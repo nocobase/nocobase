@@ -12,6 +12,8 @@ import { createMockServer, MockServer } from '@nocobase/test';
 import { InAppMessagesDefinition as MessagesDefinition } from '../../types';
 import defineMyInAppChannels from '../defineMyInAppChannels';
 import { ChannelsCollectionDefinition as ChannelsDefinition } from '@nocobase/plugin-notification-manager';
+import { createMessages } from './mock/db-funcs';
+import defineMyInAppMessages from '../defineMyInAppMessages';
 
 describe('inapp message channels', () => {
   let app: MockServer;
@@ -32,7 +34,7 @@ describe('inapp message channels', () => {
     db = app.db;
     UserRepo = db.getCollection('users').repository;
     channelsRepo = db.getRepository(ChannelsDefinition.name);
-    const messagesRepo = db.getRepository(MessagesDefinition.name);
+    messagesRepo = db.getRepository(MessagesDefinition.name);
 
     users = await UserRepo.create({
       values: [
@@ -55,28 +57,94 @@ describe('inapp message channels', () => {
       await channelsRepo.destroy({ truncate: true });
       await messagesRepo.destroy({ truncate: true });
     });
-    test('user can get own channels', async () => {
+    test('user can get own channels and messages', async () => {
       defineMyInAppChannels({ app });
-      await channelsRepo.create({
+      defineMyInAppMessages({ app, addClient: () => null, removeClient: () => null });
+      const channelsRes = await channelsRepo.create({
         values: [
           {
-            id: '3f04ebff-25fe-4e98-9dcc-e3f2b9ebecc3',
-            senderId: 'c72b1bb7-664f-4f7e-a08a-9bfae1bd78d9',
-            userId: 2,
-            title: '测试1',
+            title: '测试渠道2(userId=2)',
+            notificationType: 'in-app-message',
           },
           {
-            id: '3f04ebff-25fe-4e98-9dcc-e3f2b9ebefff',
-            senderId: 'c72b1bb7-664f-4f7e-a08a-9bfae1bd7fff',
-            userId: 3,
-            title: '测试2',
+            title: '测试渠道3(userId=3)',
+            notificationType: 'in-app-message',
           },
         ],
       });
+      await createMessages(
+        { messagesRepo },
+        { unreadNum: 2, readNum: 2, channelName: channelsRes[0].name, startTimeStamp: Date.now(), userId: users[0].id },
+      );
+      await createMessages(
+        { messagesRepo },
+        { unreadNum: 2, readNum: 2, channelName: channelsRes[0].name, startTimeStamp: Date.now(), userId: users[1].id },
+      );
       const res = await userAgents[0].resource('myInAppChannels').list();
       expect(res.body.data.length).toBe(1);
+      const myMessages = await userAgents[0].resource('myInAppMessages').list();
+      expect(myMessages.body.data.messages.length).toBe(4);
     });
+    test('filter channel by status', async () => {
+      const channels = await channelsRepo.create({
+        values: [
+          {
+            title: 'read_channel',
+            notificationType: 'in-app-message',
+          },
+          {
+            title: 'unread_channel',
+            notificationType: 'in-app-message',
+          },
+          {
+            title: 'mix_channel',
+            notificationType: 'in-app-message',
+          },
+        ],
+      });
+      const allReadChannel = channels.find((channel) => channel.title === 'read_channel');
+      const allUnreadChannel = channels.find((channel) => channel.title === 'unread_channel');
+      const mixChannel = channels.find((channel) => channel.title === 'mix_channel');
+      await createMessages(
+        { messagesRepo },
+        { unreadNum: 0, readNum: 4, channelName: allReadChannel.name, startTimeStamp: Date.now(), userId: currUserId },
+      );
 
-    test('filter channels by status', async () => {});
+      await createMessages(
+        { messagesRepo },
+        {
+          unreadNum: 4,
+          readNum: 0,
+          channelName: allUnreadChannel.name,
+          startTimeStamp: Date.now(),
+          userId: currUserId,
+        },
+      );
+
+      await createMessages(
+        { messagesRepo },
+        {
+          unreadNum: 2,
+          readNum: 2,
+          channelName: mixChannel.name,
+          startTimeStamp: Date.now(),
+          userId: currUserId,
+        },
+      );
+      const readChannelsRes = await currUserAgent.resource('myInAppChannels').list({ filter: { status: 'read' } });
+      const unreadChannelsRes = await currUserAgent.resource('myInAppChannels').list({ filter: { status: 'unread' } });
+      const allChannelsRes = await currUserAgent.resource('myInAppChannels').list({ filter: { status: 'all' } });
+      [allReadChannel, mixChannel].forEach((channel) => {
+        expect(readChannelsRes.body.data.map((channel) => channel.name)).toContain(channel.name);
+      });
+
+      [allUnreadChannel, mixChannel].forEach((channel) => {
+        expect(unreadChannelsRes.body.data.map((channel) => channel.name)).toContain(channel.name);
+      });
+      expect(allChannelsRes.body.data.length).toBe(3);
+    });
+    // test('channel last receive timestamp filter', () => {
+    //   const currentTS = Date.now();
+    // });
   });
 });
