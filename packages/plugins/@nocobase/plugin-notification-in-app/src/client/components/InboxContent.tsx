@@ -135,15 +135,23 @@ const InnerInboxContent = () => {
               <Card
                 size={'small'}
                 bordered={false}
-                style={{ marginTop: 24, cursor: 'pointer' }}
+                style={{ marginTop: 24 }}
                 title={
                   <Tooltip title={message.title} mouseEnterDelay={0.5}>
-                    <span style={{ fontWeight: message.status === 'unread' ? 'bold' : 'normal' }}>{message.title}</span>
+                    <div
+                      onClick={() => {
+                        onItemClicked(message);
+                      }}
+                      style={{
+                        fontWeight: message.status === 'unread' ? 'bold' : 'normal',
+                        cursor: 'pointer',
+                        width: '100%',
+                      }}
+                    >
+                      {message.title}
+                    </div>
                   </Tooltip>
                 }
-                onClick={() => {
-                  onItemClicked(message);
-                }}
                 extra={
                   message.options?.url ? (
                     <Button
