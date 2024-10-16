@@ -145,7 +145,7 @@ export const usePopupUtils = (
   const collection = useCollection();
   const cm = useCollectionManager();
   const association = useAssociationName();
-  const { visible, setVisible } = useContext(PopupVisibleProviderContext) || { visible: false, setVisible: () => {} };
+  const { visible, setVisible } = useContext(PopupVisibleProviderContext) || { visible: false, setVisible: _.noop };
   const { params: popupParams } = useCurrentPopupContext();
   const service = useDataBlockRequest();
   const { isPopupVisibleControlledByURL } = usePopupSettings();

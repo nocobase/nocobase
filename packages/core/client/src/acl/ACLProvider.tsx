@@ -114,29 +114,41 @@ export const useACLRolesCheck = () => {
   const dataSourceName = useDataSourceKey();
   const { dataSources: dataSourcesAcl } = ctx?.data?.meta || {};
   const data = { ...ctx?.data?.data, ...omit(dataSourcesAcl?.[dataSourceName], 'snippets') };
-  const getActionAlias = (actionPath: string) => {
-    const actionName = actionPath.split(':').pop();
-    return data?.actionAlias?.[actionName] || actionName;
-  };
+  const getActionAlias = useCallback(
+    (actionPath: string) => {
+      const actionName = actionPath.split(':').pop();
+      return data?.actionAlias?.[actionName] || actionName;
+    },
+    [data?.actionAlias],
+  );
   return {
     data,
     getActionAlias,
-    inResources: (resourceName: string) => {
-      return data?.resources?.includes?.(resourceName);
-    },
-    getResourceActionParams: (actionPath: string) => {
-      const [resourceName] = actionPath.split(':');
-      const actionAlias = getActionAlias(actionPath);
-      return data?.actions?.[`${resourceName}:${actionAlias}`] || data?.actions?.[actionPath];
-    },
-    getStrategyActionParams: (actionPath: string) => {
-      const actionAlias = getActionAlias(actionPath);
-      const strategyAction = data?.strategy?.actions?.find((action) => {
-        const [value] = action.split(':');
-        return value === actionAlias;
-      });
-      return strategyAction ? {} : null;
-    },
+    inResources: useCallback(
+      (resourceName: string) => {
+        return data?.resources?.includes?.(resourceName);
+      },
+      [data?.resources],
+    ),
+    getResourceActionParams: useCallback(
+      (actionPath: string) => {
+        const [resourceName] = actionPath.split(':');
+        const actionAlias = getActionAlias(actionPath);
+        return data?.actions?.[`${resourceName}:${actionAlias}`] || data?.actions?.[actionPath];
+      },
+      [data?.actions, getActionAlias],
+    ),
+    getStrategyActionParams: useCallback(
+      (actionPath: string) => {
+        const actionAlias = getActionAlias(actionPath);
+        const strategyAction = data?.strategy?.actions?.find((action) => {
+          const [value] = action.split(':');
+          return value === actionAlias;
+        });
+        return strategyAction ? {} : null;
+      },
+      [data?.strategy?.actions, getActionAlias],
+    ),
   };
 };
 
@@ -179,35 +191,42 @@ export function useACLRoleContext() {
   const { data, getActionAlias, inResources, getResourceActionParams, getStrategyActionParams } = useACLRolesCheck();
   const allowedActions = useAllowedActions();
   const cm = useCollectionManager();
-  const verifyScope = (actionName: string, recordPkValue: any) => {
-    const actionAlias = getActionAlias(actionName);
-    if (!Array.isArray(allowedActions?.[actionAlias])) {
-      return null;
-    }
-    return allowedActions[actionAlias].includes(recordPkValue);
-  };
+  const verifyScope = useCallback(
+    (actionName: string, recordPkValue: any) => {
+      const actionAlias = getActionAlias(actionName);
+      if (!Array.isArray(allowedActions?.[actionAlias])) {
+        return null;
+      }
+      return allowedActions[actionAlias].includes(recordPkValue);
+    },
+    [allowedActions, getActionAlias],
+  );
+
   return {
     ...data,
-    parseAction: (actionPath: string, options: any = {}) => {
-      const [resourceName, actionName] = actionPath.split(':');
-      const targetResource = resourceName?.includes('.') && cm.getCollectionField(resourceName)?.target;
-      if (!getIgnoreScope(options)) {
-        const r = verifyScope(actionName, options.recordPkValue);
-        if (r !== null) {
-          return r ? {} : null;
+    parseAction: useCallback(
+      (actionPath: string, options: any = {}) => {
+        const [resourceName, actionName] = actionPath.split(':');
+        const targetResource = resourceName?.includes('.') && cm.getCollectionField(resourceName)?.target;
+        if (!getIgnoreScope(options)) {
+          const r = verifyScope(actionName, options.recordPkValue);
+          if (r !== null) {
+            return r ? {} : null;
+          }
         }
-      }
-      if (data?.allowAll) {
-        return {};
-      }
-      if (inResources(targetResource)) {
-        return getResourceActionParams(`${targetResource}:${actionName}`);
-      }
-      if (inResources(resourceName)) {
-        return getResourceActionParams(actionPath);
-      }
-      return getStrategyActionParams(actionPath);
-    },
+        if (data?.allowAll) {
+          return {};
+        }
+        if (inResources(targetResource)) {
+          return getResourceActionParams(`${targetResource}:${actionName}`);
+        }
+        if (inResources(resourceName)) {
+          return getResourceActionParams(actionPath);
+        }
+        return getStrategyActionParams(actionPath);
+      },
+      [cm, data?.allowAll, getResourceActionParams, getStrategyActionParams, inResources, verifyScope],
+    ),
   };
 }
 
@@ -227,19 +246,24 @@ export const ACLCollectionProvider = (props) => {
   const { allowAll: customAllowAll } = useACLCustomContext();
   const app = useApp();
   const schema = useFieldSchema();
-  if (allowAll || app.disableAcl || customAllowAll) {
-    return props.children;
-  }
+
   let actionPath = schema?.['x-acl-action'] || props.actionPath;
   const resoureName = schema?.['x-decorator-props']?.['association'] || schema?.['x-decorator-props']?.['collection'];
+
   // 兼容 undefined 的情况
   if (actionPath === 'undefined:list' && resoureName && resoureName !== 'undefined') {
     actionPath = `${resoureName}:list`;
   }
+
+  const params = useMemo(() => parseAction(actionPath, { schema }), [parseAction, actionPath, schema]);
+
+  if (allowAll || app.disableAcl || customAllowAll) {
+    return props.children;
+  }
   if (!actionPath) {
     return props.children;
   }
-  const params = parseAction(actionPath, { schema });
+
   if (!params) {
     return <CollectionNotAllowViewPlaceholder />;
   }
@@ -267,19 +291,26 @@ export const ACLActionProvider = (props) => {
   const schema = useFieldSchema();
   let actionPath = schema['x-acl-action'];
   const editablePath = ['create', 'update', 'destroy', 'importXlsx'];
+
   if (!actionPath && resource && schema['x-action']) {
     actionPath = `${resource}:${schema['x-action']}`;
   }
   if (!actionPath?.includes(':')) {
     actionPath = `${resource}:${actionPath}`;
   }
+
+  const params = useMemo(
+    () => parseAction(actionPath, { schema, recordPkValue }),
+    [parseAction, actionPath, schema, recordPkValue],
+  );
+
   if (!actionPath) {
     return <>{props.children}</>;
   }
   if (!resource) {
     return <>{props.children}</>;
   }
-  const params = parseAction(actionPath, { schema, recordPkValue });
+
   if (!params) {
     return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
   }
