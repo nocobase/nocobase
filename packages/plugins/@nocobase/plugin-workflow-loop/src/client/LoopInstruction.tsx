@@ -256,7 +256,7 @@ export default class extends Instruction {
       'x-component-props': {
         changeOnSelect: true,
         nullable: false,
-        useTypedConstant: ['string', 'number'],
+        useTypedConstant: ['string', ['number', { step: 1, min: 0, precision: 0 }]],
         className: css`
           width: 100%;
 
