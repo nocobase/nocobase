@@ -101,6 +101,22 @@ const InnerInboxContent = () => {
       unread: t('Unread'),
     };
     if (!selectedChannelName) return null;
+    const onItemClicked = (message) => {
+      updateMessage({
+        filterByTk: message.id,
+        values: {
+          status: 'read',
+        },
+      });
+      if (message.options?.url) {
+        inboxVisible.value = false;
+        const url = message.options.url;
+        if (url.startsWith('/')) navigate(url);
+        else {
+          window.location.href = url;
+        }
+      }
+    };
     return (
       <ConfigProvider
         theme={{
@@ -126,30 +142,15 @@ const InnerInboxContent = () => {
                   </Tooltip>
                 }
                 onClick={() => {
-                  updateMessage({
-                    filterByTk: message.id,
-                    values: {
-                      status: 'read',
-                    },
-                  });
+                  onItemClicked(message);
                 }}
                 extra={
                   message.options?.url ? (
                     <Button
                       type="link"
-                      onClick={() => {
-                        updateMessage({
-                          filterByTk: message.id,
-                          values: {
-                            status: 'read',
-                          },
-                        });
-                        const url = message.options.url;
-                        if (url.startsWith('/')) navigate(url);
-                        else {
-                          window.location.href = url;
-                        }
-                        inboxVisible.value = false;
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onItemClicked(message);
                       }}
                     >
                       {t('View')}
