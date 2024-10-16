@@ -25,7 +25,7 @@ function setNativeInputValue(input, value) {
 
 export function RawTextArea(props): JSX.Element {
   const inputRef = useRef<any>(null);
-  const { changeOnSelect, component: Component = Input.TextArea, fieldNames, scope, ...others } = props;
+  const { changeOnSelect, component: Component = Input.TextArea, fieldNames, scope, buttonClass, ...others } = props;
   const dataScope = typeof scope === 'function' ? scope() : scope;
   const [options, setOptions] = useState(dataScope ? dataScope : []);
 
@@ -66,7 +66,7 @@ export function RawTextArea(props): JSX.Element {
       >
         <VariableSelect
           className={
-            props.buttonClass ??
+            buttonClass ??
             css`
               &:not(:hover) {
                 border-right-color: transparent;

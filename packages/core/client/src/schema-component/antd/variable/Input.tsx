@@ -480,6 +480,7 @@ export function Input(props: VariableInputProps) {
               margin-left: -1px;
             `)}
               type={variable ? 'primary' : 'default'}
+              disabled={disabled}
             />
           )}
         </Cascader>

@@ -203,5 +203,8 @@
   "End process": "结束流程",
   "End the process immediately, with set status.": "以设置的状态立即结束流程。",
   "End status": "结束状态",
-  "Succeeded": "成功"
+  "Succeeded": "成功",
+  "Test run": "测试执行",
+  "Test run will do the actual data manipulating or API calling, please use with caution.": "测试执行会进行实际的数据操作或 API 调用，请谨慎使用。",
+  "No variable": "无变量"
 }
