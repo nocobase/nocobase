@@ -12,6 +12,7 @@ import { cloneDeep } from 'lodash';
 import type { CollectionFieldOptions } from '../collection';
 import { CollectionFieldInterfaceManager } from './CollectionFieldInterfaceManager';
 import { defaultProps } from '../../collection-manager/interfaces/properties';
+import { tval } from '@nocobase/utils/client';
 export type CollectionFieldInterfaceFactory = new (
   collectionFieldInterfaceManager: CollectionFieldInterfaceManager,
 ) => CollectionFieldInterface;
@@ -73,7 +74,7 @@ export abstract class CollectionFieldInterface {
       if (xComponent) {
         this.componentOptions = [
           {
-            label: xComponent.split('.').pop(),
+            label: tval(xComponent.split('.').pop()),
             value: xComponent,
             useProps() {
               return componentProps || {};
