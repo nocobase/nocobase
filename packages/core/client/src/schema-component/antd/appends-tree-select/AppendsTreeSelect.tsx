@@ -12,13 +12,7 @@ import { Tag, TreeSelect } from 'antd';
 import type { DefaultOptionType, TreeSelectProps } from 'rc-tree-select/es/TreeSelect';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  CollectionFieldOptions_deprecated,
-  parseCollectionName,
-  useApp,
-  useCollectionManager_deprecated,
-  useCompile,
-} from '../../..';
+import { CollectionFieldOptions_deprecated, parseCollectionName, useApp, useCompile } from '../../..';
 
 export type AppendsTreeSelectProps = {
   value: string[] | string;
@@ -106,7 +100,11 @@ export const AppendsTreeSelect: React.FC<TreeSelectProps & AppendsTreeSelectProp
   const [dataSourceName, collectionName] = parseCollectionName(collectionString);
   const app = useApp();
   const { collectionManager } = app.dataSourceManager.getDataSource(dataSourceName);
-  const getCollectionFields = collectionManager.getCollectionFields.bind(collectionManager);
+  const getCollectionFields = (name, predicate) => {
+    const instance = collectionManager.getCollection(name);
+    // NOTE: condition for compatibility with hidden collections like "attachments"
+    return instance ? instance.getAllFields(predicate) : [];
+  };
   const treeData = Object.values(optionsMap);
   const value: string | DefaultOptionType[] = useMemo(() => {
     if (props.multiple) {

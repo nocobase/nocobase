@@ -7,7 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { attachmentFileTypes } from './shared';
-export { useUploadStyles } from './style';
+export const CHECKPOINT = {
+  BEFORE: 0,
+  AFTER: 1,
+};
 
-export * from './Upload';
+export const CONTINUE_ON_FALSE = {
+  BREAK: false,
+  CONTINUE: true,
+};
+
+export const EXIT = {
+  CONTINUE: 2,
+  BREAK: 1,
+  RETURN: 0,
+};

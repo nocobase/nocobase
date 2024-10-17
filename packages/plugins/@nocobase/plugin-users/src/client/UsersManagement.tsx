@@ -52,7 +52,6 @@ const useSubmitActionProps = () => {
     async onClick() {
       await form.submit();
       const values = form.values;
-      console.log('values:', values);
       if (values[collection.filterTargetKey]) {
         await resource.update({
           values,
@@ -110,8 +109,12 @@ const UsersSettingsTab: React.FC = () => {
   const form = useForm();
   const useFormBlockProps = () => {
     const result = useContext(UsersSettingsContext);
+    const { enableChangePassword, enableEditProfile } = result?.data?.data || {};
     useEffect(() => {
-      form?.setValues(result?.data?.data);
+      form?.setValues({
+        enableChangePassword: enableChangePassword !== false,
+        enableEditProfile: enableEditProfile !== false,
+      });
     }, [result]);
     return {
       form: form,
