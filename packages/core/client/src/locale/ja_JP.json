@@ -1006,5 +1006,6 @@
   "The current user only has the UI configuration permission, but don't have view permission for collection \"{{name}}\"": "現在のユーザーにはUI設定の権限しかなく、コレクション「{{name}}」を閲覧する権限はありません。",
   "NaN": "なし",
   "true": "真",
-  "false": "偽"
+  "false": "偽",
+  "Parent object": "親オブジェクト"
 }
