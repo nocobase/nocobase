@@ -67,16 +67,18 @@ export async function submit(context: Context, next) {
     return context.throw(403);
   }
   const presetValues = processor.getParsedValue(actionItem.values ?? {}, userJob.nodeId, {
-    // @deprecated
-    currentUser: currentUser,
-    // @deprecated
-    currentRecord: values.result[formKey],
-    // @deprecated
-    currentTime: new Date(),
-    $user: currentUser,
-    $nForm: values.result[formKey],
-    $nDate: {
-      now: new Date(),
+    additionalScope: {
+      // @deprecated
+      currentUser: currentUser,
+      // @deprecated
+      currentRecord: values.result[formKey],
+      // @deprecated
+      currentTime: new Date(),
+      $user: currentUser,
+      $nForm: values.result[formKey],
+      $nDate: {
+        now: new Date(),
+      },
     },
   });
 

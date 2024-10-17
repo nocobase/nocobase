@@ -350,7 +350,7 @@ export default class extends Instruction {
     },
     ignoreFail: {
       type: 'boolean',
-      title: `{{t("Ignore failed request and continue workflow", { ns: "${NAMESPACE}" })}}`,
+      'x-content': `{{t("Ignore failed request and continue workflow", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
     },
@@ -390,4 +390,5 @@ export default class extends Instruction {
           ],
     };
   }
+  testable = true;
 }
