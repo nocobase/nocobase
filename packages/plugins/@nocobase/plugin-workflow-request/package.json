@@ -11,7 +11,7 @@
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-request",
   "devDependencies": {
     "antd": "5.x",
-    "axios": "^0.26.1",
+    "axios": "^1.7.0",
     "react": "18.x",
     "react-i18next": "^11.15.1"
   },

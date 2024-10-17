@@ -15,3 +15,5 @@ export * from './RadioWithTooltip';
 export * from './CheckboxGroupWithTooltip';
 export * from './ValueBlock';
 export * from './SimpleDesigner';
+export * from './renderEngineReference';
+export * from './Calculation';

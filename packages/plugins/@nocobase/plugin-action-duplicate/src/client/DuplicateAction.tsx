@@ -15,6 +15,7 @@ import {
   FormBlockContext,
   PopupSettingsProvider,
   RecordProvider,
+  TabsContextProvider,
   fetchTemplateData,
   useACLActionParamsContext,
   useAPIClient,
@@ -200,16 +201,19 @@ export const DuplicateAction = observer(
                 {loading ? t('Duplicating') : children || t('Duplicate')}
               </Button>
             )}
-            <CollectionProvider_deprecated name={duplicateCollection || name}>
-              {/* 这里的 record 就是弹窗中创建表单的 sourceRecord */}
-              <RecordProvider record={{ ...parentRecordData, __collection: duplicateCollection || __collection }}>
-                <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
-                  <PopupSettingsProvider enableURL={false}>
-                    <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
-                  </PopupSettingsProvider>
-                </ActionContextProvider>
-              </RecordProvider>
-            </CollectionProvider_deprecated>
+            {/* Clear the context of Tabs to avoid affecting the Tabs of the upper-level popup */}
+            <TabsContextProvider>
+              <CollectionProvider_deprecated name={duplicateCollection || name}>
+                {/* 这里的 record 就是弹窗中创建表单的 sourceRecord */}
+                <RecordProvider record={{ ...parentRecordData, __collection: duplicateCollection || __collection }}>
+                  <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
+                    <PopupSettingsProvider enableURL={false}>
+                      <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
+                    </PopupSettingsProvider>
+                  </ActionContextProvider>
+                </RecordProvider>
+              </CollectionProvider_deprecated>
+            </TabsContextProvider>
           </div>
         </FormBlockContext.Provider>
       </div>
