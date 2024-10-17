@@ -16,7 +16,7 @@ import { default as lodash } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
-import { ErrorFallback, StablePopover, useActionContext } from '../..';
+import { ErrorFallback, StablePopover, TabsContextProvider, useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { useACLActionParamsContext } from '../../../acl';
 import { useCollectionParentRecordData, useCollectionRecordData, useDataBlockRequest } from '../../../data-source';
@@ -284,7 +284,7 @@ const InternalAction: React.FC<InternalActionProps> = React.memo((props) => {
     confirmTitle,
   };
 
-  const result = (
+  let result = (
     <PopupVisibleProvider visible={false}>
       <ActionContextProvider
         visible={visible || visibleWithURL}
@@ -307,6 +307,11 @@ const InternalAction: React.FC<InternalActionProps> = React.memo((props) => {
       </ActionContextProvider>
     </PopupVisibleProvider>
   );
+
+  if (isBulkEditAction(fieldSchema)) {
+    // Clear the context of Tabs to avoid affecting the Tabs of the upper-level popup
+    result = <TabsContextProvider>{result}</TabsContextProvider>;
+  }
 
   if (addChild) {
     return wrapSSR(
