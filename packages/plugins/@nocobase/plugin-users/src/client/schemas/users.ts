@@ -489,10 +489,6 @@ export const usersSettingsSchema: ISchema = {
     usersSettings: {
       type: 'void',
       'x-component': 'CardItem',
-      // 'x-decorator': 'FormBlockProvider',
-      // 'x-component-props': {
-      //   heightMode: 'fullHeight',
-      // },
       'x-decorator': 'UsersSettingsProvider',
       properties: {
         form: {
@@ -512,7 +508,7 @@ export const usersSettingsSchema: ISchema = {
               'x-component': 'Checkbox',
               'x-decorator': 'FormItem',
               default: true,
-              'x-content': '{{t("Allow Change Password")}}',
+              'x-content': '{{t("Allow change password")}}',
             },
           },
         },
