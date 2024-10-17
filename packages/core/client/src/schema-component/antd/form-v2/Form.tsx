@@ -35,7 +35,7 @@ const FormComponent: React.FC<FormProps> = (props) => {
   const { form, children, ...others } = props;
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const cardItemSchema = getCardItemSchema(fieldSchema);
+  const cardItemSchema = getCardItemSchema?.(fieldSchema);
   // TODO: component 里 useField 会与当前 field 存在偏差
   const f = useAttach(form.createVoidField({ ...field.props, basePath: '' }));
   const height = useFormBlockHeight();

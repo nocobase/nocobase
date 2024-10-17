@@ -161,7 +161,7 @@ const InternalGridCard = (props: GridCardProps) => {
     ...pagination,
     onChange: onPaginationChange,
   };
-  const cardItemSchema = getCardItemSchema(fieldSchema);
+  const cardItemSchema = getCardItemSchema?.(fieldSchema);
   const { layout = 'vertical' } = cardItemSchema?.['x-component-props'] || {};
 
   return (
