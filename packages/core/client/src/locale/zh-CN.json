@@ -1004,5 +1004,6 @@
   "Switching the picker, the value and default value will be cleared":"切换选择器时，字段的值和默认值将会被清空",
   "Stay on the current popup or page":"停留在当前弹窗或页面",
   "Return to the previous popup or page":"返回上一层弹窗或页面",
-  "Action after successful submission":"提交成功后动作"
+  "Action after successful submission":"提交成功后动作",
+  "Allow disassociation":"允许解除关联"
 }
