@@ -25,10 +25,6 @@ export const channelCountObs = observable<{ value: number }>({ value: 0 });
 export const channelStatusFilterObs = observable<{ value: ChannelStatus }>({ value: 'all' });
 export const channelListObs = observable.computed(() => {
   const channels = Object.values(channelMapObs.value)
-    .map((channel) => ({
-      ...channel,
-      unreadMsgCnt: channelStatusFilterObs.value === 'read' ? 0 : channel.unreadMsgCnt,
-    }))
     .filter((channel) => channel.userId == String(userIdObs.value ?? ''))
     .filter((channel) => {
       if (channelStatusFilterObs.value === 'read') return channel.totalMsgCnt - channel.unreadMsgCnt > 0;

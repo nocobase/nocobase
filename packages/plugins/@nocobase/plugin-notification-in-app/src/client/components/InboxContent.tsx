@@ -299,7 +299,7 @@ const InnerInboxContent = () => {
                     {' '}
                     {item.latestMsgTitle}
                   </div>
-                  <Badge count={item.unreadMsgCnt}></Badge>
+                  {channelStatusFilterObs.value !== 'read' ? <Badge count={item.unreadMsgCnt}></Badge> : null}
                 </Flex>
               </List.Item>
             );
