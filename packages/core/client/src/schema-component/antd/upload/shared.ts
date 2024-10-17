@@ -22,6 +22,10 @@ export const isImage = (file) => {
   return match(file.mimetype || file.type, 'image/*');
 };
 
+export const isVideo = (file) => {
+  return match(file.mimetype || file.type, 'video/*');
+};
+
 export const isPdf = (file) => {
   return match(file.mimetype || file.type, 'application/pdf');
 };
@@ -171,6 +175,7 @@ export const toItem = (file) => {
       : getImageByUrl(file.url, {
           exclude: ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico'],
         }),
+    videoUrl: isVideo(file) ? file.url : undefined,
   };
 };
 
