@@ -8,7 +8,7 @@
  */
 
 import type { ISchema } from '@formily/react';
-import { cloneDeep } from 'lodash';
+import { cloneDeep, capitalize } from 'lodash';
 import type { CollectionFieldOptions } from '../collection';
 import { CollectionFieldInterfaceManager } from './CollectionFieldInterfaceManager';
 import { defaultProps } from '../../collection-manager/interfaces/properties';
@@ -72,9 +72,11 @@ export abstract class CollectionFieldInterface {
       const xComponent = this.default?.uiSchema?.['x-component'];
       const componentProps = this.default?.uiSchema?.['x-component-props'];
       if (xComponent) {
+        const schemaType = this.default?.uiSchema?.type || 'string';
+        const label = tval(xComponent.startsWith('Input') ? capitalize(schemaType) : xComponent.split('.').pop());
         this.componentOptions = [
           {
-            label: tval(xComponent.split('.').pop()),
+            label,
             value: xComponent,
             useProps() {
               return componentProps || {};
