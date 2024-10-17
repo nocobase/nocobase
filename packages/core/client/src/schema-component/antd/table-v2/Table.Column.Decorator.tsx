@@ -8,7 +8,7 @@
  */
 
 import { useField, useFieldSchema } from '@formily/react';
-import React, { useLayoutEffect } from 'react';
+import React, { useLayoutEffect, useMemo } from 'react';
 import {
   CollectionFieldContext,
   SortableItem,
@@ -25,7 +25,6 @@ export const useColumnSchema = () => {
   const { getField } = useCollection_deprecated();
   const compile = useCompile();
   const columnSchema = useFieldSchema();
-  const columnField = useField();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   const fieldSchema = columnSchema?.reduceProperties((buf, s) => {
     if (isCollectionFieldComponent(s)) {
@@ -38,17 +37,30 @@ export const useColumnSchema = () => {
     return {};
   }
 
-  const path = columnField.path?.splice(columnField.path?.length - 1, 1);
-  const filedInstanceList = columnField.form.query(`${path.concat(`*.` + fieldSchema.name)}`).map();
-
   const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);
+
   return {
     columnSchema,
     fieldSchema,
     collectionField,
     uiSchema: compile(collectionField?.uiSchema),
-    filedInstanceList,
   };
+};
+
+export const useTableFieldInstanceList = () => {
+  const columnField = useField();
+  const { fieldSchema } = useColumnSchema();
+  const filedInstanceList = useMemo(() => {
+    const path = columnField.path?.splice(columnField.path?.length - 1, 1);
+    // TODO: 这里需要优化，性能比较差，在 M2 pro 的机器上这行代码会运行将近 0.1 毫秒
+    return columnField.form.query(`${path.concat(`*.` + fieldSchema.name)}`).map();
+  }, [columnField.form, columnField.path, fieldSchema.name]);
+
+  if (!fieldSchema) {
+    return [];
+  }
+
+  return filedInstanceList;
 };
 
 export const TableColumnDecorator = (props) => {

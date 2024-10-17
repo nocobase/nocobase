@@ -9,8 +9,8 @@
 
 import { observer, RecursionField } from '@formily/react';
 import React from 'react';
-import { useRecord } from '../../../../record-provider';
 import { useCollection } from '../../../../data-source';
+import { useRecord } from '../../../../record-provider';
 export const ColumnFieldProvider = observer(
   (props: { schema: any; basePath: any; children: any }) => {
     const { schema, basePath } = props;
@@ -23,7 +23,6 @@ export const ColumnFieldProvider = observer(
       return buf;
     }, null);
     const collectionField = fieldSchema && collection.getField(fieldSchema['x-collection-field']);
-
     if (
       fieldSchema &&
       record?.__collection &&
