@@ -19,6 +19,7 @@ import { useIsFieldReadPretty } from '../../../../schema-component/antd/form-ite
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { titleField } from '../Picker/recordPickerComponentFieldSettings';
 import { linkageRules } from '../SubTable/subTablePopoverComponentFieldSettings';
+import { schemaSettingsLabelLayout } from '../../../../schema-settings';
 
 const allowMultiple: any = {
   name: 'allowMultiple',
@@ -104,5 +105,5 @@ const fieldComponent: any = {
 
 export const subformPopoverComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:PopoverNester',
-  items: [fieldComponent, allowMultiple, titleField, linkageRules],
+  items: [fieldComponent, allowMultiple, titleField, linkageRules, schemaSettingsLabelLayout],
 });
