@@ -615,7 +615,7 @@ describe('workflow > instructions > request', () => {
     it('invalid config', async () => {
       const { status, result } = await instruction.test(Object.create({}));
       expect(status).toBe(JOB_STATUS.FAILED);
-      expect(result).toBe("Cannot read properties of null (reading 'replace')");
+      expect(result).toBe('Invalid URL');
     });
 
     it('data url', async () => {
