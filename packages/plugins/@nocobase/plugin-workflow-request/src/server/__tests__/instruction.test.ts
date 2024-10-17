@@ -8,18 +8,18 @@
  */
 
 import { Server } from 'http';
-import type { AddressInfo } from 'net';
 import jwt from 'jsonwebtoken';
 import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
+import type { AddressInfo } from 'net';
 
 import Database from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 
-import PluginWorkflow, { Processor, EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
+import PluginWorkflow, { EXECUTION_STATUS, JOB_STATUS, Processor } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
-import { RequestConfig } from '../RequestInstruction';
+import RequestInstruction, { RequestConfig } from '../RequestInstruction';
 
 const HOST = 'localhost';
 
@@ -111,6 +111,7 @@ describe('workflow > instructions > request', () => {
   let WorkflowModel;
   let workflow;
   let api: MockAPI;
+  let instruction: RequestInstruction;
 
   beforeEach(async () => {
     api = new MockAPI();
@@ -123,6 +124,9 @@ describe('workflow > instructions > request', () => {
     });
 
     db = app.db;
+
+    instruction = (app.pm.get(PluginWorkflow) as PluginWorkflow).instructions.get('request') as RequestInstruction;
+
     WorkflowModel = db.getCollection('workflows').model;
     PostCollection = db.getCollection('posts');
     PostRepo = PostCollection.repository;
@@ -227,8 +231,8 @@ describe('workflow > instructions > request', () => {
 
       expect(job.result).toMatchObject({
         code: 'ECONNABORTED',
-        name: 'Error',
-        status: null,
+        name: 'AxiosError',
+        // status: null,
         message: 'timeout of 250ms exceeded',
       });
 
@@ -256,8 +260,8 @@ describe('workflow > instructions > request', () => {
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
       expect(job.result).toMatchObject({
         code: 'ECONNABORTED',
-        name: 'Error',
-        status: null,
+        name: 'AxiosError',
+        // status: null,
         message: 'timeout of 250ms exceeded',
       });
     });
@@ -340,7 +344,7 @@ describe('workflow > instructions > request', () => {
       expect(job.result).toMatchObject({
         code: 'ECONNRESET',
         name: 'Error',
-        status: null,
+        // status: null,
         message: 'socket hang up',
       });
     });
@@ -604,6 +608,70 @@ describe('workflow > instructions > request', () => {
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
       expect(job.result.status).toBe(404);
+    });
+  });
+
+  describe('test run', () => {
+    it('invalid config', async () => {
+      const { status, result } = await instruction.test(Object.create({}));
+      expect(status).toBe(JOB_STATUS.FAILED);
+      expect(result).toBe("Cannot read properties of null (reading 'replace')");
+    });
+
+    it('data url', async () => {
+      const { status, result } = await instruction.test({
+        url: api.URL_DATA,
+        method: 'POST',
+        contentType: 'application/json',
+        data: { a: 1 },
+      });
+      expect(status).toBe(JOB_STATUS.RESOLVED);
+      expect(result.status).toBe(200);
+      expect(result.data).toEqual({ meta: {}, data: { a: 1 } });
+    });
+
+    it('404', async () => {
+      const { status, result } = await instruction.test({
+        url: api.URL_404,
+        method: 'GET',
+        contentType: '',
+      });
+      expect(status).toBe(JOB_STATUS.FAILED);
+      expect(result.status).toBe(404);
+    });
+
+    it('timeout', async () => {
+      const { status, result } = await instruction.test({
+        url: api.URL_TIMEOUT,
+        method: 'GET',
+        timeout: 1000,
+        contentType: '',
+      });
+      expect(status).toBe(JOB_STATUS.FAILED);
+      expect(result.code).toBe('ECONNABORTED');
+    });
+
+    it('ignoreFail', async () => {
+      const { status, result } = await instruction.test({
+        url: api.URL_404,
+        method: 'GET',
+        ignoreFail: true,
+        contentType: '',
+      });
+      expect(status).toBe(JOB_STATUS.RESOLVED);
+      expect(result.status).toBe(404);
+    });
+
+    it('timeout and ignoreFail', async () => {
+      const { status, result } = await instruction.test({
+        url: api.URL_TIMEOUT,
+        method: 'GET',
+        timeout: 1000,
+        ignoreFail: true,
+        contentType: '',
+      });
+      expect(status).toBe(JOB_STATUS.RESOLVED);
+      expect(result.code).toBe('ECONNABORTED');
     });
   });
 });

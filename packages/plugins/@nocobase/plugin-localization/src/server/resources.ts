@@ -83,7 +83,7 @@ export default class Resources {
     await this.cache.set(`texts`, [...existTexts, ...newTexts]);
   }
 
-  async resetCache(locale: string) {
-    await this.cache.del(`translations:${locale}`);
+  async reset() {
+    await this.cache.reset();
   }
 }

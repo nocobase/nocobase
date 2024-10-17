@@ -17,6 +17,7 @@
   "peerDependencies": {
     "@nocobase/client": "1.x",
     "@nocobase/database": "1.x",
+    "@nocobase/evaluators": "1.x",
     "@nocobase/plugin-workflow": ">=0.17.0-alpha.3",
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x"

@@ -72,6 +72,9 @@ const schema: ISchema = {
         useValues: '{{ useCurrentUserValues }}',
       },
       'x-component': 'Action.Drawer',
+      'x-component-props': {
+        zIndex: 10000,
+      },
       type: 'void',
       title: '{{t("Edit profile")}}',
       properties: {
