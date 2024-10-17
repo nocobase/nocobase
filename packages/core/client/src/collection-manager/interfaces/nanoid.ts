@@ -24,7 +24,7 @@ export class NanoidFieldInterface extends CollectionFieldInterface {
       'x-component': 'NanoIDInput',
     },
   };
-  availableTypes = ['string', 'nanoid'];
+  availableTypes = ['nanoid'];
   properties = {
     'uiSchema.title': {
       type: 'string',
