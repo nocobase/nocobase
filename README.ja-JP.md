@@ -74,3 +74,9 @@ NocoBaseは3つのインストール方法をサポートしています：
 - <a target="_blank" href="https://docs-cn.nocobase.com/welcome/getting-started/installation/git-clone">Gitソースコードインストール</a >
 
    最新の未公開バージョンを体験したい場合や、貢献したい場合、ソースコードを変更、デバッグする必要がある場合にこの方法を選択することをお勧めします。この方法は高度な開発技術が必要です。コードが更新された場合、gitフローを使用して最新のコードを取得できます。
+
+## デプロイメント
+
+クラウドプロバイダーを通じてワンクリックで NocoBase をデプロイし、増大するニーズに応えるために柔軟な複数のデプロイメントオプションを楽しむことができます。
+
+- [Alibaba Cloud (無料トライアルに対応)](https://computenest.console.aliyun.com/service/instance/create/default?type=user&ServiceName=NocoBase%20%E7%A4%BE%E5%8C%BA%E7%89%88)
