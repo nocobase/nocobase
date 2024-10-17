@@ -20,7 +20,6 @@ import {
 import { uid } from '@formily/shared';
 import { error } from '@nocobase/utils/client';
 import { Menu as AntdMenu, MenuProps } from 'antd';
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { createDesignable, DndContext, SortableItem, useDesignable, useDesigner } from '../..';
@@ -30,6 +29,18 @@ import { useProps } from '../../hooks/useProps';
 import { useMenuTranslation } from './locale';
 import { MenuDesigner } from './Menu.Designer';
 import { findKeysByUid, findMenuItem } from './util';
+
+import React, {
+  createContext,
+  // @ts-ignore
+  startTransition,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 const subMenuDesignerCss = css`
   position: relative;
@@ -231,39 +242,41 @@ const HeaderMenu = ({
 
   const handleSelect = useCallback(
     (info: { item; key; keyPath; domEvent }) => {
-      const s = schema.properties?.[info.key];
+      startTransition(() => {
+        const s = schema.properties?.[info.key];
 
-      if (!s) {
-        return;
-      }
-
-      if (mode === 'mix') {
-        if (s['x-component'] !== 'Menu.SubMenu') {
-          onSelect?.(info);
-        } else {
-          const menuItemSchema = findMenuItem(s);
-          if (!menuItemSchema) {
-            return onSelect?.(info);
-          }
-          // TODO
-          setLoading(true);
-          const keys = findKeysByUid(schema, menuItemSchema['x-uid']);
-          setDefaultSelectedKeys(keys);
-          setTimeout(() => {
-            setLoading(false);
-          }, 100);
-          onSelect?.({
-            key: menuItemSchema.name,
-            item: {
-              props: {
-                schema: menuItemSchema,
-              },
-            },
-          });
+        if (!s) {
+          return;
         }
-      } else {
-        onSelect?.(info);
-      }
+
+        if (mode === 'mix') {
+          if (s['x-component'] !== 'Menu.SubMenu') {
+            onSelect?.(info);
+          } else {
+            const menuItemSchema = findMenuItem(s);
+            if (!menuItemSchema) {
+              return onSelect?.(info);
+            }
+            // TODO
+            setLoading(true);
+            const keys = findKeysByUid(schema, menuItemSchema['x-uid']);
+            setDefaultSelectedKeys(keys);
+            setTimeout(() => {
+              setLoading(false);
+            }, 100);
+            onSelect?.({
+              key: menuItemSchema.name,
+              item: {
+                props: {
+                  schema: menuItemSchema,
+                },
+              },
+            });
+          }
+        } else {
+          onSelect?.(info);
+        }
+      });
     },
     [schema, mode, onSelect, setLoading, setDefaultSelectedKeys],
   );
@@ -301,10 +314,18 @@ const SideMenu = ({
 }) => {
   const { Component, getMenuItems } = useMenuItem();
 
-  // fix https://nocobase.height.app/T-3331/description
   // 使用 ref 用来防止闭包问题
   const sideMenuSchemaRef = useRef(sideMenuSchema);
   sideMenuSchemaRef.current = sideMenuSchema;
+
+  const handleSelect = useCallback(
+    (info) => {
+      startTransition(() => {
+        onSelect?.(info);
+      });
+    },
+    [onSelect],
+  );
 
   const items = useMemo(() => {
     const result = getMenuItems(() => {
@@ -351,7 +372,7 @@ const SideMenu = ({
           mode={'inline'}
           openKeys={openKeys}
           selectedKeys={selectedKeys}
-          onClick={onSelect}
+          onClick={handleSelect}
           onOpenChange={setOpenKeys}
           className={sideMenuClass}
           items={items as MenuProps['items']}
