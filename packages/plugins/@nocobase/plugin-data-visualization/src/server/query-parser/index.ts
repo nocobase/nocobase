@@ -11,6 +11,8 @@ import { Database } from '@nocobase/database';
 import { SQLiteQueryParser } from './sqlite-query-parser';
 import { PostgresQueryParser } from './postgres-query-parser';
 import { MySQLQueryParser } from './mysql-query-parser';
+import { QueryParser } from './query-parser';
+import { OracleQueryParser } from './oracle-query-parser';
 
 export const createQueryParser = (db: Database) => {
   const dialect = db.sequelize.getDialect();
@@ -22,5 +24,9 @@ export const createQueryParser = (db: Database) => {
     case 'mysql':
     case 'mariadb':
       return new MySQLQueryParser(db);
+    case 'oracle':
+      return new OracleQueryParser(db);
+    default:
+      return new QueryParser(db);
   }
 };
