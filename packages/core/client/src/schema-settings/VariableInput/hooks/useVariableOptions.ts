@@ -15,6 +15,7 @@ import { useAPITokenVariable } from './useAPITokenVariable';
 import { useDatetimeVariable } from './useDateVariable';
 import { useCurrentFormVariable } from './useFormVariable';
 import { useCurrentObjectVariable } from './useIterationVariable';
+import { useParentObjectVariable } from './useParentIterationVariable';
 import { useParentPopupVariable } from './useParentPopupVariable';
 import { useCurrentParentRecordVariable } from './useParentRecordVariable';
 import { usePopupVariable } from './usePopupVariable';
@@ -87,6 +88,12 @@ export const useVariableOptions = ({
     noDisabled,
     targetFieldSchema,
   });
+  const { parentObjectSettings, shouldDisplayParentObject } = useParentObjectVariable({
+    collectionField,
+    schema: uiSchema,
+    noDisabled,
+    targetFieldSchema,
+  });
   const { currentRecordSettings, shouldDisplayCurrentRecord } = useCurrentRecordVariable({
     schema: uiSchema,
     collectionField,
@@ -122,6 +129,7 @@ export const useVariableOptions = ({
       datetimeSettings,
       shouldDisplayCurrentForm && currentFormSettings,
       shouldDisplayCurrentObject && currentObjectSettings,
+      shouldDisplayParentObject && parentObjectSettings,
       shouldDisplayCurrentRecord && currentRecordSettings,
       shouldDisplayCurrentParentRecord && currentParentRecordSettings,
       shouldDisplayPopupRecord && popupRecordSettings,
@@ -137,6 +145,8 @@ export const useVariableOptions = ({
     currentFormSettings,
     shouldDisplayCurrentObject,
     currentObjectSettings,
+    shouldDisplayParentObject,
+    parentObjectSettings,
     shouldDisplayCurrentRecord,
     currentRecordSettings,
     shouldDisplayCurrentParentRecord,

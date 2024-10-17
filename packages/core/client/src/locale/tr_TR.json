@@ -577,5 +577,6 @@
   "Expand All": "Tümünü genişlet",
   "Clear default value": "Varsayılan değeri temizle",
   "Open in new window": "Yeni pencerede aç",
-  "Sorry, the page you visited does not exist.": "Üzgünüz, ziyaret ettiğiniz sayfa mevcut değil."
+  "Sorry, the page you visited does not exist.": "Üzgünüz, ziyaret ettiğiniz sayfa mevcut değil.",
+  "Parent object": "Üst nesne"
 }

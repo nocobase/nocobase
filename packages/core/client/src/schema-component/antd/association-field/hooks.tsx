@@ -149,14 +149,19 @@ interface SubFormProviderProps {
    * the schema of the current sub-table or sub-form
    */
   fieldSchema?: Schema;
+  parent?: SubFormProviderProps;
 }
 
 const SubFormContext = createContext<SubFormProviderProps>(null);
 SubFormContext.displayName = 'SubFormContext';
 
 export const SubFormProvider: FC<{ value: SubFormProviderProps }> = (props) => {
-  const { value, collection, fieldSchema } = props.value;
-  const memoValue = useMemo(() => ({ value, collection, fieldSchema }), [value, collection, fieldSchema]);
+  const _parent = useContext(SubFormContext);
+  const { value, collection, fieldSchema, parent } = props.value;
+  const memoValue = useMemo(
+    () => ({ value, collection, fieldSchema, parent: parent || _parent }),
+    [value, collection, fieldSchema, parent, _parent],
+  );
   return <SubFormContext.Provider value={memoValue}>{props.children}</SubFormContext.Provider>;
 };
 
@@ -170,10 +175,11 @@ export const SubFormProvider: FC<{ value: SubFormProviderProps }> = (props) => {
  * @returns
  */
 export const useSubFormValue = () => {
-  const { value, collection, fieldSchema } = useContext(SubFormContext) || {};
+  const { value, collection, fieldSchema, parent } = useContext(SubFormContext) || {};
   return {
     formValue: value,
     collection,
     fieldSchema,
+    parent,
   };
 };
