@@ -61,7 +61,7 @@ export function getJsonLogic() {
       if (Array.isArray(a)) {
         return a.includes(b);
       }
-      return a === b;
+      return a == b;
     },
     $ne: function (a, b) {
       return a != b;
