@@ -656,7 +656,7 @@
   "Parent record": "上级记录",
   "Current time": "当前时间",
   "Now": "现在",
-  "Popup close method": "弹窗关闭方式",
+  "Message popup close method": "消息弹窗关闭方式",
   "Automatic close": "自动关闭",
   "Manually close": "手动关闭",
   "After successful update": "更新成功后",
@@ -983,8 +983,8 @@
   "Automatically update timestamp on update": "当记录更新时自动设置字段值为当前时间",
   "Default value to current server time": "设置字段默认值为当前服务端时间",
   "Automatically update timestamp to the current server time on update": "当记录更新时自动设置字段值为当前服务端时间",
-  "Datetime(with time zone)": "日期时间（含时区）",
-  "Datetime(without time zone)": "日期时间（不含时区）",
+  "Datetime (with time zone)": "日期时间（含时区）",
+  "Datetime (without time zone)": "日期时间（不含时区）",
   "DateOnly": "仅日期",
   "Enable secondary confirmation": "启用二次确认",
   "Content": "内容",
@@ -1001,5 +1001,8 @@
   "Ellipsis overflow content": "省略超出长度的内容",
   "Picker": "选择器",
   "Quarter":"季度",
-  "Switching the picker, the value and default value will be cleared":"切换选择器时，字段的值和默认值将会被清空"
+  "Switching the picker, the value and default value will be cleared":"切换选择器时，字段的值和默认值将会被清空",
+  "Stay on the current popup or page":"停留在当前弹窗或页面",
+  "Return to the previous popup or page":"返回上一层弹窗或页面",
+  "Action after successful submission":"提交成功后动作"
 }

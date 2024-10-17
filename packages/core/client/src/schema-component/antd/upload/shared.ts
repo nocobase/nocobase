@@ -10,6 +10,7 @@
 import { isArr, isValid, toArr as toArray } from '@formily/shared';
 import { UploadFile } from 'antd/es/upload/interface';
 import { useTranslation } from 'react-i18next';
+import mime from 'mime';
 import match from 'mime-match';
 import React, { useCallback } from 'react';
 import { useAPIClient } from '../../../api-client';
@@ -58,6 +59,17 @@ export class AttachmentFileTypes {
  */
 export const attachmentFileTypes = new AttachmentFileTypes();
 
+export function matchMimetype(file: FileModel, type: string) {
+  if (file.mimetype) {
+    return match(file.mimetype, type);
+  }
+  if (file.url) {
+    const [fileUrl] = file.url.split('?');
+    return match(mime.getType(fileUrl) || '', type);
+  }
+  return false;
+}
+
 const toArr = (value) => {
   if (!isValid(value)) {
     return [];
@@ -82,7 +94,6 @@ const testOpts = (ext: RegExp, options: { exclude?: string[]; include?: string[]
 
 export function getThumbnailPlaceholderURL(file, options: any = {}) {
   for (let i = 0; i < UPLOAD_PLACEHOLDER.length; i++) {
-    // console.log(UPLOAD_PLACEHOLDER[i].ext, testOpts(UPLOAD_PLACEHOLDER[i].ext, options));
     if (UPLOAD_PLACEHOLDER[i].ext.test(file.extname || file.filename || file.url || file.name)) {
       if (testOpts(UPLOAD_PLACEHOLDER[i].ext, options)) {
         return UPLOAD_PLACEHOLDER[i].icon || UNKNOWN_FILE_ICON;
@@ -166,11 +177,16 @@ export function useUploadProps<T extends IUploadProps = UploadProps>(props: T) {
   };
 }
 
-export function toValueItem(file) {
-  return file.response?.data;
+export function toValueItem(data) {
+  return data;
 }
 
 export const toItem = (file) => {
+  if (typeof file === 'string') {
+    return {
+      url: file,
+    };
+  }
   if (file?.response?.data) {
     file = {
       uid: file.uid,

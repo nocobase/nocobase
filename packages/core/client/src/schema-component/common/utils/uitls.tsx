@@ -197,6 +197,10 @@ Handlebars.registerHelper('dateFormat', (date, format, tz) => {
   return dayjs(date).format(format);
 });
 
+Handlebars.registerHelper('isNull', (value) => {
+  return _.isNull(value);
+});
+
 export async function getRenderContent(templateEngine, content, variables, localVariables, defaultParse) {
   if (content && templateEngine === 'handlebars') {
     try {

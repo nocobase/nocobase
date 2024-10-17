@@ -138,15 +138,22 @@ export class OptionsParser {
       sort = sort.split(',');
     }
 
-    let defaultSortField = this.model.primaryKeyAttribute;
+    let defaultSortField: Array<string> | string = this.model.primaryKeyAttribute;
+
+    if (Array.isArray(this.collection.filterTargetKey)) {
+      defaultSortField = this.collection.filterTargetKey;
+    }
 
     if (!defaultSortField && this.collection.filterTargetKey && !Array.isArray(this.collection.filterTargetKey)) {
       defaultSortField = this.collection.filterTargetKey;
     }
 
     if (defaultSortField && !this.options?.group) {
-      if (!sort.includes(defaultSortField)) {
-        sort.push(defaultSortField);
+      defaultSortField = lodash.castArray(defaultSortField);
+      for (const key of defaultSortField) {
+        if (!sort.includes(key)) {
+          sort.push(key);
+        }
       }
     }
 

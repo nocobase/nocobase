@@ -109,17 +109,15 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
       FormLayout,
       VariableInput: (inputProps) => {
         return (
-          <FlagProvider isInSubForm={isInSubForm} isInSubTable={isInSubTable} isInSetDefaultValueDialog>
-            <VariableInput
-              {...inputProps}
-              value={inputProps.value || undefined}
-              hideVariableButton={props?.hideVariableButton}
-            />
-          </FlagProvider>
+          <VariableInput
+            {...inputProps}
+            value={inputProps.value || undefined}
+            hideVariableButton={props?.hideVariableButton}
+          />
         );
       },
     };
-  }, [isInSubForm, isInSubTable]);
+  }, []);
 
   const schema = useMemo(() => {
     return {
@@ -246,6 +244,13 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
       width={800}
       schema={schema}
       onSubmit={handleSubmit}
+      ModalContextProvider={(props) => {
+        return (
+          <FlagProvider isInSubForm={isInSubForm} isInSubTable={isInSubTable} isInSetDefaultValueDialog>
+            {props.children}
+          </FlagProvider>
+        );
+      }}
     />
   );
 };

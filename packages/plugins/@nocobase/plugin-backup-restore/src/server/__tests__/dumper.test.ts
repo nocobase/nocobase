@@ -155,6 +155,45 @@ describe('dumper', () => {
     expect(items.length).toBe(1);
   });
 
+  it('should dump and restore datetimeNoTz field', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'tests',
+        fields: [
+          {
+            type: 'datetimeNoTz',
+            name: 'test_data',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('tests').create({
+      values: {
+        test_data: '2013-10-10 12:11:00',
+      },
+    });
+
+    const dumper = new Dumper(app);
+
+    const result = await dumper.dump({
+      groups: new Set(['required', 'custom']),
+    });
+
+    const restorer = new Restorer(app, {
+      backUpFilePath: result.filePath,
+    });
+
+    await restorer.restore({
+      groups: new Set(['required', 'custom']),
+    });
+
+    const testCollection = app.db.getCollection('tests');
+    const items = await testCollection.repository.find();
+    expect(items.length).toBe(1);
+  });
+
   it('should dump and restore uuid field', async () => {
     await db.getRepository('collections').create({
       values: {

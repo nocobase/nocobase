@@ -13,6 +13,9 @@ import devDynamicImport from '../.plugins/index';
 
 export const app = new Application({
   apiClient: {
+    storageType:
+      // @ts-ignore
+      window['__nocobase_api_client_storage_type__'] || process.env.API_CLIENT_STORAGE_TYPE || 'localStorage',
     // @ts-ignore
     storagePrefix:
       // @ts-ignore

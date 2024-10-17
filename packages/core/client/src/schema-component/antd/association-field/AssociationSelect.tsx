@@ -13,6 +13,7 @@ import { RecursionField, connect, mapProps, observer, useField, useFieldSchema, 
 import { uid } from '@formily/shared';
 import { Space, message } from 'antd';
 import { isFunction } from 'mathjs';
+import { last } from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ClearCollectionFieldContext, RecordProvider, useAPIClient, useCollectionRecordData } from '../../../';
@@ -82,7 +83,8 @@ const InternalAssociationSelect = observer(
           if (
             linkageFields.includes(fieldPath?.props?.name) &&
             field.value &&
-            fieldPath?.indexes?.[0] === field?.indexes?.[0]
+            last(fieldPath?.indexes) === last(field?.indexes) &&
+            fieldPath?.props?.name !== field.props.name
           ) {
             field.setValue(undefined);
             setInnerValue(undefined);

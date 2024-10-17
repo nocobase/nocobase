@@ -331,7 +331,7 @@ export class CollectionSettings {
   }
 
   private async ['File storage'](value: string) {
-    await this.page.getByLabel('block-item-Select-collections-File storage').getByTestId('select-single').click();
+    await this.page.getByLabel('block-item-RemoteSelect-collections-File storage').getByTestId('select-single').click();
     await this.page.getByRole('option', { name: value }).click();
   }
 
@@ -430,8 +430,8 @@ export type FieldInterface =
   | 'Markdown'
   | 'Rich Text'
   | 'Attachment'
-  | 'Datetime(with time zone)'
-  | 'Datetime(without time zone)'
+  | 'Datetime (with time zone)'
+  | 'Datetime (without time zone)'
   | 'Date'
   | 'Time'
   | 'Unix Timestamp'

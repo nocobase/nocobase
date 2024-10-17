@@ -32,7 +32,7 @@ export const useFieldModeOptions = (props?) => {
       return;
     }
     if (
-      !['o2o', 'oho', 'obo', 'o2m', 'linkTo', 'm2o', 'm2m', 'updatedBy', 'createdBy', 'mbm'].includes(
+      !['o2o', 'oho', 'obo', 'o2m', 'linkTo', 'm2o', 'm2m', 'updatedBy', 'createdBy', 'mbm', 'attachmentURL'].includes(
         collectionField.interface,
       )
     )
