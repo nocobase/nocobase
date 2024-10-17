@@ -8,7 +8,7 @@
  */
 
 import { parseDate } from '@nocobase/utils';
-import { Op } from 'sequelize';
+import { Op, Sequelize } from 'sequelize';
 import moment from 'moment';
 
 function isDate(input) {
@@ -17,7 +17,7 @@ function isDate(input) {
 
 const toDate = (date, options: any = {}) => {
   const { ctx } = options;
-  const val = isDate(date) ? date : new Date(date);
+  let val = isDate(date) ? date : new Date(date);
   const field = ctx.db.getFieldByPath(ctx.fieldPath);
 
   if (!field) {
@@ -25,18 +25,25 @@ const toDate = (date, options: any = {}) => {
   }
 
   if (field.constructor.name === 'UnixTimestampField') {
-    return field.dateToValue(val);
+    val = field.dateToValue(val);
   }
 
   if (field.constructor.name === 'DatetimeNoTzField') {
-    return moment(val).utcOffset('+00:00').format('YYYY-MM-DD HH:mm:ss');
+    val = moment(val).utcOffset('+00:00').format('YYYY-MM-DD HH:mm:ss');
   }
 
   if (field.constructor.name === 'DateOnlyField') {
-    return moment(val).format('YYYY-MM-DD HH:mm:ss');
+    val = moment(val).format('YYYY-MM-DD HH:mm:ss');
   }
 
-  return val;
+  const eventObj = {
+    val,
+    fieldType: field.type,
+  };
+
+  ctx.db.emit('filterToDate', eventObj);
+
+  return eventObj.val;
 };
 
 function parseDateTimezone(ctx) {
@@ -55,10 +62,6 @@ function parseDateTimezone(ctx) {
   }
 
   return ctx.db.options.timezone;
-}
-
-function isDatetimeString(str) {
-  return /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(str);
 }
 
 export default {

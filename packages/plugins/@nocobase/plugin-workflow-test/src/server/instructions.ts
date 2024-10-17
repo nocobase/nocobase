@@ -17,6 +17,21 @@ export default {
         result: config.path == null ? result : lodash.get(result, config.path),
       };
     },
+    test(config = {}) {
+      return {
+        status: 1,
+        result: null,
+      };
+    },
+  },
+
+  echoVariable: {
+    run({ id, config = {} }: any, job, processor) {
+      return {
+        status: 1,
+        result: config.variable ? processor.getParsedValue(config.variable, id) : null,
+      };
+    },
   },
 
   error: {
@@ -27,6 +42,11 @@ export default {
 
   pending: {
     run(node, input, processor) {
+      return {
+        status: 0,
+      };
+    },
+    test() {
       return {
         status: 0,
       };
