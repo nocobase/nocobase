@@ -18,11 +18,12 @@ import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
 import { useCreation, useDeepCompareEffect, useMemoizedFn } from 'ahooks';
-import { Table as AntdTable, Spin, TableColumnProps } from 'antd';
+import { Table as AntdTable, Skeleton, Spin, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useInView } from 'react-intersection-observer';
 import { DndContext, useDesignable, useTableSize } from '../..';
 import {
   RecordIndexProvider,
@@ -42,6 +43,8 @@ import { useToken } from '../__builtins__';
 import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
+
+const InViewContext = React.createContext(false);
 
 const useArrayField = (props) => {
   const field = useField<ArrayField>();
@@ -145,7 +148,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
             );
           },
           onCell: (record, rowIndex) => {
-            return { record, schema: s, rowIndex };
+            return { record, schema: s, rowIndex, isSubTable: props.isSubTable };
           },
         } as TableColumnProps<any>;
       }),
@@ -213,6 +216,13 @@ const SortableRow = (props) => {
     id,
   });
 
+  const { ref, inView } = useInView({
+    threshold: 0,
+    triggerOnce: true,
+    initialInView: !!process.env.__E2E__,
+    skip: !!process.env.__E2E__,
+  });
+
   const classObj = useMemo(() => {
     const borderColor = new TinyColor(token.colorSettings).setAlpha(0.6).toHex8String();
     return {
@@ -235,11 +245,18 @@ const SortableRow = (props) => {
       : classObj.bottomActiveClass;
 
   return (
-    <tr
-      ref={active?.id !== id ? setNodeRef : null}
-      {...props}
-      className={classNames(props.className, { [className]: active && isOver })}
-    />
+    <InViewContext.Provider value={inView}>
+      <tr
+        ref={(node) => {
+          if (active?.id !== id) {
+            setNodeRef(node);
+          }
+          ref(node);
+        }}
+        {...props}
+        className={classNames(props.className, { [className]: active && isOver })}
+      />
+    </InViewContext.Provider>
   );
 };
 
@@ -416,13 +433,16 @@ const BodyRowComponent = (props) => {
 };
 
 const BodyCellComponent = (props) => {
-  const { record, schema } = props;
+  const inView = useContext(InViewContext);
+  const isIndex = props.className?.includes('selection-column');
+  const { record, schema, rowIndex, isSubTable } = props;
   const { valueMap } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
   const style = useMemo(() => Object.assign({ ...props.style }, valueMap), [props.style, valueMap]);
 
   return (
     <td {...props} className={classNames(props.className, cellClass)} style={style}>
-      {props.children}
+      {/* Lazy rendering cannot be used in sub-tables. */}
+      {isSubTable || inView || isIndex ? props.children : <Skeleton.Button block size="small" active={false} />}
     </td>
   );
 };
