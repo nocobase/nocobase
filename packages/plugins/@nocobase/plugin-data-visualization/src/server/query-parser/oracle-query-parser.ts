@@ -17,7 +17,13 @@ export class OracleQueryParser extends QueryParser {
     const collection = this.db.getCollection(collectionName);
     const order = super.parseOrders(ctx, orders, hasAgg);
     if (!order.length) {
-      order.push([collection.filterTargetKey, 'ASC']);
+      let filterTks = collection.filterTargetKey;
+      if (!Array.isArray(filterTks)) {
+        filterTks = [filterTks];
+      }
+      filterTks.forEach((filterTk) => {
+        order.push([this.db.sequelize.col(filterTk), 'ASC']);
+      });
     }
     return order;
   }
