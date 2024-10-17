@@ -206,7 +206,7 @@ export function useACLRoleContext() {
     ...data,
     parseAction: useCallback(
       (actionPath: string, options: any = {}) => {
-        const [resourceName, actionName] = actionPath.split(':');
+        const [resourceName, actionName] = actionPath?.split(':') || [];
         const targetResource = resourceName?.includes('.') && cm.getCollectionField(resourceName)?.target;
         if (!getIgnoreScope(options)) {
           const r = verifyScope(actionName, options.recordPkValue);
