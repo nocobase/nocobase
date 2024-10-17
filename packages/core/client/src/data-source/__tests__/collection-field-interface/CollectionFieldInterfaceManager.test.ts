@@ -156,7 +156,7 @@ describe('CollectionFieldInterfaceManager', () => {
       expect(fieldInterface.componentOptions).toMatchInlineSnapshot(`
         [
           {
-            "label": "A",
+            "label": "{{t("A")}}",
             "useProps": [Function],
             "value": "A",
           },
@@ -190,7 +190,7 @@ describe('CollectionFieldInterfaceManager', () => {
       expect(fieldInterface.componentOptions).toMatchInlineSnapshot(`
         [
           {
-            "label": "A",
+            "label": "{{t("A")}}",
             "useProps": [Function],
             "value": "A",
           },
@@ -268,7 +268,7 @@ describe('CollectionFieldInterfaceManager', () => {
       expect(fieldInterface.componentOptions).toMatchInlineSnapshot(`
         [
           {
-            "label": "B",
+            "label": "{{t("B")}}",
             "useProps": [Function],
             "value": "A.B",
           },
@@ -292,7 +292,7 @@ describe('CollectionFieldInterfaceManager', () => {
         };
         componentOptions = [
           {
-            label: 'A',
+            label: '{{t("A")}}',
             value: 'A',
           },
         ];
@@ -308,7 +308,7 @@ describe('CollectionFieldInterfaceManager', () => {
       expect(fieldInterface.componentOptions).toMatchInlineSnapshot(`
         [
           {
-            "label": "A",
+            "label": "{{t("A")}}",
             "value": "A",
           },
           {
