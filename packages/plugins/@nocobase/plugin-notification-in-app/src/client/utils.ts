@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { BaseNotificationChannel } from './base-notification-channel';
-export { default } from './plugin';
-export { COLLECTION_NAME, ChannelsCollectionDefinition } from '../constant';
-
-export * from './types';
+import { APIClient } from '@nocobase/client';
+let apiClient: APIClient;
+export const setAPIClient = (apiClientTarget: APIClient) => {
+  apiClient = apiClientTarget;
+};
+export const getAPIClient = () => apiClient;

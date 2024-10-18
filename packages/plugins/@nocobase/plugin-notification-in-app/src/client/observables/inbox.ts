@@ -7,8 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { BaseNotificationChannel } from './base-notification-channel';
-export { default } from './plugin';
-export { COLLECTION_NAME, ChannelsCollectionDefinition } from '../constant';
+import { observable } from '@formily/reactive';
 
-export * from './types';
+export const inboxVisible = observable<{ value: boolean }>({ value: false });
