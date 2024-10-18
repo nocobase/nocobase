@@ -100,6 +100,32 @@ export function patchSequelizeQueryInterface(db: Database) {
   }
 }
 
+export function patchSequelizeQueryGenerator(db: Database) {
+  // @ts-ignore
+  const oldSelectQuery = db.sequelize.dialect.queryGenerator.selectQuery;
+  // add hook after selectQuery called
+  // @ts-ignore
+  db.sequelize.dialect.queryGenerator.selectQuery = function (...args) {
+    const result = oldSelectQuery.apply(this, args);
+
+    const model = args[2];
+    const collection = db.modelCollection.get(model);
+
+    if (collection) {
+      const eventArgs = {
+        sql: result,
+        collection,
+      };
+
+      collection.emit(`selectQuery`, eventArgs);
+
+      return eventArgs.sql;
+    }
+
+    return result;
+  };
+}
+
 export function percent2float(value: string) {
   if (!value.endsWith('%')) {
     return NaN;

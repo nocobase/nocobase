@@ -72,7 +72,7 @@ export const useCreateGanttBlock = () => {
   const createGanttBlock = async ({ item }) => {
     const collectionFields = getCollectionFields(item.name, item.dataSource);
     const stringFields = collectionFields
-      ?.filter((field) => field.type === 'string')
+      ?.filter((field) => field.type === 'string' || field.dataType === 'string')
       ?.map((field) => {
         return {
           label: field?.uiSchema?.title,
