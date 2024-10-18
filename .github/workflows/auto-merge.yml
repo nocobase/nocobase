@@ -1,10 +1,14 @@
 name: Auto merge main -> next
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.inputs.repository }}
   cancel-in-progress: true
 
 on:
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: 'Please enter a repository name'
   push:
     branches:
       - 'main'
@@ -18,7 +22,7 @@ jobs:
         with:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
-          repositories: nocobase,pro-plugins,${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ',') }},${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ',') }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(vars.NEXT_PRO_PLUGIN_REPOS), ',') }},${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ',') }}
           skip-token-revoke: true
       - name: Get GitHub App User ID
         id: get-user-id
@@ -28,7 +32,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          repository: nocobase/nocobase
+          repository: nocobase/${{ inputs.repository || 'nocobase' }}
           token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
           fetch-depth: 0
