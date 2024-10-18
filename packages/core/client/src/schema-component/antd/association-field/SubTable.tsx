@@ -14,7 +14,7 @@ import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { isArr } from '@formily/shared';
 import { Button } from 'antd';
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   FormProvider,
@@ -167,6 +167,29 @@ export const SubTable: any = observer(
       const filter = list.length ? { $and: [{ [`${targetKey}.$ne`]: list }] } : {};
       return filter;
     };
+    //分页
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(field.componentProps?.pageSize || 10); // 每页条数
+    useEffect(() => {
+      setPageSize(field.componentProps?.pageSize);
+    }, [field.componentProps?.pageSize]);
+
+    const paginationConfig = useMemo(() => {
+      return {
+        current: currentPage,
+        pageSize: pageSize,
+        total: field?.value?.length,
+        onChange: (page, pageSize) => {
+          setCurrentPage(page);
+          setPageSize(pageSize);
+          field.onInput(field.value);
+        },
+        showSizeChanger: true,
+        pageSizeOptions: ['10', '20', '50', '100'],
+        hideOnSinglePage: false,
+      };
+    }, [field.value?.length, pageSize, currentPage]);
+
     return (
       <div className={subTableContainer}>
         <FlagProvider isInSubTable>
@@ -182,7 +205,7 @@ export const SubTable: any = observer(
                   showIndex
                   dragSort={false}
                   showDel={field.editable}
-                  pagination={false}
+                  pagination={paginationConfig}
                   rowSelection={{ type: 'none', hideSelectAll: true }}
                   footer={() =>
                     field.editable && (

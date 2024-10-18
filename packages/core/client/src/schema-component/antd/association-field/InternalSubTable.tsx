@@ -63,6 +63,21 @@ export const InternalSubTable = observer(
                 max-height: 100% !important;
                 min-height: 100% !important;
               }
+
+              // configure columns
+              .ant-table-thead
+                button[aria-label*='schema-initializer-AssociationField.SubTable-table:configureColumns']
+                > span:last-child {
+                display: none !important;
+              }
+              .ant-table-thead
+                button[aria-label*='schema-initializer-AssociationField.SubTable-table:configureColumns']
+                > .ant-btn-icon {
+                margin: 0px;
+              }
+              .ant-table-tbody .nb-column-initializer {
+                min-width: 40px !important;
+              }
             `}
             layout={'vertical'}
             bordered={false}
