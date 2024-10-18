@@ -785,5 +785,6 @@
   "Expand All": "Розгорнути все",
   "Clear default value": "Очистити значення за замовчуванням",
   "Open in new window": "Відкрити в новому вікні",
-  "Sorry, the page you visited does not exist.": "Вибачте, сторінка, яку ви відвідали, не існує."
+  "Sorry, the page you visited does not exist.": "Вибачте, сторінка, яку ви відвідали, не існує.",
+  "Allow multiple selection": "Дозволити множинний вибір"
 }
