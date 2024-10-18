@@ -185,10 +185,6 @@ export default class PluginFileManagerServer extends Plugin {
     this.storageTypes.register(STORAGE_TYPE_S3, new StorageTypeS3());
     this.storageTypes.register(STORAGE_TYPE_TX_COS, new StorageTypeTxCos());
 
-    await this.db.import({
-      directory: resolve(__dirname, './collections'),
-    });
-
     const Storage = this.db.getModel('storages');
     Storage.afterSave((m) => {
       this.storagesCache.set(m.id, m.toJSON());

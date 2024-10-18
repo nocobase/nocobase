@@ -190,8 +190,15 @@ export abstract class Plugin<O = any> implements PluginInterface {
    * @internal
    */
   async loadCollections() {
+    if (!this.enabled) {
+      return;
+    }
+    if (this['__loaded']) {
+      return;
+    }
     const basePath = await this.getPluginBasePath();
     if (!basePath) {
+      this['__loaded'] = true;
       return;
     }
     const directory = resolve(basePath, 'server/collections');
@@ -201,6 +208,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
         from: this.options.packageName,
       });
     }
+    this['__loaded'] = true;
   }
 
   /**
