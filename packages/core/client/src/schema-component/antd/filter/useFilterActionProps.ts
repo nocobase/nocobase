@@ -106,6 +106,9 @@ export const useFilterFieldOptions = (fields) => {
     if (!field.interface) {
       return;
     }
+    if (field.filterable === false) {
+      return;
+    }
     const fieldInterface = getInterface(field.interface);
     if (!fieldInterface?.filterable) {
       return;
