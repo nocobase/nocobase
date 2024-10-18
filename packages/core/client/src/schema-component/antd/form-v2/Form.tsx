@@ -28,15 +28,17 @@ import { useFormBlockHeight } from './hook';
 export interface FormProps extends IFormLayoutProps {
   form?: FormilyForm;
   disabled?: boolean;
+  height?: number;
 }
 
 const FormComponent: React.FC<FormProps> = (props) => {
-  const { form, children, ...others } = props;
+  const { form, children, height: propsHeight, ...others } = props;
   const field = useField();
   const fieldSchema = useFieldSchema();
   // TODO: component 里 useField 会与当前 field 存在偏差
   const f = useAttach(form.createVoidField({ ...field.props, basePath: '' }));
-  const height = useFormBlockHeight();
+  const defaultHeight = useFormBlockHeight();
+  const height = propsHeight || defaultHeight;
   const { token } = theme.useToken();
   const { designable } = useDesignable();
   return (
