@@ -19,7 +19,7 @@ export class ToOneInterface extends BaseInterface {
       return null;
     }
 
-    const { filterKey, targetCollection, transaction } = ctx;
+    const { filterKey, associationField, targetCollection, transaction } = ctx;
 
     const targetInstance = await targetCollection.repository.findOne({
       filter: {
@@ -31,8 +31,9 @@ export class ToOneInterface extends BaseInterface {
     if (!targetInstance) {
       throw new Error(`"${str}" not found in ${targetCollection.model.name} ${filterKey}`);
     }
-    const primaryKeyAttribute = targetCollection.model.primaryKeyAttribute;
 
-    return targetInstance[primaryKeyAttribute];
+    const targetKey = associationField.targetKey || targetCollection.model.primaryKeyAttribute;
+
+    return targetInstance[targetKey];
   }
 }
