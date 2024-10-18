@@ -341,6 +341,7 @@ export const recordPerPage = {
         const schema = {
           ['x-uid']: fieldSchema['x-uid'],
         };
+        field.componentProps = field.componentProps || {};
         field.componentProps.pageSize = pageSize;
         fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
         fieldSchema['x-component-props'].pageSize = pageSize;
@@ -356,18 +357,12 @@ export const recordPerPage = {
 export const subTablePopoverComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:SubTable',
   items: [
-    
     fieldComponent,
-   
     allowAddNewData,
-   
     allowSelectExistingRecord,
     allowDisassociation,
-   
     setDefaultSortingRules,
-   
     linkageRules,
-  ,
     recordPerPage,
   ],
 });
