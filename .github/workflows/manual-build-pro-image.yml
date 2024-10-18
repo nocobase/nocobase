@@ -1,19 +1,16 @@
 name: Manual build pro image
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.inputs.pr_number }}-${{ github.event.inputs.nocobase_pr_number }}
   cancel-in-progress: true
 
 on:
   workflow_dispatch:
     inputs:
-      base_branch:
-        description: 'Please enter a base branch for main repo'
-        required: true
-        default: 'main'
       pr_number:
-        description: 'Please enter a pull request number'
-        required: true
+        description: 'Please enter the pr number of pro-plugins'
+      nocobase_pr_number:
+        description: 'Please enter the pr number of nocobase/nocobase repository'
 
 jobs:
   build-and-push:
@@ -43,22 +40,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.event.inputs.base_branch }}
+          ref: ${{ github.head_ref || github.ref_name }}
           token: ${{ steps.app-token.outputs.token }}
           submodules: true
-      - name: Set PR branch
-        id: set_pro_pr_branch
-        if: inputs.pr_number != 'main'
-        run: echo "pr_branch=refs/pull/${{ github.event.inputs.pr_number }}/head" >> $GITHUB_OUTPUT
-      - name: Echo PR branch
-        run: echo "${{ steps.set_pro_pr_branch.outputs.pr_branch }}"
+      - name: Checkout nocobase/nocobase pr
+        if: ${{ inputs.nocobase_pr_number != '' }}
+        shell: bash
+        run: |
+          gh pr checkout ${{ inputs.nocobase_pr_number }}
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
       - name: Checkout pro-plugins
         uses: actions/checkout@v3
         with:
           repository: nocobase/pro-plugins
           path: packages/pro-plugins
-          ref: ${{ steps.set_pro_pr_branch.outputs.pr_branch || 'main' }}
+          ref: ${{ github.head_ref || github.ref_name }}
           token: ${{ steps.app-token.outputs.token }}
+      - name: Checkout pr
+        if: ${{ inputs.pr_number != '' }}
+        shell: bash
+        run: |
+          cd ./packages/pro-plugins/
+          gh pr checkout ${{ inputs.pr_number }}
+          cd ../../
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
       - name: Clone pro repos
         shell: bash
         run: |
