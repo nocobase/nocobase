@@ -979,6 +979,7 @@
   "The current user only has the UI configuration permission, but don't have view permission for collection \"{{name}}\"": "当前用户只有 UI 配置权限，但没有数据表 \"{{name}}\" 查看权限。",
   "Plugin dependency version mismatch": "插件依赖版本不一致",
   "The current dependency version of the plugin does not match the version of the application and may not work properly. Are you sure you want to continue enabling the plugin?": "当前插件的依赖版本与应用的版本不一致，可能无法正常工作。您确定要继续激活插件吗？",
+  "Allow multiple selection": "允许多选",
   "Default value to current time": "设置字段默认值为当前时间",
   "Automatically update timestamp on update": "当记录更新时自动设置字段值为当前时间",
   "Default value to current server time": "设置字段默认值为当前服务端时间",
@@ -1004,5 +1005,6 @@
   "Switching the picker, the value and default value will be cleared":"切换选择器时，字段的值和默认值将会被清空",
   "Stay on the current popup or page":"停留在当前弹窗或页面",
   "Return to the previous popup or page":"返回上一层弹窗或页面",
-  "Action after successful submission":"提交成功后动作"
+  "Action after successful submission":"提交成功后动作",
+  "Allow disassociation":"允许解除已有数据关联"
 }
