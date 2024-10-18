@@ -398,7 +398,7 @@ export interface FilterTarget {
   targets?: {
     /** field uid */
     uid: string;
-    /** associated field */
+    /** Field connected to the target block */
     field?: string;
   }[];
   /**
