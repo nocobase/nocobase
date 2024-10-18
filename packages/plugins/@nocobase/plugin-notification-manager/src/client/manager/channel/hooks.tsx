@@ -17,6 +17,7 @@ import {
   useCollection,
   useCollectionRecordData,
   useDataBlockRequest,
+  useDestroyActionProps,
   useDataBlockResource,
   usePlugin,
 } from '@nocobase/client';
@@ -33,7 +34,6 @@ export const useCreateActionProps = () => {
   const form = useForm();
   const resource = useDataBlockResource();
   const { service } = useBlockRequestContext();
-  const collection = useCollection();
   return {
     type: 'primary',
     async onClick(e?, callBack?) {
@@ -103,6 +103,26 @@ export const useEditFormProps = () => {
   return {
     form,
   };
+};
+export const useRecordEditActionProps = () => {
+  const recordData = useCollectionRecordData();
+  const editable = recordData?.meta?.editable;
+  const style: React.CSSProperties = {};
+  if (editable === false) {
+    style.display = 'none';
+  }
+  return { style };
+};
+
+export const useRecordDeleteActionProps = () => {
+  const recordData = useCollectionRecordData();
+  const deletable = recordData?.meta?.deletable;
+  const style: React.CSSProperties = {};
+  const destroyProps = useDestroyActionProps();
+  if (deletable === false) {
+    style.display = 'none';
+  }
+  return { ...destroyProps, style };
 };
 
 export const useCreateFormProps = () => {
