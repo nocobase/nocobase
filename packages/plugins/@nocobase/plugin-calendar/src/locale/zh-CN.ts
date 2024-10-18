@@ -7,9 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 export default {
   'Configure calendar': '配置日历',
   'Title field': '标题字段',
+  'Default view': '默认视图',
   'Custom title': '自定义标题',
   'Show lunar': '展示农历',
   'Start date field': '开始日期字段',
@@ -17,6 +36,8 @@ export default {
   'Work week': '工作日',
   Today: '今天',
   Day: '天',
+  Month: '月',
+  Week: '周',
   Agenda: '列表',
   Date: '日期',
   Time: '时间',

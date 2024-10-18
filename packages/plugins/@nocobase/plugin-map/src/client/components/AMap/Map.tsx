@@ -335,6 +335,25 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
 
     const _define = (window as any).define;
     (window as any).define = undefined;
+
+    // AMapLoader.load只执行一次 执行完后window对象上有Amap实例
+    if (window.AMap) {
+      try {
+        requestIdleCallback(() => {
+          map.current = new AMap.Map(id.current, {
+            resizeEnable: true,
+            zoom,
+          } as AMap.MapOptions);
+          aMap.current = AMap;
+          setErrMessage('');
+          forceUpdate([]);
+        });
+      } catch (err) {
+        setErrMessage(err);
+      }
+      return;
+    }
+
     AMapLoader.load({
       key: accessKey,
       version: '2.0',

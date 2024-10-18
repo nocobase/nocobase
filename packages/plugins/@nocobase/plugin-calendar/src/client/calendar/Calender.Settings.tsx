@@ -100,6 +100,36 @@ export const calendarBlockSettings = new SchemaSettings({
       },
     },
     {
+      name: 'defaultView',
+      Component: SchemaSettingsSelectItem,
+      useComponentProps() {
+        const { t } = useTranslation();
+        const fieldSchema = useFieldSchema();
+        const field = useField();
+        const { dn } = useDesignable();
+        return {
+          title: t('Default view'),
+          value: field['decoratorProps']['defaultView'] || 'month',
+          options: [
+            { value: 'month', label: '月' },
+            { value: 'week', label: '周' },
+            { value: 'day', label: '天' },
+          ],
+          onChange: (v) => {
+            field.decoratorProps.defaultView = v;
+            fieldSchema['x-decorator-props']['defaultView'] = v;
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-decorator-props': field.decoratorProps,
+              },
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
       name: 'showLunar',
       Component: ShowLunarDesignerItem,
     },
