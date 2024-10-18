@@ -8,7 +8,12 @@
  */
 
 import { expect, test } from '@nocobase/test/e2e';
-import { PopupAndSubPageWithParams, oneEmptyTableWithUsers, openInNewWidow } from './templates';
+import {
+  PopupAndSubPageWithParams,
+  URLSearchParamsUseAssociationFieldValue,
+  oneEmptyTableWithUsers,
+  openInNewWidow,
+} from './templates';
 
 test.describe('Link', () => {
   test('basic', async ({ page, mockPage, mockRecords }) => {
@@ -139,5 +144,14 @@ test.describe('Link', () => {
 
     await page.reload();
     await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('abc');
+  });
+
+  test('URL search params: use association field value', async ({ page, mockPage, mockRecords }) => {
+    await mockPage(URLSearchParamsUseAssociationFieldValue).goto();
+
+    // After clicking the Link button, the browser URL will change, and the value of the input box using variables will be updated
+    await page.getByLabel('action-Action.Link-Link-').click();
+    await page.waitForTimeout(100);
+    await expect(page.getByLabel('block-item-CollectionField-')).toHaveText(`Roles:adminmemberroot`);
   });
 });
