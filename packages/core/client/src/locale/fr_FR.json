@@ -786,5 +786,6 @@
   "Clear default value": "Effacer la valeur par défaut",
   "Open in new window": "Ouvrir dans une nouvelle fenêtre",
   "Sorry, the page you visited does not exist.": "Désolé, la page que vous avez visitée n'existe pas.",
-  "Allow multiple selection": "Permettre la sélection multiple"
+  "Allow multiple selection": "Permettre la sélection multiple",
+  "Parent object": "Objet parent"
 }
