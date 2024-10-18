@@ -323,6 +323,37 @@ export const linkageRules = {
   },
 };
 
+export const recordPerPage = {
+  name: 'recordsPerPage',
+  type: 'select',
+  useComponentProps() {
+    const { t } = useTranslation();
+    const fieldSchema = useFieldSchema();
+    const field = useField();
+    const { dn } = useDesignable();
+    const pageSizeOptions = [10, 20, 50, 100];
+
+    return {
+      title: t('Records per page'),
+      value: field.componentProps?.pageSize || 10,
+      options: pageSizeOptions.map((v) => ({ value: v })),
+      onChange: (pageSize) => {
+        const schema = {
+          ['x-uid']: fieldSchema['x-uid'],
+        };
+        field.componentProps = field.componentProps || {};
+        field.componentProps.pageSize = pageSize;
+        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props'].pageSize = pageSize;
+        schema['x-component-props'] = fieldSchema['x-component-props'];
+        dn.emit('patch', {
+          schema,
+        });
+      },
+    };
+  },
+};
+
 export const subTablePopoverComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:SubTable',
   items: [
@@ -332,5 +363,6 @@ export const subTablePopoverComponentFieldSettings = new SchemaSettings({
     allowDisassociation,
     setDefaultSortingRules,
     linkageRules,
+    recordPerPage,
   ],
 });
