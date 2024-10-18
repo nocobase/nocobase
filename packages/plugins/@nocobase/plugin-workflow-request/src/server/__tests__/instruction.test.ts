@@ -19,7 +19,7 @@ import { MockServer } from '@nocobase/test';
 import PluginWorkflow, { EXECUTION_STATUS, JOB_STATUS, Processor } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
-import { RequestConfig } from '../RequestInstruction';
+import RequestInstruction, { RequestInstructionConfig } from '../RequestInstruction';
 
 const HOST = 'localhost';
 
@@ -111,6 +111,7 @@ describe('workflow > instructions > request', () => {
   let WorkflowModel;
   let workflow;
   let api: MockAPI;
+  let instruction: RequestInstruction;
 
   beforeEach(async () => {
     api = new MockAPI();
@@ -123,6 +124,9 @@ describe('workflow > instructions > request', () => {
     });
 
     db = app.db;
+
+    instruction = (app.pm.get(PluginWorkflow) as PluginWorkflow).instructions.get('request') as RequestInstruction;
+
     WorkflowModel = db.getCollection('workflows').model;
     PostCollection = db.getCollection('posts');
     PostRepo = PostCollection.repository;
@@ -151,7 +155,7 @@ describe('workflow > instructions > request', () => {
           url: api.URL_DATA,
           method: 'GET',
           params: [{ name: 'id', value: '{{$context.data.id}}' }],
-        } as RequestConfig,
+        } as RequestInstructionConfig,
       });
 
       await PostRepo.create({ values: { title: 't1' } });
@@ -171,7 +175,7 @@ describe('workflow > instructions > request', () => {
           url: api.URL_DATA,
           method: 'GET',
           onlyData: true,
-        } as RequestConfig,
+        } as RequestInstructionConfig,
       });
 
       await PostRepo.create({ values: { title: 't1' } });
@@ -191,7 +195,7 @@ describe('workflow > instructions > request', () => {
         config: {
           url: api.URL_DATA,
           method: 'GET',
-        } as RequestConfig,
+        } as RequestInstructionConfig,
       });
 
       await PostRepo.create({ values: { title: 't1' } });
@@ -214,7 +218,7 @@ describe('workflow > instructions > request', () => {
           url: api.URL_TIMEOUT,
           method: 'GET',
           timeout: 250,
-        } as RequestConfig,
+        } as RequestInstructionConfig,
       });
 
       await PostRepo.create({ values: { title: 't1' } });
@@ -244,7 +248,7 @@ describe('workflow > instructions > request', () => {
           method: 'GET',
           timeout: 250,
           ignoreFail: true,
-        } as RequestConfig,
+        } as RequestInstructionConfig,
       });
 
       await PostRepo.create({ values: { title: 't1' } });
@@ -268,7 +272,7 @@ describe('workflow > instructions > request', () => {
         config: {
           url: api.URL_400,
           method: 'GET',
-        } as RequestConfig,
+        } as RequestInstructionConfig,
       });
 
       await PostRepo.create({ values: { title: 't1' } });
@@ -287,7 +291,7 @@ describe('workflow > instructions > request', () => {
         config: {
           url: api.URL_400_MESSAGE,
           method: 'GET',
-        } as RequestConfig,
+        } as RequestInstructionConfig,
       });
 
       await PostRepo.create({ values: { title: 't1' } });
@@ -307,7 +311,7 @@ describe('workflow > instructions > request', () => {
         config: {
           url: api.URL_400_OBJECT,
           method: 'GET',
-        } as RequestConfig,
+        } as RequestInstructionConfig,
       });
 
       await PostRepo.create({ values: { title: 't1' } });
@@ -327,7 +331,7 @@ describe('workflow > instructions > request', () => {
         config: {
           url: api.URL_END,
           method: 'GET',
-        } as RequestConfig,
+        } as RequestInstructionConfig,
       });
 
       await PostRepo.create({ values: { title: 't1' } });
@@ -353,7 +357,7 @@ describe('workflow > instructions > request', () => {
           method: 'GET',
           timeout: 1000,
           ignoreFail: true,
-        } as RequestConfig,
+        } as RequestInstructionConfig,
       });
 
       await PostRepo.create({ values: { title: 't1' } });
@@ -373,7 +377,7 @@ describe('workflow > instructions > request', () => {
           url: api.URL_DATA,
           method: 'POST',
           data: { title: '{{$context.data.title}}' },
-        } as RequestConfig,
+        } as RequestInstructionConfig,
       });
 
       await PostRepo.create({ values: { title: 't1' } });
@@ -394,7 +398,7 @@ describe('workflow > instructions > request', () => {
           url: api.URL_DATA,
           method: 'POST',
           data: { title: '{{$context.data.title}}' },
-        } as RequestConfig,
+        } as RequestInstructionConfig,
       });
 
       const title = 't1\n\nline 2';
@@ -537,7 +541,7 @@ describe('workflow > instructions > request', () => {
           url: `http://localhost:${(server.address() as AddressInfo).port}/api/categories`,
           method: 'POST',
           headers: [{ name: 'Authorization', value: `Bearer ${token}` }],
-        } as RequestConfig,
+        } as RequestInstructionConfig,
       });
 
       await PostRepo.create({ values: { title: 't1' } });
@@ -572,7 +576,7 @@ describe('workflow > instructions > request', () => {
         config: {
           url: api.URL_DATA,
           method: 'GET',
-        } as RequestConfig,
+        } as RequestInstructionConfig,
       });
 
       const workflowPlugin = app.pm.get(PluginWorkflow) as PluginWorkflow;
@@ -594,7 +598,7 @@ describe('workflow > instructions > request', () => {
           url: api.URL_404,
           method: 'GET',
           ignoreFail: true,
-        } as RequestConfig,
+        } as RequestInstructionConfig,
       });
 
       const workflowPlugin = app.pm.get(PluginWorkflow) as PluginWorkflow;
@@ -604,6 +608,70 @@ describe('workflow > instructions > request', () => {
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
       expect(job.result.status).toBe(404);
+    });
+  });
+
+  describe('test run', () => {
+    it('invalid config', async () => {
+      const { status, result } = await instruction.test(Object.create({}));
+      expect(status).toBe(JOB_STATUS.FAILED);
+      expect(result).toBe('Invalid URL');
+    });
+
+    it('data url', async () => {
+      const { status, result } = await instruction.test({
+        url: api.URL_DATA,
+        method: 'POST',
+        contentType: 'application/json',
+        data: { a: 1 },
+      });
+      expect(status).toBe(JOB_STATUS.RESOLVED);
+      expect(result.status).toBe(200);
+      expect(result.data).toEqual({ meta: {}, data: { a: 1 } });
+    });
+
+    it('404', async () => {
+      const { status, result } = await instruction.test({
+        url: api.URL_404,
+        method: 'GET',
+        contentType: '',
+      });
+      expect(status).toBe(JOB_STATUS.FAILED);
+      expect(result.status).toBe(404);
+    });
+
+    it('timeout', async () => {
+      const { status, result } = await instruction.test({
+        url: api.URL_TIMEOUT,
+        method: 'GET',
+        timeout: 1000,
+        contentType: '',
+      });
+      expect(status).toBe(JOB_STATUS.FAILED);
+      expect(result.code).toBe('ECONNABORTED');
+    });
+
+    it('ignoreFail', async () => {
+      const { status, result } = await instruction.test({
+        url: api.URL_404,
+        method: 'GET',
+        ignoreFail: true,
+        contentType: '',
+      });
+      expect(status).toBe(JOB_STATUS.RESOLVED);
+      expect(result.status).toBe(404);
+    });
+
+    it('timeout and ignoreFail', async () => {
+      const { status, result } = await instruction.test({
+        url: api.URL_TIMEOUT,
+        method: 'GET',
+        timeout: 1000,
+        ignoreFail: true,
+        contentType: '',
+      });
+      expect(status).toBe(JOB_STATUS.RESOLVED);
+      expect(result.code).toBe('ECONNABORTED');
     });
   });
 });

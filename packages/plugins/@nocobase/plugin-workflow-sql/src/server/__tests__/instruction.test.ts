@@ -9,10 +9,11 @@
 
 import Database, { fn } from '@nocobase/database';
 import { Application } from '@nocobase/server';
-import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
+import WorkflowPluginServer, { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
 import Plugin from '..';
+import SQLInstruction from '../SQLInstruction';
 
 const mysql = process.env.DB_DIALECT === 'mysql' ? describe : describe.skip;
 
@@ -24,12 +25,13 @@ describe('workflow > instructions > sql', () => {
   let ReplyRepo;
   let WorkflowModel;
   let workflow;
+  let instruction: SQLInstruction;
 
   beforeEach(async () => {
     app = await getApp({
       plugins: [Plugin],
     });
-
+    instruction = (app.pm.get(WorkflowPluginServer) as WorkflowPluginServer).instructions.get('sql') as SQLInstruction;
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
     PostCollection = db.getCollection('posts');
@@ -332,6 +334,25 @@ describe('workflow > instructions > sql', () => {
         expect(sqlJob.status).toBe(JOB_STATUS.RESOLVED);
         expect(sqlJob.result).toBe(null);
       });
+    });
+  });
+
+  describe('test', () => {
+    it('empty sql', async () => {
+      const { status, result } = await instruction.test({});
+      expect(status).toBe(JOB_STATUS.RESOLVED);
+      expect(result).toBe(null);
+    });
+
+    it('invalid sql', async () => {
+      const { status, result } = await instruction.test({ sql: '1' });
+      expect(status).toBe(JOB_STATUS.ERROR);
+    });
+
+    it('valid sql', async () => {
+      const { status, result } = await instruction.test({ sql: 'select 1 as a' });
+      expect(status).toBe(JOB_STATUS.RESOLVED);
+      expect(result).toEqual([{ a: 1 }]);
     });
   });
 });

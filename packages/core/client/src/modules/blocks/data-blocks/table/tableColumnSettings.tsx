@@ -66,16 +66,15 @@ export const tableColumnSettings = new SchemaSettings({
                 },
               } as ISchema,
               onSubmit: ({ title }) => {
-                if (title) {
-                  field.title = title;
-                  columnSchema.title = title;
-                  dn.emit('patch', {
-                    schema: {
-                      'x-uid': columnSchema['x-uid'],
-                      title: columnSchema.title,
-                    },
-                  });
-                }
+                field.title = title;
+                columnSchema.title = title;
+                dn.emit('patch', {
+                  schema: {
+                    'x-uid': columnSchema['x-uid'],
+                    title: columnSchema.title,
+                  },
+                });
+
                 dn.refresh();
               },
             };

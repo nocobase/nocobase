@@ -80,4 +80,5 @@ export default class extends Instruction {
       [fieldNames.label]: title,
     };
   }
+  testable = true;
 }

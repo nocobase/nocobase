@@ -473,18 +473,15 @@ export const Table: any = withDynamicSchemaProps(
     const highlightRowCss = useMemo(() => {
       return css`
         & > td {
-          background-color: ${token.controlItemBgActiveHover} !important;
+          background-color: ${token.controlItemBgActive} !important;
         }
         &:hover > td {
           background-color: ${token.controlItemBgActiveHover} !important;
         }
       `;
-    }, [token.controlItemBgActiveHover]);
+    }, [token.controlItemBgActive, token.controlItemBgActiveHover]);
 
-    const highlightRow = useMemo(
-      () => (onClickRow ? highlightRowCss : ''),
-      [onClickRow, token.controlItemBgActiveHover],
-    );
+    const highlightRow = useMemo(() => (onClickRow ? highlightRowCss : ''), [highlightRowCss, onClickRow]);
 
     const onRow = useMemo(() => {
       if (onClickRow) {
@@ -589,7 +586,7 @@ export const Table: any = withDynamicSchemaProps(
     const BodyCellComponent = useCallback(
       (props) => {
         const isIndex = props.className?.includes('selection-column');
-        const { record, schema, rowIndex } = props;
+        const { record, schema, rowIndex, ...others } = props;
         const { ref, inView } = useInView({
           threshold: 0,
           triggerOnce: true,
@@ -602,7 +599,7 @@ export const Table: any = withDynamicSchemaProps(
         // fix the problem of blank rows at the beginning of a table block
         if (rowIndex < 20) {
           return (
-            <td {...props} className={classNames(props.className, cellClass)} style={style}>
+            <td {...others} className={classNames(props.className, cellClass)} style={style}>
               {props.children}
             </td>
           );

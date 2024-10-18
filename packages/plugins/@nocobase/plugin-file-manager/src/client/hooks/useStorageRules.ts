@@ -7,16 +7,25 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useCollectionField, useCollectionManager, useRequest } from '@nocobase/client';
+import { useField } from '@formily/react';
+import { useAPIClient, useCollectionField, useCollectionManager, useRequest } from '@nocobase/client';
 
 export function useStorageRules(storage) {
   const name = storage ?? '';
+  const apiClient = useAPIClient();
+  const field = useField<any>();
   const { loading, data } = useRequest<any>(
-    {
-      url: `storages:getRules/${name}`,
+    async () => {
+      if (field.pattern !== 'editable') {
+        return null;
+      }
+      return apiClient.request({
+        url: `storages:getRules/${name}`,
+      });
     },
     {
       refreshDeps: [name],
+      cacheKey: name,
     },
   );
   return (!loading && data?.data) || null;
