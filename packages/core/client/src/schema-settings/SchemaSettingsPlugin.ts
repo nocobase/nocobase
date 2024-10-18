@@ -58,7 +58,10 @@ import { inputNumberComponentFieldSettings } from '../modules/fields/component/I
 import { subformComponentFieldSettings } from '../modules/fields/component/Nester/subformComponentFieldSettings';
 import { recordPickerComponentFieldSettings } from '../modules/fields/component/Picker/recordPickerComponentFieldSettings';
 import { subformPopoverComponentFieldSettings } from '../modules/fields/component/PopoverNester/subformPopoverComponentFieldSettings';
-import { selectComponentFieldSettings } from '../modules/fields/component/Select/selectComponentFieldSettings';
+import {
+  filterSelectComponentFieldSettings,
+  selectComponentFieldSettings,
+} from '../modules/fields/component/Select/selectComponentFieldSettings';
 import { subTablePopoverComponentFieldSettings } from '../modules/fields/component/SubTable/subTablePopoverComponentFieldSettings';
 import { tagComponentFieldSettings } from '../modules/fields/component/Tag/tagComponentFieldSettings';
 import { unixTimestampComponentFieldSettings } from '../modules/fields/component/UnixTimestamp/unixTimestampComponentFieldSettings';
@@ -108,6 +111,7 @@ export class SchemaSettingsPlugin extends Plugin {
 
     // field component settings
     this.schemaSettingsManager.add(selectComponentFieldSettings);
+    this.schemaSettingsManager.add(filterSelectComponentFieldSettings);
     this.schemaSettingsManager.add(recordPickerComponentFieldSettings);
     this.schemaSettingsManager.add(subformComponentFieldSettings);
     this.schemaSettingsManager.add(subformPopoverComponentFieldSettings);

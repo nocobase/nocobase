@@ -120,43 +120,42 @@ const titleField: any = {
   },
 };
 
-export const allowMultiple: any = {
-  name: 'allowMultiple',
-  type: 'switch',
-  useVisible() {
-    const isFieldReadPretty = useIsFieldReadPretty();
-    const collectionField = useCollectionField();
-    return !isFieldReadPretty && ['hasMany', 'belongsToMany'].includes(collectionField?.type);
-  },
-  useComponentProps() {
-    const { t } = useTranslation();
-    const field = useField<Field>();
-    const { fieldSchema: tableColumnSchema } = useColumnSchema();
-    const schema = useFieldSchema();
-    const fieldSchema = tableColumnSchema || schema;
-    const { dn, refresh } = useDesignable();
-    return {
-      title: t('Allow multiple'),
-      checked:
-        fieldSchema['x-component-props']?.multiple === undefined ? true : fieldSchema['x-component-props'].multiple,
-      onChange(value) {
-        const schema = {
-          ['x-uid']: fieldSchema['x-uid'],
-        };
-        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-        field.componentProps = field.componentProps || {};
+export const getAllowMultiple = (params?: { title: string }) => {
+  const title = params?.title || 'Allow multiple';
 
-        fieldSchema['x-component-props'].multiple = value;
-        field.componentProps.multiple = value;
+  return {
+    name: 'allowMultiple',
+    type: 'switch',
+    useComponentProps() {
+      const { t } = useTranslation();
+      const field = useField<Field>();
+      const { fieldSchema: tableColumnSchema } = useColumnSchema();
+      const schema = useFieldSchema();
+      const fieldSchema = tableColumnSchema || schema;
+      const { dn, refresh } = useDesignable();
+      return {
+        title: t(title),
+        checked:
+          fieldSchema['x-component-props']?.multiple === undefined ? true : fieldSchema['x-component-props'].multiple,
+        onChange(value) {
+          const schema = {
+            ['x-uid']: fieldSchema['x-uid'],
+          };
+          fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+          field.componentProps = field.componentProps || {};
 
-        schema['x-component-props'] = fieldSchema['x-component-props'];
-        dn.emit('patch', {
-          schema,
-        });
-        refresh();
-      },
-    };
-  },
+          fieldSchema['x-component-props'].multiple = value;
+          field.componentProps.multiple = value;
+
+          schema['x-component-props'] = fieldSchema['x-component-props'];
+          dn.emit('patch', {
+            schema,
+          });
+          refresh();
+        },
+      };
+    },
+  };
 };
 
 const quickCreate: any = {
@@ -362,7 +361,7 @@ export const selectComponentFieldSettings = new SchemaSettings({
       },
     },
     {
-      ...allowMultiple,
+      ...getAllowMultiple(),
       useVisible() {
         const isFieldReadPretty = useIsFieldReadPretty();
         const isAssociationField = useIsAssociationField();
@@ -370,6 +369,53 @@ export const selectComponentFieldSettings = new SchemaSettings({
         return !isFieldReadPretty && isAssociationField && IsShowMultipleSwitch();
       },
     },
+    {
+      ...titleField,
+      useVisible: useIsAssociationField,
+    },
+    {
+      ...enableLink,
+      useVisible() {
+        const readPretty = useIsFieldReadPretty();
+        return useIsAssociationField() && readPretty;
+      },
+    },
+  ],
+});
+
+/**
+ * Used for Select fields in filter form blocks
+ */
+export const filterSelectComponentFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:component:FilterSelect',
+  items: [
+    {
+      ...fieldComponent,
+      useVisible: useIsAssociationField,
+    },
+    {
+      ...setTheDataScope,
+      useVisible() {
+        const isSelectFieldMode = useIsSelectFieldMode();
+        const isFieldReadPretty = useIsFieldReadPretty();
+        return isSelectFieldMode && !isFieldReadPretty;
+      },
+    },
+    {
+      ...setDefaultSortingRules,
+      useComponentProps() {
+        const { fieldSchema } = useColumnSchema();
+        return {
+          fieldSchema,
+        };
+      },
+      useVisible() {
+        const isSelectFieldMode = useIsSelectFieldMode();
+        const isFieldReadPretty = useIsFieldReadPretty();
+        return isSelectFieldMode && !isFieldReadPretty;
+      },
+    },
+    getAllowMultiple({ title: 'Allow multiple selection' }),
     {
       ...titleField,
       useVisible: useIsAssociationField,
