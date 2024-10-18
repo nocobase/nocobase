@@ -181,6 +181,8 @@ export interface PageConfig {
   pageSchema?: any;
   /** 如果为 true 则表示不会更改 PageSchema 的 uid */
   keepUid?: boolean;
+  /** 在 URL 中的 uid，例如：/admin/0ig6xhe03u2 */
+  pageUid?: string;
 }
 
 export interface MobilePageConfig extends Omit<PageConfig, 'type'> {
@@ -199,6 +201,8 @@ interface CreatePageOptions {
   pageSchema?: any;
   /** 如果为 true 则表示不会更改 PageSchema 的 uid */
   keepUid?: boolean;
+  /** 在 URL 中的 uid，例如：/admin/0ig6xhe03u2 */
+  pageUid?: string;
 }
 
 interface CreateMobilePageOptions extends Omit<CreatePageOptions, 'type'> {
@@ -346,6 +350,7 @@ export class NocoPage {
         pageSchema: this.options?.pageSchema,
         url: this.options?.url,
         keepUid: this.options?.keepUid,
+        pageUid: this.options?.pageUid,
       }),
     );
 
@@ -706,7 +711,7 @@ const updateUidOfPageSchema = (uiSchema: any) => {
  * 在 NocoBase 中创建一个页面
  */
 const createPage = async (options?: CreatePageOptions) => {
-  const { type = 'page', url, name, pageSchema, keepUid } = options || {};
+  const { type = 'page', url, name, pageSchema, keepUid, pageUid: pageUidFromOptions } = options || {};
   const api = await request.newContext({
     storageState: process.env.PLAYWRIGHT_AUTH_FILE,
   });
@@ -728,7 +733,7 @@ const createPage = async (options?: CreatePageOptions) => {
   };
   const state = await api.storageState();
   const headers = getHeaders(state);
-  const pageUid = uid();
+  const pageUid = pageUidFromOptions || uid();
   const gridName = uid();
 
   const result = await api.post(`/api/uiSchemas:insertAdjacent/nocobase-admin-menu?position=beforeEnd`, {
