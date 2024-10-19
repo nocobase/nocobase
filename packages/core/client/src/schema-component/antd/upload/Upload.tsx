@@ -349,6 +349,7 @@ export function Uploader({ rules, ...props }: UploadProps) {
   const uploadProps = useUploadProps(props);
 
   const beforeUpload = useBeforeUpload(rules);
+  console.log('----------', pendingList);
 
   useEffect(() => {
     if (pendingList.length) {

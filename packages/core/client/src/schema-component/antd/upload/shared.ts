@@ -203,7 +203,7 @@ const Rules: Record<string, RuleFunction> = {
 
 type RuleFunction = (file: UploadFile, options: any) => string | null;
 
-function validate(file, rules: Record<string, any>) {
+export function validate(file, rules: Record<string, any>) {
   if (!rules) {
     return null;
   }
