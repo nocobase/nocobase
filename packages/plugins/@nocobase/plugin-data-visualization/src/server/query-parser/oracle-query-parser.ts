@@ -13,18 +13,20 @@ import { Context } from '@nocobase/actions';
 
 export class OracleQueryParser extends QueryParser {
   parseOrders(ctx: Context, orders: OrderProps[], hasAgg: boolean) {
-    const { collection: collectionName } = ctx.action.params.values as QueryParams;
+    const { collection: collectionName, dimensions } = ctx.action.params.values as QueryParams;
     const collection = this.db.getCollection(collectionName);
-    const order = super.parseOrders(ctx, orders, hasAgg);
-    if (!order.length) {
-      let filterTks = collection.filterTargetKey;
-      if (!Array.isArray(filterTks)) {
-        filterTks = [filterTks];
+    if (!orders.length) {
+      if (dimensions.length) {
+        orders.push(dimensions[0]);
+      } else {
+        let filterTks = collection.filterTargetKey;
+        if (!Array.isArray(filterTks)) {
+          filterTks = [filterTks];
+        }
+        orders.push(...filterTks.map((field) => ({ field, alias: field })));
       }
-      filterTks.forEach((filterTk) => {
-        order.push([this.db.sequelize.col(filterTk), 'ASC']);
-      });
     }
+    const order = super.parseOrders(ctx, orders, hasAgg);
     return order;
   }
 }
