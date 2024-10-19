@@ -84,7 +84,7 @@ const InnerInboxContent = () => {
     <div
       style={{
         textAlign: 'center',
-        marginBottom: 12,
+        marginTop: 12,
         height: 32,
         lineHeight: '32px',
       }}
@@ -230,7 +230,7 @@ const InnerInboxContent = () => {
   return (
     <Layout style={{ height: '100%' }}>
       <Layout.Sider
-        width={300}
+        width={350}
         style={{
           height: '100%',
           overflowY: 'auto',
@@ -260,7 +260,6 @@ const InnerInboxContent = () => {
                   padding: '10px 10px',
                   color: titleColor,
                   ...(selectedChannelName === item.name ? { backgroundColor: 'rgb(230, 244, 255)' } : {}),
-                  height: '70px',
                   cursor: 'pointer',
                   marginTop: '10px',
                   border: 'none',
@@ -287,7 +286,7 @@ const InnerInboxContent = () => {
                   </div>
                   <div
                     style={{
-                      width: '80px',
+                      width: '120px',
                       fontWeight: 400,
                       textAlign: 'right',
                       fontFamily: 'monospace',

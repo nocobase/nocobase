@@ -3,8 +3,8 @@
   "version": "1.4.0-alpha",
   "displayName": "Notification: In-app message",
   "displayName.zh-CN": "通知：站内信",
-  "description": "Send in-app message in Notification Manager.",
-  "description.zh-CN": "在通知管理中发送站内信通知。",
+  "description": "It supports users in receiving real-time message notifications within the NocoBase application.",
+  "description.zh-CN": "支持用户在 NocoBase 应用内实时接收消息通知。",
   "keywords": [
     "Notification"
   ],

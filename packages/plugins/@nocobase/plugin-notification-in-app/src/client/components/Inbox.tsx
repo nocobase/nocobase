@@ -63,7 +63,7 @@ const InnerInbox = (props) => {
   useEffect(() => {
     createMsgSSEConnection();
   }, []);
-  const DrawerTitle = <div style={{ padding: '0' }}>{t('Inbox')}</div>;
+  const DrawerTitle = <div style={{ padding: '0' }}>{t('Message')}</div>;
   const CloseIcon = (
     <div style={{ marginLeft: '15px' }}>
       <CloseOutlined />
@@ -75,7 +75,7 @@ const InnerInbox = (props) => {
         components: { Drawer: { paddingLG: 0 } },
       }}
     >
-      <Tooltip title={t('Inapp Message')}>
+      <Tooltip title={t('Message')}>
         <Button className={styles.button} title={'Apps'} icon={<Icon type={'MailOutlined'} />} onClick={onIconClick} />
       </Tooltip>
       {unreadMsgsCountObs.value && <Badge count={unreadMsgsCountObs.value} size="small" offset={[-18, -16]}></Badge>}
@@ -83,7 +83,7 @@ const InnerInbox = (props) => {
         title={DrawerTitle}
         open={inboxVisible.value}
         closeIcon={CloseIcon}
-        width={850}
+        width={900}
         onClose={() => {
           inboxVisible.value = false;
         }}
