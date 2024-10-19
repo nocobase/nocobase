@@ -9,6 +9,7 @@
 
 import React, { useCallback } from 'react';
 import { observer } from '@formily/reactive-react';
+
 import {
   Layout,
   List,
@@ -23,6 +24,7 @@ import {
   ConfigProvider,
   Typography,
   Tooltip,
+  theme,
 } from 'antd';
 import { css } from '@emotion/css';
 import { dayjs } from '@nocobase/utils/client';
@@ -47,6 +49,7 @@ import {
 } from '../observables';
 
 const InnerInboxContent = () => {
+  const { token } = theme.useToken();
   const { t } = useLocalTranslation();
   const channels = channelListObs.value;
   const messages = selectedMessageListObs.value;
@@ -81,7 +84,7 @@ const InnerInboxContent = () => {
     <div
       style={{
         textAlign: 'center',
-        marginTop: 12,
+        marginBottom: 12,
         height: 32,
         lineHeight: '32px',
       }}
@@ -123,7 +126,7 @@ const InnerInboxContent = () => {
           components: { Badge: { dotSize: 8 } },
         }}
       >
-        <Typography.Title level={4} style={{ marginTop: 12 }}>
+        <Typography.Title level={4} style={{ margin: '24px 0' }}>
           {channelMapObs.value[selectedChannelName].title}
         </Typography.Title>
 
@@ -135,7 +138,7 @@ const InnerInboxContent = () => {
               <Card
                 size={'small'}
                 bordered={false}
-                style={{ marginTop: 24 }}
+                style={{ marginBottom: 18 }}
                 title={
                   <Tooltip title={message.title} mouseEnterDelay={0.5}>
                     <div
@@ -175,7 +178,7 @@ const InnerInboxContent = () => {
                     </Tooltip>
                   </Descriptions.Item>
                   <Descriptions.Item label={t('Datetime')}>
-                    {dayjs(message.receiveTimestamp).format('YYYY-MM-DD HH:mm:ss')}
+                    {dayjs(message.receiveTimestamp).fromNow()}
                   </Descriptions.Item>
                   <Descriptions.Item label={t('Status')}>
                     <Tag color={message.status === 'unread' ? 'red' : 'green'}>{msgStatusDict[message.status]}</Tag>
@@ -186,9 +189,11 @@ const InnerInboxContent = () => {
           ))
         )}
         {showMsgLoadingMoreObs.value && (
-          <Button style={{ margin: '20px auto 0 auto' }} onClick={onLoadMessagesMore} loading={isFetchingMessages}>
-            {t('Loading more')}
-          </Button>
+          <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+            <Button onClick={onLoadMessagesMore} loading={isFetchingMessages}>
+              {t('Loading more')}
+            </Button>
+          </div>
         )}
       </ConfigProvider>
     );
@@ -226,7 +231,13 @@ const InnerInboxContent = () => {
     <Layout style={{ height: '100%' }}>
       <Layout.Sider
         width={300}
-        style={{ height: '100%', overflowY: 'auto', background: '#fff', padding: '0 15px', border: 'none' }}
+        style={{
+          height: '100%',
+          overflowY: 'auto',
+          background: token.colorBgLayout,
+          padding: '0 15px',
+          border: 'none',
+        }}
       >
         <FilterTab />
         <List
@@ -236,13 +247,13 @@ const InnerInboxContent = () => {
           style={{ paddingBottom: '20px' }}
           loading={channels.length === 0 && isFetchingChannelsObs.value}
           renderItem={(item) => {
-            const titleColor = selectedChannelName === item.name ? '#1677ff' : 'black';
-            const textColor = selectedChannelName === item.name ? '#1677ff' : 'rgba(0, 0, 0, 0.45)';
+            const titleColor = selectedChannelName === item.name ? token.colorPrimaryText : token.colorText;
+            const textColor = selectedChannelName === item.name ? token.colorPrimaryText : token.colorTextTertiary;
             return (
               <List.Item
                 className={css`
                 &:hover {
-                  background-color: #e4e5e6};
+                  background-color: ${token.colorBgTextHover}};
                 }
               `}
                 style={{
@@ -283,7 +294,7 @@ const InnerInboxContent = () => {
                       color: textColor,
                     }}
                   >
-                    {dayjs(item.latestMsgReceiveTimestamp).format('MM-DD')}
+                    {dayjs(item.latestMsgReceiveTimestamp).fromNow()}
                   </div>
                 </Flex>
                 <Flex justify="space-between" style={{ width: '100%' }}>
@@ -299,7 +310,9 @@ const InnerInboxContent = () => {
                     {' '}
                     {item.latestMsgTitle}
                   </div>
-                  {channelStatusFilterObs.value !== 'read' ? <Badge count={item.unreadMsgCnt}></Badge> : null}
+                  {channelStatusFilterObs.value !== 'read' ? (
+                    <Badge style={{ border: 'none' }} count={item.unreadMsgCnt}></Badge>
+                  ) : null}
                 </Flex>
               </List.Item>
             );
