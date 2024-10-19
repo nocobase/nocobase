@@ -250,7 +250,7 @@ function AttachmentListItem(props) {
       {item}
     </a>
   ) : (
-    <span className={`${prefixCls}-span`}>{item}3</span>
+    <span className={`${prefixCls}-span`}>{item}</span>
   );
 
   const content = (
