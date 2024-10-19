@@ -13,6 +13,7 @@ import { CollectionOptions } from '@nocobase/client';
 const channelCollection: CollectionOptions = {
   name: COLLECTION_NAME.channels,
   filterTargetKey: 'name',
+  autoGenId: false,
   fields: [
     {
       name: 'name',
