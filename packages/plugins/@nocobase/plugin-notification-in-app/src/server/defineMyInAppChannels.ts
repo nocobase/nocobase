@@ -124,7 +124,7 @@ export default function defineMyInAppChannels({ app }: { app: Application }) {
                   ],
                 ],
               },
-              sort: '-latestMsgReceiveTimestamp',
+              order: [[Sequelize.literal('latestMsgReceiveTimestamp'), 'DESC']],
               //@ts-ignore
               where: {
                 [Op.and]: [userFilter, latestMsgReceiveTSFilter, channelIdFilter, channelStatusFilter].filter(Boolean),
