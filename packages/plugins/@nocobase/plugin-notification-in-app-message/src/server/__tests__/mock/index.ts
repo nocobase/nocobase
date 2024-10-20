@@ -22,23 +22,9 @@ const database = new Database({
   port: 5432,
 });
 
-const initServer = async () => {
+export const initServer = async () => {
   const app = await createMockServer({
     plugins: ['users', 'auth', 'notification-manager', 'notification-in-app'],
   });
   return app;
-};
-
-export const main = async () => {
-  const app = await initServer();
-  const db: Database = app.db;
-  const channelsRepo = db.getRepository(ChannelsDefinition.name);
-  const messagesRepo = db.getRepository(MessagesDefinition.name);
-  const channels = await createChannels({ channelsRepo }, { totalNum: 50 });
-  for (const channel of channels) {
-    await createMessages(
-      { messagesRepo },
-      { unreadNum: 30, readNum: 40, channelName: channel.name, startTimeStamp: Date.now(), userId: 1 },
-    );
-  }
 };
