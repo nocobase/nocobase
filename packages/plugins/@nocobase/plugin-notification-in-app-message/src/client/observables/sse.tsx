@@ -14,6 +14,7 @@ import { messageMapObs, updateUnreadMsgsCount } from './message';
 import { channelMapObs, fetchChannels, selectedChannelNameObs } from './channel';
 import { inboxVisible } from './inbox';
 import { getAPIClient } from '../utils';
+import { uid } from '@nocobase/utils/client';
 
 export const liveSSEObs = observable<{ value: SSEData | null }>({ value: null });
 
@@ -61,7 +62,7 @@ export const createMsgSSEConnection = async () => {
       Accept: 'text/event-stream',
     },
     params: {
-      id: crypto.randomUUID(),
+      id: uid(),
     },
     responseType: 'stream',
     adapter: 'fetch',
