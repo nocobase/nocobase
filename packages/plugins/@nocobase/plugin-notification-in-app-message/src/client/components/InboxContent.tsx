@@ -296,7 +296,7 @@ const InnerInboxContent = () => {
                     {dayjs(item.latestMsgReceiveTimestamp).fromNow()}
                   </div>
                 </Flex>
-                <Flex justify="space-between" style={{ width: '100%' }}>
+                <Flex justify="space-between" style={{ width: '100%', marginTop: token.margin }}>
                   <div
                     style={{
                       width: '80%',
