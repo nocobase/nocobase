@@ -39,7 +39,7 @@ export abstract class BaseDialect {
       throw new Error(
         `to use ${(this.constructor as typeof BaseDialect).dialectName}, please ensure the version is ${
           versionGuard.version
-        }`,
+        }, current version is ${version}`,
       );
     }
 
