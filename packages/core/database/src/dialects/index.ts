@@ -7,15 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Gateway } from '@nocobase/server';
-import { getConfig } from './config';
-
-getConfig()
-  .then((config) => {
-    return Gateway.getInstance().run({
-      mainAppOptions: config,
-    });
-  })
-  .catch((e) => {
-    console.error(e);
-  });
+export * from './base-dialect';
