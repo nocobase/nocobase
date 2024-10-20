@@ -9,7 +9,7 @@
 
 import { GeneralField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
-import { isString } from 'lodash';
+import _, { isString } from 'lodash';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { createContext, FC, useCallback, useContext, useMemo } from 'react';
 import { useParsedFilter } from '../../../block-provider/hooks/useParsedFilter';
@@ -150,6 +150,10 @@ interface SubFormProviderProps {
    */
   fieldSchema?: Schema;
   parent?: SubFormProviderProps;
+  /**
+   * Ignore the current value in the upper and lower levels
+   */
+  skip?: boolean;
 }
 
 const SubFormContext = createContext<SubFormProviderProps>(null);
@@ -157,11 +161,15 @@ SubFormContext.displayName = 'SubFormContext';
 
 export const SubFormProvider: FC<{ value: SubFormProviderProps }> = (props) => {
   const _parent = useContext(SubFormContext);
-  const { value, collection, fieldSchema, parent } = props.value;
+  const { value, collection, fieldSchema, parent, skip } = props.value;
   const memoValue = useMemo(
-    () => ({ value, collection, fieldSchema, parent: parent || _parent }),
-    [value, collection, fieldSchema, parent, _parent],
-  );
+    () =>
+      _.omitBy(
+        { value, collection, fieldSchema, skip, parent: parent || (_parent?.skip ? _parent.parent : _parent) },
+        _.isUndefined,
+      ),
+    [value, collection, fieldSchema, skip, parent, _parent],
+  ) as SubFormProviderProps;
   return <SubFormContext.Provider value={memoValue}>{props.children}</SubFormContext.Provider>;
 };
 
