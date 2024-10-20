@@ -9,13 +9,17 @@
 
 import { Gateway } from '@nocobase/server';
 import { getConfig } from './config';
+import { loadPluginsStaticImport } from './load-plugins-static-import';
 
-getConfig()
-  .then((config) => {
-    return Gateway.getInstance().run({
-      mainAppOptions: config,
-    });
-  })
-  .catch((e) => {
-    console.error(e);
+async function initializeGateway() {
+  await loadPluginsStaticImport();
+  const config = await getConfig();
+  await Gateway.getInstance().run({
+    mainAppOptions: config,
   });
+}
+
+initializeGateway().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
