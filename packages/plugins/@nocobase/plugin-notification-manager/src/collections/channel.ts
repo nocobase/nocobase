@@ -8,9 +8,8 @@
  */
 
 import { COLLECTION_NAME } from '../constant';
-import { CollectionOptions } from '@nocobase/client';
 
-const channelCollection: CollectionOptions = {
+export default {
   name: COLLECTION_NAME.channels,
   filterTargetKey: 'name',
   autoGenId: false,
@@ -129,4 +128,3 @@ const channelCollection: CollectionOptions = {
     },
   ],
 };
-export default channelCollection;
