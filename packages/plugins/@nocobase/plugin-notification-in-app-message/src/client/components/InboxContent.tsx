@@ -234,7 +234,7 @@ const InnerInboxContent = () => {
         style={{
           height: '100%',
           overflowY: 'auto',
-          background: token.colorBgLayout,
+          background: token.colorBgContainer,
           padding: '0 15px',
           border: 'none',
         }}
