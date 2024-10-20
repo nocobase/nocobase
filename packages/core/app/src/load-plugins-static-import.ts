@@ -8,8 +8,24 @@
  */
 import fg from 'fast-glob';
 import fs from 'fs-extra';
-import _, { trim } from 'lodash';
+import _ from 'lodash';
 import path from 'path';
+import { PluginManager } from '@nocobase/server';
+
+export async function trim(packageNames: string[]) {
+  const nameOrPkgs = _.uniq(packageNames).filter(Boolean);
+  const names = [];
+  for (const nameOrPkg of nameOrPkgs) {
+    const { name, packageName } = await PluginManager.parseName(nameOrPkg);
+    try {
+      await PluginManager.getPackageJson(packageName);
+      names.push(name);
+    } catch (error) {
+      //
+    }
+  }
+  return names;
+}
 
 function splitNames(name: string) {
   return (name || '').split(',').filter(Boolean);
@@ -29,12 +45,14 @@ export async function findPackageNames() {
       absolute: true,
       ignore: ['**/external-db-data-source/**'],
     });
-    const packageNames = await Promise.all(
+
+    const packageNames: any = await Promise.all(
       packageJsonPaths.map(async (packageJsonPath) => {
         const packageJson = await fs.readJson(packageJsonPath);
         return packageJson.name;
       }),
     );
+
     const excludes = [
       '@nocobase/plugin-audit-logs',
       '@nocobase/plugin-backup-restore',
@@ -47,6 +65,7 @@ export async function findPackageNames() {
       '@nocobase/plugin-snapshot-field',
       '@nocobase/plugin-workflow-test',
     ];
+
     const nocobasePlugins = await findNocobasePlugins();
     const { APPEND_PRESET_BUILT_IN_PLUGINS = '', APPEND_PRESET_LOCAL_PLUGINS = '' } = process.env;
     return trim(
@@ -88,10 +107,9 @@ export async function findLocalPlugins() {
   const plugins2 = await findPackageNames();
   const builtInPlugins = await findBuiltInPlugins();
 
-  const items = trim(
+  return await trim(
     _.difference(plugins1.concat(plugins2).concat(splitNames(APPEND_PRESET_LOCAL_PLUGINS)), builtInPlugins),
   );
-  return items.split(',');
 }
 
 export async function loadPluginsStaticImport() {
