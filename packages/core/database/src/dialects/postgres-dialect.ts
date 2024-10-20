@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import semver from 'semver';
 import { BaseDialect } from './base-dialect';
 
 export class PostgresDialect extends BaseDialect {
@@ -33,7 +34,7 @@ export class PostgresDialect extends BaseDialect {
       sql: 'select version() as version',
       get: (v: string) => {
         const m = /([\d+.]+)/.exec(v);
-        return m[0];
+        return semver.minVersion(m[0]).version;
       },
       version: '>=10',
     };
