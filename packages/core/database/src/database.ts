@@ -505,6 +505,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.inDialect('mysql', 'mariadb');
   }
 
+  isPostgresCompatibleDialect() {
+    return this.inDialect('postgres');
+  }
+
   /**
    * Add collection to database
    * @param options
