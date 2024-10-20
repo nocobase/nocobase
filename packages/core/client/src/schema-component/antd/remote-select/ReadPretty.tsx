@@ -23,7 +23,7 @@ export interface RemoteSelectReadPrettyProps extends SelectReadPrettyProps {
 }
 
 export const ReadPretty = observer(
-  (props: any) => {
+  (props: RemoteSelectReadPrettyProps) => {
     const fieldNames = { ...defaultFieldNames, ...props.fieldNames };
     const field = useField<any>();
     const fieldSchema = useFieldSchema();
