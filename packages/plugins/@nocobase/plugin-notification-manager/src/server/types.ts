@@ -36,12 +36,22 @@ export type WriteLogOptions = {
 export type SendFnType<Message> = (args: {
   message: Message;
   channel: ChannelOptions;
+  receivers?: ReceiversOptions;
 }) => Promise<{ message: Message; status: 'success' | 'fail'; reason?: string }>;
 
+export type ReceiversOptions = { userIds: number[] } | Record<string, any>;
 export interface SendOptions {
   channelName: string;
   message: Record<string, any>;
   triggerFrom: string;
+  receivers?: { userIds: number[] } | unknown;
+}
+
+export interface SendUserOptions {
+  userIds: number[];
+  channels: string[];
+  message: Record<string, any>;
+  data?: Record<string, any>;
 }
 
 export type NotificationChannelConstructor = new (app: Application) => BaseNotificationChannel;
