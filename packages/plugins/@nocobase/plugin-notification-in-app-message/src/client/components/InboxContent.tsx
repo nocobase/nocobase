@@ -126,19 +126,19 @@ const InnerInboxContent = () => {
           components: { Badge: { dotSize: 8 } },
         }}
       >
-        <Typography.Title level={4} style={{ margin: '24px 0' }}>
+        <Typography.Title level={4} style={{ marginBottom: token.marginLG }}>
           {channelMapObs.value[selectedChannelName].title}
         </Typography.Title>
 
         {messages.length === 0 && isFecthingMessageObs.value ? (
-          <Spin style={{ width: '100%', marginTop: '80px' }} />
+          <Spin style={{ width: '100%', marginTop: token.marginXXL }} />
         ) : (
           messages.map((message, index) => (
             <>
               <Card
                 size={'small'}
                 bordered={false}
-                style={{ marginBottom: 18 }}
+                style={{ marginBottom: token.marginMD }}
                 title={
                   <Tooltip title={message.title} mouseEnterDelay={0.5}>
                     <div
@@ -259,7 +259,7 @@ const InnerInboxContent = () => {
                 style={{
                   padding: '10px 10px',
                   color: titleColor,
-                  ...(selectedChannelName === item.name ? { backgroundColor: 'rgb(230, 244, 255)' } : {}),
+                  ...(selectedChannelName === item.name ? { backgroundColor: token.colorPrimaryBg } : {}),
                   cursor: 'pointer',
                   marginTop: '10px',
                   border: 'none',
@@ -318,7 +318,7 @@ const InnerInboxContent = () => {
           }}
         />
       </Layout.Sider>
-      <Layout.Content style={{ padding: '0 24px 30px 24px', height: '100%', overflowY: 'auto' }}>
+      <Layout.Content style={{ padding: token.paddingLG, height: '100%', overflowY: 'auto' }}>
         {selectedChannelName ? <MessageList /> : null}
       </Layout.Content>
     </Layout>
