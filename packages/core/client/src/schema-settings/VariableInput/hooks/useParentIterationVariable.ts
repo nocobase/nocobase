@@ -59,7 +59,7 @@ export const useParentObjectVariable = ({
 
   return {
     /** 是否显示变量 */
-    shouldDisplayParentObject: (isInSubForm || isInSubTable) && !!parentObjectCtx,
+    shouldDisplayParentObject: (isInSubForm || isInSubTable) && !!collectionOfParentObject,
     /** 变量的值 */
     parentObjectCtx,
     /** 变量的配置项 */
