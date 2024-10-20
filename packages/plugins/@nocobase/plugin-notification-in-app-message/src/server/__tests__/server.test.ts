@@ -28,7 +28,7 @@ describe('inapp message channels', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['users', 'auth', 'notification-manager', 'notification-in-app'],
+      plugins: ['users', 'auth', 'notification-manager', 'notification-in-app-message'],
     });
     await app.pm.get('auth')?.install();
     db = app.db;
