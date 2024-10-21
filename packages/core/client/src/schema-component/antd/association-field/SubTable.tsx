@@ -157,6 +157,8 @@ export const SubTable: any = observer(
           field.initialValue = field.value;
           setSelectedRows([]);
           setVisible(false);
+          const totalPages = Math.ceil(field.value.length / (field.componentProps?.pageSize || 10));
+          setCurrentPage(totalPages);
         },
       };
     };
@@ -176,7 +178,7 @@ export const SubTable: any = observer(
     const paginationConfig = useMemo(() => {
       return {
         current: currentPage,
-        pageSize: pageSize,
+        pageSize: pageSize || 10,
         total: field?.value?.length,
         onChange: (page, pageSize) => {
           setCurrentPage(page);
@@ -188,7 +190,6 @@ export const SubTable: any = observer(
         hideOnSinglePage: false,
       };
     }, [field.value?.length, pageSize, currentPage]);
-
     return (
       <div className={subTableContainer}>
         <FlagProvider isInSubTable>
@@ -229,6 +230,9 @@ export const SubTable: any = observer(
                             onClick={() => {
                               field.value = field.value || [];
                               field.value.push(markRecordAsNew({}));
+                              // 计算总页数，并跳转到最后一页
+                              const totalPages = Math.ceil(field.value.length / (field.componentProps?.pageSize || 10));
+                              setCurrentPage(totalPages);
                             }}
                           >
                             {t('Add new')}
