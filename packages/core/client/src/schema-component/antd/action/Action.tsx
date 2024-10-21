@@ -288,6 +288,7 @@ const InternalAction: React.FC<InternalActionProps> = React.memo(
     let result = (
       <PopupVisibleProvider visible={false}>
         <ActionContextProvider
+          button={RenderButton(buttonProps)}
           visible={visible || visibleWithURL}
           setVisible={(value) => {
             setVisible?.(value);
