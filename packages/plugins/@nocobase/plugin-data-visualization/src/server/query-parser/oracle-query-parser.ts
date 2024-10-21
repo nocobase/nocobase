@@ -10,8 +10,17 @@
 import { QueryParser } from './query-parser';
 import { OrderProps, QueryParams } from '../types';
 import { Context } from '@nocobase/actions';
+import { OracleFormatter } from '../formatter/oracle-formatter';
+import { Database } from '@nocobase/database';
 
 export class OracleQueryParser extends QueryParser {
+  declare formatter: OracleFormatter;
+
+  constructor(db: Database) {
+    super(db);
+    this.formatter = new OracleFormatter(db.sequelize);
+  }
+
   parseOrders(ctx: Context, orders: OrderProps[], hasAgg: boolean) {
     const { collection: collectionName, dimensions } = ctx.action.params.values as QueryParams;
     const collection = this.db.getCollection(collectionName);
