@@ -7,17 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { PluginManager } from '@nocobase/server';
 import fg from 'fast-glob';
 import fs from 'fs-extra';
 import _ from 'lodash';
 import path from 'path';
+import { PluginManager } from './';
 
 function splitNames(name: string) {
   return (name || '').split(',').filter(Boolean);
 }
 
-export async function trim(packageNames: string[]) {
+async function trim(packageNames: string[]) {
   const nameOrPkgs = _.uniq(packageNames).filter(Boolean);
   const names = [];
   for (const nameOrPkg of nameOrPkgs) {
@@ -78,9 +78,16 @@ export async function findPackageNames() {
   }
 }
 
+async function getPackageJson() {
+  const packageJson = await fs.readJson(
+    path.resolve(process.env.NODE_MODULES_PATH, '@nocobase/preset-nocobase/package.json'),
+  );
+  return packageJson;
+}
+
 async function findNocobasePlugins() {
   try {
-    const packageJson = await fs.readJson(path.resolve(__dirname, '../../package.json'));
+    const packageJson = await getPackageJson();
     const pluginNames = Object.keys(packageJson.dependencies).filter((name) => name.startsWith('@nocobase/plugin-'));
     return trim(pluginNames);
   } catch (error) {
@@ -91,7 +98,7 @@ async function findNocobasePlugins() {
 export async function findBuiltInPlugins() {
   const { APPEND_PRESET_BUILT_IN_PLUGINS = '' } = process.env;
   try {
-    const packageJson = await fs.readJson(path.resolve(__dirname, '../../package.json'));
+    const packageJson = await getPackageJson();
     return trim(packageJson.builtIn.concat(splitNames(APPEND_PRESET_BUILT_IN_PLUGINS)));
   } catch (error) {
     return [];
@@ -103,7 +110,7 @@ export async function findLocalPlugins() {
   const plugins1 = await findNocobasePlugins();
   const plugins2 = await findPackageNames();
   const builtInPlugins = await findBuiltInPlugins();
-  const packageJson = await fs.readJson(path.resolve(__dirname, '../../package.json'));
+  const packageJson = await getPackageJson();
   const items = await trim(
     _.difference(
       plugins1.concat(plugins2).concat(splitNames(APPEND_PRESET_LOCAL_PLUGINS)),
@@ -112,3 +119,11 @@ export async function findLocalPlugins() {
   );
   return items;
 }
+
+export async function findAllPlugins() {
+  const builtInPlugins = await findBuiltInPlugins();
+  const localPlugins = await findLocalPlugins();
+  return _.uniq(builtInPlugins.concat(localPlugins));
+}
+
+export const packageNameTrim = trim;

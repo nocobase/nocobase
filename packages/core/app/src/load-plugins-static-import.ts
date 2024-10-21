@@ -6,11 +6,10 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { findBuiltInPlugins, findLocalPlugins } from '@nocobase/preset-nocobase';
-import { PluginManager } from '@nocobase/server';
+import { findAllPlugins, PluginManager } from '@nocobase/server';
 
 export async function loadPluginsStaticImport() {
-  const packages = [...(await findBuiltInPlugins()), ...(await findLocalPlugins())];
+  const packages = await findAllPlugins();
   for (const name of packages) {
     const { packageName } = await PluginManager.parseName(name);
 
