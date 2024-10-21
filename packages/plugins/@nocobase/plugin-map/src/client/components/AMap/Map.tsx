@@ -335,6 +335,7 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
 
     const _define = (window as any).define;
     (window as any).define = undefined;
+
     AMapLoader.load({
       key: accessKey,
       version: '2.0',
