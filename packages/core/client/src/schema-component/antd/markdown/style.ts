@@ -17,6 +17,7 @@ export const useStyles = genStyleHook('nb-markdown', (token, { isDarkTheme }) =>
     .toHexShortString();
 
   const defaultStyle: any = {
+    lineHeight: 'inherit',
     // default style of markdown
     '&.nb-markdown-default': {
       'pre code.hljs': { display: 'block', overflowX: 'auto', padding: '1em' },

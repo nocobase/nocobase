@@ -125,7 +125,7 @@ export const SettingsMenu: React.FC<{
       },
       editProfile,
       changePassword,
-      {
+      (editProfile || changePassword) && {
         key: 'divider_2',
         type: 'divider',
       },

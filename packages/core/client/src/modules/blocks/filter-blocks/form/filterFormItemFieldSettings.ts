@@ -16,9 +16,16 @@ import { useApp } from '../../../../application';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
+import { fieldComponentSettingsItem } from '../../../../data-source/commonsSettingsItem';
 import { EditOperator, useDesignable, useValidateSchema } from '../../../../schema-component';
 import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
-import { fieldComponentSettingsItem } from '../../../../data-source/commonsSettingsItem';
+
+const fieldComponentNameMap = (name: string) => {
+  if (name === 'Select') {
+    return 'FilterSelect';
+  }
+  return name;
+};
 
 export const filterFormItemFieldSettings = new SchemaSettings({
   name: 'fieldSettings:FilterFormItem',
@@ -347,7 +354,9 @@ export const filterFormItemFieldSettings = new SchemaSettings({
       useChildren() {
         const app = useApp();
         const fieldComponentName = useFieldComponentName();
-        const componentSettings = app.schemaSettingsManager.get(`fieldSettings:component:${fieldComponentName}`);
+        const componentSettings = app.schemaSettingsManager.get(
+          `fieldSettings:component:${fieldComponentNameMap(fieldComponentName)}`,
+        );
         return componentSettings?.items || [];
       },
     },

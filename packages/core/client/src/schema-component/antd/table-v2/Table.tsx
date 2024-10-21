@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, MenuOutlined } from '@ant-design/icons';
+import { CloseOutlined, MenuOutlined } from '@ant-design/icons';
 import { TinyColor } from '@ctrl/tinycolor';
 import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sortable';
 import { css, cx } from '@emotion/css';
@@ -83,7 +83,7 @@ export const useColumnsDeepMemoized = (columns: any[]) => {
   return oldObj.value;
 };
 
-const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => {
+const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }) => {
   const { token } = useToken();
   const field = useArrayField(props);
   const schema = useFieldSchema();
@@ -183,22 +183,25 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
         align: 'center',
         fixed: 'right',
         render: (v, record, index) => {
-          return (
-            <DeleteOutlined
-              style={{ cursor: 'pointer' }}
-              onClick={() => {
-                action(() => {
-                  spliceArrayState(field as any, {
-                    startIndex: index,
-                    deleteCount: 1,
+          if (props.showDel(record)) {
+            return (
+              <CloseOutlined
+                style={{ cursor: 'pointer', color: 'gray' }}
+                onClick={() => {
+                  action(() => {
+                    spliceArrayState(field as any, {
+                      startIndex: index,
+                      deleteCount: 1,
+                    });
+                    field.value.splice(index, 1);
+                    field.initialValue?.splice(index, 1);
+                    return field.onInput(field.value);
                   });
-                  field.value.splice(index, 1);
-                  field.initialValue?.splice(index, 1);
-                  return field.onInput(field.value);
-                });
-              }}
-            />
-          );
+                }}
+              />
+            );
+          }
+          return;
         },
       });
     }
@@ -435,12 +438,12 @@ const BodyRowComponent = (props) => {
 const BodyCellComponent = (props) => {
   const inView = useContext(InViewContext);
   const isIndex = props.className?.includes('selection-column');
-  const { record, schema, rowIndex, isSubTable } = props;
+  const { record, schema, rowIndex, isSubTable, ...others } = props;
   const { valueMap } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
   const style = useMemo(() => Object.assign({ ...props.style }, valueMap), [props.style, valueMap]);
 
   return (
-    <td {...props} className={classNames(props.className, cellClass)} style={style}>
+    <td {...others} className={classNames(props.className, cellClass)} style={style}>
       {/* Lazy rendering cannot be used in sub-tables. */}
       {isSubTable || inView || isIndex ? props.children : <Skeleton.Button block size="small" active={false} />}
     </td>
@@ -611,18 +614,15 @@ export const Table: any = withDynamicSchemaProps(
     const highlightRowCss = useMemo(() => {
       return css`
         & > td {
-          background-color: ${token.controlItemBgActiveHover} !important;
+          background-color: ${token.controlItemBgActive} !important;
         }
         &:hover > td {
           background-color: ${token.controlItemBgActiveHover} !important;
         }
       `;
-    }, [token.controlItemBgActiveHover]);
+    }, [token.controlItemBgActive, token.controlItemBgActiveHover]);
 
-    const highlightRow = useMemo(
-      () => (onClickRow ? highlightRowCss : ''),
-      [onClickRow, token.controlItemBgActiveHover],
-    );
+    const highlightRow = useMemo(() => (onClickRow ? highlightRowCss : ''), [highlightRowCss, onClickRow]);
 
     const onRow = useMemo(() => {
       if (onClickRow) {
