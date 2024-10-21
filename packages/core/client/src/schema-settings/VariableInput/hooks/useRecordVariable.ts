@@ -50,23 +50,42 @@ export const useRecordVariable = (props: Props) => {
 };
 
 /**
+ * 变量：`当前记录`的上下文
+ * @returns
+ */
+export const useCurrentRecordContext = () => {
+  const { name: blockType } = useBlockContext() || {};
+  const collection = useCollection();
+  const recordData = useCollectionRecordData();
+  const { formRecord, collectionName } = useFormBlockContext();
+  const realCollectionName = formRecord?.data ? collectionName : collection?.name;
+
+  return {
+    /** 变量值 */
+    currentRecordCtx: formRecord?.data || recordData,
+    /** 用于判断是否需要显示配置项 */
+    shouldDisplayCurrentRecord: !_.isEmpty(_.omit(recordData, ['__collectionName', '__parent'])) || !!formRecord?.data,
+    /** 当前记录对应的 collection name */
+    collectionName: realCollectionName,
+    /** 块类型 */
+    blockType,
+  };
+};
+
+/**
  * 变量：`当前记录`
  * @param props
  * @returns
  */
 export const useCurrentRecordVariable = (props: Props = {}) => {
   const { t } = useTranslation();
-  const { name: blockType } = useBlockContext() || {};
-  const collection = useCollection();
-  const recordData = useCollectionRecordData();
-  const { formRecord, collectionName } = useFormBlockContext();
-  const realCollectionName = formRecord?.data ? collectionName : collection?.name;
+  const { currentRecordCtx, shouldDisplayCurrentRecord, collectionName, blockType } = useCurrentRecordContext();
   const currentRecordSettings = useBaseVariable({
     collectionField: props.collectionField,
     uiSchema: props.schema,
     name: '$nRecord',
     title: t('Current record'),
-    collectionName: realCollectionName,
+    collectionName,
     noDisabled: props.noDisabled,
     targetFieldSchema: props.targetFieldSchema,
     deprecated: blockType === 'form',
@@ -77,10 +96,10 @@ export const useCurrentRecordVariable = (props: Props = {}) => {
     /** 变量配置 */
     currentRecordSettings,
     /** 变量值 */
-    currentRecordCtx: formRecord?.data || recordData,
+    currentRecordCtx,
     /** 用于判断是否需要显示配置项 */
-    shouldDisplayCurrentRecord: !_.isEmpty(_.omit(recordData, ['__collectionName', '__parent'])) || !!formRecord?.data,
+    shouldDisplayCurrentRecord,
     /** 当前记录对应的 collection name */
-    collectionName: realCollectionName,
+    collectionName,
   };
 };

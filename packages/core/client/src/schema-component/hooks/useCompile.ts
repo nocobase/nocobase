@@ -19,6 +19,11 @@ interface Props {
 
 const compileCache = {};
 
+const hasVariable = (source: string) => {
+  const reg = /{{.*?}}/g;
+  return reg.test(source);
+};
+
 export const useCompile = ({ noCache }: Props = { noCache: false }) => {
   const options = useContext(SchemaOptionsContext);
   const scope = useContext(SchemaExpressionScopeContext);
@@ -34,13 +39,13 @@ export const useCompile = ({ noCache }: Props = { noCache: false }) => {
 
     // source is Component Object, for example: { 'x-component': "Cascader", type: "array", title: "所属地区(行政区划)" }
     if (source && typeof source === 'object' && !isValidElement(source)) {
-      shouldCompile = true;
       cacheKey = JSON.stringify(source);
+      shouldCompile = hasVariable(cacheKey);
     }
 
     // source is Array, for example: [{ 'title': "{{ ('Admin')}}", name: 'admin' }, { 'title': "{{ ('Root')}}", name: 'root' }]
     if (Array.isArray(source)) {
-      shouldCompile = true;
+      shouldCompile = hasVariable(JSON.stringify(source));
     }
 
     if (shouldCompile) {
