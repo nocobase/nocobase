@@ -49,7 +49,7 @@ export abstract class RelationRepository {
 
     this.associationField = this.sourceCollection.getField(association);
 
-    this.targetModel = this.association.target;
+    this.targetModel = this.association?.target;
     this.targetCollection = this.sourceCollection.context.database.modelCollection.get(this.targetModel);
   }
 
