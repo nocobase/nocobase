@@ -61,12 +61,10 @@ export default function defineMyInAppMessages({
             'Cache-Control': 'no-cache',
             Connection: 'keep-alive',
           });
-          const stream = getClient(userId, clientId) ?? new PassThrough();
+          const stream = new PassThrough();
           ctx.status = 200;
           ctx.body = stream;
-          if (!getClient(userId, clientId)) {
-            addClient(userId, clientId, stream);
-          }
+          addClient(userId, clientId, stream);
           stream.on('close', () => {
             removeClient(userId, clientId);
           });
