@@ -51,10 +51,14 @@ export const useTableFieldInstanceList = () => {
   const columnField = useField();
   const { fieldSchema } = useColumnSchema();
   const filedInstanceList = useMemo(() => {
+    if (!fieldSchema || !columnField) {
+      return [];
+    }
+
     const path = columnField.path?.splice(columnField.path?.length - 1, 1);
     // TODO: 这里需要优化，性能比较差，在 M2 pro 的机器上这行代码会运行将近 0.1 毫秒
     return columnField.form.query(`${path.concat(`*.` + fieldSchema.name)}`).map();
-  }, [columnField.form, columnField.path, fieldSchema.name]);
+  }, [columnField, fieldSchema]);
 
   if (!fieldSchema) {
     return [];

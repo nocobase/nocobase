@@ -255,7 +255,12 @@ export const ACLCollectionProvider = (props) => {
     actionPath = `${resoureName}:list`;
   }
 
-  const params = useMemo(() => parseAction(actionPath, { schema }), [parseAction, actionPath, schema]);
+  const params = useMemo(() => {
+    if (!actionPath) {
+      return null;
+    }
+    return parseAction(actionPath, { schema });
+  }, [parseAction, actionPath, schema]);
 
   if (allowAll || app.disableAcl || customAllowAll) {
     return props.children;
@@ -279,6 +284,11 @@ export const useACLActionParamsContext = () => {
 export const useRecordPkValue = () => {
   const collection = useCollection();
   const record = useRecord();
+
+  if (!collection) {
+    return;
+  }
+
   const primaryKey = collection.getPrimaryKey();
   return record?.[primaryKey];
 };
@@ -316,7 +326,7 @@ export const ACLActionProvider = (props) => {
   }
   //视图表无编辑权限时不显示
   if (editablePath.includes(actionPath) || editablePath.includes(actionPath?.split(':')[1])) {
-    if (collection.template !== 'view' || collection.writableView) {
+    if ((collection && collection.template !== 'view') || collection?.writableView) {
       return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
     }
     return null;

@@ -510,8 +510,6 @@ const InternalNocoBaseTable = React.memo(
       ...others
     } = props;
 
-    console.log('props', props);
-
     return (
       <div
         className={cx(
@@ -697,7 +695,9 @@ export const Table: any = withDynamicSchemaProps(
     const dataSource = useMemo(() => {
       const value = Array.isArray(field?.value) ? field.value : [];
       return value.filter(Boolean);
-    }, [field.value]);
+
+      // If we don't depend on "field?.value?.length", it will cause no response when clicking "Add new" in the SubTable
+    }, [field?.value, field?.value?.length]);
 
     const BodyWrapperComponent = useMemo(() => {
       return (props) => {
@@ -870,7 +870,8 @@ export const Table: any = withDynamicSchemaProps(
     }, [expandedKeys, onExpandValue]);
 
     return (
-      <Spin spinning={loading}>
+      // If spinning is set to undefined, it will cause the subtable to always display loading, so we need to convert it here
+      <Spin spinning={!!loading}>
         <InternalNocoBaseTable
           tableHeight={tableHeight}
           SortableWrapper={SortableWrapper}

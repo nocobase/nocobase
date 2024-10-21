@@ -200,129 +200,131 @@ interface InternalActionProps {
   parentRecordData: any;
 }
 
-const InternalAction: React.FC<InternalActionProps> = React.memo((props) => {
-  const {
-    containerRefKey,
-    fieldSchema,
-    designable,
-    field,
-    actionTitle,
-    icon,
-    loading,
-    handleMouseEnter,
-    tarComponent,
-    className,
-    type,
-    Designer,
-    onClick,
-    confirm,
-    confirmTitle,
-    popover,
-    addChild,
-    recordData,
-    title,
-    style,
-    propsDisabled,
-    useAction,
-    actionCallback,
-    visibleWithURL,
-    setVisibleWithURL,
-    setSubmitted,
-    getAriaLabel,
-    parentRecordData,
-    ...others
-  } = props;
-  const [visible, setVisible] = useState(false);
-  const { wrapSSR, componentCls, hashId } = useStyles();
-  const [formValueChanged, setFormValueChanged] = useState(false);
-  const designerProps = fieldSchema['x-toolbar-props'] || fieldSchema['x-designer-props'];
-  const openMode = fieldSchema?.['x-component-props']?.['openMode'];
-  const openSize = fieldSchema?.['x-component-props']?.['openSize'];
-  const refreshDataBlockRequest = fieldSchema?.['x-component-props']?.['refreshDataBlockRequest'];
-  const { modal } = App.useApp();
-  const form = useForm();
-  const aclCtx = useACLActionParamsContext();
-  const { run, element, disabled: disableAction } = useAction?.(actionCallback) || ({} as any);
-  const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled || disableAction;
+const InternalAction: React.FC<InternalActionProps> = React.memo(
+  observer(function Com(props) {
+    const {
+      containerRefKey,
+      fieldSchema,
+      designable,
+      field,
+      actionTitle,
+      icon,
+      loading,
+      handleMouseEnter,
+      tarComponent,
+      className,
+      type,
+      Designer,
+      onClick,
+      confirm,
+      confirmTitle,
+      popover,
+      addChild,
+      recordData,
+      title,
+      style,
+      propsDisabled,
+      useAction,
+      actionCallback,
+      visibleWithURL,
+      setVisibleWithURL,
+      setSubmitted,
+      getAriaLabel,
+      parentRecordData,
+      ...others
+    } = props;
+    const [visible, setVisible] = useState(false);
+    const { wrapSSR, componentCls, hashId } = useStyles();
+    const [formValueChanged, setFormValueChanged] = useState(false);
+    const designerProps = fieldSchema['x-toolbar-props'] || fieldSchema['x-designer-props'];
+    const openMode = fieldSchema?.['x-component-props']?.['openMode'];
+    const openSize = fieldSchema?.['x-component-props']?.['openSize'];
+    const refreshDataBlockRequest = fieldSchema?.['x-component-props']?.['refreshDataBlockRequest'];
+    const { modal } = App.useApp();
+    const form = useForm();
+    const aclCtx = useACLActionParamsContext();
+    const { run, element, disabled: disableAction } = useAction?.(actionCallback) || ({} as any);
+    const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled || disableAction;
 
-  const buttonStyle = useMemo(() => {
-    return {
-      ...style,
-      opacity: designable && (field?.data?.hidden || !aclCtx) && 0.1,
-      color: disabled ? 'rgba(0, 0, 0, 0.25)' : style?.color,
+    const buttonStyle = useMemo(() => {
+      return {
+        ...style,
+        opacity: designable && (field?.data?.hidden || !aclCtx) && 0.1,
+        color: disabled ? 'rgba(0, 0, 0, 0.25)' : style?.color,
+      };
+    }, [aclCtx, designable, field?.data?.hidden, style, disabled]);
+
+    const buttonProps = {
+      designable,
+      field,
+      aclCtx,
+      actionTitle,
+      icon,
+      loading,
+      disabled,
+      buttonStyle,
+      handleMouseEnter,
+      tarComponent,
+      designerProps,
+      componentCls,
+      hashId,
+      className,
+      others,
+      getAriaLabel,
+      type,
+      Designer,
+      openMode,
+      onClick,
+      refreshDataBlockRequest,
+      fieldSchema,
+      setVisible,
+      run,
+      confirm,
+      modal,
+      setSubmitted,
+      confirmTitle,
     };
-  }, [aclCtx, designable, field?.data?.hidden, style, disabled]);
 
-  const buttonProps = {
-    designable,
-    field,
-    aclCtx,
-    actionTitle,
-    icon,
-    loading,
-    disabled,
-    buttonStyle,
-    handleMouseEnter,
-    tarComponent,
-    designerProps,
-    componentCls,
-    hashId,
-    className,
-    others,
-    getAriaLabel,
-    type,
-    Designer,
-    openMode,
-    onClick,
-    refreshDataBlockRequest,
-    fieldSchema,
-    setVisible,
-    run,
-    confirm,
-    modal,
-    setSubmitted,
-    confirmTitle,
-  };
+    let result = (
+      <PopupVisibleProvider visible={false}>
+        <ActionContextProvider
+          visible={visible || visibleWithURL}
+          setVisible={(value) => {
+            setVisible?.(value);
+            setVisibleWithURL?.(value);
+          }}
+          formValueChanged={formValueChanged}
+          setFormValueChanged={setFormValueChanged}
+          openMode={openMode}
+          openSize={openSize}
+          containerRefKey={containerRefKey}
+          fieldSchema={fieldSchema}
+          setSubmitted={setSubmitted}
+        >
+          {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
+          {!popover && <RenderButton {...buttonProps} />}
+          <VariablePopupRecordProvider>{!popover && props.children}</VariablePopupRecordProvider>
+          {element}
+        </ActionContextProvider>
+      </PopupVisibleProvider>
+    );
 
-  let result = (
-    <PopupVisibleProvider visible={false}>
-      <ActionContextProvider
-        visible={visible || visibleWithURL}
-        setVisible={(value) => {
-          setVisible?.(value);
-          setVisibleWithURL?.(value);
-        }}
-        formValueChanged={formValueChanged}
-        setFormValueChanged={setFormValueChanged}
-        openMode={openMode}
-        openSize={openSize}
-        containerRefKey={containerRefKey}
-        fieldSchema={fieldSchema}
-        setSubmitted={setSubmitted}
-      >
-        {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
-        {!popover && <RenderButton {...buttonProps} />}
-        <VariablePopupRecordProvider>{!popover && props.children}</VariablePopupRecordProvider>
-        {element}
-      </ActionContextProvider>
-    </PopupVisibleProvider>
-  );
+    if (isBulkEditAction(fieldSchema)) {
+      // Clear the context of Tabs to avoid affecting the Tabs of the upper-level popup
+      result = <TabsContextProvider>{result}</TabsContextProvider>;
+    }
 
-  if (isBulkEditAction(fieldSchema)) {
-    // Clear the context of Tabs to avoid affecting the Tabs of the upper-level popup
-    result = <TabsContextProvider>{result}</TabsContextProvider>;
-  }
+    if (addChild) {
+      return wrapSSR(
+        <RecordProvider record={null} parent={parentRecordData}>
+          <TreeRecordProvider parent={recordData}>{result}</TreeRecordProvider>
+        </RecordProvider>,
+      ) as React.ReactElement;
+    }
 
-  if (addChild) {
-    return wrapSSR(
-      <RecordProvider record={null} parent={parentRecordData}>
-        <TreeRecordProvider parent={recordData}>{result}</TreeRecordProvider>
-      </RecordProvider>,
-    ) as React.ReactElement;
-  }
-
-  return wrapSSR(result) as React.ReactElement;
-});
+    return wrapSSR(result) as React.ReactElement;
+  }),
+);
 
 InternalAction.displayName = 'InternalAction';
 
