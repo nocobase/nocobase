@@ -12,7 +12,7 @@ import { FormContext, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useCollectionManager_deprecated } from '../collection-manager';
 import { withDynamicSchemaProps } from '../hoc/withDynamicSchemaProps';
-import { useTableBlockParams } from '../modules/blocks/data-blocks/table';
+import { useTableBlockParams } from '../modules/blocks/data-blocks/table/hooks/useTableBlockDecoratorProps';
 import { FixedBlockWrapper, SchemaComponentOptions } from '../schema-component';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useBlockHeightProps } from './hooks';

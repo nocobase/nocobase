@@ -13,7 +13,7 @@ import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem }
 import { useCollection_deprecated } from '../../../../collection-manager';
 import { useAssociationName, useCollectionManager } from '../../../../data-source';
 import { useRecordCollectionDataSourceItems } from '../../../../schema-initializer/utils';
-import { useSchemaTemplateManager } from '../../../../schema-templates';
+import { useBlockTemplateContext, useSchemaTemplateManager } from '../../../../schema-templates';
 import { createDetailsUISchema } from './createDetailsUISchema';
 
 export const RecordReadPrettyFormBlockInitializer = () => {
@@ -38,11 +38,12 @@ export function useCreateSingleDetailsSchema() {
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const association = useAssociationName();
   const cm = useCollectionManager();
+  const { componentNamePrefix } = useBlockTemplateContext();
 
   const templateWrap = useCallback(
     (templateSchema, options) => {
       const { item } = options;
-      if (item.template.componentName === 'ReadPrettyFormItem') {
+      if (item.template.componentName === `${componentNamePrefix}ReadPrettyFormItem`) {
         const collectionName = item.collectionName || item.name;
         const collection = cm.getCollection(collectionName);
         const blockSchema = createDetailsUISchema(
@@ -69,7 +70,7 @@ export function useCreateSingleDetailsSchema() {
         return templateSchema;
       }
     },
-    [association, cm],
+    [association, cm, componentNamePrefix],
   );
 
   const createSingleDetailsSchema = useCallback(

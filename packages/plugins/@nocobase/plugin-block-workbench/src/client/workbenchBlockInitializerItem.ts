@@ -19,7 +19,7 @@ export const workbenchBlockInitializerItem: SchemaInitializerItemType = {
     const { t } = useTranslation('@nocobase/plugin-block-workbench');
     const { insert } = useSchemaInitializer();
     return {
-      title: t('Workbench'),
+      title: t('Action panel'),
       onClick: () => {
         insert(blockSchema);
       },

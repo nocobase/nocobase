@@ -59,7 +59,10 @@ export interface FilterAble {
   filter: Filter;
 }
 
-export type TargetKey = string | number;
+export type BaseTargetKey = string | number;
+export type MultiTargetKey = Record<string, BaseTargetKey>;
+export type TargetKey = BaseTargetKey | MultiTargetKey;
+
 export type TK = TargetKey | TargetKey[];
 
 type FieldValue = string | number | bigint | boolean | Date | Buffer | null | FieldValue[] | FilterWithOperator;
@@ -68,10 +71,10 @@ type Operators = keyof typeof operators & keyof WhereOperators;
 
 export type FilterWithOperator = {
   [key: string]:
-    | {
-        [K in Operators]: FieldValue;
-      }
-    | FieldValue;
+  | {
+    [K in Operators]: FieldValue;
+  }
+  | FieldValue;
 };
 
 export type FilterWithValue = {
@@ -174,7 +177,7 @@ interface RelatedQueryOptions {
   };
 }
 
-const transaction = transactionWrapperBuilder(function () {
+const transaction = transactionWrapperBuilder(function() {
   return (<Repository>this).collection.model.sequelize.transaction();
 });
 
@@ -317,32 +320,29 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     }
 
     if (countOptions?.filterByTk) {
+      const optionParser = new OptionsParser(options, {
+        collection: this.collection,
+      });
+
       options['where'] = {
-        [Op.and]: [
-          options['where'] || {},
-          {
-            [this.collection.filterTargetKey]: options.filterByTk,
-          },
-        ],
+        [Op.and]: [options['where'] || {}, optionParser.filterByTkToWhereOption()],
       };
     }
 
     const queryOptions: any = {
       ...options,
-      distinct: Boolean(this.collection.model.primaryKeyAttribute),
+      distinct: Boolean(this.collection.model.primaryKeyAttribute) && !this.collection.isMultiFilterTargetKey(),
     };
 
     if (queryOptions.include?.length === 0) {
       delete queryOptions.include;
     }
 
-    const count = await this.collection.model.count({
+    // @ts-ignore
+    return await this.collection.model.count({
       ...queryOptions,
       transaction,
     });
-
-    // @ts-ignore
-    return count;
   }
 
   async aggregate(options: AggregateOptions & { optionsTransformer?: (options: any) => any }): Promise<any> {
@@ -509,6 +509,10 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return this.collection.model.findByPk(id);
   }
 
+  findByTargetKey(targetKey: TargetKey) {
+    return this.findOne({ filterByTk: targetKey });
+  }
+
   /**
    * Find one record from database
    *
@@ -578,7 +582,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       underscored: this.collection.options.underscored,
     });
 
-    const values = guard.sanitize(options.values || {});
+    const values = (this.model as typeof Model).callSetters(guard.sanitize(options.values || {}), options);
 
     const instance = await this.model.create<any>(values, {
       ...options,
@@ -650,7 +654,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     const guard = UpdateGuard.fromOptions(this.model, { ...options, underscored: this.collection.options.underscored });
 
-    const values = guard.sanitize(options.values);
+    const values = (this.model as typeof Model).callSetters(guard.sanitize(options.values || {}), options);
 
     // NOTE:
     // 1. better to be moved to separated API like bulkUpdate/updateMany
@@ -772,15 +776,30 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     }
 
     if (filterByTk && !options.filter) {
-      return await this.model.destroy({
+      const where = [];
+
+      for (const tk of filterByTk) {
+        const optionParser = new OptionsParser(
+          {
+            filterByTk: tk,
+          },
+          {
+            collection: this.collection,
+          },
+        );
+
+        where.push(optionParser.filterByTkToWhereOption());
+      }
+
+      const destroyOptions = {
         ...options,
         where: {
-          [modelFilterKey]: {
-            [Op.in]: filterByTk,
-          },
+          [Op.or]: where,
         },
         transaction,
-      });
+      };
+
+      return await this.model.destroy(destroyOptions);
     }
 
     if (options.filter && isValidFilter(options.filter)) {

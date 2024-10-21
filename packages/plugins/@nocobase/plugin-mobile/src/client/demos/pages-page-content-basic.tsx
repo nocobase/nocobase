@@ -1,6 +1,6 @@
-import React from 'react';
 import { Plugin } from '@nocobase/client';
 import { MobilePageContent, MobileRoutesProvider } from '@nocobase/plugin-mobile/client';
+import React from 'react';
 
 import { mockApp } from '@nocobase/client/demo-utils';
 
@@ -37,7 +37,7 @@ const app = mockApp({
   },
   plugins: [DemoPlugin],
   apis: {
-    'mobileRoutes:list': {
+    'mobileRoutes:listAccessible': {
       data: [],
     },
     'uiSchemas:getJsonSchema/tab1': {

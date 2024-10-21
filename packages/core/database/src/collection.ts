@@ -98,7 +98,7 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
   viewName?: string;
   writableView?: boolean;
 
-  filterTargetKey?: string;
+  filterTargetKey?: string | string[];
   fields?: FieldOptions[];
   model?: string | ModelStatic<Model>;
   repository?: string | RepositoryType;
@@ -169,15 +169,26 @@ export class Collection<
     this.setSortable(options.sortable);
   }
 
-  get filterTargetKey() {
+  get filterTargetKey(): string | string[] {
     const targetKey = this.options?.filterTargetKey;
+
+    if (Array.isArray(targetKey)) {
+      return targetKey;
+    }
+
     if (targetKey && this.model.getAttributes()[targetKey]) {
       return targetKey;
     }
+
     if (this.model.primaryKeyAttributes.length > 1) {
       return null;
     }
+
     return this.model.primaryKeyAttribute;
+  }
+
+  isMultiFilterTargetKey() {
+    return Array.isArray(this.filterTargetKey) && this.filterTargetKey.length > 1;
   }
 
   get name() {

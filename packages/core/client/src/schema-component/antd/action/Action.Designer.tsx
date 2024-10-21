@@ -8,7 +8,7 @@
  */
 
 import { ArrayTable } from '@formily/antd-v5';
-import { Field, onFieldValueChange } from '@formily/core';
+import { onFieldValueChange } from '@formily/core';
 import { ISchema, useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
 import { Alert, Flex, ModalProps, Tag } from 'antd';
@@ -251,14 +251,28 @@ export function SkipValidation() {
     />
   );
 }
+
 export function AfterSuccess() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
+  const { onSuccess } = fieldSchema?.['x-action-settings'] || {};
   return (
     <SchemaSettingsModalItem
       title={t('After successful submission')}
-      initialValues={fieldSchema?.['x-action-settings']?.['onSuccess']}
+      initialValues={
+        onSuccess
+          ? {
+              actionAfterSuccess: onSuccess?.redirecting ? 'redirect' : 'previous',
+              ...onSuccess,
+            }
+          : {
+              manualClose: false,
+              redirecting: false,
+              successMessage: '{{t("Saved successfully")}}',
+              actionAfterSuccess: 'previous',
+            }
+      }
       schema={
         {
           type: 'object',
@@ -271,7 +285,7 @@ export function AfterSuccess() {
               'x-component-props': {},
             },
             manualClose: {
-              title: t('Popup close method'),
+              title: t('Message popup close method'),
               enum: [
                 { label: t('Automatic close'), value: false },
                 { label: t('Manually close'), value: true },
@@ -282,6 +296,7 @@ export function AfterSuccess() {
             },
             redirecting: {
               title: t('Then'),
+              'x-hidden': true,
               enum: [
                 { label: t('Stay on current page'), value: false },
                 { label: t('Redirect to'), value: true },
@@ -294,6 +309,25 @@ export function AfterSuccess() {
                 fulfill: {
                   state: {
                     visible: '{{!!$self.value}}',
+                  },
+                },
+              },
+            },
+            actionAfterSuccess: {
+              title: t('Action after successful submission'),
+              enum: [
+                { label: t('Stay on the current popup or page'), value: 'stay' },
+                { label: t('Return to the previous popup or page'), value: 'previous' },
+                { label: t('Redirect to'), value: 'redirect' },
+              ],
+              'x-decorator': 'FormItem',
+              'x-component': 'Radio.Group',
+              'x-component-props': {},
+              'x-reactions': {
+                target: 'redirectTo',
+                fulfill: {
+                  state: {
+                    visible: "{{$self.value==='redirect'}}",
                   },
                 },
               },
@@ -359,15 +393,15 @@ function WorkflowSelect({ formAction, buttonAction, actionType, ...props }) {
   const compile = useCompile();
 
   const workflowPlugin = usePlugin('workflow') as any;
+  const triggerOptions = workflowPlugin.useTriggersOptions();
   const workflowTypes = useMemo(
     () =>
-      workflowPlugin
-        .getTriggersOptions()
+      triggerOptions
         .filter((item) => {
           return typeof item.options.isActionTriggerable === 'function' || item.options.isActionTriggerable === true;
         })
         .map((item) => item.value),
-    [workflowPlugin],
+    [triggerOptions],
   );
 
   useFormEffects(() => {
@@ -435,7 +469,7 @@ function WorkflowSelect({ formAction, buttonAction, actionType, ...props }) {
         }}
         optionFilter={optionFilter}
         optionRender={({ label, data }) => {
-          const typeOption = workflowPlugin.getTriggersOptions().find((item) => item.value === data.type);
+          const typeOption = triggerOptions.find((item) => item.value === data.type);
           return typeOption ? (
             <Flex justify="space-between">
               <span>{label}</span>
@@ -819,34 +853,80 @@ export function SecondConFirm() {
   const { dn } = useDesignable();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
-  const field = useField<Field>();
+  const field = useField();
+  const compile = useCompile();
 
   return (
-    <SchemaSettingsSwitchItem
+    <SchemaSettingsModalItem
       title={t('Secondary confirmation')}
-      checked={!!fieldSchema?.['x-component-props']?.confirm?.content}
-      onChange={(value) => {
-        if (!fieldSchema['x-component-props']) {
-          fieldSchema['x-component-props'] = {};
-        }
-        if (value) {
-          fieldSchema['x-component-props'].confirm = value
-            ? {
-                title: 'Perform the {{title}}',
-                content: 'Are you sure you want to perform the {{title}} action?',
-              }
-            : {};
-        } else {
-          fieldSchema['x-component-props'].confirm = {};
-        }
-        field.componentProps.confirm = { ...fieldSchema['x-component-props']?.confirm };
+      initialValues={{
+        title:
+          compile(fieldSchema?.['x-component-props']?.confirm?.title) ||
+          t('Perform the {{title}}', { title: compile(fieldSchema.title) }),
+        content:
+          compile(fieldSchema?.['x-component-props']?.confirm?.content) ||
+          t('Are you sure you want to perform the {{title}} action?', { title: compile(fieldSchema.title) }),
+      }}
+      schema={
+        {
+          type: 'object',
+          title: t('Secondary confirmation'),
+          properties: {
+            enable: {
+              'x-decorator': 'FormItem',
+              'x-component': 'Checkbox',
+              'x-content': t('Enable secondary confirmation'),
+              default:
+                fieldSchema?.['x-component-props']?.confirm?.enable !== false &&
+                !!fieldSchema?.['x-component-props']?.confirm?.content,
+              'x-component-props': {},
+            },
+            title: {
+              'x-decorator': 'FormItem',
+              'x-component': 'Input.TextArea',
+              title: t('Title'),
 
+              'x-reactions': {
+                dependencies: ['enable'],
+                fulfill: {
+                  state: {
+                    required: '{{$deps[0]}}',
+                  },
+                },
+              },
+            },
+            content: {
+              'x-decorator': 'FormItem',
+              'x-component': 'Input.TextArea',
+              title: t('Content'),
+              'x-reactions': {
+                dependencies: ['enable'],
+                fulfill: {
+                  state: {
+                    required: '{{$deps[0]}}',
+                  },
+                },
+              },
+            },
+          },
+        } as ISchema
+      }
+      onSubmit={({ enable, title, content }) => {
+        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props'].confirm = {};
+        fieldSchema['x-component-props'].confirm.enable = enable;
+        fieldSchema['x-component-props'].confirm.title = title;
+        fieldSchema['x-component-props'].confirm.content = content;
+        field.componentProps.confirm = { ...fieldSchema['x-component-props']?.confirm };
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
-            'x-component-props': { ...fieldSchema['x-component-props'] },
+            'x-component-props': {
+              ...fieldSchema['x-component-props'],
+            },
           },
         });
+        dn.refresh();
       }}
     />
   );

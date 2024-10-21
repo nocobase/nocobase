@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Action, useAPIClient, useRequest } from '@nocobase/client';
+import { Action, useAPIClient, useRequest, withDynamicSchemaProps } from '@nocobase/client';
 import React from 'react';
 import { useFieldSchema } from '@formily/react';
 import { listByCurrentRoleUrl } from '../constants';
@@ -39,12 +39,14 @@ const components = {
   'customize:table:request': Action.Link,
 };
 
-export const CustomRequestAction = (props) => {
+export const CustomRequestAction: React.FC<any> & {
+  [key: string]: any;
+} = withDynamicSchemaProps((props) => {
   const fieldSchema = useFieldSchema();
   const xAction = fieldSchema['x-action'];
   const Component = components[xAction] || Action;
   return <Component {...props} useProps={useCustomizeRequestActionProps}></Component>;
-};
+});
 
 CustomRequestAction.Designer = CustomRequestActionDesigner;
 CustomRequestAction.Decorator = CustomRequestActionACLDecorator;

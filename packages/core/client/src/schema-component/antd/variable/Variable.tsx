@@ -10,6 +10,7 @@
 import { connect, mapReadPretty } from '@formily/react';
 import React, { createContext, useContext } from 'react';
 
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { Input } from './Input';
 import { JSONInput } from './JSONInput';
 import { RawTextArea } from './RawTextArea';
@@ -32,7 +33,7 @@ export function Variable() {
 
 Variable.Input = connect(Input);
 
-Variable.TextArea = connect(TextArea, mapReadPretty(TextArea.ReadPretty));
+Variable.TextArea = withDynamicSchemaProps(connect(TextArea, mapReadPretty(TextArea.ReadPretty)));
 
 Variable.RawTextArea = connect(RawTextArea);
 

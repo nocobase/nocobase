@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { getLoggerFilePath } from './config';
 import { Logger, LoggerOptions } from './logger';
-import { pick } from 'lodash';
+import { pick, omit } from 'lodash';
 const defaultRequestWhitelist = [
   'action',
   'header.x-role',
@@ -21,6 +20,12 @@ const defaultRequestWhitelist = [
   'referer',
 ];
 const defaultResponseWhitelist = ['status'];
+const defaultActionBlackList = [
+  'params.values.password',
+  'params.values.confirmPassword',
+  'params.values.oldPassword',
+  'params.values.newPassword',
+];
 
 export interface RequestLoggerOptions extends LoggerOptions {
   skip?: (ctx?: any) => Promise<boolean>;
@@ -60,7 +65,7 @@ export const requestLogger = (appName: string, requestLogger: Logger, options?: 
         message: `response ${ctx.url}`,
         ...requestInfo,
         res: pick(ctx.response.toJSON(), options?.responseWhitelist || defaultResponseWhitelist),
-        action: ctx.action?.toJSON?.(),
+        action: omit(ctx.action?.toJSON?.(), defaultActionBlackList),
         userId: ctx.auth?.user?.id,
         status: ctx.status,
         cost,

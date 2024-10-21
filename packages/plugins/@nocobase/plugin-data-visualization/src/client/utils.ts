@@ -94,6 +94,7 @@ export const getSelectedFields = (fields: FieldOption[], query: QueryProps) => {
         key: selectedField.alias || fieldProps?.key,
         label: selectedField.alias || fieldProps?.label,
         value: selectedField.alias || fieldProps?.value,
+        query: selectedField,
       };
     });
   };
@@ -105,7 +106,7 @@ export const getSelectedFields = (fields: FieldOption[], query: QueryProps) => {
   return selectedFields;
 };
 
-export const processData = (selectedFields: FieldOption[], data: any[], scope: any) => {
+export const processData = (selectedFields: (FieldOption & { query?: any })[], data: any[], scope: any) => {
   const parseEnum = (field: FieldOption, value: any) => {
     const options = field.uiSchema?.enum as { value: string; label: string }[];
     if (!options || !Array.isArray(options)) {
@@ -120,7 +121,7 @@ export const processData = (selectedFields: FieldOption[], data: any[], scope: a
   return data.map((record) => {
     const processed = {};
     Object.entries(record).forEach(([key, value]) => {
-      const field = selectedFields.find((field) => field.value === key);
+      const field = selectedFields.find((field) => field.value === key && !field?.query?.aggregation);
       if (!field) {
         processed[key] = value;
         return;

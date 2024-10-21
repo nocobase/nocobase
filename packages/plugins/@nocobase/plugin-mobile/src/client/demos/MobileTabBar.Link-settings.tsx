@@ -48,7 +48,7 @@ const app = mockApp({
   schemaSettings: [mobileTabBarLinkSettings],
   designable: true,
   apis: {
-    'mobileRoutes:list': {
+    'mobileRoutes:listAccessible': {
       data: [],
     },
     'mobileRoutes:update': {

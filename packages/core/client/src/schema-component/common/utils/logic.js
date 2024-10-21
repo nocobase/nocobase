@@ -120,9 +120,11 @@ export function getJsonLogic() {
       return a.indexOf(b) !== -1;
     },
     $notIncludes: function (a, b) {
-      if (!a || typeof a.indexOf === 'undefined') return false;
-      if (Array.isArray(a)) return !a.some((element) => element.includes(b));
-      return !(a.indexOf(b) !== -1);
+      if (Array.isArray(a)) return !a.some((element) => (element || '').includes(b));
+
+      a = a || '';
+
+      return !a.includes(b);
     },
     $anyOf: function (a, b) {
       if (a.length === 0) {
@@ -158,58 +160,75 @@ export function getJsonLogic() {
       if (!a || !b) {
         return false;
       }
-      if (!Array.isArray(a)) {
-        a = [a, a];
-      }
-      if (!Array.isArray(b)) {
-        b = [b, b];
-      }
-      a = a.map((date) => dayjs(date));
-      b = b.map((date) => dayjs(date));
-
-      return a[0].isBetween(b[0], b[1], null, '[]') && a[1].isBetween(b[0], b[1], null, '[]');
+      return a === b;
     },
     $dateBefore: function (a, b) {
       if (!a || !b) {
         return false;
       }
-      if (!Array.isArray(a)) {
-        a = [a, a];
-      }
-      if (!Array.isArray(b)) {
-        b = [b, b];
-      }
-      a = a.map((date) => dayjs(date));
-      b = b.map((date) => dayjs(date));
+      // Parse both date strings
+      const dateA = parseDate(a);
+      const dateB = parseDate(b);
 
-      return a[0].isBefore(b[0]) && a[1].isBefore(b[0]);
+      if (!dateA || !dateB) {
+        throw new Error('Invalid date format');
+      }
+      return dateA < dateB;
     },
     $dateNotBefore: function (a, b) {
-      return !operations.$dateBefore(a, b);
+      if (!a || !b) {
+        return false;
+      }
+      const dateA = parseDate(a);
+      const dateB = parseDate(b);
+
+      if (!dateA || !dateB) {
+        throw new Error('Invalid date format');
+      }
+
+      // Compare the two dates
+      return dateA >= dateB;
     },
     $dateAfter: function (a, b) {
       if (!a || !b) {
         return false;
       }
-      if (!Array.isArray(a)) {
-        a = [a, a];
-      }
-      if (!Array.isArray(b)) {
-        b = [b, b];
-      }
-      a = a.map((date) => dayjs(date));
-      b = b.map((date) => dayjs(date));
+      // Parse both date strings
+      const dateA = parseDate(a);
+      const dateB = parseDate(b);
 
-      return a[0].isAfter(b[1]) && a[1].isAfter(b[1]);
+      return dateA > dateB;
     },
     $dateNotAfter: function (a, b) {
-      return !operations.$dateAfter(a, b);
+      if (!a || !b) {
+        return false;
+      }
+      const dateA = parseDate(a);
+      const dateB = parseDate(b);
+
+      if (!dateA || !dateB) {
+        throw new Error('Invalid date format');
+      }
+      return dateA <= dateB;
     },
     $dateBetween: function (a, b) {
-      return operations.$dateOn(a, b);
+      if (!a || !b) {
+        return false;
+      }
+      const dateA = parseFullDate(a);
+      const dateBStart = parseFullDate(b[0]);
+      const dateBEnd = parseFullDate(b[1]);
+
+      if (!dateA || !dateBStart || !dateBEnd) {
+        throw new Error('Invalid date format');
+      }
+      return dateA >= dateBStart && dateA <= dateBEnd;
     },
     $dateNotOn: function (a, b) {
-      return !operations.$dateOn(a, b);
+      if (!a || !b) {
+        return false;
+      }
+      return a !== b;
     },
     $isTruly: function (a) {
       if (Array.isArray(a)) return a.some((k) => k === true || k === 1);
@@ -612,4 +631,44 @@ export function getJsonLogic() {
   };
 
   return jsonLogic;
+}
+
+function parseFullDate(dateStr) {
+  return new Date(dateStr);
+}
+
+function parseMonth(dateStr) {
+  const [year, month] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1);
+}
+
+function parseQuarter(dateStr) {
+  const year = parseInt(dateStr.slice(0, 4));
+  const quarter = parseInt(dateStr.slice(5, 6));
+  const month = (quarter - 1) * 3;
+  return new Date(year, month);
+}
+
+function parseYear(dateStr) {
+  const year = parseInt(dateStr);
+  return new Date(year, 0);
+}
+
+function parseDate(dateStr) {
+  dateStr = dateStr.trim();
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    // It's in "YYYY-MM-DD" format
+    return parseFullDate(dateStr);
+  } else if (/^\d{4}-\d{2}$/.test(dateStr)) {
+    // It's in "YYYY-MM" format
+    return parseMonth(dateStr);
+  } else if (/^\d{4}Q[1-4]$/.test(dateStr)) {
+    // It's in "YYYYQn" format
+    return parseQuarter(dateStr);
+  } else if (/^\d{4}$/.test(dateStr)) {
+    // It's in "YYYY" format
+    return parseYear(dateStr);
+  }
+  return null; // Invalid format
 }

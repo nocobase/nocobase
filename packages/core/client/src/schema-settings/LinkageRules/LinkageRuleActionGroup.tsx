@@ -68,6 +68,7 @@ export const LinkageRuleActionGroup = withDynamicSchemaProps(
       const items = f.value || [];
       items.push({});
       f.value = items;
+      f.initialValue = items;
     }, [field]);
 
     return (

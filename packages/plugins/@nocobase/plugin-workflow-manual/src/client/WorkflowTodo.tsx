@@ -406,6 +406,7 @@ export function getWorkflowTodoViewActionSchema({ defaultOpenMode, collectionNam
     'x-action-context': {
       dataSource: 'main',
       collection: collectionName,
+      doNotUpdateContext: true,
     },
     properties: {
       drawer: {

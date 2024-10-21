@@ -353,7 +353,7 @@ const useStyles = createStyles(({ css, token }) => {
 
     nodeJobResultClass: css`
       padding: 1em;
-      background-color: ${token.colorBgContainer};
+      background-color: #f3f3f3;
     `,
 
     addButtonClass: css`

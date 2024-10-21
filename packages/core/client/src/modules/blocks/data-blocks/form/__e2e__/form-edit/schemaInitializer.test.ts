@@ -9,6 +9,7 @@
 
 import { expect, oneEmptyTableBlockWithActions, test } from '@nocobase/test/e2e';
 import { T3848 } from '../../../details-single/__e2e__/templatesOfBug';
+import { addAssociationFields } from './templatesOfBug';
 
 test.describe('where edit form block can be added', () => {
   test('popup', async ({ page, mockPage, mockRecord }) => {
@@ -69,4 +70,30 @@ test.describe('where edit form block can be added', () => {
 
 test.describe('configure actions', () => {});
 
-test.describe('configure fields', () => {});
+test.describe('configure fields', () => {
+  test('add association fields', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(addAssociationFields).waitForInit();
+    const record = await mockRecord('general', 3);
+    await nocoPage.goto();
+
+    // Create association fields for the first, second, and third levels respectively, and assert whether the values are correct
+    await page.getByLabel('action-Action.Link-Edit-').first().click();
+    await page.getByLabel('schema-initializer-Grid-form:').hover();
+    await page.getByRole('menuitem', { name: 'manyToOne1', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'manyToOne1 right' }).hover();
+    await page.getByRole('menuitem', { name: 'manyToOne2', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'manyToOne2 right' }).hover();
+    await page.getByRole('menuitem', { name: 'manyToOne3' }).click();
+    await page.mouse.move(600, 0);
+
+    await expect(page.getByLabel('block-item-CollectionField-general-form-general.manyToOne1-manyToOne1')).toHaveText(
+      `manyToOne1:${record.manyToOne1.id}`,
+    );
+    await expect(
+      page.getByLabel('block-item-CollectionField-general-form-targetCollection1.manyToOne2-manyToOne2'),
+    ).toHaveText(`manyToOne2:${record.manyToOne1.manyToOne2.id}`);
+    await expect(
+      page.getByLabel('block-item-CollectionField-general-form-targetCollection2.manyToOne3-manyToOne3'),
+    ).toHaveText(`manyToOne3:${record.manyToOne1.manyToOne2.manyToOne3.id}`);
+  });
+});

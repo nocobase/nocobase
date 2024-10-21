@@ -5,7 +5,7 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "dependencies": {
-    "axios": "^0.26.1",
+    "axios": "^1.7.0",
     "qs": "^6.10.1"
   },
   "devDependencies": {

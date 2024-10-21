@@ -19,6 +19,9 @@ export function beforeDestroyForeignKey(db: Database) {
 
     const fieldKeys = [];
     const collection = db.getCollection(collectionName);
+    if (!collection) {
+      return;
+    }
 
     for (const [, field] of collection.fields) {
       const fieldKey = field.options?.key;

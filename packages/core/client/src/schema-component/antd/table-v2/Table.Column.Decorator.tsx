@@ -10,12 +10,12 @@
 import { useField, useFieldSchema } from '@formily/react';
 import React, { useLayoutEffect } from 'react';
 import {
+  CollectionFieldContext,
   SortableItem,
   useCollection_deprecated,
   useCollectionManager_deprecated,
   useCompile,
   useDesigner,
-  CollectionFieldContext,
   useFlag,
 } from '../../../';
 import { designerCss } from './Table.Column.ActionBar';
@@ -25,6 +25,7 @@ export const useColumnSchema = () => {
   const { getField } = useCollection_deprecated();
   const compile = useCompile();
   const columnSchema = useFieldSchema();
+  const columnField = useField();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   const fieldSchema = columnSchema?.reduceProperties((buf, s) => {
     if (isCollectionFieldComponent(s)) {
@@ -32,12 +33,22 @@ export const useColumnSchema = () => {
     }
     return buf;
   }, null);
+
   if (!fieldSchema) {
     return {};
   }
 
+  const path = columnField.path?.splice(columnField.path?.length - 1, 1);
+  const filedInstanceList = columnField.form.query(`${path.concat(`*.` + fieldSchema.name)}`).map();
+
   const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);
-  return { columnSchema, fieldSchema, collectionField, uiSchema: compile(collectionField?.uiSchema) };
+  return {
+    columnSchema,
+    fieldSchema,
+    collectionField,
+    uiSchema: compile(collectionField?.uiSchema),
+    filedInstanceList,
+  };
 };
 
 export const TableColumnDecorator = (props) => {

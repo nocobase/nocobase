@@ -10,12 +10,13 @@
 import { css } from '@emotion/css';
 import { observer, useFieldSchema } from '@formily/react';
 import React, { useMemo } from 'react';
-import { FormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated } from '../../collection-manager';
 import { useCollectionParentRecordData } from '../../data-source/collection-record/CollectionRecordProvider';
+import { CollectionProvider } from '../../data-source/collection/CollectionProvider';
 import { withDynamicSchemaProps } from '../../hoc/withDynamicSchemaProps';
 import { RecordProvider } from '../../record-provider';
 import { SchemaComponent, useProps } from '../../schema-component';
+import { SubFormProvider } from '../../schema-component/antd/association-field/hooks';
 import { DynamicComponentProps } from '../../schema-component/antd/filter/DynamicComponent';
 import { FilterContext } from '../../schema-component/antd/filter/context';
 import { VariableInput, getShouldChange } from '../VariableInput/VariableInput';
@@ -23,24 +24,15 @@ import { LinkageRuleActionGroup } from './LinkageRuleActionGroup';
 import { EnableLinkage } from './components/EnableLinkage';
 import { ArrayCollapse } from './components/LinkageHeader';
 
-interface Props {
+export interface Props {
   dynamicComponent: any;
 }
 
 export const FormLinkageRules = withDynamicSchemaProps(
   observer((props: Props) => {
     const fieldSchema = useFieldSchema();
-    const {
-      options,
-      defaultValues,
-      collectionName,
-      form,
-      formBlockType,
-      variables,
-      localVariables,
-      record,
-      dynamicComponent,
-    } = useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
+    const { options, defaultValues, collectionName, form, variables, localVariables, record, dynamicComponent } =
+      useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
     const parentRecordData = useCollectionParentRecordData();
 
@@ -175,13 +167,16 @@ export const FormLinkageRules = withDynamicSchemaProps(
     );
 
     return (
-      <FormBlockContext.Provider value={{ form, type: formBlockType, collectionName }}>
+      // 这里使用 SubFormProvider 包裹，是为了让子表格的联动规则中 “当前对象” 的配置显示正确
+      <SubFormProvider value={{ value: null, collection: { name: collectionName } as any }}>
         <RecordProvider record={record} parent={parentRecordData}>
           <FilterContext.Provider value={value}>
-            <SchemaComponent components={components} schema={schema} />
+            <CollectionProvider name={collectionName}>
+              <SchemaComponent components={components} schema={schema} />
+            </CollectionProvider>
           </FilterContext.Provider>
         </RecordProvider>
-      </FormBlockContext.Provider>
+      </SubFormProvider>
     );
   }),
   { displayName: 'FormLinkageRules' },

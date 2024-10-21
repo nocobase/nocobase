@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { ArrowUpOutlined } from '@ant-design/icons';
-
-import { css, cx, useCompile } from '@nocobase/client';
-
+import { Card, Checkbox } from 'antd';
+import { FormLayout, FormItem } from '@formily/antd-v5';
+import { useForm } from '@formily/react';
+import { css, cx, SchemaComponent, useCompile, Variable } from '@nocobase/client';
 import {
   NodeDefaultView,
   Branch,
@@ -19,13 +20,23 @@ import {
   useStyles,
   VariableOption,
   WorkflowVariableInput,
+  WorkflowVariableTextArea,
   defaultFieldNames,
   nodesOptions,
   scopeOptions,
   triggerOptions,
   Instruction,
+  RadioWithTooltip,
+  renderEngineReference,
+  RadioWithTooltipOption,
+  CalculationConfig,
+  useWorkflowVariableOptions,
+  UseVariableOptions,
+  useNodeContext,
 } from '@nocobase/plugin-workflow/client';
+
 import { NAMESPACE, useLang } from '../locale';
+import { useTranslation } from 'react-i18next';
 
 function findOption(options: VariableOption[], paths: string[]) {
   let opts = options;
@@ -47,6 +58,189 @@ function findOption(options: VariableOption[], paths: string[]) {
   return option;
 }
 
+function LoopCondition({ value, onChange }) {
+  const { t } = useTranslation();
+  const onCheckpointChange = useCallback(
+    (ev) => {
+      onChange({ ...value, checkpoint: ev.target.value });
+    },
+    [value, onChange],
+  );
+  const onContinueOnFalseChange = useCallback(
+    (ev) => {
+      onChange({ ...value, continueOnFalse: ev.target.value });
+    },
+    [value, onChange],
+  );
+  const onCalculationChange = useCallback(
+    (calculation) => {
+      onChange({ ...value, calculation });
+    },
+    [value, onChange],
+  );
+  return (
+    <>
+      <Checkbox
+        checked={Boolean(value)}
+        onChange={(ev) => {
+          onChange(
+            ev.target.checked
+              ? { checkpoint: 0, continueOnFalse: false, calculation: { group: { type: 'and', calculations: [] } } }
+              : false,
+          );
+        }}
+      >
+        {t('Enable loop condition', { ns: NAMESPACE })}
+      </Checkbox>
+      {value ? (
+        <Card>
+          <FormLayout layout="vertical">
+            <FormItem label={t('Condition', { ns: NAMESPACE })}>
+              <CalculationConfig
+                value={value.calculation}
+                onChange={onCalculationChange}
+                useVariableHook={useVariableHook}
+              />
+            </FormItem>
+            <FormItem label={t('When to check', { ns: NAMESPACE })}>
+              <RadioWithTooltip
+                value={value.checkpoint}
+                onChange={onCheckpointChange}
+                options={[
+                  {
+                    label: t('Before each starts', { ns: NAMESPACE }),
+                    value: 0,
+                  },
+                  {
+                    label: t('After each ends', { ns: NAMESPACE }),
+                    value: 1,
+                  },
+                ]}
+              />
+            </FormItem>
+            <FormItem label={t('When condition is not met on item', { ns: NAMESPACE })}>
+              <RadioWithTooltip
+                value={value.continueOnFalse}
+                onChange={onContinueOnFalseChange}
+                options={[
+                  {
+                    label: t('Exit loop', { ns: NAMESPACE }),
+                    value: false,
+                  },
+                  {
+                    label: t('Continue on next item', { ns: NAMESPACE }),
+                    value: true,
+                  },
+                ]}
+              />
+            </FormItem>
+          </FormLayout>
+        </Card>
+      ) : null}
+    </>
+  );
+}
+
+function useScopeVariables(node, options) {
+  const compile = useCompile();
+  const langLoopTarget = useLang('Loop target');
+  const langLoopIndex = useLang('Loop index (starts from 0)');
+  const langLoopSequence = useLang('Loop sequence (starts from 1)');
+  const langLoopLength = useLang('Loop length');
+  const { target } = node.config;
+  if (target == null) {
+    return null;
+  }
+
+  const { fieldNames = defaultFieldNames, scope } = options;
+
+  // const { workflow } = useFlowContext();
+  // const current = useNodeContext();
+  // const upstreams = useAvailableUpstreams(current);
+  // find target data model by path described in `config.target`
+  // 1. get options from $context/$jobsMapByNodeKey
+  // 2. route to sub-options and use as loop target options
+  let targetOption: VariableOption = {
+    key: 'item',
+    [fieldNames.value]: 'item',
+    [fieldNames.label]: langLoopTarget,
+  };
+
+  if (typeof target === 'string' && target.startsWith('{{') && target.endsWith('}}')) {
+    const paths = target
+      .slice(2, -2)
+      .split('.')
+      .map((path) => path.trim());
+
+    const targetOptions =
+      scope ??
+      [scopeOptions, nodesOptions, triggerOptions].map((item: any) => {
+        const opts = item.useOptions({ ...options, current: node }).filter(Boolean);
+        return {
+          [fieldNames.label]: compile(item.label),
+          [fieldNames.value]: item.value,
+          key: item.value,
+          [fieldNames.children]: opts,
+          disabled: opts && !opts.length,
+        };
+      });
+
+    const found = findOption(targetOptions, paths);
+
+    targetOption = Object.assign({}, found, targetOption);
+  }
+
+  return [
+    targetOption,
+    { key: 'index', [fieldNames.value]: 'index', [fieldNames.label]: langLoopIndex },
+    { key: 'sequence', [fieldNames.value]: 'sequence', [fieldNames.label]: langLoopSequence },
+    { key: 'length', [fieldNames.value]: 'length', [fieldNames.label]: langLoopLength },
+  ];
+}
+
+function useVariableHook(options: UseVariableOptions = {}) {
+  const { values } = useForm<any>();
+  const node = useNodeContext();
+  const current = {
+    ...node,
+    config: {
+      ...node.config,
+      target: values.target,
+    },
+  };
+  const result = useWorkflowVariableOptions(options);
+  const subOptions = useScopeVariables(current, {
+    ...options,
+    scope: result.filter((item) => ['$scopes', '$jobsMapByNodeKey', '$context'].includes(item.key)),
+  });
+  const { fieldNames = defaultFieldNames } = options;
+  if (!subOptions) {
+    return result;
+  }
+
+  const scope = result.find((item) => item[fieldNames.value] === '$scopes');
+  if (scope) {
+    if (!scope[fieldNames.children]) {
+      scope[fieldNames.children] = [];
+    }
+
+    scope[fieldNames.children].unshift({
+      key: node.key,
+      [fieldNames.value]: node.key,
+      [fieldNames.label]: node.title ?? `#${node.id}`,
+      [fieldNames.children]: subOptions,
+    });
+    scope.disabled = false;
+  }
+
+  return [...result];
+}
+
+function LoopVariableTextArea({ variableOptions, ...props }): JSX.Element {
+  const scope = useVariableHook(variableOptions);
+  return <Variable.TextArea scope={scope} {...props} />;
+}
+
 export default class extends Instruction {
   title = `{{t("Loop", { ns: "${NAMESPACE}" })}}`;
   type = 'loop';
@@ -61,7 +255,8 @@ export default class extends Instruction {
       'x-component': 'WorkflowVariableInput',
       'x-component-props': {
         changeOnSelect: true,
-        useTypedConstant: ['string', 'number', 'null'],
+        nullable: false,
+        useTypedConstant: ['string', ['number', { step: 1, min: 0, precision: 0 }]],
         className: css`
           width: 100%;
 
@@ -75,10 +270,101 @@ export default class extends Instruction {
         `,
       },
       required: true,
+      default: 1,
+      'x-reactions': [
+        {
+          target: 'calculation',
+          effects: ['onFieldValueChange'],
+          fulfill: {
+            state: {
+              value: null,
+            },
+          },
+        },
+        {
+          target: 'expression',
+          effects: ['onFieldValueChange'],
+          fulfill: {
+            state: {
+              value: '',
+            },
+          },
+        },
+      ],
+    },
+    // startIndex: {
+    //   type: 'number',
+    //   title: `{{t("Start index", { ns: "${NAMESPACE}" })}}`,
+    //   description: `{{t("The index number used in loop scope variable.", { ns: "${NAMESPACE}" })}}`,
+    //   'x-decorator': 'FormItem',
+    //   'x-component': 'RadioWithTooltip',
+    //   'x-component-props': {
+    //     options: [
+    //       {
+    //         label: `{{t("From 0", { ns: "${NAMESPACE}" })}}`,
+    //         value: 0,
+    //         tooltip: `{{t("Follow programming language conventions.", { ns: "${NAMESPACE}" })}}`,
+    //       },
+    //       {
+    //         label: `{{t("From 1", { ns: "${NAMESPACE}" })}}`,
+    //         value: 1,
+    //         tooltip: `{{t("Follow natural language conventions.", { ns: "${NAMESPACE}" })}}`,
+    //       },
+    //     ],
+    //   },
+    //   default: 0,
+    // },
+    condition: {
+      type: 'boolean',
+      'x-decorator': 'FormItem',
+      'x-component': 'LoopCondition',
+      'x-reactions': [
+        {
+          dependencies: ['target'],
+          fulfill: {
+            state: {
+              visible: '{{Boolean($deps[0])}}',
+            },
+          },
+        },
+      ],
+      default: false,
+    },
+    exit: {
+      type: 'number',
+      title: `{{t("When node inside loop failed", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'RadioWithTooltip',
+      'x-component-props': {
+        direction: 'vertical',
+        options: [
+          {
+            label: `{{t("Exit workflow", { ns: "${NAMESPACE}" })}}`,
+            value: 0,
+          },
+          {
+            label: `{{t("Exit loop and continue workflow", { ns: "${NAMESPACE}" })}}`,
+            value: 1,
+          },
+          {
+            label: `{{t("Continue loop on next item", { ns: "${NAMESPACE}" })}}`,
+            value: 2,
+          },
+        ],
+      },
+      default: 0,
     },
   };
+  scope = {
+    renderEngineReference,
+  };
   components = {
+    LoopCondition,
     WorkflowVariableInput,
+    WorkflowVariableTextArea,
+    LoopVariableTextArea,
+    RadioWithTooltip,
+    CalculationConfig,
   };
   Component({ data }) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -111,60 +397,5 @@ export default class extends Instruction {
       </NodeDefaultView>
     );
   }
-  useScopeVariables(node, options) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const compile = useCompile();
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const langLoopTarget = useLang('Loop target');
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const langLoopIndex = useLang('Loop index');
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const langLoopLength = useLang('Loop length');
-    const { target } = node.config;
-    if (!target) {
-      return null;
-    }
-
-    const { fieldNames = defaultFieldNames } = options;
-
-    // const { workflow } = useFlowContext();
-    // const current = useNodeContext();
-    // const upstreams = useAvailableUpstreams(current);
-    // find target data model by path described in `config.target`
-    // 1. get options from $context/$jobsMapByNodeKey
-    // 2. route to sub-options and use as loop target options
-    let targetOption: VariableOption = {
-      key: 'item',
-      [fieldNames.value]: 'item',
-      [fieldNames.label]: langLoopTarget,
-    };
-
-    if (typeof target === 'string' && target.startsWith('{{') && target.endsWith('}}')) {
-      const paths = target
-        .slice(2, -2)
-        .split('.')
-        .map((path) => path.trim());
-
-      const targetOptions = [scopeOptions, nodesOptions, triggerOptions].map((item: any) => {
-        const opts = item.useOptions({ ...options, current: node }).filter(Boolean);
-        return {
-          [fieldNames.label]: compile(item.label),
-          [fieldNames.value]: item.value,
-          key: item.value,
-          [fieldNames.children]: opts,
-          disabled: opts && !opts.length,
-        };
-      });
-
-      const found = findOption(targetOptions, paths);
-
-      targetOption = Object.assign({}, found, targetOption);
-    }
-
-    return [
-      targetOption,
-      { key: 'index', [fieldNames.value]: 'index', [fieldNames.label]: langLoopIndex },
-      { key: 'length', [fieldNames.value]: 'length', [fieldNames.label]: langLoopLength },
-    ];
-  }
+  useScopeVariables = useScopeVariables;
 }

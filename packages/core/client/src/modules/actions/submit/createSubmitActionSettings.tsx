@@ -28,6 +28,8 @@ import {
 } from '../../../schema-component/antd/action/Action.Designer';
 import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
 import { SchemaSettingsModalItem } from '../../../schema-settings/SchemaSettings';
+import { useParentPopupRecord } from '../../variable/variablesProvider/VariablePopupRecordProvider';
+import { useDataBlockProps } from '../../../data-source';
 
 const Tree = connect(
   AntdTree,
@@ -163,6 +165,10 @@ export const createSubmitActionSettings = new SchemaSettings({
     {
       name: 'saveMode',
       Component: SaveMode,
+      useVisible() {
+        const { type } = useDataBlockProps() || ({} as any);
+        return type !== 'publicForm';
+      },
     },
     {
       name: 'assignFieldValues',
@@ -176,8 +182,8 @@ export const createSubmitActionSettings = new SchemaSettings({
       name: 'afterSuccessfulSubmission',
       Component: AfterSuccess,
       useVisible() {
-        const fieldSchema = useFieldSchema();
-        return isValid(fieldSchema?.['x-action-settings']?.onSuccess);
+        const { type } = useDataBlockProps() || ({} as any);
+        return type !== 'publicForm';
       },
     },
     {
@@ -187,6 +193,10 @@ export const createSubmitActionSettings = new SchemaSettings({
         return {
           isPopupAction: false,
         };
+      },
+      useVisible() {
+        const parentRecord = useParentPopupRecord();
+        return !!parentRecord;
       },
     },
     {

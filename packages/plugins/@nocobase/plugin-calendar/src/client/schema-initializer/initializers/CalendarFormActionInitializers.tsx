@@ -7,14 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useFieldSchema } from '@formily/react';
 import {
   SchemaInitializer,
   SchemaInitializerItemType,
   useCollection_deprecated,
   useActionAvailable,
 } from '@nocobase/client';
+import { useContext } from 'react';
 import { generateNTemplate } from '../../../locale';
 import { DeleteEventActionInitializer } from '../items/DeleteEventActionInitializer';
+import { DeleteEventContext } from '../../calendar/Calendar';
 export const deleteEventActionInitializer: SchemaInitializerItemType<any> = {
   name: 'deleteEvent',
   title: generateNTemplate('Delete Event'),
@@ -24,8 +27,9 @@ export const deleteEventActionInitializer: SchemaInitializerItemType<any> = {
     'x-decorator': 'ACLActionProvider',
   },
   useVisible() {
+    const { allowDeleteEvent } = useContext(DeleteEventContext);
     const collection = useCollection_deprecated();
-    return collection.template === 'calendar';
+    return collection.template === 'calendar' && allowDeleteEvent;
   },
 };
 

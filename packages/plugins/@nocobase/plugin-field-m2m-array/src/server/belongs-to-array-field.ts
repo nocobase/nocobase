@@ -12,6 +12,7 @@ import { BaseColumnFieldOptions, BelongsToArrayAssociation, Model, RelationField
 export const elementTypeMap = {
   nanoid: 'string',
   sequence: 'string',
+  uid: 'string',
 };
 
 export class BelongsToArrayField extends RelationField {

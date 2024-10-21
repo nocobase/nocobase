@@ -27,10 +27,9 @@ export const Event = observer(
     const close = useCallback(() => {
       setVisible(false);
     }, [setVisible]);
-
     return (
       <PopupContextProvider visible={visible} setVisible={setVisible}>
-        <DeleteEventContext.Provider value={{ close }}>
+        <DeleteEventContext.Provider value={{ close, allowDeleteEvent: true }}>
           <VariablePopupRecordProvider recordData={recordData} collection={collection}>
             {props.children}
           </VariablePopupRecordProvider>

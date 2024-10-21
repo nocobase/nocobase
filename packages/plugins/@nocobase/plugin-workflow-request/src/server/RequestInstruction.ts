@@ -8,6 +8,7 @@
  */
 
 import axios, { AxiosRequestConfig } from 'axios';
+import { trim } from 'lodash';
 
 import { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plugin-workflow';
 
@@ -16,10 +17,10 @@ export interface Header {
   value: string;
 }
 
-export type RequestConfig = Pick<AxiosRequestConfig, 'url' | 'method' | 'params' | 'data' | 'timeout'> & {
-  headers: Array<Header>;
+export type RequestInstructionConfig = Pick<AxiosRequestConfig, 'url' | 'method' | 'params' | 'data' | 'timeout'> & {
+  headers?: Header[];
   contentType: string;
-  ignoreFail: boolean;
+  ignoreFail?: boolean;
   onlyData?: boolean;
 };
 
@@ -38,29 +39,30 @@ async function request(config) {
   // default headers
   const { url, method = 'POST', contentType = 'application/json', data, timeout = 5000 } = config;
   const headers = (config.headers ?? []).reduce((result, header) => {
-    const name = header.name?.trim();
+    const name = trim(header.name);
     if (name.toLowerCase() === 'content-type') {
       return result;
     }
-    return Object.assign(result, { [name]: header.value?.trim() });
+    return Object.assign(result, { [name]: trim(header.value) });
   }, {});
   const params = (config.params ?? []).reduce(
-    (result, param) => Object.assign(result, { [param.name]: param.value?.trim() }),
+    (result, param) => Object.assign(result, { [param.name]: trim(param.value) }),
     {},
   );
 
   // TODO(feat): only support JSON type for now, should support others in future
   headers['Content-Type'] = contentType;
+  const transformer = ContentTypeTransformers[contentType];
 
   return axios.request({
-    url: url?.trim(),
+    url: trim(url),
     method,
     headers,
     params,
     timeout,
     ...(method.toLowerCase() !== 'get' && data != null
       ? {
-          data: ContentTypeTransformers[contentType](data),
+          data: transformer ? transformer(data) : data.toString(),
         }
       : {}),
   });
@@ -101,7 +103,7 @@ function responseFailure(error) {
 
 export default class extends Instruction {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
-    const config = processor.getParsedValue(node.config, node.id) as RequestConfig;
+    const config = processor.getParsedValue(node.config, node.id) as RequestInstructionConfig;
 
     const { workflow } = processor.execution;
     const sync = this.workflow.isWorkflowSync(workflow);
@@ -169,10 +171,25 @@ export default class extends Instruction {
   }
 
   async resume(node: FlowNodeModel, job, processor: Processor) {
-    const { ignoreFail } = node.config as RequestConfig;
+    const { ignoreFail } = node.config as RequestInstructionConfig;
     if (ignoreFail) {
       job.set('status', JOB_STATUS.RESOLVED);
     }
     return job;
+  }
+
+  async test(config: RequestInstructionConfig) {
+    try {
+      const response = await request(config);
+      return {
+        status: JOB_STATUS.RESOLVED,
+        result: responseSuccess(response, config.onlyData),
+      };
+    } catch (error) {
+      return {
+        status: config.ignoreFail ? JOB_STATUS.RESOLVED : JOB_STATUS.FAILED,
+        result: error.isAxiosError ? error.toJSON() : error.message,
+      };
+    }
   }
 }

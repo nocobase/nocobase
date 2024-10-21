@@ -211,8 +211,9 @@ export const useBaseVariable = ({
     const target = option.field.target;
     return new Promise((resolve) => {
       setTimeout(() => {
+        const usedInVariable = true;
         const children = (
-          getChildren(returnFields(getFilterOptions(target, dataSource), option), {
+          getChildren(returnFields(getFilterOptions(target, dataSource, usedInVariable), option), {
             collectionField,
             uiSchema,
             targetFieldSchema,

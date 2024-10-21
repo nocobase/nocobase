@@ -24,7 +24,7 @@ test.describe('data will be updated && Assign field values && after successful s
     await expect(page.getByTitle('Data will be updated').getByText('Selected')).toBeVisible();
     await page.getByRole('menuitem', { name: 'Data will be updated' }).click();
     //切换为全部数据
-    await page.getByRole('option', { name: 'All' }).click();
+    await page.getByRole('option', { name: 'Entire collection' }).click();
     //字段赋值
     await page.getByRole('menuitem', { name: 'Assign field values' }).click();
     await page.getByLabel('schema-initializer-Grid-assignFieldValuesForm:configureFields-general').click();

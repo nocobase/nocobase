@@ -32,6 +32,7 @@ import { markRecordAsNew } from '../../../data-source/collection-record/isNewRec
 import { FlagProvider } from '../../../flag-provider';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider } from '../action';
+import { useSubTableSpecialCase } from '../form-item/hooks/useSpecialCase';
 import { Table } from '../table-v2/Table';
 import { SubFormProvider, useAssociationFieldContext, useFieldNames } from './hooks';
 import { useTableSelectorProps } from './InternalPicker';
@@ -43,9 +44,6 @@ const subTableContainer = css`
   }
   .ant-formily-item-error-help {
     display: none;
-  }
-  .ant-description-textarea {
-    line-height: 34px;
   }
   .ant-table-cell .ant-formily-item-error-help {
     display: block;
@@ -101,6 +99,8 @@ export const SubTable: any = observer(
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
     const recordV2 = useCollectionRecord();
     const collection = useCollection();
+    const { allowSelectExistingRecord, allowAddnew, allowDisassociation } = field.componentProps;
+    useSubTableSpecialCase({ field });
     const move = (fromIndex: number, toIndex: number) => {
       if (toIndex === undefined) return;
       if (!isArr(field.value)) return;
@@ -152,7 +152,7 @@ export const SubTable: any = observer(
       const { selectedRows, setSelectedRows } = useContext(RecordPickerContext);
       return {
         onClick() {
-          selectedRows.map((v) => field.value.push(v));
+          selectedRows.map((v) => field.value.push(markRecordAsNew(v)));
           field.onInput(field.value);
           field.initialValue = field.value;
           setSelectedRows([]);
@@ -171,8 +171,8 @@ export const SubTable: any = observer(
         <FlagProvider isInSubTable>
           <CollectionRecordProvider record={null} parentRecord={recordV2}>
             <FormActiveFieldsProvider name="nester">
-              {/* 在这里加，是为了让 “当前对象” 的配置显示正确 */}
-              <SubFormProvider value={{ value: null, collection }}>
+              {/* 在这里加，是为了让子表格中默认值的 “当前对象” 的配置显示正确 */}
+              <SubFormProvider value={{ value: null, collection, fieldSchema: fieldSchema.parent, skip: true }}>
                 <Table
                   className={tableClassName}
                   bordered
@@ -180,13 +180,25 @@ export const SubTable: any = observer(
                   field={field}
                   showIndex
                   dragSort={false}
-                  showDel={field.editable}
+                  showDel={
+                    allowAddnew !== false || allowSelectExistingRecord !== false || allowDisassociation !== false
+                      ? (record) => {
+                          if (!field.editable) {
+                            return false;
+                          }
+                          if (allowDisassociation !== false) {
+                            return true;
+                          }
+                          return record?.__isNewRecord__;
+                        }
+                      : false
+                  }
                   pagination={false}
                   rowSelection={{ type: 'none', hideSelectAll: true }}
                   footer={() =>
                     field.editable && (
                       <>
-                        {field.componentProps?.allowAddnew !== false && (
+                        {allowAddnew !== false && (
                           <Button
                             type={'text'}
                             block
@@ -199,7 +211,7 @@ export const SubTable: any = observer(
                             {t('Add new')}
                           </Button>
                         )}
-                        {field.componentProps?.allowSelectExistingRecord && (
+                        {allowSelectExistingRecord && (
                           <Button
                             type={'text'}
                             block

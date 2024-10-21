@@ -11,10 +11,10 @@ import { FormOutlined } from '@ant-design/icons';
 import React, { useCallback } from 'react';
 
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
-import { useSchemaTemplateManager } from '../../schema-templates';
-import { useRecordCollectionDataSourceItems } from '../utils';
 import { useCollectionManager_deprecated } from '../../collection-manager';
 import { createDetailsUISchema } from '../../modules/blocks/data-blocks/details-single/createDetailsUISchema';
+import { useBlockTemplateContext, useSchemaTemplateManager } from '../../schema-templates';
+import { useRecordCollectionDataSourceItems } from '../utils';
 
 /**
  * @deprecated
@@ -69,6 +69,7 @@ export const RecordReadPrettyAssociationFormBlockInitializer = () => {
 export function useCreateAssociationDetailsWithoutPagination() {
   const { insert } = useSchemaInitializer();
   const { getCollection } = useCollectionManager_deprecated();
+  const { componentNamePrefix } = useBlockTemplateContext();
 
   const createAssociationDetailsWithoutPagination = useCallback(
     ({ item }) => {
@@ -90,7 +91,7 @@ export function useCreateAssociationDetailsWithoutPagination() {
       const field = item.associationField;
       const collection = getCollection(field.target);
 
-      if (item.template.componentName === 'ReadPrettyFormItem') {
+      if (item.template.componentName === `${componentNamePrefix}ReadPrettyFormItem`) {
         const blockSchema = createDetailsUISchema({
           dataSource: collection.dataSource,
           association: `${field.collectionName}.${field.name}`,
@@ -104,7 +105,7 @@ export function useCreateAssociationDetailsWithoutPagination() {
         return templateSchema;
       }
     },
-    [getCollection],
+    [getCollection, componentNamePrefix],
   );
 
   return { createAssociationDetailsWithoutPagination, templateWrap };

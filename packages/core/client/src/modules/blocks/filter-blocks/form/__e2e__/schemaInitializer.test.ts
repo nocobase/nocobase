@@ -105,7 +105,7 @@ test.describe('configure fields', () => {
     });
 
     // expect: should only display the record with the `root` role
-    await expect(page.getByRole('button', { name: 'root,admin,member' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'root' })).toBeVisible();
     await expect(page.getByRole('button', { name: record.roles.map((item) => item.name).join(',') })).not.toBeVisible();
   });
 

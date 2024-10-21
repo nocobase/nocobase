@@ -30,6 +30,7 @@ import {
   ResourceActionContext,
   useDataSourceManager,
 } from '@nocobase/client';
+import { getPickerFormat } from '@nocobase/utils/client';
 import { message } from 'antd';
 import { getCollectionSchema } from './schema/collections';
 import { CollectionFields } from './CollectionFields';
@@ -208,6 +209,7 @@ export const ConfigurationTable = () => {
           interfaces,
           enableInherits: database?.dialect === 'postgres',
           isPG: database?.dialect === 'postgres',
+          getPickerFormat,
         }}
       />
     </SchemaComponentContext.Provider>

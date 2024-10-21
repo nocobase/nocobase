@@ -54,6 +54,7 @@ export const StrategyActions = connect((props) => {
       <Table
         size={'small'}
         pagination={false}
+        rowKey={'name'}
         columns={[
           {
             dataIndex: 'displayName',

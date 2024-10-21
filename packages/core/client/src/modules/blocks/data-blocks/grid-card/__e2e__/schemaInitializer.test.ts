@@ -159,7 +159,7 @@ test.describe('configure fields', () => {
     await page.mouse.move(300, 0);
     await expect(page.getByLabel('block-item-CollectionField-general-grid-card-general.id-ID').first()).toBeVisible();
     await expect(
-      page.getByLabel('block-item-CollectionField-general-grid-card-general.manyToOne.nickname').first(),
+      page.getByLabel('block-item-CollectionField-general-grid-card-users.nickname-Nickname').first(),
     ).toBeVisible();
 
     // delete fields

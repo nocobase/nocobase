@@ -267,7 +267,6 @@ const HeaderMenu = ({
     },
     [schema, mode, onSelect, setLoading, setDefaultSelectedKeys],
   );
-
   return (
     <>
       <Component />
@@ -530,14 +529,14 @@ Menu.Item = observer(
                 removeParentsIfNoChildren={false}
               >
                 <Icon type={icon} />
-                <span style={menuItemTitleStyle}>{t(field.title)}</span>
+                <span style={menuItemTitleStyle}>{t(schema.title)}</span>
                 <Designer />
               </SortableItem>
             </FieldContext.Provider>
           </SchemaContext.Provider>
         ),
       };
-    }, [field.title, icon, schema, Designer]);
+    }, [schema.title, icon, schema, Designer]);
 
     if (!pushMenuItem) {
       error('Menu.Item must be wrapped by GetMenuItemsContext.Provider');

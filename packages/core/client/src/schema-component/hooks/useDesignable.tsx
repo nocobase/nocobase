@@ -217,6 +217,19 @@ export class Designable {
       });
       message.success(t('Saved successfully'), 0.2);
     });
+    this.on('initializeActionContext', async ({ schema }) => {
+      this.refresh();
+      if (!schema?.['x-uid']) {
+        return;
+      }
+      await api.request({
+        url: `/uiSchemas:initializeActionContext`,
+        method: 'post',
+        data: {
+          ...schema,
+        },
+      });
+    });
     this.on('batchPatch', async ({ schemas }) => {
       this.refresh();
       await api.request({
@@ -267,14 +280,17 @@ export class Designable {
     generateUid(schema);
   }
 
-  on(name: 'insertAdjacent' | 'remove' | 'error' | 'patch' | 'batchPatch', listener: any) {
+  on(name: 'insertAdjacent' | 'remove' | 'error' | 'patch' | 'batchPatch' | 'initializeActionContext', listener: any) {
     if (!this.events[name]) {
       this.events[name] = [];
     }
     this.events[name].push(listener);
   }
 
-  async emit(name: 'insertAdjacent' | 'remove' | 'error' | 'patch' | 'batchPatch', ...args) {
+  async emit(
+    name: 'insertAdjacent' | 'remove' | 'error' | 'patch' | 'batchPatch' | 'initializeActionContext',
+    ...args
+  ) {
     if (!this.events[name]) {
       return;
     }

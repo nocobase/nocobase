@@ -27,6 +27,7 @@ import { useOpenModeContext } from '../../../modules/popup/OpenModeProvider';
 import { useRecord } from '../../../record-provider';
 import { useColumnSchema } from '../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { generalSettingsItems } from '../../../schema-items/GeneralSettings';
+import { getTempFieldState } from '../../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 import { SchemaSettingsDateFormat } from '../../../schema-settings/SchemaSettingsDateFormat';
@@ -41,7 +42,6 @@ import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { isSubMode } from '../association-field/util';
 import { removeNullCondition } from '../filter';
 import { DynamicComponentProps } from '../filter/DynamicComponent';
-import { getTempFieldState } from '../form-v2/utils';
 import { useColorFields } from '../table-v2/Table.Column.Designer';
 
 export const allowAddNew: SchemaSettingsItemType = {

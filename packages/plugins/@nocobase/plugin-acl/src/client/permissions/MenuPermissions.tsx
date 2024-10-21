@@ -7,17 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Checkbox, message, Table } from 'antd';
-import { onFormValuesChange, createForm, Form } from '@formily/core';
-import { uniq } from 'lodash';
-import React, { useContext, useState, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
+import { createForm, Form, onFormValuesChange } from '@formily/core';
 import { uid } from '@formily/shared';
-import { useAPIClient, SchemaComponent, useRequest } from '@nocobase/client';
-import { useStyles } from './style';
+import { SchemaComponent, useAPIClient, useRequest } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
+import { Checkbox, message, Table } from 'antd';
+import { uniq } from 'lodash';
+import React, { useContext, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { RolesManagerContext } from '../RolesManagerProvider';
 import { useMenuItems } from './MenuItemsProvider';
+import { useStyles } from './style';
 
 const findUids = (items) => {
   if (!Array.isArray(items)) {

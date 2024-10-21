@@ -20,7 +20,8 @@ import {
   useIsFieldReadPretty,
   useIsFormReadPretty,
 } from '../../../../schema-component/antd/form-item/FormItem.Settings';
-import { setDefaultSortingRules } from '../SubTable/subTablePopoverComponentFieldSettings';
+import { linkageRules, setDefaultSortingRules } from '../SubTable/subTablePopoverComponentFieldSettings';
+import { schemaSettingsLabelLayout } from '../../../../schema-settings';
 
 const allowMultiple: any = {
   name: 'allowMultiple',
@@ -142,5 +143,7 @@ export const subformComponentFieldSettings = new SchemaSettings({
       },
     },
     setDefaultSortingRules,
+    linkageRules,
+    schemaSettingsLabelLayout,
   ],
 });

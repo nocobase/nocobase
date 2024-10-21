@@ -71,6 +71,7 @@ type Props = {
    * 不需要禁用选项，一般会在表达式中使用
    */
   noDisabled?: boolean;
+  hideVariableButton?: boolean;
 };
 
 /**
@@ -96,6 +97,7 @@ export const VariableInput = (props: Props) => {
     returnScope = _.identity,
     targetFieldSchema,
     noDisabled,
+    hideVariableButton,
   } = props;
   const { name: blockCollectionName } = useBlockCollection();
   const scope = useVariableScope();
@@ -149,6 +151,7 @@ export const VariableInput = (props: Props) => {
       )}
       style={style}
       changeOnSelect
+      hideVariableButton={hideVariableButton}
     >
       <RenderSchemaComponent value={value} onChange={onChange} />
     </Variable.Input>

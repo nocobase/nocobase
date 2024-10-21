@@ -9,9 +9,25 @@
 
 import { createContext } from 'react';
 
+export interface Role {
+  createdAt: string;
+  updatedAt: string;
+  name: string;
+  title: string;
+  description: string;
+  strategy: {
+    actions: string[];
+  };
+  default: boolean;
+  hidden: boolean;
+  allowConfigure: boolean;
+  allowNewMenu: boolean;
+  snippets: string[];
+}
+
 export const RolesManagerContext = createContext<{
-  role: any;
-  setRole: (role: any) => void;
+  role: Role;
+  setRole: (role: Role) => void;
 }>({
   role: null,
 } as any);

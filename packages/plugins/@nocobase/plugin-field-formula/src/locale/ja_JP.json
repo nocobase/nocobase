@@ -1,0 +1,9 @@
+{
+  "Formula": "公式",
+  "Calculation engine": "計算エンジン",
+  "Expression": "式",
+  "Expression syntax error": "式の構文エラー",
+  "Syntax references": "構文リファレンス",
+  "Compute a value based on the other fields": "他のフィールドを基に値を計算します",
+  "Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.": "同じレコード内の複数フィールドの計算結果を設定して保存します。Math.jsおよびExcelの関数をサポートしています。"
+}

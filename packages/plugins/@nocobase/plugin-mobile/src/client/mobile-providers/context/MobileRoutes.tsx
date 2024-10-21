@@ -9,7 +9,7 @@
 
 import { APIClient, useAPIClient, useRequest } from '@nocobase/client';
 import { Spin } from 'antd';
-import React, { createContext, useContext, useEffect, useMemo } from 'react';
+import React, { createContext, FC, useContext, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import type { IResource } from '@nocobase/sdk';
@@ -88,7 +88,17 @@ function useTitle(activeTabBar: MobileRouteItem) {
   }, [activeTabBar, context]);
 }
 
-export const MobileRoutesProvider = ({ children }) => {
+export const MobileRoutesProvider: FC<{
+  /**
+   * list: return all route data, and only administrators can access;
+   * listAccessible: return the route data that the current user can access;
+   *
+   * @default 'listAccessible'
+   */
+  action?: 'list' | 'listAccessible';
+  refreshRef?: any;
+  manual?: boolean;
+}> = ({ children, refreshRef, manual, action = 'listAccessible' }) => {
   const api = useAPIClient();
   const resource = useMemo(() => api.resource('mobileRoutes'), [api]);
   const schemaResource = useMemo(() => api.resource('uiSchemas'), [api]);
@@ -96,9 +106,17 @@ export const MobileRoutesProvider = ({ children }) => {
     data,
     runAsync: refresh,
     loading,
-  } = useRequest<{ data: MobileRouteItem[] }>(() =>
-    resource.list({ tree: true, sort: 'sort' }).then((res) => res.data),
+  } = useRequest<{ data: MobileRouteItem[] }>(
+    () => resource[action]({ tree: true, sort: 'sort' }).then((res) => res.data),
+    {
+      manual,
+    },
   );
+
+  if (refreshRef) {
+    refreshRef.current = refresh;
+  }
+
   const routeList = useMemo(() => data?.data || [], [data]);
   const { activeTabBarItem, activeTabItem } = useActiveTabBar(routeList);
 

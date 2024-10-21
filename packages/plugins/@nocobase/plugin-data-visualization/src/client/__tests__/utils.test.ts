@@ -10,35 +10,72 @@
 import { processData } from '../utils';
 
 describe('utils', () => {
-  it('processFields', () => {
-    expect(
-      processData(
-        [
-          {
-            name: 'tag',
-            type: 'bigInt',
-            interface: 'select',
-            uiSchema: {
-              type: 'string',
-              enum: [
-                {
-                  value: '1',
-                  label: 'Yes',
-                },
-                {
-                  value: '2',
-                  label: 'No',
-                },
-              ],
+  describe('process data', () => {
+    it('should process select field', () => {
+      expect(
+        processData(
+          [
+            {
+              name: 'tag',
+              type: 'bigInt',
+              interface: 'select',
+              uiSchema: {
+                type: 'string',
+                enum: [
+                  {
+                    value: '1',
+                    label: 'Yes',
+                  },
+                  {
+                    value: '2',
+                    label: 'No',
+                  },
+                ],
+              },
+              label: 'Tag',
+              value: 'tag',
+              key: 'tag',
             },
-            label: 'Tag',
-            value: 'tag',
-            key: 'tag',
-          },
-        ],
-        [{ tag: 1 }],
-        {},
-      ),
-    ).toEqual([{ tag: 'Yes' }]);
+          ],
+          [{ tag: 1 }],
+          {},
+        ),
+      ).toEqual([{ tag: 'Yes' }]);
+    });
+    it('should not process when aggregating', () => {
+      expect(
+        processData(
+          [
+            {
+              name: 'tag',
+              type: 'bigInt',
+              interface: 'select',
+              uiSchema: {
+                type: 'string',
+                enum: [
+                  {
+                    value: '1',
+                    label: 'Yes',
+                  },
+                  {
+                    value: '2',
+                    label: 'No',
+                  },
+                ],
+              },
+              label: 'Tag',
+              value: 'tag',
+              key: 'tag',
+              query: {
+                field: 'tag',
+                aggregation: 'count',
+              },
+            },
+          ],
+          [{ tag: 1 }],
+          {},
+        ),
+      ).toEqual([{ tag: 1 }]);
+    });
   });
 });

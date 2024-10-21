@@ -57,9 +57,12 @@ async function listWithPagination(ctx: Context) {
   });
 
   if (simplePaginate) {
+    options.limit = options.limit + 1;
+
     const rows = await repository.find(options);
     ctx.body = {
-      rows,
+      rows: rows.slice(0, pageSize),
+      hasNext: rows.length > pageSize,
       page: Number(page),
       pageSize: Number(pageSize),
     };

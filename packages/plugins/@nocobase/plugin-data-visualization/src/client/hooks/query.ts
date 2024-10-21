@@ -41,9 +41,10 @@ export type FieldOption = {
 
 export const useChartDataSource = (dataSource?: string) => {
   const { current } = useContext(ChartConfigContext);
-  const { dataSource: _dataSource = dataSource || DEFAULT_DATA_SOURCE_KEY, collection } = current || {};
+  const { dataSource: currentDataSource, collection } = current || {};
+  dataSource = dataSource || currentDataSource || DEFAULT_DATA_SOURCE_KEY;
   const dm = useDataSourceManager();
-  const ds = dm.getDataSource(_dataSource);
+  const ds = dm.getDataSource(dataSource);
   const fim = dm.collectionFieldInterfaceManager;
   const cm = ds?.collectionManager;
   return { cm, fim, collection };
@@ -133,6 +134,9 @@ export const useFormatters = (fields: FieldOption[]) => (field: any) => {
   const fieldInterface = getField(fields, selectedField)?.interface;
   switch (fieldInterface) {
     case 'datetime':
+    case 'datetimeTz':
+    case 'unixTimestamp':
+    case 'datetimeNoTz':
     case 'createdAt':
     case 'updatedAt':
       options = formatters.datetime;

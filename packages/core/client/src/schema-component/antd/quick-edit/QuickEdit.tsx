@@ -9,14 +9,15 @@
 
 import { css } from '@emotion/css';
 // import { FormItem } from '@formily/antd-v5';
+import { IFormItemProps } from '@formily/antd-v5';
 import { Field, createForm } from '@formily/core';
 import { FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import React, { useMemo, useRef } from 'react';
 import { useCollectionManager_deprecated } from '../../../collection-manager';
-import { StablePopover } from '../popover';
-import { FormItem } from '../form-item';
-import { IFormItemProps } from '@formily/antd-v5';
 import { useCollection } from '../../../data-source/collection/CollectionProvider';
+import { useToken } from '../../../style';
+import { FormItem } from '../form-item';
+import { StablePopover } from '../popover';
 
 export interface QuickEditProps extends IFormItemProps {
   children?: React.ReactNode;
@@ -28,6 +29,7 @@ export const Editable = observer(
     const containerRef = useRef(null);
     const fieldSchema = useFieldSchema();
     const value = field.value;
+    const { token } = useToken();
     const schema: any = {
       name: fieldSchema.name,
       'x-collection-field': fieldSchema['x-collection-field'],
@@ -74,7 +76,15 @@ export const Editable = observer(
             }
           `}
         >
-          <div style={{ minHeight: 30, padding: '0 8px' }}>
+          <div
+            style={{
+              minHeight: token.controlHeight,
+              padding: `1px ${token.paddingXS}px`,
+              backgroundColor: field.disabled ? token.colorBgContainerDisabled : undefined,
+              color: field.disabled ? token.colorTextDisabled : undefined,
+              borderRadius: token.borderRadius,
+            }}
+          >
             <FormContext.Provider value={form}>
               <RecursionField schema={schema} name={fieldSchema.name} />
             </FormContext.Provider>
@@ -97,7 +107,11 @@ export const QuickEdit = observer(
     if (!collectionField) {
       return null;
     }
-    return field.editable ? <Editable {...props} /> : <FormItem {...props} style={{ padding: '0 8px' }} />;
+    return field.editable || field.disabled ? (
+      <Editable {...props} />
+    ) : (
+      <FormItem {...props} style={{ padding: '0 8px' }} />
+    );
   },
   { displayName: 'QuickEdit' },
 );

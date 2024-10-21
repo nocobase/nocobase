@@ -119,7 +119,7 @@ test.describe('select data', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const sqlNodeJob = jobs.find((job) => job.nodeId.toString() === sqlNodeId);
     const sqlNodeJobResult = sqlNodeJob.result;
-    const nodeResultRecordOrgname = sqlNodeJobResult[0][0].orgname;
+    const nodeResultRecordOrgname = sqlNodeJobResult[0].orgname;
     expect(nodeResultRecordOrgname).toBe('公司名称(单行文本)1');
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
@@ -215,7 +215,7 @@ test.describe('select data', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const sqlNodeJob = jobs.find((job) => job.nodeId.toString() === sqlNodeId);
     const sqlNodeJobResult = sqlNodeJob.result;
-    const nodeResultRecordLength = sqlNodeJobResult[0].length;
+    const nodeResultRecordLength = sqlNodeJobResult.length;
     expect(nodeResultRecordLength).toBe(8);
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
@@ -317,7 +317,7 @@ test.describe('select data', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const sqlNodeJob = jobs.find((job) => job.nodeId.toString() === sqlNodeId);
     const sqlNodeJobResult = sqlNodeJob.result;
-    const nodeResultRecordOrgname = sqlNodeJobResult[0][0].orgname;
+    const nodeResultRecordOrgname = sqlNodeJobResult[0].orgname;
     expect(nodeResultRecordOrgname).toBe('公司名称(单行文本)1');
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
@@ -419,7 +419,7 @@ test.describe('select data', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const sqlNodeJob = jobs.find((job) => job.nodeId.toString() === sqlNodeId);
     const sqlNodeJobResult = sqlNodeJob.result;
-    const nodeResultRecordLength = sqlNodeJobResult[0].length;
+    const nodeResultRecordLength = sqlNodeJobResult.length;
     expect(nodeResultRecordLength).toBe(7);
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
@@ -524,7 +524,7 @@ test.describe('select data', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const sqlNodeJob = jobs.find((job) => job.nodeId.toString() === sqlNodeId);
     const sqlNodeJobResult = sqlNodeJob.result;
-    const nodeResultRecordOrgname = sqlNodeJobResult[0][0].orgname;
+    const nodeResultRecordOrgname = sqlNodeJobResult[0].orgname;
     expect(nodeResultRecordOrgname).toBe(triggerNodeCollectionRecordOne);
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
@@ -629,7 +629,7 @@ test.describe('select data', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const sqlNodeJob = jobs.find((job) => job.nodeId.toString() === sqlNodeId);
     const sqlNodeJobResult = sqlNodeJob.result;
-    const nodeResultRecordLength = sqlNodeJobResult[0].length;
+    const nodeResultRecordLength = sqlNodeJobResult.length;
     expect(nodeResultRecordLength).toBe(8);
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
@@ -713,10 +713,10 @@ test.describe('insert data', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const sqlNodeJob = jobs.find((job) => job.nodeId.toString() === sqlNodeId);
     const sqlNodeJobResult = sqlNodeJob.result;
-    const nodeResultRecordOrgname = sqlNodeJobResult[0][0].orgname;
+    const nodeResultRecordOrgname = sqlNodeJobResult[0].orgname;
     expect(nodeResultRecordOrgname).toBe('公司名称(单行文本)1');
 
-    const insertRecordId = sqlNodeJobResult[0][0].id;
+    const insertRecordId = sqlNodeJobResult[0].id;
     const getRecords = await apiGetRecord(SQLNodeCollectionName, insertRecordId);
     const getRecordsObj = JSON.parse(JSON.stringify(getRecords));
     expect(getRecordsObj.orgname).toBe('公司名称(单行文本)1');
@@ -801,7 +801,7 @@ test.describe('insert data', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const sqlNodeJob = jobs.find((job) => job.nodeId.toString() === sqlNodeId);
     const sqlNodeJobResult = sqlNodeJob.result;
-    const nodeResultRecordLength = sqlNodeJobResult[0].length;
+    const nodeResultRecordLength = sqlNodeJobResult.length;
     expect(nodeResultRecordLength).toBe(3);
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
@@ -903,7 +903,7 @@ test.describe('insert data', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const sqlNodeJob = jobs.find((job) => job.nodeId.toString() === sqlNodeId);
     const sqlNodeJobResult = sqlNodeJob.result;
-    const nodeResultRecordOrgname = sqlNodeJobResult[0][0].orgname;
+    const nodeResultRecordOrgname = sqlNodeJobResult[0].orgname;
     expect(nodeResultRecordOrgname).toBe('公司名称(单行文本)1');
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
@@ -1001,7 +1001,7 @@ test.describe('update data', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const sqlNodeJob = jobs.find((job) => job.nodeId.toString() === sqlNodeId);
     const sqlNodeJobResult = sqlNodeJob.result;
-    const nodeResultRecordLength = sqlNodeJobResult[0].length;
+    const nodeResultRecordLength = sqlNodeJobResult.length;
     expect(nodeResultRecordLength).toBe(8);
 
     // 4、后置处理：删除工作流
@@ -1107,7 +1107,7 @@ test.describe('update data', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const sqlNodeJob = jobs.find((job) => job.nodeId.toString() === sqlNodeId);
     const sqlNodeJobResult = sqlNodeJob.result;
-    const nodeResultRecordOrgname = sqlNodeJobResult[0][0].orgname;
+    const nodeResultRecordOrgname = sqlNodeJobResult[0].orgname;
     expect(nodeResultRecordOrgname).toBe('orgname');
 
     // 4、后置处理：删除工作流
@@ -1206,7 +1206,7 @@ test.describe('delete data', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const sqlNodeJob = jobs.find((job) => job.nodeId.toString() === sqlNodeId);
     const sqlNodeJobResult = sqlNodeJob.result;
-    const nodeResultRecordOrgname = sqlNodeJobResult[0][0].orgname;
+    const nodeResultRecordOrgname = sqlNodeJobResult[0].orgname;
     expect(nodeResultRecordOrgname).toBe('公司名称(单行文本)1');
 
     // 4、后置处理：删除工作流
@@ -1312,7 +1312,7 @@ test.describe('delete data', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const sqlNodeJob = jobs.find((job) => job.nodeId.toString() === sqlNodeId);
     const sqlNodeJobResult = sqlNodeJob.result;
-    const nodeResultRecordOrgname = sqlNodeJobResult[0][0].orgname;
+    const nodeResultRecordOrgname = sqlNodeJobResult[0].orgname;
     expect(nodeResultRecordOrgname).toBe('公司名称(单行文本)1');
 
     // 4、后置处理：删除工作流

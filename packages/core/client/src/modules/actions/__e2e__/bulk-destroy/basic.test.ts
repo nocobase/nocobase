@@ -44,6 +44,8 @@ test.describe('bulk-destroy', () => {
     await page.getByLabel('action-Action-Delete-destroy-').hover();
     await page.getByLabel('designer-schema-settings-Action-actionSettings:bulkDelete-general').hover();
     await page.getByRole('menuitem', { name: 'Secondary confirmation' }).click();
+    await page.getByLabel('Enable secondary confirmation').uncheck();
+    await page.getByRole('button', { name: 'OK' }).click();
     await page.mouse.move(500, 0);
 
     // 2. 选中所有行

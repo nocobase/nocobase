@@ -127,7 +127,11 @@ describe('view inference', function () {
     });
 
     const createdAt = UserCollection.model.rawAttributes['createdAt'].field;
-    expect(inferredFields[createdAt]['type']).toBe('date');
+    if (db.isMySQLCompatibleDialect()) {
+      expect(inferredFields[createdAt]['type']).toBe('datetimeNoTz');
+    } else {
+      expect(inferredFields[createdAt]['type']).toBe('datetimeTz');
+    }
 
     if (db.options.dialect == 'sqlite') {
       expect(inferredFields['name']).toMatchObject({

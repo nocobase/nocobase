@@ -10,15 +10,22 @@
 import React, { memo, useContext, useEffect, useMemo, useRef } from 'react';
 import { createForm, onFieldInit, onFieldMount, onFieldUnmount } from '@formily/core';
 import { ChartFilterContext } from './FilterProvider';
-import { DEFAULT_DATA_SOURCE_KEY, FormV2, VariablesContext } from '@nocobase/client';
+import {
+  DEFAULT_DATA_SOURCE_KEY,
+  FormV2,
+  VariablesContext,
+  VariablesContextType,
+  useLocalVariables,
+} from '@nocobase/client';
 import { setDefaultValue } from './utils';
 import { useChartFilter } from '../hooks';
 
 export const ChartFilterForm: React.FC = memo((props) => {
   const { setField, removeField, setForm } = useContext(ChartFilterContext);
   const { getTranslatedTitle } = useChartFilter();
-  const variables = useRef<any>(null);
+  const variables = useRef<VariablesContextType>(null);
   variables.current = useContext(VariablesContext);
+  const localVariables = useLocalVariables();
   const form = useMemo(
     () =>
       createForm({
@@ -53,7 +60,7 @@ export const ChartFilterForm: React.FC = memo((props) => {
             }
 
             // parse default value
-            setDefaultValue(field, variables.current);
+            setDefaultValue(field, variables.current, localVariables);
           });
           onFieldUnmount('*', (field: any) => {
             const name = getField(field);
@@ -64,7 +71,7 @@ export const ChartFilterForm: React.FC = memo((props) => {
           });
         },
       }),
-    [setField, getTranslatedTitle, removeField, variables],
+    [setField, getTranslatedTitle, removeField, variables, localVariables],
   );
 
   useEffect(() => setForm(form), [form, setForm]);

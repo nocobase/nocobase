@@ -13,9 +13,10 @@ import { theme } from 'antd';
 import { debounce } from 'lodash';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useDesignable } from '..';
-import { useDataBlockRequest, useCollection, useTableBlockContext } from '../../';
+import { useCollection, useDataBlockRequest } from '../../';
+import { getPageSchema, useBlockHeightProps } from '../../block-provider/hooks';
+import { useTableBlockContext } from '../../block-provider/TableBlockProvider';
 import { HeightMode } from '../../schema-settings/SchemaSettingsBlockHeightItem';
-import { useBlockHeightProps, getPageSchema } from '../../block-provider/hooks';
 
 const getPageHeaderHeight = (disablePageHeader, enablePageTabs, hidePageTitle, token) => {
   if (disablePageHeader) {

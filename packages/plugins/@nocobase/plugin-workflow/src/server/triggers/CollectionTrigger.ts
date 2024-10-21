@@ -59,9 +59,10 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
     changed &&
     changed.length &&
     changed
-      .filter(
-        (name) => !['linkTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(collection.getField(name).options.type),
-      )
+      .filter((name) => {
+        const field = collection.getField(name);
+        return field && !['linkTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.options.type);
+      })
       .every((name) => !data.changedWithAssociations(getFieldRawName(collection, name)))
   ) {
     return;

@@ -92,14 +92,28 @@ export class APIClient extends APIClientSDK {
         return response;
       },
       (error) => {
-        const errs = error?.response?.data?.errors || [{ message: 'Server error' }];
+        const errs = this.toErrMessages(error);
         // Hard code here temporarily
         // TODO(yangqia): improve error code and message
         if (errs.find((error: { code?: string }) => error.code === 'ROLE_NOT_FOUND_ERR')) {
           this.auth.setRole(null);
         }
+        if (errs.find((error: { code?: string }) => error.code === 'TOKEN_INVALID')) {
+          this.auth.setToken(null);
+        }
         throw error;
       },
+    );
+  }
+
+  toErrMessages(error) {
+    if (typeof error?.response?.data === 'string') {
+      return [{ message: error?.response?.data }];
+    }
+    return (
+      error?.response?.data?.errors ||
+      error?.response?.data?.messages ||
+      error?.response?.error || [{ message: error.message || 'Server error' }]
     );
   }
 
@@ -119,9 +133,11 @@ export class APIClient extends APIClientSDK {
         }
         return response;
       },
-      (error) => {
+      async (error) => {
         if (this.silence) {
-          throw error;
+          console.error(error);
+          return;
+          // throw error;
         }
         const redirectTo = error?.response?.data?.redirectTo;
         if (redirectTo) {
@@ -143,7 +159,7 @@ export class APIClient extends APIClientSDK {
           } else if (this.app.error) {
             this.app.error = null;
           }
-          let errs = error?.response?.data?.errors || error?.response?.data?.messages || [{ message: 'Server error' }];
+          let errs = this.toErrMessages(error);
           errs = errs.filter((error) => {
             const lastTime = errorCache.get(error.message);
             if (lastTime && new Date().getTime() - lastTime < 500) {

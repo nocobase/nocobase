@@ -11,7 +11,11 @@ import { useFieldSchema } from '@formily/react';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { SchemaSettingsItemType } from '../../../../application/schema-settings/types';
 import { useCollection } from '../../../../data-source/collection/CollectionProvider';
-import { SchemaSettingsFormItemTemplate, SchemaSettingsLinkageRules } from '../../../../schema-settings';
+import {
+  SchemaSettingsFormItemTemplate,
+  SchemaSettingsLinkageRules,
+  schemaSettingsLabelLayout,
+} from '../../../../schema-settings';
 import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
@@ -52,6 +56,7 @@ const commonItems: SchemaSettingsItemType[] = [
       };
     },
   },
+  schemaSettingsLabelLayout,
   {
     name: 'divider',
     type: 'divider',

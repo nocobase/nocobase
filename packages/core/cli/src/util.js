@@ -163,6 +163,10 @@ exports.promptForTs = () => {
   console.log(chalk.green('WAIT: ') + 'TypeScript compiling...');
 };
 
+exports.downloadPro = async () => {
+  await exports.run('yarn', ['nocobase', 'pkg', 'download-pro']);
+};
+
 exports.updateJsonFile = async (target, fn) => {
   const content = await readFile(target, 'utf-8');
   const json = JSON.parse(content);
@@ -287,6 +291,7 @@ function buildIndexHtml(force = false) {
   const data = fs.readFileSync(tpl, 'utf-8');
   const replacedData = data
     .replace(/\{\{env.APP_PUBLIC_PATH\}\}/g, process.env.APP_PUBLIC_PATH)
+    .replace(/\{\{env.API_CLIENT_STORAGE_TYPE\}\}/g, process.env.API_CLIENT_STORAGE_TYPE)
     .replace(/\{\{env.API_CLIENT_STORAGE_PREFIX\}\}/g, process.env.API_CLIENT_STORAGE_PREFIX)
     .replace(/\{\{env.API_BASE_URL\}\}/g, process.env.API_BASE_URL || process.env.API_BASE_PATH)
     .replace(/\{\{env.WS_URL\}\}/g, process.env.WEBSOCKET_URL || '')
@@ -323,6 +328,7 @@ exports.initEnv = function initEnv() {
     APP_PORT: 13000,
     API_BASE_PATH: '/api/',
     API_CLIENT_STORAGE_PREFIX: 'NOCOBASE_',
+    API_CLIENT_STORAGE_TYPE: 'localStorage',
     DB_DIALECT: 'sqlite',
     DB_STORAGE: 'storage/db/nocobase.sqlite',
     // DB_TIMEZONE: '+00:00',
@@ -414,5 +420,15 @@ exports.initEnv = function initEnv() {
     throw new Error(
       `process.env.DB_TIMEZONE="${process.env.DB_TIMEZONE}" and process.env.TZ="${process.env.TZ}" are different`,
     );
+  }
+};
+
+exports.generatePlugins = function () {
+  try {
+    require.resolve('@nocobase/devtools/umiConfig');
+    const { generatePlugins } = require('@nocobase/devtools/umiConfig');
+    generatePlugins();
+  } catch (error) {
+    return;
   }
 };

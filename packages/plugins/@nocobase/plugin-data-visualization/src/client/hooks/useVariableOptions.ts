@@ -13,6 +13,7 @@ import {
   useCurrentRoleVariable,
   useCurrentUserVariable,
   useDatetimeVariable,
+  usePopupVariable,
   useURLSearchParamsVariable,
 } from '@nocobase/client';
 import { useMemo } from 'react';
@@ -32,13 +33,29 @@ export const useGeneralVariableOptions = (
   const { apiTokenSettings } = useAPITokenVariable({ noDisabled: true });
   const { datetimeSettings } = useDatetimeVariable({ operator, schema, noDisabled: true });
   const { urlSearchParamsSettings } = useURLSearchParamsVariable();
+  const { settings: popupRecordSettings, shouldDisplayPopupRecord } = usePopupVariable({
+    schema,
+  });
 
   const result = useMemo(
     () =>
-      [currentUserSettings, currentRoleSettings, apiTokenSettings, datetimeSettings, urlSearchParamsSettings].filter(
-        Boolean,
-      ),
-    [datetimeSettings, currentUserSettings, currentRoleSettings, urlSearchParamsSettings, apiTokenSettings],
+      [
+        currentUserSettings,
+        currentRoleSettings,
+        apiTokenSettings,
+        datetimeSettings,
+        urlSearchParamsSettings,
+        shouldDisplayPopupRecord && popupRecordSettings,
+      ].filter(Boolean),
+    [
+      datetimeSettings,
+      currentUserSettings,
+      currentRoleSettings,
+      urlSearchParamsSettings,
+      apiTokenSettings,
+      shouldDisplayPopupRecord,
+      popupRecordSettings,
+    ],
   );
 
   if (!schema) return [];

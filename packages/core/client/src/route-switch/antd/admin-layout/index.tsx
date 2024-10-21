@@ -429,15 +429,33 @@ export const InternalAdminLayout = () => {
                 align-items: center;
               `}
             >
-              <img
-                className={css`
-                  padding: 0 16px;
-                  object-fit: contain;
-                  width: 100%;
-                  height: 100%;
-                `}
-                src={result?.data?.data?.logo?.url}
-              />
+              {result?.data?.data?.logo?.url ? (
+                <img
+                  className={css`
+                    padding: 0 16px;
+                    object-fit: contain;
+                    width: 100%;
+                    height: 100%;
+                  `}
+                  src={result?.data?.data?.logo?.url}
+                />
+              ) : (
+                <span
+                  style={{ fontSize: token.fontSizeHeading3 }}
+                  className={css`
+                    padding: 0 16px;
+                    width: 100%;
+                    height: 100%;
+                    font-weight: 500;
+                    text-align: center;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                  `}
+                >
+                  {result?.data?.data?.title}
+                </span>
+              )}
             </div>
             <div
               className={css`

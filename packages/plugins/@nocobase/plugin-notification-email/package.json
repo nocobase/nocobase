@@ -1,0 +1,22 @@
+{
+  "name": "@nocobase/plugin-notification-email",
+  "version": "1.4.0-alpha",
+  "displayName": "Notification: Email",
+  "displayName.zh-CN": "通知：电子邮件",
+  "description": "Used for sending email notifications with built-in SMTP transport.",
+  "description.zh-CN": "通过电子邮件渠道发送通知，目前只支持 SMTP 传输方式。",
+  "main": "dist/server/index.js",
+  "devDependencies": {
+    "nodemailer": "^6.x",
+    "@types/nodemailer": "^6.x"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "1.x",
+    "@nocobase/plugin-notification-manager": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
+  },
+  "keywords": [
+    "Notification"
+  ]
+}

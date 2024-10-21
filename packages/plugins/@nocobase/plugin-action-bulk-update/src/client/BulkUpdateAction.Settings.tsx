@@ -33,7 +33,7 @@ function UpdateMode() {
       title={t('Data will be updated')}
       options={[
         { label: t('Selected'), value: 'selected' },
-        { label: t('All'), value: 'all' },
+        { label: t('Entire collection', { ns: 'action-bulk-edit' }), value: 'all' },
       ]}
       value={fieldSchema?.['x-action-settings']?.['updateMode']}
       onChange={(value) => {
@@ -144,10 +144,6 @@ const schemaSettingsItems: SchemaSettingsItemType[] = [
   {
     name: 'afterSuccess',
     Component: AfterSuccess,
-    useVisible() {
-      const fieldSchema = useFieldSchema();
-      return isValid(fieldSchema?.['x-action-settings']?.onSuccess);
-    },
   },
   {
     name: 'refreshDataBlockRequest',

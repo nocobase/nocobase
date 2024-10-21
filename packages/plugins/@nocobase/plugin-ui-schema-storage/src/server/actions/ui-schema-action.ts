@@ -67,6 +67,7 @@ export const uiSchemaActions = {
   insertNewSchema: callRepositoryMethod('insertNewSchema', 'values'),
   remove: callRepositoryMethod('remove', 'resourceIndex'),
   patch: callRepositoryMethod('patch', 'values'),
+  initializeActionContext: callRepositoryMethod('initializeActionContext', 'values'),
   batchPatch: callRepositoryMethod('batchPatch', 'values'),
   clearAncestor: callRepositoryMethod('clearAncestor', 'resourceIndex'),
 

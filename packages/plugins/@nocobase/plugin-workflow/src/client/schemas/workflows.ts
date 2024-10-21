@@ -40,8 +40,8 @@ const collection = {
         type: 'string',
         'x-decorator': 'FormItem',
         'x-component': 'Select',
+        enum: '{{useTriggersOptions()}}',
         'x-component-props': {
-          options: `{{getTriggersOptions()}}`,
           optionRender: TriggerOptionRender,
           popupMatchSelectWidth: true,
           listHeight: 300,
@@ -173,6 +173,7 @@ const workflowFieldset = {
 };
 
 export const workflowSchema: ISchema = {
+  name: 'workflow',
   type: 'void',
   properties: {
     provider: {

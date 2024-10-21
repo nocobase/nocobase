@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { DevDynamicImport } from '../Application';
 import type { Plugin } from '../Plugin';
 import type { PluginData } from '../PluginManager';
 import type { RequireJS } from './requirejs';
-import type { DevDynamicImport } from '../Application';
 
 /**
  * @internal
@@ -131,7 +131,10 @@ export async function getPlugins(options: GetPluginsOption): Promise<Array<[stri
     return res;
   }
 
-  const remotePluginList = await getRemotePlugins(requirejs, remotePlugins);
-  res.push(...remotePluginList);
+  if (res.length === 0) {
+    const remotePluginList = await getRemotePlugins(requirejs, remotePlugins);
+    res.push(...remotePluginList);
+  }
+
   return res;
 }

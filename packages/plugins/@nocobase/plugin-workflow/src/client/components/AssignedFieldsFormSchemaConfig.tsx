@@ -19,6 +19,7 @@ import {
   CollectionManagerProvider,
   CollectionProvider,
   FormProvider,
+  RerenderDataBlockProvider,
   SchemaComponent,
   SchemaComponentOptions,
   SchemaComponentProvider,
@@ -57,8 +58,7 @@ export function AssignedFieldsFormSchemaConfig(props) {
   const { setFormValueChanged } = useActionContext();
   const api = useAPIClient();
   const scope = useWorkflowVariableOptions();
-  const nodeForm = useForm();
-  const { values, setValuesIn } = nodeForm;
+  const { values, setValuesIn, disabled } = useForm();
   const params = toJS(values.params);
   const [dataSourceName, collectionName] = parseCollectionName(values.collection);
 
@@ -121,17 +121,19 @@ export function AssignedFieldsFormSchemaConfig(props) {
     <Card>
       <CollectionManagerProvider dataSource={dataSourceName}>
         <CollectionProvider name={collectionName}>
-          <FormProvider form={form}>
-            <FormLayout layout={'vertical'}>
-              <VariableScopeProvider scope={scope}>
-                <SchemaComponentProvider form={form} designable={!nodeForm.disabled}>
-                  <SchemaComponentOptions {...schemaOptions}>
-                    <SchemaComponent schema={schema} onChange={onChange} />
-                  </SchemaComponentOptions>
-                </SchemaComponentProvider>
-              </VariableScopeProvider>
-            </FormLayout>
-          </FormProvider>
+          <RerenderDataBlockProvider>
+            <FormProvider form={form}>
+              <FormLayout layout={'vertical'}>
+                <VariableScopeProvider scope={scope}>
+                  <SchemaComponentProvider form={form} designable={!disabled}>
+                    <SchemaComponentOptions {...schemaOptions}>
+                      <SchemaComponent schema={schema} onChange={onChange} />
+                    </SchemaComponentOptions>
+                  </SchemaComponentProvider>
+                </VariableScopeProvider>
+              </FormLayout>
+            </FormProvider>
+          </RerenderDataBlockProvider>
         </CollectionProvider>
       </CollectionManagerProvider>
     </Card>

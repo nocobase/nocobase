@@ -29,6 +29,7 @@ export type InstructionInterface = {
   resume?: Runner;
   getScope?: (node: FlowNodeModel, data: any, processor: Processor) => any;
   duplicateConfig?: (node: FlowNodeModel, options: Transactionable) => object | Promise<object>;
+  test?: (config: Record<string, any>) => IJob | Promise<IJob>;
 };
 
 // what should a instruction do?

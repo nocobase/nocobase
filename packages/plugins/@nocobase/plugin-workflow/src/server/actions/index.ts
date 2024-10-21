@@ -30,6 +30,7 @@ export default function ({ app }) {
     ...make('flow_nodes', {
       update: nodes.update,
       destroy: nodes.destroy,
+      test: nodes.test,
     }),
     ...make('executions', executions),
   });

@@ -194,6 +194,7 @@ export const TableVoidDesigner = () => {
         title={'每页显示'}
         value={field.decoratorProps.request.params?.pageSize || 20}
         options={[
+          { label: '5', value: 5 },
           { label: '10', value: 10 },
           { label: '20', value: 20 },
           { label: '50', value: 50 },

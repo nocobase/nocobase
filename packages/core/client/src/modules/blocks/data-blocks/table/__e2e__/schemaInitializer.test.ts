@@ -8,6 +8,7 @@
  */
 
 import { Page, expect, oneEmptyTable, test } from '@nocobase/test/e2e';
+import { addAssociationFields } from '../../form/__e2e__/form-edit/templatesOfBug';
 import { oneTableWithInheritFields } from './templatesOfBug';
 
 const deleteButton = async (page: Page, name: string) => {
@@ -111,6 +112,141 @@ test.describe('configure columns', () => {
     await expect(page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch')).not.toBeChecked();
     await page.mouse.move(300, 0);
     await expect(page.getByRole('button', { name: 'Nickname', exact: true })).not.toBeVisible();
+  });
+
+  test('multiple depths of association fields', async ({ page, mockPage, mockRecord, mockRecords }) => {
+    const nocoPage = await mockPage(addAssociationFields).waitForInit();
+
+    // The purpose here is to make the IDs in the same row different
+    await mockRecords('targetCollection1', 2, 0);
+    await mockRecords('targetCollection2', 1, 0);
+
+    const record = await mockRecord('general', 3);
+    await nocoPage.goto();
+
+    // 1. Create association fields for the first, second, and third levels
+    await page.getByLabel('schema-initializer-TableV2-').hover();
+    await page.getByRole('menuitem', { name: 'manyToOne1', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'manyToOne1 right' }).hover();
+    await page.getByRole('menuitem', { name: 'manyToOne2', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'manyToOne2 right' }).hover();
+    await page.getByRole('menuitem', { name: 'manyToOne3' }).click();
+    await page.mouse.move(600, 0);
+
+    // 2. Click on the association field, create a details block in the popup, display the ID field, and assert if it's correct
+    await page
+      .getByRole('button', { name: `${record.manyToOne1.id}`, exact: true })
+      .getByText(record.manyToOne1.id)
+      .click();
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Current record' }).click();
+    await page.getByLabel('schema-initializer-Grid-details:configureFields-targetCollection1').hover();
+    await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
+    await page.mouse.move(600, 0);
+    await expect(page.getByLabel('block-item-CollectionField-')).toHaveText(`ID:${record.manyToOne1.id}`);
+    await page.getByLabel('drawer-AssociationField.Viewer-targetCollection1-View record-mask').click();
+
+    await page
+      .getByRole('button', { name: `${record.manyToOne1.manyToOne2.id}`, exact: true })
+      .getByText(record.manyToOne1.manyToOne2.id)
+      .click();
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Current record' }).click();
+    await page.getByLabel('schema-initializer-Grid-details:configureFields-targetCollection2').hover();
+    await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
+    await page.mouse.move(600, 0);
+    await expect(page.getByLabel('block-item-CollectionField-')).toHaveText(`ID:${record.manyToOne1.manyToOne2.id}`);
+    await page.getByLabel('drawer-AssociationField.Viewer-targetCollection2-View record-mask').click();
+
+    await page
+      .getByRole('button', { name: `${record.manyToOne1.manyToOne2.manyToOne3.id}`, exact: true })
+      .getByText(record.manyToOne1.manyToOne2.manyToOne3.id)
+      .click();
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Current record' }).click();
+    await page.getByLabel('schema-initializer-Grid-details:configureFields-emptyCollection').hover();
+    await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
+    await page.mouse.move(600, 0);
+    await expect(page.getByLabel('block-item-CollectionField-')).toHaveText(
+      `ID:${record.manyToOne1.manyToOne2.manyToOne3.id}`,
+    );
+    await page.getByLabel('drawer-AssociationField.Viewer-emptyCollection-View record-mask').click();
+
+    // 测试详情区块的关系字段
+    // 1. 点击行操作按钮打开弹窗，创建一个详情区块，并配置第一、二、三级关系字段
+    await page.getByLabel('action-Action.Link-Edit-').first().click();
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Current record' }).click();
+    await page.getByLabel('schema-initializer-Grid-details:configureFields-general').hover();
+    await page.getByRole('menuitem', { name: 'manyToOne1', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'manyToOne1 right' }).hover();
+    await page.getByRole('menuitem', { name: 'manyToOne2', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'manyToOne2 right' }).hover();
+    await page.getByRole('menuitem', { name: 'manyToOne3' }).click();
+    await page.mouse.move(600, 0);
+
+    // 2. 点击每一个关系字段，创建一个详情区块，显示 ID 字段，断言 ID 是否正确
+    await page
+      .getByLabel('block-item-CollectionField-general-details-general.manyToOne1-manyToOne1')
+      .getByText(String(record.manyToOne1.id), { exact: true })
+      .click();
+    await page
+      .getByTestId('drawer-AssociationField.Viewer-targetCollection1-View record')
+      .getByLabel('schema-initializer-Grid-popup')
+      .hover();
+    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Current record' }).click();
+    await page.getByLabel('schema-initializer-Grid-details:configureFields-targetCollection1').hover();
+    await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
+    await expect(
+      page
+        .getByTestId('drawer-AssociationField.Viewer-targetCollection1-View record')
+        .getByLabel('block-item-CollectionField-'),
+    ).toHaveText(`ID:${record.manyToOne1.id}`);
+    await page.getByLabel('drawer-AssociationField.Viewer-targetCollection1-View record-mask').click();
+
+    // another field
+    await page
+      .getByLabel('block-item-CollectionField-general-details-targetCollection1.manyToOne2-')
+      .getByText(String(record.manyToOne1.manyToOne2.id), { exact: true })
+      .click();
+    await page
+      .getByTestId('drawer-AssociationField.Viewer-targetCollection2-View record')
+      .getByLabel('schema-initializer-Grid-popup')
+      .hover();
+    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Current record' }).click();
+    await page.getByLabel('schema-initializer-Grid-details:configureFields-targetCollection2').hover();
+    await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
+    await expect(
+      page
+        .getByTestId('drawer-AssociationField.Viewer-targetCollection2-View record')
+        .getByLabel('block-item-CollectionField-'),
+    ).toHaveText(`ID:${record.manyToOne1.manyToOne2.id}`);
+    await page.getByLabel('drawer-AssociationField.Viewer-targetCollection2-View record-mask').click();
+
+    // another field
+    await page
+      .getByLabel('block-item-CollectionField-general-details-targetCollection2.manyToOne3-')
+      .getByText(String(record.manyToOne1.manyToOne2.manyToOne3.id), { exact: true })
+      .click();
+    await page
+      .getByTestId('drawer-AssociationField.Viewer-emptyCollection-View record')
+      .getByLabel('schema-initializer-Grid-popup')
+      .hover();
+    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Current record' }).click();
+    await page.getByLabel('schema-initializer-Grid-details:configureFields-emptyCollection').hover();
+    await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
+    await expect(
+      page
+        .getByTestId('drawer-AssociationField.Viewer-emptyCollection-View record')
+        .getByLabel('block-item-CollectionField-'),
+    ).toHaveText(`ID:${record.manyToOne1.manyToOne2.manyToOne3.id}`);
   });
 
   test.pgOnly('display inherit fields', async ({ page, mockPage, mockRecord }) => {

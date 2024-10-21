@@ -48,7 +48,11 @@ export const SchemaInitializerMenu: FC<MenuProps> = (props) => {
   const { items, ...others } = props;
   const { token } = theme.useToken();
   const itemsWithPopupClass = useMemo(
-    () => items.map((item) => ({ ...item, popupClassName: `${hashId} ${componentCls}-menu-sub` })),
+    () =>
+      items.map((item) => ({
+        ...item,
+        popupClassName: `${hashId} ${componentCls}-menu-sub`,
+      })),
     [componentCls, hashId, items],
   );
   // selectedKeys 为了不让有选中效果
@@ -62,9 +66,23 @@ export const SchemaInitializerMenu: FC<MenuProps> = (props) => {
           border-inline-end: 0 !important;
           .ant-menu-sub {
             max-height: 50vh !important;
+            padding: ${token.paddingXXS}px !important;
           }
           .ant-menu-item {
-            margin-block: 0;
+            margin-inline: ${token.marginXXS}px !important;
+            margin-block: 0 !important;
+            width: auto !important;
+            padding: 0 ${token.paddingSM}px 0 ${token.padding}px !important;
+          }
+          .ant-menu-item-group-title {
+            padding: 0 ${token.padding}px;
+            margin-inline: 0;
+            line-height: 32px;
+          }
+          .ant-menu-submenu-title {
+            margin: 0 ${token.marginXXS}px !important;
+            padding-left: ${token.padding}px !important;
+            width: auto !important;
           }
           .ant-menu-root {
             margin: 0 -${token.margin}px;

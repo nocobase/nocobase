@@ -1,4 +1,4 @@
-name: deploy client docs
+name: Deploy client docs
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -25,30 +25,30 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: 18
-        cache: 'yarn'
-    - run: yarn install
-    - name: Build zh-CN
-      run: yarn doc build core/client --lang=zh-CN
-    - name: Build en-US
-      run: yarn doc build core/client --lang=en-US
-    - name: Set tags
-      id: set-tags
-      run: |
-        if [[ "${{ github.ref_name }}" == "main" ]]; then
-          echo "::set-output name=tags::${{ github.ref_name }}"
-        else
-          echo "::set-output name=tags::pr-${{ github.event.pull_request.number }}"
-        fi
-    - name: copy files via ssh - ${{ steps.set-tags.outputs.tags }}
-      uses: appleboy/scp-action@v0.1.4
-      with:
-        host: ${{ secrets.CN_CLIENT_HOST }}
-        username: ${{ secrets.CN_CLIENT_USERNAME }}
-        key: ${{ secrets.CN_CLIENT_KEY }}
-        port: ${{ secrets.CN_CLIENT_PORT }}
-        source: "packages/core/client/dist/*"
-        target: ${{ secrets.CN_CLIENT_TARGET }}/${{ steps.set-tags.outputs.tags }}
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'yarn'
+      - run: yarn install
+      - name: Build zh-CN
+        run: yarn doc build core/client --lang=zh-CN
+      - name: Build en-US
+        run: yarn doc build core/client --lang=en-US
+      - name: Set tags
+        id: set-tags
+        run: |
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            echo "::set-output name=tags::${{ github.ref_name }}"
+          else
+            echo "::set-output name=tags::pr-${{ github.event.pull_request.number }}"
+          fi
+      - name: copy files via ssh - ${{ steps.set-tags.outputs.tags }}
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.CN_CLIENT_HOST }}
+          username: ${{ secrets.CN_CLIENT_USERNAME }}
+          key: ${{ secrets.CN_CLIENT_KEY }}
+          port: ${{ secrets.CN_CLIENT_PORT }}
+          source: 'packages/core/client/dist/*'
+          target: ${{ secrets.CN_CLIENT_TARGET }}/${{ steps.set-tags.outputs.tags }}

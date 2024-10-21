@@ -26,6 +26,7 @@ import {
   useCollectionManager_deprecated,
   useDesignable,
   useFormBlockContext,
+  useColumnSchema,
 } from '@nocobase/client';
 import _ from 'lodash';
 import { useMapTranslation } from '../locale';
@@ -70,6 +71,10 @@ export const defaultZoomLevel = {
         dn.refresh();
       },
     };
+  },
+  useVisible() {
+    const { fieldSchema: tableColumnSchema } = useColumnSchema();
+    return !tableColumnSchema;
   },
 };
 

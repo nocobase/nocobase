@@ -21,7 +21,7 @@ test.describe('bulk edit action setting', () => {
     await expect(page.getByTitle('Data will be updated').getByText('Selected')).toBeVisible();
     await page.getByRole('menuitem', { name: 'Data will be updated' }).click();
     //切换为全部数据
-    await page.getByRole('option', { name: 'All' }).click();
+    await page.getByRole('option', { name: 'Entire collection' }).click();
     //配置更新规则
     await page.getByLabel('Bulk edit').click();
     await page.getByLabel('schema-initializer-Grid-popup:bulkEdit:addBlock-general').hover();

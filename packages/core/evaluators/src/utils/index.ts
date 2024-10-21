@@ -36,6 +36,10 @@ export function evaluate(this: Evaluator, options: EvaluatorOptions = {}, expres
   const keyMap = {};
   let index = 0;
   const exp = expression.trim().replace(/{{\s*([\w$.-]+)\s*}}/g, (_, v) => {
+    if (v.startsWith('this.')) {
+      // 适配handlebar
+      return `{{${v}}}`;
+    }
     appendArrayColumn(context, v);
 
     let item = get(context, v) ?? null;

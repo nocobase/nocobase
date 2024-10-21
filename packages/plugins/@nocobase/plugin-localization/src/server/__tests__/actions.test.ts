@@ -27,9 +27,11 @@ describe('actions', () => {
     };
 
     beforeAll(async () => {
+      process.env.APP_ENV = 'production';
       app = await createMockServer({
         plugins: ['localization'],
       });
+      await app.emitAsync('afterLoad');
       db = app.db;
       repo = db.getRepository('localizationTexts');
       agent = app.agent();
@@ -105,6 +107,29 @@ describe('actions', () => {
         expect(res.body.data[0].text).toBe('text');
         expect(res.body.data[0].translation).toBeUndefined();
       });
+    });
+
+    it('publish', async () => {
+      await repo.create({
+        values: [
+          {
+            module: 'test',
+            text: 'text',
+            translations: [
+              {
+                locale: 'en-US',
+                translation: 'translation',
+              },
+            ],
+          },
+        ],
+      });
+      const { resources } = await app.localeManager.get('en-US');
+      expect(resources.test).toBeUndefined();
+      await agent.resource('localization').publish();
+      const { resources: resources2 } = await app.localeManager.get('en-US');
+      expect(resources2.test).toBeDefined();
+      expect(resources2.test.text).toBe('translation');
     });
   });
 });

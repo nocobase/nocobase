@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import _ from 'lodash';
 import React, { createContext, useCallback, useMemo } from 'react';
 import { AssociationSelect } from './AssociationSelect';
 import { InternalFileManager } from './FileManager';
@@ -29,7 +28,7 @@ export enum AssociationFieldMode {
 }
 
 interface AssociationFieldModeProviderProps {
-  modeToComponent: Partial<Record<AssociationFieldMode, React.FC | ((originalCom: React.FC) => React.FC)>>;
+  modeToComponent: Partial<Record<AssociationFieldMode, React.FC>>;
 }
 
 const defaultModeToComponent = {
@@ -45,9 +44,13 @@ const defaultModeToComponent = {
 const AssociationFieldModeContext = createContext<{
   modeToComponent: AssociationFieldModeProviderProps['modeToComponent'];
   getComponent: (mode: AssociationFieldMode) => React.FC;
+  getDefaultComponent: (mode: AssociationFieldMode) => React.FC;
 }>({
   modeToComponent: defaultModeToComponent,
   getComponent: (mode: AssociationFieldMode) => {
+    return defaultModeToComponent[mode];
+  },
+  getDefaultComponent: (mode: AssociationFieldMode) => {
     return defaultModeToComponent[mode];
   },
 });
@@ -61,18 +64,19 @@ export const AssociationFieldModeProvider: React.FC<AssociationFieldModeProvider
 
   const getComponent = useCallback(
     (mode: AssociationFieldMode) => {
-      const component = modeToComponent[mode];
-
-      if (_.isFunction(component)) {
-        return component(defaultModeToComponent[mode]) as React.FC;
-      }
-
-      return component || defaultModeToComponent[mode];
+      return modeToComponent[mode] || defaultModeToComponent[mode];
     },
     [modeToComponent],
   );
 
-  const value = useMemo(() => ({ modeToComponent, getComponent }), [getComponent, modeToComponent]);
+  const getDefaultComponent = useCallback((mode: AssociationFieldMode) => {
+    return defaultModeToComponent[mode];
+  }, []);
+
+  const value = useMemo(
+    () => ({ modeToComponent, getComponent, getDefaultComponent }),
+    [getComponent, modeToComponent, getDefaultComponent],
+  );
   return <AssociationFieldModeContext.Provider value={value}>{props.children}</AssociationFieldModeContext.Provider>;
 };
 

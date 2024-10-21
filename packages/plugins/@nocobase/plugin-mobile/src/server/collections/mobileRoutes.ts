@@ -294,6 +294,13 @@ export default defineCollection({
         title: 'sort',
       },
     },
+    {
+      type: 'belongsToMany',
+      name: 'roles',
+      through: 'rolesMobileRoutes',
+      target: 'roles',
+      onDelete: 'CASCADE',
+    },
   ],
   category: [],
   logging: true,

@@ -47,7 +47,7 @@ export const canMakeAssociationBlock = (field) => {
 function useRecordBlocks() {
   const collection = useCollection();
   const { getChildrenCollections } = useCollectionManager_deprecated();
-  const collectionsWithView = getChildrenCollections(collection.name, true, collection.dataSource).filter(
+  const collectionsWithView = getChildrenCollections(collection?.name, true, collection?.dataSource).filter(
     (v) => v?.filterTargetKey,
   );
 
@@ -56,8 +56,8 @@ function useRecordBlocks() {
       name: 'details',
       title: '{{t("Details")}}',
       Component: 'DetailsBlockInitializer',
-      collectionName: collection.name,
-      dataSource: collection.dataSource,
+      collectionName: collection?.name,
+      dataSource: collection?.dataSource,
       useComponentProps() {
         const currentCollection = useCollection();
         const { createSingleDetailsSchema, templateWrap } = useCreateSingleDetailsSchema();
@@ -122,8 +122,8 @@ function useRecordBlocks() {
       name: 'editForm',
       title: '{{t("Form (Edit)")}}',
       Component: 'FormBlockInitializer',
-      collectionName: collection.name,
-      dataSource: collection.dataSource,
+      collectionName: collection?.name,
+      dataSource: collection?.dataSource,
       useComponentProps() {
         const currentCollection = useCollection();
         const { createEditFormBlock, templateWrap: templateWrapEdit } = useCreateEditFormBlock();
@@ -151,8 +151,8 @@ function useRecordBlocks() {
       name: 'createForm',
       title: '{{t("Form (Add new)")}}',
       Component: 'FormBlockInitializer',
-      collectionName: collection.name,
-      dataSource: collection.dataSource,
+      collectionName: collection?.name,
+      dataSource: collection?.dataSource,
       useComponentProps() {
         const { createAssociationFormBlock, templateWrap } = useCreateAssociationFormBlock();
         const { createFormBlock, templateWrap: templateWrapCollection } = useCreateFormBlock();

@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC } from 'react';
+import { css } from '@emotion/css';
 import { Resizable } from 're-resizable';
+import React, { FC } from 'react';
 import { useSize } from './sizeContext';
 
 interface DesktopModeContentProps {
@@ -28,6 +29,11 @@ export const DesktopModeContent: FC<DesktopModeContentProps> = ({ children }) =>
         overflow: 'auto',
         padding: 80,
       }}
+      className={css`
+        .adm-error-block-full-page {
+          padding-top: 100px;
+        }
+      `}
     >
       <Resizable
         style={{

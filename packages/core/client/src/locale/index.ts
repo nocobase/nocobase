@@ -7,6 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 export type LocaleOptions = {
   label: string;
 };
@@ -81,7 +90,7 @@ export const dayjsLocale = {
   'zh-TW': 'zh-tw',
 };
 
-export default {
+export const languageCodes = {
   'ar-EG': { label: 'العربية' },
   'az-AZ': { label: 'Azərbaycan dili' },
   'bg-BG': { label: 'Български' },
@@ -150,3 +159,5 @@ export default {
   'zh-HK': { label: '繁體中文（香港）' },
   'zh-TW': { label: '繁體中文（台湾）' },
 };
+
+export default languageCodes;

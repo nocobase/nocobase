@@ -8,10 +8,11 @@
  */
 
 import type { ISchema } from '@formily/react';
-import { cloneDeep } from 'lodash';
+import { cloneDeep, capitalize } from 'lodash';
 import type { CollectionFieldOptions } from '../collection';
 import { CollectionFieldInterfaceManager } from './CollectionFieldInterfaceManager';
 import { defaultProps } from '../../collection-manager/interfaces/properties';
+import { tval } from '@nocobase/utils/client';
 export type CollectionFieldInterfaceFactory = new (
   collectionFieldInterfaceManager: CollectionFieldInterfaceManager,
 ) => CollectionFieldInterface;
@@ -71,9 +72,11 @@ export abstract class CollectionFieldInterface {
       const xComponent = this.default?.uiSchema?.['x-component'];
       const componentProps = this.default?.uiSchema?.['x-component-props'];
       if (xComponent) {
+        const schemaType = this.default?.uiSchema?.type || 'string';
+        const label = tval(xComponent.startsWith('Input') ? capitalize(schemaType) : xComponent.split('.').pop());
         this.componentOptions = [
           {
-            label: xComponent.split('.').pop(),
+            label,
             value: xComponent,
             useProps() {
               return componentProps || {};
@@ -106,6 +109,7 @@ export abstract class CollectionFieldInterface {
               'uiSchema.x-component-props.showTime',
               'uiSchema.x-component-props.dateFormat',
               'uiSchema.x-component-props.timeFormat',
+              'uiSchema.x-component-props.picker',
             ],
             fulfill: {
               state: {
@@ -114,13 +118,23 @@ export abstract class CollectionFieldInterface {
                   showTime: '{{$deps[1]}}',
                   dateFormat: '{{$deps[2]}}',
                   timeFormat: '{{$deps[3]}}',
+                  picker: '{{$deps[4]}}',
                 },
               },
             },
           },
           {
-            dependencies: ['primaryKey', 'unique', 'autoIncrement'],
-            when: '{{$deps[0]||$deps[1]||$deps[2]}}',
+            // 当 picker 改变时，清空 defaultValue
+            dependencies: ['uiSchema.x-component-props.picker'],
+            fulfill: {
+              state: {
+                value: null,
+              },
+            },
+          },
+          {
+            dependencies: ['primaryKey', 'unique', 'autoIncrement', 'defaultToCurrentTime'],
+            when: '{{$deps[0]||$deps[1]||$deps[2]||$deps[3]}}',
             fulfill: {
               state: {
                 hidden: true,

@@ -11,7 +11,7 @@ import { Database } from '../../database';
 import { mockDatabase } from '../';
 import { SortField } from '../../fields';
 
-describe('string field', () => {
+describe('sort field', () => {
   let db: Database;
 
   beforeEach(async () => {
@@ -37,7 +37,7 @@ describe('string field', () => {
         },
         {
           type: 'string',
-          name: 'scopeKey',
+          name: 'someField',
         },
       ],
     });
@@ -45,13 +45,19 @@ describe('string field', () => {
     await db.sync();
 
     await Test.repository.create({
-      values: {
-        name: 't1',
-        scopeKey: 'a',
-      },
+      values: [
+        {
+          name: 't1',
+          someField: 'a',
+        },
+        {
+          name: 't2',
+          someField: 'b',
+        },
+      ],
     });
 
-    Test.setField('scopeKeySort', { type: 'sort', scopeKey: 'scopeKey' });
+    Test.setField('scopeKeySort', { type: 'sort', scopeKey: 'someField' });
     await db.sync();
   });
 

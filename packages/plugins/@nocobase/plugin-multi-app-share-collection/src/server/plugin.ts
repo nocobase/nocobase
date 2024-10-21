@@ -127,7 +127,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       throw new Error('multi-app-share-collection plugin only support postgres');
     }
     const plugin = this.pm.get('multi-app-manager');
-    if (!plugin.enabled) {
+    if (!plugin?.enabled) {
       throw new Error(`${this.name} plugin need multi-app-manager plugin enabled`);
     }
   }

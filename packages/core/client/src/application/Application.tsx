@@ -34,17 +34,17 @@ import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
 import { getRequireJs } from './utils/requirejs';
 
+import { CollectionFieldInterfaceComponentOption } from '../data-source/collection-field-interface/CollectionFieldInterface';
 import { CollectionField } from '../data-source/collection-field/CollectionField';
 import { DataSourceApplicationProvider } from '../data-source/components/DataSourceApplicationProvider';
 import { DataBlockProvider } from '../data-source/data-block/DataBlockProvider';
 import { DataSourceManager, type DataSourceManagerOptions } from '../data-source/data-source/DataSourceManager';
-import { CollectionFieldInterfaceComponentOption } from '../data-source/collection-field-interface/CollectionFieldInterface';
 
+import type { CollectionFieldInterfaceFactory } from '../data-source';
 import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import type { Plugin } from './Plugin';
 import type { RequireJS } from './utils/requirejs';
-import type { CollectionFieldInterfaceFactory } from '../data-source';
 
 declare global {
   interface Window {
@@ -282,10 +282,21 @@ export class Application {
         });
       }
       loadFailed = true;
-      const others = error?.response?.data?.error || error?.response?.data?.errors?.[0] || { message: error?.message };
+      const toError = (error) => {
+        if (typeof error?.response?.data === 'string') {
+          return { message: error?.response?.data };
+        }
+        if (error?.response?.data?.error) {
+          return error?.response?.data?.error;
+        }
+        if (error?.response?.data?.errors?.[0]) {
+          return error?.response?.data?.errors?.[0];
+        }
+        return { message: error?.message };
+      };
       this.error = {
         code: 'LOAD_ERROR',
-        ...others,
+        ...toError(error),
       };
       console.error(error, this.error);
     }

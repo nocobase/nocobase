@@ -15,7 +15,7 @@ import bodyParser from 'koa-bodyparser';
 import Database from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 
-import PluginWorkflow, { Processor, EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
+import PluginWorkflow, { EXECUTION_STATUS, JOB_STATUS, Processor } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
 import { RequestConfig } from '../MailerInstruction';
@@ -206,8 +206,8 @@ describe('workflow > instructions > request', () => {
 
       expect(job.result).toMatchObject({
         code: 'ECONNABORTED',
-        name: 'Error',
-        status: null,
+        name: 'AxiosError',
+        // status: null,
         message: 'timeout of 250ms exceeded',
       });
 
@@ -235,8 +235,8 @@ describe('workflow > instructions > request', () => {
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
       expect(job.result).toMatchObject({
         code: 'ECONNABORTED',
-        name: 'Error',
-        status: null,
+        name: 'AxiosError',
+        // status: null,
         message: 'timeout of 250ms exceeded',
       });
     });
@@ -319,7 +319,7 @@ describe('workflow > instructions > request', () => {
       expect(job.result).toMatchObject({
         code: 'ECONNRESET',
         name: 'Error',
-        status: null,
+        // status: null,
         message: 'socket hang up',
       });
     });

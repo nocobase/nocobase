@@ -8,11 +8,13 @@
  */
 
 import { Plugin } from '@nocobase/client';
+import { ACLSettingsUI } from './ACLSettingsUI';
 import { RolesManagement } from './RolesManagement';
 import { RolesManager } from './roles-manager';
 
 export class PluginACLClient extends Plugin {
   rolesManager = new RolesManager();
+  settingsUI = new ACLSettingsUI();
 
   async load() {
     this.pluginSettingsManager.add('users-permissions.roles', {

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, MenuOutlined } from '@ant-design/icons';
+import { CloseOutlined, MenuOutlined } from '@ant-design/icons';
 import { TinyColor } from '@ctrl/tinycolor';
 import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sortable';
 import { css, cx } from '@emotion/css';
@@ -31,10 +31,10 @@ import {
   useCollection,
   useCollectionParentRecordData,
   useSchemaInitializerRender,
-  useTableBlockContext,
   useTableSelectorContext,
 } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
+import { useTableBlockContext } from '../../../block-provider/TableBlockProvider';
 import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useSatisfiedActionValues } from '../../../schema-settings/LinkageRules/useActionValues';
@@ -42,6 +42,7 @@ import { useToken } from '../__builtins__';
 import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
+import { useDataBlockRequest } from '../../../';
 const MemoizedAntdTable = React.memo(AntdTable);
 
 const useArrayField = (props) => {
@@ -81,7 +82,7 @@ export const useColumnsDeepMemoized = (columns: any[]) => {
   return oldObj.value;
 };
 
-const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => {
+const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }) => {
   const { token } = useToken();
   const field = useArrayField(props);
   const schema = useFieldSchema();
@@ -132,7 +133,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
             const index = field.value?.indexOf(record);
             const basePath = field.address.concat(record.__index || index);
             return (
-              <SubFormProvider value={{ value: record, collection }}>
+              <SubFormProvider value={{ value: record, collection, fieldSchema: schema.parent }}>
                 <RecordIndexProvider index={record.__index || index}>
                   <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
                     <ColumnFieldProvider schema={s} basePath={basePath}>
@@ -145,8 +146,8 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
               </SubFormProvider>
             );
           },
-          onCell: (record) => {
-            return { record, schema: s };
+          onCell: (record, rowIndex) => {
+            return { record, schema: s, rowIndex };
           },
         } as TableColumnProps<any>;
       }),
@@ -181,22 +182,25 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
         align: 'center',
         fixed: 'right',
         render: (v, record, index) => {
-          return (
-            <DeleteOutlined
-              style={{ cursor: 'pointer' }}
-              onClick={() => {
-                action(() => {
-                  spliceArrayState(field as any, {
-                    startIndex: index,
-                    deleteCount: 1,
+          if (props.showDel(record)) {
+            return (
+              <CloseOutlined
+                style={{ cursor: 'pointer', color: 'gray' }}
+                onClick={() => {
+                  action(() => {
+                    spliceArrayState(field as any, {
+                      startIndex: index,
+                      deleteCount: 1,
+                    });
+                    field.value.splice(index, 1);
+                    field.initialValue?.splice(index, 1);
+                    return field.onInput(field.value);
                   });
-                  field.value.splice(index, 1);
-                  field.initialValue?.splice(index, 1);
-                  return field.onInput(field.value);
-                });
-              }}
-            />
-          );
+                }}
+              />
+            );
+          }
+          return;
         },
       });
     }
@@ -261,10 +265,15 @@ const TableIndex = (props) => {
   );
 };
 
+const pageSizeOptions = [5, 10, 20, 50, 100, 200];
+
 const usePaginationProps = (pagination1, pagination2) => {
   const { t } = useTranslation();
   const field: any = useField();
   const { token } = useToken();
+  const { data } = useDataBlockRequest() || ({} as any);
+  const { meta } = data || {};
+  const { hasNext } = meta || {};
   const pagination = useMemo(
     () => ({ ...pagination1, ...pagination2 }),
     [JSON.stringify({ ...pagination1, ...pagination2 })],
@@ -279,19 +288,21 @@ const usePaginationProps = (pagination1, pagination2) => {
   const result = useMemo(() => {
     if (totalCount) {
       return {
+        pageSizeOptions,
         showTotal,
         showSizeChanger: true,
         ...pagination,
       };
     } else {
       return {
+        pageSizeOptions,
         showTotal: false,
         simple: true,
         showTitle: false,
         showSizeChanger: true,
         hideOnSinglePage: false,
         ...pagination,
-        total: field.value?.length < pageSize ? pageSize * current : pageSize * current + 1,
+        total: field.value?.length < pageSize || !hasNext ? pageSize * current : pageSize * current + 1,
         className: css`
           .ant-pagination-simple-pager {
             display: none !important;
@@ -317,7 +328,7 @@ const usePaginationProps = (pagination1, pagination2) => {
         },
       };
     }
-  }, [pagination, t, showTotal]);
+  }, [pagination, t, showTotal, field.value?.length]);
 
   if (pagination2 === false) {
     return false;
@@ -325,7 +336,6 @@ const usePaginationProps = (pagination1, pagination2) => {
   if (!pagination2 && pagination1 === false) {
     return false;
   }
-
   return result.total <= result.pageSize ? false : result;
 };
 
@@ -340,9 +350,6 @@ const headerClass = css`
 const cellClass = css`
   max-width: 300px;
   white-space: nowrap;
-  .nb-read-pretty-input-number {
-    text-align: right;
-  }
   .ant-color-picker-trigger {
     position: absolute;
     top: 50%;
@@ -469,18 +476,15 @@ export const Table: any = withDynamicSchemaProps(
     const highlightRowCss = useMemo(() => {
       return css`
         & > td {
-          background-color: ${token.controlItemBgActiveHover} !important;
+          background-color: ${token.controlItemBgActive} !important;
         }
         &:hover > td {
           background-color: ${token.controlItemBgActiveHover} !important;
         }
       `;
-    }, [token.controlItemBgActiveHover]);
+    }, [token.controlItemBgActive, token.controlItemBgActiveHover]);
 
-    const highlightRow = useMemo(
-      () => (onClickRow ? highlightRowCss : ''),
-      [onClickRow, token.controlItemBgActiveHover],
-    );
+    const highlightRow = useMemo(() => (onClickRow ? highlightRowCss : ''), [highlightRowCss, onClickRow]);
 
     const onRow = useMemo(() => {
       if (onClickRow) {
@@ -517,6 +521,9 @@ export const Table: any = withDynamicSchemaProps(
      * @returns
      */
     const defaultRowKey = useCallback((record: any) => {
+      if (rowKey) {
+        return getRowKey(record);
+      }
       if (record.key) {
         return record.key;
       }
@@ -532,13 +539,21 @@ export const Table: any = withDynamicSchemaProps(
 
     const getRowKey = useCallback(
       (record: any) => {
-        if (typeof rowKey === 'string') {
-          return record[rowKey]?.toString();
+        if (Array.isArray(rowKey)) {
+          // 使用多个字段值组合生成唯一键
+          return rowKey
+            .map((keyField) => {
+              return record[keyField]?.toString() || '';
+            })
+            .join('-');
+        } else if (typeof rowKey === 'string') {
+          return record[rowKey];
         } else {
+          // 如果 rowKey 是函数或未提供，使用 defaultRowKey
           return (rowKey ?? defaultRowKey)(record)?.toString();
         }
       },
-      [rowKey, defaultRowKey],
+      [JSON.stringify(rowKey), defaultRowKey],
     );
 
     const dataSourceKeys = field?.value?.map?.(getRowKey);
@@ -574,15 +589,24 @@ export const Table: any = withDynamicSchemaProps(
     const BodyCellComponent = useCallback(
       (props) => {
         const isIndex = props.className?.includes('selection-column');
-        const { record, schema } = props;
+        const { record, schema, rowIndex, ...others } = props;
         const { ref, inView } = useInView({
           threshold: 0,
           triggerOnce: true,
-          initialInView: isIndex || !!process.env.__E2E__ || dataSource.length <= 10,
+          initialInView: isIndex || !!process.env.__E2E__,
           skip: isIndex || !!process.env.__E2E__,
         });
         const { valueMap } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
         const style = useMemo(() => Object.assign({ ...props.style }, valueMap), [props.style, valueMap]);
+
+        // fix the problem of blank rows at the beginning of a table block
+        if (rowIndex < 20) {
+          return (
+            <td {...others} className={classNames(props.className, cellClass)} style={style}>
+              {props.children}
+            </td>
+          );
+        }
 
         return (
           <td {...props} ref={ref} className={classNames(props.className, cellClass)} style={style}>
@@ -591,7 +615,7 @@ export const Table: any = withDynamicSchemaProps(
           </td>
         );
       },
-      [dataSource.length, others.isSubTable],
+      [others.isSubTable],
     );
 
     const components = useMemo(() => {
@@ -619,6 +643,7 @@ export const Table: any = withDynamicSchemaProps(
               onChange(selectedRowKeys: any[], selectedRows: any[]) {
                 field.data = field.data || {};
                 field.data.selectedRowKeys = selectedRowKeys;
+                field.data.selectedRowData = selectedRows;
                 setSelectedRowKeys(selectedRowKeys);
                 onRowSelectionChange?.(selectedRowKeys, selectedRows);
               },
@@ -710,13 +735,13 @@ export const Table: any = withDynamicSchemaProps(
     const scroll = useMemo(() => {
       return {
         x: 'max-content',
-        y: tableHeight,
+        y: dataSource.length > 0 ? tableHeight : undefined,
       };
-    }, [tableHeight, maxContent]);
+    }, [tableHeight, maxContent, dataSource]);
 
     const rowClassName = useCallback(
       (record) => (selectedRow.includes(record[rowKey]) ? highlightRow : ''),
-      [selectedRow, highlightRow, rowKey],
+      [selectedRow, highlightRow, JSON.stringify(rowKey)],
     );
 
     const onExpandValue = useCallback(
@@ -750,6 +775,9 @@ export const Table: any = withDynamicSchemaProps(
                   height: 100%;
                   display: flex;
                   flex-direction: column;
+                  .ant-table-expanded-row-fixed {
+                    min-height: ${tableHeight}px;
+                  }
                   .ant-table-body {
                     min-height: ${tableHeight}px;
                   }
@@ -767,7 +795,8 @@ export const Table: any = withDynamicSchemaProps(
         <SortableWrapper>
           <MemoizedAntdTable
             ref={tableSizeRefCallback}
-            rowKey={rowKey ?? defaultRowKey}
+            rowKey={defaultRowKey}
+            // rowKey={(record) => record.id}
             dataSource={dataSource}
             tableLayout="auto"
             {...others}

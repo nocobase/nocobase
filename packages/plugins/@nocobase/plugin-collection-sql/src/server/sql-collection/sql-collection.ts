@@ -20,6 +20,23 @@ export class SQLCollection extends Collection {
     super(options, context);
   }
 
+  /* istanbul ignore next -- @preserve */
+  get filterTargetKey() {
+    const targetKey = this.options?.filterTargetKey || 'id';
+    if (Array.isArray(targetKey)) {
+      return targetKey;
+    }
+
+    if (targetKey && this.model.getAttributes()[targetKey]) {
+      return targetKey;
+    }
+
+    if (this.model.primaryKeyAttributes.length > 1) {
+      return null;
+    }
+    return this.model.primaryKeyAttribute;
+  }
+
   isSql() {
     return true;
   }
@@ -30,18 +47,6 @@ export class SQLCollection extends Collection {
 
   public collectionSchema() {
     return undefined;
-  }
-
-  /* istanbul ignore next -- @preserve */
-  get filterTargetKey() {
-    const targetKey = this.options?.filterTargetKey || 'id';
-    if (targetKey && this.model.getAttributes()[targetKey]) {
-      return targetKey;
-    }
-    if (this.model.primaryKeyAttributes.length > 1) {
-      return null;
-    }
-    return this.model.primaryKeyAttribute;
   }
 
   modelInit() {

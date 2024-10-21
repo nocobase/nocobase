@@ -157,7 +157,7 @@ test.describe('configure fields', () => {
     await page.mouse.move(300, 0);
     await expect(page.getByLabel('block-item-CollectionField-general-list-general.id-ID').first()).toBeVisible();
     await expect(
-      page.getByLabel('block-item-CollectionField-general-list-general.manyToOne.nickname').first(),
+      page.getByLabel('block-item-CollectionField-general-list-users.nickname-Nickname').first(),
     ).toBeVisible();
 
     // delete fields

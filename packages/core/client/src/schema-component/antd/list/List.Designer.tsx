@@ -170,11 +170,12 @@ export const ListDesigner = () => {
         title={t('Records per page')}
         value={field.decoratorProps?.params?.pageSize || 20}
         options={[
+          { label: '5', value: 5 },
           { label: '10', value: 10 },
           { label: '20', value: 20 },
           { label: '50', value: 50 },
-          { label: '80', value: 80 },
           { label: '100', value: 100 },
+          { label: '200', value: 200 },
         ]}
         onChange={(pageSize) => {
           _.set(fieldSchema, 'x-decorator-props.params.pageSize', pageSize);

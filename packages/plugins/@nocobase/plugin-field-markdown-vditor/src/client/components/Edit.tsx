@@ -8,7 +8,7 @@
  */
 
 import { useAPIClient, useApp, withDynamicSchemaProps } from '@nocobase/client';
-import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Vditor from 'vditor';
 import { defaultToolbar } from '../interfaces/markdown-vditor';
 import { useCDN } from './const';
@@ -19,10 +19,11 @@ const locales = ['en_US', 'fr_FR', 'pt_BR', 'ja_JP', 'ko_KR', 'ru_RU', 'sv_SE', 
 export const Edit = withDynamicSchemaProps((props) => {
   const { disabled, onChange, value, fileCollection, toolbar } = props;
 
+  const [editorReady, setEditorReady] = useState(false);
   const vdRef = useRef<Vditor>();
   const vdFullscreen = useRef(false);
-  const containerRef = useRef<HTMLDivElement>();
-  const containerParentRef = useRef<HTMLDivElement>();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const containerParentRef = useRef<HTMLDivElement>(null);
   const app = useApp();
   const apiClient = useAPIClient();
   const cdn = useCDN();
@@ -38,28 +39,24 @@ export const Edit = withDynamicSchemaProps((props) => {
   }, [locale]);
 
   useEffect(() => {
+    if (!containerRef.current) return;
+
     const uploadFileCollection = fileCollection || 'attachments';
     const toolbarConfig = toolbar ?? defaultToolbar;
+
     const vditor = new Vditor(containerRef.current, {
       value: value ?? '',
       lang,
-      cache: {
-        enable: false,
-      },
+      cache: { enable: false },
       undoDelay: 0,
-      preview: {
-        math: {
-          engine: 'KaTeX',
-        },
-      },
+      preview: { math: { engine: 'KaTeX' } },
       toolbar: toolbarConfig,
-      fullscreen: {
-        index: 1200,
-      },
+      fullscreen: { index: 1200 },
       cdn,
       minHeight: 200,
       after: () => {
         vdRef.current = vditor;
+        setEditorReady(true); // Notify that the editor is ready
         vditor.setValue(value ?? '');
         if (disabled) {
           vditor.disabled();
@@ -92,6 +89,7 @@ export const Edit = withDynamicSchemaProps((props) => {
         },
       },
     });
+
     return () => {
       vdRef.current?.destroy();
       vdRef.current = undefined;
@@ -99,34 +97,42 @@ export const Edit = withDynamicSchemaProps((props) => {
   }, [fileCollection, toolbar?.join(',')]);
 
   useEffect(() => {
-    if (value === vdRef?.current?.getValue()) {
-      return;
-    }
-    vdRef.current?.setValue(value);
-    vdRef.current?.focus();
-    // 移动光标到末尾
-    const preArea = containerRef.current.querySelector('div.vditor-content > div.vditor-ir > pre') as HTMLPreElement;
-    if (preArea) {
-      const range = document.createRange();
-      const selection = window.getSelection();
-      if (selection) {
-        range.selectNodeContents(preArea);
-        range.collapse(false); // 将光标移动到内容末尾
-        selection.removeAllRanges();
-        selection.addRange(range);
+    if (editorReady && vdRef.current) {
+      const editor = vdRef.current;
+      if (value !== editor.getValue()) {
+        editor.setValue(value ?? '');
+        // editor.focus();
+
+        const preArea = containerRef.current?.querySelector(
+          'div.vditor-content > div.vditor-ir > pre',
+        ) as HTMLPreElement;
+        if (preArea) {
+          const range = document.createRange();
+          const selection = window.getSelection();
+          if (selection) {
+            range.selectNodeContents(preArea);
+            range.collapse(false); // Move cursor to the end
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
+        }
       }
     }
-  }, [value]);
+  }, [value, editorReady]);
 
   useEffect(() => {
-    if (disabled) {
-      vdRef.current?.disabled();
-    } else {
-      vdRef.current?.enable();
+    if (editorReady && vdRef.current) {
+      if (disabled) {
+        vdRef.current.disabled();
+      } else {
+        vdRef.current.enable();
+      }
     }
-  }, [disabled]);
+  }, [disabled, editorReady]);
 
   useLayoutEffect(() => {
+    if (!containerRef.current) return;
+
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const target = entry.target;

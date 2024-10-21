@@ -16,6 +16,7 @@ import { useDataSourceManager } from '../data-source';
 import { DEFAULT_DATA_SOURCE_KEY } from '../../data-source/data-source/DataSourceManager';
 import { useCollection } from '../collection';
 import { BlockItemCard } from '../../schema-component/antd/block-item/BlockItemCard';
+import { AnyKindOfDictionary } from 'lodash';
 
 export interface CollectionDeletedPlaceholderProps {
   type: 'Collection' | 'Field' | 'Data Source' | 'Block template';
@@ -108,6 +109,54 @@ export const CollectionDeletedPlaceholder: FC<CollectionDeletedPlaceholderProps>
         />
       </BlockItemCard>
     );
+  }
+
+  return null;
+};
+
+const CollectionNotAllowView = () => {
+  const { t } = useTranslation();
+  const dataSource = useDataSource();
+  const compile = useCompile();
+  const collection = useCollection();
+  const dataSourceManager = useDataSourceManager();
+  const nameValue = useMemo(() => {
+    const dataSourcePrefix =
+      dataSourceManager?.getDataSources().length >= 1 && dataSource && dataSource.key !== DEFAULT_DATA_SOURCE_KEY
+        ? `${compile(dataSource.displayName || dataSource.key)} > `
+        : '';
+    if (collection) {
+      return `${dataSourcePrefix}${collection.name}`;
+    }
+    const collectionPrefix = collection
+      ? `${compile(collection.title) || collection.name || collection.tableName} > `
+      : '';
+    return `${dataSourcePrefix}${collectionPrefix}${collection.name}`;
+  }, []);
+
+  const messageValue = useMemo(() => {
+    return t(
+      `The current user only has the UI configuration permission, but don't have view permission for collection "{{name}}"`,
+      {
+        name: nameValue,
+      },
+    ).replaceAll('&gt;', '>');
+  }, [nameValue, t]);
+  return (
+    <BlockItemCard>
+      <Result status="404" subTitle={messageValue} />
+    </BlockItemCard>
+  );
+};
+
+/**
+ * @internal
+ */
+export const CollectionNotAllowViewPlaceholder: FC<any> = () => {
+  const { designable } = useDesignable();
+
+  if (designable) {
+    return <CollectionNotAllowView />;
   }
 
   return null;

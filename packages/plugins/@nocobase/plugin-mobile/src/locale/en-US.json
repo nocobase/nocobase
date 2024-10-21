@@ -21,5 +21,8 @@
   "Icon field is required": "Icon field is required",
   "Desktop data blocks": "Desktop data blocks",
   "Other desktop blocks": "Other desktop blocks",
-  "Settings": "Settings"
+  "Settings": "Settings",
+  "Mobile menu": "Mobile menu",
+  "No accessible pages found": "No accessible pages found",
+  "This might be due to permission configuration issues": "This might be due to permission configuration issues"
 }

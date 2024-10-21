@@ -76,9 +76,7 @@ test.describe('configure fields', () => {
     await expect(
       page.getByLabel('block-item-CollectionField-general-details-general.singleSelect-Single select'),
     ).toBeVisible();
-    await expect(
-      page.getByLabel('block-item-CollectionField-general-details-general.manyToOne.nickname'),
-    ).toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-general-details-users.nickname-Nickname')).toBeVisible();
 
     // delete fields
     await formItemInitializer.hover();

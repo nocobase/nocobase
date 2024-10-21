@@ -15,18 +15,20 @@ import { G2PlotChart } from './g2plot';
 export default [
   new G2PlotChart({
     name: 'line',
-    title: 'Line Chart',
+    title: 'Line',
     Component: Line,
     config: ['smooth', 'isStack'],
   }),
   new G2PlotChart({
     name: 'area',
-    title: 'Area Chart',
+    title: 'Area',
     Component: Area,
     config: [
       'smooth',
       {
-        property: 'isStack',
+        configType: 'boolean',
+        name: 'isStack',
+        title: 'isStack',
         defaultValue: true,
       },
       'isPercent',
@@ -34,17 +36,17 @@ export default [
   }),
   new G2PlotChart({
     name: 'column',
-    title: 'Column Chart',
+    title: 'Column',
     Component: Column,
     config: ['isGroup', 'isStack', 'isPercent'],
   }),
   new G2PlotChart({
     name: 'bar',
-    title: 'Bar Chart',
+    title: 'Bar',
     Component: Bar,
     config: ['isGroup', 'isStack', 'isPercent'],
   }),
   new Pie(),
   new DualAxes(),
-  new G2PlotChart({ name: 'scatter', title: 'Scatter Chart', Component: Scatter }),
+  new G2PlotChart({ name: 'scatter', title: 'Scatter', Component: Scatter }),
 ];

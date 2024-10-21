@@ -13,7 +13,7 @@ import React, { useCallback, useMemo } from 'react';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 import { useCollectionManager_deprecated } from '../../collection-manager';
 import { createCreateFormBlockUISchema } from '../../modules/blocks/data-blocks/form/createCreateFormBlockUISchema';
-import { useSchemaTemplateManager } from '../../schema-templates';
+import { useBlockTemplateContext, useSchemaTemplateManager } from '../../schema-templates';
 import { useRecordCollectionDataSourceItems } from '../utils';
 
 /**
@@ -70,6 +70,7 @@ export const RecordAssociationFormBlockInitializer = () => {
 export function useCreateAssociationFormBlock() {
   const { insert } = useSchemaInitializer();
   const { getCollection } = useCollectionManager_deprecated();
+  const { componentNamePrefix } = useBlockTemplateContext();
 
   const createAssociationFormBlock = useCallback(
     ({ item }) => {
@@ -88,7 +89,7 @@ export function useCreateAssociationFormBlock() {
 
   const templateWrap = useCallback(
     (templateSchema, { item }) => {
-      if (item.template.componentName === 'FormItem' && item.associationField) {
+      if (item.template.componentName === `${componentNamePrefix}FormItem` && item.associationField) {
         const field = item.associationField;
         const collection = getCollection(field.target);
         const blockSchema = createCreateFormBlockUISchema({
@@ -104,7 +105,7 @@ export function useCreateAssociationFormBlock() {
         return templateSchema;
       }
     },
-    [getCollection],
+    [getCollection, componentNamePrefix],
   );
 
   return { createAssociationFormBlock, templateWrap };

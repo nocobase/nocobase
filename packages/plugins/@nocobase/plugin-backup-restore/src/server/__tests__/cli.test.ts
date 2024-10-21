@@ -14,7 +14,7 @@ describe('cli', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['nocobase'],
+      plugins: ['nocobase', 'backup-restore'],
     });
   });
 

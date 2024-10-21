@@ -223,7 +223,7 @@ export class XlsxImporter extends EventEmitter {
 
   getData() {
     const firstSheet = this.firstSheet();
-    const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: null, raw: false });
+    const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: null });
 
     if (this.options.explain) {
       rows.shift();
