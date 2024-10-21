@@ -17,6 +17,7 @@ import { useSchemaInitializerItem } from '../context';
 import { useSchemaInitializerMenuItems } from '../hooks';
 import { SchemaInitializerOptions } from '../types';
 import { useSchemaInitializerStyles } from './style';
+import { useMenuSearch } from './SchemaInitializerItemSearchFields';
 
 export interface SchemaInitializerSubMenuProps {
   name?: string;
@@ -123,10 +124,23 @@ export const SchemaInitializerSubMenu: FC<SchemaInitializerSubMenuProps> = (prop
   return <SchemaInitializerMenu onOpenChange={onOpenChange} items={items}></SchemaInitializerMenu>;
 };
 
+const useProcessedChildren = (children) => {
+  return children.map((child) => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const searchedChildren = useMenuSearch(child);
+    return {
+      ...child,
+      children: searchedChildren,
+    };
+  });
+};
+
 /**
  * @internal
  */
 export const SchemaInitializerSubMenuInternal = () => {
-  const itemConfig = useSchemaInitializerItem<SchemaInitializerSubMenuProps>();
-  return <SchemaInitializerSubMenu {...itemConfig}></SchemaInitializerSubMenu>;
+  const { children: itemChildren, ...itemConfig } = useSchemaInitializerItem<SchemaInitializerSubMenuProps>();
+  const processedChildren = useProcessedChildren(itemChildren);
+  /* eslint-disable react/no-children-prop */
+  return <SchemaInitializerSubMenu {...itemConfig} children={processedChildren} />;
 };
