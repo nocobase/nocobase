@@ -8,16 +8,16 @@
  */
 
 import { COLLECTION_NAME } from '../constant';
-import { CollectionOptions } from '@nocobase/client';
 
-const channelCollection: CollectionOptions = {
+export default {
   name: COLLECTION_NAME.channels,
-  autoGenId: false,
   filterTargetKey: 'name',
+  autoGenId: false,
   fields: [
     {
       name: 'name',
       type: 'uid',
+      prefix: 's_',
       primaryKey: true,
       interface: 'input',
       uiSchema: {
@@ -49,6 +49,11 @@ const channelCollection: CollectionOptions = {
         type: 'object',
         'x-component': 'ConfigForm',
       },
+    },
+    {
+      name: 'meta',
+      type: 'json',
+      interface: 'json',
     },
     {
       interface: 'input',
@@ -123,4 +128,3 @@ const channelCollection: CollectionOptions = {
     },
   ],
 };
-export default channelCollection;

@@ -7,8 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { BaseNotificationChannel } from './base-notification-channel';
-export { default } from './plugin';
-export { COLLECTION_NAME, ChannelsCollectionDefinition } from '../constant';
+import { messageCollection } from '../../types/messages';
 
-export * from './types';
+export default messageCollection;

@@ -8,12 +8,13 @@
  */
 
 import { Application } from '@nocobase/server';
-import { ChannelOptions } from './types';
+import { ChannelOptions, ReceiversOptions } from './types';
 
 export abstract class BaseNotificationChannel<Message = any> {
   constructor(protected app: Application) {}
   abstract send(params: {
     channel: ChannelOptions;
     message: Message;
+    receivers?: ReceiversOptions;
   }): Promise<{ message: Message; status: 'success' | 'fail'; reason?: string }>;
 }

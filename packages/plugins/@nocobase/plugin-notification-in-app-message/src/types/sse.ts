@@ -7,8 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { BaseNotificationChannel } from './base-notification-channel';
-export { default } from './plugin';
-export { COLLECTION_NAME, ChannelsCollectionDefinition } from '../constant';
-
-export * from './types';
+export type SSEData = {
+  type: 'message:created';
+  data: {
+    id: string;
+    title: string;
+    content: string;
+    userId: string;
+    receiveTimestamp: number;
+    channelName: string;
+    status: 'read' | 'unread';
+  };
+};
