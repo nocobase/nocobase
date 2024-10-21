@@ -1007,5 +1007,6 @@
   "NaN": "なし",
   "true": "真",
   "false": "偽",
-  "Allow multiple selection": "複数選択を許可"
+  "Allow multiple selection": "複数選択を許可",
+  "Parent object": "親オブジェクト"
 }
