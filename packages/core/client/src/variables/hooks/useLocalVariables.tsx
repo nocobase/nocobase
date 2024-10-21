@@ -14,6 +14,7 @@ import { useBlockCollection } from '../../schema-settings/VariableInput/hooks/us
 import { useDatetimeVariable } from '../../schema-settings/VariableInput/hooks/useDateVariable';
 import { useCurrentFormVariable } from '../../schema-settings/VariableInput/hooks/useFormVariable';
 import { useCurrentObjectVariable } from '../../schema-settings/VariableInput/hooks/useIterationVariable';
+import { useParentObjectVariable } from '../../schema-settings/VariableInput/hooks/useParentIterationVariable';
 import { useParentPopupVariable } from '../../schema-settings/VariableInput/hooks/useParentPopupVariable';
 import { useCurrentParentRecordVariable } from '../../schema-settings/VariableInput/hooks/useParentRecordVariable';
 import { usePopupVariable } from '../../schema-settings/VariableInput/hooks/usePopupVariable';
@@ -27,6 +28,11 @@ interface Props {
 }
 
 const useLocalVariables = (props?: Props) => {
+  const {
+    parentObjectCtx,
+    shouldDisplayParentObject,
+    collectionName: collectionNameOfParentObject,
+  } = useParentObjectVariable();
   const { currentObjectCtx, shouldDisplayCurrentObject } = useCurrentObjectVariable();
   const { currentRecordCtx, collectionName: collectionNameOfRecord } = useCurrentRecordVariable();
   const {
@@ -134,6 +140,11 @@ const useLocalVariables = (props?: Props) => {
           ctx: currentObjectCtx,
           collectionName: currentCollectionName,
         },
+        shouldDisplayParentObject && {
+          name: '$nParentIteration',
+          ctx: parentObjectCtx,
+          collectionName: collectionNameOfParentObject,
+        },
       ] as VariableOption[]
     ).filter(Boolean);
   }, [
@@ -154,6 +165,9 @@ const useLocalVariables = (props?: Props) => {
     currentCollectionName,
     defaultValueOfPopupRecord,
     defaultValueOfParentPopupRecord,
+    shouldDisplayParentObject,
+    parentObjectCtx,
+    collectionNameOfParentObject,
     contextVariable,
   ]); // 尽量保持返回的值不变，这样可以减少接口的请求次数，因为关系字段会缓存到变量的 ctx 中
 };

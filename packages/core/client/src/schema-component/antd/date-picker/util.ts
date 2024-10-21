@@ -100,6 +100,9 @@ const handleChangeOnForm = (value, dateOnly, utc, picker, showTime, gmt) => {
     const formattedDate = dayjs(value).format(format);
     return dayjs(formattedDate).toISOString();
   }
+  if (showTime) {
+    return dayjs(value).format(format);
+  }
   return dayjs(value).startOf(picker).format(format);
 };
 
