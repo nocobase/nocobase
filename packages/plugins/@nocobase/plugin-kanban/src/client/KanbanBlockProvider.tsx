@@ -8,7 +8,7 @@
  */
 
 import { ArrayField } from '@formily/core';
-import { useField } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import {
@@ -82,8 +82,13 @@ export const useKanbanBlockContext = () => {
 };
 
 const useDisableCardDrag = () => {
+  const fieldSchema = useFieldSchema();
+  const { dragSort } = fieldSchema?.parent?.['x-component-props'] || {};
   const ctx = useKanbanBlockContext();
   const { allowAll, allowConfigure, parseAction } = useACLRoleContext();
+  if (dragSort === false) {
+    return true;
+  }
   if (allowAll || allowConfigure) {
     return false;
   }
