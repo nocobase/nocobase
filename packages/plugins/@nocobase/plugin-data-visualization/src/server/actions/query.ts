@@ -12,52 +12,8 @@ import { BelongsToArrayAssociation, Field, FilterParser } from '@nocobase/databa
 import compose from 'koa-compose';
 import { Cache } from '@nocobase/cache';
 import { middlewares } from '@nocobase/server';
-import { createFormatter } from '../formatter';
-
-type MeasureProps = {
-  field: string | string[];
-  type?: string;
-  aggregation?: string;
-  alias?: string;
-  distinct?: boolean;
-};
-
-type DimensionProps = {
-  field: string | string[];
-  type?: string;
-  alias?: string;
-  format?: string;
-  options?: any;
-};
-
-type OrderProps = {
-  field: string | string[];
-  alias?: string;
-  order?: 'asc' | 'desc';
-};
-
-type QueryParams = Partial<{
-  uid: string;
-  dataSource: string;
-  collection: string;
-  measures: MeasureProps[];
-  dimensions: DimensionProps[];
-  orders: OrderProps[];
-  filter: any;
-  limit: number;
-  sql: {
-    fields?: string;
-    clauses?: string;
-  };
-  cache: {
-    enabled: boolean;
-    ttl: number;
-  };
-  // Get the latest data from the database
-  refresh: boolean;
-}>;
-
-const AllowedAggFuncs = ['sum', 'count', 'avg', 'min', 'max'];
+import { QueryParams } from '../types';
+import { createQueryParser } from '../query-parser';
 
 const getDB = (ctx: Context, dataSource: string) => {
   const ds = ctx.app.dataSourceManager.dataSources.get(dataSource);
@@ -107,79 +63,6 @@ export const queryData = async (ctx: Context, next: Next) => {
   // const statement = `SELECT ${sql.fields} FROM ${collection} ${sql.clauses}`;
   // const [data] = await ctx.db.sequelize.query(statement);
   // return data;
-};
-
-export const parseBuilder = async (ctx: Context, next: Next) => {
-  const { dataSource, measures, dimensions, orders, include, where, limit } = ctx.action.params.values;
-  const db = getDB(ctx, dataSource) || ctx.db;
-  const { sequelize } = db;
-  const attributes = [];
-  const group = [];
-  const order = [];
-  const fieldMap = {};
-  let hasAgg = false;
-
-  measures.forEach((measure: MeasureProps & { field: string }) => {
-    const { field, aggregation, alias, distinct } = measure;
-    const attribute = [];
-    const col = sequelize.col(field);
-    if (aggregation) {
-      if (!AllowedAggFuncs.includes(aggregation)) {
-        throw new Error(`Invalid aggregation function: ${aggregation}`);
-      }
-      hasAgg = true;
-      attribute.push(sequelize.fn(aggregation, distinct ? sequelize.fn('DISTINCT', col) : col));
-    } else {
-      attribute.push(col);
-    }
-    if (alias) {
-      attribute.push(alias);
-    }
-    attributes.push(attribute.length > 1 ? attribute : attribute[0]);
-    fieldMap[alias || field] = measure;
-  });
-
-  dimensions.forEach((dimension: DimensionProps & { field: string }) => {
-    const { field, format, alias, type, options } = dimension;
-    const attribute = [];
-    const col = sequelize.col(field);
-    if (format) {
-      const formatter = createFormatter(sequelize);
-      attribute.push(formatter.format({ type, field, format, timezone: ctx.timezone, options }));
-    } else {
-      attribute.push(col);
-    }
-    if (alias) {
-      attribute.push(alias);
-    }
-    attributes.push(attribute.length > 1 ? attribute : attribute[0]);
-    if (hasAgg) {
-      group.push(attribute[0]);
-    }
-    fieldMap[alias || field] = dimension;
-  });
-
-  orders.forEach((item: OrderProps) => {
-    const alias = sequelize.getQueryInterface().quoteIdentifier(item.alias);
-    const name = hasAgg ? sequelize.literal(alias) : sequelize.col(item.field as string);
-    order.push([name, item.order || 'ASC']);
-  });
-
-  ctx.action.params.values = {
-    ...ctx.action.params.values,
-    queryParams: {
-      where,
-      attributes,
-      include,
-      group,
-      order,
-      limit: limit || 2000,
-      subQuery: false,
-      raw: true,
-    },
-    fieldMap,
-  };
-  await next();
 };
 
 export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
@@ -323,13 +206,16 @@ export const checkPermission = (ctx: Context, next: Next) => {
 };
 
 export const query = async (ctx: Context, next: Next) => {
+  const { dataSource } = ctx.action.params.values as QueryParams;
+  const db = getDB(ctx, dataSource) || ctx.db;
+  const queryParser = createQueryParser(db);
   try {
     await compose([
       checkPermission,
       cacheMiddleware,
       parseVariables,
       parseFieldAndAssociations,
-      parseBuilder,
+      queryParser.parse(),
       queryData,
       postProcess,
     ])(ctx, next);
