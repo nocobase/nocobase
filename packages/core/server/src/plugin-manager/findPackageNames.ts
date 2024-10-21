@@ -127,3 +127,16 @@ export async function findAllPlugins() {
 }
 
 export const packageNameTrim = trim;
+
+export async function appendToBuiltInPlugins(nameOrPkg: string) {
+  const APPEND_PRESET_BUILT_IN_PLUGINS = process.env.APPEND_PRESET_BUILT_IN_PLUGINS || '';
+  const keys = APPEND_PRESET_BUILT_IN_PLUGINS.split(',');
+  const { name, packageName } = await PluginManager.parseName(nameOrPkg);
+  if (keys.includes(packageName)) {
+    return;
+  }
+  if (keys.includes(name)) {
+    return;
+  }
+  process.env.APPEND_PRESET_BUILT_IN_PLUGINS += ',' + nameOrPkg;
+}

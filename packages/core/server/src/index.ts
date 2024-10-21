@@ -20,6 +20,7 @@ export * from './sync-manager';
 export const OFFICIAL_PLUGIN_PREFIX = '@nocobase/plugin-';
 
 export {
+  appendToBuiltInPlugins,
   findAllPlugins,
   findBuiltInPlugins,
   findLocalPlugins,
