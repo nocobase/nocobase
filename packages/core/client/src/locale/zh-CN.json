@@ -980,6 +980,7 @@
   "Plugin dependency version mismatch": "插件依赖版本不一致",
   "The current dependency version of the plugin does not match the version of the application and may not work properly. Are you sure you want to continue enabling the plugin?": "当前插件的依赖版本与应用的版本不一致，可能无法正常工作。您确定要继续激活插件吗？",
   "Allow multiple selection": "允许多选",
+  "Parent object": "上级对象",
   "Default value to current time": "设置字段默认值为当前时间",
   "Automatically update timestamp on update": "当记录更新时自动设置字段值为当前时间",
   "Default value to current server time": "设置字段默认值为当前服务端时间",
