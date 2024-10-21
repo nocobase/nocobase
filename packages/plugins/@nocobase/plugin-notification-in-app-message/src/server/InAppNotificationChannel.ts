@@ -47,6 +47,9 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
     }
     this.userClientsMap[userId][clientId] = stream;
   };
+  getClient = (userId: UserID, clientId: ClientID) => {
+    return this.userClientsMap[userId]?.[clientId];
+  };
   removeClient = (userId: UserID, clientId: ClientID) => {
     if (this.userClientsMap[userId]) {
       delete this.userClientsMap[userId][clientId];
@@ -129,7 +132,12 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
   };
 
   defineActions() {
-    defineMyInAppMessages({ app: this.app, addClient: this.addClient, removeClient: this.removeClient });
+    defineMyInAppMessages({
+      app: this.app,
+      addClient: this.addClient,
+      removeClient: this.removeClient,
+      getClient: this.getClient,
+    });
     defineMyInAppChannels({ app: this.app });
     this.app.acl.allow('myInAppMessages', '*', 'loggedIn');
     this.app.acl.allow('myInAppChannels', '*', 'loggedIn');

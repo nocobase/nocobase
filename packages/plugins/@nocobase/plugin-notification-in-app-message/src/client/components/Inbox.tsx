@@ -29,7 +29,7 @@ import { useCurrentUserContext } from '@nocobase/client';
 import {
   updateUnreadMsgsCount,
   unreadMsgsCountObs,
-  createMsgSSEConnection,
+  startMsgSSEStreamWithRetry,
   inboxVisible,
   userIdObs,
 } from '../observables';
@@ -61,7 +61,7 @@ const InnerInbox = (props) => {
   }, []);
 
   useEffect(() => {
-    createMsgSSEConnection();
+    startMsgSSEStreamWithRetry();
   }, []);
   const DrawerTitle = <div style={{ padding: '0' }}>{t('Message')}</div>;
   const CloseIcon = (

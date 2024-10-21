@@ -53,25 +53,28 @@ reaction(
   },
 );
 
-export const createMsgSSEConnection = async () => {
-  const apiClient = getAPIClient();
-  const res = await apiClient.request({
-    url: 'myInAppMessages:sse',
-    method: 'get',
-    headers: {
-      Accept: 'text/event-stream',
-    },
-    params: {
-      id: uid(),
-    },
-    responseType: 'stream',
-    adapter: 'fetch',
-  });
-  const stream = res.data;
-  const reader = stream.pipeThrough(new TextDecoderStream()).getReader();
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    try {
+export const startMsgSSEStreamWithRetry = async () => {
+  let retryTimes = 0;
+  const clientId = uid();
+  const createMsgSSEConnection = async (clientId: string) => {
+    const apiClient = getAPIClient();
+    const res = await apiClient.request({
+      url: 'myInAppMessages:sse',
+      method: 'get',
+      headers: {
+        Accept: 'text/event-stream',
+      },
+      params: {
+        id: clientId,
+      },
+      responseType: 'stream',
+      adapter: 'fetch',
+    });
+    const stream = res.data;
+    const reader = stream.pipeThrough(new TextDecoderStream()).getReader();
+    retryTimes = 0;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
       const { value, done } = await reader.read();
       if (done) break;
       const messages = value.split('\n\n').filter(Boolean);
@@ -79,9 +82,23 @@ export const createMsgSSEConnection = async () => {
         const sseData: SSEData = JSON.parse(message.replace(/^data:\s*/, '').trim());
         liveSSEObs.value = sseData;
       }
-    } catch (error) {
-      console.error(error);
-      break;
     }
-  }
+  };
+
+  const connectionWithRetry = async () => {
+    try {
+      await createMsgSSEConnection(clientId);
+    } catch (error) {
+      console.error('Error during stream:', error.message);
+
+      retryTimes++;
+      setTimeout(
+        () => {
+          connectionWithRetry();
+        },
+        retryTimes < 5 ? 0 : 10000,
+      );
+    }
+  };
+  connectionWithRetry();
 };

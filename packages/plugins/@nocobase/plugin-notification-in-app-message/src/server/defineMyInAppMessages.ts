@@ -16,10 +16,12 @@ export default function defineMyInAppMessages({
   app,
   addClient,
   removeClient,
+  getClient,
 }: {
   app: Application;
   addClient: any;
   removeClient: any;
+  getClient: any;
 }) {
   const countTotalUnreadMessages = async (userId: string) => {
     const messagesRepo = app.db.getRepository(MessagesDefinition.name);
@@ -59,11 +61,12 @@ export default function defineMyInAppMessages({
             'Cache-Control': 'no-cache',
             Connection: 'keep-alive',
           });
-
+          const stream = getClient(userId, clientId) ?? new PassThrough();
           ctx.status = 200;
-          const stream = new PassThrough();
           ctx.body = stream;
-          addClient(userId, clientId, stream);
+          if (!getClient(userId, clientId)) {
+            addClient(userId, clientId, stream);
+          }
           stream.on('close', () => {
             removeClient(userId, clientId);
           });
