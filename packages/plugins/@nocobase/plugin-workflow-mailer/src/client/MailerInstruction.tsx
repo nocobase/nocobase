@@ -63,7 +63,7 @@ export default class extends Instruction {
                       'x-decorator': 'FormItem',
                       'x-component': 'WorkflowVariableInput',
                       'x-component-props': {
-                        useTypedConstant: ['string'],
+                        useTypedConstant: [['string', { placeholder: 'smtp.example.com' }]],
                       },
                     },
                   },
@@ -145,7 +145,7 @@ export default class extends Instruction {
                       'x-decorator': 'FormItem',
                       'x-component': 'WorkflowVariableInput',
                       'x-component-props': {
-                        useTypedConstant: ['string'],
+                        useTypedConstant: [['string', { placeholder: 'example@domain.com' }]],
                       },
                     },
                   },
@@ -179,7 +179,7 @@ export default class extends Instruction {
       'x-decorator': 'FormItem',
       'x-component': 'WorkflowVariableInput',
       'x-component-props': {
-        useTypedConstant: ['string'],
+        useTypedConstant: [['string', { placeholder: 'noreply <example@domain.com>' }]],
       },
     },
     to: {
