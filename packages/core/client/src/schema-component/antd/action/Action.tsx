@@ -515,73 +515,75 @@ function RenderButton({
 }
 
 const RenderButtonInner = React.memo(
-  (props: {
-    designable: boolean;
-    field: Field;
-    aclCtx: any;
-    actionTitle: string;
-    icon: string;
-    loading: boolean;
-    disabled: boolean;
-    buttonStyle: React.CSSProperties;
-    handleMouseEnter: (e: React.MouseEvent) => void;
-    getAriaLabel: (postfix?: string) => string;
-    handleButtonClick: (e: React.MouseEvent) => void;
-    tarComponent: React.ElementType;
-    componentCls: string;
-    hashId: string;
-    className: string;
-    type: string;
-    Designer: React.ElementType;
-    designerProps: any;
-  }) => {
-    const {
-      designable,
-      field,
-      aclCtx,
-      actionTitle,
-      icon,
-      loading,
-      disabled,
-      buttonStyle,
-      handleMouseEnter,
-      getAriaLabel,
-      handleButtonClick,
-      tarComponent,
-      componentCls,
-      hashId,
-      className,
-      type,
-      Designer,
-      designerProps,
-      ...others
-    } = props;
+  observer(
+    (props: {
+      designable: boolean;
+      field: Field;
+      aclCtx: any;
+      actionTitle: string;
+      icon: string;
+      loading: boolean;
+      disabled: boolean;
+      buttonStyle: React.CSSProperties;
+      handleMouseEnter: (e: React.MouseEvent) => void;
+      getAriaLabel: (postfix?: string) => string;
+      handleButtonClick: (e: React.MouseEvent) => void;
+      tarComponent: React.ElementType;
+      componentCls: string;
+      hashId: string;
+      className: string;
+      type: string;
+      Designer: React.ElementType;
+      designerProps: any;
+    }) => {
+      const {
+        designable,
+        field,
+        aclCtx,
+        actionTitle,
+        icon,
+        loading,
+        disabled,
+        buttonStyle,
+        handleMouseEnter,
+        getAriaLabel,
+        handleButtonClick,
+        tarComponent,
+        componentCls,
+        hashId,
+        className,
+        type,
+        Designer,
+        designerProps,
+        ...others
+      } = props;
 
-    if (!designable && (field?.data?.hidden || !aclCtx)) {
-      return null;
-    }
+      if (!designable && (field?.data?.hidden || !aclCtx)) {
+        return null;
+      }
 
-    return (
-      <SortableItem
-        role="button"
-        aria-label={getAriaLabel()}
-        {...others}
-        onMouseEnter={handleMouseEnter}
-        // @ts-ignore
-        loading={field?.data?.loading || loading}
-        icon={typeof icon === 'string' ? <Icon type={icon} /> : icon}
-        disabled={disabled}
-        style={buttonStyle}
-        onClick={handleButtonClick}
-        component={tarComponent || Button}
-        className={classnames(componentCls, hashId, className, 'nb-action')}
-        type={type === 'danger' ? undefined : type}
-      >
-        {actionTitle && <span className={icon ? 'nb-action-title' : null}>{actionTitle}</span>}
-        <Designer {...designerProps} />
-      </SortableItem>
-    );
-  },
+      return (
+        <SortableItem
+          role="button"
+          aria-label={getAriaLabel()}
+          {...others}
+          onMouseEnter={handleMouseEnter}
+          // @ts-ignore
+          loading={field?.data?.loading || loading}
+          icon={typeof icon === 'string' ? <Icon type={icon} /> : icon}
+          disabled={disabled}
+          style={buttonStyle}
+          onClick={handleButtonClick}
+          component={tarComponent || Button}
+          className={classnames(componentCls, hashId, className, 'nb-action')}
+          type={type === 'danger' ? undefined : type}
+        >
+          {actionTitle && <span className={icon ? 'nb-action-title' : null}>{actionTitle}</span>}
+          <Designer {...designerProps} />
+        </SortableItem>
+      );
+    },
+  ),
 );
 
 RenderButtonInner.displayName = 'RenderButtonInner';
