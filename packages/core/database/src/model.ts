@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import lodash, { isPlainObject } from 'lodash';
+import lodash from 'lodash';
 import { Model as SequelizeModel, ModelStatic } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
