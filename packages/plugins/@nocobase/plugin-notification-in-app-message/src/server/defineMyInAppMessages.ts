@@ -8,9 +8,10 @@
  */
 
 import { Application } from '@nocobase/server';
+import { Op, Sequelize } from 'sequelize';
 import { PassThrough } from 'stream';
-import { InAppMessagesDefinition as MessagesDefinition, ChannelsDefinition as ChannelsDefinition } from '../types';
-
+import { InAppMessagesDefinition as MessagesDefinition } from '../types';
+import { ChannelsCollectionDefinition as ChannelsDefinition } from '@nocobase/plugin-notification-manager';
 export default function defineMyInAppMessages({
   app,
   addClient,
@@ -20,6 +21,28 @@ export default function defineMyInAppMessages({
   addClient: any;
   removeClient: any;
 }) {
+  const countTotalUnreadMessages = async (userId: string) => {
+    const messagesRepo = app.db.getRepository(MessagesDefinition.name);
+    const channelsCollection = app.db.getCollection(ChannelsDefinition.name);
+    const channelsTableName = channelsCollection.getRealTableName(true);
+    const channelsFieldName = {
+      name: channelsCollection.getRealFieldName(ChannelsDefinition.fieldNameMap.name, true),
+    };
+
+    const count = await messagesRepo.count({
+      logging: console.log,
+      // @ts-ignore
+      where: {
+        userId,
+        status: 'unread',
+        channelName: {
+          [Op.in]: Sequelize.literal(`(select ${channelsFieldName.name} from ${channelsTableName})`),
+        },
+      },
+    });
+    return count;
+  };
+
   app.resourceManager.define({
     name: 'myInAppMessages',
     actions: {
@@ -52,10 +75,13 @@ export default function defineMyInAppMessages({
       },
       count: {
         handler: async (ctx) => {
-          const userId = ctx.state.currentUser.id;
-          const messages = app.db.getRepository(MessagesDefinition.name);
-          const count = await messages.count({ filter: { userId, status: 'unread' } });
-          ctx.body = { count };
+          try {
+            const userId = ctx.state.currentUser.id;
+            const count = await countTotalUnreadMessages(userId);
+            ctx.body = { count };
+          } catch (error) {
+            console.error(error);
+          }
         },
       },
       list: {
@@ -73,14 +99,6 @@ export default function defineMyInAppMessages({
             sort: '-receiveTimestamp',
           });
           ctx.body = { messages: messageList };
-        },
-      },
-      update: {
-        handler: async (ctx) => {
-          const userId = ctx.state.currentUser.id;
-          const messages = app.db.getRepository(MessagesDefinition.name);
-          const count = await messages.count({ filter: { userId, status: 'unread' } });
-          ctx.body = { count };
         },
       },
     },
