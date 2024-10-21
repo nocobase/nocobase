@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Divider, Empty, Input, MenuProps, Spin } from 'antd';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Divider, Empty, Input, MenuProps } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const STEP = 15;
@@ -16,7 +16,7 @@ const STEP = 15;
 export const SearchFields = ({ value: outValue, onChange }) => {
   const { t } = useTranslation();
   const [value, setValue] = useState<string>(outValue);
-  const inputRef = React.useRef<any>(null);
+  const inputRef = React.useRef<any>('');
 
   // 之所以要增加个内部的 value 是为了防止用户输入过快时造成卡顿的问题
   useEffect(() => {
