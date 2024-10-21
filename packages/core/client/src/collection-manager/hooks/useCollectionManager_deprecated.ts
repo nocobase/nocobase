@@ -194,6 +194,7 @@ export const useCollectionManager_deprecated = (dataSourceName?: string) => {
             !exceptInterfaces.includes(field.interface) &&
             (allowAllTypes ||
               type.includes(field.type) ||
+              type.includes(field.dataType) ||
               (association && field.target && field.target !== collectionName && Array.isArray(association)
                 ? association.includes(field.interface)
                 : false)),
