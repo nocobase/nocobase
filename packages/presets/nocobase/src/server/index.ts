@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, PluginManager } from '@nocobase/server';
+import { findBuiltInPlugins, findLocalPlugins, packageNameTrim, Plugin, PluginManager } from '@nocobase/server';
 import _ from 'lodash';
-import { findBuiltInPlugins, findLocalPlugins, trim } from './findPackageNames';
 
 export class PresetNocoBase extends Plugin {
   splitNames(name: string) {
@@ -43,7 +42,7 @@ export class PresetNocoBase extends Plugin {
     });
     const plugins1 = await findBuiltInPlugins();
     const plugins2 = await findLocalPlugins();
-    return trim(_.uniq([...plugins1, ...plugins2, ...items.map((item) => item.name)]));
+    return packageNameTrim(_.uniq([...plugins1, ...plugins2, ...items.map((item) => item.name)]));
   }
 
   async getAllPlugins(locale = 'en-US') {

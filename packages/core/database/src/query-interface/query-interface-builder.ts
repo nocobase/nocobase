@@ -20,7 +20,12 @@ export default function buildQueryInterface(db: Database) {
     sqlite: SqliteQueryInterface,
   };
 
+  if (db.isPostgresCompatibleDialect()) {
+    return new PostgresQueryInterface(db);
+  }
+
   const dialect = db.options.dialect;
+
   if (!map[dialect]) {
     return null;
   }

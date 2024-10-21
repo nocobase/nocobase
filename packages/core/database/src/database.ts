@@ -18,7 +18,6 @@ import lodash from 'lodash';
 import { nanoid } from 'nanoid';
 import { basename, isAbsolute, resolve } from 'path';
 import safeJsonStringify from 'safe-json-stringify';
-import semver from 'semver';
 import {
   DataTypes,
   ModelStatic,
@@ -41,7 +40,7 @@ import { referentialIntegrityCheck } from './features/referential-integrity-chec
 import { ArrayFieldRepository } from './field-repository/array-field-repository';
 import * as FieldTypes from './fields';
 import { Field, FieldContext, RelationField } from './fields';
-import { checkDatabaseVersion } from './helpers';
+import { checkDatabaseVersion, registerDialects } from './helpers';
 import { InheritedCollection } from './inherited-collection';
 import InheritanceMap from './inherited-map';
 import { InterfaceManager } from './interface-manager';
@@ -85,6 +84,7 @@ import {
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
+import { BaseDialect } from './dialects/base-dialect';
 
 export type MergeOptions = merge.Options;
 
@@ -129,35 +129,9 @@ export type AddMigrationsOptions = {
 
 type OperatorFunc = (value: any, ctx?: RegisterOperatorsContext) => any;
 
-export const DialectVersionAccessors = {
-  sqlite: {
-    sql: 'select sqlite_version() as version',
-    get: (v: string) => v,
-  },
-  mysql: {
-    sql: 'select version() as version',
-    get: (v: string) => {
-      const m = /([\d+.]+)/.exec(v);
-      return m[0];
-    },
-  },
-  mariadb: {
-    sql: 'select version() as version',
-    get: (v: string) => {
-      const m = /([\d+.]+)/.exec(v);
-      return m[0];
-    },
-  },
-  postgres: {
-    sql: 'select version() as version',
-    get: (v: string) => {
-      const m = /([\d+.]+)/.exec(v);
-      return semver.minVersion(m[0]).version;
-    },
-  },
-};
-
 export class Database extends EventEmitter implements AsyncEmitter {
+  static dialects = new Map<string, typeof BaseDialect>();
+
   sequelize: Sequelize;
   migrator: Umzug;
   migrations: Migrations;
@@ -181,12 +155,30 @@ export class Database extends EventEmitter implements AsyncEmitter {
   delayCollectionExtend = new Map<string, { collectionOptions: CollectionOptions; mergeOptions?: any }[]>();
   logger: Logger;
   interfaceManager = new InterfaceManager(this);
-
   collectionFactory: CollectionFactory = new CollectionFactory(this);
+  dialect: BaseDialect;
+
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
+
+  static registerDialect(dialect: typeof BaseDialect) {
+    this.dialects.set(dialect.dialectName, dialect);
+  }
+
+  static getDialect(name: string) {
+    return this.dialects.get(name);
+  }
 
   constructor(options: DatabaseOptions) {
     super();
+
+    const dialectClass = Database.getDialect(options.dialect);
+
+    if (!dialectClass) {
+      throw new Error(`unsupported dialect ${options.dialect}`);
+    }
+
+    // @ts-ignore
+    this.dialect = new dialectClass();
 
     const opts = {
       sync: {
@@ -373,21 +365,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
    * @internal
    */
   sequelizeOptions(options) {
-    if (options.dialect === 'postgres') {
-      if (!options.hooks) {
-        options.hooks = {};
-      }
-
-      if (!options.hooks['afterConnect']) {
-        options.hooks['afterConnect'] = [];
-      }
-
-      options.hooks['afterConnect'].push(async (connection) => {
-        await connection.query('SET search_path TO public;');
-      });
-    }
-
-    return options;
+    return this.dialect.getSequelizeOptions(options);
   }
 
   /**
@@ -525,6 +503,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   isMySQLCompatibleDialect() {
     return this.inDialect('mysql', 'mariadb');
+  }
+
+  isPostgresCompatibleDialect() {
+    return this.inDialect('postgres');
   }
 
   /**
@@ -1036,5 +1018,6 @@ export const defineCollection = (collectionOptions: CollectionOptions) => {
 };
 
 applyMixins(Database, [AsyncEmitter]);
+registerDialects();
 
 export default Database;

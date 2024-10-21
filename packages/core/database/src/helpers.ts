@@ -11,7 +11,10 @@
 
 import { Database, IDatabaseOptions } from './database';
 import fs from 'fs';
-import semver from 'semver';
+import { MysqlDialect } from './dialects/mysql-dialect';
+import { SqliteDialect } from './dialects/sqlite-dialect';
+import { MariadbDialect } from './dialects/mariadb-dialect';
+import { PostgresDialect } from './dialects/postgres-dialect';
 
 function getEnvValue(key, defaultValue?) {
   return process.env[key] || defaultValue;
@@ -103,55 +106,12 @@ function customLogger(queryString, queryObject) {
   }
 }
 
-const dialectVersionAccessors = {
-  sqlite: {
-    sql: 'select sqlite_version() as version',
-    get: (v: string) => v,
-    version: '3.x',
-  },
-  mysql: {
-    sql: 'select version() as version',
-    get: (v: string) => {
-      const m = /([\d+.]+)/.exec(v);
-      return m[0];
-    },
-    version: '>=8.0.17',
-  },
-  mariadb: {
-    sql: 'select version() as version',
-    get: (v: string) => {
-      const m = /([\d+.]+)/.exec(v);
-      return m[0];
-    },
-    version: '>=10.9',
-  },
-  postgres: {
-    sql: 'select version() as version',
-    get: (v: string) => {
-      const m = /([\d+.]+)/.exec(v);
-      return semver.minVersion(m[0]).version;
-    },
-    version: '>=10',
-  },
-};
-
 export async function checkDatabaseVersion(db: Database) {
-  const dialect = db.sequelize.getDialect();
-  const accessor = dialectVersionAccessors[dialect];
-  if (!accessor) {
-    throw new Error(`unsupported dialect ${dialect}`);
-  }
+  await db.dialect.checkDatabaseVersion(db);
+}
 
-  const result = await db.sequelize.query(accessor.sql, {
-    type: 'SELECT',
+export function registerDialects() {
+  [SqliteDialect, MysqlDialect, MariadbDialect, PostgresDialect].forEach((dialect) => {
+    Database.registerDialect(dialect);
   });
-
-  // @ts-ignore
-  const version = accessor.get(result?.[0]?.version);
-  const versionResult = semver.satisfies(version, accessor.version);
-  if (!versionResult) {
-    throw new Error(`to use ${dialect}, please ensure the version is ${accessor.version}`);
-  }
-
-  return true;
 }
