@@ -37,7 +37,7 @@
     "classnames": "^2.3.1",
     "cronstrue": "^2.11.0",
     "file-saver": "^2.0.5",
-    "filesize": "9.0.11",
+    "filesize": "10.1.6",
     "flat": "^5.0.2",
     "i18next": "^22.4.9",
     "i18next-http-backend": "^2.1.1",
