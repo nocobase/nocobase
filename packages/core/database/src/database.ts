@@ -170,6 +170,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   collections = new Map<string, Collection>();
   pendingFields = new Map<string, RelationField[]>();
   modelCollection = new Map<ModelStatic<any>, Collection>();
+  modelNameCollectionMap = new Map<string, Collection>();
   tableNameCollectionMap = new Map<string, Collection>();
   context: any = {};
   queryInterface: QueryInterface;
@@ -547,6 +548,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.collections.set(collection.name, collection);
 
+    if (!collection.model.primaryKeyAttribute && collection.options.filterTargetKey) {
+      // @ts-ignore
+      collection.model.primaryKeyAttribute = collection.options.filterTargetKey;
+    }
+
     this.emit('afterDefineCollection', collection);
 
     return collection;
@@ -579,6 +585,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
 
     return field;
+  }
+
+  getCollectionByModelName(name: string) {
+    return this.modelNameCollectionMap.get(name);
   }
 
   /**

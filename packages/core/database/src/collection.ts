@@ -126,6 +126,7 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
    */
   origin?: string;
   asStrategyResource?: boolean;
+
   [key: string]: any;
 }
 
@@ -155,6 +156,7 @@ export class Collection<
     this.modelInit();
 
     this.db.modelCollection.set(this.model, this);
+    this.db.modelNameCollectionMap.set(this.model.name, this);
 
     // set tableName to collection map
     // the form of key is `${schema}.${tableName}` if schema exists
@@ -262,6 +264,20 @@ export class Collection<
     this.model.database = this.context.database;
     // @ts-ignore
     this.model.collection = this;
+
+    this.model = new Proxy(this.model, {
+      get: (target, prop) => {
+        if (prop === 'primaryKeyAttribute') {
+          if (!target.primaryKeyAttribute && this.options.filterTargetKey) {
+            return this.options.filterTargetKey;
+          }
+
+          return target[prop];
+        }
+
+        return target[prop];
+      },
+    });
   }
 
   setRepository(repository?: RepositoryType | string) {
@@ -845,6 +861,7 @@ export class Collection<
 
   protected sequelizeModelOptions() {
     const { name } = this.options;
+
     return {
       ..._.omit(this.options, ['name', 'fields', 'model', 'targetKey']),
       modelName: name,
