@@ -13,6 +13,7 @@ import lodash from 'lodash';
 export class InheritedSyncRunner {
   static async syncInheritModel(model: any, options: any) {
     const { transaction } = options;
+    options.hooks = options.hooks === undefined ? true : !!options.hooks;
 
     const inheritedCollection = model.collection as InheritedCollection;
     const db = inheritedCollection.context.database;
