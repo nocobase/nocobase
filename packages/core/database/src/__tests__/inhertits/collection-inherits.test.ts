@@ -84,6 +84,35 @@ describe.runIf(isPg())('collection inherits', () => {
     expect(err).toBeUndefined();
   });
 
+  it('should emit afterSync event', async () => {
+    const Root = db.collection({
+      name: 'root',
+      fields: [
+        { name: 'name', type: 'string' },
+        {
+          name: 'bs',
+          type: 'hasMany',
+          target: 'b',
+          foreignKey: 'root_id',
+        },
+      ],
+    });
+
+    const Child = db.collection({
+      name: 'child',
+      inherits: ['root'],
+    });
+
+    const fn = vi.fn();
+    db.on('child.afterSync', (options) => {
+      fn();
+    });
+
+    await db.sync();
+
+    expect(fn).toBeCalled();
+  });
+
   it('should append __collection with eager load', async () => {
     const Root = db.collection({
       name: 'root',

@@ -63,7 +63,7 @@ export default class extends Instruction {
                       'x-decorator': 'FormItem',
                       'x-component': 'WorkflowVariableInput',
                       'x-component-props': {
-                        useTypedConstant: ['string'],
+                        useTypedConstant: [['string', { placeholder: 'smtp.example.com' }]],
                       },
                     },
                   },
@@ -140,12 +140,12 @@ export default class extends Instruction {
                   properties: {
                     'auth.user': {
                       type: 'string',
-                      required: true,
+                      // required: true,
                       title: `{{t("User", { ns: "${NAMESPACE}" })}}`,
                       'x-decorator': 'FormItem',
                       'x-component': 'WorkflowVariableInput',
                       'x-component-props': {
-                        useTypedConstant: ['string'],
+                        useTypedConstant: [['string', { placeholder: 'example@domain.com' }]],
                       },
                     },
                   },
@@ -156,7 +156,7 @@ export default class extends Instruction {
                   properties: {
                     'auth.pass': {
                       type: 'string',
-                      required: true,
+                      // required: true,
                       title: `{{t("Password", { ns: "${NAMESPACE}" })}}`,
                       'x-decorator': 'FormItem',
                       'x-component': 'WorkflowVariableInput',
@@ -179,7 +179,7 @@ export default class extends Instruction {
       'x-decorator': 'FormItem',
       'x-component': 'WorkflowVariableInput',
       'x-component-props': {
-        useTypedConstant: ['string'],
+        useTypedConstant: [['string', { placeholder: 'noreply <example@domain.com>' }]],
       },
     },
     to: {
@@ -308,7 +308,7 @@ export default class extends Instruction {
     },
     subject: {
       type: 'string',
-      required: true,
+      // required: true,
       title: `{{t("Subject", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'WorkflowVariableTextArea',
@@ -326,7 +326,7 @@ export default class extends Instruction {
     },
     html: {
       type: 'string',
-      required: true,
+      // required: true,
       title: `{{t("Content", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-decorator-props': {},
@@ -350,7 +350,7 @@ export default class extends Instruction {
     },
     text: {
       type: 'string',
-      required: true,
+      // required: true,
       title: `{{t("Content", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-decorator-props': {},
