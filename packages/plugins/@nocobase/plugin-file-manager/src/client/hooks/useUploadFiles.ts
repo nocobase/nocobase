@@ -12,26 +12,29 @@ import {
   useActionContext,
   useBlockRequestContext,
   useCollection,
+  useDataBlockProps,
+  useDataBlockRequest,
+  useSourceId,
   useSourceIdFromParentRecord,
 } from '@nocobase/client';
 import { useContext, useMemo } from 'react';
 import { useStorageRules } from './useStorageRules';
 
 export const useUploadFiles = () => {
-  const { service } = useBlockRequestContext();
+  const service = useDataBlockRequest();
+  const { association } = useDataBlockProps();
   const { setVisible } = useActionContext();
-  const { props: blockProps } = useBlockRequestContext();
   const collection = useCollection();
-  const sourceId = useSourceIdFromParentRecord();
+  const sourceId = useSourceId();
   const rules = useStorageRules(collection?.getOption('storage'));
   const action = useMemo(() => {
     let action = `${collection.name}:create`;
-    if (blockProps?.association) {
-      const [s, t] = blockProps.association.split('.');
+    if (association) {
+      const [s, t] = association.split('.');
       action = `${s}/${sourceId}/${t}:create`;
     }
     return action;
-  }, [collection.name, blockProps?.association, sourceId]);
+  }, [collection.name, association, sourceId]);
   const { setSelectedRows } = useContext(RecordPickerContext) || {};
   const uploadingFiles = {};
 

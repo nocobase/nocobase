@@ -457,6 +457,26 @@ describe('action', () => {
     });
   });
 
+  describe('association', () => {
+    it('has-many', async () => {
+      const UserRepo = db.getRepository('users');
+      const user = await UserRepo.findOne();
+      const FileRepo = db.getRepository('users.files', user.id);
+      const f1s = await FileRepo.count();
+      expect(f1s).toBe(0);
+      const { body } = await agent.resource('users.files', 1).create({
+        [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+      });
+      const f2s = await FileRepo.find({});
+      expect(f2s.length).toBe(1);
+      expect(f2s[0].userId).toBe(user.id);
+
+      await agent.resource('users.files', 1).destroy({ filterByTk: body.data.id });
+      const f3s = await FileRepo.count();
+      expect(f3s).toBe(0);
+    });
+  });
+
   describe('storage actions', () => {
     describe('getRules', () => {
       it('get rules without key as default storage', async () => {

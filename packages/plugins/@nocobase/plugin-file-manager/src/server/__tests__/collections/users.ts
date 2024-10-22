@@ -22,6 +22,10 @@ export default {
       target: 'attachments',
     },
     {
+      type: 'hasMany',
+      name: 'files',
+    },
+    {
       type: 'belongsToMany',
       name: 'pubkeys',
       target: 'attachments',
