@@ -18,9 +18,16 @@ function writeToExclude() {
   const excludePath = resolve(process.cwd(), '.git', 'info', 'exclude');
   const content = 'packages/pro-plugins/\n';
   const dirPath = dirname(excludePath);
+
   if (!existsSync(dirPath)) {
-    mkdirSync(dirPath, { recursive: true });
+    try {
+      mkdirSync(dirPath, { recursive: true });
+    } catch (e) {
+      console.log(`${e.message}, ignore write to git exclude`);
+      return;
+    }
   }
+
   let fileContent = '';
   if (existsSync(excludePath)) {
     fileContent = readFileSync(excludePath, 'utf-8');
