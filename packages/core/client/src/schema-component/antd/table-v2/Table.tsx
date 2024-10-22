@@ -18,7 +18,7 @@ import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
 import { useCreation, useDeepCompareEffect, useMemoizedFn } from 'ahooks';
-import { Table as AntdTable, Skeleton, Spin, TableColumnProps } from 'antd';
+import { Table as AntdTable, Spin, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
 import React, { useCallback, useContext, useMemo, useRef, useState } from 'react';
@@ -31,6 +31,7 @@ import {
   useCollection,
   useCollectionParentRecordData,
   useDataBlockRequest,
+  useFlag,
   useSchemaInitializerRender,
   useTableSelectorContext,
 } from '../../../';
@@ -212,7 +213,13 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }) => {
   return tableColumns;
 };
 
-const SortableRow = (props) => {
+const SortableRow = (props: {
+  rowIndex: number;
+  onClick: (e: any) => void;
+  style: React.CSSProperties;
+  className: string;
+}) => {
+  const { isInSubTable } = useFlag();
   const { token } = useToken();
   const id = props['data-row-key']?.toString();
   const { setNodeRef, isOver, active, over } = useSortable({
@@ -222,8 +229,8 @@ const SortableRow = (props) => {
   const { ref, inView } = useInView({
     threshold: 0,
     triggerOnce: true,
-    initialInView: !!process.env.__E2E__,
-    skip: !!process.env.__E2E__,
+    initialInView: !!process.env.__E2E__ || isInSubTable || props.rowIndex < 20,
+    skip: !!process.env.__E2E__ || isInSubTable || props.rowIndex < 20,
   });
 
   const classObj = useMemo(() => {
@@ -431,21 +438,32 @@ const HeaderCellComponent = (props) => {
   return <th {...props} className={cls(props.className, headerClass)} />;
 };
 
-const BodyRowComponent = (props) => {
+const BodyRowComponent = (props: {
+  rowIndex: number;
+  onClick: (e: any) => void;
+  style: React.CSSProperties;
+  className: string;
+}) => {
   return <SortableRow {...props} />;
 };
 
 const BodyCellComponent = (props) => {
+  const { token } = useToken();
   const inView = useContext(InViewContext);
   const isIndex = props.className?.includes('selection-column');
   const { record, schema, rowIndex, isSubTable, ...others } = props;
   const { valueMap } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
   const style = useMemo(() => Object.assign({ ...props.style }, valueMap), [props.style, valueMap]);
+  const skeletonStyle = {
+    height: '1em',
+    backgroundColor: 'rgba(0, 0, 0, 0.06)',
+    borderRadius: `${token.borderRadiusSM}px`,
+  };
 
   return (
     <td {...others} className={classNames(props.className, cellClass)} style={style}>
       {/* Lazy rendering cannot be used in sub-tables. */}
-      {isSubTable || inView || isIndex ? props.children : <Skeleton.Button block size="small" active={false} />}
+      {isSubTable || inView || isIndex ? props.children : <div style={skeletonStyle} />}
     </td>
   );
 };
@@ -624,7 +642,7 @@ export const Table: any = withDynamicSchemaProps(
 
     const onRow = useMemo(() => {
       if (onClickRow) {
-        return (record) => {
+        return (record, rowIndex) => {
           return {
             onClick: (e) => {
               if (isPortalInBody(e.target)) {
@@ -632,6 +650,7 @@ export const Table: any = withDynamicSchemaProps(
               }
               onClickRow(record, setSelectedRow, selectedRow);
             },
+            rowIndex,
           };
         };
       }
