@@ -780,7 +780,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
   const locationSearch = useLocationSearch();
 
   // 解决变量`当前对象`值在弹窗中丢失的问题
-  const { formValue: subFormValue, collection: subFormCollection } = useSubFormValue();
+  const { formValue: subFormValue, collection: subFormCollection, parent } = useSubFormValue();
 
   // 解决弹窗变量丢失的问题
   const popupRecordVariable = useCurrentPopupRecord();
@@ -812,7 +812,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                   >
                     <CollectionRecordProvider record={noRecord ? null : record}>
                       <FormBlockContext.Provider value={formCtx}>
-                        <SubFormProvider value={{ value: subFormValue, collection: subFormCollection }}>
+                        <SubFormProvider value={{ value: subFormValue, collection: subFormCollection, parent }}>
                           <FormActiveFieldsProvider
                             name="form"
                             getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}

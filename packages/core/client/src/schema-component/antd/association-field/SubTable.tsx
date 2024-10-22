@@ -168,8 +168,8 @@ export const SubTable: any = observer(
         <FlagProvider isInSubTable>
           <CollectionRecordProvider record={null} parentRecord={recordV2}>
             <FormActiveFieldsProvider name="nester">
-              {/* 在这里加，是为了让 “当前对象” 的配置显示正确 */}
-              <SubFormProvider value={{ value: null, collection, fieldSchema: fieldSchema.parent }}>
+              {/* 在这里加，是为了让子表格中默认值的 “当前对象” 的配置显示正确 */}
+              <SubFormProvider value={{ value: null, collection, fieldSchema: fieldSchema.parent, skip: true }}>
                 <Table
                   className={tableClassName}
                   bordered
