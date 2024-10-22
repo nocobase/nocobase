@@ -61,7 +61,7 @@ const defaultSubAppUpgradeHandle: SubAppUpgradeHandler = async (mainApp: Applica
 
 const defaultDbCreator = async (app: Application) => {
   const databaseOptions = app.options.database as any;
-  const { host, port, username, password, dialect, database } = databaseOptions;
+  const { host, port, username, password, dialect, database, schema } = databaseOptions;
 
   if (dialect === 'mysql') {
     const mysql = require('mysql2/promise');
@@ -91,7 +91,11 @@ const defaultDbCreator = async (app: Application) => {
     await client.connect();
 
     try {
-      await client.query(`CREATE DATABASE "${database}"`);
+      if (process.env.USE_DB_SCHEMA_IN_SUBAPP === 'true') {
+        await client.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
+      } else {
+        await client.query(`CREATE DATABASE "${database}"`);
+      }
     } catch (e) {
       console.log(e);
     }
@@ -109,6 +113,8 @@ const defaultAppOptionsFactory = (appName: string, mainApp: Application) => {
       const mainStorageDir = path.dirname(mainAppStorage);
       rawDatabaseOptions.storage = path.join(mainStorageDir, `${appName}.sqlite`);
     }
+  } else if (process.env.USE_DB_SCHEMA_IN_SUBAPP === 'true' && rawDatabaseOptions.dialect === 'postgres') {
+    rawDatabaseOptions.schema = appName;
   } else {
     rawDatabaseOptions.database = appName;
   }
