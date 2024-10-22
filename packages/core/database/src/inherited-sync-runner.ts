@@ -62,10 +62,10 @@ export class InheritedSyncRunner {
         for (const parent of parents) {
           const sequenceNameResult = await queryInterface.sequelize.query(
             `SELECT column_default
-           FROM information_schema.columns
-           WHERE table_name = '${parent.model.tableName}'
-             and table_schema = '${parent.collectionSchema()}'
-             and "column_name" = 'id';`,
+             FROM information_schema.columns
+             WHERE table_name = '${parent.model.tableName}'
+               and table_schema = '${parent.collectionSchema()}'
+               and "column_name" = 'id';`,
             {
               transaction,
             },
@@ -87,7 +87,7 @@ export class InheritedSyncRunner {
           const sequenceName = match[1];
           const sequenceCurrentValResult = await queryInterface.sequelize.query(
             `select last_value
-           from ${sequenceName}`,
+             from ${sequenceName}`,
             {
               transaction,
             },
@@ -117,10 +117,10 @@ export class InheritedSyncRunner {
           const schemaName = sequenceTable.schema;
 
           const idColumnSql = `SELECT column_name
-           FROM information_schema.columns
-           WHERE table_name = '${tableName}'
-             and column_name = 'id'
-             and table_schema = '${schemaName}';
+                               FROM information_schema.columns
+                               WHERE table_name = '${tableName}'
+                                 and column_name = 'id'
+                                 and table_schema = '${schemaName}';
           `;
 
           const idColumnQuery = await queryInterface.sequelize.query(idColumnSql, {
@@ -133,7 +133,7 @@ export class InheritedSyncRunner {
 
           await queryInterface.sequelize.query(
             `alter table ${db.utils.quoteTable(sequenceTable)}
-            alter column id set default nextval('${maxSequenceName}')`,
+              alter column id set default nextval('${maxSequenceName}')`,
             {
               transaction,
             },
@@ -152,6 +152,14 @@ export class InheritedSyncRunner {
           await queryInterface.addColumn(tableName, columnName, childAttributes[columnName], options);
         }
       }
+    }
+
+    if (options.hooks) {
+      await model.runHooks('afterSync', {
+        ...options,
+        modelName: model.name,
+        transaction,
+      });
     }
   }
 
