@@ -213,6 +213,9 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }) => {
   return tableColumns;
 };
 
+// How many rows should be displayed on initial render
+const INITIAL_ROWS_NUMBER = 20;
+
 const SortableRow = (props: {
   rowIndex: number;
   onClick: (e: any) => void;
@@ -229,8 +232,8 @@ const SortableRow = (props: {
   const { ref, inView } = useInView({
     threshold: 0,
     triggerOnce: true,
-    initialInView: !!process.env.__E2E__ || isInSubTable || props.rowIndex < 20,
-    skip: !!process.env.__E2E__ || isInSubTable || props.rowIndex < 20,
+    initialInView: !!process.env.__E2E__ || isInSubTable || props.rowIndex < INITIAL_ROWS_NUMBER,
+    skip: !!process.env.__E2E__ || isInSubTable || props.rowIndex < INITIAL_ROWS_NUMBER,
   });
 
   const classObj = useMemo(() => {
