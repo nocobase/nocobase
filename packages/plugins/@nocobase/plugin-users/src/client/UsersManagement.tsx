@@ -16,14 +16,17 @@ import {
   useDataBlockRequest,
   useDataBlockResource,
   useSchemaComponentContext,
+  useRequest,
+  useAPIClient,
 } from '@nocobase/client';
-import React, { useEffect, useMemo } from 'react';
-import { usersSchema } from './schemas/users';
-import { useUsersTranslation } from './locale';
-import { PasswordField } from './PasswordField';
-import { App } from 'antd';
+import React, { createContext, useEffect, useMemo, useContext } from 'react';
+import { App, Tabs, message } from 'antd';
 import { useForm } from '@formily/react';
 import { createForm } from '@formily/core';
+import { css } from '@emotion/css';
+import { usersSchema, usersSettingsSchema } from './schemas/users';
+import { useUsersTranslation } from './locale';
+import { PasswordField } from './PasswordField';
 
 const useCancelActionProps = () => {
   const { setVisible } = useActionContext();
@@ -49,7 +52,6 @@ const useSubmitActionProps = () => {
     async onClick() {
       await form.submit();
       const values = form.values;
-      console.log('values:', values);
       if (values[collection.filterTargetKey]) {
         await resource.update({
           values,
@@ -79,7 +81,7 @@ const useEditFormProps = () => {
   };
 };
 
-export const UsersManagement: React.FC = () => {
+const UsersManagementTab: React.FC = () => {
   const { t } = useUsersTranslation();
   const scCtx = useSchemaComponentContext();
   return (
@@ -90,5 +92,83 @@ export const UsersManagement: React.FC = () => {
         components={{ PasswordField }}
       />
     </SchemaComponentContext.Provider>
+  );
+};
+const UsersSettingsContext = createContext<any>({});
+
+const UsersSettingsProvider = (props) => {
+  const result = useRequest({
+    url: 'systemSettings:get/1',
+  });
+  return <UsersSettingsContext.Provider value={result}>{props.children}</UsersSettingsContext.Provider>;
+};
+
+const UsersSettingsTab: React.FC = () => {
+  const { t } = useUsersTranslation();
+  const scCtx = useSchemaComponentContext();
+  const form = useForm();
+  const useFormBlockProps = () => {
+    const result = useContext(UsersSettingsContext);
+    const { enableChangePassword, enableEditProfile } = result?.data?.data || {};
+    useEffect(() => {
+      form?.setValues({
+        enableChangePassword: enableChangePassword !== false,
+        enableEditProfile: enableEditProfile !== false,
+      });
+    }, [result]);
+    return {
+      form: form,
+    };
+  };
+
+  const useSubmitActionProps = () => {
+    const api = useAPIClient();
+    const form = useForm();
+    return {
+      type: 'primary',
+      async onClick() {
+        await form.submit();
+        const values = form.values;
+        await api.request({ url: 'systemSettings:update/1', data: values, method: 'POST' });
+        message.success(t('Saved successfully'));
+        window.location.reload();
+      },
+    };
+  };
+  return (
+    <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
+      <SchemaComponent
+        schema={usersSettingsSchema}
+        scope={{ t, useFormBlockProps, useSubmitActionProps }}
+        components={{ UsersSettingsProvider }}
+      />
+    </SchemaComponentContext.Provider>
+  );
+};
+
+export const UsersManagement: React.FC = () => {
+  const { t } = useUsersTranslation();
+  return (
+    <Tabs
+      defaultActiveKey="usersManager"
+      type="card"
+      className={css`
+        .ant-tabs-nav {
+          margin-bottom: 0px;
+        }
+      `}
+      items={[
+        {
+          label: t('Users manager'),
+          key: 'usersManager',
+          children: <UsersManagementTab />,
+        },
+        {
+          label: t('Settings'),
+          key: 'usersSettings',
+          children: <UsersSettingsTab />,
+        },
+      ]}
+    />
   );
 };

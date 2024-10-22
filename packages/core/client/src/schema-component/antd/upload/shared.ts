@@ -59,8 +59,11 @@ export class AttachmentFileTypes {
  */
 export const attachmentFileTypes = new AttachmentFileTypes();
 
-export function matchMimetype(file: FileModel, type: string) {
-  if (file.mimetype) {
+export function matchMimetype(file: FileModel | UploadFile<any>, type: string) {
+  if ('originFileObj' in file) {
+    return match(file.type, type);
+  }
+  if ('mimetype' in file) {
     return match(file.mimetype, type);
   }
   if (file.url) {
@@ -223,7 +226,7 @@ const Rules: Record<string, RuleFunction> = {
 
 type RuleFunction = (file: UploadFile, options: any) => string | null;
 
-function validate(file, rules: Record<string, any>) {
+export function validate(file, rules: Record<string, any>) {
   if (!rules) {
     return null;
   }

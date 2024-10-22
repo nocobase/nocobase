@@ -43,7 +43,7 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { VariablesContext } from '../';
+import { SchemaSettingsItemType, VariablesContext } from '../';
 import { APIClientProvider } from '../api-client/APIClientProvider';
 import { useAPIClient } from '../api-client/hooks/useAPIClient';
 import { ApplicationContext, LocationSearchContext, useApp, useLocationSearch } from '../application';
@@ -784,7 +784,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
   const variableOptions = useVariables();
 
   // 解决变量`当前对象`值在弹窗中丢失的问题
-  const { formValue: subFormValue, collection: subFormCollection } = useSubFormValue();
+  const { formValue: subFormValue, collection: subFormCollection, parent } = useSubFormValue();
 
   // 解决弹窗变量丢失的问题
   const popupRecordVariable = useCurrentPopupRecord();
@@ -819,7 +819,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                       >
                         <CollectionRecordProvider record={noRecord ? null : record}>
                           <FormBlockContext.Provider value={formCtx}>
-                            <SubFormProvider value={{ value: subFormValue, collection: subFormCollection }}>
+                            <SubFormProvider value={{ value: subFormValue, collection: subFormCollection, parent }}>
                               <FormActiveFieldsProvider
                                 name="form"
                                 getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}
@@ -1274,6 +1274,36 @@ export const findParentFieldSchema = (fieldSchema: Schema) => {
   }
 };
 
+export const schemaSettingsLabelLayout: SchemaSettingsItemType = {
+  name: 'formLabelLayout',
+  type: 'select',
+  useComponentProps() {
+    const field = useField();
+    const fieldSchema = useFieldSchema();
+    const { t } = useTranslation();
+    const { dn } = useDesignable();
+    return {
+      title: t('Layout'),
+      value: field.componentProps?.layout || 'vertical',
+      options: [
+        { label: t('Vertical'), value: 'vertical' },
+        { label: t('Horizontal'), value: 'horizontal' },
+      ],
+      onChange: (layout) => {
+        field.componentProps = field.componentProps || {};
+        field.componentProps.layout = layout;
+        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props']['layout'] = layout;
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-component-props': fieldSchema['x-component-props'],
+          },
+        });
+      },
+    };
+  },
+};
 // 是否是系统字段
 export const isSystemField = (collectionField: CollectionFieldOptions_deprecated, getInterface) => {
   const i = getInterface?.(collectionField?.interface);

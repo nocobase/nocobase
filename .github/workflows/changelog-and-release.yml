@@ -34,11 +34,19 @@ jobs:
         run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      - name: Get branch
+        id: get-branch
+        run: |
+          if [[ "${{ inputs.version }}" == "alpha" ]]; then
+            echo "branch=$(echo 'next')" >> $GITHUB_OUTPUT
+          else
+            echo "branch=$(echo 'main')" >> $GITHUB_OUTPUT
+          fi
       - name: Checkout
         uses: actions/checkout@v4
         with:
           repository: nocobase/nocobase
-          ref: main
+          ref: ${{ steps.get-branch.outputs.branch }}
           token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
           fetch-depth: 0
@@ -47,6 +55,7 @@ jobs:
         with:
           repository: nocobase/pro-plugins
           path: packages/pro-plugins
+          ref: ${{ steps.get-branch.outputs.branch }}
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
@@ -55,7 +64,7 @@ jobs:
         run: |
           for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
           do
-          git clone -b main https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
+          git clone -b ${{ steps.get-branch.outputs.branch }} https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
           done
       - name: Set user
         run: |

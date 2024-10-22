@@ -84,7 +84,7 @@ ReadPretty.TextArea = (props) => {
   const { autop = true, ellipsis, text } = props;
   const html = (
     <div
-      style={{ lineHeight: 1.612 }}
+      style={{ lineHeight: 'inherit' }}
       dangerouslySetInnerHTML={{
         __html: HTMLEncode(value).split('\n').join('<br/>'),
       }}
