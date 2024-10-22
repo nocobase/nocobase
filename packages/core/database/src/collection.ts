@@ -279,7 +279,11 @@ export class Collection<
     this.model = new Proxy(this.model, {
       get: (target, prop) => {
         if (prop === 'primaryKeyAttribute') {
-          if (!target.primaryKeyAttribute && this.options.filterTargetKey) {
+          if (
+            !target.primaryKeyAttribute &&
+            this.options.filterTargetKey &&
+            this.getField(this.options.filterTargetKey)
+          ) {
             return this.options.filterTargetKey;
           }
 

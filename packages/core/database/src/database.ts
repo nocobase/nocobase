@@ -551,11 +551,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.collections.set(collection.name, collection);
 
-    if (!collection.model.primaryKeyAttribute && collection.options.filterTargetKey) {
-      // @ts-ignore
-      collection.model.primaryKeyAttribute = collection.options.filterTargetKey;
-    }
-
     this.emit('afterDefineCollection', collection);
 
     return collection;
