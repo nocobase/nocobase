@@ -116,7 +116,6 @@ export const calendarBlockSettings = new SchemaSettings({
           { label: t('Not selected'), value: '' },
           ...fliedList.filter((item) => item.interface === 'radioGroup' || item.interface === 'select'),
         ];
-
         return {
           title: t('Background color field'),
           value: fieldNames.colorFieldName || '',
