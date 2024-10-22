@@ -22,6 +22,7 @@ export abstract class DataSource extends EventEmitter {
   public resourceManager: ResourceManager;
   public acl: ACL;
   logger: Logger;
+  _sqlLogger: Logger;
 
   constructor(protected options: DataSourceOptions) {
     super();
@@ -30,6 +31,14 @@ export abstract class DataSource extends EventEmitter {
 
   setLogger(logger: Logger) {
     this.logger = logger;
+  }
+
+  setSqlLogger(logger: Logger) {
+    this._sqlLogger = logger;
+  }
+
+  get sqlLogger() {
+    return this._sqlLogger || this.logger;
   }
 
   get name() {

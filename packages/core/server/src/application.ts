@@ -227,7 +227,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
    */
   public syncManager: SyncManager;
   public requestLogger: Logger;
-  private sqlLogger: Logger;
+  private _sqlLogger: Logger;
   protected _logger: SystemLogger;
 
   constructor(public options: ApplicationOptions) {
@@ -250,6 +250,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get logger() {
     return this._logger;
+  }
+
+  get sqlLogger() {
+    return this._sqlLogger;
   }
 
   get log() {
@@ -1083,12 +1087,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       // Due to the use of custom log levels,
       // we have to use any type here until Winston updates the type definitions.
     }) as any;
+
     this.requestLogger = createLogger({
       dirname: getLoggerFilePath(this.name),
       filename: 'request',
       ...(options?.request || {}),
     });
-    this.sqlLogger = this.createLogger({
+
+    this._sqlLogger = this.createLogger({
       filename: 'sql',
       level: 'debug',
     });
@@ -1097,7 +1103,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   protected closeLogger() {
     this.log?.close();
     this.requestLogger?.close();
-    this.sqlLogger?.close();
+    this._sqlLogger?.close();
   }
 
   protected init() {
@@ -1209,7 +1215,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       if (msg.includes('INSERT INTO')) {
         msg = msg.substring(0, 2000) + '...';
       }
-      this.sqlLogger.debug({ message: msg, app: this.name, reqId: this.context.reqId });
+      this._sqlLogger.debug({ message: msg, app: this.name, reqId: this.context.reqId });
     };
     const dbOptions = options.database instanceof Database ? options.database.options : options.database;
     const db = new Database({
