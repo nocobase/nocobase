@@ -200,176 +200,172 @@ interface InternalActionProps {
   parentRecordData: any;
 }
 
-const InternalAction: React.FC<InternalActionProps> = React.memo(
-  observer(function Com(props) {
-    const {
-      containerRefKey,
-      fieldSchema,
-      designable,
-      field,
-      actionTitle,
-      icon,
-      loading,
-      handleMouseEnter,
-      tarComponent,
-      className,
-      type,
-      Designer,
-      onClick,
-      confirm,
-      confirmTitle,
-      popover,
-      addChild,
-      recordData,
-      title,
-      style,
-      propsDisabled,
-      useAction,
-      actionCallback,
-      visibleWithURL,
-      setVisibleWithURL,
-      setSubmitted,
-      getAriaLabel,
-      parentRecordData,
-      ...others
-    } = props;
-    const [visible, setVisible] = useState(false);
-    const { wrapSSR, componentCls, hashId } = useStyles();
-    const [formValueChanged, setFormValueChanged] = useState(false);
-    const designerProps = fieldSchema['x-toolbar-props'] || fieldSchema['x-designer-props'];
-    const openMode = fieldSchema?.['x-component-props']?.['openMode'];
-    const openSize = fieldSchema?.['x-component-props']?.['openSize'];
-    const refreshDataBlockRequest = fieldSchema?.['x-component-props']?.['refreshDataBlockRequest'];
-    const { modal } = App.useApp();
-    const form = useForm();
-    const aclCtx = useACLActionParamsContext();
-    const { run, element, disabled: disableAction } = useAction?.(actionCallback) || ({} as any);
-    const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled || disableAction;
+const InternalAction: React.FC<InternalActionProps> = observer(function Com(props) {
+  const {
+    containerRefKey,
+    fieldSchema,
+    designable,
+    field,
+    actionTitle,
+    icon,
+    loading,
+    handleMouseEnter,
+    tarComponent,
+    className,
+    type,
+    Designer,
+    onClick,
+    confirm,
+    confirmTitle,
+    popover,
+    addChild,
+    recordData,
+    title,
+    style,
+    propsDisabled,
+    useAction,
+    actionCallback,
+    visibleWithURL,
+    setVisibleWithURL,
+    setSubmitted,
+    getAriaLabel,
+    parentRecordData,
+    ...others
+  } = props;
+  const [visible, setVisible] = useState(false);
+  const { wrapSSR, componentCls, hashId } = useStyles();
+  const [formValueChanged, setFormValueChanged] = useState(false);
+  const designerProps = fieldSchema['x-toolbar-props'] || fieldSchema['x-designer-props'];
+  const openMode = fieldSchema?.['x-component-props']?.['openMode'];
+  const openSize = fieldSchema?.['x-component-props']?.['openSize'];
+  const refreshDataBlockRequest = fieldSchema?.['x-component-props']?.['refreshDataBlockRequest'];
+  const { modal } = App.useApp();
+  const form = useForm();
+  const aclCtx = useACLActionParamsContext();
+  const { run, element, disabled: disableAction } = useAction?.(actionCallback) || ({} as any);
+  const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled || disableAction;
 
-    const buttonStyle = useMemo(() => {
-      return {
-        ...style,
-        opacity: designable && (field?.data?.hidden || !aclCtx) && 0.1,
-        color: disabled ? 'rgba(0, 0, 0, 0.25)' : style?.color,
-      };
-    }, [aclCtx, designable, field?.data?.hidden, style, disabled]);
-
-    const buttonProps = {
-      designable,
-      field,
-      aclCtx,
-      actionTitle,
-      icon,
-      loading,
-      disabled,
-      buttonStyle,
-      handleMouseEnter,
-      tarComponent,
-      designerProps,
-      componentCls,
-      hashId,
-      className,
-      others,
-      getAriaLabel,
-      type,
-      Designer,
-      openMode,
-      onClick,
-      refreshDataBlockRequest,
-      fieldSchema,
-      setVisible,
-      run,
-      confirm,
-      modal,
-      setSubmitted,
-      confirmTitle,
+  const buttonStyle = useMemo(() => {
+    return {
+      ...style,
+      opacity: designable && (field?.data?.hidden || !aclCtx) && 0.1,
+      color: disabled ? 'rgba(0, 0, 0, 0.25)' : style?.color,
     };
+  }, [aclCtx, designable, field?.data?.hidden, style, disabled]);
 
-    let result = (
-      <PopupVisibleProvider visible={false}>
-        <ActionContextProvider
-          button={RenderButton(buttonProps)}
-          visible={visible || visibleWithURL}
-          setVisible={(value) => {
-            setVisible?.(value);
-            setVisibleWithURL?.(value);
-          }}
-          formValueChanged={formValueChanged}
-          setFormValueChanged={setFormValueChanged}
-          openMode={openMode}
-          openSize={openSize}
-          containerRefKey={containerRefKey}
-          fieldSchema={fieldSchema}
-          setSubmitted={setSubmitted}
-        >
-          {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
-          {!popover && <RenderButton {...buttonProps} />}
-          <VariablePopupRecordProvider>{!popover && props.children}</VariablePopupRecordProvider>
-          {element}
-        </ActionContextProvider>
-      </PopupVisibleProvider>
-    );
+  const buttonProps = {
+    designable,
+    field,
+    aclCtx,
+    actionTitle,
+    icon,
+    loading,
+    disabled,
+    buttonStyle,
+    handleMouseEnter,
+    tarComponent,
+    designerProps,
+    componentCls,
+    hashId,
+    className,
+    others,
+    getAriaLabel,
+    type,
+    Designer,
+    openMode,
+    onClick,
+    refreshDataBlockRequest,
+    fieldSchema,
+    setVisible,
+    run,
+    confirm,
+    modal,
+    setSubmitted,
+    confirmTitle,
+  };
 
-    if (isBulkEditAction(fieldSchema)) {
-      // Clear the context of Tabs to avoid affecting the Tabs of the upper-level popup
-      result = <TabsContextProvider>{result}</TabsContextProvider>;
-    }
+  let result = (
+    <PopupVisibleProvider visible={false}>
+      <ActionContextProvider
+        button={RenderButton(buttonProps)}
+        visible={visible || visibleWithURL}
+        setVisible={(value) => {
+          setVisible?.(value);
+          setVisibleWithURL?.(value);
+        }}
+        formValueChanged={formValueChanged}
+        setFormValueChanged={setFormValueChanged}
+        openMode={openMode}
+        openSize={openSize}
+        containerRefKey={containerRefKey}
+        fieldSchema={fieldSchema}
+        setSubmitted={setSubmitted}
+      >
+        {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
+        {!popover && <RenderButton {...buttonProps} />}
+        <VariablePopupRecordProvider>{!popover && props.children}</VariablePopupRecordProvider>
+        {element}
+      </ActionContextProvider>
+    </PopupVisibleProvider>
+  );
 
-    if (addChild) {
-      return wrapSSR(
-        <RecordProvider record={null} parent={parentRecordData}>
-          <TreeRecordProvider parent={recordData}>{result}</TreeRecordProvider>
-        </RecordProvider>,
-      ) as React.ReactElement;
-    }
+  if (isBulkEditAction(fieldSchema)) {
+    // Clear the context of Tabs to avoid affecting the Tabs of the upper-level popup
+    result = <TabsContextProvider>{result}</TabsContextProvider>;
+  }
 
-    return wrapSSR(result) as React.ReactElement;
-  }),
-);
+  if (addChild) {
+    return wrapSSR(
+      <RecordProvider record={null} parent={parentRecordData}>
+        <TreeRecordProvider parent={recordData}>{result}</TreeRecordProvider>
+      </RecordProvider>,
+    ) as React.ReactElement;
+  }
+
+  return wrapSSR(result) as React.ReactElement;
+});
 
 InternalAction.displayName = 'InternalAction';
 
-Action.Popover = observer(
-  (props) => {
-    const { button, visible, setVisible } = useActionContext();
-    const content = (
-      <ErrorBoundary FallbackComponent={ErrorFallback} onError={handleError}>
-        {props.children}
-      </ErrorBoundary>
-    );
-    return (
-      <StablePopover
-        {...props}
-        destroyTooltipOnHide
-        open={visible}
-        onOpenChange={(visible) => {
-          setVisible(visible);
-        }}
-        content={content}
-      >
-        {button}
-      </StablePopover>
-    );
-  },
-  { displayName: 'Action.Popover' },
-);
+Action.Popover = function ActionPopover(props) {
+  const { button, visible, setVisible } = useActionContext();
+  const content = (
+    <ErrorBoundary FallbackComponent={ErrorFallback} onError={handleError}>
+      {props.children}
+    </ErrorBoundary>
+  );
+  return (
+    <StablePopover
+      {...props}
+      destroyTooltipOnHide
+      open={visible}
+      onOpenChange={(visible) => {
+        setVisible(visible);
+      }}
+      content={content}
+    >
+      {button}
+    </StablePopover>
+  );
+};
 
-Action.Popover.Footer = observer(
-  (props) => {
-    return (
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          width: '100%',
-        }}
-      >
-        {props.children}
-      </div>
-    );
-  },
-  { displayName: 'Action.Popover.Footer' },
-);
+Action.Popover.displayName = 'Action.Popover';
+
+Action.Popover.Footer = (props) => {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'flex-end',
+        width: '100%',
+      }}
+    >
+      {props.children}
+    </div>
+  );
+};
+
+Action.Popover.Footer.displayName = 'Action.Popover.Footer';
 
 Action.Link = ActionLink;
 Action.Designer = ActionDesigner;
@@ -515,76 +511,74 @@ function RenderButton({
   );
 }
 
-const RenderButtonInner = React.memo(
-  observer(
-    (props: {
-      designable: boolean;
-      field: Field;
-      aclCtx: any;
-      actionTitle: string;
-      icon: string;
-      loading: boolean;
-      disabled: boolean;
-      buttonStyle: React.CSSProperties;
-      handleMouseEnter: (e: React.MouseEvent) => void;
-      getAriaLabel: (postfix?: string) => string;
-      handleButtonClick: (e: React.MouseEvent) => void;
-      tarComponent: React.ElementType;
-      componentCls: string;
-      hashId: string;
-      className: string;
-      type: string;
-      Designer: React.ElementType;
-      designerProps: any;
-    }) => {
-      const {
-        designable,
-        field,
-        aclCtx,
-        actionTitle,
-        icon,
-        loading,
-        disabled,
-        buttonStyle,
-        handleMouseEnter,
-        getAriaLabel,
-        handleButtonClick,
-        tarComponent,
-        componentCls,
-        hashId,
-        className,
-        type,
-        Designer,
-        designerProps,
-        ...others
-      } = props;
+const RenderButtonInner = observer(
+  (props: {
+    designable: boolean;
+    field: Field;
+    aclCtx: any;
+    actionTitle: string;
+    icon: string;
+    loading: boolean;
+    disabled: boolean;
+    buttonStyle: React.CSSProperties;
+    handleMouseEnter: (e: React.MouseEvent) => void;
+    getAriaLabel: (postfix?: string) => string;
+    handleButtonClick: (e: React.MouseEvent) => void;
+    tarComponent: React.ElementType;
+    componentCls: string;
+    hashId: string;
+    className: string;
+    type: string;
+    Designer: React.ElementType;
+    designerProps: any;
+  }) => {
+    const {
+      designable,
+      field,
+      aclCtx,
+      actionTitle,
+      icon,
+      loading,
+      disabled,
+      buttonStyle,
+      handleMouseEnter,
+      getAriaLabel,
+      handleButtonClick,
+      tarComponent,
+      componentCls,
+      hashId,
+      className,
+      type,
+      Designer,
+      designerProps,
+      ...others
+    } = props;
 
-      if (!designable && (field?.data?.hidden || !aclCtx)) {
-        return null;
-      }
+    if (!designable && (field?.data?.hidden || !aclCtx)) {
+      return null;
+    }
 
-      return (
-        <SortableItem
-          role="button"
-          aria-label={getAriaLabel()}
-          {...others}
-          onMouseEnter={handleMouseEnter}
-          // @ts-ignore
-          loading={field?.data?.loading || loading}
-          icon={typeof icon === 'string' ? <Icon type={icon} /> : icon}
-          disabled={disabled}
-          style={buttonStyle}
-          onClick={handleButtonClick}
-          component={tarComponent || Button}
-          className={classnames(componentCls, hashId, className, 'nb-action')}
-          type={type === 'danger' ? undefined : type}
-        >
-          {actionTitle && <span className={icon ? 'nb-action-title' : null}>{actionTitle}</span>}
-          <Designer {...designerProps} />
-        </SortableItem>
-      );
-    },
-  ),
+    return (
+      <SortableItem
+        role="button"
+        aria-label={getAriaLabel()}
+        {...others}
+        onMouseEnter={handleMouseEnter}
+        // @ts-ignore
+        loading={field?.data?.loading || loading}
+        icon={typeof icon === 'string' ? <Icon type={icon} /> : icon}
+        disabled={disabled}
+        style={buttonStyle}
+        onClick={handleButtonClick}
+        component={tarComponent || Button}
+        className={classnames(componentCls, hashId, className, 'nb-action')}
+        type={type === 'danger' ? undefined : type}
+      >
+        {actionTitle && <span className={icon ? 'nb-action-title' : null}>{actionTitle}</span>}
+        <Designer {...designerProps} />
+      </SortableItem>
+    );
+  },
 );
 
 RenderButtonInner.displayName = 'RenderButtonInner';
