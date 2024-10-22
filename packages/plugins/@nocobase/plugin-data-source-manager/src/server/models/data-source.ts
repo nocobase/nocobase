@@ -96,6 +96,7 @@ export class DataSourceModel extends Model {
       ...createOptions,
       name: dataSourceKey,
       logger: app.logger.child({ dataSourceKey }),
+      sqlLogger: app.sqlLogger.child({ dataSourceKey }),
     });
 
     if (loadAtAfterStart) {

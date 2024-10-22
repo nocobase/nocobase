@@ -97,7 +97,7 @@ const InternalList = (props) => {
             <AntdList
               {...props}
               pagination={
-                !meta || meta.count <= meta.pageSize
+                !meta || !field.value?.length
                   ? false
                   : {
                       onChange: onPaginationChange,
