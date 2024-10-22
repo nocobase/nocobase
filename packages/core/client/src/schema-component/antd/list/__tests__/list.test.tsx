@@ -228,7 +228,9 @@ describe('List', () => {
 
     await waitFor(() => {
       expect(screen.queryByText('ID')).toBeInTheDocument();
-      expect(screen.queryByText('1')).toBeInTheDocument();
+      const spanElements = screen.getAllByText('1');
+      const firstSpanElement = spanElements.find((el) => el.tagName === 'SPAN');
+      expect(firstSpanElement).toBeInTheDocument();
     });
 
     expect(screen.queryByText('Nickname')).toBeInTheDocument();

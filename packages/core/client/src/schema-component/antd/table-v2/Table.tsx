@@ -336,7 +336,7 @@ const usePaginationProps = (pagination1, pagination2) => {
   if (!pagination2 && pagination1 === false) {
     return false;
   }
-  return result.total <= result.pageSize ? false : result;
+  return field.value?.length > 0 ? result : false;
 };
 
 const headerClass = css`
