@@ -14,7 +14,7 @@ import { useBlockCollection } from '../../schema-settings/VariableInput/hooks/us
 import { useDatetimeVariableContext } from '../../schema-settings/VariableInput/hooks/useDateVariable';
 import { useCurrentFormContext } from '../../schema-settings/VariableInput/hooks/useFormVariable';
 import { useCurrentObjectContext } from '../../schema-settings/VariableInput/hooks/useIterationVariable';
-import { useParentObjectVariable } from '../../schema-settings/VariableInput/hooks/useParentIterationVariable';
+import { useParentObjectContext } from '../../schema-settings/VariableInput/hooks/useParentIterationVariable';
 import { useParentPopupVariableContext } from '../../schema-settings/VariableInput/hooks/useParentPopupVariable';
 import { useCurrentParentRecordContext } from '../../schema-settings/VariableInput/hooks/useParentRecordVariable';
 import { usePopupVariableContext } from '../../schema-settings/VariableInput/hooks/usePopupVariable';
@@ -32,7 +32,7 @@ const useLocalVariables = (props?: Props) => {
     parentObjectCtx,
     shouldDisplayParentObject,
     collectionName: collectionNameOfParentObject,
-  } = useParentObjectVariable();
+  } = useParentObjectContext();
   const { currentObjectCtx, shouldDisplayCurrentObject } = useCurrentObjectContext();
   const { currentRecordCtx, collectionName: collectionNameOfRecord } = useCurrentRecordContext();
   const {
