@@ -62,7 +62,7 @@ export function useMenuSearch({
   showType?: boolean;
   hideSearch?: boolean;
 }) {
-  const items = children.concat();
+  const items = children?.concat?.() || [];
   const [searchValue, setSearchValue] = useState(null);
   const currentItems = useMemo(() => {
     return items || [];
@@ -144,5 +144,8 @@ export function useMenuSearch({
   const res = useMemo(() => {
     return resultItems;
   }, [children, resultItems]);
+  if (!children) {
+    return;
+  }
   return res;
 }
