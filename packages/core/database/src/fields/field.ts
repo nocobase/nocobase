@@ -150,6 +150,11 @@ export abstract class Field {
     if (this.options.index) {
       this.context.collection.addIndex([this.name]);
     }
+
+    if (!model.primaryKeyAttribute && this.context.collection.options.filterTargetKey) {
+      // @ts-ignore
+      model.primaryKeyAttribute = this.context.collection.options.filterTargetKey;
+    }
   }
 
   unbind() {
