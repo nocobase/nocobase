@@ -11,8 +11,6 @@ import { Divider, Empty, Input, MenuProps } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const STEP = 15;
-
 export const SearchFields = ({ value: outValue, onChange }) => {
   const { t } = useTranslation();
   const [value, setValue] = useState<string>(outValue);
@@ -66,7 +64,6 @@ export function useMenuSearch({
 }) {
   const items = children.concat();
   const [searchValue, setSearchValue] = useState(null);
-  const [count, setCount] = useState(STEP);
   const currentItems = useMemo(() => {
     return items || [];
   }, [items]);
@@ -88,8 +85,8 @@ export function useMenuSearch({
 
   // 根据 count 进行懒加载处理
   const limitedSearchedItems = useMemo(() => {
-    return searchedItems.slice(0, count);
-  }, [searchedItems, count]);
+    return searchedItems;
+  }, [searchedItems]);
 
   // 最终的返回结果
   const resultItems = useMemo<MenuProps['items']>(() => {
@@ -104,7 +101,6 @@ export function useMenuSearch({
               <SearchFields
                 value={searchValue}
                 onChange={(val: string) => {
-                  setCount(STEP);
                   setSearchValue(val);
                 }}
               />
