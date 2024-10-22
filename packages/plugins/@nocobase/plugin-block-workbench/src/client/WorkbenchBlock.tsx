@@ -34,7 +34,7 @@ const ConfigureActionsButton = observer(
 const InternalIcons = () => {
   const fieldSchema = useFieldSchema();
   const { designable } = useDesignable();
-  const { layout = WorkbenchLayout.Grid } = fieldSchema.parent['x-component-props'] || {};
+  const { layout = WorkbenchLayout.Grid, height } = fieldSchema.parent['x-component-props'] || {};
   const [gap, setGap] = useState(8); // 初始 gap 值
 
   useEffect(() => {
@@ -66,7 +66,7 @@ const InternalIcons = () => {
   }, [Object.keys(fieldSchema?.properties || {}).length]);
 
   return (
-    <div style={{ marginBottom: designable ? '1rem' : 0 }}>
+    <div style={{ marginBottom: designable ? '1rem' : 0, height: height || 'unset' }}>
       <DndContext>
         {layout === WorkbenchLayout.Grid ? (
           <Space wrap size={gap}>
