@@ -20,7 +20,7 @@ export const useFieldTitle = () => {
   const collection = useCollection();
   const cm = useCollectionManager();
   const collectionField =
-    collection.getField(fieldSchema['name']) || cm.getCollectionField(fieldSchema['x-collection-field']);
+    collection?.getField(fieldSchema['name']) || cm?.getCollectionField(fieldSchema['x-collection-field']);
   const compile = useCompile();
   useEffect(() => {
     if (!field?.title) {
