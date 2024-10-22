@@ -260,7 +260,7 @@ ReadPretty.JSON = (props: JSONTextAreaReadPrettyProps) => {
   if (props.ellipsis) {
     return (
       <EllipsisWithTooltip ellipsis={props.ellipsis} popoverContent={JSONContent}>
-        <Typography.Text>{content}</Typography.Text>
+        {content}
       </EllipsisWithTooltip>
     );
   }
