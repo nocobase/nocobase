@@ -453,6 +453,12 @@ export class PluginManager {
       await this.app.emitAsync('afterLoadPlugin', plugin, options);
     }
 
+    if (this.app.pm.get('audit-logger').enabled) {
+      this.app.logger.debug('start audit logger');
+
+      this.app.auditManager.registerActions(['pm:add', 'pm:unpdate', 'pm:enable', 'pm:disable', 'pm:remove']);
+    }
+
     this.app.log.debug('plugins loaded');
     this.app.setMaintainingMessage('plugins loaded');
   }
