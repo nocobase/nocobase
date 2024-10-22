@@ -12,8 +12,8 @@ import { BaseError } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import { ErrorHandler } from './error-handler';
-import enUS from './locale/en_US';
-import zhCN from './locale/zh_CN';
+import enUS from './locale/en-US.json';
+import zhCN from './locale/zh-CN.json';
 
 export class PluginErrorHandlerServer extends Plugin {
   errorHandler: ErrorHandler = new ErrorHandler();
