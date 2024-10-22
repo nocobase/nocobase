@@ -61,6 +61,21 @@ function getValuesByPath(values, key, index?) {
   }
 }
 
+function getValuesByFullPath(values, fieldPath) {
+  const fieldPaths = fieldPath.split('.');
+  let currentKeyIndex = 0;
+  let value = values;
+  //loop to get the last field
+  while (currentKeyIndex < fieldPaths.length) {
+    const fieldName = fieldPaths[currentKeyIndex];
+    const index = parseInt(fieldPaths?.[currentKeyIndex + 1]);
+    value = getValuesByPath(value, fieldName, index);
+    //have index means an array, then jump 2; else 1
+    currentKeyIndex = currentKeyIndex + (index >= 0 ? 2 : 1);
+  }
+  return value;
+}
+
 function areValuesEqual(value1, value2) {
   if (_.isString(value1) && !isNaN(Date.parse(value1))) {
     value1 = new Date(value1);
@@ -87,8 +102,7 @@ export function Result(props) {
   const field: any = useField();
   const path: any = field.path.entire;
   const fieldPath = path?.replace(`.${fieldSchema.name}`, '');
-  const fieldName = fieldPath.split('.')[0];
-  const index = parseInt(fieldPath.split('.')?.[1]);
+
   useEffect(() => {
     setEditingValue(value);
   }, [value]);
@@ -103,7 +117,9 @@ export function Result(props) {
       ) {
         return;
       }
-      const scope = toJS(getValuesByPath(form.values, fieldName, index));
+      //field name may be like todos.0.sub_todos.0.title
+      //scope should be the deepest one
+      const scope = toJS(getValuesByFullPath(form.values, fieldPath));
       let v;
       try {
         v = evaluate(expression, scope);
