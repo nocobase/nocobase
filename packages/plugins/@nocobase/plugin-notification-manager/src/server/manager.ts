@@ -70,7 +70,7 @@ export class NotificationManager implements NotificationManager {
     const { userIds, channels, message, data } = options;
     return await Promise.all(
       channels.map((channelName) =>
-        this.send({ channelName, message, triggerFrom: 'sendToUsers', receivers: { userIds } }),
+        this.send({ channelName, message, triggerFrom: 'sendToUsers', receivers: { value: userIds, type: 'userId' } }),
       ),
     );
   }

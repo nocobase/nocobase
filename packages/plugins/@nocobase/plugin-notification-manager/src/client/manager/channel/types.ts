@@ -16,6 +16,7 @@ export type RegisterChannelOptions = {
   components: {
     ChannelConfigForm: ComponentType;
     MessageConfigForm?: ComponentType<{ variableOptions: any }>;
+    ContentConfigForm?: ComponentType<{ variableOptions?: any }>;
   };
   meta?: {
     creatable?: boolean;

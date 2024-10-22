@@ -58,7 +58,7 @@ export const startMsgSSEStreamWithRetry = async () => {
   const clientId = uid();
   const createMsgSSEConnection = async (clientId: string) => {
     const apiClient = getAPIClient();
-    const res = await apiClient.request({
+    const res = await apiClient.silent().request({
       url: 'myInAppMessages:sse',
       method: 'get',
       headers: {
@@ -98,6 +98,7 @@ export const startMsgSSEStreamWithRetry = async () => {
         },
         retryTimes < 5 ? 0 : 10000,
       );
+      return { error };
     }
   };
   connectionWithRetry();

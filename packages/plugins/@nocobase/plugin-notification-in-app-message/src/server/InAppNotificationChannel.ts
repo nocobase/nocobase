@@ -111,8 +111,8 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
     let userIds: number[];
     const { content, title, options = {} } = message;
     const userRepo = this.app.db.getRepository('users');
-    if (receivers?.userIds) {
-      userIds = receivers.userIds.map((i) => parseInt(i));
+    if (receivers?.type === 'userId') {
+      userIds = receivers.value;
     } else {
       userIds = (await parseUserSelectionConf(message.receivers, userRepo)).map((i) => parseInt(i));
     }

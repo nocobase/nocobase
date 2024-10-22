@@ -39,12 +39,14 @@ export type SendFnType<Message> = (args: {
   receivers?: ReceiversOptions;
 }) => Promise<{ message: Message; status: 'success' | 'fail'; reason?: string }>;
 
-export type ReceiversOptions = { userIds: number[] } | Record<string, any>;
+export type ReceiversOptions =
+  | { value: number[]; type: 'userId' }
+  | { value: any; type: 'channel-self-defined'; channelType: string };
 export interface SendOptions {
   channelName: string;
   message: Record<string, any>;
   triggerFrom: string;
-  receivers?: { userIds: number[] } | unknown;
+  receivers?: ReceiversOptions;
 }
 
 export interface SendUserOptions {
