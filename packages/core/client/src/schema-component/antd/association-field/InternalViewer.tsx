@@ -10,7 +10,7 @@
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import _ from 'lodash';
-import React, { FC, Fragment, useRef, useState } from 'react';
+import React, { FC, Fragment, useEffect, useRef, useState } from 'react';
 import { useDesignable } from '../../';
 import { WithoutTableFieldResource } from '../../../block-provider';
 import { CollectionRecordProvider, useCollectionManager, useCollectionRecordData } from '../../../data-source';
@@ -49,6 +49,131 @@ export interface ButtonListProps {
   };
 }
 
+const RenderRecord = React.memo(
+  ({
+    fieldNames,
+    isTreeCollection,
+    compile,
+    getLabelUiSchema,
+    collectionField,
+    snapshot,
+    enableLink,
+    designable,
+    insertViewer,
+    fieldSchema,
+    openPopup,
+    recordData,
+    ellipsisWithTooltipRef,
+    value,
+    setBtnHover,
+  }: {
+    fieldNames: any;
+    isTreeCollection: boolean;
+    compile: (source: any, ext?: any) => any;
+    getLabelUiSchema;
+    collectionField: any;
+    snapshot: boolean;
+    enableLink: any;
+    designable: boolean;
+    insertViewer: (ss: any) => void;
+    fieldSchema;
+    openPopup;
+    recordData: any;
+    ellipsisWithTooltipRef: React.MutableRefObject<IEllipsisWithTooltipRef>;
+    value: any;
+    setBtnHover: any;
+  }) => {
+    const [loading, setLoading] = useState(true);
+    const resultRef = useRef<React.ReactNode[]>([]);
+
+    // The map method here maybe quite time-consuming, especially in table blocks.
+    // Therefore, we use an asynchronous approach to render the list,
+    // which allows us to avoid blocking the main rendering process.
+    useEffect(() => {
+      resultRef.current = toArr(value).map((record, index, arr) => {
+        const value = record?.[fieldNames?.label || 'label'];
+        const label = isTreeCollection
+          ? transformNestedData(record)
+              .map((o) => o?.[fieldNames?.label || 'label'])
+              .join(' / ')
+          : isObject(value)
+            ? JSON.stringify(value)
+            : value;
+
+        const val = toValue(compile(label), 'N/A');
+        const labelUiSchema = getLabelUiSchema(
+          record?.__collection || collectionField?.target,
+          fieldNames?.label || 'label',
+        );
+        const text = getLabelFormatValue(compile(labelUiSchema), val, true);
+
+        return (
+          <Fragment key={`${record?.id}_${index}`}>
+            <span>
+              {snapshot ? (
+                text
+              ) : enableLink !== false ? (
+                <a
+                  onMouseEnter={() => {
+                    setBtnHover(true);
+                  }}
+                  onClick={(e) => {
+                    setBtnHover(true);
+                    e.stopPropagation();
+                    e.preventDefault();
+                    if (designable) {
+                      insertViewer(schema.Viewer);
+                    }
+
+                    if (fieldSchema.properties) {
+                      openPopup({
+                        recordData: record,
+                        parentRecordData: recordData,
+                      });
+                    }
+
+                    ellipsisWithTooltipRef?.current?.setPopoverVisible(false);
+                  }}
+                >
+                  {text}
+                </a>
+              ) : (
+                text
+              )}
+            </span>
+            {index < arr.length - 1 ? <span style={{ marginRight: 4, color: '#aaa' }}>,</span> : null}
+          </Fragment>
+        );
+      });
+      setLoading(false);
+    }, [
+      collectionField?.target,
+      compile,
+      designable,
+      ellipsisWithTooltipRef,
+      enableLink,
+      fieldNames?.label,
+      fieldSchema?.properties,
+      getLabelUiSchema,
+      insertViewer,
+      isTreeCollection,
+      openPopup,
+      recordData,
+      setBtnHover,
+      snapshot,
+      value,
+    ]);
+
+    if (loading) {
+      return null;
+    }
+
+    return <>{resultRef.current}</>;
+  },
+);
+
+RenderRecord.displayName = 'RenderRecord';
+
 const ButtonLinkList: FC<ButtonListProps> = (props) => {
   const fieldSchema = useFieldSchema();
   const cm = useCollectionManager();
@@ -66,63 +191,25 @@ const ButtonLinkList: FC<ButtonListProps> = (props) => {
   const { openPopup } = usePopupUtils();
   const recordData = useCollectionRecordData();
 
-  const renderRecords = () =>
-    toArr(props.value).map((record, index, arr) => {
-      const value = record?.[fieldNames?.label || 'label'];
-      const label = isTreeCollection
-        ? transformNestedData(record)
-            .map((o) => o?.[fieldNames?.label || 'label'])
-            .join(' / ')
-        : isObject(value)
-          ? JSON.stringify(value)
-          : value;
-      const val = toValue(compile(label), 'N/A');
-      const labelUiSchema = getLabelUiSchema(
-        record?.__collection || collectionField?.target,
-        fieldNames?.label || 'label',
-      );
-      const text = getLabelFormatValue(compile(labelUiSchema), val, true);
-      return (
-        <Fragment key={`${record?.id}_${index}`}>
-          <span>
-            {snapshot ? (
-              text
-            ) : enableLink !== false ? (
-              <a
-                onMouseEnter={() => {
-                  props.setBtnHover(true);
-                }}
-                onClick={(e) => {
-                  props.setBtnHover(true);
-                  e.stopPropagation();
-                  e.preventDefault();
-                  if (designable) {
-                    insertViewer(schema.Viewer);
-                  }
-
-                  // fix https://nocobase.height.app/T-4794/description
-                  if (fieldSchema.properties) {
-                    openPopup({
-                      recordData: record,
-                      parentRecordData: recordData,
-                    });
-                  }
-
-                  ellipsisWithTooltipRef?.current?.setPopoverVisible(false);
-                }}
-              >
-                {text}
-              </a>
-            ) : (
-              text
-            )}
-          </span>
-          {index < arr.length - 1 ? <span style={{ marginRight: 4, color: '#aaa' }}>,</span> : null}
-        </Fragment>
-      );
-    });
-
-  return <>{renderRecords()}</>;
+  return (
+    <RenderRecord
+      fieldNames={fieldNames}
+      isTreeCollection={isTreeCollection}
+      compile={compile}
+      getLabelUiSchema={getLabelUiSchema}
+      collectionField={collectionField}
+      snapshot={snapshot}
+      enableLink={enableLink}
+      designable={designable}
+      insertViewer={insertViewer}
+      fieldSchema={fieldSchema}
+      openPopup={openPopup}
+      recordData={recordData}
+      ellipsisWithTooltipRef={ellipsisWithTooltipRef}
+      value={props.value}
+      setBtnHover={props.setBtnHover}
+    />
+  );
 };
 
 interface ReadPrettyInternalViewerProps {

@@ -7,33 +7,33 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema, Schema } from '@formily/react';
+import { Field } from '@formily/core';
+import { ISchema } from '@formily/react';
 import { isArr } from '@formily/shared';
 import { getDefaultFormat, str2moment } from '@nocobase/utils/client';
 import { Tag } from 'antd';
 import dayjs from 'dayjs';
 import React from 'react';
-import { CollectionFieldOptions_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
-import { Field } from '@formily/core';
+import { useCollectionManager } from '../../../data-source/collection/CollectionManagerProvider';
 
 export const useLabelUiSchemaV2 = () => {
-  const { getCollectionJoinField } = useCollectionManager_deprecated();
+  const cm = useCollectionManager();
 
   return (collectionName: string, label: string): ISchema => {
     if (!collectionName) {
       return;
     }
-    const labelField = getCollectionJoinField(`${collectionName}.${label}`) as CollectionFieldOptions_deprecated;
+    const labelField = cm?.getCollectionField(`${collectionName}.${label}`);
     return labelField?.uiSchema;
   };
 };
 
 export const useLabelUiSchema = (collectionName: string, label: string): ISchema => {
-  const { getCollectionJoinField } = useCollectionManager_deprecated();
+  const cm = useCollectionManager();
   if (!collectionName) {
     return;
   }
-  const labelField = getCollectionJoinField(`${collectionName}.${label}`) as CollectionFieldOptions_deprecated;
+  const labelField = cm?.getCollectionField(`${collectionName}.${label}`);
   return labelField?.uiSchema;
 };
 
