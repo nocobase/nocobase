@@ -414,30 +414,30 @@ async function postCMS(tag, content, contentCN) {
 async function writeChangelogAndCreateRelease() {
   let { ver = 'beta', test } = program.opts();
   const { from, to } = await getVersion();
-  let { cn, en } = await getExistsChangelog(from, to);
-  let exists = false;
-  if (cn || en) {
-    exists = true;
-    console.log('Changelog already exists');
-  } else {
-    const { changelogs } = await collect(from, to);
-    const c = await generateChangelog(changelogs);
-    cn = c.cn;
-    en = c.en;
-    // if (!cn && !en) {
-    //   console.error('No changelog generated');
-    //   return;
-    // }
-  }
-  console.log(en);
-  console.log(cn);
-  if (test) {
-    return;
-  }
-  if (ver === 'beta' && !exists) {
-    // await writeChangelog(cn, en, from, to);
-  }
-  await createRelease(cn, en, to);
+  // let { cn, en } = await getExistsChangelog(from, to);
+  // let exists = false;
+  // if (cn || en) {
+  //   exists = true;
+  //   console.log('Changelog already exists');
+  // } else {
+  //   const { changelogs } = await collect(from, to);
+  //   const c = await generateChangelog(changelogs);
+  //   cn = c.cn;
+  //   en = c.en;
+  // if (!cn && !en) {
+  //   console.error('No changelog generated');
+  //   return;
+  // }
+  // }
+  // console.log(en);
+  // console.log(cn);
+  // if (test) {
+  //   return;
+  // }
+  // if (ver === 'beta' && !exists) {
+  // await writeChangelog(cn, en, from, to);
+  // }
+  await createRelease('', '', to);
   // await postCMS(to, en, cn);
 }
 
