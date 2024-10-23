@@ -13,8 +13,11 @@ on:
 jobs:
   publish-npm:
     runs-on: ubuntu-latest
-    container: node:18
     steps:
+      - name: Set Node.js 18
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
       - uses: actions/create-github-app-token@v1
         id: app-token
         with:
