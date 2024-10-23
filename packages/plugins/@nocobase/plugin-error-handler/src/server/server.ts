@@ -8,7 +8,6 @@
  */
 
 import { Schema } from '@formily/json-schema';
-import { BaseError } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import { ErrorHandler } from './error-handler';
@@ -47,10 +46,15 @@ export class PluginErrorHandlerServer extends Plugin {
     };
 
     this.errorHandler.register(
-      (err) => err?.errors?.length && err instanceof BaseError,
+      (err) => err?.errors?.length,
       (err, ctx) => {
         ctx.body = {
           errors: err.errors.map((err) => {
+            if (!err.instance || !err.path) {
+              return {
+                message: err.message,
+              };
+            }
             const t = ctx.i18n.t;
             const title = findFieldTitle(err.instance, err.path, t, ctx);
             return {
