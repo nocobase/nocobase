@@ -30,7 +30,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: next
+          ref: chore/ci
           fetch-depth: 0
       # - name: Send curl request and parse response
       #   env:
