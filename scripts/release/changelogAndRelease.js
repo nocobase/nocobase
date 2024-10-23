@@ -424,10 +424,10 @@ async function writeChangelogAndCreateRelease() {
     const c = await generateChangelog(changelogs);
     cn = c.cn;
     en = c.en;
-    if (!cn && !en) {
-      console.error('No changelog generated');
-      return;
-    }
+    // if (!cn && !en) {
+    //   console.error('No changelog generated');
+    //   return;
+    // }
   }
   console.log(en);
   console.log(cn);
