@@ -9,7 +9,7 @@
 
 import { Form } from '@formily/core';
 import { Schema, useFieldSchema } from '@formily/react';
-import React, { useContext, useMemo } from 'react';
+import React, { useCallback, useContext, useMemo } from 'react';
 import { useFormBlockContext, useFormBlockType } from '../../block-provider/FormBlockProvider';
 import { CollectionFieldOptions_deprecated } from '../../collection-manager/types';
 import { useCollectionManager } from '../../data-source/collection/CollectionManagerProvider';
@@ -60,19 +60,34 @@ export const useIsAllowToSetDefaultValue = ({ form, fieldSchema, collectionField
   const { isAllowToSetDefaultValue = _isAllowToSetDefaultValue } = useContext(DefaultValueContext) || {};
 
   const result = {
-    isAllowToSetDefaultValue: (isSubTableColumn?: boolean) => {
-      const innerCollectionField =
-        collection.getField(innerFieldSchema['name']) || cm.getCollectionField(innerFieldSchema['x-collection-field']);
+    isAllowToSetDefaultValue: useCallback(
+      (isSubTableColumn?: boolean) => {
+        const innerCollectionField =
+          collection.getField(innerFieldSchema['name']) ||
+          cm.getCollectionField(innerFieldSchema['x-collection-field']);
 
-      return isAllowToSetDefaultValue({
-        collectionField: collectionField || innerCollectionField,
-        getInterface: dm?.collectionFieldInterfaceManager.getFieldInterface.bind(dm?.collectionFieldInterfaceManager),
-        form: form || innerForm,
-        formBlockType: type,
-        fieldSchema: fieldSchema || innerFieldSchema,
-        isSubTableColumn,
-      });
-    },
+        return isAllowToSetDefaultValue({
+          collectionField: collectionField || innerCollectionField,
+          getInterface: dm?.collectionFieldInterfaceManager.getFieldInterface.bind(dm?.collectionFieldInterfaceManager),
+          form: form || innerForm,
+          formBlockType: type,
+          fieldSchema: fieldSchema || innerFieldSchema,
+          isSubTableColumn,
+        });
+      },
+      [
+        cm,
+        collection,
+        collectionField,
+        dm?.collectionFieldInterfaceManager,
+        fieldSchema,
+        form,
+        innerFieldSchema,
+        innerForm,
+        isAllowToSetDefaultValue,
+        type,
+      ],
+    ),
   };
   return result;
 };
