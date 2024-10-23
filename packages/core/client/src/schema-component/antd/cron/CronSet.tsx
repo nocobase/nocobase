@@ -11,6 +11,7 @@ import { connect, mapReadPretty, useFieldSchema } from '@formily/react';
 import { Select, SelectProps } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useCollection_deprecated } from '../../../collection-manager';
+import { useCollection } from '../../../data-source/collection/CollectionProvider';
 import { useCompile } from '../../hooks';
 import { EllipsisWithTooltip } from '../input';
 import Cron from './Cron';
@@ -101,8 +102,8 @@ const ReadPretty = (props: CronReadPrettyProps) => {
   const { value } = props;
   const compile = useCompile();
   const fieldSchema = useFieldSchema();
-  const { getField } = useCollection_deprecated();
-  const uiSchemaOptions = getField(fieldSchema?.name)?.uiSchema.enum;
+  const collection = useCollection();
+  const uiSchemaOptions = collection?.getField(fieldSchema?.name)?.uiSchema.enum;
 
   const options = useMemo(() => {
     return (props.options || []).concat((uiSchemaOptions as any[]) || []);

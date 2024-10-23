@@ -11,10 +11,10 @@ import { isArrayField } from '@formily/core';
 import { observer, useField } from '@formily/react';
 import { isValid } from '@formily/shared';
 import { Tag } from 'antd';
-import React from 'react';
+import React, { useMemo } from 'react';
+import { useCollectionField } from '../../../data-source/collection-field/CollectionFieldProvider';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 import { FieldNames, defaultFieldNames, getCurrentOptions } from './utils';
-import { useCollectionField } from '../../../data-source/collection-field/CollectionFieldProvider';
 
 export interface SelectReadPrettyProps {
   value: any;
@@ -29,11 +29,13 @@ export interface SelectReadPrettyProps {
 
 export const ReadPretty = observer(
   (props: SelectReadPrettyProps) => {
-    const fieldNames = { ...defaultFieldNames, ...props.fieldNames };
+    const fieldNames = useMemo(() => ({ ...defaultFieldNames, ...props.fieldNames }), [props.fieldNames]);
     const field = useField<any>();
     const collectionField = useCollectionField();
-    const dataSource = field.dataSource || props.options || collectionField?.uiSchema.enum || [];
-    const currentOptions = getCurrentOptions(field.value, dataSource, fieldNames);
+    const currentOptions = useMemo(() => {
+      const dataSource = field.dataSource || props.options || collectionField?.uiSchema.enum || [];
+      return getCurrentOptions(field.value, dataSource, fieldNames);
+    }, [collectionField?.uiSchema.enum, field.dataSource, field.value, fieldNames, props.options]);
 
     if (!isValid(props.value) && !currentOptions.length) {
       return <div />;

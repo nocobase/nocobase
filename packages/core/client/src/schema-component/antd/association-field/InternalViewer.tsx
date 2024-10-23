@@ -90,63 +90,62 @@ const RenderRecord = React.memo(
     // Therefore, we use an asynchronous approach to render the list,
     // which allows us to avoid blocking the main rendering process.
     useEffect(() => {
-      setResult(
-        toArr(value).map((record, index, arr) => {
-          const value = record?.[fieldNames?.label || 'label'];
-          const label = isTreeCollection
-            ? transformNestedData(record)
-                .map((o) => o?.[fieldNames?.label || 'label'])
-                .join(' / ')
-            : isObject(value)
-              ? JSON.stringify(value)
-              : value;
+      const result = toArr(value).map((record, index, arr) => {
+        const value = record?.[fieldNames?.label || 'label'];
+        const label = isTreeCollection
+          ? transformNestedData(record)
+              .map((o) => o?.[fieldNames?.label || 'label'])
+              .join(' / ')
+          : isObject(value)
+            ? JSON.stringify(value)
+            : value;
 
-          const val = toValue(compile(label), 'N/A');
-          const labelUiSchema = getLabelUiSchema(
-            record?.__collection || collectionField?.target,
-            fieldNames?.label || 'label',
-          );
-          const text = getLabelFormatValue(compile(labelUiSchema), val, true);
+        const val = toValue(compile(label), 'N/A');
+        const labelUiSchema = getLabelUiSchema(
+          record?.__collection || collectionField?.target,
+          fieldNames?.label || 'label',
+        );
+        const text = getLabelFormatValue(compile(labelUiSchema), val, true);
 
-          return (
-            <Fragment key={`${record?.id}_${index}`}>
-              <span>
-                {snapshot ? (
-                  text
-                ) : enableLink !== false ? (
-                  <a
-                    onMouseEnter={() => {
-                      setBtnHover(true);
-                    }}
-                    onClick={(e) => {
-                      setBtnHover(true);
-                      e.stopPropagation();
-                      e.preventDefault();
-                      if (designable) {
-                        insertViewer(schema.Viewer);
-                      }
+        return (
+          <Fragment key={`${record?.id}_${index}`}>
+            <span>
+              {snapshot ? (
+                text
+              ) : enableLink !== false ? (
+                <a
+                  onMouseEnter={() => {
+                    setBtnHover(true);
+                  }}
+                  onClick={(e) => {
+                    setBtnHover(true);
+                    e.stopPropagation();
+                    e.preventDefault();
+                    if (designable) {
+                      insertViewer(schema.Viewer);
+                    }
 
-                      if (fieldSchema.properties) {
-                        openPopup({
-                          recordData: record,
-                          parentRecordData: recordData,
-                        });
-                      }
+                    if (fieldSchema.properties) {
+                      openPopup({
+                        recordData: record,
+                        parentRecordData: recordData,
+                      });
+                    }
 
-                      ellipsisWithTooltipRef?.current?.setPopoverVisible(false);
-                    }}
-                  >
-                    {text}
-                  </a>
-                ) : (
-                  text
-                )}
-              </span>
-              {index < arr.length - 1 ? <span style={{ marginRight: 4, color: '#aaa' }}>,</span> : null}
-            </Fragment>
-          );
-        }),
-      );
+                    ellipsisWithTooltipRef?.current?.setPopoverVisible(false);
+                  }}
+                >
+                  {text}
+                </a>
+              ) : (
+                text
+              )}
+            </span>
+            {index < arr.length - 1 ? <span style={{ marginRight: 4, color: '#aaa' }}>,</span> : null}
+          </Fragment>
+        );
+      });
+      setResult(result);
       setLoading(false);
     }, [
       collectionField?.target,
@@ -166,7 +165,7 @@ const RenderRecord = React.memo(
       value,
     ]);
 
-    if (loading && _.isEmpty(result)) {
+    if (loading) {
       return null;
     }
 
