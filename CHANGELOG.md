@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.37-beta](https://github.com/nocobase/nocobase/compare/v1.3.36-beta...v1.3.37-beta) - 2024-10-23
+
+### 🚀 Improvements
+
+- **[client]** Adjust hint in configuration panel of binding workflow to a button ([#5494](https://github.com/nocobase/nocobase/pull/5494)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[File manager]** fix upload and destroy file record within an association block ([#5493](https://github.com/nocobase/nocobase/pull/5493)) by @mytharcher
+
 ## [v1.3.36-beta](https://github.com/nocobase/nocobase/compare/v1.3.35-beta...v1.3.36-beta) - 2024-10-22
 
 ### 🐛 Bug Fixes
