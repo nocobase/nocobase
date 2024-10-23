@@ -8,24 +8,16 @@
  */
 
 import React from 'react';
-import { SchemaComponent } from '@nocobase/client';
+import { withDynamicSchemaProps } from '@nocobase/client';
 import { observer } from '@formily/react';
 import { useChannelTypeMap } from '../../../../hooks';
-import { useNotificationTranslation } from '../../../../locale';
-export const ContentConfigForm = observer<{ variableOptions: any; channelType: string }>(
-  ({ variableOptions, channelType }) => {
-    const { t } = useNotificationTranslation();
-
-    const providerMap = useChannelTypeMap();
-    const { ContentConfigForm = () => null } = (channelType ? providerMap[channelType] : {}).components || {};
-    const schema = {
-      type: 'void',
-      'x-component': 'ContentConfigForm',
-      'x-component-props': {
-        variableOptions,
-      },
-    };
-    return <SchemaComponent schema={schema} components={{ ContentConfigForm }} scope={{ t, variableOptions }} />;
-  },
-  { displayName: 'MessageConfigForm' },
+export const ContentConfigForm = withDynamicSchemaProps(
+  observer<{ variableOptions: any; channelType: string }>(
+    ({ variableOptions, channelType }) => {
+      const channelTypeMap = useChannelTypeMap();
+      const { ContentConfigForm = () => null } = (channelType ? channelTypeMap[channelType] : {}).components || {};
+      return <ContentConfigForm variableOptions={variableOptions} />;
+    },
+    { displayName: 'ContentConfigForm' },
+  ),
 );
