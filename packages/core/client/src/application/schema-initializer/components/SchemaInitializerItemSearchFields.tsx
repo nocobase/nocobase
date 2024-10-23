@@ -8,13 +8,13 @@
  */
 
 import { Divider, Empty, Input, MenuProps } from 'antd';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export const SearchFields = ({ value: outValue, onChange }) => {
   const { t } = useTranslation();
   const [value, setValue] = useState<string>(outValue);
-  const inputRef = React.useRef<any>('');
+  const inputRef = useRef<any>('');
 
   // 之所以要增加个内部的 value 是为了防止用户输入过快时造成卡顿的问题
   useEffect(() => {
@@ -39,6 +39,22 @@ export const SearchFields = ({ value: outValue, onChange }) => {
     };
   }, []);
 
+  const compositionRef = useRef<boolean>(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!compositionRef.current) {
+      onChange(e.target.value);
+      setValue(e.target.value);
+    }
+  };
+  const Composition = (e: React.CompositionEvent<HTMLInputElement> | any) => {
+    if (e.type === 'compositionend') {
+      compositionRef.current = false;
+      handleChange(e);
+    } else {
+      compositionRef.current = true;
+    }
+  };
   return (
     <div onClick={(e) => e.stopPropagation()}>
       <Input
@@ -47,15 +63,14 @@ export const SearchFields = ({ value: outValue, onChange }) => {
         style={{ padding: '0 4px 6px 16px', boxShadow: 'none' }}
         bordered={false}
         placeholder={t('Search')}
-        value={value}
+        defaultValue={value}
         onClick={(e) => {
           e.stopPropagation();
         }}
-        onChange={(e) => {
-          onChange(e.target.value);
-          setValue(e.target.value);
-          e.stopPropagation();
-        }}
+        onChange={handleChange}
+        onCompositionStart={Composition}
+        onCompositionEnd={Composition}
+        onCompositionUpdate={Composition}
       />
       <Divider style={{ margin: 0 }} />
     </div>
