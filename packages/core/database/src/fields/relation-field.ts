@@ -41,7 +41,7 @@ export abstract class RelationField extends Field {
    * @constructor
    */
   get TargetModel() {
-    return this.targetCollection()?.model;
+    return this.context.database.sequelize.models[this.target];
   }
 
   targetCollection() {
