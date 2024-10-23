@@ -7,14 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { SchemaComponent } from '@nocobase/client';
-import { onFieldValueChange } from '@formily/core';
-import { observer, useField, useForm, useFormEffects } from '@formily/react';
-import { useAPIClient } from '@nocobase/client';
+import { observer } from '@formily/react';
 import { useChannelTypeMap } from '../../../../hooks';
 import { useNotificationTranslation } from '../../../../locale';
-import { COLLECTION_NAME } from '../../../../../constant';
 export const ContentConfigForm = observer<{ variableOptions: any; channelType: string }>(
   ({ variableOptions, channelType }) => {
     const { t } = useNotificationTranslation();
