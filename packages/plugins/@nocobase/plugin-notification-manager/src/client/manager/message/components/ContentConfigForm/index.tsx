@@ -25,7 +25,7 @@ export const ContentConfigForm = observer<{ variableOptions: any; channelType: s
         variableOptions,
       },
     };
-    return <SchemaComponent schema={schema} components={{ ContentConfigForm }} scope={{ t }} />;
+    return <SchemaComponent schema={schema} components={{ ContentConfigForm }} scope={{ t, variableOptions }} />;
   },
   { displayName: 'MessageConfigForm' },
 );
