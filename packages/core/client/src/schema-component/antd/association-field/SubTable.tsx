@@ -14,7 +14,7 @@ import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { isArr } from '@formily/shared';
 import { Button } from 'antd';
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   FormProvider,
@@ -157,6 +157,8 @@ export const SubTable: any = observer(
           field.initialValue = field.value;
           setSelectedRows([]);
           setVisible(false);
+          const totalPages = Math.ceil(field.value.length / (field.componentProps?.pageSize || 10));
+          setCurrentPage(totalPages);
         },
       };
     };
@@ -166,6 +168,28 @@ export const SubTable: any = observer(
       const filter = list.length ? { $and: [{ [`${targetKey}.$ne`]: list }] } : {};
       return filter;
     };
+    //分页
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(field.componentProps?.pageSize || 10); // 每页条数
+    useEffect(() => {
+      setPageSize(field.componentProps?.pageSize);
+    }, [field.componentProps?.pageSize]);
+
+    const paginationConfig = useMemo(() => {
+      return {
+        current: currentPage,
+        pageSize: pageSize || 10,
+        total: field?.value?.length,
+        onChange: (page, pageSize) => {
+          setCurrentPage(page);
+          setPageSize(pageSize);
+          field.onInput(field.value);
+        },
+        showSizeChanger: true,
+        pageSizeOptions: ['10', '20', '50', '100'],
+        hideOnSinglePage: false,
+      };
+    }, [field.value?.length, pageSize, currentPage]);
     return (
       <div className={subTableContainer}>
         <FlagProvider isInSubTable>
@@ -193,7 +217,7 @@ export const SubTable: any = observer(
                         }
                       : false
                   }
-                  pagination={false}
+                  pagination={paginationConfig}
                   rowSelection={{ type: 'none', hideSelectAll: true }}
                   footer={() =>
                     field.editable && (
@@ -206,6 +230,9 @@ export const SubTable: any = observer(
                             onClick={() => {
                               field.value = field.value || [];
                               field.value.push(markRecordAsNew({}));
+                              // 计算总页数，并跳转到最后一页
+                              const totalPages = Math.ceil(field.value.length / (field.componentProps?.pageSize || 10));
+                              setCurrentPage(totalPages);
                             }}
                           >
                             {t('Add new')}

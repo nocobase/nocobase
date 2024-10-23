@@ -19,6 +19,7 @@ import {
   useProps,
   useToken,
   withDynamicSchemaProps,
+  useACLRoleContext,
 } from '@nocobase/client';
 import { parseExpression } from 'cron-parser';
 import type { Dayjs } from 'dayjs';
@@ -214,6 +215,18 @@ const useEvents = (
   ]);
 };
 
+function findCreateSchema(schema): Schema {
+  return schema.reduceProperties((buf, current) => {
+    if (current['x-component'].endsWith('Action') && current['x-action'] === 'create') {
+      return current;
+    }
+    if (current['x-component'].endsWith('.ActionBar')) {
+      return findCreateSchema(current);
+    }
+    return buf;
+  }, null);
+}
+
 export const Calendar: any = withDynamicSchemaProps(
   observer(
     (props: any) => {
@@ -233,6 +246,13 @@ export const Calendar: any = withDynamicSchemaProps(
       const parentRecordData = useCollectionParentRecordData();
       const fieldSchema = useFieldSchema();
       const { token } = useToken();
+      //nint deal with slot select to show create popup
+      const { parseAction } = useACLRoleContext();
+      const collection = useCollection();
+      const canCreate = parseAction(`${collection.name}:create`);
+      const createActionSchema: Schema = useMemo(() => findCreateSchema(fieldSchema), [fieldSchema]);
+      const startFieldName = fieldNames?.start?.[0];
+      const endFieldName = fieldNames?.end?.[0];
 
       const components = useMemo(() => {
         return {
@@ -302,7 +322,16 @@ export const Calendar: any = withDynamicSchemaProps(
               onNavigate={setDate}
               onView={setView}
               onSelectSlot={(slotInfo) => {
-                console.log('onSelectSlot', slotInfo);
+                //nint show create popup
+                if (canCreate && createActionSchema) {
+                  const record = {};
+                  record[startFieldName] = slotInfo.start;
+                  record[endFieldName] = slotInfo.end;
+                  openPopup({
+                    recordData: record,
+                    customActionSchema: createActionSchema,
+                  });
+                }
               }}
               onDoubleClickEvent={() => {
                 console.log('onDoubleClickEvent');
