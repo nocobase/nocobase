@@ -32,6 +32,7 @@ jobs:
         with:
           repository: nocobase/nocobase
           ref: chore/ci
+          token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
           fetch-depth: 0
       # - name: Send curl request and parse response
