@@ -279,12 +279,20 @@ export class Collection<
     this.model = new Proxy(this.model, {
       get: (target, prop) => {
         if (prop === 'primaryKeyAttribute') {
-          if (
-            !target.primaryKeyAttribute &&
-            this.options.filterTargetKey &&
-            this.getField(this.options.filterTargetKey)
-          ) {
-            return this.options.filterTargetKey;
+          const singleFilterTargetKey: string = (() => {
+            if (!this.options.filterTargetKey) {
+              return null;
+            }
+
+            if (Array.isArray(this.options.filterTargetKey) && this.options.filterTargetKey.length === 1) {
+              return this.options.filterTargetKey[0];
+            }
+
+            return this.options.filterTargetKey as string;
+          })();
+
+          if (!target.primaryKeyAttribute && singleFilterTargetKey && this.getField(singleFilterTargetKey)) {
+            return singleFilterTargetKey;
           }
 
           return target[prop];
