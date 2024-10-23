@@ -56,4 +56,5 @@ export class PluginNotificationManagerClient extends Plugin {
 
 export { NotificationVariableContext, NotificationVariableProvider, useNotificationVariableOptions } from './hooks';
 export { MessageConfigForm } from './manager/message/components/MessageConfigForm';
+export { ContentConfigForm } from './manager/message/components/ContentConfigForm';
 export default PluginNotificationManagerClient;
