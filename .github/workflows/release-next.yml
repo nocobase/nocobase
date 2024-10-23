@@ -30,7 +30,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          repository: nocobase/nocobase
           ref: chore/ci
+          persist-credentials: true
           fetch-depth: 0
       # - name: Send curl request and parse response
       #   env:
