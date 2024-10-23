@@ -71,7 +71,6 @@ export function useMenuSearch({
   showType?: boolean;
   hideSearch?: boolean;
 }) {
-  console.log(999);
   const items = children?.concat?.() || [];
   const [searchValue, setSearchValue] = useState(null);
   const currentItems = useMemo(() => {
