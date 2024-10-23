@@ -25,8 +25,8 @@ export type RequestConfig = Pick<AxiosRequestConfig, 'url' | 'method' | 'params'
 };
 
 const ContentTypeTransformers = {
-  'application/json'(data) {
-    return data;
+  'text/plain'(data) {
+    return data.toString();
   },
   'application/x-www-form-urlencoded'(data: { name: string; value: string }[]) {
     return new URLSearchParams(
@@ -52,6 +52,7 @@ async function request(config) {
 
   // TODO(feat): only support JSON type for now, should support others in future
   headers['Content-Type'] = contentType;
+  const transformer = ContentTypeTransformers[contentType];
 
   return axios.request({
     url: trim(url),
@@ -61,7 +62,7 @@ async function request(config) {
     timeout,
     ...(method.toLowerCase() !== 'get' && data != null
       ? {
-          data: ContentTypeTransformers[contentType](data),
+          data: transformer ? transformer(data) : data,
         }
       : {}),
   });
