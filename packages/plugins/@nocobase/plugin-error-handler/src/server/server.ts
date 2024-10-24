@@ -8,6 +8,7 @@
  */
 
 import { Schema } from '@formily/json-schema';
+import { BaseError } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import { ErrorHandler } from './error-handler';
@@ -44,7 +45,7 @@ export class PluginErrorHandlerServer extends Plugin {
     };
 
     this.errorHandler.register(
-      (err) => err?.errors?.length,
+      (err) => err?.errors?.length && err instanceof BaseError,
       (err, ctx) => {
         ctx.body = {
           errors: err.errors.map((err) => {
