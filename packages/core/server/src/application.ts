@@ -566,6 +566,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       }
     }
 
+    if (this.cacheManager) {
+      await this.cacheManager.close();
+    }
+
     this._cacheManager = await createCacheManager(this, this.options.cacheManager);
 
     this.log.debug('init plugins');
@@ -582,10 +586,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     // Telemetry is initialized after beforeLoad hook
     // since some configuration may be registered in beforeLoad hook
-    this.telemetry.init();
-    if (this.options.telemetry?.enabled) {
-      // Start collecting telemetry data if enabled
-      this.telemetry.start();
+    if (!this.telemetry.started) {
+      this.telemetry.init();
+      if (this.options.telemetry?.enabled) {
+        // Start collecting telemetry data if enabled
+        this.telemetry.start();
+      }
     }
 
     await this.pm.load(options);
@@ -915,7 +921,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.reInit();
     await this.db.sync();
     await this.load({ hooks: false });
-
+    this._loaded = false;
     this.log.debug('emit beforeInstall', { method: 'install' });
     this.setMaintainingMessage('call beforeInstall hook...');
     await this.emitAsync('beforeInstall', this, options);

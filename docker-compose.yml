@@ -40,6 +40,8 @@ services:
       DB_MODE: pg
       NEED_START: yes
     command: ["/usr/sbin/init"]
+    volumes:
+      - ./storage/db/kingbase:/home/kingbase/userdata
   postgres:
     image: postgres:latest
     restart: always

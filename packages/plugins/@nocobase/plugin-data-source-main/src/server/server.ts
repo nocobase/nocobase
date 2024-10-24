@@ -436,19 +436,21 @@ export class PluginDataSourceMainServer extends Plugin {
           field.set('options', newOptions);
         } else {
           const collectionField = this.app.db.getCollection(field.get('collectionName'))?.getField(field.get('name'));
-          const newOptions: any = {};
-          // merge with current field options
-          lodash.mergeWith(newOptions, field.get(), (objValue, srcValue) => {
-            if (srcValue === null) {
-              return objValue;
-            }
-          });
+          if (collectionField) {
+            const newOptions: any = {};
+            // merge with current field options
+            lodash.mergeWith(newOptions, field.get(), (objValue, srcValue) => {
+              if (srcValue === null) {
+                return objValue;
+              }
+            });
 
-          if (collectionField.options.displayInAssociation !== undefined) {
-            newOptions.displayInAssociation = collectionField.options.displayInAssociation;
+            if (collectionField.options.displayInAssociation !== undefined) {
+              newOptions.displayInAssociation = collectionField.options.displayInAssociation;
+            }
+            // set final options
+            field.set('options', newOptions);
           }
-          // set final options
-          field.set('options', newOptions);
         }
       }
     };
