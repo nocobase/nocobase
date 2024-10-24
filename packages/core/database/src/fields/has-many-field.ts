@@ -99,10 +99,10 @@ export class HasManyField extends RelationField {
     const sourceKey = association.sourceKey;
 
     return buildReference({
-      sourceCollectionName: this.database.getCollectionByModelName(association.target.name).name,
+      sourceCollectionName: this.database.modelCollection.get(association.target).name,
       sourceField: association.foreignKey,
       targetField: sourceKey,
-      targetCollectionName: this.database.getCollectionByModelName(association.source.name).name,
+      targetCollectionName: this.database.modelCollection.get(association.source).name,
       onDelete: this.options.onDelete,
     });
   }

@@ -18,7 +18,6 @@ import {
   ModelStatic,
   Transactionable,
 } from 'sequelize';
-import Database from './database';
 import { Model } from './model';
 import { UpdateGuard } from './update-guard';
 import { TargetKey } from './repository';
@@ -469,16 +468,9 @@ export async function updateMultipleAssociation(
   await model[setAccessor](setItems, { transaction, context, individualHooks: true });
 
   const newItems = [];
-  const pk = association.target.primaryKeyAttribute;
-  const tmpKey = association['options']?.['targetKey'];
-  let targetKey = pk;
-  const db = model.constructor['database'] as Database;
-  if (tmpKey !== pk) {
-    const targetKeyFieldOptions = db.getFieldByPath(`${association.target.name}.${tmpKey}`)?.options;
-    if (targetKeyFieldOptions?.unique) {
-      targetKey = tmpKey;
-    }
-  }
+  // @ts-ignore
+  const targetKey = (association as any).targetKey || association.options.targetKey || 'id';
+
   for (const item of objectItems) {
     const through = (<any>association).through ? (<any>association).through.model.name : null;
 
@@ -491,10 +483,6 @@ export async function updateMultipleAssociation(
 
     if (throughValue) {
       accessorOptions['through'] = throughValue;
-    }
-
-    if (pk !== targetKey && !isUndefinedOrNull(item[pk]) && isUndefinedOrNull(item[targetKey])) {
-      throw new Error(`${targetKey} field value is empty`);
     }
 
     if (isUndefinedOrNull(item[targetKey])) {
