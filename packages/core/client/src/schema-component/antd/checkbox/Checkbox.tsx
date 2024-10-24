@@ -16,7 +16,7 @@ import type {
   CheckboxProps as AntdCheckboxProps,
 } from 'antd/es/checkbox';
 import uniq from 'lodash/uniq';
-import React, { FC, useMemo } from 'react';
+import React, { FC, useEffect, useState } from 'react';
 import { useCollectionField } from '../../../data-source/collection-field/CollectionFieldProvider';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 
@@ -37,7 +37,7 @@ const ReadPretty: FC<CheckboxReadPrettyProps> = (props) => {
   if (props.value) {
     return <CheckOutlined style={{ color: '#52c41a' }} />;
   }
-  return props.showUnchecked ? <CloseOutlined style={{ color: '#ff4d4f' }} /> : null;
+  return props.showUnchecked ? <CloseOutlined style={{ color: '#ff4d4f' }} /> : <AntdCheckbox disabled />;
 };
 
 export const Checkbox: ComposedCheckbox = connect(
@@ -74,23 +74,32 @@ Checkbox.Group = connect(
     if (!isValid(props.value)) {
       return null;
     }
+    const [content, setContent] = useState<React.ReactNode[]>([]);
+    const [loading, setLoading] = useState(true);
     const field = useField<any>();
     const collectionField = useCollectionField();
-    const tags = useMemo(() => {
+
+    // The map method here maybe quite time-consuming, especially in table blocks.
+    // Therefore, we use an asynchronous approach to render the list,
+    // which allows us to avoid blocking the main rendering process.
+    useEffect(() => {
       const dataSource = field.dataSource || collectionField?.uiSchema.enum || [];
       const value = uniq(field.value ? field.value : []);
-      return dataSource.filter((option) => value.includes(option.value));
+      const tags = dataSource.filter((option) => value.includes(option.value));
+      const content = tags.map((option, key) => (
+        <Tag key={key} color={option.color} icon={option.icon}>
+          {option.label}
+        </Tag>
+      ));
+      setContent(content);
+      setLoading(false);
     }, [field.value]);
 
-    return (
-      <EllipsisWithTooltip ellipsis={props.ellipsis}>
-        {tags.map((option, key) => (
-          <Tag key={key} color={option.color} icon={option.icon}>
-            {option.label}
-          </Tag>
-        ))}
-      </EllipsisWithTooltip>
-    );
+    if (loading) {
+      return null;
+    }
+
+    return <EllipsisWithTooltip ellipsis={props.ellipsis}>{content}</EllipsisWithTooltip>;
   }),
 );
 Checkbox.Group.displayName = 'Checkbox.Group';

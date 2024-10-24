@@ -25,7 +25,7 @@ import { parseExpression } from 'cron-parser';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import get from 'lodash/get';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Calendar as BigCalendar, View, dayjsLocalizer } from 'react-big-calendar';
 import * as dates from 'react-big-calendar/lib/utils/dates';
 import { i18nt, useTranslation } from '../../locale';
@@ -236,10 +236,10 @@ export const Calendar: any = withDynamicSchemaProps(
       });
 
       // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-      const { dataSource, fieldNames, showLunar } = useProps(props);
+      const { dataSource, fieldNames, showLunar, defaultView } = useProps(props);
       const height = useCalenderHeight();
       const [date, setDate] = useState<Date>(new Date());
-      const [view, setView] = useState<View>('month');
+      const [view, setView] = useState<View>(props.defaultView || 'month');
       const { events, enumList } = useEvents(dataSource, fieldNames, date, view);
       const [record, setRecord] = useState<any>({});
       const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
@@ -253,6 +253,10 @@ export const Calendar: any = withDynamicSchemaProps(
       const createActionSchema: Schema = useMemo(() => findCreateSchema(fieldSchema), [fieldSchema]);
       const startFieldName = fieldNames?.start?.[0];
       const endFieldName = fieldNames?.end?.[0];
+
+      useEffect(() => {
+        setView(props.defaultView);
+      }, [props.defaultView]);
 
       const components = useMemo(() => {
         return {

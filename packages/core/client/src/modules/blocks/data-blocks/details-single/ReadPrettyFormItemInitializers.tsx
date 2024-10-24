@@ -79,7 +79,7 @@ const commonOptions = {
     },
     {
       name: 'addText',
-      title: '{{t("Add text")}}',
+      title: '{{t("Add Markdown")}}',
       Component: 'BlockItemInitializer',
       schema: {
         type: 'void',
@@ -94,6 +94,21 @@ const commonOptions = {
         'x-component': 'Markdown.Void',
         'x-component-props': {
           content: '{{t("This is a demo text, **supports Markdown syntax**.")}}',
+        },
+      },
+    },
+    {
+      name: 'addDivider',
+      title: '{{t("Add group")}}',
+      Component: 'BlockItemInitializer',
+      schema: {
+        type: 'void',
+        'x-decorator': 'FormItem',
+        'x-toolbar': 'FormItemSchemaToolbar',
+        'x-settings': 'blockSettings:divider',
+        'x-component': 'Divider',
+        'x-component-props': {
+          children: '{{t("Group")}}',
         },
       },
     },
