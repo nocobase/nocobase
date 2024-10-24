@@ -49,19 +49,12 @@ export const Page = (props) => {
   const { tabUid, name: pageUid } = useParams();
   const basenameOfCurrentRouter = useRouterBasename();
 
-  // react18  tab 动画会卡顿，所以第一个 tab 时，动画禁用，后面的 tab 才启用
-  const [hasMounted, setHasMounted] = useState(false);
-  useEffect(() => {
-    setTimeout(() => {
-      setHasMounted(true);
-    });
-  }, []);
-
   useEffect(() => {
     if (!title) {
       setTitle(t(fieldSchema.title));
     }
   }, [fieldSchema.title, title]);
+
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
   const enablePageTabs = fieldSchema['x-component-props']?.enablePageTabs;
   const hidePageTitle = fieldSchema['x-component-props']?.hidePageTitle;
@@ -101,7 +94,6 @@ export const Page = (props) => {
       <DndContext>
         <Tabs
           size={'small'}
-          animated={hasMounted}
           activeKey={activeKey}
           // 这里的样式是为了保证页面 tabs 标签下面的分割线和页面内容对齐（页面内边距可以通过主题编辑器调节）
           tabBarStyle={{
@@ -191,7 +183,6 @@ export const Page = (props) => {
       </DndContext>
     ) : null;
   }, [
-    hasMounted,
     activeKey,
     fieldSchema,
     dn.designable,

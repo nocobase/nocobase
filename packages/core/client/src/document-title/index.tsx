@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
 import { Plugin } from '../application/Plugin';
@@ -31,13 +31,15 @@ export const DocumentTitleProvider: React.FC<{ addonBefore?: string; addonAfter?
   const documentTitle = `${addonBefore ? ` - ${t(addonBefore)}` : ''}${t(title || '')}${
     addonAfter ? ` - ${t(addonAfter)}` : ''
   }`;
+  const value = useMemo(() => {
+    return {
+      title,
+      setTitle,
+    };
+  }, [title]);
+
   return (
-    <DocumentTitleContext.Provider
-      value={{
-        title,
-        setTitle,
-      }}
-    >
+    <DocumentTitleContext.Provider value={value}>
       <Helmet>
         <title>{documentTitle}</title>
       </Helmet>

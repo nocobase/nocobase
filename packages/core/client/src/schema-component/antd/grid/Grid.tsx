@@ -11,7 +11,6 @@ import { TinyColor } from '@ctrl/tinycolor';
 import { useDndContext, useDndMonitor, useDraggable, useDroppable } from '@dnd-kit/core';
 import { ISchema, RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { theme } from 'antd';
 import cls from 'classnames';
 import _ from 'lodash';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -334,8 +333,6 @@ export const Grid: any = observer(
     const rows = useRowProperties();
     const { setPrintContent } = useFormBlockContext();
     const { styles } = useStyles();
-    const { token } = theme.useToken();
-    const { designable } = useDesignable();
     const distributedValue =
       distributed === undefined
         ? fieldSchema?.parent['x-component'] === 'Page' || fieldSchema?.parent['x-component'] === 'Tabs.TabPane'

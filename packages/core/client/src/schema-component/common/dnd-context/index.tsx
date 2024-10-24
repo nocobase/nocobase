@@ -9,7 +9,6 @@
 
 import { DndContext as DndKitContext, DragEndEvent, DragOverlay, rectIntersection } from '@dnd-kit/core';
 import { Props } from '@dnd-kit/core/dist/components/DndContext/DndContext';
-import { observer } from '@formily/react';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../';
@@ -77,38 +76,35 @@ const useDragEnd = (onDragEnd) => {
 
 export type DndContextProps = Props;
 
-export const DndContext = observer(
-  (props: Props) => {
-    const { t } = useTranslation();
-    const [visible, setVisible] = useState(true);
+export const DndContext = (props: Props) => {
+  const { t } = useTranslation();
+  const [visible, setVisible] = useState(true);
 
-    const onDragStart = useCallback(
-      (event) => {
-        const { active } = event;
-        const activeSchema = active?.data?.current?.schema;
-        setVisible(!!activeSchema);
-        if (props?.onDragStart) {
-          props?.onDragStart?.(event);
-        }
-      },
-      [props?.onDragStart],
-    );
+  const onDragStart = useCallback(
+    (event) => {
+      const { active } = event;
+      const activeSchema = active?.data?.current?.schema;
+      setVisible(!!activeSchema);
+      if (props?.onDragStart) {
+        props?.onDragStart?.(event);
+      }
+    },
+    [props?.onDragStart],
+  );
 
-    const onDragEnd = useDragEnd(props?.onDragEnd);
+  const onDragEnd = useDragEnd(props?.onDragEnd);
 
-    return (
-      <DndKitContext collisionDetection={rectIntersection} {...props} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-        <DragOverlay
-          dropAnimation={{
-            duration: 10,
-            easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
-          }}
-        >
-          {visible && <span style={{ whiteSpace: 'nowrap' }}>{t('Dragging')}</span>}
-        </DragOverlay>
-        {props.children}
-      </DndKitContext>
-    );
-  },
-  { displayName: 'DndContext' },
-);
+  return (
+    <DndKitContext collisionDetection={rectIntersection} {...props} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+      <DragOverlay
+        dropAnimation={{
+          duration: 10,
+          easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+        }}
+      >
+        {visible && <span style={{ whiteSpace: 'nowrap' }}>{t('Dragging')}</span>}
+      </DragOverlay>
+      {props.children}
+    </DndKitContext>
+  );
+};
