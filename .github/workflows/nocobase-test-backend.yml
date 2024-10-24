@@ -60,7 +60,7 @@ jobs:
       - name: Test with Sqlite
         run: yarn test --server --single-thread=false packages/plugins/@nocobase/plugin-error-handler/src/server/__tests__/render-error.test.ts
         env:
-          LOGGER_LEVEL: error
+          LOGGER_LEVEL: info
           DB_DIALECT: sqlite
           DB_STORAGE: /tmp/db.sqlite
           DB_TEST_PREFIX: test_
