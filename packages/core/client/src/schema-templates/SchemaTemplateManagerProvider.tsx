@@ -10,14 +10,13 @@
 import { ISchema, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { cloneDeep } from 'lodash';
-import React, { ReactNode, createContext, useContext, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { createContext, useContext, useMemo } from 'react';
 import { useAPIClient, useRequest } from '../api-client';
 import { Plugin } from '../application/Plugin';
 import { useAppSpin } from '../application/hooks/useAppSpin';
 import { useCollectionManager_deprecated } from '../collection-manager';
-import { BlockTemplate } from './BlockTemplate';
 import { DEFAULT_DATA_SOURCE_KEY } from '../data-source';
+import { BlockTemplate } from './BlockTemplate';
 
 export const SchemaTemplateManagerContext = createContext<any>({});
 SchemaTemplateManagerContext.displayName = 'SchemaTemplateManagerContext';
@@ -39,7 +38,7 @@ const regenerateUid = (s: ISchema) => {
 };
 
 export const useSchemaTemplate = () => {
-  const { getTemplateBySchema, templates } = useSchemaTemplateManager();
+  const { getTemplateBySchema } = useSchemaTemplateManager();
   const fieldSchema = useFieldSchema();
   const schemaId = fieldSchema['x-uid'];
   const templateKey = fieldSchema['x-template-key'];
