@@ -75,9 +75,9 @@ test.describe('configure fields', () => {
       page.getByLabel('block-item-CollectionField-general-filter-form-general.manyToOne.nickname'),
     ).not.toBeVisible();
 
-    // add text
+    // add markdown
     await formItemInitializer.hover();
-    await page.getByRole('menuitem', { name: 'Add text' }).click();
+    await page.getByRole('menuitem', { name: 'Add Markdown' }).click();
 
     await expect(page.getByLabel('block-item-Markdown.Void-general-filter-form')).toBeVisible();
   });
