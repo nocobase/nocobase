@@ -17,7 +17,6 @@ import {
   useCollection_deprecated,
   useCompile,
   useComponent,
-  useFormBlockContext,
 } from '@nocobase/client';
 import { Checkbox, Select, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
@@ -36,14 +35,6 @@ const InternalField: React.FC = (props) => {
   const setFieldProps = (key, value) => {
     field[key] = typeof field[key] === 'undefined' ? value : field[key];
   };
-  const ctx = useFormBlockContext();
-
-  useEffect(() => {
-    if (ctx?.field) {
-      ctx.field.added = ctx.field.added || new Set();
-      ctx.field.added.add(fieldSchema.name);
-    }
-  });
 
   useEffect(() => {
     if (!uiSchema) {

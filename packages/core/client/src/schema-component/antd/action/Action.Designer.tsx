@@ -500,20 +500,17 @@ export function WorkflowConfig() {
   const buttonAction = fieldSchema['x-action'];
 
   const description = {
-    submit: t(
-      'Workflow will be triggered before or after submitting succeeded based on workflow type (supports pre/post action event in local mode, and approval event).',
-      {
-        ns: 'workflow',
-      },
-    ),
+    submit: t('Support pre-action event (local mode), post-action event (local mode), and approval event here.', {
+      ns: 'workflow',
+    }),
     'customize:save': t(
-      'Workflow will be triggered before or after submitting succeeded based on workflow type (supports pre/post action event in local mode, and approval event).',
+      'Support pre-action event (local mode), post-action event (local mode), and approval event here.',
       {
         ns: 'workflow',
       },
     ),
     'customize:update': t(
-      'Workflow will be triggered before or after submitting succeeded based on workflow type (supports pre/post action event in local mode, and approval event).',
+      'Support pre-action event (local mode), post-action event (local mode), and approval event here.',
       { ns: 'workflow' },
     ),
     'customize:triggerWorkflows': t(

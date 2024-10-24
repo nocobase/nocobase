@@ -175,6 +175,11 @@ export class PluginPublicFormsServer extends Plugin {
   };
 
   async load() {
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}`,
+      actions: ['publicForms:*'],
+    });
+
     this.app.acl.allow('publicForms', 'getMeta', 'public');
     this.app.resourceManager.registerActionHandlers({
       'publicForms:getMeta': this.getPublicFormsMeta,

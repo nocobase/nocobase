@@ -12,6 +12,7 @@ on:
     paths:
       - 'packages/**'
       - 'Dockerfile.pro'
+      - 'package.json'
       - '.github/workflows/build-pro-image.yml'
 
 jobs:

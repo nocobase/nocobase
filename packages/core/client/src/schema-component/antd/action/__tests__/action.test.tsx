@@ -106,7 +106,7 @@ describe('Action.Popover', () => {
     const { container } = render(<App4 />);
     const btn = container.querySelector('.ant-btn') as HTMLElement;
 
-    fireEvent.mouseEnter(btn);
+    fireEvent.click(btn);
 
     await waitFor(() => {
       // popover

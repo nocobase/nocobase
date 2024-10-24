@@ -10,6 +10,7 @@
 import { Repository } from '@nocobase/database';
 import { MockDatabase, MockServer, createMockServer } from '@nocobase/test';
 import Migration from '../migrations/20240802141435-collection-tree';
+import { isPg } from '@nocobase/test';
 
 describe('tree collection sync', async () => {
   let app: MockServer;
@@ -32,6 +33,45 @@ describe('tree collection sync', async () => {
     const collection = db.collection({
       name: 'test_tree',
       tree: 'adjacency-list',
+      fields: [
+        {
+          type: 'belongsTo',
+          name: 'parent',
+          treeParent: true,
+        },
+        {
+          type: 'hasMany',
+          name: 'children',
+          treeChildren: true,
+        },
+      ],
+    });
+    await collection.sync();
+    const name = `main_${collection.name}_path`;
+    const pathCollection = db.getCollection(name);
+    expect(pathCollection).toBeTruthy();
+    expect(await pathCollection.existsInDb()).toBeTruthy();
+  });
+
+  it.runIf(isPg())('should create path collection when creating inherit tree collection', async () => {
+    const root = db.collection({
+      name: 'root',
+      fields: [
+        { name: 'name', type: 'string' },
+        {
+          name: 'bs',
+          type: 'hasMany',
+          target: 'b',
+          foreignKey: 'root_id',
+        },
+      ],
+    });
+    await root.sync();
+
+    const collection = db.collection({
+      name: 'test_tree',
+      tree: 'adjacency-list',
+      inherits: ['root'],
       fields: [
         {
           type: 'belongsTo',
