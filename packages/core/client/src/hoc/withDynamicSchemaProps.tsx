@@ -27,29 +27,28 @@ const getHook = (str: string, scope: Record<string, any>, allText: string) => {
   return res || useDefaultDynamicComponentProps;
 };
 
+const getUseDynamicProps = (useComponentPropsStr: string, scope: Record<string, any>) => {
+  if (!useComponentPropsStr) {
+    return useDefaultDynamicComponentProps;
+  }
+
+  if (_.isFunction(useComponentPropsStr)) {
+    return useComponentPropsStr;
+  }
+
+  const pathList = useComponentPropsStr.split('.');
+  let result;
+
+  for (const item of pathList) {
+    result = getHook(item, result || scope, useComponentPropsStr);
+  }
+
+  return result;
+};
+
 export function useDynamicComponentProps(useComponentPropsStr?: string, props?: any) {
   const scope = useExpressionScope();
-
-  const useDynamicProps = useMemo(() => {
-    if (!useComponentPropsStr) {
-      return useDefaultDynamicComponentProps;
-    }
-
-    if (_.isFunction(useComponentPropsStr)) {
-      return useComponentPropsStr;
-    }
-
-    const pathList = useComponentPropsStr.split('.');
-    let result;
-
-    for (const item of pathList) {
-      result = getHook(item, result || scope, useComponentPropsStr);
-    }
-
-    return result;
-  }, [useComponentPropsStr]);
-
-  const res = useDynamicProps(props);
+  const res = getUseDynamicProps(useComponentPropsStr, scope)(props);
 
   return res;
 }

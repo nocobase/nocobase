@@ -32,7 +32,12 @@ test.describe('Input.Preview', () => {
     // 4. 切换图片大小到 Large，大小切换正常
     await page.getByLabel('block-item-CollectionField-').hover();
     await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FormItem-general-general').hover();
-    await page.getByRole('menuitem', { name: 'Size Small' }).click();
+    await page.getByRole('menuitem', { name: 'Size Small' }).click({
+      position: {
+        x: 160,
+        y: 10,
+      },
+    });
     await page.getByRole('option', { name: 'Large' }).click();
     await expect(page.getByLabel('block-item-CollectionField-').getByRole('img').first()).toHaveJSProperty('width', 72);
 

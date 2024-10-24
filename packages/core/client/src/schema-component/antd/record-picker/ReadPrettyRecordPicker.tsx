@@ -13,11 +13,9 @@ import React, { Fragment, useRef, useState } from 'react';
 import { WithoutTableFieldResource } from '../../../block-provider';
 // TODO: 不要使用 '../../../block-provider' 这个路径引用 BlockAssociationContext，在 Vitest 中会报错，待修复
 import { BlockAssociationContext } from '../../../block-provider/BlockProvider';
-import {
-  CollectionProvider_deprecated,
-  useCollection_deprecated,
-  useCollectionManager_deprecated,
-} from '../../../collection-manager';
+import { CollectionProvider_deprecated } from '../../../collection-manager';
+import { useCollectionManager } from '../../../data-source/collection/CollectionManagerProvider';
+import { useCollection } from '../../../data-source/collection/CollectionProvider';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
@@ -44,23 +42,23 @@ export const ReadPrettyRecordPicker: React.FC = observer(
     const { ellipsis } = props;
     const fieldSchema = useFieldSchema();
     const recordCtx = useRecord();
-    const { getCollectionJoinField } = useCollectionManager_deprecated();
+    const cm = useCollectionManager();
     // value 做了转换，但 props.value 和原来 useField().value 的值不一致
     // const field = useField<Field>();
     const fieldNames = useFieldNames(props);
     const [visible, setVisible] = useState(false);
-    const { getField } = useCollection_deprecated();
-    const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);
+    const collection = useCollection();
+    const collectionField =
+      collection?.getField(fieldSchema.name) || cm?.getCollectionField(fieldSchema?.['x-collection-field']);
     const [record, setRecord] = useState({});
     const compile = useCompile();
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
-    const showFilePicker = isShowFilePicker(labelUiSchema);
     const { snapshot } = useActionContext();
     const isTagsMode = fieldSchema['x-component-props']?.mode === 'tags';
 
     const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
 
-    if (showFilePicker) {
+    if (isShowFilePicker(labelUiSchema)) {
       return collectionField ? <Preview {...props} /> : null;
     }
 

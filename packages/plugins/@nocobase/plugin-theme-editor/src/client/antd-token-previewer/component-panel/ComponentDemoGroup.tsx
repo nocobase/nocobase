@@ -95,7 +95,7 @@ const ComponentDemoBlock: FC<ComponentDemoBlockProps> = ({
                     <div className="previewer-component-demo-group-item-relative-token">
                       <Tooltip title={demo.tokens.join(', ')}>
                         <span>
-                          {locale.demo.relatedTokens}: {demo.tokens.slice(0, 2).join(', ')}
+                          {locale.relatedTokens}: {demo.tokens.slice(0, 2).join(', ')}
                           {demo.tokens.length > 2 ? '...' : ''}
                         </span>
                       </Tooltip>
