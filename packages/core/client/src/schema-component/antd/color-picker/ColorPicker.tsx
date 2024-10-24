@@ -28,7 +28,7 @@ export const ColorPicker = connect(
           trigger="hover"
           {...others}
           destroyTooltipOnHide
-          getPopupContainer={(current) => current}
+          // getPopupContainer={(current) => current}
           presets={[
             {
               label: 'Recommended',
