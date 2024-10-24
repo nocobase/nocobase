@@ -11,7 +11,7 @@ import { observable, autorun, reaction } from '@formily/reactive';
 import { notification } from 'antd';
 import { SSEData } from '../../types';
 import { messageMapObs, updateUnreadMsgsCount } from './message';
-import { channelMapObs, fetchChannels, selectedChannelNameObs } from './channel';
+import { fetchChannels, selectedChannelNameObs } from './channel';
 import { inboxVisible } from './inbox';
 import { getAPIClient } from '../utils';
 import { uid } from '@nocobase/utils/client';
@@ -22,31 +22,9 @@ reaction(
   () => liveSSEObs.value,
   (sseData) => {
     if (!sseData) return;
-
     if (['message:created', 'message:updated'].includes(sseData.type)) {
       const { data } = sseData;
       messageMapObs.value[data.id] = data;
-      if (sseData.type === 'message:created') {
-        notification.info({
-          message: (
-            <div
-              style={{
-                textOverflow: 'ellipsis',
-                overflow: 'hidden',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {data.title}
-            </div>
-          ),
-          description: data.content.slice(0, 100) + (data.content.length > 100 ? '...' : ''),
-          onClick: () => {
-            inboxVisible.value = true;
-            selectedChannelNameObs.value = data.channelName;
-            notification.destroy();
-          },
-        });
-      }
       fetchChannels({ filter: { name: data.channelName } });
       updateUnreadMsgsCount();
     }

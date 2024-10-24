@@ -8,5 +8,5 @@
  */
 
 export const PluginName = 'mobile';
-export const NavigationBarHeight = 50;
+export const NavigationBarHeight = 60;
 export const PageBackgroundColor = '#f5f5f5';

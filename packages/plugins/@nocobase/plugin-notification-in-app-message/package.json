@@ -19,7 +19,9 @@
     "@nocobase/plugin-notification-manager": "1.x",
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x",
-    "react-router-dom": "^6.x"
+    "react-router-dom": "^6.x",
+    "antd-mobile": "^5.x",
+    "react-router-dom": "^6"
 
   }
 }

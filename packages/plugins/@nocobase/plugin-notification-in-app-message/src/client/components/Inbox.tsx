@@ -17,7 +17,8 @@
  */
 
 import React, { useEffect, useCallback, useContext } from 'react';
-import { Badge, Button, ConfigProvider, Drawer, Tooltip } from 'antd';
+import { Badge, Button, ConfigProvider, Drawer, Tooltip, notification } from 'antd';
+import { reaction } from '@formily/reactive';
 import { CloseOutlined } from '@ant-design/icons';
 import { createStyles } from 'antd-style';
 import { Icon } from '@nocobase/client';
@@ -32,6 +33,9 @@ import {
   startMsgSSEStreamWithRetry,
   inboxVisible,
   userIdObs,
+  messageMapObs,
+  liveSSEObs,
+  selectedChannelNameObs,
 } from '../observables';
 const useStyles = createStyles(({ token }) => {
   return {
@@ -62,6 +66,42 @@ const InnerInbox = (props) => {
 
   useEffect(() => {
     startMsgSSEStreamWithRetry();
+  }, []);
+
+  useEffect(() => {
+    const dispose = reaction(
+      () => liveSSEObs.value,
+      (sseData) => {
+        if (!sseData) return;
+
+        if (['message:created', 'message:updated'].includes(sseData.type)) {
+          const { data } = sseData;
+          messageMapObs.value[data.id] = data;
+          if (sseData.type === 'message:created') {
+            notification.info({
+              message: (
+                <div
+                  style={{
+                    textOverflow: 'ellipsis',
+                    overflow: 'hidden',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {data.title}
+                </div>
+              ),
+              description: data.content.slice(0, 100) + (data.content.length > 100 ? '...' : ''),
+              onClick: () => {
+                inboxVisible.value = true;
+                selectedChannelNameObs.value = data.channelName;
+                notification.destroy();
+              },
+            });
+          }
+        }
+      },
+    );
+    return () => dispose();
   }, []);
   const DrawerTitle = <div style={{ padding: '0' }}>{t('Message')}</div>;
   const CloseIcon = (
