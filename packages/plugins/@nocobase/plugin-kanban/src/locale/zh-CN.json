@@ -4,5 +4,6 @@
   "Create sort field": "创建排序字段",
   "Convert the following integer fields to sorting fields": "将以下整数字段转为排序字段",
   "Sorting field":"排序字段",
-  "Grouped sorting based on":"基于分组字段"
+  "Grouped sorting based on":"基于分组字段",
+  "Enable drag and drop sorting":"启用拖拽排序"
 }

@@ -9,7 +9,7 @@
 
 import { GeneralField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
-import { isString } from 'lodash';
+import _, { isString } from 'lodash';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { createContext, FC, useCallback, useContext, useMemo } from 'react';
 import { useParsedFilter } from '../../../block-provider/hooks/useParsedFilter';
@@ -137,7 +137,7 @@ export const useFieldNames = (
   const fieldSchema = useFieldSchema();
   const fieldNames =
     fieldSchema['x-component-props']?.['field']?.['uiSchema']?.['x-component-props']?.['fieldNames'] ||
-    fieldSchema?.['x-component-props']?.['fieldNames'] ||
+    fieldSchema['x-component-props']?.['fieldNames'] ||
     props.fieldNames;
   return { label: 'label', value: 'value', ...fieldNames };
 };
@@ -149,14 +149,27 @@ interface SubFormProviderProps {
    * the schema of the current sub-table or sub-form
    */
   fieldSchema?: Schema;
+  parent?: SubFormProviderProps;
+  /**
+   * Ignore the current value in the upper and lower levels
+   */
+  skip?: boolean;
 }
 
 const SubFormContext = createContext<SubFormProviderProps>(null);
 SubFormContext.displayName = 'SubFormContext';
 
 export const SubFormProvider: FC<{ value: SubFormProviderProps }> = (props) => {
-  const { value, collection, fieldSchema } = props.value;
-  const memoValue = useMemo(() => ({ value, collection, fieldSchema }), [value, collection, fieldSchema]);
+  const _parent = useContext(SubFormContext);
+  const { value, collection, fieldSchema, parent, skip } = props.value;
+  const memoValue = useMemo(
+    () =>
+      _.omitBy(
+        { value, collection, fieldSchema, skip, parent: parent || (_parent?.skip ? _parent.parent : _parent) },
+        _.isUndefined,
+      ),
+    [value, collection, fieldSchema, skip, parent, _parent],
+  ) as SubFormProviderProps;
   return <SubFormContext.Provider value={memoValue}>{props.children}</SubFormContext.Provider>;
 };
 
@@ -170,10 +183,11 @@ export const SubFormProvider: FC<{ value: SubFormProviderProps }> = (props) => {
  * @returns
  */
 export const useSubFormValue = () => {
-  const { value, collection, fieldSchema } = useContext(SubFormContext) || {};
+  const { value, collection, fieldSchema, parent } = useContext(SubFormContext) || {};
   return {
     formValue: value,
     collection,
     fieldSchema,
+    parent,
   };
 };

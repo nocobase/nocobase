@@ -225,7 +225,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   private _maintainingCommandStatus: MaintainingCommandStatus;
   private _maintainingStatusBeforeCommand: MaintainingCommandStatus | null;
   private _actionCommand: Command;
-  private sqlLogger: Logger;
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -238,6 +237,18 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
   }
 
+  private _sqlLogger: Logger;
+
+  get sqlLogger() {
+    return this._sqlLogger;
+  }
+
+  protected _logger: SystemLogger;
+
+  get logger() {
+    return this._logger;
+  }
+
   protected _started: Date | null = null;
 
   /**
@@ -245,12 +256,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
    */
   get started() {
     return this._started;
-  }
-
-  protected _logger: SystemLogger;
-
-  get logger() {
-    return this._logger;
   }
 
   get log() {
@@ -561,6 +566,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       }
     }
 
+    if (this.cacheManager) {
+      await this.cacheManager.close();
+    }
+
     this._cacheManager = await createCacheManager(this, this.options.cacheManager);
 
     this.log.debug('init plugins');
@@ -577,10 +586,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     // Telemetry is initialized after beforeLoad hook
     // since some configuration may be registered in beforeLoad hook
-    this.telemetry.init();
-    if (this.options.telemetry?.enabled) {
-      // Start collecting telemetry data if enabled
-      this.telemetry.start();
+    if (!this.telemetry.started) {
+      this.telemetry.init();
+      if (this.options.telemetry?.enabled) {
+        // Start collecting telemetry data if enabled
+        this.telemetry.start();
+      }
     }
 
     await this.pm.load(options);
@@ -910,7 +921,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.reInit();
     await this.db.sync();
     await this.load({ hooks: false });
-
+    this._loaded = false;
     this.log.debug('emit beforeInstall', { method: 'install' });
     this.setMaintainingMessage('call beforeInstall hook...');
     await this.emitAsync('beforeInstall', this, options);
@@ -1084,12 +1095,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       // Due to the use of custom log levels,
       // we have to use any type here until Winston updates the type definitions.
     }) as any;
+
     this.requestLogger = createLogger({
       dirname: getLoggerFilePath(this.name),
       filename: 'request',
       ...(options?.request || {}),
     });
-    this.sqlLogger = this.createLogger({
+
+    this._sqlLogger = this.createLogger({
       filename: 'sql',
       level: 'debug',
     });
@@ -1098,7 +1111,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   protected closeLogger() {
     this.log?.close();
     this.requestLogger?.close();
-    this.sqlLogger?.close();
+    this._sqlLogger?.close();
   }
 
   protected init() {
@@ -1210,7 +1223,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       if (msg.includes('INSERT INTO')) {
         msg = msg.substring(0, 2000) + '...';
       }
-      this.sqlLogger.debug({ message: msg, app: this.name, reqId: this.context.reqId });
+      this._sqlLogger.debug({ message: msg, app: this.name, reqId: this.context.reqId });
     };
     const dbOptions = options.database instanceof Database ? options.database.options : options.database;
     const db = new Database({

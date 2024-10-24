@@ -30,7 +30,7 @@ export async function getApp(options = {}): Promise<MockServer> {
   });
 
   await app.db.import({
-    directory: path.resolve(__dirname, './tables'),
+    directory: path.resolve(__dirname, './collections'),
   });
 
   await app.db.sync();
