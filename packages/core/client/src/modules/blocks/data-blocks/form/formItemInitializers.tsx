@@ -36,8 +36,13 @@ const commonOptions = {
     },
     {
       name: 'addText',
-      title: '{{t("Add text")}}',
+      title: '{{t("Add Markdown")}}',
       Component: 'MarkdownFormItemInitializer',
+    },
+    {
+      name: 'addDivider',
+      title: '{{t("Add group")}}',
+      Component: 'DividerFormItemInitializer',
     },
   ],
 };

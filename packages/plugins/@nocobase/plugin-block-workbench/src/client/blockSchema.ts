@@ -12,6 +12,9 @@ import { ISchema } from '@nocobase/client';
 export const blockSchema: ISchema = {
   type: 'void',
   'x-decorator': 'CardItem',
+  'x-decorator-props': {
+    title: '',
+  },
   'x-settings': 'blockSettings:workbench',
   'x-schema-toolbar': 'BlockSchemaToolbar',
   'x-component': 'WorkbenchBlock',
