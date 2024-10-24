@@ -13,7 +13,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { useCollectionManager_deprecated } from '../collection-manager';
 import { withDynamicSchemaProps } from '../hoc/withDynamicSchemaProps';
 import { useTableBlockParams } from '../modules/blocks/data-blocks/table/hooks/useTableBlockDecoratorProps';
-import { FixedBlockWrapper, SchemaComponentOptions } from '../schema-component';
+import { SchemaComponentOptions } from '../schema-component';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useBlockHeightProps } from './hooks';
 /**
@@ -90,27 +90,25 @@ const InternalTableBlockProvider = (props: Props) => {
   );
 
   return (
-    <FixedBlockWrapper>
-      <TableBlockContext.Provider
-        value={{
-          ...others,
-          field,
-          service,
-          resource,
-          params,
-          showIndex,
-          dragSort,
-          rowKey,
-          expandFlag,
-          childrenColumnName,
-          allIncludesChildren,
-          setExpandFlag: setExpandFlagValue,
-          heightProps,
-        }}
-      >
-        {props.children}
-      </TableBlockContext.Provider>
-    </FixedBlockWrapper>
+    <TableBlockContext.Provider
+      value={{
+        ...others,
+        field,
+        service,
+        resource,
+        params,
+        showIndex,
+        dragSort,
+        rowKey,
+        expandFlag,
+        childrenColumnName,
+        allIncludesChildren,
+        setExpandFlag: setExpandFlagValue,
+        heightProps,
+      }}
+    >
+      {props.children}
+    </TableBlockContext.Provider>
   );
 };
 

@@ -34,7 +34,6 @@ import { SchemaComponent, SchemaComponentOptions } from '../../core';
 import { useCompile, useDesignable } from '../../hooks';
 import { useToken } from '../__builtins__';
 import { ErrorFallback } from '../error-fallback';
-import FixedBlock from './FixedBlock';
 import { useStyles } from './Page.style';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 
@@ -75,7 +74,6 @@ export const Page = (props) => {
     () => tabUid || searchParams.get('tab') || Object.keys(fieldSchema.properties || {}).shift(),
     [fieldSchema.properties, searchParams, tabUid],
   );
-  const [height, setHeight] = useState(0);
   const { wrapSSR, hashId, componentCls } = useStyles();
   const aclStyles = useAClStyles();
   const { token } = useToken();
@@ -207,30 +205,30 @@ export const Page = (props) => {
   return wrapSSR(
     <div className={`${componentCls} ${hashId} ${aclStyles.styles}`}>
       <PageDesigner title={fieldSchema.title || title} />
-      <div
-        ref={(ref) => {
-          setHeight(Math.floor(ref?.getBoundingClientRect().height || 0) + 1);
-        }}
-      >
-        {!disablePageHeader && (
-          <AntdPageHeader
-            className={classNames('pageHeaderCss', pageHeaderTitle || enablePageTabs ? '' : 'height0')}
-            ghost={false}
-            // 如果标题为空的时候会导致 PageHeader 不渲染，所以这里设置一个空白字符，然后再设置高度为 0
-            title={pageHeaderTitle || ' '}
-            {...others}
-            footer={footer}
-          />
-        )}
-      </div>
+      {!disablePageHeader && (
+        <AntdPageHeader
+          className={classNames('pageHeaderCss', pageHeaderTitle || enablePageTabs ? '' : 'height0')}
+          ghost={false}
+          // 如果标题为空的时候会导致 PageHeader 不渲染，所以这里设置一个空白字符，然后再设置高度为 0
+          title={pageHeaderTitle || ' '}
+          {...others}
+          footer={footer}
+        />
+      )}
       <div className="nb-page-wrapper">
         <ErrorBoundary FallbackComponent={ErrorFallback} onError={handleErrors}>
           {tabUid ? (
             // used to match the rout with name "admin.page.tab"
-            <Outlet context={{ loading, disablePageHeader, enablePageTabs, fieldSchema, height, tabUid }} />
+            <Outlet context={{ loading, disablePageHeader, enablePageTabs, fieldSchema, tabUid }} />
           ) : (
             <>
-              <PageContent {...{ loading, disablePageHeader, enablePageTabs, fieldSchema, height, activeKey }} />
+              <PageContent
+                loading={loading}
+                disablePageHeader={disablePageHeader}
+                enablePageTabs={enablePageTabs}
+                fieldSchema={fieldSchema}
+                activeKey={activeKey}
+              />
               {/* Used to match the route with name "admin.page.popup" */}
               <Outlet />
             </>
@@ -242,10 +240,16 @@ export const Page = (props) => {
 };
 
 export const PageTabs = () => {
-  const { loading, disablePageHeader, enablePageTabs, fieldSchema, height, tabUid } = useOutletContext<any>();
+  const { loading, disablePageHeader, enablePageTabs, fieldSchema, tabUid } = useOutletContext<any>();
   return (
     <>
-      <PageContent {...{ loading, disablePageHeader, enablePageTabs, fieldSchema, activeKey: tabUid, height }} />
+      <PageContent
+        loading={loading}
+        disablePageHeader={disablePageHeader}
+        enablePageTabs={enablePageTabs}
+        fieldSchema={fieldSchema}
+        activeKey={tabUid}
+      />
       {/* used to match the route with name "admin.page.tab.popup" */}
       <Outlet />
     </>
@@ -254,6 +258,14 @@ export const PageTabs = () => {
 
 Page.displayName = 'Page';
 
+const className1 = css`
+  > .nb-grid-container:not(:last-child) {
+    > .nb-grid > .nb-grid-warp > button:last-child {
+      display: none;
+    }
+  }
+`;
+
 const PageContent = memo(
   ({
     loading,
@@ -261,16 +273,13 @@ const PageContent = memo(
     enablePageTabs,
     fieldSchema,
     activeKey,
-    height,
   }: {
     loading: boolean;
     disablePageHeader: any;
     enablePageTabs: any;
     fieldSchema: Schema<any, any, any, any, any, any, any, any, any>;
     activeKey: string;
-    height: number;
   }) => {
-    const { token } = useToken();
     const { render } = useAppSpin();
 
     if (loading) {
@@ -284,37 +293,22 @@ const PageContent = memo(
             if (schema.name !== activeKey) return null;
 
             return (
-              <FixedBlock key={schema.name} height={`calc(${height}px + 46px + ${token.paddingPageVertical}px * 2)`}>
-                <SchemaComponent
-                  distributed
-                  schema={
-                    new Schema({
-                      properties: {
-                        [schema.name]: schema,
-                      },
-                    })
-                  }
-                />
-              </FixedBlock>
+              <SchemaComponent
+                distributed
+                schema={
+                  new Schema({
+                    properties: {
+                      [schema.name]: schema,
+                    },
+                  })
+                }
+              />
             );
           })
         ) : (
-          <FixedBlock height={`calc(${height}px + 46px + ${token.paddingPageVertical}px * 2)`}>
-            <div
-              className={classNames(
-                `pageWithFixedBlockCss nb-page-content`,
-                css`
-                  > .nb-grid-container:not(:last-child) {
-                    > .nb-grid > .nb-grid-warp > button:last-child {
-                      display: none;
-                    }
-                  }
-                `,
-              )}
-            >
-              <SchemaComponent schema={fieldSchema} distributed />
-            </div>
-          </FixedBlock>
+          <div className={classNames(`pageWithFixedBlockCss nb-page-content`, className1)}>
+            <SchemaComponent schema={fieldSchema} distributed />
+          </div>
         )}
       </>
     );
