@@ -914,7 +914,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
     await this.reInit();
     await this.db.sync();
-    await this.load({ hooks: false });
+    await this.load();
 
     this.log.debug('emit beforeInstall', { method: 'install' });
     this.setMaintainingMessage('call beforeInstall hook...');
