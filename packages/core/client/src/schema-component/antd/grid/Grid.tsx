@@ -549,7 +549,7 @@ Grid.Col = observer(
       </GridColContext.Provider>
     );
   },
-  { displayName: 'Grid.Row' },
+  { displayName: 'Grid.Col' },
 );
 
 Grid.wrap = (schema: ISchema) => {

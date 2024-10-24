@@ -47,7 +47,7 @@ const commonOptions: any = {
       useComponentProps() {
         const field = useField();
         const fieldSchema = useFieldSchema();
-        const { t } = useTranslation();
+        const { t, i18n } = useTranslation();
         const { dn } = useDesignable();
         const api = useAPIClient();
         const { mode, url, params, htmlId, height = '60vh', engine } = fieldSchema['x-component-props'] || {};
@@ -92,8 +92,14 @@ const commonOptions: any = {
           <>
             <span style={{ marginLeft: '.25em' }} className={'ant-formily-item-extra'}>
               {t('Syntax references')}:
-            </span>
-            <a href="https://handlebarsjs.com/guide/" target="_blank" rel="noreferrer">
+            </span>{' '}
+            <a
+              href={`https://${
+                i18n.language === 'zh-CN' ? 'docs-cn' : 'docs'
+              }.nocobase.com/handbook/template-handlebars`}
+              target="_blank"
+              rel="noreferrer"
+            >
               Handlebars.js
             </a>
           </>

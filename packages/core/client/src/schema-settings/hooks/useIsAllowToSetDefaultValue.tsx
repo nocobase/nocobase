@@ -9,11 +9,12 @@
 
 import { Form } from '@formily/core';
 import { Schema, useFieldSchema } from '@formily/react';
-import React, { useContext, useMemo } from 'react';
+import React, { useCallback, useContext, useMemo } from 'react';
 import { useFormBlockContext, useFormBlockType } from '../../block-provider/FormBlockProvider';
-import { useCollectionManager_deprecated } from '../../collection-manager/hooks/useCollectionManager_deprecated';
-import { useCollection_deprecated } from '../../collection-manager/hooks/useCollection_deprecated';
 import { CollectionFieldOptions_deprecated } from '../../collection-manager/types';
+import { useCollectionManager } from '../../data-source/collection/CollectionManagerProvider';
+import { useCollection } from '../../data-source/collection/CollectionProvider';
+import { useDataSourceManager } from '../../data-source/data-source/DataSourceManagerProvider';
 import { isSystemField } from '../SchemaSettings';
 import { isPatternDisabled } from '../isPatternDisabled';
 
@@ -50,27 +51,45 @@ export const DefaultValueProvider = (props: DefaultValueProviderProps) => {
 };
 
 export const useIsAllowToSetDefaultValue = ({ form, fieldSchema, collectionField }: Props = {}) => {
-  const { getInterface, getCollectionJoinField } = useCollectionManager_deprecated();
-  const { getField } = useCollection_deprecated();
+  const dm = useDataSourceManager();
+  const cm = useCollectionManager();
+  const collection = useCollection();
   const { form: innerForm } = useFormBlockContext();
   const innerFieldSchema = useFieldSchema();
   const { type } = useFormBlockType();
   const { isAllowToSetDefaultValue = _isAllowToSetDefaultValue } = useContext(DefaultValueContext) || {};
-  const innerCollectionField =
-    getField(innerFieldSchema['name']) || getCollectionJoinField(innerFieldSchema['x-collection-field']);
 
-  return {
-    isAllowToSetDefaultValue: (isSubTableColumn?: boolean) => {
-      return isAllowToSetDefaultValue({
-        collectionField: collectionField || innerCollectionField,
-        getInterface,
-        form: form || innerForm,
-        formBlockType: type,
-        fieldSchema: fieldSchema || innerFieldSchema,
-        isSubTableColumn,
-      });
-    },
+  const result = {
+    isAllowToSetDefaultValue: useCallback(
+      (isSubTableColumn?: boolean) => {
+        const innerCollectionField =
+          collection.getField(innerFieldSchema['name']) ||
+          cm.getCollectionField(innerFieldSchema['x-collection-field']);
+
+        return isAllowToSetDefaultValue({
+          collectionField: collectionField || innerCollectionField,
+          getInterface: dm?.collectionFieldInterfaceManager.getFieldInterface.bind(dm?.collectionFieldInterfaceManager),
+          form: form || innerForm,
+          formBlockType: type,
+          fieldSchema: fieldSchema || innerFieldSchema,
+          isSubTableColumn,
+        });
+      },
+      [
+        cm,
+        collection,
+        collectionField,
+        dm?.collectionFieldInterfaceManager,
+        fieldSchema,
+        form,
+        innerFieldSchema,
+        innerForm,
+        isAllowToSetDefaultValue,
+        type,
+      ],
+    ),
   };
+  return result;
 };
 
 export const interfacesOfUnsupportedDefaultValue = [

@@ -16,16 +16,20 @@ export default class extends Migration {
   on = 'afterLoad'; // 'beforeLoad' or 'afterLoad'
   appVersion = '<=1.3.0-beta';
 
+  async getTreeCollections({ transaction }) {
+    const treeCollections = await this.app.db.getRepository('collections').find({
+      appends: ['fields'],
+      filter: {
+        'options.tree': 'adjacencyList',
+      },
+      transaction,
+    });
+    return treeCollections;
+  }
+
   async up() {
     await this.db.sequelize.transaction(async (transaction) => {
-      const treeCollections = await this.app.db.getRepository('collections').find({
-        appends: ['fields'],
-        filter: {
-          'options.tree': 'adjacencyList',
-        },
-        transaction,
-      });
-
+      const treeCollections = await this.getTreeCollections({ transaction });
       for (const treeCollection of treeCollections) {
         const name = `main_${treeCollection.name}_path`;
         const collectionOptions = {

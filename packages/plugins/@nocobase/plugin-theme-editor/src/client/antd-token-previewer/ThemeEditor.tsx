@@ -13,7 +13,6 @@ import React, { forwardRef, useImperativeHandle, useMemo, useState } from 'react
 import { antdComponents } from './component-panel';
 import useControlledTheme from './hooks/useControlledTheme';
 import type { SelectedToken, Theme } from './interface';
-import type { Locale } from './locale';
 import { LocaleContext, zhCN } from './locale';
 import { mapRelatedAlias, seedRelatedAlias, seedRelatedMap } from './meta/TokenRelation';
 import type { TokenPanelProProps } from './token-panel-pro';
@@ -50,7 +49,7 @@ export type ThemeEditorProps = {
   className?: string;
   style?: React.CSSProperties;
   darkAlgorithm?: DerivativeFunc<any, any>;
-  locale?: Locale;
+  locale?: any;
 };
 
 const ThemeEditor = forwardRef<ThemeEditorRef, ThemeEditorProps>(

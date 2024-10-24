@@ -5,6 +5,70 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.38-beta](https://github.com/nocobase/nocobase/compare/v1.3.37-beta...v1.3.38-beta) - 2024-10-24
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - pagination issue in list block with simple pagination collection ([#5500](https://github.com/nocobase/nocobase/pull/5500)) by @katherinehhh
+
+  - In non-config mode, display only the current collection  in the edit form. ([#5499](https://github.com/nocobase/nocobase/pull/5499)) by @katherinehhh
+
+- **[Workflow: HTTP request node]** fix special white space appears when paste content into variable textarea caused issue ([#5497](https://github.com/nocobase/nocobase/pull/5497)) by @mytharcher
+
+- **[Departments]** Fix the issue of incorrect external data source permissions check under the department role by @2013xile
+
+## [v1.3.37-beta](https://github.com/nocobase/nocobase/compare/v1.3.36-beta...v1.3.37-beta) - 2024-10-23
+
+### 🚀 Improvements
+
+- **[client]** Adjust hint in configuration panel of binding workflow to a button ([#5494](https://github.com/nocobase/nocobase/pull/5494)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[File manager]** fix upload and destroy file record within an association block ([#5493](https://github.com/nocobase/nocobase/pull/5493)) by @mytharcher
+
+## [v1.3.36-beta](https://github.com/nocobase/nocobase/compare/v1.3.35-beta...v1.3.36-beta) - 2024-10-22
+
+### 🐛 Bug Fixes
+
+- **[Collection: Tree]** Fix the issue where the path collection for the inheritance tree collection is not automatically created ([#5486](https://github.com/nocobase/nocobase/pull/5486)) by @2013xile
+
+- **[Calendar]** show pagination bar with data in the table ([#5480](https://github.com/nocobase/nocobase/pull/5480)) by @katherinehhh
+
+- **[File manager]** fix file can not be uploaded due to rule hook. ([#5460](https://github.com/nocobase/nocobase/pull/5460)) by @mytharcher
+
+- **[Collection field: Formula]** Fix incorrect formula calculation in nested multi-level sub-table ([#5469](https://github.com/nocobase/nocobase/pull/5469)) by @gu-zhichao
+
+## [v1.3.35-beta](https://github.com/nocobase/nocobase/compare/v1.3.34-beta...v1.3.35-beta) - 2024-10-21
+
+### 🚀 Improvements
+
+- **[Workflow: mailer node]** add placeholder to mailer node ([#5470](https://github.com/nocobase/nocobase/pull/5470)) by @mytharcher
+
+## [v1.3.34-beta](https://github.com/nocobase/nocobase/compare/v1.3.33-beta...v1.3.34-beta) - 2024-10-21
+
+### 🎉 New Features
+
+- **[test]** Association fields in filter forms support configuring whether multiple selection is allowed ([#5451](https://github.com/nocobase/nocobase/pull/5451)) by @zhangzhonghe
+
+- **[client]** Add a variable named "Parent object" ([#5449](https://github.com/nocobase/nocobase/pull/5449)) by @zhangzhonghe
+Reference: [Parent object](https://docs.nocobase.com/handbook/ui/variables#parent-object)
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fix URL search params variables not being parsed ([#5454](https://github.com/nocobase/nocobase/pull/5454)) by @zhangzhonghe
+
+  - Fix data clearing bug when selecting association data with data scope in nested sub-tables ([#5441](https://github.com/nocobase/nocobase/pull/5441)) by @katherinehhh
+
+  - fix selected background color of table row ([#5445](https://github.com/nocobase/nocobase/pull/5445)) by @mytharcher
+
+- **[Block: Map]** remove zoom level configuration for map fields in table column ([#5457](https://github.com/nocobase/nocobase/pull/5457)) by @katherinehhh
+
+- **[File manager]** fix calling storage rule hook on read-pretty fields ([#5447](https://github.com/nocobase/nocobase/pull/5447)) by @mytharcher
+
+- **[Data source: Main]** fix e2e case failed due to component changed ([#5437](https://github.com/nocobase/nocobase/pull/5437)) by @mytharcher
+
 ## [v1.3.33-beta](https://github.com/nocobase/nocobase/compare/v1.3.32-beta...v1.3.33-beta) - 2024-10-16
 
 ### 🚀 Improvements
