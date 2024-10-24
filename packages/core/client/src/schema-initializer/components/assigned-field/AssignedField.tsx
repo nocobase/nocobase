@@ -47,14 +47,6 @@ const InternalField: React.FC = (props) => {
       field.required = !!uiSchema['required'];
     }
   };
-  const ctx = useFormBlockContext();
-
-  useEffect(() => {
-    if (ctx?.field) {
-      ctx.field.added = ctx.field.added || new Set();
-      ctx.field.added.add(fieldSchema.name);
-    }
-  });
 
   useEffect(() => {
     if (!uiSchema) {
