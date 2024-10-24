@@ -190,6 +190,19 @@ export const useDateVariable = ({ operator, schema, noDisabled }: Props) => {
 };
 
 /**
+ * 变量：`日期变量`的上下文
+ * @returns
+ */
+export const useDatetimeVariableContext = () => {
+  const { utc = true } = useDatePickerContext();
+  const datetimeCtx = useMemo(() => getDateRanges({ shouldBeString: true, utc }), [utc]);
+
+  return {
+    datetimeCtx,
+  };
+};
+
+/**
  * 变量：`日期变量`
  * @param param0
  * @returns
@@ -197,7 +210,6 @@ export const useDateVariable = ({ operator, schema, noDisabled }: Props) => {
 export const useDatetimeVariable = ({ operator, schema, noDisabled, targetFieldSchema }: Props = {}) => {
   const { t } = useTranslation();
   const { getOperator } = useOperators();
-  const { utc = true } = useDatePickerContext();
 
   const datetimeSettings = useMemo(() => {
     const operatorValue = operator?.value || getOperator(targetFieldSchema?.name) || '';
@@ -348,7 +360,7 @@ export const useDatetimeVariable = ({ operator, schema, noDisabled, targetFieldS
     };
   }, [schema?.['x-component'], targetFieldSchema]);
 
-  const datetimeCtx = useMemo(() => getDateRanges({ shouldBeString: true, utc }), [utc]);
+  const { datetimeCtx } = useDatetimeVariableContext();
 
   return {
     datetimeSettings,

@@ -11,14 +11,18 @@ import { useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { SchemaSettingsItemType } from '../../../../application/schema-settings/types';
-import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
+import {
+  useColumnSchema,
+  useTableFieldInstanceList,
+} from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { useDesignable } from '../../../../schema-component/hooks/useDesignable';
 
 export const ellipsisSettingsItem: SchemaSettingsItemType = {
   name: 'ellipsis',
   type: 'switch',
   useComponentProps() {
-    const { fieldSchema: tableFieldSchema, filedInstanceList } = useColumnSchema();
+    const { fieldSchema: tableFieldSchema } = useColumnSchema();
+    const tableFieldInstanceList = useTableFieldInstanceList();
     const fieldSchema = useFieldSchema();
     const formField = useField();
     const { dn } = useDesignable();
@@ -26,8 +30,8 @@ export const ellipsisSettingsItem: SchemaSettingsItemType = {
 
     const schema = tableFieldSchema || fieldSchema;
     const hidden = tableFieldSchema
-      ? filedInstanceList[0]
-        ? !filedInstanceList[0].readPretty
+      ? tableFieldInstanceList[0]
+        ? !tableFieldInstanceList[0].readPretty
         : !tableFieldSchema['x-read-pretty']
       : !formField.readPretty;
 
@@ -46,8 +50,8 @@ export const ellipsisSettingsItem: SchemaSettingsItemType = {
           },
         });
 
-        if (tableFieldSchema && filedInstanceList) {
-          filedInstanceList.forEach((fieldInstance) => {
+        if (tableFieldSchema && tableFieldInstanceList) {
+          tableFieldInstanceList.forEach((fieldInstance) => {
             fieldInstance.componentProps.ellipsis = checked;
           });
         } else {

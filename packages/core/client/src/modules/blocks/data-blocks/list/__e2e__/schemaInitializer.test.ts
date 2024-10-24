@@ -122,6 +122,7 @@ test.describe('configure item actions', () => {
 
     await page.getByLabel('schema-initializer-ActionBar-list:configureItemActions-general').first().hover();
     await page.getByRole('menuitem', { name: 'Popup' }).click();
+    await page.mouse.move(300, 0);
     await page.getByLabel('schema-initializer-ActionBar-list:configureItemActions-general').first().hover();
     await page.getByRole('menuitem', { name: 'Update record' }).click();
 

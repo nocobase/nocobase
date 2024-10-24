@@ -18,10 +18,10 @@ import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
 import { useCreation, useDeepCompareEffect, useMemoizedFn } from 'ahooks';
-import { Table as AntdTable, Skeleton, TableColumnProps } from 'antd';
+import { Table as AntdTable, Spin, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInView } from 'react-intersection-observer';
 import { DndContext, useDesignable, useTableSize } from '../..';
@@ -30,6 +30,8 @@ import {
   RecordProvider,
   useCollection,
   useCollectionParentRecordData,
+  useDataBlockRequest,
+  useFlag,
   useSchemaInitializerRender,
   useTableSelectorContext,
 } from '../../../';
@@ -42,8 +44,8 @@ import { useToken } from '../__builtins__';
 import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
-import { useDataBlockRequest } from '../../../';
-const MemoizedAntdTable = React.memo(AntdTable);
+
+const InViewContext = React.createContext(false);
 
 const useArrayField = (props) => {
   const field = useField<ArrayField>();
@@ -147,7 +149,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }) => {
             );
           },
           onCell: (record, rowIndex) => {
-            return { record, schema: s, rowIndex };
+            return { record, schema: s, rowIndex, isSubTable: props.isSubTable };
           },
         } as TableColumnProps<any>;
       }),
@@ -211,11 +213,27 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }) => {
   return tableColumns;
 };
 
-const SortableRow = (props) => {
+// How many rows should be displayed on initial render
+const INITIAL_ROWS_NUMBER = 20;
+
+const SortableRow = (props: {
+  rowIndex: number;
+  onClick: (e: any) => void;
+  style: React.CSSProperties;
+  className: string;
+}) => {
+  const { isInSubTable } = useFlag();
   const { token } = useToken();
   const id = props['data-row-key']?.toString();
   const { setNodeRef, isOver, active, over } = useSortable({
     id,
+  });
+
+  const { ref, inView } = useInView({
+    threshold: 0,
+    triggerOnce: true,
+    initialInView: !!process.env.__E2E__ || isInSubTable || props.rowIndex < INITIAL_ROWS_NUMBER,
+    skip: !!process.env.__E2E__ || isInSubTable || props.rowIndex < INITIAL_ROWS_NUMBER,
   });
 
   const classObj = useMemo(() => {
@@ -240,11 +258,18 @@ const SortableRow = (props) => {
       : classObj.bottomActiveClass;
 
   return (
-    <tr
-      ref={active?.id !== id ? setNodeRef : null}
-      {...props}
-      className={classNames(props.className, { [className]: active && isOver })}
-    />
+    <InViewContext.Provider value={inView}>
+      <tr
+        ref={(node) => {
+          if (active?.id !== id) {
+            setNodeRef(node);
+          }
+          ref(node);
+        }}
+        {...props}
+        className={classNames(props.className, { [className]: active && isOver })}
+      />
+    </InViewContext.Provider>
   );
 };
 
@@ -416,8 +441,34 @@ const HeaderCellComponent = (props) => {
   return <th {...props} className={cls(props.className, headerClass)} />;
 };
 
-const BodyRowComponent = (props) => {
+const BodyRowComponent = (props: {
+  rowIndex: number;
+  onClick: (e: any) => void;
+  style: React.CSSProperties;
+  className: string;
+}) => {
   return <SortableRow {...props} />;
+};
+
+const BodyCellComponent = (props) => {
+  const { token } = useToken();
+  const inView = useContext(InViewContext);
+  const isIndex = props.className?.includes('selection-column');
+  const { record, schema, rowIndex, isSubTable, ...others } = props;
+  const { valueMap } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
+  const style = useMemo(() => Object.assign({ ...props.style }, valueMap), [props.style, valueMap]);
+  const skeletonStyle = {
+    height: '1em',
+    backgroundColor: 'rgba(0, 0, 0, 0.06)',
+    borderRadius: `${token.borderRadiusSM}px`,
+  };
+
+  return (
+    <td {...others} className={classNames(props.className, cellClass)} style={style}>
+      {/* Lazy rendering cannot be used in sub-tables. */}
+      {isSubTable || inView || isIndex ? props.children : <div style={skeletonStyle} />}
+    </td>
+  );
 };
 
 interface TableProps {
@@ -436,6 +487,112 @@ interface TableProps {
   onExpand?: (flag: boolean, record: any) => void;
   isSubTable?: boolean;
 }
+
+const InternalNocoBaseTable = React.memo(
+  (props: {
+    tableHeight: number;
+    SortableWrapper: React.FC<{}>;
+    tableSizeRefCallback: (instance: HTMLDivElement) => void;
+    defaultRowKey: (record: any) => any;
+    dataSource: any[];
+    restProps: { rowSelection: any };
+    paginationProps: any;
+    components: {
+      header: { wrapper: (props: any) => React.JSX.Element; cell: (props: any) => React.JSX.Element };
+      body: {
+        wrapper: (props: any) => React.JSX.Element;
+        row: (props: any) => React.JSX.Element;
+        cell: (props: any) => React.JSX.Element;
+      };
+    };
+    onTableChange: any;
+    onRow: (record: any) => { onClick: (e: any) => void };
+    rowClassName: (record: any) => string;
+    scroll: { x: string; y: number };
+    columns: any[];
+    expandable: { onExpand: (flag: any, record: any) => void; expandedRowKeys: any };
+    field: ArrayField<any, any>;
+  }): React.ReactElement<any, any> => {
+    const {
+      tableHeight,
+      SortableWrapper,
+      tableSizeRefCallback,
+      defaultRowKey,
+      dataSource,
+      paginationProps,
+      components,
+      onTableChange,
+      onRow,
+      rowClassName,
+      scroll,
+      columns,
+      expandable,
+      field,
+      ...others
+    } = props;
+
+    return (
+      <div
+        className={cx(
+          css`
+            height: 100%;
+            overflow: hidden;
+            .ant-table-wrapper {
+              height: 100%;
+              .ant-spin-nested-loading {
+                height: 100%;
+                .ant-spin-container {
+                  height: 100%;
+                  display: flex;
+                  flex-direction: column;
+                  .ant-table-expanded-row-fixed {
+                    min-height: ${tableHeight}px;
+                  }
+                  .ant-table-body {
+                    min-height: ${tableHeight}px;
+                  }
+                }
+              }
+            }
+            .ant-table {
+              overflow-x: auto;
+              overflow-y: hidden;
+            }
+          `,
+          'nb-table-container',
+        )}
+      >
+        <SortableWrapper>
+          <AntdTable
+            ref={tableSizeRefCallback as any}
+            rowKey={defaultRowKey}
+            // rowKey={(record) => record.id}
+            dataSource={dataSource}
+            tableLayout="auto"
+            {...others}
+            pagination={paginationProps}
+            components={components}
+            onChange={onTableChange}
+            onRow={onRow}
+            rowClassName={rowClassName}
+            scroll={scroll}
+            columns={columns}
+            expandable={expandable}
+          />
+        </SortableWrapper>
+        {field.errors.length > 0 && (
+          <div className="ant-formily-item-error-help ant-formily-item-help ant-formily-item-help-enter ant-formily-item-help-enter-active">
+            {field.errors.map((error) => {
+              return error.messages.map((message) => <div key={message}>{message}</div>);
+            })}
+          </div>
+        )}
+      </div>
+    );
+  },
+);
+
+InternalNocoBaseTable.displayName = 'InternalNocoBaseTable';
 
 export const Table: any = withDynamicSchemaProps(
   observer((props: TableProps) => {
@@ -488,7 +645,7 @@ export const Table: any = withDynamicSchemaProps(
 
     const onRow = useMemo(() => {
       if (onClickRow) {
-        return (record) => {
+        return (record, rowIndex) => {
           return {
             onClick: (e) => {
               if (isPortalInBody(e.target)) {
@@ -496,6 +653,7 @@ export const Table: any = withDynamicSchemaProps(
               }
               onClickRow(record, setSelectedRow, selectedRow);
             },
+            rowIndex,
           };
         };
       }
@@ -556,67 +714,38 @@ export const Table: any = withDynamicSchemaProps(
       [JSON.stringify(rowKey), defaultRowKey],
     );
 
-    const dataSourceKeys = field?.value?.map?.(getRowKey);
-    const memoizedDataSourceKeys = useMemo(() => dataSourceKeys, [JSON.stringify(dataSourceKeys)]);
     const dataSource = useMemo(() => {
       const value = Array.isArray(field?.value) ? field.value : [];
       return value.filter(Boolean);
-    }, [field?.value, field?.value?.length, memoizedDataSourceKeys]);
 
-    const bodyWrapperComponent = useMemo(() => {
+      // If we don't depend on "field?.value?.length", it will cause no response when clicking "Add new" in the SubTable
+    }, [field?.value, field?.value?.length]);
+
+    const BodyWrapperComponent = useMemo(() => {
       return (props) => {
+        const onDragEndCallback = useCallback((e) => {
+          if (!e.active || !e.over) {
+            console.warn('move cancel');
+            return;
+          }
+          const fromIndex = e.active?.data.current?.sortable?.index;
+          const toIndex = e.over?.data.current?.sortable?.index;
+          const from = field.value[fromIndex] || e.active;
+          const to = field.value[toIndex] || e.over;
+          void field.move(fromIndex, toIndex);
+          onRowDragEnd({ from, to });
+        }, []);
+
         return (
-          <DndContext
-            onDragEnd={(e) => {
-              if (!e.active || !e.over) {
-                console.warn('move cancel');
-                return;
-              }
-              const fromIndex = e.active?.data.current?.sortable?.index;
-              const toIndex = e.over?.data.current?.sortable?.index;
-              const from = field.value[fromIndex] || e.active;
-              const to = field.value[toIndex] || e.over;
-              void field.move(fromIndex, toIndex);
-              onRowDragEnd({ from, to });
-            }}
-          >
+          <DndContext onDragEnd={onDragEndCallback}>
             <tbody {...props} />
           </DndContext>
         );
       };
-    }, [onRowDragEnd, field]);
+    }, [field, onRowDragEnd]);
 
-    const BodyCellComponent = useCallback(
-      (props) => {
-        const isIndex = props.className?.includes('selection-column');
-        const { record, schema, rowIndex, ...others } = props;
-        const { ref, inView } = useInView({
-          threshold: 0,
-          triggerOnce: true,
-          initialInView: isIndex || !!process.env.__E2E__,
-          skip: isIndex || !!process.env.__E2E__,
-        });
-        const { valueMap } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
-        const style = useMemo(() => Object.assign({ ...props.style }, valueMap), [props.style, valueMap]);
-
-        // fix the problem of blank rows at the beginning of a table block
-        if (rowIndex < 20) {
-          return (
-            <td {...others} className={classNames(props.className, cellClass)} style={style}>
-              {props.children}
-            </td>
-          );
-        }
-
-        return (
-          <td {...props} ref={ref} className={classNames(props.className, cellClass)} style={style}>
-            {/* 子表格中不能使用懒渲染。详见：https://nocobase.height.app/T-4889/description */}
-            {others.isSubTable || inView || isIndex ? props.children : <Skeleton.Button style={{ height: '100%' }} />}
-          </td>
-        );
-      },
-      [others.isSubTable],
-    );
+    // @ts-ignore
+    BodyWrapperComponent.displayName = 'BodyWrapperComponent';
 
     const components = useMemo(() => {
       return {
@@ -625,12 +754,12 @@ export const Table: any = withDynamicSchemaProps(
           cell: HeaderCellComponent,
         },
         body: {
-          wrapper: bodyWrapperComponent,
+          wrapper: BodyWrapperComponent,
           row: BodyRowComponent,
           cell: BodyCellComponent,
         },
       };
-    }, [BodyCellComponent, bodyWrapperComponent]);
+    }, [BodyWrapperComponent]);
 
     const memoizedRowSelection = useMemo(() => rowSelection, [JSON.stringify(rowSelection)]);
 
@@ -761,65 +890,29 @@ export const Table: any = withDynamicSchemaProps(
         expandedRowKeys: expandedKeys,
       };
     }, [expandedKeys, onExpandValue]);
+
     return (
-      <div
-        className={cx(
-          css`
-            height: 100%;
-            overflow: hidden;
-            .ant-table-wrapper {
-              height: 100%;
-              .ant-spin-nested-loading {
-                height: 100%;
-                .ant-spin-container {
-                  height: 100%;
-                  display: flex;
-                  flex-direction: column;
-                  .ant-table-expanded-row-fixed {
-                    min-height: ${tableHeight}px;
-                  }
-                  .ant-table-body {
-                    min-height: ${tableHeight}px;
-                  }
-                }
-              }
-            }
-            .ant-table {
-              overflow-x: auto;
-              overflow-y: hidden;
-            }
-          `,
-          'nb-table-container',
-        )}
-      >
-        <SortableWrapper>
-          <MemoizedAntdTable
-            ref={tableSizeRefCallback}
-            rowKey={defaultRowKey}
-            // rowKey={(record) => record.id}
-            dataSource={dataSource}
-            tableLayout="auto"
-            {...others}
-            {...restProps}
-            loading={loading}
-            pagination={paginationProps}
-            components={components}
-            onChange={onTableChange}
-            onRow={onRow}
-            rowClassName={rowClassName}
-            scroll={scroll}
-            columns={columns}
-            expandable={expandable}
-          />
-        </SortableWrapper>
-        {field.errors.length > 0 && (
-          <div className="ant-formily-item-error-help ant-formily-item-help ant-formily-item-help-enter ant-formily-item-help-enter-active">
-            {field.errors.map((error) => {
-              return error.messages.map((message) => <div key={message}>{message}</div>);
-            })}
-          </div>
-        )}
-      </div>
+      // If spinning is set to undefined, it will cause the subtable to always display loading, so we need to convert it here
+      <Spin spinning={!!loading}>
+        <InternalNocoBaseTable
+          tableHeight={tableHeight}
+          SortableWrapper={SortableWrapper}
+          tableSizeRefCallback={tableSizeRefCallback}
+          defaultRowKey={defaultRowKey}
+          dataSource={dataSource}
+          {...others}
+          {...restProps}
+          paginationProps={paginationProps}
+          components={components}
+          onTableChange={onTableChange}
+          onRow={onRow}
+          rowClassName={rowClassName}
+          scroll={scroll}
+          columns={columns}
+          expandable={expandable}
+          field={field}
+        />
+      </Spin>
     );
   }),
   { displayName: 'NocoBaseTable' },

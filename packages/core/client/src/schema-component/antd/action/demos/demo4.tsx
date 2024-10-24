@@ -1,4 +1,4 @@
-import { ISchema, observer, useForm } from '@formily/react';
+import { ISchema, useForm } from '@formily/react';
 import {
   Action,
   CustomRouterContextProvider,
@@ -53,7 +53,7 @@ const schema: ISchema = {
   },
 };
 
-export default observer(() => {
+export default () => {
   return (
     <Router location={window.location} navigator={null}>
       <CustomRouterContextProvider>
@@ -63,4 +63,4 @@ export default observer(() => {
       </CustomRouterContextProvider>
     </Router>
   );
-});
+};
