@@ -87,9 +87,9 @@ test.describe('configure fields', () => {
       page.getByLabel('block-item-CollectionField-general-form-general.manyToOne.nickname'),
     ).not.toBeVisible();
 
-    // add text
+    // add markdown
     await page.getByLabel('schema-initializer-Grid-form:configureFields-general').hover();
-    await page.getByRole('menuitem', { name: 'Text' }).click();
+    await page.getByRole('menuitem', { name: 'Add Markdown' }).click();
     await expect(page.getByLabel('block-item-Markdown.Void-general-form')).toBeVisible();
   });
 
