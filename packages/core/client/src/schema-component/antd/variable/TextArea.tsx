@@ -212,7 +212,7 @@ const defaultFieldNames = { value: 'value', label: 'label' };
 
 export function TextArea(props) {
   const { wrapSSR, hashId, componentCls } = useStyles();
-  const { value = '', scope, onChange, changeOnSelect, style } = props;
+  const { value = '', scope, onChange, changeOnSelect, style, fieldNames } = props;
   const inputRef = useRef<HTMLDivElement>(null);
   const [options, setOptions] = useState([]);
   const form = useForm();
