@@ -50,6 +50,7 @@ export class PluginErrorHandlerServer extends Plugin {
       (err, ctx) => {
         ctx.body = {
           errors: err.errors.map((err) => {
+            console.log(err, err);
             if (!err.instance || !err.path) {
               return {
                 message: err.message,
