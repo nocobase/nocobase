@@ -27,7 +27,7 @@ const commonOptions = {
     },
     {
       name: 'addText',
-      title: '{{t("Add text")}}',
+      title: '{{t("Add Markdown")}}',
       Component: 'BlockItemInitializer',
       schema: {
         type: 'void',
