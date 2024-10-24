@@ -43,22 +43,22 @@ function flatData(data: any[], fieldNames: FieldNames): any[] {
   return newArr;
 }
 
+function findOptions(options: any[], fieldNames: FieldNames, arrValues: any[]): Option[] {
+  if (!options) return [];
+  const current: Option[] = [];
+  for (const value of arrValues) {
+    const option = options.find((v) => v[fieldNames.value] == value) || {
+      value,
+      label: value ? value.toString() : value,
+    };
+    current.push(option);
+  }
+  return current;
+}
+
 export function getCurrentOptions(values: any | any[], dataSource: any[], fieldNames: FieldNames): Option[] {
   const result = flatData(dataSource, fieldNames);
   const arrValues = castArray(values).map((val) => (isPlainObject(val) ? val[fieldNames.value] : val)) as any[];
 
-  function findOptions(options: any[]): Option[] {
-    if (!options) return [];
-    const current: Option[] = [];
-    for (const value of arrValues) {
-      const option = options.find((v) => v[fieldNames.value] == value) || {
-        value,
-        label: value ? value.toString() : value,
-      };
-      current.push(option);
-    }
-    return current;
-  }
-
-  return findOptions(result);
+  return findOptions(result, fieldNames, arrValues);
 }

@@ -8,9 +8,10 @@
  */
 
 import { useForm } from '@formily/react';
+import { useCollectionRecordData } from '../../../../../data-source/collection-record/CollectionRecordProvider';
 import { useSatisfiedActionValues } from '../../../../../schema-settings/LinkageRules/useActionValues';
 export function useDataFormItemProps() {
-  const form = useForm();
-  const { valueMap: style } = useSatisfiedActionValues({ category: 'style', formValues: form?.values });
+  const data = useCollectionRecordData();
+  const { valueMap: style } = useSatisfiedActionValues({ category: 'style', formValues: data });
   return { wrapperStyle: style };
 }

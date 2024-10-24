@@ -50,7 +50,7 @@ test.describe('association form block', () => {
     await mockRecord('general');
     await expect(page.getByLabel('block-item-CardItem-general-')).toBeVisible();
     // 1. 打开关系字段弹窗
-    await page.getByLabel('block-item-CardItem-general-').locator('a').click();
+    await page.getByLabel('block-item-CardItem-general-').locator('a').first().click();
     await page.getByLabel('block-item-CardItem-roles-').click();
 
     // 2. 提交后，Table 会显示新增的数据

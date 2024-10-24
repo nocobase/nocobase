@@ -52,6 +52,18 @@ export const mobileAddBlockInitializer = new SchemaInitializer({
       ],
     },
     {
+      name: 'filterBlocks',
+      title: '{{t("Desktop filter blocks")}}',
+      type: 'itemGroup',
+      children: [
+        {
+          name: 'filterForm',
+          title: '{{t("Form")}}',
+          Component: 'FilterFormBlockInitializer',
+        },
+      ],
+    },
+    {
       name: 'otherBlocks',
       type: 'itemGroup',
       title: '{{t("Other desktop blocks")}}',
