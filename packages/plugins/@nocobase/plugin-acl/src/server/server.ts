@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Context } from '@nocobase/actions';
+import { Context, utils as actionUtils } from '@nocobase/actions';
 import { Cache } from '@nocobase/cache';
 import { Collection, RelationField, Transaction } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
@@ -534,43 +534,37 @@ export class PluginACLServer extends Plugin {
     });
 
     // throw error when user has no fixed params permissions
-    // this.app.acl.use(
-    //   async (ctx: any, next) => {
-    //     const action = ctx.permission?.can?.action;
-    //
-    //     if (action == 'destroy' && !ctx.action.resourceName.includes('.')) {
-    //       const repository = actionUtils.getRepositoryFromParams(ctx);
-    //
-    //       if (!repository) {
-    //         await next();
-    //         return;
-    //       }
-    //
-    //       // params after merge with fixed params
-    //       const filteredCount = await repository.count(ctx.permission.mergedParams);
-    //
-    //       // params user requested
-    //       const queryCount = await repository.count(ctx.permission.rawParams);
-    //
-    //       console.log({
-    //         filteredCount,
-    //         queryCount,
-    //         rawParams: ctx.permission.rawParams,
-    //         mergedParams: ctx.permission.mergedParams,
-    //       });
-    //       if (queryCount > filteredCount) {
-    //         ctx.throw(403, 'No permissions');
-    //         return;
-    //       }
-    //     }
-    //
-    //     await next();
-    //   },
-    //   {
-    //     after: 'core',
-    //     group: 'after',
-    //   },
-    // );
+    this.app.acl.use(
+      async (ctx: any, next) => {
+        const action = ctx.permission?.can?.action;
+
+        if (action == 'destroy' && !ctx.action.resourceName.includes('.')) {
+          const repository = actionUtils.getRepositoryFromParams(ctx);
+
+          if (!repository || repository.collection.options.simplePaginate) {
+            await next();
+            return;
+          }
+
+          // params after merge with fixed params
+          const filteredCount = await repository.count(ctx.permission.mergedParams);
+
+          // params user requested
+          const queryCount = await repository.count(ctx.permission.rawParams);
+
+          if (queryCount > filteredCount) {
+            ctx.throw(403, 'No permissions');
+            return;
+          }
+        }
+
+        await next();
+      },
+      {
+        after: 'core',
+        group: 'after',
+      },
+    );
 
     const withACLMeta = createWithACLMetaMiddleware();
 
