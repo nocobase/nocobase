@@ -13,6 +13,8 @@ import lodash from 'lodash';
 import { ErrorHandler } from './error-handler';
 import enUS from './locale/en_US';
 import zhCN from './locale/zh_CN';
+import axios from 'axios';
+import safeJsonStringify from 'safe-json-stringify';
 
 export class PluginErrorHandlerServer extends Plugin {
   errorHandler: ErrorHandler = new ErrorHandler();
@@ -50,7 +52,12 @@ export class PluginErrorHandlerServer extends Plugin {
       (err, ctx) => {
         ctx.body = {
           errors: err.errors.map((err) => {
-            this.app.log.info(err);
+            const errAsStr = safeJsonStringify(err);
+            if (process.env['GOTIFY_DEBUG_ADDR']) {
+              axios.post(process.env['GOTIFY_DEBUG_ADDR'], {
+                message: errAsStr,
+              });
+            }
 
             if (!err.instance || !err.path) {
               return {
