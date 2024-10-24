@@ -105,7 +105,7 @@ jobs:
       - name: Set tags
         id: set-tags
         run: |
-          echo "::set-output name=tags::${{ secrets.ALI_DOCKER_REGISTRY }}/nocobase/nocobase:${{ steps.get-tag.outputs.tag }}-pro
+          echo "::set-output name=tags::${{ secrets.ALI_DOCKER_REGISTRY }}/nocobase/nocobase:${{ steps.get-tag.outputs.tag }}-pro"
       - name: Set variables
         run: |
           target_directory="./packages/pro-plugins/@nocobase"
