@@ -113,7 +113,7 @@ const defaultAppOptionsFactory = (appName: string, mainApp: Application) => {
       const mainStorageDir = path.dirname(mainAppStorage);
       rawDatabaseOptions.storage = path.join(mainStorageDir, `${appName}.sqlite`);
     }
-  } else if (process.env.USE_DB_SCHEMA_IN_SUBAPP === 'true' && rawDatabaseOptions.dialect === 'postgres') {
+  } else if (process.env.USE_DB_SCHEMA_IN_SUBAPP === 'true' && mainApp.db.isPostgresCompatibleDialect()) {
     rawDatabaseOptions.schema = appName;
   } else {
     rawDatabaseOptions.database = appName;
