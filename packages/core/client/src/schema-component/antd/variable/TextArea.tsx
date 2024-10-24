@@ -212,7 +212,7 @@ const defaultFieldNames = { value: 'value', label: 'label' };
 
 export function TextArea(props) {
   const { wrapSSR, hashId, componentCls } = useStyles();
-  const { value = '', scope, onChange, multiline = true, changeOnSelect, style, fieldNames } = props;
+  const { value = '', scope, onChange, changeOnSelect, style, fieldNames } = props;
   const inputRef = useRef<HTMLDivElement>(null);
   const [options, setOptions] = useState([]);
   const form = useForm();
@@ -425,9 +425,10 @@ export function TextArea(props) {
           hashId,
           'ant-input',
           { 'ant-input-disabled': disabled },
+          // NOTE: `pre-wrap` here for avoid the `&nbsp;` (\x160) issue when paste content, we need normal space (\x32).
           css`
             overflow: auto;
-            white-space: ${multiline ? 'normal' : 'nowrap'};
+            white-space: pre-wrap;
 
             &[placeholder]:empty::before {
               content: attr(placeholder);
