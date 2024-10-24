@@ -7,12 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Gateway } from '@nocobase/server';
+import { Gateway, runPluginStaticImports } from '@nocobase/server';
 import { getConfig } from './config';
-import { loadPluginsStaticImport } from './load-plugins-static-import';
 
 async function initializeGateway() {
-  await loadPluginsStaticImport();
+  await runPluginStaticImports();
   const config = await getConfig();
   await Gateway.getInstance().run({
     mainAppOptions: config,

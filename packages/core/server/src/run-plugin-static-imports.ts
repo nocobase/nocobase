@@ -8,7 +8,7 @@
  */
 import { findAllPlugins, PluginManager } from '@nocobase/server';
 
-export async function loadPluginsStaticImport() {
+export async function runPluginStaticImports() {
   const packages = await findAllPlugins();
   for (const name of packages) {
     const { packageName } = await PluginManager.parseName(name);
