@@ -12,12 +12,6 @@ import { Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import { ErrorHandler } from './error-handler';
 
-import enUS from './locale/en_US';
-import zhCN from './locale/zh_CN';
-import axios from 'axios';
-import safeJsonStringify from 'safe-json-stringify';
-
-
 export class PluginErrorHandlerServer extends Plugin {
   errorHandler: ErrorHandler = new ErrorHandler();
   i18nNs = 'error-handler';
@@ -54,18 +48,6 @@ export class PluginErrorHandlerServer extends Plugin {
       (err, ctx) => {
         ctx.body = {
           errors: err.errors.map((err) => {
-            const errAsStr = safeJsonStringify(err);
-            if (process.env['GOTIFY_DEBUG_ADDR']) {
-              axios.post(process.env['GOTIFY_DEBUG_ADDR'], {
-                message: errAsStr,
-              });
-            }
-
-            if (!err.instance || !err.path) {
-              return {
-                message: err.message,
-              };
-            }
             const t = ctx.i18n.t;
             const title = findFieldTitle(err.instance, err.path, t, ctx);
             return {
@@ -82,6 +64,6 @@ export class PluginErrorHandlerServer extends Plugin {
   }
 
   async load() {
-    this.app.use(this.errorHandler.middleware(), { before: 'cors', tag: 'errorHandler' });
+    this.app.use(this.errorHandler.middleware(), { after: 'i18n', tag: 'errorHandler', before: 'cors' });
   }
 }
