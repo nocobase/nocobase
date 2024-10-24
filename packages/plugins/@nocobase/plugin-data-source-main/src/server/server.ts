@@ -434,6 +434,21 @@ export class PluginDataSourceMainServer extends Plugin {
 
           // set final options
           field.set('options', newOptions);
+        } else {
+          const collectionField = this.app.db.getCollection(field.get('collectionName'))?.getField(field.get('name'));
+          const newOptions: any = {};
+          // merge with current field options
+          lodash.mergeWith(newOptions, field.get(), (objValue, srcValue) => {
+            if (srcValue === null) {
+              return objValue;
+            }
+          });
+
+          if (collectionField.options.displayInAssociation !== undefined) {
+            newOptions.displayInAssociation = collectionField.options.displayInAssociation;
+          }
+          // set final options
+          field.set('options', newOptions);
         }
       }
     };
@@ -448,10 +463,8 @@ export class PluginDataSourceMainServer extends Plugin {
         ctx.action.params?.paginate == 'false'
       ) {
         for (const collection of ctx.body) {
-          if (collection.get('view')) {
-            const fields = collection.fields;
-            handleFieldSource(fields);
-          }
+          const fields = collection.fields;
+          handleFieldSource(fields);
         }
       }
 
