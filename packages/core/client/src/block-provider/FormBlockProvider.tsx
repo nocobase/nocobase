@@ -24,6 +24,8 @@ import { useActionContext } from '../schema-component';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
 import { FormActiveFieldsProvider } from './hooks/useFormActiveFields';
+import { useDesignable } from '../schema-component';
+import { useCollectionRecordData } from '../data-source';
 
 export const FormBlockContext = createContext<{
   form?: any;
@@ -123,6 +125,18 @@ export const useIsDetailBlock = () => {
 export const FormBlockProvider = withDynamicSchemaProps((props) => {
   const parentRecordData = useCollectionParentRecordData();
   const { parentRecord } = props;
+  const record = useCollectionRecordData();
+  const { association } = props;
+  const cm = useCollectionManager();
+  const { __collection } = record || {};
+  const { designable } = useDesignable();
+  const collection = props.collection || cm.getCollection(association).name;
+
+  if (!designable && __collection) {
+    if (__collection !== collection) {
+      return null;
+    }
+  }
 
   return (
     <TemplateBlockProvider>
