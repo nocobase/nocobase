@@ -144,6 +144,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   collections = new Map<string, Collection>();
   pendingFields = new Map<string, RelationField[]>();
   modelCollection = new Map<ModelStatic<any>, Collection>();
+  modelNameCollectionMap = new Map<string, Collection>();
   tableNameCollectionMap = new Map<string, Collection>();
   context: any = {};
   queryInterface: QueryInterface;
@@ -564,6 +565,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
 
     return field;
+  }
+
+  getCollectionByModelName(name: string) {
+    return this.modelNameCollectionMap.get(name);
   }
 
   /**

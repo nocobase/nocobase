@@ -65,6 +65,6 @@ export class PluginErrorHandlerServer extends Plugin {
   }
 
   async load() {
-    this.app.use(this.errorHandler.middleware(), { before: 'cors', tag: 'errorHandler' });
+    this.app.use(this.errorHandler.middleware(), { after: 'i18n', tag: 'errorHandler', before: 'cors' });
   }
 }

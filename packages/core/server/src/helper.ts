@@ -40,10 +40,13 @@ export function createResourcer(options: ApplicationOptions) {
 }
 
 export function registerMiddlewares(app: Application, options: ApplicationOptions) {
-  app.use(async (ctx, next) => {
-    app.context.reqId = randomUUID();
-    await next();
-  });
+  app.use(
+    async function generateReqId(ctx, next) {
+      app.context.reqId = randomUUID();
+      await next();
+    },
+    { tag: 'generateReqId' },
+  );
 
   app.use(requestLogger(app.name, app.requestLogger, options.logger?.request), { tag: 'logger' });
 
@@ -82,10 +85,10 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
     await next();
   });
 
-  app.use(i18n, { tag: 'i18n', after: 'cors' });
+  app.use(i18n, { tag: 'i18n', before: 'cors' });
 
   if (options.dataWrapping !== false) {
-    app.use(dataWrapping(), { tag: 'dataWrapping', after: 'i18n' });
+    app.use(dataWrapping(), { tag: 'dataWrapping', after: 'cors' });
   }
 
   app.use(app.dataSourceManager.middleware(), { tag: 'dataSource', after: 'dataWrapping' });
