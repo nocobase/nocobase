@@ -85,21 +85,18 @@ export const startMsgSSEStreamWithRetry = async () => {
     }
   };
 
-  const connectionWithRetry = async () => {
+  const connectWithRetry = async () => {
     try {
       await createMsgSSEConnection(clientId);
     } catch (error) {
       console.error('Error during stream:', error.message);
-
+      const nextDelay = retryTimes < 6 ? 1000 * Math.pow(2, retryTimes) : 60000;
       retryTimes++;
-      setTimeout(
-        () => {
-          connectionWithRetry();
-        },
-        retryTimes < 5 ? 0 : 10000,
-      );
+      setTimeout(() => {
+        connectWithRetry();
+      }, nextDelay);
       return { error };
     }
   };
-  connectionWithRetry();
+  connectWithRetry();
 };
