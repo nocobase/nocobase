@@ -346,6 +346,7 @@ describe('collection sync', () => {
 
     const model = collection.model;
     await collection.sync();
+
     if (db.options.underscored) {
       const tableFields = await (<any>model).queryInterface.describeTable(`${db.getTablePrefix()}posts_tags`);
       expect(tableFields['post_id']).toBeDefined();
