@@ -381,7 +381,7 @@ async function getVersion() {
   return { from, to };
 }
 
-async function postCMS(title, content, contentCN) {
+async function postCMS(tag, content, contentCN) {
   const { cmsToken, cmsURL } = program.opts();
   if (!cmsToken || !cmsURL) {
     console.error('No cmsToken or cmsURL provided');
@@ -394,13 +394,16 @@ async function postCMS(title, content, contentCN) {
       Authorization: `Bearer ${cmsToken}`,
     },
     params: {
-      filterKeys: ['title'],
+      filterKeys: ['slug'],
     },
     data: {
-      title,
-      title_cn: title,
+      slug: tag,
+      title: `Nocobase ${tag}`,
+      title_cn: `Nocobase ${tag}`,
       content,
       content_cn: contentCN,
+      description: `Release Note of ${tag}`,
+      description_cn: `${tag} 更新日志`,
       tags: [4],
       status: 'drafted',
       author: 'nocobase [bot]',

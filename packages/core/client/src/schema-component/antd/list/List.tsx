@@ -28,6 +28,7 @@ const InternalList = (props) => {
   const fieldSchema = useFieldSchema();
   const Designer = useDesigner();
   const meta = service?.data?.meta;
+  const { pageSize, count, hasNext, page } = meta || {};
   const field = useField<ArrayField>();
   const [schemaMap] = useState(new Map());
   const { wrapSSR, componentCls, hashId } = useStyles();
@@ -63,7 +64,51 @@ const InternalList = (props) => {
     },
     [run, params],
   );
-
+  const usePagination = () => {
+    if (!count) {
+      return {
+        onChange: onPaginationChange,
+        total: count || field.value?.length < pageSize || !hasNext ? pageSize * page : pageSize * page + 1,
+        pageSize: pageSize || 10,
+        current: page || 1,
+        showSizeChanger: true,
+        pageSizeOptions,
+        simple: true,
+        className: css`
+          .ant-pagination-simple-pager {
+            display: none !important;
+          }
+        `,
+        itemRender: (_, type, originalElement) => {
+          if (type === 'prev') {
+            return (
+              <div
+                style={{ display: 'flex' }}
+                className={css`
+                  .ant-pagination-item-link {
+                    min-width: ${token.controlHeight}px;
+                  }
+                `}
+              >
+                {originalElement} <div style={{ marginLeft: '7px' }}>{page}</div>
+              </div>
+            );
+          } else {
+            return originalElement;
+          }
+        },
+      };
+    }
+    return {
+      onChange: onPaginationChange,
+      total: count || 0,
+      pageSize: pageSize || 10,
+      current: page || 1,
+      showSizeChanger: true,
+      pageSizeOptions,
+    };
+  };
+  const paginationProps = usePagination();
   return wrapSSR(
     <SchemaComponentOptions
       scope={{
@@ -91,18 +136,7 @@ const InternalList = (props) => {
         <div className="nb-list-container">
           <AntdList
             {...props}
-            pagination={
-              !meta || !field.value?.length
-                ? false
-                : {
-                    onChange: onPaginationChange,
-                    total: meta?.count || 0,
-                    pageSize: meta?.pageSize || 10,
-                    current: meta?.page || 1,
-                    showSizeChanger: true,
-                    pageSizeOptions,
-                  }
-            }
+            pagination={!meta || !field.value?.length ? false : paginationProps}
             loading={service?.loading}
           >
             {field.value?.length

@@ -192,10 +192,9 @@ test.describe('form item & edit form', () => {
         ).toBeDisabled();
       },
       expectEasyReading: async () => {
-        // checkbox 应该被隐藏，然后只显示一个图标
         await expect(
           page.getByLabel('block-item-CollectionField-general-form-general.checkbox-checkbox').getByRole('checkbox'),
-        ).not.toBeVisible();
+        ).toBeVisible();
         await expect(
           page
             .getByLabel('block-item-CollectionField-general-form-general.checkbox-checkbox')

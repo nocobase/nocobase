@@ -8,7 +8,7 @@
  */
 
 import { Schema } from '@formily/react';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import {
   useActionAvailable,
   useCollection,
@@ -283,16 +283,6 @@ const commonOptions = {
       name: 'filterBlocks',
       title: '{{t("Filter blocks")}}',
       type: 'itemGroup',
-      useVisible() {
-        const collection = useCollection();
-        return useMemo(
-          () =>
-            collection.fields.some(
-              (field) => canMakeAssociationBlock(field) && ['hasMany', 'belongsToMany'].includes(field.type),
-            ),
-          [collection.fields],
-        );
-      },
       children: [
         {
           name: 'filterForm',
