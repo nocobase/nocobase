@@ -77,6 +77,7 @@ const useDragEnd = (onDragEnd) => {
 export type DndContextProps = Props;
 
 export const DndContext = (props: Props) => {
+  const { designable } = useDesignable();
   const { t } = useTranslation();
   const [visible, setVisible] = useState(true);
 
@@ -93,6 +94,10 @@ export const DndContext = (props: Props) => {
   );
 
   const onDragEnd = useDragEnd(props?.onDragEnd);
+
+  if (!designable) {
+    return <>{props.children}</>;
+  }
 
   return (
     <DndKitContext collisionDetection={rectIntersection} {...props} onDragStart={onDragStart} onDragEnd={onDragEnd}>
