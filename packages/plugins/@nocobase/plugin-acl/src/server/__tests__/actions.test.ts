@@ -241,8 +241,9 @@ describe('destroy action with acl', () => {
         },
       });
 
-    // should throw error
     expect(response.statusCode).toEqual(403);
+
+    expect(await Post.repository.count()).toBe(6);
 
     const response2 = await app
       .agent()
@@ -253,7 +254,6 @@ describe('destroy action with acl', () => {
         },
       });
 
-    // should throw error
     expect(response2.statusCode).toEqual(200);
   });
 });

@@ -541,7 +541,7 @@ export class PluginACLServer extends Plugin {
         if (action == 'destroy' && !ctx.action.resourceName.includes('.')) {
           const repository = actionUtils.getRepositoryFromParams(ctx);
 
-          if (!repository) {
+          if (!repository || repository.collection.options.simplePaginate) {
             await next();
             return;
           }
