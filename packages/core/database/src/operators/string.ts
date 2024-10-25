@@ -16,6 +16,11 @@ function escapeLike(value: string) {
 
 export default {
   $includes(value, ctx) {
+    if (value === null) {
+      return {
+        [Op.is]: null,
+      };
+    }
     if (Array.isArray(value)) {
       const conditions = value.map((item) => ({
         [isPg(ctx) ? Op.iLike : Op.like]: `%${escapeLike(item)}%`,
@@ -32,6 +37,11 @@ export default {
   },
 
   $notIncludes(value, ctx) {
+    if (value === null) {
+      return {
+        [Op.not]: null,
+      };
+    }
     if (Array.isArray(value)) {
       const conditions = value.map((item) => ({
         [isPg(ctx) ? Op.notILike : Op.notLike]: `%${escapeLike(item)}%`,
