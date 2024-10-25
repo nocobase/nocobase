@@ -43,31 +43,35 @@ const useIsSubPageClosedByPageMenu = () => {
   return isSubPageClosedByPageMenu;
 };
 
-export const ActionContextProvider: React.FC<ActionContextProps & { value?: ActionContextProps }> = (props) => {
-  const [submitted, setSubmitted] = useState(false); //是否有提交记录
-  const { visible } = { ...props, ...props.value } || {};
-  const { setSubmitted: setParentSubmitted } = { ...props, ...props.value };
-  const service = useBlockServiceInActionButton();
-  const isSubPageClosedByPageMenu = useIsSubPageClosedByPageMenu();
+export const ActionContextProvider: React.FC<ActionContextProps & { value?: ActionContextProps }> = React.memo(
+  (props) => {
+    const [submitted, setSubmitted] = useState(false); //是否有提交记录
+    const { visible } = { ...props, ...props.value } || {};
+    const { setSubmitted: setParentSubmitted } = { ...props, ...props.value };
+    const service = useBlockServiceInActionButton();
+    const isSubPageClosedByPageMenu = useIsSubPageClosedByPageMenu();
 
-  useEffect(() => {
-    if (visible === false && service && !service.loading && (submitted || isSubPageClosedByPageMenu)) {
-      service.refresh();
-      service.loading = true;
-      setParentSubmitted?.(true); //传递给上一层
-    }
+    useEffect(() => {
+      if (visible === false && service && !service.loading && (submitted || isSubPageClosedByPageMenu)) {
+        service.refresh();
+        service.loading = true;
+        setParentSubmitted?.(true); //传递给上一层
+      }
 
-    return () => {
-      setSubmitted(false);
-    };
-  }, [visible, service?.refresh, setParentSubmitted, isSubPageClosedByPageMenu]);
+      return () => {
+        setSubmitted(false);
+      };
+    }, [visible, service?.refresh, setParentSubmitted, isSubPageClosedByPageMenu]);
 
-  return (
-    <ActionContext.Provider value={{ ...props, ...props?.value, submitted, setSubmitted }}>
-      {props.children}
-    </ActionContext.Provider>
-  );
-};
+    return (
+      <ActionContext.Provider value={{ ...props, ...props?.value, submitted, setSubmitted }}>
+        {props.children}
+      </ActionContext.Provider>
+    );
+  },
+);
+
+ActionContextProvider.displayName = 'ActionContextProvider';
 
 const useBlockServiceInActionButton = () => {
   const { params } = useCurrentPopupContext();

@@ -12,7 +12,6 @@ import { observer, RecursionField, Schema, useField, useFieldSchema, useForm } f
 import { isPortalInBody } from '@nocobase/utils/client';
 import { App, Button } from 'antd';
 import classnames from 'classnames';
-import { default as lodash } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
@@ -44,6 +43,8 @@ import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ActionContextProps, ActionProps, ComposedAction } from './types';
 import { linkageAction, setInitialActionState } from './utils';
 
+const RecursionFieldMemo = React.memo(RecursionField);
+
 const useA = () => {
   return {
     async run() {},
@@ -53,7 +54,7 @@ const useA = () => {
 const handleError = (err) => console.log(err);
 
 export const Action: ComposedAction = withDynamicSchemaProps(
-  observer((props: ActionProps) => {
+  React.memo((props: ActionProps) => {
     const {
       popover,
       containerRefKey,
@@ -76,7 +77,6 @@ export const Action: ComposedAction = withDynamicSchemaProps(
       confirmTitle,
       ...others
     } = useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-    const { t } = useTranslation();
     const Designer = useDesigner();
     const field = useField<any>();
     const fieldSchema = useFieldSchema();
@@ -92,11 +92,6 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const { setSubmitted } = useActionContext();
     const { getAriaLabel } = useGetAriaLabelOfAction(title);
     const parentRecordData = useCollectionParentRecordData();
-
-    const actionTitle = useMemo(() => {
-      const res = title || compile(fieldSchema.title);
-      return lodash.isString(res) ? t(res) : res;
-    }, [title, fieldSchema.title, t]);
 
     useEffect(() => {
       if (field.stateOfLinkageRules) {
@@ -131,7 +126,6 @@ export const Action: ComposedAction = withDynamicSchemaProps(
         fieldSchema={fieldSchema}
         designable={designable}
         field={field}
-        actionTitle={actionTitle}
         icon={icon}
         loading={loading}
         handleMouseEnter={handleMouseEnter}
@@ -166,7 +160,6 @@ interface InternalActionProps {
   fieldSchema: Schema;
   designable: boolean;
   field: Field;
-  actionTitle: string;
   icon: string;
   loading: boolean;
   handleMouseEnter: (e: React.MouseEvent) => void;
@@ -206,7 +199,6 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
     fieldSchema,
     designable,
     field,
-    actionTitle,
     icon,
     loading,
     handleMouseEnter,
@@ -253,46 +245,79 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
     };
   }, [aclCtx, designable, field?.data?.hidden, style, disabled]);
 
-  const buttonProps = {
-    designable,
-    field,
+  const buttonProps = useMemo(() => {
+    return {
+      designable,
+      field,
+      aclCtx,
+      icon,
+      loading,
+      disabled,
+      buttonStyle,
+      handleMouseEnter,
+      tarComponent,
+      designerProps,
+      componentCls,
+      hashId,
+      className,
+      others,
+      getAriaLabel,
+      type,
+      Designer,
+      onClick,
+      refreshDataBlockRequest,
+      fieldSchema,
+      setVisible,
+      run,
+      confirm,
+      modal,
+      setSubmitted,
+      confirmTitle,
+      title,
+    };
+  }, [
+    Designer,
     aclCtx,
-    actionTitle,
+    buttonStyle,
+    className,
+    componentCls,
+    confirm,
+    confirmTitle,
+    designable,
+    designerProps,
+    disabled,
+    field,
+    fieldSchema,
+    getAriaLabel,
+    handleMouseEnter,
+    hashId,
     icon,
     loading,
-    disabled,
-    buttonStyle,
-    handleMouseEnter,
-    tarComponent,
-    designerProps,
-    componentCls,
-    hashId,
-    className,
-    others,
-    getAriaLabel,
-    type,
-    Designer,
-    openMode,
-    onClick,
-    refreshDataBlockRequest,
-    fieldSchema,
-    setVisible,
-    run,
-    confirm,
     modal,
+    onClick,
+    others,
+    refreshDataBlockRequest,
+    run,
     setSubmitted,
-    confirmTitle,
-  };
+    tarComponent,
+    title,
+    type,
+  ]);
+  const button = useMemo(() => <RenderButton {...buttonProps} />, [buttonProps]);
+  const handleVisibleChange = useCallback(
+    (value: boolean): void => {
+      setVisible?.(value);
+      setVisibleWithURL?.(value);
+    },
+    [setVisibleWithURL],
+  );
 
   let result = (
     <PopupVisibleProvider visible={false}>
       <ActionContextProvider
-        button={RenderButton(buttonProps)}
+        button={button}
         visible={visible || visibleWithURL}
-        setVisible={(value) => {
-          setVisible?.(value);
-          setVisibleWithURL?.(value);
-        }}
+        setVisible={handleVisibleChange}
         formValueChanged={formValueChanged}
         setFormValueChanged={setFormValueChanged}
         openMode={openMode}
@@ -301,7 +326,7 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
         fieldSchema={fieldSchema}
         setSubmitted={setSubmitted}
       >
-        {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
+        {popover && <RecursionFieldMemo basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
         {!popover && <RenderButton {...buttonProps} />}
         <VariablePopupRecordProvider>{!popover && props.children}</VariablePopupRecordProvider>
         {element}
@@ -381,142 +406,145 @@ function isBulkEditAction(fieldSchema) {
   return fieldSchema['x-action'] === 'customize:bulkEdit';
 }
 
-function RenderButton({
-  designable,
-  field,
-  aclCtx,
-  actionTitle,
-  icon,
-  loading,
-  disabled,
-  buttonStyle,
-  handleMouseEnter,
-  tarComponent,
-  designerProps,
-  componentCls,
-  hashId,
-  className,
-  others,
-  getAriaLabel,
-  type,
-  Designer,
-  openMode,
-  onClick,
-  refreshDataBlockRequest,
-  fieldSchema,
-  setVisible,
-  run,
-  confirm,
-  modal,
-  setSubmitted,
-  confirmTitle,
-}) {
-  const service = useDataBlockRequest();
-  const { t } = useTranslation();
-  const { isPopupVisibleControlledByURL } = usePopupSettings();
-  const { openPopup } = usePopupUtils();
+const RenderButton = React.memo<any>(
+  ({
+    designable,
+    field,
+    aclCtx,
+    icon,
+    loading,
+    disabled,
+    buttonStyle,
+    handleMouseEnter,
+    tarComponent,
+    designerProps,
+    componentCls,
+    hashId,
+    className,
+    others,
+    getAriaLabel,
+    type,
+    Designer,
+    onClick,
+    refreshDataBlockRequest,
+    fieldSchema,
+    setVisible,
+    run,
+    confirm,
+    modal,
+    setSubmitted,
+    confirmTitle,
+    title,
+  }) => {
+    const service = useDataBlockRequest();
+    const { t } = useTranslation();
+    const { isPopupVisibleControlledByURL } = usePopupSettings();
+    const { openPopup } = usePopupUtils();
 
-  const serviceRef = useRef(null);
-  serviceRef.current = service;
+    const serviceRef = useRef(null);
+    serviceRef.current = service;
 
-  const openPopupRef = useRef(null);
-  openPopupRef.current = openPopup;
+    const openPopupRef = useRef(null);
+    openPopupRef.current = openPopup;
 
-  const handleButtonClick = useCallback(
-    (e: React.MouseEvent, checkPortal = true) => {
-      if (checkPortal && isPortalInBody(e.target as Element)) {
-        return;
-      }
-      e.preventDefault();
-      e.stopPropagation();
+    const handleButtonClick = useCallback(
+      (e: React.MouseEvent, checkPortal = true) => {
+        if (checkPortal && isPortalInBody(e.target as Element)) {
+          return;
+        }
+        e.preventDefault();
+        e.stopPropagation();
 
-      if (!disabled && aclCtx) {
-        const onOk = () => {
-          if (onClick) {
-            onClick(e, () => {
-              if (refreshDataBlockRequest !== false) {
-                setSubmitted?.(true);
-                serviceRef.current?.refresh?.();
-              }
-            });
-          } else if (isBulkEditAction(fieldSchema) || !isPopupVisibleControlledByURL()) {
-            setVisible(true);
-            run?.();
-          } else {
-            // Currently, only buttons of these types can control the visibility of popups through URLs.
-            if (
-              ['view', 'update', 'create', 'customize:popup'].includes(fieldSchema['x-action']) &&
-              fieldSchema['x-uid']
-            ) {
-              openPopupRef.current();
-            } else {
+        if (!disabled && aclCtx) {
+          const onOk = () => {
+            if (onClick) {
+              onClick(e, () => {
+                if (refreshDataBlockRequest !== false) {
+                  setSubmitted?.(true);
+                  serviceRef.current?.refresh?.();
+                }
+              });
+            } else if (isBulkEditAction(fieldSchema) || !isPopupVisibleControlledByURL()) {
               setVisible(true);
               run?.();
+            } else {
+              // Currently, only buttons of these types can control the visibility of popups through URLs.
+              if (
+                ['view', 'update', 'create', 'customize:popup'].includes(fieldSchema['x-action']) &&
+                fieldSchema['x-uid']
+              ) {
+                openPopupRef.current();
+              } else {
+                setVisible(true);
+                run?.();
+              }
             }
+          };
+          if (confirm?.enable !== false && confirm?.content) {
+            modal.confirm({
+              title: t(confirm.title, { title: confirmTitle || title || field?.title }),
+              content: t(confirm.content, { title: confirmTitle || title || field?.title }),
+              onOk,
+            });
+          } else {
+            onOk();
           }
-        };
-        if (confirm?.enable !== false && confirm?.content) {
-          modal.confirm({
-            title: t(confirm.title, { title: confirmTitle || actionTitle }),
-            content: t(confirm.content, { title: confirmTitle || actionTitle }),
-            onOk,
-          });
-        } else {
-          onOk();
         }
-      }
-    },
-    [
-      disabled,
-      aclCtx,
-      confirm?.enable,
-      confirm?.content,
-      confirm?.title,
-      onClick,
-      fieldSchema,
-      isPopupVisibleControlledByURL,
-      refreshDataBlockRequest,
-      setSubmitted,
-      setVisible,
-      run,
-      modal,
-      t,
-      confirmTitle,
-      actionTitle,
-    ],
-  );
+      },
+      [
+        aclCtx,
+        confirm?.content,
+        confirm?.enable,
+        confirm?.title,
+        confirmTitle,
+        disabled,
+        field,
+        fieldSchema,
+        isPopupVisibleControlledByURL,
+        modal,
+        onClick,
+        refreshDataBlockRequest,
+        run,
+        setSubmitted,
+        setVisible,
+        t,
+        title,
+      ],
+    );
 
-  return (
-    <RenderButtonInner
-      designable={designable}
-      field={field}
-      aclCtx={aclCtx}
-      actionTitle={actionTitle}
-      icon={icon}
-      loading={loading}
-      disabled={disabled}
-      buttonStyle={buttonStyle}
-      handleMouseEnter={handleMouseEnter}
-      getAriaLabel={getAriaLabel}
-      handleButtonClick={handleButtonClick}
-      tarComponent={tarComponent}
-      componentCls={componentCls}
-      hashId={hashId}
-      className={className}
-      type={type}
-      Designer={Designer}
-      designerProps={designerProps}
-      {...others}
-    />
-  );
-}
+    return (
+      <RenderButtonInner
+        designable={designable}
+        field={field}
+        aclCtx={aclCtx}
+        icon={icon}
+        loading={loading}
+        disabled={disabled}
+        buttonStyle={buttonStyle}
+        handleMouseEnter={handleMouseEnter}
+        getAriaLabel={getAriaLabel}
+        handleButtonClick={handleButtonClick}
+        tarComponent={tarComponent}
+        componentCls={componentCls}
+        hashId={hashId}
+        className={className}
+        type={type}
+        Designer={Designer}
+        designerProps={designerProps}
+        title={title}
+        {...others}
+      />
+    );
+  },
+);
+
+RenderButton.displayName = 'RenderButton';
 
 const RenderButtonInner = observer(
   (props: {
     designable: boolean;
     field: Field;
     aclCtx: any;
-    actionTitle: string;
     icon: string;
     loading: boolean;
     disabled: boolean;
@@ -531,12 +559,12 @@ const RenderButtonInner = observer(
     type: string;
     Designer: React.ElementType;
     designerProps: any;
+    title: string;
   }) => {
     const {
       designable,
       field,
       aclCtx,
-      actionTitle,
       icon,
       loading,
       disabled,
@@ -551,12 +579,15 @@ const RenderButtonInner = observer(
       type,
       Designer,
       designerProps,
+      title,
       ...others
     } = props;
 
     if (!designable && (field?.data?.hidden || !aclCtx)) {
       return null;
     }
+
+    const actionTitle = title || field?.title;
 
     return (
       <SortableItem

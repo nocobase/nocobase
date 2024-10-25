@@ -112,19 +112,21 @@ export const BlockRequestProvider_deprecated = (props) => {
   }, [serviceAllowedActions]);
 
   const __parent = useBlockRequestContext();
+  const value = useMemo(() => {
+    return {
+      allowedActions,
+      block: props.block,
+      props,
+      field,
+      service,
+      resource,
+      __parent,
+      updateAssociationValues: props?.updateAssociationValues || [],
+    };
+  }, [__parent, allowedActions, field, props, resource, service]);
+
   return (
-    <BlockRequestContext_deprecated.Provider
-      value={{
-        allowedActions,
-        block: props.block,
-        props,
-        field,
-        service,
-        resource,
-        __parent,
-        updateAssociationValues: props?.updateAssociationValues || [],
-      }}
-    >
+    <BlockRequestContext_deprecated.Provider value={value}>
       {/* 用于兼容旧版 record.__parent 的写法 */}
       <RecordProvider isNew={record?.isNew} record={record?.data} parent={parentRecord?.data}>
         {props.children}
