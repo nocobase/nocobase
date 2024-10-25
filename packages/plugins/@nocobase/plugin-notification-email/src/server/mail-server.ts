@@ -29,8 +29,10 @@ type Message = {
 export class MailNotificationChannel extends BaseNotificationChannel {
   transpoter: Transporter;
   async send(args): Promise<any> {
-    const { message, channel } = args;
+    const { message, channel, receivers } = args;
     const { host, port, secure, account, password, from } = channel.options;
+    const userRepo = this.app.db.getRepository('users');
+
     try {
       const transpoter: Transporter = nodemailer.createTransport({
         host,
@@ -42,27 +44,43 @@ export class MailNotificationChannel extends BaseNotificationChannel {
         },
       });
       const { subject, cc, bcc, to, contentType } = message;
-      const payload = {
-        to: to.map((item) => item?.trim()).filter(Boolean),
-        cc: cc
-          ? cc
-              .flat()
-              .map((item) => item?.trim())
-              .filter(Boolean)
-          : undefined,
-        bcc: bcc
-          ? bcc
-              .flat()
-              .map((item) => item?.trim())
-              .filter(Boolean)
-          : undefined,
-        subject,
-        from,
-        ...(contentType === 'html' ? { html: message.html } : { text: message.text }),
-      };
+      if (receivers?.type === 'userId') {
+        const users = await userRepo.find({
+          filter: {
+            $in: receivers.value,
+          },
+        });
+        const usersEmail = users.map((user) => user.email).filter(Boolean);
+        const payload = {
+          to: usersEmail,
+          from,
+          ...(contentType === 'html' ? { html: message.html } : { text: message.text }),
+        };
+        const result = await transpoter.sendMail(payload);
+        return { status: 'success', message };
+      } else {
+        const payload = {
+          to: to.map((item) => item?.trim()).filter(Boolean),
+          cc: cc
+            ? cc
+                .flat()
+                .map((item) => item?.trim())
+                .filter(Boolean)
+            : undefined,
+          bcc: bcc
+            ? bcc
+                .flat()
+                .map((item) => item?.trim())
+                .filter(Boolean)
+            : undefined,
+          subject,
+          from,
+          ...(contentType === 'html' ? { html: message.html } : { text: message.text }),
+        };
 
-      const result = await transpoter.sendMail(payload);
-      return { status: 'success', message };
+        const result = await transpoter.sendMail(payload);
+        return { status: 'success', message };
+      }
     } catch (error) {
       throw { status: 'failure', reason: error.message, message };
     }

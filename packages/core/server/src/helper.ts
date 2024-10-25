@@ -26,7 +26,7 @@ import { i18n } from './middlewares/i18n';
 export function createI18n(options: ApplicationOptions) {
   const instance = i18next.createInstance();
   instance.init({
-    lng: 'en-US',
+    lng: process.env.INIT_LANG || 'en-US',
     resources: {},
     keySeparator: false,
     nsSeparator: false,
