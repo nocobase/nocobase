@@ -15,7 +15,7 @@ import { SchemaInitializerOptions } from '../types';
 import { SchemaInitializerChildren } from './SchemaInitializerChildren';
 import { SchemaInitializerDivider } from './SchemaInitializerDivider';
 import { useSchemaInitializerStyles } from './style';
-
+import { useMenuSearch } from './SchemaInitializerItemSearchFields';
 export interface SchemaInitializerItemGroupProps {
   title: string;
   children?: SchemaInitializerOptions['items'];
@@ -45,6 +45,8 @@ export const SchemaInitializerItemGroup: FC<SchemaInitializerItemGroupProps> = (
  * @internal
  */
 export const SchemaInitializerItemGroupInternal = () => {
-  const itemConfig = useSchemaInitializerItem<SchemaInitializerItemGroupProps>();
-  return <SchemaInitializerItemGroup {...itemConfig} />;
+  const itemConfig: any = useSchemaInitializerItem<SchemaInitializerItemGroupProps>();
+  const searchedChildren = useMenuSearch(itemConfig);
+  /* eslint-disable react/no-children-prop */
+  return <SchemaInitializerItemGroup {...itemConfig} children={searchedChildren} />;
 };
