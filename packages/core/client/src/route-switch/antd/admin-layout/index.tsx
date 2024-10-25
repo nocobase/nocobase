@@ -321,7 +321,7 @@ const InternalAdminSideBar: FC<{ pageUid: string; sideMenuRef: any }> = memo((pr
       .ant-menu-item {
         padding-left: 0px ${collapsed ? '!important' : ''};
         .ant-menu-title-content {
-          margin-left: -16px ${collapsed ? '!important' : ''};
+          margin-left: ${collapsed ? '-16px' : '-24px'};
           span[role='img'] {
             font-size: 16px ${collapsed ? '!important' : ''};
           }
