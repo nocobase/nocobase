@@ -339,12 +339,21 @@ export class OptionsParser {
       let lastLevel = false;
 
       if (appendFields.length == 1) {
+        const association = associations[appendFields[0]];
+        const attributes = model.getAttributes();
+        if (!association && attributes[appendFields[0]]) {
+          return;
+        }
         lastLevel = true;
       }
 
       if (appendFields.length == 2) {
         const association = associations[appendFields[0]];
+        const attributes = model.getAttributes();
         if (!association) {
+          if (attributes[appendFields[0]]) {
+            return;
+          }
           throw new Error(`association ${appendFields[0]} in ${model.name} not found`);
         }
 

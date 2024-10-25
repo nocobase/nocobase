@@ -32,103 +32,138 @@ export const useFieldModeOptions = (props?) => {
       return;
     }
     if (
-      !['o2o', 'oho', 'obo', 'o2m', 'linkTo', 'm2o', 'm2m', 'updatedBy', 'createdBy', 'mbm', 'attachmentURL'].includes(
-        collectionField.interface,
-      )
+      ![
+        'o2o',
+        'oho',
+        'obo',
+        'o2m',
+        'linkTo',
+        'm2o',
+        'm2m',
+        'updatedBy',
+        'createdBy',
+        'mbm',
+        'attachmentURL',
+        'JSONDocObject',
+        'JSONDocArray',
+      ].includes(collectionField.interface)
     )
       return;
     const collection = getCollection(collectionField.target);
     if (collection?.template === 'file') {
       return isReadPretty
         ? [
-            { label: t('Title'), value: 'Select' },
-            { label: t('File manager'), value: 'FileManager' },
-            { label: t('Tag'), value: 'Tag' },
-          ]
+          { label: t('Title'), value: 'Select' },
+          { label: t('File manager'), value: 'FileManager' },
+          { label: t('Tag'), value: 'Tag' },
+        ]
         : [
-            { label: t('Select'), value: 'Select' },
-            { label: t('Record picker'), value: 'Picker' },
-            { label: t('File manager'), value: 'FileManager' },
-          ];
+          { label: t('Select'), value: 'Select' },
+          { label: t('Record picker'), value: 'Picker' },
+          { label: t('File manager'), value: 'FileManager' },
+        ];
     }
     if (collection?.template === 'tree' && ['m2m', 'o2m', 'm2o'].includes(collectionField.interface)) {
       return isReadPretty
         ? [
-            { label: t('Title'), value: 'Select' },
-            { label: t('Tag'), value: 'Tag' },
-            !isTableField && { label: t('Sub-details'), value: 'Nester' },
-            !isTableField && { label: t('Sub-table'), value: 'SubTable' },
-          ]
+          { label: t('Title'), value: 'Select' },
+          { label: t('Tag'), value: 'Tag' },
+          !isTableField && { label: t('Sub-details'), value: 'Nester' },
+          !isTableField && { label: t('Sub-table'), value: 'SubTable' },
+        ]
         : [
-            { label: t('Select'), value: 'Select' },
-            { label: t('Record picker'), value: 'Picker' },
-            !isTableField &&
-              ['m2m', 'o2m'].includes(collectionField.interface) && { label: t('Sub-table'), value: 'SubTable' },
-            !isTableField && { label: t('Cascade Select'), value: 'CascadeSelect' },
-            !isTableField && { label: t('Sub-form'), value: 'Nester' },
-            { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
-          ];
+          { label: t('Select'), value: 'Select' },
+          { label: t('Record picker'), value: 'Picker' },
+          !isTableField &&
+          ['m2m', 'o2m'].includes(collectionField.interface) && { label: t('Sub-table'), value: 'SubTable' },
+          !isTableField && { label: t('Cascade Select'), value: 'CascadeSelect' },
+          !isTableField && { label: t('Sub-form'), value: 'Nester' },
+          { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
+        ];
     }
     switch (collectionField.interface) {
       case 'o2m':
         return isReadPretty
           ? [
-              { label: t('Title'), value: 'Select' },
-              { label: t('Tag'), value: 'Tag' },
-              !isTableField && { label: t('Sub-table'), value: 'SubTable' },
-              !isTableField && { label: t('Sub-details'), value: 'Nester' },
-            ]
+            { label: t('Title'), value: 'Select' },
+            { label: t('Tag'), value: 'Tag' },
+            !isTableField && { label: t('Sub-table'), value: 'SubTable' },
+            !isTableField && { label: t('Sub-details'), value: 'Nester' },
+          ]
           : [
-              { label: t('Select'), value: 'Select' },
-              { label: t('Record picker'), value: 'Picker' },
-              !isTableField && { label: t('Sub-form'), value: 'Nester' },
-              { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
-              !isTableField && { label: t('Sub-table'), value: 'SubTable' },
-            ];
+            { label: t('Select'), value: 'Select' },
+            { label: t('Record picker'), value: 'Picker' },
+            !isTableField && { label: t('Sub-form'), value: 'Nester' },
+            { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
+            !isTableField && { label: t('Sub-table'), value: 'SubTable' },
+          ];
       case 'm2m':
       case 'mbm':
         return isReadPretty
           ? [
-              { label: t('Title'), value: 'Select' },
-              { label: t('Tag'), value: 'Tag' },
-              !isTableField && { label: t('Sub-details'), value: 'Nester' },
-              !isTableField && { label: t('Sub-table'), value: 'SubTable' },
-            ]
+            { label: t('Title'), value: 'Select' },
+            { label: t('Tag'), value: 'Tag' },
+            !isTableField && { label: t('Sub-details'), value: 'Nester' },
+            !isTableField && { label: t('Sub-table'), value: 'SubTable' },
+          ]
           : [
-              { label: t('Select'), value: 'Select' },
-              { label: t('Record picker'), value: 'Picker' },
-              !isTableField && { label: t('Sub-table'), value: 'SubTable' },
-              !isTableField && { label: t('Sub-form'), value: 'Nester' },
-              { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
-            ];
+            { label: t('Select'), value: 'Select' },
+            { label: t('Record picker'), value: 'Picker' },
+            !isTableField && { label: t('Sub-table'), value: 'SubTable' },
+            !isTableField && { label: t('Sub-form'), value: 'Nester' },
+            { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
+          ];
       case 'm2o':
       case 'linkTo':
         return isReadPretty
           ? [
-              { label: t('Title'), value: 'Select' },
-              { label: t('Tag'), value: 'Tag' },
-              !isTableField && { label: t('Sub-details'), value: 'Nester' },
-            ]
+            { label: t('Title'), value: 'Select' },
+            { label: t('Tag'), value: 'Tag' },
+            !isTableField && { label: t('Sub-details'), value: 'Nester' },
+          ]
           : [
-              { label: t('Select'), value: 'Select' },
-              { label: t('Record picker'), value: 'Picker' },
-              !isTableField && { label: t('Sub-form'), value: 'Nester' },
-              { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
-            ];
+            { label: t('Select'), value: 'Select' },
+            { label: t('Record picker'), value: 'Picker' },
+            !isTableField && { label: t('Sub-form'), value: 'Nester' },
+            { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
+          ];
+      case 'JSONDocObject':
+        return isReadPretty
+          ? [
+            { label: t('Title'), value: 'Select' },
+            { label: t('Tag'), value: 'Tag' },
+            !isTableField && { label: t('Sub-details'), value: 'Nester' },
+          ]
+          : [
+            !isTableField && { label: t('Sub-form'), value: 'Nester' },
+            { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
+          ];
+      case 'JSONDocArray':
+        return isReadPretty
+          ? [
+            { label: t('Title'), value: 'Select' },
+            { label: t('Tag'), value: 'Tag' },
+            !isTableField && { label: t('Sub-details'), value: 'Nester' },
+          ]
+          : [
+            !isTableField && { label: t('Sub-form'), value: 'Nester' },
+            !isTableField && { label: t('Sub-table'), value: 'SubTable' },
+            { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
+          ];
 
       default:
         return isReadPretty
           ? [
-              { label: t('Title'), value: 'Select' },
-              { label: t('Tag'), value: 'Tag' },
-              !isTableField && { label: t('Sub-details'), value: 'Nester' },
-            ]
+            { label: t('Title'), value: 'Select' },
+            { label: t('Tag'), value: 'Tag' },
+            !isTableField && { label: t('Sub-details'), value: 'Nester' },
+          ]
           : [
-              { label: t('Select'), value: 'Select' },
-              { label: t('Record picker'), value: 'Picker' },
-              !isTableField && { label: t('Sub-form'), value: 'Nester' },
-              { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
-            ];
+            { label: t('Select'), value: 'Select' },
+            { label: t('Record picker'), value: 'Picker' },
+            !isTableField && { label: t('Sub-form'), value: 'Nester' },
+            { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
+          ];
     }
   }, [t, collectionField?.interface, label]);
   return (fieldModeOptions || []).filter(Boolean);
