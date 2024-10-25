@@ -109,6 +109,10 @@ export const useFilterFieldOptions = (fields) => {
     if (field.filterable === false) {
       return;
     }
+    //关系表字段是否支持筛选
+    if (field.displayInAssociation === false && depth > 1) {
+      return;
+    }
     const fieldInterface = getInterface(field.interface);
     if (!fieldInterface?.filterable) {
       return;
