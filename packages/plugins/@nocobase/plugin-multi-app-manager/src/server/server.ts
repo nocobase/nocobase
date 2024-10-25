@@ -77,7 +77,7 @@ const defaultDbCreator = async (app: Application) => {
     await connection.end();
   }
 
-  if (dialect === 'postgres') {
+  if (['postgres', 'kingbase'].includes(dialect)) {
     const { Client } = require('pg');
 
     const client = new Client({
@@ -85,7 +85,7 @@ const defaultDbCreator = async (app: Application) => {
       port,
       user: username,
       password,
-      database: 'postgres',
+      database: dialect,
     });
 
     await client.connect();
@@ -113,7 +113,10 @@ const defaultAppOptionsFactory = (appName: string, mainApp: Application) => {
       const mainStorageDir = path.dirname(mainAppStorage);
       rawDatabaseOptions.storage = path.join(mainStorageDir, `${appName}.sqlite`);
     }
-  } else if (process.env.USE_DB_SCHEMA_IN_SUBAPP === 'true' && mainApp.db.isPostgresCompatibleDialect()) {
+  } else if (
+    process.env.USE_DB_SCHEMA_IN_SUBAPP === 'true' &&
+    ['postgres', 'kingbase'].includes(rawDatabaseOptions.dialect)
+  ) {
     rawDatabaseOptions.schema = appName;
   } else {
     rawDatabaseOptions.database = appName;
