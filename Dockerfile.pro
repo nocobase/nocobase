@@ -54,7 +54,7 @@ RUN mkdir -p /app/nocobase/storage/uploads/ && echo "$COMMIT_HASH" >> /app/nocob
 # install postgresql-client and mysql-client
 RUN apt update && apt install -y wget postgresql-common gnupg \
   && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
-  && apt install -y postgresql-client-16 \
+  && apt install -y postgresql-client-17 \
   && wget https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.1.0-1debian11_amd64.deb \
   && dpkg -x mysql-community-client-core_8.1.0-1debian11_amd64.deb /tmp/mysql-client \
   && cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ \
