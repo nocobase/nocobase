@@ -116,6 +116,17 @@ export class Gateway extends EventEmitter {
           ctx.resolvedAppName = req.headers['x-app'];
         }
 
+        if (!ctx.resolvedAppName && req.headers.cookie) {
+          const cookies = {};
+          req.headers.cookie.split('; ').forEach((cookie) => {
+            const [name, value] = cookie.split('=');
+            cookies[name] = decodeURIComponent(value); // 解码 cookie 值
+          });
+          if (cookies['__appName']) {
+            ctx.resolvedAppName = cookies['__appName'];
+          }
+        }
+
         await next();
       },
       {
