@@ -31,17 +31,14 @@ import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/
 import { DndContext } from '../../common';
 import { SortableItem } from '../../common/sortable-item';
 import { SchemaComponent, SchemaComponentOptions } from '../../core';
-import { useCompile, useDesignable } from '../../hooks';
+import { useDesignable } from '../../hooks';
 import { useToken } from '../__builtins__';
 import { ErrorFallback } from '../error-fallback';
 import { useStyles } from './Page.style';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 
 export const Page = (props) => {
-  const { children, ...others } = props;
   const { t } = useTranslation();
-  const compile = useCompile();
-  const { title, setTitle } = useDocumentTitle();
   const fieldSchema = useFieldSchema();
   const dn = useDesignable();
   const { theme } = useGlobalTheme();
@@ -49,15 +46,8 @@ export const Page = (props) => {
   const { tabUid, name: pageUid } = useParams();
   const basenameOfCurrentRouter = useRouterBasename();
 
-  useEffect(() => {
-    if (!title) {
-      setTitle(t(fieldSchema.title));
-    }
-  }, [fieldSchema.title, title]);
-
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
   const enablePageTabs = fieldSchema['x-component-props']?.enablePageTabs;
-  const hidePageTitle = fieldSchema['x-component-props']?.hidePageTitle;
   const options = useContext(SchemaOptionsContext);
   const navigate = useNavigateNoUpdate();
   const [searchParams] = useSearchParams();
@@ -70,20 +60,6 @@ export const Page = (props) => {
   const { wrapSSR, hashId, componentCls } = useStyles();
   const aclStyles = useAClStyles();
   const { token } = useToken();
-
-  const pageHeaderTitle = hidePageTitle ? undefined : fieldSchema.title || compile(title);
-
-  useRequest(
-    {
-      url: `/uiSchemas:getParentJsonSchema/${fieldSchema['x-uid']}`,
-    },
-    {
-      ready: !hidePageTitle && !pageHeaderTitle,
-      onSuccess(data) {
-        setTitle(data.data.title);
-      },
-    },
-  );
 
   const handleErrors = useCallback((error) => {
     console.error(error);
@@ -195,17 +171,7 @@ export const Page = (props) => {
 
   return wrapSSR(
     <div className={`${componentCls} ${hashId} ${aclStyles.styles}`}>
-      <PageDesigner title={fieldSchema.title || title} />
-      {!disablePageHeader && (
-        <AntdPageHeader
-          className={classNames('pageHeaderCss', pageHeaderTitle || enablePageTabs ? '' : 'height0')}
-          ghost={false}
-          // 如果标题为空的时候会导致 PageHeader 不渲染，所以这里设置一个空白字符，然后再设置高度为 0
-          title={pageHeaderTitle || ' '}
-          {...others}
-          footer={footer}
-        />
-      )}
+      <NocoBasePageHeader footer={footer} />
       <div className="nb-page-wrapper">
         <ErrorBoundary FallbackComponent={ErrorFallback} onError={handleErrors}>
           {tabUid ? (
@@ -306,6 +272,49 @@ const PageContent = memo(
   },
 );
 PageContent.displayName = 'PageContent';
+
+function NocoBasePageHeader({ footer }: { footer: React.JSX.Element }) {
+  const fieldSchema = useFieldSchema();
+  const { title, setTitle } = useDocumentTitle();
+  const { t } = useTranslation();
+
+  const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
+  const enablePageTabs = fieldSchema['x-component-props']?.enablePageTabs;
+  const hidePageTitle = fieldSchema['x-component-props']?.hidePageTitle;
+
+  useEffect(() => {
+    if (fieldSchema.title) {
+      setTitle(t(fieldSchema.title));
+    }
+  }, [fieldSchema.title, setTitle, t]);
+
+  useRequest(
+    {
+      url: `/uiSchemas:getParentJsonSchema/${fieldSchema['x-uid']}`,
+    },
+    {
+      ready: !hidePageTitle && !fieldSchema.title,
+      onSuccess(data) {
+        setTitle(data.data.title);
+      },
+    },
+  );
+
+  return (
+    <>
+      <PageDesigner title={fieldSchema.title || title} />
+      {!disablePageHeader && (
+        <AntdPageHeader
+          className={classNames('pageHeaderCss', title || enablePageTabs ? '' : 'height0')}
+          ghost={false}
+          // 如果标题为空的时候会导致 PageHeader 不渲染，所以这里设置一个空白字符，然后再设置高度为 0
+          title={title || ' '}
+          footer={footer}
+        />
+      )}
+    </>
+  );
+}
 
 export function navigateToTab({
   activeKey,
