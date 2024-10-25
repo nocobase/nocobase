@@ -70,7 +70,6 @@ export class APIClient extends APIClientSDK {
     api.auth = this.auth;
     api.storagePrefix = this.storagePrefix;
     api.notification = this.notification;
-    api.axios = this.axios;
     return api;
   }
 
