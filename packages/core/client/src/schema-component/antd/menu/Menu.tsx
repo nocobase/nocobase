@@ -550,7 +550,9 @@ Menu.Item = observer(
                 removeParentsIfNoChildren={false}
               >
                 <Icon type={icon} />
-                <span style={menuItemTitleStyle}>{t(schema.title)}</span>
+                <span style={menuItemTitleStyle} className="nb-menu-title">
+                  {t(schema.title)}
+                </span>
                 <Designer />
               </SortableItem>
             </FieldContext.Provider>
@@ -602,6 +604,7 @@ const MenuURLButton = ({ href, params, icon }) => {
     >
       <Icon type={icon} />
       <span
+        className="nb-menu-title"
         style={{
           overflow: 'hidden',
           textOverflow: 'ellipsis',

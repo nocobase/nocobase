@@ -292,25 +292,53 @@ const SetThemeOfHeaderSubmenu = ({ children }) => {
   );
 };
 
-const sideClass = css`
-  height: 100%;
-  /* position: fixed; */
-  position: relative;
-  left: 0;
-  top: 0;
-  background: rgba(0, 0, 0, 0);
-  z-index: 100;
-  .ant-layout-sider-children {
-    top: var(--nb-header-height);
-    position: fixed;
-    width: 200px;
-    height: calc(100vh - var(--nb-header-height));
-  }
-`;
-
 const InternalAdminSideBar: FC<{ pageUid: string; sideMenuRef: any }> = memo((props) => {
+  const [collapsed, setCollapsed] = useState(false);
   if (!props.pageUid) return null;
-  return <Layout.Sider className={sideClass} theme={'light'} ref={props.sideMenuRef}></Layout.Sider>;
+  const sideClass = css`
+    height: 100%;
+    /* position: fixed; */
+    position: relative;
+    left: 0;
+    top: 0;
+    background: rgba(0, 0, 0, 0);
+    z-index: 100;
+    padding: 0px !important;
+    .ant-layout-sider-children {
+      top: var(--nb-header-height);
+      position: fixed;
+      width: ${collapsed ? 80 : 200}px;
+      height: calc(100vh - var(--nb-header-height));
+      .ant-btn-icon {
+        margin-inline-end: 0px ${collapsed ? '!important' : ''};
+      }
+      .nb-menu-title {
+        display: ${collapsed ? 'none' : 'inline-block'} !important;
+      }
+      .ant-menu-title-content button[aria-label*='schema-initializer-Menu-MenuItemInitializers'] > span:last-child {
+        display: ${collapsed ? 'none' : 'inline-block'} !important;
+      }
+      .ant-menu-item {
+        padding-left: 0px ${collapsed ? '!important' : ''};
+        .ant-menu-title-content {
+          margin-left: -16px ${collapsed ? '!important' : ''};
+          span[role='img'] {
+            font-size: 16px ${collapsed ? '!important' : ''};
+          }
+        }
+      }
+    }
+  `;
+  return (
+    <Layout.Sider
+      collapsible
+      className={sideClass}
+      collapsed={collapsed}
+      theme={'light'}
+      ref={props.sideMenuRef}
+      onCollapse={(value) => setCollapsed(value)}
+    ></Layout.Sider>
+  );
 });
 InternalAdminSideBar.displayName = 'InternalAdminSideBar';
 
