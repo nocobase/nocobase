@@ -61,6 +61,19 @@ export class APIClient extends APIClientSDK {
   /** 该值会在 AntdAppProvider 中被重新赋值 */
   notification: any = notification;
 
+  cloneInstance() {
+    const api = new APIClient(this.options);
+    api.options = this.options;
+    api.services = this.services;
+    api.storage = this.storage;
+    api.app = this.app;
+    api.auth = this.auth;
+    api.storagePrefix = this.storagePrefix;
+    api.notification = this.notification;
+    api.axios = this.axios;
+    return api;
+  }
+
   getHeaders() {
     const headers = super.getHeaders();
     const appName = this.app.getName();
@@ -180,7 +193,8 @@ export class APIClient extends APIClientSDK {
   }
 
   silent() {
-    this.silence = true;
-    return this;
+    const api = this.cloneInstance();
+    api.silence = true;
+    return api;
   }
 }
