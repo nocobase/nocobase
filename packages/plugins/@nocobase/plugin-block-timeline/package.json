@@ -1,9 +1,9 @@
 {
-  "name": "@nocobase/plugin-timeline",
+  "name": "@nocobase/plugin-block-timeline",
   "version": "1.4.0-alpha",
   "main": "dist/server/index.js",
-  "displayName": "Timeline",
-  "displayName.zh-CN": "时间轴",
+  "displayName": "Block: Timeline",
+  "displayName.zh-CN": "区块：时间轴",
   "description": "When a series of information needs to be arranged in chronological order, it can be displayed in both forward and reverse order",
   "description.zh-CN": "当有一系列信息需按时间排列时，可正序和倒序展示",
   "dependencies": {},
