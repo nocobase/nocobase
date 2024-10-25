@@ -9,6 +9,7 @@
 import React from 'react';
 import { Instruction, useWorkflowVariableOptions } from '@nocobase/plugin-workflow/client';
 import { MessageConfigForm } from '@nocobase/plugin-notification-manager/client';
+
 import { NAMESPACE } from '../locale';
 
 const LocalProvider = () => {
