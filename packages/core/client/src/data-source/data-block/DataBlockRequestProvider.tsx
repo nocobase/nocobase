@@ -25,6 +25,8 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const dataLoadingMode = useDataLoadingMode();
   const resource = useDataBlockResource();
   const { action, params = {}, record, requestService, requestOptions } = options;
+  const JSONParams = JSON.stringify(params);
+  const JSONRecord = JSON.stringify(record);
 
   const service = useMemo(() => {
     return (
@@ -47,13 +49,13 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
         return resource[action]?.({ ...paramsValue, ...customParams }).then((res) => res.data);
       })
     );
-  }, [resource, action, JSON.stringify(params), JSON.stringify(record), requestService]);
+  }, [resource, action, JSONParams, JSONRecord, requestService]);
 
   const request = useRequest<T>(service, {
     ...requestOptions,
     manual: dataLoadingMode === 'manual',
     ready: !!action,
-    refreshDeps: [action, JSON.stringify(params), JSON.stringify(record), resource],
+    refreshDeps: [action, JSONParams, JSONRecord, resource],
   });
 
   return request;
@@ -100,6 +102,23 @@ function useParentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   );
 }
 
+const EMPTY_REQUEST: UseRequestResult<{ data: any }> = Object.freeze({
+  loading: true,
+  data: { data: undefined },
+  error: undefined,
+  params: [],
+  run: _.noop,
+  runAsync: () => Promise.resolve({ data: undefined }),
+  refresh: _.noop,
+  refreshAsync: () => Promise.resolve({ data: undefined }),
+  mutate: _.noop,
+  cancel: _.noop,
+  state: {
+    data: { data: undefined },
+  },
+  setState: _.noop,
+});
+
 export const BlockRequestProvider: FC = ({ children }) => {
   const props = useDataBlockProps();
   const {
@@ -115,7 +134,10 @@ export const BlockRequestProvider: FC = ({ children }) => {
     requestService,
   } = props;
 
-  const currentRequest = useCurrentRequest<{ data: any }>({
+  let currentRequest = EMPTY_REQUEST,
+    parentRequest = EMPTY_REQUEST;
+
+  const _currentRequest = useCurrentRequest<{ data: any }>({
     action,
     sourceId,
     record,
@@ -129,11 +151,17 @@ export const BlockRequestProvider: FC = ({ children }) => {
     },
   });
 
-  const parentRequest = useParentRequest<{ data: any }>({
+  const _parentRequest = useParentRequest<{ data: any }>({
     sourceId,
     association,
     parentRecord,
   });
+
+  // This is to prevent multiple re-renders of descendant components
+  if (!_currentRequest.loading && !_parentRequest.loading) {
+    currentRequest = _currentRequest;
+    parentRequest = _parentRequest;
+  }
 
   const memoizedParentRecord = useMemo(() => {
     return (
