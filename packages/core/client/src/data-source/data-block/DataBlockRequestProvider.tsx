@@ -96,7 +96,7 @@ export async function requestParentRecordData({
   return res.data;
 }
 
-export const BlockRequestProvider: FC = ({ children }) => {
+export const BlockRequestProvider: FC = React.memo(({ children }) => {
   const props = useDataBlockProps();
   const {
     action,
@@ -155,7 +155,9 @@ export const BlockRequestProvider: FC = ({ children }) => {
       )}
     </BlockRequestContext.Provider>
   );
-};
+});
+
+BlockRequestProvider.displayName = 'DataBlockRequestProvider';
 
 export const useDataBlockRequest = <T extends {}>(): UseRequestResult<{ data: T }> => {
   const context = useContext(BlockRequestContext);
