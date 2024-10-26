@@ -17,6 +17,7 @@ export default {
 
       const { associatedIndex: dataSourceKey } = params;
       const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
+
       if (!dataSource) {
         throw new Error(`dataSource ${dataSourceKey} not found`);
       }

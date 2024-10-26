@@ -23,6 +23,39 @@ describe('data source', async () => {
     await app.destroy();
   });
 
+  it('should return datasource status when datasource is loading or reloading', async () => {
+    class MockDataSource extends DataSource {
+      static testConnection(options?: any): Promise<boolean> {
+        return Promise.resolve(true);
+      }
+
+      async load(): Promise<void> {
+        await waitSecond(1000);
+      }
+
+      createCollectionManager(options?: any): any {
+        return undefined;
+      }
+    }
+
+    app.dataSourceManager.beforeAddDataSource(async () => {
+      await waitSecond(5000);
+    });
+
+    await app.db.getRepository('dataSources').create({
+      values: {
+        key: 'mockInstance1',
+        type: 'mock',
+        displayName: 'Mock',
+        options: {},
+      },
+    });
+
+    // get data source status
+  });
+
+  it('should get error when datasource loading failed', async () => {});
+
   it('should list main datasource in api', async () => {
     const listResp = await app.agent().resource('dataSources').list();
     expect(listResp.status).toBe(200);
