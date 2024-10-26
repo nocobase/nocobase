@@ -275,6 +275,7 @@ interface ExtendedOptions {
 export type APIClientOptions = AxiosInstance | (AxiosRequestConfig & ExtendedOptions);
 
 export class APIClient {
+  options?: APIClientOptions;
   axios: AxiosInstance;
   auth: Auth;
   storage: Storage;
@@ -297,11 +298,12 @@ export class APIClient {
     return headers;
   }
 
-  constructor(instance?: APIClientOptions) {
-    if (typeof instance === 'function') {
-      this.axios = instance;
+  constructor(options?: APIClientOptions) {
+    this.options = options;
+    if (typeof options === 'function') {
+      this.axios = options;
     } else {
-      const { authClass, storageType, storageClass, storagePrefix = 'NOCOBASE_', ...others } = instance || {};
+      const { authClass, storageType, storageClass, storagePrefix = 'NOCOBASE_', ...others } = options || {};
       this.storagePrefix = storagePrefix;
       this.axios = axios.create(others);
       this.initStorage(storageClass, storageType);

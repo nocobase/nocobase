@@ -112,6 +112,7 @@ class AppGenerator extends Generator {
         envs.push(`DB_USER=${env.DB_USER || ''}`);
         envs.push(`DB_PASSWORD=${env.DB_PASSWORD || ''}`);
         break;
+      case 'kingbase':
       case 'postgres':
         if (!allDbDialect) {
           dependencies.push(`"pg": "^8.7.3"`);
@@ -125,7 +126,7 @@ class AppGenerator extends Generator {
         break;
     }
 
-    const keys = ['PLUGIN_PACKAGE_PREFIX', 'DB_HOST', 'DB_PORT', 'DB_DATABASE', 'DB_USER', 'DB_PASSWORD', 'DB_STORAGE'];
+    const keys = ['DB_HOST', 'DB_PORT', 'DB_DATABASE', 'DB_USER', 'DB_PASSWORD', 'DB_STORAGE'];
 
     for (const key in env) {
       if (keys.includes(key)) {

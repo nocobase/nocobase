@@ -16,10 +16,11 @@ export type RegisterChannelOptions = {
   components: {
     ChannelConfigForm: ComponentType;
     MessageConfigForm?: ComponentType<{ variableOptions: any }>;
+    ContentConfigForm?: ComponentType<{ variableOptions?: any }>;
   };
   meta?: {
     creatable?: boolean;
-    eidtable?: boolean;
+    editable?: boolean;
     deletable?: boolean;
   };
 };

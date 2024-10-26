@@ -182,11 +182,11 @@ test.describe('configure fields', () => {
       page.getByLabel('block-item-CollectionField-general-grid-card-general.manyToOne.nickname').first(),
     ).not.toBeVisible();
 
-    // add text
+    // add markdown
     await formItemInitializer.hover();
     await page.getByRole('menuitem', { name: 'ID', exact: true }).hover();
     await page.mouse.wheel(0, 300);
-    await page.getByRole('menuitem', { name: 'Add text' }).click();
+    await page.getByRole('menuitem', { name: 'Add Markdown' }).click();
 
     await expect(page.getByLabel('block-item-Markdown.Void-general-grid-card').first()).toBeVisible();
   });

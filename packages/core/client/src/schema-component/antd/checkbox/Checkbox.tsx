@@ -37,7 +37,7 @@ const ReadPretty: FC<CheckboxReadPrettyProps> = (props) => {
   if (props.value) {
     return <CheckOutlined style={{ color: '#52c41a' }} />;
   }
-  return props.showUnchecked ? <CloseOutlined style={{ color: '#ff4d4f' }} /> : null;
+  return props.showUnchecked ? <CloseOutlined style={{ color: '#ff4d4f' }} /> : <AntdCheckbox disabled />;
 };
 
 export const Checkbox: ComposedCheckbox = connect(

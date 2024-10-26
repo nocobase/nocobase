@@ -75,6 +75,7 @@ import {
 import { subTablePopoverComponentFieldSettings } from '../modules/fields/component/SubTable/subTablePopoverComponentFieldSettings';
 import { tagComponentFieldSettings } from '../modules/fields/component/Tag/tagComponentFieldSettings';
 import { unixTimestampComponentFieldSettings } from '../modules/fields/component/UnixTimestamp/unixTimestampComponentFieldSettings';
+import { dividerSettings } from '../modules/blocks/other-blocks/divider/dividerSettings';
 
 export class SchemaSettingsPlugin extends Plugin {
   async load() {
@@ -144,5 +145,6 @@ export class SchemaSettingsPlugin extends Plugin {
     // this.schemaSettingsManager.add(inputURLComponentFieldSettings);
     this.schemaSettingsManager.add(uploadAttachmentComponentFieldSettings);
     this.schemaSettingsManager.add(previewComponentFieldSettings);
+    this.schemaSettingsManager.add(dividerSettings);
   }
 }
