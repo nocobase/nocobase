@@ -21,41 +21,51 @@ import { useDataBlockResource } from './DataBlockResourceProvider';
 export const BlockRequestContext = createContext<UseRequestResult<any>>(null);
 BlockRequestContext.displayName = 'BlockRequestContext';
 
-function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
+function useRecordRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const dataLoadingMode = useDataLoadingMode();
   const resource = useDataBlockResource();
-  const { action, params = {}, record, requestService, requestOptions } = options;
+  const { action, params = {}, record, requestService, requestOptions, sourceId, association, parentRecord } = options;
+  const api = useAPIClient();
+  const dataBlockProps = useDataBlockProps();
+  const headers = useDataSourceHeaders(dataBlockProps.dataSource);
+  const sourceKey = useSourceKey(association);
   const JSONParams = JSON.stringify(params);
   const JSONRecord = JSON.stringify(record);
 
-  const service = useMemo(() => {
-    return (
-      requestService ||
-      ((customParams) => {
-        if (record) return Promise.resolve({ data: record });
-        if (!action) {
-          throw new Error(`[nocobase]: The 'action' parameter is missing in the 'DataBlockRequestProvider' component`);
-        }
+  const defaultService = (customParams) => {
+    if (record) return Promise.resolve({ data: record });
+    if (!action) {
+      throw new Error(`[nocobase]: The 'action' parameter is missing in the 'DataBlockRequestProvider' component`);
+    }
 
-        // fix https://nocobase.height.app/T-4876/description
-        if (action === 'get' && _.isNil(params.filterByTk)) {
-          return console.warn(
-            '[nocobase]: The "filterByTk" parameter is missing in the "DataBlockRequestProvider" component',
-          );
-        }
+    // fix https://nocobase.height.app/T-4876/description
+    if (action === 'get' && _.isNil(params.filterByTk)) {
+      return console.warn(
+        '[nocobase]: The "filterByTk" parameter is missing in the "DataBlockRequestProvider" component',
+      );
+    }
 
-        const paramsValue = params.filterByTk === undefined ? _.omit(params, 'filterByTk') : params;
+    const paramsValue = params.filterByTk === undefined ? _.omit(params, 'filterByTk') : params;
 
-        return resource[action]?.({ ...paramsValue, ...customParams }).then((res) => res.data);
-      })
-    );
-  }, [resource, action, JSONParams, JSONRecord, requestService]);
+    return resource[action]?.({ ...paramsValue, ...customParams }).then((res) => res.data);
+  };
+
+  const service = async (...arg) => {
+    const [currentRecordData, parentRecordData] = await Promise.all([
+      (requestService || defaultService)(...arg),
+      requestParentRecordData({ sourceId, association, parentRecord, api, headers, sourceKey }),
+    ]);
+
+    currentRecordData.parentRecord = parentRecordData?.data;
+
+    return currentRecordData;
+  };
 
   const request = useRequest<T>(service, {
     ...requestOptions,
     manual: dataLoadingMode === 'manual',
     ready: !!action,
-    refreshDeps: [action, JSONParams, JSONRecord, resource],
+    refreshDeps: [action, JSONParams, JSONRecord, resource, association, parentRecord, sourceId],
   });
 
   return request;
@@ -86,39 +96,6 @@ export async function requestParentRecordData({
   return res.data;
 }
 
-function useParentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
-  const { sourceId, association, parentRecord } = options;
-  const api = useAPIClient();
-  const dataBlockProps = useDataBlockProps();
-  const headers = useDataSourceHeaders(dataBlockProps.dataSource);
-  const sourceKey = useSourceKey(association);
-  return useRequest<T>(
-    () => {
-      return requestParentRecordData({ sourceId, association, parentRecord, api, headers, sourceKey });
-    },
-    {
-      refreshDeps: [association, parentRecord, sourceId],
-    },
-  );
-}
-
-const EMPTY_REQUEST: UseRequestResult<{ data: any }> = Object.freeze({
-  loading: true,
-  data: { data: undefined },
-  error: undefined,
-  params: [],
-  run: _.noop,
-  runAsync: () => Promise.resolve({ data: undefined }),
-  refresh: _.noop,
-  refreshAsync: () => Promise.resolve({ data: undefined }),
-  mutate: _.noop,
-  cancel: _.noop,
-  state: {
-    data: { data: undefined },
-  },
-  setState: _.noop,
-});
-
 export const BlockRequestProvider: FC = ({ children }) => {
   const props = useDataBlockProps();
   const {
@@ -134,10 +111,7 @@ export const BlockRequestProvider: FC = ({ children }) => {
     requestService,
   } = props;
 
-  let currentRequest = EMPTY_REQUEST,
-    parentRequest = EMPTY_REQUEST;
-
-  const _currentRequest = useCurrentRequest<{ data: any }>({
+  const recordRequest = useRecordRequest<{ data: any; parentRecord: any }>({
     action,
     sourceId,
     record,
@@ -149,39 +123,27 @@ export const BlockRequestProvider: FC = ({ children }) => {
       ...params,
       filterByTk: filterByTk || params.filterByTk,
     },
-  });
-
-  const _parentRequest = useParentRequest<{ data: any }>({
-    sourceId,
-    association,
     parentRecord,
   });
 
-  // This is to prevent multiple re-renders of descendant components
-  if (!_currentRequest.loading && !_parentRequest.loading) {
-    currentRequest = _currentRequest;
-    parentRequest = _parentRequest;
-  }
+  const parentRecordData = recordRequest.data?.parentRecord;
 
   const memoizedParentRecord = useMemo(() => {
     return (
-      parentRequest.data?.data &&
+      parentRecordData &&
       new CollectionRecord({
         isNew: false,
-        data:
-          parentRequest.data?.data instanceof CollectionRecord
-            ? parentRequest.data?.data.data
-            : parentRequest.data?.data,
+        data: parentRecordData instanceof CollectionRecord ? parentRecordData.data : parentRecordData,
       })
     );
-  }, [parentRequest.data?.data]);
+  }, [parentRecordData]);
 
   return (
-    <BlockRequestContext.Provider value={currentRequest}>
+    <BlockRequestContext.Provider value={recordRequest}>
       {action !== 'list' ? (
         <CollectionRecordProvider
           isNew={action == null}
-          record={currentRequest.data?.data || record}
+          record={recordRequest.data?.data || record}
           parentRecord={memoizedParentRecord || parentRecord}
         >
           {children}
