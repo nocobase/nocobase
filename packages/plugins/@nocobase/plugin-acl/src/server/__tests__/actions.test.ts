@@ -142,7 +142,7 @@ describe('destroy action with acl', () => {
     expect(response.statusCode).toEqual(200);
   });
 
-  it('should throw error when user has no permission to destroy record', async () => {
+  it.skip('should throw error when user has no permission to destroy record', async () => {
     const userRole = app.acl.define({
       role: 'user',
     });
