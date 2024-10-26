@@ -74,6 +74,8 @@ export const PopupVisibleProvider: FC<PopupsVisibleProviderProps> = React.memo((
   return <PopupVisibleProviderContext.Provider value={value}>{children}</PopupVisibleProviderContext.Provider>;
 });
 
+PopupVisibleProvider.displayName = 'PopupVisibleProvider';
+
 const PopupParamsProvider: FC<Omit<PopupProps, 'hidden'>> = (props) => {
   const value = useMemo(() => {
     return {

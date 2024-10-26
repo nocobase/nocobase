@@ -44,6 +44,7 @@ import { ActionContextProps, ActionProps, ComposedAction } from './types';
 import { linkageAction, setInitialActionState } from './utils';
 
 const RecursionFieldMemo = React.memo(RecursionField);
+RecursionFieldMemo.displayName = 'RecursionFieldMemo';
 
 const useA = () => {
   return {

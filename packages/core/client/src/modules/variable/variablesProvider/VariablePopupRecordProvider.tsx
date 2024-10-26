@@ -53,6 +53,8 @@ export const VariablePopupRecordProvider: FC<{
   );
 });
 
+VariablePopupRecordProvider.displayName = 'VariablePopupRecordProvider';
+
 export const useCurrentPopupRecord = () => {
   return React.useContext(CurrentPopupRecordContext);
 };
