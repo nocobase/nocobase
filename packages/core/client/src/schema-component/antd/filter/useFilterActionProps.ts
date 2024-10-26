@@ -21,11 +21,12 @@ import { mergeFilter } from '../../../filter-provider/utils';
 import { useDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 
 export const useGetFilterOptions = () => {
-  const cm = useCollectionManager();
+  const dm = useDataSourceManager();
   const getFilterFieldOptions = useGetFilterFieldOptions();
 
   return (collectionName, dataSource?: string, usedInVariable?: boolean) => {
-    const fields = cm?.getCollectionFields(collectionName, dataSource);
+    const cm = dm?.getDataSource(dataSource)?.collectionManager;
+    const fields = cm?.getCollectionFields(collectionName);
     const options = getFilterFieldOptions(fields, usedInVariable);
     return options;
   };
