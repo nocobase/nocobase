@@ -291,9 +291,16 @@ const SetThemeOfHeaderSubmenu = ({ children }) => {
     </>
   );
 };
+export const SiderMenuContext = createContext<any>({});
+
+const SiderMenuProvider = (props) => {
+  const [collapsed, setCollapsed] = useState(false);
+
+  return <SiderMenuContext.Provider value={{ collapsed, setCollapsed }}>{props.children}</SiderMenuContext.Provider>;
+};
 
 const InternalAdminSideBar: FC<{ pageUid: string; sideMenuRef: any }> = memo((props) => {
-  const [collapsed, setCollapsed] = useState(false);
+  const { collapsed, setCollapsed } = useContext(SiderMenuContext);
   if (!props.pageUid) return null;
   const sideClass = css`
     height: 100%;
@@ -319,13 +326,22 @@ const InternalAdminSideBar: FC<{ pageUid: string; sideMenuRef: any }> = memo((pr
         display: ${collapsed ? 'none' : 'inline-block'} !important;
       }
       .ant-menu-item {
-        padding-left: 0px ${collapsed ? '!important' : ''};
+        // padding-left: 0px ${collapsed ? '!important' : ''};
         .ant-menu-title-content {
-          margin-left: ${collapsed ? '-16px' : '-24px'};
-          span[role='img'] {
-            font-size: 16px ${collapsed ? '!important' : ''};
-          }
+          display: inline-block;
         }
+        .anticon {
+          line-height: 16px ${collapsed ? '!important' : ''};
+        }
+      }
+      .ant-menu-submenu-title {
+        .anticon {
+          line-height: 16px ${collapsed ? '!important' : ''};
+        }
+      }
+      .ant-btn-dashed {
+        padding-left: ${collapsed ? '8px' : 8};
+        margin-left: ${collapsed ? '-8px' : 0};
       }
     }
   `;
@@ -382,7 +398,6 @@ export const InternalAdminLayout = () => {
   const result = useSystemSettings();
   const { token } = useToken();
   const sideMenuRef = useRef<HTMLDivElement>();
-
   const layoutHeaderCss = useMemo(() => {
     return css`
       .ant-menu.ant-menu-dark .ant-menu-item-selected,
@@ -429,97 +444,99 @@ export const InternalAdminLayout = () => {
   return (
     <Layout>
       <GlobalStyleForAdminLayout />
-      <Layout.Header className={layoutHeaderCss}>
-        <div
-          style={{
-            position: 'relative',
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-          }}
-        >
+      <SiderMenuProvider>
+        <Layout.Header className={layoutHeaderCss}>
           <div
             style={{
               position: 'relative',
-              zIndex: 1,
-              flex: '1 1 auto',
-              display: 'flex',
+              width: '100%',
               height: '100%',
+              display: 'flex',
             }}
           >
             <div
-              className={css`
-                width: 200px;
-                display: inline-flex;
-                flex-shrink: 0;
-                color: #fff;
-                padding: 0;
-                align-items: center;
-              `}
+              style={{
+                position: 'relative',
+                zIndex: 1,
+                flex: '1 1 auto',
+                display: 'flex',
+                height: '100%',
+              }}
             >
-              {result?.data?.data?.logo?.url ? (
-                <img
-                  className={css`
-                    padding: 0 16px;
-                    object-fit: contain;
-                    width: 100%;
-                    height: 100%;
-                  `}
-                  src={result?.data?.data?.logo?.url}
-                />
-              ) : (
-                <span
-                  style={{ fontSize: token.fontSizeHeading3 }}
-                  className={css`
-                    padding: 0 16px;
-                    width: 100%;
-                    height: 100%;
-                    font-weight: 500;
-                    text-align: center;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
-                  `}
-                >
-                  {result?.data?.data?.title}
-                </span>
-              )}
+              <div
+                className={css`
+                  width: 200px;
+                  display: inline-flex;
+                  flex-shrink: 0;
+                  color: #fff;
+                  padding: 0;
+                  align-items: center;
+                `}
+              >
+                {result?.data?.data?.logo?.url ? (
+                  <img
+                    className={css`
+                      padding: 0 16px;
+                      object-fit: contain;
+                      width: 100%;
+                      height: 100%;
+                    `}
+                    src={result?.data?.data?.logo?.url}
+                  />
+                ) : (
+                  <span
+                    style={{ fontSize: token.fontSizeHeading3 }}
+                    className={css`
+                      padding: 0 16px;
+                      width: 100%;
+                      height: 100%;
+                      font-weight: 500;
+                      text-align: center;
+                      overflow: hidden;
+                      text-overflow: ellipsis;
+                      white-space: nowrap;
+                    `}
+                  >
+                    {result?.data?.data?.title}
+                  </span>
+                )}
+              </div>
+              <div
+                className={css`
+                  flex: 1 1 auto;
+                  width: 0;
+                `}
+              >
+                <SetThemeOfHeaderSubmenu>
+                  <MenuEditor sideMenuRef={sideMenuRef} />
+                </SetThemeOfHeaderSubmenu>
+              </div>
             </div>
             <div
               className={css`
-                flex: 1 1 auto;
-                width: 0;
+                position: relative;
+                flex-shrink: 0;
+                height: 100%;
+                z-index: 10;
               `}
             >
-              <SetThemeOfHeaderSubmenu>
-                <MenuEditor sideMenuRef={sideMenuRef} />
-              </SetThemeOfHeaderSubmenu>
+              <PinnedPluginList />
+              <ConfigProvider
+                theme={{
+                  token: {
+                    colorSplit: 'rgba(255, 255, 255, 0.1)',
+                  },
+                }}
+              >
+                <Divider type="vertical" />
+              </ConfigProvider>
+              <Help />
+              <CurrentUser />
             </div>
           </div>
-          <div
-            className={css`
-              position: relative;
-              flex-shrink: 0;
-              height: 100%;
-              z-index: 10;
-            `}
-          >
-            <PinnedPluginList />
-            <ConfigProvider
-              theme={{
-                token: {
-                  colorSplit: 'rgba(255, 255, 255, 0.1)',
-                },
-              }}
-            >
-              <Divider type="vertical" />
-            </ConfigProvider>
-            <Help />
-            <CurrentUser />
-          </div>
-        </div>
-      </Layout.Header>
-      <AdminSideBar sideMenuRef={sideMenuRef} />
+        </Layout.Header>
+        <AdminSideBar sideMenuRef={sideMenuRef} />
+      </SiderMenuProvider>
       {/* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */}
       <Layout.Content className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
         <header className={layoutContentHeaderClass}></header>

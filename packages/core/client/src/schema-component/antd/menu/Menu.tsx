@@ -29,7 +29,7 @@ import { useProps } from '../../hooks/useProps';
 import { useMenuTranslation } from './locale';
 import { MenuDesigner } from './Menu.Designer';
 import { findKeysByUid, findMenuItem } from './util';
-
+import { SiderMenuContext } from '../../../route-switch/antd/admin-layout';
 import React, {
   createContext,
   // @ts-ignore
@@ -313,7 +313,7 @@ const SideMenu = ({
   designable,
 }) => {
   const { Component, getMenuItems } = useMenuItem();
-
+  const { collapsed } = useContext(SiderMenuContext);
   // 使用 ref 用来防止闭包问题
   const sideMenuSchemaRef = useRef(sideMenuSchema);
   sideMenuSchemaRef.current = sideMenuSchema;
@@ -376,6 +376,7 @@ const SideMenu = ({
           onOpenChange={setOpenKeys}
           className={sideMenuClass}
           items={items as MenuProps['items']}
+          inlineCollapsed={collapsed}
         />
       </MenuModeContext.Provider>,
       sideMenuRef.current.firstChild,
