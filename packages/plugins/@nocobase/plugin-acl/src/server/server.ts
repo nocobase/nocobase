@@ -533,6 +533,47 @@ export class PluginACLServer extends Plugin {
       }
     });
 
+    this.app.acl.use(
+      async (ctx: any, next) => {
+        const action = ctx.permission?.can?.action;
+
+        if (action == 'destroy' && !ctx.action.resourceName.includes('.')) {
+          const repository = actionUtils.getRepositoryFromParams(ctx);
+
+          if (!repository) {
+            await next();
+            return;
+          }
+
+          const hasFilterByTk = (params) => {
+            return JSON.stringify(params).includes('filterByTk');
+          }
+
+          if (!hasFilterByTk(ctx.permission.mergedParams) || !hasFilterByTk(ctx.permission.rawParams)) {
+            await next();
+            return;
+          }
+
+          // params after merge with fixed params
+          const filteredCount = await repository.count(ctx.permission.mergedParams);
+
+          // params user requested
+          const queryCount = await repository.count(ctx.permission.rawParams);
+
+          if (queryCount > filteredCount) {
+            ctx.throw(403, 'No permissions');
+            return;
+          }
+        }
+
+        await next();
+      },
+      {
+        after: 'core',
+        group: 'after',
+      },
+    );
+
 
     const withACLMeta = createWithACLMetaMiddleware();
 
