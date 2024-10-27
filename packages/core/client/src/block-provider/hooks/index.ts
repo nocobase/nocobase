@@ -25,6 +25,7 @@ import { useReactToPrint } from 'react-to-print';
 import {
   AssociationFilter,
   useCollection,
+  useCollectionManager,
   useCollectionRecord,
   useDataSourceHeaders,
   useFormActiveFields,
@@ -1296,12 +1297,12 @@ export const useAssociationFilterBlockProps = () => {
   const field = useField();
   const { props: blockProps } = useBlockRequestContext();
   const headers = useDataSourceHeaders(blockProps?.dataSource);
-  const cm = useCollectionManager_deprecated();
+  const cm = useCollectionManager();
   const { filter, parseVariableLoading } = useParsedFilter({ filterOption: field.componentProps?.params?.filter });
 
   let list, handleSearchInput, params, run, data, valueKey, labelKey, filterKey;
 
-  valueKey = collectionField?.target ? cm.getCollection(collectionField.target)?.getPrimaryKey() : 'id';
+  valueKey = collectionField?.target ? cm?.getCollection(collectionField.target)?.getPrimaryKey() : 'id';
   labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
 
   // eslint-disable-next-line prefer-const

@@ -11,6 +11,7 @@ import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import flat from 'flat';
 import _ from 'lodash';
+import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager } from '../../../data-source/collection/CollectionManagerProvider';
 import { useCollection } from '../../../data-source/collection/CollectionProvider';
@@ -201,9 +202,8 @@ export const useFilterFieldProps = ({ options, service, params }) => {
   const field = useField<Field>();
   const dataLoadingMode = useDataLoadingMode();
 
-  return {
-    options,
-    onSubmit(values) {
+  const onSubmit = useCallback(
+    (values) => {
       // filter parameter for the block
       const defaultFilter = params.filter;
       // filter parameter for the filter action
@@ -226,28 +226,36 @@ export const useFilterFieldProps = ({ options, service, params }) => {
         field.title = t('Filter');
       }
     },
-    onReset() {
-      const filter = params.filter;
-      const filters = service.params?.[1]?.filters || {};
-      delete filters[`filterAction`];
+    [dataLoadingMode, field, params?.filter, service, t],
+  );
 
-      const newParams = [
-        {
-          ...service.params?.[0],
-          filter: mergeFilter([...Object.values(filters), filter]),
-          page: 1,
-        },
-        { filters },
-      ];
+  const onReset = useCallback(() => {
+    const filter = params.filter;
+    const filters = service.params?.[1]?.filters || {};
+    delete filters[`filterAction`];
 
-      field.title = t('Filter');
+    const newParams = [
+      {
+        ...service.params?.[0],
+        filter: mergeFilter([...Object.values(filters), filter]),
+        page: 1,
+      },
+      { filters },
+    ];
 
-      if (dataLoadingMode === 'manual') {
-        service.params = newParams;
-        return service.mutate(undefined);
-      }
+    field.title = t('Filter');
 
-      service.run(...newParams);
-    },
+    if (dataLoadingMode === 'manual') {
+      service.params = newParams;
+      return service.mutate(undefined);
+    }
+
+    service.run(...newParams);
+  }, [dataLoadingMode, field, params?.filter, service, t]);
+
+  return {
+    options,
+    onSubmit,
+    onReset,
   };
 };
