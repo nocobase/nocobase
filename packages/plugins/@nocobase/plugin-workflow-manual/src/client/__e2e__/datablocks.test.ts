@@ -103,7 +103,7 @@ test.describe('field data', () => {
 
     //配置Manual节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const preCreateRecordNodePom = new CreateRecordNode(page, preCreateRecordNodeTitle);
     await preCreateRecordNodePom.addNodeButton.click();
     await page.getByRole('button', { name: 'manual', exact: true }).click();
@@ -140,7 +140,7 @@ test.describe('field data', () => {
 
     const newPage = mockPage();
     await newPage.goto();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
@@ -265,7 +265,7 @@ test.describe('field data', () => {
 
     //配置Manual节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const preAggregateNodePom = new AggregateNode(page, preAggregateNodeTitle);
     await preAggregateNodePom.addNodeButton.click();
     await page.getByRole('button', { name: 'manual', exact: true }).click();
@@ -300,7 +300,7 @@ test.describe('field data', () => {
 
     const newPage = mockPage();
     await newPage.goto();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });

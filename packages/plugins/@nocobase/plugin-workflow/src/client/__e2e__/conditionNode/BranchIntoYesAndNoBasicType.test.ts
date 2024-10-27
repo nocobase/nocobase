@@ -88,7 +88,7 @@ test('Collection event add data trigger, determine trigger node integer variable
 
   //配置判断节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const preQueryRecordNodePom = new QueryRecordNode(page, preQueryRecordNodeTitle);
   await preQueryRecordNodePom.addNodeButton.click();
   await page.getByRole('button', { name: 'condition', exact: true }).hover();
@@ -236,7 +236,7 @@ test('Collection event add data trigger, determine trigger node integer variable
 
   //配置判断节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const preQueryRecordNodePom = new QueryRecordNode(page, preQueryRecordNodeTitle);
   await preQueryRecordNodePom.addNodeButton.click();
   await page.getByRole('button', { name: 'condition', exact: true }).hover();
@@ -380,7 +380,7 @@ test('Collection event add data trigger, determine trigger node integer variable
 
   //配置判断节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const preQueryRecordNodePom = new QueryRecordNode(page, preQueryRecordNodeTitle);
   await preQueryRecordNodePom.addNodeButton.click();
   await page.getByRole('button', { name: 'condition', exact: true }).hover();
@@ -526,7 +526,7 @@ test('Collection event add data trigger, determine trigger node integer variable
 
   //配置判断节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const preQueryRecordNodePom = new QueryRecordNode(page, preQueryRecordNodeTitle);
   await preQueryRecordNodePom.addNodeButton.click();
   await page.getByRole('button', { name: 'condition', exact: true }).hover();

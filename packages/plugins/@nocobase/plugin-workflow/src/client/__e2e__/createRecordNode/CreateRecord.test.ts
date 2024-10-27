@@ -72,7 +72,7 @@ test('Collection event add data trigger, single row text fields for common table
 
   //配置新增数据节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'create', exact: true }).click();
@@ -175,7 +175,7 @@ test('Collection event add data trigger, normal table single line text field, se
 
   //配置新增数据节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'create', exact: true }).click();
@@ -287,7 +287,7 @@ test('Collection event add data trigger, normal table integer field, set constan
 
   //配置新增数据节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'create', exact: true }).click();
@@ -390,7 +390,7 @@ test('Collection event add data trigger, normal table integer field, set trigger
 
   //配置新增数据节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'create', exact: true }).click();
@@ -502,7 +502,7 @@ test('Collection event add data trigger, normal table numeric field, set constan
 
   //配置新增数据节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'create', exact: true }).click();
@@ -605,7 +605,7 @@ test('Collection event add data trigger, normal table numeric field, set trigger
 
   //配置新增数据节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'create', exact: true }).click();
@@ -717,7 +717,7 @@ test('Collection event add data trigger, normal table dropdown radio field, set 
 
   //配置新增数据节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'create', exact: true }).click();
@@ -820,7 +820,7 @@ test('Collection event add data trigger, normal table dropdown radio field, set 
 
   //配置新增数据节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'create', exact: true }).click();
@@ -932,7 +932,7 @@ test('Collection event add data trigger, normal table dropdown radio fields, set
 
   //配置新增数据节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'create', exact: true }).click();
@@ -1031,7 +1031,7 @@ test('Collection event add data trigger, normal table dropdown radio fields, set
 
   //配置新增数据节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'create', exact: true }).click();
@@ -1143,7 +1143,7 @@ test('Collection event add data trigger, normal table date field, set constant d
 
   //配置新增数据节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'create', exact: true }).click();
@@ -1253,7 +1253,7 @@ test('Collection event add data trigger, normal table date field, set trigger no
 
   //配置新增数据节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'create', exact: true }).click();

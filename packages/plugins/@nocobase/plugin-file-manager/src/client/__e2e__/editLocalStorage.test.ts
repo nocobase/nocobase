@@ -20,7 +20,7 @@ test.describe('File manager', () => {
 
     // 1、前置条件：1.1已登录;1.2存在一个文件管理器
     await page.goto('/admin/settings/file-manager');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.getByRole('button', { name: 'plus Add new' }).hover();
     await page.getByRole('menuitem', { name: 'Local storage' }).click();
 
