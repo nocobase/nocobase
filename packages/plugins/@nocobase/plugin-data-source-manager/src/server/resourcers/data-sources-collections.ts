@@ -21,8 +21,13 @@ export default {
 
       const dataSourceStatus = plugin.dataSourceStatus[dataSourceKey];
 
-      if (dataSourceStatus === 'failed') {
-        throw new Error(`dataSource ${dataSourceKey} failed to connect`);
+      if (dataSourceStatus === 'loading-failed') {
+        const error = plugin.dataSourceErrors[dataSourceKey];
+        if (error) {
+          throw new Error(`dataSource ${dataSourceKey} loading failed: ${error.message}`);
+        }
+
+        throw new Error(`dataSource ${dataSourceKey} loading failed`);
       }
 
       if (['loading', 'reloading'].includes(dataSourceStatus)) {
