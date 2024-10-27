@@ -246,65 +246,36 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
     };
   }, [aclCtx, designable, field?.data?.hidden, style, disabled]);
 
-  const buttonProps = useMemo(() => {
-    return {
-      designable,
-      field,
-      aclCtx,
-      icon,
-      loading,
-      disabled,
-      buttonStyle,
-      handleMouseEnter,
-      tarComponent,
-      designerProps,
-      componentCls,
-      hashId,
-      className,
-      others,
-      getAriaLabel,
-      type,
-      Designer,
-      onClick,
-      refreshDataBlockRequest,
-      fieldSchema,
-      setVisible,
-      run,
-      confirm,
-      modal,
-      setSubmitted,
-      confirmTitle,
-      title,
-    };
-  }, [
-    Designer,
-    aclCtx,
-    buttonStyle,
-    className,
-    componentCls,
-    confirm,
-    confirmTitle,
+  const buttonProps = {
     designable,
-    designerProps,
-    disabled,
     field,
-    fieldSchema,
-    getAriaLabel,
-    handleMouseEnter,
-    hashId,
+    aclCtx,
     icon,
     loading,
-    modal,
-    onClick,
-    others,
-    refreshDataBlockRequest,
-    run,
-    setSubmitted,
+    disabled,
+    buttonStyle,
+    handleMouseEnter,
     tarComponent,
-    title,
+    designerProps,
+    componentCls,
+    hashId,
+    className,
+    others,
+    getAriaLabel,
     type,
-  ]);
-  const button = useMemo(() => <RenderButton {...buttonProps} />, [buttonProps]);
+    Designer,
+    onClick,
+    refreshDataBlockRequest,
+    fieldSchema,
+    setVisible,
+    run,
+    confirm,
+    modal,
+    setSubmitted,
+    confirmTitle,
+    title,
+  };
+
   const handleVisibleChange = useCallback(
     (value: boolean): void => {
       setVisible?.(value);
@@ -316,7 +287,7 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
   let result = (
     <PopupVisibleProvider visible={false}>
       <ActionContextProvider
-        button={button}
+        button={RenderButton(buttonProps)}
         visible={visible || visibleWithURL}
         setVisible={handleVisibleChange}
         formValueChanged={formValueChanged}
@@ -407,137 +378,135 @@ function isBulkEditAction(fieldSchema) {
   return fieldSchema['x-action'] === 'customize:bulkEdit';
 }
 
-const RenderButton = React.memo<any>(
-  ({
-    designable,
-    field,
-    aclCtx,
-    icon,
-    loading,
-    disabled,
-    buttonStyle,
-    handleMouseEnter,
-    tarComponent,
-    designerProps,
-    componentCls,
-    hashId,
-    className,
-    others,
-    getAriaLabel,
-    type,
-    Designer,
-    onClick,
-    refreshDataBlockRequest,
-    fieldSchema,
-    setVisible,
-    run,
-    confirm,
-    modal,
-    setSubmitted,
-    confirmTitle,
-    title,
-  }) => {
-    const service = useDataBlockRequest();
-    const { t } = useTranslation();
-    const { isPopupVisibleControlledByURL } = usePopupSettings();
-    const { openPopup } = usePopupUtils();
+const RenderButton = ({
+  designable,
+  field,
+  aclCtx,
+  icon,
+  loading,
+  disabled,
+  buttonStyle,
+  handleMouseEnter,
+  tarComponent,
+  designerProps,
+  componentCls,
+  hashId,
+  className,
+  others,
+  getAriaLabel,
+  type,
+  Designer,
+  onClick,
+  refreshDataBlockRequest,
+  fieldSchema,
+  setVisible,
+  run,
+  confirm,
+  modal,
+  setSubmitted,
+  confirmTitle,
+  title,
+}) => {
+  const service = useDataBlockRequest();
+  const { t } = useTranslation();
+  const { isPopupVisibleControlledByURL } = usePopupSettings();
+  const { openPopup } = usePopupUtils();
 
-    const serviceRef = useRef(null);
-    serviceRef.current = service;
+  const serviceRef = useRef(null);
+  serviceRef.current = service;
 
-    const openPopupRef = useRef(null);
-    openPopupRef.current = openPopup;
+  const openPopupRef = useRef(null);
+  openPopupRef.current = openPopup;
 
-    const handleButtonClick = useCallback(
-      (e: React.MouseEvent, checkPortal = true) => {
-        if (checkPortal && isPortalInBody(e.target as Element)) {
-          return;
-        }
-        e.preventDefault();
-        e.stopPropagation();
+  const handleButtonClick = useCallback(
+    (e: React.MouseEvent, checkPortal = true) => {
+      if (checkPortal && isPortalInBody(e.target as Element)) {
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
 
-        if (!disabled && aclCtx) {
-          const onOk = () => {
-            if (onClick) {
-              onClick(e, () => {
-                if (refreshDataBlockRequest !== false) {
-                  setSubmitted?.(true);
-                  serviceRef.current?.refresh?.();
-                }
-              });
-            } else if (isBulkEditAction(fieldSchema) || !isPopupVisibleControlledByURL()) {
+      if (!disabled && aclCtx) {
+        const onOk = () => {
+          if (onClick) {
+            onClick(e, () => {
+              if (refreshDataBlockRequest !== false) {
+                setSubmitted?.(true);
+                serviceRef.current?.refresh?.();
+              }
+            });
+          } else if (isBulkEditAction(fieldSchema) || !isPopupVisibleControlledByURL()) {
+            setVisible(true);
+            run?.();
+          } else {
+            // Currently, only buttons of these types can control the visibility of popups through URLs.
+            if (
+              ['view', 'update', 'create', 'customize:popup'].includes(fieldSchema['x-action']) &&
+              fieldSchema['x-uid']
+            ) {
+              openPopupRef.current();
+            } else {
               setVisible(true);
               run?.();
-            } else {
-              // Currently, only buttons of these types can control the visibility of popups through URLs.
-              if (
-                ['view', 'update', 'create', 'customize:popup'].includes(fieldSchema['x-action']) &&
-                fieldSchema['x-uid']
-              ) {
-                openPopupRef.current();
-              } else {
-                setVisible(true);
-                run?.();
-              }
             }
-          };
-          if (confirm?.enable !== false && confirm?.content) {
-            modal.confirm({
-              title: t(confirm.title, { title: confirmTitle || title || field?.title }),
-              content: t(confirm.content, { title: confirmTitle || title || field?.title }),
-              onOk,
-            });
-          } else {
-            onOk();
           }
+        };
+        if (confirm?.enable !== false && confirm?.content) {
+          modal.confirm({
+            title: t(confirm.title, { title: confirmTitle || title || field?.title }),
+            content: t(confirm.content, { title: confirmTitle || title || field?.title }),
+            onOk,
+          });
+        } else {
+          onOk();
         }
-      },
-      [
-        aclCtx,
-        confirm?.content,
-        confirm?.enable,
-        confirm?.title,
-        confirmTitle,
-        disabled,
-        field,
-        fieldSchema,
-        isPopupVisibleControlledByURL,
-        modal,
-        onClick,
-        refreshDataBlockRequest,
-        run,
-        setSubmitted,
-        setVisible,
-        t,
-        title,
-      ],
-    );
+      }
+    },
+    [
+      aclCtx,
+      confirm?.content,
+      confirm?.enable,
+      confirm?.title,
+      confirmTitle,
+      disabled,
+      field,
+      fieldSchema,
+      isPopupVisibleControlledByURL,
+      modal,
+      onClick,
+      refreshDataBlockRequest,
+      run,
+      setSubmitted,
+      setVisible,
+      t,
+      title,
+    ],
+  );
 
-    return (
-      <RenderButtonInner
-        designable={designable}
-        field={field}
-        aclCtx={aclCtx}
-        icon={icon}
-        loading={loading}
-        disabled={disabled}
-        buttonStyle={buttonStyle}
-        handleMouseEnter={handleMouseEnter}
-        getAriaLabel={getAriaLabel}
-        handleButtonClick={handleButtonClick}
-        tarComponent={tarComponent}
-        componentCls={componentCls}
-        hashId={hashId}
-        className={className}
-        type={type}
-        Designer={Designer}
-        designerProps={designerProps}
-        title={title}
-        {...others}
-      />
-    );
-  },
-);
+  return (
+    <RenderButtonInner
+      designable={designable}
+      field={field}
+      aclCtx={aclCtx}
+      icon={icon}
+      loading={loading}
+      disabled={disabled}
+      buttonStyle={buttonStyle}
+      handleMouseEnter={handleMouseEnter}
+      getAriaLabel={getAriaLabel}
+      handleButtonClick={handleButtonClick}
+      tarComponent={tarComponent}
+      componentCls={componentCls}
+      hashId={hashId}
+      className={className}
+      type={type}
+      Designer={Designer}
+      designerProps={designerProps}
+      title={title}
+      {...others}
+    />
+  );
+};
 
 RenderButton.displayName = 'RenderButton';
 
