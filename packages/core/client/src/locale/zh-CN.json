@@ -1017,5 +1017,9 @@
   "Left": "左",
   "Center": "居中",
   "Right": "右",
-  "Divider line color": "分割线颜色"
+  "Divider line color": "分割线颜色",
+  "Label align": "标签内容对齐",
+  "Label width": "标签内容宽度",
+  "label Wrap": "标签内容超出宽度时换行",
+  "Set block layout":"设置区块布局"
 }

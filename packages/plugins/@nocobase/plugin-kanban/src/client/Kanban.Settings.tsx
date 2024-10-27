@@ -80,10 +80,6 @@ export const kanbanSettings = new SchemaSettings({
       },
     },
     {
-      name: 'setBlockLayout',
-      Component: SchemaSettingsLayoutItem,
-    },
-    {
       name: 'allowDragAndDrop',
       type: 'switch',
       useComponentProps: () => {
@@ -108,6 +104,10 @@ export const kanbanSettings = new SchemaSettings({
           },
         };
       },
+    },
+    {
+      name: 'setBlockLayout',
+      Component: SchemaSettingsLayoutItem,
     },
     {
       name: 'divider',
