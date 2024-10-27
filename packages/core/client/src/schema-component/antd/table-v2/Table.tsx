@@ -195,7 +195,6 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }) => {
                       deleteCount: 1,
                     });
                     field.value.splice(index, 1);
-                    field.initialValue?.splice(index, 1);
                     return field.onInput(field.value);
                   });
                 }}

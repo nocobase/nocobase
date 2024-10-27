@@ -147,6 +147,7 @@ export const SubTable: any = observer(
       setSelectedRows,
       collectionField,
     };
+
     const usePickActionProps = () => {
       const { setVisible } = useActionContext();
       const { selectedRows, setSelectedRows } = useContext(RecordPickerContext);
