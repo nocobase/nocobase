@@ -104,12 +104,11 @@ export class DataSourceModel extends Model {
         pluginDataSourceManagerServer.dataSourceLoadingProgress[dataSourceKey] = progress;
       });
 
-
       if (loadAtAfterStart) {
         dataSource.on('loadMessage', ({ message }) => {
           app.setMaintainingMessage(`${message} in data source ${this.get('displayName')}`);
         });
-     }
+      }
 
       const acl = dataSource.acl;
 
