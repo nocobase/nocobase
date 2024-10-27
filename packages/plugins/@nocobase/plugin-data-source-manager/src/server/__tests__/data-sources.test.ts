@@ -59,6 +59,8 @@ describe('data source', async () => {
       },
     });
 
+    await waitSecond(200);
+
     // get data source status
     const plugin: any = app.pm.get('data-source-manager');
     expect(plugin.dataSourceStatus['mockInstance1']).toBe('loading');
@@ -93,6 +95,7 @@ describe('data source', async () => {
       },
     });
 
+    await waitSecond(2000);
     // get data source status
     const plugin: any = app.pm.get('data-source-manager');
     expect(plugin.dataSourceStatus['mockInstance1']).toBe('loading-failed');
