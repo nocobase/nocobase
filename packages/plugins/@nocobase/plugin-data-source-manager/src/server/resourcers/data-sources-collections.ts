@@ -17,6 +17,23 @@ export default {
 
       const { associatedIndex: dataSourceKey } = params;
       const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
+      const plugin: any = ctx.app.pm.get('data-source-manager');
+
+      const dataSourceStatus = plugin.dataSourceStatus.get(dataSourceKey);
+
+      if (dataSourceStatus === 'failed') {
+        throw new Error(`dataSource ${dataSourceKey} failed to connect`);
+      }
+
+      if (['loading', 'reloading'].includes(dataSourceStatus)) {
+        const progress = plugin.dataSourceProgress.get(dataSourceKey);
+
+        if (progress) {
+          throw new Error(`dataSource ${dataSourceKey} is ${dataSourceStatus} (${progress.loaded}/${progress.total})`);
+        }
+
+        throw new Error(`dataSource ${dataSourceKey} is ${dataSourceStatus}`);
+      }
 
       if (!dataSource) {
         throw new Error(`dataSource ${dataSourceKey} not found`);

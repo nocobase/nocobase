@@ -38,8 +38,16 @@ describe('data source', async () => {
       }
     }
 
-    app.dataSourceManager.beforeAddDataSource(async () => {
-      await waitSecond(5000);
+    app.dataSourceManager.factory.register('mock', MockDataSource);
+
+    app.dataSourceManager.beforeAddDataSource(async (dataSource: DataSource) => {
+      const total = 1000;
+      for (let i = 0; i < total; i++) {
+        dataSource.emitLoadingProgress({
+          total,
+          loaded: i,
+        });
+      }
     });
 
     await app.db.getRepository('dataSources').create({
@@ -52,9 +60,45 @@ describe('data source', async () => {
     });
 
     // get data source status
+    const plugin: any = app.pm.get('data-source-manager');
+    expect(plugin.dataSourceStatus['mockInstance1']).toBe('loading');
+
+    const loadingStatus = plugin.dataSourceLoadingProgress['mockInstance1'];
+    expect(loadingStatus).toBeDefined();
   });
 
-  it('should get error when datasource loading failed', async () => {});
+  it('should get error when datasource loading failed', async () => {
+    class MockDataSource extends DataSource {
+      static testConnection(options?: any): Promise<boolean> {
+        return Promise.resolve(true);
+      }
+
+      async load(): Promise<void> {
+        throw new Error(`load failed`);
+      }
+
+      createCollectionManager(options?: any): any {
+        return undefined;
+      }
+    }
+
+    app.dataSourceManager.factory.register('mock', MockDataSource);
+
+    await app.db.getRepository('dataSources').create({
+      values: {
+        key: 'mockInstance1',
+        type: 'mock',
+        displayName: 'Mock',
+        options: {},
+      },
+    });
+
+    // get data source status
+    const plugin: any = app.pm.get('data-source-manager');
+    expect(plugin.dataSourceStatus['mockInstance1']).toBe('loading-failed');
+
+    expect(plugin.dataSourceErrors['mockInstance1'].message).toBe('load failed');
+  });
 
   it('should list main datasource in api', async () => {
     const listResp = await app.agent().resource('dataSources').list();
