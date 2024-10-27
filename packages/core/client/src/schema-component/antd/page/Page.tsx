@@ -302,7 +302,7 @@ function NocoBasePageHeader({ footer }: { footer: React.JSX.Element }) {
 
   return (
     <>
-      <PageDesigner title={fieldSchema.title || title} />
+      <PageDesigner title={title} />
       {!disablePageHeader && (
         <AntdPageHeader
           className={classNames('pageHeaderCss', title || enablePageTabs ? '' : 'height0')}

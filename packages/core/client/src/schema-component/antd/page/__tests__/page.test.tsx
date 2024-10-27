@@ -30,17 +30,6 @@ describe('Page', () => {
 
   describe('Page Component', () => {
     const title = 'Test Title';
-    test('schema title', async () => {
-      await renderAppOptions({
-        schema: {
-          type: 'void',
-          title,
-          'x-component': Page,
-        },
-      });
-
-      expect(screen.getByText(title)).toBeInTheDocument();
-    });
 
     test('hide title', async () => {
       await renderAppOptions({
