@@ -192,14 +192,18 @@ test.describe('form item & edit form', () => {
         ).toBeDisabled();
       },
       expectEasyReading: async () => {
-        await expect(
-          page.getByLabel('block-item-CollectionField-general-form-general.checkbox-checkbox').getByRole('checkbox'),
-        ).toBeVisible();
-        await expect(
-          page
-            .getByLabel('block-item-CollectionField-general-form-general.checkbox-checkbox')
-            .getByRole('img', { name: 'check' }),
-        ).toBeVisible({ visible: record.checkbox });
+        if (record.checkbox) {
+          await expect(
+            page
+              .getByLabel('block-item-CollectionField-general-form-general.checkbox-checkbox')
+              .getByRole('img', { name: 'check' }),
+          ).toBeVisible({ visible: record.checkbox });
+        } else {
+          // 未选中状态会显示一个禁用的 checkbox
+          await expect(
+            page.getByLabel('block-item-CollectionField-general-form-general.checkbox-checkbox').getByRole('checkbox'),
+          ).toBeDisabled();
+        }
       },
     });
   });
