@@ -67,7 +67,12 @@ const InternalList = (props) => {
     [run, params],
   );
   const cardItemSchema = getCardItemSchema?.(fieldSchema);
-  const { layout = 'vertical' } = cardItemSchema?.['x-component-props'] || {};
+  const {
+    layout = 'vertical',
+    labelAlign = 'left',
+    labelWidth = 120,
+    labelWrap = true,
+  } = cardItemSchema?.['x-component-props'] || {};
   const usePagination = () => {
     if (!count) {
       return {
@@ -138,7 +143,7 @@ const InternalList = (props) => {
         )}
       >
         <div className="nb-list-container">
-          <FormLayout layout={layout}>
+          <FormLayout layout={layout} labelAlign={labelAlign} labelWidth={labelWidth} labelWrap={labelWrap}>
             <AntdList
               {...props}
               pagination={!meta || !field.value?.length ? false : paginationProps}

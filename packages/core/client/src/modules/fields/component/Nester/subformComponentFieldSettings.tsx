@@ -21,7 +21,7 @@ import {
   useIsFormReadPretty,
 } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { linkageRules, setDefaultSortingRules } from '../SubTable/subTablePopoverComponentFieldSettings';
-import { schemaSettingsLabelLayout } from '../../../../schema-settings';
+import { SchemaSettingsLayoutItem } from '../../../../schema-settings/SchemaSettingsLayoutItem';
 
 const allowMultiple: any = {
   name: 'allowMultiple',
@@ -144,6 +144,9 @@ export const subformComponentFieldSettings = new SchemaSettings({
     },
     setDefaultSortingRules,
     linkageRules,
-    schemaSettingsLabelLayout,
+    {
+      name: 'setBlockLayout',
+      Component: SchemaSettingsLayoutItem,
+    },
   ],
 });

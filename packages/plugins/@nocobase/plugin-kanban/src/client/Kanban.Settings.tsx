@@ -20,10 +20,11 @@ import {
   useCollection_deprecated,
   useDesignable,
   useFormBlockContext,
-  schemaSettingsLabelLayout,
+  SchemaSettingsLayoutItem,
 } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 import { useKanbanBlockContext } from './KanbanBlockProvider';
+
 export const kanbanSettings = new SchemaSettings({
   name: 'blockSettings:kanban',
   items: [
@@ -78,7 +79,10 @@ export const kanbanSettings = new SchemaSettings({
         };
       },
     },
-    schemaSettingsLabelLayout,
+    {
+      name: 'setBlockLayout',
+      Component: SchemaSettingsLayoutItem,
+    },
     {
       name: 'allowDragAndDrop',
       type: 'switch',
