@@ -15,7 +15,7 @@ export const ContentConfigForm = withDynamicSchemaProps(
   observer<{ variableOptions: any; channelType: string }>(
     ({ variableOptions, channelType }) => {
       const channelTypeMap = useChannelTypeMap();
-      const { ContentConfigForm = () => null } = (channelType ? channelTypeMap[channelType] : {}).components || {};
+      const { ContentConfigForm = () => null } = (channelType ? channelTypeMap[channelType] : {})?.components || {};
       return <ContentConfigForm variableOptions={variableOptions} />;
     },
     { displayName: 'ContentConfigForm' },
