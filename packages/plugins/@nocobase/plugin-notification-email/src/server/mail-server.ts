@@ -54,6 +54,7 @@ export class MailNotificationChannel extends BaseNotificationChannel {
         const payload = {
           to: usersEmail,
           from,
+          subject,
           ...(contentType === 'html' ? { html: message.html } : { text: message.text }),
         };
         const result = await transpoter.sendMail(payload);
