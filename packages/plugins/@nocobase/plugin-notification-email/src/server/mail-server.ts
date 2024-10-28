@@ -47,7 +47,7 @@ export class MailNotificationChannel extends BaseNotificationChannel {
       if (receivers?.type === 'userId') {
         const users = await userRepo.find({
           filter: {
-            $in: receivers.value,
+            id: receivers.value,
           },
         });
         const usersEmail = users.map((user) => user.email).filter(Boolean);
