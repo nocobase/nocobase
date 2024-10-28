@@ -67,7 +67,7 @@ jobs:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
       - name: rm .git
         run: |
-          rm -rf packages/pro-plugins/@nocobase/plugin-wecom-notification/.git
+          rm -rf packages/pro-plugins/@nocobase/plugin-notification-wecom/.git
           rm -rf packages/pro-plugins/@nocobase/plugin-workflow-approval/.git
           git config --global user.email "you@example.com"  &&  git config --global user.name "Your Name" && git add -A && git commit -m "tmp commit"
       - name: Set up QEMU
