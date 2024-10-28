@@ -20,7 +20,7 @@ import type {
 
 export class NotificationManager implements NotificationManager {
   private plugin: PluginNotificationManagerServer;
-  private notificationTypes = new Registry<{ Channel: NotificationChannelConstructor }>();
+  public notificationTypes = new Registry<{ Channel: NotificationChannelConstructor }>();
 
   constructor({ plugin }: { plugin: PluginNotificationManagerServer }) {
     this.plugin = plugin;
