@@ -43,7 +43,7 @@ const deps: Record<string, string> = {
   i18next: '22.x',
   'react-i18next': '11.x',
   '@dnd-kit/accessibility': '3.x',
-  '@dnd-kit/core': '5.x',
+  '@dnd-kit/core': '6.x',
   '@dnd-kit/modifiers': '6.x',
   '@dnd-kit/sortable': '6.x',
   '@dnd-kit/utilities': '3.x',

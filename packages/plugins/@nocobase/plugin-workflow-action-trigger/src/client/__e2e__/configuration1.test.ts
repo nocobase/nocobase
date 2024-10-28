@@ -54,7 +54,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
 
     //配置工作流触发器
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const formEventTriggerNode = new FormEventTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await formEventTriggerNode.nodeConfigure.click();
     await formEventTriggerNode.collectionDropDown.click();
@@ -65,7 +65,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
     //配置录入数据区块
     const newPage = mockPage();
     await newPage.goto();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
     const dataSourcesCount = await apiGetDataSourceCount();
@@ -111,7 +111,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
     const fieldData = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByRole('textbox').fill(fieldData);
     await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.waitForTimeout(1000);
     // 3、预期结果：触发次数为1
     const getWorkflow = await apiGetWorkflow(workflowId);
@@ -157,7 +157,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
 
     //配置工作流触发器
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const formEventTriggerNode = new FormEventTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await formEventTriggerNode.nodeConfigure.click();
     await formEventTriggerNode.collectionDropDown.click();
@@ -168,7 +168,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
     //配置录入数据区块
     const newPage = mockPage();
     await newPage.goto();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
     const dataSourcesCount = await apiGetDataSourceCount();
@@ -218,7 +218,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
     await page
       .getByLabel(`action-Action-Submit to workflow-customize:triggerWorkflows-${triggerNodeCollectionName}-form`)
       .click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.waitForTimeout(1000);
     // 3、预期结果：触发次数为1
     const getWorkflow = await apiGetWorkflow(workflowId);

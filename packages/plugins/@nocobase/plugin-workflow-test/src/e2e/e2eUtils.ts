@@ -1047,7 +1047,7 @@ export const userLogin = async (browser: Browser, approvalUserEmail: string, app
   await page.getByPlaceholder('Email').fill(approvalUserEmail);
   await page.getByPlaceholder('Password').fill(approvalUser);
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   return context;
 };
 
