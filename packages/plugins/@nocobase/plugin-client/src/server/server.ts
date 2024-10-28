@@ -119,11 +119,7 @@ export class PluginClientServer extends Plugin {
       },
     });
 
-    if (this.app.pm.get('audit-logger').enabled) {
-      this.app.logger.debug('start audit logger');
-
-      this.app.auditManager.registerActions(['app:restart', 'app:clearCache']);
-    }
+    this.app.auditManager.registerActions(['app:restart', 'app:clearCache']);
   }
 }
 

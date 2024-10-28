@@ -80,12 +80,11 @@ export class PluginAuthServer extends Plugin {
       await this.cache.del(`auth:${userId}`);
     });
 
-    if (this.app.pm.get('audit-logger').enabled) {
-      this.app.logger.debug('start audit logger');
-
-      const getSignInMeta = (ctx) => {
-        return new Promise((resolve) => {
-          resolve({
+    this.app.auditManager.registerActions([
+      {
+        name: 'auth:signIn',
+        getMetaData: async (ctx: any) => {
+          return {
             request: {
               params: ctx.request?.params,
               body: {
@@ -99,18 +98,19 @@ export class PluginAuthServer extends Plugin {
                 token: undefined,
               },
             },
-          });
-        });
-      };
-
-      const getSignUpMeta = (ctx) => {
-        return new Promise((resolve) => {
-          resolve({
+          };
+        },
+      },
+      {
+        name: 'auth:signUp',
+        getMetaData: async (ctx: any) => {
+          return {
             request: {
               params: ctx.request?.params,
               body: {
                 ...ctx.request?.body,
                 password: undefined,
+                confirm_password: undefined,
               },
             },
             response: {
@@ -119,22 +119,11 @@ export class PluginAuthServer extends Plugin {
                 token: undefined,
               },
             },
-          });
-        });
-      };
-
-      this.app.auditManager.registerActions([
-        {
-          name: 'auth:signIn',
-          getMetaData: getSignInMeta,
+          };
         },
-        {
-          name: 'auth:signUp',
-          getMetaData: getSignUpMeta,
-        },
-        'auth:signOut',
-      ]);
-    }
+      },
+      'auth:signOut',
+    ]);
   }
 
   async install(options?: InstallOptions) {

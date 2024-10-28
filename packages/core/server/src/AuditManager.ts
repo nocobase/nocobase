@@ -184,7 +184,7 @@ export class AuditManager {
     }
   }
 
-  formatAuditData(ctx: any) {
+  formatAuditData(ctx: Context) {
     const { resourceName } = ctx.action;
 
     let association = '';
@@ -192,8 +192,8 @@ export class AuditManager {
     if (resourceName) {
       const resourceArray = resourceName.split('.');
       if (resourceArray.length > 1) {
+        collection = resourceArray[0];
         association = resourceArray[1];
-        collection = resourceArray[1];
       } else {
         collection = resourceName;
       }
@@ -202,11 +202,11 @@ export class AuditManager {
 
     const auditLog: AuditLog = {
       uuid: ctx.reqId,
-      dataSource: ctx.request.header['x-data-source'] || 'main',
+      dataSource: (ctx.request.header['x-data-source'] || 'main') as string,
       resource: resourceName,
       association: association,
       collection: collection,
-      action: ctx.action.name,
+      action: ctx.action.actionName,
       resourceUk: resourceUk,
       userId: ctx.state?.currentUser?.id,
       roleName: ctx.state?.currentRole,
