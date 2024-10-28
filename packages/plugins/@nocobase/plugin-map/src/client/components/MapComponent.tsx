@@ -27,7 +27,6 @@ export const MapComponent = React.forwardRef<any, any>((props, ref) => {
   if (!Component) {
     return <div>{t(`The ${mapType} cannot found`)}</div>;
   }
-
   return <Component ref={ref} {...props} />;
 });
 MapComponent.displayName = 'MapComponent';
