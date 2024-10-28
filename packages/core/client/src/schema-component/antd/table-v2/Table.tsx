@@ -189,8 +189,8 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }) => {
               <CloseOutlined
                 style={{ cursor: 'pointer', color: 'gray' }}
                 onClick={() => {
-                  action(() => {
-                    spliceArrayState(field as any, {
+                  return action(() => {
+                    spliceArrayState(field, {
                       startIndex: index,
                       deleteCount: 1,
                     });
