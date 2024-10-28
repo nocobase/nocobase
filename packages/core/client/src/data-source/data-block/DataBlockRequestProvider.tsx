@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC, createContext, useContext, useMemo } from 'react';
+import React, { FC, createContext, useContext, useMemo, useRef } from 'react';
 
 import _ from 'lodash';
 import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
@@ -18,8 +18,20 @@ import { useDataSourceHeaders } from '../utils';
 import { AllDataBlockProps, useDataBlockProps } from './DataBlockProvider';
 import { useDataBlockResource } from './DataBlockResourceProvider';
 
+/**
+ * @deprecated
+ */
 export const BlockRequestContext = createContext<UseRequestResult<any>>(null);
 BlockRequestContext.displayName = 'BlockRequestContext';
+
+const BlockRequestRefContext = createContext<React.MutableRefObject<UseRequestResult<any>>>(null);
+BlockRequestRefContext.displayName = 'BlockRequestRefContext';
+
+const BlockRequestLoadingContext = createContext<boolean>(false);
+BlockRequestLoadingContext.displayName = 'BlockRequestLoadingContext';
+
+const BlockRequestDataContext = createContext<any>(null);
+BlockRequestDataContext.displayName = 'BlockRequestDataContext';
 
 function useRecordRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const dataLoadingMode = useDataLoadingMode();
@@ -96,6 +108,22 @@ export async function requestParentRecordData({
   return res.data;
 }
 
+export const BlockRequestContextProvider: FC<{ recordRequest: UseRequestResult<any> }> = (props) => {
+  const recordRequestRef = useRef<UseRequestResult<any>>(props.recordRequest);
+
+  recordRequestRef.current = props.recordRequest;
+
+  return (
+    <BlockRequestRefContext.Provider value={recordRequestRef}>
+      <BlockRequestLoadingContext.Provider value={props.recordRequest?.loading}>
+        <BlockRequestDataContext.Provider value={props.recordRequest?.data}>
+          {props.children}
+        </BlockRequestDataContext.Provider>
+      </BlockRequestLoadingContext.Provider>
+    </BlockRequestRefContext.Provider>
+  );
+};
+
 export const BlockRequestProvider: FC = React.memo(({ children }) => {
   const props = useDataBlockProps();
   const {
@@ -140,19 +168,21 @@ export const BlockRequestProvider: FC = React.memo(({ children }) => {
 
   return (
     <BlockRequestContext.Provider value={recordRequest}>
-      {action !== 'list' ? (
-        <CollectionRecordProvider
-          isNew={action == null}
-          record={recordRequest.data?.data || record}
-          parentRecord={memoizedParentRecord || parentRecord}
-        >
-          {children}
-        </CollectionRecordProvider>
-      ) : (
-        <CollectionRecordProvider isNew={false} record={null} parentRecord={memoizedParentRecord || parentRecord}>
-          {children}
-        </CollectionRecordProvider>
-      )}
+      <BlockRequestContextProvider recordRequest={recordRequest}>
+        {action !== 'list' ? (
+          <CollectionRecordProvider
+            isNew={action == null}
+            record={recordRequest.data?.data || record}
+            parentRecord={memoizedParentRecord || parentRecord}
+          >
+            {children}
+          </CollectionRecordProvider>
+        ) : (
+          <CollectionRecordProvider isNew={false} record={null} parentRecord={memoizedParentRecord || parentRecord}>
+            {children}
+          </CollectionRecordProvider>
+        )}
+      </BlockRequestContextProvider>
     </BlockRequestContext.Provider>
   );
 });
@@ -160,6 +190,24 @@ export const BlockRequestProvider: FC = React.memo(({ children }) => {
 BlockRequestProvider.displayName = 'DataBlockRequestProvider';
 
 export const useDataBlockRequest = <T extends {}>(): UseRequestResult<{ data: T }> => {
-  const context = useContext(BlockRequestContext);
-  return context;
+  const contextRef = useContext(BlockRequestRefContext);
+  const loading = useContext(BlockRequestLoadingContext);
+  const data = useContext(BlockRequestDataContext);
+  return useMemo(() => (contextRef ? { ...contextRef.current, loading, data } : null), [contextRef, data, loading]);
+};
+
+/**
+ * Compared to `useDataBlockRequest`, the advantage of this hook is that it prevents unnecessary re-renders.
+ * For example, if you only need to use methods like `refresh` or `run`, it's recommended to use this hook,
+ * as it avoids component re-rendering when re-triggering requests.
+ * @returns
+ */
+export const useDataBlockRequestGetter = () => {
+  const contextRef = useContext(BlockRequestRefContext);
+  return useMemo(
+    () => ({
+      getDataBlockRequest: () => (contextRef ? contextRef.current : null),
+    }),
+    [contextRef],
+  );
 };

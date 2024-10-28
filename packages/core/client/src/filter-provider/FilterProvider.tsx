@@ -12,7 +12,7 @@ import _, { uniqBy } from 'lodash';
 import { CollectionFieldOptions_deprecated } from '../collection-manager';
 import { Collection } from '../data-source/collection/Collection';
 import { useCollection } from '../data-source/collection/CollectionProvider';
-import { useDataBlockRequest } from '../data-source/data-block/DataBlockRequestProvider';
+import { useDataBlockRequestGetter } from '../data-source/data-block/DataBlockRequestProvider';
 import { useDataLoadingMode } from '../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 import { removeNullCondition } from '../schema-component';
 import { mergeFilter, useAssociatedFields } from './utils';
@@ -114,7 +114,7 @@ export const DataBlockCollector = ({
 }) => {
   const collection = useCollection();
   const { recordDataBlocks } = useFilterBlock();
-  const service = useDataBlockRequest();
+  const { getDataBlockRequest } = useDataBlockRequestGetter();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const associatedFields = useAssociatedFields();
@@ -128,6 +128,7 @@ export const DataBlockCollector = ({
     field.decoratorProps.blockType !== 'filter';
 
   const addBlockToDataBlocks = useCallback(() => {
+    const service = getDataBlockRequest();
     recordDataBlocks({
       uid: fieldSchema['x-uid'],
       title: field.componentProps.title,
@@ -169,7 +170,7 @@ export const DataBlockCollector = ({
     fieldSchema,
     params?.filter,
     recordDataBlocks,
-    service,
+    getDataBlockRequest,
   ]);
 
   useEffect(() => {

@@ -19,7 +19,7 @@ import {
   useCollectionManager,
   useCollectionParentRecord,
   useCollectionRecord,
-  useDataBlockRequest,
+  useDataBlockRequestGetter,
   useDataSourceKey,
 } from '../../../data-source';
 import { ActionContext } from '../action/context';
@@ -147,7 +147,7 @@ export const usePopupUtils = (
   const association = useAssociationName();
   const { visible, setVisible } = useContext(PopupVisibleProviderContext) || { visible: false, setVisible: _.noop };
   const { params: popupParams } = useCurrentPopupContext();
-  const service = useDataBlockRequest();
+  const { getDataBlockRequest } = useDataBlockRequestGetter();
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { setVisible: _setVisibleFromAction } = useContext(ActionContext);
   const { updatePopupContext } = usePopupContextInActionOrAssociationField();
@@ -244,7 +244,7 @@ export const usePopupUtils = (
         schema: customActionSchema || fieldSchema,
         record: new CollectionRecord({ isNew: false, data: recordData }),
         parentRecord: parentRecordData ? new CollectionRecord({ isNew: false, data: parentRecordData }) : parentRecord,
-        service,
+        service: getDataBlockRequest(),
         dataSource: dataSourceKey,
         collection: collection?.name,
         association,
@@ -266,7 +266,7 @@ export const usePopupUtils = (
       navigate,
       parentRecord,
       record,
-      service,
+      getDataBlockRequest,
       location,
       isPopupVisibleControlledByURL,
       getSourceId,

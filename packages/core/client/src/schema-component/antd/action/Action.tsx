@@ -18,7 +18,11 @@ import { useTranslation } from 'react-i18next';
 import { ErrorFallback, StablePopover, TabsContextProvider, useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { useACLActionParamsContext } from '../../../acl';
-import { useCollectionParentRecordData, useCollectionRecordData, useDataBlockRequest } from '../../../data-source';
+import {
+  useCollectionParentRecordData,
+  useCollectionRecordData,
+  useDataBlockRequestGetter,
+} from '../../../data-source';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { Icon } from '../../../icon';
 import { TreeRecordProvider } from '../../../modules/blocks/data-blocks/table/TreeRecordProvider';
@@ -407,13 +411,10 @@ const RenderButton = ({
   confirmTitle,
   title,
 }) => {
-  const service = useDataBlockRequest();
+  const { getDataBlockRequest } = useDataBlockRequestGetter();
   const { t } = useTranslation();
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { openPopup } = usePopupUtils();
-
-  const serviceRef = useRef(null);
-  serviceRef.current = service;
 
   const openPopupRef = useRef(null);
   openPopupRef.current = openPopup;
@@ -432,7 +433,7 @@ const RenderButton = ({
             onClick(e, () => {
               if (refreshDataBlockRequest !== false) {
                 setSubmitted?.(true);
-                serviceRef.current?.refresh?.();
+                getDataBlockRequest()?.refresh?.();
               }
             });
           } else if (isBulkEditAction(fieldSchema) || !isPopupVisibleControlledByURL()) {
@@ -480,6 +481,7 @@ const RenderButton = ({
       setVisible,
       t,
       title,
+      getDataBlockRequest,
     ],
   );
 

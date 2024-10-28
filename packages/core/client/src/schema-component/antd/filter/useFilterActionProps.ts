@@ -16,7 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { useCollectionManager } from '../../../data-source/collection/CollectionManagerProvider';
 import { useCollection } from '../../../data-source/collection/CollectionProvider';
 import { useDataBlockProps } from '../../../data-source/data-block/DataBlockProvider';
-import { useDataBlockRequest } from '../../../data-source/data-block/DataBlockRequestProvider';
+import { useDataBlockRequestGetter } from '../../../data-source/data-block/DataBlockRequestProvider';
 import { useDataSourceManager } from '../../../data-source/data-source/DataSourceManagerProvider';
 import { mergeFilter } from '../../../filter-provider/utils';
 import { useDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
@@ -192,31 +192,33 @@ export const removeNullCondition = (filter, customFlat = flat) => {
 export const useFilterActionProps = () => {
   const collection = useCollection();
   const options = useFilterOptions(collection?.name);
-  const service = useDataBlockRequest();
   const props = useDataBlockProps();
-  return useFilterFieldProps({ options, service, params: props?.params });
+  return useFilterFieldProps({ options, params: props?.params });
 };
 
-export const useFilterFieldProps = ({ options, service, params }) => {
+export const useFilterFieldProps = ({ options, service, params }: { options: any[]; service?: any; params: any }) => {
+  const { getDataBlockRequest } = useDataBlockRequestGetter();
   const { t } = useTranslation();
   const field = useField<Field>();
   const dataLoadingMode = useDataLoadingMode();
 
   const onSubmit = useCallback(
     (values) => {
+      const _service = service || getDataBlockRequest();
+
       // filter parameter for the block
       const defaultFilter = params.filter;
       // filter parameter for the filter action
       const filter = removeNullCondition(values?.filter);
 
       if (dataLoadingMode === 'manual' && _.isEmpty(filter)) {
-        return service.mutate(undefined);
+        return _service?.mutate(undefined);
       }
 
-      const filters = service.params?.[1]?.filters || {};
+      const filters = _service?.params?.[1]?.filters || {};
       filters[`filterAction`] = filter;
-      service.run(
-        { ...service.params?.[0], page: 1, filter: mergeFilter([...Object.values(filters), defaultFilter]) },
+      _service?.run(
+        { ..._service?.params?.[0], page: 1, filter: mergeFilter([...Object.values(filters), defaultFilter]) },
         { filters },
       );
       const items = filter?.$and || filter?.$or;
@@ -226,17 +228,19 @@ export const useFilterFieldProps = ({ options, service, params }) => {
         field.title = t('Filter');
       }
     },
-    [dataLoadingMode, field, params?.filter, service, t],
+    [dataLoadingMode, field, params?.filter, service, t, getDataBlockRequest],
   );
 
   const onReset = useCallback(() => {
+    const _service = service || getDataBlockRequest();
+
     const filter = params.filter;
-    const filters = service.params?.[1]?.filters || {};
+    const filters = _service?.params?.[1]?.filters || {};
     delete filters[`filterAction`];
 
     const newParams = [
       {
-        ...service.params?.[0],
+        ..._service?.params?.[0],
         filter: mergeFilter([...Object.values(filters), filter]),
         page: 1,
       },
@@ -246,12 +250,12 @@ export const useFilterFieldProps = ({ options, service, params }) => {
     field.title = t('Filter');
 
     if (dataLoadingMode === 'manual') {
-      service.params = newParams;
-      return service.mutate(undefined);
+      _service.params = newParams;
+      return _service?.mutate(undefined);
     }
 
-    service.run(...newParams);
-  }, [dataLoadingMode, field, params?.filter, service, t]);
+    _service?.run(...newParams);
+  }, [dataLoadingMode, field, params?.filter, service, t, getDataBlockRequest]);
 
   return {
     options,

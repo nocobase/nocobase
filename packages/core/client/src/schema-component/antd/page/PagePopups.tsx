@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { Location, useLocation } from 'react-router-dom';
 import { useAPIClient } from '../../../api-client';
 import { DataBlockProvider } from '../../../data-source/data-block/DataBlockProvider';
-import { BlockRequestContext } from '../../../data-source/data-block/DataBlockRequestProvider';
+import { BlockRequestContextProvider } from '../../../data-source/data-block/DataBlockRequestProvider';
 import { SchemaComponent } from '../../core';
 import { TabsContextProvider } from '../tabs/context';
 import { usePopupSettings } from './PopupSettingsProvider';
@@ -178,11 +178,11 @@ const PagePopupsItemProvider: FC<{
           action="get"
         >
           {/* Pass the service of the block where the button is located down, to refresh the block's data when the popup is closed */}
-          <BlockRequestContext.Provider value={storedContext.service}>
+          <BlockRequestContextProvider recordRequest={storedContext.service}>
             <PopupTabsPropsProvider>
               <div style={{ display: 'none' }}>{children}</div>
             </PopupTabsPropsProvider>
-          </BlockRequestContext.Provider>
+          </BlockRequestContextProvider>
         </DataBlockProvider>
       </PopupVisibleProvider>
     </PopupParamsProvider>

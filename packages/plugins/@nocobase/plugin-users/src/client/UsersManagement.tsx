@@ -7,26 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { css } from '@emotion/css';
+import { createForm } from '@formily/core';
+import { useForm } from '@formily/react';
 import {
   SchemaComponent,
   SchemaComponentContext,
+  useAPIClient,
   useActionContext,
   useCollection,
   useCollectionRecordData,
-  useDataBlockRequest,
+  useDataBlockRequestGetter,
   useDataBlockResource,
-  useSchemaComponentContext,
   useRequest,
-  useAPIClient,
+  useSchemaComponentContext,
 } from '@nocobase/client';
-import React, { createContext, useEffect, useMemo, useContext } from 'react';
 import { App, Tabs, message } from 'antd';
-import { useForm } from '@formily/react';
-import { createForm } from '@formily/core';
-import { css } from '@emotion/css';
-import { usersSchema, usersSettingsSchema } from './schemas/users';
+import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useUsersTranslation } from './locale';
 import { PasswordField } from './PasswordField';
+import { usersSchema, usersSettingsSchema } from './schemas/users';
 
 const useCancelActionProps = () => {
   const { setVisible } = useActionContext();
@@ -43,7 +43,7 @@ const useSubmitActionProps = () => {
   const { message } = App.useApp();
   const form = useForm();
   const resource = useDataBlockResource();
-  const { runAsync } = useDataBlockRequest();
+  const { getDataBlockRequest } = useDataBlockRequestGetter();
   const { t } = useUsersTranslation();
   const collection = useCollection();
 
@@ -60,7 +60,7 @@ const useSubmitActionProps = () => {
       } else {
         await resource.create({ values });
       }
-      await runAsync();
+      await getDataBlockRequest()?.runAsync();
       message.success(t('Saved successfully'));
       setVisible(false);
     },
