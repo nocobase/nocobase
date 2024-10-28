@@ -9,7 +9,7 @@
   "main": "./dist/server/index.js",
   "devDependencies": {
     "@formily/json-schema": "2.x",
-    "supertest": "^6.1.6"
+    "supertest": "^7.0.0"
   },
   "peerDependencies": {
     "@nocobase/client": "1.x",
