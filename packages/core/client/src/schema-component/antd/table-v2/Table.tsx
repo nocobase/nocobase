@@ -360,7 +360,7 @@ const usePaginationProps = (pagination1, pagination2) => {
   if (!pagination2 && pagination1 === false) {
     return false;
   }
-  return field.value?.length > 0 ? result : false;
+  return field.value?.length > 0 || result.total ? result : false;
 };
 
 const headerClass = css`
