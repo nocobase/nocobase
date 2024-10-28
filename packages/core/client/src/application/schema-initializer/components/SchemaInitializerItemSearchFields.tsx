@@ -165,11 +165,21 @@ export function useMenuSearch({
     return res;
   }, [hideSearch, limitedSearchedItems, searchValue, showType]);
 
-  const res = useMemo(() => {
-    return resultItems;
-  }, [children, resultItems]);
-  if (!children) {
-    return;
-  }
-  return res;
+  // 处理嵌套的子菜单
+  const result = useMemo(() => {
+    return resultItems.map((item: any) => {
+      if (['subMenu', 'itemGroup'].includes(item.type)) {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const child = useMenuSearch({
+          children: item.children,
+          showType,
+          hideSearch,
+        });
+        return { ...item, children: child };
+      }
+      return item;
+    });
+  }, [resultItems, showType, hideSearch]);
+
+  return children ? result : undefined;
 }
