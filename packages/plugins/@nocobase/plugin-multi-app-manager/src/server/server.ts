@@ -146,7 +146,7 @@ export class PluginMultiAppManagerServer extends Plugin {
   async handleSyncMessage(message) {
     const { type } = message;
 
-    if (type === 'startApp') {
+    if (type === 'subAppStarted') {
       const { appName } = message;
       const model = await this.app.db.getRepository('applications').findOne({
         filter: {
@@ -155,6 +155,10 @@ export class PluginMultiAppManagerServer extends Plugin {
       });
 
       if (!model) {
+        return;
+      }
+
+      if (AppSupervisor.getInstance().hasApp(appName)) {
         return;
       }
 
@@ -208,21 +212,23 @@ export class PluginMultiAppManagerServer extends Plugin {
           appOptionsFactory: this.appOptionsFactory,
         });
 
+        subApp.on('afterStart', async () => {
+          this.sendSyncMessage(
+            {
+              type: 'subAppStarted',
+              appName: name,
+            },
+            {
+              transaction,
+            },
+          );
+        });
+
         // create database
         await this.appDbCreator(subApp, {
           transaction,
           context: options.context,
         });
-
-        this.sendSyncMessage(
-          {
-            type: 'startApp',
-            appName: name,
-          },
-          {
-            transaction,
-          },
-        );
 
         const startPromise = subApp.runCommand('start', '--quickstart');
 
@@ -287,6 +293,10 @@ export class PluginMultiAppManagerServer extends Plugin {
 
       const subApp = applicationRecord.registerToSupervisor(mainApp, {
         appOptionsFactory: self.appOptionsFactory,
+      });
+
+      subApp.on('afterStart', async () => {
+        await mainApp.emitAsync('subAppStarted', subApp);
       });
 
       // must skip load on upgrade
