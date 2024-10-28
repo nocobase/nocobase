@@ -11,6 +11,7 @@ import {
   expect,
   expectSettingsMenu,
   oneFilterFormBlockWithAllAssociationFields,
+  oneFilterFormBlockWithAllAssociationFieldsV1333Beta,
   oneTableBlockWithAddNewAndViewAndEditAndAssociationFields,
   test,
 } from '@nocobase/test/e2e';
@@ -35,6 +36,28 @@ test.describe('form item & filter form', () => {
         'Field component',
         'Title field',
         'Delete',
+      ],
+    });
+  });
+
+  test('v1.3: supported options', async ({ page, mockPage }) => {
+    const nocoPage = await mockPage(oneFilterFormBlockWithAllAssociationFieldsV1333Beta).waitForInit();
+    await nocoPage.goto();
+
+    await expectSettingsMenu({
+      page,
+      showMenu: async () => {
+        await page.getByLabel('block-item-CollectionField-general-filter-form-general.manyToOne-manyToOne').hover();
+        await page.getByRole('button', { name: 'designer-schema-settings-CollectionField' }).hover();
+      },
+      supportedOptions: [
+        'Edit field title',
+        'Edit description',
+        'Set the data scope',
+        'Field component',
+        'Title field',
+        'Delete',
+        'Allow multiple selection',
       ],
     });
   });

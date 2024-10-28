@@ -68,10 +68,14 @@ import { inputNumberComponentFieldSettings } from '../modules/fields/component/I
 import { subformComponentFieldSettings } from '../modules/fields/component/Nester/subformComponentFieldSettings';
 import { recordPickerComponentFieldSettings } from '../modules/fields/component/Picker/recordPickerComponentFieldSettings';
 import { subformPopoverComponentFieldSettings } from '../modules/fields/component/PopoverNester/subformPopoverComponentFieldSettings';
-import { selectComponentFieldSettings } from '../modules/fields/component/Select/selectComponentFieldSettings';
+import {
+  filterSelectComponentFieldSettings,
+  selectComponentFieldSettings,
+} from '../modules/fields/component/Select/selectComponentFieldSettings';
 import { subTablePopoverComponentFieldSettings } from '../modules/fields/component/SubTable/subTablePopoverComponentFieldSettings';
 import { tagComponentFieldSettings } from '../modules/fields/component/Tag/tagComponentFieldSettings';
 import { unixTimestampComponentFieldSettings } from '../modules/fields/component/UnixTimestamp/unixTimestampComponentFieldSettings';
+import { dividerSettings } from '../modules/blocks/other-blocks/divider/dividerSettings';
 
 export class SchemaSettingsPlugin extends Plugin {
   async load() {
@@ -118,6 +122,7 @@ export class SchemaSettingsPlugin extends Plugin {
 
     // field component settings
     this.schemaSettingsManager.add(selectComponentFieldSettings);
+    this.schemaSettingsManager.add(filterSelectComponentFieldSettings);
     this.schemaSettingsManager.add(recordPickerComponentFieldSettings);
     this.schemaSettingsManager.add(subformComponentFieldSettings);
     this.schemaSettingsManager.add(subformPopoverComponentFieldSettings);
@@ -140,5 +145,6 @@ export class SchemaSettingsPlugin extends Plugin {
     // this.schemaSettingsManager.add(inputURLComponentFieldSettings);
     this.schemaSettingsManager.add(uploadAttachmentComponentFieldSettings);
     this.schemaSettingsManager.add(previewComponentFieldSettings);
+    this.schemaSettingsManager.add(dividerSettings);
   }
 }

@@ -58,7 +58,7 @@ test.describe('Any succeeded', () => {
     const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
     //配置分支节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'parallel', exact: true }).click();
@@ -194,7 +194,7 @@ test.describe('Any succeeded', () => {
     const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
     //配置分支节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'parallel', exact: true }).click();
@@ -331,7 +331,7 @@ test.describe('Any succeeded', () => {
     const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
     //配置分支节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'parallel', exact: true }).click();

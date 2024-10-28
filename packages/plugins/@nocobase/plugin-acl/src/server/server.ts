@@ -533,7 +533,6 @@ export class PluginACLServer extends Plugin {
       }
     });
 
-    // throw error when user has no fixed params permissions
     this.app.acl.use(
       async (ctx: any, next) => {
         const action = ctx.permission?.can?.action;
@@ -542,6 +541,15 @@ export class PluginACLServer extends Plugin {
           const repository = actionUtils.getRepositoryFromParams(ctx);
 
           if (!repository) {
+            await next();
+            return;
+          }
+
+          const hasFilterByTk = (params) => {
+            return JSON.stringify(params).includes('filterByTk');
+          }
+
+          if (!hasFilterByTk(ctx.permission.mergedParams) || !hasFilterByTk(ctx.permission.rawParams)) {
             await next();
             return;
           }
@@ -565,6 +573,7 @@ export class PluginACLServer extends Plugin {
         group: 'after',
       },
     );
+
 
     const withACLMeta = createWithACLMetaMiddleware();
 

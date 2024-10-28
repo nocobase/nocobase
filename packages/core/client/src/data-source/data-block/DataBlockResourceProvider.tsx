@@ -8,8 +8,8 @@
  */
 
 import { IResource } from '@nocobase/sdk';
-import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 import { isArray } from 'lodash';
+import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 import { useAPIClient } from '../../api-client';
 import { useCollectionManager } from '../collection';
 import { CollectionRecord } from '../collection-record';

@@ -10,8 +10,11 @@ on:
 jobs:
   publish-npm:
     runs-on: ubuntu-latest
-    container: node:18
     steps:
+      - name: Set Node.js 18
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
       - uses: actions/create-github-app-token@v1
         id: app-token
         with:
@@ -27,7 +30,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          repository: nocobase/nocobase
           ref: next
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: true
           fetch-depth: 0
       - name: Send curl request and parse response
         env:

@@ -52,7 +52,7 @@ const useStyles = genStyleHook('nb-action', (token) => {
         marginInlineEnd: '0px !important',
       },
       '.nb-action-title': {
-        marginInlineStart: '8px',
+        marginInlineStart: `${token.controlPaddingHorizontalSM}px`,
       },
     },
   };

@@ -17,10 +17,16 @@ import { Logger } from '@nocobase/logger';
 
 export type DataSourceOptions = any;
 
+export type LoadingProgress = {
+  total: number;
+  loaded: number;
+};
+
 export abstract class DataSource extends EventEmitter {
   public collectionManager: ICollectionManager;
   public resourceManager: ResourceManager;
   public acl: ACL;
+
   logger: Logger;
 
   constructor(protected options: DataSourceOptions) {
@@ -28,8 +34,10 @@ export abstract class DataSource extends EventEmitter {
     this.init(options);
   }
 
-  setLogger(logger: Logger) {
-    this.logger = logger;
+  _sqlLogger: Logger;
+
+  get sqlLogger() {
+    return this._sqlLogger || this.logger;
   }
 
   get name() {
@@ -38,6 +46,14 @@ export abstract class DataSource extends EventEmitter {
 
   static testConnection(options?: any): Promise<boolean> {
     return Promise.resolve(true);
+  }
+
+  setLogger(logger: Logger) {
+    this.logger = logger;
+  }
+
+  setSqlLogger(logger: Logger) {
+    this._sqlLogger = logger;
   }
 
   init(options: DataSourceOptions = {}) {
@@ -89,6 +105,10 @@ export abstract class DataSource extends EventEmitter {
 
   publicOptions() {
     return null;
+  }
+
+  emitLoadingProgress(progress: LoadingProgress) {
+    this.emit('loadingProgress', progress);
   }
 
   async load(options: any = {}) {}

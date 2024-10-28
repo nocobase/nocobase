@@ -8,6 +8,7 @@
  */
 
 import { SchemaSettings, SchemaSettingsSelectItem, useDesignable } from '@nocobase/client';
+import { CustomSchemaSettingsBlockTitleItem } from './SchemaSettingsBlockTitleItem';
 import React from 'react';
 import { useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
@@ -50,6 +51,10 @@ const ActionPanelLayout = () => {
 export const workbenchBlockSettings = new SchemaSettings({
   name: 'blockSettings:workbench',
   items: [
+    {
+      name: 'title',
+      Component: CustomSchemaSettingsBlockTitleItem,
+    },
     {
       name: 'layout',
       Component: ActionPanelLayout,

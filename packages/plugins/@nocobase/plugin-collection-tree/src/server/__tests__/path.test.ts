@@ -570,4 +570,46 @@ describe('tree path test', () => {
   //   await treeCollection.removeFromDb();
   //   expect(await db.getCollection(name).existsInDb()).toBeFalsy();
   // })
+
+  it('should update paths when remove children', async () => {
+    const data = await treeCollection.repository.create({
+      values: {
+        name: 'a1',
+        children: [
+          {
+            name: 'b1',
+          },
+          {
+            name: 'b2',
+          },
+        ],
+      },
+    });
+    const b1 = data.get('children')[0];
+    const b2 = data.get('children')[1];
+    const tks = [b1.get(treeCollection.filterTargetKey), b2.get(treeCollection.filterTargetKey)];
+    const paths = await db.getRepository(name).find({
+      filter: {
+        [nodePkColumnName]: {
+          $in: tks,
+        },
+      },
+    });
+    expect(paths.length).toBe(2);
+    expect(paths[0].get('path')).toBe('/1/2');
+    expect(paths[1].get('path')).toBe('/1/3');
+    // @ts-ignore
+    await db.getRepository(`${treeCollection.name}.children`, data.get(treeCollection.filterTargetKey)).remove(tks);
+    const paths2 = await db.getRepository(name).find({
+      filter: {
+        [nodePkColumnName]: {
+          $in: tks,
+        },
+      },
+    });
+    console.log(paths2);
+    expect(paths2.length).toBe(2);
+    expect(paths2[0].get('path')).toBe('/2');
+    expect(paths2[1].get('path')).toBe('/3');
+  });
 });

@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../hooks';
 import { XButton } from './XButton';
 import { useStyles } from './style';
+import { Json } from '../input';
 
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
 
@@ -122,6 +123,14 @@ const ConstantTypes = {
     component: NullComponent,
     default() {
       return null;
+    },
+  },
+  object: {
+    label: '{{t("JSON")}}',
+    value: 'object',
+    component: Json,
+    default() {
+      return {};
     },
   },
 };
@@ -480,6 +489,7 @@ export function Input(props: VariableInputProps) {
               margin-left: -1px;
             `)}
               type={variable ? 'primary' : 'default'}
+              disabled={disabled}
             />
           )}
         </Cascader>

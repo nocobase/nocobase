@@ -1284,7 +1284,7 @@ export const useOptionalFieldList = () => {
 
 const isOptionalField = (field) => {
   const optionalInterfaces = ['select', 'multipleSelect', 'checkbox', 'checkboxGroup', 'chinaRegion'];
-  return optionalInterfaces.includes(field.interface) && field.uiSchema.enum;
+  return optionalInterfaces.includes(field?.interface) && field?.uiSchema?.enum;
 };
 
 export const useAssociationFilterBlockProps = () => {
@@ -1329,7 +1329,7 @@ export const useAssociationFilterBlockProps = () => {
 
   useEffect(() => {
     // 由于选项字段不需要触发当前请求，所以请求单独在关系字段的时候触发
-    if (!isOptionalField(collectionField) && parseVariableLoading === false) {
+    if (collectionField && !isOptionalField(collectionField) && parseVariableLoading === false) {
       run();
     }
 

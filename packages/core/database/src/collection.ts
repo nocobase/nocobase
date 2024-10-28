@@ -10,6 +10,7 @@
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import { default as _, default as lodash } from 'lodash';
+import safeJsonStringify from 'safe-json-stringify';
 import {
   ModelOptions,
   ModelStatic,
@@ -25,7 +26,6 @@ import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
-import safeJsonStringify from 'safe-json-stringify';
 
 export type RepositoryType = typeof Repository;
 
@@ -126,6 +126,7 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
    */
   origin?: string;
   asStrategyResource?: boolean;
+
   [key: string]: any;
 }
 
@@ -155,6 +156,7 @@ export class Collection<
     this.modelInit();
 
     this.db.modelCollection.set(this.model, this);
+    this.db.modelNameCollectionMap.set(this.model.name, this);
 
     // set tableName to collection map
     // the form of key is `${schema}.${tableName}` if schema exists
@@ -259,8 +261,58 @@ export class Collection<
       M = model;
     }
 
+    const collection = this;
+
     // @ts-ignore
     this.model = class extends M {};
+
+    Object.defineProperty(this.model, 'primaryKeyAttribute', {
+      get: function () {
+        const singleFilterTargetKey: string = (() => {
+          if (!collection.options.filterTargetKey) {
+            return null;
+          }
+
+          if (Array.isArray(collection.options.filterTargetKey) && collection.options.filterTargetKey.length === 1) {
+            return collection.options.filterTargetKey[0];
+          }
+
+          return collection.options.filterTargetKey as string;
+        })();
+
+        if (!this._primaryKeyAttribute && singleFilterTargetKey && collection.getField(singleFilterTargetKey)) {
+          return singleFilterTargetKey;
+        }
+
+        return this._primaryKeyAttribute;
+      }.bind(this.model),
+
+      set(value) {
+        this._primaryKeyAttribute = value;
+      },
+    });
+
+    Object.defineProperty(this.model, 'primaryKeyAttributes', {
+      get: function () {
+        if (Array.isArray(this._primaryKeyAttributes) && this._primaryKeyAttributes.length) {
+          return this._primaryKeyAttributes;
+        }
+
+        if (collection.options.filterTargetKey) {
+          const fields = lodash.castArray(collection.options.filterTargetKey);
+          if (fields.every((field) => collection.getField(field))) {
+            return fields;
+          }
+        }
+
+        return this._primaryKeyAttributes;
+      }.bind(this.model),
+
+      set(value) {
+        this._primaryKeyAttributes = value;
+      },
+    });
+
     this.model.init(null, this.sequelizeModelOptions());
 
     this.model.options.modelName = this.options.name;
@@ -812,6 +864,16 @@ export class Collection<
     return `${schema}.${tableName}`;
   }
 
+  public getRealTableName(quoted = false) {
+    const realname = this.tableNameAsString();
+    return !quoted ? realname : this.db.sequelize.getQueryInterface().quoteIdentifiers(realname);
+  }
+
+  public getRealFieldName(name: string, quoted = false) {
+    const realname = this.model.getAttributes()[name].field;
+    return !quoted ? name : this.db.sequelize.getQueryInterface().quoteIdentifier(realname);
+  }
+
   public getTableNameWithSchemaAsString() {
     const tableName = this.model.tableName;
 
@@ -856,12 +918,15 @@ export class Collection<
 
   protected sequelizeModelOptions() {
     const { name } = this.options;
-    return {
+
+    const attr = {
       ..._.omit(this.options, ['name', 'fields', 'model', 'targetKey']),
       modelName: name,
       sequelize: this.context.database.sequelize,
       tableName: this.tableName(),
     };
+
+    return attr;
   }
 
   protected bindFieldEventListener() {

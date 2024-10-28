@@ -141,6 +141,10 @@ export class CollectionManager {
     return this.getCollection(collectionName)?.getFields(predicate) || [];
   }
 
+  getCollectionAllFields(collectionName: string, predicate?: GetCollectionFieldPredicate) {
+    return this.getCollection(collectionName)?.getAllFields(predicate) || [];
+  }
+
   /**
    * @example
    * getFilterByTK('users', { id: 1 }); // 1

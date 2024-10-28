@@ -22,6 +22,7 @@ import { DataSourcesRolesResourcesModel } from './models/connections-roles-resou
 import { DataSourcesRolesResourcesActionModel } from './models/connections-roles-resources-action';
 import { DataSourceModel } from './models/data-source';
 import { DataSourcesRolesModel } from './models/data-sources-roles-model';
+import { LoadingProgress } from '@nocobase/data-source-manager';
 
 type DataSourceState = 'loading' | 'loaded' | 'loading-failed' | 'reloading' | 'reloading-failed';
 
@@ -34,6 +35,10 @@ export class PluginDataSourceManagerServer extends Plugin {
 
   public dataSourceStatus: {
     [dataSourceKey: string]: DataSourceState;
+  } = {};
+
+  public dataSourceLoadingProgress: {
+    [dataSourceKey: string]: LoadingProgress;
   } = {};
 
   async beforeLoad() {
@@ -86,6 +91,10 @@ export class PluginDataSourceManagerServer extends Plugin {
         const type = model.get('type');
 
         const klass = this.app.dataSourceManager.factory.getClass(type);
+
+        if (!klass) {
+          throw new Error(`Data source type "${type}" is not registered`);
+        }
 
         try {
           await klass.testConnection(dataSourceOptions);

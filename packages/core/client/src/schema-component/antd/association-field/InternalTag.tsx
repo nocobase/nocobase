@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer, useFieldSchema } from '@formily/react';
+import { useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import React, { Fragment, useRef } from 'react';
 import { useDesignable } from '../../';
@@ -100,9 +100,6 @@ const ButtonTabList: React.FC<ButtonListProps> = (props) => {
   return <>{renderRecords()}</>;
 };
 
-export const ReadPrettyInternalTag: React.FC = observer(
-  (props: any) => {
-    return <ReadPrettyInternalViewer {...props} ButtonList={ButtonTabList} />;
-  },
-  { displayName: 'ReadPrettyInternalTag' },
-);
+export const ReadPrettyInternalTag: React.FC = (props: any) => {
+  return <ReadPrettyInternalViewer {...props} ButtonList={ButtonTabList} />;
+};

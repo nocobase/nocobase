@@ -42,7 +42,7 @@ test.describe('Filter', () => {
 
     // 2、筛选工作流
     await page.goto('/admin/settings/workflow');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.getByLabel('action-Filter.Action-Filter-filter-workflows').click();
     await page.getByRole('textbox').fill(workFlowName);
     await page.getByRole('button', { name: 'Submit' }).click();
@@ -59,7 +59,7 @@ test.describe('Add new', () => {
   test('add new Action event', async ({ page }) => {
     // 添加工作流
     await page.goto('/admin/settings/workflow');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.getByLabel('action-Action-Add new-workflows').click();
     const createWorkFlow = new CreateWorkFlow(page);
     const workFlowName = faker.string.alphanumeric(5);
@@ -101,7 +101,7 @@ test.describe('Delete', () => {
 
     // 删除工作流
     await page.goto('/admin/settings/workflow');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.getByLabel('action-Filter.Action-Filter-filter-workflows').click();
     await page.getByRole('textbox').fill(workFlowName);
     await page.getByRole('button', { name: 'Submit' }).click();
@@ -133,13 +133,13 @@ test.describe('Edit', () => {
 
     // 编辑工作流
     await page.goto('/admin/settings/workflow');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.getByLabel(`action-Action.Link-Edit-workflows-${workFlowName}`).click();
     const editWorkFlow = new EditWorkFlow(page, workFlowName);
     workFlowName = faker.string.alphanumeric(5) + triggerNodeAppendText;
     await editWorkFlow.name.fill(workFlowName);
     await page.getByLabel('action-Action-Submit-workflows').click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     // 3、预期结果：编辑成功，列表中出现编辑后的工作流
     await expect(page.getByText(workFlowName)).toBeAttached();
 
@@ -166,10 +166,10 @@ test.describe('Duplicate', () => {
 
     // 2、复制工作流
     await page.goto('/admin/settings/workflow');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.getByLabel(`action-Action.Link-Duplicate-workflows-${workFlowName}`).click();
     await page.getByLabel(`action-Action-Submit-workflows-${workFlowName}`).click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     // 3、预期结果：列表中出现筛选的工作流
     await page.getByLabel('action-Filter.Action-Filter-filter-workflows').click();
     await page.getByRole('textbox').fill(workFlowName);

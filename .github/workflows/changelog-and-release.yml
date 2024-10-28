@@ -22,12 +22,22 @@ jobs:
   write-changelog-and-release:
     runs-on: ubuntu-latest
     steps:
+      - name: Get info
+        id: get-info
+        run: |
+          if [[ "${{ inputs.version }}" == "alpha" ]]; then
+            echo "branch=$(echo 'next')" >> $GITHUB_OUTPUT
+            echo "proRepos=$(echo '${{ vars.NEXT_PRO_PLUGIN_REPOS }}')" >> $GITHUB_OUTPUT
+          else
+            echo "branch=$(echo 'main')" >> $GITHUB_OUTPUT
+            echo "proRepos=$(echo '${{ vars.PRO_PLUGIN_REPOS }}')" >> $GITHUB_OUTPUT
+          fi
       - uses: actions/create-github-app-token@v1
         id: app-token
         with:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
-          repositories: nocobase,pro-plugins,${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ',') }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(steps.get-info.outputs.proRepos), ',') }}
           skip-token-revoke: true
       - name: Get GitHub App User ID
         id: get-user-id
@@ -38,7 +48,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: nocobase/nocobase
-          ref: main
+          ref: ${{ steps.get-info.outputs.branch }}
           token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
           fetch-depth: 0
@@ -47,15 +57,16 @@ jobs:
         with:
           repository: nocobase/pro-plugins
           path: packages/pro-plugins
+          ref: ${{ steps.get-info.outputs.branch }}
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
       - name: Clone pro repos
         shell: bash
         run: |
-          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
+          for repo in ${{ join(fromJSON(steps.get-info.outputs.proRepos), ' ') }}
           do
-          git clone -b main https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
+          git clone -b ${{ steps.get-info.outputs.branch }} https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
           done
       - name: Set user
         run: |
@@ -72,7 +83,7 @@ jobs:
         run: |
           node scripts/release/changelogAndRelease.js --ver ${{ inputs.version }} --cmsURL ${{ secrets.CMS_URL }} --cmsToken ${{ secrets.CMS_TOKEN }}
         env:
-          PRO_PLUGIN_REPOS: ${{ vars.PRO_PLUGIN_REPOS }}
+          PRO_PLUGIN_REPOS: ${{ steps.get-info.outputs.proRepos }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
       - name: Commit and push
         run: |

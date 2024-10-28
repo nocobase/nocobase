@@ -5,6 +5,127 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.42-beta](https://github.com/nocobase/nocobase/compare/v1.3.41-beta...v1.3.42-beta) - 2024-10-28
+
+### 🐛 Bug Fixes
+
+- **[Collection: Tree]** Fix the issue where node paths are not updated when disassociate children ([#5522](https://github.com/nocobase/nocobase/pull/5522)) by @2013xile
+
+## [v1.3.41-beta](https://github.com/nocobase/nocobase/compare/v1.3.40-beta...v1.3.41-beta) - 2024-10-27
+
+### 🚀 Improvements
+
+- **[Access control]** Optimize performance for large tables in acl ([#5496](https://github.com/nocobase/nocobase/pull/5496)) by @chareice
+
+## [v1.3.40-beta](https://github.com/nocobase/nocobase/compare/v1.3.39-beta...v1.3.40-beta) - 2024-10-25
+
+### 🎉 New Features
+
+- **[Auth: OIDC]** Add an option for allowing skip ssl verification by @2013xile
+
+### 🚀 Improvements
+
+- **[client]** show disabled unchecked checkbox for unselected fields ([#5503](https://github.com/nocobase/nocobase/pull/5503)) by @katherinehhh
+
+### 🐛 Bug Fixes
+
+- **[database]** Fix the issue where string operators "contains" and "does not contain do not properly handle `null` values ([#5509](https://github.com/nocobase/nocobase/pull/5509)) by @2013xile
+
+- **[client]** Fix linkage rule to correctly evaluate URL parameter variables ([#5504](https://github.com/nocobase/nocobase/pull/5504)) by @katherinehhh
+
+- **[Block: Map]** Fixed the issue where some maps are displayed incorrectly when multiple maps exist due to multiple calls to the `load` method of AMap ([#5490](https://github.com/nocobase/nocobase/pull/5490)) by @Cyx649312038
+
+## [v1.3.39-beta](https://github.com/nocobase/nocobase/compare/v1.3.38-beta...v1.3.39-beta) - 2024-10-24
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix the issue where filter blocks cannot be added in the popup ([#5502](https://github.com/nocobase/nocobase/pull/5502)) by @zhangzhonghe
+
+## [v1.3.38-beta](https://github.com/nocobase/nocobase/compare/v1.3.37-beta...v1.3.38-beta) - 2024-10-24
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - pagination issue in list block with simple pagination collection ([#5500](https://github.com/nocobase/nocobase/pull/5500)) by @katherinehhh
+
+  - In non-config mode, display only the current collection  in the edit form. ([#5499](https://github.com/nocobase/nocobase/pull/5499)) by @katherinehhh
+
+- **[Workflow: HTTP request node]** fix special white space appears when paste content into variable textarea caused issue ([#5497](https://github.com/nocobase/nocobase/pull/5497)) by @mytharcher
+
+- **[Departments]** Fix the issue of incorrect external data source permissions check under the department role by @2013xile
+
+## [v1.3.37-beta](https://github.com/nocobase/nocobase/compare/v1.3.36-beta...v1.3.37-beta) - 2024-10-23
+
+### 🚀 Improvements
+
+- **[client]** Adjust hint in configuration panel of binding workflow to a button ([#5494](https://github.com/nocobase/nocobase/pull/5494)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[File manager]** fix upload and destroy file record within an association block ([#5493](https://github.com/nocobase/nocobase/pull/5493)) by @mytharcher
+
+## [v1.3.36-beta](https://github.com/nocobase/nocobase/compare/v1.3.35-beta...v1.3.36-beta) - 2024-10-22
+
+### 🐛 Bug Fixes
+
+- **[Collection: Tree]** Fix the issue where the path collection for the inheritance tree collection is not automatically created ([#5486](https://github.com/nocobase/nocobase/pull/5486)) by @2013xile
+
+- **[Calendar]** show pagination bar with data in the table ([#5480](https://github.com/nocobase/nocobase/pull/5480)) by @katherinehhh
+
+- **[File manager]** fix file can not be uploaded due to rule hook. ([#5460](https://github.com/nocobase/nocobase/pull/5460)) by @mytharcher
+
+- **[Collection field: Formula]** Fix incorrect formula calculation in nested multi-level sub-table ([#5469](https://github.com/nocobase/nocobase/pull/5469)) by @gu-zhichao
+
+## [v1.3.35-beta](https://github.com/nocobase/nocobase/compare/v1.3.34-beta...v1.3.35-beta) - 2024-10-21
+
+### 🚀 Improvements
+
+- **[Workflow: mailer node]** add placeholder to mailer node ([#5470](https://github.com/nocobase/nocobase/pull/5470)) by @mytharcher
+
+## [v1.3.34-beta](https://github.com/nocobase/nocobase/compare/v1.3.33-beta...v1.3.34-beta) - 2024-10-21
+
+### 🎉 New Features
+
+- **[test]** Association fields in filter forms support configuring whether multiple selection is allowed ([#5451](https://github.com/nocobase/nocobase/pull/5451)) by @zhangzhonghe
+
+- **[client]** Add a variable named "Parent object" ([#5449](https://github.com/nocobase/nocobase/pull/5449)) by @zhangzhonghe
+Reference: [Parent object](https://docs.nocobase.com/handbook/ui/variables#parent-object)
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fix URL search params variables not being parsed ([#5454](https://github.com/nocobase/nocobase/pull/5454)) by @zhangzhonghe
+
+  - Fix data clearing bug when selecting association data with data scope in nested sub-tables ([#5441](https://github.com/nocobase/nocobase/pull/5441)) by @katherinehhh
+
+  - fix selected background color of table row ([#5445](https://github.com/nocobase/nocobase/pull/5445)) by @mytharcher
+
+- **[Block: Map]** remove zoom level configuration for map fields in table column ([#5457](https://github.com/nocobase/nocobase/pull/5457)) by @katherinehhh
+
+- **[File manager]** fix calling storage rule hook on read-pretty fields ([#5447](https://github.com/nocobase/nocobase/pull/5447)) by @mytharcher
+
+- **[Data source: Main]** fix e2e case failed due to component changed ([#5437](https://github.com/nocobase/nocobase/pull/5437)) by @mytharcher
+
+## [v1.3.33-beta](https://github.com/nocobase/nocobase/compare/v1.3.32-beta...v1.3.33-beta) - 2024-10-16
+
+### 🚀 Improvements
+
+- **[Workflow]** add association field related hint to the batch mode of update node ([#5426](https://github.com/nocobase/nocobase/pull/5426)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - fix the issue of Edit profile drawer being covered by subpage ([#5409](https://github.com/nocobase/nocobase/pull/5409)) by @zhangzhonghe
+
+  - Workflow node variables do not display inherited collection fields ([#5415](https://github.com/nocobase/nocobase/pull/5415)) by @chenos
+
+  - pagination not resetting after clearing filter data in table filtering block ([#5411](https://github.com/nocobase/nocobase/pull/5411)) by @katherinehhh
+
+- **[File manager]** remove the 20 items limit of loading storages in file template collection configuration ([#5430](https://github.com/nocobase/nocobase/pull/5430)) by @mytharcher
+
+- **[Action: Duplicate record]** Fix the issue where the bulk edit popup does not display content ([#5412](https://github.com/nocobase/nocobase/pull/5412)) by @zhangzhonghe
+
+- **[Data visualization]** Fix the issue of default values not displaying in the chart filter block ([#5405](https://github.com/nocobase/nocobase/pull/5405)) by @zhangzhonghe
+
 ## [v1.3.32-beta](https://github.com/nocobase/nocobase/compare/v1.3.31-beta...v1.3.32-beta) - 2024-10-13
 
 ### 🐛 Bug Fixes
