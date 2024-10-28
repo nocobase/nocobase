@@ -61,7 +61,7 @@ jobs:
         shell: bash
         run: |
           cd ./packages/pro-plugins/@nocobase/plugin-workflow-approval
-          gh pr checkout 6
+          gh pr checkout 8
           cd ../../../../
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -88,7 +88,7 @@ jobs:
           echo "::set-output name=tags::${{ secrets.ALI_DOCKER_REGISTRY }}/nocobase/nocobase:pr-8-workflow-approval"
       - name: IMAGE_TAG
         env:
-          IMAGE_TAG: pr-1
+          IMAGE_TAG: pr-8
         run: |
           echo $IMAGE_TAG
       - name: Set variables
