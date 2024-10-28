@@ -85,7 +85,7 @@ jobs:
       - name: Set tags
         id: set-tags
         run: |
-          echo "::set-output name=tags::${{ secrets.ALI_DOCKER_REGISTRY }}/nocobase/nocobase:pr-6-workflow-approval"
+          echo "::set-output name=tags::${{ secrets.ALI_DOCKER_REGISTRY }}/nocobase/nocobase:pr-8-workflow-approval"
       - name: IMAGE_TAG
         env:
           IMAGE_TAG: pr-1
@@ -118,7 +118,7 @@ jobs:
           tags: ${{ steps.set-tags.outputs.tags }}
       - name: Deploy NocoBase
         env:
-          IMAGE_TAG: pr-6
+          IMAGE_TAG: pr-8
         run: |
           echo $IMAGE_TAG
           export APP_NAME=$(echo $IMAGE_TAG | cut -d ":" -f 2)-workflow-approval
