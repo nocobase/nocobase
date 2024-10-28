@@ -84,7 +84,7 @@ export const useColumnsDeepMemoized = (columns: any[]) => {
   return oldObj.value;
 };
 
-const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }) => {
+const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginationProps) => {
   const { token } = useToken();
   const field = useArrayField(props);
   const schema = useFieldSchema();
@@ -98,7 +98,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }) => {
     }
     return buf;
   }, []);
-
+  const { current, pageSize } = paginationProps;
   const hasChangedColumns = useColumnsDeepMemoized(columnsSchema);
 
   const schemaToolbarBigger = useMemo(() => {
@@ -190,11 +190,12 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }) => {
                 style={{ cursor: 'pointer', color: 'gray' }}
                 onClick={() => {
                   return action(() => {
+                    const fieldIndex = (current - 1) * pageSize + index;
                     spliceArrayState(field, {
-                      startIndex: index,
+                      startIndex: fieldIndex,
                       deleteCount: 1,
                     });
-                    field.value.splice(index, 1);
+                    field.value.splice(fieldIndex, 1);
                     return field.onInput(field.value);
                   });
                 }}
@@ -615,7 +616,6 @@ export const Table: any = withDynamicSchemaProps(
       ...others
     } = { ...others1, ...others2 } as any;
     const field = useArrayField(others);
-    const columns = useTableColumns(others);
     const schema = useFieldSchema();
     const collection = useCollection();
     const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
@@ -623,12 +623,12 @@ export const Table: any = withDynamicSchemaProps(
     const { expandFlag, allIncludesChildren } = ctx;
     const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
     const paginationProps = usePaginationProps(pagination1, pagination2);
+    const columns = useTableColumns(others, paginationProps);
     const [expandedKeys, setExpandesKeys] = useState(() => (expandFlag ? allIncludesChildren : []));
     const [selectedRowKeys, setSelectedRowKeys] = useState<any[]>(field?.data?.selectedRowKeys || []);
     const [selectedRow, setSelectedRow] = useState([]);
     const isRowSelect = rowSelection?.type !== 'none';
     const defaultRowKeyMap = useRef(new Map());
-
     const highlightRowCss = useMemo(() => {
       return css`
         & > td {
