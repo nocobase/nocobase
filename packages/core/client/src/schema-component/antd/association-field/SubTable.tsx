@@ -147,6 +147,7 @@ export const SubTable: any = observer(
       setSelectedRows,
       collectionField,
     };
+
     const usePickActionProps = () => {
       const { setVisible } = useActionContext();
       const { selectedRows, setSelectedRows } = useContext(RecordPickerContext);
@@ -176,8 +177,9 @@ export const SubTable: any = observer(
     }, [field.componentProps?.pageSize]);
 
     const paginationConfig = useMemo(() => {
+      const page = Math.ceil(field.value?.length / 10);
       return {
-        current: currentPage,
+        current: currentPage > page ? page : currentPage,
         pageSize: pageSize || 10,
         total: field?.value?.length,
         onChange: (page, pageSize) => {

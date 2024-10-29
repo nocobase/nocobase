@@ -17,7 +17,8 @@ import { useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../..
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
 import { useIsFieldReadPretty } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
-import { titleField } from '../Picker/recordPickerComponentFieldSettings';
+import { titleField } from '../Select/selectComponentFieldSettings';
+
 import { linkageRules } from '../SubTable/subTablePopoverComponentFieldSettings';
 import { SchemaSettingsLayoutItem } from '../../../../schema-settings/SchemaSettingsLayoutItem';
 

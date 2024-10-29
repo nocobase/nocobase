@@ -8,13 +8,9 @@
  */
 
 import { ISchema } from '@formily/react';
-import { Collection, CollectionFieldInterface } from '@nocobase/client';
+import { CollectionFieldInterface, getUniqueKeyFromCollection } from '@nocobase/client';
 import { tval } from '@nocobase/utils/client';
 import { NAMESPACE } from './locale';
-
-function getUniqueKeyFromCollection(collection: Collection) {
-  return collection?.filterTargetKey?.[0] || collection?.filterTargetKey || collection?.getPrimaryKey() || 'id';
-}
 
 export class MBMFieldInterface extends CollectionFieldInterface {
   name = 'mbm';
