@@ -172,8 +172,7 @@ const getIgnoreScope = (options: any = {}) => {
 
 const useAllowedActions = () => {
   const service = useResourceActionContext();
-  const result = useBlockRequestContext();
-  return result?.allowedActions ?? service?.data?.meta?.allowedActions;
+  return service?.data?.meta?.allowedActions;
 };
 
 const useResourceName = () => {

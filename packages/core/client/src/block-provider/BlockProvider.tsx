@@ -10,10 +10,9 @@
 import { Field, GeneralField } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Col, Row } from 'antd';
-import merge from 'deepmerge';
 import { isArray } from 'lodash';
 import template from 'lodash/template';
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   DataBlockProvider,
@@ -56,7 +55,6 @@ export const BlockRequestContext_deprecated = createContext<{
   field?: GeneralField;
   service?: any;
   resource?: any;
-  allowedActions?: any;
   __parent?: any;
   updateAssociationValues?: any[];
 }>({});
@@ -97,24 +95,13 @@ export const MaybeCollectionProvider = (props) => {
 export const BlockRequestProvider_deprecated = (props) => {
   const field = useField<Field>();
   const resource = useDataBlockResource();
-  const [allowedActions, setAllowedActions] = useState({});
   const service = useDataBlockRequest();
   const record = useCollectionRecord();
   const parentRecord = useCollectionParentRecord();
 
-  // Infinite scroll support
-  const serviceAllowedActions = (service?.data as any)?.meta?.allowedActions;
-  useEffect(() => {
-    if (!serviceAllowedActions) return;
-    setAllowedActions((last) => {
-      return merge(last, serviceAllowedActions ?? {});
-    });
-  }, [serviceAllowedActions]);
-
   const __parent = useBlockRequestContext();
   const value = useMemo(() => {
     return {
-      allowedActions,
       block: props.block,
       props,
       field,
@@ -123,7 +110,7 @@ export const BlockRequestProvider_deprecated = (props) => {
       __parent,
       updateAssociationValues: props?.updateAssociationValues || [],
     };
-  }, [__parent, allowedActions, field, props, resource, service]);
+  }, [__parent, field, props, resource, service]);
 
   return (
     <BlockRequestContext_deprecated.Provider value={value}>
