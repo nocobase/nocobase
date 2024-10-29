@@ -329,6 +329,14 @@ describe('useVariables', () => {
         name: '$user.belongsToField',
       });
     });
+
+    await waitFor(async () => {
+      // After lazy loading the association field value, the original $user variable value should not contain the association field value
+      expect(await result.current.parseVariable('{{ $user }}').then(({ value }) => value)).toEqual({
+        id: 0,
+        nickname: 'from request',
+      });
+    });
   });
 
   it('set doNotRequest to true to ensure the result is empty', async () => {
