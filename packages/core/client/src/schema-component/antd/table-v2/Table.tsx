@@ -891,7 +891,8 @@ export const Table: any = withDynamicSchemaProps(
     }, [expandedKeys, onExpandValue]);
 
     return (
-      // If spinning is set to undefined, it will cause the subtable to always display loading, so we need to convert it here
+      // If spinning is set to undefined, it will cause the subtable to always display loading, so we need to convert it here.
+      // We use Spin here instead of Table's loading prop because using Spin here reduces unnecessary re-renders.
       <Spin spinning={!!loading}>
         <InternalNocoBaseTable
           tableHeight={tableHeight}
