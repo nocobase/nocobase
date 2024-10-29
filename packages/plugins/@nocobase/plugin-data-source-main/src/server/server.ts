@@ -32,8 +32,6 @@ import { FieldIsDependedOnByOtherError } from './errors/field-is-depended-on-by-
 import { beforeCreateCheckFieldInMySQL } from './hooks/beforeCreateCheckFieldInMySQL';
 
 export class PluginDataSourceMainServer extends Plugin {
-  public schema: string;
-
   private loadFilter: Filter = {};
 
   setLoadFilter(filter: Filter) {
