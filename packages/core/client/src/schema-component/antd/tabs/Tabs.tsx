@@ -28,8 +28,6 @@ export const Tabs: any = (props: TabsProps) => {
   const contextProps = useTabsContext();
   const { PaneRoot = React.Fragment as React.FC<any> } = contextProps;
 
-  PaneRoot.displayName = 'PaneRoot';
-
   const items = useMemo(() => {
     const result = fieldSchema.mapProperties((schema, key: string) => {
       return {
