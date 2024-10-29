@@ -8,7 +8,7 @@
  */
 
 import { useField, useFieldSchema, useForm } from '@formily/react';
-import { EllipsisWithTooltip, useCollection_deprecated, useFieldTitle } from '@nocobase/client';
+import { EllipsisWithTooltip, useCollection, useFieldTitle } from '@nocobase/client';
 import React from 'react';
 import { MapComponent } from './MapComponent';
 
