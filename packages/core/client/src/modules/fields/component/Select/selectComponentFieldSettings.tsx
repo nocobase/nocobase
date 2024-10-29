@@ -73,7 +73,7 @@ const enableLink = {
   },
 };
 
-const titleField: any = {
+export const titleField: any = {
   name: 'titleField',
   type: 'select',
   useComponentProps() {
