@@ -4,6 +4,8 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.inputs.pro_plugin }}-${{ github.events.inputs.pr_number }}-${{ github.events.inputs.nocobase_pr_number }}
   cancel-in-progress: true
 
+run-name: Build pro plugin image ${{ github.ref }}-${{ github.event.inputs.pro_plugin }}-${{ github.events.inputs.pr_number }}-${{ github.events.inputs.nocobase_pr_number }}
+
 on:
   workflow_dispatch:
     inputs:
