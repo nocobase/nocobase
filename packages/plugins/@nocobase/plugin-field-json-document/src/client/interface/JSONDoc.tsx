@@ -9,6 +9,8 @@
 
 import { ISchema } from '@formily/react';
 import { Collection, CollectionFieldInterface } from '@nocobase/client';
+import { tval } from '@nocobase/utils/client';
+import { NAMESPACE } from '../locale';
 
 function getUniqueKeyFromCollection(collection: Collection) {
   return collection?.filterTargetKey || collection?.getPrimaryKey() || 'id';
@@ -19,8 +21,8 @@ export class JSONDocObjectInterface extends CollectionFieldInterface {
   type = 'object';
   group = 'advanced';
   order = 4;
-  title = '{{t("JSON Document (Object)")}}';
-  description = '{{t("One to one description")}}';
+  title = tval('JSON Document (Object)', { ns: NAMESPACE });
+  description = tval('JSONDoc object description', { ns: NAMESPACE });
   isAssociation = true;
   default = {
     type: 'JSONDocument',
@@ -112,8 +114,8 @@ export class JSONDocArrayInterface extends CollectionFieldInterface {
   type = 'object';
   group = 'advanced';
   order = 5;
-  title = '{{t("JSON Document (Array)")}}';
-  description = '{{t("One to one description")}}';
+  title = tval('JSON Document (Array)', { ns: NAMESPACE });
+  description = tval('JSONDoc array description', { ns: NAMESPACE });
   isAssociation = true;
   default = {
     type: 'JSONDocument',

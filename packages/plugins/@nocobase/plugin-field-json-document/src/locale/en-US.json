@@ -1,0 +1,6 @@
+{
+  "JSON Document (Object)": "JSON Document (Object)",
+  "JSON Document (Array)": "JSON Document (Array)",
+  "JSONDoc object description": "Allows to define fields in a JSON object for using JSON fields in a structured way.",
+  "JSONDoc array description": "Allows to define fields in a JSON array with objects for using JSON fields in a structured way."
+}
