@@ -16,6 +16,6 @@
   "Message content": "消息内容",
   "Inapp Message": "站内信",
   "Detail URL": "详情链接",
-  "Support two types of links in NocoBase: internal links and external links. If using an internal link, the link starts with\"/\", for example, \"/admin\". If using an external link, the link starts with \"http\", for example, \"https://example.com\".": "NocoBase 支持两种链接类型：内部链接和外部链接。如果使用内部链接，链接以\"/\"开头，例如\"/admin\"。如果使用外部链接，链接以\"http\"开头，例如\"https://example.com\"。",
+  "Support two types of links in NocoBase: internal links and external links. If using an internal link, the link starts with\"/\", for example, \"/admin\". If using an external link, the link starts with \"http\", for example, \"https://example.com\".": "NocoBase 支持两种链接类型：内部链接和外部链接。如果使用内部链接，链接以“/”开头，例如“/admin”。如果使用外部链接，链接以“http”开头，例如“https://example.com”。",
   "Mark as read": "标记为已读"
 }

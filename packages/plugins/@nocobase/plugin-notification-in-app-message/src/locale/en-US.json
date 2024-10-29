@@ -17,6 +17,6 @@
   "Message content": "Message content",
   "Inapp Message": "Inapp Message",
   "Detail URL": "Detail URL",
-  "Support two types of links in NocoBase: internal links and external links. If using an internal link, the link starts with\"/\", for example, \"/admin\". If using an external link, the link starts with \"http\", for example, \"https://example.com\".": "Support two types of links in nocobase: internal links and external links. If using an internal link, the link starts with \"/\", for example, \"/admin\". If using an external link, the link starts with \"http\", for example, \"https://example.com\".",
+  "Support two types of links in NocoBase: internal links and external links. If using an internal link, the link starts with\"/\", for example, \"/admin\". If using an external link, the link starts with \"http\", for example, \"https://example.com\".": "Support two types of links in NocoBase: internal links and external links. If using an internal link, the link starts with \"/\", for example, \"/admin\". If using an external link, the link starts with \"http\", for example, \"https://example.com\".",
   "Mark as read": "Mark as read"
 }
