@@ -148,7 +148,7 @@ const VariablesProvider = ({ children }) => {
                 return result;
               }
             }
-            return item?.[key] || getCachedLazyLoadedValues(item, currentVariablePath);
+            return getCachedLazyLoadedValues(item, currentVariablePath) || item?.[key];
           });
           current = removeThroughCollectionFields(_.flatten(await Promise.all(result)), associationField);
         } else if (
@@ -184,7 +184,10 @@ const VariablesProvider = ({ children }) => {
 
           current = removeThroughCollectionFields(value, associationField);
         } else {
-          current = removeThroughCollectionFields(getValuesByPath(current, key), associationField);
+          current = removeThroughCollectionFields(
+            getCachedLazyLoadedValues(current, currentVariablePath) || getValuesByPath(current, key),
+            associationField,
+          );
         }
 
         if (associationField?.target) {
