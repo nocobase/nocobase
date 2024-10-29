@@ -77,7 +77,13 @@ export class PluginDataSourceMainServer extends Plugin {
     });
 
     this.app.db.on('collections.beforeCreate', async (model) => {
-      if (this.app.db.inDialect('postgres') && this.schema && model.get('from') != 'db2cm' && !model.get('schema')) {
+      if (
+        this.app.db.inDialect('postgres') &&
+        this.schema &&
+        model.get('from') != 'db2cm' &&
+        !model.get('schema') &&
+        this.schema !== this.db.options.schema
+      ) {
         model.set('schema', this.schema);
       }
     });
