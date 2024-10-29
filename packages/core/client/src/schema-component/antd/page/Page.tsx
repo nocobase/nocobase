@@ -277,7 +277,7 @@ function NocoBasePageHeader({ footer }: { footer: React.JSX.Element }) {
   const fieldSchema = useFieldSchema();
   const { setTitle: setDocumentTitle, getTitle: getDocumentTitle } = useDocumentTitle();
   const { t } = useTranslation();
-  const [pageTitle, setPageTitle] = useState(getDocumentTitle());
+  const [pageTitle, setPageTitle] = useState('');
 
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
   const enablePageTabs = fieldSchema['x-component-props']?.enablePageTabs;

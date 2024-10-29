@@ -18,12 +18,6 @@ import { useDataSourceHeaders } from '../utils';
 import { AllDataBlockProps, useDataBlockProps } from './DataBlockProvider';
 import { useDataBlockResource } from './DataBlockResourceProvider';
 
-/**
- * @deprecated
- */
-export const BlockRequestContext = createContext<UseRequestResult<any>>(null);
-BlockRequestContext.displayName = 'BlockRequestContext';
-
 const BlockRequestRefContext = createContext<React.MutableRefObject<UseRequestResult<any>>>(null);
 BlockRequestRefContext.displayName = 'BlockRequestRefContext';
 
@@ -167,23 +161,21 @@ export const BlockRequestProvider: FC = React.memo(({ children }) => {
   }, [parentRecordData]);
 
   return (
-    <BlockRequestContext.Provider value={recordRequest}>
-      <BlockRequestContextProvider recordRequest={recordRequest}>
-        {action !== 'list' ? (
-          <CollectionRecordProvider
-            isNew={action == null}
-            record={recordRequest.data?.data || record}
-            parentRecord={memoizedParentRecord || parentRecord}
-          >
-            {children}
-          </CollectionRecordProvider>
-        ) : (
-          <CollectionRecordProvider isNew={false} record={null} parentRecord={memoizedParentRecord || parentRecord}>
-            {children}
-          </CollectionRecordProvider>
-        )}
-      </BlockRequestContextProvider>
-    </BlockRequestContext.Provider>
+    <BlockRequestContextProvider recordRequest={recordRequest}>
+      {action !== 'list' ? (
+        <CollectionRecordProvider
+          isNew={action == null}
+          record={recordRequest.data?.data || record}
+          parentRecord={memoizedParentRecord || parentRecord}
+        >
+          {children}
+        </CollectionRecordProvider>
+      ) : (
+        <CollectionRecordProvider isNew={false} record={null} parentRecord={memoizedParentRecord || parentRecord}>
+          {children}
+        </CollectionRecordProvider>
+      )}
+    </BlockRequestContextProvider>
   );
 });
 
