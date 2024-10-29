@@ -4043,10 +4043,10 @@
   resolved "https://registry.npmmirror.com/@formily/path/-/path-2.3.0.tgz#1cb71389ad39fd30e323b7f35f96cb35f12e304f"
   integrity sha512-LbSW50ytAH9wPlZc2VkjRjMukoYWiDAII7HfGkSnkCDQYduhWzvbqpkKOd/W8l5VFrLrl2/7yWkfp5cChv0wjA==
 
-"@formily/path@^2.2.27":
-  version "2.3.1"
-  resolved "https://registry.npmmirror.com/@formily/path/-/path-2.3.1.tgz#b7adb91f7d3bb0f2efc90672dda466a0590dcb1b"
-  integrity sha512-BVo89K5nAFntx02+EV696If1b1bVIm5I1tRPtVyCVIjBIfAgga5hK4k80GZ01Dlk3tpReHpiIbZVg2DNVfw7jA==
+"@formily/path@2.3.2", "@formily/path@^2.2.27":
+  version "2.3.2"
+  resolved "https://registry.npmmirror.com/@formily/path/-/path-2.3.2.tgz#9385d9ba1eabd5e3ed916f2b1953be6257bb192e"
+  integrity sha512-KK8h/CupHOs4HIgu9JucqwWvIr8Nbmof++Kby0NdNFHdTN5nAyVzStS8VEPFPGRkQaXV3AH+FVGAxgucmEy4ZA==
 
 "@formily/react@2.x", "@formily/react@^2.2.0", "@formily/react@^2.2.27":
   version "2.3.0"
@@ -4074,12 +4074,25 @@
   resolved "https://registry.npmmirror.com/@formily/reactive/-/reactive-2.3.0.tgz#95582dfcf97c42410454ef7df0c247514bd4446e"
   integrity sha512-8QYApPL/GvATIP/9K3UeICJNuCaLq99NLlNLEuBsE7cIk2hFiFhWP7vnLtWBdorqeQZNYZ6lzSuau2Ndogu+Dw==
 
-"@formily/shared@2.3.0", "@formily/shared@2.x", "@formily/shared@^2.2.0", "@formily/shared@^2.2.27":
+"@formily/shared@2.3.0":
   version "2.3.0"
   resolved "https://registry.npmmirror.com/@formily/shared/-/shared-2.3.0.tgz#4423c3dfad0d1017cab1e3c6c8fd34004e0a9664"
   integrity sha512-sJiMLBmk4JMPI1CxzLawIc+ERTjcnWOm8u4cpmF+3XABdLNU3CxsIRT9CXiJnrS9ZR+OE12AW7cGp6A1hPm7ZA==
   dependencies:
     "@formily/path" "2.3.0"
+    camel-case "^4.1.1"
+    lower-case "^2.0.1"
+    no-case "^3.0.4"
+    param-case "^3.0.4"
+    pascal-case "^3.1.1"
+    upper-case "^2.0.1"
+
+"@formily/shared@2.x", "@formily/shared@^2.2.0", "@formily/shared@^2.2.27":
+  version "2.3.2"
+  resolved "https://registry.npmmirror.com/@formily/shared/-/shared-2.3.2.tgz#1cea158491280a267278e0c9dc4f6cc7a69d4485"
+  integrity sha512-hb8eL28Dqe4WQzGtxC3h7OwG9VPPBXtfKUfmnRkaBMJ8zn2KmdYOP8YnAkwdO2ZMgxtkOl0hku0Ufm2PwP3ziA==
+  dependencies:
+    "@formily/path" "2.3.2"
     camel-case "^4.1.1"
     lower-case "^2.0.1"
     no-case "^3.0.4"

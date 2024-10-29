@@ -11,12 +11,15 @@ import { Plugin } from '@nocobase/client';
 import { lang as t } from './locale';
 import { ChannelManager } from './manager/channel/components';
 import { RegisterChannelOptions } from './manager/channel/types';
+import { useNotificationTypes } from './manager/channel/hooks';
 import { LogManager } from './manager/log/components/Manager';
 import NotificationManager from './notification-manager';
 
 const NAMESPACE = 'notification-manager';
 export class PluginNotificationManagerClient extends Plugin {
   private manager: NotificationManager;
+
+  useNotificationTypes = useNotificationTypes;
 
   get channelTypes() {
     return this.manager.channelTypes;
