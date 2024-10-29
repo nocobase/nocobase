@@ -17,7 +17,7 @@ export function useDataFormItemProps() {
   const subForm = useSubFormValue();
   const { valueMap: style } = useSatisfiedActionValues({
     category: 'style',
-    formValues: subForm.formValue || form.values || record,
+    formValues: subForm?.formValue || form?.values || record,
     form,
   });
   return { wrapperStyle: style };
