@@ -13,7 +13,6 @@ import { Plugin } from '@nocobase/server';
 import { Mutex } from 'async-mutex';
 import lodash from 'lodash';
 import path from 'path';
-import * as process from 'process';
 import { CollectionRepository } from '.';
 import {
   afterCreateForForeignKeyField,
@@ -55,10 +54,6 @@ export class PluginDataSourceMainServer extends Plugin {
   }
 
   async beforeLoad() {
-    if (this.app.db.inDialect('postgres')) {
-      this.schema = process.env.COLLECTION_MANAGER_SCHEMA || this.db.options.schema || 'public';
-    }
-
     this.app.db.registerRepositories({
       CollectionRepository,
     });
@@ -74,18 +69,6 @@ export class PluginDataSourceMainServer extends Plugin {
       context: {
         plugin: this,
       },
-    });
-
-    this.app.db.on('collections.beforeCreate', async (model) => {
-      if (
-        this.app.db.inDialect('postgres') &&
-        this.schema &&
-        model.get('from') != 'db2cm' &&
-        !model.get('schema') &&
-        this.schema !== this.db.options.schema
-      ) {
-        model.set('schema', this.schema);
-      }
     });
 
     this.app.db.on('collections.beforeCreate', beforeCreateForViewCollection(this.db));
