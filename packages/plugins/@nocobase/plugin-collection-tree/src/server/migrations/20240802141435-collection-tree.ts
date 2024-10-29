@@ -47,11 +47,18 @@ export default class extends Migration {
             },
           ],
         };
-        if (treeCollection.options.schema) {
-          collectionOptions['schema'] = treeCollection.options.schema;
+
+        const collectionInstance = this.db.getCollection(treeCollection.name);
+        const treeCollectionSchema = collectionInstance.collectionSchema();
+
+        if (this.app.db.inDialect('postgres') && treeCollectionSchema != this.app.db.options.schema) {
+          collectionOptions['schema'] = treeCollectionSchema;
         }
+
         this.app.db.collection(collectionOptions);
+
         const treeExistsInDb = await this.app.db.getCollection(name).existsInDb({ transaction });
+
         if (!treeExistsInDb) {
           await this.app.db.getCollection(name).sync({ transaction } as SyncOptions);
           const opts = {
@@ -63,9 +70,11 @@ export default class extends Migration {
               { type: 'integer', name: 'parentId' },
             ],
           };
-          if (treeCollection.options.schema) {
-            opts['schema'] = treeCollection.options.schema;
+
+          if (treeCollectionSchema != this.app.db.options.schema) {
+            opts['schema'] = treeCollectionSchema;
           }
+
           this.app.db.collection(opts);
           const chunkSize = 1000;
           await this.app.db.getRepository(treeCollection.name).chunk({
