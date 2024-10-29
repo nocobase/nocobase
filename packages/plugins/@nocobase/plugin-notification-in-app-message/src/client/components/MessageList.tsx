@@ -150,7 +150,7 @@ export const MessageList = observer(() => {
                           });
                         }}
                       >
-                        标为已读
+                        {t('Mark as read')}
                       </Button>
                     ) : (
                       <Tag color={message.status === 'unread' ? 'red' : 'green'}>{msgStatusDict[message.status]}</Tag>

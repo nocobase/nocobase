@@ -47,13 +47,14 @@ export class MailNotificationChannel extends BaseNotificationChannel {
       if (receivers?.type === 'userId') {
         const users = await userRepo.find({
           filter: {
-            $in: receivers.value,
+            id: receivers.value,
           },
         });
         const usersEmail = users.map((user) => user.email).filter(Boolean);
         const payload = {
           to: usersEmail,
           from,
+          subject,
           ...(contentType === 'html' ? { html: message.html } : { text: message.text }),
         };
         const result = await transpoter.sendMail(payload);

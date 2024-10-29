@@ -19,10 +19,13 @@ test.describe('auth', () => {
   });
 
   test('register', async ({ page }) => {
+    // Generate a random username
+    const username = `zidonghuaceshi${Math.random().toString(36).substring(2, 15)}`;
+
     await page.goto('/');
     await page.getByRole('link', { name: 'Create an account' }).click();
     await page.getByPlaceholder('Username').click();
-    await page.getByPlaceholder('Username').fill('zidonghuaceshi');
+    await page.getByPlaceholder('Username').fill(username);
     await page.getByPlaceholder('Password', { exact: true }).click();
     await page.getByPlaceholder('Password', { exact: true }).fill('zidonghuaceshi123');
     await page.getByPlaceholder('Confirm password').click();
@@ -31,14 +34,14 @@ test.describe('auth', () => {
 
     await expect(page.getByText('Sign up successfully, and automatically jump to the sign in page')).toBeVisible();
 
-    // 用新账户登录
+    // Sign in with the new account
     await page.getByPlaceholder('Username/Email').click();
-    await page.getByPlaceholder('Username/Email').fill('zidonghuaceshi');
+    await page.getByPlaceholder('Username/Email').fill(username);
     await page.getByPlaceholder('Password').click();
     await page.getByPlaceholder('Password').fill('zidonghuaceshi123');
     await page.getByRole('button', { name: 'Sign in' }).click();
 
     await page.getByTestId('user-center-button').hover();
-    await expect(page.getByText('zidonghuaceshi')).toBeVisible();
+    await expect(page.getByText(username)).toBeVisible();
   });
 });

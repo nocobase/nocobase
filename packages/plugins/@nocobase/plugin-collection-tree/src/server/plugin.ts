@@ -14,11 +14,6 @@ import lodash from 'lodash';
 import { Transaction } from 'sequelize';
 import { TreeCollection } from './tree-collection';
 
-const getFilterTargetKey = (model: Model) => {
-  // @ts-ignore
-  return model.constructor.collection.filterTargetKey;
-};
-
 class PluginCollectionTreeServer extends Plugin {
   async beforeLoad() {
     const condition = (options) => {
@@ -36,6 +31,7 @@ class PluginCollectionTreeServer extends Plugin {
           if (!condition(collection.options)) {
             return;
           }
+          const tk = collection.filterTargetKey as string;
           const name = `${dataSource.name}_${collection.name}_path`;
           const parentForeignKey = collection.treeParentField?.foreignKey || 'parentId';
 
@@ -55,9 +51,8 @@ class PluginCollectionTreeServer extends Plugin {
           //afterCreate
           this.db.on(`${collection.name}.afterCreate`, async (model: Model, options) => {
             const { transaction } = options;
-            const tk = getFilterTargetKey(model);
             let path = `/${model.get(tk)}`;
-            path = await this.getTreePath(model, path, collection, name, transaction);
+            path = await this.getTreePath(model, path, collection, tk, name, transaction);
             const rootPk = path.split('/')[1];
             await this.app.db.getRepository(name).create({
               values: {
@@ -71,49 +66,32 @@ class PluginCollectionTreeServer extends Plugin {
 
           //afterUpdate
           this.db.on(`${collection.name}.afterUpdate`, async (model: Model, options) => {
-            const tk = getFilterTargetKey(model);
             // only update parentId and filterTargetKey
             if (!(model._changed.has(tk) || model._changed.has(parentForeignKey))) {
               return;
             }
             const { transaction } = options;
-            let path = `/${model.get(tk)}`;
-            path = await this.getTreePath(model, path, collection, name, transaction);
-            const collectionTreePath = this.db.getCollection(name);
-            const nodePkColumnName = collectionTreePath.getField('nodePk').columnName();
-            const pathData = await this.app.db.getRepository(name).findOne({
-              filter: {
-                [nodePkColumnName]: model.get(tk),
-              },
-              transaction,
-            });
+            await this.updateTreePath(model, collection, tk, name, transaction);
+          });
 
-            const relatedNodes = await this.app.db.getRepository(name).find({
-              filter: {
-                path: {
-                  $startsWith: `${pathData.get('path')}`,
-                },
+          // after remove
+          this.db.on(`${collection.name}.afterBulkUpdate`, async (options) => {
+            if (!(options.where && options.where[tk])) {
+              return;
+            }
+            const instances = await this.db.getRepository(collection.name).find({
+              where: {
+                [tk]: options.where[tk],
               },
-              transaction,
+              transaction: options.transaction,
             });
-            const rootPk = path.split('/')[1];
-            for (const node of relatedNodes) {
-              await this.app.db.getRepository(name).update({
-                values: {
-                  path: node.get('path').replace(`${pathData.get('path')}`, path),
-                  rootPk: rootPk ? Number(rootPk) : null,
-                },
-                filter: {
-                  [nodePkColumnName]: node.get('nodePk'),
-                },
-                transaction,
-              });
+            for (const model of instances) {
+              await this.updateTreePath(model, collection, tk, name, options.transaction);
             }
           });
 
           //afterDestroy
           this.db.on(`${collection.name}.afterDestroy`, async (model: Model, options: DestroyOptions) => {
-            const tk = getFilterTargetKey(model);
             await this.app.db.getRepository(name).destroy({
               filter: {
                 nodePk: model.get(tk),
@@ -161,10 +139,10 @@ class PluginCollectionTreeServer extends Plugin {
     model: Model,
     path: string,
     collection: Collection,
+    tk: string,
     pathCollectionName: string,
     transaction?: Transaction,
   ) {
-    const tk = getFilterTargetKey(model);
     const parentForeignKey = collection.treeParentField?.foreignKey || 'parentId';
     if (model.get(parentForeignKey) && model.get(parentForeignKey) !== null) {
       const parent = await this.app.db.getRepository(collection.name).findOne({
@@ -186,7 +164,7 @@ class PluginCollectionTreeServer extends Plugin {
           });
           const parentPath = lodash.get(parentPathData, 'path', null);
           if (parentPath == null) {
-            path = await this.getTreePath(parent, path, collection, pathCollectionName, transaction);
+            path = await this.getTreePath(parent, path, collection, tk, pathCollectionName, transaction);
           } else {
             path = `${parentPath}/${model.get(tk)}`;
           }
@@ -194,6 +172,48 @@ class PluginCollectionTreeServer extends Plugin {
       }
     }
     return path;
+  }
+
+  private async updateTreePath(
+    model: Model,
+    collection: Collection,
+    tk: string,
+    pathCollectionName: string,
+    transaction: Transaction,
+  ) {
+    let path = `/${model.get(tk)}`;
+    path = await this.getTreePath(model, path, collection, tk, pathCollectionName, transaction);
+    const collectionTreePath = this.db.getCollection(pathCollectionName);
+    const nodePkColumnName = collectionTreePath.getField('nodePk').columnName();
+    const pathData = await this.app.db.getRepository(pathCollectionName).findOne({
+      filter: {
+        [nodePkColumnName]: model.get(tk),
+      },
+      transaction,
+    });
+
+    const relatedNodes = await this.app.db.getRepository(pathCollectionName).find({
+      filter: {
+        path: {
+          $startsWith: `${pathData.get('path')}`,
+        },
+      },
+      transaction,
+    });
+    const rootPk = path.split('/')[1];
+    for (const node of relatedNodes) {
+      const newPath = node.get('path').replace(pathData.get('path'), path);
+      await this.app.db.getRepository(pathCollectionName).update({
+        values: {
+          path: newPath,
+          rootPk: rootPk ? Number(rootPk) : null,
+        },
+        filter: {
+          [nodePkColumnName]: node.get('nodePk'),
+        },
+        transaction,
+      });
+    }
   }
 }
 

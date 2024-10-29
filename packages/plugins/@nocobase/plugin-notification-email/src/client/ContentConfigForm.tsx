@@ -55,7 +55,7 @@ export const ContentConfigForm = ({ variableOptions }) => {
             },
             'x-reactions': [
               {
-                dependencies: ['contentType'],
+                dependencies: ['.contentType'],
                 fulfill: {
                   state: {
                     visible: '{{$deps[0] === "html"}}',
@@ -79,7 +79,7 @@ export const ContentConfigForm = ({ variableOptions }) => {
             },
             'x-reactions': [
               {
-                dependencies: ['contentType'],
+                dependencies: ['.contentType'],
                 fulfill: {
                   state: {
                     visible: '{{$deps[0] === "text"}}',

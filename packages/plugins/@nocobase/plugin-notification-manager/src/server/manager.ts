@@ -20,14 +20,14 @@ import type {
 
 export class NotificationManager implements NotificationManager {
   private plugin: PluginNotificationManagerServer;
-  private notificationTypes = new Registry<{ Channel: NotificationChannelConstructor }>();
+  public channelTypes = new Registry<{ Channel: NotificationChannelConstructor }>();
 
   constructor({ plugin }: { plugin: PluginNotificationManagerServer }) {
     this.plugin = plugin;
   }
 
   registerType({ type, Channel }: RegisterServerTypeFnParams) {
-    this.notificationTypes.register(type, { Channel });
+    this.channelTypes.register(type, { Channel });
   }
 
   createSendingRecord = async (options: WriteLogOptions) => {
@@ -46,7 +46,7 @@ export class NotificationManager implements NotificationManager {
     try {
       const channel = await channelsRepo.findOne({ filterByTk: params.channelName });
       if (channel) {
-        const Channel = this.notificationTypes.get(channel.notificationType).Channel;
+        const Channel = this.channelTypes.get(channel.notificationType).Channel;
         const instance = new Channel(this.plugin.app);
         logData.channelTitle = channel.title;
         logData.notificationType = channel.notificationType;
