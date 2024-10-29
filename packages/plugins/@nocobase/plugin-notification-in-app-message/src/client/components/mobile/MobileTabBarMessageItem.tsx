@@ -27,7 +27,16 @@ const InnerMobileTabBarMessageItem = (props) => {
   }, []);
   const selected = props.url && location.pathname.startsWith(props.url);
 
-  return <MobileTabBarItem {...{ ...props, onClick, badge: unreadMsgsCountObs.value ?? undefined, selected }} />;
+  return (
+    <MobileTabBarItem
+      {...{
+        ...props,
+        onClick,
+        badge: unreadMsgsCountObs.value && unreadMsgsCountObs.value > 0 ? unreadMsgsCountObs.value : undefined,
+        selected,
+      }}
+    />
+  );
 };
 
 export const MobileTabBarMessageItem = observer(InnerMobileTabBarMessageItem, {
