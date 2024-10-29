@@ -159,7 +159,7 @@ test.describe('form item & edit form', () => {
       gotoPage: async () => {
         record = await (async (mockPage, mockRecord) => {
           const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndChoicesFields).waitForInit();
-          const record = await mockRecord('general');
+          const record = await mockRecord('general', { checkbox: false });
           await nocoPage.goto();
 
           return record;
