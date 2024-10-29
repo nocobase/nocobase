@@ -15,55 +15,9 @@ import { useFieldComponentName } from '../../../../common/useFieldComponentName'
 import { useCollectionField } from '../../../../data-source';
 import { useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
-import {
-  allowAddNew,
-  useIsFieldReadPretty,
-  useTitleFieldOptions,
-} from '../../../../schema-component/antd/form-item/FormItem.Settings';
+import { allowAddNew, useIsFieldReadPretty } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
-
-export const titleField: any = {
-  name: 'titleField',
-  type: 'select',
-  useComponentProps() {
-    const { t } = useTranslation();
-    const field = useField<Field>();
-    const { uiSchema, fieldSchema: tableColumnSchema, collectionField: tableColumnField } = useColumnSchema();
-    const options = useTitleFieldOptions();
-    const schema = useFieldSchema();
-    const fieldSchema = tableColumnSchema || schema;
-    const targetCollectionField = useCollectionField();
-    const collectionField = tableColumnField || targetCollectionField;
-    const { dn } = useDesignable();
-    const fieldNames =
-      field?.componentProps?.fieldNames ||
-      fieldSchema?.['x-component-props']?.['fieldNames'] ||
-      uiSchema?.['x-component-props']?.['fieldNames'];
-    return {
-      title: t('Title field'),
-      options,
-      value: fieldNames?.label,
-      onChange(label) {
-        const schema = {
-          ['x-uid']: fieldSchema['x-uid'],
-        };
-        const fieldNames = {
-          ...collectionField?.uiSchema?.['x-component-props']?.['fieldNames'],
-          ...field.componentProps.fieldNames,
-          label,
-        };
-        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-        fieldSchema['x-component-props']['fieldNames'] = fieldNames;
-        schema['x-component-props'] = fieldSchema['x-component-props'];
-        field.componentProps.fieldNames = fieldSchema['x-component-props'].fieldNames;
-        dn.emit('patch', {
-          schema,
-        });
-        dn.refresh();
-      },
-    };
-  },
-};
+import { titleField } from '../Select/selectComponentFieldSettings';
 
 const allowMultiple: any = {
   name: 'allowMultiple',
