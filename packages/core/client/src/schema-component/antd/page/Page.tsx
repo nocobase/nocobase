@@ -275,8 +275,9 @@ PageContent.displayName = 'PageContent';
 
 function NocoBasePageHeader({ footer }: { footer: React.JSX.Element }) {
   const fieldSchema = useFieldSchema();
-  const { title, setTitle } = useDocumentTitle();
+  const { setTitle: setDocumentTitle, getTitle: getDocumentTitle } = useDocumentTitle();
   const { t } = useTranslation();
+  const [pageTitle, setPageTitle] = useState(getDocumentTitle());
 
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
   const enablePageTabs = fieldSchema['x-component-props']?.enablePageTabs;
@@ -284,9 +285,11 @@ function NocoBasePageHeader({ footer }: { footer: React.JSX.Element }) {
 
   useEffect(() => {
     if (fieldSchema.title) {
-      setTitle(t(fieldSchema.title));
+      const title = t(fieldSchema.title);
+      setPageTitle(title);
+      setDocumentTitle(title);
     }
-  }, [fieldSchema.title, setTitle, t]);
+  }, [fieldSchema.title, setDocumentTitle, t]);
 
   useRequest(
     {
@@ -295,20 +298,21 @@ function NocoBasePageHeader({ footer }: { footer: React.JSX.Element }) {
     {
       ready: !hidePageTitle && !fieldSchema.title,
       onSuccess(data) {
-        setTitle(data.data.title);
+        setPageTitle(data.data.title);
+        setDocumentTitle(data.data.title);
       },
     },
   );
 
   return (
     <>
-      <PageDesigner title={title} />
+      <PageDesigner title={pageTitle} />
       {!disablePageHeader && (
         <AntdPageHeader
-          className={classNames('pageHeaderCss', title || enablePageTabs ? '' : 'height0')}
+          className={classNames('pageHeaderCss', pageTitle || enablePageTabs ? '' : 'height0')}
           ghost={false}
           // 如果标题为空的时候会导致 PageHeader 不渲染，所以这里设置一个空白字符，然后再设置高度为 0
-          title={hidePageTitle ? ' ' : title || ' '}
+          title={hidePageTitle ? ' ' : pageTitle || ' '}
           footer={footer}
         />
       )}
