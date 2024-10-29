@@ -18,7 +18,7 @@ import { removeNullCondition } from '../schema-component';
 import { mergeFilter, useAssociatedFields } from './utils';
 
 // @ts-ignore
-import React, { createContext, startTransition, useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { createContext, useCallback, useEffect, useMemo, useRef } from 'react';
 
 enum FILTER_OPERATOR {
   AND = '$and',
@@ -72,8 +72,8 @@ export interface DataBlock {
 }
 
 interface FilterContextValue {
-  dataBlocks: DataBlock[];
-  setDataBlocks: React.Dispatch<React.SetStateAction<DataBlock[]>>;
+  getDataBlocks: () => DataBlock[];
+  setDataBlocks: (value: DataBlock[] | ((prev: DataBlock[]) => DataBlock[])) => void;
 }
 
 const FilterContext = createContext<FilterContextValue>(null);
@@ -84,21 +84,25 @@ FilterContext.displayName = 'FilterContext';
  * @param props
  * @returns
  */
-export const FilterBlockProvider: React.FC = ({ children }) => {
-  const [dataBlocks, _setDataBlocks] = React.useState<DataBlock[]>([]);
+export const FilterBlockProvider: React.FC = React.memo(({ children }) => {
+  const dataBlocksRef = React.useRef<DataBlock[]>([]);
 
   const setDataBlocks = useCallback((value) => {
-    startTransition(() => {
-      _setDataBlocks(value);
-    });
+    if (typeof value === 'function') {
+      dataBlocksRef.current = value(dataBlocksRef.current);
+    } else {
+      dataBlocksRef.current = value;
+    }
   }, []);
 
-  const value = useMemo(() => {
-    return { dataBlocks, setDataBlocks };
-  }, [dataBlocks, setDataBlocks]);
+  const getDataBlocks = useCallback(() => dataBlocksRef.current, []);
+
+  const value = useMemo(() => ({ getDataBlocks, setDataBlocks }), [getDataBlocks, setDataBlocks]);
 
   return <FilterContext.Provider value={value}>{children}</FilterContext.Provider>;
-};
+});
+
+FilterBlockProvider.displayName = 'FilterBlockProvider';
 
 /**
  * 用于收集当前页面中的数据区块的信息，用于在过滤区块中使用
@@ -188,11 +192,11 @@ export const useFilterBlock = () => {
   const ctx = React.useContext(FilterContext);
 
   // 有可能存在页面没有提供 FilterBlockProvider 的情况，比如内部使用的数据表管理页面
-  const getDataBlocks = useCallback<() => DataBlock[]>(() => ctx?.dataBlocks || [], [ctx?.dataBlocks]);
+  const getDataBlocks = useCallback<() => DataBlock[]>(() => ctx?.getDataBlocks() || [], [ctx]);
 
   const recordDataBlocks = useCallback(
     (block: DataBlock) => {
-      const existingBlock = ctx?.dataBlocks.find((item) => item.uid === block.uid);
+      const existingBlock = ctx?.getDataBlocks().find((item) => item.uid === block.uid);
 
       if (existingBlock) {
         // 这里的值有可能会变化，所以需要更新
@@ -207,7 +211,7 @@ export const useFilterBlock = () => {
 
   const removeDataBlock = useCallback(
     (uid: string) => {
-      if (ctx?.dataBlocks.every((item) => item.uid !== uid)) return;
+      if (ctx?.getDataBlocks().every((item) => item.uid !== uid)) return;
       ctx?.setDataBlocks((prev) => prev.filter((item) => item.uid !== uid));
     },
     [ctx],
