@@ -17,24 +17,31 @@ export const SearchFields = ({ value: outValue, onChange }) => {
   const [value, setValue] = useState<string>(outValue);
   const inputRef = useRef<any>('');
 
-  // 之所以要增加个内部的 value 是为了防止用户输入过快时造成卡顿的问题
+  // 生成唯一的ID用于区分不同层级的SearchFields
+  const uniqueId = useRef(`searchFields_${Math.random().toString(36).substr(2, 9)}`);
+
   useEffect(() => {
     setValue(outValue);
   }, [outValue]);
 
-  // TODO: antd 的 Input 的 autoFocus 有 BUG，会不生效，等待官方修复后再简化：https://github.com/ant-design/ant-design/issues/41239
   useEffect(() => {
-    // 1. 组件在第一次渲染时自动 focus，提高用户体验
-    inputRef.current.input.focus();
+    const focusInput = () => {
+      if (document.activeElement?.id !== uniqueId.current) {
+        inputRef.current?.focus();
+      }
+    };
 
-    // 2. 当组件已经渲染，并再次显示时，自动 focus
+    // 观察当前元素是否在视图中
     const observer = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting) {
-        inputRef.current.input.focus();
+        focusInput();
       }
     });
+    if (inputRef.current?.input) {
+      inputRef.current.input.id = uniqueId.current; // 设置唯一ID
+      observer.observe(inputRef.current.input);
+    }
 
-    observer.observe(inputRef.current.input);
     return () => {
       observer.disconnect();
     };
