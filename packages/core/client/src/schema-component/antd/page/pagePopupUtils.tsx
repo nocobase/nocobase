@@ -111,6 +111,7 @@ export const getPopupPathFromParams = (params: PopupParams) => {
     puid,
     collection && 'collection',
     collection,
+    // filterbytk is possibly to be 0
     filterbytk !== null && filterbytk !== undefined && 'filterbytk',
     filterbytk,
     sourceid && 'sourceid',
