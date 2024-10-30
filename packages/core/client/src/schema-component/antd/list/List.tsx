@@ -143,7 +143,12 @@ const InternalList = (props) => {
         )}
       >
         <div className="nb-list-container">
-          <FormLayout layout={layout} labelAlign={labelAlign} labelWidth={labelWidth} labelWrap={labelWrap}>
+          <FormLayout
+            layout={layout}
+            labelAlign={labelAlign}
+            labelWidth={layout === 'horizontal' ? labelWidth : null}
+            labelWrap={labelWrap}
+          >
             <AntdList
               {...props}
               pagination={!meta || !field.value?.length ? false : paginationProps}

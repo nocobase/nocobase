@@ -138,7 +138,12 @@ export const KanbanCard: any = observer(
       <>
         <Card onClick={handleCardClick} bordered={false} hoverable style={cardStyle} className={cardCss}>
           <DndContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
-            <FormLayout layout={layout} labelAlign={labelAlign} labelWidth={labelWidth} labelWrap={labelWrap}>
+            <FormLayout
+              layout={layout}
+              labelAlign={labelAlign}
+              labelWidth={layout === 'horizontal' ? labelWidth : null}
+              labelWrap={labelWrap}
+            >
               <FormProvider form={form}>
                 <MemorizedRecursionField schema={fieldSchema} onlyRenderProperties />
               </FormProvider>

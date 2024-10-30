@@ -192,7 +192,12 @@ const InternalGridCard = (props: GridCardProps) => {
           `,
         )}
       >
-        <FormLayout layout={layout} labelAlign={labelAlign} labelWidth={labelWidth} labelWrap={labelWrap}>
+        <FormLayout
+          layout={layout}
+          labelAlign={labelAlign}
+          labelWidth={layout === 'horizontal' ? labelWidth : null}
+          labelWrap={labelWrap}
+        >
           <AntdList
             pagination={
               !meta || meta.count <= meta.pageSize
