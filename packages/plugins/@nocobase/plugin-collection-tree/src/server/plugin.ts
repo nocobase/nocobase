@@ -167,7 +167,7 @@ class PluginCollectionTreeServer extends Plugin {
           });
           const parentPath = lodash.get(parentPathData, 'path', null);
           if (parentPath == null) {
-            path = await this.getTreePath(parent, path, collection, tk, pathCollectionName, transaction);
+            path = await this.getTreePath(parent, path, collection, pathCollectionName, transaction);
           } else {
             path = `${parentPath}/${model.get(tk)}`;
           }
