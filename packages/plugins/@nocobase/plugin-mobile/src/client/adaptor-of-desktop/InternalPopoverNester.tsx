@@ -8,22 +8,23 @@
  */
 
 import { useField } from '@formily/react';
+import { useZIndexContext, zIndexContext } from '@nocobase/client';
 import { ConfigProvider } from 'antd';
 import { Popup } from 'antd-mobile';
 import { CloseOutline } from 'antd-mobile-icons';
 import React, { useCallback, useMemo } from 'react';
-import { BasicZIndexProvider, MIN_Z_INDEX_INCREMENT, useBasicZIndex } from './BasicZIndexProvider';
 import { usePopupContainer } from './FilterAction';
 import { useInternalPopoverNesterUsedInMobileStyle } from './InternalPopoverNester.style';
+import { MIN_Z_INDEX_INCREMENT } from './zIndex';
 
 const Container = (props) => {
   const { onOpenChange } = props;
   const { visiblePopup, popupContainerRef } = usePopupContainer(props.open);
   const { componentCls, hashId } = useInternalPopoverNesterUsedInMobileStyle();
   const field = useField();
-  const { basicZIndex } = useBasicZIndex();
+  const parentZIndex = useZIndexContext();
 
-  const newZIndex = basicZIndex + MIN_Z_INDEX_INCREMENT;
+  const newZIndex = parentZIndex + MIN_Z_INDEX_INCREMENT;
   const title = field.title || '';
 
   const zIndexStyle = useMemo(() => {
@@ -49,7 +50,7 @@ const Container = (props) => {
   }, [newZIndex]);
 
   return (
-    <BasicZIndexProvider basicZIndex={newZIndex}>
+    <zIndexContext.Provider value={newZIndex}>
       <ConfigProvider theme={theme}>
         <div onClick={openPopup}>{props.children}</div>
         <Popup
@@ -78,7 +79,7 @@ const Container = (props) => {
           <div style={{ height: 50 }}></div>
         </Popup>
       </ConfigProvider>
-    </BasicZIndexProvider>
+    </zIndexContext.Provider>
   );
 };
 

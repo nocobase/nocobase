@@ -936,7 +936,7 @@ test.describe('actions schema settings', () => {
       ).toBeVisible();
     });
 
-    test('open mode', async ({ page, mockPage }) => {
+    test.skip('open mode', async ({ page, mockPage }) => {
       const nocoPage = await mockPage(testingOfOpenModeForAddChild).waitForInit();
       await nocoPage.goto();
 

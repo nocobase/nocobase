@@ -8,14 +8,14 @@
  */
 
 import { ISchema, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Action, SchemaComponent, useActionContext } from '@nocobase/client';
+import { Action, SchemaComponent, useActionContext, useZIndexContext, zIndexContext } from '@nocobase/client';
 import { ConfigProvider } from 'antd';
 import { Popup } from 'antd-mobile';
 import { CloseOutline } from 'antd-mobile-icons';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useMobileActionDrawerStyle } from './ActionDrawer.style';
-import { BasicZIndexProvider, MIN_Z_INDEX_INCREMENT, useBasicZIndex } from './BasicZIndexProvider';
 import { usePopupContainer } from './FilterAction';
+import { MIN_Z_INDEX_INCREMENT } from './zIndex';
 
 export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?: string }) => {
   const fieldSchema = useFieldSchema();
@@ -23,7 +23,7 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
   const { visible, setVisible } = useActionContext();
   const { popupContainerRef, visiblePopup } = usePopupContainer(visible);
   const { componentCls, hashId } = useMobileActionDrawerStyle();
-  const { basicZIndex } = useBasicZIndex();
+  const parentZIndex = useZIndexContext();
 
   // this schema need to add padding in the content area of the popup
   const isSpecialSchema = isChangePasswordSchema(fieldSchema) || isEditProfileSchema(fieldSchema);
@@ -32,7 +32,7 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
 
   const specialStyle = isSpecialSchema ? { backgroundColor: 'white' } : {};
 
-  const newZIndex = basicZIndex + MIN_Z_INDEX_INCREMENT;
+  const newZIndex = parentZIndex + MIN_Z_INDEX_INCREMENT;
 
   const zIndexStyle = useMemo(() => {
     return {
@@ -66,7 +66,7 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
   }, [newZIndex]);
 
   return (
-    <BasicZIndexProvider basicZIndex={newZIndex}>
+    <zIndexContext.Provider value={newZIndex}>
       <ConfigProvider theme={theme}>
         <Popup
           className={`${componentCls} ${hashId}`}
@@ -121,7 +121,7 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
           ) : null}
         </Popup>
       </ConfigProvider>
-    </BasicZIndexProvider>
+    </zIndexContext.Provider>
   );
 });
 

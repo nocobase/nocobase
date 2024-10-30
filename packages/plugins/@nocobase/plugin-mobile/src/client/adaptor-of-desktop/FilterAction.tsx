@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Filter, withDynamicSchemaProps } from '@nocobase/client';
+import { Filter, useZIndexContext, withDynamicSchemaProps } from '@nocobase/client';
 import { ConfigProvider } from 'antd';
 import { Popup } from 'antd-mobile';
 import { CloseOutline } from 'antd-mobile-icons';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMobileActionDrawerStyle } from './ActionDrawer.style';
-import { MIN_Z_INDEX_INCREMENT, useBasicZIndex } from './BasicZIndexProvider';
+import { MIN_Z_INDEX_INCREMENT } from './zIndex';
 
 const OriginFilterAction = Filter.Action;
 
@@ -24,11 +24,11 @@ export const FilterAction = withDynamicSchemaProps((props) => {
       {...props}
       Container={(props) => {
         const { visiblePopup, popupContainerRef } = usePopupContainer(props.open);
-        const { basicZIndex } = useBasicZIndex();
+        const parentZIndex = useZIndexContext();
         const { componentCls, hashId } = useMobileActionDrawerStyle();
         const { t } = useTranslation();
 
-        const newZIndex = basicZIndex + MIN_Z_INDEX_INCREMENT;
+        const newZIndex = parentZIndex + MIN_Z_INDEX_INCREMENT;
 
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const closePopup = useCallback(() => {
@@ -117,9 +117,9 @@ export const usePopupContainer = (visible: boolean) => {
   const [mobileContainer] = useState<HTMLElement>(() => document.querySelector('.mobile-container'));
   const [visiblePopup, setVisiblePopup] = useState(false);
   const popupContainerRef = React.useRef<HTMLDivElement>(null);
-  const { basicZIndex } = useBasicZIndex();
+  const parentZIndex = useZIndexContext();
 
-  const newZIndex = basicZIndex + MIN_Z_INDEX_INCREMENT;
+  const newZIndex = parentZIndex + MIN_Z_INDEX_INCREMENT;
 
   useEffect(() => {
     if (!visible) {

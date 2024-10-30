@@ -16,7 +16,7 @@
  * For more information, please rwefer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useCallback, useContext } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { Badge, Button, ConfigProvider, Drawer, Tooltip } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import { createStyles } from 'antd-style';
@@ -76,9 +76,15 @@ const InnerInbox = (props) => {
       }}
     >
       <Tooltip title={t('Message')}>
-        <Button className={styles.button} title={'Apps'} icon={<Icon type={'MailOutlined'} />} onClick={onIconClick} />
+        <Badge count={unreadMsgsCountObs.value} size="small" offset={[-12, 14]}>
+          <Button
+            className={styles.button}
+            title={'Apps'}
+            icon={<Icon type={'MailOutlined'} />}
+            onClick={onIconClick}
+          />
+        </Badge>
       </Tooltip>
-      {unreadMsgsCountObs.value && <Badge count={unreadMsgsCountObs.value} size="small" offset={[-18, -16]}></Badge>}
       <Drawer
         title={DrawerTitle}
         open={inboxVisible.value}
