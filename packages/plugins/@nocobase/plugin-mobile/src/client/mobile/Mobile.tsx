@@ -40,7 +40,7 @@ export const Mobile = () => {
   useToAdaptActionDrawerToMobile();
   useToAddMobilePopupBlockInitializers();
 
-  const { styles } = useStyles();
+  const { componentCls, hashId } = useStyles();
   const mobilePlugin = usePlugin(PluginMobileClient);
   const MobileRouter = mobilePlugin.getRouterComponent();
   const AdminProviderComponent = mobilePlugin?.options?.config?.skipLogin ? React.Fragment : AdminProvider;
@@ -89,7 +89,7 @@ export const Mobile = () => {
             },
           }}
         >
-          <AntdAppProvider className={`mobile-container ${styles.nbMobile}`}>
+          <AntdAppProvider className={`mobile-container ${componentCls} ${hashId}`}>
             <OpenModeProvider
               defaultOpenMode="page"
               isMobile={true}
