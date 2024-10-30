@@ -11,9 +11,9 @@ import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../schema-component';
 import { SchemaInitializerItem, useSchemaInitializer } from '../../application';
 import { useGlobalTheme } from '../../global-theme';
+import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../schema-component';
 import { useStyles } from '../../schema-component/antd/menu/MenuItemInitializers';
 
 export const GroupItem = () => {
@@ -21,7 +21,7 @@ export const GroupItem = () => {
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
-  const { styles } = useStyles();
+  const { componentCls, hashId } = useStyles();
 
   const handleClick = useCallback(async () => {
     const values = await FormDialog(
@@ -76,5 +76,5 @@ export const GroupItem = () => {
       ],
     });
   }, [insert, options.components, options.scope, t, theme]);
-  return <SchemaInitializerItem title={t('Group')} onClick={handleClick} className={styles.menuItem} />;
+  return <SchemaInitializerItem title={t('Group')} onClick={handleClick} className={`${componentCls} ${hashId}`} />;
 };

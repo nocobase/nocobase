@@ -23,7 +23,7 @@ export const LinkMenuItem = () => {
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
-  const { styles } = useStyles();
+  const { componentCls, hashId } = useStyles();
   const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
 
   const handleClick = useCallback(async () => {
@@ -86,5 +86,5 @@ export const LinkMenuItem = () => {
     });
   }, [insert, options.components, options.scope, t, theme]);
 
-  return <SchemaInitializerItem title={t('Link')} onClick={handleClick} className={styles.menuItem} />;
+  return <SchemaInitializerItem title={t('Link')} onClick={handleClick} className={`${componentCls} ${hashId}`} />;
 };
