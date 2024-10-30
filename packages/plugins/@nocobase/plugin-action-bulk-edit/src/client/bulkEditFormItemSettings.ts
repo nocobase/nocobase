@@ -22,6 +22,7 @@ import {
   useValidateSchema,
   fieldComponentSettingsItem,
   EditValidationRules,
+  useCompile,
 } from '@nocobase/client';
 import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
@@ -46,6 +47,7 @@ export const bulkEditFormItemSettings = new SchemaSettings({
             type: 'modal',
             useComponentProps() {
               const { t } = useTranslation();
+              const compile = useCompile();
               const { dn } = useDesignable();
               const field = useField<Field>();
               const fieldSchema = useFieldSchema();
@@ -70,16 +72,16 @@ export const bulkEditFormItemSettings = new SchemaSettings({
                   },
                 },
                 onSubmit({ title }) {
-                  if (title) {
-                    field.title = title;
-                    fieldSchema.title = title;
-                    dn.emit('patch', {
-                      schema: {
-                        'x-uid': fieldSchema['x-uid'],
-                        title: fieldSchema.title,
-                      },
-                    });
-                  }
+                  const result = title.trim() === '' ? collectionField?.uiSchema?.title : title;
+                  field.title = compile(result);
+                  fieldSchema.title = title;
+                  dn.emit('patch', {
+                    schema: {
+                      'x-uid': fieldSchema['x-uid'],
+                      title: fieldSchema.title,
+                    },
+                  });
+
                   dn.refresh();
                 },
               };

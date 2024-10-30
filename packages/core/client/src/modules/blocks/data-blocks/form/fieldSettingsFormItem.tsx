@@ -19,7 +19,7 @@ import { useCollectionManager_deprecated, useCollection_deprecated } from '../..
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { useCollection } from '../../../../data-source';
 import { fieldComponentSettingsItem } from '../../../../data-source/commonsSettingsItem';
-import { useDesignable, useValidateSchema } from '../../../../schema-component';
+import { useDesignable, useValidateSchema, useCompile } from '../../../../schema-component';
 import {
   useIsFieldReadPretty,
   useIsFormReadPretty,
@@ -53,6 +53,7 @@ export const fieldSettingsFormItem = new SchemaSettings({
               const { dn } = useDesignable();
               const field = useField<Field>();
               const fieldSchema = useFieldSchema();
+              const compile = useCompile();
               const { getCollectionJoinField } = useCollectionManager_deprecated();
               const { getField } = useCollection_deprecated();
               const collectionField =
@@ -75,16 +76,15 @@ export const fieldSettingsFormItem = new SchemaSettings({
                   },
                 } as ISchema,
                 onSubmit({ title }) {
-                  if (title) {
-                    field.title = title;
-                    fieldSchema.title = title;
-                    dn.emit('patch', {
-                      schema: {
-                        'x-uid': fieldSchema['x-uid'],
-                        title: fieldSchema.title,
-                      },
-                    });
-                  }
+                  const result = title.trim() === '' ? collectionField?.uiSchema?.title : title;
+                  field.title = compile(result);
+                  fieldSchema.title = result;
+                  dn.emit('patch', {
+                    schema: {
+                      'x-uid': fieldSchema['x-uid'],
+                      title: fieldSchema.title,
+                    },
+                  });
                   dn.refresh();
                 },
               };
