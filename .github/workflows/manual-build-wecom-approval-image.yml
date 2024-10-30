@@ -29,12 +29,12 @@ jobs:
         with:
           ref: next
           fetch-depth: 0
-      # - name: Checkout nocobase/nocobase pr
-      #   shell: bash
-      #   run: |
-      #     gh pr checkout 5244
-      #   env:
-      #     GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+      - name: Checkout nocobase/nocobase pr
+        shell: bash
+        run: |
+          gh pr checkout 5553
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
       - name: Checkout wecom notification plugin
         uses: actions/checkout@v3
         with:
