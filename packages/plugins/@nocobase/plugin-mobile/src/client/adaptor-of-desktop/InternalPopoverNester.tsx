@@ -19,7 +19,7 @@ import { useInternalPopoverNesterUsedInMobileStyle } from './InternalPopoverNest
 const Container = (props) => {
   const { onOpenChange } = props;
   const { visiblePopup, popupContainerRef } = usePopupContainer(props.open);
-  const { styles } = useInternalPopoverNesterUsedInMobileStyle();
+  const { componentCls, hashId } = useInternalPopoverNesterUsedInMobileStyle();
   const field = useField();
   const { basicZIndex } = useBasicZIndex();
 
@@ -53,23 +53,24 @@ const Container = (props) => {
       <ConfigProvider theme={theme}>
         <div onClick={openPopup}>{props.children}</div>
         <Popup
+          className={`${componentCls} ${hashId}`}
           visible={visiblePopup}
           onClose={closePopup}
           onMaskClick={closePopup}
           getContainer={() => popupContainerRef.current as HTMLElement}
-          bodyClassName={styles.body}
+          bodyClassName="nb-internal-popover-nester-used-in-mobile-body"
           bodyStyle={zIndexStyle}
           maskStyle={zIndexStyle}
           showCloseButton
           closeOnSwipe
         >
-          <div className={styles.header}>
+          <div className="nb-internal-popover-nester-used-in-mobile-header">
             {/* used to make the title center */}
-            <span className={styles.placeholder}>
+            <span className="nb-internal-popover-nester-used-in-mobile-placeholder">
               <CloseOutline />
             </span>
             <span>{title}</span>
-            <span className={styles.closeIcon} onClick={closePopup}>
+            <span className="nb-internal-popover-nester-used-in-mobile-close-icon" onClick={closePopup}>
               <CloseOutline />
             </span>
           </div>
