@@ -19,7 +19,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { NavigateFunction, Outlet, useOutletContext, useParams, useSearchParams } from 'react-router-dom';
 import { FormDialog } from '..';
-import { useStyles as useAClStyles } from '../../../acl/style';
+import { antTableCell } from '../../../acl/style';
 import { useRequest } from '../../../api-client';
 import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import { useAppSpin } from '../../../application/hooks/useAppSpin';
@@ -58,7 +58,6 @@ export const Page = (props) => {
     [fieldSchema.properties, searchParams, tabUid],
   );
   const { wrapSSR, hashId, componentCls } = useStyles();
-  const aclStyles = useAClStyles();
   const { token } = useToken();
 
   const handleErrors = useCallback((error) => {
@@ -170,7 +169,7 @@ export const Page = (props) => {
   ]);
 
   return wrapSSR(
-    <div className={`${componentCls} ${hashId} ${aclStyles.styles}`}>
+    <div className={`${componentCls} ${hashId} ${antTableCell}`}>
       <NocoBasePageHeader footer={footer} />
       <div className="nb-page-wrapper">
         <ErrorBoundary FallbackComponent={ErrorFallback} onError={handleErrors}>

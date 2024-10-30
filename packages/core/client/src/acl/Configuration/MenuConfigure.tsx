@@ -13,7 +13,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { useRecord } from '../../record-provider';
-import { useStyles } from '../style';
+import { antTableCell } from '../style';
 import { useMenuItems } from './MenuItemsProvider';
 
 const findUids = (items) => {
@@ -49,7 +49,6 @@ const getChildrenUids = (data = [], arr = []) => {
 };
 
 export const MenuConfigure = () => {
-  const { styles } = useStyles();
   const record = useRecord();
   const api = useAPIClient();
   const { items } = useMenuItems();
@@ -115,7 +114,7 @@ export const MenuConfigure = () => {
 
   return (
     <Table
-      className={styles}
+      className={antTableCell}
       loading={loading}
       rowKey={'uid'}
       pagination={false}
