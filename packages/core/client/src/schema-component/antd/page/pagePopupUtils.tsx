@@ -111,13 +111,13 @@ export const getPopupPathFromParams = (params: PopupParams) => {
     puid,
     collection && 'collection',
     collection,
-    filterbytk && 'filterbytk',
+    filterbytk !== null && filterbytk !== undefined && 'filterbytk',
     filterbytk,
     sourceid && 'sourceid',
     sourceid,
     tab && 'tab',
     tab,
-  ].filter(Boolean);
+  ].filter((item) => item !== undefined && item !== null);
 
   return `/popups/${popupPath.map((item) => encodePathValue(item)).join('/')}`;
 };
