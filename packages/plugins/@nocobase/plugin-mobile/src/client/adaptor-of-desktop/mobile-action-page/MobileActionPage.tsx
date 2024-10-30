@@ -16,12 +16,14 @@ import {
   useActionContext,
   useApp,
   useTabsContext,
+  useZIndexContext,
+  zIndexContext,
 } from '@nocobase/client';
 import _ from 'lodash';
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { usePluginTranslation } from '../../locale';
-import { BasicZIndexProvider, MIN_Z_INDEX_INCREMENT, useBasicZIndex } from '../BasicZIndexProvider';
+import { MIN_Z_INDEX_INCREMENT } from '../zIndex';
 import { useMobileActionPageStyle } from './MobileActionPage.style';
 import { MobileTabsForMobileActionPage } from './MobileTabsForMobileActionPage';
 
@@ -94,11 +96,11 @@ export const MobileActionPage = ({ level, footerNodeName }) => {
   const { styles } = useMobileActionPageStyle();
   const tabContext = useTabsContext();
   const containerDOM = useMemo(() => document.querySelector('.nb-mobile-subpages-slot'), []);
-  const { basicZIndex } = useBasicZIndex();
+  const parentZIndex = useZIndexContext();
 
   // in nested popups, basicZIndex is an accumulated value to ensure that
   // the z-index of the current level is always higher than the previous level
-  const newZIndex = basicZIndex + MIN_Z_INDEX_INCREMENT + (level || 1);
+  const newZIndex = parentZIndex + MIN_Z_INDEX_INCREMENT + (level || 1);
 
   const footerSchema = fieldSchema.reduceProperties((buf, s) => {
     if (s['x-component'] === footerNodeName) {
@@ -118,7 +120,7 @@ export const MobileActionPage = ({ level, footerNodeName }) => {
   }
 
   const actionPageNode = (
-    <BasicZIndexProvider basicZIndex={newZIndex}>
+    <zIndexContext.Provider value={newZIndex}>
       <div className={styles.container} style={zIndexStyle}>
         <TabsContextProvider {...tabContext} tabBarExtraContent={<BackButtonUsedInSubPage />} tabBarGutter={48}>
           <SchemaComponent components={components} schema={fieldSchema} onlyRenderProperties />
@@ -136,7 +138,7 @@ export const MobileActionPage = ({ level, footerNodeName }) => {
           </div>
         )}
       </div>
-    </BasicZIndexProvider>
+    </zIndexContext.Provider>
   );
 
   if (containerDOM) {
