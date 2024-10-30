@@ -14,7 +14,7 @@ import React, { FC, useCallback } from 'react';
 import { useMobileRoutes } from '../../mobile-providers';
 import { useStyles } from './styles';
 
-import { css, cx, DndContext, DndContextProps, SchemaComponent, useDesignable } from '@nocobase/client';
+import { cx, DndContext, DndContextProps, SchemaComponent, useDesignable } from '@nocobase/client';
 import { isInnerLink } from '../../utils';
 import { MobileTabBarInitializer } from './initializer';
 import { getMobileTabBarItemSchema, MobileTabBarItem } from './MobileTabBar.Item';
@@ -32,7 +32,7 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
   Page: typeof MobileTabBarPage;
   Link: typeof MobileTabBarLink;
 } = ({ enableTabBar = true }) => {
-  const { styles } = useStyles();
+  const { componentCls, hashId } = useStyles();
   const { designable } = useDesignable();
   const { routeList, activeTabBarItem, resource, refresh } = useMobileRoutes();
   const validRouteList = routeList.filter((item) => item.schemaUid || isInnerLink(item.options?.url));
@@ -61,19 +61,14 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
   // 判断内页的方法：没有激活的 activeTabBarItem 并且 routeList 中有数据
   if (!activeTabBarItem && validRouteList.length > 0) return null;
   return (
-    <div className={cx(styles.mobileTabBar, 'mobile-tab-bar')} data-testid="mobile-tab-bar">
-      <div className={styles.mobileTabBarContent}>
+    <div className={cx(componentCls, hashId, 'mobile-tab-bar')} data-testid="mobile-tab-bar">
+      <div className="mobile-tab-bar-content">
         <DndContext onDragEnd={handleDragEnd}>
           <div
-            className={cx(
-              styles.mobileTabBarList,
-              css({
-                maxWidth: designable ? 'calc(100% - 58px)' : '100%',
-                // '.nb-block-item': {
-                //   maxWidth: `${100 / routeList.length}%`,
-                // },
-              }),
-            )}
+            className="mobile-tab-bar-list"
+            style={{
+              maxWidth: designable ? 'calc(100% - 58px)' : '100%',
+            }}
           >
             {routeList.map((item) => {
               return <SchemaComponent key={item.id} schema={getMobileTabBarItemSchema(item)} />;
