@@ -76,7 +76,7 @@ export const SchemaSettingsLayoutItem = function LayoutItem() {
               },
               'x-validator': [
                 {
-                  minimum: 100,
+                  minimum: 50,
                 },
               ],
               'x-reactions': {
