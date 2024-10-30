@@ -14,10 +14,8 @@ import { merge } from '@formily/shared';
 import { concat } from 'lodash';
 import React, { useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useDynamicComponentProps } from '../../hoc/withDynamicSchemaProps';
 import { ErrorFallback, useCompile, useComponent } from '../../schema-component';
-import { useIsAllowToSetDefaultValue } from '../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { CollectionFieldProvider, useCollectionField } from './CollectionFieldProvider';
 
 type Props = {
@@ -48,11 +46,9 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { uiSchema: uiSchemaOrigin, defaultValue } = useCollectionField();
-  const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue();
   const Component = useComponent(
     fieldSchema['x-component-props']?.['component'] || uiSchemaOrigin?.['x-component'] || 'Input',
   );
-  const ctx = useFormBlockContext();
   const dynamicProps = useDynamicComponentProps(uiSchemaOrigin?.['x-use-component-props'], props);
 
   // TODO: 初步适配
@@ -64,9 +60,9 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
     setFieldProps(field, 'content', uiSchema['x-content']);
     setFieldProps(field, 'title', uiSchema.title);
     setFieldProps(field, 'description', uiSchema.description);
-    if (ctx?.form) {
-      const defaultVal = isAllowToSetDefaultValue() ? fieldSchema.default || defaultValue : undefined;
-      defaultVal !== null && defaultVal !== undefined && setFieldProps(field, 'initialValue', defaultVal);
+
+    if (fieldSchema.default == null && defaultValue != null) {
+      setFieldProps(field, 'initialValue', defaultValue);
     }
 
     if (!field.validator && (uiSchema['x-validator'] || fieldSchema['x-validator'])) {
