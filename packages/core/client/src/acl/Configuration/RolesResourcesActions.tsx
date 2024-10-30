@@ -166,7 +166,7 @@ export const RolesResourcesActions = connect((props) => {
           </FormItem>
           <FormItem label={t('Field permission')}>
             <Table
-              className={styles}
+              className={antTableCell}
               pagination={false}
               dataSource={fieldPermissions}
               columns={[
