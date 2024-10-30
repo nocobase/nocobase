@@ -22,7 +22,7 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
   const field = useField();
   const { visible, setVisible } = useActionContext();
   const { popupContainerRef, visiblePopup } = usePopupContainer(visible);
-  const { styles } = useMobileActionDrawerStyle();
+  const { componentCls, hashId } = useMobileActionDrawerStyle();
   const { basicZIndex } = useBasicZIndex();
 
   // this schema need to add padding in the content area of the popup
@@ -69,22 +69,23 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
     <BasicZIndexProvider basicZIndex={newZIndex}>
       <ConfigProvider theme={theme}>
         <Popup
+          className={`${componentCls} ${hashId}`}
           visible={visiblePopup}
           onClose={closePopup}
           onMaskClick={closePopup}
           getContainer={() => popupContainerRef.current}
-          bodyClassName={styles.body}
+          bodyClassName="nb-mobile-action-drawer-body"
           bodyStyle={zIndexStyle}
           maskStyle={zIndexStyle}
           closeOnSwipe
         >
-          <div className={styles.header}>
+          <div className="nb-mobile-action-drawer-header">
             {/* used to make the title center */}
-            <span className={styles.placeholder}>
+            <span className="nb-mobile-action-drawer-placeholder">
               <CloseOutline />
             </span>
             <span>{title}</span>
-            <span className={styles.closeIcon} onClick={closePopup}>
+            <span className="nb-mobile-action-drawer-close-icon" onClick={closePopup}>
               <CloseOutline />
             </span>
           </div>
@@ -107,7 +108,7 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
             />
           )}
           {footerSchema ? (
-            <div className={styles.footer} style={isSpecialSchema ? specialStyle : null}>
+            <div className="nb-mobile-action-drawer-footer" style={isSpecialSchema ? specialStyle : null}>
               <RecursionField
                 basePath={field.address}
                 schema={fieldSchema}

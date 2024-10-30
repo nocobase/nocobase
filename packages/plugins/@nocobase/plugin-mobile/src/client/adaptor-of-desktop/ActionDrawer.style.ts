@@ -7,73 +7,76 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createStyles } from '@nocobase/client';
+import { genStyleHook } from '@nocobase/client';
 
-export const useMobileActionDrawerStyle = createStyles(({ css, token }: any) => {
+export const useMobileActionDrawerStyle = genStyleHook('nb-mobile-action-drawer', (token) => {
+  const { componentCls } = token;
   return {
-    header: css`
-      height: var(--nb-mobile-page-header-height);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid ${token.colorSplit};
-      position: sticky;
-      top: 0;
-      background-color: white;
-      z-index: 1000;
+    [componentCls]: {
+      '.nb-mobile-action-drawer-header': {
+        height: 'var(--nb-mobile-page-header-height)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderBottom: `1px solid ${token.colorSplit}`,
+        position: 'sticky',
+        top: 0,
+        backgroundColor: 'white',
+        zIndex: 1000,
 
-      // to match the button named 'Add block'
-      & + .nb-grid-container > .nb-grid > .nb-grid-warp > .ant-btn {
-        margin: 12px;
-      }
-    `,
+        // to match the button named 'Add block'
+        '& + .nb-grid-container > .nb-grid > .nb-grid-warp > .ant-btn': {
+          margin: 12,
+        },
+      },
 
-    placeholder: css`
-      display: inline-block;
-      padding: 12px;
-      visibility: hidden;
-    `,
+      '.nb-mobile-action-drawer-placeholder': {
+        display: 'inline-block',
+        padding: 12,
+        visibility: 'hidden',
+      },
 
-    closeIcon: css`
-      display: inline-block;
-      padding: 12px;
-      cursor: pointer;
-    `,
+      '.nb-mobile-action-drawer-close-icon': {
+        display: 'inline-block',
+        padding: 12,
+        cursor: 'pointer',
+      },
 
-    body: css`
-      border-top-left-radius: 8px;
-      border-top-right-radius: 8px;
-      max-height: calc(100% - var(--nb-mobile-page-header-height));
-      overflow-y: auto;
-      overflow-x: hidden;
-      background-color: ${token.colorBgLayout};
+      '.nb-mobile-action-drawer-body': {
+        borderTopLeftRadius: 8,
+        borderTopRightRadius: 8,
+        maxHeight: 'calc(100% - var(--nb-mobile-page-header-height))',
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        backgroundColor: token.colorBgLayout,
 
-      // clear the margin-bottom of the last block
-      & > .nb-grid-container > .nb-grid > .nb-grid-warp > .nb-grid-row:nth-last-child(2) .noco-card-item {
-        margin-bottom: 0;
+        // clear the margin-bottom of the last block
+        '& > .nb-grid-container > .nb-grid > .nb-grid-warp > .nb-grid-row:nth-last-child(2) .noco-card-item': {
+          marginBottom: 0,
 
-        & > .ant-card {
-          margin-bottom: 0 !important;
-        }
-      }
-    `,
+          '& > .ant-card': {
+            marginBottom: '0 !important',
+          },
+        },
+      },
 
-    footer: css`
-      padding: 8px var(--nb-mobile-page-tabs-content-padding);
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      position: sticky;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 1000;
-      border-top: 1px solid ${token.colorSplit};
-      background-color: ${token.colorBgLayout};
+      '.nb-mobile-action-drawer-footer': {
+        padding: '8px var(--nb-mobile-page-tabs-content-padding)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        position: 'sticky',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1000,
+        borderTop: `1px solid ${token.colorSplit}`,
+        backgroundColor: token.colorBgLayout,
 
-      .ant-btn {
-        margin-left: 8px;
-      }
-    `,
+        '.ant-btn': {
+          marginLeft: 8,
+        },
+      },
+    },
   };
 });
