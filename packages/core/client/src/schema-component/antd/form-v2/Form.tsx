@@ -49,14 +49,7 @@ const FormComponent: React.FC<FormProps> = (props) => {
   return (
     <FieldContext.Provider value={undefined}>
       <FormContext.Provider value={form}>
-        <FormLayout
-          layout={layout}
-          {...others}
-          labelAlign={labelAlign}
-          labelWidth={labelWidth}
-          labelWrap={labelWrap}
-          tooltipLayout="text"
-        >
+        <FormLayout layout={layout} {...others} labelAlign={labelAlign} labelWidth={labelWidth} labelWrap={labelWrap}>
           <div
             className={css`
               .nb-grid-container {
