@@ -7,27 +7,25 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC } from 'react';
-import { NavBar } from 'antd-mobile';
 import { RecursionField, useFieldSchema } from '@formily/react';
 import { cx, SchemaToolbarProvider } from '@nocobase/client';
+import { NavBar } from 'antd-mobile';
+import React, { FC } from 'react';
 
-import { useMobilePage } from '../../context';
 import { useMobileTitle } from '../../../../mobile-providers';
+import { useMobilePage } from '../../context';
 import { useStyles } from './styles';
 
 export const MobilePageNavigationBar: FC = () => {
   const { title } = useMobileTitle();
   const { displayNavigationBar = true, displayPageTitle = true } = useMobilePage();
   const fieldSchema = useFieldSchema();
-  const { styles } = useStyles();
+  const { componentCls, hashId } = useStyles();
+
   if (!displayNavigationBar) return null;
 
   return (
-    <div
-      className={cx('mobile-page-navigation-bar', styles.mobilePageNavigationBar)}
-      data-testid="mobile-page-navigation-bar"
-    >
+    <div className={cx('mobile-page-navigation-bar', componentCls, hashId)} data-testid="mobile-page-navigation-bar">
       <NavBar
         backArrow={false}
         back={null}
