@@ -356,7 +356,7 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
   );
 };
 
-export const SchemaToolbar: FC<SchemaToolbarProps> = (props) => {
+export const SchemaToolbar: FC<SchemaToolbarProps> = React.memo((props) => {
   const { designable } = useDesignable();
 
   if (!designable) {
@@ -364,4 +364,6 @@ export const SchemaToolbar: FC<SchemaToolbarProps> = (props) => {
   }
 
   return <InternalSchemaToolbar {...props} />;
-};
+});
+
+SchemaToolbar.displayName = 'SchemaToolbar';

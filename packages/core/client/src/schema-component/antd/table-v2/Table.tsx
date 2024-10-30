@@ -45,6 +45,7 @@ import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 
+const RecursionFieldMemo = React.memo(RecursionField);
 const InViewContext = React.createContext(false);
 
 const useArrayField = (props) => {
@@ -114,33 +115,29 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
 
   const columns = useMemo(
     () =>
-      columnsSchema?.map((s: Schema) => {
-        const collectionFields = s.reduceProperties((buf, s) => {
+      columnsSchema?.map((columnSchema: Schema) => {
+        const collectionFields = columnSchema.reduceProperties((buf, s) => {
           if (isCollectionFieldComponent(s)) {
             return buf.concat([s]);
           }
         }, []);
-        const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : s.name;
+        const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : columnSchema.name;
         return {
-          title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
+          title: <RecursionFieldMemo name={columnSchema.name} schema={columnSchema} onlyRenderSelf />,
           dataIndex,
-          key: s.name,
-          sorter: s['x-component-props']?.['sorter'],
+          key: columnSchema.name,
+          sorter: columnSchema['x-component-props']?.['sorter'],
           width: 200,
-          ...s['x-component-props'],
-          render: (v, record) => {
-            // 这行代码会导致这里的测试不通过：packages/core/client/src/modules/blocks/data-blocks/table/__e2e__/schemaInitializer.test.ts:189
-            // if (collectionFields?.length === 1 && collectionFields[0]['x-read-pretty'] && v == undefined) return null;
-
-            const index = field.value?.indexOf(record);
+          ...columnSchema['x-component-props'],
+          render: (value, record, index) => {
             const basePath = field.address.concat(record.__index || index);
             return (
               <SubFormProvider value={{ value: record, collection, fieldSchema: schema.parent }}>
                 <RecordIndexProvider index={record.__index || index}>
                   <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
-                    <ColumnFieldProvider schema={s} basePath={basePath}>
+                    <ColumnFieldProvider schema={columnSchema} basePath={basePath}>
                       <span role="button" className={schemaToolbarBigger}>
-                        <RecursionField basePath={basePath} schema={s} onlyRenderProperties />
+                        <RecursionFieldMemo basePath={basePath} schema={columnSchema} onlyRenderProperties />
                       </span>
                     </ColumnFieldProvider>
                   </RecordProvider>
@@ -149,14 +146,14 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
             );
           },
           onCell: (record, rowIndex) => {
-            return { record, schema: s, rowIndex, isSubTable: props.isSubTable };
+            return { record, schema: columnSchema, rowIndex, isSubTable: props.isSubTable };
           },
         } as TableColumnProps<any>;
       }),
 
     // 这里不能把 columnsSchema 作为依赖，因为其每次都会变化，这里使用 hasChangedColumns 作为依赖
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [hasChangedColumns, field.value, field.address, collection, parentRecordData, schemaToolbarBigger],
+    [hasChangedColumns, field.address, collection, parentRecordData, schemaToolbarBigger],
   );
 
   const tableColumns = useMemo(() => {
@@ -855,17 +852,12 @@ export const Table: any = withDynamicSchemaProps(
     );
 
     const { height: tableHeight, tableSizeRefCallback } = useTableSize();
-    const maxContent = useMemo(() => {
-      return {
-        x: 'max-content',
-      };
-    }, []);
     const scroll = useMemo(() => {
       return {
         x: 'max-content',
         y: dataSource.length > 0 ? tableHeight : undefined,
       };
-    }, [tableHeight, maxContent, dataSource]);
+    }, [tableHeight, dataSource]);
 
     const rowClassName = useCallback(
       (record) => (selectedRow.includes(record[rowKey]) ? highlightRow : ''),

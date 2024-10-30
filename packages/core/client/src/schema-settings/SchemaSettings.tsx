@@ -153,9 +153,8 @@ export const SchemaSettingsProvider: React.FC<SchemaSettingsProviderProps> = (pr
   );
 };
 
-export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = (props) => {
+export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = React.memo((props) => {
   const { title, dn, ...others } = props;
-  const app = useApp();
   const [visible, setVisible] = useState(false);
   const { Component, getMenuItems } = useMenuItem();
   const [, startTransition] = useReactTransition();
@@ -196,7 +195,9 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = (props) => 
       </Dropdown>
     </SchemaSettingsProvider>
   );
-};
+});
+
+SchemaSettingsDropdown.displayName = 'SchemaSettingsDropdown';
 
 const findGridSchema = (fieldSchema) => {
   return fieldSchema.reduceProperties((buf, s) => {
