@@ -21,7 +21,7 @@ export function ActionPage({ level }) {
   const filedSchema = useFieldSchema();
   const ctx = useActionContext();
   const { getContainerDOM } = usePopupOrSubpagesContainerDOM();
-  const { styles } = useActionPageStyle();
+  const { componentCls, hashId } = useActionPageStyle();
   const tabContext = useTabsContext();
   const parentZIndex = useZIndexContext();
 
@@ -36,7 +36,7 @@ export function ActionPage({ level }) {
   }
 
   const actionPageNode = (
-    <div className={styles.container} style={style}>
+    <div className={`${componentCls} ${hashId}`} style={style}>
       <TabsContextProvider {...tabContext} tabBarExtraContent={<BackButtonUsedInSubPage />}>
         <zIndexContext.Provider value={style.zIndex}>
           <RecursionField schema={filedSchema} onlyRenderProperties />
