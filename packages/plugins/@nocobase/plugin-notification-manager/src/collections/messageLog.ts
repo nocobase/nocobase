@@ -95,7 +95,7 @@ export default {
     },
     {
       name: 'reason',
-      type: 'string',
+      type: 'text',
       interface: 'input',
       uiSchema: {
         type: 'string',
