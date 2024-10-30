@@ -216,9 +216,8 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
     ...props,
     ...(fieldSchema?.['x-toolbar-props'] || {}),
   } as SchemaToolbarProps;
-  const { designable } = useDesignable();
   const compile = useCompile();
-  const { styles } = useStyles();
+  const { componentCls, hashId } = useStyles();
   const { t } = useTranslation();
   const { getAriaLabel } = useGetAriaLabelOfDesigner();
   const dm = useDataSourceManager();
@@ -229,8 +228,9 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
   const titleArr = useMemo(() => {
     if (!title) return undefined;
     if (typeof title === 'string') return [compile(title)];
-    if (Array.isArray(title)) return title.map((item) => compile(item));
-  }, [compile, title]);
+    if (Array.isArray(title)) return compile(title);
+  }, [title]);
+
   const { render: schemaSettingsRender, exists: schemaSettingsExists } = useSchemaSettingsRender(
     settings || fieldSchema?.['x-settings'],
     fieldSchema?.['x-settings-props'],
@@ -282,9 +282,7 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
   const settingsElement = useMemo(() => {
     return settings !== false && schemaSettingsExists ? schemaSettingsRender() : null;
   }, [schemaSettingsExists, schemaSettingsRender, settings]);
-
   const toolbarRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     const toolbarElement = toolbarRef.current;
     let parentElement = toolbarElement?.parentElement;
@@ -314,38 +312,33 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
 
     parentElement.addEventListener('mouseenter', show);
     parentElement.addEventListener('mouseleave', hide);
-
     return () => {
       parentElement.removeEventListener('mouseenter', show);
       parentElement.removeEventListener('mouseleave', hide);
     };
   }, []);
 
-  if (!designable) {
-    return null;
-  }
-
   return (
     <div
       ref={toolbarRef}
-      className={classNames(styles.toolbar, toolbarClassName, 'schema-toolbar')}
+      className={classNames(componentCls, hashId, toolbarClassName, 'schema-toolbar')}
       style={{ border: showBorder ? 'auto' : 0, background: showBackground ? 'auto' : 0, ...toolbarStyle }}
     >
       {titleArr && (
-        <div className={styles.toolbarTitle}>
+        <div className={'toolbar-title'}>
           <Space size={2}>
-            <span key={titleArr[0]} className={styles.toolbarTitleTag}>
+            <span key={titleArr[0]} className={'toolbar-title-tag'}>
               {dataSource ? `${compile(dataSource?.displayName)} > ${titleArr[0]}` : titleArr[0]}
             </span>
             {titleArr[1] && (
-              <span className={styles.toolbarTitleTag}>
+              <span className={'toolbar-title-tag'}>
                 {`${t('Reference template')}: ${`${titleArr[1]}` || t('Untitled')}`}
               </span>
             )}
           </Space>
         </div>
       )}
-      <div className={classNames(styles.toolbarIcons, spaceWrapperClassName)} style={spaceWrapperStyle}>
+      <div className={classNames('toolbar-icons', spaceWrapperClassName)} style={spaceWrapperStyle}>
         <Space size={3} align={'center'} className={spaceClassName} style={spaceStyle}>
           {dragElement}
           {initializerElement}
