@@ -332,7 +332,7 @@ export const Grid: any = observer(
     const addr = field.address.toString();
     const rows = useRowProperties();
     const { setPrintContent } = useFormBlockContext();
-    const { styles } = useStyles();
+    const { componentCls, hashId } = useStyles();
     const distributedValue =
       distributed === undefined
         ? fieldSchema?.parent['x-component'] === 'Page' || fieldSchema?.parent['x-component'] === 'Tabs.TabPane'
@@ -355,8 +355,8 @@ export const Grid: any = observer(
     return (
       <FilterBlockProvider>
         <GridContext.Provider value={gridContextValue}>
-          <div className={cls('nb-grid-container', styles.wrapper)}>
-            <div className={cls(`nb-grid ${styles.container}`)} style={{ position: 'relative' }} ref={gridRef}>
+          <div className={cls('nb-grid-container')}>
+            <div className={cls(`nb-grid ${componentCls} ${hashId}`)} ref={gridRef}>
               <div className="nb-grid-warp">
                 <DndWrapper dndContext={props.dndContext}>
                   {showDivider ? (
