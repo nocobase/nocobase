@@ -155,7 +155,7 @@ export const Page = (props) => {
         key: schema.name as string,
       };
     });
-  }, [fieldSchema, props.className, t]);
+  }, [fieldSchema, props.className, t, fieldSchema.mapProperties((schema) => schema.title || t('Unnamed')).join()]);
 
   const footer = useMemo(() => {
     return enablePageTabs ? (
