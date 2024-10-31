@@ -18,12 +18,12 @@ import {
   OpenModeProvider,
   useAssociationFieldModeContext,
   usePlugin,
+  zIndexContext,
 } from '@nocobase/client';
 import React from 'react';
 import { isDesktop } from 'react-device-detect';
 
 import { ActionDrawerUsedInMobile, useToAdaptActionDrawerToMobile } from '../adaptor-of-desktop/ActionDrawer';
-import { BasicZIndexProvider } from '../adaptor-of-desktop/BasicZIndexProvider';
 import { useToAdaptFilterActionToMobile } from '../adaptor-of-desktop/FilterAction';
 import { InternalPopoverNesterUsedInMobile } from '../adaptor-of-desktop/InternalPopoverNester';
 import { useToAddMobilePopupBlockInitializers } from '../adaptor-of-desktop/mobile-action-page/blockInitializers';
@@ -105,9 +105,9 @@ export const Mobile = () => {
                   <ResetSchemaOptionsProvider>
                     <AssociationFieldModeProvider modeToComponent={modeToComponent}>
                       {/* the z-index of all popups and subpages will be based on this value */}
-                      <BasicZIndexProvider basicZIndex={800}>
+                      <zIndexContext.Provider value={100}>
                         <MobileRouter />
-                      </BasicZIndexProvider>
+                      </zIndexContext.Provider>
                     </AssociationFieldModeProvider>
                   </ResetSchemaOptionsProvider>
                 </MobileAppProvider>

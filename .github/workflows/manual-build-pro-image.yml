@@ -1,8 +1,10 @@
 name: Manual build pro image
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.inputs.pr_number }}-${{ github.event.inputs.nocobase_pr_number }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.pr_number }}-${{ inputs.nocobase_pr_number }}
   cancel-in-progress: true
+
+run-name: Build pro image ${{ github.ref }}-${{ inputs.pr_number }}-${{ inputs.nocobase_pr_number }}
 
 on:
   workflow_dispatch:

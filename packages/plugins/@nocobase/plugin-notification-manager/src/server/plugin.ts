@@ -15,6 +15,10 @@ export class PluginNotificationManagerServer extends Plugin {
   private manager: NotificationManager;
   logger: Logger;
 
+  get channelTypes() {
+    return this.manager.channelTypes;
+  }
+
   registerChannelType(params: RegisterServerTypeFnParams) {
     this.manager.registerType(params);
   }

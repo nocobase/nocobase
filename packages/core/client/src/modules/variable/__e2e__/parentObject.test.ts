@@ -110,7 +110,7 @@ test.describe('variable: parent object', () => {
 
     // 3. Test if the "Current object" variable can be used normally in the subform
     await page.getByLabel('schema-initializer-Grid-form:configureFields-collection2').hover();
-    await page.getByRole('menuitem', { name: 'form Add text' }).click();
+    await page.getByRole('menuitem', { name: 'form Add Markdown' }).click();
     await page.getByLabel('block-item-Markdown.Void-').hover();
     await page.getByLabel('designer-schema-settings-Markdown.Void-blockSettings:markdown-collection2').hover();
     await page.getByRole('menuitem', { name: 'Edit markdown' }).click();

@@ -297,7 +297,7 @@ export const useTableSelectorProps = () => {
       field.value = data;
       field?.setInitialValue?.(data);
       field.data = field.data || {};
-      field.data.selectedRowKeys = ctx?.field?.data?.selectedRowKeys;
+      field.data.selectedRowKeys = [];
       field.componentProps.pagination = field.componentProps.pagination || {};
       field.componentProps.pagination.pageSize = ctx?.service?.data?.meta?.pageSize;
       field.componentProps.pagination.total = ctx?.service?.data?.meta?.count;
