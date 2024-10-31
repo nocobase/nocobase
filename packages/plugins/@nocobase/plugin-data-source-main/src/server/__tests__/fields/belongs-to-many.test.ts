@@ -206,18 +206,20 @@ describe('belongsToMany', () => {
       context: {},
     });
 
-    const throughCollection = await Collection.repository.findOne({
+    const throughCollectionRecord = await Collection.repository.findOne({
       filter: {
         name: 'post_tags',
       },
     });
 
-    expect(throughCollection.get('sortable')).toEqual(false);
+    expect(throughCollectionRecord.get('sortable')).toEqual(false);
     const collectionManagerSchema = process.env.COLLECTION_MANAGER_SCHEMA;
     const mainSchema = process.env.DB_SCHEMA || 'public';
 
+    const throughCollection = db.getCollection('post_tags');
+
     if (collectionManagerSchema && mainSchema != collectionManagerSchema && db.inDialect('postgres')) {
-      expect(throughCollection.get('schema')).toEqual(collectionManagerSchema);
+      expect(throughCollection.options.schema).toEqual(collectionManagerSchema);
 
       const tableName = db.getCollection('post_tags').model.tableName;
 
