@@ -463,7 +463,7 @@ const BodyCellComponent = (props) => {
   const style = useMemo(() => Object.assign({ ...props.style }, valueMap), [props.style, valueMap]);
   const skeletonStyle = {
     height: '1em',
-    backgroundColor: 'rgba(0, 0, 0, 0.06)',
+    backgroundColor: token.colorFillSecondary,
     borderRadius: `${token.borderRadiusSM}px`,
   };
 

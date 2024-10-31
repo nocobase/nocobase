@@ -62,14 +62,14 @@ export const TableSkeleton: React.FC<TableSkeletonProps> = ({ rows = 5, columns 
 
       .skeleton-loading {
         height: ${token.controlHeight / 2}px;
-        background: ${token.colorFillQuaternary};
+        background: ${token.colorFillSecondary};
         border-radius: ${token.borderRadiusSM}px;
       }
 
       .skeleton-checkbox {
         width: ${token.controlHeight / 2}px;
         height: ${token.controlHeight / 2}px;
-        background: ${token.colorFillQuaternary};
+        background: ${token.colorFillSecondary};
         border-radius: ${token.borderRadiusSM}px;
       }
 
