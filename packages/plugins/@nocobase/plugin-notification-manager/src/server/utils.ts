@@ -10,6 +10,9 @@
 import { Handlebars } from '@nocobase/utils';
 
 export function compile(template: Record<string, any>, data: Record<string, any>): Record<string, any> {
+  if (!template) {
+    return {};
+  }
   const result = Object.keys(template).reduce((object, key) => {
     let c;
     let value = object[key];
