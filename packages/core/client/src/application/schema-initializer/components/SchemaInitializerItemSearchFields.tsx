@@ -33,7 +33,6 @@ export const SearchFields = ({ value: outValue, onChange, name }) => {
   }, [outValue]);
 
   useEffect(() => {
-    inputRef.current?.focus();
     const focusInput = () => {
       if (
         document.activeElement?.id !== inputRef.current.input.id &&
