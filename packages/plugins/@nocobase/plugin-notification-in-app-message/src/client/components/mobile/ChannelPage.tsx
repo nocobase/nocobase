@@ -10,7 +10,7 @@
 import React, { useEffect, useCallback } from 'react';
 import { Tabs } from 'antd-mobile';
 import { observer } from '@formily/reactive-react';
-import { useCurrentUserContext } from '@nocobase/client';
+import { useCurrentUserContext, css } from '@nocobase/client';
 import {
   MobilePageHeader,
   MobilePageNavigationBar,
@@ -35,8 +35,17 @@ const MobileMessageBoxInner = () => {
       <MobilePageHeader>
         <MobilePageNavigationBar />
         <Tabs
+          className={css({
+            '.adm-tabs-header': {
+              borderBottomWidth: 0,
+            },
+            '.adm-tabs-tab': {
+              height: 49,
+              padding: '10px 0 10px',
+            },
+          })}
           activeKey={channelStatusFilterObs.value}
-          activeLineMode={'full'}
+          activeLineMode={'auto'}
           onChange={(key: ChannelStatus) => {
             channelStatusFilterObs.value = key;
             fetchChannels({});

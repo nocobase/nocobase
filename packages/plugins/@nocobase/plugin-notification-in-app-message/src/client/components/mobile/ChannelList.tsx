@@ -9,14 +9,29 @@
 
 import React from 'react';
 import { observer } from '@formily/reactive-react';
-import { List, Badge } from 'antd-mobile';
+import { List, Badge, InfiniteScroll } from 'antd-mobile';
 import { useNavigate } from 'react-router-dom';
-import { channelListObs, channelStatusFilterObs } from '../../observables';
+import { channelListObs, channelStatusFilterObs, showChannelLoadingMoreObs, fetchChannels } from '../../observables';
 const InternalChannelList = () => {
   const navigate = useNavigate();
+  const channels = channelListObs.value;
+  const onLoadChannelsMore = async () => {
+    const filter: Record<string, any> = {};
+    const lastChannel = channels[channels.length - 1];
+    if (lastChannel?.latestMsgReceiveTimestamp) {
+      filter.latestMsgReceiveTimestamp = {
+        $lt: lastChannel.latestMsgReceiveTimestamp,
+      };
+    }
+    return fetchChannels({ filter, limit: 30 });
+  };
   return (
     <>
-      <List>
+      <List
+        style={{
+          '--border-top': 'none',
+        }}
+      >
         {channelListObs.value.map((item) => {
           return (
             <List.Item
@@ -36,6 +51,7 @@ const InternalChannelList = () => {
             </List.Item>
           );
         })}
+        <InfiniteScroll loadMore={onLoadChannelsMore} hasMore={showChannelLoadingMoreObs.value}></InfiniteScroll>
       </List>
     </>
   );

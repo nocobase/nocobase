@@ -99,7 +99,11 @@ const MobileMessagePageInner = () => {
             },
           })}
         >
-          <List>
+          <List
+            style={{
+              '--border-top': 'none',
+            }}
+          >
             {messages.map((item) => {
               return (
                 <List.Item
