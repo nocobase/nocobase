@@ -63,7 +63,7 @@ export class CollectionModel extends MagicAttributeModel {
       delete collectionOptions.schema;
     }
 
-    if (this.db.inDialect('postgres') && !collectionOptions.schema) {
+    if (this.db.inDialect('postgres') && !collectionOptions.schema && collectionOptions.from !== 'db2cm') {
       collectionOptions.schema = process.env.COLLECTION_MANAGER_SCHEMA || this.db.options.schema || 'public';
     }
 
