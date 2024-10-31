@@ -44,6 +44,7 @@ import { useSatisfiedActionValues } from '../../../schema-settings/LinkageRules/
 import { useToken } from '../__builtins__';
 import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
+import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 
 const RecursionFieldMemo = React.memo(RecursionField);
@@ -930,6 +931,7 @@ export const Table: any = withDynamicSchemaProps(
         }
         return !!service?.loading;
       },
+      SkeletonComponent: TableSkeleton,
     },
   ),
   { displayName: 'NocoBaseTable' },
