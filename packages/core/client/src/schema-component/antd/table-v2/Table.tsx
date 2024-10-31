@@ -308,14 +308,19 @@ const usePaginationProps = (pagination1, pagination2) => {
     },
     [t, totalCount],
   );
+
+  const showTotalResult = useMemo(() => {
+    return {
+      pageSizeOptions,
+      showTotal,
+      showSizeChanger: true,
+      ...pagination,
+    };
+  }, [pagination, showTotal]);
+
   const result = useMemo(() => {
     if (totalCount) {
-      return {
-        pageSizeOptions,
-        showTotal,
-        showSizeChanger: true,
-        ...pagination,
-      };
+      return showTotalResult;
     } else {
       return {
         pageSizeOptions,
@@ -351,7 +356,7 @@ const usePaginationProps = (pagination1, pagination2) => {
         },
       };
     }
-  }, [pagination, t, showTotal, field.value?.length]);
+  }, [pagination, t, showTotal, field.value?.length, showTotalResult]);
 
   if (pagination2 === false) {
     return false;

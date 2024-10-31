@@ -10,7 +10,7 @@
 import { ArrayField } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { isEqual } from 'lodash';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTableBlockContext } from '../../../../../block-provider/TableBlockProvider';
 import { findFilterTargets } from '../../../../../block-provider/hooks';
 import { DataBlock, useFilterBlock } from '../../../../../filter-provider/FilterProvider';
@@ -26,12 +26,20 @@ export const useTableBlockProps = () => {
 
   const ctxRef = useRef(null);
   ctxRef.current = ctx;
+  const meta = ctx?.service?.data?.meta || {};
+  const pagination = useMemo(
+    () => ({
+      pageSize: meta?.pageSize,
+      total: meta?.count,
+      current: meta?.page,
+    }),
+    [meta?.count, meta?.page, meta?.pageSize],
+  );
 
   useEffect(() => {
     if (!isLoading) {
       const serviceResponse = ctx?.service?.data;
       const data = serviceResponse?.data || [];
-      const meta = serviceResponse?.meta || {};
       const selectedRowKeys = ctx?.field?.data?.selectedRowKeys;
 
       if (!isEqual(field.value, data)) {
@@ -44,12 +52,9 @@ export const useTableBlockProps = () => {
         field.data.selectedRowKeys = selectedRowKeys;
       }
 
-      field.componentProps.pagination = field.componentProps.pagination || {};
-      field.componentProps.pagination.pageSize = meta?.pageSize;
-      field.componentProps.pagination.total = meta?.count;
-      field.componentProps.pagination.current = meta?.page;
+      field.componentProps.pagination = pagination;
     }
-  }, [field, ctx?.service?.data, isLoading, ctx?.field?.data?.selectedRowKeys]);
+  }, [field, ctx?.service?.data, isLoading, ctx?.field?.data?.selectedRowKeys, pagination]);
 
   return {
     defaultDataSource: ctx?.service?.data?.data || [],
@@ -59,7 +64,7 @@ export const useTableBlockProps = () => {
     showIndex: ctx.showIndex,
     dragSort: ctx.dragSort && ctx.dragSortBy,
     rowKey: ctx.rowKey || fieldSchema?.['x-component-props']?.rowKey || 'id',
-    pagination: fieldSchema?.['x-component-props']?.pagination === false ? false : field.componentProps.pagination,
+    pagination: fieldSchema?.['x-component-props']?.pagination === false ? false : pagination,
     onRowSelectionChange: useCallback((selectedRowKeys, selectedRowData) => {
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;
