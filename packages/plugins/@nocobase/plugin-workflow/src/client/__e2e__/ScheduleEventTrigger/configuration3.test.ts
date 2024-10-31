@@ -62,15 +62,15 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
     // 2、测试步骤：等待60秒
     await page.waitForTimeout(60000);
     await page.goto('/admin/settings/workflow');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const workflowListRecords = new WorkflowListRecords(page, workFlowName);
     await workflowListRecords.executionCountPopup.click();
     await page.getByText('View').click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.getByRole('link', { name: 'Workflow', exact: true }).click();
 
     // 3、预期结果：跳转路径正确
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     expect(page.url()).toBe(`${process.env.APP_BASE_URL}/admin/settings/workflow`);
 
     // 4、后置处理：删除工作流
@@ -120,14 +120,14 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
     // 2、测试步骤：等待60秒
     await page.waitForTimeout(60000);
     await page.goto('/admin/settings/workflow');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const workflowListRecords = new WorkflowListRecords(page, workFlowName);
     await workflowListRecords.executionCountPopup.click();
     await page.getByText('View').click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     //跳转其他执行日志界面，元素无法定位
     // 3、预期结果：跳转路径正确
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     // expect(page.url()).toBe(`${process.env.APP_BASE_URL}/admin/settings/workflow`);
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);

@@ -68,7 +68,7 @@ test.describe('Configuration page disable enable', () => {
     expect(getWorkflowExecuted).toBe(1);
 
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.getByRole('switch', { name: 'On Off' }).click();
     await mockRecords(triggerNodeCollectionName, [{ orgname: triggerNodeCollectionRecordOne + '1' }]);
     await page.waitForTimeout(1000);
@@ -131,7 +131,7 @@ test.describe('Configuration page disable enable', () => {
     expect(getWorkflowExecuted).toBe(0);
 
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.getByRole('switch', { name: 'On Off' }).click();
     await mockRecords(triggerNodeCollectionName, [{ orgname: triggerNodeCollectionRecordOne + '1' }]);
     await page.waitForTimeout(1000);

@@ -22,7 +22,6 @@ test.describe('file manager', () => {
 
     // 2、测试步骤：进入“文件管理器”-“新建”按钮，填写表单，点击“确定”按钮
     await page.goto('/admin/settings/file-manager');
-    await page.waitForLoadState('networkidle');
     await page.getByRole('button', { name: 'plus Add new' }).hover();
     await page.getByRole('menuitem', { name: 'Local storage' }).click();
     const createLocalStorage = new CreateLocalStorage(page);

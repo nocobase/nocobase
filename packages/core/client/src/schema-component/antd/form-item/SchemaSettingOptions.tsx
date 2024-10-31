@@ -30,6 +30,7 @@ export const EditTitle = () => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { dn } = useDesignable();
+  const compile = useCompile();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
 
   return collectionField ? (
@@ -53,16 +54,16 @@ export const EditTitle = () => {
         } as ISchema
       }
       onSubmit={({ title }) => {
-        if (title) {
-          field.title = title;
-          fieldSchema.title = title;
-          dn.emit('patch', {
-            schema: {
-              'x-uid': fieldSchema['x-uid'],
-              title: fieldSchema.title,
-            },
-          });
-        }
+        const result = title.trim() === '' ? collectionField?.uiSchema?.title : title;
+        field.title = compile(result);
+        fieldSchema.title = title;
+        dn.emit('patch', {
+          schema: {
+            'x-uid': fieldSchema['x-uid'],
+            title: fieldSchema.title,
+          },
+        });
+
         dn.refresh();
       }}
     />

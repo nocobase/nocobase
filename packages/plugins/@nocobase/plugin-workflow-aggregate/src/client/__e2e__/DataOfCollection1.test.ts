@@ -80,7 +80,7 @@ test.describe('no filter', () => {
 
     //配置聚合数据节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'aggregate', exact: true }).click();
@@ -179,7 +179,7 @@ test.describe('no filter', () => {
 
     //配置聚合数据节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'aggregate', exact: true }).click();
@@ -282,7 +282,7 @@ test.describe('no filter', () => {
     const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
     //配置聚合数据节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'aggregate', exact: true }).click();
@@ -387,7 +387,7 @@ test.describe('no filter', () => {
 
     //配置聚合数据节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'aggregate', exact: true }).click();
@@ -491,7 +491,7 @@ test.describe('no filter', () => {
 
     //配置聚合数据节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'aggregate', exact: true }).click();
@@ -595,7 +595,7 @@ test.describe('no filter', () => {
 
     //配置聚合数据节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'aggregate', exact: true }).click();
@@ -695,7 +695,7 @@ test.describe('no filter', () => {
 
     //配置聚合数据节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'aggregate', exact: true }).click();
@@ -801,7 +801,7 @@ test.describe('no filter', () => {
     const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
     //配置聚合数据节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'aggregate', exact: true }).click();
@@ -909,7 +909,7 @@ test.describe('no filter', () => {
 
     //配置聚合数据节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'aggregate', exact: true }).click();
@@ -1014,7 +1014,7 @@ test.describe('no filter', () => {
 
     //配置聚合数据节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'aggregate', exact: true }).click();

@@ -80,7 +80,7 @@ test('Collection event add data trigger, filter integer field not null, common t
 
   //配置更新数据节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -233,7 +233,7 @@ test('Collection event add data trigger, filter integer field not empty, common 
 
   //配置更新数据节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -392,7 +392,7 @@ test('Collection event add data trigger, filter numeric field not null, common t
 
   //配置更新数据节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -544,7 +544,7 @@ test('Collection event add data trigger, filter numeric field not empty, common 
 
   //配置更新数据节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'update', exact: true }).click();
