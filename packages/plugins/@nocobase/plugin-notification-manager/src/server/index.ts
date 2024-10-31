@@ -10,5 +10,6 @@
 export { BaseNotificationChannel } from './base-notification-channel';
 export { default } from './plugin';
 export { COLLECTION_NAME, ChannelsCollectionDefinition } from '../constant';
+export { parseUserSelectionConfig } from './utils/parseUserSelectionConfig';
 
 export * from './types';
