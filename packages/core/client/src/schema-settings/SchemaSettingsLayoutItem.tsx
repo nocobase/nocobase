@@ -90,10 +90,10 @@ export const SchemaSettingsLayoutItem = function LayoutItem() {
             },
             labelWrap: {
               type: 'string',
-              title: t('label Wrap'),
+              title: t('When the Label exceeds the width'),
               enum: [
-                { label: t('Yes'), value: true },
-                { label: t('No'), value: false },
+                { label: t('Line break'), value: true },
+                { label: t('Ellipsis'), value: false },
               ],
               default: fieldSchema?.['x-component-props']?.labelWrap !== false,
               'x-decorator': 'FormItem',
