@@ -22,7 +22,6 @@ import { FormDialog } from '..';
 import { antTableCell } from '../../../acl/style';
 import { useRequest } from '../../../api-client';
 import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
-import { useAppSpin } from '../../../application/hooks/useAppSpin';
 import { useRouterBasename } from '../../../application/hooks/useRouterBasename';
 import { useDocumentTitle } from '../../../document-title';
 import { useGlobalTheme } from '../../../global-theme';
@@ -51,7 +50,7 @@ export const Page = (props) => {
   const options = useContext(SchemaOptionsContext);
   const navigate = useNavigateNoUpdate();
   const [searchParams] = useSearchParams();
-  const [loading, setLoading] = useState(false);
+  const loading = false;
   const activeKey = useMemo(
     // 处理 searchParams 是为了兼容旧版的 tab 参数
     () => tabUid || searchParams.get('tab') || Object.keys(fieldSchema.properties || {}).shift(),
@@ -78,11 +77,7 @@ export const Page = (props) => {
             marginRight: token.paddingPageHorizontal - token.paddingLG,
           }}
           onChange={(activeKey) => {
-            setLoading(true);
             navigateToTab({ activeKey, navigate, basename: basenameOfCurrentRouter });
-            setTimeout(() => {
-              setLoading(false);
-            }, 50);
           }}
           tabBarExtraContent={
             dn.designable && (
@@ -236,38 +231,41 @@ const PageContent = memo(
     fieldSchema: Schema<any, any, any, any, any, any, any, any, any>;
     activeKey: string;
   }) => {
-    const { render } = useAppSpin();
+    // const { render } = useAppSpin();
 
-    if (loading) {
-      return render();
+    // if (loading) {
+    //   return render();
+    // }g
+
+    if (!disablePageHeader && enablePageTabs) {
+      const result = fieldSchema
+        .mapProperties((schema) => {
+          if (schema.name !== activeKey) return null;
+
+          return (
+            <SchemaComponent
+              key={schema.name}
+              distributed
+              schema={
+                new Schema({
+                  properties: {
+                    [schema.name]: schema,
+                  },
+                })
+              }
+            />
+          );
+        })
+        .filter(Boolean);
+
+      return result[0];
+    } else {
+      return (
+        <div className={className1}>
+          <SchemaComponent schema={fieldSchema} distributed />
+        </div>
+      );
     }
-
-    return (
-      <>
-        {!disablePageHeader && enablePageTabs ? (
-          fieldSchema.mapProperties((schema) => {
-            if (schema.name !== activeKey) return null;
-
-            return (
-              <SchemaComponent
-                distributed
-                schema={
-                  new Schema({
-                    properties: {
-                      [schema.name]: schema,
-                    },
-                  })
-                }
-              />
-            );
-          })
-        ) : (
-          <div className={classNames(`pageWithFixedBlockCss nb-page-content`, className1)}>
-            <SchemaComponent schema={fieldSchema} distributed />
-          </div>
-        )}
-      </>
-    );
   },
 );
 PageContent.displayName = 'PageContent';

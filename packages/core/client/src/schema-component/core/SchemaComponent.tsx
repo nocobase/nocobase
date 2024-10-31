@@ -71,11 +71,15 @@ const RecursionSchemaComponent = memo((props: ISchemaFieldProps & SchemaComponen
   );
 });
 
+RecursionSchemaComponent.displayName = 'RecursionSchemaComponent';
+
 const MemoizedSchemaComponent = memo((props: ISchemaFieldProps & SchemaComponentOnChange & DistributedProps) => {
   const { schema, ...others } = props;
   const s = useMemoizedSchema(schema);
   return <RecursionSchemaComponent {...others} schema={s} />;
 });
+
+MemoizedSchemaComponent.displayName = 'MemoizedSchemaComponent';
 
 export const SchemaComponent = memo(
   (
@@ -89,3 +93,5 @@ export const SchemaComponent = memo(
     return <RecursionSchemaComponent {...others} />;
   },
 );
+
+SchemaComponent.displayName = 'SchemaComponent';

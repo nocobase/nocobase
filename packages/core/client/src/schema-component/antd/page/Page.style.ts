@@ -114,13 +114,6 @@ export const useStyles = genStyleHook('nb-page', (token) => {
         },
       },
 
-      '.pageWithFixedBlockCss': {
-        height: '100%',
-        '> .nb-grid:not(:last-child)': {
-          '> .nb-schema-initializer-button': { display: 'none' },
-        },
-      },
-
       '.nb-page-wrapper': {
         padding: `${token.paddingPageVertical}px`,
         paddingBottom: 0,
