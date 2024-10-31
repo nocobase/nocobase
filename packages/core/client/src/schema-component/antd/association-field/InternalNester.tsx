@@ -45,14 +45,24 @@ export const InternalNester = observer(
     const { options: collectionField } = useAssociationFieldContext();
     const showTitle = fieldSchema['x-decorator-props']?.showTitle ?? true;
     const { actionName } = useACLActionParamsContext();
-    const { layout = 'vertical' } = fieldSchema?.['x-component-props'] || {};
+    const {
+      layout = 'vertical',
+      labelAlign = 'left',
+      labelWidth = 120,
+      labelWrap = true,
+    } = fieldSchema?.['x-component-props'] || {};
     useEffect(() => {
       insertNester(schema.Nester);
     }, []);
     return (
       <CollectionProvider_deprecated name={collectionField.target}>
         <ACLCollectionProvider actionPath={`${collectionField.target}:${actionName || 'view'}`}>
-          <FormLayout layout={layout}>
+          <FormLayout
+            layout={layout}
+            labelAlign={labelAlign}
+            labelWidth={layout === 'horizontal' ? labelWidth : null}
+            labelWrap={labelWrap}
+          >
             <div
               className={cx(
                 InternalNesterCss,
