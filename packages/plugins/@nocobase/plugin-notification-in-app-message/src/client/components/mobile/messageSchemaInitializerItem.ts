@@ -10,20 +10,22 @@
 import { SchemaInitializerItemType } from '@nocobase/client';
 import { useMobileRoutes, MobileRouteItem } from '@nocobase/plugin-mobile/client';
 import { uid } from '@formily/shared';
+import { useLocalTranslation } from '../../../locale';
 export const messageSchemaInitializerItem: SchemaInitializerItemType = {
   name: 'message-schema',
   type: 'item',
   useComponentProps() {
+    const { t } = useLocalTranslation();
     const { resource, refresh, schemaResource } = useMobileRoutes();
     return {
       isItem: true,
-      title: 'Message',
+      title: t('Message'),
       badge: 10,
       async onClick(values) {
         const { data } = await resource.create({
           values: {
             type: 'page',
-            title: 'Messages',
+            title: t('Message'),
             icon: 'mailoutlined',
             options: {
               url: `/page/in-app-message`,
@@ -34,7 +36,7 @@ export const messageSchemaInitializerItem: SchemaInitializerItemType = {
             children: [
               {
                 type: 'page',
-                title: 'Messages',
+                title: t('Message'),
                 icon: 'mailoutlined',
                 options: {
                   url: `/page/in-app-message/messages`,
