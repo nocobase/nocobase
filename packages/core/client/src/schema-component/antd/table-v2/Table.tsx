@@ -14,7 +14,7 @@ import { css, cx } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
-import { action } from '@formily/reactive';
+import { action, raw } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
 import { useCreation, useDeepCompareEffect, useMemoizedFn } from 'ahooks';
@@ -39,6 +39,7 @@ import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { useTableBlockContext } from '../../../block-provider/TableBlockProvider';
 import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
+import { withSkeletonComponent } from '../../../hoc/withSkeletonComponent';
 import { useSatisfiedActionValues } from '../../../schema-settings/LinkageRules/useActionValues';
 import { useToken } from '../__builtins__';
 import { SubFormProvider } from '../association-field/hooks';
@@ -74,7 +75,7 @@ function adjustColumnOrder(columns) {
   return [...leftFixedColumns, ...normalColumns, ...rightFixedColumns];
 }
 
-export const useColumnsDeepMemoized = (columns: any[]) => {
+const useColumnsDeepMemoized = (columns: any[]) => {
   const columnsJSON = getSchemaArrJSON(columns);
   const oldObj = useCreation(() => ({ value: _.cloneDeep(columnsJSON) }), []);
 
@@ -483,6 +484,7 @@ interface TableProps {
   required?: boolean;
   onExpand?: (flag: boolean, record: any) => void;
   isSubTable?: boolean;
+  defaultDataSource?: any[];
 }
 
 const InternalNocoBaseTable = React.memo(
@@ -592,320 +594,338 @@ const InternalNocoBaseTable = React.memo(
 InternalNocoBaseTable.displayName = 'InternalNocoBaseTable';
 
 export const Table: any = withDynamicSchemaProps(
-  observer((props: TableProps) => {
-    const { token } = useToken();
-    const { pagination: pagination1, useProps, ...others1 } = omit(props, ['onBlur', 'onFocus', 'value']);
+  withSkeletonComponent(
+    observer((props: TableProps) => {
+      const { token } = useToken();
+      const { pagination: pagination1, useProps, ...others1 } = omit(props, ['onBlur', 'onFocus', 'value']);
 
-    // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-    const { pagination: pagination2, ...others2 } = useProps?.() || {};
+      // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
+      const { pagination: pagination2, ...others2 } = useProps?.() || {};
 
-    const {
-      dragSort = false,
-      showIndex = true,
-      onRowSelectionChange,
-      onChange: onTableChange,
-      rowSelection,
-      rowKey,
-      required,
-      onExpand,
-      loading,
-      onClickRow,
-      ...others
-    } = { ...others1, ...others2 } as any;
-    const field = useArrayField(others);
-    const schema = useFieldSchema();
-    const collection = useCollection();
-    const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
-    const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();
-    const { expandFlag, allIncludesChildren } = ctx;
-    const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
-    const paginationProps = usePaginationProps(pagination1, pagination2);
-    const columns = useTableColumns(others, paginationProps);
-    const [expandedKeys, setExpandesKeys] = useState(() => (expandFlag ? allIncludesChildren : []));
-    const [selectedRowKeys, setSelectedRowKeys] = useState<any[]>(field?.data?.selectedRowKeys || []);
-    const [selectedRow, setSelectedRow] = useState([]);
-    const isRowSelect = rowSelection?.type !== 'none';
-    const defaultRowKeyMap = useRef(new Map());
-    const highlightRowCss = useMemo(() => {
-      return css`
-        & > td {
-          background-color: ${token.controlItemBgActive} !important;
-        }
-        &:hover > td {
-          background-color: ${token.controlItemBgActiveHover} !important;
-        }
-      `;
-    }, [token.controlItemBgActive, token.controlItemBgActiveHover]);
-
-    const highlightRow = useMemo(() => (onClickRow ? highlightRowCss : ''), [highlightRowCss, onClickRow]);
-
-    const onRow = useMemo(() => {
-      if (onClickRow) {
-        return (record, rowIndex) => {
-          return {
-            onClick: (e) => {
-              if (isPortalInBody(e.target)) {
-                return;
-              }
-              onClickRow(record, setSelectedRow, selectedRow);
-            },
-            rowIndex,
-          };
-        };
-      }
-      return null;
-    }, [onClickRow, selectedRow]);
-
-    useDeepCompareEffect(() => {
-      const newExpandesKeys = expandFlag ? allIncludesChildren : [];
-      if (!_.isEqual(newExpandesKeys, expandedKeys)) {
-        setExpandesKeys(newExpandesKeys);
-      }
-    }, [expandFlag, allIncludesChildren]);
-
-    /**
-     * 为没有设置 key 属性的表格行生成一个唯一的 key
-     * 1. rowKey 的默认值是 “key”，所以先判断有没有 record.key；
-     * 2. 如果没有就生成一个唯一的 key，并以 record 的值作为索引；
-     * 3. 这样下次就能取到对应的 key 的值；
-     *
-     * 这里有效的前提是：数组中对应的 record 的引用不会发生改变。
-     *
-     * @param record
-     * @returns
-     */
-    const defaultRowKey = useCallback((record: any) => {
-      if (rowKey) {
-        return getRowKey(record);
-      }
-      if (record.key) {
-        return record.key;
-      }
-
-      if (defaultRowKeyMap.current.has(record)) {
-        return defaultRowKeyMap.current.get(record);
-      }
-
-      const key = uid();
-      defaultRowKeyMap.current.set(record, key);
-      return key;
-    }, []);
-
-    const getRowKey = useCallback(
-      (record: any) => {
-        if (Array.isArray(rowKey)) {
-          // 使用多个字段值组合生成唯一键
-          return rowKey
-            .map((keyField) => {
-              return record[keyField]?.toString() || '';
-            })
-            .join('-');
-        } else if (typeof rowKey === 'string') {
-          return record[rowKey];
-        } else {
-          // 如果 rowKey 是函数或未提供，使用 defaultRowKey
-          return (rowKey ?? defaultRowKey)(record)?.toString();
-        }
-      },
-      [JSON.stringify(rowKey), defaultRowKey],
-    );
-
-    const dataSource = useMemo(() => {
-      const value = Array.isArray(field?.value) ? field.value : [];
-      return value.filter(Boolean);
-
-      // If we don't depend on "field?.value?.length", it will cause no response when clicking "Add new" in the SubTable
-    }, [field?.value, field?.value?.length]);
-
-    const BodyWrapperComponent = useMemo(() => {
-      return (props) => {
-        const onDragEndCallback = useCallback((e) => {
-          if (!e.active || !e.over) {
-            console.warn('move cancel');
-            return;
-          }
-          const fromIndex = e.active?.data.current?.sortable?.index;
-          const toIndex = e.over?.data.current?.sortable?.index;
-          const from = field.value[fromIndex] || e.active;
-          const to = field.value[toIndex] || e.over;
-          void field.move(fromIndex, toIndex);
-          onRowDragEnd({ from, to });
-        }, []);
-
-        return (
-          <DndContext onDragEnd={onDragEndCallback}>
-            <tbody {...props} />
-          </DndContext>
-        );
-      };
-    }, [field, onRowDragEnd]);
-
-    // @ts-ignore
-    BodyWrapperComponent.displayName = 'BodyWrapperComponent';
-
-    const components = useMemo(() => {
-      return {
-        header: {
-          wrapper: HeaderWrapperComponent,
-          cell: HeaderCellComponent,
-        },
-        body: {
-          wrapper: BodyWrapperComponent,
-          row: BodyRowComponent,
-          cell: BodyCellComponent,
-        },
-      };
-    }, [BodyWrapperComponent]);
-
-    const memoizedRowSelection = useMemo(() => rowSelection, [JSON.stringify(rowSelection)]);
-
-    const restProps = useMemo(
-      () => ({
-        rowSelection: memoizedRowSelection
-          ? {
-              type: 'checkbox',
-              selectedRowKeys: selectedRowKeys,
-              onChange(selectedRowKeys: any[], selectedRows: any[]) {
-                field.data = field.data || {};
-                field.data.selectedRowKeys = selectedRowKeys;
-                field.data.selectedRowData = selectedRows;
-                setSelectedRowKeys(selectedRowKeys);
-                onRowSelectionChange?.(selectedRowKeys, selectedRows);
-              },
-              getCheckboxProps(record) {
-                return {
-                  'aria-label': `checkbox`,
-                };
-              },
-              renderCell: (checked, record, index, originNode) => {
-                if (!dragSort && !showIndex) {
-                  return originNode;
-                }
-                const current = paginationProps?.current;
-
-                const pageSize = paginationProps?.pageSize || 20;
-                if (current) {
-                  index = index + (current - 1) * pageSize + 1;
-                } else {
-                  index = index + 1;
-                }
-                if (record.__index) {
-                  index = extractIndex(record.__index);
-                }
-                return (
-                  <div
-                    role="button"
-                    aria-label={`table-index-${index}`}
-                    className={classNames(checked ? 'checked' : floatLeftClass, rowSelectCheckboxWrapperClass, {
-                      [rowSelectCheckboxWrapperClassHover]: isRowSelect,
-                    })}
-                  >
-                    <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
-                      {dragSort && <SortHandle id={getRowKey(record)} />}
-                      {showIndex && <TableIndex index={index} />}
-                    </div>
-                    {isRowSelect && (
-                      <div
-                        className={classNames(
-                          'nb-origin-node',
-                          checked ? 'checked' : null,
-                          rowSelectCheckboxCheckedClassHover,
-                        )}
-                      >
-                        {originNode}
-                      </div>
-                    )}
-                  </div>
-                );
-              },
-              ...memoizedRowSelection,
-            }
-          : undefined,
-      }),
-      [
-        memoizedRowSelection,
-        selectedRowKeys,
+      const {
+        dragSort = false,
+        showIndex = true,
         onRowSelectionChange,
-        showIndex,
-        dragSort,
-        field,
-        getRowKey,
-        isRowSelect,
-        memoizedRowSelection,
-        paginationProps,
-      ],
-    );
+        onChange: onTableChange,
+        rowSelection,
+        rowKey,
+        required,
+        onExpand,
+        loading,
+        onClickRow,
+        defaultDataSource,
+        ...others
+      } = { ...others1, ...others2 } as any;
+      const field = useArrayField(others);
+      const schema = useFieldSchema();
+      const collection = useCollection();
+      const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
+      const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();
+      const { expandFlag, allIncludesChildren } = ctx;
+      const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
+      const paginationProps = usePaginationProps(pagination1, pagination2);
+      const columns = useTableColumns(others, paginationProps);
+      const [expandedKeys, setExpandesKeys] = useState(() => (expandFlag ? allIncludesChildren : []));
+      const [selectedRowKeys, setSelectedRowKeys] = useState<any[]>(field?.data?.selectedRowKeys || []);
+      const [selectedRow, setSelectedRow] = useState([]);
+      const isRowSelect = rowSelection?.type !== 'none';
+      const defaultRowKeyMap = useRef(new Map());
+      const highlightRowCss = useMemo(() => {
+        return css`
+          & > td {
+            background-color: ${token.controlItemBgActive} !important;
+          }
+          &:hover > td {
+            background-color: ${token.controlItemBgActiveHover} !important;
+          }
+        `;
+      }, [token.controlItemBgActive, token.controlItemBgActiveHover]);
 
-    const SortableWrapper = useCallback<React.FC>(
-      ({ children }) => {
-        return dragSort
-          ? React.createElement<Omit<SortableContextProps, 'children'>>(
-              SortableContext,
-              {
-                items: field.value?.map?.(getRowKey) || [],
+      const highlightRow = useMemo(() => (onClickRow ? highlightRowCss : ''), [highlightRowCss, onClickRow]);
+
+      const onRow = useMemo(() => {
+        if (onClickRow) {
+          return (record, rowIndex) => {
+            return {
+              onClick: (e) => {
+                if (isPortalInBody(e.target)) {
+                  return;
+                }
+                onClickRow(record, setSelectedRow, selectedRow);
               },
-              children,
-            )
-          : React.createElement(React.Fragment, {}, children);
+              rowIndex,
+            };
+          };
+        }
+        return null;
+      }, [onClickRow, selectedRow]);
+
+      useDeepCompareEffect(() => {
+        const newExpandesKeys = expandFlag ? allIncludesChildren : [];
+        if (!_.isEqual(newExpandesKeys, expandedKeys)) {
+          setExpandesKeys(newExpandesKeys);
+        }
+      }, [expandFlag, allIncludesChildren]);
+
+      /**
+       * 为没有设置 key 属性的表格行生成一个唯一的 key
+       * 1. rowKey 的默认值是 “key”，所以先判断有没有 record.key；
+       * 2. 如果没有就生成一个唯一的 key，并以 record 的值作为索引；
+       * 3. 这样下次就能取到对应的 key 的值；
+       *
+       * 这里有效的前提是：数组中对应的 record 的引用不会发生改变。
+       *
+       * @param record
+       * @returns
+       */
+      const defaultRowKey = useCallback((record: any) => {
+        if (rowKey) {
+          return getRowKey(record);
+        }
+        if (record.key) {
+          return record.key;
+        }
+
+        if (defaultRowKeyMap.current.has(record)) {
+          return defaultRowKeyMap.current.get(record);
+        }
+
+        const key = uid();
+        defaultRowKeyMap.current.set(record, key);
+        return key;
+      }, []);
+
+      const getRowKey = useCallback(
+        (record: any) => {
+          if (Array.isArray(rowKey)) {
+            // 使用多个字段值组合生成唯一键
+            return rowKey
+              .map((keyField) => {
+                return record[keyField]?.toString() || '';
+              })
+              .join('-');
+          } else if (typeof rowKey === 'string') {
+            return record[rowKey];
+          } else {
+            // 如果 rowKey 是函数或未提供，使用 defaultRowKey
+            return (rowKey ?? defaultRowKey)(record)?.toString();
+          }
+        },
+        [JSON.stringify(rowKey), defaultRowKey],
+      );
+
+      const dataSource = useMemo(() => {
+        if (_.isEmpty(field?.value) || _.isEqual(raw(field?.value), defaultDataSource)) {
+          return defaultDataSource || [];
+        }
+
+        const value = Array.isArray(field?.value) ? field.value : [];
+        return value.filter(Boolean);
+
+        // If we don't depend on "field?.value?.length", it will cause no response when clicking "Add new" in the SubTable
+      }, [field?.value, field?.value?.length, defaultDataSource]);
+
+      const BodyWrapperComponent = useMemo(() => {
+        return (props) => {
+          const onDragEndCallback = useCallback((e) => {
+            if (!e.active || !e.over) {
+              console.warn('move cancel');
+              return;
+            }
+            const fromIndex = e.active?.data.current?.sortable?.index;
+            const toIndex = e.over?.data.current?.sortable?.index;
+            const from = field.value[fromIndex] || e.active;
+            const to = field.value[toIndex] || e.over;
+            void field.move(fromIndex, toIndex);
+            onRowDragEnd({ from, to });
+          }, []);
+
+          return (
+            <DndContext onDragEnd={onDragEndCallback}>
+              <tbody {...props} />
+            </DndContext>
+          );
+        };
+      }, [field, onRowDragEnd]);
+
+      // @ts-ignore
+      BodyWrapperComponent.displayName = 'BodyWrapperComponent';
+
+      const components = useMemo(() => {
+        return {
+          header: {
+            wrapper: HeaderWrapperComponent,
+            cell: HeaderCellComponent,
+          },
+          body: {
+            wrapper: BodyWrapperComponent,
+            row: BodyRowComponent,
+            cell: BodyCellComponent,
+          },
+        };
+      }, [BodyWrapperComponent]);
+
+      const memoizedRowSelection = useMemo(() => rowSelection, [JSON.stringify(rowSelection)]);
+
+      const restProps = useMemo(
+        () => ({
+          rowSelection: memoizedRowSelection
+            ? {
+                type: 'checkbox',
+                selectedRowKeys: selectedRowKeys,
+                onChange(selectedRowKeys: any[], selectedRows: any[]) {
+                  field.data = field.data || {};
+                  field.data.selectedRowKeys = selectedRowKeys;
+                  field.data.selectedRowData = selectedRows;
+                  setSelectedRowKeys(selectedRowKeys);
+                  onRowSelectionChange?.(selectedRowKeys, selectedRows);
+                },
+                getCheckboxProps(record) {
+                  return {
+                    'aria-label': `checkbox`,
+                  };
+                },
+                renderCell: (checked, record, index, originNode) => {
+                  if (!dragSort && !showIndex) {
+                    return originNode;
+                  }
+                  const current = paginationProps?.current;
+
+                  const pageSize = paginationProps?.pageSize || 20;
+                  if (current) {
+                    index = index + (current - 1) * pageSize + 1;
+                  } else {
+                    index = index + 1;
+                  }
+                  if (record.__index) {
+                    index = extractIndex(record.__index);
+                  }
+                  return (
+                    <div
+                      role="button"
+                      aria-label={`table-index-${index}`}
+                      className={classNames(checked ? 'checked' : floatLeftClass, rowSelectCheckboxWrapperClass, {
+                        [rowSelectCheckboxWrapperClassHover]: isRowSelect,
+                      })}
+                    >
+                      <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
+                        {dragSort && <SortHandle id={getRowKey(record)} />}
+                        {showIndex && <TableIndex index={index} />}
+                      </div>
+                      {isRowSelect && (
+                        <div
+                          className={classNames(
+                            'nb-origin-node',
+                            checked ? 'checked' : null,
+                            rowSelectCheckboxCheckedClassHover,
+                          )}
+                        >
+                          {originNode}
+                        </div>
+                      )}
+                    </div>
+                  );
+                },
+                ...memoizedRowSelection,
+              }
+            : undefined,
+        }),
+        [
+          memoizedRowSelection,
+          selectedRowKeys,
+          onRowSelectionChange,
+          showIndex,
+          dragSort,
+          field,
+          getRowKey,
+          isRowSelect,
+          memoizedRowSelection,
+          paginationProps,
+        ],
+      );
+
+      const SortableWrapper = useCallback<React.FC>(
+        ({ children }) => {
+          return dragSort
+            ? React.createElement<Omit<SortableContextProps, 'children'>>(
+                SortableContext,
+                {
+                  items: field.value?.map?.(getRowKey) || [],
+                },
+                children,
+              )
+            : React.createElement(React.Fragment, {}, children);
+        },
+        [field, dragSort, getRowKey],
+      );
+
+      const { height: tableHeight, tableSizeRefCallback } = useTableSize();
+      const scroll = useMemo(() => {
+        return {
+          x: 'max-content',
+          y: dataSource.length > 0 ? tableHeight : undefined,
+        };
+      }, [tableHeight, dataSource]);
+
+      const rowClassName = useCallback(
+        (record) => (selectedRow.includes(record[rowKey]) ? highlightRow : ''),
+        [selectedRow, highlightRow, JSON.stringify(rowKey)],
+      );
+
+      const onExpandValue = useCallback(
+        (flag, record) => {
+          const newKeys = flag
+            ? [...expandedKeys, record[collection.getPrimaryKey()]]
+            : expandedKeys.filter((i) => record[collection.getPrimaryKey()] !== i);
+          setExpandesKeys(newKeys);
+          onExpand?.(flag, record);
+        },
+        [expandedKeys, onExpand, collection],
+      );
+
+      const expandable = useMemo(() => {
+        return {
+          onExpand: onExpandValue,
+          expandedRowKeys: expandedKeys,
+        };
+      }, [expandedKeys, onExpandValue]);
+
+      return (
+        // If spinning is set to undefined, it will cause the subtable to always display loading, so we need to convert it here.
+        // We use Spin here instead of Table's loading prop because using Spin here reduces unnecessary re-renders.
+        <Spin spinning={!!loading}>
+          <InternalNocoBaseTable
+            tableHeight={tableHeight}
+            SortableWrapper={SortableWrapper}
+            tableSizeRefCallback={tableSizeRefCallback}
+            defaultRowKey={defaultRowKey}
+            dataSource={dataSource}
+            {...others}
+            {...restProps}
+            paginationProps={paginationProps}
+            components={components}
+            onTableChange={onTableChange}
+            onRow={onRow}
+            rowClassName={rowClassName}
+            scroll={scroll}
+            columns={columns}
+            expandable={expandable}
+            field={field}
+          />
+        </Spin>
+      );
+    }),
+    {
+      useLoading() {
+        const service = useDataBlockRequest();
+        const { isInSubTable } = useFlag();
+
+        if (isInSubTable) {
+          return false;
+        }
+        return !!service?.loading;
       },
-      [field, dragSort, getRowKey],
-    );
-
-    const { height: tableHeight, tableSizeRefCallback } = useTableSize();
-    const scroll = useMemo(() => {
-      return {
-        x: 'max-content',
-        y: dataSource.length > 0 ? tableHeight : undefined,
-      };
-    }, [tableHeight, dataSource]);
-
-    const rowClassName = useCallback(
-      (record) => (selectedRow.includes(record[rowKey]) ? highlightRow : ''),
-      [selectedRow, highlightRow, JSON.stringify(rowKey)],
-    );
-
-    const onExpandValue = useCallback(
-      (flag, record) => {
-        const newKeys = flag
-          ? [...expandedKeys, record[collection.getPrimaryKey()]]
-          : expandedKeys.filter((i) => record[collection.getPrimaryKey()] !== i);
-        setExpandesKeys(newKeys);
-        onExpand?.(flag, record);
-      },
-      [expandedKeys, onExpand, collection],
-    );
-
-    const expandable = useMemo(() => {
-      return {
-        onExpand: onExpandValue,
-        expandedRowKeys: expandedKeys,
-      };
-    }, [expandedKeys, onExpandValue]);
-
-    return (
-      // If spinning is set to undefined, it will cause the subtable to always display loading, so we need to convert it here.
-      // We use Spin here instead of Table's loading prop because using Spin here reduces unnecessary re-renders.
-      <Spin spinning={!!loading}>
-        <InternalNocoBaseTable
-          tableHeight={tableHeight}
-          SortableWrapper={SortableWrapper}
-          tableSizeRefCallback={tableSizeRefCallback}
-          defaultRowKey={defaultRowKey}
-          dataSource={dataSource}
-          {...others}
-          {...restProps}
-          paginationProps={paginationProps}
-          components={components}
-          onTableChange={onTableChange}
-          onRow={onRow}
-          rowClassName={rowClassName}
-          scroll={scroll}
-          columns={columns}
-          expandable={expandable}
-          field={field}
-        />
-      </Spin>
-    );
-  }),
+    },
+  ),
   { displayName: 'NocoBaseTable' },
 );
