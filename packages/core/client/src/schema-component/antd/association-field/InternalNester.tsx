@@ -9,6 +9,7 @@
 
 import { css, cx } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
+import { theme } from 'antd';
 import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect } from 'react';
 import { ACLCollectionProvider, useACLActionParamsContext } from '../../../acl';
@@ -45,6 +46,7 @@ export const InternalNester = observer(
     const { options: collectionField } = useAssociationFieldContext();
     const showTitle = fieldSchema['x-decorator-props']?.showTitle ?? true;
     const { actionName } = useACLActionParamsContext();
+    const { token } = theme.useToken();
     const {
       layout = 'vertical',
       labelAlign = 'left',
@@ -72,6 +74,9 @@ export const InternalNester = observer(
                 css`
                   .nb-grid-container {
                     height: 100% !important;
+                    .ant-formily-item-label {
+                      line-height: ${token.controlHeight}px;
+                    }
                     .ant-formily-item-label label {
                       white-space: ${labelWrap ? 'break-all' : 'nowrap'};
                     }
