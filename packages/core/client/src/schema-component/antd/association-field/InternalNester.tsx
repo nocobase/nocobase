@@ -72,6 +72,9 @@ export const InternalNester = observer(
                 css`
                   .nb-grid-container {
                     height: 100% !important;
+                    .ant-formily-item-label label {
+                      white-space: ${labelWrap ? 'break-all' : 'nowrap'};
+                    }
                   }
                 `,
               )}
