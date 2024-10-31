@@ -9,7 +9,6 @@
 
 import { Field } from '@formily/core';
 import { connect, Schema, useField, useFieldSchema } from '@formily/react';
-import { untracked } from '@formily/reactive';
 import { merge } from '@formily/shared';
 import { concat } from 'lodash';
 import React, { useEffect } from 'react';
@@ -24,11 +23,9 @@ type Props = {
 };
 
 const setFieldProps = (field: Field, key: string, value: any) => {
-  untracked(() => {
-    if (field[key] === undefined) {
-      field[key] = value;
-    }
-  });
+  if (field[key] === undefined) {
+    field[key] = value;
+  }
 };
 
 const setRequired = (field: Field, fieldSchema: Schema, uiSchema: Schema) => {
@@ -78,7 +75,7 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
     setRequired(field, fieldSchema, uiSchema);
     // @ts-ignore
     field.dataSource = uiSchema.enum;
-    const originalProps = compile(uiSchema['x-component-props']) || {};
+    const originalProps = uiSchema['x-component-props'] || {};
     field.componentProps = merge(originalProps, field.componentProps || {}, dynamicProps || {});
   }, [uiSchemaOrigin]);
 
