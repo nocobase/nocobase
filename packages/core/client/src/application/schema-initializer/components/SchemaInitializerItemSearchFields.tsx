@@ -12,21 +12,33 @@ import { Divider, Empty, Input, MenuProps } from 'antd';
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
-export const SearchFields = ({ value: outValue, onChange }) => {
+function getPrefixAndCompare(a, b) {
+  const prefixA = a.replace(/-displayCollectionFields$/, '');
+  const prefixB = b.replace(/-displayCollectionFields$/, '');
+
+  // 判断 a 是否包含 b，如果包含则返回 false，否则返回 true
+  return !prefixA.includes(prefixB);
+}
+
+export const SearchFields = ({ value: outValue, onChange, name }) => {
   const { t } = useTranslation();
   const [value, setValue] = useState<string>(outValue);
   const inputRef = useRef<any>('');
 
   // 生成唯一的ID用于区分不同层级的SearchFields
-  const uniqueId = useRef(`searchFields_${Math.random().toString(36).substr(2, 9)}`);
+  const uniqueId = useRef(`${name || Math.random().toString(10).substr(2, 9)}`);
 
   useEffect(() => {
     setValue(outValue);
   }, [outValue]);
 
   useEffect(() => {
+    inputRef.current?.focus();
     const focusInput = () => {
-      if (document.activeElement?.id !== uniqueId.current) {
+      if (
+        document.activeElement?.id !== inputRef.current.input.id &&
+        getPrefixAndCompare(document.activeElement?.id, inputRef.current.input.id)
+      ) {
         inputRef.current?.focus();
       }
     };
@@ -85,15 +97,8 @@ export const SearchFields = ({ value: outValue, onChange }) => {
   );
 };
 
-export const useMenuSearch = ({
-  children,
-  showType,
-  hideSearch,
-}: {
-  children: any[];
-  showType?: boolean;
-  hideSearch?: boolean;
-}) => {
+export const useMenuSearch = (props: { children: any[]; showType?: boolean; hideSearch?: boolean; name?: string }) => {
+  const { children, showType, hideSearch, name } = props;
   const items = children?.concat?.() || [];
   const [searchValue, setSearchValue] = useState(null);
 
@@ -120,6 +125,7 @@ export const useMenuSearch = ({
         key: `search-${uid()}`,
         Component: () => (
           <SearchFields
+            name={name}
             value={searchValue}
             onChange={(val: string) => {
               setSearchValue(val);
@@ -153,19 +159,20 @@ export const useMenuSearch = ({
     return res;
   }, [hideSearch, limitedSearchedItems, searchValue, showType]);
 
-  const result = processedResult(resultItems, showType, hideSearch);
+  const result = processedResult(resultItems, showType, hideSearch, name);
 
   return children ? result : undefined;
 };
 
 // 处理嵌套子菜单
-const processedResult = (resultItems, showType, hideSearch) => {
+const processedResult = (resultItems, showType, hideSearch, name) => {
   return resultItems.map((item: any) => {
     if (['subMenu', 'itemGroup'].includes(item.type)) {
       const childItems = useMenuSearch({
         children: item.children,
         showType,
         hideSearch,
+        name: item.name,
       });
       return { ...item, children: childItems };
     }
