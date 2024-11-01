@@ -44,7 +44,7 @@ export const SearchFields = ({ value: outValue, onChange, name }) => {
 
     // 观察当前元素是否在视图中
     const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) {
+      if (entries.some((v) => v.isIntersecting)) {
         focusInput();
       }
     });
