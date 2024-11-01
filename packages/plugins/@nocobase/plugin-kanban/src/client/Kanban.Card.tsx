@@ -127,13 +127,23 @@ export const KanbanCard: any = observer(
       };
     }, [popupSchema]);
     const cardItemSchema = getCardItemSchema?.(fieldSchema);
-    const { layout = 'vertical' } = cardItemSchema?.['x-component-props'] || {};
+    const {
+      layout = 'vertical',
+      labelAlign = 'left',
+      labelWidth = 120,
+      labelWrap = true,
+    } = cardItemSchema?.['x-component-props'] || {};
 
     return (
       <>
         <Card onClick={handleCardClick} bordered={false} hoverable style={cardStyle} className={cardCss}>
           <DndContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
-            <FormLayout layout={layout}>
+            <FormLayout
+              layout={layout}
+              labelAlign={labelAlign}
+              labelWidth={layout === 'horizontal' ? labelWidth : null}
+              labelWrap={labelWrap}
+            >
               <FormProvider form={form}>
                 <MemorizedRecursionField schema={fieldSchema} onlyRenderProperties />
               </FormProvider>

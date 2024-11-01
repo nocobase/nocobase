@@ -40,11 +40,22 @@ const FormComponent: React.FC<FormProps> = (props) => {
   const f = useAttach(form.createVoidField({ ...field.props, basePath: '' }));
   const height = useFormBlockHeight();
   const { token } = theme.useToken();
-  const { layout = 'vertical' } = cardItemSchema?.['x-component-props'] || {};
+  const {
+    layout = 'vertical',
+    labelAlign = 'left',
+    labelWidth = 120,
+    labelWrap = true,
+  } = cardItemSchema?.['x-component-props'] || {};
   return (
     <FieldContext.Provider value={undefined}>
       <FormContext.Provider value={form}>
-        <FormLayout layout={layout} {...others}>
+        <FormLayout
+          layout={layout}
+          {...others}
+          labelAlign={labelAlign}
+          labelWidth={layout === 'horizontal' ? labelWidth : null}
+          labelWrap={labelWrap}
+        >
           <div
             className={css`
               .nb-grid-container {
