@@ -7,10 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export {
-  default,
-  COLLECTION_NAME,
-  ChannelsCollectionDefinition,
-  BaseNotificationChannel,
-  parseUserSelectionConfig,
-} from './server';
+export { default as UserSelect } from './UserSelect';
+export { default as UserAddition } from './UserAddition';

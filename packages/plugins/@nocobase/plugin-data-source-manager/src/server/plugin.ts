@@ -363,7 +363,9 @@ export class PluginDataSourceManagerServer extends Plugin {
 
     this.app.db.on('dataSourcesCollections.afterDestroy', async (model: DataSourcesCollectionModel) => {
       const dataSource = this.app.dataSourceManager.dataSources.get(model.get('dataSourceKey'));
-      dataSource.collectionManager.removeCollection(model.get('name'));
+      if (dataSource) {
+        dataSource.collectionManager.removeCollection(model.get('name'));
+      }
     });
 
     this.app.db.on('dataSourcesFields.afterSaveWithAssociations', async (model: DataSourcesFieldModel) => {
