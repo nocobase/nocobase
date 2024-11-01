@@ -232,8 +232,8 @@ const SortableRow = (props: {
   const { ref, inView } = useInView({
     threshold: 0,
     triggerOnce: true,
-    initialInView: !!process.env.__E2E__ || isInSubTable || props.rowIndex < INITIAL_ROWS_NUMBER,
-    skip: !!process.env.__E2E__ || isInSubTable || props.rowIndex < INITIAL_ROWS_NUMBER,
+    initialInView: !!process.env.__E2E__ || isInSubTable || (props.rowIndex || 0) < INITIAL_ROWS_NUMBER,
+    skip: !!process.env.__E2E__ || isInSubTable,
   });
 
   const classObj = useMemo(() => {

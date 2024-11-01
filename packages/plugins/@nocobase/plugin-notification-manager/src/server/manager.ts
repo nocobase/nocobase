@@ -61,7 +61,7 @@ export class NotificationManager implements NotificationManager {
       return logData;
     } catch (error) {
       logData.status = 'failure';
-      this.plugin.logger.error('notification send failed', JSON.stringify(error));
+      this.plugin.logger.error(`notification send failed, options: ${JSON.stringify(error)}`);
       logData.reason = JSON.stringify(error);
       this.createSendingRecord(logData);
       return logData;
@@ -69,7 +69,7 @@ export class NotificationManager implements NotificationManager {
   }
   async sendToUsers(options: SendUserOptions) {
     const { userIds, channels, message, data } = options;
-    this.plugin.logger.info('notificationManager.sendToUsers options', JSON.stringify(options));
+    this.plugin.logger.info(`notificationManager.sendToUsers options: ${JSON.stringify(options)}`);
     return await Promise.all(
       channels.map((channelName) =>
         this.send({ channelName, message, triggerFrom: 'sendToUsers', receivers: { value: userIds, type: 'userId' } }),

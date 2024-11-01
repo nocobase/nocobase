@@ -189,10 +189,6 @@ export class Collection<
     return this.model.primaryKeyAttribute;
   }
 
-  isMultiFilterTargetKey() {
-    return Array.isArray(this.filterTargetKey) && this.filterTargetKey.length > 1;
-  }
-
   get name() {
     return this.options.name;
   }
@@ -223,6 +219,10 @@ export class Collection<
         return field;
       }
     }
+  }
+
+  isMultiFilterTargetKey() {
+    return Array.isArray(this.filterTargetKey) && this.filterTargetKey.length > 1;
   }
 
   tableName() {
@@ -310,6 +310,20 @@ export class Collection<
 
       set(value) {
         this._primaryKeyAttributes = value;
+      },
+    });
+
+    Object.defineProperty(this.model, 'primaryKeyField', {
+      get: function () {
+        if (this.primaryKeyAttribute) {
+          return this.rawAttributes[this.primaryKeyAttribute].field || this.primaryKeyAttribute;
+        }
+
+        return null;
+      }.bind(this.model),
+
+      set(val) {
+        this._primaryKeyField = val;
       },
     });
 
@@ -639,9 +653,14 @@ export class Collection<
   updateOptions(options: CollectionOptions, mergeOptions?: any) {
     let newOptions = lodash.cloneDeep(options);
     newOptions = merge(this.options, newOptions, mergeOptions);
-    this.context.database.emit('beforeUpdateCollection', this, newOptions);
-    this.options = newOptions;
 
+    if (options.filterTargetKey) {
+      newOptions.filterTargetKey = options.filterTargetKey;
+    }
+
+    this.context.database.emit('beforeUpdateCollection', this, newOptions);
+
+    this.options = newOptions;
     this.setFields(options.fields, false);
     if (options.repository) {
       this.setRepository(options.repository);

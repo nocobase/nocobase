@@ -7,10 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export {
-  default,
-  COLLECTION_NAME,
-  ChannelsCollectionDefinition,
-  BaseNotificationChannel,
-  parseUserSelectionConfig,
-} from './server';
+// minimum z-index increment
+export const MIN_Z_INDEX_INCREMENT = 10;

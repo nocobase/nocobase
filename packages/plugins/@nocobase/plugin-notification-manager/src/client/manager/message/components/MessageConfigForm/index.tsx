@@ -8,6 +8,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { ArrayItems } from '@formily/antd-v5';
 import { SchemaComponent } from '@nocobase/client';
 import { observer, useField } from '@formily/react';
 import { useAPIClient } from '@nocobase/client';
@@ -75,7 +76,9 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
         },
       },
     };
-    return <SchemaComponent schema={createMessageFormSchema} components={{ MessageConfigForm }} scope={{ t }} />;
+    return (
+      <SchemaComponent schema={createMessageFormSchema} components={{ MessageConfigForm, ArrayItems }} scope={{ t }} />
+    );
   },
   { displayName: 'MessageConfigForm' },
 );

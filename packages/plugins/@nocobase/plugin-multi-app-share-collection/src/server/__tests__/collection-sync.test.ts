@@ -9,7 +9,7 @@
 
 import { BelongsToManyRepository, Database } from '@nocobase/database';
 import { AppSupervisor } from '@nocobase/server';
-import { MockServer, createMockServer, isPg } from '@nocobase/test';
+import { createMockServer, isPg, MockServer } from '@nocobase/test';
 import * as process from 'process';
 
 describe.runIf(isPg())('enable plugin', () => {
@@ -491,6 +491,8 @@ describe.runIf(isPg())('collection sync', () => {
       context: {},
     });
 
+    const mainCollectionInstance = mainDb.getCollection('mainCollection');
+
     await subApp1.runCommand('restart');
 
     const subAppMainCollectionRecord = await subApp1.db.getRepository('collections').findOne({
@@ -504,7 +506,7 @@ describe.runIf(isPg())('collection sync', () => {
     const subAppMainCollection = subApp1.db.getCollection('mainCollection');
 
     expect(subAppMainCollection).toBeTruthy();
-    expect(subAppMainCollection.options.schema).toBe(mainCollection.options.schema || 'public');
+    expect(subAppMainCollection.options.schema).toBe(mainCollectionInstance.collectionSchema());
 
     await mainApp.db.getRepository('fields').create({
       values: {
