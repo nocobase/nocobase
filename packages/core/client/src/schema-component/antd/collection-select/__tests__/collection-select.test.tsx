@@ -45,16 +45,16 @@ describe('CollectionSelect', () => {
     expect(container).toMatchInlineSnapshot(`
       <div>
         <div
-          class="css-dev-only-do-not-override-11aiz3o ant-app"
+          class="css-dev-only-do-not-override-wwtqkl ant-app"
           style="height: 100%;"
         >
           <div
             aria-label="block-item-demo title"
-            class="nb-sortable-designer nb-block-item nb-form-item acss-gw2dva"
+            class="nb-sortable-designer nb-block-item nb-form-item ant-nb-block-item css-dev-only-do-not-override-wwtqkl"
             role="button"
           >
             <div
-              class="css-1yh5po ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-11aiz3o"
+              class="css-1yh5po ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-wwtqkl"
             >
               <div
                 class="ant-formily-item-label"
@@ -84,7 +84,7 @@ describe('CollectionSelect', () => {
                     class="ant-formily-item-control-content-component"
                   >
                     <div
-                      class="ant-select css-dev-only-do-not-override-11aiz3o ant-select-focused ant-select-single ant-select-show-arrow ant-select-show-search"
+                      class="ant-select css-dev-only-do-not-override-wwtqkl ant-select-focused ant-select-single ant-select-show-arrow ant-select-show-search"
                       data-testid="select-collection"
                       role="button"
                     >
@@ -182,16 +182,16 @@ describe('CollectionSelect', () => {
     expect(container).toMatchInlineSnapshot(`
       <div>
         <div
-          class="css-dev-only-do-not-override-11aiz3o ant-app"
+          class="css-dev-only-do-not-override-wwtqkl ant-app"
           style="height: 100%;"
         >
           <div
             aria-label="block-item-demo title"
-            class="nb-sortable-designer nb-block-item nb-form-item acss-gw2dva"
+            class="nb-sortable-designer nb-block-item nb-form-item ant-nb-block-item css-dev-only-do-not-override-wwtqkl"
             role="button"
           >
             <div
-              class="css-1yh5po ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-11aiz3o"
+              class="css-1yh5po ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-wwtqkl"
             >
               <div
                 class="ant-formily-item-label"
@@ -222,7 +222,7 @@ describe('CollectionSelect', () => {
                   >
                     <div>
                       <span
-                        class="ant-tag css-dev-only-do-not-override-11aiz3o"
+                        class="ant-tag css-dev-only-do-not-override-wwtqkl"
                       >
                         Users
                       </span>
