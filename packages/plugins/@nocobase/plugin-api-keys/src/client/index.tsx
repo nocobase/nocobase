@@ -8,12 +8,11 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import { NAMESPACE } from '../constants';
 import { Configuration } from './Configuration';
 
 export class PluginAPIKeysClient extends Plugin {
   async load() {
-    this.pluginSettingsManager.add(NAMESPACE, {
+    this.pluginSettingsManager.add('api-keys', {
       icon: 'KeyOutlined',
       title: this.t('API keys'),
       Component: Configuration,
