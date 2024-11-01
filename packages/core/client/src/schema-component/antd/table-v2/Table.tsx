@@ -617,6 +617,7 @@ export const Table: any = withDynamicSchemaProps(
     } = { ...others1, ...others2 } as any;
     const field = useArrayField(others);
     const schema = useFieldSchema();
+    const { size = 'middle' } = schema['x-component-props'];
     const collection = useCollection();
     const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
     const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();
@@ -889,7 +890,7 @@ export const Table: any = withDynamicSchemaProps(
         expandedRowKeys: expandedKeys,
       };
     }, [expandedKeys, onExpandValue]);
-
+    console.log(size);
     return (
       // If spinning is set to undefined, it will cause the subtable to always display loading, so we need to convert it here
       <Spin spinning={!!loading}>
@@ -910,6 +911,7 @@ export const Table: any = withDynamicSchemaProps(
           columns={columns}
           expandable={expandable}
           field={field}
+          size={size}
         />
       </Spin>
     );
