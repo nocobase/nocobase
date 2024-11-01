@@ -439,15 +439,15 @@ export const updateFilterTargets = (fieldSchema, targets: FilterTarget['targets'
 const useDoFilter = () => {
   const form = useForm();
   const { getDataBlocks } = useFilterBlock();
-  const { getCollectionJoinField } = useCollectionManager_deprecated();
+  const cm = useCollectionManager();
   const { getOperators } = useOperators();
   const fieldSchema = useFieldSchema();
   const { name } = useCollection();
   const { targets = [], uid } = useMemo(() => findFilterTargets(fieldSchema), [fieldSchema]);
 
   const getFilterFromCurrentForm = useCallback(() => {
-    return removeNullCondition(transformToFilter(form.values, getOperators(), getCollectionJoinField, name));
-  }, [form.values, getCollectionJoinField, getOperators, name]);
+    return removeNullCondition(transformToFilter(form.values, getOperators(), cm.getCollectionField.bind(cm), name));
+  }, [form.values, cm, getOperators, name]);
 
   const doFilter = useCallback(
     async ({ doNothingWhenFilterIsEmpty = false } = {}) => {

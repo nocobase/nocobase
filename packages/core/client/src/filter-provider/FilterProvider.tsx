@@ -8,7 +8,7 @@
  */
 
 import { useField, useFieldSchema } from '@formily/react';
-import _, { uniqBy } from 'lodash';
+import _ from 'lodash';
 import { CollectionFieldOptions_deprecated } from '../collection-manager';
 import { Collection } from '../data-source/collection/Collection';
 import { useCollection } from '../data-source/collection/CollectionProvider';
@@ -203,8 +203,8 @@ export const useFilterBlock = () => {
         Object.assign(existingBlock, block);
         return;
       }
-      // 由于 setDataBlocks 是异步操作，所以上面的 existingBlock 在判断时有可能用的是旧的 dataBlocks,所以下面还需要根据 uid 进行去重操作
-      ctx?.setDataBlocks((prev) => uniqBy([...prev, block], 'uid'));
+
+      ctx?.setDataBlocks((prev) => [...prev, block]);
     },
     [ctx],
   );
