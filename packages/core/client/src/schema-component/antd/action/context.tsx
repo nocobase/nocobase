@@ -45,7 +45,7 @@ const useIsSubPageClosedByPageMenu = () => {
 
 export const ActionContextProvider: React.FC<ActionContextProps & { value?: ActionContextProps }> = (props) => {
   const [submitted, setSubmitted] = useState(false); //是否有提交记录
-  const { visible } = { ...props, ...props.value } || {};
+  const { visible } = { ...props, ...props.value };
   const { setSubmitted: setParentSubmitted } = { ...props, ...props.value };
   const service = useBlockServiceInActionButton();
   const isSubPageClosedByPageMenu = useIsSubPageClosedByPageMenu();
