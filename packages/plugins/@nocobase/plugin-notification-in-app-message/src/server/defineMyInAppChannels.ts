@@ -124,11 +124,11 @@ export default function defineMyInAppChannels({ app }: { app: Application }) {
                   ],
                 ],
               },
-              order: [[Sequelize.literal('latestMsgReceiveTimestamp'), 'DESC']],
               //@ts-ignore
               where: {
                 [Op.and]: [userFilter, latestMsgReceiveTSFilter, channelIdFilter, channelStatusFilter].filter(Boolean),
               },
+              sort: ['-latestMsgReceiveTimestamp'],
             });
             const countRes = channelsRepo.count({
               //@ts-ignore
