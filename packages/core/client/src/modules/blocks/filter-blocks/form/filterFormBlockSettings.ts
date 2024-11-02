@@ -13,15 +13,12 @@ import { SchemaSettings } from '../../../../application/schema-settings/SchemaSe
 import { useCollection_deprecated } from '../../../../collection-manager';
 import { useCollection } from '../../../../data-source/collection/CollectionProvider';
 import { FilterBlockType } from '../../../../filter-provider';
-import {
-  SchemaSettingsFormItemTemplate,
-  SchemaSettingsLinkageRules,
-  schemaSettingsLabelLayout,
-} from '../../../../schema-settings';
+import { SchemaSettingsFormItemTemplate, SchemaSettingsLinkageRules } from '../../../../schema-settings';
 import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { SchemaSettingsConnectDataBlocks } from '../../../../schema-settings/SchemaSettingsConnectDataBlocks';
 import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
+import { SchemaSettingsLayoutItem } from '../../../../schema-settings/SchemaSettingsLayoutItem';
 
 export const filterFormBlockSettings = new SchemaSettings({
   name: 'blockSettings:filterForm',
@@ -71,7 +68,10 @@ export const filterFormBlockSettings = new SchemaSettings({
         };
       },
     },
-    schemaSettingsLabelLayout,
+    {
+      name: 'setBlockLayout',
+      Component: SchemaSettingsLayoutItem,
+    },
     {
       name: 'divider',
       type: 'divider',

@@ -20,7 +20,7 @@ import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Tabl
 import { titleField } from '../Select/selectComponentFieldSettings';
 
 import { linkageRules } from '../SubTable/subTablePopoverComponentFieldSettings';
-import { schemaSettingsLabelLayout } from '../../../../schema-settings';
+import { SchemaSettingsLayoutItem } from '../../../../schema-settings/SchemaSettingsLayoutItem';
 
 const allowMultiple: any = {
   name: 'allowMultiple',
@@ -106,5 +106,14 @@ const fieldComponent: any = {
 
 export const subformPopoverComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:PopoverNester',
-  items: [fieldComponent, allowMultiple, titleField, linkageRules, schemaSettingsLabelLayout],
+  items: [
+    fieldComponent,
+    allowMultiple,
+    titleField,
+    linkageRules,
+    {
+      name: 'setBlockLayout',
+      Component: SchemaSettingsLayoutItem,
+    },
+  ],
 });

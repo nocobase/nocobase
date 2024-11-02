@@ -25,6 +25,7 @@ export * from './setTheDataScopeSchemaSettingsItem';
 export * from './SchemaSettingsRenderEngine';
 export * from './hooks/useGetAriaLabelOfDesigner';
 export * from './hooks/useIsAllowToSetDefaultValue';
+export * from './SchemaSettingsLayoutItem';
 export { default as useParseDataScopeFilter } from './hooks/useParseDataScopeFilter';
 export * from './isPatternDisabled';
 export { SchemaSettingsPlugin } from './SchemaSettingsPlugin';
