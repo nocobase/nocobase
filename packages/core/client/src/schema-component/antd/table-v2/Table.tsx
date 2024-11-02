@@ -13,7 +13,7 @@ import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sor
 import { css, cx } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
-import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
+import { Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { action, raw } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
@@ -38,6 +38,7 @@ import {
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { useTableBlockContext } from '../../../block-provider/TableBlockProvider';
 import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { withSkeletonComponent } from '../../../hoc/withSkeletonComponent';
 import { useSatisfiedActionValues } from '../../../schema-settings/LinkageRules/useActionValues';
@@ -47,7 +48,6 @@ import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 
-const RecursionFieldMemo = React.memo(RecursionField);
 const InViewContext = React.createContext(false);
 
 const useArrayField = (props) => {
@@ -95,14 +95,14 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
   const { designable } = useDesignable();
   const { exists, render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
   const parentRecordData = useCollectionParentRecordData();
-  const columnsSchema = schema.reduceProperties((buf, s) => {
+  const columnsSchemas = schema.reduceProperties((buf, s) => {
     if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
       return buf.concat([s]);
     }
     return buf;
   }, []);
   const { current, pageSize } = paginationProps;
-  const hasChangedColumns = useColumnsDeepMemoized(columnsSchema);
+  const hasChangedColumns = useColumnsDeepMemoized(columnsSchemas);
 
   const schemaToolbarBigger = useMemo(() => {
     return css`
@@ -111,21 +111,27 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
         padding: ${token.paddingContentVerticalLG}px ${token.margin}px;
       }
     `;
-  }, [token.paddingContentVerticalLG, token.marginSM]);
+  }, [token.paddingContentVerticalLG, token.marginSM, token.margin]);
 
   const collection = useCollection();
 
   const columns = useMemo(
     () =>
-      columnsSchema?.map((columnSchema: Schema) => {
+      columnsSchemas?.map((columnSchema: Schema) => {
         const collectionFields = columnSchema.reduceProperties((buf, s) => {
           if (isCollectionFieldComponent(s)) {
             return buf.concat([s]);
           }
         }, []);
         const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : columnSchema.name;
+        const { uiSchema, defaultValue } = collection?.getField(dataIndex) || {};
+
+        if (uiSchema) {
+          uiSchema.default = defaultValue;
+        }
+
         return {
-          title: <RecursionFieldMemo name={columnSchema.name} schema={columnSchema} onlyRenderSelf />,
+          title: <NocoBaseRecursionField name={columnSchema.name} schema={columnSchema} onlyRenderSelf />,
           dataIndex,
           key: columnSchema.name,
           sorter: columnSchema['x-component-props']?.['sorter'],
@@ -139,7 +145,12 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
                   <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
                     <ColumnFieldProvider schema={columnSchema} basePath={basePath}>
                       <span role="button" className={schemaToolbarBigger}>
-                        <RecursionFieldMemo basePath={basePath} schema={columnSchema} onlyRenderProperties />
+                        <NocoBaseRecursionField
+                          basePath={basePath}
+                          schema={columnSchema}
+                          uiSchema={uiSchema}
+                          onlyRenderProperties
+                        />
                       </span>
                     </ColumnFieldProvider>
                   </RecordProvider>
