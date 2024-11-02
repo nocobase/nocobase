@@ -160,6 +160,8 @@
   "Continue when \"Yes\"": "“是”则继续",
   "Branch into \"Yes\" and \"No\"": "“是”和“否”分别继续",
   "Condition expression": "条件表达式",
+  "Inside of \"Yes\" branch": "“是”分支内",
+  "Inside of \"No\" branch": "“否”分支内",
   "Create record": "新增数据",
   "Add new record to a collection. You can use variables from upstream nodes to assign values to fields.":
     "向一个数据表中添加新的数据。可以使用上游节点里的变量为字段赋值。",
@@ -206,5 +208,10 @@
   "Succeeded": "成功",
   "Test run": "测试执行",
   "Test run will do the actual data manipulating or API calling, please use with caution.": "测试执行会进行实际的数据操作或 API 调用，请谨慎使用。",
-  "No variable": "无变量"
+  "No variable": "无变量",
+
+  "Add node": "添加节点",
+  "Move all downstream nodes to": "将所有下游节点移至",
+  "After end of branches": "分支结束后",
+  "Inside of branch": "分支内"
 }

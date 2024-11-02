@@ -51,27 +51,40 @@ export type NodeAvailableContext = {
   branchIndex: number;
 };
 
+type Config = Record<string, any>;
+
+type Options = { label: string; value: any }[];
+
 export abstract class Instruction {
   title: string;
   type: string;
   group: string;
   description?: string;
   /**
-   * @experimental
+   * @deprecated migrate to `presetFieldset` instead
    */
   options?: { label: string; value: any; key: string }[];
   fieldset: Record<string, ISchema>;
   /**
    * @experimental
    */
+  presetFieldset?: Record<string, ISchema>;
+  /**
+   * To presentation if the instruction is creating a branch
+   * @experimental
+   */
+  branching?: boolean | Options | ((config: Config) => boolean | Options);
+  /**
+   * @experimental
+   */
   view?: ISchema;
-  scope?: { [key: string]: any };
-  components?: { [key: string]: any };
+  scope?: Record<string, any>;
+  components?: Record<string, any>;
   Component?(props): JSX.Element;
   /**
    * @experimental
    */
-  createDefaultConfig?(): Record<string, any> {
+  createDefaultConfig?(): Config {
     return {};
   }
   useVariables?(node, options?: UseVariableOptions): VariableOption;
@@ -568,12 +581,7 @@ export function NodeDefaultView(props) {
             'Node with unknown type will cause error. Please delete it or check plugin which provide this type.',
           )}
         >
-          <div
-            role="button"
-            aria-label={`_untyped-${editingTitle}`}
-            className={cx(styles.nodeCardClass, 'invalid')}
-            onClick={onOpenDrawer}
-          >
+          <div role="button" aria-label={`_untyped-${editingTitle}`} className={cx(styles.nodeCardClass, 'invalid')}>
             <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
               <Tag color="error">{lang('Unknown node')}</Tag>
               <span className="workflow-node-id">{data.id}</span>
