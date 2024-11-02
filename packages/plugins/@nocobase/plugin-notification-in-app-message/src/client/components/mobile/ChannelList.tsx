@@ -7,14 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { observer } from '@formily/reactive-react';
-import { List, Badge, InfiniteScroll } from 'antd-mobile';
+import { reaction } from '@formily/reactive';
+import { List, Badge, InfiniteScroll, ListRef } from 'antd-mobile';
 import { useNavigate } from 'react-router-dom';
 import { channelListObs, channelStatusFilterObs, showChannelLoadingMoreObs, fetchChannels } from '../../observables';
 const InternalChannelList = () => {
   const navigate = useNavigate();
   const channels = channelListObs.value;
+  const listRef = useRef<ListRef>(null);
+  useEffect(() => {
+    const dispose = reaction(
+      () => channelStatusFilterObs.value,
+      () => {
+        const ele = document.querySelector('.mobile-page-content');
+        if (ele) ele.scrollTop = 0;
+      },
+    );
+    return dispose;
+  }, []);
   const onLoadChannelsMore = async () => {
     const filter: Record<string, any> = {};
     const lastChannel = channels[channels.length - 1];
@@ -28,6 +40,7 @@ const InternalChannelList = () => {
   return (
     <>
       <List
+        ref={listRef}
         style={{
           '--border-top': 'none',
         }}
