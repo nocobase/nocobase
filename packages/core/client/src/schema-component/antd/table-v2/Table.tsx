@@ -191,12 +191,10 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
                 onClick={() => {
                   return action(() => {
                     const fieldIndex = (current - 1) * pageSize + index;
-                    spliceArrayState(field, {
-                      startIndex: fieldIndex,
-                      deleteCount: 1,
-                    });
-                    field.value.splice(fieldIndex, 1);
-                    return field.onInput(field.value);
+                    const updatedValue = [...field.value];
+                    updatedValue.splice(fieldIndex, 1);
+                    field.value = updatedValue;
+                    field.onInput(field.value);
                   });
                 }}
               />
