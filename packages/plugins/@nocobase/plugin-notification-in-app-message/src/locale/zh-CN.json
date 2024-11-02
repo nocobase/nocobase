@@ -1,7 +1,10 @@
 {
   "Inbox": "收信箱",
   "Message": "消息",
+  "Loading": "加载中",
   "Loading more": "加载更多",
+  "Loading failed,": "加载失败，",
+  "please reload": "重新加载",
   "Detail": "详情",
   "Content": "内容",
   "Datetime": "时间",

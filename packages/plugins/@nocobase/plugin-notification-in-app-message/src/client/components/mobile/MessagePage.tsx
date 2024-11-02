@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { List, Badge, InfiniteScroll, NavBar } from 'antd-mobile';
+import { List, Badge, InfiniteScroll, NavBar, DotLoading } from 'antd-mobile';
 import { observer } from '@formily/reactive-react';
 import { useCurrentUserContext, css } from '@nocobase/client';
 import { useSearchParams } from 'react-router-dom';
@@ -31,6 +31,7 @@ import {
   showMsgLoadingMoreObs,
 } from '../../observables';
 import { useLocalTranslation } from '../../../locale';
+import InfiniteScrollContent from './InfiniteScrollContent';
 const MobileMessagePageInner = () => {
   const { t } = useLocalTranslation();
   const navigate = useNavigate();
@@ -71,7 +72,9 @@ const MobileMessagePageInner = () => {
     });
     viewMessageDetail(message);
   };
-  const onLoadMessagesMore = useCallback(() => {
+  const [fetchMsgStatus, setFecthMsgStatus] = useState<'success' | 'loading' | 'failure'>('success');
+
+  const onLoadMessagesMore = useCallback(async () => {
     const filter: Record<string, any> = {};
     const lastMessage = messages[messages.length - 1];
     if (lastMessage) {
@@ -82,7 +85,14 @@ const MobileMessagePageInner = () => {
     if (selectedChannelNameObs.value) {
       filter.channelName = selectedChannelNameObs.value;
     }
-    return fetchMessages({ filter, limit: 30 });
+    try {
+      setFecthMsgStatus('loading');
+      const res = await fetchMessages({ filter, limit: 30 });
+      setFecthMsgStatus('success');
+      return res;
+    } catch {
+      setFecthMsgStatus('failure');
+    }
   }, [messages]);
   const { title } = useMobileTitle();
 
@@ -126,7 +136,16 @@ const MobileMessagePageInner = () => {
                 </List.Item>
               );
             })}
-            <InfiniteScroll loadMore={onLoadMessagesMore} hasMore={showMsgLoadingMoreObs.value}></InfiniteScroll>
+            <InfiniteScroll
+              loadMore={onLoadMessagesMore}
+              hasMore={fetchMsgStatus !== 'failure' && showMsgLoadingMoreObs.value}
+            >
+              <InfiniteScrollContent
+                loadMoreStatus={fetchMsgStatus}
+                hasMore={showMsgLoadingMoreObs.value}
+                retry={onLoadMessagesMore}
+              />
+            </InfiniteScroll>
           </List>
         </div>
       </MobilePageContentContainer>

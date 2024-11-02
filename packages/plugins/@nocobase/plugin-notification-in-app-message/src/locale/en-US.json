@@ -1,7 +1,10 @@
 {
   "Inbox": "Inbox",
   "Message": "Message",
+  "Loading": "Loading",
   "Loading more": "Loading more",
+  "Loading failed,": "Loading failed,",
+  "please reload": "please reload",
   "Detail": "Detail",
   "Content": "Content",
   "Datetime": "Datetime",

@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { observer } from '@formily/reactive-react';
 import { reaction } from '@formily/reactive';
 import { List, Badge, InfiniteScroll, ListRef } from 'antd-mobile';
 import { useNavigate } from 'react-router-dom';
+import InfiniteScrollContent from './InfiniteScrollContent';
 import { channelListObs, channelStatusFilterObs, showChannelLoadingMoreObs, fetchChannels } from '../../observables';
 const InternalChannelList = () => {
   const navigate = useNavigate();
@@ -27,15 +28,24 @@ const InternalChannelList = () => {
     );
     return dispose;
   }, []);
+  const [fetctChannelsStatus, setFetchChannelsStatus] = useState<'success' | 'loading' | 'failure'>('success');
+
   const onLoadChannelsMore = async () => {
-    const filter: Record<string, any> = {};
-    const lastChannel = channels[channels.length - 1];
-    if (lastChannel?.latestMsgReceiveTimestamp) {
-      filter.latestMsgReceiveTimestamp = {
-        $lt: lastChannel.latestMsgReceiveTimestamp,
-      };
+    try {
+      setFetchChannelsStatus('loading');
+      const filter: Record<string, any> = {};
+      const lastChannel = channels[channels.length - 1];
+      if (lastChannel?.latestMsgReceiveTimestamp) {
+        filter.latestMsgReceiveTimestamp = {
+          $lt: lastChannel.latestMsgReceiveTimestamp,
+        };
+      }
+      const res = await fetchChannels({ filter, limit: 30 });
+      setFetchChannelsStatus('success');
+      return res;
+    } catch {
+      setFetchChannelsStatus('failure');
     }
-    return fetchChannels({ filter, limit: 30 });
   };
   return (
     <>
@@ -64,7 +74,16 @@ const InternalChannelList = () => {
             </List.Item>
           );
         })}
-        <InfiniteScroll loadMore={onLoadChannelsMore} hasMore={showChannelLoadingMoreObs.value}></InfiniteScroll>
+        <InfiniteScroll
+          loadMore={onLoadChannelsMore}
+          hasMore={fetctChannelsStatus !== 'failure' && showChannelLoadingMoreObs.value}
+        >
+          <InfiniteScrollContent
+            loadMoreStatus={fetctChannelsStatus}
+            hasMore={showChannelLoadingMoreObs.value}
+            retry={onLoadChannelsMore}
+          />
+        </InfiniteScroll>
       </List>
     </>
   );
