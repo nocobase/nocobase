@@ -10,6 +10,7 @@
 import { SchemaInitializerItemType } from '@nocobase/client';
 import { useMobileRoutes, MobileRouteItem } from '@nocobase/plugin-mobile/client';
 import { uid } from '@formily/shared';
+import { Toast } from 'antd-mobile';
 import { useLocalTranslation } from '../../../locale';
 export const messageSchemaInitializerItem: SchemaInitializerItemType = {
   name: 'message-schema',
@@ -22,6 +23,17 @@ export const messageSchemaInitializerItem: SchemaInitializerItemType = {
       title: t('Message'),
       badge: 10,
       async onClick(values) {
+        const res = await resource.list();
+        if (Array.isArray(res?.data?.data)) {
+          const findIndex = res?.data?.data.findIndex((route) => route?.options?.url === `/page/in-app-message`);
+          if (findIndex > -1) {
+            Toast.show({
+              icon: 'fail',
+              content: t('The message page has already been created.'),
+            });
+            return;
+          }
+        }
         const { data } = await resource.create({
           values: {
             type: 'page',
