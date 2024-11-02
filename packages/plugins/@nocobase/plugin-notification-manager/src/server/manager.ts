@@ -17,7 +17,7 @@ import type {
   SendUserOptions,
   WriteLogOptions,
 } from './types';
-import { compile } from './utils';
+import { compile } from './utils/compile';
 
 export class NotificationManager implements NotificationManager {
   private plugin: PluginNotificationManagerServer;

@@ -18,7 +18,7 @@ export function compile(template: Record<string, any>, data: Record<string, any>
     let value = object[key];
     switch (typeof template[key]) {
       case 'object':
-        value = compile(object[key], data);
+        value = compile(template[key], data);
         break;
       case 'string':
         c = Handlebars.compile(template[key]);
