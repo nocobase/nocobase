@@ -17,7 +17,19 @@ import { getAPIClient } from '../utils';
 import { uid } from '@nocobase/utils/client';
 
 export const liveSSEObs = observable<{ value: SSEData | null }>({ value: null });
+reaction(
+  () => liveSSEObs.value,
+  (sseData) => {
+    if (!sseData) return;
 
+    if (['message:created', 'message:updated'].includes(sseData.type)) {
+      const { data } = sseData;
+      messageMapObs.value[data.id] = data;
+      fetchChannels({ filter: { name: data.channelName } });
+      updateUnreadMsgsCount();
+    }
+  },
+);
 export const startMsgSSEStreamWithRetry = async () => {
   let retryTimes = 0;
   const clientId = uid();

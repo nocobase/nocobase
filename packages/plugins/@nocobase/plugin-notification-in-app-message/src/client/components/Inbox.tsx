@@ -103,8 +103,6 @@ const InnerInbox = (props) => {
               },
             });
           }
-          fetchChannels({ filter: { name: data.channelName } });
-          updateUnreadMsgsCount();
         }
       },
     );
