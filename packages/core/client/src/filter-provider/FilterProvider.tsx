@@ -18,7 +18,7 @@ import { removeNullCondition } from '../schema-component';
 import { mergeFilter, useAssociatedFields } from './utils';
 
 // @ts-ignore
-import React, { createContext, useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { createContext, useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 
 enum FILTER_OPERATOR {
   AND = '$and',
@@ -177,7 +177,7 @@ export const DataBlockCollector = ({
     getDataBlockRequest,
   ]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (shouldApplyFilter) addBlockToDataBlocks();
   }, [addBlockToDataBlocks, shouldApplyFilter]);
 

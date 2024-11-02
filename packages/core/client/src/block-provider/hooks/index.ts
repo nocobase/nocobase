@@ -497,7 +497,11 @@ const useDoFilter = () => {
 
   // 这里的代码是为了实现：筛选表单的筛选操作在首次渲染时自动执行一次
   useEffect(() => {
-    doFilter({ doNothingWhenFilterIsEmpty: true });
+    // 使用 setTimeout 是为了等待筛选表单的变量解析完成，否则会因为获取的 filter 为空而导致筛选表单的筛选操作不执行。
+    // 另外，如果不加 100 毫秒的延迟，会导致数据区块列表更新后，不触发筛选操作的问题。
+    setTimeout(() => {
+      doFilter({ doNothingWhenFilterIsEmpty: true });
+    }, 100);
   }, [getDataBlocks().length]);
 
   return {

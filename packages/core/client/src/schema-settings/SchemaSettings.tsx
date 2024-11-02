@@ -33,12 +33,12 @@ import React, {
   FC,
   ReactNode,
   createContext,
+  // @ts-ignore
+  startTransition,
   useCallback,
   useContext,
   useEffect,
   useMemo,
-  // @ts-ignore
-  useTransition as useReactTransition,
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -157,22 +157,40 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = React.memo(
   const { title, dn, ...others } = props;
   const [visible, setVisible] = useState(false);
   const { Component, getMenuItems } = useMenuItem();
-  const [, startTransition] = useReactTransition();
   const dropdownMaxHeight = useNiceDropdownMaxHeight([visible]);
+  const [openDropdown, setOpenDropdown] = useState(false);
 
-  const changeMenu: DropdownProps['onOpenChange'] = useCallback((nextOpen: boolean, info) => {
+  const setDropdownVisible = (visible: boolean) => {
+    setVisible(visible);
+
+    // 延迟 300ms 是为了避免对动画造成影响
+    setTimeout(() => {
+      setOpenDropdown(visible);
+    }, 300);
+  };
+
+  const changeMenu: DropdownProps['onOpenChange'] = (nextOpen: boolean, info) => {
     if (info.source === 'trigger' || nextOpen) {
       // 当鼠标快速滑过时，终止菜单的渲染，防止卡顿
       startTransition(() => {
-        setVisible(nextOpen);
+        setDropdownVisible(nextOpen);
       });
     }
-  }, []);
+  };
+
+  // 从这里截断，可以保证每次显示时都是最新的菜单列表
+  if (!openDropdown) {
+    return (
+      <div onMouseEnter={() => setOpenDropdown(true)} data-testid={props['data-testid']}>
+        {typeof title === 'string' ? <span>{title}</span> : title}
+      </div>
+    );
+  }
 
   const items = getMenuItems(() => props.children);
 
   return (
-    <SchemaSettingsProvider visible={visible} setVisible={setVisible} dn={dn} {...others}>
+    <SchemaSettingsProvider visible={visible} setVisible={setDropdownVisible} dn={dn} {...others}>
       <Component />
       <Dropdown
         open={visible}

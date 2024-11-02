@@ -12,10 +12,10 @@ import { flatten, getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { useCallback, useEffect, useState } from 'react';
 import { FilterTarget, findFilterTargets } from '../block-provider/hooks';
-import { CollectionFieldOptions_deprecated, FieldOptions, InheritanceCollectionMixin } from '../collection-manager';
+import { CollectionFieldOptions_deprecated, FieldOptions } from '../collection-manager';
 import { Collection } from '../data-source/collection/Collection';
 import { useCollection } from '../data-source/collection/CollectionProvider';
-import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
+import { useAllCollectionsInheritChainGetter } from '../data-source/data-source/DataSourceManagerProvider';
 import { removeNullCondition } from '../schema-component';
 import { DataBlock, useFilterBlock } from './FilterProvider';
 
@@ -61,21 +61,10 @@ export const getSupportFieldsByForeignKey = (filterBlockCollection: Collection, 
  * @returns
  */
 export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
-  const dm = useDataSourceManager();
   const { getDataBlocks } = useFilterBlock();
   const fieldSchema = useFieldSchema();
   const collection = useCollection();
-
-  // 获取当前 collection 继承链路上的所有 collection
-  const getAllCollectionsInheritChain = useCallback(
-    (collectionName: string, customDataSource?: string) => {
-      return dm
-        ?.getDataSource(customDataSource)
-        ?.collectionManager?.getCollection<InheritanceCollectionMixin>(collectionName)
-        ?.getAllCollectionsInheritChain();
-    },
-    [dm],
-  );
+  const { getAllCollectionsInheritChain } = useAllCollectionsInheritChainGetter();
 
   // Form 和 Collapse 仅支持同表的数据区块
   if (filterBlockType === FilterBlockType.FORM || filterBlockType === FilterBlockType.COLLAPSE) {
