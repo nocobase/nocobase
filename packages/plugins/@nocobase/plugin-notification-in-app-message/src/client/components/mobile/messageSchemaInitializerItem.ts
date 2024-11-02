@@ -65,7 +65,7 @@ export const messageSchemaInitializerItem: SchemaInitializerItemType = {
                 },
               },
             ],
-          } as MobileRouteItem<'MessageItem'>,
+          } as MobileRouteItem,
         });
         const parentId = data.data.id;
         refresh();
