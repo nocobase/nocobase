@@ -7,11 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { connect, useFieldSchema } from '@formily/react';
-import React from 'react';
+import { Field } from '@formily/core';
+import { connect, Schema, useField, useFieldSchema } from '@formily/react';
+import { merge } from '@formily/shared';
+import { concat } from 'lodash';
+import React, { useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useDynamicComponentProps } from '../../hoc/withDynamicSchemaProps';
-import { ErrorFallback, useComponent } from '../../schema-component';
+import { ErrorFallback, useCompile, useComponent } from '../../schema-component';
 import { CollectionFieldProvider, useCollectionField } from './CollectionFieldProvider';
 
 type Props = {
@@ -19,15 +22,64 @@ type Props = {
   children?: React.ReactNode;
 };
 
-export const CollectionFieldInternalField: React.FC = (props: Props) => {
-  const fieldSchema = useFieldSchema();
-  const { uiSchema } = useCollectionField();
-  const Component = useComponent(
-    fieldSchema['x-component-props']?.['component'] || uiSchema?.['x-component'] || 'Input',
-  );
-  const dynamicProps = useDynamicComponentProps(uiSchema?.['x-use-component-props'], props);
+const setFieldProps = (field: Field, key: string, value: any) => {
+  if (field[key] === undefined) {
+    field[key] = value;
+  }
+};
 
-  if (!uiSchema) return null;
+const setRequired = (field: Field, fieldSchema: Schema, uiSchema: Schema) => {
+  if (typeof fieldSchema['required'] === 'undefined') {
+    field.required = !!uiSchema['required'];
+  }
+};
+
+/**
+ * TODO: 初步适配
+ * @internal
+ */
+export const CollectionFieldInternalField: React.FC = (props: Props) => {
+  const compile = useCompile();
+  const field = useField<Field>();
+  const fieldSchema = useFieldSchema();
+  const { uiSchema: uiSchemaOrigin, defaultValue } = useCollectionField();
+  const Component = useComponent(
+    fieldSchema['x-component-props']?.['component'] || uiSchemaOrigin?.['x-component'] || 'Input',
+  );
+  const dynamicProps = useDynamicComponentProps(uiSchemaOrigin?.['x-use-component-props'], props);
+
+  // TODO: 初步适配
+  useEffect(() => {
+    if (!uiSchemaOrigin) {
+      return;
+    }
+    const uiSchema = compile(uiSchemaOrigin);
+    setFieldProps(field, 'content', uiSchema['x-content']);
+    setFieldProps(field, 'title', uiSchema.title);
+    setFieldProps(field, 'description', uiSchema.description);
+
+    if (fieldSchema.default == null && defaultValue != null) {
+      setFieldProps(field, 'initialValue', defaultValue);
+    }
+
+    if (!field.validator && (uiSchema['x-validator'] || fieldSchema['x-validator'])) {
+      const concatSchema = concat([], uiSchema['x-validator'] || [], fieldSchema['x-validator'] || []);
+      field.validator = concatSchema;
+    }
+    if (fieldSchema['x-disabled'] === true) {
+      field.disabled = true;
+    }
+    if (fieldSchema['x-read-pretty'] === true) {
+      field.readPretty = true;
+    }
+    setRequired(field, fieldSchema, uiSchema);
+    // @ts-ignore
+    field.dataSource = uiSchema.enum;
+    const originalProps = uiSchema['x-component-props'] || {};
+    field.componentProps = merge(originalProps, field.componentProps || {}, dynamicProps || {});
+  }, [uiSchemaOrigin]);
+
+  if (!uiSchemaOrigin) return null;
 
   return <Component {...props} {...dynamicProps} />;
 };
