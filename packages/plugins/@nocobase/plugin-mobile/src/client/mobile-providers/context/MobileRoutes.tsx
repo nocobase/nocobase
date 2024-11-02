@@ -16,15 +16,15 @@ import type { IResource } from '@nocobase/sdk';
 
 import { useMobileTitle } from './MobileTitle';
 
-export interface MobileRouteItem<ExtendedType = 'page'> {
-  id?: number;
+export interface MobileRouteItem {
+  id: number;
   schemaUid?: string;
-  type: 'page' | 'link' | 'tabs' | ExtendedType;
+  type: 'page' | 'link' | 'tabs';
   options?: any;
   title?: string;
   icon?: string;
   parentId?: number;
-  children?: MobileRouteItem<ExtendedType>[];
+  children?: MobileRouteItem[];
 }
 
 export const MobileRoutesContext = createContext<MobileRoutesContextValue>(null);
