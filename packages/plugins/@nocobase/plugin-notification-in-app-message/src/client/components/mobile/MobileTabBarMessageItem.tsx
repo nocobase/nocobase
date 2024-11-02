@@ -11,7 +11,7 @@ import React, { useEffect } from 'react';
 import { observer } from '@formily/reactive-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { MobileTabBarItem } from '@nocobase/plugin-mobile/client';
-import { unreadMsgsCountObs, updateUnreadMsgsCount } from '../../observables';
+import { unreadMsgsCountObs, startMsgSSEStreamWithRetry, updateUnreadMsgsCount } from '../../observables';
 
 const InnerMobileTabBarMessageItem = (props) => {
   const navigate = useNavigate();
@@ -20,6 +20,7 @@ const InnerMobileTabBarMessageItem = (props) => {
     navigate('/page/in-app-message');
   };
   useEffect(() => {
+    startMsgSSEStreamWithRetry();
     updateUnreadMsgsCount();
   }, []);
   const selected = props.url && location.pathname.startsWith(props.url);
