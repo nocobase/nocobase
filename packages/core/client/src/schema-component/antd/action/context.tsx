@@ -11,7 +11,7 @@ import { useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React, { createContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useDataBlockRequestGetter } from '../../../data-source';
+import { useDataBlockRequest } from '../../../data-source';
 import { useCurrentPopupContext } from '../page/PagePopups';
 import { getBlockService, storeBlockService } from '../page/pagePopupUtils';
 import { ActionContextProps } from './types';
@@ -75,22 +75,21 @@ ActionContextProvider.displayName = 'ActionContextProvider';
 
 const useBlockServiceInActionButton = () => {
   const { params } = useCurrentPopupContext();
-  const fieldSchema = useFieldSchema();
   const popupUidWithoutOpened = useFieldSchema()?.['x-uid'];
-  const { getDataBlockRequest } = useDataBlockRequestGetter();
+  const service = useDataBlockRequest();
   const currentPopupUid = params?.popupuid;
 
   // 把 service 存起来
   useEffect(() => {
     if (popupUidWithoutOpened && currentPopupUid !== popupUidWithoutOpened) {
-      storeBlockService(popupUidWithoutOpened, { service: getDataBlockRequest() });
+      storeBlockService(popupUidWithoutOpened, { service });
     }
-  }, [popupUidWithoutOpened, getDataBlockRequest, currentPopupUid, fieldSchema]);
+  }, [currentPopupUid, popupUidWithoutOpened, service]);
 
   // 关闭弹窗时，获取到对应的 service
   if (currentPopupUid === popupUidWithoutOpened) {
-    return getBlockService(currentPopupUid)?.service || getDataBlockRequest();
+    return getBlockService(currentPopupUid)?.service || service;
   }
 
-  return getDataBlockRequest();
+  return service;
 };
