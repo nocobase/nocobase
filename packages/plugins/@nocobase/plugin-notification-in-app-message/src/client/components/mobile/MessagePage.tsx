@@ -9,16 +9,17 @@
 
 import React, { useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { List, Badge, InfiniteScroll } from 'antd-mobile';
+import { List, Badge, InfiniteScroll, NavBar } from 'antd-mobile';
 import { observer } from '@formily/reactive-react';
 import { useCurrentUserContext, css } from '@nocobase/client';
 import { useSearchParams } from 'react-router-dom';
 import { dayjs } from '@nocobase/utils/client';
+
 import {
   MobilePageHeader,
-  MobilePageNavigationBar,
   MobilePageProvider,
   MobilePageContentContainer,
+  useMobileTitle,
 } from '@nocobase/plugin-mobile/client';
 import {
   userIdObs,
@@ -83,11 +84,12 @@ const MobileMessagePageInner = () => {
     }
     return fetchMessages({ filter, limit: 30 });
   }, [messages]);
+  const { title } = useMobileTitle();
 
   return (
     <MobilePageProvider>
       <MobilePageHeader>
-        <MobilePageNavigationBar />
+        <NavBar onBack={() => navigate('/page/in-app-message')}>{title}</NavBar>
       </MobilePageHeader>
       <MobilePageContentContainer>
         <div
