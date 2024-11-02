@@ -109,8 +109,8 @@ export const useMenuSearch = (props: { children: any[]; showType?: boolean; hide
     const lowerSearchValue = searchValue.toLocaleLowerCase();
     return items.filter(
       (item) =>
-        (item.label || item.title) &&
-        String(item.label || item.title)
+        (item.title || item.label) &&
+        String(item.title || item.label)
           .toLocaleLowerCase()
           .includes(lowerSearchValue),
     );
