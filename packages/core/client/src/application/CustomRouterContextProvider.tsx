@@ -11,8 +11,22 @@ import React, { FC, useEffect } from 'react';
 import { Location, NavigateFunction, NavigateOptions, useLocation, useNavigate } from 'react-router-dom';
 
 const NavigateNoUpdateContext = React.createContext<NavigateFunction>(null);
+NavigateNoUpdateContext.displayName = 'NavigateNoUpdateContext';
+
 const LocationNoUpdateContext = React.createContext<Location>(null);
+LocationNoUpdateContext.displayName = 'LocationNoUpdateContext';
+
 export const LocationSearchContext = React.createContext<string>('');
+LocationSearchContext.displayName = 'LocationSearchContext';
+
+const IsAdminPageContext = React.createContext<boolean>(false);
+IsAdminPageContext.displayName = 'IsAdminPageContext';
+
+const IsAdminPageProvider: FC = ({ children }) => {
+  const location = useLocation();
+  const isAdminPage = location.pathname.startsWith('/admin');
+  return <IsAdminPageContext.Provider value={isAdminPage}>{children}</IsAdminPageContext.Provider>;
+};
 
 /**
  * When the URL changes, components that use `useNavigate` will re-render.
@@ -78,11 +92,17 @@ export const useLocationSearch = () => {
   return React.useContext(LocationSearchContext);
 };
 
+export const useIsAdminPage = () => {
+  return React.useContext(IsAdminPageContext);
+};
+
 export const CustomRouterContextProvider: FC = ({ children }) => {
   return (
     <NavigateNoUpdateProvider>
       <LocationNoUpdateProvider>
-        <LocationSearchProvider>{children}</LocationSearchProvider>
+        <IsAdminPageProvider>
+          <LocationSearchProvider>{children}</LocationSearchProvider>
+        </IsAdminPageProvider>
       </LocationNoUpdateProvider>
     </NavigateNoUpdateProvider>
   );

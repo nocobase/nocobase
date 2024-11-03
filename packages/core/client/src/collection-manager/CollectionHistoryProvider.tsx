@@ -8,8 +8,8 @@
  */
 
 import React, { createContext, useCallback, useContext, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
+import { useIsAdminPage } from '../application/CustomRouterContextProvider';
 import { useAppSpin } from '../application/hooks/useAppSpin';
 
 export interface CollectionHistoryContextValue {
@@ -38,9 +38,7 @@ const options = {
 
 export const CollectionHistoryProvider: React.FC = (props) => {
   const api = useAPIClient();
-  const location = useLocation();
-
-  const isAdminPage = location.pathname.startsWith('/admin');
+  const isAdminPage = useIsAdminPage();
   const token = api.auth.getToken() || '';
   const { render } = useAppSpin();
 
