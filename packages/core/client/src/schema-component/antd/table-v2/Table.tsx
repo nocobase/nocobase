@@ -433,47 +433,62 @@ const rowSelectCheckboxCheckedClassHover = css`
   }
 `;
 
-const HeaderWrapperComponent = (props) => {
+const HeaderWrapperComponent = React.memo((props) => {
   return (
     <DndContext>
       <thead {...props} />
     </DndContext>
   );
-};
+});
 
-const HeaderCellComponent = (props) => {
+HeaderWrapperComponent.displayName = 'HeaderWrapperComponent';
+
+const HeaderCellComponent = React.memo((props: { className: string }) => {
   return <th {...props} className={cls(props.className, headerClass)} />;
-};
+});
 
-const BodyRowComponent = (props: {
-  rowIndex: number;
-  onClick: (e: any) => void;
-  style: React.CSSProperties;
-  className: string;
-}) => {
-  return <SortableRow {...props} />;
-};
+HeaderCellComponent.displayName = 'HeaderCellComponent';
 
-const BodyCellComponent = (props) => {
-  const { token } = useToken();
-  const inView = useContext(InViewContext);
-  const isIndex = props.className?.includes('selection-column');
-  const { record, schema, rowIndex, isSubTable, ...others } = props;
-  const { valueMap } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
-  const style = useMemo(() => Object.assign({ ...props.style }, valueMap), [props.style, valueMap]);
-  const skeletonStyle = {
-    height: '1em',
-    backgroundColor: token.colorFillSecondary,
-    borderRadius: `${token.borderRadiusSM}px`,
-  };
+const BodyRowComponent = React.memo(
+  (props: { rowIndex: number; onClick: (e: any) => void; style: React.CSSProperties; className: string }) => {
+    return <SortableRow {...props} />;
+  },
+);
 
-  return (
-    <td {...others} className={classNames(props.className, cellClass)} style={style}>
-      {/* Lazy rendering cannot be used in sub-tables. */}
-      {isSubTable || inView || isIndex ? props.children : <div style={skeletonStyle} />}
-    </td>
-  );
-};
+BodyRowComponent.displayName = 'BodyRowComponent';
+
+const BodyCellComponent = React.memo(
+  (props: {
+    className: string;
+    style: React.CSSProperties;
+    children: React.ReactNode;
+    record: any;
+    schema: any;
+    rowIndex: number;
+    isSubTable: boolean;
+  }) => {
+    const { token } = useToken();
+    const inView = useContext(InViewContext);
+    const isIndex = props.className?.includes('selection-column');
+    const { record, schema, rowIndex, isSubTable, ...others } = props;
+    const { valueMap } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
+    const style = useMemo(() => Object.assign({ ...props.style }, valueMap), [props.style, valueMap]);
+    const skeletonStyle = {
+      height: '1em',
+      backgroundColor: token.colorFillSecondary,
+      borderRadius: `${token.borderRadiusSM}px`,
+    };
+
+    return (
+      <td {...others} className={classNames(props.className, cellClass)} style={style}>
+        {/* Lazy rendering cannot be used in sub-tables. */}
+        {isSubTable || inView || isIndex ? props.children : <div style={skeletonStyle} />}
+      </td>
+    );
+  },
+);
+
+BodyCellComponent.displayName = 'BodyCellComponent';
 
 interface TableProps {
   /** @deprecated */

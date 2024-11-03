@@ -25,6 +25,10 @@ TableBlockContext.displayName = 'TableBlockContext';
 const TableBlockContextBasicValue = createContext<{
   field: any;
   rowKey: string;
+  dragSortBy?: string;
+  childrenColumnName?: string;
+  showIndex?: boolean;
+  dragSort?: boolean;
 }>(null);
 TableBlockContextBasicValue.displayName = 'TableBlockContextBasicValue';
 
@@ -56,6 +60,7 @@ interface Props {
   collection?: string;
   children?: any;
   expandFlag?: boolean;
+  dragSortBy?: string;
 }
 
 const InternalTableBlockProvider = (props: Props) => {
@@ -100,8 +105,12 @@ const InternalTableBlockProvider = (props: Props) => {
     () => ({
       field,
       rowKey,
+      childrenColumnName,
+      showIndex,
+      dragSort,
+      dragSortBy: props.dragSortBy,
     }),
-    [field, rowKey],
+    [field, rowKey, childrenColumnName, showIndex, dragSort, props.dragSortBy],
   );
 
   // Keep the original for compatibility
