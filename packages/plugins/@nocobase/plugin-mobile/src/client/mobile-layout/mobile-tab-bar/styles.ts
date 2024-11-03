@@ -36,7 +36,6 @@ export const useStyles = createStyles(() => ({
     overflowX: 'auto',
     '.adm-tab-bar-item': {
       maxWidth: '100%',
-      paddingTop: '8px',
       '.adm-tab-bar-item-title': {
         maxWidth: '100%',
         overflow: 'hidden',
