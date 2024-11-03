@@ -14,11 +14,15 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo } fro
 import { Navigate } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
 import { useAppSpin } from '../application/hooks/useAppSpin';
-import { useBlockRequestContext } from '../block-provider/BlockProvider';
 import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
-import { CollectionNotAllowViewPlaceholder, useCollection, useCollectionManager } from '../data-source';
+import {
+  CollectionNotAllowViewPlaceholder,
+  useCollection,
+  useCollectionManager,
+  useCollectionRecordData,
+  useDataBlockProps,
+} from '../data-source';
 import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
-import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
 
 import { useApp } from '../application';
@@ -177,12 +181,12 @@ const useAllowedActions = () => {
 
 const useResourceName = () => {
   const service = useResourceActionContext();
-  const result = useBlockRequestContext() || { service };
+  const dataBlockProps = useDataBlockProps();
   return (
-    result?.props?.resource ||
-    result?.props?.association ||
-    result?.props?.collection ||
-    result?.service?.defaultRequest?.resource
+    dataBlockProps?.resource ||
+    dataBlockProps?.association ||
+    dataBlockProps?.collection ||
+    service?.defaultRequest?.resource
   );
 };
 
@@ -282,14 +286,14 @@ export const useACLActionParamsContext = () => {
 
 export const useRecordPkValue = () => {
   const collection = useCollection();
-  const record = useRecord();
+  const recordData = useCollectionRecordData();
 
   if (!collection) {
     return;
   }
 
   const primaryKey = collection.getPrimaryKey();
-  return record?.[primaryKey];
+  return recordData?.[primaryKey];
 };
 
 export const ACLActionProvider = (props) => {

@@ -9,7 +9,7 @@
 
 import { useField } from '@formily/react';
 import { Result } from 'ahooks/es/useRequest/src/types';
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useCollectionManager_deprecated } from '.';
 import { CollectionProvider_deprecated, useRecord } from '..';
 import { useAPIClient, useRequest } from '../api-client';
@@ -58,9 +58,15 @@ const CollectionResourceActionProvider = (props) => {
     { uid },
   );
   const resource = api.resource(request.resource);
+  const resourceActionValue = useMemo(
+    () => ({ ...service, defaultRequest: request, dragSort }),
+    [dragSort, request, service],
+  );
+  const resourceContextValue = useMemo(() => ({ type: 'collection', resource, collection }), [collection, resource]);
+
   return (
-    <ResourceContext.Provider value={{ type: 'collection', resource, collection }}>
-      <ResourceActionContext.Provider value={{ ...service, defaultRequest: request, dragSort }}>
+    <ResourceContext.Provider value={resourceContextValue}>
+      <ResourceActionContext.Provider value={resourceActionValue}>
         <CollectionProvider_deprecated collection={collection}>{props.children}</CollectionProvider_deprecated>
       </ResourceActionContext.Provider>
     </ResourceContext.Provider>
@@ -88,9 +94,18 @@ const AssociationResourceActionProvider = (props) => {
     { uid },
   );
   const resource = api.resource(request.resource, resourceOf);
+  const resourceContextValue = useMemo(
+    () => ({ type: 'association', resource, association, collection }),
+    [association, collection, resource],
+  );
+  const resourceActionContextValue = useMemo(
+    () => ({ ...service, defaultRequest: request, dragSort }),
+    [dragSort, request, service],
+  );
+
   return (
-    <ResourceContext.Provider value={{ type: 'association', resource, association, collection }}>
-      <ResourceActionContext.Provider value={{ ...service, defaultRequest: request, dragSort }}>
+    <ResourceContext.Provider value={resourceContextValue}>
+      <ResourceActionContext.Provider value={resourceActionContextValue}>
         <CollectionProvider_deprecated collection={collection}>{props.children}</CollectionProvider_deprecated>
       </ResourceActionContext.Provider>
     </ResourceContext.Provider>
