@@ -7,19 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { RecursionField, useFieldSchema } from '@formily/react';
 import { Empty } from 'antd';
 import _ from 'lodash';
 import React from 'react';
-import { RecursionField, useFieldSchema } from '@formily/react';
 import { useDataBlockRequest } from '../../../data-source';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
+import { withSkeletonComponent } from '../../../hoc/withSkeletonComponent';
 import { FormV2 } from '../form-v2';
 import { FormProps } from '../form-v2/Form';
 
 export type DetailsProps = FormProps;
 
 export const Details = withDynamicSchemaProps(
-  (props: DetailsProps) => {
+  withSkeletonComponent((props: DetailsProps) => {
     const request = useDataBlockRequest();
     const schema = useFieldSchema();
     if (!request?.loading && _.isEmpty(request?.data?.data)) {
@@ -32,6 +33,6 @@ export const Details = withDynamicSchemaProps(
     }
 
     return <FormV2 {...props} />;
-  },
-  { displayName: 'Details' },
+  }),
+  { displayName: 'NocoBaseDetails' },
 );
