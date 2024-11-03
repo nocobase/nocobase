@@ -8,16 +8,7 @@
  */
 
 import React, { FC, useEffect } from 'react';
-import {
-  Location,
-  NavigateFunction,
-  NavigateOptions,
-  PathMatch,
-  useLocation,
-  useMatch,
-  useNavigate,
-  useParams,
-} from 'react-router-dom';
+import { Location, NavigateFunction, NavigateOptions, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 const NavigateNoUpdateContext = React.createContext<NavigateFunction>(null);
 NavigateNoUpdateContext.displayName = 'NavigateNoUpdateContext';
@@ -34,10 +25,10 @@ IsAdminPageContext.displayName = 'IsAdminPageContext';
 const CurrentPageUidContext = React.createContext<string>('');
 CurrentPageUidContext.displayName = 'CurrentPageUidContext';
 
-const MatchAdminContext = React.createContext<PathMatch<string> | null>(null);
+const MatchAdminContext = React.createContext<boolean>(false);
 MatchAdminContext.displayName = 'MatchAdminContext';
 
-const MatchAdminNameContext = React.createContext<PathMatch<string> | null>(null);
+const MatchAdminNameContext = React.createContext<boolean>(false);
 MatchAdminNameContext.displayName = 'MatchAdminNameContext';
 
 const IsInSettingsPageContext = React.createContext<boolean>(false);
@@ -49,12 +40,14 @@ const IsInSettingsPageProvider: FC = ({ children }) => {
 };
 
 const MatchAdminProvider: FC = ({ children }) => {
-  const matchAdmin = useMatch('/admin');
+  const location = useLocation();
+  const matchAdmin = location.pathname.startsWith('/admin');
   return <MatchAdminContext.Provider value={matchAdmin}>{children}</MatchAdminContext.Provider>;
 };
 
 const MatchAdminNameProvider: FC = ({ children }) => {
-  const matchAdminName = useMatch('/admin/:name');
+  const location = useLocation();
+  const matchAdminName = /^\/admin\/.+/.test(location.pathname);
   return <MatchAdminNameContext.Provider value={matchAdminName}>{children}</MatchAdminNameContext.Provider>;
 };
 
