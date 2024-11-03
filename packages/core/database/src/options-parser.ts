@@ -182,12 +182,7 @@ export class OptionsParser {
 
       sortField.push(direction);
       if (this.database.isMySQLCompatibleDialect()) {
-        const fieldName = sortField[0];
-
-        // @ts-ignore
-        if (this.model.fieldRawAttributesMap[fieldName]) {
-          orderParams.push([Sequelize.fn('ISNULL', Sequelize.col(`${this.model.name}.${sortField[0]}`))]);
-        }
+        orderParams.push([Sequelize.fn('ISNULL', Sequelize.col(`${this.model.name}.${sortField[0]}`))]);
       }
       orderParams.push(sortField);
     }
