@@ -24,6 +24,7 @@ import {
 import {
   userIdObs,
   selectedChannelNameObs,
+  selectedChannelObs,
   selectedMessageListObs,
   fetchChannels,
   updateMessage,
@@ -94,7 +95,7 @@ const MobileMessagePageInner = () => {
       setFecthMsgStatus('failure');
     }
   }, [messages]);
-  const { title } = useMobileTitle();
+  const title = selectedChannelObs.value?.title || t('Message');
 
   return (
     <MobilePageProvider>
