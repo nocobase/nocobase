@@ -240,8 +240,10 @@ export const TriggerConfig = () => {
           className={cx(styles.nodeCardClass, 'invalid')}
           onClick={onOpenDrawer}
         >
-          <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
-            <Tag color="error">{lang('Unknown trigger')}</Tag>
+          <div className={styles.nodeHeaderClass}>
+            <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
+              <Tag color="error">{lang('Unknown trigger')}</Tag>
+            </div>
           </div>
           <div className="workflow-node-title">
             <Input.TextArea value={editingTitle} disabled autoSize />
@@ -260,11 +262,16 @@ export const TriggerConfig = () => {
       className={cx(styles.nodeCardClass)}
       onClick={onOpenDrawer}
     >
-      <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
-        <Tag color="gold">
-          <ThunderboltOutlined />
-          <span className="type">{compile(trigger.title)}</span>
-        </Tag>
+      <div className={styles.nodeHeaderClass}>
+        <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
+          <Tag color="gold">
+            <ThunderboltOutlined />
+            <span className="type">{compile(trigger.title)}</span>
+          </Tag>
+        </div>
+        <div className="workflow-node-actions">
+          <TriggerExecution />
+        </div>
       </div>
       <div className="workflow-node-title">
         <Input.TextArea
@@ -275,7 +282,6 @@ export const TriggerConfig = () => {
           disabled={workflow.executed}
         />
       </div>
-      <TriggerExecution />
       <ActionContextProvider
         value={{
           visible: editingConfig,

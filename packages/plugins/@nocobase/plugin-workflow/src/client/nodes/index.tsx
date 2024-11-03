@@ -34,7 +34,7 @@ import {
 import { parse, str2moment } from '@nocobase/utils/client';
 
 import WorkflowPlugin from '..';
-import { AddButton } from '../AddButton';
+import { AddButton } from '../AddNodeContext';
 import { useFlowContext } from '../FlowContext';
 import { DrawerDescription } from '../components/DrawerDescription';
 import { StatusButton } from '../components/StatusButton';
@@ -256,6 +256,7 @@ export function RemoveButton() {
       icon={<DeleteOutlined />}
       onClick={onRemove}
       className="workflow-node-remove-button"
+      size="small"
     />
   );
 }
@@ -582,13 +583,17 @@ export function NodeDefaultView(props) {
           )}
         >
           <div role="button" aria-label={`_untyped-${editingTitle}`} className={cx(styles.nodeCardClass, 'invalid')}>
-            <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
-              <Tag color="error">{lang('Unknown node')}</Tag>
-              <span className="workflow-node-id">{data.id}</span>
+            <div className={styles.nodeHeaderClass}>
+              <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
+                <Tag color="error">{lang('Unknown node')}</Tag>
+                <span className="workflow-node-id">{data.id}</span>
+              </div>
+              <div className="workflow-node-actions">
+                <RemoveButton />
+                <JobButton />
+              </div>
             </div>
             <Input.TextArea value={editingTitle} disabled autoSize />
-            <RemoveButton />
-            <JobButton />
           </div>
         </Tooltip>
       </div>
@@ -605,9 +610,15 @@ export function NodeDefaultView(props) {
         className={cx(styles.nodeCardClass, { configuring: editingConfig })}
         onClick={onOpenDrawer}
       >
-        <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
-          <Tag>{typeTitle}</Tag>
-          <span className="workflow-node-id">{data.id}</span>
+        <div className={styles.nodeHeaderClass}>
+          <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
+            <Tag>{typeTitle}</Tag>
+            <span className="workflow-node-id">{data.id}</span>
+          </div>
+          <div className="workflow-node-actions">
+            <RemoveButton />
+            <JobButton />
+          </div>
         </div>
         <Input.TextArea
           disabled={workflow.executed}
@@ -616,8 +627,6 @@ export function NodeDefaultView(props) {
           onBlur={(ev) => onChangeTitle(ev.target.value)}
           autoSize
         />
-        <RemoveButton />
-        <JobButton />
         <ActionContextProvider
           value={{
             visible: editingConfig,

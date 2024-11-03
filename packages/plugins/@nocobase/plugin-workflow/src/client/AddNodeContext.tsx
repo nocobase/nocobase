@@ -13,22 +13,154 @@ import { observer, useForm } from '@formily/react';
 
 import {
   ActionContextProvider,
-  FormItem,
+  css,
   SchemaComponent,
   useActionContext,
   useAPIClient,
   useCancelAction,
+  useCompile,
+  usePlugin,
 } from '@nocobase/client';
 
+import WorkflowPlugin, { Instruction, useStyles } from '.';
 import { useFlowContext } from './FlowContext';
 import { lang, NAMESPACE } from './locale';
 import { RadioWithTooltip } from './components';
+import { uid } from '@nocobase/utils/client';
+import { Button, Dropdown } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
+
+interface AddButtonProps {
+  upstream;
+  branchIndex?: number | null;
+  [key: string]: any;
+}
+
+export function AddButton(props: AddButtonProps) {
+  const { upstream, branchIndex = null } = props;
+  const engine = usePlugin(WorkflowPlugin);
+  const compile = useCompile();
+  const { workflow } = useFlowContext() ?? {};
+  const instructionList = Array.from(engine.instructions.getValues()) as Instruction[];
+  const { styles } = useStyles();
+  const { onCreate, creating } = useAddNodeContext();
+
+  const groups = useMemo(() => {
+    const result = [
+      { key: 'control', label: `{{t("Control", { ns: "${NAMESPACE}" })}}` },
+      { key: 'calculation', label: `{{t("Calculation", { ns: "${NAMESPACE}" })}}` },
+      { key: 'collection', label: `{{t("Collection operations", { ns: "${NAMESPACE}" })}}` },
+      { key: 'manual', label: `{{t("Manual", { ns: "${NAMESPACE}" })}}` },
+      { key: 'extended', label: `{{t("Extended types", { ns: "${NAMESPACE}" })}}` },
+    ]
+      .map((group) => {
+        const groupInstructions = instructionList.filter(
+          (item) =>
+            item.group === group.key &&
+            (item.isAvailable ? item.isAvailable({ engine, workflow, upstream, branchIndex }) : true),
+        );
+
+        return {
+          ...group,
+          type: 'group',
+          children: groupInstructions.map((item) => ({
+            role: 'button',
+            'aria-label': item.type,
+            key: item.type,
+            label: item.title,
+          })),
+        };
+      })
+      .filter((group) => group.children.length);
+
+    return compile(result);
+  }, [branchIndex, compile, engine, instructionList, upstream, workflow]);
+
+  const onClick = useCallback(
+    async ({ keyPath }) => {
+      const [type] = keyPath;
+      onCreate({ type, upstream, branchIndex });
+    },
+    [branchIndex, onCreate, upstream],
+  );
+
+  if (!workflow) {
+    return null;
+  }
+
+  return (
+    <div className={styles.addButtonClass}>
+      <Dropdown
+        menu={{
+          items: groups,
+          onClick,
+        }}
+        disabled={workflow.executed}
+        overlayClassName={css`
+          .ant-dropdown-menu-root {
+            max-height: 30em;
+            overflow-y: auto;
+          }
+        `}
+      >
+        <Button
+          aria-label={props['aria-label'] || 'add-button'}
+          shape="circle"
+          icon={<PlusOutlined />}
+          loading={creating?.upstreamId == upstream?.id && creating?.branchIndex === branchIndex}
+          size="small"
+        />
+      </Dropdown>
+    </div>
+  );
+}
 
 function useAddNodeSubmitAction() {
   const form = useForm();
+  const api = useAPIClient();
+  const { workflow, refresh } = useFlowContext();
+  const { presetting, setPresetting, setCreating } = useAddNodeContext();
+  const ctx = useActionContext();
   return {
     async run() {
-      console.log('=======', form.values);
+      if (!presetting) {
+        return;
+      }
+      await form.submit();
+      setCreating(presetting.data);
+      try {
+        const {
+          data: { data: newNode },
+        } = await api.resource('workflows.nodes', workflow.id).create({
+          values: {
+            ...presetting.data,
+            config: {
+              ...presetting.data.config,
+              ...form.values.config,
+            },
+          },
+        });
+        if (form.values.downstreamBranchIndex !== false && newNode.downstreamId) {
+          await api.resource('flow_nodes').update({
+            filterByTk: newNode.downstreamId,
+            values: {
+              branchIndex: form.values.downstreamBranchIndex,
+              upstream: {
+                id: newNode.id,
+                downstreamId: null,
+              },
+            },
+            updateAssociationValues: ['upstream'],
+          });
+        }
+        ctx.setVisible(false);
+        setPresetting(null);
+        refresh();
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setCreating(null);
+      }
     },
   };
 }
@@ -58,9 +190,9 @@ const DownstreamBranchIndex = observer((props) => {
     if (!presetting?.instruction) {
       return [];
     }
-    const { instruction, upstream, branchIndex } = presetting || {};
-    const downstream = upstream
-      ? nodes.find((item) => item.upstreamId === upstream.id && item.branchIndex === branchIndex)
+    const { instruction, data } = presetting;
+    const downstream = data.upstreamId
+      ? nodes.find((item) => item.upstreamId === data.upstreamId && item.branchIndex === data.branchIndex)
       : nodes.find((item) => item.upstreamId === null);
     if (!downstream) {
       return [];
@@ -77,13 +209,15 @@ const DownstreamBranchIndex = observer((props) => {
     return null;
   }
 
+  const { data } = presetting;
+
   return (
     <SchemaComponent
       components={{
         RadioWithTooltip,
       }}
       schema={{
-        name: `${presetting?.type ?? 'unknown'}-${presetting?.upstream?.id ?? 'root'}-${presetting?.branchIndex}`,
+        name: `${data.type ?? 'unknown'}-${data.upstreamId ?? 'root'}-${data.branchIndex}`,
         type: 'void',
         properties: {
           downstreamBranchIndex: {
@@ -110,51 +244,54 @@ const DownstreamBranchIndex = observer((props) => {
   // );
 });
 
-function PresetFieldset({ useSchema }) {
-  const schema = useSchema();
-  return <SchemaComponent schema={schema} />;
+function PresetFieldset() {
+  const { presetting } = useAddNodeContext();
+  if (!presetting?.instruction.presetFieldset) {
+    return null;
+  }
+  return (
+    <SchemaComponent
+      schema={{
+        type: 'void',
+        properties: {
+          config: {
+            type: 'object',
+            properties: presetting.instruction.presetFieldset,
+          },
+        },
+      }}
+    />
+  );
 }
 
 export function AddNodeContextProvider(props) {
   const api = useAPIClient();
+  const compile = useCompile();
+  const engine = usePlugin(WorkflowPlugin);
   const [creating, setCreating] = useState(null);
   const [presetting, setPresetting] = useState(null);
   const [formValueChanged, setFormValueChanged] = useState(false);
-  const { workflow, refresh } = useFlowContext() ?? {};
+  const { workflow, nodes, refresh } = useFlowContext() ?? {};
 
-  const form = useMemo(() => {
-    return createForm({
-      initialValues: {},
-      values: {},
-    });
-  }, [presetting]);
+  const form = useMemo(() => createForm(), []);
 
   const onModalCancel = useCallback(
     (visible) => {
       if (!visible) {
-        // form.setValues({});
-        // form.clearFormGraph('.config', true);
         form.reset();
-        setTimeout(() => {
-          setPresetting(null);
-        });
+        form.clearFormGraph('*');
+        setPresetting(null);
       }
     },
     [form],
   );
 
-  const onCreate = useCallback(
-    async ({ type, title, config, upstream, branchIndex }) => {
-      setCreating({ upstream, branchIndex });
+  const create = useCallback(
+    async (data) => {
+      setCreating(data);
       try {
         await api.resource('workflows.nodes', workflow.id).create({
-          values: {
-            type,
-            upstreamId: upstream?.id ?? null,
-            branchIndex,
-            title,
-            config,
-          },
+          values: data,
         });
         refresh();
       } catch (err) {
@@ -166,10 +303,40 @@ export function AddNodeContextProvider(props) {
     [api, refresh, workflow.id],
   );
 
-  const usePresetSchema = useCallback(() => presetting?.instruction.presetFieldset, [presetting]);
+  const onCreate = useCallback(
+    ({ type, upstream, branchIndex }) => {
+      const instruction = engine.instructions.get(type);
+      if (!instruction) {
+        console.error(`Instruction "${type}" not found`);
+        return;
+      }
+      const data = {
+        key: uid(),
+        type,
+        upstreamId: upstream?.id ?? null,
+        branchIndex,
+        title: compile(instruction.title),
+        config: instruction.createDefaultConfig?.() ?? {},
+      };
+      const downstream = upstream?.id
+        ? nodes.find((item) => item.upstreamId === data.upstreamId && item.branchIndex === data.branchIndex)
+        : nodes.find((item) => item.upstreamId === null);
+      if (
+        instruction.presetFieldset ||
+        ((typeof instruction.branching === 'function' ? instruction.branching(data.config) : instruction.branching) &&
+          downstream)
+      ) {
+        setPresetting({ data, instruction });
+        return;
+      }
+
+      create(data);
+    },
+    [compile, create, engine.instructions],
+  );
 
   return (
-    <AddNodeContext.Provider value={{ onPreset: setPresetting, presetting, onCreate, creating }}>
+    <AddNodeContext.Provider value={{ presetting, setPresetting, onCreate, creating, setCreating }}>
       {props.children}
       <ActionContextProvider
         value={{
@@ -183,11 +350,11 @@ export function AddNodeContextProvider(props) {
         <SchemaComponent
           components={{
             DownstreamBranchIndex,
+            PresetFieldset,
           }}
           scope={{
             useCancelAction,
             useAddNodeSubmitAction,
-            usePresetSchema,
           }}
           schema={{
             name: `modal`,
@@ -202,10 +369,6 @@ export function AddNodeContextProvider(props) {
               config: {
                 type: 'void',
                 'x-component': 'PresetFieldset',
-                'x-component-props': {
-                  useSchema: '{{ usePresetSchema }}',
-                },
-                // properties: configSchema,
               },
               downstreamBranchIndex: {
                 type: 'void',
