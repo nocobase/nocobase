@@ -39,13 +39,9 @@ const FallbackComponent: FC<FallbackProps> = (props) => {
   );
 };
 
-const handleErrors = (error) => {
-  console.error(error);
-};
-
 export const BlockItemError: FC = ({ children }) => {
   return (
-    <ErrorBoundary FallbackComponent={FallbackComponent} onError={handleErrors}>
+    <ErrorBoundary FallbackComponent={FallbackComponent} onError={console.error}>
       {children}
     </ErrorBoundary>
   );

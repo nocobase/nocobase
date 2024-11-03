@@ -44,7 +44,7 @@ export const BlockItem: React.FC<BlockItemProps> = withDynamicSchemaProps(
         style={style}
       >
         {render()}
-        <ErrorBoundary FallbackComponent={ErrorFallback} onError={(err) => console.log(err)}>
+        <ErrorBoundary FallbackComponent={ErrorFallback} onError={console.log}>
           {children}
         </ErrorBoundary>
       </SortableItem>

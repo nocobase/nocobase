@@ -59,10 +59,6 @@ export const Page = (props) => {
   const { wrapSSR, hashId, componentCls } = useStyles();
   const { token } = useToken();
 
-  const handleErrors = useCallback((error) => {
-    console.error(error);
-  }, []);
-
   // 这里的样式是为了保证页面 tabs 标签下面的分割线和页面内容对齐（页面内边距可以通过主题编辑器调节）
   const tabBarStyle = useMemo(
     () => ({
@@ -176,7 +172,7 @@ export const Page = (props) => {
     <div className={`${componentCls} ${hashId} ${antTableCell}`}>
       <NocoBasePageHeader footer={footer} />
       <div className="nb-page-wrapper">
-        <ErrorBoundary FallbackComponent={ErrorFallback} onError={handleErrors}>
+        <ErrorBoundary FallbackComponent={ErrorFallback} onError={console.error}>
           {tabUid ? (
             // used to match the rout with name "admin.page.tab"
             <Outlet context={{ loading, disablePageHeader, enablePageTabs, fieldSchema, tabUid }} />

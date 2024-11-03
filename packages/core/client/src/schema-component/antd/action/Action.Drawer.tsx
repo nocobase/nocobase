@@ -111,7 +111,7 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
 );
 
 export const ActionDrawer: ComposedActionDrawer = (props) => (
-  <ErrorBoundary FallbackComponent={DrawerErrorFallback} onError={(err) => console.log(err)}>
+  <ErrorBoundary FallbackComponent={DrawerErrorFallback} onError={console.log}>
     <InternalActionDrawer {...props} />
   </ErrorBoundary>
 );

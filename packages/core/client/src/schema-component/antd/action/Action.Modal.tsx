@@ -154,7 +154,7 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
 );
 
 export const ActionModal: ComposedActionDrawer<ModalProps> = (props) => (
-  <ErrorBoundary FallbackComponent={ModalErrorFallback} onError={(err) => console.log(err)}>
+  <ErrorBoundary FallbackComponent={ModalErrorFallback} onError={console.log}>
     <InternalActionModal {...props} />
   </ErrorBoundary>
 );

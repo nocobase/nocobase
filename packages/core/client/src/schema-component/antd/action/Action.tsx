@@ -56,7 +56,7 @@ const useA = () => {
   };
 };
 
-const handleError = (err) => console.log(err);
+const handleError = console.log;
 
 export const Action: ComposedAction = withDynamicSchemaProps(
   React.memo((props: ActionProps) => {

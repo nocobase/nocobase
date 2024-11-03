@@ -12,13 +12,13 @@ import { ConfigProvider, Popover, theme } from 'antd';
 import React, { ComponentType, useCallback, useMemo, useState } from 'react';
 
 import { css } from '@emotion/css';
+import { ErrorBoundary } from 'react-error-boundary';
 import { useNiceDropdownMaxHeight } from '../../common/useNiceDropdownHeight';
 import { useFlag } from '../../flag-provider';
 import { ErrorFallback, useDesignable } from '../../schema-component';
 import { useSchemaInitializerStyles } from './components/style';
 import { SchemaInitializerContext } from './context';
 import { SchemaInitializerOptions } from './types';
-import { ErrorBoundary } from 'react-error-boundary';
 
 const defaultWrap = (s: ISchema) => s;
 const useWrapDefault = (wrap = defaultWrap) => wrap;
@@ -91,7 +91,7 @@ export function withInitializer<T>(C: ComponentType<T>) {
       }
 
       return (
-        <ErrorBoundary FallbackComponent={ErrorFallback.Modal} onError={(err) => console.error(err)}>
+        <ErrorBoundary FallbackComponent={ErrorFallback.Modal} onError={console.error}>
           <SchemaInitializerContext.Provider
             value={{
               visible,
@@ -108,7 +108,7 @@ export function withInitializer<T>(C: ComponentType<T>) {
                 {...popoverProps}
                 arrow={false}
                 overlayClassName={overlayClassName}
-                  open={visible}
+                open={visible}
                 onOpenChange={setVisible}
                 content={wrapSSR(
                   <div
