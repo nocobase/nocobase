@@ -12,7 +12,6 @@ import { observer } from '@formily/reactive-react';
 import { reaction } from '@formily/reactive';
 import { List, Badge, InfiniteScroll, ListRef } from 'antd-mobile';
 import { useNavigate } from 'react-router-dom';
-import { dayjs } from '@nocobase/utils/client';
 import InfiniteScrollContent from './InfiniteScrollContent';
 import { channelListObs, channelStatusFilterObs, showChannelLoadingMoreObs, fetchChannels } from '../../observables';
 const InternalChannelList = () => {
@@ -63,32 +62,15 @@ const InternalChannelList = () => {
               onClick={() => {
                 navigate(`/page/in-app-message/messages?channel=${item.name}`);
               }}
-              description={
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>{item.latestMsgTitle}</div>
-                  <div>
-                    <Badge
-                      style={{ border: 'none' }}
-                      content={
-                        channelStatusFilterObs.value !== 'read' && item.unreadMsgCnt > 0 ? item.unreadMsgCnt : null
-                      }
-                    ></Badge>
-                  </div>
-                </div>
+              description={item.latestMsgTitle}
+              extra={
+                <Badge
+                  style={{ border: 'none' }}
+                  content={channelStatusFilterObs.value !== 'read' && item.unreadMsgCnt > 0 ? item.unreadMsgCnt : null}
+                ></Badge>
               }
             >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                <div> {item.title}</div>
-                <div style={{ color: 'var(--adm-color-weak)', fontSize: 'var(--adm-font-size-main)' }}>
-                  {dayjs(item.latestMsgReceiveTimestamp).fromNow(true)}
-                </div>
-              </div>
+              {item.title}
             </List.Item>
           );
         })}
