@@ -16,11 +16,11 @@ import {
   SchemaSettingsDataTemplates,
   SchemaSettingsFormItemTemplate,
   SchemaSettingsLinkageRules,
-  schemaSettingsLabelLayout,
 } from '../../../../schema-settings';
 import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
+import { SchemaSettingsLayoutItem } from '../../../../schema-settings/SchemaSettingsLayoutItem';
 
 export const createFormBlockSettings = new SchemaSettings({
   name: 'blockSettings:createForm',
@@ -77,7 +77,10 @@ export const createFormBlockSettings = new SchemaSettings({
         };
       },
     },
-    schemaSettingsLabelLayout,
+    {
+      name: 'setBlockLayout',
+      Component: SchemaSettingsLayoutItem,
+    },
     {
       name: 'divider2',
       type: 'divider',

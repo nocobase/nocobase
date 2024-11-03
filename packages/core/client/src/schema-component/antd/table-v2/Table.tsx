@@ -196,6 +196,9 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
                       deleteCount: 1,
                     });
                     field.value.splice(fieldIndex, 1);
+                    setTimeout(() => {
+                      field.value[field.value.length] = null;
+                    });
                     return field.onInput(field.value);
                   });
                 }}
