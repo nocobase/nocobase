@@ -31,6 +31,7 @@ import {
   useCollection,
   useCollectionParentRecordData,
   useDataBlockRequest,
+  useDataBlockRequestData,
   useFlag,
   useSchemaInitializerRender,
   useTableSelectorContext,
@@ -295,8 +296,7 @@ const usePaginationProps = (pagination1, pagination2) => {
   const { t } = useTranslation();
   const field: any = useField();
   const { token } = useToken();
-  const { data } = useDataBlockRequest() || ({} as any);
-  const { meta } = data || {};
+  const { meta } = useDataBlockRequestData() || {};
   const { hasNext } = meta || {};
   const pagination = useMemo(
     () => ({ ...pagination1, ...pagination2 }),

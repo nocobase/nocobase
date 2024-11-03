@@ -196,7 +196,7 @@ export const useFilterActionProps = () => {
   return useFilterFieldProps({ options, params: props?.params });
 };
 
-export const useFilterFieldProps = ({ options, service, params }: { options: any[]; service?: any; params: any }) => {
+export const useFilterFieldProps = ({ options, service, params }: { options: any[]; service?: any; params?: any }) => {
   const { getDataBlockRequest } = useDataBlockRequestGetter();
   const { t } = useTranslation();
   const field = useField<Field>();
@@ -205,9 +205,10 @@ export const useFilterFieldProps = ({ options, service, params }: { options: any
   const onSubmit = useCallback(
     (values) => {
       const _service = service || getDataBlockRequest();
+      const _params = params || _service.state?.params?.[0] || _service.params;
 
       // filter parameter for the block
-      const defaultFilter = params.filter;
+      const defaultFilter = _params.filter;
       // filter parameter for the filter action
       const filter = removeNullCondition(values?.filter);
 
@@ -228,13 +229,14 @@ export const useFilterFieldProps = ({ options, service, params }: { options: any
         field.title = t('Filter');
       }
     },
-    [dataLoadingMode, field, params?.filter, service, t, getDataBlockRequest],
+    [dataLoadingMode, field, getDataBlockRequest, params, service, t],
   );
 
   const onReset = useCallback(() => {
     const _service = service || getDataBlockRequest();
+    const _params = params || _service.state?.params?.[0] || _service.params;
 
-    const filter = params.filter;
+    const filter = _params.filter;
     const filters = _service?.params?.[1]?.filters || {};
     delete filters[`filterAction`];
 
@@ -255,7 +257,7 @@ export const useFilterFieldProps = ({ options, service, params }: { options: any
     }
 
     _service?.run(...newParams);
-  }, [dataLoadingMode, field, params?.filter, service, t, getDataBlockRequest]);
+  }, [dataLoadingMode, field, getDataBlockRequest, params, service, t]);
 
   return {
     options,
