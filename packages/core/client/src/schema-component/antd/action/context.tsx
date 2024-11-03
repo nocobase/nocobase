@@ -63,11 +63,9 @@ export const ActionContextProvider: React.FC<ActionContextProps & { value?: Acti
       };
     }, [visible, service?.refresh, setParentSubmitted, isSubPageClosedByPageMenu]);
 
-    return (
-      <ActionContext.Provider value={{ ...props, ...props?.value, submitted, setSubmitted }}>
-        {props.children}
-      </ActionContext.Provider>
-    );
+    const value = useMemo(() => ({ ...props, ...props?.value, submitted, setSubmitted }), [props, submitted]);
+
+    return <ActionContext.Provider value={value}>{props.children}</ActionContext.Provider>;
   },
 );
 
