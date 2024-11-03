@@ -37,7 +37,11 @@ export class SyncMessageManager {
     if (transaction) {
       return await new Promise((resolve, reject) => {
         const timer = setTimeout(() => {
-          reject(new Error(`Publish message to ${channel} timeout, message: ${JSON.stringify(message)}`));
+          reject(
+            new Error(
+              `Publish message to ${channel} timeout, channel: ${channel}, message: ${JSON.stringify(message)}`,
+            ),
+          );
         }, 50000);
 
         transaction.afterCommit(async () => {
@@ -46,6 +50,7 @@ export class SyncMessageManager {
               skipSelf: true,
               ...others,
             });
+
             resolve(r);
           } catch (error) {
             reject(error);
