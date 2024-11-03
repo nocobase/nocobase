@@ -12,7 +12,7 @@ import { useSessionStorageState } from 'ahooks';
 import { App, ConfigProvider, Divider, Layout } from 'antd';
 import { createGlobalStyle } from 'antd-style';
 import React, { FC, createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, Outlet, useMatch, useParams } from 'react-router-dom';
+import { Link, Outlet, useParams } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
@@ -33,7 +33,13 @@ import {
   useSystemSettings,
   useToken,
 } from '../../../';
-import { useLocationNoUpdate, useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
+import {
+  useCurrentPageUid,
+  useLocationNoUpdate,
+  useMatchAdmin,
+  useMatchAdminName,
+  useNavigateNoUpdate,
+} from '../../../application/CustomRouterContextProvider';
 import { Plugin } from '../../../application/Plugin';
 import { useAppSpin } from '../../../application/hooks/useAppSpin';
 import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
@@ -82,12 +88,11 @@ const MenuEditor = (props) => {
   const { setTitle: _setTitle } = useDocumentTitle();
   const setTitle = useCallback((title) => _setTitle(t(title)), []);
   const navigate = useNavigateNoUpdate();
-  const params = useParams<any>();
   const location = useLocationNoUpdate();
-  const isMatchAdmin = useMatch('/admin');
-  const isMatchAdminName = useMatch('/admin/:name');
-  const defaultSelectedUid = params.name;
-  const isDynamicPage = !!defaultSelectedUid;
+  const isMatchAdmin = useMatchAdmin();
+  const isMatchAdminName = useMatchAdminName();
+  const currentPageUid = useCurrentPageUid();
+  const isDynamicPage = !!currentPageUid;
   const { sideMenuRef } = props;
   const ctx = useACLRoleContext();
   const [current, setCurrent] = useState(null);
@@ -126,7 +131,7 @@ const MenuEditor = (props) => {
         if (!isMatchAdminName || !isDynamicPage) return;
 
         // url 为 `admin/xxx` 的情况
-        const s = findByUid(schema, defaultSelectedUid);
+        const s = findByUid(schema, currentPageUid);
         if (s) {
           setTitle(s.title);
         } else {
@@ -147,7 +152,9 @@ const MenuEditor = (props) => {
     if (sideMenuRef.current) {
       const pageType =
         properties &&
-        Object.values(properties).find((item) => item['x-uid'] === params.name && item['x-component'] === 'Menu.Item');
+        Object.values(properties).find(
+          (item) => item['x-uid'] === currentPageUid && item['x-component'] === 'Menu.Item',
+        );
       const isSettingPage = location?.pathname.includes('/settings');
       if (pageType || isSettingPage) {
         sideMenuRef.current.style.display = 'none';
@@ -155,7 +162,7 @@ const MenuEditor = (props) => {
         sideMenuRef.current.style.display = 'block';
       }
     }
-  }, [data?.data, params.name, sideMenuRef, location?.pathname]);
+  }, [data?.data, currentPageUid, sideMenuRef, location?.pathname]);
 
   const schema = useMemo(() => {
     const s = filterByACL(data?.data, ctx);
@@ -167,12 +174,12 @@ const MenuEditor = (props) => {
 
   useEffect(() => {
     if (isMatchAdminName) {
-      const s = findByUid(schema, defaultSelectedUid);
+      const s = findByUid(schema, currentPageUid);
       if (s) {
         setTitle(s.title);
       }
     }
-  }, [defaultSelectedUid, isMatchAdmin, isMatchAdminName, schema, setTitle]);
+  }, [currentPageUid, isMatchAdmin, isMatchAdminName, schema, setTitle]);
 
   useRequest(
     {
@@ -213,14 +220,14 @@ const MenuEditor = (props) => {
   );
 
   const scope = useMemo(() => {
-    return { useMenuProps, onSelect, sideMenuRef, defaultSelectedUid };
+    return { useMenuProps, onSelect, sideMenuRef, defaultSelectedUid: currentPageUid };
   }, []);
 
   if (loading) {
     return render();
   }
   return (
-    <SchemaIdContext.Provider value={defaultSelectedUid}>
+    <SchemaIdContext.Provider value={currentPageUid}>
       <SchemaComponent distributed scope={scope} schema={schema} />
     </SchemaIdContext.Provider>
   );

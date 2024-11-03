@@ -8,7 +8,16 @@
  */
 
 import React, { FC, useEffect } from 'react';
-import { Location, NavigateFunction, NavigateOptions, useLocation, useNavigate } from 'react-router-dom';
+import {
+  Location,
+  NavigateFunction,
+  NavigateOptions,
+  PathMatch,
+  useLocation,
+  useMatch,
+  useNavigate,
+  useParams,
+} from 'react-router-dom';
 
 const NavigateNoUpdateContext = React.createContext<NavigateFunction>(null);
 NavigateNoUpdateContext.displayName = 'NavigateNoUpdateContext';
@@ -22,10 +31,34 @@ LocationSearchContext.displayName = 'LocationSearchContext';
 const IsAdminPageContext = React.createContext<boolean>(false);
 IsAdminPageContext.displayName = 'IsAdminPageContext';
 
+const CurrentPageUidContext = React.createContext<string>('');
+CurrentPageUidContext.displayName = 'CurrentPageUidContext';
+
+const MatchAdminContext = React.createContext<PathMatch<string> | null>(null);
+MatchAdminContext.displayName = 'MatchAdminContext';
+
+const MatchAdminNameContext = React.createContext<PathMatch<string> | null>(null);
+MatchAdminNameContext.displayName = 'MatchAdminNameContext';
+
+const MatchAdminProvider: FC = ({ children }) => {
+  const matchAdmin = useMatch('/admin');
+  return <MatchAdminContext.Provider value={matchAdmin}>{children}</MatchAdminContext.Provider>;
+};
+
+const MatchAdminNameProvider: FC = ({ children }) => {
+  const matchAdminName = useMatch('/admin/:name');
+  return <MatchAdminNameContext.Provider value={matchAdminName}>{children}</MatchAdminNameContext.Provider>;
+};
+
 const IsAdminPageProvider: FC = ({ children }) => {
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith('/admin');
   return <IsAdminPageContext.Provider value={isAdminPage}>{children}</IsAdminPageContext.Provider>;
+};
+
+const CurrentPageUidProvider: FC = ({ children }) => {
+  const params = useParams<any>();
+  return <CurrentPageUidContext.Provider value={params.name}>{children}</CurrentPageUidContext.Provider>;
 };
 
 /**
@@ -96,12 +129,30 @@ export const useIsAdminPage = () => {
   return React.useContext(IsAdminPageContext);
 };
 
+export const useCurrentPageUid = () => {
+  return React.useContext(CurrentPageUidContext);
+};
+
+export const useMatchAdmin = () => {
+  return React.useContext(MatchAdminContext);
+};
+
+export const useMatchAdminName = () => {
+  return React.useContext(MatchAdminNameContext);
+};
+
 export const CustomRouterContextProvider: FC = ({ children }) => {
   return (
     <NavigateNoUpdateProvider>
       <LocationNoUpdateProvider>
         <IsAdminPageProvider>
-          <LocationSearchProvider>{children}</LocationSearchProvider>
+          <LocationSearchProvider>
+            <CurrentPageUidProvider>
+              <MatchAdminProvider>
+                <MatchAdminNameProvider>{children}</MatchAdminNameProvider>
+              </MatchAdminProvider>
+            </CurrentPageUidProvider>
+          </LocationSearchProvider>
         </IsAdminPageProvider>
       </LocationNoUpdateProvider>
     </NavigateNoUpdateProvider>
