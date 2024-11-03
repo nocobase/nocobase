@@ -40,6 +40,14 @@ MatchAdminContext.displayName = 'MatchAdminContext';
 const MatchAdminNameContext = React.createContext<PathMatch<string> | null>(null);
 MatchAdminNameContext.displayName = 'MatchAdminNameContext';
 
+const IsInSettingsPageContext = React.createContext<boolean>(false);
+IsInSettingsPageContext.displayName = 'IsInSettingsPageContext';
+
+const IsInSettingsPageProvider: FC = ({ children }) => {
+  const isInSettingsPage = useLocation().pathname.includes('/settings');
+  return <IsInSettingsPageContext.Provider value={isInSettingsPage}>{children}</IsInSettingsPageContext.Provider>;
+};
+
 const MatchAdminProvider: FC = ({ children }) => {
   const matchAdmin = useMatch('/admin');
   return <MatchAdminContext.Provider value={matchAdmin}>{children}</MatchAdminContext.Provider>;
@@ -56,8 +64,8 @@ const IsAdminPageProvider: FC = ({ children }) => {
   return <IsAdminPageContext.Provider value={isAdminPage}>{children}</IsAdminPageContext.Provider>;
 };
 
-const CurrentPageUidProvider: FC = ({ children }) => {
-  const params = useParams<any>();
+export const CurrentPageUidProvider: FC = ({ children }) => {
+  const params = useParams();
   return <CurrentPageUidContext.Provider value={params.name}>{children}</CurrentPageUidContext.Provider>;
 };
 
@@ -141,17 +149,21 @@ export const useMatchAdminName = () => {
   return React.useContext(MatchAdminNameContext);
 };
 
+export const useIsInSettingsPage = () => {
+  return React.useContext(IsInSettingsPageContext);
+};
+
 export const CustomRouterContextProvider: FC = ({ children }) => {
   return (
     <NavigateNoUpdateProvider>
       <LocationNoUpdateProvider>
         <IsAdminPageProvider>
           <LocationSearchProvider>
-            <CurrentPageUidProvider>
-              <MatchAdminProvider>
-                <MatchAdminNameProvider>{children}</MatchAdminNameProvider>
-              </MatchAdminProvider>
-            </CurrentPageUidProvider>
+            <MatchAdminProvider>
+              <MatchAdminNameProvider>
+                <IsInSettingsPageProvider>{children}</IsInSettingsPageProvider>
+              </MatchAdminNameProvider>
+            </MatchAdminProvider>
           </LocationSearchProvider>
         </IsAdminPageProvider>
       </LocationNoUpdateProvider>

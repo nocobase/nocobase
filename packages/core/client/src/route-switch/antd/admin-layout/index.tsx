@@ -12,7 +12,7 @@ import { useSessionStorageState } from 'ahooks';
 import { App, ConfigProvider, Divider, Layout } from 'antd';
 import { createGlobalStyle } from 'antd-style';
 import React, { FC, createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, Outlet, useParams } from 'react-router-dom';
+import { Link, Outlet } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
@@ -34,8 +34,9 @@ import {
   useToken,
 } from '../../../';
 import {
+  CurrentPageUidProvider,
   useCurrentPageUid,
-  useLocationNoUpdate,
+  useIsInSettingsPage,
   useMatchAdmin,
   useMatchAdminName,
   useNavigateNoUpdate,
@@ -86,9 +87,9 @@ const MenuEditor = (props) => {
   const [, setHasNotice] = useSessionStorageState('plugin-notice', { defaultValue: false });
   const { t } = useMenuTranslation();
   const { setTitle: _setTitle } = useDocumentTitle();
-  const setTitle = useCallback((title) => _setTitle(t(title)), []);
+  const setTitle = useCallback((title) => _setTitle(t(title)), [_setTitle, t]);
   const navigate = useNavigateNoUpdate();
-  const location = useLocationNoUpdate();
+  const isInSettingsPage = useIsInSettingsPage();
   const isMatchAdmin = useMatchAdmin();
   const isMatchAdminName = useMatchAdminName();
   const currentPageUid = useCurrentPageUid();
@@ -97,12 +98,15 @@ const MenuEditor = (props) => {
   const ctx = useACLRoleContext();
   const [current, setCurrent] = useState(null);
 
-  const onSelect = useCallback(({ item }: { item; key; keyPath; domEvent }) => {
-    const schema = item.props.schema;
-    setTitle(schema.title);
-    setCurrent(schema);
-    navigate(`/admin/${schema['x-uid']}`);
-  }, []);
+  const onSelect = useCallback(
+    ({ item }: { item; key; keyPath; domEvent }) => {
+      const schema = item.props.schema;
+      setTitle(schema.title);
+      setCurrent(schema);
+      navigate(`/admin/${schema['x-uid']}`);
+    },
+    [navigate, setTitle],
+  );
   const { render } = useAppSpin();
   const adminSchemaUid = useAdminSchemaUid();
   const { data, loading } = useRequest<{
@@ -155,14 +159,13 @@ const MenuEditor = (props) => {
         Object.values(properties).find(
           (item) => item['x-uid'] === currentPageUid && item['x-component'] === 'Menu.Item',
         );
-      const isSettingPage = location?.pathname.includes('/settings');
-      if (pageType || isSettingPage) {
+      if (pageType || isInSettingsPage) {
         sideMenuRef.current.style.display = 'none';
       } else {
         sideMenuRef.current.style.display = 'block';
       }
     }
-  }, [data?.data, currentPageUid, sideMenuRef, location?.pathname]);
+  }, [current?.root?.properties, currentPageUid, data?.data?.properties, isInSettingsPage, sideMenuRef]);
 
   const schema = useMemo(() => {
     const s = filterByACL(data?.data, ctx);
@@ -221,7 +224,7 @@ const MenuEditor = (props) => {
 
   const scope = useMemo(() => {
     return { useMenuProps, onSelect, sideMenuRef, defaultSelectedUid: currentPageUid };
-  }, []);
+  }, [currentPageUid, onSelect, sideMenuRef]);
 
   if (loading) {
     return render();
@@ -322,8 +325,8 @@ const InternalAdminSideBar: FC<{ pageUid: string; sideMenuRef: any }> = memo((pr
 InternalAdminSideBar.displayName = 'InternalAdminSideBar';
 
 const AdminSideBar = ({ sideMenuRef }) => {
-  const params = useParams<any>();
-  return <InternalAdminSideBar pageUid={params.name} sideMenuRef={sideMenuRef} />;
+  const currentPageUid = useCurrentPageUid();
+  return <InternalAdminSideBar pageUid={currentPageUid} sideMenuRef={sideMenuRef} />;
 };
 
 export const AdminDynamicPage = () => {
@@ -357,6 +360,60 @@ const layoutContentHeaderClass = css`
   pointer-events: none;
 `;
 
+const style1: any = {
+  position: 'relative',
+  width: '100%',
+  height: '100%',
+  display: 'flex',
+};
+
+const style2: any = {
+  position: 'relative',
+  zIndex: 1,
+  flex: '1 1 auto',
+  display: 'flex',
+  height: '100%',
+};
+
+const className1 = css`
+  width: 200px;
+  display: inline-flex;
+  flex-shrink: 0;
+  color: #fff;
+  padding: 0;
+  align-items: center;
+`;
+const className2 = css`
+  padding: 0 16px;
+  object-fit: contain;
+  width: 100%;
+  height: 100%;
+`;
+const className3 = css`
+  padding: 0 16px;
+  width: 100%;
+  height: 100%;
+  font-weight: 500;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+const className4 = css`
+  flex: 1 1 auto;
+  width: 0;
+`;
+const className5 = css`
+  position: relative;
+  flex-shrink: 0;
+  height: 100%;
+  z-index: 10;
+`;
+const theme = {
+  token: {
+    colorSplit: 'rgba(255, 255, 255, 0.1)',
+  },
+};
 export const InternalAdminLayout = () => {
   const result = useSystemSettings();
   const { token } = useToken();
@@ -404,107 +461,48 @@ export const InternalAdminLayout = () => {
     token.colorBgHeader,
     token.colorTextHeaderMenu,
   ]);
+  const fontSizeStyle = useMemo(() => ({ fontSize: token.fontSizeHeading3 }), [token.fontSizeHeading3]);
 
   return (
     <Layout>
       <GlobalStyleForAdminLayout />
-      <Layout.Header className={layoutHeaderCss}>
-        <div
-          style={{
-            position: 'relative',
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-          }}
-        >
-          <div
-            style={{
-              position: 'relative',
-              zIndex: 1,
-              flex: '1 1 auto',
-              display: 'flex',
-              height: '100%',
-            }}
-          >
-            <div
-              className={css`
-                width: 200px;
-                display: inline-flex;
-                flex-shrink: 0;
-                color: #fff;
-                padding: 0;
-                align-items: center;
-              `}
-            >
-              {result?.data?.data?.logo?.url ? (
-                <img
-                  className={css`
-                    padding: 0 16px;
-                    object-fit: contain;
-                    width: 100%;
-                    height: 100%;
-                  `}
-                  src={result?.data?.data?.logo?.url}
-                />
-              ) : (
-                <span
-                  style={{ fontSize: token.fontSizeHeading3 }}
-                  className={css`
-                    padding: 0 16px;
-                    width: 100%;
-                    height: 100%;
-                    font-weight: 500;
-                    text-align: center;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
-                  `}
-                >
-                  {result?.data?.data?.title}
-                </span>
-              )}
+      <CurrentPageUidProvider>
+        <Layout.Header className={layoutHeaderCss}>
+          <div style={style1}>
+            <div style={style2}>
+              <div className={className1}>
+                {result?.data?.data?.logo?.url ? (
+                  <img className={className2} src={result?.data?.data?.logo?.url} />
+                ) : (
+                  <span style={fontSizeStyle} className={className3}>
+                    {result?.data?.data?.title}
+                  </span>
+                )}
+              </div>
+              <div className={className4}>
+                <SetThemeOfHeaderSubmenu>
+                  <MenuEditor sideMenuRef={sideMenuRef} />
+                </SetThemeOfHeaderSubmenu>
+              </div>
             </div>
-            <div
-              className={css`
-                flex: 1 1 auto;
-                width: 0;
-              `}
-            >
-              <SetThemeOfHeaderSubmenu>
-                <MenuEditor sideMenuRef={sideMenuRef} />
-              </SetThemeOfHeaderSubmenu>
+            <div className={className5}>
+              <PinnedPluginList />
+              <ConfigProvider theme={theme}>
+                <Divider type="vertical" />
+              </ConfigProvider>
+              <Help />
+              <CurrentUser />
             </div>
           </div>
-          <div
-            className={css`
-              position: relative;
-              flex-shrink: 0;
-              height: 100%;
-              z-index: 10;
-            `}
-          >
-            <PinnedPluginList />
-            <ConfigProvider
-              theme={{
-                token: {
-                  colorSplit: 'rgba(255, 255, 255, 0.1)',
-                },
-              }}
-            >
-              <Divider type="vertical" />
-            </ConfigProvider>
-            <Help />
-            <CurrentUser />
-          </div>
-        </div>
-      </Layout.Header>
-      <AdminSideBar sideMenuRef={sideMenuRef} />
-      {/* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */}
-      <Layout.Content className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
-        <header className={layoutContentHeaderClass}></header>
-        <Outlet />
-        {/* {service.contentLoading ? render() : <Outlet />} */}
-      </Layout.Content>
+        </Layout.Header>
+        <AdminSideBar sideMenuRef={sideMenuRef} />
+        {/* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */}
+        <Layout.Content className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
+          <header className={layoutContentHeaderClass}></header>
+          <Outlet />
+          {/* {service.contentLoading ? render() : <Outlet />} */}
+        </Layout.Content>
+      </CurrentPageUidProvider>
     </Layout>
   );
 };
