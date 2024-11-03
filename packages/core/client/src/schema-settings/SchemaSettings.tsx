@@ -38,12 +38,19 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { SchemaSettingsItemType, VariablesContext } from '../';
+import {
+  SchemaSettingsItemType,
+  SchemaToolbarVisibleContext,
+  VariablesContext,
+  useCollection,
+  useCollectionManager,
+} from '../';
 import { APIClientProvider } from '../api-client/APIClientProvider';
 import { useAPIClient } from '../api-client/hooks/useAPIClient';
 import { ApplicationContext, LocationSearchContext, useApp, useLocationSearch } from '../application';
@@ -63,7 +70,6 @@ import {
 import { FormActiveFieldsProvider, useFormActiveFields } from '../block-provider/hooks';
 import { useLinkageCollectionFilterOptions, useSortFields } from '../collection-manager/action-hooks';
 import { useCollectionManager_deprecated } from '../collection-manager/hooks/useCollectionManager_deprecated';
-import { useCollection_deprecated } from '../collection-manager/hooks/useCollection_deprecated';
 import { CollectionFieldOptions_deprecated } from '../collection-manager/types';
 import { SelectWithTitle, SelectWithTitleProps } from '../common/SelectWithTitle';
 import { useNiceDropdownMaxHeight } from '../common/useNiceDropdownHeight';
@@ -142,15 +148,20 @@ interface SchemaSettingsProviderProps {
 }
 
 export const SchemaSettingsProvider: React.FC<SchemaSettingsProviderProps> = (props) => {
-  const { children, fieldSchema, ...others } = props;
+  const { children, fieldSchema } = props;
   const { getTemplateBySchema } = useSchemaTemplateManager();
-  const { name } = useCollection_deprecated();
+  const collection = useCollection();
   const template = getTemplateBySchema(fieldSchema);
-  return (
-    <SchemaSettingsContext.Provider value={{ collectionName: name, template, fieldSchema, ...others }}>
-      {children}
-    </SchemaSettingsContext.Provider>
+  const value = useMemo(
+    () => ({
+      ...props,
+      collectionName: collection?.name,
+      template,
+      fieldSchema,
+    }),
+    [collection?.name, fieldSchema, props, template],
   );
+  return <SchemaSettingsContext.Provider value={value}>{children}</SchemaSettingsContext.Provider>;
 };
 
 export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = React.memo((props) => {
@@ -159,26 +170,24 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = React.memo(
   const { Component, getMenuItems } = useMenuItem();
   const dropdownMaxHeight = useNiceDropdownMaxHeight([visible]);
   const [openDropdown, setOpenDropdown] = useState(false);
+  const toolbarVisible = useContext(SchemaToolbarVisibleContext);
 
-  const setDropdownVisible = (visible: boolean) => {
-    setVisible(visible);
-
-    // 延迟 300ms 是为了避免对动画造成影响
-    setTimeout(() => {
-      setOpenDropdown(visible);
-    }, 300);
-  };
+  useLayoutEffect(() => {
+    if (toolbarVisible) {
+      setOpenDropdown(false);
+    }
+  }, [toolbarVisible]);
 
   const changeMenu: DropdownProps['onOpenChange'] = (nextOpen: boolean, info) => {
     if (info.source === 'trigger' || nextOpen) {
       // 当鼠标快速滑过时，终止菜单的渲染，防止卡顿
       startTransition(() => {
-        setDropdownVisible(nextOpen);
+        setVisible(nextOpen);
       });
     }
   };
 
-  // 从这里截断，可以保证每次显示时都是最新的菜单列表
+  // 从这里截断，可以保证每次显示时都是最新状态的菜单列表
   if (!openDropdown) {
     return (
       <div onMouseEnter={() => setOpenDropdown(true)} data-testid={props['data-testid']}>
@@ -190,7 +199,7 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = React.memo(
   const items = getMenuItems(() => props.children);
 
   return (
-    <SchemaSettingsProvider visible={visible} setVisible={setDropdownVisible} dn={dn} {...others}>
+    <SchemaSettingsProvider visible={visible} setVisible={setVisible} dn={dn} {...others}>
       <Component />
       <Dropdown
         open={visible}
@@ -255,7 +264,7 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
   const { insertAdjacentPosition = 'afterBegin', componentName, collectionName, resourceName } = props;
   const { t } = useTranslation();
   const compile = useCompile();
-  const { getCollection } = useCollectionManager_deprecated();
+  const cm = useCollectionManager();
   const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
   const api = useAPIClient();
   const { saveAsTemplate, copyTemplateSchema } = useSchemaTemplateManager();
@@ -307,7 +316,7 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
       title="Save as block template"
       onClick={async () => {
         setVisible(false);
-        const collection = collectionName && getCollection(collectionName);
+        const collection = collectionName && cm?.getCollection(collectionName);
         const gridSchema = findGridSchema(fieldSchema);
         const values = await FormDialog(
           t('Save as template'),
@@ -785,7 +794,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
     ...others
   } = props;
   const options = useContext(SchemaOptionsContext);
-  const collection = useCollection_deprecated();
+  const collection = useCollection();
   const apiClient = useAPIClient();
   const app = useApp();
   const { theme } = useGlobalTheme();
@@ -848,7 +857,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                                     <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSourceKey}>
                                       <AssociationOrCollectionProvider
                                         allowNull
-                                        collection={collection.name}
+                                        collection={collection?.name}
                                         association={association}
                                       >
                                         <SchemaComponentOptions scope={options.scope} components={options.components}>
@@ -922,7 +931,7 @@ export const SchemaSettingsDefaultSortingRules = function DefaultSortingRules(pr
   const fieldSchema = useFieldSchema();
   const field = useField();
   const title = props.title || t('Set default sorting rules');
-  const { name } = useCollection_deprecated();
+  const collection = useCollection();
   const defaultSort = get(fieldSchema, path) || [];
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
@@ -935,7 +944,7 @@ export const SchemaSettingsDefaultSortingRules = function DefaultSortingRules(pr
           direction: 'asc',
         };
   });
-  const sortFields = useSortFields(props.name || name);
+  const sortFields = useSortFields(props.name || collection?.name);
 
   const onSubmit = async ({ sort }) => {
     if (props?.onSubmit) {

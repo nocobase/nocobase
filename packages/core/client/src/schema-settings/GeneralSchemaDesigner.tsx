@@ -12,7 +12,7 @@ import { css } from '@emotion/css';
 import { useField, useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import classNames from 'classnames';
-import React, { FC, useEffect, useMemo, useRef } from 'react';
+import React, { createContext, FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer, SchemaSettings, SchemaToolbarProvider, useSchemaInitializerRender } from '../application';
 import { useSchemaSettingsRender } from '../application/schema-settings/hooks/useSchemaSettingsRender';
@@ -195,6 +195,7 @@ export interface SchemaToolbarProps {
   spaceWrapperStyle?: React.CSSProperties;
   spaceClassName?: string;
   spaceStyle?: React.CSSProperties;
+  onVisibleChange?: (nextVisible: boolean) => void;
 }
 
 const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
@@ -283,6 +284,7 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
     return settings !== false && schemaSettingsExists ? schemaSettingsRender() : null;
   }, [schemaSettingsExists, schemaSettingsRender, settings]);
   const toolbarRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const toolbarElement = toolbarRef.current;
     let parentElement = toolbarElement?.parentElement;
@@ -296,12 +298,14 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
     function show() {
       if (toolbarElement) {
         toolbarElement.style.display = 'block';
+        props.onVisibleChange?.(true);
       }
     }
 
     function hide() {
       if (toolbarElement) {
         toolbarElement.style.display = 'none';
+        props.onVisibleChange?.(false);
       }
     }
 
@@ -316,7 +320,7 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
       parentElement.removeEventListener('mouseenter', show);
       parentElement.removeEventListener('mouseleave', hide);
     };
-  }, []);
+  }, [props.onVisibleChange]);
 
   return (
     <div
@@ -349,14 +353,28 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
   );
 };
 
+/**
+ * @internal
+ */
+export const SchemaToolbarVisibleContext = createContext(false);
+
 export const SchemaToolbar: FC<SchemaToolbarProps> = React.memo((props) => {
   const { designable } = useDesignable();
+  const [visible, setVisible] = useState(false);
+
+  const onVisibleChange = useCallback((nextVisible: boolean) => {
+    setVisible(nextVisible);
+  }, []);
 
   if (!designable) {
     return null;
   }
 
-  return <InternalSchemaToolbar {...props} />;
+  return (
+    <SchemaToolbarVisibleContext.Provider value={visible}>
+      <InternalSchemaToolbar {...props} onVisibleChange={onVisibleChange} />
+    </SchemaToolbarVisibleContext.Provider>
+  );
 });
 
 SchemaToolbar.displayName = 'SchemaToolbar';
