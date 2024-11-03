@@ -189,7 +189,6 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = React.memo(
 
   const handleMouseEnter = () => {
     setOpenDropdown(true);
-    setVisible(true);
   };
 
   // 从这里截断，可以保证每次显示时都是最新状态的菜单列表
