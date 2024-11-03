@@ -213,15 +213,10 @@ export class PluginMultiAppManagerServer extends Plugin {
         });
 
         subApp.on('afterStart', async () => {
-          this.sendSyncMessage(
-            {
-              type: 'subAppStarted',
-              appName: name,
-            },
-            {
-              transaction,
-            },
-          );
+          this.sendSyncMessage({
+            type: 'subAppStarted',
+            appName: name,
+          });
         });
 
         // create database
