@@ -22,6 +22,12 @@ import { useBlockHeightProps } from './hooks';
 export const TableBlockContext = createContext<any>({});
 TableBlockContext.displayName = 'TableBlockContext';
 
+const TableBlockContextBasicValue = createContext<{
+  field: any;
+  rowKey: string;
+}>(null);
+TableBlockContextBasicValue.displayName = 'TableBlockContextBasicValue';
+
 /**
  * @internal
  */
@@ -61,7 +67,7 @@ const InternalTableBlockProvider = (props: Props) => {
     childrenColumnName,
     expandFlag: propsExpandFlag = false,
     fieldNames,
-    ...others
+    collection,
   } = props;
   const field: any = useField();
   const { resource, service } = useBlockRequestContext();
@@ -89,25 +95,52 @@ const InternalTableBlockProvider = (props: Props) => {
     [expandFlag],
   );
 
+  // Split from value to prevent unnecessary re-renders
+  const basicValue = useMemo(
+    () => ({
+      field,
+      rowKey,
+    }),
+    [field, rowKey],
+  );
+
+  // Keep the original for compatibility
+  const value = useMemo(
+    () => ({
+      collection,
+      field,
+      service,
+      resource,
+      params,
+      showIndex,
+      dragSort,
+      rowKey,
+      expandFlag,
+      childrenColumnName,
+      allIncludesChildren,
+      setExpandFlag: setExpandFlagValue,
+      heightProps,
+    }),
+    [
+      allIncludesChildren,
+      childrenColumnName,
+      collection,
+      dragSort,
+      expandFlag,
+      field,
+      heightProps,
+      params,
+      resource,
+      rowKey,
+      service,
+      setExpandFlagValue,
+      showIndex,
+    ],
+  );
+
   return (
-    <TableBlockContext.Provider
-      value={{
-        ...others,
-        field,
-        service,
-        resource,
-        params,
-        showIndex,
-        dragSort,
-        rowKey,
-        expandFlag,
-        childrenColumnName,
-        allIncludesChildren,
-        setExpandFlag: setExpandFlagValue,
-        heightProps,
-      }}
-    >
-      {props.children}
+    <TableBlockContext.Provider value={value}>
+      <TableBlockContextBasicValue.Provider value={basicValue}>{props.children}</TableBlockContextBasicValue.Provider>
     </TableBlockContext.Provider>
   );
 };
@@ -187,4 +220,11 @@ export const TableBlockProvider = withDynamicSchemaProps((props) => {
  */
 export const useTableBlockContext = () => {
   return useContext(TableBlockContext);
+};
+
+/**
+ * @internal
+ */
+export const useTableBlockContextBasicValue = () => {
+  return useContext(TableBlockContextBasicValue);
 };

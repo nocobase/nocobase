@@ -203,3 +203,10 @@ export const useDataBlockRequestGetter = () => {
     [contextRef],
   );
 };
+
+/**
+ * When only data is needed, it's recommended to use this hook to avoid unnecessary re-renders
+ */
+export const useDataBlockRequestData = () => {
+  return useContext(BlockRequestDataContext);
+};

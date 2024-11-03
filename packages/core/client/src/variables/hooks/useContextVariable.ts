@@ -8,7 +8,9 @@
  */
 
 import { useMemo } from 'react';
-import { useTableBlockContext } from '../../block-provider/TableBlockProvider';
+import { useTableBlockContextBasicValue } from '../../block-provider/TableBlockProvider';
+import { useDataBlockRequestData } from '../../data-source';
+import { useCollection } from '../../data-source/collection/CollectionProvider';
 import { useCurrentPopupContext } from '../../schema-component/antd/page/PagePopups';
 import { getStoredPopupContext } from '../../schema-component/antd/page/pagePopupUtils';
 import { usePopupSettings } from '../../schema-component/antd/page/PopupSettingsProvider';
@@ -19,19 +21,21 @@ const useContextVariable = (): VariableOption => {
 
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { params } = useCurrentPopupContext();
-  const _tableBlockContext = useTableBlockContext();
+  const collection = useCollection();
+  const _blockData = useDataBlockRequestData();
+  const tableBlockContextBasicValue = useTableBlockContextBasicValue() || {};
 
   if (isPopupVisibleControlledByURL()) {
     tableBlockContext = getStoredPopupContext(params?.popupuid)?.tableBlockContext;
   } else {
-    tableBlockContext = _tableBlockContext;
+    tableBlockContext = { ...tableBlockContextBasicValue, collection, blockData: _blockData };
   }
 
-  const { field, service, rowKey, collection: collectionName } = tableBlockContext || {};
+  const { field, blockData, rowKey, collection: collectionName } = tableBlockContext || {};
 
   const contextData = useMemo(
-    () => service?.data?.data?.filter((v) => (field?.data?.selectedRowKeys || [])?.includes(v[rowKey])),
-    [field?.data?.selectedRowKeys, rowKey, service?.data?.data],
+    () => blockData?.data?.filter((v) => (field?.data?.selectedRowKeys || [])?.includes(v[rowKey])),
+    [field?.data?.selectedRowKeys, rowKey, blockData],
   );
 
   return useMemo(() => {

@@ -11,7 +11,7 @@ import { ISchema, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useCallback, useContext } from 'react';
 import { useLocationNoUpdate, useNavigateNoUpdate } from '../../../application';
-import { useTableBlockContext } from '../../../block-provider/TableBlockProvider';
+import { useTableBlockContextBasicValue } from '../../../block-provider/TableBlockProvider';
 import {
   CollectionRecord,
   useAssociationName,
@@ -19,6 +19,7 @@ import {
   useCollectionManager,
   useCollectionParentRecord,
   useCollectionRecord,
+  useDataBlockRequestData,
   useDataBlockRequestGetter,
   useDataSourceKey,
 } from '../../../data-source';
@@ -50,7 +51,7 @@ export interface PopupContextStorage extends PopupContext {
   service?: any;
   sourceId?: string;
   /** Specifically prepared for the 'Table selected records' variable */
-  tableBlockContext?: { field: any; service: any; rowKey: any; collection: string };
+  tableBlockContext?: { field: any; blockData: any; rowKey: any; collection: string };
 }
 
 const popupsContextStorage: Record<string, PopupContextStorage> = {};
@@ -157,7 +158,8 @@ export const usePopupUtils = (
       (_parentRecordData || parentRecord?.data)?.[cm.getSourceKeyByAssociation(association)],
     [parentRecord, association],
   );
-  const tableBlockContext = useTableBlockContext();
+  const blockData = useDataBlockRequestData();
+  const tableBlockContextBasicValue = useTableBlockContextBasicValue() || ({} as any);
 
   const setVisibleFromAction = options.setVisible || _setVisibleFromAction;
 
@@ -249,7 +251,7 @@ export const usePopupUtils = (
         collection: collection?.name,
         association,
         sourceId,
-        tableBlockContext,
+        tableBlockContext: { ...tableBlockContextBasicValue, collection: collection?.name, blockData },
       });
 
       updatePopupContext(getNewPopupContext(), customActionSchema);
@@ -271,7 +273,8 @@ export const usePopupUtils = (
       isPopupVisibleControlledByURL,
       getSourceId,
       getNewPopupContext,
-      tableBlockContext,
+      blockData,
+      tableBlockContextBasicValue,
     ],
   );
 
