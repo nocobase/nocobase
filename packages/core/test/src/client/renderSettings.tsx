@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { fireEvent, screen, waitFor } from '@nocobase/test/client';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { GetAppComponentOptions } from '../web';
 import { renderAppOptions, renderReadPrettyApp } from './renderAppOptions';
 import { expectNoTsError } from './utils';
