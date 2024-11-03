@@ -296,7 +296,10 @@ export class PluginMultiAppManagerServer extends Plugin {
       });
 
       subApp.on('afterStart', async () => {
-        await mainApp.emitAsync('subAppStarted', subApp);
+        this.sendSyncMessage({
+          type: 'subAppStarted',
+          appName: name,
+        });
       });
 
       // must skip load on upgrade
