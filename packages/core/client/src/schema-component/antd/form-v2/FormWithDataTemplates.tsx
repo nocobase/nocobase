@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Templates } from '../..';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
@@ -18,9 +18,10 @@ export const FormWithDataTemplates: any = withDynamicSchemaProps(
   (props) => {
     const formBlockCtx = useFormBlockContext();
     const { token } = useToken();
+    const style = useMemo(() => ({ marginBottom: token.margin }), [token.margin]);
     return (
       <>
-        <Templates style={{ marginBottom: token.margin }} form={props.form || formBlockCtx?.form} />
+        <Templates style={style} form={props.form || formBlockCtx?.form} />
         <Form {...props} />
       </>
     );

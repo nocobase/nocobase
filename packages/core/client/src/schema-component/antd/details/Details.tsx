@@ -11,7 +11,7 @@ import { RecursionField, useFieldSchema } from '@formily/react';
 import { Empty } from 'antd';
 import _ from 'lodash';
 import React from 'react';
-import { useDataBlockRequest } from '../../../data-source';
+import { useDataBlockRequestData } from '../../../data-source';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { withSkeletonComponent } from '../../../hoc/withSkeletonComponent';
 import { FormV2 } from '../form-v2';
@@ -21,9 +21,9 @@ export type DetailsProps = FormProps;
 
 export const Details = withDynamicSchemaProps(
   withSkeletonComponent((props: DetailsProps) => {
-    const request = useDataBlockRequest();
+    const data = useDataBlockRequestData();
     const schema = useFieldSchema();
-    if (!request?.loading && _.isEmpty(request?.data?.data)) {
+    if (_.isEmpty(data?.data)) {
       return (
         <>
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
