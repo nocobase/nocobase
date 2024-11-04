@@ -74,7 +74,12 @@ async function listWithPagination(ctx: Context) {
 async function listWithNonPaged(ctx: Context) {
   const repository = getRepositoryFromParams(ctx);
 
-  const rows = await repository.find({ context: ctx, ...findArgs(ctx) });
+  const rows = ctx.actionCacheKey
+    ? await ctx.app.cache.wrap(
+        ctx.actionCacheKey,
+        async () => await repository.find({ context: ctx, ...findArgs(ctx) }),
+      )
+    : await repository.find({ context: ctx, ...findArgs(ctx) });
 
   ctx.body = rows;
 }

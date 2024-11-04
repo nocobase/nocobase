@@ -591,4 +591,20 @@ describe('collections repository', () => {
     const collectionInMemory = app.db.getCollection(firstCollection.name);
     expect(firstCollection.unavailableActions).toEqual(collectionInMemory.unavailableActions());
   });
+
+  it('should set cache in collection list', async () => {
+    const cacheKey = `collections:list:paginate:false`;
+    expect(await app.cache.get(cacheKey)).toBeUndefined();
+    const response = await app
+      .agent()
+      .resource('collections')
+      .list({
+        appends: ['fields', 'category'],
+        paginate: false,
+      });
+
+    expect(response.statusCode).toBe(200);
+
+    expect(await app.cache.get(cacheKey)).toBeDefined();
+  });
 });

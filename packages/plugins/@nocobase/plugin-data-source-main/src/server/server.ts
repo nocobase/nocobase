@@ -87,6 +87,8 @@ export class PluginDataSourceMainServer extends Plugin {
     this.app.db.on(
       'collections.afterSaveWithAssociations',
       async (model: CollectionModel, { context, transaction }) => {
+        this.app.cache.del('collections:list:paginate:false');
+
         if (context) {
           await model.migrate({
             transaction,
@@ -101,6 +103,8 @@ export class PluginDataSourceMainServer extends Plugin {
     );
 
     this.app.db.on('collections.beforeDestroy', async (model: CollectionModel, options) => {
+      this.app.cache.del('collections:list:paginate:false');
+
       const removeOptions = {};
       if (options.transaction) {
         removeOptions['transaction'] = options.transaction;
@@ -250,6 +254,7 @@ export class PluginDataSourceMainServer extends Plugin {
     });
 
     this.app.db.on('fields.afterSaveWithAssociations', async (model: FieldModel, options) => {
+      this.app.cache.del('collections:list:paginate:false');
       const { context, transaction } = options;
       if (context) {
         const collection = this.app.db.getCollection(model.get('collectionName'));
@@ -277,6 +282,8 @@ export class PluginDataSourceMainServer extends Plugin {
     });
 
     this.app.db.on('fields.afterDestroy', async (model: FieldModel, options) => {
+      this.app.cache.del('collections:list:paginate:false');
+
       const { transaction } = options;
       const collectionName = model.get('collectionName');
       const childCollections = this.db.inheritanceMap.getChildren(collectionName);
@@ -439,6 +446,17 @@ export class PluginDataSourceMainServer extends Plugin {
     };
 
     this.app.resourcer.use(async (ctx, next) => {
+      if (
+        ctx.action.resourceName === 'collections' &&
+        ctx.action.actionName == 'list' &&
+        ctx.action.params?.paginate == 'false' &&
+        ctx.action.params?.appends?.indexOf('fields') !== -1 &&
+        ctx.action.params?.appends?.indexOf('category') !== -1 &&
+        ctx.action.params?.appends?.length == 2
+      ) {
+        ctx.actionCacheKey = `collections:list:paginate:false`;
+      }
+
       await next();
 
       // handle collections:list
