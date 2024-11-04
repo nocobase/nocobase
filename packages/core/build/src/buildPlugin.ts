@@ -1,12 +1,3 @@
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
-
 import ncc from '@vercel/ncc';
 import react from '@vitejs/plugin-react';
 import chalk from 'chalk';
@@ -16,9 +7,10 @@ import path from 'path';
 import { build as tsupBuild } from 'tsup';
 import { build as viteBuild } from 'vite';
 import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
+import { rspack } from '@rspack/core';
 
 import { EsbuildSupportExts, globExcludeFiles } from './constant';
-import { PkgLog, UserConfig, getEnvDefine, getPackageJson } from './utils';
+import { PkgLog, UserConfig, getPackageJson } from './utils';
 import {
   buildCheck,
   checkFileSize,
@@ -43,7 +35,6 @@ const external = [
   '@nocobase/cache',
   '@nocobase/client',
   '@nocobase/database',
-  '@nocobase/data-source-manager',
   '@nocobase/evaluators',
   '@nocobase/logger',
   '@nocobase/resourcer',
@@ -316,46 +307,205 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
     return prev;
   }, {});
 
-  const entry = fg.globSync('src/client/index.{ts,tsx,js,jsx}', { absolute: true, cwd });
+  const entry = fg.globSync('index.{ts,tsx,js,jsx}', { absolute: false, cwd: path.join(cwd, 'src/client') });
   const outputFileName = 'index.js';
-
-  await viteBuild(userConfig.modifyViteConfig({
-    mode: process.env.NODE_ENV || 'production',
-    define: getEnvDefine(),
-    logLevel: 'warn',
-    build: {
-      minify: process.env.NODE_ENV === 'production',
-      outDir,
-      cssCodeSplit: false,
-      emptyOutDir: true,
-      sourcemap,
-      lib: {
-        entry,
-        formats: ['umd'],
+  const compiler = rspack({
+    mode: "production",
+    // mode: "development",
+    context: cwd,
+    entry: './src/client/' + entry[0],
+    target: ['web', 'es5'],
+    output: {
+      path: outDir,
+      filename: outputFileName,
+      publicPath: `/static/plugins/${packageJson.name}/dist/client/`,
+      clean: true,
+      library: {
         name: packageJson.name,
-        fileName: () => outputFileName,
-      },
-      target: ['es2015', 'edge88', 'firefox78', 'chrome87', 'safari14'],
-      rollupOptions: {
-        cache: true,
-        external: [...Object.keys(globals), 'react', 'react/jsx-runtime'],
-        output: {
-          exports: 'named',
-          globals: {
-            react: 'React',
-            'react/jsx-runtime': 'jsxRuntime',
-            ...globals,
-          },
-        },
+        type: 'umd',
+        umdNamedDefine: true,
       },
     },
+    resolve: {
+      extensions: ['.js', '.jsx', '.ts', '.tsx', '.json', '.less', '.css'],
+    },
+    module: {
+      rules: [
+        {
+          test: /.less$/,
+          use: [
+            { loader: "style-loader" },
+            { loader: "css-loader" },
+            { loader: "less-loader" },
+            {
+              loader: 'postcss-loader',
+              options: {
+                postcssOptions: {
+                  plugins: {
+                    'postcss-preset-env': {
+                      browsers: [
+                        'last 2 versions',
+                        "> 1%",
+                        "cover 99.5%",
+                        "not dead"
+                      ]
+                    },
+                    autoprefixer: {},
+                  },
+                },
+              },
+            }
+          ],
+          type: "javascript/auto"
+        },
+        {
+          test: /\.css$/,
+          use: [
+            'style-loader',
+            'css-loader',
+            {
+              loader: 'postcss-loader',
+              options: {
+                postcssOptions: {
+                  plugins: {
+                    'postcss-preset-env': {
+                      browsers: [
+                        'last 2 versions',
+                        "> 1%",
+                        "cover 99.5%",
+                        "not dead"
+                      ]
+                    },
+                    autoprefixer: {},
+                  },
+                },
+              },
+            }
+          ],
+          type: 'javascript/auto',
+        },
+        {
+          test: /\.(png|jpe?g|gif)$/i,
+          type: 'asset',
+        },
+        {
+          test: /\.svg$/i,
+          issuer: /\.[jt]sx?$/,
+          use: ['@svgr/webpack'],
+        },
+        {
+          test: /\.jsx$/,
+          exclude: /[\\/]node_modules[\\/]/,
+          loader: 'builtin:swc-loader',
+          options: {
+            sourceMap: true,
+            jsc: {
+              parser: {
+                syntax: 'ecmascript',
+                jsx: true,
+              },
+              target: "es5"
+            },
+          },
+        },
+        {
+          test: /\.tsx$/,
+          exclude: /[\\/]node_modules[\\/]/,
+          loader: 'builtin:swc-loader',
+          options: {
+            sourceMap: true,
+            jsc: {
+              parser: {
+                syntax: 'typescript',
+                tsx: true,
+              },
+              target: "es5"
+            },
+          },
+        },
+        {
+          test: /\.ts$/,
+          exclude: /[\\/]node_modules[\\/]/,
+          loader: 'builtin:swc-loader',
+          options: {
+            sourceMap: true,
+            jsc: {
+              parser: {
+                syntax: 'typescript',
+              },
+              target: "es5"
+            },
+          },
+        },
+      ]
+    },
     plugins: [
-      react(),
-      cssInjectedByJsPlugin({ styleId: packageJson.name }),
+      new rspack.DefinePlugin({
+        "process.env.NODE_ENV": "'production'",
+      })
     ],
-  }));
+    node: {
+      global: true,
+    },
+    externals: {
+      react: 'React',
+      // 'react/jsx-runtime': 'jsxRuntime',
+      ...globals,
+    },
+    stats: 'errors-warnings',
+  })
 
-  checkFileSize(outDir, log);
+  return new Promise((resolve, reject) => {
+    compiler.run((err, stats) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      console.log(stats.toString({
+        colors: true,
+      }));
+      resolve(null);
+    });
+  })
+  // await viteBuild(userConfig.modifyViteConfig({
+  //   mode: 'production',
+  //   define: {
+  //     'process.env.NODE_ENV': JSON.stringify('production'),
+  //   },
+  //   logLevel: 'warn',
+  //   build: {
+  //     minify: true,
+  //     outDir,
+  //     cssCodeSplit: false,
+  //     emptyOutDir: true,
+  //     sourcemap,
+  //     lib: {
+  //       entry,
+  //       formats: ['umd'],
+  //       name: packageJson.name,
+  //       fileName: () => outputFileName,
+  //     },
+  //     target: ['es2015', 'edge88', 'firefox78', 'chrome87', 'safari14'],
+  //     rollupOptions: {
+  //       cache: true,
+  //       external: [...Object.keys(globals), 'react', 'react/jsx-runtime'],
+  //       output: {
+  //         exports: 'named',
+  //         globals: {
+  //           react: 'React',
+  //           'react/jsx-runtime': 'jsxRuntime',
+  //           ...globals,
+  //         },
+  //       },
+  //     },
+  //   },
+  //   plugins: [
+  //     react(),
+  //     cssInjectedByJsPlugin({ styleId: packageJson.name }),
+  //   ],
+  // }));
+
+  // checkFileSize(outDir, log);
 }
 
 export async function buildPlugin(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {
