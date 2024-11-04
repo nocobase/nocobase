@@ -198,7 +198,7 @@ const DownstreamBranchIndex = observer((props) => {
       return [];
     }
     const branching =
-      typeof instruction.branching === 'function' ? instruction.branching(values.config) : instruction.branching;
+      typeof instruction.branching === 'function' ? instruction.branching(values.config ?? {}) : instruction.branching;
     if (!branching) {
       return [];
     }
