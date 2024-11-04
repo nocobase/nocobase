@@ -225,7 +225,7 @@ const useStyles = createStyles(({ css, token }) => {
         align-items: center;
         justify-content: center;
         width: 0;
-        height: 6em;
+        height: 4em;
         border-left: 1px dashed ${token.colorBgLayout};
 
         .anticon {
