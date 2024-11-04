@@ -21,7 +21,7 @@ import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSetti
 import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
 import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
-import { schemaSettingsLabelLayout } from '../../../../schema-settings';
+import { SchemaSettingsLayoutItem } from '../../../../schema-settings/SchemaSettingsLayoutItem';
 
 export const listBlockSettings = new SchemaSettings({
   name: 'blockSettings:list',
@@ -225,7 +225,10 @@ export const listBlockSettings = new SchemaSettings({
         };
       },
     },
-    schemaSettingsLabelLayout,
+    {
+      name: 'setBlockLayout',
+      Component: SchemaSettingsLayoutItem,
+    },
     {
       name: 'divider',
       type: 'divider',

@@ -547,7 +547,7 @@ export class PluginACLServer extends Plugin {
 
           const hasFilterByTk = (params) => {
             return JSON.stringify(params).includes('filterByTk');
-          }
+          };
 
           if (!hasFilterByTk(ctx.permission.mergedParams) || !hasFilterByTk(ctx.permission.rawParams)) {
             await next();
@@ -573,7 +573,6 @@ export class PluginACLServer extends Plugin {
         group: 'after',
       },
     );
-
 
     const withACLMeta = createWithACLMetaMiddleware();
 
