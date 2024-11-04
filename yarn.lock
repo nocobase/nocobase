@@ -7078,17 +7078,10 @@
     "@types/koa-compose" "*"
     "@types/node" "*"
 
-"@types/lerna__package@*":
+"@types/lerna__package@*", "@types/lerna__package@5.1.3":
   version "5.1.3"
   resolved "https://registry.npmmirror.com/@types/lerna__package/-/lerna__package-5.1.3.tgz#3604531e882229dee8e3f2bd8c819c405e2fcb43"
   integrity sha512-oHJSN1MQM4ZC6spkjq/8DTJ13uZkpJW10T9KXztHtVOJQja7GRs96oL9/UEjRIjcgUT5fzrov+ygzYZcG+nN4A==
-  dependencies:
-    "@types/npm-package-arg" "*"
-
-"@types/lerna__package@5.1.0":
-  version "5.1.0"
-  resolved "https://registry.npmmirror.com/@types/lerna__package/-/lerna__package-5.1.0.tgz#870a1fa82356dc9d5cd2a60d8deb45a54755fdc5"
-  integrity sha512-afNRkz6zwZZRR/5JRZ48R2t7kekQcX2Dq0JMvnsh0NiAVOdP9PYghNGhwiIdBau3cFmdU7wwxXupWAnzC4rZSQ==
   dependencies:
     "@types/npm-package-arg" "*"
 
