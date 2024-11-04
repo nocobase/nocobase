@@ -35,6 +35,8 @@ import {
 } from '../../../';
 import {
   CurrentPageUidProvider,
+  CurrentTabUidProvider,
+  IsSubPageClosedByPageMenuProvider,
   useCurrentPageUid,
   useIsInSettingsPage,
   useMatchAdmin,
@@ -467,41 +469,45 @@ export const InternalAdminLayout = () => {
     <Layout>
       <GlobalStyleForAdminLayout />
       <CurrentPageUidProvider>
-        <Layout.Header className={layoutHeaderCss}>
-          <div style={style1}>
-            <div style={style2}>
-              <div className={className1}>
-                {result?.data?.data?.logo?.url ? (
-                  <img className={className2} src={result?.data?.data?.logo?.url} />
-                ) : (
-                  <span style={fontSizeStyle} className={className3}>
-                    {result?.data?.data?.title}
-                  </span>
-                )}
+        <CurrentTabUidProvider>
+          <IsSubPageClosedByPageMenuProvider>
+            <Layout.Header className={layoutHeaderCss}>
+              <div style={style1}>
+                <div style={style2}>
+                  <div className={className1}>
+                    {result?.data?.data?.logo?.url ? (
+                      <img className={className2} src={result?.data?.data?.logo?.url} />
+                    ) : (
+                      <span style={fontSizeStyle} className={className3}>
+                        {result?.data?.data?.title}
+                      </span>
+                    )}
+                  </div>
+                  <div className={className4}>
+                    <SetThemeOfHeaderSubmenu>
+                      <MenuEditor sideMenuRef={sideMenuRef} />
+                    </SetThemeOfHeaderSubmenu>
+                  </div>
+                </div>
+                <div className={className5}>
+                  <PinnedPluginList />
+                  <ConfigProvider theme={theme}>
+                    <Divider type="vertical" />
+                  </ConfigProvider>
+                  <Help />
+                  <CurrentUser />
+                </div>
               </div>
-              <div className={className4}>
-                <SetThemeOfHeaderSubmenu>
-                  <MenuEditor sideMenuRef={sideMenuRef} />
-                </SetThemeOfHeaderSubmenu>
-              </div>
-            </div>
-            <div className={className5}>
-              <PinnedPluginList />
-              <ConfigProvider theme={theme}>
-                <Divider type="vertical" />
-              </ConfigProvider>
-              <Help />
-              <CurrentUser />
-            </div>
-          </div>
-        </Layout.Header>
-        <AdminSideBar sideMenuRef={sideMenuRef} />
-        {/* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */}
-        <Layout.Content className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
-          <header className={layoutContentHeaderClass}></header>
-          <Outlet />
-          {/* {service.contentLoading ? render() : <Outlet />} */}
-        </Layout.Content>
+            </Layout.Header>
+            <AdminSideBar sideMenuRef={sideMenuRef} />
+            {/* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */}
+            <Layout.Content className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
+              <header className={layoutContentHeaderClass}></header>
+              <Outlet />
+              {/* {service.contentLoading ? render() : <Outlet />} */}
+            </Layout.Content>
+          </IsSubPageClosedByPageMenuProvider>
+        </CurrentTabUidProvider>
       </CurrentPageUidProvider>
     </Layout>
   );

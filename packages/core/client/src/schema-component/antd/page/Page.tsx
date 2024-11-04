@@ -17,12 +17,16 @@ import classNames from 'classnames';
 import React, { memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
-import { NavigateFunction, Outlet, useOutletContext, useParams, useSearchParams } from 'react-router-dom';
+import { NavigateFunction, Outlet, useOutletContext } from 'react-router-dom';
 import { FormDialog } from '..';
 import { antTableCell } from '../../../acl/style';
 import { useRequest } from '../../../api-client';
-import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
-import { useRouterBasename } from '../../../application/hooks/useRouterBasename';
+import {
+  useCurrentSearchParams,
+  useCurrentTabUid,
+  useNavigateNoUpdate,
+  useRouterBasename,
+} from '../../../application/CustomRouterContextProvider';
 import { useDocumentTitle } from '../../../document-title';
 import { useGlobalTheme } from '../../../global-theme';
 import { Icon } from '../../../icon';
@@ -36,25 +40,24 @@ import { ErrorFallback } from '../error-fallback';
 import { useStyles } from './Page.style';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 
-export const Page = (props) => {
+export const Page = React.memo((props: any) => {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const dn = useDesignable();
   const { theme } = useGlobalTheme();
   const { getAriaLabel } = useGetAriaLabelOfSchemaInitializer();
-  const { tabUid } = useParams();
+  const currentTabUid = useCurrentTabUid();
   const basenameOfCurrentRouter = useRouterBasename();
-
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
   const enablePageTabs = fieldSchema['x-component-props']?.enablePageTabs;
   const options = useContext(SchemaOptionsContext);
   const navigate = useNavigateNoUpdate();
-  const [searchParams] = useSearchParams();
+  const searchParams = useCurrentSearchParams();
   const loading = false;
   const activeKey = useMemo(
     // 处理 searchParams 是为了兼容旧版的 tab 参数
-    () => tabUid || searchParams.get('tab') || Object.keys(fieldSchema.properties || {}).shift(),
-    [fieldSchema.properties, searchParams, tabUid],
+    () => currentTabUid || searchParams.get('tab') || Object.keys(fieldSchema.properties || {}).shift(),
+    [fieldSchema.properties, searchParams, currentTabUid],
   );
   const { wrapSSR, hashId, componentCls } = useStyles();
   const { token } = useToken();
@@ -168,14 +171,19 @@ export const Page = (props) => {
     ) : null;
   }, [activeKey, enablePageTabs, handleTabsChange, items, tabBarExtraContent, tabBarStyle]);
 
+  const outletContext = useMemo(
+    () => ({ loading, disablePageHeader, enablePageTabs, fieldSchema, tabUid: currentTabUid }),
+    [currentTabUid, disablePageHeader, enablePageTabs, fieldSchema, loading],
+  );
+
   return wrapSSR(
     <div className={`${componentCls} ${hashId} ${antTableCell}`}>
       <NocoBasePageHeader footer={footer} />
       <div className="nb-page-wrapper">
         <ErrorBoundary FallbackComponent={ErrorFallback} onError={console.error}>
-          {tabUid ? (
+          {currentTabUid ? (
             // used to match the rout with name "admin.page.tab"
-            <Outlet context={{ loading, disablePageHeader, enablePageTabs, fieldSchema, tabUid }} />
+            <Outlet context={outletContext} />
           ) : (
             <>
               <PageContent
@@ -193,7 +201,9 @@ export const Page = (props) => {
       </div>
     </div>,
   );
-};
+});
+
+Page.displayName = 'NocoBasePage';
 
 export const PageTabs = () => {
   const { loading, disablePageHeader, enablePageTabs, fieldSchema, tabUid } = useOutletContext<any>();

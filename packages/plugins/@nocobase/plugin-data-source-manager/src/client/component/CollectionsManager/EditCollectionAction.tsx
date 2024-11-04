@@ -139,7 +139,7 @@ export const useUpdateCollectionActionAndRefreshCM = (options) => {
   const ctx = useActionContext();
   const { name } = useParams();
   const { refresh } = useResourceActionContext();
-  const { resource, targetKey } = useResourceContext();
+  const { targetKey } = useResourceContext();
   const { [targetKey]: filterByTk } = useRecord();
   const api = useAPIClient();
   const dm = useDataSourceManager();

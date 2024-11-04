@@ -7,8 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC, useEffect } from 'react';
-import { Location, NavigateFunction, NavigateOptions, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Schema } from '@formily/json-schema';
+import _ from 'lodash';
+import React, { FC, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Location,
+  NavigateFunction,
+  NavigateOptions,
+  useHref,
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom';
 
 const NavigateNoUpdateContext = React.createContext<NavigateFunction>(null);
 NavigateNoUpdateContext.displayName = 'NavigateNoUpdateContext';
@@ -33,6 +44,61 @@ MatchAdminNameContext.displayName = 'MatchAdminNameContext';
 
 const IsInSettingsPageContext = React.createContext<boolean>(false);
 IsInSettingsPageContext.displayName = 'IsInSettingsPageContext';
+
+const CurrentTabUidContext = React.createContext<string>('');
+CurrentTabUidContext.displayName = 'CurrentTabUidContext';
+
+const SearchParamsContext = React.createContext<URLSearchParams>(new URLSearchParams());
+SearchParamsContext.displayName = 'SearchParamsContext';
+
+const RouterBasenameContext = React.createContext<string>('');
+RouterBasenameContext.displayName = 'RouterBasenameContext';
+
+const IsSubPageClosedByPageMenuContext = React.createContext<{
+  isSubPageClosedByPageMenu: boolean;
+  setFieldSchema: React.Dispatch<React.SetStateAction<Schema>>;
+}>({
+  isSubPageClosedByPageMenu: false,
+  setFieldSchema: () => {},
+});
+IsSubPageClosedByPageMenuContext.displayName = 'IsSubPageClosedByPageMenuContext';
+
+export const IsSubPageClosedByPageMenuProvider: FC = ({ children }) => {
+  const params = useParams();
+  const prevParamsRef = useRef<any>({});
+  const [fieldSchema, setFieldSchema] = useState<Schema>(null);
+
+  const isSubPageClosedByPageMenu = useMemo(() => {
+    const result =
+      _.isEmpty(params['*']) &&
+      fieldSchema?.['x-component-props']?.openMode === 'page' &&
+      !!prevParamsRef.current['*']?.includes(fieldSchema['x-uid']);
+
+    prevParamsRef.current = params;
+
+    return result;
+  }, [fieldSchema, params]);
+
+  const value = useMemo(() => ({ isSubPageClosedByPageMenu, setFieldSchema }), [isSubPageClosedByPageMenu]);
+
+  return (
+    <IsSubPageClosedByPageMenuContext.Provider value={value}>{children}</IsSubPageClosedByPageMenuContext.Provider>
+  );
+};
+
+/**
+ * see: https://stackoverflow.com/questions/50449423/accessing-basename-of-browserouter
+ * @returns {string} basename
+ */
+const RouterBasenameProvider: FC = ({ children }) => {
+  const basenameOfCurrentRouter = useHref('/');
+  return <RouterBasenameContext.Provider value={basenameOfCurrentRouter}>{children}</RouterBasenameContext.Provider>;
+};
+
+const SearchParamsProvider: FC = ({ children }) => {
+  const [searchParams] = useSearchParams();
+  return <SearchParamsContext.Provider value={searchParams}>{children}</SearchParamsContext.Provider>;
+};
 
 const IsInSettingsPageProvider: FC = ({ children }) => {
   const isInSettingsPage = useLocation().pathname.includes('/settings');
@@ -60,6 +126,11 @@ const IsAdminPageProvider: FC = ({ children }) => {
 export const CurrentPageUidProvider: FC = ({ children }) => {
   const params = useParams();
   return <CurrentPageUidContext.Provider value={params.name}>{children}</CurrentPageUidContext.Provider>;
+};
+
+export const CurrentTabUidProvider: FC = ({ children }) => {
+  const params = useParams();
+  return <CurrentTabUidContext.Provider value={params.tabUid}>{children}</CurrentTabUidContext.Provider>;
 };
 
 /**
@@ -107,7 +178,7 @@ const LocationSearchProvider: FC = ({ children }) => {
 };
 
 /**
- * use `useNavigateNoUpdate` to avoid components that use `useNavigateNoUpdate` re-rendering.
+ * use `useNavigateNoUpdate` to avoid components re-rendering.
  * @returns
  */
 export const useNavigateNoUpdate = () => {
@@ -115,7 +186,7 @@ export const useNavigateNoUpdate = () => {
 };
 
 /**
- * use `useLocationNoUpdate` to avoid components that use `useLocationNoUpdate` re-rendering.
+ * use `useLocationNoUpdate` to avoid components re-rendering.
  * @returns
  */
 export const useLocationNoUpdate = () => {
@@ -146,6 +217,32 @@ export const useIsInSettingsPage = () => {
   return React.useContext(IsInSettingsPageContext);
 };
 
+export const useCurrentTabUid = () => {
+  return React.useContext(CurrentTabUidContext);
+};
+
+export const useCurrentSearchParams = () => {
+  return React.useContext(SearchParamsContext);
+};
+
+export const useRouterBasename = () => {
+  return React.useContext(RouterBasenameContext);
+};
+
+/**
+ * Used to determine if the user closed the sub-page by clicking on the page menu
+ * @returns
+ */
+export const useIsSubPageClosedByPageMenu = (fieldSchema: Schema) => {
+  const { isSubPageClosedByPageMenu, setFieldSchema } = React.useContext(IsSubPageClosedByPageMenuContext);
+
+  useEffect(() => {
+    setFieldSchema(fieldSchema);
+  }, [fieldSchema, setFieldSchema]);
+
+  return isSubPageClosedByPageMenu;
+};
+
 export const CustomRouterContextProvider: FC = ({ children }) => {
   return (
     <NavigateNoUpdateProvider>
@@ -154,7 +251,11 @@ export const CustomRouterContextProvider: FC = ({ children }) => {
           <LocationSearchProvider>
             <MatchAdminProvider>
               <MatchAdminNameProvider>
-                <IsInSettingsPageProvider>{children}</IsInSettingsPageProvider>
+                <SearchParamsProvider>
+                  <RouterBasenameProvider>
+                    <IsInSettingsPageProvider>{children}</IsInSettingsPageProvider>
+                  </RouterBasenameProvider>
+                </SearchParamsProvider>
               </MatchAdminNameProvider>
             </MatchAdminProvider>
           </LocationSearchProvider>

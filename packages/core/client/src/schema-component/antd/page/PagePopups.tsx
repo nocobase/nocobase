@@ -109,6 +109,7 @@ const PopupTabsPropsProvider: FC = ({ children }) => {
   );
 };
 
+const displayNone = { display: 'none' };
 const PagePopupsItemProvider: FC<{
   params: PopupParams;
   context: PopupContext;
@@ -180,7 +181,7 @@ const PagePopupsItemProvider: FC<{
           {/* Pass the service of the block where the button is located down, to refresh the block's data when the popup is closed */}
           <BlockRequestContextProvider recordRequest={storedContext.service}>
             <PopupTabsPropsProvider>
-              <div style={{ display: 'none' }}>{children}</div>
+              <div style={displayNone}>{children}</div>
             </PopupTabsPropsProvider>
           </BlockRequestContextProvider>
         </DataBlockProvider>

@@ -34,7 +34,7 @@ const useContextVariable = (): VariableOption => {
   const { field, blockData, rowKey, collection: collectionName } = tableBlockContext || {};
 
   const contextData = useMemo(
-    () => blockData?.data?.filter((v) => (field?.data?.selectedRowKeys || [])?.includes(v[rowKey])),
+    () => blockData?.data?.filter?.((v) => (field?.data?.selectedRowKeys || [])?.includes(v[rowKey])),
     [field?.data?.selectedRowKeys, rowKey, blockData],
   );
 
