@@ -139,10 +139,10 @@
   resolved "https://registry.npmmirror.com/@amap/amap-jsapi-loader/-/amap-jsapi-loader-1.0.1.tgz#9ec4b4d5d2467eac451f6c852e35db69e9f9f0c0"
   integrity sha512-nPyLKt7Ow/ThHLkSvn2etQlUzqxmTVgK7bIgwdBRTg2HK5668oN7xVxkaiRe3YZEzGzfV2XgH5Jmu2T73ljejw==
 
-"@amap/amap-jsapi-types@^0.0.10":
-  version "0.0.10"
-  resolved "https://registry.npmmirror.com/@amap/amap-jsapi-types/-/amap-jsapi-types-0.0.10.tgz#0e8e69ac8921ed3dde74da209dbb7e04b830debd"
-  integrity sha512-znvqLGPBy9NRCr1/3650o9vL1aYl/f1YK0+UGn8lBUvHJXND6uMDJGJsl43cEYglw9/tblwIRxjm4pIotOvSCQ==
+"@amap/amap-jsapi-types@^0.0.15":
+  version "0.0.15"
+  resolved "https://registry.npmmirror.com/@amap/amap-jsapi-types/-/amap-jsapi-types-0.0.15.tgz#9e2d102c2ac9f7e7c1752f63f7be628c62c8d04b"
+  integrity sha512-oqyRqHpVDZh5bUe2mAJh41ZsziSj0eUzwcfIbiaBNB0eiTJnZNhKsTdk77VOklOjwuwNfsblpKW9LjmWNpeQ7A==
 
 "@ampproject/remapping@^2.2.0":
   version "2.2.1"

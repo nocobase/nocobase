@@ -11,7 +11,7 @@
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/map",
   "devDependencies": {
     "@amap/amap-jsapi-loader": "^1.0.1",
-    "@amap/amap-jsapi-types": "^0.0.10",
+    "@amap/amap-jsapi-types": "^0.0.15",
     "@ant-design/icons": "5.x",
     "@formily/antd-v5": "1.x",
     "@formily/core": "2.x",
