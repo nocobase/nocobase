@@ -32,7 +32,7 @@ const useDefaultLoading = () => {
 export const withSkeletonComponent = (Component: React.ComponentType<any>, options?: Options) => {
   const { useLoading = useDefaultLoading, displayName, SkeletonComponent = Skeleton } = options || {};
 
-  const Result = (props: any) => {
+  const Result = React.memo((props: any) => {
     const loading = useLoading();
     const mountedRef = useRef(false);
     const deferredLoading = useDeferredValue(loading);
@@ -44,7 +44,7 @@ export const withSkeletonComponent = (Component: React.ComponentType<any>, optio
     mountedRef.current = true;
 
     return <Component {...props} />;
-  };
+  });
 
   Result.displayName =
     displayName || `${Component.displayName}(withSkeletonComponent)` || `${Component.name}(withSkeletonComponent)`;

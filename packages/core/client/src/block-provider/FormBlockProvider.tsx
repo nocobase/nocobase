@@ -16,16 +16,16 @@ import {
   useCollectionManager,
   useCollectionParentRecordData,
   useCollectionRecord,
+  useCollectionRecordData,
 } from '../data-source';
 import { withDynamicSchemaProps } from '../hoc/withDynamicSchemaProps';
+import { withSkeletonComponent } from '../hoc/withSkeletonComponent';
 import { useTreeParentRecord } from '../modules/blocks/data-blocks/table/TreeRecordProvider';
 import { RecordProvider } from '../record-provider';
-import { useActionContext } from '../schema-component';
+import { useActionContext, useDesignable } from '../schema-component';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
 import { FormActiveFieldsProvider } from './hooks/useFormActiveFields';
-import { useDesignable } from '../schema-component';
-import { useCollectionRecordData } from '../data-source';
 
 export const FormBlockContext = createContext<{
   form?: any;
@@ -43,64 +43,69 @@ export const FormBlockContext = createContext<{
 }>({});
 FormBlockContext.displayName = 'FormBlockContext';
 
-const InternalFormBlockProvider = (props) => {
-  const cm = useCollectionManager();
-  const ctx = useFormBlockContext();
-  const { action, readPretty, params, collection, association } = props;
-  const field = useField();
-  const form = useMemo(
-    () =>
-      createForm({
-        readPretty,
-      }),
-    [readPretty],
-  );
-  const { resource, service, updateAssociationValues } = useBlockRequestContext();
-  const formBlockRef = useRef();
-  const record = useCollectionRecord();
-  const formBlockValue: any = useMemo(() => {
-    return {
-      ...ctx,
-      params,
+const InternalFormBlockProvider = withSkeletonComponent(
+  (props) => {
+    const cm = useCollectionManager();
+    const ctx = useFormBlockContext();
+    const { action, readPretty, params, collection, association } = props;
+    const field = useField();
+    const form = useMemo(
+      () =>
+        createForm({
+          readPretty,
+        }),
+      [readPretty],
+    );
+    const { resource, service, updateAssociationValues } = useBlockRequestContext();
+    const formBlockRef = useRef();
+    const record = useCollectionRecord();
+    const formBlockValue: any = useMemo(() => {
+      return {
+        ...ctx,
+        params,
+        action,
+        form,
+        // update 表示是表单编辑区块，create 表示是表单新增区块
+        type: action === 'get' ? 'update' : 'create',
+        field,
+        service,
+        resource,
+        updateAssociationValues,
+        formBlockRef,
+        collectionName: collection || cm.getCollectionField(association)?.target,
+        formRecord: record,
+      };
+    }, [
       action,
-      form,
-      // update 表示是表单编辑区块，create 表示是表单新增区块
-      type: action === 'get' ? 'update' : 'create',
+      association,
+      cm,
+      collection,
+      ctx,
       field,
-      service,
+      form,
+      params,
+      record,
       resource,
+      service,
       updateAssociationValues,
-      formBlockRef,
-      collectionName: collection || cm.getCollectionField(association)?.target,
-      formRecord: record,
-    };
-  }, [
-    action,
-    association,
-    cm,
-    collection,
-    ctx,
-    field,
-    form,
-    params,
-    record,
-    resource,
-    service,
-    updateAssociationValues,
-  ]);
+    ]);
 
-  if (service.loading && Object.keys(form?.initialValues || {})?.length === 0 && action) {
-    return <Spin />;
-  }
+    if (service.loading && Object.keys(form?.initialValues || {})?.length === 0 && action) {
+      return <Spin />;
+    }
 
-  return (
-    <FormBlockContext.Provider value={formBlockValue}>
-      <RecordProvider isNew={record?.isNew} parent={record?.parentRecord?.data} record={record?.data}>
-        <div ref={formBlockRef}>{props.children}</div>
-      </RecordProvider>
-    </FormBlockContext.Provider>
-  );
-};
+    return (
+      <FormBlockContext.Provider value={formBlockValue}>
+        <RecordProvider isNew={record?.isNew} parent={record?.parentRecord?.data} record={record?.data}>
+          <div ref={formBlockRef}>{props.children}</div>
+        </RecordProvider>
+      </FormBlockContext.Provider>
+    );
+  },
+  {
+    displayName: 'InternalFormBlockProvider',
+  },
+);
 
 /**
  * @internal
