@@ -45,9 +45,6 @@ export const SchemaInitializerItemGroup: FC<SchemaInitializerItemGroupProps> = (
  * @internal
  */
 
-/**
- * @internal
- */
 export const SchemaInitializerItemGroupInternal = () => {
   const itemConfig: any = useSchemaInitializerItem<SchemaInitializerItemGroupProps>();
 
