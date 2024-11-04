@@ -296,12 +296,7 @@ const SetThemeOfHeaderSubmenu = ({ children }) => {
     };
   }, []);
 
-  return (
-    <>
-      <GlobalStyleForAdminLayout />
-      <ConfigProvider getPopupContainer={() => containerRef.current}>{children}</ConfigProvider>
-    </>
-  );
+  return <ConfigProvider getPopupContainer={() => containerRef.current}>{children}</ConfigProvider>;
 };
 
 const sideClass = css`
