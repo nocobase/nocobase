@@ -1023,5 +1023,6 @@
   "When the Label exceeds the width": "字段标题超出宽度时",
   "Line break": "换行",
   "Ellipsis": "省略",
-  "Set block layout": "设置区块布局"
+  "Set block layout": "设置区块布局",
+  "Table size":"表格大小"
 }

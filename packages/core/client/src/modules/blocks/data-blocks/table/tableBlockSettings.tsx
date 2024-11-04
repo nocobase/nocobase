@@ -196,7 +196,7 @@ export const tableBlockSettings = new SchemaSettings({
         const { t } = useTranslation();
         const { dn } = useDesignable();
         return {
-          title: t('Size'),
+          title: t('Table size'),
           value: field.componentProps?.size || 'middle',
           options: [
             { label: t('Large'), value: 'large' },
