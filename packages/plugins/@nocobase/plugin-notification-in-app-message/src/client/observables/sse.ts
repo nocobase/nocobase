@@ -6,13 +6,11 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import React from 'react';
+
 import { observable, reaction } from '@formily/reactive';
-import { notification } from 'antd';
 import { SSEData } from '../../types';
 import { messageMapObs, updateUnreadMsgsCount } from './message';
-import { fetchChannels, selectedChannelNameObs } from './channel';
-import { inboxVisible } from './inbox';
+import { fetchChannels } from './channel';
 import { getAPIClient } from '../utils';
 import { uid } from '@nocobase/utils/client';
 
@@ -30,14 +28,22 @@ reaction(
     }
   },
 );
-export const startMsgSSEStreamWithRetry = async () => {
+export const startMsgSSEStreamWithRetry: () => () => void = () => {
   let retryTimes = 0;
+  const controller = new AbortController();
+  let disposed = false;
+  const dispose = () => {
+    disposed = true;
+    controller.abort();
+  };
+
   const clientId = uid();
   const createMsgSSEConnection = async (clientId: string) => {
     const apiClient = getAPIClient();
     const res = await apiClient.silent().request({
       url: 'myInAppMessages:sse',
       method: 'get',
+      signal: controller.signal,
       headers: {
         Accept: 'text/event-stream',
       },
@@ -70,10 +76,11 @@ export const startMsgSSEStreamWithRetry = async () => {
       const nextDelay = retryTimes < 6 ? 1000 * Math.pow(2, retryTimes) : 60000;
       retryTimes++;
       setTimeout(() => {
-        connectWithRetry();
+        if (!disposed) connectWithRetry();
       }, nextDelay);
       return { error };
     }
   };
   connectWithRetry();
+  return dispose;
 };

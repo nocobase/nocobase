@@ -65,7 +65,28 @@ const InnerInbox = (props) => {
   }, []);
 
   useEffect(() => {
-    startMsgSSEStreamWithRetry();
+    const disposes: Array<() => void> = [];
+    disposes.push(startMsgSSEStreamWithRetry());
+    const disposeAll = () => {
+      while (disposes.length > 0) {
+        const dispose = disposes.pop();
+        dispose && dispose();
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        disposes.push(startMsgSSEStreamWithRetry());
+      } else {
+        disposeAll();
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      disposeAll();
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, []);
   const DrawerTitle = <div style={{ padding: '0' }}>{t('Message')}</div>;
   const CloseIcon = (
@@ -118,7 +139,7 @@ const InnerInbox = (props) => {
         <Badge count={unreadMsgsCountObs.value} size="small" offset={[-12, 14]}>
           <Button
             className={styles.button}
-            title={'Apps'}
+            title={t('Message')}
             icon={<Icon type={'MailOutlined'} />}
             onClick={onIconClick}
           />
