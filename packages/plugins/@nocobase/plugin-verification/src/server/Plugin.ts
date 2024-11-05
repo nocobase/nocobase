@@ -138,16 +138,17 @@ export default class PluginVerficationServer extends Plugin {
     await initProviders(this);
     initActions(this);
 
+    const self = this;
     // add middleware to action
-    app.resourcer.use(async (context, next) => {
+    app.resourceManager.use(async function verificationIntercept(context, next) {
       const { resourceName, actionName, values } = context.action.params;
       const key = `${resourceName}:${actionName}`;
-      const interceptor = this.interceptors.get(key);
+      const interceptor = self.interceptors.get(key);
       if (!interceptor || interceptor.manual) {
         return next();
       }
 
-      return this.intercept(context, next);
+      return self.intercept(context, next);
     });
 
     app.acl.allow('verifications', 'create', 'public');

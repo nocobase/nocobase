@@ -24,7 +24,16 @@ import {
 } from '@nocobase/logger';
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import { Telemetry, TelemetryOptions } from '@nocobase/telemetry';
-import { applyMixins, AsyncEmitter, importModule, Toposort, ToposortOptions } from '@nocobase/utils';
+
+import {
+  applyMixins,
+  AsyncEmitter,
+  importModule,
+  Toposort,
+  ToposortOptions,
+  wrapMiddlewareWithLogging,
+} from '@nocobase/utils';
+
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { randomUUID } from 'crypto';
 import glob from 'glob';
@@ -50,7 +59,6 @@ import {
   enablePerfHooks,
   getCommandFullName,
   registerMiddlewares,
-  wrapMiddlewareWithLogging,
 } from './helper';
 import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
@@ -466,10 +474,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     middleware: Koa.Middleware<StateT & NewStateT, ContextT & NewContextT>,
     options?: ToposortOptions,
   ) {
-    this.middleware.add(
-      wrapMiddlewareWithLogging(middleware, middleware.toString().slice(0, 100), this.logger),
-      options,
-    );
+    this.middleware.add(wrapMiddlewareWithLogging(middleware, this.logger), options);
     return this;
   }
 
@@ -1197,6 +1202,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       group: 'parseVariables',
       after: 'acl',
     });
+
     this._dataSourceManager.use(dataTemplate, { group: 'dataTemplate', after: 'acl' });
 
     this._locales = new Locale(createAppProxy(this));
