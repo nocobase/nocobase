@@ -237,6 +237,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
   }
 
+  private static staticCommands = [];
+
+  static addCommand(callback: (app: Application) => void) {
+    this.staticCommands.push(callback);
+  }
+
   private _sqlLogger: Logger;
 
   get sqlLogger() {
@@ -440,6 +446,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return packageJson.version;
   }
 
+  getPackageVersion() {
+    return packageJson.version;
+  }
+
   /**
    * This method is deprecated and should not be used.
    * Use {@link #this.pm.addPreset()} instead.
@@ -540,6 +550,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._loaded = false;
   }
 
+  async createCacheManager() {
+    this._cacheManager = await createCacheManager(this, this.options.cacheManager);
+    return this._cacheManager;
+  }
+
   async load(options?: LoadOptions) {
     if (this._loaded) {
       return;
@@ -570,7 +585,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       await this.cacheManager.close();
     }
 
-    this._cacheManager = await createCacheManager(this, this.options.cacheManager);
+    this._cacheManager = await this.createCacheManager();
 
     this.log.debug('init plugins');
     this.setMaintainingMessage('init plugins');
@@ -1195,6 +1210,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     registerCli(this);
 
     this._version = new ApplicationVersion(this);
+
+    for (const callback of Application.staticCommands) {
+      callback(this);
+    }
   }
 
   protected createMainDataSource(options: ApplicationOptions) {

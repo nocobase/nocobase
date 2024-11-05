@@ -13,7 +13,10 @@ import lodash from 'lodash';
 import path from 'path';
 import { ApplicationModel } from '../server';
 
-export type AppDbCreator = (app: Application, options?: Transactionable & { context?: any }) => Promise<void>;
+export type AppDbCreator = (
+  app: Application,
+  options?: Transactionable & { context?: any; applicationModel?: ApplicationModel },
+) => Promise<void>;
 export type AppOptionsFactory = (appName: string, mainApp: Application) => any;
 export type SubAppUpgradeHandler = (mainApp: Application) => Promise<void>;
 
@@ -189,13 +192,18 @@ export class PluginMultiAppManagerServer extends Plugin {
           appOptionsFactory: this.appOptionsFactory,
         });
 
-        // create database
-        await this.appDbCreator(subApp, {
-          transaction,
-          context: options.context,
-        });
+        const quickstart = async () => {
+          // create database
+          await this.appDbCreator(subApp, {
+            transaction,
+            applicationModel: model,
+            context: options.context,
+          });
 
-        const startPromise = subApp.runCommand('start', '--quickstart');
+          await subApp.runCommand('start', '--quickstart');
+        };
+
+        const startPromise = quickstart();
 
         if (options?.context?.waitSubAppInstall) {
           await startPromise;
