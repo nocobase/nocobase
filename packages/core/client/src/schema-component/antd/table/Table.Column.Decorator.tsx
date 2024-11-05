@@ -9,7 +9,7 @@
 
 import { useField, useFieldSchema } from '@formily/react';
 import React, { useLayoutEffect } from 'react';
-import { SortableItem, useCollection_deprecated, useCompile, useDesignable, useDesigner } from '../../../';
+import { SortableItem, useCollection_deprecated, useCompile, useDesigner } from '../../../';
 import { designerCss } from './Table.Column.ActionBar';
 
 export const useColumnSchema = () => {
@@ -33,7 +33,6 @@ export const TableColumnDecorator = (props) => {
   const Designer = useDesigner();
   const field = useField();
   const { fieldSchema, uiSchema, collectionField } = useColumnSchema();
-  const { refresh } = useDesignable();
   const compile = useCompile();
   useLayoutEffect(() => {
     if (field.title) {
