@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.44-beta](https://github.com/nocobase/nocobase/compare/v1.3.43-beta...v1.3.44-beta) - 2024-11-05
+
+### 🎉 New Features
+
+- **[Auth: OIDC]** Add an option "enable RP-initiated logout" by @2013xile
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix filter issue when setting single-select field as title field in association select ([#5581](https://github.com/nocobase/nocobase/pull/5581)) by @katherinehhh
+
 ## [v1.3.43-beta](https://github.com/nocobase/nocobase/compare/v1.3.42-beta...v1.3.43-beta) - 2024-11-05
 
 ### 🚀 Improvements
