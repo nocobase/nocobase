@@ -130,6 +130,7 @@ export default function defineMyInAppChannels({ app }: { app: Application }) {
               },
               sort: ['-latestMsgReceiveTimestamp'],
             });
+
             const countRes = channelsRepo.count({
               //@ts-ignore
               where: {
