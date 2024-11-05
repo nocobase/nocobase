@@ -78,3 +78,11 @@ NocoBase 支持三种安装方式：
 - <a target="_blank" href="https://docs-cn.nocobase.com/welcome/getting-started/installation/git-clone">Git 源码安装</a>
 
    如果你想体验最新未发布版本，或者想参与贡献，需要在源码上进行修改、调试，建议选择这种安装方式，对开发技术水平要求较高，如果代码有更新，可以走 git 流程拉取最新代码。
+
+## 部署
+
+通过云厂商一键部署 NocoBase，并享受多种部署选项的灵活性，以满足您不断增长的需求：
+
+- [阿里云](https://computenest.console.aliyun.com/service/instance/create/default?type=user&ServiceName=NocoBase%20%E7%A4%BE%E5%8C%BA%E7%89%88)
+
+
