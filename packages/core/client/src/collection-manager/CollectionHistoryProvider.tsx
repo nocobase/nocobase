@@ -10,7 +10,6 @@
 import React, { createContext, useCallback, useContext, useMemo } from 'react';
 import { useAPIClient, useRequest } from '../api-client';
 import { useIsAdminPage } from '../application/CustomRouterContextProvider';
-import { useAppSpin } from '../application/hooks/useAppSpin';
 
 export interface CollectionHistoryContextValue {
   historyCollections: any[];
@@ -40,7 +39,6 @@ export const CollectionHistoryProvider: React.FC = (props) => {
   const api = useAPIClient();
   const isAdminPage = useIsAdminPage();
   const token = api.auth.getToken() || '';
-  const { render } = useAppSpin();
 
   const service = useRequest<{
     data: any;
@@ -63,16 +61,12 @@ export const CollectionHistoryProvider: React.FC = (props) => {
     };
   }, [refreshCH, service.data?.data]);
 
-  if (service.loading) {
-    return render();
-  }
-
   return <CollectionHistoryContext.Provider value={value}>{props.children}</CollectionHistoryContext.Provider>;
 };
 
 export const useHistoryCollectionsByNames = (collectionNames: string[]) => {
   const { historyCollections } = useContext(CollectionHistoryContext);
-  return historyCollections.filter((i) => collectionNames.includes(i.name));
+  return historyCollections?.filter((i) => collectionNames.includes(i.name)) || [];
 };
 
 export const useCollectionHistory = () => {
