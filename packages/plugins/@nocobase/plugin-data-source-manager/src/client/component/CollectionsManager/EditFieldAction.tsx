@@ -10,29 +10,29 @@
 import { ArrayTable } from '@formily/antd-v5';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
+import {
+  ActionContextProvider,
+  IField,
+  RecordProvider,
+  SchemaComponent,
+  useActionContext,
+  useAPIClient,
+  useCancelAction,
+  useCollectionManager_deprecated,
+  useCollectionParentRecordData,
+  useCompile,
+  useCurrentAppInfo,
+  useDataSourceManager,
+  useRecord,
+  useRequest,
+  useResourceActionContext,
+} from '@nocobase/client';
 import cloneDeep from 'lodash/cloneDeep';
 import omit from 'lodash/omit';
 import set from 'lodash/set';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
-import {
-  useAPIClient,
-  IField,
-  useRequest,
-  RecordProvider,
-  useRecord,
-  ActionContextProvider,
-  SchemaComponent,
-  useActionContext,
-  useCompile,
-  useResourceActionContext,
-  useCancelAction,
-  useCollectionManager_deprecated,
-  useCurrentAppInfo,
-  useCollectionParentRecordData,
-  useDataSourceManager,
-} from '@nocobase/client';
 import { useRemoteCollectionContext } from './CollectionFields';
 
 const getSchema = ({
@@ -192,7 +192,9 @@ const EditFieldAction = (props) => {
   const { getInterface, collections, getCollection } = useCollectionManager_deprecated();
   const {
     data: { database: currentDatabase },
-  } = useCurrentAppInfo();
+  } = useCurrentAppInfo() || {
+    data: { database: {} as any },
+  };
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const api = useAPIClient();

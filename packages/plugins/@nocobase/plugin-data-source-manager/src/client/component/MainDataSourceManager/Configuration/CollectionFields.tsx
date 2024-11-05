@@ -315,7 +315,9 @@ const CollectionFieldsInternal = () => {
   const { name, template } = useRecord();
   const {
     data: { database },
-  } = useCurrentAppInfo();
+  } = useCurrentAppInfo() || {
+    data: { database: {} as any },
+  };
   const { getInterface, getInheritCollections, getCollection, getTemplate } = useCollectionManager_deprecated();
   const form = useMemo(() => createForm(), []);
   const f = useAttach(form.createArrayField({ ...field.props, basePath: '' }));
