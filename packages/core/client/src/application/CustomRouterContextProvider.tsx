@@ -107,7 +107,7 @@ const IsInSettingsPageProvider: FC = ({ children }) => {
 
 const MatchAdminProvider: FC = ({ children }) => {
   const location = useLocation();
-  const matchAdmin = location.pathname.startsWith('/admin');
+  const matchAdmin = location.pathname === '/admin' || location.pathname == '/admin/';
   return <MatchAdminContext.Provider value={matchAdmin}>{children}</MatchAdminContext.Provider>;
 };
 
