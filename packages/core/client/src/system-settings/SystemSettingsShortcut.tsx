@@ -39,7 +39,7 @@ const useSystemSettingsValues = (options) => {
   const result = useSystemSettings();
   return useRequest(() => Promise.resolve(result.data), {
     ...options,
-    refreshDeps: [visible],
+    refreshDeps: [visible, result.data],
   });
 };
 
