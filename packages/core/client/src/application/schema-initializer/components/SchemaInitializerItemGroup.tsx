@@ -44,9 +44,14 @@ export const SchemaInitializerItemGroup: FC<SchemaInitializerItemGroupProps> = (
 /**
  * @internal
  */
+
 export const SchemaInitializerItemGroupInternal = () => {
   const itemConfig: any = useSchemaInitializerItem<SchemaInitializerItemGroupProps>();
+
   const searchedChildren = useMenuSearch(itemConfig);
+  if (itemConfig.name !== 'displayFields') {
+    return <SchemaInitializerItemGroup {...itemConfig} />;
+  }
   /* eslint-disable react/no-children-prop */
   return <SchemaInitializerItemGroup {...itemConfig} children={searchedChildren} />;
 };
