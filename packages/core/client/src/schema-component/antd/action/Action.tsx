@@ -153,6 +153,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
         setSubmitted={setSubmitted}
         getAriaLabel={getAriaLabel}
         parentRecordData={parentRecordData}
+        actionCallback={actionCallback}
         {...others}
       />
     );
