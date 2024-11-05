@@ -162,11 +162,11 @@ export class PluginDataSourceManagerServer extends Plugin {
               return data;
             }
 
-            const dataSourceStatus = this.dataSourceStatus[item.get('key')];
+            const dataSourceStatus = plugin.dataSourceStatus[item.get('key')];
             data['status'] = dataSourceStatus;
 
             if (dataSourceStatus === 'loading-failed' || dataSourceStatus === 'reloading-failed') {
-              data['errorMessage'] = this.dataSourceErrors[item.get('key')].message;
+              data['errorMessage'] = plugin.dataSourceErrors[item.get('key')].message;
             }
 
             return data;
