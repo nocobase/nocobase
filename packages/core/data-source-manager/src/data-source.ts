@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+// new comment
 import { ACL } from '@nocobase/acl';
 import { getNameByParams, parseRequest, ResourceManager } from '@nocobase/resourcer';
 import EventEmitter from 'events';
