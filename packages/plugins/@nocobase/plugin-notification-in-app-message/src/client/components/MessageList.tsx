@@ -26,7 +26,7 @@ import {
   inboxVisible,
 } from '../observables';
 
-export const MessageList = observer(() => {
+const MessageList = observer(() => {
   const { t } = useLocalTranslation();
   const navigate = useNavigate();
   const { token } = theme.useToken();
@@ -172,3 +172,5 @@ export const MessageList = observer(() => {
     </ConfigProvider>
   );
 });
+
+export default MessageList;

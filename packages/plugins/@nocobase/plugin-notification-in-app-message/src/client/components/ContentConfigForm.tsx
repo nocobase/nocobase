@@ -51,7 +51,7 @@ export const ContentConfigForm = ({ variableOptions }) => {
               url: {
                 type: 'string',
                 required: false,
-                title: `{{t("Detail URL")}}`,
+                title: `{{t("PC detail URL")}}`,
                 'x-decorator': 'FormItem',
                 'x-component': 'Variable.TextArea',
                 'x-component-props': {
@@ -65,7 +65,7 @@ export const ContentConfigForm = ({ variableOptions }) => {
               mobileUrl: {
                 type: 'string',
                 required: false,
-                title: `{{t("Mobile Detail URL")}}`,
+                title: `{{t("Mobile detail URL")}}`,
                 'x-decorator': 'FormItem',
                 'x-component': 'Variable.TextArea',
                 'x-component-props': {
