@@ -32,6 +32,19 @@ async function trim(packageNames: string[]) {
   return names;
 }
 
+const excludes = [
+  '@nocobase/plugin-audit-logs',
+  '@nocobase/plugin-backup-restore',
+  '@nocobase/plugin-charts',
+  '@nocobase/plugin-disable-pm-add',
+  '@nocobase/plugin-mobile-client',
+  '@nocobase/plugin-mock-collections',
+  '@nocobase/plugin-multi-app-share-collection',
+  '@nocobase/plugin-notifications',
+  '@nocobase/plugin-snapshot-field',
+  '@nocobase/plugin-workflow-test',
+];
+
 export async function findPackageNames() {
   const patterns = [
     './packages/plugins/*/package.json',
@@ -52,23 +65,11 @@ export async function findPackageNames() {
         return packageJson.name;
       }),
     );
-    const excludes = [
-      '@nocobase/plugin-audit-logs',
-      '@nocobase/plugin-backup-restore',
-      '@nocobase/plugin-charts',
-      '@nocobase/plugin-disable-pm-add',
-      '@nocobase/plugin-mobile-client',
-      '@nocobase/plugin-mock-collections',
-      '@nocobase/plugin-multi-app-share-collection',
-      '@nocobase/plugin-notifications',
-      '@nocobase/plugin-snapshot-field',
-      '@nocobase/plugin-workflow-test',
-    ];
     const nocobasePlugins = await findNocobasePlugins();
     const { APPEND_PRESET_BUILT_IN_PLUGINS = '', APPEND_PRESET_LOCAL_PLUGINS = '' } = process.env;
     return trim(
-      _.difference(packageNames, excludes)
-        .filter(Boolean)
+      packageNames
+        .filter((pkg) => pkg && !excludes.includes(pkg))
         .concat(nocobasePlugins)
         .concat(splitNames(APPEND_PRESET_BUILT_IN_PLUGINS))
         .concat(splitNames(APPEND_PRESET_LOCAL_PLUGINS)),
@@ -89,7 +90,7 @@ async function findNocobasePlugins() {
   try {
     const packageJson = await getPackageJson();
     const pluginNames = Object.keys(packageJson.dependencies).filter((name) => name.startsWith('@nocobase/plugin-'));
-    return trim(pluginNames);
+    return trim(pluginNames.filter((pkg) => pkg && !excludes.includes(pkg)));
   } catch (error) {
     return [];
   }

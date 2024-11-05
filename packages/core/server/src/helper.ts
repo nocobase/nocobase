@@ -16,7 +16,6 @@ import { randomUUID } from 'crypto';
 import fs from 'fs';
 import i18next from 'i18next';
 import bodyParser from 'koa-bodyparser';
-import { resolve } from 'path';
 import { createHistogram, RecordableHistogram } from 'perf_hooks';
 import Application, { ApplicationOptions } from './application';
 import { dataWrapping } from './middlewares/data-wrapping';
@@ -77,7 +76,7 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
     );
   }
 
-  app.use(async (ctx, next) => {
+  app.use(async function getBearerToken(ctx, next) {
     ctx.getBearerToken = () => {
       const token = ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
       return token || ctx.query.token;
@@ -124,8 +123,7 @@ export const getCommandFullName = (command: Command) => {
 
 /* istanbul ignore next -- @preserve */
 export const tsxRerunning = async () => {
-  const file = resolve(process.cwd(), 'storage/app.watch.ts');
-  await fs.promises.writeFile(file, `export const watchId = '${uid()}';`, 'utf-8');
+  await fs.promises.writeFile(process.env.WATCH_FILE, `export const watchId = '${uid()}';`, 'utf-8');
 };
 
 /* istanbul ignore next -- @preserve */

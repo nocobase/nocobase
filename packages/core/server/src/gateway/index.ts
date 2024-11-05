@@ -311,7 +311,7 @@ export class Gateway extends EventEmitter {
     if (!process.env.IS_DEV_CMD) {
       return;
     }
-    const file = resolve(process.cwd(), 'storage/app.watch.ts');
+    const file = process.env.WATCH_FILE;
     if (!fs.existsSync(file)) {
       await fs.promises.writeFile(file, `export const watchId = '${uid()}';`, 'utf-8');
     }

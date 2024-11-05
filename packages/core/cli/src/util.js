@@ -350,6 +350,7 @@ exports.initEnv = function initEnv() {
     LOGGER_BASE_PATH: 'storage/logs',
     APP_SERVER_BASE_URL: '',
     APP_PUBLIC_PATH: '/',
+    WATCH_FILE: resolve(process.cwd(), 'storage/app.watch.ts'),
   };
 
   if (

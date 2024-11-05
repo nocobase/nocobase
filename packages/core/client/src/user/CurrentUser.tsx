@@ -139,8 +139,12 @@ export const SettingsMenu: React.FC<{
         key: 'signout',
         label: t('Sign out'),
         onClick: async () => {
-          await api.auth.signOut();
-          navigate(`/signin?redirect=${encodeURIComponent(redirectUrl)}`);
+          const { data } = await api.auth.signOut();
+          if (data?.data?.redirect) {
+            window.location.href = data.data.redirect;
+          } else {
+            navigate(`/signin?redirect=${encodeURIComponent(redirectUrl)}`);
+          }
         },
       },
     ];
