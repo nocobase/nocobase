@@ -105,7 +105,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
     return css`
       .nb-action-link {
         margin: -${token.paddingContentVerticalLG}px -${token.marginSM}px;
-        padding: ${token.paddingContentVerticalLG}px ${token.margin}px;
+        padding: ${token.paddingContentVerticalLG}px ${token.paddingSM + 4}px;
       }
     `;
   }, [token.paddingContentVerticalLG, token.marginSM]);
