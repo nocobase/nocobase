@@ -133,11 +133,11 @@ export function useTableColumnInitializerFields() {
         'x-component': 'CollectionField',
         'x-component-props': isFileCollection
           ? {
-              fieldNames: {
-                label: 'preview',
-                value: 'id',
-              },
-            }
+            fieldNames: {
+              label: 'preview',
+              value: 'id',
+            },
+          }
           : isPreviewComponent
             ? { size: 'small' }
             : {},
@@ -181,7 +181,7 @@ export function useAssociatedTableColumnInitializerFields() {
   const { getInterface, getCollectionFields, getCollection } = useCollectionManager_deprecated();
   const groups = fields
     ?.filter((field) => {
-      return ['o2o', 'oho', 'obo', 'm2o'].includes(field.interface);
+      return ['o2o', 'oho', 'obo', 'm2o', 'JSONDocObject'].includes(field.interface);
     })
     ?.map((field) => {
       return getGroupItemForTable({
@@ -305,8 +305,12 @@ function getGroupItemForTable({
 
 export function useInheritsTableColumnInitializerFields() {
   const { name } = useCollection_deprecated();
-  const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } =
-    useCollectionManager_deprecated();
+  const {
+    getInterface,
+    getInheritCollections,
+    getCollection,
+    getParentCollectionFields,
+  } = useCollectionManager_deprecated();
   const fieldSchema = useFieldSchema();
   const isSubTable = fieldSchema['x-component'] === 'AssociationField.SubTable';
   const form = useForm();
@@ -330,11 +334,11 @@ export function useInheritsTableColumnInitializerFields() {
             'x-collection-field': `${name}.${k.name}`,
             'x-component-props': isFileCollection
               ? {
-                  fieldNames: {
-                    label: 'preview',
-                    value: 'id',
-                  },
-                }
+                fieldNames: {
+                  label: 'preview',
+                  value: 'id',
+                },
+              }
               : {},
             'x-decorator': isSubTable
               ? quickEditField.includes(k.interface) || isFileCollection
@@ -396,15 +400,15 @@ export const useFormItemInitializerFields = (options?: any) => {
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': isFileCollection
           ? {
-              fieldNames: {
-                label: 'preview',
-                value: 'id',
-              },
-            }
+            fieldNames: {
+              label: 'preview',
+              value: 'id',
+            },
+          }
           : isAssociationField && fieldNames
             ? {
-                fieldNames: { ...fieldNames, label: targetCollection?.titleField || fieldNames.label },
-              }
+              fieldNames: { ...fieldNames, label: targetCollection?.titleField || fieldNames.label },
+            }
             : {},
         'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
       };
@@ -509,8 +513,7 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
   const form = useForm();
   const { t } = useTranslation();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
-  const interfaces = block === 'Form' ? ['m2o'] : ['o2o', 'oho', 'obo', 'm2o'];
-
+  const interfaces = block === 'Form' ? ['m2o', 'JSONDocObject'] : ['o2o', 'oho', 'obo', 'm2o', 'JSONDocObject'];
   const groups = fields
     ?.filter((field) => {
       return interfaces.includes(field.interface);
@@ -602,8 +605,12 @@ export const useFilterAssociatedFormItemInitializerFields = () => {
 
 export const useInheritsFormItemInitializerFields = (options?) => {
   const { name } = useCollection_deprecated();
-  const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } =
-    useCollectionManager_deprecated();
+  const {
+    getInterface,
+    getInheritCollections,
+    getCollection,
+    getParentCollectionFields,
+  } = useCollectionManager_deprecated();
   const inherits = getInheritCollections(name);
   const { snapshot } = useActionContext();
   const form = useForm();
@@ -659,8 +666,12 @@ export const useInheritsFormItemInitializerFields = (options?) => {
 // 筛选表单相关
 export const useFilterInheritsFormItemInitializerFields = (options?) => {
   const { name } = useCollection_deprecated();
-  const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } =
-    useCollectionManager_deprecated();
+  const {
+    getInterface,
+    getInheritCollections,
+    getCollection,
+    getParentCollectionFields,
+  } = useCollectionManager_deprecated();
   const inherits = getInheritCollections(name);
   const { snapshot } = useActionContext();
   const form = useForm();
@@ -984,7 +995,7 @@ export const useCollectionDataSourceItems = ({
         dataSource: collection.dataSource,
         Component: DataBlockInitializer,
         // 目的是使点击无效
-        onClick() {},
+        onClick() { },
         componentProps: {
           ...dataBlockInitializerProps,
           icon: null,
@@ -999,7 +1010,7 @@ export const useCollectionDataSourceItems = ({
         name: 'associationRecords',
         Component: DataBlockInitializer,
         // 目的是使点击无效
-        onClick() {},
+        onClick() { },
         componentProps: {
           ...dataBlockInitializerProps,
           icon: null,
@@ -1023,7 +1034,7 @@ export const useCollectionDataSourceItems = ({
         name: 'otherRecords',
         Component: DataBlockInitializer,
         // 目的是使点击无效
-        onClick() {},
+        onClick() { },
         componentProps: {
           ...dataBlockInitializerProps,
           hideSearch: false,
@@ -1142,10 +1153,10 @@ export const createDetailsBlockSchema = (options: {
       action,
       ...(action === 'list'
         ? {
-            params: {
-              pageSize: 1,
-            },
-          }
+          params: {
+            pageSize: 1,
+          },
+        }
         : {}),
       ...others,
     },
@@ -1178,12 +1189,12 @@ export const createDetailsBlockSchema = (options: {
           },
           ...(action === 'list'
             ? {
-                pagination: {
-                  type: 'void',
-                  'x-component': 'Pagination',
-                  'x-use-component-props': 'useDetailsPaginationProps',
-                },
-              }
+              pagination: {
+                type: 'void',
+                'x-component': 'Pagination',
+                'x-use-component-props': 'useDetailsPaginationProps',
+              },
+            }
             : {}),
         },
       },
@@ -1625,9 +1636,9 @@ function getGroupItemForForm({
           'pattern-disable': block === 'Form' && readPretty,
           fieldNames: isFileCollection
             ? {
-                label: 'preview',
-                value: 'id',
-              }
+              label: 'preview',
+              value: 'id',
+            }
             : undefined,
         },
         'x-decorator': 'FormItem',

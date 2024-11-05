@@ -25,27 +25,29 @@ const commonOptions: any = {
       useChildren() {
         const cm = useCollectionManager_deprecated();
         const associatedFields = useAssociatedFields();
-        const children = associatedFields.map((field) => ({
-          name: field.key,
-          title: field.uiSchema?.title,
-          Component: 'AssociationFilterDesignerDisplayField',
-          schema: {
-            name: field.name,
+        const children = associatedFields
+          .filter((field) => !['JSONDocObject', 'JSONDocArray'].includes(field.interface))
+          .map((field) => ({
+            name: field.key,
             title: field.uiSchema?.title,
-            type: 'void',
-            // 'x-designer': 'AssociationFilter.Item.Designer',
-            'x-toolbar': 'CollapseItemSchemaToolbar',
-            'x-settings': 'fieldSettings:FilterCollapseItem',
-            'x-component': 'AssociationFilter.Item',
-            'x-use-component-props': 'useAssociationFilterBlockProps',
-            'x-component-props': {
-              fieldNames: {
-                label: field.targetKey || cm.getCollection(field.target)?.getPrimaryKey() || 'id',
+            Component: 'AssociationFilterDesignerDisplayField',
+            schema: {
+              name: field.name,
+              title: field.uiSchema?.title,
+              type: 'void',
+              // 'x-designer': 'AssociationFilter.Item.Designer',
+              'x-toolbar': 'CollapseItemSchemaToolbar',
+              'x-settings': 'fieldSettings:FilterCollapseItem',
+              'x-component': 'AssociationFilter.Item',
+              'x-use-component-props': 'useAssociationFilterBlockProps',
+              'x-component-props': {
+                fieldNames: {
+                  label: field.targetKey || cm.getCollection(field.target)?.getPrimaryKey() || 'id',
+                },
               },
+              properties: {},
             },
-            properties: {},
-          },
-        }));
+          }));
         return children;
       },
     },

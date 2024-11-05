@@ -153,7 +153,7 @@ export class FieldModel extends MagicAttributeModel {
       return;
     }
 
-    if (collection.isView()) {
+    if (collection.isView() || collection.options.json) {
       return;
     }
 

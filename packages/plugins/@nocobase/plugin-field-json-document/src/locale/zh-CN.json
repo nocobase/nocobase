@@ -1,0 +1,6 @@
+{
+  "JSON Document (Object)": "JSON 文档（对象）",
+  "JSON Document (Array)": "JSON 文档（数组）",
+  "JSONDoc object description": "支持定义 JSON 对象中的字段，以结构化的方式使用 JSON 字段。",
+  "JSONDoc array description": "支持定义 JSON 对象数组中的字段，以结构化的方式使用 JSON 字段。"
+}

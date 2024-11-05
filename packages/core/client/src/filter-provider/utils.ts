@@ -174,9 +174,21 @@ export const useAssociatedFields = () => {
 };
 
 export const isAssocField = (field?: FieldOptions) => {
-  return ['o2o', 'oho', 'obo', 'm2o', 'createdBy', 'updatedBy', 'o2m', 'm2m', 'linkTo', 'chinaRegion', 'mbm'].includes(
-    field?.interface,
-  );
+  return [
+    'o2o',
+    'oho',
+    'obo',
+    'm2o',
+    'createdBy',
+    'updatedBy',
+    'o2m',
+    'm2m',
+    'linkTo',
+    'chinaRegion',
+    'mbm',
+    'JSONDocObject',
+    'JSONDocArray',
+  ].includes(field?.interface);
 };
 
 export const isSameCollection = (c1: Collection, c2: Collection) => {
