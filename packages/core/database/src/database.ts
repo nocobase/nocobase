@@ -234,7 +234,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
       });
     }
 
+    if (options.logging && process.env['DB_SQL_BENCHMARK'] == 'true') {
+      opts.benchmark = true;
+    }
+
     this.options = opts;
+
     this.logger.debug(
       `create database instance: ${safeJsonStringify(
         // remove sensitive information

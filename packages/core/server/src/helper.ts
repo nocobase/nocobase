@@ -16,7 +16,6 @@ import { randomUUID } from 'crypto';
 import fs from 'fs';
 import i18next from 'i18next';
 import bodyParser from 'koa-bodyparser';
-import { resolve } from 'path';
 import { createHistogram, RecordableHistogram } from 'perf_hooks';
 import Application, { ApplicationOptions } from './application';
 import { dataWrapping } from './middlewares/data-wrapping';
@@ -124,8 +123,7 @@ export const getCommandFullName = (command: Command) => {
 
 /* istanbul ignore next -- @preserve */
 export const tsxRerunning = async () => {
-  const file = resolve(process.cwd(), 'storage/app.watch.ts');
-  await fs.promises.writeFile(file, `export const watchId = '${uid()}';`, 'utf-8');
+  await fs.promises.writeFile(process.env.WATCH_FILE, `export const watchId = '${uid()}';`, 'utf-8');
 };
 
 /* istanbul ignore next -- @preserve */
@@ -160,3 +158,22 @@ export const enablePerfHooks = (app: Application) => {
 
   app.acl.allow('perf', '*', 'public');
 };
+
+export function wrapMiddlewareWithLogging(fn, name, logger) {
+  if (process.env['LOGGER_LEVEL'] !== 'trace') {
+    return fn;
+  }
+
+  return async (ctx, next) => {
+    const reqId = ctx.reqId;
+    logger.trace(`--> Entering middleware: ${name}`, { reqId });
+    const start = Date.now();
+
+    await fn(ctx, async () => {
+      await next();
+    });
+
+    const ms = Date.now() - start;
+    logger.trace(`<-- Exiting middleware: ${name} - ${ms}ms`, { reqId });
+  };
+}

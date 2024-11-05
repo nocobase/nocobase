@@ -44,6 +44,19 @@ const commonOptions = {
     },
     {
       type: 'item',
+      title: "{{t('Popup')}}",
+      name: 'popup',
+      Component: 'PopupActionInitializer',
+      componentProps: {
+        'x-component': 'Action',
+        'x-initializer': 'page:addBlock',
+      },
+      schema: {
+        'x-align': 'right',
+      },
+    },
+    {
+      type: 'item',
       title: "{{t('Delete')}}",
       name: 'delete',
       Component: 'BulkDestroyActionInitializer',
