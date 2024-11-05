@@ -45,15 +45,13 @@ const MobileDateTimePicker = connect(
     };
     return (
       <>
-        <Space align="center">
-          <DatePicker
-            onClick={() => setVisible(true)}
-            value={value}
-            {...rest}
-            popupStyle={{ display: 'none' }}
-            style={{ width: '100%' }}
-          />
-        </Space>
+        <DatePicker
+          onClick={() => setVisible(true)}
+          value={value}
+          {...rest}
+          popupStyle={{ display: 'none' }}
+          style={{ width: '100%' }}
+        />
         <Popup visible={visible} onMaskClick={() => setVisible(false)} destroyOnClose bodyStyle={{ padding: '16px' }}>
           <DatePickerView {...rest} value={selectedDate} onChange={(date) => setSelectedDate(date)} />
           {showTime && (

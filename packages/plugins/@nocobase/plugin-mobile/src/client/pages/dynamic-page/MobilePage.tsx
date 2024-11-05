@@ -24,7 +24,7 @@ import { MobileDateTimePicker } from './components/MobileDatePicker';
 
 const mobileComponents = {
   Button: MobileButton,
-  Input: MobileInput,
+  // Input: MobileInput,
   Select: MobilePicker,
   DatePicker: MobileDateTimePicker,
   Checkbox: MobileCheckbox,
