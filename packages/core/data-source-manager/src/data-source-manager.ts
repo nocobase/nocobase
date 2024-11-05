@@ -96,7 +96,8 @@ export class DataSourceManager {
       const ds = self.dataSources.get(name);
       ctx.dataSource = ds;
 
-      return ds.middleware(self.middlewares)(ctx, next);
+      const composedFn = ds.middleware(self.middlewares);
+      return composedFn(ctx, next);
     };
   }
 

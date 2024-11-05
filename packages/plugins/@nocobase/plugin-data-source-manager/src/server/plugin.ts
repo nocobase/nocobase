@@ -493,7 +493,7 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     // add global roles check
-    this.app.resourcer.use(async (ctx, next) => {
+    this.app.resourceManager.use(async function appendDataToRolesCheck(ctx, next) {
       const action = ctx.action;
       await next();
       const { resourceName, actionName } = action.params;

@@ -14,6 +14,7 @@ import compose from 'koa-compose';
 import { loadDefaultActions } from './load-default-actions';
 import { ICollectionManager } from './types';
 import { Logger } from '@nocobase/logger';
+import { wrapMiddlewareWithLogging } from '@nocobase/utils';
 
 export type DataSourceOptions = any;
 
@@ -79,6 +80,7 @@ export abstract class DataSource extends EventEmitter {
       for (const [fn, options] of middlewares) {
         this.resourceManager.use(fn, options);
       }
+
       this['_used'] = true;
     }
 
@@ -91,7 +93,9 @@ export abstract class DataSource extends EventEmitter {
         return this.collectionManager.getRepository(resourceName, resourceOf);
       };
 
-      return compose([this.collectionToResourceMiddleware(), this.resourceManager.middleware()])(ctx, next);
+      const middlewares = [this.collectionToResourceMiddleware(), this.resourceManager.middleware()];
+
+      return compose(middlewares.map((fn) => wrapMiddlewareWithLogging(fn)))(ctx, next);
     };
   }
 
@@ -117,15 +121,16 @@ export abstract class DataSource extends EventEmitter {
   abstract createCollectionManager(options?: any): ICollectionManager;
 
   protected collectionToResourceMiddleware() {
-    return async (ctx, next) => {
+    const self = this;
+    return async function collectionToResource(ctx, next) {
       const params = parseRequest(
         {
           path: ctx.request.path,
           method: ctx.request.method,
         },
         {
-          prefix: this.resourceManager.options.prefix,
-          accessors: this.resourceManager.options.accessors,
+          prefix: self.resourceManager.options.prefix,
+          accessors: self.resourceManager.options.accessors,
         },
       );
       if (!params) {
@@ -133,7 +138,7 @@ export abstract class DataSource extends EventEmitter {
       }
       const resourceName = getNameByParams(params);
       // 如果资源名称未被定义
-      if (this.resourceManager.isDefined(resourceName)) {
+      if (self.resourceManager.isDefined(resourceName)) {
         return next();
       }
 
@@ -141,11 +146,11 @@ export abstract class DataSource extends EventEmitter {
 
       const collectionName = splitResult[0];
 
-      if (!this.collectionManager.hasCollection(collectionName)) {
+      if (!self.collectionManager.hasCollection(collectionName)) {
         return next();
       }
 
-      this.resourceManager.define({
+      self.resourceManager.define({
         name: resourceName,
       });
 

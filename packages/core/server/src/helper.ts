@@ -158,22 +158,3 @@ export const enablePerfHooks = (app: Application) => {
 
   app.acl.allow('perf', '*', 'public');
 };
-
-export function wrapMiddlewareWithLogging(fn, name, logger) {
-  if (process.env['LOGGER_LEVEL'] !== 'trace') {
-    return fn;
-  }
-
-  return async (ctx, next) => {
-    const reqId = ctx.reqId;
-    logger.trace(`--> Entering middleware: ${name}`, { reqId });
-    const start = Date.now();
-
-    await fn(ctx, async () => {
-      await next();
-    });
-
-    const ms = Date.now() - start;
-    logger.trace(`<-- Exiting middleware: ${name} - ${ms}ms`, { reqId });
-  };
-}

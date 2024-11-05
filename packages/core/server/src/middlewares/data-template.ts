@@ -10,7 +10,7 @@
 import { Context } from '@nocobase/actions';
 import { Collection } from '@nocobase/database';
 
-export const dataTemplate = async (ctx: Context, next) => {
+export async function dataTemplate(ctx: Context, next) {
   const { resourceName, actionName } = ctx.action;
   const { isTemplate, fields } = ctx.action.params;
 
@@ -22,7 +22,7 @@ export const dataTemplate = async (ctx: Context, next) => {
       include: fields,
     });
   }
-};
+}
 
 type TraverseOptions = {
   collection: Collection;

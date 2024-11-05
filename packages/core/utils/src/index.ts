@@ -34,6 +34,7 @@ export * from './toposort';
 export * from './uid';
 export * from './url';
 export * from './i18n';
+export * from './wrap-middleware';
 
 export { dayjs, lodash };
 export { Schema } from '@formily/json-schema';
