@@ -131,7 +131,7 @@ export class PluginDataSourceManagerServer extends Plugin {
 
     const app = this.app;
 
-    this.app.use(async (ctx, next) => {
+    this.app.use(async function setDataSourceListItemStatus(ctx, next) {
       await next();
       if (!ctx.action) {
         return;
@@ -233,7 +233,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       return item;
     };
 
-    this.app.resourcer.use(async (ctx, next) => {
+    this.app.resourceManager.use(async function setDataSourceListDefaultSort(ctx, next) {
       if (!ctx.action) {
         await next();
         return;
@@ -250,7 +250,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       await next();
     });
 
-    this.app.use(async (ctx, next) => {
+    this.app.use(async function handleAppendDataSourceCollection(ctx, next) {
       await next();
 
       if (!ctx.action) {

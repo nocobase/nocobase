@@ -50,6 +50,7 @@ import {
   enablePerfHooks,
   getCommandFullName,
   registerMiddlewares,
+  wrapMiddlewareWithLogging,
 } from './helper';
 import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
@@ -465,7 +466,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     middleware: Koa.Middleware<StateT & NewStateT, ContextT & NewContextT>,
     options?: ToposortOptions,
   ) {
-    this.middleware.add(middleware, options);
+    this.middleware.add(
+      wrapMiddlewareWithLogging(middleware, middleware.toString().slice(0, 100), this.logger),
+      options,
+    );
     return this;
   }
 
