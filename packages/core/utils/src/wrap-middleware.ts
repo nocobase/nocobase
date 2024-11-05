@@ -21,7 +21,13 @@ export function wrapMiddlewareWithLogging(fn, logger?) {
     const start = Date.now();
 
     await fn(ctx, async () => {
+      const beforeNext = Date.now();
+      logger.trace(`--> Before next middleware: ${name} - ${beforeNext - start}ms`, { reqId });
+
       await next();
+
+      const afterNext = Date.now();
+      logger.trace(`<-- After next middleware: ${name} - ${afterNext - beforeNext}ms`, { reqId });
     });
 
     const ms = Date.now() - start;
