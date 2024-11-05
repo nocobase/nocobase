@@ -76,7 +76,7 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
     );
   }
 
-  app.use(async (ctx, next) => {
+  app.use(async function getBearerToken(ctx, next) {
     ctx.getBearerToken = () => {
       const token = ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
       return token || ctx.query.token;

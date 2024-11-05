@@ -466,10 +466,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     middleware: Koa.Middleware<StateT & NewStateT, ContextT & NewContextT>,
     options?: ToposortOptions,
   ) {
-    this.middleware.add(
-      wrapMiddlewareWithLogging(middleware, middleware.toString().slice(0, 100), this.logger),
-      options,
-    );
+    const middlewareName = middleware.name || middleware.toString().slice(0, 100);
+
+    this.middleware.add(wrapMiddlewareWithLogging(middleware, middlewareName, this.logger), options);
     return this;
   }
 

@@ -34,7 +34,7 @@ export interface RequestLoggerOptions extends LoggerOptions {
 }
 
 export const requestLogger = (appName: string, requestLogger: Logger, options?: RequestLoggerOptions) => {
-  return async (ctx, next) => {
+  return async function requestLoggerMiddleware(ctx, next) {
     const reqId = ctx.reqId;
     const path = /^\/api\/(.+):(.+)/.exec(ctx.path);
     const contextLogger = ctx.app.log.child({ reqId, module: path?.[1], submodule: path?.[2] });
