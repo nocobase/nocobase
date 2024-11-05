@@ -50,19 +50,6 @@ describe('getAppends', () => {
     return collections[name];
   };
 
-  function reduceProperties(reducer, prefix = '') {
-    const reduce = (properties, prefix = '') => {
-      Object.entries(properties).forEach(([key, value]: any) => {
-        reducer(prefix, value);
-        // 如果有嵌套的 properties，递归处理
-        if (value.properties) {
-          reduce(value.properties, value.name);
-        }
-      });
-    };
-    reduce(this.properties, prefix);
-  }
-
   const createSchema = (properties) => {
     return new Schema({
       properties,
