@@ -27,6 +27,7 @@ const mobileComponents = {
   // Input: MobileInput,
   Select: MobilePicker,
   DatePicker: MobileDateTimePicker,
+  UnixTimestamp: MobileDateTimePicker,
   Checkbox: MobileCheckbox,
   // Radio: MobileRadio,
   Form: MobileForm,

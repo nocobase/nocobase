@@ -10,6 +10,7 @@
 import React, { useMemo, useState } from 'react';
 import { Button, CheckList, Popup, SearchBar, Space, Input } from 'antd-mobile';
 import { connect, mapProps } from '@formily/react';
+import { Select } from '@nocobase/client';
 
 const MobilePicker = connect(
   (props) => {
@@ -31,16 +32,16 @@ const MobilePicker = connect(
       onChange(selected); // 更新选中的值
       setVisible(false); // 关闭弹窗
     };
-
+    console.log(value);
     return (
       <>
-        <Space align="center">
-          <Input
-            onClick={() => setVisible(true)}
-            placeholder="选择"
-            value={value?.length > 0 ? value.join(', ') : ''}
-          />
-        </Space>
+        <Select
+          onClick={() => setVisible(true)}
+          placeholder="选择"
+          value={value}
+          dropdownStyle={{ display: 'none' }}
+          multiple={mode === 'multiple'}
+        />
         <Popup visible={visible} onMaskClick={() => setVisible(false)} destroyOnClose>
           <div>
             <SearchBar placeholder="输入文字过滤选项" value={searchText} onChange={(v) => setSearchText(v)} />
