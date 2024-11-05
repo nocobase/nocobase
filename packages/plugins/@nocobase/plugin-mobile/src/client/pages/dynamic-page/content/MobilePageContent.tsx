@@ -16,6 +16,8 @@ import { MobilePageContentContainer } from './MobilePageContentContainer';
 export const MobilePageContent = () => {
   const { tabSchemaUid } = useParams();
   const { activeTabBarItem } = useMobileRoutes();
+
+  // 如果 URL 中有 tabSchemaUid，则使用 tabSchemaUid，否则使用第一个 tab 的 pageSchemaUid
   return (
     <MobilePageContentContainer>
       <RemoteSchemaComponent
