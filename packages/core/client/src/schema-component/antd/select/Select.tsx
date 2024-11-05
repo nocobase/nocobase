@@ -142,6 +142,9 @@ const InternalSelect = connect(
         }
         return undefined;
       }
+      if (typeof v === 'number') {
+        return v.toString();
+      }
       return v;
     };
     return (
