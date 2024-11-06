@@ -36,7 +36,7 @@ function isNumeric(str: any) {
   return !isNaN(str as any) && !isNaN(parseFloat(str));
 }
 
-export const parseVariables = async (ctx, next) => {
+export async function parseVariables(ctx, next) {
   const filter = ctx.action.params.filter;
   if (!filter) {
     return next();
@@ -66,4 +66,4 @@ export const parseVariables = async (ctx, next) => {
     },
   });
   await next();
-};
+}

@@ -35,7 +35,7 @@ import {
 import { useAPIClient, useRequest } from '../../api-client';
 import { useNavigateNoUpdate } from '../../application/CustomRouterContextProvider';
 import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
-import { useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
+import { CollectionOptions, useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
 import { DataBlock, useFilterBlock } from '../../filter-provider/FilterProvider';
 import { mergeFilter, transformToFilter } from '../../filter-provider/utils';
 import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/TreeRecordProvider';
@@ -1494,90 +1494,137 @@ export function getAssociationPath(str) {
   return str;
 }
 
-export const useAssociationNames = (dataSource?: string) => {
-  let updateAssociationValues = new Set([]);
-  let appends = new Set([]);
-  const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated(dataSource);
-  const fieldSchema = useFieldSchema();
-  const _getAssociationAppends = (schema, str) => {
-    schema.reduceProperties((pre, s) => {
-      const prefix = pre || str;
-      const collectionField = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field'], dataSource);
-      const isAssociationSubfield = s.name.includes('.');
-      const isAssociationField =
-        collectionField &&
-        ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'].includes(collectionField.type);
+export const getAppends = ({
+  schema,
+  prefix: defaultPrefix,
+  updateAssociationValues,
+  appends,
+  getCollectionJoinField,
+  getCollection,
+  dataSource,
+}: {
+  schema: any;
+  prefix: string;
+  updateAssociationValues: Set<string>;
+  appends: Set<string>;
+  getCollectionJoinField: (name: string, dataSource: string) => any;
+  getCollection: (name: any, customDataSource?: string) => CollectionOptions;
+  dataSource: string;
+}) => {
+  schema.reduceProperties((pre, s) => {
+    const prefix = pre || defaultPrefix;
+    const collectionField = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field'], dataSource);
+    const isAssociationSubfield = s.name.includes('.');
+    const isAssociationField =
+      collectionField &&
+      ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'].includes(collectionField.type);
 
-      // 根据联动规则中条件的字段获取一些 appends
-      // 需要排除掉子表格和子表单中的联动规则
-      if (s['x-linkage-rules'] && !isSubMode(s)) {
-        const collectAppends = (obj) => {
-          const type = Object.keys(obj)[0] || '$and';
-          const list = obj[type];
+    // 根据联动规则中条件的字段获取一些 appends
+    // 需要排除掉子表格和子表单中的联动规则
+    if (s['x-linkage-rules'] && !isSubMode(s)) {
+      const collectAppends = (obj) => {
+        const type = Object.keys(obj)[0] || '$and';
+        const list = obj[type];
 
-          list.forEach((item) => {
-            if ('$and' in item || '$or' in item) {
-              return collectAppends(item);
-            }
+        list.forEach((item) => {
+          if ('$and' in item || '$or' in item) {
+            return collectAppends(item);
+          }
 
-            const fieldNames = getTargetField(item);
+          const fieldNames = getTargetField(item);
 
-            // 只应该收集关系字段，只有大于 1 的时候才是关系字段
-            if (fieldNames.length > 1) {
-              appends.add(fieldNames.join('.'));
-            }
-          });
-        };
+          // 只应该收集关系字段，只有大于 1 的时候才是关系字段
+          if (fieldNames.length > 1) {
+            appends.add(fieldNames.join('.'));
+          }
+        });
+      };
 
-        const rules = s['x-linkage-rules'];
-        rules.forEach(({ condition }) => {
-          collectAppends(condition);
+      const rules = s['x-linkage-rules'];
+      rules.forEach(({ condition }) => {
+        collectAppends(condition);
+      });
+    }
+
+    const isTreeCollection =
+      isAssociationField && getCollection(collectionField.target, dataSource)?.template === 'tree';
+
+    if (collectionField && (isAssociationField || isAssociationSubfield) && s['x-component'] !== 'TableField') {
+      const fieldPath = !isAssociationField && isAssociationSubfield ? getAssociationPath(s.name) : s.name;
+      const path = prefix === '' || !prefix ? fieldPath : prefix + '.' + fieldPath;
+      if (isTreeCollection) {
+        appends.add(path);
+        appends.add(`${path}.parent` + '(recursively=true)');
+      } else {
+        if (s['x-component-props']?.sortArr) {
+          const sort = s['x-component-props']?.sortArr;
+          appends.add(`${path}(sort=${sort})`);
+        } else {
+          appends.add(path);
+        }
+      }
+      if (isSubMode(s)) {
+        updateAssociationValues.add(path);
+        const bufPrefix = prefix && prefix !== '' ? prefix + '.' + s.name : s.name;
+        getAppends({
+          schema: s,
+          prefix: bufPrefix,
+          updateAssociationValues,
+          appends,
+          getCollectionJoinField,
+          getCollection,
+          dataSource,
         });
       }
-      const isTreeCollection =
-        isAssociationField && getCollection(collectionField.target, dataSource)?.template === 'tree';
-      if (collectionField && (isAssociationField || isAssociationSubfield) && s['x-component'] !== 'TableField') {
-        const fieldPath = !isAssociationField && isAssociationSubfield ? getAssociationPath(s.name) : s.name;
-        const path = prefix === '' || !prefix ? fieldPath : prefix + '.' + fieldPath;
-        if (isTreeCollection) {
-          appends.add(path);
-          appends.add(`${path}.parent` + '(recursively=true)');
-        } else {
-          if (s['x-component-props']?.sortArr) {
-            const sort = s['x-component-props']?.sortArr;
-            appends.add(`${path}(sort=${sort})`);
-          } else {
-            appends.add(path);
-          }
-        }
-        if (['Nester', 'SubTable', 'PopoverNester'].includes(s['x-component-props']?.mode)) {
-          updateAssociationValues.add(path);
-          const bufPrefix = prefix && prefix !== '' ? prefix + '.' + s.name : s.name;
-          _getAssociationAppends(s, bufPrefix);
-        }
-      } else if (
-        ![
-          'ActionBar',
-          'Action',
-          'Action.Link',
-          'Action.Modal',
-          'Selector',
-          'Viewer',
-          'AddNewer',
-          'AssociationField.Selector',
-          'AssociationField.AddNewer',
-          'TableField',
-        ].includes(s['x-component'])
-      ) {
-        _getAssociationAppends(s, str);
-      }
-    }, str);
-  };
+    } else if (
+      ![
+        'ActionBar',
+        'Action',
+        'Action.Link',
+        'Action.Modal',
+        'Selector',
+        'Viewer',
+        'AddNewer',
+        'AssociationField.Selector',
+        'AssociationField.AddNewer',
+        'TableField',
+        'Kanban.CardViewer',
+      ].includes(s['x-component'])
+    ) {
+      getAppends({
+        schema: s,
+        prefix: defaultPrefix,
+        updateAssociationValues,
+        appends,
+        getCollectionJoinField,
+        getCollection,
+        dataSource,
+      });
+    }
+  }, defaultPrefix);
+};
+
+export const useAssociationNames = (dataSource?: string) => {
+  const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated(dataSource);
+  const fieldSchema = useFieldSchema();
+
   const getAssociationAppends = () => {
-    updateAssociationValues = new Set([]);
-    appends = new Set([]);
-    _getAssociationAppends(fieldSchema, '');
+    const updateAssociationValues = new Set([]);
+    let appends = new Set([]);
+
+    getAppends({
+      schema: fieldSchema,
+      prefix: '',
+      updateAssociationValues,
+      appends,
+      getCollectionJoinField,
+      getCollection,
+      dataSource,
+    });
     appends = fillParentFields(appends);
+
+    console.log('appends', appends);
+
     return { appends: [...appends], updateAssociationValues: [...updateAssociationValues] };
   };
 

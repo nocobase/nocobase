@@ -11,6 +11,7 @@ import { uid } from '@formily/shared';
 import { Divider, Empty, Input, MenuProps } from 'antd';
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useCompile } from '../../../';
 
 function getPrefixAndCompare(a, b) {
   const prefixA = a.replace(/-displayCollectionFields$/, '');
@@ -100,6 +101,7 @@ export const useMenuSearch = (props: { children: any[]; showType?: boolean; hide
   const { children, showType, hideSearch, name } = props;
   const items = children?.concat?.() || [];
   const [searchValue, setSearchValue] = useState(null);
+  const compile = useCompile();
 
   // 处理搜索逻辑
   const limitedSearchedItems = useMemo(() => {
@@ -107,13 +109,14 @@ export const useMenuSearch = (props: { children: any[]; showType?: boolean; hide
       return items;
     }
     const lowerSearchValue = searchValue.toLocaleLowerCase();
-    return items.filter(
-      (item) =>
-        (item.label || item.title) &&
-        String(item.label || item.title)
+    return items.filter((item) => {
+      return (
+        (item.title || item.label) &&
+        String(compile(item.title || item.label))
           .toLocaleLowerCase()
-          .includes(lowerSearchValue),
-    );
+          .includes(lowerSearchValue)
+      );
+    });
   }, [searchValue, items]);
 
   // 最终结果项

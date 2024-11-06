@@ -1,7 +1,11 @@
 {
   "Inbox": "收信箱",
   "Message": "消息",
+  "Loading": "加载中",
   "Loading more": "加载更多",
+  "No more": "没有更多了",
+  "Loading failed,": "加载失败，",
+  "please reload": "重新加载",
   "Detail": "详情",
   "Content": "内容",
   "Datetime": "时间",
@@ -14,8 +18,11 @@
   "Message group name": "消息分组名称",
   "Message title": "消息标题",
   "Message content": "消息内容",
-  "Inapp Message": "站内信",
-  "Detail URL": "详情链接",
+  "detail URL": "详情链接",
+    "PC detail URL": "PC端详情链接",
   "Support two types of links: internal links and external links. If using an internal link, the link starts with\"/\", for example, \"/admin\". If using an external link, the link starts with \"http\", for example, \"https://example.com\".": "支持两种链接类型：内部链接和外部链接。如果使用内部链接，链接以“/”开头，例如“/admin”。如果使用外部链接，链接以“http”开头，例如“https://example.com”。",
-  "Mark as read": "标记为已读"
+  "Mark as read": "标记为已读",
+  "Support two types of links: internal links and external links. If using an internal link, the link starts with\"/\", for example, \"/m\". If using an external link, the link starts with \"http\", for example, \"https://example.com\".": "支持两种链接类型：内部链接和外部链接。如果使用内部链接，链接以“/”开头，例如“/m”。如果使用外部链接，链接以“http”开头，例如“https://example.com”。",
+  "Mobile detail URL": "移动端详情链接",
+  "The message page has already been created.": "站内信页面已创建。"
 }

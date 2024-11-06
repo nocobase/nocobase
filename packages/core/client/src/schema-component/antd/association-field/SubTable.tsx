@@ -165,7 +165,7 @@ export const SubTable: any = observer(
     };
     const getFilter = () => {
       const targetKey = collectionField?.targetKey || 'id';
-      const list = (field.value || []).map((option) => option[targetKey]).filter(Boolean);
+      const list = (field.value || []).map((option) => option?.[targetKey]).filter(Boolean);
       const filter = list.length ? { $and: [{ [`${targetKey}.$ne`]: list }] } : {};
       return filter;
     };
@@ -235,6 +235,7 @@ export const SubTable: any = observer(
                               // 计算总页数，并跳转到最后一页
                               const totalPages = Math.ceil(field.value.length / (field.componentProps?.pageSize || 10));
                               setCurrentPage(totalPages);
+                              return field.onInput(field.value);
                             }}
                           >
                             {t('Add new')}

@@ -31,6 +31,67 @@ describe('export to xlsx with preset', () => {
     await app.destroy();
   });
 
+  it('should export with checkbox field', async () => {
+    const Post = app.db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'title' },
+        {
+          type: 'boolean',
+          name: 'test_field',
+          interface: 'checkbox',
+          uiSchema: {
+            type: 'boolean',
+            'x-component': 'Checkbox',
+          },
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    await Post.repository.create({
+      values: {
+        title: 'p1',
+        test_field: true,
+      },
+    });
+
+    const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: Post,
+      chunkSize: 10,
+      columns: [
+        { dataIndex: ['title'], defaultTitle: 'Title' },
+        {
+          dataIndex: ['test_field'],
+          defaultTitle: 'test_field',
+        },
+      ],
+    });
+
+    const wb = await exporter.run();
+
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+
+    try {
+      XLSX.writeFile(wb, xlsxFilePath);
+
+      // read xlsx file
+      const workbook = XLSX.readFile(xlsxFilePath);
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+      const header = sheetData[0];
+      expect(header).toEqual(['Title', 'test_field']);
+
+      const data = sheetData[1];
+      expect(data[1]).toBe('True');
+    } finally {
+      fs.unlinkSync(xlsxFilePath);
+    }
+  });
+
   it('should export number field with cell format', async () => {
     const Post = app.db.collection({
       name: 'posts',
