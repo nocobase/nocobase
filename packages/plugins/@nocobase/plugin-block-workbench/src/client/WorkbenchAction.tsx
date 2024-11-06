@@ -42,7 +42,7 @@ function Button() {
       <div className={cx(styles.title)}>{fieldSchema.title}</div>
     </div>
   ) : (
-    <a>{fieldSchema.title}</a>
+    <span>{fieldSchema.title}</span>
   );
 }
 
