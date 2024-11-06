@@ -37,6 +37,7 @@ export default defineConfig({
       `,
     },
   ],
+  cacheDirectoryPath: process.env.APP_CLIENT_CACHE_DIR || `node_modules/.cache`,
   outputPath: path.resolve(__dirname, '../dist/client'),
   hash: true,
   alias: {

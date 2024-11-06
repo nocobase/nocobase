@@ -40,6 +40,11 @@ export const showChannelLoadingMoreObs = observable.computed(() => {
   else return false;
 }) as { value: boolean };
 export const selectedChannelNameObs = observable<{ value: string | null }>({ value: null });
+export const selectedChannelObs = observable.computed(() => {
+  if (selectedChannelNameObs.value && channelMapObs.value && channelMapObs.value[selectedChannelNameObs.value])
+    return channelMapObs.value[selectedChannelNameObs.value];
+  else return null;
+}) as { value: Channel };
 
 export const fetchChannels = async (params: any) => {
   const apiClient = getAPIClient();

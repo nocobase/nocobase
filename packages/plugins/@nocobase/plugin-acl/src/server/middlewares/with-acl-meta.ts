@@ -43,6 +43,11 @@ function createWithACLMetaMiddleware() {
 
     const Model = collection.model;
 
+    // skip if collection is multi filter target key
+    if (collection.isMultiFilterTargetKey()) {
+      return;
+    }
+
     // @ts-ignore
     const primaryKeyField = Model.primaryKeyField || Model.primaryKeyAttribute;
 
@@ -135,6 +140,11 @@ function createWithACLMetaMiddleware() {
 
       return listData.map((item) => item[primaryKeyField]);
     })();
+
+    // if all ids are empty, skip
+    if (ids.filter(Boolean).length == 0) {
+      return;
+    }
 
     const conditions = [];
 

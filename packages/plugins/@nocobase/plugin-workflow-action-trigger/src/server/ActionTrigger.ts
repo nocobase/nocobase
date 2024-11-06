@@ -24,7 +24,25 @@ export default class extends Trigger {
   constructor(workflow: WorkflowPlugin) {
     super(workflow);
 
-    workflow.app.dataSourceManager.use(this.middleware);
+    const self = this;
+
+    async function triggerWorkflowActionMiddleware(context: Context, next: Next) {
+      const { resourceName, actionName } = context.action;
+
+      if (resourceName === 'workflows' && actionName === 'trigger') {
+        return self.workflowTriggerAction(context, next);
+      }
+
+      await next();
+
+      if (!['create', 'update'].includes(actionName)) {
+        return;
+      }
+
+      return self.collectionTriggerAction(context);
+    }
+
+    workflow.app.dataSourceManager.use(triggerWorkflowActionMiddleware);
   }
 
   /**
@@ -42,22 +60,6 @@ export default class extends Trigger {
 
     return this.collectionTriggerAction(context);
   }
-
-  middleware = async (context: Context, next: Next) => {
-    const { resourceName, actionName } = context.action;
-
-    if (resourceName === 'workflows' && actionName === 'trigger') {
-      return this.workflowTriggerAction(context, next);
-    }
-
-    await next();
-
-    if (!['create', 'update'].includes(actionName)) {
-      return;
-    }
-
-    return this.collectionTriggerAction(context);
-  };
 
   private async collectionTriggerAction(context: Context) {
     const {

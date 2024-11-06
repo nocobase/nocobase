@@ -500,7 +500,7 @@ Grid.Col = observer(
         width = `calc(${w}% - ${token.marginBlock}px *  ${(showDivider ? cols.length + 1 : 0) / cols.length})`;
       }
       return { width };
-    }, [cols?.length, schema?.['x-component-props']?.['width']]);
+    }, [cols?.length, schema?.['x-component-props']?.['width'], token.marginBlock]);
     const { isOver, setNodeRef } = useDroppable({
       id: field.address.toString(),
       data: {

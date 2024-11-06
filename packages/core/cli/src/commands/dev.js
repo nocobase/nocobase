@@ -38,16 +38,16 @@ module.exports = (cli) => {
         depth: 1, // 只监听第一层目录
       });
 
+      await fs.promises.mkdir(path.dirname(process.env.WATCH_FILE), { recursive: true });
+
       watcher
         .on('addDir', async (pathname) => {
           generatePlugins();
-          const file = path.resolve(process.cwd(), 'storage/app.watch.ts');
-          await fs.promises.writeFile(file, `export const watchId = '${uid()}';`, 'utf-8');
+          await fs.promises.writeFile(process.env.WATCH_FILE, `export const watchId = '${uid()}';`, 'utf-8');
         })
         .on('unlinkDir', async (pathname) => {
           generatePlugins();
-          const file = path.resolve(process.cwd(), 'storage/app.watch.ts');
-          await fs.promises.writeFile(file, `export const watchId = '${uid()}';`, 'utf-8');
+          await fs.promises.writeFile(process.env.WATCH_FILE, `export const watchId = '${uid()}';`, 'utf-8');
         });
 
       promptForTs();
