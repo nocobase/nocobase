@@ -18,7 +18,9 @@ export const useStyles = createStyles(({ token, css }) => {
       & ::-webkit-scrollbar {
         display: none;
       }
-
+      .ant-formily-item-feedback-layout-loose {
+        margin-bottom: 3px;
+      }
       .ant-table-thead button[aria-label*='schema-initializer-TableV2-table:configureColumns'] > span:last-child {
         display: none !important;
       }
