@@ -17,6 +17,7 @@ jobs:
     steps:
       - name: Get info
         id: get-info
+        shell: bash
         run: |
           if [[ "${{ github.ref_name }}" =~ "beta" ]]; then
             echo "defaultTag=$(echo 'latest')" >> $GITHUB_OUTPUT
@@ -111,6 +112,7 @@ jobs:
     steps:
       - name: Get info
         id: get-info
+        shell: bash
         run: |
           if [[ "${{ github.ref_name }}" =~ "beta" ]]; then
             echo "defaultTag=$(echo 'latest')" >> $GITHUB_OUTPUT
