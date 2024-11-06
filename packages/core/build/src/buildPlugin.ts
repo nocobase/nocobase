@@ -44,6 +44,7 @@ const external = [
   '@nocobase/cache',
   '@nocobase/client',
   '@nocobase/database',
+  '@nocobase/data-source-manager',
   '@nocobase/evaluators',
   '@nocobase/logger',
   '@nocobase/resourcer',
