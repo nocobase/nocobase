@@ -164,7 +164,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
       return columns;
     }
     const res = [
-      ...columns,
+      ...adjustColumnOrder(columns),
       {
         title: render(),
         dataIndex: 'TABLE_COLUMN_INITIALIZER',
@@ -172,7 +172,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
         render: designable
           ? () => <div style={{ width: '100%', minWidth: '180px' }} className="nb-column-initializer" />
           : null,
-        fixed: 'right',
+        fixed: designable ? 'right' : 'none',
       },
     ];
 
@@ -210,7 +210,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
       });
     }
 
-    return adjustColumnOrder(res);
+    return res;
   }, [columns, exists, field, render, props.showDel, designable]);
 
   return tableColumns;
