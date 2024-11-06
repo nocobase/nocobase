@@ -43,6 +43,11 @@ function createWithACLMetaMiddleware() {
 
     const Model = collection.model;
 
+    // skip if collection is multi filter target key
+    if (collection.isMultiFilterTargetKey()) {
+      return;
+    }
+
     // @ts-ignore
     const primaryKeyField = Model.primaryKeyField || Model.primaryKeyAttribute;
 
