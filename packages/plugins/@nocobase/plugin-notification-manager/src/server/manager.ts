@@ -51,7 +51,11 @@ export class NotificationManager implements NotificationManager {
         logData.channelTitle = channel.title;
         logData.notificationType = channel.notificationType;
         logData.receivers = params.receivers;
-        const result = await instance.send({ message: params.message, channel, receivers: params.receivers });
+        const result = await instance.send({
+          message: { receivers: params.receivers, ...(params.message ?? {}) },
+          channel,
+          receivers: params.receivers,
+        });
         logData.status = result.status;
         logData.reason = result.reason;
       } else {
