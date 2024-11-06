@@ -345,6 +345,7 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
       },
     },
     resolve: {
+      tsConfig: path.join(process.cwd(), 'tsconfig.json'),
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json', '.less', '.css'],
     },
     module: {
