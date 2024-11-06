@@ -141,6 +141,11 @@ function createWithACLMetaMiddleware() {
       return listData.map((item) => item[primaryKeyField]);
     })();
 
+    // if all ids are empty, skip
+    if (ids.filter(Boolean).length == 0) {
+      return;
+    }
+
     const conditions = [];
 
     const allAllowed = [];
