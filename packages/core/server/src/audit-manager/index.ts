@@ -179,7 +179,6 @@ export class AuditManager {
   }
 
   formatAuditData(ctx: Context) {
-    ctx.log.debug('formatAuditData: ' + JSON.stringify(ctx.action));
     const { resourceName } = ctx.action;
     let association = '';
     let collection = '';
@@ -232,9 +231,6 @@ export class AuditManager {
     try {
       const { resourceName, actionName } = ctx.action;
       const action: Action = this.getAction(actionName, resourceName);
-      ctx.log?.debug(
-        'resourceName: ' + resourceName + ' actionName: ' + actionName + ' action ' + JSON.stringify(action),
-      );
       if (!action) {
         return;
       }
@@ -251,11 +247,9 @@ export class AuditManager {
       ctx.log?.error('audit output error: ' + err.message);
     }
   }
-
   // 中间件
   middleware() {
     return async (ctx: any, next: any) => {
-      ctx.log.debug('audit middleware context: ' + JSON.stringify(ctx.action));
       let metadata = {};
       try {
         await next();
