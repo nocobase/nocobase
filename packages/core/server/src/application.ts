@@ -62,7 +62,7 @@ import { InstallOptions, PluginManager } from './plugin-manager';
 import { SyncManager } from './sync-manager';
 
 import packageJson from '../package.json';
-import { AuditManageOptions, AuditManager } from './AuditManager';
+import { AuditManager } from './audit-manager';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];

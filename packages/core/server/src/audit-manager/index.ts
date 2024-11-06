@@ -38,11 +38,6 @@ type Action =
       getMetaData?: (ctx: Context) => Promise<Record<string, any>>;
     };
 
-export interface AuditManageOptions {
-  logger: AuditLogger;
-  resources: Map<string, Map<string, Action>>;
-}
-
 export class AuditManager {
   logger: AuditLogger;
   resources: Map<string, Map<string, Action>>; // 不一定是这个类型，根据存取方便处理
@@ -76,11 +71,7 @@ export class AuditManager {
 
   registerActions(actions: Action[]) {
     actions.forEach((action) => {
-      if (typeof action === 'string') {
-        this.registerAction(action);
-      } else {
-        this.registerAction(action.name, action);
-      }
+      this.registerAction(action);
     });
   }
 
@@ -89,104 +80,107 @@ export class AuditManager {
   // registerAction('app:*')
   // registerAction('pm:update')
   // registerAction('create', { getMetaData })
-  registerAction(actionName: string, options?: Action) {
-    const { actionName: name, resourceName } = this.formatActionAndResource(actionName);
-
-    if (this.resources.has(name)) {
-      const preResourceMap: Map<string, Action> = this.resources.get(name);
-      const preResouceName: string = Object.keys(preResourceMap)[0];
-      const preOptions: Action = preResourceMap.get(preResouceName);
-      const prePriority = this.calculatePriority(preResouceName, name, preOptions);
-      const priority = this.calculatePriority(resourceName, name, options);
-
-      if (prePriority < priority) {
-        this.setResource(name, resourceName, options);
-      }
+  registerAction(action: Action) {
+    let originAction = '';
+    let getMetaData = null;
+    if (typeof action === 'string') {
+      originAction = action;
     } else {
-      this.setResource(name, resourceName, options);
+      originAction = action.name;
+      getMetaData = action.getMetaData;
     }
-  }
-
-  setResource(actionName: string, resouceName: string, options?: Action) {
-    const resourceMap = new Map<string, Action>();
-    if (options && typeof options !== 'string') {
-      const { getMetaData } = options;
-      resourceMap.set(resouceName, { name: actionName, getMetaData: getMetaData });
+    // 解析originAction, 获取actionName, resourceName
+    const nameRegex = /^[a-zA-Z0-9_-]+$/;
+    const resourceWildcardRegex = /^([a-zA-Z0-9_-]+):\*$/;
+    const resourceAndActionRegex = /^([a-zA-Z0-9_-]+):([a-zA-Z0-9_-]+)$/;
+    let resourceName = '';
+    let actionName = '';
+    if (nameRegex.test(originAction)) {
+      actionName = originAction;
+      resourceName = '__default__';
+    }
+    if (resourceWildcardRegex.test(originAction)) {
+      const match = originAction.match(resourceWildcardRegex);
+      resourceName = match[1];
+      actionName = '__default__';
+    }
+    if (resourceAndActionRegex.test(originAction)) {
+      const match = originAction.match(resourceAndActionRegex);
+      resourceName = match[1];
+      actionName = match[2];
+    }
+    if (!resourceName && !actionName) {
+      return;
+    }
+    let resource = this.resources.get(resourceName);
+    if (!resource) {
+      resource = new Map();
+      this.resources.set(resourceName, resource);
+    }
+    if (getMetaData) {
+      resource.set(actionName, { name: originAction, getMetaData });
     } else {
-      resourceMap.set(resouceName, actionName);
+      resource.set(actionName, { name: originAction });
     }
-    this.resources.set(actionName, resourceMap);
-  }
-
-  calculatePriority(resouceName: string, actionName: string, options?: Action) {
-    let priority = 0;
-
-    if (options && typeof options !== 'string') {
-      const { getMetaData } = options;
-      if (getMetaData) {
-        priority = priority + 100;
-      }
-    }
-
-    if (resouceName === '*') {
-      priority = priority + 25;
-    } else if (resouceName) {
-      priority = priority + 50;
-    }
-
-    if (actionName) {
-      priority = priority + 1;
-    }
-
-    return priority;
-  }
-
-  formatActionAndResource(actionName: string) {
-    if (actionName.indexOf(':') >= 0) {
-      const names = actionName.split(':');
-      return {
-        actionName: names[1],
-        resourceName: names[0],
-      };
-    }
-
-    return {
-      actionName: actionName,
-      resourceName: '*',
-    };
   }
 
   getAction(action: string, resource?: string) {
-    const act: Map<string, Action> = this.resources.get(action);
-    if (!act) return null;
-
-    if (act.has('*')) {
-      return act.get('*');
+    // 1. 匹配resource:action
+    // 2. 匹配resource:*
+    // 3. 匹配*:action
+    let resourceName = resource;
+    if (!resource) {
+      resourceName = '__default__';
     }
-
-    return act.get(resource);
+    if (resourceName === '__default__') {
+      const resourceActions = this.resources.get(resourceName);
+      if (resourceActions) {
+        const resourceAction = resourceActions.get(action);
+        if (resourceAction) {
+          return resourceAction;
+        }
+      }
+    } else {
+      const resourceActions = this.resources.get(resourceName);
+      if (resourceActions) {
+        let resourceAction = resourceActions.get(action);
+        if (resourceAction) {
+          return resourceAction;
+        } else {
+          resourceAction = resourceActions.get('__default__');
+          if (resourceAction) {
+            return resourceAction;
+          }
+        }
+      } else {
+        const resourceActions = this.resources.get('__default__');
+        if (resourceActions) {
+          const resourceAction = resourceActions.get(action);
+          if (resourceAction) {
+            return resourceAction;
+          }
+        }
+      }
+    }
+    return null;
   }
 
   async getDefaultMetaData(ctx: any) {
-    if (ctx.response.status == 200) {
-      return {
-        request: {
-          params: ctx.request.params,
-          query: ctx.request.query,
-          body: ctx.request.body,
-        },
-        response: {
-          body: ctx.body,
-        },
-      };
-    } else {
-      return null;
-    }
+    return {
+      request: {
+        params: ctx.request.params,
+        query: ctx.request.query,
+        body: ctx.request.body,
+      },
+      response: {
+        body: ctx.body,
+      },
+    };
   }
 
   formatAuditData(ctx: Context) {
+    ctx.log.debug('formatAuditData: ' + JSON.stringify(ctx.action));
     const { resourceName } = ctx.action;
-
     let association = '';
     let collection = '';
     if (resourceName) {
@@ -234,42 +228,37 @@ export class AuditManager {
     return resourceUk;
   }
 
-  async output(ctx: any, status: number, metadata?: Record<string, any>) {
-    // 操作后，记录审计日志
-    // 1. 从ctx.action 获取 resourceName, actionName,
-    const { resourceName, actionName } = ctx.action;
-    // 2. 判断操作是否需要审计
-    const action: Action = this.getAction(actionName, resourceName);
-    if (!action) {
-      return;
+  async output(ctx: any, metadata?: Record<string, any>) {
+    try {
+      const { resourceName, actionName } = ctx.action;
+      const action: Action = this.getAction(actionName, resourceName);
+      ctx.log?.debug(
+        'resourceName: ' + resourceName + ' actionName: ' + actionName + ' action ' + JSON.stringify(action),
+      );
+      if (!action) {
+        return;
+      }
+      const auditLog: AuditLog = this.formatAuditData(ctx);
+      if (typeof action !== 'string' && action.getMetaData) {
+        const extra = await action.getMetaData(ctx);
+        auditLog.metadata = { ...metadata, ...extra };
+      } else {
+        const defaultMetaData = await this.getDefaultMetaData(ctx);
+        auditLog.metadata = { ...metadata, ...defaultMetaData };
+      }
+      this.logger.log(auditLog);
+    } catch (err) {
+      ctx.log?.error('audit output error: ' + err.message);
     }
-    // 3. 从上下文获取各种信息，可以抽一个方法
-    const auditLog: AuditLog = this.formatAuditData(ctx);
-    // 4.获取默认metadata
-    const defaultMetaData = await this.getDefaultMetaData(ctx);
-    // 5. 用操作注册的 getMetadata 方法获取metadata
-    if (defaultMetaData) {
-      metadata = { ...defaultMetaData };
-    }
-    if (typeof action !== 'string') {
-      const extra = await action.getMetaData(ctx);
-      metadata = { ...metadata, ...extra };
-    }
-    if (metadata && Object.keys(metadata).length !== 0) {
-      auditLog.metadata = metadata;
-    }
-
-    this.logger.log(auditLog);
   }
 
   // 中间件
   middleware() {
     return async (ctx: any, next: any) => {
+      ctx.log.debug('audit middleware context: ' + JSON.stringify(ctx.action));
       let metadata = {};
-      let status = 0;
       try {
         await next();
-        status = 1;
       } catch (err) {
         // 操作失败的时候
         // HTTP相应状态码和error message 放到 metadata
@@ -277,8 +266,9 @@ export class AuditManager {
           status: ctx.status,
           errMsg: err.message,
         };
+        throw err;
       } finally {
-        this.output(ctx, status, metadata);
+        this.output(ctx, metadata);
       }
     };
   }
