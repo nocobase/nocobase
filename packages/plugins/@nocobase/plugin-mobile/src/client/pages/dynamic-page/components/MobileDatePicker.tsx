@@ -11,14 +11,16 @@ import React, { useState } from 'react';
 import { Button, DatePickerView, Popup, Space, Picker } from 'antd-mobile';
 import { mapDatePicker, DatePicker } from '@nocobase/client';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
+import { useTranslation } from 'react-i18next';
 
 const MobileDateTimePicker = connect(
   (props) => {
+    const { t } = useTranslation();
     const { value, onChange, dateFormat = 'YYYY-MM-DD', timeFormat = 'HH:mm', showTime = false, ...rest } = props;
     const [visible, setVisible] = useState(false);
     const [selectedDate, setSelectedDate] = useState(value || new Date());
     const [selectedTime, setSelectedTime] = useState(['12', '00']);
-    // 时间选择数据
+
     const hours = Array.from({ length: 24 }, (_, i) => ({
       label: i.toString().padStart(2, '0'),
       value: i.toString().padStart(2, '0'),
@@ -62,13 +64,13 @@ const MobileDateTimePicker = connect(
             >
               {(items, { open }) => (
                 <Button onClick={open} style={{ width: '100%', marginTop: '16px' }}>
-                  选择时间
+                  {t('Select time')}
                 </Button>
               )}
             </Picker>
           )}
           <Button block color="primary" onClick={handleConfirm} style={{ marginTop: '16px' }}>
-            确认
+            {t('Confirm')}
           </Button>
         </Popup>
       </>

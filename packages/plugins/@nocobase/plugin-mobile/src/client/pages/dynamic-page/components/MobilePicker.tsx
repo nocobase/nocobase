@@ -8,13 +8,15 @@
  */
 
 import React, { useMemo, useState } from 'react';
-import { Button, CheckList, Popup, SearchBar, Space, Input } from 'antd-mobile';
+import { Button, CheckList, Popup, SearchBar } from 'antd-mobile';
 import { connect, mapProps } from '@formily/react';
 import { Select } from '@nocobase/client';
+import { useTranslation } from 'react-i18next';
 
 const MobilePicker = connect(
   (props) => {
-    const { value, onChange, options = [], mode, ...rest } = props;
+    const { value, onChange, options = [], mode } = props;
+    const { t } = useTranslation();
     const [visible, setVisible] = useState(false);
     const [selected, setSelected] = useState(value || []); // 默认值为空数组
     const [searchText, setSearchText] = useState('');
@@ -27,36 +29,34 @@ const MobilePicker = connect(
       return options;
     }, [options, searchText]);
 
-    // 确认选择并更新父组件的状态
     const handleConfirm = () => {
-      onChange(selected); // 更新选中的值
-      setVisible(false); // 关闭弹窗
+      onChange(selected);
+      setVisible(false);
     };
-    console.log(value);
     return (
       <>
         <Select
           onClick={() => setVisible(true)}
-          placeholder="选择"
+          placeholder={t('Select')}
           value={value}
           dropdownStyle={{ display: 'none' }}
           multiple={mode === 'multiple'}
         />
         <Popup visible={visible} onMaskClick={() => setVisible(false)} destroyOnClose>
           <div>
-            <SearchBar placeholder="输入文字过滤选项" value={searchText} onChange={(v) => setSearchText(v)} />
+            <SearchBar placeholder={t('search')} value={searchText} onChange={(v) => setSearchText(v)} />
           </div>
           <div>
             <CheckList
               multiple={mode === 'multiple'}
-              value={selected} // 使用 value 而非 defaultValue 以反映当前选择
+              value={selected}
               onChange={(val) => {
                 if (mode === 'multiple') {
-                  setSelected(val); // 仅更新选中的项，不立即通知父组件
-                } else {
                   setSelected(val);
-                  onChange(val); // 更新选中的值
-                  setVisible(false); // 关闭弹窗
+                } else {
+                  setSelected(val[0]);
+                  onChange(val[0]);
+                  setVisible(false);
                 }
               }}
             >
@@ -69,7 +69,7 @@ const MobilePicker = connect(
           </div>
           {mode === 'multiple' && (
             <Button block color="primary" onClick={handleConfirm} style={{ marginTop: '16px' }}>
-              确认
+              {t('Confirm')}
             </Button>
           )}
         </Popup>
