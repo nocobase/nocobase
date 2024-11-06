@@ -16,7 +16,7 @@ on:
         default: beta
   push:
     tags:
-      - 'v*-beta'
+      - 'v*'
 
 jobs:
   write-changelog-and-release:
@@ -25,11 +25,13 @@ jobs:
       - name: Get info
         id: get-info
         run: |
-          if [[ "${{ inputs.version }}" == "alpha" ]]; then
+          if [[ "${{ inputs.version }}" == "alpha" || ${{ github.ref_name }} =~ "alpha" ]]; then
             echo "branch=$(echo 'next')" >> $GITHUB_OUTPUT
+            echo "version=$(echo 'alpha')" >> $GITHUB_OUTPUT
             echo "proRepos=$(echo '${{ vars.NEXT_PRO_PLUGIN_REPOS }}')" >> $GITHUB_OUTPUT
           else
             echo "branch=$(echo 'main')" >> $GITHUB_OUTPUT
+            echo "version=$(echo 'beta')" >> $GITHUB_OUTPUT
             echo "proRepos=$(echo '${{ vars.PRO_PLUGIN_REPOS }}')" >> $GITHUB_OUTPUT
           fi
       - uses: actions/create-github-app-token@v1
@@ -81,7 +83,7 @@ jobs:
       - name: Run script
         shell: bash
         run: |
-          node scripts/release/changelogAndRelease.js --ver ${{ inputs.version }} --cmsURL ${{ secrets.CMS_URL }} --cmsToken ${{ secrets.CMS_TOKEN }}
+          node scripts/release/changelogAndRelease.js --ver ${{ steps.get-info.outputs.version }} --cmsURL ${{ secrets.CMS_URL }} --cmsToken ${{ secrets.CMS_TOKEN }}
         env:
           PRO_PLUGIN_REPOS: ${{ steps.get-info.outputs.proRepos }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
