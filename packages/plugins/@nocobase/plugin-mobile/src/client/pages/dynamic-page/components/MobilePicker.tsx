@@ -49,6 +49,7 @@ const MobilePicker = connect(
             onChange(null);
             setSelected(null);
           }}
+          onFocus={(e) => e.preventDefault()} // 禁用输入法
         />
         <Popup visible={visible} onMaskClick={() => setVisible(false)} destroyOnClose>
           <div>
