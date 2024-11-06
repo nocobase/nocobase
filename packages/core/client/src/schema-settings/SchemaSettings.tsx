@@ -598,9 +598,7 @@ export const SchemaSettingsPopupItem: FC<SchemaSettingsPopupProps> = (props) => 
   );
 };
 
-export interface SchemaSettingsActionModalItemProps
-  extends SchemaSettingsModalItemProps,
-    Omit<SchemaSettingsItemProps, 'onSubmit' | 'onClick'> {
+export interface SchemaSettingsActionModalItemProps extends SchemaSettingsModalItemProps {
   uid?: string;
   initialSchema?: ISchema;
   schema?: ISchema;
