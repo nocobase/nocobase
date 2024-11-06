@@ -172,7 +172,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
         render: designable
           ? () => <div style={{ width: '100%', minWidth: '180px' }} className="nb-column-initializer" />
           : null,
-        fixed: designable ? 'right' : 'none',
+        fixed: 'right',
       },
     ];
 
