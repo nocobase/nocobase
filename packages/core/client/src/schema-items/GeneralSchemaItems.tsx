@@ -13,7 +13,7 @@ import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../collection-manager';
-import { useDesignable } from '../schema-component';
+import { useDesignable, useCompile } from '../schema-component';
 import { SchemaSettingsModalItem, SchemaSettingsSwitchItem } from '../schema-settings';
 import { getTempFieldState } from '../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 
@@ -28,6 +28,7 @@ export const GeneralSchemaItems: React.FC<{
     const fieldSchema = useFieldSchema();
     const { t } = useTranslation();
     const { dn, refresh } = useDesignable();
+    const compile = useCompile();
     const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
     return (
       <>
@@ -52,16 +53,16 @@ export const GeneralSchemaItems: React.FC<{
               } as ISchema
             }
             onSubmit={({ title }) => {
-              if (title) {
-                field.title = title;
-                fieldSchema.title = title;
-                dn.emit('patch', {
-                  schema: {
-                    'x-uid': fieldSchema['x-uid'],
-                    title: fieldSchema.title,
-                  },
-                });
-              }
+              const result = title.trim() === '' ? collectionField?.uiSchema?.title : title;
+              field.title = compile(result);
+              fieldSchema.title = title;
+              dn.emit('patch', {
+                schema: {
+                  'x-uid': fieldSchema['x-uid'],
+                  title: fieldSchema.title,
+                },
+              });
+
               dn.refresh();
             }}
           />

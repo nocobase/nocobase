@@ -84,7 +84,7 @@ export const useColumnsDeepMemoized = (columns: any[]) => {
   return oldObj.value;
 };
 
-const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }) => {
+const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginationProps) => {
   const { token } = useToken();
   const field = useArrayField(props);
   const schema = useFieldSchema();
@@ -98,14 +98,14 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }) => {
     }
     return buf;
   }, []);
-
+  const { current, pageSize } = paginationProps;
   const hasChangedColumns = useColumnsDeepMemoized(columnsSchema);
 
   const schemaToolbarBigger = useMemo(() => {
     return css`
       .nb-action-link {
         margin: -${token.paddingContentVerticalLG}px -${token.marginSM}px;
-        padding: ${token.paddingContentVerticalLG}px ${token.margin}px;
+        padding: ${token.paddingContentVerticalLG}px ${token.paddingSM + 4}px;
       }
     `;
   }, [token.paddingContentVerticalLG, token.marginSM]);
@@ -189,13 +189,16 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }) => {
               <CloseOutlined
                 style={{ cursor: 'pointer', color: 'gray' }}
                 onClick={() => {
-                  action(() => {
-                    spliceArrayState(field as any, {
-                      startIndex: index,
+                  return action(() => {
+                    const fieldIndex = (current - 1) * pageSize + index;
+                    spliceArrayState(field, {
+                      startIndex: fieldIndex,
                       deleteCount: 1,
                     });
-                    field.value.splice(index, 1);
-                    field.initialValue?.splice(index, 1);
+                    field.value.splice(fieldIndex, 1);
+                    setTimeout(() => {
+                      field.value[field.value.length] = null;
+                    });
                     return field.onInput(field.value);
                   });
                 }}
@@ -232,8 +235,8 @@ const SortableRow = (props: {
   const { ref, inView } = useInView({
     threshold: 0,
     triggerOnce: true,
-    initialInView: !!process.env.__E2E__ || isInSubTable || props.rowIndex < INITIAL_ROWS_NUMBER,
-    skip: !!process.env.__E2E__ || isInSubTable || props.rowIndex < INITIAL_ROWS_NUMBER,
+    initialInView: !!process.env.__E2E__ || isInSubTable || (props.rowIndex || 0) < INITIAL_ROWS_NUMBER,
+    skip: !!process.env.__E2E__ || isInSubTable,
   });
 
   const classObj = useMemo(() => {
@@ -361,7 +364,7 @@ const usePaginationProps = (pagination1, pagination2) => {
   if (!pagination2 && pagination1 === false) {
     return false;
   }
-  return field.value?.length > 0 ? result : false;
+  return field.value?.length > 0 || result.total ? result : false;
 };
 
 const headerClass = css`
@@ -616,20 +619,20 @@ export const Table: any = withDynamicSchemaProps(
       ...others
     } = { ...others1, ...others2 } as any;
     const field = useArrayField(others);
-    const columns = useTableColumns(others);
     const schema = useFieldSchema();
+    const { size = 'middle' } = schema?.['x-component-props'] || {};
     const collection = useCollection();
     const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
     const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();
     const { expandFlag, allIncludesChildren } = ctx;
     const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
     const paginationProps = usePaginationProps(pagination1, pagination2);
+    const columns = useTableColumns(others, paginationProps);
     const [expandedKeys, setExpandesKeys] = useState(() => (expandFlag ? allIncludesChildren : []));
     const [selectedRowKeys, setSelectedRowKeys] = useState<any[]>(field?.data?.selectedRowKeys || []);
     const [selectedRow, setSelectedRow] = useState([]);
     const isRowSelect = rowSelection?.type !== 'none';
     const defaultRowKeyMap = useRef(new Map());
-
     const highlightRowCss = useMemo(() => {
       return css`
         & > td {
@@ -890,7 +893,6 @@ export const Table: any = withDynamicSchemaProps(
         expandedRowKeys: expandedKeys,
       };
     }, [expandedKeys, onExpandValue]);
-
     return (
       // If spinning is set to undefined, it will cause the subtable to always display loading, so we need to convert it here
       <Spin spinning={!!loading}>
@@ -911,6 +913,7 @@ export const Table: any = withDynamicSchemaProps(
           columns={columns}
           expandable={expandable}
           field={field}
+          size={size}
         />
       </Spin>
     );

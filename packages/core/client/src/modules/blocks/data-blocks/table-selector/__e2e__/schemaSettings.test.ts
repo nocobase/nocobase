@@ -103,7 +103,7 @@ test.describe('table data selector schema settings', () => {
     await page.getByRole('menuitem', { name: 'Delete' }).hover();
     await page.mouse.move(-300, 0);
 
-    await page.getByLabel('block-item-CollectionField-').nth(1).click();
+    await page.getByTestId('select-data-picker').first().click();
 
     // 3. 创建 Table 区块
     await page.getByLabel('schema-initializer-Grid-popup').hover();

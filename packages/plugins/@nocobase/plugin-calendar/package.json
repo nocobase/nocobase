@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-calendar",
-  "version": "1.4.0-alpha",
+  "version": "1.4.0-alpha.1",
   "displayName": "Calendar",
   "displayName.zh-CN": "日历",
   "description": "Provides callendar collection template and block for managing date data, typically for date/time related information such as events, appointments, tasks, and so on.",
@@ -17,7 +17,7 @@
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
     "antd": "5.x",
-    "antd-style": "3.4.5",
+    "antd-style": "3.7.1",
     "cron-parser": "4.4.0",
     "dayjs": "^1.11.8",
     "lodash": "^4.17.21",

@@ -162,7 +162,12 @@ const InternalGridCard = (props: GridCardProps) => {
     onChange: onPaginationChange,
   };
   const cardItemSchema = getCardItemSchema?.(fieldSchema);
-  const { layout = 'vertical' } = cardItemSchema?.['x-component-props'] || {};
+  const {
+    layout = 'vertical',
+    labelAlign = 'left',
+    labelWidth = 120,
+    labelWrap = true,
+  } = cardItemSchema?.['x-component-props'] || {};
 
   return (
     <SchemaComponentOptions
@@ -187,7 +192,12 @@ const InternalGridCard = (props: GridCardProps) => {
           `,
         )}
       >
-        <FormLayout layout={layout}>
+        <FormLayout
+          layout={layout}
+          labelAlign={labelAlign}
+          labelWidth={layout === 'horizontal' ? labelWidth : null}
+          labelWrap={labelWrap}
+        >
           <AntdList
             pagination={
               !meta || meta.count <= meta.pageSize

@@ -66,7 +66,7 @@ class PluginCollectionTreeServer extends Plugin {
 
           //afterUpdate
           this.db.on(`${collection.name}.afterUpdate`, async (model: Model, options) => {
-            const tk = collection.filterTargetKey as string;
+            const tk = collection.filterTargetKey;
             // only update parentId and filterTargetKey
             if (!(model._changed.has(tk) || model._changed.has(parentForeignKey))) {
               return;

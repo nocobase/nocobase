@@ -5,24 +5,37 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  workflow_dispatch:
   push:
     tags:
-      - 'v*-beta'
+      - 'v*'
 
 jobs:
   publish-npm:
     runs-on: ubuntu-latest
     container: node:18
     steps:
+      - name: Get info
+        id: get-info
+        run: |
+          if [[ "${{ github.ref_name }}" =~ "beta" ]]; then
+            echo "defaultTag=$(echo 'latest')" >> $GITHUB_OUTPUT
+            echo "proRepos=$(echo '${{ vars.PRO_PLUGIN_REPOS }}')" >> $GITHUB_OUTPUT
+          else
+            echo "defaultTag=$(echo 'next')" >> $GITHUB_OUTPUT
+            echo "proRepos=$(echo '${{ vars.NEXT_PRO_PLUGIN_REPOS }}')" >> $GITHUB_OUTPUT
+          fi
       - uses: actions/create-github-app-token@v1
         id: app-token
         with:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
-          repositories: nocobase,pro-plugins,${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ',') }},${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ',') }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(steps.get-info.outputs.proRepos), ',') }},${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ',') }}
           skip-token-revoke: true
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref_name }}
       - name: Send curl request and parse response
         env:
           PKG_USERNAME: ${{ secrets.PKG_USERNAME }}
@@ -61,19 +74,20 @@ jobs:
           yarn config set registry https://registry.npmjs.org/
           yarn config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
           npm whoami
-          yarn release:force --no-verify-access --no-git-reset --registry https://registry.npmjs.org/
+          yarn release:force --no-verify-access --no-git-reset --registry https://registry.npmjs.org/ --dist-tag=${{ steps.get-info.outputs.defaultTag }}
       - name: Checkout pro-plugins
         uses: actions/checkout@v3
         with:
           repository: nocobase/pro-plugins
           path: packages/pro-plugins
+          ref: ${{ github.ref_name }}
           token: ${{ steps.app-token.outputs.token }}
       - name: Clone pro repos
         shell: bash
         run: |
-          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }} ${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ' ') }}
+          for repo in ${{ join(fromJSON(steps.get-info.outputs.proRepos), ' ') }} ${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ' ') }}
           do
-          git clone -b main https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
+          git clone -b ${{ github.ref_name }} https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
           done
       - name: Build Pro plugins
         run: |
@@ -84,17 +98,25 @@ jobs:
         run: |
           git reset --hard
           npm config set //pkg.nocobase.com/:_authToken=${{ env.PKG_NOCOBASE_TOKEN }}
-          yarn release:force --no-verify-access --no-git-reset --registry https://pkg.nocobase.com
+          yarn release:force --no-verify-access --no-git-reset --registry https://pkg.nocobase.com --dist-tag=${{ steps.get-info.outputs.defaultTag }}
       - name: publish pkg-src.nocobase.com
         run: |
           git reset --hard
           bash generate-npmignore.sh ignore-src
           npm config set //pkg-src.nocobase.com/:_authToken=${{ env.PKG_SRC_NOCOBASE_TOKEN }}
-          yarn release:force --no-verify-access --no-git-reset --registry https://pkg-src.nocobase.com
+          yarn release:force --no-verify-access --no-git-reset --registry https://pkg-src.nocobase.com --dist-tag=${{ steps.get-info.outputs.defaultTag }}
   push-docker:
     runs-on: ubuntu-latest
     needs: publish-npm
     steps:
+      - name: Get info
+        id: get-info
+        run: |
+          if [[ "${{ github.ref_name }}" =~ "beta" ]]; then
+            echo "defaultTag=$(echo 'latest')" >> $GITHUB_OUTPUT
+          else
+            echo "defaultTag=$(echo 'next')" >> $GITHUB_OUTPUT
+          fi
       - name: Checkout
         uses: actions/checkout@v3
       - name: Set up QEMU
@@ -129,4 +151,4 @@ jobs:
           context: ./docker/nocobase
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: nocobase/nocobase:latest,${{ steps.meta.outputs.tags }},${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/nocobase/nocobase:latest,${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/${{ steps.meta.outputs.tags }}
+          tags: nocobase/nocobase:${{ steps.get-info.outputs.defaultTag }},${{ steps.meta.outputs.tags }},${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/nocobase/nocobase:${{ steps.get-info.outputs.defaultTag }},${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/${{ steps.meta.outputs.tags }}

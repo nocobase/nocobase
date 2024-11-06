@@ -17,17 +17,18 @@ import type {
   SendUserOptions,
   WriteLogOptions,
 } from './types';
+import { compile } from './utils/compile';
 
 export class NotificationManager implements NotificationManager {
   private plugin: PluginNotificationManagerServer;
-  private notificationTypes = new Registry<{ Channel: NotificationChannelConstructor }>();
+  public channelTypes = new Registry<{ Channel: NotificationChannelConstructor }>();
 
   constructor({ plugin }: { plugin: PluginNotificationManagerServer }) {
     this.plugin = plugin;
   }
 
   registerType({ type, Channel }: RegisterServerTypeFnParams) {
-    this.notificationTypes.register(type, { Channel });
+    this.channelTypes.register(type, { Channel });
   }
 
   createSendingRecord = async (options: WriteLogOptions) => {
@@ -46,10 +47,11 @@ export class NotificationManager implements NotificationManager {
     try {
       const channel = await channelsRepo.findOne({ filterByTk: params.channelName });
       if (channel) {
-        const Channel = this.notificationTypes.get(channel.notificationType).Channel;
+        const Channel = this.channelTypes.get(channel.notificationType).Channel;
         const instance = new Channel(this.plugin.app);
         logData.channelTitle = channel.title;
         logData.notificationType = channel.notificationType;
+        logData.receivers = params.receivers;
         const result = await instance.send({ message: params.message, channel, receivers: params.receivers });
         logData.status = result.status;
         logData.reason = result.reason;
@@ -61,13 +63,16 @@ export class NotificationManager implements NotificationManager {
       return logData;
     } catch (error) {
       logData.status = 'failure';
-      logData.reason = error.reason;
+      this.plugin.logger.error(`notification send failed, options: ${JSON.stringify(error)}`);
+      logData.reason = JSON.stringify(error);
       this.createSendingRecord(logData);
       return logData;
     }
   }
   async sendToUsers(options: SendUserOptions) {
-    const { userIds, channels, message, data } = options;
+    this.plugin.logger.info(`notificationManager.sendToUsers options: ${JSON.stringify(options)}`);
+    const { userIds, channels, message: template = {}, data = {} } = options;
+    const message = compile(template, data);
     return await Promise.all(
       channels.map((channelName) =>
         this.send({ channelName, message, triggerFrom: 'sendToUsers', receivers: { value: userIds, type: 'userId' } }),

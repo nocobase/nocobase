@@ -7,7 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { default } from './server';
-export { BaseNotificationChannel } from './server/base-notification-channel';
-
-export * from './server';
+export {
+  default,
+  COLLECTION_NAME,
+  ChannelsCollectionDefinition,
+  BaseNotificationChannel,
+  parseUserSelectionConfig,
+  SendFnType,
+} from './server';

@@ -220,6 +220,21 @@ describe('Table.settings', () => {
           ],
         },
         {
+          title: 'Table size',
+          type: 'select',
+          options: [
+            {
+              label: 'Large',
+            },
+            {
+              label: 'Middle',
+            },
+            {
+              label: 'Small',
+            },
+          ],
+        },
+        {
           title: 'Save as template',
           type: 'modal',
         },

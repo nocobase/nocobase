@@ -37,6 +37,7 @@ const InternalItem: React.FC<TabBarItemProps> = () => {
           height: 100%;
           top: 0;
           left: 0;
+          padding-top: 5px;
         `,
       )}
     >

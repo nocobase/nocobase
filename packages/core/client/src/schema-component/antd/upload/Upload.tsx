@@ -446,14 +446,7 @@ export function Uploader({ rules, ...props }: UploadProps) {
         </Tooltip>
       </div>
       {selectable && QRCodeUploader && (
-        <QRCodeUploader
-          value={value}
-          onChange={(value) => {
-            // TODO
-            console.log(value);
-            // onChange(value);
-          }}
-        />
+        <QRCodeUploader disabled={disabled} multiple={multiple} value={value} onChange={onChange} />
       )}
     </>
   );
