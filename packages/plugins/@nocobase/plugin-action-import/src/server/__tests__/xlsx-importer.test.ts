@@ -42,10 +42,100 @@ describe('xlsx importer', () => {
             name: 'date',
             interface: 'datetime',
           },
+          {
+            type: 'datetimeNoTz',
+            name: 'datetimeNoTz',
+            interface: 'datetimeNoTz',
+          },
+          {
+            type: 'dateOnly',
+            name: 'dateOnly',
+            interface: 'date',
+          },
         ],
       });
 
       await app.db.sync();
+    });
+
+    it('should import with dateOnly', async () => {
+      const columns = [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['dateOnly'],
+          defaultTitle: '日期',
+        },
+      ];
+
+      const templateCreator = new TemplateCreator({
+        collection: User,
+        columns,
+      });
+
+      const template = await templateCreator.run();
+
+      const worksheet = template.Sheets[template.SheetNames[0]];
+
+      XLSX.utils.sheet_add_aoa(worksheet, [['test', 77383]], { origin: 'A2' });
+
+      const importer = new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: User,
+        columns,
+        workbook: template,
+      });
+
+      await importer.run();
+
+      expect(await User.repository.count()).toBe(1);
+
+      const user = await User.repository.findOne();
+
+      const userData = user.toJSON();
+
+      expect(userData['dateOnly']).toBe('2111-11-12');
+    });
+
+    it('should import with datetimeNoTz', async () => {
+      const columns = [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['datetimeNoTz'],
+          defaultTitle: '日期',
+        },
+      ];
+
+      const templateCreator = new TemplateCreator({
+        collection: User,
+        columns,
+      });
+
+      const template = await templateCreator.run();
+
+      const worksheet = template.Sheets[template.SheetNames[0]];
+
+      XLSX.utils.sheet_add_aoa(worksheet, [['test', 77383]], { origin: 'A2' });
+
+      const importer = new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: User,
+        columns,
+        workbook: template,
+      });
+
+      await importer.run();
+
+      expect(await User.repository.count()).toBe(1);
+
+      const user = await User.repository.findOne();
+
+      expect(moment(user.get('datetimeNoTz')).format('YYYY-MM-DD')).toBe('2111-11-12');
     });
 
     it('should import with date', async () => {

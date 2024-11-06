@@ -10,7 +10,9 @@
 import Database from '../database';
 import {
   BooleanInterface,
+  DateInterface,
   DatetimeInterface,
+  DatetimeNoTzInterface,
   MultipleSelectInterface,
   PercentInterface,
   SelectInterface,
@@ -36,6 +38,8 @@ const interfaces = {
   radioGroup: SelectInterface,
   percent: PercentInterface,
   datetime: DatetimeInterface,
+  datetimeNoTz: DatetimeNoTzInterface,
+  date: DateInterface,
   createdAt: DatetimeInterface,
   updatedAt: DatetimeInterface,
   boolean: BooleanInterface,
