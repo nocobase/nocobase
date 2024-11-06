@@ -25,7 +25,7 @@
     "cytoscape": "3.28.0",
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
-    "antd": "5.12.8",
+    "antd": "5.13.3",
     "rollup": "4.24.0"
   },
   "dependencies": {
