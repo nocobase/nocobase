@@ -14,7 +14,7 @@ import { connect, mapProps, mapReadPretty } from '@formily/react';
 
 const MobileDateTimePicker = connect(
   (props) => {
-    const { value, onChange, dateFormat = 'YYYY-MM-DD', timeFormat = 'HH:mm', showTime = true, ...rest } = props;
+    const { value, onChange, dateFormat = 'YYYY-MM-DD', timeFormat = 'HH:mm', showTime = false, ...rest } = props;
     const [visible, setVisible] = useState(false);
     const [selectedDate, setSelectedDate] = useState(value || new Date());
     const [selectedTime, setSelectedTime] = useState(['12', '00']);
