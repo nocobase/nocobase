@@ -22,7 +22,7 @@
     "@formily/shared": "2.x",
     "@types/react": "17.x",
     "@types/react-dom": "17.x",
-    "antd-mobile": "^5.36.1",
+    "antd-mobile": "^5.38",
     "re-resizable": "6.6.0",
     "react-device-detect": "2.2.3",
     "@emotion/css": "11.x",

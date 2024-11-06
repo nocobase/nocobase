@@ -12,6 +12,9 @@
   "dependencies": {
     "immer": "^10.1.1"
   },
+  "devDependencies": {
+    "antd-mobile": "^5.38"
+  },
   "peerDependencies": {
     "@formily/reactive": "^2",
     "@formily/reactive-react": "^2",
@@ -20,6 +23,5 @@
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x",
     "react-router-dom": "^6.x"
-
   }
 }

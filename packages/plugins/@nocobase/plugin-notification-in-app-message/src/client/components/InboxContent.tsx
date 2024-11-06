@@ -26,7 +26,8 @@ import {
   ChannelStatus,
 } from '../observables';
 
-import { MessageList } from './MessageList';
+import MessageList from './MessageList';
+import FilterTab from './FilterTab';
 
 const InnerInboxContent = () => {
   const { token } = theme.useToken();
@@ -60,34 +61,6 @@ const InnerInboxContent = () => {
       </Button>
     </div>
   ) : null;
-
-  const FilterTab = () => {
-    interface TabItem {
-      label: string;
-      key: ChannelStatus;
-    }
-    const items: Array<TabItem> = [
-      { label: t('All'), key: 'all' },
-      { label: t('Unread'), key: 'unread' },
-      { label: t('Read'), key: 'read' },
-    ];
-    return (
-      <ConfigProvider
-        theme={{
-          components: { Tabs: { horizontalItemMargin: '20px' } },
-        }}
-      >
-        <Tabs
-          activeKey={channelStatusFilterObs.value}
-          items={items}
-          onChange={(key: ChannelStatus) => {
-            channelStatusFilterObs.value = key;
-            fetchChannels({});
-          }}
-        />
-      </ConfigProvider>
-    );
-  };
 
   return (
     <Layout style={{ height: '100%' }}>

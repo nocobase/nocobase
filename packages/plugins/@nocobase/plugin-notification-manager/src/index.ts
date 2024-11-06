@@ -13,4 +13,5 @@ export {
   ChannelsCollectionDefinition,
   BaseNotificationChannel,
   parseUserSelectionConfig,
+  SendFnType,
 } from './server';
