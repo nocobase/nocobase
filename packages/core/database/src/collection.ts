@@ -836,10 +836,6 @@ export class Collection<
   }
 
   unavailableActions() {
-    if (this.options.template === 'file') {
-      return ['create', 'update', 'destroy'];
-    }
-
     return [];
   }
 
