@@ -281,6 +281,151 @@ describe('xlsx importer', () => {
     });
   });
 
+  describe('import with belongs to association', async () => {
+    let Profile;
+    let User;
+
+    beforeEach(async () => {
+      Profile = app.db.collection({
+        name: 'profiles',
+        autoGenId: false,
+        fields: [
+          {
+            type: 'bigInt',
+            name: 'id',
+            primaryKey: true,
+            autoIncrement: true,
+          },
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'string',
+            name: 'userName',
+          },
+          {
+            type: 'belongsTo',
+            name: 'user',
+            target: 'users',
+            foreignKey: 'userName',
+            targetKey: 'name',
+          },
+        ],
+      });
+
+      User = app.db.collection({
+        name: 'users',
+        autoGenId: false,
+        fields: [
+          {
+            type: 'bigInt',
+            name: 'id',
+            primaryKey: true,
+            autoIncrement: true,
+          },
+          {
+            type: 'string',
+            name: 'name',
+            unique: true,
+          },
+        ],
+      });
+
+      await app.db.sync();
+
+      const user = await User.repository.create({
+        values: {
+          name: 'User1',
+        },
+      });
+    });
+
+    it('should import with foreignKey', async () => {
+      const columns = [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '名称',
+        },
+        {
+          dataIndex: ['userName'],
+          defaultTitle: '用户名',
+        },
+      ];
+
+      const templateCreator = new TemplateCreator({
+        collection: Profile,
+        columns,
+      });
+
+      const template = await templateCreator.run();
+
+      const worksheet = template.Sheets[template.SheetNames[0]];
+
+      XLSX.utils.sheet_add_aoa(worksheet, [['test', 'User1']], {
+        origin: 'A2',
+      });
+
+      const importer = new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: Profile,
+        columns,
+        workbook: template,
+      });
+
+      await importer.run();
+
+      const profile = await Profile.repository.findOne({
+        appends: ['user'],
+      });
+
+      expect(profile.get('user').get('name')).toBe('User1');
+      expect(profile.get('name')).toBe('test');
+    });
+
+    it('should import with association field', async () => {
+      const columns = [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '名称',
+        },
+        {
+          dataIndex: ['user', 'name'],
+          defaultTitle: '用户名',
+        },
+      ];
+
+      const templateCreator = new TemplateCreator({
+        collection: Profile,
+        columns,
+      });
+
+      const template = await templateCreator.run();
+
+      const worksheet = template.Sheets[template.SheetNames[0]];
+
+      XLSX.utils.sheet_add_aoa(worksheet, [['test', 'User1']], {
+        origin: 'A2',
+      });
+
+      const importer = new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: Profile,
+        columns,
+        workbook: template,
+      });
+
+      await importer.run();
+
+      const profile = await Profile.repository.findOne({
+        appends: ['user'],
+      });
+
+      expect(profile.get('user').get('name')).toBe('User1');
+      expect(profile.get('name')).toBe('test');
+    });
+  });
+
   describe('import with associations', () => {
     let User;
     let Post;

@@ -36,7 +36,16 @@ export class MultipleSelectInterface extends BaseInterface {
       .castArray(value)
       .map((value) => {
         const option = enumConfig.find((item) => item.value === value);
-        return option ? option.label : value;
+
+        if (option) {
+          if (ctx?.t) {
+            return ctx.t(option.label, { ns: 'lm-collections' });
+          }
+
+          return option.label;
+        }
+
+        return value;
       })
       .join(',');
   }

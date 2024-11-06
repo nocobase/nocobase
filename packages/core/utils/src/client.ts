@@ -15,6 +15,7 @@ export * from './common';
 export * from './date';
 export * from './forEach';
 export * from './getValuesByPath';
+export * from './handlebars';
 export * from './isValidFilter';
 export * from './json-templates';
 export * from './log';
