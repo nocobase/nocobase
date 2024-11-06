@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.45-beta](https://github.com/nocobase/nocobase/compare/v1.3.44-beta...v1.3.45-beta) - 2024-11-06
+
+### 🐛 Bug Fixes
+
+- **[client]** permission for the association table field in the table is based on the permission of the corresponding association field ([#5569](https://github.com/nocobase/nocobase/pull/5569)) by @katherinehhh
+
+- **[Action: Export records]** Fix export with i18n ([#5591](https://github.com/nocobase/nocobase/pull/5591)) by @chareice
+
+- **[Action: Import records]** fix issue with import belongs to association ([#5417](https://github.com/nocobase/nocobase/pull/5417)) by @chareice
+
 ## [v1.3.44-beta](https://github.com/nocobase/nocobase/compare/v1.3.43-beta...v1.3.44-beta) - 2024-11-05
 
 ### 🎉 New Features
