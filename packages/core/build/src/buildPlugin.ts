@@ -159,7 +159,9 @@ export function deleteServerFiles(cwd: string, log: PkgLog) {
 
 export function writeExternalPackageVersion(cwd: string, log: PkgLog) {
   log('write external version');
-  const sourceFiles = fg.globSync(sourceGlobalFiles, { cwd, absolute: true }).map((item) => fs.readFileSync(item, 'utf-8'));
+  const sourceFiles = fg
+    .globSync(sourceGlobalFiles, { cwd, absolute: true })
+    .map((item) => fs.readFileSync(item, 'utf-8'));
   const sourcePackages = getSourcePackages(sourceFiles);
   const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix);
   const data = excludePackages.reduce<Record<string, string>>((prev, packageName) => {
@@ -175,7 +177,9 @@ export function writeExternalPackageVersion(cwd: string, log: PkgLog) {
 export async function buildServerDeps(cwd: string, serverFiles: string[], log: PkgLog) {
   log('build plugin server dependencies');
   const outDir = path.join(cwd, target_dir, 'node_modules');
-  const serverFileSource = serverFiles.filter(item => validExts.includes(path.extname(item))).map((item) => fs.readFileSync(item, 'utf-8'));
+  const serverFileSource = serverFiles
+    .filter((item) => validExts.includes(path.extname(item)))
+    .map((item) => fs.readFileSync(item, 'utf-8'));
   const sourcePackages = getSourcePackages(serverFileSource);
   const includePackages = getIncludePackages(sourcePackages, external, pluginPrefix);
   const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix);
@@ -269,30 +273,34 @@ export async function buildPluginServer(cwd: string, userConfig: UserConfig, sou
   const packageJson = getPackageJson(cwd);
   const serverFiles = fg.globSync(serverGlobalFiles, { cwd, absolute: true });
   buildCheck({ cwd, packageJson, entry: 'server', files: serverFiles, log });
-  const otherExts = Array.from(new Set(serverFiles.map((item) => path.extname(item)).filter((item) => !EsbuildSupportExts.includes(item))));
+  const otherExts = Array.from(
+    new Set(serverFiles.map((item) => path.extname(item)).filter((item) => !EsbuildSupportExts.includes(item))),
+  );
   if (otherExts.length) {
     log('%s will not be processed, only be copied to the dist directory.', chalk.yellow(otherExts.join(',')));
   }
 
   deleteServerFiles(cwd, log);
 
-  await tsupBuild(userConfig.modifyTsupConfig({
-    entry: serverFiles,
-    splitting: false,
-    clean: false,
-    bundle: false,
-    silent: true,
-    treeshake: false,
-    target: 'node16',
-    sourcemap,
-    outDir: path.join(cwd, target_dir),
-    format: 'cjs',
-    skipNodeModulesBundle: true,
-    loader: {
-      ...otherExts.reduce((prev, cur) => ({ ...prev, [cur]: 'copy' }), {}),
-      '.json': 'copy',
-    },
-  }));
+  await tsupBuild(
+    userConfig.modifyTsupConfig({
+      entry: serverFiles,
+      splitting: false,
+      clean: false,
+      bundle: false,
+      silent: true,
+      treeshake: false,
+      target: 'node16',
+      sourcemap,
+      outDir: path.join(cwd, target_dir),
+      format: 'cjs',
+      skipNodeModulesBundle: true,
+      loader: {
+        ...otherExts.reduce((prev, cur) => ({ ...prev, [cur]: 'copy' }), {}),
+        '.json': 'copy',
+      },
+    }),
+  );
 
   await buildServerDeps(cwd, serverFiles, log);
 }
@@ -320,7 +328,7 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
   const entry = fg.globSync('index.{ts,tsx,js,jsx}', { absolute: false, cwd: path.join(cwd, 'src/client') });
   const outputFileName = 'index.js';
   const compiler = rspack({
-    mode: "production",
+    mode: 'production',
     // mode: "development",
     context: cwd,
     entry: './src/client/' + entry[0],
@@ -344,29 +352,24 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
         {
           test: /.less$/,
           use: [
-            { loader: "style-loader" },
-            { loader: "css-loader" },
-            { loader: "less-loader" },
+            { loader: 'style-loader' },
+            { loader: 'css-loader' },
+            { loader: 'less-loader' },
             {
               loader: 'postcss-loader',
               options: {
                 postcssOptions: {
                   plugins: {
                     'postcss-preset-env': {
-                      browsers: [
-                        'last 2 versions',
-                        "> 1%",
-                        "cover 99.5%",
-                        "not dead"
-                      ]
+                      browsers: ['last 2 versions', '> 1%', 'cover 99.5%', 'not dead'],
                     },
                     autoprefixer: {},
                   },
                 },
               },
-            }
+            },
           ],
-          type: "javascript/auto"
+          type: 'javascript/auto',
         },
         {
           test: /\.css$/,
@@ -379,18 +382,13 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
                 postcssOptions: {
                   plugins: {
                     'postcss-preset-env': {
-                      browsers: [
-                        'last 2 versions',
-                        "> 1%",
-                        "cover 99.5%",
-                        "not dead"
-                      ]
+                      browsers: ['last 2 versions', '> 1%', 'cover 99.5%', 'not dead'],
                     },
                     autoprefixer: {},
                   },
                 },
               },
-            }
+            },
           ],
           type: 'javascript/auto',
         },
@@ -414,7 +412,7 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
                 syntax: 'ecmascript',
                 jsx: true,
               },
-              target: "es5"
+              target: 'es5',
             },
           },
         },
@@ -429,7 +427,7 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
                 syntax: 'typescript',
                 tsx: true,
               },
-              target: "es5"
+              target: 'es5',
             },
           },
         },
@@ -443,16 +441,16 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
               parser: {
                 syntax: 'typescript',
               },
-              target: "es5"
+              target: 'es5',
             },
           },
         },
-      ]
+      ],
     },
     plugins: [
       new rspack.DefinePlugin({
-        "process.env.NODE_ENV": "'production'",
-      })
+        'process.env.NODE_ENV': JSON.stringify('production'),
+      }),
     ],
     node: {
       global: true,
@@ -463,7 +461,7 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
       ...globals,
     },
     stats: 'errors-warnings',
-  })
+  });
 
   return new Promise((resolve, reject) => {
     compiler.run((err, stats) => {
@@ -471,12 +469,14 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
         reject(err);
         return;
       }
-      console.log(stats.toString({
-        colors: true,
-      }));
+      console.log(
+        stats.toString({
+          colors: true,
+        }),
+      );
       resolve(null);
     });
-  })
+  });
   // await viteBuild(userConfig.modifyViteConfig({
   //   mode: 'production',
   //   define: {
