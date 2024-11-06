@@ -12,6 +12,7 @@
     "flat-to-nested": "^1.1.1",
     "graphlib": "^2.1.8",
     "handlebars": "^4.7.8",
+    "@budibase/handlebars-helpers": "^0.14.0",
     "multer": "^1.4.5-lts.1",
     "object-path": "^0.11.8"
   },
