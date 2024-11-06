@@ -7,3 +7,4 @@ app-upgrading
 /verdaccio/storage
 libs
 scripts
+.cache

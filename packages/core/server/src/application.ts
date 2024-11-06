@@ -24,7 +24,16 @@ import {
 } from '@nocobase/logger';
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import { Telemetry, TelemetryOptions } from '@nocobase/telemetry';
-import { applyMixins, AsyncEmitter, importModule, Toposort, ToposortOptions } from '@nocobase/utils';
+
+import {
+  applyMixins,
+  AsyncEmitter,
+  importModule,
+  Toposort,
+  ToposortOptions,
+  wrapMiddlewareWithLogging,
+} from '@nocobase/utils';
+
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { randomUUID } from 'crypto';
 import glob from 'glob';
@@ -465,7 +474,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     middleware: Koa.Middleware<StateT & NewStateT, ContextT & NewContextT>,
     options?: ToposortOptions,
   ) {
-    this.middleware.add(middleware, options);
+    this.middleware.add(wrapMiddlewareWithLogging(middleware, this.logger), options);
     return this;
   }
 
@@ -1193,6 +1202,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       group: 'parseVariables',
       after: 'acl',
     });
+
     this._dataSourceManager.use(dataTemplate, { group: 'dataTemplate', after: 'acl' });
 
     this._locales = new Locale(createAppProxy(this));
@@ -1235,15 +1245,26 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   protected createDatabase(options: ApplicationOptions) {
-    const logging = (msg: any) => {
+    const logging = (...args) => {
+      let msg = args[0];
+
       if (typeof msg === 'string') {
         msg = msg.replace(/[\r\n]/gm, '').replace(/\s+/g, ' ');
       }
+
       if (msg.includes('INSERT INTO')) {
         msg = msg.substring(0, 2000) + '...';
       }
-      this._sqlLogger.debug({ message: msg, app: this.name, reqId: this.context.reqId });
+
+      const content: any = { message: msg, app: this.name, reqId: this.context.reqId };
+
+      if (args[1] && typeof args[1] === 'number') {
+        content.executeTime = args[1];
+      }
+
+      this._sqlLogger.debug(content);
     };
+
     const dbOptions = options.database instanceof Database ? options.database.options : options.database;
     const db = new Database({
       ...dbOptions,

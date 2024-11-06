@@ -153,7 +153,7 @@ export default class PluginUsersServer extends Plugin {
   }
 
   async load() {
-    this.app.resourceManager.use(async (ctx, next) => {
+    this.app.resourceManager.use(async function deleteRolesCache(ctx, next) {
       await next();
       const { associatedName, resourceName, actionName, values } = ctx.action.params;
       if (

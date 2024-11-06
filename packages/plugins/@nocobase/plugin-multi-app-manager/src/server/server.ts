@@ -200,14 +200,14 @@ export class PluginMultiAppManagerServer extends Plugin {
             context: options.context,
           });
 
-          const startPromise = subApp.runCommand('start', '--quickstart');
-
-          if (options?.context?.waitSubAppInstall) {
-            await startPromise;
-          }
+          await subApp.runCommand('start', '--quickstart');
         };
 
-        quickstart();
+        const startPromise = quickstart();
+
+        if (options?.context?.waitSubAppInstall) {
+          await startPromise;
+        }
       },
     );
 
