@@ -79,7 +79,7 @@ test.describe('Any succeeded', () => {
     // 分支1添加判断节点
     await page.getByLabel(`add-button-parallel-${parallelBranchNodeTitle}-1`).click();
     await page.getByRole('button', { name: 'condition', exact: true }).click();
-    await page.getByText('Branch into "Yes" and "No"').click();
+    await page.getByText('Continue when "Yes"').click();
     await page.getByLabel('action-Action-Submit-workflows').click();
     const oneConditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(oneConditionNodeName);
@@ -92,7 +92,7 @@ test.describe('Any succeeded', () => {
     // 分支2添加判断节点
     await page.getByLabel(`add-button-parallel-${parallelBranchNodeTitle}-2`).click();
     await page.getByRole('button', { name: 'condition', exact: true }).click();
-    await page.getByText('Branch into "Yes" and "No"').click();
+    await page.getByText('Continue when "Yes"').click();
     await page.getByLabel('action-Action-Submit-workflows').click();
     const twoConditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(twoConditionNodeName);
@@ -105,7 +105,7 @@ test.describe('Any succeeded', () => {
     // 分支3添加判断节点
     await page.getByLabel(`add-button-parallel-${parallelBranchNodeTitle}-3`).click();
     await page.getByRole('button', { name: 'condition', exact: true }).click();
-    await page.getByText('Branch into "Yes" and "No"').click();
+    await page.getByText('Continue when "Yes"').click();
     await page.getByLabel('action-Action-Submit-workflows').click();
     const threeConditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(threeConditionNodeName);
@@ -218,7 +218,7 @@ test.describe('Any succeeded', () => {
     // 分支1添加判断节点
     await page.getByLabel(`add-button-parallel-${parallelBranchNodeTitle}-1`).click();
     await page.getByRole('button', { name: 'condition', exact: true }).click();
-    await page.getByText('Branch into "Yes" and "No"').click();
+    await page.getByText('Continue when "Yes"').click();
     await page.getByLabel('action-Action-Submit-workflows').click();
     const oneConditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(oneConditionNodeName);
@@ -231,7 +231,7 @@ test.describe('Any succeeded', () => {
     // 分支2添加判断节点
     await page.getByLabel(`add-button-parallel-${parallelBranchNodeTitle}-2`).click();
     await page.getByRole('button', { name: 'condition', exact: true }).click();
-    await page.getByText('Branch into "Yes" and "No"').click();
+    await page.getByText('Continue when "Yes"').click();
     await page.getByLabel('action-Action-Submit-workflows').click();
     const twoConditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(twoConditionNodeName);
@@ -244,7 +244,7 @@ test.describe('Any succeeded', () => {
     // 分支3添加判断节点
     await page.getByLabel(`add-button-parallel-${parallelBranchNodeTitle}-3`).click();
     await page.getByRole('button', { name: 'condition', exact: true }).click();
-    await page.getByText('Branch into "Yes" and "No"').click();
+    await page.getByText('Continue when "Yes"').click();
     await page.getByLabel('action-Action-Submit-workflows').click();
     const threeConditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(threeConditionNodeName);
@@ -358,7 +358,7 @@ test.describe('Any succeeded', () => {
     // 分支1添加判断节点
     await page.getByLabel(`add-button-parallel-${parallelBranchNodeTitle}-1`).click();
     await page.getByRole('button', { name: 'condition', exact: true }).click();
-    await page.getByText('Branch into "Yes" and "No"').click();
+    await page.getByText('Continue when "Yes"').click();
     await page.getByLabel('action-Action-Submit-workflows').click();
     const oneConditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(oneConditionNodeName);
@@ -371,7 +371,7 @@ test.describe('Any succeeded', () => {
     // 分支2添加判断节点
     await page.getByLabel(`add-button-parallel-${parallelBranchNodeTitle}-2`).click();
     await page.getByRole('button', { name: 'condition', exact: true }).click();
-    await page.getByText('Branch into "Yes" and "No"').click();
+    await page.getByText('Continue when "Yes"').click();
     await page.getByLabel('action-Action-Submit-workflows').click();
     const twoConditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(twoConditionNodeName);
@@ -384,7 +384,7 @@ test.describe('Any succeeded', () => {
     // 分支3添加判断节点
     await page.getByLabel(`add-button-parallel-${parallelBranchNodeTitle}-3`).click();
     await page.getByRole('button', { name: 'condition', exact: true }).click();
-    await page.getByText('Branch into "Yes" and "No"').click();
+    await page.getByText('Continue when "Yes"').click();
     await page.getByLabel('action-Action-Submit-workflows').click();
     const threeConditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(threeConditionNodeName);
