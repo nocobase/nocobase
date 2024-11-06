@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useAPIClient, useRequest } from '../api-client';
-import { useAppSpin } from '../application/hooks/useAppSpin';
 import { CollectionManagerProvider } from '../data-source/collection/CollectionManagerProvider';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
 import { useCollectionHistory } from './CollectionHistoryProvider';
@@ -34,6 +33,7 @@ const coptions = {
     paginate: false,
     sort: ['sort'],
   },
+  refreshDeps: [],
 };
 
 export const RemoteCollectionManagerProvider = (props: any) => {
@@ -41,7 +41,7 @@ export const RemoteCollectionManagerProvider = (props: any) => {
   const dm = useDataSourceManager();
   const { refreshCH } = useCollectionHistory();
 
-  const service = useRequest<{
+  useRequest<{
     data: any;
   }>(() => {
     return dm.reload().then(refreshCH);
@@ -50,16 +50,11 @@ export const RemoteCollectionManagerProvider = (props: any) => {
     data: any;
   }>(coptions);
 
-  const { render } = useAppSpin();
   const refreshCategory = useCallback(async () => {
     const { data } = await api.request(coptions);
     result.mutate(data);
     return data?.data || [];
   }, [result]);
-
-  if (service.loading) {
-    return render();
-  }
 
   return (
     <CollectionCategoriesProvider service={result} refreshCategory={refreshCategory}>
@@ -70,15 +65,13 @@ export const RemoteCollectionManagerProvider = (props: any) => {
 
 export const CollectionCategoriesProvider = (props) => {
   const { service, refreshCategory } = props;
-  return (
-    <CollectionCategoriesContext.Provider
-      value={{
-        data: service?.data?.data,
-        refresh: refreshCategory,
-        ...props,
-      }}
-    >
-      {props.children}
-    </CollectionCategoriesContext.Provider>
+  const value = useMemo(
+    () => ({
+      data: service?.data?.data,
+      refresh: refreshCategory,
+      ...props,
+    }),
+    [service?.data?.data, refreshCategory, props],
   );
+  return <CollectionCategoriesContext.Provider value={value}>{props.children}</CollectionCategoriesContext.Provider>;
 };
