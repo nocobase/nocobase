@@ -62,6 +62,10 @@ export class DatetimeInterface extends BaseInterface {
   }
 
   toString(value: any, ctx?: any) {
+    if (typeof value === 'string') {
+      return value;
+    }
+
     const utcOffset = resolveTimeZoneFromCtx(ctx);
     const props = this.options?.uiSchema?.['x-component-props'] ?? {};
     const format = getDefaultFormat(props);

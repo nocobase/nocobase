@@ -38,8 +38,8 @@ describe('xlsx importer', () => {
             name: 'name',
           },
           {
-            type: 'date',
-            name: 'date',
+            type: 'datetime',
+            name: 'datetime',
             interface: 'datetime',
           },
           {
@@ -79,7 +79,14 @@ describe('xlsx importer', () => {
 
       const worksheet = template.Sheets[template.SheetNames[0]];
 
-      XLSX.utils.sheet_add_aoa(worksheet, [['test', 77383]], { origin: 'A2' });
+      XLSX.utils.sheet_add_aoa(
+        worksheet,
+        [
+          ['test', 77383],
+          ['test2', '2021-10-18'],
+        ],
+        { origin: 'A2' },
+      );
 
       const importer = new XlsxImporter({
         collectionManager: app.mainDataSource.collectionManager,
@@ -90,13 +97,9 @@ describe('xlsx importer', () => {
 
       await importer.run();
 
-      expect(await User.repository.count()).toBe(1);
-
-      const user = await User.repository.findOne();
-
-      const userData = user.toJSON();
-
-      expect(userData['dateOnly']).toBe('2111-11-12');
+      const users = (await User.repository.find()).map((user) => user.toJSON());
+      expect(users[0]['dateOnly']).toBe('2111-11-12');
+      expect(users[1]['dateOnly']).toBe('2021-10-18');
     });
 
     it('should import with datetimeNoTz', async () => {
@@ -120,7 +123,14 @@ describe('xlsx importer', () => {
 
       const worksheet = template.Sheets[template.SheetNames[0]];
 
-      XLSX.utils.sheet_add_aoa(worksheet, [['test', 77383]], { origin: 'A2' });
+      XLSX.utils.sheet_add_aoa(
+        worksheet,
+        [
+          ['test', 77383],
+          ['test2', '2021-10-18'],
+        ],
+        { origin: 'A2' },
+      );
 
       const importer = new XlsxImporter({
         collectionManager: app.mainDataSource.collectionManager,
@@ -131,21 +141,19 @@ describe('xlsx importer', () => {
 
       await importer.run();
 
-      expect(await User.repository.count()).toBe(1);
-
-      const user = await User.repository.findOne();
-
-      expect(moment(user.get('datetimeNoTz')).format('YYYY-MM-DD')).toBe('2111-11-12');
+      const users = (await User.repository.find()).map((user) => user.toJSON());
+      expect(users[0]['datetimeNoTz']).toBe('2111-11-12 00:00:00');
+      expect(users[1]['datetimeNoTz']).toBe('2021-10-18 00:00:00');
     });
 
-    it('should import with date', async () => {
+    it('should import with datetimeTz', async () => {
       const columns = [
         {
           dataIndex: ['name'],
           defaultTitle: '姓名',
         },
         {
-          dataIndex: ['date'],
+          dataIndex: ['datetime'],
           defaultTitle: '日期',
         },
       ];
@@ -170,11 +178,8 @@ describe('xlsx importer', () => {
 
       await importer.run();
 
-      expect(await User.repository.count()).toBe(1);
-
-      const user = await User.repository.findOne();
-
-      expect(moment(user.get('date')).format('YYYY-MM-DD')).toBe('2111-11-12');
+      const users = (await User.repository.find()).map((user) => user.toJSON());
+      expect(moment(users[0]['datetime']).toISOString()).toEqual('2111-11-12T00:00:00.000Z');
     });
   });
 
