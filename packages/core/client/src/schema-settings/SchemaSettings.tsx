@@ -363,7 +363,7 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
 };
 
 export interface SchemaSettingsItemProps extends Omit<MenuItemProps, 'title'> {
-  title: string;
+  title: string | ReactNode;
 }
 export const SchemaSettingsItem: FC<SchemaSettingsItemProps> = (props) => {
   const { pushMenuItem } = useCollectMenuItems();
@@ -544,7 +544,7 @@ export const SchemaSettingsCascaderItem: FC<SchemaSettingsCascaderItemProps> = (
 };
 
 export interface SchemaSettingsSwitchItemProps extends Omit<MenuItemProps, 'onChange'> {
-  title: string;
+  title: string | ReactNode;
   checked?: boolean;
   onChange?: (v: boolean) => void;
 }
