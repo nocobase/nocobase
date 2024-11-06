@@ -28,4 +28,3 @@ export {
 } from './plugin-manager/findPackageNames';
 
 export { runPluginStaticImports } from './run-plugin-static-imports';
-export { wrapMiddlewareWithLogging } from './helper';

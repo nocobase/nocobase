@@ -17,7 +17,7 @@ export function lang(key: string) {
 }
 
 export function generateNTemplate(key: string) {
-  return `{{t('${key}', { ns: '${NAMESPACE}', nsMode: 'fallback' })}}`;
+  return `{{t('${key}', { ns: ['${NAMESPACE}', 'client'], nsMode: 'fallback' })}}`;
 }
 
 export function useLocalTranslation() {

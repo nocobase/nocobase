@@ -1,7 +1,11 @@
 {
   "Inbox": "Inbox",
   "Message": "Message",
+  "Loading": "Loading",
   "Loading more": "Loading more",
+  "No more": "No more",
+  "Loading failed,": "Loading failed,",
+  "please reload": "please reload",
   "Detail": "Detail",
   "Content": "Content",
   "Datetime": "Datetime",
@@ -15,8 +19,10 @@
   "Message group name": "Message group name",
   "Message title": "Message title",
   "Message content": "Message content",
-  "Inapp Message": "Inapp Message",
-  "Detail URL": "Detail URL",
+  "PC detail URL": "PC detail URL",
   "Support two types of links: internal links and external links. If using an internal link, the link starts with\"/\", for example, \"/admin\". If using an external link, the link starts with \"http\", for example, \"https://example.com\".": "Support two types of links: internal links and external links. If using an internal link, the link starts with \"/\", for example, \"/admin\". If using an external link, the link starts with \"http\", for example, \"https://example.com\".",
-  "Mark as read": "Mark as read"
+  "Mark as read": "Mark as read",
+  "Support two types of links: internal links and external links. If using an internal link, the link starts with\"/\", for example, \"/m\". If using an external link, the link starts with \"http\", for example, \"https://example.com\".": "Support two types of links: internal links and external links. If using an internal link, the link starts with \"/\", for example, \"/m\". If using an external link, the link starts with \"http\", for example, \"https://example.com\".",
+  "Mobile detail URL":   "Mobile detail URL",
+  "The message page has already been created.": "The message page has already been created."
 }

@@ -17,6 +17,7 @@ import type {
   SendUserOptions,
   WriteLogOptions,
 } from './types';
+import { compile } from './utils/compile';
 
 export class NotificationManager implements NotificationManager {
   private plugin: PluginNotificationManagerServer;
@@ -68,8 +69,9 @@ export class NotificationManager implements NotificationManager {
     }
   }
   async sendToUsers(options: SendUserOptions) {
-    const { userIds, channels, message, data } = options;
     this.plugin.logger.info(`notificationManager.sendToUsers options: ${JSON.stringify(options)}`);
+    const { userIds, channels, message: template = {}, data = {} } = options;
+    const message = compile(template, data);
     return await Promise.all(
       channels.map((channelName) =>
         this.send({ channelName, message, triggerFrom: 'sendToUsers', receivers: { value: userIds, type: 'userId' } }),

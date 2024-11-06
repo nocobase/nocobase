@@ -492,8 +492,9 @@ export class PluginDataSourceManagerServer extends Plugin {
       });
     });
 
+    const self = this;
     // add global roles check
-    this.app.resourcer.use(async (ctx, next) => {
+    this.app.resourceManager.use(async function appendDataToRolesCheck(ctx, next) {
       const action = ctx.action;
       await next();
       const { resourceName, actionName } = action.params;
@@ -503,12 +504,12 @@ export class PluginDataSourceManagerServer extends Plugin {
 
         ctx.bodyMeta = {
           dataSources: dataSources.reduce((carry, dataSourceModel) => {
-            const dataSource = this.app.dataSourceManager.dataSources.get(dataSourceModel.get('key'));
+            const dataSource = self.app.dataSourceManager.dataSources.get(dataSourceModel.get('key'));
             if (!dataSource) {
               return carry;
             }
 
-            const dataSourceStatus = this.dataSourceStatus[dataSourceModel.get('key')];
+            const dataSourceStatus = self.dataSourceStatus[dataSourceModel.get('key')];
             if (dataSourceStatus !== 'loaded') {
               return carry;
             }
