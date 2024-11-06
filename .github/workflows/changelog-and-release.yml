@@ -88,6 +88,7 @@ jobs:
           PRO_PLUGIN_REPOS: ${{ steps.get-info.outputs.proRepos }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
       - name: Commit and push
+        if: ${{ steps.get-info.outputs.version == 'beta' }}
         run: |
           git pull origin main
           git add .
