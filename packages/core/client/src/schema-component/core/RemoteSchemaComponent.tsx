@@ -43,7 +43,6 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
     hidden,
     scope,
     uid,
-    memoized = true,
     components,
     onSuccess,
     NotFoundPage,
@@ -52,11 +51,8 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
   } = props;
   const { reset } = useSchemaComponentContext();
   const type = onlyRenderProperties ? 'getProperties' : 'getJsonSchema';
-  const conf = {
-    url: `/uiSchemas:${type}/${uid}`,
-  };
   const form = useMemo(() => createForm(), [uid]);
-  const { schema, loading } = useRequestSchema({
+  const { schema } = useRequestSchema({
     uid,
     type,
     onSuccess: (data) => {
@@ -65,7 +61,8 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
     },
   });
   const NotFoundComponent = useComponent(NotFoundPage);
-  if (loading || hidden) {
+
+  if (hidden) {
     return (
       <div style={{ textAlign: 'center', marginTop: 20 }}>
         <Spin />
