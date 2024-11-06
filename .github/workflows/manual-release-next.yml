@@ -60,14 +60,14 @@ jobs:
         shell: bash
         run: |
           cd ./packages/pro-plugins
-          git checkout main
+          git checkout next
           for repo in ${{ join(fromJSON(vars.NEXT_PRO_PLUGIN_REPOS), ' ') }} ${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ' ') }}
           do
             echo "@nocobase/$repo" >> .git/info/exclude
           done
           echo "$(<.git/info/exclude )"
           cd ./../..
-          git checkout main
+          git checkout next
           git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
           git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
           echo "packages/pro-plugins" >> .git/info/exclude
