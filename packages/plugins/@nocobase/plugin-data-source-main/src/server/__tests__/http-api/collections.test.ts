@@ -599,6 +599,6 @@ describe('collections repository', () => {
     const firstCollection = data[0];
     const collectionInMemory = app.db.getCollection(firstCollection.name);
     expect(firstCollection.unavailableActions).toEqual(collectionInMemory.unavailableActions());
-    expect(firstCollection.fields.length).toEqual(collectionInMemory.fields.length);
+    expect(firstCollection.fields.length).toEqual(collectionInMemory.fields.size);
   });
 });
