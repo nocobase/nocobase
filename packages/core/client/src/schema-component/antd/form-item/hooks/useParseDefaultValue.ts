@@ -16,8 +16,9 @@ import { useCallback, useEffect } from 'react';
 import { useRecordIndex } from '../../../../../src/record-provider';
 import { useOperators } from '../../../../block-provider/CollectOperators';
 import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
-import { InheritanceCollectionMixin, useCollection_deprecated } from '../../../../collection-manager';
+import { InheritanceCollectionMixin } from '../../../../collection-manager';
 import { useCollectionRecord } from '../../../../data-source/collection-record/CollectionRecordProvider';
+import { useCollection } from '../../../../data-source/collection/CollectionProvider';
 import { DataSourceManager } from '../../../../data-source/data-source/DataSourceManager';
 import { useDataSourceManager } from '../../../../data-source/data-source/DataSourceManagerProvider';
 import { useFlag } from '../../../../flag-provider';
@@ -40,7 +41,7 @@ const useParseDefaultValue = () => {
   const record = useCollectionRecord();
   const { isInAssignFieldValues, isInSetDefaultValueDialog, isInFormDataTemplate, isInSubTable, isInSubForm } =
     useFlag() || {};
-  const { getField } = useCollection_deprecated();
+  const collection = useCollection();
   const { isSpecialCase, setDefaultValue } = useSpecialCase();
   const index = useRecordIndex();
   const { type, form } = useFormBlockContext();
@@ -92,7 +93,7 @@ const useParseDefaultValue = () => {
         }
 
         field.loading = true;
-        const collectionField = !fieldSchema.name.toString().includes('.') && getField(fieldSchema.name);
+        const collectionField = !fieldSchema.name.toString().includes('.') && collection?.getField(fieldSchema.name);
 
         if (process.env.NODE_ENV !== 'production') {
           if (!collectionField) {
@@ -191,7 +192,7 @@ const useParseDefaultValue = () => {
       // 解决子表格（或子表单）中新增一行数据时，默认值不生效的问题
       field.setValue(fieldSchema.default);
     }
-  }, [fieldSchema.default, localVariables, type, getOperator, dm]);
+  }, [fieldSchema.default, localVariables, type, getOperator, dm, collection]);
 };
 
 export default useParseDefaultValue;
