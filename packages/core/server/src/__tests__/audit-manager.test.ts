@@ -49,7 +49,7 @@ describe('audit manager', () => {
       `);
   });
 
-  it('register actions with getMetaData and getUserInfo', () => {
+  it('register actions with getMetaData and getUserInfo and getresourceUk', () => {
     const getMetaData = () => {
       return new Promise((resolve, reject) => {
         resolve({
@@ -76,12 +76,19 @@ describe('audit manager', () => {
         });
       });
     };
-    app.auditManager.registerAction({ name: 'create', getMetaData, getUserInfo });
+    const getResourceUk = () => {
+      return new Promise<string>((resolve, reject) => {
+        const id = 'str';
+        resolve(id);
+      });
+    };
+    app.auditManager.registerAction({ name: 'create', getMetaData, getUserInfo, getResourceUk });
     expect(app.auditManager.resources).toMatchInlineSnapshot(`
         Map {
           "__default__" => Map {
             "create" => {
               "getMetaData": [Function],
+              "getResourceUk": [Function],
               "getUserInfo": [Function],
               "name": "create",
             },

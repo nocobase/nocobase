@@ -43,14 +43,14 @@ type Action =
   | string
   | {
       name: string;
-      // 在操作上下文中获取 MetaData
       getMetaData?: (ctx: Context) => Promise<Record<string, any>>;
       getUserInfo?: (ctx: Context) => Promise<Record<string, any>>;
+      getResourceUk?: (ctx: Context) => Promise<string>;
     };
 
 export class AuditManager {
   logger: AuditLogger;
-  resources: Map<string, Map<string, Action>>; // 不一定是这个类型，根据存取方便处理
+  resources: Map<string, Map<string, Action>>;
 
   constructor() {
     this.resources = new Map();
@@ -111,12 +111,14 @@ export class AuditManager {
     let originAction = '';
     let getMetaData = null;
     let getUserInfo = null;
+    let getResourceUk = null;
     if (typeof action === 'string') {
       originAction = action;
     } else {
       originAction = action.name;
       getMetaData = action.getMetaData;
       getUserInfo = action.getUserInfo;
+      getResourceUk = action.getResourceUk;
     }
     // 解析originAction, 获取actionName, resourceName
     const nameRegex = /^[a-zA-Z0-9_-]+$/;
@@ -154,6 +156,9 @@ export class AuditManager {
     }
     if (getUserInfo) {
       saveAction.getUserInfo = getUserInfo;
+    }
+    if (getResourceUk) {
+      saveAction.getResourceUk = getResourceUk;
     }
     resource.set(actionName, saveAction);
   }
@@ -249,15 +254,15 @@ export class AuditManager {
   }
 
   formatResourceUk(ctx: any) {
-    const { filterByTk, filterKeys } = ctx.action.params;
+    const { filterByTk } = ctx.action.params;
     let resourceUk = '';
 
     if (filterByTk) {
-      resourceUk = filterByTk;
-    }
-
-    if (filterKeys && filterKeys.length > 0) {
-      resourceUk = filterKeys.join(',');
+      if (filterByTk instanceof Array) {
+        resourceUk = filterByTk.join(',');
+      } else {
+        resourceUk = filterByTk;
+      }
     }
 
     return resourceUk;
@@ -291,6 +296,12 @@ export class AuditManager {
         } else {
           const defaultMetaData = await this.getDefaultMetaData(ctx);
           auditLog.metadata = { ...metadata, ...defaultMetaData };
+        }
+        if (action.getResourceUk) {
+          const resourceUk = await action.getResourceUk(ctx);
+          if (resourceUk) {
+            auditLog.resourceUk = resourceUk;
+          }
         }
       } else {
         const defaultMetaData = await this.getDefaultMetaData(ctx);
