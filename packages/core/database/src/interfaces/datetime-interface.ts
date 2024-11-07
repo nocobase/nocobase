@@ -36,6 +36,14 @@ export class DatetimeInterface extends BaseInterface {
       return null;
     }
 
+    if (typeof value === 'string') {
+      const match = /^(\d{4})[-/]?(\d{2})[-/]?(\d{2})$/.exec(value);
+      if (match) {
+        const m = dayjs(`${match[1]}-${match[2]}-${match[3]} 00:00:00.000`);
+        return m.toISOString();
+      }
+    }
+
     if (dayjs.isDayjs(value)) {
       return value;
     } else if (isDate(value)) {
@@ -50,9 +58,10 @@ export class DatetimeInterface extends BaseInterface {
   }
 
   toString(value: any, ctx?: any) {
+    const utcOffset = resolveTimeZoneFromCtx(ctx);
     const props = this.options?.uiSchema?.['x-component-props'] ?? {};
     const format = getDefaultFormat(props);
-    const m = str2moment(value, props);
+    const m = str2moment(value, { ...props, utcOffset });
     return m ? m.format(format) : '';
   }
 }
