@@ -54,7 +54,7 @@ export class PluginErrorHandlerServer extends Plugin {
             return {
               message: t(err.type, {
                 ns: this.i18nNs,
-                field: t(title, { ns: 'lm-collections' }),
+                field: t(title, { ns: ['lm-collections', 'client'] }),
               }),
             };
           }),

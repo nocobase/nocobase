@@ -768,5 +768,7 @@
   "Sorry, the page you visited does not exist.": "Lo siento, la página que visitaste no existe.",
   "Allow multiple selection": "Permitir selección múltiple",
   "Parent object": "Objeto padre",
-  "Ellipsis overflow content": "Contenido de desbordamiento de elipsis"
+  "Ellipsis overflow content": "Contenido de desbordamiento de elipsis",
+  "Hide column": "Ocultar columna",
+  "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "En modo de configuración, toda la columna se vuelve transparente. En modo de no configuración, toda la columna se ocultará. Incluso si toda la columna está oculta, sus valores predeterminados configurados y otras configuraciones seguirán tomando efecto."
 }

@@ -847,5 +847,7 @@
   "Skip getting the total number of table records during paging to speed up loading. It is recommended to enable this option for data tables with a large amount of data": "Skip getting the total number of table records during paging to speed up loading. It is recommended to enable this option for data tables with a large amount of data",
   "Enable secondary confirmation": "Enable secondary confirmation",
   "Notification": "Notification",
-  "Ellipsis overflow content": "Ellipsis overflow content"
+  "Ellipsis overflow content": "Ellipsis overflow content",
+  "Hide column": "Hide column",
+  "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect."
 }

@@ -78,7 +78,7 @@ const toMoment = (val: any, options?: Str2momentOptions) => {
   if (!val) {
     return;
   }
-  const offset = options.utcOffset || -1 * new Date().getTimezoneOffset();
+  const offset = options.utcOffset !== undefined ? options.utcOffset : -1 * new Date().getTimezoneOffset();
   const { gmt, picker, utc = true } = options;
   if (dayjs(val).isValid()) {
     if (!utc) {
