@@ -10,7 +10,9 @@
 import { Database } from '@nocobase/database';
 
 export default {
-  async ['collections:listMeta'](ctx, next) {},
+  async ['collections:listMeta'](ctx, next) {
+    const db = ctx.app.db as Database;
+  },
 
   async ['collections:setFields'](ctx, next) {
     const { filterByTk, values } = ctx.action.params;
