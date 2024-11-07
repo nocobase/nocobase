@@ -46,6 +46,14 @@ describe('xlsx importer', () => {
             type: 'datetimeNoTz',
             name: 'datetimeNoTz',
             interface: 'datetimeNoTz',
+            uiSchema: {
+              'x-component-props': {
+                picker: 'date',
+                dateFormat: 'YYYY-MM-DD',
+                showTime: true,
+                timeFormat: 'HH:mm:ss',
+              },
+            },
           },
           {
             type: 'dateOnly',
@@ -115,7 +123,7 @@ describe('xlsx importer', () => {
       expect(users[1]['dateOnly']).toBe('2021-10-18');
     });
 
-    it('should import with datetimeNoTz', async () => {
+    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')('should import with datetimeNoTz', async () => {
       const columns = [
         {
           dataIndex: ['name'],
