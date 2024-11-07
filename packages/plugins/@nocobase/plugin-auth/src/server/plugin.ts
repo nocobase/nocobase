@@ -10,7 +10,6 @@
 import { Cache } from '@nocobase/cache';
 import { Model } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { resolve } from 'path';
 import { namespace, presetAuthType, presetAuthenticator } from '../preset';
 import authActions from './actions/auth';
 import authenticatorsActions from './actions/authenticators';
@@ -84,6 +83,17 @@ export class PluginAuthServer extends Plugin {
       {
         name: 'auth:signIn',
         getMetaData: async (ctx: any) => {
+          let body = {};
+          if (ctx.status === 200) {
+            body = {
+              data: {
+                ...ctx.body.data,
+                token: undefined,
+              },
+            };
+          } else {
+            body = ctx.body;
+          }
           return {
             request: {
               params: ctx.request?.params,
@@ -93,10 +103,7 @@ export class PluginAuthServer extends Plugin {
               },
             },
             response: {
-              body: {
-                ...ctx.response?.body,
-                token: undefined,
-              },
+              body,
             },
           };
         },

@@ -268,7 +268,7 @@ export class AuditManager {
     return resourceUk;
   }
 
-  async output(ctx: any, reqId: any, status: number, metadata?: Record<string, any>) {
+  async output(ctx: any, reqId: any, metadata?: Record<string, any>) {
     try {
       const { resourceName, actionName } = ctx.action;
       const action: Action = this.getAction(actionName, resourceName);
@@ -277,7 +277,7 @@ export class AuditManager {
       }
       const auditLog: AuditLog = this.formatAuditData(ctx);
       auditLog.uuid = reqId;
-      auditLog.status = status;
+      auditLog.status = ctx.status;
       if (typeof action !== 'string') {
         if (action.getUserInfo) {
           const userInfo = await action.getUserInfo(ctx);
@@ -316,7 +316,6 @@ export class AuditManager {
   middleware() {
     return async (ctx: any, next: any) => {
       const reqId = ctx.reqId;
-      let status = 1;
       let metadata = {};
       try {
         await next();
@@ -327,11 +326,10 @@ export class AuditManager {
           status: ctx.status,
           errMsg: err.message,
         };
-        status = 0;
         throw err;
       } finally {
         if (this.logger) {
-          this.output(ctx, reqId, status, metadata);
+          this.output(ctx, reqId, metadata);
         }
       }
     };
