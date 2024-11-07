@@ -10,11 +10,11 @@
 import { usePrefixCls } from '@formily/antd-v5/esm/__builtins__';
 import { isArr } from '@formily/shared';
 import {
+  getDefaultFormat,
   GetDefaultFormatProps,
+  str2moment,
   Str2momentOptions,
   Str2momentValue,
-  getDefaultFormat,
-  str2moment,
 } from '@nocobase/utils/client';
 import cls from 'classnames';
 import dayjs from 'dayjs';
@@ -67,6 +67,7 @@ ReadPretty.DateRangePicker = function DateRangePicker(props: DateRangePickerRead
     const labels = m.map((m) => m.format(format));
     return isArr(labels) ? labels.join('~') : labels;
   };
+
   return (
     <div className={cls(prefixCls, props.className)} style={props.style}>
       {getLabels()}

@@ -8,7 +8,7 @@
  */
 
 import { BaseInterface } from './base-interface';
-import { getDefaultFormat, moment2str, str2moment } from '@nocobase/utils';
+import { getDefaultFormat, str2moment } from '@nocobase/utils';
 import dayjs from 'dayjs';
 import { getJsDateFromExcel } from 'excel-date-to-js';
 
@@ -36,14 +36,6 @@ export class DatetimeInterface extends BaseInterface {
       return null;
     }
 
-    if (typeof value === 'string') {
-      const match = /^(\d{4})[-/]?(\d{2})[-/]?(\d{2})$/.exec(value);
-      if (match) {
-        const m = dayjs(`${match[1]}-${match[2]}-${match[3]} 00:00:00.000`);
-        return m.toISOString();
-      }
-    }
-
     if (dayjs.isDayjs(value)) {
       return value;
     } else if (isDate(value)) {
@@ -51,25 +43,16 @@ export class DatetimeInterface extends BaseInterface {
     } else if (isNumeric(value)) {
       return getJsDateFromExcel(value).toISOString();
     } else if (typeof value === 'string') {
-      const props = ctx.field?.options?.uiSchema?.['x-component-props'] || {};
-      const m = dayjs(value);
-      if (m.isValid()) {
-        return moment2str(m, props);
-      }
+      return value;
     }
 
     throw new Error(`Invalid date - ${value}`);
   }
 
   toString(value: any, ctx?: any) {
-    if (typeof value === 'string') {
-      return value;
-    }
-
-    const utcOffset = resolveTimeZoneFromCtx(ctx);
     const props = this.options?.uiSchema?.['x-component-props'] ?? {};
     const format = getDefaultFormat(props);
-    const m = str2moment(value, { ...props, utcOffset });
+    const m = str2moment(value, props);
     return m ? m.format(format) : '';
   }
 }

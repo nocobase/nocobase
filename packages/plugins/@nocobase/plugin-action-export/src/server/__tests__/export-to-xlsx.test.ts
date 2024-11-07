@@ -31,6 +31,72 @@ describe('export to xlsx with preset', () => {
     await app.destroy();
   });
 
+  describe('export with date field', () => {
+    let Post;
+
+    beforeEach(async () => {
+      Post = app.db.collection({
+        name: 'posts',
+        fields: [
+          { type: 'string', name: 'title' },
+          {
+            name: 'datetime',
+            type: 'datetime',
+            interface: 'datetime',
+            uiSchema: {
+              'x-component-props': { picker: 'date', dateFormat: 'YYYY-MM-DD', gmt: false, showTime: false, utc: true },
+              type: 'string',
+              'x-component': 'DatePicker',
+              title: 'dateTz',
+            },
+          },
+        ],
+      });
+
+      await app.db.sync();
+    });
+
+    it('should export with datetime field', async () => {
+      await Post.repository.create({
+        values: {
+          title: 'p1',
+          datetime: '2024-05-10T01:42:35.000Z',
+        },
+      });
+
+      const exporter = new XlsxExporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: Post,
+        chunkSize: 10,
+        columns: [
+          { dataIndex: ['title'], defaultTitle: 'Title' },
+          {
+            dataIndex: ['datetime'],
+            defaultTitle: 'datetime',
+          },
+        ],
+      });
+
+      const wb = await exporter.run();
+
+      const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+
+      try {
+        XLSX.writeFile(wb, xlsxFilePath);
+
+        // read xlsx file
+        const workbook = XLSX.readFile(xlsxFilePath);
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+        const firstUser = sheetData[1];
+        expect(firstUser).toEqual(['p1', '2024-05-10']);
+      } finally {
+        fs.unlinkSync(xlsxFilePath);
+      }
+    });
+  });
+
   it('should export with checkbox field', async () => {
     const Post = app.db.collection({
       name: 'posts',
