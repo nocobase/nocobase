@@ -40,7 +40,12 @@ export class BooleanInterface extends BaseInterface {
       const option = enumConfig.find((item) => item.value === value);
       return option?.label;
     } else {
-      return value ? '是' : value === null || value === undefined ? '' : '否';
+      const label = value ? 'True' : value === null || value === undefined ? '' : 'False';
+      if (ctx?.t) {
+        return ctx.t(label, { ns: 'action-export' });
+      }
+
+      return label;
     }
   }
 }

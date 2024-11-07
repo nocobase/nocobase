@@ -14,13 +14,18 @@ import { MobileTabBarItemProps, MobileTabBarItem } from '../../MobileTabBar.Item
 
 export interface MobileTabBarPageProps extends Omit<MobileTabBarItemProps, 'onClick' | 'selected'> {
   schemaUid: string;
+  url?: string;
 }
 
 export const MobileTabBarPage: FC<MobileTabBarPageProps> = (props) => {
   const { schemaUid, ...rests } = props;
   const navigate = useNavigate();
   const location = useLocation();
-  const url = useMemo(() => `/page/${schemaUid}`, [schemaUid]);
+  const url = useMemo(() => {
+    if (schemaUid) return `/page/${schemaUid}`;
+    else if (rests.url) return `${rests.url}`;
+    else return '/';
+  }, [schemaUid, rests.url]);
   const handleClick = useCallback(() => {
     navigate(url);
   }, [url, navigate]);

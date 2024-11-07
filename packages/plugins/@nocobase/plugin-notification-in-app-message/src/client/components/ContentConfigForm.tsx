@@ -51,7 +51,7 @@ export const ContentConfigForm = ({ variableOptions }) => {
               url: {
                 type: 'string',
                 required: false,
-                title: `{{t("Detail URL")}}`,
+                title: `{{t("PC detail URL")}}`,
                 'x-decorator': 'FormItem',
                 'x-component': 'Variable.TextArea',
                 'x-component-props': {
@@ -59,7 +59,21 @@ export const ContentConfigForm = ({ variableOptions }) => {
                   useTypedConstant: ['string'],
                 },
                 description: tval(
-                  "Support two types of links in nocobase: internal links and external links. If using an internal link, the link starts with '/', for example, '/admin/page'. If using an external link, the link starts with 'http', for example, 'https://example.com'.",
+                  'Support two types of links: internal links and external links. If using an internal link, the link starts with"/", for example, "/admin". If using an external link, the link starts with "http", for example, "https://example.com".',
+                ),
+              },
+              mobileUrl: {
+                type: 'string',
+                required: false,
+                title: `{{t("Mobile detail URL")}}`,
+                'x-decorator': 'FormItem',
+                'x-component': 'Variable.TextArea',
+                'x-component-props': {
+                  scope: variableOptions,
+                  useTypedConstant: ['string'],
+                },
+                description: tval(
+                  "Support two types of links: internal links and external links. If using an internal link, the link starts with '/', for example, '/m'. If using an external link, the link starts with 'http', for example, 'https://example.com'.",
                 ),
               },
             },

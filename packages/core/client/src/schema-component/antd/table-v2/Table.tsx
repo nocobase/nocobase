@@ -105,7 +105,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
     return css`
       .nb-action-link {
         margin: -${token.paddingContentVerticalLG}px -${token.marginSM}px;
-        padding: ${token.paddingContentVerticalLG}px ${token.margin}px;
+        padding: ${token.paddingContentVerticalLG}px ${token.paddingSM + 4}px;
       }
     `;
   }, [token.paddingContentVerticalLG, token.marginSM]);
@@ -196,6 +196,9 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
                       deleteCount: 1,
                     });
                     field.value.splice(fieldIndex, 1);
+                    setTimeout(() => {
+                      field.value[field.value.length] = null;
+                    });
                     return field.onInput(field.value);
                   });
                 }}
@@ -232,8 +235,8 @@ const SortableRow = (props: {
   const { ref, inView } = useInView({
     threshold: 0,
     triggerOnce: true,
-    initialInView: !!process.env.__E2E__ || isInSubTable || props.rowIndex < INITIAL_ROWS_NUMBER,
-    skip: !!process.env.__E2E__ || isInSubTable || props.rowIndex < INITIAL_ROWS_NUMBER,
+    initialInView: !!process.env.__E2E__ || isInSubTable || (props.rowIndex || 0) < INITIAL_ROWS_NUMBER,
+    skip: !!process.env.__E2E__ || isInSubTable,
   });
 
   const classObj = useMemo(() => {
@@ -617,6 +620,7 @@ export const Table: any = withDynamicSchemaProps(
     } = { ...others1, ...others2 } as any;
     const field = useArrayField(others);
     const schema = useFieldSchema();
+    const { size = 'middle' } = schema?.['x-component-props'] || {};
     const collection = useCollection();
     const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
     const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();
@@ -889,7 +893,6 @@ export const Table: any = withDynamicSchemaProps(
         expandedRowKeys: expandedKeys,
       };
     }, [expandedKeys, onExpandValue]);
-
     return (
       // If spinning is set to undefined, it will cause the subtable to always display loading, so we need to convert it here
       <Spin spinning={!!loading}>
@@ -910,6 +913,7 @@ export const Table: any = withDynamicSchemaProps(
           columns={columns}
           expandable={expandable}
           field={field}
+          size={size}
         />
       </Spin>
     );

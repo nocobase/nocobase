@@ -13,7 +13,6 @@ import { Plugin } from '@nocobase/server';
 import { Mutex } from 'async-mutex';
 import lodash from 'lodash';
 import path from 'path';
-import * as process from 'process';
 import { CollectionRepository } from '.';
 import {
   afterCreateForForeignKeyField,
@@ -33,8 +32,6 @@ import { FieldIsDependedOnByOtherError } from './errors/field-is-depended-on-by-
 import { beforeCreateCheckFieldInMySQL } from './hooks/beforeCreateCheckFieldInMySQL';
 
 export class PluginDataSourceMainServer extends Plugin {
-  public schema: string;
-
   private loadFilter: Filter = {};
 
   setLoadFilter(filter: Filter) {
@@ -55,10 +52,6 @@ export class PluginDataSourceMainServer extends Plugin {
   }
 
   async beforeLoad() {
-    if (this.app.db.inDialect('postgres')) {
-      this.schema = process.env.COLLECTION_MANAGER_SCHEMA || this.db.options.schema || 'public';
-    }
-
     this.app.db.registerRepositories({
       CollectionRepository,
     });
@@ -74,12 +67,6 @@ export class PluginDataSourceMainServer extends Plugin {
       context: {
         plugin: this,
       },
-    });
-
-    this.app.db.on('collections.beforeCreate', async (model) => {
-      if (this.app.db.inDialect('postgres') && this.schema && model.get('from') != 'db2cm' && !model.get('schema')) {
-        model.set('schema', this.schema);
-      }
     });
 
     this.app.db.on('collections.beforeCreate', beforeCreateForViewCollection(this.db));
@@ -317,7 +304,7 @@ export class PluginDataSourceMainServer extends Plugin {
 
     this.app.on('beforeStart', loadCollections);
 
-    this.app.resourcer.use(async (ctx, next) => {
+    this.app.resourceManager.use(async function pushUISchemaWhenUpdateCollectionField(ctx, next) {
       const { resourceName, actionName } = ctx.action;
       if (resourceName === 'collections.fields' && actionName === 'update') {
         const { updateAssociationValues = [] } = ctx.action.params;
@@ -397,7 +384,7 @@ export class PluginDataSourceMainServer extends Plugin {
       },
     );
 
-    this.app.resourcer.use(async (ctx, next) => {
+    this.app.resourceManager.use(async function mergeReverseFieldWhenSaveCollectionField(ctx, next) {
       if (ctx.action.resourceName === 'collections.fields' && ['create', 'update'].includes(ctx.action.actionName)) {
         ctx.action.mergeParams({
           updateAssociationValues: ['reverseField'],
@@ -438,7 +425,7 @@ export class PluginDataSourceMainServer extends Plugin {
       }
     };
 
-    this.app.resourcer.use(async (ctx, next) => {
+    this.app.resourceManager.use(async function handleFieldSourceMiddleware(ctx, next) {
       await next();
 
       // handle collections:list

@@ -28,16 +28,7 @@ export const CollectionManagerProvider_deprecated: React.FC<CollectionManagerOpt
   );
 };
 
-const coptions = {
-  url: 'collectionCategories:list',
-  params: {
-    paginate: false,
-    sort: ['sort'],
-  },
-};
-
 export const RemoteCollectionManagerProvider = (props: any) => {
-  const api = useAPIClient();
   const dm = useDataSourceManager();
   const { refreshCH } = useCollectionHistory();
 
@@ -46,26 +37,13 @@ export const RemoteCollectionManagerProvider = (props: any) => {
   }>(() => {
     return dm.reload().then(refreshCH);
   });
-  const result = useRequest<{
-    data: any;
-  }>(coptions);
 
   const { render } = useAppSpin();
-  const refreshCategory = useCallback(async () => {
-    const { data } = await api.request(coptions);
-    result.mutate(data);
-    return data?.data || [];
-  }, [result]);
-
   if (service.loading) {
     return render();
   }
 
-  return (
-    <CollectionCategoriesProvider service={result} refreshCategory={refreshCategory}>
-      <CollectionManagerProvider_deprecated {...props}></CollectionManagerProvider_deprecated>
-    </CollectionCategoriesProvider>
-  );
+  return <CollectionManagerProvider_deprecated {...props}></CollectionManagerProvider_deprecated>;
 };
 
 export const CollectionCategoriesProvider = (props) => {

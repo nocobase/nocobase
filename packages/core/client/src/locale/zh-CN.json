@@ -1017,5 +1017,13 @@
   "Left": "左",
   "Center": "居中",
   "Right": "右",
-  "Divider line color": "分割线颜色"
+  "Divider line color": "分割线颜色",
+  "Label align": "字段标题对齐方式",
+  "Label width": "字段标题宽度",
+  "When the Label exceeds the width": "字段标题超出宽度时",
+  "Line break": "换行",
+  "Ellipsis": "省略",
+  "Set block layout": "设置区块布局",
+  "Add & Update": "添加 & 更新",
+  "Table size":"表格大小"
 }

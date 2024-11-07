@@ -452,7 +452,7 @@ export class PluginACLServer extends Plugin {
       };
     });
 
-    this.app.resourcer.use(async (ctx, next) => {
+    this.app.resourceManager.use(async function showAnonymous(ctx, next) {
       const { actionName, resourceName, params } = ctx.action;
       const { showAnonymous } = params || {};
       if (actionName === 'list' && resourceName === 'roles') {
@@ -547,7 +547,7 @@ export class PluginACLServer extends Plugin {
 
           const hasFilterByTk = (params) => {
             return JSON.stringify(params).includes('filterByTk');
-          }
+          };
 
           if (!hasFilterByTk(ctx.permission.mergedParams) || !hasFilterByTk(ctx.permission.rawParams)) {
             await next();
@@ -574,12 +574,11 @@ export class PluginACLServer extends Plugin {
       },
     );
 
-
     const withACLMeta = createWithACLMetaMiddleware();
 
     // append allowedActions to list & get response
     this.app.use(
-      async (ctx, next) => {
+      async function withACLMetaMiddleware(ctx, next) {
         try {
           await withACLMeta(ctx, next);
         } catch (error) {
