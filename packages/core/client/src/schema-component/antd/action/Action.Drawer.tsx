@@ -20,7 +20,7 @@ import { useActionContext } from './hooks';
 import { useSetAriaLabelForDrawer } from './hooks/useSetAriaLabelForDrawer';
 import { ActionDrawerProps, ComposedActionDrawer, OpenSize } from './types';
 import { useZIndexContext, zIndexContext } from './zIndexContext';
-import { FlagProvider } from '../../../flag-provider';
+
 const DrawerErrorFallback: React.FC<FallbackProps> = (props) => {
   const { visible, setVisible } = useActionContext();
   return (
@@ -112,9 +112,7 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
 
 export const ActionDrawer: ComposedActionDrawer = (props) => (
   <ErrorBoundary FallbackComponent={DrawerErrorFallback} onError={(err) => console.log(err)}>
-    <FlagProvider isInSubTable={false} isInSubForm={false}>
-      <InternalActionDrawer {...props} />
-    </FlagProvider>
+    <InternalActionDrawer {...props} />
   </ErrorBoundary>
 );
 

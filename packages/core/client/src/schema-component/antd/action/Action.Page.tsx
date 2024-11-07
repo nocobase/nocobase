@@ -16,7 +16,6 @@ import { TabsContextProvider, useTabsContext } from '../tabs/context';
 import { useActionPageStyle } from './Action.Page.style';
 import { usePopupOrSubpagesContainerDOM } from './hooks/usePopupSlotDOM';
 import { useZIndexContext, zIndexContext } from './zIndexContext';
-import { FlagProvider } from '../../../flag-provider';
 
 export function ActionPage({ level }) {
   const filedSchema = useFieldSchema();
@@ -37,15 +36,13 @@ export function ActionPage({ level }) {
   }
 
   const actionPageNode = (
-    <FlagProvider isInSubTable={false} isInSubForm={false}>
-      <div className={styles.container} style={style}>
-        <TabsContextProvider {...tabContext} tabBarExtraContent={<BackButtonUsedInSubPage />}>
-          <zIndexContext.Provider value={style.zIndex}>
-            <RecursionField schema={filedSchema} onlyRenderProperties />
-          </zIndexContext.Provider>
-        </TabsContextProvider>
-      </div>
-    </FlagProvider>
+    <div className={styles.container} style={style}>
+      <TabsContextProvider {...tabContext} tabBarExtraContent={<BackButtonUsedInSubPage />}>
+        <zIndexContext.Provider value={style.zIndex}>
+          <RecursionField schema={filedSchema} onlyRenderProperties />
+        </zIndexContext.Provider>
+      </TabsContextProvider>
+    </div>
   );
 
   const container = getContainerDOM();

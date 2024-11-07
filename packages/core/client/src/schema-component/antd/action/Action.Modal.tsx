@@ -21,7 +21,6 @@ import { useActionContext } from './hooks';
 import { useSetAriaLabelForModal } from './hooks/useSetAriaLabelForModal';
 import { ActionDrawerProps, ComposedActionDrawer, OpenSize } from './types';
 import { useZIndexContext, zIndexContext } from './zIndexContext';
-import { FlagProvider } from '../../../flag-provider';
 
 const ModalErrorFallback: React.FC<FallbackProps> = (props) => {
   const { visible, setVisible } = useActionContext();
@@ -156,9 +155,7 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
 
 export const ActionModal: ComposedActionDrawer<ModalProps> = (props) => (
   <ErrorBoundary FallbackComponent={ModalErrorFallback} onError={(err) => console.log(err)}>
-    <FlagProvider isInSubTable={false} isInSubForm={false}>
-      <InternalActionModal {...props} />
-    </FlagProvider>
+    <InternalActionModal {...props} />
   </ErrorBoundary>
 );
 
