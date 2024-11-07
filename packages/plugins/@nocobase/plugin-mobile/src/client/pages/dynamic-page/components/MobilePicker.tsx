@@ -38,19 +38,21 @@ const MobilePicker = connect(
 
     return (
       <>
-        <Select
-          onClick={() => setVisible(true)}
-          placeholder={t('Select')}
-          value={value}
-          dropdownStyle={{ display: 'none' }}
-          multiple={mode === 'multiple'}
-          onClear={() => {
-            setVisible(false);
-            onChange(null);
-            setSelected(null);
-          }}
-          onFocus={(e) => e.preventDefault()} // 禁用输入法
-        />
+        <div contentEditable="false" style={{ pointerEvents: 'none' }}>
+          <Select
+            onClick={() => setVisible(true)}
+            placeholder={t('Select')}
+            value={value}
+            dropdownStyle={{ display: 'none' }}
+            multiple={mode === 'multiple'}
+            onClear={() => {
+              setVisible(false);
+              onChange(null);
+              setSelected(null);
+            }}
+            onFocus={(e) => e.preventDefault()}
+          />
+        </div>
         <Popup visible={visible} onMaskClick={() => setVisible(false)} destroyOnClose>
           <div>
             <SearchBar placeholder={t('search')} value={searchText} onChange={(v) => setSearchText(v)} />
