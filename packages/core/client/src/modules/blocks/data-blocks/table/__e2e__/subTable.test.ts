@@ -19,33 +19,23 @@ test.describe('subTable', () => {
     await mockPage(subTableDefaultValue).goto();
 
     // 1. Click "Add new" to add a row, default values should display correctly
-    await page.getByText('Add new').click();
+    await page.getByRole('button', { name: 'Add new' }).click();
     await expect(page.getByTestId('select-object-single').getByText('Super Admin')).toBeVisible();
     await expect(
-      page
-        .getByLabel('block-item-CollectionField-t_vswtj086si6-form-t_vswtj086si6.f_nxw8fjft5kd-')
-        .getByPlaceholder('Select date'),
+      page.getByLabel('block-item-CollectionField-group-form-group.timeStart-').getByPlaceholder('Select date'),
     ).toHaveValue('2024-11-07');
     await expect(
-      page
-        .getByLabel('block-item-CollectionField-t_vswtj086si6-form-t_vswtj086si6.f_wqnkacbz92p-')
-        .getByPlaceholder('Select date'),
+      page.getByLabel('block-item-CollectionField-group-form-group.timeEnd-').getByPlaceholder('Select date'),
     ).toHaveValue('2024-11-07');
 
     // 2. Click "Add new" again to add another row, default values should display correctly
-    await page.getByText('Add new').click();
+    await page.getByRole('button', { name: 'Add new' }).click();
     await expect(page.getByTestId('select-object-single').getByText('Super Admin').nth(1)).toBeVisible();
     await expect(
-      page
-        .getByLabel('block-item-CollectionField-t_vswtj086si6-form-t_vswtj086si6.f_nxw8fjft5kd-')
-        .nth(1)
-        .getByPlaceholder('Select date'),
+      page.getByLabel('block-item-CollectionField-group-form-group.timeStart-').nth(1).getByPlaceholder('Select date'),
     ).toHaveValue('2024-11-07');
     await expect(
-      page
-        .getByLabel('block-item-CollectionField-t_vswtj086si6-form-t_vswtj086si6.f_wqnkacbz92p-')
-        .nth(1)
-        .getByPlaceholder('Select date'),
+      page.getByLabel('block-item-CollectionField-group-form-group.timeEnd-').nth(1).getByPlaceholder('Select date'),
     ).toHaveValue('2024-11-07');
 
     // 3. After modifying timeStart in both first and second rows, their corresponding timeEnd should stay synchronized
@@ -56,31 +46,19 @@ test.describe('subTable', () => {
 
     // First row
     await expect(
-      page
-        .getByLabel('block-item-CollectionField-t_vswtj086si6-form-t_vswtj086si6.f_nxw8fjft5kd-')
-        .nth(0)
-        .getByPlaceholder('Select date'),
+      page.getByLabel('block-item-CollectionField-group-form-group.timeStart-').nth(0).getByPlaceholder('Select date'),
     ).toHaveValue('2024-11-08');
     await expect(
-      page
-        .getByLabel('block-item-CollectionField-t_vswtj086si6-form-t_vswtj086si6.f_wqnkacbz92p-')
-        .nth(0)
-        .getByPlaceholder('Select date'),
+      page.getByLabel('block-item-CollectionField-group-form-group.timeEnd-').nth(0).getByPlaceholder('Select date'),
     ).toHaveValue('2024-11-08');
     await expect(page.getByTestId('select-object-single').getByText('Super Admin').nth(0)).toBeVisible();
 
     // Second row
     await expect(
-      page
-        .getByLabel('block-item-CollectionField-t_vswtj086si6-form-t_vswtj086si6.f_nxw8fjft5kd-')
-        .nth(1)
-        .getByPlaceholder('Select date'),
+      page.getByLabel('block-item-CollectionField-group-form-group.timeStart-').nth(1).getByPlaceholder('Select date'),
     ).toHaveValue('2024-11-08');
     await expect(
-      page
-        .getByLabel('block-item-CollectionField-t_vswtj086si6-form-t_vswtj086si6.f_wqnkacbz92p-')
-        .nth(1)
-        .getByPlaceholder('Select date'),
+      page.getByLabel('block-item-CollectionField-group-form-group.timeEnd-').nth(1).getByPlaceholder('Select date'),
     ).toHaveValue('2024-11-08');
     await expect(page.getByTestId('select-object-single').getByText('Super Admin').nth(1)).toBeVisible();
   });

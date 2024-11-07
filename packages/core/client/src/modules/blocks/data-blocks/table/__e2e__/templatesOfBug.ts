@@ -7964,56 +7964,54 @@ export const subTableDefaultValue = {
     version: '2.0',
     type: 'void',
     'x-component': 'Page',
-    'x-app-version': '1.3.27-beta',
     properties: {
-      x4nwysebrxk: {
+      gxs8yrx2r0h: {
         _isJSONSchemaObject: true,
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
         'x-initializer': 'page:addBlock',
-        'x-app-version': '1.3.27-beta',
         properties: {
-          '3yzahq9zhzm': {
+          '823g8sd0un5': {
             _isJSONSchemaObject: true,
             version: '2.0',
             type: 'void',
             'x-component': 'Grid.Row',
-            'x-app-version': '1.3.27-beta',
+            'x-app-version': '1.3.46-beta',
             properties: {
-              ow6auxniroj: {
+              s8gra6scztq: {
                 _isJSONSchemaObject: true,
                 version: '2.0',
                 type: 'void',
                 'x-component': 'Grid.Col',
-                'x-app-version': '1.3.27-beta',
+                'x-app-version': '1.3.46-beta',
                 properties: {
-                  biosbw7p1r3: {
+                  k0hmoift98n: {
                     _isJSONSchemaObject: true,
                     version: '2.0',
                     type: 'void',
                     'x-acl-action-props': {
                       skipScopeCheck: true,
                     },
-                    'x-acl-action': 't_0yetq8qrgjv:create',
+                    'x-acl-action': 'people:create',
                     'x-decorator': 'FormBlockProvider',
                     'x-use-decorator-props': 'useCreateFormBlockDecoratorProps',
                     'x-decorator-props': {
                       dataSource: 'main',
-                      collection: 't_0yetq8qrgjv',
+                      collection: 'people',
                     },
                     'x-toolbar': 'BlockSchemaToolbar',
                     'x-settings': 'blockSettings:createForm',
                     'x-component': 'CardItem',
-                    'x-app-version': '1.3.27-beta',
+                    'x-app-version': '1.3.46-beta',
                     properties: {
-                      u8pijvlaso2: {
+                      qj7mcan7daw: {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
                         'x-component': 'FormV2',
                         'x-use-component-props': 'useCreateFormBlockProps',
-                        'x-app-version': '1.3.27-beta',
+                        'x-app-version': '1.3.46-beta',
                         properties: {
                           grid: {
                             _isJSONSchemaObject: true,
@@ -8021,24 +8019,24 @@ export const subTableDefaultValue = {
                             type: 'void',
                             'x-component': 'Grid',
                             'x-initializer': 'form:configureFields',
-                            'x-app-version': '1.3.27-beta',
+                            'x-app-version': '1.3.46-beta',
                             properties: {
-                              u0oxc1dtfyl: {
+                              zx4nzvdjpzq: {
                                 _isJSONSchemaObject: true,
                                 version: '2.0',
                                 type: 'void',
                                 'x-component': 'Grid.Row',
-                                'x-app-version': '1.3.27-beta',
+                                'x-app-version': '1.3.46-beta',
                                 properties: {
-                                  f0f0kfkg0i0: {
+                                  osnr82axoai: {
                                     _isJSONSchemaObject: true,
                                     version: '2.0',
                                     type: 'void',
                                     'x-component': 'Grid.Col',
-                                    'x-app-version': '1.3.27-beta',
+                                    'x-app-version': '1.3.46-beta',
                                     properties: {
-                                      f_pgipm2qrg15: {
-                                        'x-uid': 'r85si4z0uau',
+                                      group: {
+                                        'x-uid': '001ix5hsr0t',
                                         _isJSONSchemaObject: true,
                                         version: '2.0',
                                         type: 'string',
@@ -8046,18 +8044,18 @@ export const subTableDefaultValue = {
                                         'x-settings': 'fieldSettings:FormItem',
                                         'x-component': 'CollectionField',
                                         'x-decorator': 'FormItem',
-                                        'x-collection-field': 't_0yetq8qrgjv.f_pgipm2qrg15',
+                                        'x-collection-field': 'people.group',
                                         'x-component-props': {
                                           fieldNames: {
-                                            value: 'id',
                                             label: 'id',
+                                            value: 'id',
                                           },
                                           mode: 'SubTable',
                                         },
-                                        'x-app-version': '1.3.27-beta',
+                                        'x-app-version': '1.3.46-beta',
                                         default: null,
                                         properties: {
-                                          pp1nrhjmamy: {
+                                          '2go92pz3q7s': {
                                             _isJSONSchemaObject: true,
                                             version: '2.0',
                                             type: 'void',
@@ -8067,9 +8065,9 @@ export const subTableDefaultValue = {
                                               action: false,
                                             },
                                             'x-index': 1,
-                                            'x-app-version': '1.3.27-beta',
+                                            'x-app-version': '1.3.46-beta',
                                             properties: {
-                                              bfd526poxub: {
+                                              '9e59ms847h0': {
                                                 _isJSONSchemaObject: true,
                                                 version: '2.0',
                                                 type: 'void',
@@ -8077,18 +8075,18 @@ export const subTableDefaultValue = {
                                                 'x-toolbar': 'TableColumnSchemaToolbar',
                                                 'x-settings': 'fieldSettings:TableColumn',
                                                 'x-component': 'TableV2.Column',
-                                                'x-app-version': '1.3.27-beta',
+                                                'x-app-version': '1.3.46-beta',
                                                 properties: {
-                                                  f_71uuto2us20: {
-                                                    'x-uid': '251x0zgwsch',
+                                                  staff: {
+                                                    'x-uid': 'qfin4x5otua',
                                                     _isJSONSchemaObject: true,
                                                     version: '2.0',
-                                                    'x-collection-field': 't_vswtj086si6.f_71uuto2us20',
+                                                    'x-collection-field': 'group.staff',
                                                     'x-component': 'CollectionField',
                                                     'x-component-props': {
                                                       fieldNames: {
-                                                        value: 'id',
                                                         label: 'nickname',
+                                                        value: 'id',
                                                       },
                                                       ellipsis: true,
                                                       size: 'small',
@@ -8099,17 +8097,17 @@ export const subTableDefaultValue = {
                                                         display: 'none',
                                                       },
                                                     },
-                                                    'x-app-version': '1.3.27-beta',
+                                                    'x-app-version': '1.3.46-beta',
                                                     default: '{{$user}}',
                                                     'x-async': false,
                                                     'x-index': 1,
                                                   },
                                                 },
-                                                'x-uid': '1nbo8gcnayb',
+                                                'x-uid': 'gg09b3sv8p7',
                                                 'x-async': false,
                                                 'x-index': 1,
                                               },
-                                              yikwx5dcogj: {
+                                              kd80mzx281w: {
                                                 _isJSONSchemaObject: true,
                                                 version: '2.0',
                                                 type: 'void',
@@ -8117,13 +8115,13 @@ export const subTableDefaultValue = {
                                                 'x-toolbar': 'TableColumnSchemaToolbar',
                                                 'x-settings': 'fieldSettings:TableColumn',
                                                 'x-component': 'TableV2.Column',
-                                                'x-app-version': '1.3.27-beta',
+                                                'x-app-version': '1.3.46-beta',
                                                 properties: {
-                                                  f_nxw8fjft5kd: {
-                                                    'x-uid': 'llhliae7yeh',
+                                                  timeStart: {
+                                                    'x-uid': 'sm3t7czuvu1',
                                                     _isJSONSchemaObject: true,
                                                     version: '2.0',
-                                                    'x-collection-field': 't_vswtj086si6.f_nxw8fjft5kd',
+                                                    'x-collection-field': 'group.timeStart',
                                                     'x-component': 'CollectionField',
                                                     'x-component-props': {},
                                                     'x-decorator': 'FormItem',
@@ -8132,17 +8130,17 @@ export const subTableDefaultValue = {
                                                         display: 'none',
                                                       },
                                                     },
-                                                    'x-app-version': '1.3.27-beta',
+                                                    'x-app-version': '1.3.46-beta',
                                                     default: '2024-11-06T16:00:00.000Z',
                                                     'x-async': false,
                                                     'x-index': 1,
                                                   },
                                                 },
-                                                'x-uid': 'bitkhugv01a',
+                                                'x-uid': 'ojxw1dbkoi0',
                                                 'x-async': false,
                                                 'x-index': 2,
                                               },
-                                              xkxqwvs2bwq: {
+                                              st8bezxhvax: {
                                                 _isJSONSchemaObject: true,
                                                 version: '2.0',
                                                 type: 'void',
@@ -8150,13 +8148,13 @@ export const subTableDefaultValue = {
                                                 'x-toolbar': 'TableColumnSchemaToolbar',
                                                 'x-settings': 'fieldSettings:TableColumn',
                                                 'x-component': 'TableV2.Column',
-                                                'x-app-version': '1.3.27-beta',
+                                                'x-app-version': '1.3.46-beta',
                                                 properties: {
-                                                  f_wqnkacbz92p: {
-                                                    'x-uid': '43h1chewr6k',
+                                                  timeEnd: {
+                                                    'x-uid': '0nks9kfq38u',
                                                     _isJSONSchemaObject: true,
                                                     version: '2.0',
-                                                    'x-collection-field': 't_vswtj086si6.f_wqnkacbz92p',
+                                                    'x-collection-field': 'group.timeEnd',
                                                     'x-component': 'CollectionField',
                                                     'x-component-props': {},
                                                     'x-decorator': 'FormItem',
@@ -8165,18 +8163,18 @@ export const subTableDefaultValue = {
                                                         display: 'none',
                                                       },
                                                     },
-                                                    'x-app-version': '1.3.27-beta',
-                                                    default: '{{$iteration.f_nxw8fjft5kd}}',
+                                                    'x-app-version': '1.3.46-beta',
+                                                    default: '{{$iteration.timeStart}}',
                                                     'x-async': false,
                                                     'x-index': 1,
                                                   },
                                                 },
-                                                'x-uid': '1a05jcafmxn',
+                                                'x-uid': '8lynj1uxlbv',
                                                 'x-async': false,
                                                 'x-index': 3,
                                               },
                                             },
-                                            'x-uid': '6lfiwsi1ue5',
+                                            'x-uid': 'bsd9l4pl5by',
                                             'x-async': false,
                                           },
                                         },
@@ -8184,21 +8182,21 @@ export const subTableDefaultValue = {
                                         'x-index': 1,
                                       },
                                     },
-                                    'x-uid': '3zs3hp1t07r',
+                                    'x-uid': 't9bhhahpuln',
                                     'x-async': false,
                                     'x-index': 1,
                                   },
                                 },
-                                'x-uid': 'r4ksx6i248n',
+                                'x-uid': 'm94ti0kcqqh',
                                 'x-async': false,
                                 'x-index': 1,
                               },
                             },
-                            'x-uid': 'bsicl59lje4',
+                            'x-uid': '9po3njajeii',
                             'x-async': false,
                             'x-index': 1,
                           },
-                          '2wt623kooab': {
+                          gr2fjadfkef: {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
@@ -8207,38 +8205,38 @@ export const subTableDefaultValue = {
                             'x-component-props': {
                               layout: 'one-column',
                             },
-                            'x-app-version': '1.3.27-beta',
-                            'x-uid': '2d325lj9va0',
+                            'x-app-version': '1.3.46-beta',
+                            'x-uid': 'v5zhsmloels',
                             'x-async': false,
                             'x-index': 2,
                           },
                         },
-                        'x-uid': 'vo3lrwmviuy',
+                        'x-uid': 'o9fcw2oo6vi',
                         'x-async': false,
                         'x-index': 1,
                       },
                     },
-                    'x-uid': 'v94xo03n6cs',
+                    'x-uid': '7361xvr7amv',
                     'x-async': false,
                     'x-index': 1,
                   },
                 },
-                'x-uid': 'kwhxaf0y5nl',
+                'x-uid': 'an5bhgxdio8',
                 'x-async': false,
                 'x-index': 1,
               },
             },
-            'x-uid': '1m8f7b4xqvw',
+            'x-uid': '0hixaaou1xh',
             'x-async': false,
             'x-index': 1,
           },
         },
-        'x-uid': 'r3wrlgpqwll',
+        'x-uid': 'nfot2l93mkp',
         'x-async': false,
         'x-index': 1,
       },
     },
-    'x-uid': 'x3xrcn4jseb',
+    'x-uid': '3lfdt8s5cay',
     'x-async': true,
     'x-index': 1,
   },
