@@ -93,7 +93,7 @@ export function isSpecialCaseField({
   getCollectionField: (name: string) => CollectionFieldOptions_deprecated;
 }) {
   // 只针对“表格选中记录”变量有效
-  if (!fieldSchema.default.includes('$context')) {
+  if (!fieldSchema.default || !fieldSchema.default.includes('$context')) {
     return false;
   }
 
