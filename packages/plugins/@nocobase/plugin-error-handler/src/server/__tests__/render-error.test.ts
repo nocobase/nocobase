@@ -112,7 +112,7 @@ describe('create with exception', () => {
 
     expect(response.statusCode).toEqual(400);
 
-    expect(response.body['errors'][0]['message']).toBe('name must be unique');
+    expect(response.body['errors'][0]['message']).toBe('name already exists');
   });
 
   it('should render error with field title', async () => {
