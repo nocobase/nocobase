@@ -1,0 +1,107 @@
+name: Auto merge (next -> main) and release major
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - chore/ci-next-to-main
+  workflow_dispatch:
+
+jobs:
+  merge-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(vars.NEXT_PRO_PLUGIN_REPOS), ',') }},${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ',') }}
+          skip-token-revoke: true
+      - name: Get GitHub App User ID
+        id: get-user-id
+        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/nocobase
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: true
+          fetch-depth: 0
+      - name: Checkout pro-plugins
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/pro-plugins
+          path: packages/pro-plugins
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: true
+      - name: Clone pro repos
+        shell: bash
+        run: |
+          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }} ${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ' ') }}
+          do
+          git clone https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
+          done
+      - name: Set Node.js 18
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install Lerna
+        run: npm install -g lerna@4 auto-changelog@2
+      - name: Set up git
+        shell: bash
+        run: |
+          git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
+          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
+          echo "pro-plugins" >> .git/info/exclude
+          cd ./packages/pro-plugins
+          git checkout main
+          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }} ${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ' ') }}
+          do
+            echo "@nocobase/$repo" >> .git/info/exclude
+          done
+          cd ./../..
+      - name: Merge main into next
+        shell: bash
+        run: |
+          git pull origin main
+          git pull origin next
+          git checkout next
+          git merge main
+      - name: Merge next into main
+        shell: bash
+        run: |
+          git checkout main
+          git merge next
+      - name: Release major (main)
+        shell: bash
+        run: |
+          git checkout main
+          bash release.sh --is-feat
+        env:
+          PRO_PLUGIN_REPOS: ${{ vars.NEXT_PRO_PLUGIN_REPOS }}
+          CUSTOM_PRO_PLUGIN_REPOS: ${{ vars.CUSTOM_PRO_PLUGIN_REPOS }}
+      - name: Merge main into next(-X ours)
+        shell: bash
+        run: |
+          git checkout next
+          git merge -X ours main --no-edit
+      - name: Release major (next)
+        shell: bash
+        run: |
+          git checkout next
+          bash release.sh --is-feat
+        env:
+          PRO_PLUGIN_REPOS: ${{ vars.NEXT_PRO_PLUGIN_REPOS }}
+          CUSTOM_PRO_PLUGIN_REPOS: ${{ vars.CUSTOM_PRO_PLUGIN_REPOS }}
+      # - name: Push
+      #   shell: bash
+      #   run: |
+      #     git push origin main --atomic --tags
+      #     git push origin next --atomic --tags
