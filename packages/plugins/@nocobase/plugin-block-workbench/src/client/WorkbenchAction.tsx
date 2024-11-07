@@ -48,12 +48,12 @@ function Button() {
 
 export const WorkbenchAction = withDynamicSchemaProps((props) => {
   const { className, ...others } = props;
-  const { styles, cx } = useStyles();
+  const { styles, cx } = useStyles() as any;
   const fieldSchema = useFieldSchema();
   const Component = useComponent(props?.targetComponent) || Action;
   return (
     <Component
-      className={cx(className, styles.action)}
+      className={cx(className, styles.action, 'nb-action-panel')}
       {...others}
       icon={null}
       title={<Button />}

@@ -27,6 +27,11 @@ export const useStyles = createStyles(({ token, css }) => {
       .ant-pagination-simple {
         margin-top: 0px !important;
       }
+      .nb-action-panel .ant-avatar-circle {
+        width: 48px !important;
+        height: 48px !important;
+        line-height: 48px !important;
+      }
       .ant-table-thead button[aria-label*='schema-initializer-TableV2-table:configureColumns'] > span:last-child {
         display: none !important;
       }
