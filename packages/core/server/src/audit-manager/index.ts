@@ -309,7 +309,7 @@ export class AuditManager {
       }
       this.logger.log(auditLog);
     } catch (err) {
-      ctx.log?.error('audit output error: ' + err.message);
+      ctx.log?.error(err);
     }
   }
   // 中间件
