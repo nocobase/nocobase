@@ -38,9 +38,8 @@ const MobilePicker = connect(
 
     return (
       <>
-        <div contentEditable="false" style={{ pointerEvents: 'none' }}>
+        <div contentEditable="false" onClick={() => setVisible(true)}>
           <Select
-            onClick={() => setVisible(true)}
             placeholder={t('Select')}
             value={value}
             dropdownStyle={{ display: 'none' }}
@@ -51,11 +50,20 @@ const MobilePicker = connect(
               setSelected(null);
             }}
             onFocus={(e) => e.preventDefault()}
+            style={{ pointerEvents: 'none' }}
           />
         </div>
         <Popup visible={visible} onMaskClick={() => setVisible(false)} destroyOnClose>
           <div>
-            <SearchBar placeholder={t('search')} value={searchText} onChange={(v) => setSearchText(v)} />
+            <SearchBar
+              placeholder={t('search')}
+              value={searchText}
+              onChange={(v) => setSearchText(v)}
+              showCancelButton
+              style={{
+                border: 'none',
+              }}
+            />
           </div>
           <div
             style={{
