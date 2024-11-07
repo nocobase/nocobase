@@ -8,7 +8,7 @@
  */
 
 import React, { useState } from 'react';
-import { Button, DatePickerView, Popup, Space, Picker } from 'antd-mobile';
+import { Button, DatePickerView, Popup, Picker } from 'antd-mobile';
 import { mapDatePicker, DatePicker } from '@nocobase/client';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { useTranslation } from 'react-i18next';
@@ -58,7 +58,13 @@ const MobileDateTimePicker = connect(
         </div>
 
         <Popup visible={visible} onMaskClick={() => setVisible(false)} destroyOnClose bodyStyle={{ padding: '16px' }}>
-          <DatePickerView {...rest} value={selectedDate} onChange={(date) => setSelectedDate(date)} />
+          <DatePickerView
+            {...rest}
+            value={selectedDate}
+            onChange={(date) => setSelectedDate(date)}
+            min={new Date(1000, 0, 1)}
+            max={new Date(9999, 11, 31)}
+          />
           {showTime && (
             <Picker
               columns={[hours, minutes, seconds]}
