@@ -52,6 +52,19 @@ describe('xlsx importer', () => {
             name: 'dateOnly',
             interface: 'date',
           },
+          {
+            type: 'unixTimestamp',
+            name: 'unixTimestamp',
+            interface: 'unixTimestamp',
+            uiSchema: {
+              'x-component-props': {
+                picker: 'date',
+                dateFormat: 'YYYY-MM-DD',
+                showTime: true,
+                timeFormat: 'HH:mm:ss',
+              },
+            },
+          },
         ],
       });
 
@@ -144,6 +157,42 @@ describe('xlsx importer', () => {
       const users = (await User.repository.find()).map((user) => user.toJSON());
       expect(users[0]['datetimeNoTz']).toBe('2111-11-12 00:00:00');
       expect(users[1]['datetimeNoTz']).toBe('2021-10-18 00:00:00');
+    });
+
+    it('should import with unixTimestamp', async () => {
+      const columns = [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['unixTimestamp'],
+          defaultTitle: '日期',
+        },
+      ];
+
+      const templateCreator = new TemplateCreator({
+        collection: User,
+        columns,
+      });
+
+      const template = await templateCreator.run();
+
+      const worksheet = template.Sheets[template.SheetNames[0]];
+
+      XLSX.utils.sheet_add_aoa(worksheet, [['test', 77383]], { origin: 'A2' });
+
+      const importer = new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: User,
+        columns,
+        workbook: template,
+      });
+
+      await importer.run();
+
+      const users = (await User.repository.find()).map((user) => user.toJSON());
+      expect(moment(users[0]['unixTimestamp']).toISOString()).toEqual('2111-11-12T00:00:00.000Z');
     });
 
     it('should import with datetimeTz', async () => {

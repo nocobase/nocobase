@@ -69,6 +69,19 @@ describe('export to xlsx with preset', () => {
               title: 'dateTz',
             },
           },
+          {
+            name: 'unixTimestamp',
+            type: 'unixTimestamp',
+            interface: 'unixTimestamp',
+            uiSchema: {
+              'x-component-props': {
+                picker: 'date',
+                dateFormat: 'YYYY-MM-DD',
+                showTime: true,
+                timeFormat: 'HH:mm:ss',
+              },
+            },
+          },
         ],
       });
 
@@ -82,6 +95,7 @@ describe('export to xlsx with preset', () => {
           datetime: '2024-05-10T01:42:35.000Z',
           dateOnly: '2024-05-10',
           datetimeNoTz: '2024-01-01 00:00:00',
+          unixTimestamp: '2024-05-10T01:42:35.000Z',
         },
       });
 
@@ -103,6 +117,10 @@ describe('export to xlsx with preset', () => {
             dataIndex: ['datetimeNoTz'],
             defaultTitle: 'datetimeNoTz',
           },
+          {
+            dataIndex: ['unixTimestamp'],
+            defaultTitle: 'unixTimestamp',
+          },
         ],
       });
 
@@ -122,6 +140,7 @@ describe('export to xlsx with preset', () => {
         expect(firstUser[1]).toEqual('2024-05-10');
         expect(firstUser[2]).toEqual('2024-05-10');
         expect(firstUser[3]).toEqual('2024-01-01');
+        expect(firstUser[4]).toEqual('2024-05-10 01:42:35');
       } finally {
         fs.unlinkSync(xlsxFilePath);
       }

@@ -39,6 +39,7 @@ const interfaces = {
   percent: PercentInterface,
   datetime: DatetimeInterface,
   datetimeNoTz: DatetimeNoTzInterface,
+  unixTimestamp: DatetimeInterface,
   date: DateInterface,
   createdAt: DatetimeInterface,
   updatedAt: DatetimeInterface,
