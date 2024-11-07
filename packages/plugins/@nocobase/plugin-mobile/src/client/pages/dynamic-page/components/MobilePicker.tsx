@@ -70,7 +70,7 @@ const MobilePicker = connect(
           >
             <CheckList
               multiple={mode === 'multiple'}
-              value={selected || ''}
+              value={Array.isArray(selected) ? selected : [selected] || []}
               onChange={(val) => {
                 if (mode === 'multiple') {
                   setSelected(val);
