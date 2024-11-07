@@ -102,7 +102,7 @@ test.describe('add menu item', () => {
 
     // open link page
     await page.getByLabel(pageLink).click();
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(2000);
 
     // After clicking, it will redirect to another page, so we need to get the instance of the new page
     const newPage = page.context().pages()[1];

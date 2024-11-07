@@ -878,5 +878,7 @@
   "Sorry, the page you visited does not exist.": "抱歉，你訪問的頁面不存在。",
   "Allow multiple selection": "允許多選",
   "Parent object": "上級物件",
-  "Ellipsis overflow content": "省略超出長度的內容"
+  "Ellipsis overflow content": "省略超出長度的內容",
+  "Hide column": "隱藏列",
+  "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "在配置模式下，整個列會變為透明色。在非配置模式下，整個列將被隱藏。即使整個列被隱藏了，其配置的默認值和其他設置仍然有效。"
 }
