@@ -198,9 +198,9 @@ export class AuditManager {
 
   async getDefaultMetaData(ctx: any) {
     let body: any = null;
-    if (ctx.request.body) {
-      if (!Buffer.isBuffer(ctx.request.body) && !isStream(ctx.request.body)) {
-        body = ctx.request.body;
+    if (ctx.body) {
+      if (!Buffer.isBuffer(ctx.body) && !isStream(ctx.body)) {
+        body = ctx.body;
       }
     }
     return {
