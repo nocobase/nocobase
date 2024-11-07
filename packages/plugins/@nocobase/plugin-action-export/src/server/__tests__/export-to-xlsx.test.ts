@@ -617,7 +617,7 @@ describe('export to xlsx', () => {
             title: 'test_date',
           },
           name: 'test_date',
-          type: 'date',
+          type: 'datetime',
           interface: 'datetime',
         },
       ],
@@ -657,7 +657,7 @@ describe('export to xlsx', () => {
       const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
       const firstUser = sheetData[1];
-      expect(firstUser).toEqual(['some_title', '2024-05-10 09:42:35']);
+      expect(firstUser).toEqual(['some_title', '2024-05-10 01:42:35']);
     } finally {
       fs.unlinkSync(xlsxFilePath);
     }
