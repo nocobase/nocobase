@@ -125,13 +125,15 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
           }
         }, []);
         const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : columnSchema.name;
+        const columnHidden = !!columnSchema['x-component-props']?.['columnHidden'];
         return {
           title: <RecursionFieldMemo name={columnSchema.name} schema={columnSchema} onlyRenderSelf />,
           dataIndex,
           key: columnSchema.name,
           sorter: columnSchema['x-component-props']?.['sorter'],
-          width: 200,
+          columnHidden,
           ...columnSchema['x-component-props'],
+          width: columnHidden && !designable ? 0 : columnSchema['x-component-props']?.width || 200,
           render: (value, record, index) => {
             const basePath = field.address.concat(record.__index || index);
             return (
@@ -149,14 +151,25 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
             );
           },
           onCell: (record, rowIndex) => {
-            return { record, schema: columnSchema, rowIndex, isSubTable: props.isSubTable };
+            return {
+              record,
+              schema: columnSchema,
+              rowIndex,
+              isSubTable: props.isSubTable,
+              columnHidden,
+            };
+          },
+          onHeaderCell: () => {
+            return {
+              columnHidden,
+            };
           },
         } as TableColumnProps<any>;
       }),
 
     // 这里不能把 columnsSchema 作为依赖，因为其每次都会变化，这里使用 hasChangedColumns 作为依赖
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [hasChangedColumns, field.address, collection, parentRecordData, schemaToolbarBigger],
+    [hasChangedColumns, field.address, collection, parentRecordData, schemaToolbarBigger, designable],
   );
 
   const tableColumns = useMemo(() => {
@@ -164,7 +177,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
       return columns;
     }
     const res = [
-      ...columns,
+      ...adjustColumnOrder(columns),
       {
         title: render(),
         dataIndex: 'TABLE_COLUMN_INITIALIZER',
@@ -210,7 +223,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
       });
     }
 
-    return adjustColumnOrder(res);
+    return res;
   }, [columns, exists, field, render, props.showDel, designable]);
 
   return tableColumns;
@@ -444,11 +457,31 @@ const HeaderWrapperComponent = React.memo((props) => {
   );
 });
 
+// Style when Hidden is enabled in table column configuration
+const columnHiddenStyle = {
+  borderRight: 'none',
+  paddingLeft: 0,
+  paddingRight: 0,
+};
+
+// Style when Hidden is enabled in configuration mode
+const columnOpacityStyle = {
+  opacity: 0.3,
+};
+
 HeaderWrapperComponent.displayName = 'HeaderWrapperComponent';
 
-const HeaderCellComponent = React.memo((props: { className: string }) => {
-  return <th {...props} className={cls(props.className, headerClass)} />;
-});
+const HeaderCellComponent = React.memo(
+  (props: { className: string; columnHidden: boolean; children: React.ReactNode }) => {
+    const { designable } = useDesignable();
+
+    if (props.columnHidden) {
+      return <th style={designable ? columnOpacityStyle : columnHiddenStyle}>{designable ? props.children : null}</th>;
+    }
+
+    return <th {...props} className={cls(props.className, headerClass)} />;
+  },
+);
 
 HeaderCellComponent.displayName = 'HeaderCellComponent';
 
@@ -460,36 +493,62 @@ const BodyRowComponent = React.memo(
 
 BodyRowComponent.displayName = 'BodyRowComponent';
 
-const BodyCellComponent = React.memo(
-  (props: {
-    className: string;
-    style: React.CSSProperties;
-    children: React.ReactNode;
-    record: any;
-    schema: any;
-    rowIndex: number;
-    isSubTable: boolean;
-  }) => {
-    const { token } = useToken();
-    const inView = useContext(InViewContext);
-    const isIndex = props.className?.includes('selection-column');
-    const { record, schema, rowIndex, isSubTable, ...others } = props;
-    const { valueMap } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
-    const style = useMemo(() => Object.assign({ ...props.style }, valueMap), [props.style, valueMap]);
-    const skeletonStyle = {
-      height: '1em',
-      backgroundColor: token.colorFillSecondary,
-      borderRadius: `${token.borderRadiusSM}px`,
-    };
+const InternalBodyCellComponent = React.memo<{
+  columnHidden: boolean;
+  className: string;
+  style: React.CSSProperties;
+  children: React.ReactNode;
+  record: any;
+  schema: any;
+  rowIndex: number;
+  isSubTable: boolean;
+}>((props) => {
+  const { token } = useToken();
+  const inView = useContext(InViewContext);
+  const isIndex = props.className?.includes('selection-column');
+  const { record, schema, rowIndex, isSubTable, ...others } = props;
+  const { valueMap } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
+  const style = useMemo(() => Object.assign({ ...props.style }, valueMap), [props.style, valueMap]);
+  const skeletonStyle = {
+    height: '1em',
+    backgroundColor: token.colorFillSecondary,
+    borderRadius: `${token.borderRadiusSM}px`,
+  };
 
+  return (
+    <td {...others} className={classNames(props.className, cellClass)} style={style}>
+      {/* Lazy rendering cannot be used in sub-tables. */}
+      {isSubTable || inView || isIndex ? props.children : <div style={skeletonStyle} />}
+    </td>
+  );
+});
+
+InternalBodyCellComponent.displayName = 'InternalBodyCellComponent';
+
+const displayNone = { display: 'none' };
+
+const BodyCellComponent = React.memo<{
+  columnHidden: boolean;
+  children: React.ReactNode;
+  className: string;
+  style: React.CSSProperties;
+  record: any;
+  schema: any;
+  rowIndex: number;
+  isSubTable: boolean;
+}>((props) => {
+  const { designable } = useDesignable();
+
+  if (props.columnHidden) {
     return (
-      <td {...others} className={classNames(props.className, cellClass)} style={style}>
-        {/* Lazy rendering cannot be used in sub-tables. */}
-        {isSubTable || inView || isIndex ? props.children : <div style={skeletonStyle} />}
+      <td style={designable ? columnOpacityStyle : columnHiddenStyle}>
+        {designable ? props.children : <span style={displayNone}>{props.children}</span>}
       </td>
     );
-  },
-);
+  }
+
+  return <InternalBodyCellComponent {...props} />;
+});
 
 BodyCellComponent.displayName = 'BodyCellComponent';
 

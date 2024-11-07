@@ -348,7 +348,7 @@ export const useACLFieldWhitelist = () => {
   return {
     whitelist,
     schemaInWhitelist: useCallback(
-      (fieldSchema: Schema, isSkip?) => {
+      (fieldSchema: Schema | any, isSkip?) => {
         if (isSkip) {
           return true;
         }
@@ -362,7 +362,8 @@ export const useACLFieldWhitelist = () => {
           return true;
         }
         const [key1, key2] = fieldSchema['x-collection-field'].split('.');
-        return whitelist?.includes(key2 || key1);
+        const [associationField] = fieldSchema['name'].split('.');
+        return whitelist?.includes(associationField || key2 || key1);
       },
       [whitelist],
     ),

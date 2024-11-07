@@ -20,7 +20,6 @@ import {
   APIClientProvider,
   ApplicationContext,
   CollectionCategoriesContext,
-  CollectionCategoriesProvider,
   CurrentAppInfoContext,
   DataSourceApplicationProvider,
   SchemaComponent,
@@ -38,7 +37,7 @@ import {
 import { App, Button, ConfigProvider, Layout, Spin, Switch, Tooltip } from 'antd';
 import dagre from 'dagre';
 import lodash from 'lodash';
-import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAsyncDataSource, useCreateActionAndRefreshCM } from './action-hooks';
 import { AddCollectionAction } from './components/AddCollectionAction';
@@ -384,6 +383,9 @@ export const GraphDrawPage = React.memo(() => {
   const [collectionList, setCollectionList] = useState<any>([]);
   const [loading, setLoading] = useState(false);
   const { collections, getCollections } = useCollectionManager_deprecated();
+  const categoryCtx = useContext(CollectionCategoriesContext);
+  const categoryCtxRef = useRef<any>();
+  categoryCtxRef.current = categoryCtx;
   const dm = useDataSourceManager();
   const currentAppInfo = useCurrentAppInfo();
   const app = useApp();
@@ -392,7 +394,6 @@ export const GraphDrawPage = React.memo(() => {
   } = currentAppInfo || {
     data: { database: {} as any },
   };
-  const categoryCtx = useContext(CollectionCategoriesContext);
   const scope = { ...options?.scope };
   const components = { ...options?.components };
   const saveGraphPositionAction = async (data) => {
@@ -444,7 +445,6 @@ export const GraphDrawPage = React.memo(() => {
   };
 
   const dataSource = useDataSource();
-
   const initGraphCollections = () => {
     targetGraph = new Graph({
       container: document.getElementById('container')!,
@@ -522,7 +522,7 @@ export const GraphDrawPage = React.memo(() => {
             <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSource?.key}>
               <APIClientProvider apiClient={api}>
                 <SchemaComponentOptions inherit scope={scope} components={components}>
-                  <CollectionCategoriesProvider {...categoryCtx}>
+                  <CollectionCategoriesContext.Provider value={categoryCtxRef.current}>
                     {/* TODO: 因为画布中的卡片是一次性注册进 Graph 的，这里的 theme 是存在闭包里的，因此当主题动态变更时，并不会触发卡片的重新渲染 */}
                     <ConfigProvider theme={theme as any}>
                       <div style={{ height: 'auto' }}>
@@ -533,7 +533,7 @@ export const GraphDrawPage = React.memo(() => {
                         </App>
                       </div>
                     </ConfigProvider>
-                  </CollectionCategoriesProvider>
+                  </CollectionCategoriesContext.Provider>
                 </SchemaComponentOptions>
               </APIClientProvider>
             </DataSourceApplicationProvider>

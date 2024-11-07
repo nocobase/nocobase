@@ -372,7 +372,7 @@ async function getVersion() {
   if (!from || !to) {
     // git tag -l --sort=version:refname | grep "v*-ver" | tail -2
     const tagPattern = `v*-${ver}`;
-    const { stdout: tags } = await execa(`git tag -l --sort=version:refname | grep "${tagPattern}" | tail -2`, {
+    const { stdout: tags } = await execa(`git tag -l --sort=creatordate | grep "${tagPattern}" | tail -2`, {
       shell: true,
     });
     [from, to] = tags.split('\n');

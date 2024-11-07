@@ -1,8 +1,7 @@
 {
   "name": "@nocobase/plugin-public-forms",
-  "version": "1.4.0-alpha",
+  "version": "1.4.0-alpha.2",
   "main": "dist/server/index.js",
-  "dependencies": {},
   "displayName": "Public forms",
   "displayName.zh-CN": "公开表单",
   "description": "Share public forms externally to collect information from anonymous users",
