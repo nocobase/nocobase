@@ -10,6 +10,7 @@
 import { SchemaComponent } from '@nocobase/client';
 import React from 'react';
 import { useAuthTranslation } from '../locale';
+import { FormTab, ArrayTable } from '@formily/antd-v5';
 import { Alert } from 'antd';
 
 export const Options = () => {
@@ -17,28 +18,115 @@ export const Options = () => {
   return (
     <SchemaComponent
       scope={{ t }}
-      components={{ Alert }}
+      components={{ Alert, FormTab, ArrayTable }}
       schema={{
         type: 'object',
         properties: {
-          public: {
-            type: 'object',
-            properties: {
-              allowSignUp: {
-                'x-decorator': 'FormItem',
-                type: 'boolean',
-                title: '{{t("Allow to sign up")}}',
-                'x-component': 'Checkbox',
-                default: true,
-              },
-            },
-          },
           notice: {
             type: 'void',
+            'x-decorator': 'FormItem',
             'x-component': 'Alert',
             'x-component-props': {
               showIcon: true,
               message: '{{t("The authentication allows users to sign in via username or email.")}}',
+            },
+          },
+          public: {
+            type: 'object',
+            properties: {
+              collapse: {
+                type: 'void',
+                'x-component': 'FormTab',
+                properties: {
+                  basic: {
+                    type: 'void',
+                    'x-component': 'FormTab.TabPane',
+                    'x-component-props': {
+                      tab: 'Sign-up settings',
+                    },
+                    properties: {
+                      allowSignUp: {
+                        'x-decorator': 'FormItem',
+                        type: 'boolean',
+                        title: '{{t("Allow to sign up")}}',
+                        'x-component': 'Checkbox',
+                        default: true,
+                      },
+                      signupForm: {
+                        title: '{{t("Sign-up form")}}',
+                        type: 'array',
+                        'x-decorator': 'FormItem',
+                        'x-component': 'ArrayTable',
+                        default: [
+                          {
+                            field: 'username',
+                            show: true,
+                            required: true,
+                          },
+                          {
+                            field: 'email',
+                            show: false,
+                            required: false,
+                          },
+                        ],
+                        items: {
+                          type: 'object',
+                          'x-decorator': 'ArrayItems.Item',
+                          properties: {
+                            column1: {
+                              type: 'void',
+                              'x-component': 'ArrayTable.Column',
+                              'x-component-props': { width: 80, title: 'Field', align: 'center' },
+                              properties: {
+                                field: {
+                                  type: 'string',
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'Select',
+                                  enum: [
+                                    {
+                                      label: 'Username',
+                                      value: 'username',
+                                    },
+                                    {
+                                      label: 'Email',
+                                      value: 'email',
+                                    },
+                                  ],
+                                  'x-read-pretty': true,
+                                },
+                              },
+                            },
+                            column2: {
+                              type: 'void',
+                              'x-component': 'ArrayTable.Column',
+                              'x-component-props': { width: 80, title: 'Display', align: 'center' },
+                              properties: {
+                                show: {
+                                  type: 'boolean',
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'Checkbox',
+                                },
+                              },
+                            },
+                            column3: {
+                              type: 'void',
+                              'x-component': 'ArrayTable.Column',
+                              'x-component-props': { width: 80, title: 'Required', align: 'center' },
+                              properties: {
+                                required: {
+                                  type: 'boolean',
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'Checkbox',
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
             },
           },
         },
