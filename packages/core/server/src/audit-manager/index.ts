@@ -8,6 +8,16 @@
  */
 
 import { Context } from '@nocobase/actions';
+import Stream from 'stream';
+
+function isStream(obj) {
+  return (
+    obj instanceof Stream.Readable ||
+    obj instanceof Stream.Writable ||
+    obj instanceof Stream.Duplex ||
+    obj instanceof Stream.Transform
+  );
+}
 
 export interface AuditLog {
   uuid: string;
@@ -22,7 +32,6 @@ export interface AuditLog {
   ip: string;
   ua: string;
   status: number;
-  createdAt: string;
   metadata: Record<string, any>;
 }
 
@@ -36,6 +45,7 @@ type Action =
       name: string;
       // 在操作上下文中获取 MetaData
       getMetaData?: (ctx: Context) => Promise<Record<string, any>>;
+      getUserInfo?: (ctx: Context) => Promise<Record<string, any>>;
     };
 
 export class AuditManager {
@@ -51,43 +61,62 @@ export class AuditManager {
   }
   /**
    * 注册需要参与审计的资源和操作，支持几种写法
-   * 注册全局的操作，对所有资源生效；
+   *
+   * 对所有资源生效；
    * registerActions(['create'])
+   *
    * 对某个资源的所有操作生效 resource:*
    * registerActions(['app:*'])
+   *
    * 对某个资源的某个操作生效 resouce:action
    * registerAction(['pm:update'])
    *
    * 支持传getMetaData方法
+   *
    * registerActions([
    *  'create',
    *  { name: 'auth:signIn', getMetaData}
    * ])
    *
-   * 当注册的接口有重叠是，颗粒度细的注册方法优先级更高 ？怎么进行判断？
-   * registerActions(['create']);
-   * registerAction([{ name: 'xxx:create', getMetaData }]); // 采用这个
+   * 支持传getUserInfo方法
+   *
+   * registerActions([
+   * 'create',
+   * { name: 'auth:signIn', getUserInfo }
+   * ])
+   *
+   * 当注册的接口有重叠时，颗粒度细的注册方法优先级更高
+   *
+   * Action1: registerActions(['create']);
+   *
+   * Action2: registerAction([{ name: 'user:*', getMetaData }]);
+   *
+   * Action3: registerAction([{ name: 'user:create', getMetaData }]);
+   *
+   * 对于user:create接口，以上优先级顺序是 Action3 > Action2 > Action1
+   *
+   * @param actions 操作列表
    */
-
   registerActions(actions: Action[]) {
     actions.forEach((action) => {
       this.registerAction(action);
     });
   }
 
-  // 注册单个操作，支持的用法同上
-  // registerAction('create')
-  // registerAction('app:*')
-  // registerAction('pm:update')
-  // registerAction('create', { getMetaData })
+  /**
+   * 注册单个操作，支持的用法同registerActions
+   * @param action 操作
+   */
   registerAction(action: Action) {
     let originAction = '';
     let getMetaData = null;
+    let getUserInfo = null;
     if (typeof action === 'string') {
       originAction = action;
     } else {
       originAction = action.name;
       getMetaData = action.getMetaData;
+      getUserInfo = action.getUserInfo;
     }
     // 解析originAction, 获取actionName, resourceName
     const nameRegex = /^[a-zA-Z0-9_-]+$/;
@@ -117,17 +146,19 @@ export class AuditManager {
       resource = new Map();
       this.resources.set(resourceName, resource);
     }
+    const saveAction: Action = {
+      name: originAction,
+    };
     if (getMetaData) {
-      resource.set(actionName, { name: originAction, getMetaData });
-    } else {
-      resource.set(actionName, { name: originAction });
+      saveAction.getMetaData = getMetaData;
     }
+    if (getUserInfo) {
+      saveAction.getUserInfo = getUserInfo;
+    }
+    resource.set(actionName, saveAction);
   }
 
   getAction(action: string, resource?: string) {
-    // 1. 匹配resource:action
-    // 2. 匹配resource:*
-    // 3. 匹配*:action
     let resourceName = resource;
     if (!resource) {
       resourceName = '__default__';
@@ -166,6 +197,12 @@ export class AuditManager {
   }
 
   async getDefaultMetaData(ctx: any) {
+    let body: any = null;
+    if (ctx.request.body) {
+      if (!Buffer.isBuffer(ctx.request.body) && !isStream(ctx.request.body)) {
+        body = ctx.request.body;
+      }
+    }
     return {
       request: {
         params: ctx.request.params,
@@ -173,7 +210,7 @@ export class AuditManager {
         body: ctx.request.body,
       },
       response: {
-        body: ctx.body,
+        body,
       },
     };
   }
@@ -206,7 +243,6 @@ export class AuditManager {
       ip: ctx.request.ip,
       ua: ctx.request.header['user-agent'],
       status: ctx.response.status,
-      createdAt: new Date().toISOString(),
       metadata: null,
     };
     return auditLog;
@@ -227,7 +263,7 @@ export class AuditManager {
     return resourceUk;
   }
 
-  async output(ctx: any, metadata?: Record<string, any>) {
+  async output(ctx: any, reqId: any, status: number, metadata?: Record<string, any>) {
     try {
       const { resourceName, actionName } = ctx.action;
       const action: Action = this.getAction(actionName, resourceName);
@@ -235,9 +271,27 @@ export class AuditManager {
         return;
       }
       const auditLog: AuditLog = this.formatAuditData(ctx);
-      if (typeof action !== 'string' && action.getMetaData) {
-        const extra = await action.getMetaData(ctx);
-        auditLog.metadata = { ...metadata, ...extra };
+      auditLog.uuid = reqId;
+      auditLog.status = status;
+      if (typeof action !== 'string') {
+        if (action.getUserInfo) {
+          const userInfo = await action.getUserInfo(ctx);
+          if (userInfo) {
+            if (userInfo.id) {
+              auditLog.userId = userInfo.id;
+            }
+            if (userInfo.roleName) {
+              auditLog.roleName = userInfo.roleName;
+            }
+          }
+        }
+        if (action.getMetaData) {
+          const extra = await action.getMetaData(ctx);
+          auditLog.metadata = { ...metadata, ...extra };
+        } else {
+          const defaultMetaData = await this.getDefaultMetaData(ctx);
+          auditLog.metadata = { ...metadata, ...defaultMetaData };
+        }
       } else {
         const defaultMetaData = await this.getDefaultMetaData(ctx);
         auditLog.metadata = { ...metadata, ...defaultMetaData };
@@ -250,6 +304,8 @@ export class AuditManager {
   // 中间件
   middleware() {
     return async (ctx: any, next: any) => {
+      const reqId = ctx.reqId;
+      let status = 1;
       let metadata = {};
       try {
         await next();
@@ -260,9 +316,12 @@ export class AuditManager {
           status: ctx.status,
           errMsg: err.message,
         };
+        status = 0;
         throw err;
       } finally {
-        this.output(ctx, metadata);
+        if (this.logger) {
+          this.output(ctx, reqId, status, metadata);
+        }
       }
     };
   }

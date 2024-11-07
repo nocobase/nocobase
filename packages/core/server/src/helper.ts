@@ -48,6 +48,7 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
   );
 
   app.use(requestLogger(app.name, app.requestLogger, options.logger?.request), { tag: 'logger' });
+  app.use(app.auditManager.middleware(), { tag: 'audit' });
 
   app.use(
     cors({

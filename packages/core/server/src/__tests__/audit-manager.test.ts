@@ -49,19 +49,41 @@ describe('audit manager', () => {
       `);
   });
 
-  it('register actions', () => {
-    app.auditManager.registerActions(['create', 'update', 'destroy']);
+  it('register actions with getMetaData and getUserInfo', () => {
+    const getMetaData = () => {
+      return new Promise((resolve, reject) => {
+        resolve({
+          request: {
+            params: {
+              testData: 'testParamData',
+            },
+            body: {
+              testBody: 'testBodyData',
+            },
+          },
+          response: {
+            body: {
+              testBody: 'testBody',
+            },
+          },
+        });
+      });
+    };
+    const getUserInfo = () => {
+      return new Promise((resolve, reject) => {
+        resolve({
+          id: 1,
+        });
+      });
+    };
+    app.auditManager.registerAction({ name: 'create', getMetaData, getUserInfo });
     expect(app.auditManager.resources).toMatchInlineSnapshot(`
         Map {
           "__default__" => Map {
             "create" => {
+              "getMetaData": [Function],
+              "getUserInfo": [Function],
               "name": "create",
-            },
-            "update" => {
-              "name": "update",
-            },
-            "destroy" => {
-              "name": "destroy",
             },
           },
         }
@@ -100,7 +122,7 @@ describe('audit manager', () => {
       `);
   });
 
-  it('audit manager register actions with getMetaData', async () => {
+  it('register actions with getMetaData', async () => {
     const getMetaData = () => {
       return new Promise((resolve, reject) => {
         resolve({
@@ -136,7 +158,32 @@ describe('audit manager', () => {
     `);
   });
 
-  it('audit manager getAction', () => {
+  it('register actions with getUserInfo', async () => {
+    const getUserInfo = () => {
+      return new Promise((resolve, reject) => {
+        resolve({
+          id: 1,
+          name: 'test',
+        });
+      });
+    };
+    app.auditManager.registerActions(['pm:enable', { name: 'pm:enable', getUserInfo }, 'pm:add']);
+    expect(app.auditManager.resources).toMatchInlineSnapshot(`
+      Map {
+          "pm" => Map {
+            "enable" => {
+              "getUserInfo": [Function],
+              "name": "pm:enable",
+            },
+            "add" => {
+              "name": "pm:add",
+            },
+          },
+        }
+    `);
+  });
+
+  it('getAction', () => {
     app.auditManager.registerActions(['create', 'update', 'user:create', 'user:*', 'user:destory', 'role:*']);
     expect(app.auditManager.resources).toMatchInlineSnapshot(`
       Map {
@@ -207,7 +254,9 @@ describe('audit manager', () => {
 
     const action7 = app.auditManager.getAction('destory');
     expect(action7).toEqual(null);
+  });
 
+  it('getAction priority', () => {
     app.auditManager.registerActions(['list']);
     const action8 = app.auditManager.getAction('list', 'department');
     expect(action8).toMatchInlineSnapshot(`

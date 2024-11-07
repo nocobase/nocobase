@@ -100,6 +100,34 @@ export class PluginAuthServer extends Plugin {
             },
           };
         },
+        getUserInfo: async (ctx: any) => {
+          if (!ctx.body?.data?.user) {
+            return null;
+          }
+          // 查询用户角色
+          const userId = ctx.body.data.user.id;
+          const user = await ctx.db.getRepository('users').findOne({
+            filterByTk: userId,
+          });
+          const roles = await user?.getRoles();
+          if (!roles) {
+            return {
+              id: userId,
+            };
+          } else {
+            if (roles.length === 1) {
+              return {
+                id: userId,
+                roleName: roles[0].name,
+              };
+            } else {
+              // 多角色的情况下暂时不返回角色名
+              return {
+                id: userId,
+              };
+            }
+          }
+        },
       },
       {
         name: 'auth:signUp',
