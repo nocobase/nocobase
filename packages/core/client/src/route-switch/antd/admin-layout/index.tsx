@@ -10,7 +10,7 @@
 import { css } from '@emotion/css';
 import { ConfigProvider, Divider, Layout } from 'antd';
 import { createGlobalStyle } from 'antd-style';
-import React, { FC, createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { FC, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
@@ -73,13 +73,11 @@ const filterByACL = (schema, options) => {
   return schema;
 };
 
-const SchemaIdContext = createContext(null);
-SchemaIdContext.displayName = 'SchemaIdContext';
 const useMenuProps = () => {
-  const defaultSelectedUid = useContext(SchemaIdContext);
+  const currentPageUid = useCurrentPageUid();
   return {
-    selectedUid: defaultSelectedUid,
-    defaultSelectedUid,
+    selectedUid: currentPageUid,
+    defaultSelectedUid: currentPageUid,
   };
 };
 
@@ -190,11 +188,8 @@ const MenuEditor = (props) => {
   if (loading) {
     return render();
   }
-  return (
-    <SchemaIdContext.Provider value={currentPageUid}>
-      <SchemaComponent distributed scope={scope} schema={schema} />
-    </SchemaIdContext.Provider>
-  );
+
+  return <SchemaComponent distributed scope={scope} schema={schema} />;
 };
 
 /**
