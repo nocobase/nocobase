@@ -70,9 +70,10 @@ jobs:
       - name: Merge main into next
         shell: bash
         run: |
+          git checkout main
           git pull origin main
-          git pull origin next
           git checkout next
+          git pull origin next
           git merge main
       - name: Merge next into main
         shell: bash
