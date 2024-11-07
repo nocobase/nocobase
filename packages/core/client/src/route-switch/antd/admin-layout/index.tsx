@@ -8,11 +8,10 @@
  */
 
 import { css } from '@emotion/css';
-import { useSessionStorageState } from 'ahooks';
-import { App, ConfigProvider, Divider, Layout } from 'antd';
+import { ConfigProvider, Divider, Layout } from 'antd';
 import { createGlobalStyle } from 'antd-style';
 import React, { FC, createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
@@ -85,8 +84,6 @@ const useMenuProps = () => {
 };
 
 const MenuEditor = (props) => {
-  const { notification } = App.useApp();
-  const [, setHasNotice] = useSessionStorageState('plugin-notice', { defaultValue: false });
   const { t } = useMenuTranslation();
   const { setTitle: _setTitle } = useDocumentTitle();
   const setTitle = useCallback((title) => _setTitle(t(title)), [_setTitle, t]);
@@ -185,44 +182,6 @@ const MenuEditor = (props) => {
       }
     }
   }, [currentPageUid, isMatchAdmin, isMatchAdminName, schema, setTitle]);
-
-  useRequest(
-    {
-      url: 'applicationPlugins:list',
-      params: {
-        sort: 'id',
-        paginate: false,
-      },
-    },
-    {
-      onSuccess: ({ data }) => {
-        setHasNotice(true);
-        const errorPlugins = data.filter((item) => !item.isCompatible);
-        if (errorPlugins.length) {
-          notification.error({
-            message: 'Plugin dependencies check failed',
-            description: (
-              <div>
-                <div>
-                  These plugins failed dependency checks. Please go to the{' '}
-                  <Link to="/admin/pm/list/local/">plugin management page</Link> for more details.{' '}
-                </div>
-                <ul>
-                  {errorPlugins.map((item) => (
-                    <li key={item.id}>
-                      {item.displayName} - {item.packageName}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ),
-          });
-        }
-      },
-      manual: true,
-      // ready: !hasNotice,
-    },
-  );
 
   const scope = useMemo(() => {
     return { useMenuProps, onSelect, sideMenuRef, defaultSelectedUid: currentPageUid };
