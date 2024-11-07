@@ -21,6 +21,12 @@ export const useStyles = createStyles(({ token, css }) => {
       .ant-formily-item-feedback-layout-loose {
         margin-bottom: 3px;
       }
+      .ant-card .ant-card-body {
+        padding: 16px;
+      }
+      .ant-pagination-simple {
+        margin-top: 0px !important;
+      }
       .ant-table-thead button[aria-label*='schema-initializer-TableV2-table:configureColumns'] > span:last-child {
         display: none !important;
       }
