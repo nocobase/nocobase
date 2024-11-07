@@ -1,6 +1,7 @@
 import { DatetimeInterface } from './datetime-interface';
 import dayjs from 'dayjs';
 import { getJsDateFromExcel } from 'excel-date-to-js';
+import { getDefaultFormat, str2moment } from '@nocobase/utils';
 
 function isDate(v) {
   return v instanceof Date;
@@ -37,5 +38,12 @@ export class DatetimeNoTzInterface extends DatetimeInterface {
     }
 
     throw new Error(`Invalid date - ${value}`);
+  }
+
+  toString(value: any, ctx?: any) {
+    const props = this.options?.uiSchema?.['x-component-props'] ?? {};
+    const format = getDefaultFormat(props);
+    const m = str2moment(value, { ...props });
+    return m ? m.format(format) : '';
   }
 }

@@ -50,6 +50,25 @@ describe('export to xlsx with preset', () => {
               title: 'dateTz',
             },
           },
+          {
+            name: 'dateOnly',
+            type: 'dateOnly',
+            interface: 'date',
+            defaultToCurrentTime: false,
+            onUpdateToCurrentTime: false,
+            timezone: true,
+          },
+          {
+            name: 'datetimeNoTz',
+            type: 'datetimeNoTz',
+            interface: 'datetimeNoTz',
+            uiSchema: {
+              'x-component-props': { picker: 'date', dateFormat: 'YYYY-MM-DD', gmt: false, showTime: false, utc: true },
+              type: 'string',
+              'x-component': 'DatePicker',
+              title: 'dateTz',
+            },
+          },
         ],
       });
 
@@ -61,6 +80,8 @@ describe('export to xlsx with preset', () => {
         values: {
           title: 'p1',
           datetime: '2024-05-10T01:42:35.000Z',
+          dateOnly: '2024-05-10',
+          datetimeNoTz: '2024-01-01 00:00:00',
         },
       });
 
@@ -73,6 +94,14 @@ describe('export to xlsx with preset', () => {
           {
             dataIndex: ['datetime'],
             defaultTitle: 'datetime',
+          },
+          {
+            dataIndex: ['dateOnly'],
+            defaultTitle: 'dateOnly',
+          },
+          {
+            dataIndex: ['datetimeNoTz'],
+            defaultTitle: 'datetimeNoTz',
           },
         ],
       });
@@ -90,7 +119,9 @@ describe('export to xlsx with preset', () => {
         const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
         const firstUser = sheetData[1];
-        expect(firstUser).toEqual(['p1', '2024-05-10']);
+        expect(firstUser[1]).toEqual('2024-05-10');
+        expect(firstUser[2]).toEqual('2024-05-10');
+        expect(firstUser[3]).toEqual('2024-01-01');
       } finally {
         fs.unlinkSync(xlsxFilePath);
       }
