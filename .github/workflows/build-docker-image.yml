@@ -79,11 +79,11 @@ jobs:
       - name: Set tags
         id: set-tags
         run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]] || [[ "${{ github.ref }}" == "refs/heads/next" ]]; then
-            echo "::set-output name=tags::${{ steps.meta.outputs.tags }},${{ secrets.ALI_DOCKER_REGISTRY }}/${{ steps.meta.outputs.tags }},${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/${{ steps.meta.outputs.tags }}"
-          else
+          # if [[ "${{ github.ref }}" == "refs/heads/main" ]] || [[ "${{ github.ref }}" == "refs/heads/next" ]]; then
+          #   echo "::set-output name=tags::${{ steps.meta.outputs.tags }},${{ secrets.ALI_DOCKER_REGISTRY }}/${{ steps.meta.outputs.tags }},${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/${{ steps.meta.outputs.tags }}"
+          # else
             echo "::set-output name=tags::${{ secrets.ALI_DOCKER_REGISTRY }}/${{ steps.meta.outputs.tags }}"
-          fi
+          # fi
 
       - name: Build and push
         uses: docker/build-push-action@v3
