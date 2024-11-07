@@ -39,10 +39,11 @@ export class NotificationManager implements NotificationManager {
   async send(params: SendOptions) {
     this.plugin.logger.info('receive sending message request', params);
     const channelsRepo = this.plugin.app.db.getRepository(COLLECTION_NAME.channels);
+    const messageData = { ...(params.receivers ? { receivers: params.receivers } : {}), ...params.message };
     const logData: any = {
       triggerFrom: params.triggerFrom,
       channelName: params.channelName,
-      message: params.message,
+      message: messageData,
     };
     try {
       const channel = await channelsRepo.findOne({ filterByTk: params.channelName });
@@ -51,6 +52,7 @@ export class NotificationManager implements NotificationManager {
         const instance = new Channel(this.plugin.app);
         logData.channelTitle = channel.title;
         logData.notificationType = channel.notificationType;
+        logData.receivers = params.receivers;
         const result = await instance.send({ message: params.message, channel, receivers: params.receivers });
         logData.status = result.status;
         logData.reason = result.reason;
