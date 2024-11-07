@@ -86,8 +86,12 @@ const InternalRemoteSelect = withDynamicSchemaProps(
 
       const operator = useMemo(() => {
         if (targetField?.interface) {
-          const initialOperator = getInterface(targetField.interface)?.filterable?.operators[0].value || '$includes';
-          return initialOperator !== '$eq' ? initialOperator : '$includes';
+          const targetInterface = getInterface(targetField.interface);
+          const initialOperator = targetInterface?.filterable?.operators[0].value || '$includes';
+          if (targetField.type === 'string') {
+            return '$includes';
+          }
+          return initialOperator;
         }
         return '$includes';
       }, [targetField]);

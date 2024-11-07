@@ -164,7 +164,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
       return columns;
     }
     const res = [
-      ...columns,
+      ...adjustColumnOrder(columns),
       {
         title: render(),
         dataIndex: 'TABLE_COLUMN_INITIALIZER',
@@ -210,7 +210,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
       });
     }
 
-    return adjustColumnOrder(res);
+    return res;
   }, [columns, exists, field, render, props.showDel, designable]);
 
   return tableColumns;
