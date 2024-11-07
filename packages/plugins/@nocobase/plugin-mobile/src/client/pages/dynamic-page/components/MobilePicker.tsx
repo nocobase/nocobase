@@ -54,21 +54,18 @@ const MobilePicker = connect(
           />
         </div>
         <Popup visible={visible} onMaskClick={() => setVisible(false)} destroyOnClose>
-          <div>
+          <div style={{ margin: '10px' }}>
             <SearchBar
               placeholder={t('search')}
               value={searchText}
               onChange={(v) => setSearchText(v)}
               showCancelButton
-              style={{
-                border: 'none',
-              }}
             />
           </div>
           <div
             style={{
-              maxHeight: '70vh', // 设置最大高度为屏幕的 70%
-              overflowY: 'auto', // 启用垂直滚动
+              maxHeight: '60vh',
+              overflowY: 'auto',
             }}
           >
             <CheckList
