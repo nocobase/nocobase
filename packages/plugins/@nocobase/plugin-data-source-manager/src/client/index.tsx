@@ -19,6 +19,7 @@ import { DatabaseConnectionManagerPane } from './component/DatabaseConnectionMan
 import { MainDataSourceManager } from './component/MainDataSourceManager';
 import { DataSourcePermissionManager } from './component/PermissionManager';
 import { NAMESPACE } from './locale';
+import { CollectionMainProvider } from './component/MainDataSourceManager/CollectionMainProvider';
 
 export class PluginDataSourceManagerClient extends Plugin {
   types = new Map();
@@ -46,6 +47,7 @@ export class PluginDataSourceManagerClient extends Plugin {
     }));
 
     this.app.use(DatabaseConnectionProvider);
+
     this.app.pluginSettingsManager.add(NAMESPACE, {
       title: `{{t("Data sources", { ns: "${NAMESPACE}" })}}`,
       icon: 'ClusterOutlined',
@@ -74,6 +76,7 @@ export class PluginDataSourceManagerClient extends Plugin {
       sort: 100,
       skipAclConfigure: true,
       aclSnippet: 'pm.data-source-manager.data-source-main',
+      Component: CollectionMainProvider,
     });
     this.app.pluginSettingsManager.add(`${NAMESPACE}/main.collections`, {
       title: `{{t("Collections", { ns: "${NAMESPACE}" })}}`,
