@@ -120,7 +120,6 @@ export const mapDatePicker = function () {
           if (underFilter) {
             onChange(handleChangeOnFilter(value, picker, showTime));
           } else {
-            console.log(value);
             onChange(handleChangeOnForm(value, dateOnly, utc, picker, showTime, gmt));
           }
         }

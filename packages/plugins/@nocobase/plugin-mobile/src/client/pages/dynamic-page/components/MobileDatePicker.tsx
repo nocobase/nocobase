@@ -19,7 +19,7 @@ const MobileDateTimePicker = connect(
     const { value, onChange, dateFormat = 'YYYY-MM-DD', timeFormat = 'HH:mm', showTime = false, ...rest } = props;
     const [visible, setVisible] = useState(false);
     const [selectedDate, setSelectedDate] = useState(value || new Date());
-    const [selectedTime, setSelectedTime] = useState(['12', '00']);
+    const [selectedTime, setSelectedTime] = useState(['00', '00', '00']);
 
     const hours = Array.from({ length: 24 }, (_, i) => ({
       label: i.toString().padStart(2, '0'),
@@ -47,13 +47,16 @@ const MobileDateTimePicker = connect(
     };
     return (
       <>
-        <DatePicker
-          onClick={() => setVisible(true)}
-          value={value}
-          {...rest}
-          popupStyle={{ display: 'none' }}
-          style={{ width: '100%' }}
-        />
+        <div contentEditable="false" onClick={() => setVisible(true)}>
+          <DatePicker
+            onClick={() => setVisible(true)}
+            value={value}
+            {...rest}
+            popupStyle={{ display: 'none' }}
+            style={{ pointerEvents: 'none', width: '100%' }}
+          />
+        </div>
+
         <Popup visible={visible} onMaskClick={() => setVisible(false)} destroyOnClose bodyStyle={{ padding: '16px' }}>
           <DatePickerView {...rest} value={selectedDate} onChange={(date) => setSelectedDate(date)} />
           {showTime && (
