@@ -19,7 +19,7 @@ test.describe('subTable', () => {
     await mockPage(subTableDefaultValue).goto();
 
     // 1. Click "Add new" to add a row, default values should display correctly
-    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.getByText('Add new').click();
     await expect(page.getByTestId('select-object-single').getByText('Super Admin')).toBeVisible();
     await expect(
       page
@@ -33,7 +33,7 @@ test.describe('subTable', () => {
     ).toHaveValue('2024-11-07');
 
     // 2. Click "Add new" again to add another row, default values should display correctly
-    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.getByText('Add new').click();
     await expect(page.getByTestId('select-object-single').getByText('Super Admin').nth(1)).toBeVisible();
     await expect(
       page
