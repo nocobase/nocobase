@@ -580,5 +580,7 @@
   "Sorry, the page you visited does not exist.": "Üzgünüz, ziyaret ettiğiniz sayfa mevcut değil.",
   "Allow multiple selection": "Çoklu seçim izni",
   "Parent object": "Üst nesne",
-  "Ellipsis overflow content": "Üç nokta ile taşan içerik"
+  "Ellipsis overflow content": "Üç nokta ile taşan içerik",
+  "Hide column": "Sütunu gizle",
+  "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "Yapılandırma modunda, tüm sütun tamamen saydamlık alır. Yapılandırma modu olmayan durumda, tüm sütun gizlenir. Tamamen sütun gizlendiğinde bile, yapılandırılmış varsayılan değerleri ve diğer ayarları hâlâ etkin olur."
 }

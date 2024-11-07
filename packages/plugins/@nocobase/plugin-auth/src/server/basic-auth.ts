@@ -130,37 +130,4 @@ export class BasicAuth extends BaseAuth {
     }
     return user;
   }
-
-  async changePassword() {
-    const ctx = this.ctx;
-    const {
-      values: { oldPassword, newPassword, confirmPassword },
-    } = ctx.action.params;
-    if (newPassword !== confirmPassword) {
-      ctx.throw(400, ctx.t('The password is inconsistent, please re-enter', { ns: namespace }));
-    }
-    const currentUser = ctx.auth.user;
-    if (!currentUser) {
-      ctx.throw(401);
-    }
-    let key: string;
-    if (currentUser.username) {
-      key = 'username';
-    } else {
-      key = 'email';
-    }
-    const user = await this.userRepository.findOne({
-      where: {
-        [key]: currentUser[key],
-      },
-    });
-    const pwd = this.userCollection.getField<PasswordField>('password');
-    const isValid = await pwd.verify(oldPassword, user.password);
-    if (!isValid) {
-      ctx.throw(401, ctx.t('The password is incorrect, please re-enter', { ns: namespace }));
-    }
-    user.password = newPassword;
-    await user.save();
-    return currentUser;
-  }
 }

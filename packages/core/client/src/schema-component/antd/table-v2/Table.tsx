@@ -121,13 +121,15 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
           }
         }, []);
         const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : s.name;
+        const columnHidden = !!s['x-component-props']?.['columnHidden'];
         return {
           title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
           dataIndex,
           key: s.name,
           sorter: s['x-component-props']?.['sorter'],
-          width: 200,
+          columnHidden,
           ...s['x-component-props'],
+          width: columnHidden && !designable ? 0 : s['x-component-props']?.width || 200,
           render: (v, record) => {
             // 这行代码会导致这里的测试不通过：packages/core/client/src/modules/blocks/data-blocks/table/__e2e__/schemaInitializer.test.ts:189
             // if (collectionFields?.length === 1 && collectionFields[0]['x-read-pretty'] && v == undefined) return null;
@@ -149,14 +151,25 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
             );
           },
           onCell: (record, rowIndex) => {
-            return { record, schema: s, rowIndex, isSubTable: props.isSubTable };
+            return {
+              record,
+              schema: s,
+              rowIndex,
+              isSubTable: props.isSubTable,
+              columnHidden,
+            };
+          },
+          onHeaderCell: () => {
+            return {
+              columnHidden,
+            };
           },
         } as TableColumnProps<any>;
       }),
 
     // 这里不能把 columnsSchema 作为依赖，因为其每次都会变化，这里使用 hasChangedColumns 作为依赖
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [hasChangedColumns, field.value, field.address, collection, parentRecordData, schemaToolbarBigger],
+    [hasChangedColumns, field.value, field.address, collection, parentRecordData, schemaToolbarBigger, designable],
   );
 
   const tableColumns = useMemo(() => {
@@ -164,7 +177,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
       return columns;
     }
     const res = [
-      ...columns,
+      ...adjustColumnOrder(columns),
       {
         title: render(),
         dataIndex: 'TABLE_COLUMN_INITIALIZER',
@@ -210,7 +223,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
       });
     }
 
-    return adjustColumnOrder(res);
+    return res;
   }, [columns, exists, field, render, props.showDel, designable]);
 
   return tableColumns;
@@ -440,7 +453,25 @@ const HeaderWrapperComponent = (props) => {
   );
 };
 
+// Style when Hidden is enabled in table column configuration
+const columnHiddenStyle = {
+  borderRight: 'none',
+  paddingLeft: 0,
+  paddingRight: 0,
+};
+
+// Style when Hidden is enabled in configuration mode
+const columnOpacityStyle = {
+  opacity: 0.3,
+};
+
 const HeaderCellComponent = (props) => {
+  const { designable } = useDesignable();
+
+  if (props.columnHidden) {
+    return <th style={designable ? columnOpacityStyle : columnHiddenStyle}>{designable ? props.children : null}</th>;
+  }
+
   return <th {...props} className={cls(props.className, headerClass)} />;
 };
 
@@ -453,7 +484,7 @@ const BodyRowComponent = (props: {
   return <SortableRow {...props} />;
 };
 
-const BodyCellComponent = (props) => {
+const InternalBodyCellComponent = (props) => {
   const { token } = useToken();
   const inView = useContext(InViewContext);
   const isIndex = props.className?.includes('selection-column');
@@ -472,6 +503,21 @@ const BodyCellComponent = (props) => {
       {isSubTable || inView || isIndex ? props.children : <div style={skeletonStyle} />}
     </td>
   );
+};
+
+const displayNone = { display: 'none' };
+const BodyCellComponent = (props) => {
+  const { designable } = useDesignable();
+
+  if (props.columnHidden) {
+    return (
+      <td style={designable ? columnOpacityStyle : columnHiddenStyle}>
+        {designable ? props.children : <span style={displayNone}>{props.children}</span>}
+      </td>
+    );
+  }
+
+  return <InternalBodyCellComponent {...props} />;
 };
 
 interface TableProps {
