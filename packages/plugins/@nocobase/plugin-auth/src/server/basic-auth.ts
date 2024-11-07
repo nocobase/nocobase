@@ -39,13 +39,13 @@ export class BasicAuth extends BaseAuth {
     });
 
     if (!user) {
-      ctx.throw(401, ctx.t('The username or email is incorrect, please re-enter', { ns: namespace }));
+      ctx.throw(401, ctx.t('The username/email or password is incorrect, please re-enter', { ns: namespace }));
     }
 
     const field = this.userCollection.getField<PasswordField>('password');
     const valid = await field.verify(password, user.password);
     if (!valid) {
-      ctx.throw(401, ctx.t('The password is incorrect, please re-enter', { ns: namespace }));
+      ctx.throw(401, ctx.t('The username/email or password is incorrect, please re-enter', { ns: namespace }));
     }
     return user;
   }

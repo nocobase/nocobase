@@ -116,7 +116,7 @@ describe('actions', () => {
         email: 'no-exists@nocobase.com',
       });
       expect(res.statusCode).toEqual(401);
-      expect(res.error.text).toBe('The username or email is incorrect, please re-enter');
+      expect(res.error.text).toBe('The username/email or password is incorrect, please re-enter');
     });
 
     it('should check password when signing in', async () => {
@@ -125,7 +125,7 @@ describe('actions', () => {
         password: 'incorrect',
       });
       expect(res.statusCode).toEqual(401);
-      expect(res.error.text).toBe('The password is incorrect, please re-enter');
+      expect(res.error.text).toBe('The username/email or password is incorrect, please re-enter');
     });
 
     it('should sign in with password', async () => {
