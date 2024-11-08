@@ -148,7 +148,8 @@ describe('xlsx importer', () => {
         worksheet,
         [
           ['test', 77383],
-          ['test2', '2021-10-18'],
+          ['test2', '2021-10-18 12:31:20'],
+          ['test3', 41557.4377314815],
         ],
         { origin: 'A2' },
       );
@@ -164,7 +165,8 @@ describe('xlsx importer', () => {
 
       const users = (await User.repository.find()).map((user) => user.toJSON());
       expect(users[0]['datetimeNoTz']).toBe('2111-11-12 00:00:00');
-      expect(users[1]['datetimeNoTz']).toBe('2021-10-18 00:00:00');
+      expect(users[1]['datetimeNoTz']).toBe('2021-10-18 12:31:20');
+      expect(users[2]['datetimeNoTz']).toBe('2013-10-10 10:30:20');
     });
 
     it('should import with unixTimestamp', async () => {
