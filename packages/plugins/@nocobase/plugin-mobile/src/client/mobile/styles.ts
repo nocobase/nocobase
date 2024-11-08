@@ -35,6 +35,10 @@ export const useStyles = createStyles(({ token, css }) => {
         margin-top: -10px;
         margin-bottom: -10px;
       }
+      .nb-action-penal-container
+        button[aria-label*='schema-initializer-WorkbenchBlock.ActionBar-workbench:configureActions'] {
+        margin-bottom: 10px;
+      }
       .nb-action-panel {
         padding-top: 10px;
       }
