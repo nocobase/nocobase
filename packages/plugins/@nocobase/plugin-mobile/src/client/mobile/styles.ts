@@ -18,6 +18,16 @@ export const useStyles = createStyles(({ token, css }) => {
       & ::-webkit-scrollbar {
         display: none;
       }
+      .ant-formily-item-feedback-layout-loose {
+        margin-bottom: 5px;
+      }
+      .ant-formily-item-layout-vertical .ant-formily-item-label {
+        margin-bottom: -8px;
+      }
+      .ant-card .ant-card-body {
+        padding-bottom: 10px;
+        padding-top: 10px;
+      }
       .ant-pagination-simple {
         margin-top: 0px !important;
       }
