@@ -879,5 +879,7 @@
   "Sorry, the page you visited does not exist.": "죄송합니다. 방문한 페이지가 존재하지 않습니다.",
   "Allow multiple selection": "다중 선택 허용",
   "Parent object": "부모 객체",
-"Ellipsis overflow content": "생략 부호로 내용 줄임"
+  "Ellipsis overflow content": "생략 부호로 내용 줄임",
+  "Hide column": "열 숨기기",
+  "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "구성 모드에서는 전체 열이 투명해집니다. 비구성 모드에서는 전체 열이 숨겨집니다. 전체 열이 숨겨져도 구성된 기본값 및 기타 설정은 여전히 적용됩니다."
 }

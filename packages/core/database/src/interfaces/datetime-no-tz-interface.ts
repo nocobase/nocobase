@@ -1,16 +1,7 @@
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
-
-import { BaseInterface } from './base-interface';
-import { getDefaultFormat, str2moment } from '@nocobase/utils';
+import { DatetimeInterface } from './datetime-interface';
 import dayjs from 'dayjs';
 import { getJsDateFromExcel } from 'excel-date-to-js';
+import { getDefaultFormat, str2moment } from '@nocobase/utils';
 
 function isDate(v) {
   return v instanceof Date;
@@ -22,15 +13,7 @@ function isNumeric(str: any) {
   return !isNaN(str as any) && !isNaN(parseFloat(str));
 }
 
-function resolveTimeZoneFromCtx(ctx) {
-  if (ctx?.get && ctx?.get('X-Timezone')) {
-    return ctx.get('X-Timezone');
-  }
-
-  return 0;
-}
-
-export class DatetimeInterface extends BaseInterface {
+export class DatetimeNoTzInterface extends DatetimeInterface {
   async toValue(value: any, ctx: any = {}): Promise<any> {
     if (!value) {
       return null;
@@ -39,8 +22,7 @@ export class DatetimeInterface extends BaseInterface {
     if (typeof value === 'string') {
       const match = /^(\d{4})[-/]?(\d{2})[-/]?(\d{2})$/.exec(value);
       if (match) {
-        const m = dayjs(`${match[1]}-${match[2]}-${match[3]} 00:00:00.000`);
-        return m.toISOString();
+        return `${match[1]}-${match[2]}-${match[3]}`;
       }
     }
 
@@ -49,7 +31,8 @@ export class DatetimeInterface extends BaseInterface {
     } else if (isDate(value)) {
       return value;
     } else if (isNumeric(value)) {
-      return getJsDateFromExcel(value).toISOString();
+      const date = getJsDateFromExcel(value);
+      return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
     } else if (typeof value === 'string') {
       return value;
     }
@@ -58,10 +41,9 @@ export class DatetimeInterface extends BaseInterface {
   }
 
   toString(value: any, ctx?: any) {
-    const utcOffset = resolveTimeZoneFromCtx(ctx);
     const props = this.options?.uiSchema?.['x-component-props'] ?? {};
     const format = getDefaultFormat(props);
-    const m = str2moment(value, { ...props, utcOffset });
+    const m = str2moment(value, { ...props });
     return m ? m.format(format) : '';
   }
 }
