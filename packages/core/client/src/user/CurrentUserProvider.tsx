@@ -50,6 +50,7 @@ export const NavigateIfNotSignIn = ({ children }) => {
   const result = useCurrentUserContext();
   const { pathname, search } = useLocationNoUpdate();
   const redirect = `?redirect=${pathname}${search}`;
+
   if (result.loading === false && !result.data?.data?.id) {
     return <Navigate replace to={`/signin${redirect}`} />;
   }

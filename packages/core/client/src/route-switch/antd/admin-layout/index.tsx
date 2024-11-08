@@ -10,12 +10,14 @@
 import { css } from '@emotion/css';
 import { ConfigProvider, Divider, Layout } from 'antd';
 import { createGlobalStyle } from 'antd-style';
-import React, { FC, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
   CurrentUser,
+  findByUid,
+  findMenuItem,
   NavigateIfNotSignIn,
   PinnedPluginList,
   RemoteCollectionManagerProvider,
@@ -23,8 +25,6 @@ import {
   RemoteSchemaTemplateManagerProvider,
   RouteSchemaComponent,
   SchemaComponent,
-  findByUid,
-  findMenuItem,
   useACLRoleContext,
   useAdminSchemaUid,
   useDocumentTitle,
@@ -43,7 +43,6 @@ import {
   useNavigateNoUpdate,
 } from '../../../application/CustomRouterContextProvider';
 import { Plugin } from '../../../application/Plugin';
-import { useAppSpin } from '../../../application/hooks/useAppSpin';
 import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
 import { Help } from '../../../user/Help';
 import { VariablesProvider } from '../../../variables';
@@ -81,32 +80,22 @@ const useMenuProps = () => {
   };
 };
 
-const MenuEditor = (props) => {
+const MenuSchemaRequestContext = createContext(null);
+MenuSchemaRequestContext.displayName = 'MenuSchemaRequestContext';
+
+const MenuSchemaRequestProvider: FC = ({ children }) => {
   const { t } = useMenuTranslation();
   const { setTitle: _setTitle } = useDocumentTitle();
   const setTitle = useCallback((title) => _setTitle(t(title)), [_setTitle, t]);
   const navigate = useNavigateNoUpdate();
-  const isInSettingsPage = useIsInSettingsPage();
   const isMatchAdmin = useMatchAdmin();
   const isMatchAdminName = useMatchAdminName();
   const currentPageUid = useCurrentPageUid();
   const isDynamicPage = !!currentPageUid;
-  const { sideMenuRef } = props;
   const ctx = useACLRoleContext();
-  const [current, setCurrent] = useState(null);
-
-  const onSelect = useCallback(
-    ({ item }: { item; key; keyPath; domEvent }) => {
-      const schema = item.props.schema;
-      setTitle(schema.title);
-      setCurrent(schema);
-      navigate(`/admin/${schema['x-uid']}`);
-    },
-    [navigate, setTitle],
-  );
-  const { render } = useAppSpin();
   const adminSchemaUid = useAdminSchemaUid();
-  const { data, loading } = useRequest<{
+
+  const { data } = useRequest<{
     data: any;
   }>(
     {
@@ -148,8 +137,35 @@ const MenuEditor = (props) => {
     },
   );
 
+  return <MenuSchemaRequestContext.Provider value={data?.data}>{children}</MenuSchemaRequestContext.Provider>;
+};
+
+const MenuEditor = (props) => {
+  const { t } = useMenuTranslation();
+  const { setTitle: _setTitle } = useDocumentTitle();
+  const setTitle = useCallback((title) => _setTitle(t(title)), [_setTitle, t]);
+  const navigate = useNavigateNoUpdate();
+  const isInSettingsPage = useIsInSettingsPage();
+  const isMatchAdmin = useMatchAdmin();
+  const isMatchAdminName = useMatchAdminName();
+  const currentPageUid = useCurrentPageUid();
+  const { sideMenuRef } = props;
+  const ctx = useACLRoleContext();
+  const [current, setCurrent] = useState(null);
+  const menuSchema = useContext(MenuSchemaRequestContext);
+
+  const onSelect = useCallback(
+    ({ item }: { item; key; keyPath; domEvent }) => {
+      const schema = item.props.schema;
+      setTitle(schema.title);
+      setCurrent(schema);
+      navigate(`/admin/${schema['x-uid']}`);
+    },
+    [navigate, setTitle],
+  );
+
   useEffect(() => {
-    const properties = Object.values(current?.root?.properties || {}).shift()?.['properties'] || data?.data?.properties;
+    const properties = Object.values(current?.root?.properties || {}).shift()?.['properties'] || menuSchema?.properties;
     if (sideMenuRef.current) {
       const pageType =
         properties &&
@@ -162,15 +178,15 @@ const MenuEditor = (props) => {
         sideMenuRef.current.style.display = 'block';
       }
     }
-  }, [current?.root?.properties, currentPageUid, data?.data?.properties, isInSettingsPage, sideMenuRef]);
+  }, [current?.root?.properties, currentPageUid, menuSchema?.properties, isInSettingsPage, sideMenuRef]);
 
   const schema = useMemo(() => {
-    const s = filterByACL(data?.data, ctx);
+    const s = filterByACL(menuSchema, ctx);
     if (s?.['x-component-props']) {
       s['x-component-props']['useProps'] = useMenuProps;
     }
     return s;
-  }, [data?.data]);
+  }, [menuSchema]);
 
   useEffect(() => {
     if (isMatchAdminName) {
@@ -184,10 +200,6 @@ const MenuEditor = (props) => {
   const scope = useMemo(() => {
     return { useMenuProps, onSelect, sideMenuRef, defaultSelectedUid: currentPageUid };
   }, [currentPageUid, onSelect, sideMenuRef]);
-
-  if (loading) {
-    return render();
-  }
 
   return <SchemaComponent distributed scope={scope} schema={schema} />;
 };
@@ -250,7 +262,9 @@ const SetThemeOfHeaderSubmenu = ({ children }) => {
     };
   }, []);
 
-  return <ConfigProvider getPopupContainer={() => containerRef.current}>{children}</ConfigProvider>;
+  const getPopupContainer = useCallback(() => containerRef.current, []);
+
+  return <ConfigProvider getPopupContainer={getPopupContainer}>{children}</ConfigProvider>;
 };
 
 const sideClass = css`
@@ -464,17 +478,19 @@ export const InternalAdminLayout = () => {
 
 export const AdminProvider = (props) => {
   return (
-    <CurrentAppInfoProvider>
-      <NavigateIfNotSignIn>
-        <RemoteSchemaTemplateManagerProvider>
-          <RemoteCollectionManagerProvider>
-            <VariablesProvider>
-              <ACLRolesCheckProvider>{props.children}</ACLRolesCheckProvider>
-            </VariablesProvider>
-          </RemoteCollectionManagerProvider>
-        </RemoteSchemaTemplateManagerProvider>
-      </NavigateIfNotSignIn>
-    </CurrentAppInfoProvider>
+    <ACLRolesCheckProvider>
+      <MenuSchemaRequestProvider>
+        <RemoteCollectionManagerProvider>
+          <CurrentAppInfoProvider>
+            <NavigateIfNotSignIn>
+              <RemoteSchemaTemplateManagerProvider>
+                <VariablesProvider>{props.children}</VariablesProvider>
+              </RemoteSchemaTemplateManagerProvider>
+            </NavigateIfNotSignIn>
+          </CurrentAppInfoProvider>
+        </RemoteCollectionManagerProvider>
+      </MenuSchemaRequestProvider>
+    </ACLRolesCheckProvider>
   );
 };
 

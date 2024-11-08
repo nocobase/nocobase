@@ -12,7 +12,7 @@ import { PageHeader as AntdPageHeader } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
 import { Schema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
-import { Button, Tabs } from 'antd';
+import { Button, Spin, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -27,6 +27,7 @@ import {
   useNavigateNoUpdate,
   useRouterBasename,
 } from '../../../application/CustomRouterContextProvider';
+import { useRemoteCollectionManagerLoading } from '../../../collection-manager/CollectionManagerProvider';
 import { useDocumentTitle } from '../../../document-title';
 import { useGlobalTheme } from '../../../global-theme';
 import { Icon } from '../../../icon';
@@ -275,6 +276,10 @@ const PageContent = memo(
     fieldSchema: Schema<any, any, any, any, any, any, any, any, any>;
     activeKey: string;
   }) => {
+    const collectionManagerLoading = useRemoteCollectionManagerLoading();
+
+    if (collectionManagerLoading) return <Spin style={{ width: '100%' }} />;
+
     if (!disablePageHeader && enablePageTabs) {
       return (
         <>
@@ -295,9 +300,9 @@ const PageContent = memo(
 
 function NocoBasePageHeader({ footer }: { footer: React.JSX.Element }) {
   const fieldSchema = useFieldSchema();
-  const { setTitle: setDocumentTitle, getTitle: getDocumentTitle } = useDocumentTitle();
+  const { setTitle: setDocumentTitle } = useDocumentTitle();
   const { t } = useTranslation();
-  const [pageTitle, setPageTitle] = useState('');
+  const [pageTitle, setPageTitle] = useState(() => t(fieldSchema.title));
 
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
   const enablePageTabs = fieldSchema['x-component-props']?.enablePageTabs;
@@ -305,11 +310,9 @@ function NocoBasePageHeader({ footer }: { footer: React.JSX.Element }) {
 
   useEffect(() => {
     if (fieldSchema.title) {
-      const title = t(fieldSchema.title);
-      setPageTitle(title);
-      setDocumentTitle(title);
+      setDocumentTitle(pageTitle);
     }
-  }, [fieldSchema.title, setDocumentTitle, t]);
+  }, [fieldSchema.title, pageTitle, setDocumentTitle]);
 
   useRequest(
     {

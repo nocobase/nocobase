@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 import { useRequest } from '../api-client';
 import { CollectionManagerProvider } from '../data-source/collection/CollectionManagerProvider';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
@@ -27,17 +27,27 @@ export const CollectionManagerProvider_deprecated: React.FC<CollectionManagerOpt
   );
 };
 
+const RemoteCollectionManagerLoadingContext = createContext(false);
+
+export const useRemoteCollectionManagerLoading = () => {
+  return useContext(RemoteCollectionManagerLoadingContext);
+};
+
 export const RemoteCollectionManagerProvider = (props: any) => {
   const dm = useDataSourceManager();
   const { refreshCH } = useCollectionHistory();
 
-  useRequest<{
+  const service = useRequest<{
     data: any;
   }>(() => {
     return dm.reload().then(refreshCH);
   });
 
-  return <CollectionManagerProvider_deprecated {...props} />;
+  return (
+    <RemoteCollectionManagerLoadingContext.Provider value={service.loading}>
+      <CollectionManagerProvider_deprecated {...props} />
+    </RemoteCollectionManagerLoadingContext.Provider>
+  );
 };
 
 export const CollectionCategoriesProvider = (props) => {

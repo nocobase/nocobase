@@ -139,7 +139,7 @@ export const DataBlockCollector = ({
       doFilter: service.runAsync as any,
       collection,
       associatedFields,
-      foreignKeyFields: collection.getFields('isForeignKey') as ForeignKeyField[],
+      foreignKeyFields: collection?.getFields('isForeignKey') as ForeignKeyField[],
       defaultFilter: params?.filter || {},
       service,
       dom: container.current,
