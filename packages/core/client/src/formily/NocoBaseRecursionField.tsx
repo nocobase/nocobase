@@ -47,33 +47,49 @@ const useBasePath = (props: IRecursionFieldProps) => {
   return props.basePath || parent?.address;
 };
 
+const createSchemaInstance = _.memoize((schema: ISchema): Schema => {
+  return new Schema(schema);
+});
+
+const toJSON = _.memoize((schema: Schema) => {
+  return schema.toJSON();
+});
+
+const createMergedSchemaInstance = _.memoize((schema: Schema, uiSchema: ISchema, onlyRenderProperties: boolean) => {
+  const clonedSchema = toJSON(schema);
+
+  if (onlyRenderProperties) {
+    if (!clonedSchema.properties) {
+      throw new Error('[NocoBaseRecursionField]: properties is required');
+    }
+
+    const firstPropertyKey = Object.keys(clonedSchema.properties)[0];
+    const firstPropertyValue = Object.values(clonedSchema.properties)[0];
+    // Some uiSchema's type value is "void", which can cause exceptions, so we need to ignore the type field
+    clonedSchema.properties[firstPropertyKey] = merge(_.omit(uiSchema, 'type'), firstPropertyValue);
+    return new Schema(clonedSchema);
+  }
+
+  // Some uiSchema's type value is "void", which can cause exceptions, so we need to ignore the type field
+  return new Schema(merge(_.omit(uiSchema, 'type'), clonedSchema));
+});
+
 /**
  * Based on @formily/react v2.3.2 RecursionField component
  * Modified to better adapt to NocoBase's needs
  */
 export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = React.memo((props) => {
   const basePath = useBasePath(props);
-  const fieldSchema = useMemo(() => new Schema(props.schema), [props.schema]);
+  const fieldSchema = createSchemaInstance(props.schema);
 
   // Merge default Schema of collection fields
   const mergedFieldSchema = useMemo(() => {
     if (props.uiSchema) {
-      const clonedSchema = _.cloneDeep(props.schema);
-      if (props.onlyRenderProperties) {
-        if (!clonedSchema.properties) {
-          throw new Error('[NocoBaseRecursionField]: properties is required');
-        }
-
-        const firstPropertyKey = Object.keys(clonedSchema.properties)[0];
-        const firstPropertyValue = Object.values(clonedSchema.properties)[0];
-        clonedSchema.properties[firstPropertyKey] = merge(props.uiSchema, firstPropertyValue);
-        return new Schema(clonedSchema);
-      }
-      return new Schema(merge(props.uiSchema, clonedSchema));
+      return createMergedSchemaInstance(fieldSchema, props.uiSchema, props.onlyRenderProperties);
     }
 
     return fieldSchema;
-  }, [fieldSchema, props.onlyRenderProperties, props.schema, props.uiSchema]);
+  }, [fieldSchema, props.onlyRenderProperties, props.uiSchema]);
 
   const fieldProps = useFieldProps(mergedFieldSchema);
   const renderProperties = (field?: GeneralField) => {

@@ -1628,8 +1628,6 @@ export const useAssociationNames = (dataSource?: string) => {
     });
     appends = fillParentFields(appends);
 
-    console.log('appends', appends);
-
     return { appends: [...appends], updateAssociationValues: [...updateAssociationValues] };
   };
 
