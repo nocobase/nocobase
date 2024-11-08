@@ -66,6 +66,7 @@ export const requestLogger = (appName: string, requestLogger: Logger, options?: 
         cost,
         app: appName,
         reqId,
+        bodySize: ctx.response.length,
       };
       if (Math.floor(status / 100) == 5) {
         requestLogger.error({ ...info, res: ctx.body?.['errors'] || ctx.body });

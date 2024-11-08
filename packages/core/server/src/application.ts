@@ -1208,15 +1208,26 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   protected createDatabase(options: ApplicationOptions) {
-    const logging = (msg: any) => {
+    const logging = (...args) => {
+      let msg = args[0];
+
       if (typeof msg === 'string') {
         msg = msg.replace(/[\r\n]/gm, '').replace(/\s+/g, ' ');
       }
+
       if (msg.includes('INSERT INTO')) {
         msg = msg.substring(0, 2000) + '...';
       }
-      this._sqlLogger.debug({ message: msg, app: this.name, reqId: this.context.reqId });
+
+      const content: any = { message: msg, app: this.name, reqId: this.context.reqId };
+
+      if (args[1] && typeof args[1] === 'number') {
+        content.executeTime = args[1];
+      }
+
+      this._sqlLogger.debug(content);
     };
+
     const dbOptions = options.database instanceof Database ? options.database.options : options.database;
     const db = new Database({
       ...dbOptions,
