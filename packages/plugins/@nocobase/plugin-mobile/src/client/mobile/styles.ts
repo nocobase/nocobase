@@ -31,6 +31,13 @@ export const useStyles = createStyles(({ token, css }) => {
       .ant-pagination-simple {
         margin-top: 0px !important;
       }
+      .nb-action-penal-container {
+        margin-top: -10px;
+        margin-bottom: -10px;
+      }
+      .nb-action-panel {
+        padding-top: 10px;
+      }
       .nb-action-panel .ant-avatar-circle {
         width: 48px !important;
         height: 48px !important;
