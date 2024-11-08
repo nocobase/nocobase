@@ -27,7 +27,7 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   esac \
   && set -ex \
   # libatomic1 for arm
-  && apt-get update && apt-get install -y nginx
+  && apt-get update && apt-get install -y nginx libaio1
 
 RUN rm -rf /etc/nginx/sites-enabled/default
 COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz
