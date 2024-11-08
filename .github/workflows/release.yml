@@ -152,7 +152,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: ./docker/nocobase
-          file: Dockerfile
+          file: ./docker/nocobase/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: nocobase/nocobase:main,nocobase/nocobase:latest,${{ steps.meta.outputs.tags }},${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/nocobase/nocobase:main,${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/nocobase/nocobase:latest,${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/${{ steps.meta.outputs.tags }}
@@ -161,7 +161,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: ./docker/nocobase
-          file: Dockerfile.next
+          file: ./docker/nocobase/Dockerfile.next
           platforms: linux/amd64,linux/arm64
           push: true
           tags: nocobase/nocobase:next,${{ steps.meta.outputs.tags }},${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/nocobase/nocobase:next,${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/${{ steps.meta.outputs.tags }}
