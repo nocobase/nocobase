@@ -57,7 +57,6 @@ export const channelsSchema: ISchema = {
       pageSize: 20,
     },
   },
-  'x-component': 'CardItem',
   properties: {
     actions: {
       type: 'void',
@@ -110,6 +109,9 @@ export const channelsSchema: ISchema = {
           type: 'void',
           'x-component': 'TableV2.Column',
           title: '{{t("Channel display name")}}',
+          'x-component-props': {
+            width: 100,
+          },
           properties: {
             title: {
               type: 'string',
@@ -125,6 +127,9 @@ export const channelsSchema: ISchema = {
           type: 'void',
           'x-component': 'TableV2.Column',
           title: '{{t("Channel name")}}',
+          'x-component-props': {
+            width: 100,
+          },
           properties: {
             name: {
               type: 'string',
@@ -140,6 +145,9 @@ export const channelsSchema: ISchema = {
           type: 'void',
           'x-component': 'TableV2.Column',
           title: '{{t("Description")}}',
+          'x-component-props': {
+            width: 200,
+          },
           properties: {
             description: {
               type: 'boolean',
@@ -155,6 +163,9 @@ export const channelsSchema: ISchema = {
           title: '{{t("Notification type")}}',
           type: 'void',
           'x-component': 'TableV2.Column',
+          'x-component-props': {
+            width: 200,
+          },
           properties: {
             notificationType: {
               type: 'string',
@@ -167,7 +178,6 @@ export const channelsSchema: ISchema = {
           type: 'void',
           title: '{{t("Actions")}}',
           'x-component': 'TableV2.Column',
-          'x-decorator': 'TableV2.Column.ActionBar',
           properties: {
             edit: {
               type: 'void',
