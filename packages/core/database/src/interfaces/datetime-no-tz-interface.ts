@@ -15,7 +15,6 @@ function isNumeric(str: any) {
 
 export class DatetimeNoTzInterface extends DatetimeInterface {
   async toValue(value: any, ctx: any = {}): Promise<any> {
-    console.log({ value });
     if (!value) {
       return null;
     }
