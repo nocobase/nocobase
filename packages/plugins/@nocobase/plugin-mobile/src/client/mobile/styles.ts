@@ -47,6 +47,13 @@ export const useStyles = createStyles(({ token, css }) => {
         height: 48px !important;
         line-height: 48px !important;
       }
+      .nb-chart-block .ant-card .ant-card-body {
+        padding-bottom: 0px;
+        padding-top: 0px;
+      }
+      .nb-chart-block .noco-card-item {
+        margin-bottom: -13px;
+      }
       .ant-table-thead button[aria-label*='schema-initializer-TableV2-table:configureColumns'] > span:last-child {
         display: none !important;
       }
