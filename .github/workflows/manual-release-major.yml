@@ -112,7 +112,7 @@ jobs:
         shell: bash
         run: |
           git checkout main
-          bash release.sh --is-feat
+          bash release.sh --is-feat --is-beta
         env:
           PRO_PLUGIN_REPOS: ${{ vars.NEXT_PRO_PLUGIN_REPOS }}
           CUSTOM_PRO_PLUGIN_REPOS: ${{ vars.CUSTOM_PRO_PLUGIN_REPOS }}
