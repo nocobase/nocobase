@@ -244,11 +244,12 @@ const SortableRow = (props: {
   const { setNodeRef, isOver, active, over } = useSortable({
     id,
   });
+  const { rowIndex, ...others } = props;
 
   const { ref, inView } = useInView({
     threshold: 0,
     triggerOnce: true,
-    initialInView: !!process.env.__E2E__ || isInSubTable || (props.rowIndex || 0) < INITIAL_ROWS_NUMBER,
+    initialInView: !!process.env.__E2E__ || isInSubTable || (rowIndex || 0) < INITIAL_ROWS_NUMBER,
     skip: !!process.env.__E2E__ || isInSubTable,
   });
 
@@ -282,7 +283,7 @@ const SortableRow = (props: {
           }
           ref(node);
         }}
-        {...props}
+        {...others}
         className={classNames(props.className, { [className]: active && isOver })}
       />
     </InViewContext.Provider>

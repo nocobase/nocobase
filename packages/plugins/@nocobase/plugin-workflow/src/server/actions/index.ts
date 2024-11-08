@@ -22,7 +22,7 @@ function make(name, mod) {
 }
 
 export default function ({ app }) {
-  app.actions({
+  app.resourceManager.registerActionHandlers({
     ...make('workflows', workflows),
     ...make('workflows.nodes', {
       create: nodes.create,

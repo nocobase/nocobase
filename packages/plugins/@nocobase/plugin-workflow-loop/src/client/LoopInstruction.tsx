@@ -355,6 +355,7 @@ export default class extends Instruction {
       default: 0,
     },
   };
+  branching = true;
   scope = {
     renderEngineReference,
   };
