@@ -116,22 +116,6 @@ jobs:
         env:
           PRO_PLUGIN_REPOS: ${{ vars.NEXT_PRO_PLUGIN_REPOS }}
           CUSTOM_PRO_PLUGIN_REPOS: ${{ vars.CUSTOM_PRO_PLUGIN_REPOS }}
-      - name: Merge main into next
-        shell: bash
-        run: |
-          for repo in ${{ join(fromJSON(vars.NEXT_PRO_PLUGIN_REPOS), ' ') }} ${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ' ') }}
-          do
-            cd ./packages/pro-plugins/@nocobase/$repo
-            git checkout next
-            git merge main
-            cd ../../../../
-          done
-          cd ./packages/pro-plugins
-          git checkout next
-          git merge main
-          cd ../../
-          git checkout next
-          git merge main
       - name: Release major (next)
         shell: bash
         run: |
@@ -140,6 +124,22 @@ jobs:
         env:
           PRO_PLUGIN_REPOS: ${{ vars.NEXT_PRO_PLUGIN_REPOS }}
           CUSTOM_PRO_PLUGIN_REPOS: ${{ vars.CUSTOM_PRO_PLUGIN_REPOS }}
+      - name: Merge main into next
+        shell: bash
+        run: |
+          for repo in ${{ join(fromJSON(vars.NEXT_PRO_PLUGIN_REPOS), ' ') }} ${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ' ') }}
+          do
+            cd ./packages/pro-plugins/@nocobase/$repo
+            git checkout next
+            git merge -X ours main --no-edit
+            cd ../../../../
+          done
+          cd ./packages/pro-plugins
+          git checkout next
+          git merge -X ours main --no-edit
+          cd ../../
+          git checkout next
+          git merge -X ours main --no-edit
       # - name: Push
       #   shell: bash
       #   run: |
