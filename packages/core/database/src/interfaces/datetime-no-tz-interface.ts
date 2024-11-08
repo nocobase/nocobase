@@ -15,6 +15,7 @@ function isNumeric(str: any) {
 
 export class DatetimeNoTzInterface extends DatetimeInterface {
   async toValue(value: any, ctx: any = {}): Promise<any> {
+    console.log({ value });
     if (!value) {
       return null;
     }
@@ -22,6 +23,7 @@ export class DatetimeNoTzInterface extends DatetimeInterface {
     if (typeof value === 'string') {
       const match = /^(\d{4})[-/]?(\d{2})[-/]?(\d{2})$/.exec(value);
       if (match) {
+        console.log(`${match[1]}-${match[2]}-${match[3]}`);
         return `${match[1]}-${match[2]}-${match[3]}`;
       }
     }
@@ -32,7 +34,7 @@ export class DatetimeNoTzInterface extends DatetimeInterface {
       return value;
     } else if (isNumeric(value)) {
       const date = getJsDateFromExcel(value);
-      return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+      return date.toISOString();
     } else if (typeof value === 'string') {
       return value;
     }
