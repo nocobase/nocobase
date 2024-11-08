@@ -52,7 +52,7 @@ export interface CollectionOptions {
   viewName?: string;
   writableView?: boolean;
 
-  filterTargetKey?: string | string[];
+  filterTargetKey?: string;
   fields?: CollectionFieldOptions[];
   model?: any;
   repository?: any;
