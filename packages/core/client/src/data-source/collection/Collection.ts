@@ -52,7 +52,7 @@ export interface CollectionOptions {
   viewName?: string;
   writableView?: boolean;
 
-  filterTargetKey?: string;
+  filterTargetKey?: string | string[];
   fields?: CollectionFieldOptions[];
   model?: any;
   repository?: any;
@@ -163,6 +163,9 @@ export class Collection {
     this.primaryKey = field?.name;
 
     return this.primaryKey;
+  }
+  getFilterTargetKey() {
+    return this.filterTargetKey || this.getPrimaryKey() || 'id';
   }
 
   get inherits() {
