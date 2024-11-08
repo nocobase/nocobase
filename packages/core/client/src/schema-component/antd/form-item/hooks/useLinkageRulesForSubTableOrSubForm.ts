@@ -18,24 +18,20 @@ import useVariables from '../../../../variables/hooks/useVariables';
 import { useSubFormValue } from '../../association-field/hooks';
 import { isSubMode } from '../../association-field/util';
 
-const useIsSubFormOrSubTableField = () => {
-  const isSubFormOrSubTableField = (fieldSchema: Schema) => {
-    while (fieldSchema) {
-      if (isSubMode(fieldSchema)) {
-        return true;
-      }
-
-      if (fieldSchema['x-component'] === 'FormV2') {
-        return false;
-      }
-
-      fieldSchema = fieldSchema.parent;
+const isSubFormOrSubTableField = (fieldSchema: Schema) => {
+  while (fieldSchema) {
+    if (isSubMode(fieldSchema)) {
+      return true;
     }
 
-    return false;
-  };
+    if (fieldSchema['x-component'] === 'FormV2') {
+      return false;
+    }
 
-  return { isSubFormOrSubTableField };
+    fieldSchema = fieldSchema.parent;
+  }
+
+  return false;
 };
 
 /**
@@ -43,12 +39,6 @@ const useIsSubFormOrSubTableField = () => {
  */
 export const useLinkageRulesForSubTableOrSubForm = () => {
   const fieldSchema = useFieldSchema();
-  const { isSubFormOrSubTableField } = useIsSubFormOrSubTableField();
-
-  if (!isSubFormOrSubTableField(fieldSchema)) {
-    return;
-  }
-
   const field = useField<Field>();
   const { fieldSchema: schemaOfSubTableOrSubForm, formValue } = useSubFormValue();
   const localVariables = useLocalVariables();
@@ -57,6 +47,10 @@ export const useLinkageRulesForSubTableOrSubForm = () => {
   const linkageRules = getLinkageRules(schemaOfSubTableOrSubForm);
 
   useEffect(() => {
+    if (!isSubFormOrSubTableField(fieldSchema)) {
+      return;
+    }
+
     if (!(field.onUnmount as any).__rested) {
       const _onUnmount = field.onUnmount;
       field.onUnmount = () => {
