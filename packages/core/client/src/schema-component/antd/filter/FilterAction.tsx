@@ -43,61 +43,67 @@ export type FilterActionProps<T = {}> = ActionProps & {
   }) => React.ReactElement;
 };
 
-export const FilterAction = withDynamicSchemaProps(
-  React.memo((props: FilterActionProps) => {
-    const field = useField<Field>();
-    const [visible, setVisible] = useState(false);
-    const { designable, dn } = useDesignable();
-    const fieldSchema = useFieldSchema();
-    const form = useMemo<Form>(() => props.form || createForm(), []);
+const InternalFilterAction = React.memo((props: FilterActionProps) => {
+  const field = useField<Field>();
+  const [visible, setVisible] = useState(false);
+  const { designable, dn } = useDesignable();
+  const fieldSchema = useFieldSchema();
+  const form = useMemo<Form>(() => props.form || createForm(), []);
 
-    // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-    const { options, onSubmit, onReset, Container = StablePopover, icon } = useProps(props);
+  // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
+  const { options, onSubmit, onReset, Container = StablePopover, icon } = useProps(props);
 
-    const onOpenChange = useCallback((visible: boolean): void => {
-      setVisible(visible);
-    }, []);
+  const onOpenChange = useCallback((visible: boolean): void => {
+    setVisible(visible);
+  }, []);
 
-    const filterActionContextValue = useMemo(
-      () => ({ field, fieldSchema, designable, dn }),
-      [designable, dn, field, fieldSchema],
-    );
+  const filterActionContextValue = useMemo(
+    () => ({ field, fieldSchema, designable, dn }),
+    [designable, dn, field, fieldSchema],
+  );
 
-    const handleClick = useCallback(() => setVisible((visible) => !visible), []);
+  const handleClick = useCallback(() => setVisible((visible) => !visible), []);
 
-    const content = useMemo(() => {
-      return (
-        <FilterActionContent
-          form={form}
-          options={options}
-          field={field}
-          fieldSchema={fieldSchema}
-          onReset={onReset}
-          setVisible={setVisible}
-          onSubmit={onSubmit}
-        />
-      );
-    }, [field, fieldSchema, form, onReset, onSubmit, options]);
-
+  const content = useMemo(() => {
     return (
-      <FilterActionContext.Provider value={filterActionContextValue}>
-        <Container
-          destroyTooltipOnHide
-          placement={'bottomLeft'}
-          open={visible}
-          onOpenChange={onOpenChange}
-          trigger={'click'}
-          content={content}
-        >
-          {/* Adding a div here can prevent unnecessary re-rendering of Action */}
-          <div>
-            <Action onClick={handleClick} icon={icon} />
-          </div>
-        </Container>
-      </FilterActionContext.Provider>
+      <FilterActionContent
+        form={form}
+        options={options}
+        field={field}
+        fieldSchema={fieldSchema}
+        onReset={onReset}
+        setVisible={setVisible}
+        onSubmit={onSubmit}
+      />
     );
-  }),
-);
+  }, [field, fieldSchema, form, onReset, onSubmit, options]);
+
+  return (
+    <FilterActionContext.Provider value={filterActionContextValue}>
+      <Container
+        destroyTooltipOnHide
+        placement={'bottomLeft'}
+        open={visible}
+        onOpenChange={onOpenChange}
+        trigger={'click'}
+        content={content}
+      >
+        {/* Adding a div here can prevent unnecessary re-rendering of Action */}
+        <div>
+          <Action onClick={handleClick} icon={icon} />
+        </div>
+      </Container>
+    </FilterActionContext.Provider>
+  );
+});
+
+InternalFilterAction.displayName = 'InternalFilterAction';
+
+export const FilterAction = withDynamicSchemaProps((props: FilterActionProps) => {
+  // When clicking submit, "disabled" will change from undefined to false, which triggers a re-render.
+  // Here we convert the default undefined to false to avoid unnecessary re-rendering.
+  return <InternalFilterAction {...props} disabled={!!props.disabled} />;
+});
 
 FilterAction.displayName = 'FilterAction';
 
