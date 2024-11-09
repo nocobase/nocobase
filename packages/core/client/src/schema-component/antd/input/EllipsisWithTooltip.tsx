@@ -39,6 +39,11 @@ interface IEllipsisWithTooltipProps {
   children: any;
 }
 
+const popoverStyle = {
+  width: 300,
+  overflow: 'auto',
+  maxHeight: 400,
+};
 export const EllipsisWithTooltip = forwardRef((props: Partial<IEllipsisWithTooltipProps>, ref: any) => {
   const [ellipsis, setEllipsis] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -85,17 +90,7 @@ export const EllipsisWithTooltip = forwardRef((props: Partial<IEllipsisWithToolt
       onOpenChange={(visible) => {
         setVisible(ellipsis && visible);
       }}
-      content={
-        <div
-          style={{
-            width: 300,
-            overflow: 'auto',
-            maxHeight: 400,
-          }}
-        >
-          {props.popoverContent || props.children}
-        </div>
-      }
+      content={<div style={popoverStyle}>{props.popoverContent || props.children}</div>}
     >
       {divContent}
     </Popover>
