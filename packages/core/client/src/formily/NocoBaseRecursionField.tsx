@@ -32,11 +32,15 @@ interface INocoBaseRecursionFieldProps extends IRecursionFieldProps {
   uiSchema?: ISchema;
 }
 
-const useFieldProps = (schema: Schema) => {
-  const scope = useExpressionScope();
+const toFieldProps = _.memoize((schema: Schema, scope: any) => {
   return schema.toFieldProps({
     scope,
   }) as any;
+});
+
+const useFieldProps = (schema: Schema) => {
+  const scope = useExpressionScope();
+  return toFieldProps(schema, scope);
 };
 
 const useBasePath = (props: IRecursionFieldProps) => {
@@ -74,6 +78,55 @@ const createMergedSchemaInstance = _.memoize((schema: Schema, uiSchema: ISchema,
   return new Schema(merge(_.omit(uiSchema, 'type'), clonedSchema));
 });
 
+const getOrderProperties = _.memoize((schema: Schema) => {
+  return Schema.getOrderProperties(schema);
+});
+
+const propertiesToReactElement = (
+  schema: Schema,
+  field: any,
+  basePath: any,
+  mapProperties?: any,
+  filterProperties?: any,
+  propsRecursion?: any,
+) => {
+  const properties = getOrderProperties(schema);
+  if (!properties.length) return null;
+  return (
+    <Fragment>
+      {properties.map(({ schema: item, key: name }, index) => {
+        const base = field?.address || basePath;
+        let schema: Schema = item;
+        if (isFn(mapProperties)) {
+          const mapped = mapProperties(item, name);
+          if (mapped) {
+            schema = mapped;
+          }
+        }
+        if (isFn(filterProperties)) {
+          if (filterProperties(schema, name) === false) {
+            return null;
+          }
+        }
+        if (isBool(propsRecursion) && propsRecursion) {
+          return (
+            <NocoBaseRecursionField
+              propsRecursion={true}
+              filterProperties={filterProperties}
+              mapProperties={mapProperties}
+              schema={schema}
+              key={`${index}-${name}`}
+              name={name}
+              basePath={base}
+            />
+          );
+        }
+        return <NocoBaseRecursionField schema={schema} key={`${index}-${name}`} name={name} basePath={base} />;
+      })}
+    </Fragment>
+  );
+};
+
 /**
  * Based on @formily/react v2.3.2 RecursionField component
  * Modified to better adapt to NocoBase's needs
@@ -92,42 +145,16 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
   }, [fieldSchema, props.onlyRenderProperties, props.uiSchema]);
 
   const fieldProps = useFieldProps(mergedFieldSchema);
+
   const renderProperties = (field?: GeneralField) => {
     if (props.onlyRenderSelf) return;
-    const properties = Schema.getOrderProperties(mergedFieldSchema);
-    if (!properties.length) return;
-    return (
-      <Fragment>
-        {properties.map(({ schema: item, key: name }, index) => {
-          const base = field?.address || basePath;
-          let schema: Schema = item;
-          if (isFn(props.mapProperties)) {
-            const mapped = props.mapProperties(item, name);
-            if (mapped) {
-              schema = mapped;
-            }
-          }
-          if (isFn(props.filterProperties)) {
-            if (props.filterProperties(schema, name) === false) {
-              return null;
-            }
-          }
-          if (isBool(props.propsRecursion) && props.propsRecursion) {
-            return (
-              <NocoBaseRecursionField
-                propsRecursion={true}
-                filterProperties={props.filterProperties}
-                mapProperties={props.mapProperties}
-                schema={schema}
-                key={`${index}-${name}`}
-                name={name}
-                basePath={base}
-              />
-            );
-          }
-          return <NocoBaseRecursionField schema={schema} key={`${index}-${name}`} name={name} basePath={base} />;
-        })}
-      </Fragment>
+    return propertiesToReactElement(
+      mergedFieldSchema,
+      field,
+      basePath,
+      props.mapProperties,
+      props.filterProperties,
+      props.propsRecursion,
     );
   };
 
