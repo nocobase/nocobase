@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import _ from 'lodash';
 import React, { FC, Fragment, useEffect, useRef, useState } from 'react';
@@ -241,68 +241,64 @@ const getSourceData = (recordData, fieldSchema) => {
   return _.get(recordData, sourceRecordKey);
 };
 
-export const ReadPrettyInternalViewer: React.FC = observer(
-  (props: ReadPrettyInternalViewerProps) => {
-    const { value, ButtonList = ButtonLinkList } = props;
-    const fieldSchema = useFieldSchema();
-    const { enableLink } = fieldSchema['x-component-props'] || {};
-    // value 做了转换，但 props.value 和原来 useField().value 的值不一致
-    const field = useField();
-    const [visible, setVisible] = useState(false);
-    const { options: collectionField } = useAssociationFieldContext();
-    const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
-    const { visibleWithURL, setVisibleWithURL } = usePopupUtils();
-    const [btnHover, setBtnHover] = useState(!!visibleWithURL);
-    const { defaultOpenMode } = useOpenModeContext();
-    const recordData = useCollectionRecordData();
+export const ReadPrettyInternalViewer: React.FC<ReadPrettyInternalViewerProps> = (props) => {
+  const { value, ButtonList = ButtonLinkList } = props;
+  const fieldSchema = useFieldSchema();
+  const { enableLink } = fieldSchema['x-component-props'] || {};
+  // value 做了转换，但 props.value 和原来 useField().value 的值不一致
+  const field = useField();
+  const [visible, setVisible] = useState(false);
+  const { options: collectionField } = useAssociationFieldContext();
+  const { visibleWithURL, setVisibleWithURL } = usePopupUtils();
+  const [btnHover, setBtnHover] = useState(!!visibleWithURL);
+  const { defaultOpenMode } = useOpenModeContext();
+  const recordData = useCollectionRecordData();
 
-    const btnElement = (
-      <EllipsisWithTooltip ellipsis={true} ref={ellipsisWithTooltipRef}>
-        <CollectionRecordProvider isNew={false} record={getSourceData(recordData, fieldSchema)}>
-          <ButtonList setBtnHover={setBtnHover} value={value} fieldNames={props.fieldNames} />
-        </CollectionRecordProvider>
-      </EllipsisWithTooltip>
-    );
+  const btnElement = (
+    <EllipsisWithTooltip ellipsis={true}>
+      <CollectionRecordProvider isNew={false} record={getSourceData(recordData, fieldSchema)}>
+        <ButtonList setBtnHover={setBtnHover} value={value} fieldNames={props.fieldNames} />
+      </CollectionRecordProvider>
+    </EllipsisWithTooltip>
+  );
 
-    if (enableLink === false || !btnHover) {
-      return btnElement;
-    }
+  if (enableLink === false || !btnHover) {
+    return btnElement;
+  }
 
-    const renderWithoutTableFieldResourceProvider = () => (
-      // The recordData here is only provided when the popup is opened, not the current row record
-      <VariablePopupRecordProvider>
-        <WithoutTableFieldResource.Provider value={true}>
-          <RecursionField
-            schema={fieldSchema}
-            onlyRenderProperties
-            basePath={field.address}
-            filterProperties={(s) => {
-              return s['x-component'] === 'AssociationField.Viewer';
-            }}
-          />
-        </WithoutTableFieldResource.Provider>
-      </VariablePopupRecordProvider>
-    );
-
-    return (
-      <PopupVisibleProvider visible={false}>
-        <ActionContextProvider
-          value={{
-            visible: visible || visibleWithURL,
-            setVisible: (value) => {
-              setVisible?.(value);
-              setVisibleWithURL?.(value);
-            },
-            openMode: defaultOpenMode,
-            snapshot: collectionField?.interface === 'snapshot',
-            fieldSchema: fieldSchema,
+  const renderWithoutTableFieldResourceProvider = () => (
+    // The recordData here is only provided when the popup is opened, not the current row record
+    <VariablePopupRecordProvider>
+      <WithoutTableFieldResource.Provider value={true}>
+        <RecursionField
+          schema={fieldSchema}
+          onlyRenderProperties
+          basePath={field.address}
+          filterProperties={(s) => {
+            return s['x-component'] === 'AssociationField.Viewer';
           }}
-        >
-          {btnElement}
-          {renderWithoutTableFieldResourceProvider()}
-        </ActionContextProvider>
-      </PopupVisibleProvider>
-    );
-  },
-  { displayName: 'ReadPrettyInternalViewer' },
-);
+        />
+      </WithoutTableFieldResource.Provider>
+    </VariablePopupRecordProvider>
+  );
+
+  return (
+    <PopupVisibleProvider visible={false}>
+      <ActionContextProvider
+        value={{
+          visible: visible || visibleWithURL,
+          setVisible: (value) => {
+            setVisible?.(value);
+            setVisibleWithURL?.(value);
+          },
+          openMode: defaultOpenMode,
+          snapshot: collectionField?.interface === 'snapshot',
+          fieldSchema: fieldSchema,
+        }}
+      >
+        {btnElement}
+        {renderWithoutTableFieldResourceProvider()}
+      </ActionContextProvider>
+    </PopupVisibleProvider>
+  );
+};
