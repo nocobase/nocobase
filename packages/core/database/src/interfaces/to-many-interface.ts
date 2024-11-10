@@ -21,7 +21,6 @@ export class ToManyInterface extends BaseInterface {
 
     const { filterKey, targetCollection, transaction } = ctx;
 
-    console.log({ filterKey });
     const targetInstances = await targetCollection.repository.find({
       filter: {
         [filterKey]: items,
