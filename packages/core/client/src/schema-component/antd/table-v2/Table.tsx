@@ -26,8 +26,8 @@ import { useTranslation } from 'react-i18next';
 import { useInView } from 'react-intersection-observer';
 import { DndContext, useDesignable, useTableSize } from '../..';
 import {
+  CollectionRecordProvider,
   RecordIndexProvider,
-  RecordProvider,
   useCollection,
   useCollectionParentRecordData,
   useDataBlockRequest,
@@ -95,7 +95,6 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
   const { schemaInWhitelist } = useACLFieldWhitelist();
   const { designable } = useDesignable();
   const { exists, render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
-  const parentRecordData = useCollectionParentRecordData();
   const columnsSchemas = schema.reduceProperties((buf, s) => {
     if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
       return buf.concat([s]);
@@ -142,10 +141,11 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
           width: columnHidden && !designable ? 0 : columnSchema['x-component-props']?.width || 200,
           render: (value, record, index) => {
             const basePath = field.address.concat(record.__index || index);
-            return (
-              <SubFormProvider value={{ value: record, collection, fieldSchema: schema.parent }}>
-                <RecordIndexProvider index={record.__index || index}>
-                  <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
+
+            if (props.isSubTable) {
+              return (
+                <SubFormProvider value={{ value: record, collection, fieldSchema: schema.parent }}>
+                  <RecordIndexProvider index={record.__index || index}>
                     <ColumnFieldProvider schema={columnSchema} basePath={basePath}>
                       <span role="button" className={schemaToolbarBigger}>
                         <NocoBaseRecursionField
@@ -156,9 +156,20 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
                         />
                       </span>
                     </ColumnFieldProvider>
-                  </RecordProvider>
-                </RecordIndexProvider>
-              </SubFormProvider>
+                  </RecordIndexProvider>
+                </SubFormProvider>
+              );
+            }
+
+            return (
+              <span role="button" className={schemaToolbarBigger}>
+                <NocoBaseRecursionField
+                  basePath={basePath}
+                  schema={columnSchema}
+                  uiSchema={uiSchema}
+                  onlyRenderProperties
+                />
+              </span>
             );
           },
           onCell: (record, rowIndex) => {
@@ -180,7 +191,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
 
     // 这里不能把 columnsSchema 作为依赖，因为其每次都会变化，这里使用 hasChangedColumns 作为依赖
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [hasChangedColumns, field.address, collection, parentRecordData, schemaToolbarBigger, designable],
+    [hasChangedColumns, field.address, collection, schemaToolbarBigger, designable],
   );
 
   const tableColumns = useMemo(() => {
@@ -248,6 +259,7 @@ const SortableRow = (props: {
   onClick: (e: any) => void;
   style: React.CSSProperties;
   className: string;
+  record: any;
 }) => {
   const { isInSubTable } = useFlag();
   const { token } = useToken();
@@ -498,8 +510,20 @@ const HeaderCellComponent = React.memo(
 HeaderCellComponent.displayName = 'HeaderCellComponent';
 
 const BodyRowComponent = React.memo(
-  (props: { rowIndex: number; onClick: (e: any) => void; style: React.CSSProperties; className: string }) => {
-    return <SortableRow {...props} />;
+  (props: {
+    rowIndex: number;
+    onClick: (e: any) => void;
+    style: React.CSSProperties;
+    className: string;
+    record: any;
+  }) => {
+    const parentRecordData = useCollectionParentRecordData();
+
+    return (
+      <CollectionRecordProvider isNew={isNewRecord(props.record)} record={props.record} parentRecord={parentRecordData}>
+        <SortableRow {...props} />
+      </CollectionRecordProvider>
+    );
   },
 );
 
@@ -750,6 +774,7 @@ export const Table: any = withDynamicSchemaProps(
                 onClickRow(record, setSelectedRow, selectedRow);
               },
               rowIndex,
+              record,
             };
           };
         }
