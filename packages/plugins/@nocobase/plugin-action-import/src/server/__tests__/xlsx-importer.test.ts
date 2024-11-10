@@ -429,6 +429,8 @@ describe('xlsx importer', () => {
   describe('import with associations', () => {
     let User;
     let Post;
+    let Tag;
+
     beforeEach(async () => {
       User = app.db.collection({
         name: 'users',
@@ -460,10 +462,96 @@ describe('xlsx importer', () => {
             target: 'users',
             interface: 'm2o',
           },
+          {
+            type: 'belongsToMany',
+            name: 'tags',
+            target: 'tags',
+            interface: 'm2m',
+            through: 'postsTags',
+          },
+        ],
+      });
+
+      Tag = app.db.collection({
+        name: 'tags',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'belongsToMany',
+            name: 'posts',
+            target: 'posts',
+            interface: 'm2m',
+            through: 'postsTags',
+          },
         ],
       });
 
       await app.db.sync();
+    });
+
+    it('should import many to many with id', async () => {
+      await Tag.repository.create({
+        values: [
+          {
+            title: 't1',
+          },
+          {
+            title: 't2',
+          },
+        ],
+      });
+
+      const columns = [
+        {
+          dataIndex: ['title'],
+          defaultTitle: '名称',
+        },
+        {
+          dataIndex: ['tags', 'id'],
+          defaultTitle: 'IDS',
+        },
+      ];
+
+      const templateCreator = new TemplateCreator({
+        collection: Post,
+        columns,
+      });
+
+      const template = await templateCreator.run();
+
+      const worksheet = template.Sheets[template.SheetNames[0]];
+
+      XLSX.utils.sheet_add_aoa(
+        worksheet,
+        [
+          ['test', '1,2'],
+          ['test2', 1],
+        ],
+        {
+          origin: 'A2',
+        },
+      );
+
+      const importer = new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: Post,
+        columns,
+        workbook: template,
+      });
+
+      await importer.run();
+
+      const posts = await Post.repository.find({
+        appends: ['tags'],
+      });
+
+      expect(posts.length).toBe(2);
+
+      expect(posts[0]['tags'].map((item: any) => item.id)).toEqual([1, 2]);
+      expect(posts[1]['tags'].map((item: any) => item.id)).toEqual([1]);
     });
 
     it('should validate to many association', async () => {
