@@ -32,7 +32,7 @@ export class DatetimeNoTzInterface extends DatetimeInterface {
       return value;
     } else if (isNumeric(value)) {
       const date = getJsDateFromExcel(value);
-      return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+      return date.toISOString();
     } else if (typeof value === 'string') {
       return value;
     }

@@ -591,4 +591,14 @@ describe('collections repository', () => {
     const collectionInMemory = app.db.getCollection(firstCollection.name);
     expect(firstCollection.unavailableActions).toEqual(collectionInMemory.unavailableActions());
   });
+
+  it('should get full collections api', async () => {
+    const response = await app.agent().resource('collections').listMeta();
+    expect(response.statusCode).toBe(200);
+    const data = response.body.data;
+    const firstCollection = data[0];
+    const collectionInMemory = app.db.getCollection(firstCollection.name);
+    expect(firstCollection.unavailableActions).toEqual(collectionInMemory.unavailableActions());
+    expect(firstCollection.fields.length).toEqual(collectionInMemory.fields.size);
+  });
 });
