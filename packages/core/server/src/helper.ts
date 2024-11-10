@@ -47,6 +47,8 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
     { tag: 'generateReqId' },
   );
 
+  app.use(app.auditManager.middleware(), { tag: 'audit' });
+
   app.use(requestLogger(app.name, app.requestLogger, options.logger?.request), { tag: 'logger' });
 
   app.use(
@@ -91,7 +93,6 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
   }
 
   app.use(app.dataSourceManager.middleware(), { tag: 'dataSource', after: 'dataWrapping' });
-  app.use(app.auditManager.middleware(), { tag: 'audit', before: 'dataWrapping' });
 }
 
 export const createAppProxy = (app: Application) => {
