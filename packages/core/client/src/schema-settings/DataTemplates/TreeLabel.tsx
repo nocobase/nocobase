@@ -25,7 +25,7 @@ export const TreeNode = (props) => {
   return (
     <div>
       <Tag color={colors[type]}>
-        <span>{tag}</span> {displayType ? text[type] : ''}
+        <span>{tag}</span> {displayType ? `(${text[type]})` : ''}
       </Tag>
     </div>
   );
