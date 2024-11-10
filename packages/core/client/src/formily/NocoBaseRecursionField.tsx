@@ -78,19 +78,22 @@ const createMergedSchemaInstance = _.memoize((schema: Schema, uiSchema: ISchema,
   return new Schema(merge(_.omit(uiSchema, 'type'), clonedSchema));
 });
 
-const getOrderProperties = _.memoize((schema: Schema) => {
-  return Schema.getOrderProperties(schema);
-});
-
-const propertiesToReactElement = (
-  schema: Schema,
-  field: any,
-  basePath: any,
-  mapProperties?: any,
-  filterProperties?: any,
-  propsRecursion?: any,
-) => {
-  const properties = getOrderProperties(schema);
+const propertiesToReactElement = ({
+  schema,
+  field,
+  basePath,
+  mapProperties,
+  filterProperties,
+  propsRecursion,
+}: {
+  schema: Schema;
+  field: any;
+  basePath: any;
+  mapProperties?: any;
+  filterProperties?: any;
+  propsRecursion?: any;
+}) => {
+  const properties = Schema.getOrderProperties(schema);
   if (!properties.length) return null;
   return (
     <Fragment>
@@ -148,14 +151,15 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
 
   const renderProperties = (field?: GeneralField) => {
     if (props.onlyRenderSelf) return;
-    return propertiesToReactElement(
-      mergedFieldSchema,
+    return propertiesToReactElement({
+      schema: mergedFieldSchema,
       field,
       basePath,
-      props.mapProperties,
-      props.filterProperties,
-      props.propsRecursion,
-    );
+      mapProperties: props.mapProperties,
+      filterProperties: props.filterProperties,
+      propsRecursion: props.propsRecursion,
+      performance: true,
+    });
   };
 
   const render = () => {
