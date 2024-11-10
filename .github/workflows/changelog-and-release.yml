@@ -24,6 +24,7 @@ jobs:
     steps:
       - name: Get info
         id: get-info
+        shell: bash
         run: |
           if [[ "${{ inputs.version }}" == "alpha" || ${{ github.ref_name }} =~ "alpha" ]]; then
             echo "branch=$(echo 'next')" >> $GITHUB_OUTPUT

@@ -23,5 +23,6 @@
   "No authentication methods available.": "没有可用的认证方式。",
   "The password is inconsistent, please re-enter": "密码不一致，请重新输入",
   "Sign-in": "登录",
-  "Password": "密码"
+  "Password": "密码",
+  "The username/email or password is incorrect, please re-enter": "用户名/邮箱或密码有误，请重新输入"
 }
