@@ -47,7 +47,7 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
     { tag: 'generateReqId' },
   );
 
-  app.use(app.auditManager.middleware(), { tag: 'audit' });
+  app.use(app.auditManager.middleware(), { tag: 'audit', after: 'generateReqId' });
 
   app.use(requestLogger(app.name, app.requestLogger, options.logger?.request), { tag: 'logger' });
 
