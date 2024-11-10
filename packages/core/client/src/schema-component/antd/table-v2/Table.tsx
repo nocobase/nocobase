@@ -13,7 +13,7 @@ import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sor
 import { css, cx } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
-import { Schema, observer, useField, useFieldSchema } from '@formily/react';
+import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { action, raw } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
@@ -148,12 +148,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
                   <RecordIndexProvider index={record.__index || index}>
                     <ColumnFieldProvider schema={columnSchema} basePath={basePath}>
                       <span role="button" className={schemaToolbarBigger}>
-                        <NocoBaseRecursionField
-                          basePath={basePath}
-                          schema={columnSchema}
-                          uiSchema={uiSchema}
-                          onlyRenderProperties
-                        />
+                        <RecursionField basePath={basePath} schema={columnSchema} onlyRenderProperties />
                       </span>
                     </ColumnFieldProvider>
                   </RecordIndexProvider>
@@ -164,6 +159,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
             return (
               <span role="button" className={schemaToolbarBigger}>
                 <NocoBaseRecursionField
+                  values={record}
                   basePath={basePath}
                   schema={columnSchema}
                   uiSchema={uiSchema}

@@ -10,7 +10,6 @@
 import { GeneralField } from '@formily/core';
 import {
   ArrayField,
-  Field,
   IRecursionFieldProps,
   ISchema,
   ObjectField,
@@ -24,12 +23,18 @@ import {
 import { isBool, isFn, isValid, merge } from '@formily/shared';
 import _ from 'lodash';
 import React, { Fragment, useMemo } from 'react';
+import { NocoBaseField } from './NocoBaseField';
 
 interface INocoBaseRecursionFieldProps extends IRecursionFieldProps {
   /**
    * Default Schema for collection fields
    */
   uiSchema?: ISchema;
+
+  /**
+   * Value for fields
+   */
+  values?: Record<string, any>;
 }
 
 const toFieldProps = _.memoize((schema: Schema, scope: any) => {
@@ -85,6 +90,7 @@ const propertiesToReactElement = ({
   mapProperties,
   filterProperties,
   propsRecursion,
+  values,
 }: {
   schema: Schema;
   field: any;
@@ -92,6 +98,7 @@ const propertiesToReactElement = ({
   mapProperties?: any;
   filterProperties?: any;
   propsRecursion?: any;
+  values?: Record<string, any>;
 }) => {
   const properties = Schema.getOrderProperties(schema);
   if (!properties.length) return null;
@@ -121,10 +128,19 @@ const propertiesToReactElement = ({
               key={`${index}-${name}`}
               name={name}
               basePath={base}
+              values={_.get(values, name)}
             />
           );
         }
-        return <NocoBaseRecursionField schema={schema} key={`${index}-${name}`} name={name} basePath={base} />;
+        return (
+          <NocoBaseRecursionField
+            schema={schema}
+            key={`${index}-${name}`}
+            name={name}
+            basePath={base}
+            values={_.get(values, name)}
+          />
+        );
       })}
     </Fragment>
   );
@@ -158,7 +174,7 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
       mapProperties: props.mapProperties,
       filterProperties: props.filterProperties,
       propsRecursion: props.propsRecursion,
-      performance: true,
+      values: props.values,
     });
   };
 
@@ -181,7 +197,15 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
         </VoidField>
       );
     }
-    return <Field {...fieldProps} name={props.name} basePath={basePath} />;
+    return (
+      <NocoBaseField
+        name={props.name}
+        value={props.values}
+        initialValue={props.values}
+        basePath={basePath}
+        schema={mergedFieldSchema}
+      />
+    );
   };
 
   if (!fieldSchema) return <Fragment />;
