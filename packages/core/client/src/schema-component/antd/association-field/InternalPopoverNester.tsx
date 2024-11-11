@@ -89,7 +89,7 @@ export const InternalPopoverNester = observer(
                 maxWidth: '95%',
               }}
             >
-              <ReadPrettyInternalViewer {...props} />
+              <ReadPrettyInternalViewer {...(props as any)} />
             </div>
             <EditOutlined style={{ display: 'inline-flex', margin: '5px' }} />
           </span>
