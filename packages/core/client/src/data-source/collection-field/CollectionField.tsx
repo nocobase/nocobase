@@ -9,9 +9,8 @@
 
 import { connect, useFieldSchema } from '@formily/react';
 import React from 'react';
-import { ErrorBoundary } from 'react-error-boundary';
 import { useDynamicComponentProps } from '../../hoc/withDynamicSchemaProps';
-import { ErrorFallback, useComponent } from '../../schema-component';
+import { useComponent } from '../../schema-component';
 import { CollectionFieldProvider, useCollectionField } from './CollectionFieldProvider';
 
 type Props = {
@@ -35,11 +34,9 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
 export const CollectionField = connect((props) => {
   const fieldSchema = useFieldSchema();
   return (
-    <ErrorBoundary FallbackComponent={ErrorFallback.Modal} onError={console.log}>
-      <CollectionFieldProvider name={fieldSchema.name}>
-        <CollectionFieldInternalField {...props} />
-      </CollectionFieldProvider>
-    </ErrorBoundary>
+    <CollectionFieldProvider name={fieldSchema.name}>
+      <CollectionFieldInternalField {...props} />
+    </CollectionFieldProvider>
   );
 });
 
