@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormPath, IFieldFactoryProps, IFieldProps, LifeCycleTypes } from '@formily/core';
+import { FormPath, FormPathPattern, IFieldFactoryProps, IFieldProps, LifeCycleTypes } from '@formily/core';
 import { Field } from '@formily/core/esm/models/Field';
+import { locateNode } from '@formily/core/esm/shared/internals';
 import { JSXComponent, Schema } from '@formily/react';
-import { batch, define, observable } from '@formily/reactive';
+import { batch, define, observable, raw } from '@formily/reactive';
 import { toArr } from '@formily/shared';
 
 export function createNocoBaseField<Decorator extends JSXComponent, Component extends JSXComponent>(
@@ -21,14 +22,17 @@ export function createNocoBaseField<Decorator extends JSXComponent, Component ex
   if (!identifier) return;
   if (!this.fields[identifier] || this.props.designable) {
     batch(() => {
-      new NocoBaseReadPrettyField(address, props, this, this.props.designable);
+      new NocoBaseField(address, props, this, this.props.designable);
     });
     this.notify(LifeCycleTypes.ON_FORM_GRAPH_CHANGE);
   }
   return this.fields[identifier] as any;
 }
 
-class NocoBaseReadPrettyField<
+/**
+ * Compared to the Field class, NocoBaseField has better performance
+ */
+class NocoBaseField<
   Decorator extends JSXComponent = any,
   Component extends JSXComponent = any,
   TextType = any,
@@ -72,6 +76,11 @@ class NocoBaseReadPrettyField<
     this.component = this.props.component
       ? toArr(this.props.component)
       : [this.props.schema?.['x-component'], this.props.schema?.['x-component-props']];
+  }
+
+  locate(address: FormPathPattern) {
+    raw(this.form.fields)[address.toString()] = this as any;
+    locateNode(this as any, address);
   }
 
   protected makeObservable() {
