@@ -24,7 +24,7 @@ import _, { omit } from 'lodash';
 import React, { useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInView } from 'react-intersection-observer';
-import { DndContext, useDesignable, useTableSize } from '../..';
+import { DndContext, isBulkEditAction, useDesignable, usePopupSettings, useTableSize } from '../..';
 import {
   CollectionRecordProvider,
   RecordIndexProvider,
@@ -103,6 +103,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
   }, []);
   const { current, pageSize } = paginationProps;
   const hasChangedColumns = useColumnsDeepMemoized(columnsSchemas);
+  const { isPopupVisibleControlledByURL } = usePopupSettings();
 
   const schemaToolbarBigger = useMemo(() => {
     return css`
@@ -164,7 +165,11 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
                   schema={columnSchema}
                   uiSchema={uiSchema}
                   onlyRenderProperties
-                  filterProperties={(schema) => schema['x-component'] !== 'Action.Container'}
+                  filterProperties={(schema) =>
+                    isBulkEditAction(schema) ||
+                    !isPopupVisibleControlledByURL() ||
+                    schema['x-component'] !== 'Action.Container'
+                  }
                 />
               </span>
             );
@@ -188,7 +193,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
 
     // 这里不能把 columnsSchema 作为依赖，因为其每次都会变化，这里使用 hasChangedColumns 作为依赖
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [hasChangedColumns, field.address, collection, schemaToolbarBigger, designable],
+    [hasChangedColumns, field.address, collection, schemaToolbarBigger, designable, isPopupVisibleControlledByURL],
   );
 
   const tableColumns = useMemo(() => {

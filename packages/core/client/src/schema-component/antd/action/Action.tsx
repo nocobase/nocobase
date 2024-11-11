@@ -379,7 +379,7 @@ Action.Page = ActionPage;
 export default Action;
 
 // TODO: Plugin-related code should not exist in the core. It would be better to implement it by modifying the schema, but it would cause incompatibility.
-function isBulkEditAction(fieldSchema) {
+export function isBulkEditAction(fieldSchema) {
   return fieldSchema['x-action'] === 'customize:bulkEdit';
 }
 
