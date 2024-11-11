@@ -10,7 +10,7 @@
 import { FormPath, IFieldFactoryProps, IFieldProps, LifeCycleTypes } from '@formily/core';
 import { Field } from '@formily/core/esm/models/Field';
 import { JSXComponent, Schema } from '@formily/react';
-import { batch } from '@formily/reactive';
+import { batch, define, observable } from '@formily/reactive';
 import { toArr } from '@formily/shared';
 
 export function createNocoBaseField<Decorator extends JSXComponent, Component extends JSXComponent>(
@@ -74,8 +74,11 @@ class NocoBaseReadPrettyField<
       : [this.props.schema?.['x-component'], this.props.schema?.['x-component-props']];
   }
 
-  // Set as an empty function to prevent parent class from executing this method
-  protected makeObservable() {}
+  protected makeObservable() {
+    define(this, {
+      componentProps: observable,
+    });
+  }
 
   // Set as an empty function to prevent parent class from executing this method
   protected makeReactive() {}
