@@ -74,94 +74,9 @@ class NocoBaseReadPrettyField<
       : [this.props.schema?.['x-component'], this.props.schema?.['x-component-props']];
   }
 
-  protected makeObservable() {
-    // super.makeObservable();
-    // if (this.designable) return;
-    // define(this, {
-    //   // path: observable.ref,
-    //   title: observable.ref,
-    //   description: observable.ref,
-    //   dataSource: observable.ref,
-    //   // selfDisplay: observable.ref,
-    //   // selfPattern: observable.ref,
-    //   loading: observable.ref,
-    //   // validating: observable.ref,
-    //   // submitting: observable.ref,
-    //   // selfModified: observable.ref,
-    //   // modified: observable.ref,
-    //   // active: observable.ref,
-    //   // visited: observable.ref,
-    //   // initialized: observable.ref,
-    //   // mounted: observable.ref,
-    //   // unmounted: observable.ref,
-    //   // inputValue: observable.ref,
-    //   // inputValues: observable.ref,
-    //   // decoratorType: observable.ref,
-    //   // componentType: observable.ref,
-    //   content: observable.ref,
-    //   // feedbacks: observable.ref,
-    //   decoratorProps: observable,
-    //   componentProps: observable,
-    //   // validator: observable.shallow,
-    //   data: observable.shallow,
-    //   component: observable.computed,
-    //   decorator: observable.computed,
-    //   // errors: observable.computed,
-    //   // warnings: observable.computed,
-    //   // successes: observable.computed,
-    //   // valid: observable.computed,
-    //   // invalid: observable.computed,
-    //   // selfErrors: observable.computed,
-    //   // selfWarnings: observable.computed,
-    //   // selfSuccesses: observable.computed,
-    //   // selfValid: observable.computed,
-    //   // selfInvalid: observable.computed,
-    //   // validateStatus: observable.computed,
-    //   value: observable.computed,
-    //   initialValue: observable.computed,
-    //   display: observable.computed,
-    //   // pattern: observable.computed,
-    //   // required: observable.computed,
-    //   hidden: observable.computed,
-    //   visible: observable.computed,
-    //   // disabled: observable.computed,
-    //   // readOnly: observable.computed,
-    //   // readPretty: observable.computed,
-    //   // editable: observable.computed,
-    //   // indexes: observable.computed,
-    //   setDisplay: action,
-    //   setTitle: action,
-    //   setDescription: action,
-    //   setDataSource: action,
-    //   setValue: action,
-    //   // setPattern: action,
-    //   setInitialValue: action,
-    //   setLoading: action,
-    //   // setValidating: action,
-    //   // setFeedback: action,
-    //   // setSelfErrors: action,
-    //   // setSelfWarnings: action,
-    //   // setSelfSuccesses: action,
-    //   // setValidator: action,
-    //   // setRequired: action,
-    //   setComponent: action,
-    //   setComponentProps: action,
-    //   setDecorator: action,
-    //   setDecoratorProps: action,
-    //   setData: action,
-    //   setContent: action,
-    //   // validate: action,
-    //   // reset: action,
-    //   // onInit: batch,
-    //   // onInput: batch,
-    //   // onMount: batch,
-    //   // onUnmount: batch,
-    //   // onFocus: batch,
-    //   // onBlur: batch,
-    // });
-  }
+  // Set as an empty function to prevent parent class from executing this method
+  protected makeObservable() {}
 
-  protected makeReactive() {
-    // super.makeReactive();
-  }
+  // Set as an empty function to prevent parent class from executing this method
+  protected makeReactive() {}
 }
