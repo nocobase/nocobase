@@ -8,7 +8,7 @@
  */
 
 import { css } from '@emotion/css';
-import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
+import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Modal, ModalProps } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
@@ -43,7 +43,6 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
     const { visible, setVisible, openSize = 'middle', modalProps } = useActionContext();
     const actualWidth = width ?? openSizeWidthMap.get(openSize);
     const schema = useFieldSchema();
-    const form = useForm();
     const field = useField();
     const { token } = useToken();
     const tabContext = useTabsContext();
@@ -91,7 +90,6 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
             open={visible}
             onCancel={() => {
               setVisible(false, true);
-              form.reset();
             }}
             className={classNames(
               others.className,

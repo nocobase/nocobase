@@ -181,6 +181,23 @@ describe('Collection', () => {
     });
   });
 
+  describe('getFilterTargetKey()', () => {
+    test('not set as id', () => {
+      const collection = getCollection({ name: 'test' });
+      expect(collection.getFilterTargetKey()).toBe('id');
+    });
+
+    test('single ftk', () => {
+      const collection = getCollection({ name: 'test', filterTargetKey: 'a' });
+      expect(collection.getFilterTargetKey()).toBe('a');
+    });
+
+    test('multiple ftk', () => {
+      const collection = getCollection({ name: 'test', filterTargetKey: ['a', 'b'] });
+      expect(collection.getFilterTargetKey()).toMatchObject(['a', 'b']);
+    });
+  });
+
   test('properties', () => {
     const app = new Application({
       dataSourceManager: {

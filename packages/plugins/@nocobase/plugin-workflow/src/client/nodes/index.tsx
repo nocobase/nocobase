@@ -34,7 +34,7 @@ import {
 import { parse, str2moment } from '@nocobase/utils/client';
 
 import WorkflowPlugin from '..';
-import { AddButton } from '../AddButton';
+import { AddButton } from '../AddNodeContext';
 import { useFlowContext } from '../FlowContext';
 import { DrawerDescription } from '../components/DrawerDescription';
 import { StatusButton } from '../components/StatusButton';
@@ -51,27 +51,40 @@ export type NodeAvailableContext = {
   branchIndex: number;
 };
 
+type Config = Record<string, any>;
+
+type Options = { label: string; value: any }[];
+
 export abstract class Instruction {
   title: string;
   type: string;
   group: string;
   description?: string;
   /**
-   * @experimental
+   * @deprecated migrate to `presetFieldset` instead
    */
   options?: { label: string; value: any; key: string }[];
   fieldset: Record<string, ISchema>;
   /**
    * @experimental
    */
+  presetFieldset?: Record<string, ISchema>;
+  /**
+   * To presentation if the instruction is creating a branch
+   * @experimental
+   */
+  branching?: boolean | Options | ((config: Config) => boolean | Options);
+  /**
+   * @experimental
+   */
   view?: ISchema;
-  scope?: { [key: string]: any };
-  components?: { [key: string]: any };
+  scope?: Record<string, any>;
+  components?: Record<string, any>;
   Component?(props): JSX.Element;
   /**
    * @experimental
    */
-  createDefaultConfig?(): Record<string, any> {
+  createDefaultConfig?(): Config {
     return {};
   }
   useVariables?(node, options?: UseVariableOptions): VariableOption;
@@ -243,6 +256,7 @@ export function RemoveButton() {
       icon={<DeleteOutlined />}
       onClick={onRemove}
       className="workflow-node-remove-button"
+      size="small"
     />
   );
 }
@@ -568,19 +582,18 @@ export function NodeDefaultView(props) {
             'Node with unknown type will cause error. Please delete it or check plugin which provide this type.',
           )}
         >
-          <div
-            role="button"
-            aria-label={`_untyped-${editingTitle}`}
-            className={cx(styles.nodeCardClass, 'invalid')}
-            onClick={onOpenDrawer}
-          >
-            <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
-              <Tag color="error">{lang('Unknown node')}</Tag>
-              <span className="workflow-node-id">{data.id}</span>
+          <div role="button" aria-label={`_untyped-${editingTitle}`} className={cx(styles.nodeCardClass, 'invalid')}>
+            <div className={styles.nodeHeaderClass}>
+              <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
+                <Tag color="error">{lang('Unknown node')}</Tag>
+                <span className="workflow-node-id">{data.id}</span>
+              </div>
+              <div className="workflow-node-actions">
+                <RemoveButton />
+                <JobButton />
+              </div>
             </div>
             <Input.TextArea value={editingTitle} disabled autoSize />
-            <RemoveButton />
-            <JobButton />
           </div>
         </Tooltip>
       </div>
@@ -597,9 +610,15 @@ export function NodeDefaultView(props) {
         className={cx(styles.nodeCardClass, { configuring: editingConfig })}
         onClick={onOpenDrawer}
       >
-        <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
-          <Tag>{typeTitle}</Tag>
-          <span className="workflow-node-id">{data.id}</span>
+        <div className={styles.nodeHeaderClass}>
+          <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
+            <Tag>{typeTitle}</Tag>
+            <span className="workflow-node-id">{data.id}</span>
+          </div>
+          <div className="workflow-node-actions">
+            <RemoveButton />
+            <JobButton />
+          </div>
         </div>
         <Input.TextArea
           disabled={workflow.executed}
@@ -608,8 +627,6 @@ export function NodeDefaultView(props) {
           onBlur={(ev) => onChangeTitle(ev.target.value)}
           autoSize
         />
-        <RemoveButton />
-        <JobButton />
         <ActionContextProvider
           value={{
             visible: editingConfig,
