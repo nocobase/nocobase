@@ -629,7 +629,7 @@ Menu.URL = observer(
           </SchemaContext.Provider>
         ),
       };
-    }, [field.title, icon, props.href, schema, JSON.stringify(props.params)]);
+    }, [field.title, designable, hidden, icon, props.href, schema, JSON.stringify(props.params)]);
 
     pushMenuItem(item);
     return null;
