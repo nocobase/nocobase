@@ -20,6 +20,7 @@ import {
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
   SchemaSettingsSubMenu,
+  SchemaSettingsSwitchItem,
   useAPIClient,
   useDesignable,
   useURLAndHTMLSchema,
@@ -372,6 +373,20 @@ export const MenuDesigner = () => {
         schema={schema as ISchema}
         initialValues={initialValues}
         onSubmit={onEditSubmit}
+      />
+      <SchemaSettingsSwitchItem
+        title={t('Hidden')}
+        checked={fieldSchema['x-component-props']?.hidden}
+        onChange={(v) => {
+          fieldSchema['x-component-props'].hidden = !!v;
+          field.componentProps.hidden = !!v;
+          dn.emit('patch', {
+            schema: {
+              'x-uid': fieldSchema['x-uid'],
+              'x-component-props': fieldSchema['x-component-props'],
+            },
+          });
+        }}
       />
       <SchemaSettingsModalItem
         title={t('Move to')}
