@@ -129,7 +129,10 @@ export const ResourceActionProvider: React.FC<ResourceActionProviderProps> = (pr
 };
 
 export const useResourceActionContext = () => {
-  return useContext(ResourceActionContext);
+  return (
+    useContext(ResourceActionContext) ||
+    ({} as Result<any, any> & { state?: any; setState?: any; dragSort?: boolean; defaultRequest?: any })
+  );
 };
 
 export const useDataSourceFromRAC = (options: any) => {
@@ -145,7 +148,7 @@ export const useDataSourceFromRAC = (options: any) => {
 };
 
 export const useResourceContext = () => {
-  const { type, resource, collection, association } = useContext(ResourceContext);
+  const { type, resource, collection, association } = useContext(ResourceContext) || {};
   return {
     type,
     resource,

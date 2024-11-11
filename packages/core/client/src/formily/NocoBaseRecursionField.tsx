@@ -10,6 +10,7 @@
 import { GeneralField } from '@formily/core';
 import {
   ArrayField,
+  Field,
   IRecursionFieldProps,
   ISchema,
   ObjectField,
@@ -35,6 +36,11 @@ interface INocoBaseRecursionFieldProps extends IRecursionFieldProps {
    * Value for fields
    */
   values?: Record<string, any>;
+
+  /**
+   * 是否使用 Formily Filed 类，性能会有所下降，但是可以更好的兼容 Formily
+   */
+  isUseFormilyField?: boolean;
 }
 
 const toFieldProps = _.memoize((schema: Schema, scope: any) => {
@@ -91,6 +97,7 @@ const propertiesToReactElement = ({
   filterProperties,
   propsRecursion,
   values,
+  isUseFormilyField,
 }: {
   schema: Schema;
   field: any;
@@ -99,6 +106,7 @@ const propertiesToReactElement = ({
   filterProperties?: any;
   propsRecursion?: any;
   values?: Record<string, any>;
+  isUseFormilyField?: boolean;
 }) => {
   const properties = Schema.getOrderProperties(schema);
   if (!properties.length) return null;
@@ -129,6 +137,7 @@ const propertiesToReactElement = ({
               name={name}
               basePath={base}
               values={_.get(values, name)}
+              isUseFormilyField={isUseFormilyField}
             />
           );
         }
@@ -140,6 +149,7 @@ const propertiesToReactElement = ({
             basePath={base}
             values={_.get(values, name)}
             filterProperties={filterProperties}
+            isUseFormilyField={isUseFormilyField}
           />
         );
       })}
@@ -176,6 +186,7 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
       filterProperties: props.filterProperties,
       propsRecursion: props.propsRecursion,
       values: props.values,
+      isUseFormilyField: props.isUseFormilyField,
     });
   };
 
@@ -198,6 +209,11 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
         </VoidField>
       );
     }
+
+    if (props.isUseFormilyField) {
+      return <Field {...fieldProps} name={props.name} basePath={basePath} />;
+    }
+
     return (
       <NocoBaseField
         name={props.name}

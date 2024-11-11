@@ -10,22 +10,21 @@
 import { uid } from '@formily/shared';
 import {
   SchemaComponent,
+  useDataSourceManager,
   usePlugin,
+  useRecord,
   useResourceActionContext,
   useResourceContext,
-  useRecord,
-  useDataSourceManager,
 } from '@nocobase/client';
 import { Card } from 'antd';
-import _ from 'lodash';
-import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import PluginDatabaseConnectionsClient from '../';
 import { databaseConnectionSchema } from '../schema';
+import { ThirdDataSource } from '../ThridDataSource';
 import { CreateDatabaseConnectAction } from './CreateDatabaseConnectAction';
 import { EditDatabaseConnectionAction } from './EditDatabaseConnectionAction';
 import { ViewDatabaseConnectionAction } from './ViewDatabaseConnectionAction';
-import { ThirdDataSource } from '../ThridDataSource';
 
 export const DatabaseConnectionManagerPane = () => {
   const { t } = useTranslation();

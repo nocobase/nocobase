@@ -33,6 +33,10 @@ const isValidComponent = (target: any) => target && (typeof target === 'object' 
 const renderChildren = (children: RenderPropsChildren<GeneralField>, field?: GeneralField, form?: Form) =>
   isFn(children) ? children(field, form) : children;
 
+/**
+ * Based on @formily/react v2.3.2 ReactiveInternal component
+ * Modified to better adapt to NocoBase's needs
+ */
 const ReactiveInternal: React.FC<IReactiveFieldProps> = (props) => {
   const components = useContext(SchemaComponentsContext);
   if (!props.field) {
@@ -101,6 +105,10 @@ const ReactiveInternal: React.FC<IReactiveFieldProps> = (props) => {
 
 ReactiveInternal.displayName = 'NocoBaseReactiveInternal';
 
+/**
+ * Based on @formily/react v2.3.2 NocoBaseReactiveField component
+ * Modified to better adapt to NocoBase's needs
+ */
 export const NocoBaseReactiveField = observer(ReactiveInternal, {
   forwardRef: true,
 });
