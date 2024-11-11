@@ -163,7 +163,7 @@ export default class PluginUsersServer extends Plugin {
         values?.length
       ) {
         // Delete cache when the members of a role changed
-        await Promise.all(values.map((userId: number) => this.app.emitAsync('cache:del:roles', { userId })));
+        await Promise.all(values.map((userId: number) => ctx.app.emitAsync('cache:del:roles', { userId })));
       }
     });
 

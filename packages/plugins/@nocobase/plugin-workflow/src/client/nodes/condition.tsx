@@ -20,6 +20,12 @@ import useStyles from '../style';
 import { useWorkflowVariableOptions, WorkflowVariableTextArea } from '../variable';
 import { CalculationConfig } from '../components/Calculation';
 
+const BRANCH_INDEX = {
+  DEFAULT: null,
+  ON_TRUE: 1,
+  ON_FALSE: 0,
+} as const;
+
 export default class extends Instruction {
   title = `{{t("Condition", { ns: "${NAMESPACE}" })}}`;
   type = 'condition';
@@ -107,18 +113,44 @@ export default class extends Instruction {
       required: true,
     },
   };
-  options = [
-    {
-      label: `{{t('Continue when "Yes"', { ns: "${NAMESPACE}" })}}`,
-      key: 'rejectOnFalse',
-      value: { rejectOnFalse: true },
+  presetFieldset = {
+    rejectOnFalse: {
+      type: 'boolean',
+      title: `{{t("Mode", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'Radio.Group',
+      enum: [
+        {
+          label: `{{t('Continue when "Yes"', { ns: "${NAMESPACE}" })}}`,
+          value: true,
+        },
+        {
+          label: `{{t('Branch into "Yes" and "No"', { ns: "${NAMESPACE}" })}}`,
+          value: false,
+        },
+      ],
+      default: true,
     },
-    {
-      label: `{{t('Branch into "Yes" and "No"', { ns: "${NAMESPACE}" })}}`,
-      key: 'branch',
-      value: { rejectOnFalse: false },
-    },
-  ];
+  };
+
+  branching = ({ rejectOnFalse = true } = {}) => {
+    return rejectOnFalse
+      ? false
+      : [
+          {
+            label: `{{t('After end of branches', { ns: "${NAMESPACE}" })}}`,
+            value: false,
+          },
+          {
+            label: `{{t('Inside of "Yes" branch', { ns: "${NAMESPACE}" })}}`,
+            value: BRANCH_INDEX.ON_TRUE,
+          },
+          {
+            label: `{{t('Inside of "No" branch', { ns: "${NAMESPACE}" })}}`,
+            value: BRANCH_INDEX.ON_FALSE,
+          },
+        ];
+  };
 
   scope = {
     renderEngineReference,
