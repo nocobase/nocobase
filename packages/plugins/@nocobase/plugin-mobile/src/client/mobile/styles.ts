@@ -111,6 +111,9 @@ export const useStyles = createStyles(({ token, css }) => {
         width: 100% !important;
         max-width: 100% !important;
       }
+      .mobile-page-header .adm-tabs-tab {
+        font-size: 14px;
+      }
     `,
   };
 });
