@@ -15,7 +15,7 @@ import { batch, define, observable, raw } from '@formily/reactive';
 import { toArr } from '@formily/shared';
 
 export function createNocoBaseField<Decorator extends JSXComponent, Component extends JSXComponent>(
-  props: IFieldFactoryProps<Decorator, Component>,
+  props: IFieldFactoryProps<Decorator, Component> & { compile: (source: any) => any },
 ): Field<Decorator, Component> {
   const address = FormPath.parse(props.basePath).concat(props.name);
   const identifier = address.toString();
@@ -38,9 +38,14 @@ class NocoBaseField<
   TextType = any,
   ValueType = any,
 > extends Field {
-  declare props: IFieldProps<Decorator, Component, TextType, ValueType> & { schema: Schema };
+  declare props: IFieldProps<Decorator, Component, TextType, ValueType> & {
+    schema: Schema;
+    compile: (source: any) => any;
+  };
 
   protected initialize() {
+    const compile = this.props.compile;
+
     this.initialized = false;
     this.loading = false;
     this.validating = false;
@@ -53,8 +58,8 @@ class NocoBaseField<
     this.inputValues = [];
     this.inputValue = null;
     this.feedbacks = [];
-    this.title = this.props.title || this.props.schema?.title;
-    this.description = this.props.description || this.props.schema?.['description'];
+    this.title = compile(this.props.title || this.props.schema?.title);
+    this.description = compile(this.props.description || this.props.schema?.['description']);
     this.display = this.props.display || this.props.schema?.['x-display'];
     this.pattern = this.props.pattern || this.props.schema?.['x-pattern'];
     this.editable = this.props.editable || this.props.schema?.['x-editable'];
@@ -63,12 +68,12 @@ class NocoBaseField<
     this.readPretty = this.props.readPretty || this.props.schema?.['x-read-pretty'];
     this.visible = this.props.visible || this.props.schema?.['x-visible'];
     this.hidden = this.props.hidden || this.props.schema?.['x-hidden'];
-    this.dataSource = this.props.dataSource || (this.props.schema?.enum as any);
+    this.dataSource = compile(this.props.dataSource || (this.props.schema?.enum as any));
     this.validator = this.props.validator;
     this.required = this.props.required || !!this.props.schema?.required;
-    this.content = this.props.content || this.props.schema?.['x-content'];
+    this.content = compile(this.props.content || this.props.schema?.['x-content']);
     this.initialValue = this.props.initialValue || this.props.schema?.default;
-    this.value = this.props.value;
+    this.value = compile(this.props.value);
     this.data = this.props.data || this.props.schema?.['x-data'];
     this.decorator = this.props.decorator
       ? toArr(this.props.decorator)
