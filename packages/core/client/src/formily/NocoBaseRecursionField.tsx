@@ -139,6 +139,7 @@ const propertiesToReactElement = ({
             name={name}
             basePath={base}
             values={_.get(values, name)}
+            filterProperties={filterProperties}
           />
         );
       })}

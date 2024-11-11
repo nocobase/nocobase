@@ -164,6 +164,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
                   schema={columnSchema}
                   uiSchema={uiSchema}
                   onlyRenderProperties
+                  filterProperties={(schema) => schema['x-component'] !== 'Action.Container'}
                 />
               </span>
             );
