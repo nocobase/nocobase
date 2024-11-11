@@ -175,6 +175,10 @@ export class Collection<
     const targetKey = this.options?.filterTargetKey;
 
     if (Array.isArray(targetKey)) {
+      if (targetKey.length === 1) {
+        return targetKey[0];
+      }
+
       return targetKey;
     }
 
