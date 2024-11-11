@@ -18,10 +18,10 @@ export const useStyles = createStyles(({ token, css }) => {
       & ::-webkit-scrollbar {
         display: none;
       }
-      .ant-formily-item-feedback-layout-loose {
+      .nb-details .ant-formily-item-feedback-layout-loose {
         margin-bottom: 5px;
       }
-      .ant-formily-item-layout-vertical .ant-formily-item-label {
+      .nb-details .ant-formily-item-layout-vertical .ant-formily-item-label {
         margin-bottom: -8px;
       }
       .ant-card .ant-card-body {
