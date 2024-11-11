@@ -245,7 +245,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
       return (
         <Select
           open={open}
-          popupMatchSelectWidth={false}
+          popupMatchSelectWidth={true}
           autoClearSearchValue
           filterOption={false}
           filterSort={null}
@@ -259,7 +259,6 @@ const InternalRemoteSelect = withDynamicSchemaProps(
           loading={data! ? loading : true}
           options={toOptionsItem(mapOptionsToTags(options))}
           rawOptions={options}
-          dropdownMatchSelectWidth={true}
           dropdownRender={(menu) => {
             const isFullMatch = options.some((v) => v[fieldNames.label] === searchData.current);
             return (
