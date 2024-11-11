@@ -16,9 +16,10 @@ import {
   useSchemaInitializerRender,
   withDynamicSchemaProps,
   Icon,
+  useBlockHeight,
 } from '@nocobase/client';
-import { css, cx } from '@emotion/css';
-import { Space, List, Avatar } from 'antd';
+import { css } from '@emotion/css';
+import { Space, List, Avatar, theme } from 'antd';
 import React, { createContext, useState, useEffect } from 'react';
 import { WorkbenchLayout } from './workbenchBlockSettings';
 
@@ -119,13 +120,20 @@ export const WorkbenchBlock: any = withDynamicSchemaProps(
   (props) => {
     const fieldSchema = useFieldSchema();
     const { layout = 'grid' } = fieldSchema['x-component-props'] || {};
-
+    const targetHeight = useBlockHeight();
+    const { token } = theme.useToken();
     return (
-      <WorkbenchBlockContext.Provider value={{ layout }}>
-        <DataSourceContext.Provider value={undefined}>
-          <CollectionContext.Provider value={undefined}>{props.children}</CollectionContext.Provider>
-        </DataSourceContext.Provider>
-      </WorkbenchBlockContext.Provider>
+      <div
+        style={{
+          height: targetHeight ? `${targetHeight - 2 * token.marginLG}px` : '100%',
+        }}
+      >
+        <WorkbenchBlockContext.Provider value={{ layout }}>
+          <DataSourceContext.Provider value={undefined}>
+            <CollectionContext.Provider value={undefined}>{props.children}</CollectionContext.Provider>
+          </DataSourceContext.Provider>
+        </WorkbenchBlockContext.Provider>
+      </div>
     );
   },
   { displayName: 'WorkbenchBlock' },
