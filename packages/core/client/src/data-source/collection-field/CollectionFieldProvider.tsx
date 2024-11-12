@@ -18,9 +18,6 @@ import { CollectionDeletedPlaceholder } from '../components/CollectionDeletedPla
 export const CollectionFieldContext = createContext<CollectionFieldOptions>(null);
 CollectionFieldContext.displayName = 'CollectionFieldContext';
 
-export const CollectionFieldOriginalContext = createContext<any>(null);
-CollectionFieldOriginalContext.displayName = 'CollectionFieldOriginalContext';
-
 export type CollectionFieldProviderProps = {
   name?: SchemaKey;
   children?: ReactNode;

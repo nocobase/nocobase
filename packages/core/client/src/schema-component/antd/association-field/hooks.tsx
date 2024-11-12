@@ -46,6 +46,7 @@ export function useAssociationFieldContext<F extends GeneralField>() {
   return useContext(AssociationFieldContext) as {
     options: any;
     field: F;
+    fieldSchema?: Schema;
     currentMode: AssociationFieldMode;
     allowMultiple?: boolean;
     allowDissociate?: boolean;
