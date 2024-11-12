@@ -272,7 +272,7 @@ describe('actions', () => {
       expect(res.error.text).toBe('Please enter a valid username');
     });
 
-    it.only('should check email when signing up', async () => {
+    it('should check email when signing up', async () => {
       const repo = db.getRepository('authenticators');
       await repo.update({
         filter: {
