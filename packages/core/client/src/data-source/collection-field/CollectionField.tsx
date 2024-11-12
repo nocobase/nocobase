@@ -13,7 +13,7 @@ import { useDynamicComponentProps } from '../../hoc/withDynamicSchemaProps';
 import { useComponent } from '../../schema-component';
 import { useCollectionField } from './CollectionFieldProvider';
 
-export const CollectionField = connect((props) => {
+const CollectionFieldInternalField = (props) => {
   const fieldSchema = useFieldSchema();
   const { uiSchema } = useCollectionField();
   const Component = useComponent(
@@ -24,6 +24,10 @@ export const CollectionField = connect((props) => {
   if (!uiSchema) return null;
 
   return <Component {...props} {...dynamicProps} />;
+};
+
+export const CollectionField = connect((props) => {
+  return <CollectionFieldInternalField {...props} />;
 });
 
 CollectionField.displayName = 'CollectionField';
