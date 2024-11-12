@@ -11,11 +11,11 @@ import React, { useState } from 'react';
 import { Button, DatePickerView, Popup, Picker } from 'antd-mobile';
 import { mapDatePicker, DatePicker } from '@nocobase/client';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { useTranslation } from 'react-i18next';
+import { usePluginTranslation } from '../../../locale';
 
 const MobileDateTimePicker = connect(
   (props) => {
-    const { t } = useTranslation();
+    const { t } = usePluginTranslation();
     const { value, onChange, dateFormat = 'YYYY-MM-DD', timeFormat = 'HH:mm', showTime = false, ...rest } = props;
     const [visible, setVisible] = useState(false);
     const [selectedDate, setSelectedDate] = useState(value || new Date());
@@ -36,6 +36,7 @@ const MobileDateTimePicker = connect(
     }));
 
     const handleConfirm = () => {
+      setVisible(false);
       const selectedDateTime = new Date(selectedDate);
       if (showTime) {
         selectedDateTime.setHours(Number(selectedTime[0]));
@@ -43,7 +44,6 @@ const MobileDateTimePicker = connect(
         selectedDateTime.setSeconds(Number(selectedTime[2]));
       }
       onChange(selectedDateTime);
-      setVisible(false);
     };
     return (
       <>
