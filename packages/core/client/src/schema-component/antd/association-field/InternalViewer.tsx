@@ -169,7 +169,7 @@ const RenderRecord = React.memo(
       return null;
     }
 
-    return <>{result}</>;
+    return <div style={{ overflowWrap: 'inherit', whiteSpace: 'normal' }}>{result}</div>;
   },
 );
 
@@ -191,7 +191,6 @@ const ButtonLinkList: FC<ButtonListProps> = (props) => {
   const getLabelUiSchema = useLabelUiSchemaV2();
   const { openPopup } = usePopupUtils();
   const recordData = useCollectionRecordData();
-
   return (
     <RenderRecord
       fieldNames={fieldNames}
@@ -255,7 +254,6 @@ export const ReadPrettyInternalViewer: React.FC = observer(
     const [btnHover, setBtnHover] = useState(!!visibleWithURL);
     const { defaultOpenMode } = useOpenModeContext();
     const recordData = useCollectionRecordData();
-
     const btnElement = (
       <EllipsisWithTooltip ellipsis={true} ref={ellipsisWithTooltipRef}>
         <CollectionRecordProvider isNew={false} record={getSourceData(recordData, fieldSchema)}>
