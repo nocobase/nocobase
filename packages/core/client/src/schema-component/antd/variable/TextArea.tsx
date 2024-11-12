@@ -24,8 +24,6 @@ import { useStyles } from './style';
 
 type RangeIndexes = [number, number, number, number];
 
-const VARIABLE_RE = /{{\s*([^{}]+)\s*}}/g;
-
 function pasteHTML(
   container: HTMLElement,
   html: string,
@@ -92,11 +90,11 @@ function pasteHTML(
   }
 }
 
-function getValue(el) {
+function getValue(el, delimiters = ['{{', '}}']) {
   const values: any[] = [];
   for (const node of el.childNodes) {
     if (node.nodeName === 'SPAN' && node['dataset']['variable']) {
-      values.push(`{{${node['dataset']['variable']}}}`);
+      values.push(`${delimiters[0]}${node['dataset']['variable']}${delimiters[1]}`);
     } else {
       values.push(node.textContent);
     }
@@ -104,8 +102,9 @@ function getValue(el) {
   return values.join('');
 }
 
-function renderHTML(exp: string, keyLabelMap) {
-  return exp.replace(VARIABLE_RE, (_, i) => {
+function renderHTML(exp: string, keyLabelMap, delimiters: [string, string] = ['{{', '}}']) {
+  const variableRegExp = new RegExp(`${delimiters[0]}\\s*([^{}]+)\\s*${delimiters[1]}`, 'g');
+  return exp.replace(variableRegExp, (_, i) => {
     const key = i.trim();
     return createVariableTagHTML(key, keyLabelMap) ?? '';
   });
@@ -210,9 +209,22 @@ function getCurrentRange(element: HTMLElement): RangeIndexes {
 
 const defaultFieldNames = { value: 'value', label: 'label' };
 
+function useVariablesFromValue(value: string, delimiters: [string, string] = ['{{', '}}']) {
+  const delimitersString = delimiters.join(' ');
+  return useMemo(() => {
+    if (!value?.trim()) {
+      return [];
+    }
+    const variableRegExp = new RegExp(`${delimiters[0]}\\s*([^{}]+)\\s*${delimiters[1]}`, 'g');
+    const matches = value.match(variableRegExp);
+    return matches?.map((m) => m.replace(variableRegExp, '$1')) ?? [];
+  }, [value, delimitersString]);
+}
+
 export function TextArea(props) {
   const { wrapSSR, hashId, componentCls } = useStyles();
-  const { value = '', scope, onChange, changeOnSelect, style, fieldNames } = props;
+  const { value = '', scope, onChange, changeOnSelect, style, fieldNames, delimiters = ['{{', '}}'] } = props;
+  const variables = useVariablesFromValue(value, delimiters);
   const inputRef = useRef<HTMLDivElement>(null);
   const [options, setOptions] = useState([]);
   const form = useForm();
@@ -222,25 +234,26 @@ export function TextArea(props) {
   );
   const [ime, setIME] = useState<boolean>(false);
   const [changed, setChanged] = useState(false);
-  const [html, setHtml] = useState(() => renderHTML(value ?? '', keyLabelMap));
+  const [html, setHtml] = useState(() => renderHTML(value ?? '', keyLabelMap, delimiters));
   // NOTE: e.g. [startElementIndex, startOffset, endElementIndex, endOffset]
   const [range, setRange] = useState<[number, number, number, number]>([-1, 0, -1, 0]);
   useInputStyle('ant-input');
+  const delimitersString = delimiters.join(' ');
 
   useEffect(() => {
-    preloadOptions(scope, value)
+    preloadOptions(scope, variables)
       .then((preloaded) => {
         setOptions(preloaded);
       })
       .catch(console.error);
-  }, [scope, value]);
+  }, [scope, JSON.stringify(variables)]);
 
   useEffect(() => {
-    setHtml(renderHTML(value ?? '', keyLabelMap));
+    setHtml(renderHTML(value ?? '', keyLabelMap, delimiters));
     if (!changed) {
       setRange([-1, 0, -1, 0]);
     }
-  }, [value, keyLabelMap]);
+  }, [value, keyLabelMap, delimitersString]);
 
   useEffect(() => {
     const { current } = inputRef;
@@ -310,9 +323,9 @@ export function TextArea(props) {
 
       setChanged(true);
       setRange(getCurrentRange(current));
-      onChange(getValue(current));
+      onChange(getValue(current, delimiters));
     },
-    [keyLabelMap, onChange, range],
+    [keyLabelMap, onChange, range, delimitersString],
   );
 
   const onInput = useCallback(
@@ -322,9 +335,9 @@ export function TextArea(props) {
       }
       setChanged(true);
       setRange(getCurrentRange(currentTarget));
-      onChange(getValue(currentTarget));
+      onChange(getValue(currentTarget, delimiters));
     },
-    [ime, onChange],
+    [ime, onChange, delimitersString],
   );
 
   const onBlur = useCallback(function ({ currentTarget }) {
@@ -346,9 +359,9 @@ export function TextArea(props) {
       setIME(false);
       setChanged(true);
       setRange(getCurrentRange(currentTarget));
-      onChange(getValue(currentTarget));
+      onChange(getValue(currentTarget, delimiters));
     },
-    [onChange],
+    [onChange, delimitersString],
   );
 
   const onPaste = useCallback(
@@ -379,9 +392,9 @@ export function TextArea(props) {
       setChanged(true);
       pasteHTML(ev.currentTarget, sanitizedHTML);
       setRange(getCurrentRange(ev.currentTarget));
-      onChange(getValue(ev.currentTarget));
+      onChange(getValue(ev.currentTarget, delimiters));
     },
-    [onChange],
+    [onChange, delimitersString],
   );
 
   const disabled = props.disabled || form.disabled;
@@ -461,19 +474,14 @@ export function TextArea(props) {
   );
 }
 
-async function preloadOptions(scope, value: string) {
+async function preloadOptions(scope, variables: string[]) {
   let options = [...(scope ?? [])];
-
+  const paths = variables.map((variable) => variable.split('.'));
   options = options.filter((item) => {
-    return !item.deprecated || value?.includes(item.value);
+    return !item.deprecated || paths.find((p) => p[0] === item.value);
   });
 
-  // 重置正则的匹配位置
-  VARIABLE_RE.lastIndex = 0;
-
-  for (let matcher; (matcher = VARIABLE_RE.exec(value ?? '')); ) {
-    const keys = matcher[1].split('.');
-
+  for (const keys of paths) {
     let prevOption = null;
 
     for (let i = 0; i < keys.length; i++) {
@@ -508,20 +516,20 @@ const textAreaReadPrettyClassName = css`
 `;
 
 TextArea.ReadPretty = function ReadPretty(props): JSX.Element {
-  const { value } = props;
+  const { value, delimiters = ['{{', '}}'] } = props;
   const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
   const { wrapSSR, hashId, componentCls } = useStyles();
   const [options, setOptions] = useState([]);
   const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [options]);
-  const html = useMemo(() => renderHTML(value ?? '', keyLabelMap), [keyLabelMap, value]);
-
+  const html = useMemo(() => renderHTML(value ?? '', keyLabelMap, delimiters), [delimiters, keyLabelMap, value]);
+  const variables = useVariablesFromValue(value, delimiters);
   useEffect(() => {
-    preloadOptions(scope, value)
+    preloadOptions(scope, variables)
       .then((preloaded) => {
         setOptions(preloaded);
       })
       .catch(error);
-  }, [scope, value]);
+  }, [scope, variables]);
 
   const content = wrapSSR(
     <span

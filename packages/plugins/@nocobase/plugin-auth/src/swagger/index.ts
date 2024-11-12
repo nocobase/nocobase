@@ -168,165 +168,165 @@ export default {
         },
       },
     },
-    '/auth:lostPassword': {
-      post: {
-        description: 'Lost password',
-        tags: ['Basic auth'],
-        security: [],
-        requestBody: {
-          content: {
-            'application/json': {
-              schema: {
-                type: 'object',
-                properties: {
-                  email: {
-                    type: 'string',
-                    description: '邮箱',
-                  },
-                },
-              },
-            },
-          },
-        },
-        responses: {
-          200: {
-            description: 'successful operation',
-            content: {
-              'application/json': {
-                schema: {
-                  allOf: [
-                    {
-                      $ref: '#/components/schemas/user',
-                    },
-                    {
-                      type: 'object',
-                      properties: {
-                        resetToken: {
-                          type: 'string',
-                          description: '重置密码的token',
-                        },
-                      },
-                    },
-                  ],
-                },
-              },
-            },
-          },
-          400: {
-            description: 'Please fill in your email address',
-            content: {
-              'application/json': {
-                schema: {
-                  $ref: '#/components/schemas/error',
-                },
-              },
-            },
-          },
-          401: {
-            description: 'The email is incorrect, please re-enter',
-            content: {
-              'application/json': {
-                schema: {
-                  $ref: '#/components/schemas/error',
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-    '/auth:resetPassword': {
-      post: {
-        description: 'Reset password',
-        tags: ['Basic auth'],
-        security: [],
-        requestBody: {
-          content: {
-            'application/json': {
-              schema: {
-                type: 'object',
-                properties: {
-                  email: {
-                    type: 'string',
-                    description: '邮箱',
-                  },
-                  password: {
-                    type: 'string',
-                    description: '密码',
-                  },
-                  resetToken: {
-                    type: 'string',
-                    description: '重置密码的token',
-                  },
-                },
-              },
-            },
-          },
-        },
-        responses: {
-          200: {
-            description: 'successful operation',
-            content: {
-              'application/json': {
-                schema: {
-                  $ref: '#/components/schemas/user',
-                },
-              },
-            },
-          },
-          404: {
-            description: 'User not found',
-            content: {
-              'application/json': {
-                schema: {
-                  $ref: '#/components/schemas/error',
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-    '/auth:getUserByResetToken': {
-      get: {
-        description: 'Get user by reset token',
-        tags: ['Basic auth'],
-        security: [],
-        parameters: [
-          {
-            name: 'token',
-            in: 'query',
-            description: '重置密码的token',
-            required: true,
-            schema: {
-              type: 'string',
-            },
-          },
-        ],
-        responses: {
-          200: {
-            description: 'ok',
-            content: {
-              'application/json': {
-                schema: {
-                  $ref: '#/components/schemas/user',
-                },
-              },
-            },
-          },
-          401: {
-            description: 'Unauthorized',
-            content: {
-              'application/json': {
-                schema: {
-                  $ref: '#/components/schemas/error',
-                },
-              },
-            },
-          },
-        },
-      },
-    },
+    // '/auth:lostPassword': {
+    //   post: {
+    //     description: 'Lost password',
+    //     tags: ['Basic auth'],
+    //     security: [],
+    //     requestBody: {
+    //       content: {
+    //         'application/json': {
+    //           schema: {
+    //             type: 'object',
+    //             properties: {
+    //               email: {
+    //                 type: 'string',
+    //                 description: '邮箱',
+    //               },
+    //             },
+    //           },
+    //         },
+    //       },
+    //     },
+    //     responses: {
+    //       200: {
+    //         description: 'successful operation',
+    //         content: {
+    //           'application/json': {
+    //             schema: {
+    //               allOf: [
+    //                 {
+    //                   $ref: '#/components/schemas/user',
+    //                 },
+    //                 {
+    //                   type: 'object',
+    //                   properties: {
+    //                     resetToken: {
+    //                       type: 'string',
+    //                       description: '重置密码的token',
+    //                     },
+    //                   },
+    //                 },
+    //               ],
+    //             },
+    //           },
+    //         },
+    //       },
+    //       400: {
+    //         description: 'Please fill in your email address',
+    //         content: {
+    //           'application/json': {
+    //             schema: {
+    //               $ref: '#/components/schemas/error',
+    //             },
+    //           },
+    //         },
+    //       },
+    //       401: {
+    //         description: 'The email is incorrect, please re-enter',
+    //         content: {
+    //           'application/json': {
+    //             schema: {
+    //               $ref: '#/components/schemas/error',
+    //             },
+    //           },
+    //         },
+    //       },
+    //     },
+    //   },
+    // },
+    // '/auth:resetPassword': {
+    //   post: {
+    //     description: 'Reset password',
+    //     tags: ['Basic auth'],
+    //     security: [],
+    //     requestBody: {
+    //       content: {
+    //         'application/json': {
+    //           schema: {
+    //             type: 'object',
+    //             properties: {
+    //               email: {
+    //                 type: 'string',
+    //                 description: '邮箱',
+    //               },
+    //               password: {
+    //                 type: 'string',
+    //                 description: '密码',
+    //               },
+    //               resetToken: {
+    //                 type: 'string',
+    //                 description: '重置密码的token',
+    //               },
+    //             },
+    //           },
+    //         },
+    //       },
+    //     },
+    //     responses: {
+    //       200: {
+    //         description: 'successful operation',
+    //         content: {
+    //           'application/json': {
+    //             schema: {
+    //               $ref: '#/components/schemas/user',
+    //             },
+    //           },
+    //         },
+    //       },
+    //       404: {
+    //         description: 'User not found',
+    //         content: {
+    //           'application/json': {
+    //             schema: {
+    //               $ref: '#/components/schemas/error',
+    //             },
+    //           },
+    //         },
+    //       },
+    //     },
+    //   },
+    // },
+    // '/auth:getUserByResetToken': {
+    //   get: {
+    //     description: 'Get user by reset token',
+    //     tags: ['Basic auth'],
+    //     security: [],
+    //     parameters: [
+    //       {
+    //         name: 'token',
+    //         in: 'query',
+    //         description: '重置密码的token',
+    //         required: true,
+    //         schema: {
+    //           type: 'string',
+    //         },
+    //       },
+    //     ],
+    //     responses: {
+    //       200: {
+    //         description: 'ok',
+    //         content: {
+    //           'application/json': {
+    //             schema: {
+    //               $ref: '#/components/schemas/user',
+    //             },
+    //           },
+    //         },
+    //       },
+    //       401: {
+    //         description: 'Unauthorized',
+    //         content: {
+    //           'application/json': {
+    //             schema: {
+    //               $ref: '#/components/schemas/error',
+    //             },
+    //           },
+    //         },
+    //       },
+    //     },
+    //   },
+    // },
     '/auth:changePassword': {
       post: {
         description: 'Change password',

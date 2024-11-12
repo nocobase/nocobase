@@ -1006,5 +1006,7 @@
   "Skip getting the total number of table records during paging to speed up loading. It is recommended to enable this option for data tables with a large amount of data": "ページング時にテーブルレコードの総数取得をスキップして、読み込み速度を向上させます。データ量が多い場合にこのオプションの使用をお勧めします。",
   "The current user only has the UI configuration permission, but don't have view permission for collection \"{{name}}\"": "現在のユーザーにはUI設定の権限しかなく、コレクション「{{name}}」を閲覧する権限はありません。",
   "Allow multiple selection": "複数選択を許可",
-  "Parent object": "親オブジェクト"
+  "Parent object": "親オブジェクト",
+  "Hide column": "列を非表示",
+  "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "設定モードでは、列全体が透明になります。非設定モードでは、列全体が非表示になります。列全体が非表示になっても、設定されたデフォルト値やその他の設定は依然として有効です。"
 }

@@ -788,5 +788,7 @@
   "Sorry, the page you visited does not exist.": "Вибачте, сторінка, яку ви відвідали, не існує.",
   "Allow multiple selection": "Дозволити множинний вибір",
   "Parent object": "Батьківський об'єкт",
-  "Ellipsis overflow content": "Вміст з багатокрапкою при переповненні"
+  "Ellipsis overflow content": "Вміст з багатокрапкою при переповненні",
+  "Hide column": "Сховати стовпець",
+  "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "В режимі конфігурації вся колонка стає прозорою. В режимі не конфігурації вся колонка буде прихована. Якщо вся колонка буде прихована, її налаштовані значення за замовчуванням і інші налаштування все одно будуть діяти."
 }

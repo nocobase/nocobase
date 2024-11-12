@@ -1,28 +1,30 @@
-# Hello sample
+# NocoBase
 
-## Register
+<video width="100%" controls>
+      <source src="https://static-docs.nocobase.com/NocoBase0510.mp4" type="video/mp4">
+</video>
 
-```ts
-yarn pm add sample-hello
-```
 
-## Activate
+## What is NocoBase
 
-```bash
-yarn pm enable sample-hello
-```
+NocoBase is a scalability-first, open-source no-code development platform.  
+Instead of investing years of time and millions of dollars in research and development, deploy NocoBase in a few minutes and you'll have a private, controllable, and extremely scalable no-code development platform!
 
-## Launch the app
+Homepage:  
+https://www.nocobase.com/
 
-```bash
-# for development
-yarn dev
+Online Demo:  
+https://demo.nocobase.com/new
 
-# for production
-yarn build
-yarn start
-```
+Documents:  
+https://docs.nocobase.com/
 
-## Demo
+Commericial license & plugins:  
+https://www.nocobase.com/en/commercial
 
-[gif]
+License agreement:   
+https://www.nocobase.com/en/agreement
+
+
+## Contact Us:  
+hello@nocobase.com

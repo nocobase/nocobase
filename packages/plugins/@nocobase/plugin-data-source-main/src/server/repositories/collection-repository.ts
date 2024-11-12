@@ -47,6 +47,8 @@ export class CollectionRepository extends Repository {
       if (instance.get('view') || instance.get('sql')) {
         viewCollections.push(instance.get('name'));
       }
+
+      this.database.collectionsSort.set(instance.get('name'), instance.get('sort'));
     }
 
     // set graph edges by inherits

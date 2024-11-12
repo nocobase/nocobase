@@ -101,8 +101,8 @@ export function isSpecialCaseField({
   fieldSchema: Schema;
   getCollectionField: (name: string) => CollectionFieldOptions_deprecated;
 }) {
-  // 排除掉“当前对象”这个变量
-  if (fieldSchema.default.includes('$iteration')) {
+  // 只针对“表格选中记录”变量有效
+  if (!fieldSchema.default || !fieldSchema.default.includes('$context')) {
     return false;
   }
 
