@@ -16,7 +16,7 @@ import { useBlockRequestContext } from '../../../block-provider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
 import { mergeFilter } from '../../../filter-provider/utils';
 import { useDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
-
+import { useCompile } from '../../';
 export const useGetFilterOptions = () => {
   const { getCollectionFields } = useCollectionManager_deprecated();
   const getFilterFieldOptions = useGetFilterFieldOptions();
@@ -183,6 +183,7 @@ export const useFilterFieldProps = ({ options, service, params }) => {
   const field = useField<Field>();
   const dataLoadingMode = useDataLoadingMode();
   const fieldSchema = useFieldSchema();
+  const compile = useCompile();
 
   return {
     options,
@@ -206,7 +207,7 @@ export const useFilterFieldProps = ({ options, service, params }) => {
       if (items?.length) {
         field.title = t('{{count}} filter items', { count: items?.length || 0 });
       } else {
-        field.title = fieldSchema.title || t('Filter');
+        field.title = compile(fieldSchema.title) || t('Filter');
       }
     },
     onReset() {
