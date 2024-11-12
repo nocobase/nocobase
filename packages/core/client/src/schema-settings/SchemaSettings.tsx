@@ -10,7 +10,8 @@
 import { css } from '@emotion/css';
 import { ArrayCollapse, ArrayItems, FormItem, FormLayout, Input } from '@formily/antd-v5';
 import { Field, GeneralField, createForm } from '@formily/core';
-import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
+import { ISchema, Schema, SchemaOptionsContext, observer, useField, useFieldSchema, useForm } from '@formily/react';
+import { observable } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import type { DropdownProps } from 'antd';
 import {
@@ -575,6 +576,13 @@ export const SchemaSettingsCascaderItem: FC<SchemaSettingsCascaderItemProps> = (
   );
 };
 
+const ml32 = { marginLeft: 32 };
+const MenuItemSwitch: FC<{ state: { checked: boolean } }> = observer(({ state }) => {
+  return <Switch size={'small'} checked={state.checked} style={ml32} />;
+});
+
+MenuItemSwitch.displayName = 'MenuItemSwitch';
+
 export interface SchemaSettingsSwitchItemProps extends Omit<MenuItemProps, 'onChange'> {
   title: string | ReactNode;
   checked?: boolean;
@@ -582,19 +590,19 @@ export interface SchemaSettingsSwitchItemProps extends Omit<MenuItemProps, 'onCh
 }
 export const SchemaSettingsSwitchItem: FC<SchemaSettingsSwitchItemProps> = (props) => {
   const { title, onChange, ...others } = props;
-  const [checked, setChecked] = useState(!!props.checked);
+  const [state] = useState(() => observable({ checked: !!props.checked }));
   return (
     <SchemaSettingsItem
       title={title}
       {...others}
       onClick={() => {
-        onChange?.(!checked);
-        setChecked(!checked);
+        onChange?.(!state.checked);
+        state.checked = !state.checked;
       }}
     >
       <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
         {title}
-        <Switch size={'small'} checked={checked} style={{ marginLeft: 32 }} />
+        <MenuItemSwitch state={state} />
       </div>
     </SchemaSettingsItem>
   );
