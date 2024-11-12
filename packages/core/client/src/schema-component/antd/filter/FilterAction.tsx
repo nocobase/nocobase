@@ -21,6 +21,7 @@ import { useProps } from '../../hooks/useProps';
 import { Action, ActionProps } from '../action';
 import { DatePickerProvider } from '../date-picker/DatePicker';
 import { StablePopover } from '../popover';
+import { useCompile } from '../../';
 
 export const FilterActionContext = createContext<any>(null);
 FilterActionContext.displayName = 'FilterActionContext';
@@ -50,6 +51,8 @@ export const FilterAction = withDynamicSchemaProps(
     const [visible, setVisible] = useState(false);
     const { designable, dn } = useDesignable();
     const fieldSchema = useFieldSchema();
+    const compile = useCompile();
+
     const form = useMemo<Form>(() => props.form || createForm(), []);
 
     // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
@@ -58,7 +61,6 @@ export const FilterAction = withDynamicSchemaProps(
     const onOpenChange = useCallback((visible: boolean): void => {
       setVisible(visible);
     }, []);
-
     return (
       <FilterActionContext.Provider value={{ field, fieldSchema, designable, dn }}>
         <Container
@@ -99,7 +101,7 @@ export const FilterAction = withDynamicSchemaProps(
                       onClick={async () => {
                         await form.reset();
                         onReset?.(form.values);
-                        field.title = t('Filter');
+                        field.title = compile(fieldSchema.title) || t('Filter');
                         setVisible(false);
                       }}
                     >
