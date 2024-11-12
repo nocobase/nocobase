@@ -26,7 +26,6 @@ import { useTranslation } from 'react-i18next';
 import { useInView } from 'react-intersection-observer';
 import { DndContext, useDesignable, useTableSize } from '../..';
 import {
-  CollectionFieldOriginalContext,
   RecordIndexProvider,
   RecordProvider,
   useCollection,
@@ -43,7 +42,7 @@ import { isNewRecord } from '../../../data-source/collection-record/isNewRecord'
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useSatisfiedActionValues } from '../../../schema-settings/LinkageRules/useActionValues';
 import { useToken } from '../__builtins__';
-import { SubFormProvider } from '../association-field/hooks';
+import { SubFormProvider, useAssociationFieldContext } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 
@@ -324,7 +323,7 @@ const usePaginationProps = (pagination1, pagination2) => {
   );
   const { total: totalCount, current, pageSize } = pagination || {};
   const blockProps = useDataBlockProps();
-  const original = useContext(CollectionFieldOriginalContext);
+  const original = useAssociationFieldContext();
   const { components } = useContext(SchemaOptionsContext);
   const C = original?.fieldSchema?.['x-component-props']?.summary?.Component || blockProps?.summary?.Component;
   const showTotal = useCallback(

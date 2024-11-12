@@ -18,7 +18,7 @@ import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useDynamicComponentProps } from '../../hoc/withDynamicSchemaProps';
 import { ErrorFallback, useCompile, useComponent } from '../../schema-component';
 import { useIsAllowToSetDefaultValue } from '../../schema-settings/hooks/useIsAllowToSetDefaultValue';
-import { CollectionFieldOriginalContext, CollectionFieldProvider, useCollectionField } from './CollectionFieldProvider';
+import { CollectionFieldProvider, useCollectionField } from './CollectionFieldProvider';
 
 type Props = {
   component: any;
@@ -96,11 +96,9 @@ export const CollectionField = connect((props) => {
   const field = useField<Field>();
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback.Modal} onError={(err) => console.log(err)}>
-      <CollectionFieldOriginalContext.Provider value={{ fieldSchema, field }}>
-        <CollectionFieldProvider name={fieldSchema.name}>
-          <CollectionFieldInternalField {...props} />
-        </CollectionFieldProvider>
-      </CollectionFieldOriginalContext.Provider>
+      <CollectionFieldProvider name={fieldSchema.name}>
+        <CollectionFieldInternalField {...props} />
+      </CollectionFieldProvider>
     </ErrorBoundary>
   );
 });
