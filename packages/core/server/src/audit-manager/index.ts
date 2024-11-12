@@ -235,6 +235,16 @@ export class AuditManager {
     }
     const resourceUk: string = this.formatResourceUk(ctx);
 
+    // 获取ip，优先使用X-Forwarded-For，如果没有则使用ctx.request.ip
+    const ipvalues = ctx.request.header['X-Forwarded-For'];
+    let ipvalue = '';
+    if (ipvalues instanceof Array) {
+      ipvalue = ipvalues[0];
+    } else {
+      ipvalue = ipvalues;
+    }
+    const ips = ipvalue ? ipvalue?.split(/\s*,\s*/) : [];
+
     const auditLog: AuditLog = {
       uuid: ctx.reqId,
       dataSource: (ctx.request.header['x-data-source'] || 'main') as string,
@@ -245,7 +255,7 @@ export class AuditManager {
       resourceUk: resourceUk,
       userId: ctx.state?.currentUser?.id,
       roleName: ctx.state?.currentRole,
-      ip: ctx.request.ip,
+      ip: ips.length > 0 ? ips[0] : ctx.request.ip,
       ua: ctx.request.header['user-agent'],
       status: ctx.response.status,
       metadata: null,
