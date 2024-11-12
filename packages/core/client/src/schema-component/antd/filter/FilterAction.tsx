@@ -58,7 +58,6 @@ export const FilterAction = withDynamicSchemaProps(
     const onOpenChange = useCallback((visible: boolean): void => {
       setVisible(visible);
     }, []);
-
     return (
       <FilterActionContext.Provider value={{ field, fieldSchema, designable, dn }}>
         <Container
@@ -99,7 +98,6 @@ export const FilterAction = withDynamicSchemaProps(
                       onClick={async () => {
                         await form.reset();
                         onReset?.(form.values);
-                        field.title = t('Filter');
                         setVisible(false);
                       }}
                     >

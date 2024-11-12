@@ -182,6 +182,7 @@ export const useFilterFieldProps = ({ options, service, params }) => {
   const { t } = useTranslation();
   const field = useField<Field>();
   const dataLoadingMode = useDataLoadingMode();
+  const fieldSchema = useFieldSchema();
 
   return {
     options,
@@ -205,7 +206,7 @@ export const useFilterFieldProps = ({ options, service, params }) => {
       if (items?.length) {
         field.title = t('{{count}} filter items', { count: items?.length || 0 });
       } else {
-        field.title = t('Filter');
+        field.title = fieldSchema.title || t('Filter');
       }
     },
     onReset() {
@@ -221,8 +222,6 @@ export const useFilterFieldProps = ({ options, service, params }) => {
         },
         { filters },
       ];
-
-      field.title = t('Filter');
 
       if (dataLoadingMode === 'manual') {
         service.params = newParams;
