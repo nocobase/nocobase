@@ -7,12 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model, Transactionable } from '@nocobase/database';
+import { Collection, Model, Transactionable } from '@nocobase/database';
 import Trigger from '.';
 import { toJSON } from '../utils';
 import type { WorkflowModel } from '../types';
-import { ICollection, parseCollectionName } from '@nocobase/data-source-manager';
+import { ICollection, parseCollectionName, SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { isValidFilter } from '@nocobase/utils';
+import { pick } from 'lodash';
 
 export interface CollectionChangeTriggerConfig {
   collection: string;
@@ -48,9 +49,8 @@ function getFieldRawName(collection: ICollection, name: string) {
 async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: Model, options) {
   const { condition, changed, mode, appends } = workflow.config;
   const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
-  const collection = this.workflow.app.dataSourceManager?.dataSources
-    .get(dataSourceName)
-    .collectionManager.getCollection(collectionName);
+  const { collectionManager } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName);
+  const collection: Collection = (collectionManager as SequelizeCollectionManager).getCollection(collectionName);
   const { transaction, context } = options;
   const { repository, filterTargetKey } = collection;
 
@@ -68,14 +68,16 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
     return;
   }
 
+  const filterByTk = Array.isArray(filterTargetKey)
+    ? pick(data, filterTargetKey)
+    : { [filterTargetKey]: data[filterTargetKey] };
   // NOTE: if no configured condition, or not match, do not trigger
   if (isValidFilter(condition) && !(mode & MODE_BITMAP.DESTROY)) {
     // TODO: change to map filter format to calculation format
     // const calculation = toCalculation(condition);
     const count = await repository.count({
-      filter: {
-        $and: [condition, { [filterTargetKey]: data[filterTargetKey] }],
-      },
+      filterByTk,
+      filter: condition,
       context,
       transaction,
     });
@@ -96,7 +98,7 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
 
     // @ts-ignore
     result = await repository.findOne({
-      filterByTk: data[filterTargetKey],
+      filterByTk,
       appends: Array.from(includeFields),
       transaction,
     });
