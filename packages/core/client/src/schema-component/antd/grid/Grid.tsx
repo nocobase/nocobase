@@ -9,14 +9,15 @@
 
 import { TinyColor } from '@ctrl/tinycolor';
 import { useDndContext, useDndMonitor, useDraggable, useDroppable } from '@dnd-kit/core';
-import { ISchema, RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
+import { ISchema, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import cls from 'classnames';
 import _ from 'lodash';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { SchemaComponent, useDesignable, useSchemaInitializerRender } from '../../../';
-import { useFormBlockContext, useFormBlockType } from '../../../block-provider/FormBlockProvider';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { FilterBlockProvider } from '../../../filter-provider/FilterProvider';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { DndContext, DndContextProps } from '../../common/dnd-context';
 import { useToken } from '../__builtins__';
 import useStyles from './Grid.style';
@@ -30,9 +31,6 @@ GridContext.displayName = 'GridContext';
 
 const breakRemoveOnGrid = (s: Schema) => s['x-component'] === 'Grid';
 const breakRemoveOnRow = (s: Schema) => s['x-component'] === 'Grid.Row';
-
-const MemorizedRecursionField = React.memo(RecursionField);
-MemorizedRecursionField.displayName = 'MemorizedRecursionField';
 
 const ColDivider = (props) => {
   const { token } = useToken();
@@ -378,7 +376,7 @@ export const Grid: any = observer(
                         {distributedValue ? (
                           <SchemaComponent name={schema.name} schema={schema} distributed />
                         ) : (
-                          <MemorizedRecursionField name={schema.name} schema={schema} />
+                          <NocoBaseRecursionField name={schema.name} schema={schema} isUseFormilyField />
                         )}
                         {showDivider ? (
                           <RowDivider
@@ -415,7 +413,6 @@ Grid.Row = observer(
     const addr = field.address.toString();
     const cols = useColProperties();
     const { showDivider } = useGridContext();
-    const { type } = useFormBlockType();
 
     const ctxValue = useMemo(() => {
       return {
@@ -423,16 +420,6 @@ Grid.Row = observer(
         cols,
       };
     }, [fieldSchema, cols]);
-
-    const mapProperties = useCallback(
-      (schema) => {
-        if (type === 'update') {
-          schema.default = null;
-        }
-        return schema;
-      },
-      [type],
-    );
 
     return (
       <GridRowContext.Provider value={ctxValue}>
@@ -457,7 +444,7 @@ Grid.Row = observer(
           {cols.map((schema, index) => {
             return (
               <React.Fragment key={index}>
-                <MemorizedRecursionField name={schema.name} schema={schema} />
+                <NocoBaseRecursionField name={schema.name} schema={schema} isUseFormilyField />
                 {showDivider && (
                   <ColDivider
                     cols={cols}

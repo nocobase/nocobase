@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { IRecursionFieldProps, ISchemaFieldProps, RecursionField, Schema } from '@formily/react';
+import { IRecursionFieldProps, ISchemaFieldProps, Schema } from '@formily/react';
 import { useUpdate } from 'ahooks';
 import React, { memo, useContext, useMemo } from 'react';
+import { NocoBaseRecursionField } from '../../formily/NocoBaseRecursionField';
 import { SchemaComponentContext } from '../context';
 import { SchemaComponentOptions } from './SchemaComponentOptions';
 
@@ -45,27 +46,29 @@ interface DistributedProps {
 }
 
 const RecursionSchemaComponent = memo((props: ISchemaFieldProps & SchemaComponentOnChange & DistributedProps) => {
-  const { components, scope, schema: _schema, distributed, ...others } = props;
+  const { components, scope, schema: _schema, distributed, onChange, ...others } = props;
   const ctx = useContext(SchemaComponentContext);
   const schema = useMemo(() => toSchema(_schema), [_schema]);
   const refresh = useUpdate();
+  const value = useMemo(
+    () => ({
+      ...ctx,
+      distributed: ctx.distributed == false ? false : distributed,
+      refresh: () => {
+        refresh();
+        if (ctx.distributed === false || distributed === false) {
+          ctx.refresh?.();
+        }
+        onChange?.(schema);
+      },
+    }),
+    [ctx, distributed, onChange, refresh, schema],
+  );
 
   return (
-    <SchemaComponentContext.Provider
-      value={{
-        ...ctx,
-        distributed: ctx.distributed == false ? false : distributed,
-        refresh: () => {
-          refresh();
-          if (ctx.distributed === false || distributed === false) {
-            ctx.refresh?.();
-          }
-          props.onChange?.(schema);
-        },
-      }}
-    >
+    <SchemaComponentContext.Provider value={value}>
       <SchemaComponentOptions inherit components={components} scope={scope}>
-        <RecursionField {...others} schema={schema} />
+        <NocoBaseRecursionField {...others} schema={schema} isUseFormilyField />
       </SchemaComponentOptions>
     </SchemaComponentContext.Provider>
   );

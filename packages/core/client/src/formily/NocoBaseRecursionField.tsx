@@ -24,14 +24,14 @@ import {
 import { isBool, isFn, isValid, merge } from '@formily/shared';
 import _ from 'lodash';
 import React, { Fragment, useMemo } from 'react';
-import { CollectionFieldProvider } from '../data-source/collection-field/CollectionFieldProvider';
+import { CollectionFieldProvider, useCollectionField } from '../data-source/collection-field/CollectionFieldProvider';
 import { NocoBaseField } from './NocoBaseField';
 
 interface INocoBaseRecursionFieldProps extends IRecursionFieldProps {
   /**
    * Default Schema for collection fields
    */
-  uiSchema?: ISchema | ((schema: Schema) => ISchema);
+  uiSchema?: ISchema;
 
   /**
    * Value for fields
@@ -39,7 +39,7 @@ interface INocoBaseRecursionFieldProps extends IRecursionFieldProps {
   values?: Record<string, any>;
 
   /**
-   * 是否使用 Formily Filed 类，性能会有所下降，但是可以更好的兼容 Formily
+   * Whether to use Formily Field class - performance will be reduced but provides better compatibility with Formily
    */
   isUseFormilyField?: boolean;
 }
@@ -92,7 +92,6 @@ const createMergedSchemaInstance = _.memoize((schema: Schema, uiSchema: ISchema,
 
 const propertiesToReactElement = ({
   schema,
-  uiSchema,
   field,
   basePath,
   mapProperties,
@@ -102,7 +101,6 @@ const propertiesToReactElement = ({
   isUseFormilyField,
 }: {
   schema: Schema;
-  uiSchema?: ISchema | ((schema: Schema) => ISchema);
   field: any;
   basePath: any;
   mapProperties?: any;
@@ -129,23 +127,48 @@ const propertiesToReactElement = ({
             return null;
           }
         }
-        if (isBool(propsRecursion) && propsRecursion) {
+
+        if (schema['x-component'] === 'CollectionField') {
           return (
-            <NocoBaseRecursionField
-              propsRecursion={true}
-              filterProperties={filterProperties}
-              mapProperties={mapProperties}
-              schema={schema}
-              key={`${index}-${name}`}
-              name={name}
-              basePath={base}
-              values={_.get(values, name)}
-              isUseFormilyField={isUseFormilyField}
-              uiSchema={isFn(uiSchema) ? uiSchema : undefined}
-            />
+            <CollectionFieldProvider name={schema.name} key={`${index}-${name}`}>
+              {isBool(propsRecursion) && propsRecursion ? (
+                <NocoBaseRecursionField
+                  propsRecursion={true}
+                  filterProperties={filterProperties}
+                  mapProperties={mapProperties}
+                  schema={schema}
+                  name={name}
+                  basePath={base}
+                  values={_.get(values, name)}
+                  isUseFormilyField={isUseFormilyField}
+                />
+              ) : (
+                <NocoBaseRecursionField
+                  schema={schema}
+                  name={name}
+                  basePath={base}
+                  values={_.get(values, name)}
+                  filterProperties={filterProperties}
+                  isUseFormilyField={isUseFormilyField}
+                />
+              )}
+            </CollectionFieldProvider>
           );
         }
-        return (
+
+        return isBool(propsRecursion) && propsRecursion ? (
+          <NocoBaseRecursionField
+            propsRecursion={true}
+            filterProperties={filterProperties}
+            mapProperties={mapProperties}
+            schema={schema}
+            key={`${index}-${name}`}
+            name={name}
+            basePath={base}
+            values={_.get(values, name)}
+            isUseFormilyField={isUseFormilyField}
+          />
+        ) : (
           <NocoBaseRecursionField
             schema={schema}
             key={`${index}-${name}`}
@@ -154,7 +177,6 @@ const propertiesToReactElement = ({
             values={_.get(values, name)}
             filterProperties={filterProperties}
             isUseFormilyField={isUseFormilyField}
-            uiSchema={isFn(uiSchema) ? uiSchema : undefined}
           />
         );
       })}
@@ -169,18 +191,20 @@ const propertiesToReactElement = ({
 export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = React.memo((props) => {
   const basePath = useBasePath(props);
   const fieldSchema = createSchemaInstance(props.schema);
+  const { uiSchema: collectionFiledUiSchema } = useCollectionField() || {};
 
   // Merge default Schema of collection fields
   const mergedFieldSchema = useMemo(() => {
-    if (isFn(props.uiSchema)) {
-      return createMergedSchemaInstance(fieldSchema, props.uiSchema(fieldSchema), props.onlyRenderProperties);
-    }
     if (props.uiSchema) {
       return createMergedSchemaInstance(fieldSchema, props.uiSchema, props.onlyRenderProperties);
     }
 
+    if (collectionFiledUiSchema) {
+      return createMergedSchemaInstance(fieldSchema, collectionFiledUiSchema, props.onlyRenderProperties);
+    }
+
     return fieldSchema;
-  }, [fieldSchema, props.onlyRenderProperties, props.uiSchema]);
+  }, [collectionFiledUiSchema, fieldSchema, props.onlyRenderProperties, props.uiSchema]);
 
   const fieldProps = useFieldProps(mergedFieldSchema);
 
@@ -188,7 +212,6 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
     if (props.onlyRenderSelf) return;
     return propertiesToReactElement({
       schema: mergedFieldSchema,
-      uiSchema: props.uiSchema,
       field,
       basePath,
       mapProperties: props.mapProperties,
@@ -216,24 +239,6 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
         <VoidField {...fieldProps} name={props.name} basePath={basePath}>
           {renderProperties}
         </VoidField>
-      );
-    }
-
-    if (fieldSchema['x-component'] === 'CollectionField') {
-      return (
-        <CollectionFieldProvider name={fieldSchema.name}>
-          {props.isUseFormilyField ? (
-            <Field {...fieldProps} name={props.name} basePath={basePath} />
-          ) : (
-            <NocoBaseField
-              name={props.name}
-              value={props.values}
-              initialValue={props.values}
-              basePath={basePath}
-              schema={mergedFieldSchema}
-            />
-          )}
-        </CollectionFieldProvider>
       );
     }
 
