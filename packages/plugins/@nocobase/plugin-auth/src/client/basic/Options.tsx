@@ -9,7 +9,7 @@
 
 import { SchemaComponent } from '@nocobase/client';
 import React from 'react';
-import { useAuthTranslation } from '../locale';
+import { lang, useAuthTranslation } from '../locale';
 import { FormTab, ArrayTable } from '@formily/antd-v5';
 import { Alert } from 'antd';
 
@@ -42,7 +42,7 @@ export const Options = () => {
                     type: 'void',
                     'x-component': 'FormTab.TabPane',
                     'x-component-props': {
-                      tab: 'Sign-up settings',
+                      tab: lang('Sign up settings'),
                     },
                     properties: {
                       allowSignUp: {
@@ -53,10 +53,19 @@ export const Options = () => {
                         default: true,
                       },
                       signupForm: {
-                        title: '{{t("Sign-up form")}}',
+                        title: '{{t("Sign up form")}}',
                         type: 'array',
                         'x-decorator': 'FormItem',
                         'x-component': 'ArrayTable',
+                        'x-component-props': {
+                          bordered: false,
+                        },
+                        'x-validator': `{{ (value) => {
+  const field = value?.filter((item) => item.show && item.required);
+  if (!field?.length) {
+    return t('At least one field is required');
+  }
+} }}`,
                         default: [
                           {
                             field: 'username',
@@ -73,10 +82,21 @@ export const Options = () => {
                           type: 'object',
                           'x-decorator': 'ArrayItems.Item',
                           properties: {
+                            column0: {
+                              type: 'void',
+                              'x-component': 'ArrayTable.Column',
+                              'x-component-props': { width: 20, align: 'center' },
+                              properties: {
+                                sort: {
+                                  type: 'void',
+                                  'x-component': 'ArrayTable.SortHandle',
+                                },
+                              },
+                            },
                             column1: {
                               type: 'void',
                               'x-component': 'ArrayTable.Column',
-                              'x-component-props': { width: 80, title: 'Field', align: 'center' },
+                              'x-component-props': { width: 100, title: lang('Field') },
                               properties: {
                                 field: {
                                   type: 'string',
@@ -84,11 +104,11 @@ export const Options = () => {
                                   'x-component': 'Select',
                                   enum: [
                                     {
-                                      label: 'Username',
+                                      label: lang('Username'),
                                       value: 'username',
                                     },
                                     {
-                                      label: 'Email',
+                                      label: lang('Email'),
                                       value: 'email',
                                     },
                                   ],
@@ -99,7 +119,7 @@ export const Options = () => {
                             column2: {
                               type: 'void',
                               'x-component': 'ArrayTable.Column',
-                              'x-component-props': { width: 80, title: 'Display', align: 'center' },
+                              'x-component-props': { width: 80, title: lang('Show') },
                               properties: {
                                 show: {
                                   type: 'boolean',
@@ -111,7 +131,7 @@ export const Options = () => {
                             column3: {
                               type: 'void',
                               'x-component': 'ArrayTable.Column',
-                              'x-component-props': { width: 80, title: 'Required', align: 'center' },
+                              'x-component-props': { width: 80, title: lang('Required') },
                               properties: {
                                 required: {
                                   type: 'boolean',
