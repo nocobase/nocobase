@@ -111,23 +111,21 @@ export default class extends Instruction {
       job.set({ result: { looped: nextIndex } });
       await processor.saveJob(job);
 
-      if (loop.config.condition) {
-        const { calculation, expression, continueOnFalse } = loop.config.condition ?? {};
-        if (calculation || expression) {
-          const condition = calculateCondition(loop, processor);
-          if (!condition && !continueOnFalse) {
-            job.set({
-              status: JOB_STATUS.RESOLVED,
-              result: { looped: nextIndex, broken: true },
-            });
-            return job;
-          }
-        }
-      }
-
       const length = getTargetLength(target);
       if (nextIndex < length) {
-        await processor.saveJob(job);
+        if (loop.config.condition) {
+          const { calculation, expression, continueOnFalse } = loop.config.condition ?? {};
+          if (calculation || expression) {
+            const condition = calculateCondition(loop, processor);
+            if (!condition && !continueOnFalse) {
+              job.set({
+                status: JOB_STATUS.RESOLVED,
+                result: { looped: nextIndex, broken: true },
+              });
+              return job;
+            }
+          }
+        }
         await processor.run(branch, job);
         return processor.exit();
       } else {
