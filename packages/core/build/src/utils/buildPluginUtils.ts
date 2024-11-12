@@ -112,7 +112,7 @@ export function checkDependencies(packageJson: Record<string, any>, log: Log) {
     chalk.yellow(packages.join(', ')),
     chalk.yellow('dependencies'),
     chalk.yellow('devDependencies'),
-    chalk.blue(chalk.blue('https://docs.nocobase.com/development/deps')),
+    chalk.blue(chalk.blue('https://docs.nocobase.com/development/others/deps')),
   );
 }
 
