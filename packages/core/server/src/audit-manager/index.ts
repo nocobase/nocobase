@@ -186,6 +186,14 @@ export class AuditManager {
           resourceAction = resourceActions.get('__default__');
           if (resourceAction) {
             return resourceAction;
+          } else {
+            const defaultResourceActions = this.resources.get('__default__');
+            if (defaultResourceActions) {
+              const defaultResourceAction = defaultResourceActions.get(action);
+              if (defaultResourceAction) {
+                return defaultResourceAction;
+              }
+            }
           }
         }
       } else {
@@ -236,6 +244,10 @@ export class AuditManager {
     const resourceUk: string = this.formatResourceUk(ctx);
 
     // 获取ip，优先使用X-Forwarded-For，如果没有则使用ctx.request.ip
+    ctx.log?.debug('audit log request header: ' + JSON.stringify(ctx.request.header));
+    ctx.log?.debug(
+      'audit log request header: X-Forwarded-For: ' + JSON.stringify(ctx.request.header['X-Forwarded-For']),
+    );
     const ipvalues = ctx.request.header['X-Forwarded-For'];
     let ipvalue = '';
     if (ipvalues instanceof Array) {

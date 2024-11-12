@@ -288,4 +288,28 @@ describe('audit manager', () => {
       }
     `);
   });
+
+  it('getAction default', () => {
+    app.auditManager.registerActions(['users:updateProfile', 'update']);
+    expect(app.auditManager.resources).toMatchInlineSnapshot(`
+      Map {
+        "users" => Map {
+          "updateProfile" => {
+            "name": "users:updateProfile",
+          },
+        },
+        "__default__" => Map {
+          "update" => {
+            "name": "update",
+          },
+        },
+      }
+    `);
+    const action = app.auditManager.getAction('update', 'users');
+    expect(action).toMatchInlineSnapshot(`
+      {
+        "name": "update",
+      }
+    `);
+  });
 });
