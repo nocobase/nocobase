@@ -317,6 +317,7 @@ export class PluginDataSourceMainServer extends Plugin {
     });
 
     this.app.acl.allow('collections', 'list', 'loggedIn');
+    this.app.acl.allow('collections', 'listMeta', 'loggedIn');
     this.app.acl.allow('collectionCategories', 'list', 'loggedIn');
 
     this.app.acl.registerSnippet({

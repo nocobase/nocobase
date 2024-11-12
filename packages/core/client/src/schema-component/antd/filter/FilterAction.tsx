@@ -16,7 +16,7 @@ import React, { createContext, useCallback, useContext, useMemo, useState } from
 import { useTranslation } from 'react-i18next';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { FormProvider, SchemaComponent } from '../../core';
-import { useDesignable } from '../../hooks';
+import { useCompile, useDesignable } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
 import { Action, ActionProps } from '../action';
 import { DatePickerProvider } from '../date-picker/DatePicker';
@@ -166,6 +166,7 @@ const FilterActionContent = observer(
     setVisible: React.Dispatch<React.SetStateAction<boolean>>;
     onSubmit: any;
   }) => {
+    const compile = useCompile();
     const { t } = useTranslation();
     const schema = useMemo(() => {
       return {
@@ -195,7 +196,7 @@ const FilterActionContent = observer(
                 onClick={async () => {
                   await form.reset();
                   onReset?.(form.values);
-                  field.title = t('Filter');
+                  field.title = compile(fieldSchema.title) || t('Filter');
                   setVisible(false);
                 }}
               >

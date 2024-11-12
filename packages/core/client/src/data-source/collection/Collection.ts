@@ -164,6 +164,9 @@ export class Collection {
 
     return this.primaryKey;
   }
+  getFilterTargetKey() {
+    return this.filterTargetKey || this.getPrimaryKey() || 'id';
+  }
 
   get inherits() {
     return this.options.inherits || [];

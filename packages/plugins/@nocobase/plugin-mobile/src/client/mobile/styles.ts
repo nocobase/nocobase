@@ -20,7 +20,42 @@ export const useStyles = genStyleHook('nb-mobile', (token) => {
       '& ::-webkit-scrollbar': {
         display: 'none',
       },
-
+      '.nb-details .ant-formily-item-feedback-layout-loose': {
+        marginBottom: '5px',
+      },
+      '.nb-details .ant-formily-item-layout-vertical .ant-formily-item-label': {
+        marginBottom: '-8px',
+      },
+      '.ant-card .ant-card-body': {
+        paddingBottom: '10px',
+        paddingTop: '10px',
+      },
+      '.ant-pagination-simple': {
+        marginTop: '0px !important',
+      },
+      '.nb-action-penal-container': {
+        marginTop: '-10px',
+        marginBottom: '-10px',
+      },
+      '.nb-action-penal-container button[aria-label*="schema-initializer-WorkbenchBlock.ActionBar-workbench:configureActions"]':
+        {
+          marginBottom: '10px',
+        },
+      '.nb-action-panel': {
+        paddingTop: '10px',
+      },
+      '.nb-action-panel .ant-avatar-circle': {
+        width: '48px !important',
+        height: '48px !important',
+        lineHeight: '48px !important',
+      },
+      '.nb-chart-block .ant-card .ant-card-body': {
+        paddingBottom: '0px',
+        paddingTop: '0px',
+      },
+      '.nb-chart-block .noco-card-item': {
+        marginBottom: '-13px',
+      },
       '.ant-table-thead button[aria-label*="schema-initializer-TableV2-table:configureColumns"] > span:last-child': {
         display: 'none !important',
       },
@@ -30,7 +65,6 @@ export const useStyles = genStyleHook('nb-mobile', (token) => {
       '.ant-table-tbody .nb-column-initializer': {
         minWidth: '40px !important',
       },
-      // reset Select record popup
       '.ant-table-thead button[aria-label*="schema-initializer-TableV2.Selector-table:configureColumns"] > span:last-child':
         {
           display: 'none !important',
@@ -39,7 +73,6 @@ export const useStyles = genStyleHook('nb-mobile', (token) => {
         {
           margin: '0px',
         },
-
       '.ant-pagination .ant-pagination-total-text': {
         display: 'none',
       },
@@ -54,8 +87,7 @@ export const useStyles = genStyleHook('nb-mobile', (token) => {
         display: 'flex',
         alignItems: 'center',
         gap: '8px',
-
-        span: {
+        '& span': {
           display: 'contents',
         },
       },
@@ -75,6 +107,9 @@ export const useStyles = genStyleHook('nb-mobile', (token) => {
       '.nb-card-list .ant-row > div': {
         width: '100% !important',
         maxWidth: '100% !important',
+      },
+      '.mobile-page-header .adm-tabs-tab': {
+        fontSize: '14px',
       },
     },
   };

@@ -42,18 +42,18 @@ function Button() {
       <div className={cx(styles.title)}>{fieldSchema.title}</div>
     </div>
   ) : (
-    <a>{fieldSchema.title}</a>
+    <span>{fieldSchema.title}</span>
   );
 }
 
 export const WorkbenchAction = withDynamicSchemaProps((props) => {
   const { className, ...others } = props;
-  const { styles, cx } = useStyles();
+  const { styles, cx } = useStyles() as any;
   const fieldSchema = useFieldSchema();
   const Component = useComponent(props?.targetComponent) || Action;
   return (
     <Component
-      className={cx(className, styles.action)}
+      className={cx(className, styles.action, 'nb-action-panel')}
       {...others}
       icon={null}
       title={<Button />}

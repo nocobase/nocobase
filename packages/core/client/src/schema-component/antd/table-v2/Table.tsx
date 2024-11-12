@@ -13,7 +13,7 @@ import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sor
 import { css, cx } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
-import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
+import { RecursionField, Schema, SchemaOptionsContext, observer, useField, useFieldSchema } from '@formily/react';
 import { action, raw } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
@@ -26,10 +26,12 @@ import { useTranslation } from 'react-i18next';
 import { useInView } from 'react-intersection-observer';
 import { DndContext, isBulkEditAction, useDesignable, usePopupSettings, useTableSize } from '../..';
 import {
+  CollectionFieldOriginalContext,
   CollectionRecordProvider,
   RecordIndexProvider,
   useCollection,
   useCollectionParentRecordData,
+  useDataBlockProps,
   useDataBlockRequest,
   useDataBlockRequestData,
   useFlag,
@@ -139,7 +141,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
           sorter: columnSchema['x-component-props']?.['sorter'],
           columnHidden,
           ...columnSchema['x-component-props'],
-          width: columnHidden && !designable ? 0 : columnSchema['x-component-props']?.width || 200,
+          width: columnHidden && !designable ? 0 : columnSchema['x-component-props']?.width || 100,
           render: (value, record, index) => {
             const basePath = field.address.concat(record.__index || index);
 
@@ -209,7 +211,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
         render: designable
           ? () => <div style={{ width: '100%', minWidth: '180px' }} className="nb-column-initializer" />
           : null,
-        fixed: designable ? 'right' : 'none',
+        fixed: 'right',
       },
     ];
 
@@ -345,11 +347,18 @@ const usePaginationProps = (pagination1, pagination2) => {
     [JSON.stringify({ ...pagination1, ...pagination2 })],
   );
   const { total: totalCount, current, pageSize } = pagination || {};
+  const blockProps = useDataBlockProps();
+  const original = useContext(CollectionFieldOriginalContext);
+  const { components } = useContext(SchemaOptionsContext);
+  const C = original?.fieldSchema?.['x-component-props']?.summary?.Component || blockProps?.summary?.Component;
   const showTotal = useCallback(
     (total) => {
+      if (components[C]) {
+        return React.createElement(components[C]);
+      }
       return t('Total {{count}} items', { count: total });
     },
-    [t, totalCount],
+    [components, C, t],
   );
 
   const showTotalResult = useMemo(() => {

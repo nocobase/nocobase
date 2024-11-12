@@ -13,6 +13,7 @@ import flat from 'flat';
 import _ from 'lodash';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useCompile } from '../../';
 import { useCollectionManager } from '../../../data-source/collection/CollectionManagerProvider';
 import { useCollection } from '../../../data-source/collection/CollectionProvider';
 import { useDataBlockProps } from '../../../data-source/data-block/DataBlockProvider';
@@ -20,7 +21,6 @@ import { useDataBlockRequestGetter } from '../../../data-source/data-block/DataB
 import { useDataSourceManager } from '../../../data-source/data-source/DataSourceManagerProvider';
 import { mergeFilter } from '../../../filter-provider/utils';
 import { useDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
-
 export const useGetFilterOptions = () => {
   const dm = useDataSourceManager();
   const getFilterFieldOptions = useGetFilterFieldOptions();
@@ -201,7 +201,8 @@ export const useFilterFieldProps = ({ options, service, params }: { options: any
   const { t } = useTranslation();
   const field = useField<Field>();
   const dataLoadingMode = useDataLoadingMode();
-
+  const fieldSchema = useFieldSchema();
+  const compile = useCompile();
   const onSubmit = useCallback(
     (values) => {
       const _service = service || getDataBlockRequest();
@@ -226,10 +227,10 @@ export const useFilterFieldProps = ({ options, service, params }: { options: any
       if (items?.length) {
         field.title = t('{{count}} filter items', { count: items?.length || 0 });
       } else {
-        field.title = t('Filter');
+        field.title = compile(fieldSchema.title) || t('Filter');
       }
     },
-    [dataLoadingMode, field, getDataBlockRequest, params, service, t],
+    [dataLoadingMode, field, getDataBlockRequest, params, service, t, fieldSchema.title],
   );
 
   const onReset = useCallback(() => {
@@ -249,7 +250,7 @@ export const useFilterFieldProps = ({ options, service, params }: { options: any
       { filters },
     ];
 
-    field.title = t('Filter');
+    field.title = compile(fieldSchema.title) || t('Filter');
 
     if (dataLoadingMode === 'manual') {
       _service.params = newParams;
@@ -257,7 +258,7 @@ export const useFilterFieldProps = ({ options, service, params }: { options: any
     }
 
     _service?.run(...newParams);
-  }, [dataLoadingMode, field, getDataBlockRequest, params, service, t]);
+  }, [dataLoadingMode, field, getDataBlockRequest, params, service, t, fieldSchema.title]);
 
   return {
     options,

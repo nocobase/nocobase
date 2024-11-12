@@ -18,7 +18,7 @@ import {
   useAsyncData,
   useSchemaComponentContext,
 } from '@nocobase/client';
-import { Button, Dropdown, Empty } from 'antd';
+import { Button, Dropdown, Empty, Card } from 'antd';
 import React, { useState } from 'react';
 import channelCollection from '../../../../collections/channel';
 import messageLogCollection from '../../../../collections/messageLog';
@@ -130,22 +130,24 @@ export const ChannelManager = () => {
     <ExtendCollectionsProvider collections={[channelCollection, messageLogCollection]}>
       <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
         <NotificationTypesContext.Provider value={{ channelTypes: notificationTypes }}>
-          <SchemaComponent
-            schema={channelsSchema}
-            components={{ AddNew, ConfigForm }}
-            scope={{
-              useCanNotDelete,
-              t,
-              notificationTypeOptions: notificationTypes,
-              useCreateActionProps,
-              useEditActionProps,
-              useCloseActionProps,
-              useEditFormProps,
-              useCreateFormProps,
-              useRecordDeleteActionProps,
-              useRecordEditActionProps,
-            }}
-          />
+          <Card bordered={false}>
+            <SchemaComponent
+              schema={channelsSchema}
+              components={{ AddNew, ConfigForm }}
+              scope={{
+                useCanNotDelete,
+                t,
+                notificationTypeOptions: notificationTypes,
+                useCreateActionProps,
+                useEditActionProps,
+                useCloseActionProps,
+                useEditFormProps,
+                useCreateFormProps,
+                useRecordDeleteActionProps,
+                useRecordEditActionProps,
+              }}
+            />
+          </Card>
         </NotificationTypesContext.Provider>
       </SchemaComponentContext.Provider>
     </ExtendCollectionsProvider>

@@ -16,9 +16,10 @@ import {
   useSchemaInitializerRender,
   withDynamicSchemaProps,
   Icon,
+  useBlockHeight,
 } from '@nocobase/client';
-import { css, cx } from '@emotion/css';
-import { Space, List, Avatar } from 'antd';
+import { css } from '@emotion/css';
+import { Space, List, Avatar, theme } from 'antd';
 import React, { createContext, useState, useEffect } from 'react';
 import { WorkbenchLayout } from './workbenchBlockSettings';
 
@@ -66,7 +67,7 @@ const InternalIcons = () => {
   }, [Object.keys(fieldSchema?.properties || {}).length]);
 
   return (
-    <div style={{ marginBottom: designable ? '1rem' : 0 }}>
+    <div style={{ marginBottom: designable ? '1rem' : 0 }} className="nb-action-panel-warp">
       <DndContext>
         {layout === WorkbenchLayout.Grid ? (
           <Space wrap size={gap}>
@@ -89,9 +90,10 @@ const InternalIcons = () => {
                     .ant-list-item-meta-title {
                       overflow: hidden;
                       text-overflow: ellipsis;
+                      font-size: 14px;
                     }
                     .ant-list-item-meta-title button {
-                      font-size: 16px;
+                      font-size: 14px;
                       overflow: hidden;
                       text-overflow: ellipsis;
                       width: 100%;
@@ -119,13 +121,31 @@ export const WorkbenchBlock: any = withDynamicSchemaProps(
   (props) => {
     const fieldSchema = useFieldSchema();
     const { layout = 'grid' } = fieldSchema['x-component-props'] || {};
+    const targetHeight = useBlockHeight();
+    const { token } = theme.useToken();
+    const { designable } = useDesignable();
 
     return (
-      <WorkbenchBlockContext.Provider value={{ layout }}>
-        <DataSourceContext.Provider value={undefined}>
-          <CollectionContext.Provider value={undefined}>{props.children}</CollectionContext.Provider>
-        </DataSourceContext.Provider>
-      </WorkbenchBlockContext.Provider>
+      <div className="nb-action-penal-container">
+        <div
+          className={css`
+            .nb-action-panel-warp {
+              height: ${targetHeight ? targetHeight - (designable ? 4 : 2) * token.marginLG + 'px' : '100%'};
+              overflow-y: auto;
+              margin-left: -24px;
+              margin-right: -24px;
+              padding-left: 24px;
+              padding-right: 24px;
+            }
+          `}
+        >
+          <WorkbenchBlockContext.Provider value={{ layout }}>
+            <DataSourceContext.Provider value={undefined}>
+              <CollectionContext.Provider value={undefined}>{props.children}</CollectionContext.Provider>
+            </DataSourceContext.Provider>
+          </WorkbenchBlockContext.Provider>
+        </div>
+      </div>
     );
   },
   { displayName: 'WorkbenchBlock' },
