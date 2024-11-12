@@ -67,7 +67,7 @@ const InternalIcons = () => {
   }, [Object.keys(fieldSchema?.properties || {}).length]);
 
   return (
-    <div style={{ marginBottom: designable ? '1rem' : 0 }}>
+    <div style={{ marginBottom: designable ? '1rem' : 0 }} className="nb-action-panel-warp">
       <DndContext>
         {layout === WorkbenchLayout.Grid ? (
           <Space wrap size={gap}>
@@ -123,12 +123,21 @@ export const WorkbenchBlock: any = withDynamicSchemaProps(
     const { layout = 'grid' } = fieldSchema['x-component-props'] || {};
     const targetHeight = useBlockHeight();
     const { token } = theme.useToken();
+    const { designable } = useDesignable();
+
     return (
       <div className="nb-action-penal-container">
         <div
-          style={{
-            height: targetHeight ? `${targetHeight - 2 * token.marginLG}px` : '100%',
-          }}
+          className={css`
+            .nb-action-panel-warp {
+              height: ${targetHeight ? targetHeight - (designable ? 4 : 2) * token.marginLG + 'px' : '100%'};
+              overflow-y: auto;
+              margin-left: -24px;
+              margin-right: -24px;
+              padding-left: 24px;
+              padding-right: 24px;
+            }
+          `}
         >
           <WorkbenchBlockContext.Provider value={{ layout }}>
             <DataSourceContext.Provider value={undefined}>
