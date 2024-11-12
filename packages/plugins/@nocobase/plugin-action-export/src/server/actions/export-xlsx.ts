@@ -54,6 +54,10 @@ async function exportXlsxAction(ctx: Context, next: Next) {
 }
 
 export async function exportXlsx(ctx: Context, next: Next) {
+  if (ctx.exportHandled) {
+    return await next();
+  }
+
   if (mutex.isLocked()) {
     throw new Error(
       ctx.t(`another export action is running, please try again later.`, {
