@@ -31,7 +31,11 @@ export const Details = withDynamicSchemaProps(
       );
     }
 
-    return <FormV2 {...props} />;
+    return (
+      <div className="nb-details">
+        <FormV2 {...props} />
+      </div>
+    );
   },
   { displayName: 'Details' },
 );

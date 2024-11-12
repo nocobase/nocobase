@@ -15,6 +15,7 @@ export const ChartCardItem = withDynamicSchemaProps(
     const { token } = useToken();
     return (
       <CardItem
+        className="nb-chart-block"
         name="charts"
         bodyStyle={{
           padding: `${token.paddingLG}px ${token.paddingLG}px 0`,

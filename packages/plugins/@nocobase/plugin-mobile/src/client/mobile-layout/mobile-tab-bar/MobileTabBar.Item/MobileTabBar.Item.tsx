@@ -54,6 +54,7 @@ export const MobileTabBarItem: FC<MobileTabBarItemProps> = (props) => {
         className={classnames('adm-tab-bar-item-title', {
           ['adm-tab-bar-item-title-with-icon']: icon,
         })}
+        style={{ fontSize: '12px' }}
       >
         {title}
       </span>

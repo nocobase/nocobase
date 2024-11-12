@@ -89,9 +89,10 @@ const InternalIcons = () => {
                     .ant-list-item-meta-title {
                       overflow: hidden;
                       text-overflow: ellipsis;
+                      font-size: 14px;
                     }
                     .ant-list-item-meta-title button {
-                      font-size: 16px;
+                      font-size: 14px;
                       overflow: hidden;
                       text-overflow: ellipsis;
                       width: 100%;
@@ -121,11 +122,13 @@ export const WorkbenchBlock: any = withDynamicSchemaProps(
     const { layout = 'grid' } = fieldSchema['x-component-props'] || {};
 
     return (
-      <WorkbenchBlockContext.Provider value={{ layout }}>
-        <DataSourceContext.Provider value={undefined}>
-          <CollectionContext.Provider value={undefined}>{props.children}</CollectionContext.Provider>
-        </DataSourceContext.Provider>
-      </WorkbenchBlockContext.Provider>
+      <div className="nb-action-penal-container">
+        <WorkbenchBlockContext.Provider value={{ layout }}>
+          <DataSourceContext.Provider value={undefined}>
+            <CollectionContext.Provider value={undefined}>{props.children}</CollectionContext.Provider>
+          </DataSourceContext.Provider>
+        </WorkbenchBlockContext.Provider>
+      </div>
     );
   },
   { displayName: 'WorkbenchBlock' },
