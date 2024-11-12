@@ -129,7 +129,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
           sorter: s['x-component-props']?.['sorter'],
           columnHidden,
           ...s['x-component-props'],
-          width: columnHidden && !designable ? 0 : s['x-component-props']?.width || 200,
+          width: columnHidden && !designable ? 0 : s['x-component-props']?.width || 100,
           render: (v, record) => {
             // 这行代码会导致这里的测试不通过：packages/core/client/src/modules/blocks/data-blocks/table/__e2e__/schemaInitializer.test.ts:189
             // if (collectionFields?.length === 1 && collectionFields[0]['x-read-pretty'] && v == undefined) return null;
