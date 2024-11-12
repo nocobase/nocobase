@@ -39,7 +39,8 @@ export class NotificationManager implements NotificationManager {
   async send(params: SendOptions) {
     this.plugin.logger.info('receive sending message request', params);
     const channelsRepo = this.plugin.app.db.getRepository(COLLECTION_NAME.channels);
-    const messageData = { ...(params.receivers ? { receivers: params.receivers } : {}), ...params.message };
+    const message = compile(params.message ?? {}, params.data ?? {});
+    const messageData = { ...(params.receivers ? { receivers: params.receivers } : {}), ...message };
     const logData: any = {
       triggerFrom: params.triggerFrom,
       channelName: params.channelName,
@@ -53,7 +54,7 @@ export class NotificationManager implements NotificationManager {
         logData.channelTitle = channel.title;
         logData.notificationType = channel.notificationType;
         logData.receivers = params.receivers;
-        const result = await instance.send({ message: params.message, channel, receivers: params.receivers });
+        const result = await instance.send({ message, channel, receivers: params.receivers });
         logData.status = result.status;
         logData.reason = result.reason;
       } else {
@@ -72,11 +73,16 @@ export class NotificationManager implements NotificationManager {
   }
   async sendToUsers(options: SendUserOptions) {
     this.plugin.logger.info(`notificationManager.sendToUsers options: ${JSON.stringify(options)}`);
-    const { userIds, channels, message: template = {}, data = {} } = options;
-    const message = compile(template, data);
+    const { userIds, channels, message, data = {} } = options;
     return await Promise.all(
       channels.map((channelName) =>
-        this.send({ channelName, message, triggerFrom: 'sendToUsers', receivers: { value: userIds, type: 'userId' } }),
+        this.send({
+          channelName,
+          message,
+          data,
+          triggerFrom: 'sendToUsers',
+          receivers: { value: userIds, type: 'userId' },
+        }),
       ),
     );
   }

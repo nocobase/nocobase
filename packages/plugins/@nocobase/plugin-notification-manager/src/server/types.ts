@@ -47,6 +47,7 @@ export interface SendOptions {
   message: Record<string, any>;
   triggerFrom: string;
   receivers?: ReceiversOptions;
+  data?: Record<string, any>;
 }
 
 export interface SendUserOptions {

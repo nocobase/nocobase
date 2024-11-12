@@ -65,8 +65,8 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
             type: message.type,
             data: {
               ...message.data,
-              title: message.data.title.slice(0, 30),
-              content: message.data.content.slice(0, 105),
+              title: message.data.title?.slice(0, 30) || '',
+              content: message.data.content?.slice(0, 105) || '',
             },
           })}\n\n`,
         );
