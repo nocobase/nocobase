@@ -24,13 +24,14 @@ import {
 import { isBool, isFn, isValid, merge } from '@formily/shared';
 import _ from 'lodash';
 import React, { Fragment, useMemo } from 'react';
+import { CollectionFieldProvider } from '../data-source/collection-field/CollectionFieldProvider';
 import { NocoBaseField } from './NocoBaseField';
 
 interface INocoBaseRecursionFieldProps extends IRecursionFieldProps {
   /**
    * Default Schema for collection fields
    */
-  uiSchema?: ISchema;
+  uiSchema?: ISchema | ((schema: Schema) => ISchema);
 
   /**
    * Value for fields
@@ -91,6 +92,7 @@ const createMergedSchemaInstance = _.memoize((schema: Schema, uiSchema: ISchema,
 
 const propertiesToReactElement = ({
   schema,
+  uiSchema,
   field,
   basePath,
   mapProperties,
@@ -100,6 +102,7 @@ const propertiesToReactElement = ({
   isUseFormilyField,
 }: {
   schema: Schema;
+  uiSchema?: ISchema | ((schema: Schema) => ISchema);
   field: any;
   basePath: any;
   mapProperties?: any;
@@ -138,6 +141,7 @@ const propertiesToReactElement = ({
               basePath={base}
               values={_.get(values, name)}
               isUseFormilyField={isUseFormilyField}
+              uiSchema={isFn(uiSchema) ? uiSchema : undefined}
             />
           );
         }
@@ -150,6 +154,7 @@ const propertiesToReactElement = ({
             values={_.get(values, name)}
             filterProperties={filterProperties}
             isUseFormilyField={isUseFormilyField}
+            uiSchema={isFn(uiSchema) ? uiSchema : undefined}
           />
         );
       })}
@@ -167,6 +172,9 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
 
   // Merge default Schema of collection fields
   const mergedFieldSchema = useMemo(() => {
+    if (isFn(props.uiSchema)) {
+      return createMergedSchemaInstance(fieldSchema, props.uiSchema(fieldSchema), props.onlyRenderProperties);
+    }
     if (props.uiSchema) {
       return createMergedSchemaInstance(fieldSchema, props.uiSchema, props.onlyRenderProperties);
     }
@@ -180,6 +188,7 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
     if (props.onlyRenderSelf) return;
     return propertiesToReactElement({
       schema: mergedFieldSchema,
+      uiSchema: props.uiSchema,
       field,
       basePath,
       mapProperties: props.mapProperties,
@@ -210,11 +219,27 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
       );
     }
 
-    if (props.isUseFormilyField) {
-      return <Field {...fieldProps} name={props.name} basePath={basePath} />;
+    if (fieldSchema['x-component'] === 'CollectionField') {
+      return (
+        <CollectionFieldProvider name={fieldSchema.name}>
+          {props.isUseFormilyField ? (
+            <Field {...fieldProps} name={props.name} basePath={basePath} />
+          ) : (
+            <NocoBaseField
+              name={props.name}
+              value={props.values}
+              initialValue={props.values}
+              basePath={basePath}
+              schema={mergedFieldSchema}
+            />
+          )}
+        </CollectionFieldProvider>
+      );
     }
 
-    return (
+    return props.isUseFormilyField ? (
+      <Field {...fieldProps} name={props.name} basePath={basePath} />
+    ) : (
       <NocoBaseField
         name={props.name}
         value={props.values}
