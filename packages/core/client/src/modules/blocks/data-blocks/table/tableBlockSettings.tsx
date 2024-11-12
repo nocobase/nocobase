@@ -235,6 +235,7 @@ export const tableBlockSettings = new SchemaSettings({
     {
       name: 'divider',
       type: 'divider',
+      sort: 7000,
       useVisible: () => {
         const fieldSchema = useFieldSchema();
         const supportTemplate = !fieldSchema?.['x-decorator-props']?.disableTemplate;
@@ -243,6 +244,7 @@ export const tableBlockSettings = new SchemaSettings({
     },
     {
       name: 'ConvertReferenceToDuplicate',
+      sort: 8000,
       Component: SchemaSettingsTemplate,
       useComponentProps() {
         const { name } = useCollection_deprecated();
@@ -265,10 +267,12 @@ export const tableBlockSettings = new SchemaSettings({
     {
       name: 'divider2',
       type: 'divider',
+      sort: 9000,
     },
     {
       name: 'delete',
       type: 'remove',
+      sort: 10000,
       useComponentProps: () => {
         return {
           removeParentsIfNoChildren: true,
