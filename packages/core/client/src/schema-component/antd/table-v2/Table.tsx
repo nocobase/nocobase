@@ -530,7 +530,7 @@ const BodyRowComponent = React.memo(
 
     return (
       <CollectionRecordProvider isNew={isNewRecord(record)} record={record} parentRecord={parentRecordData}>
-        <RecordIndexProvider index={record.__index || rowIndex}>
+        <RecordIndexProvider index={record?.__index || rowIndex}>
           <SortableRow {...props} />
         </RecordIndexProvider>
       </CollectionRecordProvider>
