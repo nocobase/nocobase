@@ -147,13 +147,11 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
             if (props.isSubTable) {
               return (
                 <SubFormProvider value={{ value: record, collection, fieldSchema: schema.parent }}>
-                  <RecordIndexProvider index={record.__index || index}>
-                    <ColumnFieldProvider schema={columnSchema} basePath={basePath}>
-                      <span role="button" className={schemaToolbarBigger}>
-                        <RecursionField basePath={basePath} schema={columnSchema} onlyRenderProperties />
-                      </span>
-                    </ColumnFieldProvider>
-                  </RecordIndexProvider>
+                  <ColumnFieldProvider schema={columnSchema} basePath={basePath}>
+                    <span role="button" className={schemaToolbarBigger}>
+                      <RecursionField basePath={basePath} schema={columnSchema} onlyRenderProperties />
+                    </span>
+                  </ColumnFieldProvider>
                 </SubFormProvider>
               );
             }
@@ -527,11 +525,14 @@ const BodyRowComponent = React.memo(
     className: string;
     record: any;
   }) => {
+    const { record, rowIndex } = props;
     const parentRecordData = useCollectionParentRecordData();
 
     return (
-      <CollectionRecordProvider isNew={isNewRecord(props.record)} record={props.record} parentRecord={parentRecordData}>
-        <SortableRow {...props} />
+      <CollectionRecordProvider isNew={isNewRecord(record)} record={record} parentRecord={parentRecordData}>
+        <RecordIndexProvider index={record.__index || rowIndex}>
+          <SortableRow {...props} />
+        </RecordIndexProvider>
       </CollectionRecordProvider>
     );
   },
@@ -788,7 +789,13 @@ export const Table: any = withDynamicSchemaProps(
             };
           };
         }
-        return null;
+
+        return (record, rowIndex) => {
+          return {
+            rowIndex,
+            record,
+          };
+        };
       }, [onClickRow, selectedRow]);
 
       useDeepCompareEffect(() => {
