@@ -52,7 +52,7 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
   const { reset } = useSchemaComponentContext();
   const type = onlyRenderProperties ? 'getProperties' : 'getJsonSchema';
   const form = useMemo(() => createForm(), [uid]);
-  const { schema } = useRequestSchema({
+  const { schema, loading } = useRequestSchema({
     uid,
     type,
     onSuccess: (data) => {
@@ -62,7 +62,7 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
   });
   const NotFoundComponent = useComponent(NotFoundPage);
 
-  if (hidden) {
+  if (loading || hidden) {
     return (
       <div style={{ textAlign: 'center', marginTop: 20 }}>
         <Spin />
