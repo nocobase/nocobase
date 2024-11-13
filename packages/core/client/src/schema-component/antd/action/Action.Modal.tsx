@@ -8,11 +8,12 @@
  */
 
 import { css } from '@emotion/css';
-import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { observer, useField, useFieldSchema } from '@formily/react';
 import { Modal, ModalProps } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { useToken } from '../../../style';
 import { ErrorFallback } from '../error-fallback';
 import { useCurrentPopupContext } from '../page/PagePopups';
@@ -122,7 +123,7 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
             )}
             footer={
               showFooter ? (
-                <RecursionField
+                <NocoBaseRecursionField
                   basePath={field.address}
                   schema={schema}
                   onlyRenderProperties
@@ -135,7 +136,7 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
               )
             }
           >
-            <RecursionField
+            <NocoBaseRecursionField
               basePath={field.address}
               schema={schema}
               onlyRenderProperties
@@ -161,7 +162,7 @@ ActionModal.Footer = observer(
   () => {
     const field = useField();
     const schema = useFieldSchema();
-    return <RecursionField basePath={field.address} schema={schema} onlyRenderProperties />;
+    return <NocoBaseRecursionField basePath={field.address} schema={schema} onlyRenderProperties />;
   },
   { displayName: 'ActionModal.Footer' },
 );
