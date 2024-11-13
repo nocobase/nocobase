@@ -43,119 +43,119 @@ describe('CollectionSelect', () => {
     });
 
     expect(container).toMatchInlineSnapshot(`
-      <div>
-        <div
-          class="css-dev-only-do-not-override-wwtqkl ant-app"
-          style="height: 100%;"
-        >
-          <div
-            aria-label="block-item-demo title"
-            class="nb-sortable-designer nb-block-item nb-form-item acss-gw2dva"
-            role="button"
-          >
-            <div
-              class="css-r098lo ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-wwtqkl"
-            >
-              <div
-                class="ant-formily-item-label"
-              >
-                <div
-                  class="ant-formily-item-label-content"
-                >
-                  <span>
-                    <label>
-                      demo title
-                    </label>
-                  </span>
-                </div>
-                <span
-                  class="ant-formily-item-colon"
-                >
-                  :
-                </span>
-              </div>
-              <div
-                class="ant-formily-item-control"
-              >
-                <div
-                  class="ant-formily-item-control-content"
-                >
-                  <div
-                    class="ant-formily-item-control-content-component"
-                  >
-                    <div
-                      class="ant-select css-dev-only-do-not-override-wwtqkl ant-select-focused ant-select-single ant-select-show-arrow ant-select-show-search"
-                      data-testid="select-collection"
-                      role="button"
-                    >
-                      <span
-                        aria-live="polite"
-                        style="width: 0px; height: 0px; position: absolute; overflow: hidden; opacity: 0;"
-                      >
-                        Users
-                      </span>
-                      <div
-                        class="ant-select-selector"
-                      >
-                        <span
-                          class="ant-select-selection-search"
-                        >
-                          <input
-                            aria-autocomplete="list"
-                            aria-controls="rc_select_TEST_OR_SSR_list"
-                            aria-expanded="false"
-                            aria-haspopup="listbox"
-                            aria-owns="rc_select_TEST_OR_SSR_list"
-                            autocomplete="off"
-                            class="ant-select-selection-search-input"
-                            id="rc_select_TEST_OR_SSR"
-                            role="button"
-                            type="search"
-                            value=""
-                          />
-                        </span>
-                        <span
-                          class="ant-select-selection-item"
-                          title="Users"
-                        >
-                          Users
-                        </span>
-                      </div>
-                      <span
-                        aria-hidden="true"
-                        class="ant-select-arrow"
-                        style="user-select: none;"
-                        unselectable="on"
-                      >
-                        <span
-                          aria-label="down"
-                          class="anticon anticon-down ant-select-suffix"
-                          role="img"
-                        >
-                          <svg
-                            aria-hidden="true"
-                            data-icon="down"
-                            fill="currentColor"
-                            focusable="false"
-                            height="1em"
-                            viewBox="64 64 896 896"
-                            width="1em"
-                          >
-                            <path
-                              d="M884 256h-75c-5.1 0-9.9 2.5-12.9 6.6L512 654.2 227.9 262.6c-3-4.1-7.8-6.6-12.9-6.6h-75c-6.5 0-10.3 7.4-6.5 12.7l352.6 486.1c12.8 17.6 39 17.6 51.7 0l352.6-486.1c3.9-5.3.1-12.7-6.4-12.7z"
-                            />
-                          </svg>
-                        </span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `);
+       <div>
+         <div
+           class="css-dev-only-do-not-override-wwtqkl ant-app"
+           style="height: 100%;"
+         >
+           <div
+             aria-label="block-item-demo title"
+             class="nb-sortable-designer nb-block-item nb-form-item acss-gw2dva"
+             role="button"
+           >
+             <div
+               class="css-10bwjp4 ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-wwtqkl"
+             >
+               <div
+                 class="ant-formily-item-label"
+               >
+                 <div
+                   class="ant-formily-item-label-content"
+                 >
+                   <span>
+                     <label>
+                       demo title
+                     </label>
+                   </span>
+                 </div>
+                 <span
+                   class="ant-formily-item-colon"
+                 >
+                   :
+                 </span>
+               </div>
+               <div
+                 class="ant-formily-item-control"
+               >
+                 <div
+                   class="ant-formily-item-control-content"
+                 >
+                   <div
+                     class="ant-formily-item-control-content-component"
+                   >
+                     <div
+                       class="ant-select css-dev-only-do-not-override-wwtqkl ant-select-focused ant-select-single ant-select-show-arrow ant-select-show-search"
+                       data-testid="select-collection"
+                       role="button"
+                     >
+                       <span
+                         aria-live="polite"
+                         style="width: 0px; height: 0px; position: absolute; overflow: hidden; opacity: 0;"
+                       >
+                         Users
+                       </span>
+                       <div
+                         class="ant-select-selector"
+                       >
+                         <span
+                           class="ant-select-selection-search"
+                         >
+                           <input
+                             aria-autocomplete="list"
+                             aria-controls="rc_select_TEST_OR_SSR_list"
+                             aria-expanded="false"
+                             aria-haspopup="listbox"
+                             aria-owns="rc_select_TEST_OR_SSR_list"
+                             autocomplete="off"
+                             class="ant-select-selection-search-input"
+                             id="rc_select_TEST_OR_SSR"
+                             role="button"
+                             type="search"
+                             value=""
+                           />
+                         </span>
+                         <span
+                           class="ant-select-selection-item"
+                           title="Users"
+                         >
+                           Users
+                         </span>
+                       </div>
+                       <span
+                         aria-hidden="true"
+                         class="ant-select-arrow"
+                         style="user-select: none;"
+                         unselectable="on"
+                       >
+                         <span
+                           aria-label="down"
+                           class="anticon anticon-down ant-select-suffix"
+                           role="img"
+                         >
+                           <svg
+                             aria-hidden="true"
+                             data-icon="down"
+                             fill="currentColor"
+                             focusable="false"
+                             height="1em"
+                             viewBox="64 64 896 896"
+                             width="1em"
+                           >
+                             <path
+                               d="M884 256h-75c-5.1 0-9.9 2.5-12.9 6.6L512 654.2 227.9 262.6c-3-4.1-7.8-6.6-12.9-6.6h-75c-6.5 0-10.3 7.4-6.5 12.7l352.6 486.1c12.8 17.6 39 17.6 51.7 0l352.6-486.1c3.9-5.3.1-12.7-6.4-12.7z"
+                             />
+                           </svg>
+                         </span>
+                       </span>
+                     </div>
+                   </div>
+                 </div>
+               </div>
+             </div>
+           </div>
+         </div>
+       </div>
+     `);
   });
 
   it('read pretty', async () => {
@@ -180,61 +180,61 @@ describe('CollectionSelect', () => {
     expect(screen.getByText('Users')).toBeInTheDocument();
 
     expect(container).toMatchInlineSnapshot(`
-      <div>
-        <div
-          class="css-dev-only-do-not-override-wwtqkl ant-app"
-          style="height: 100%;"
-        >
-          <div
-            aria-label="block-item-demo title"
-            class="nb-sortable-designer nb-block-item nb-form-item acss-gw2dva"
-            role="button"
-          >
-            <div
-              class="css-r098lo ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-wwtqkl"
-            >
-              <div
-                class="ant-formily-item-label"
-              >
-                <div
-                  class="ant-formily-item-label-content"
-                >
-                  <span>
-                    <label>
-                      demo title
-                    </label>
-                  </span>
-                </div>
-                <span
-                  class="ant-formily-item-colon"
-                >
-                  :
-                </span>
-              </div>
-              <div
-                class="ant-formily-item-control"
-              >
-                <div
-                  class="ant-formily-item-control-content"
-                >
-                  <div
-                    class="ant-formily-item-control-content-component"
-                  >
-                    <div>
-                      <span
-                        class="ant-tag css-dev-only-do-not-override-wwtqkl"
-                      >
-                        Users
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `);
+       <div>
+         <div
+           class="css-dev-only-do-not-override-wwtqkl ant-app"
+           style="height: 100%;"
+         >
+           <div
+             aria-label="block-item-demo title"
+             class="nb-sortable-designer nb-block-item nb-form-item acss-gw2dva"
+             role="button"
+           >
+             <div
+               class="css-10bwjp4 ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-wwtqkl"
+             >
+               <div
+                 class="ant-formily-item-label"
+               >
+                 <div
+                   class="ant-formily-item-label-content"
+                 >
+                   <span>
+                     <label>
+                       demo title
+                     </label>
+                   </span>
+                 </div>
+                 <span
+                   class="ant-formily-item-colon"
+                 >
+                   :
+                 </span>
+               </div>
+               <div
+                 class="ant-formily-item-control"
+               >
+                 <div
+                   class="ant-formily-item-control-content"
+                 >
+                   <div
+                     class="ant-formily-item-control-content-component"
+                   >
+                     <div>
+                       <span
+                         class="ant-tag css-dev-only-do-not-override-wwtqkl"
+                       >
+                         Users
+                       </span>
+                     </div>
+                   </div>
+                 </div>
+               </div>
+             </div>
+           </div>
+         </div>
+       </div>
+     `);
   });
 
   it('read pretty: multiple', async () => {
