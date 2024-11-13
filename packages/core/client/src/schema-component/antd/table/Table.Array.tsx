@@ -11,7 +11,14 @@ import { MenuOutlined } from '@ant-design/icons';
 import { TinyColor } from '@ctrl/tinycolor';
 import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
-import { Schema, SchemaExpressionScopeContext, observer, useField, useFieldSchema } from '@formily/react';
+import {
+  RecursionField,
+  Schema,
+  SchemaExpressionScopeContext,
+  observer,
+  useField,
+  useFieldSchema,
+} from '@formily/react';
 import { Table, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import React, { useContext, useState } from 'react';
@@ -25,7 +32,6 @@ import {
   useRequest,
   useSchemaInitializerRender,
 } from '../../../';
-import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { useToken } from '../__builtins__';
 
 const isColumnComponent = (schema: Schema) => {
@@ -49,7 +55,7 @@ const useTableColumns = () => {
     }, [])
     .map((s: Schema) => {
       return {
-        title: <NocoBaseRecursionField name={s.name} schema={s} onlyRenderSelf />,
+        title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
         dataIndex: s.name,
         key: s.name,
         render: (v, record) => {
@@ -67,7 +73,7 @@ const useTableColumns = () => {
                     }
                   `}
                 >
-                  <NocoBaseRecursionField schema={s} name={record.__index || index} onlyRenderProperties />
+                  <RecursionField schema={s} name={record.__index || index} onlyRenderProperties />
                 </span>
               </RecordProvider>
             </RecordIndexProvider>

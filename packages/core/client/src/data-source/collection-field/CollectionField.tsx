@@ -11,7 +11,7 @@ import { connect, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useDynamicComponentProps } from '../../hoc/withDynamicSchemaProps';
 import { useComponent } from '../../schema-component';
-import { useCollectionField } from './CollectionFieldProvider';
+import { CollectionFieldProvider, useCollectionField } from './CollectionFieldProvider';
 
 const CollectionFieldInternalField = (props) => {
   const fieldSchema = useFieldSchema();
@@ -27,7 +27,12 @@ const CollectionFieldInternalField = (props) => {
 };
 
 export const CollectionField = connect((props) => {
-  return <CollectionFieldInternalField {...props} />;
+  const fieldSchema = useFieldSchema();
+  return (
+    <CollectionFieldProvider name={fieldSchema.name}>
+      <CollectionFieldInternalField {...props} />
+    </CollectionFieldProvider>
+  );
 });
 
 CollectionField.displayName = 'CollectionField';
