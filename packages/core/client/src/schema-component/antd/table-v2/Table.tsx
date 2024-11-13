@@ -13,7 +13,7 @@ import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sor
 import { css, cx } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
-import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
+import { RecursionField, Schema, SchemaOptionsContext, observer, useField, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
@@ -30,6 +30,7 @@ import {
   RecordProvider,
   useCollection,
   useCollectionParentRecordData,
+  useDataBlockProps,
   useDataBlockRequest,
   useFlag,
   useSchemaInitializerRender,
@@ -41,7 +42,7 @@ import { isNewRecord } from '../../../data-source/collection-record/isNewRecord'
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useSatisfiedActionValues } from '../../../schema-settings/LinkageRules/useActionValues';
 import { useToken } from '../__builtins__';
-import { SubFormProvider } from '../association-field/hooks';
+import { SubFormProvider, useAssociationFieldContext } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 
@@ -321,11 +322,18 @@ const usePaginationProps = (pagination1, pagination2) => {
     [JSON.stringify({ ...pagination1, ...pagination2 })],
   );
   const { total: totalCount, current, pageSize } = pagination || {};
+  const blockProps = useDataBlockProps();
+  const original = useAssociationFieldContext();
+  const { components } = useContext(SchemaOptionsContext);
+  const C = original?.fieldSchema?.['x-component-props']?.summary?.Component || blockProps?.summary?.Component;
   const showTotal = useCallback(
     (total) => {
+      if (components[C]) {
+        return React.createElement(components[C]);
+      }
       return t('Total {{count}} items', { count: total });
     },
-    [t, totalCount],
+    [components, C, t],
   );
   const result = useMemo(() => {
     if (totalCount) {
