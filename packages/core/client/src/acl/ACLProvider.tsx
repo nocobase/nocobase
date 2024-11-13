@@ -7,6 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+// 注意: 这行必须放到顶部，否则会导致 Data sources 页面报错，原因未知
+import { useBlockRequestContext } from '../block-provider/BlockProvider';
+
 import { Field } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import { omit } from 'lodash';
@@ -26,6 +29,9 @@ import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider'
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
 
 import { useApp } from '../application';
+
+// 注意: 必须要对 useBlockRequestContext 进行引用，否则会导致 Data sources 页面报错，原因未知
+useBlockRequestContext;
 
 export const ACLContext = createContext<any>({});
 ACLContext.displayName = 'ACLContext';

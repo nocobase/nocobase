@@ -130,7 +130,7 @@ const propertiesToReactElement = ({
 
         if (schema['x-component'] === 'CollectionField') {
           return (
-            <CollectionFieldProvider name={schema.name} key={`${index}-${name}`}>
+            <CollectionFieldProvider name={schema.name} schema={schema} key={`${index}-${name}`}>
               {isBool(propsRecursion) && propsRecursion ? (
                 <NocoBaseRecursionField
                   propsRecursion={true}
