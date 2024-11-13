@@ -11,6 +11,8 @@ import { createForm } from '@formily/core';
 import { Schema } from '@formily/react';
 import { Spin } from 'antd';
 import React, { memo, useMemo } from 'react';
+import { useRemoteCollectionManagerLoading } from '../../collection-manager/CollectionManagerProvider';
+import { LOADING_DELAY } from '../../variables/constants';
 import { useComponent, useSchemaComponentContext } from '../hooks';
 import { FormProvider } from './FormProvider';
 import { SchemaComponent } from './SchemaComponent';
@@ -61,13 +63,10 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
     },
   });
   const NotFoundComponent = useComponent(NotFoundPage);
+  const collectionManagerLoading = useRemoteCollectionManagerLoading();
 
-  if (loading || hidden) {
-    return (
-      <div style={{ textAlign: 'center', marginTop: 20 }}>
-        <Spin />
-      </div>
-    );
+  if (collectionManagerLoading || loading || hidden) {
+    return <Spin style={{ width: '100%', marginTop: 20 }} delay={LOADING_DELAY} />;
   }
 
   if (!schema || Object.keys(schema).length === 0) {

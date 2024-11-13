@@ -12,7 +12,7 @@ import { PageHeader as AntdPageHeader } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
 import { Schema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
-import { Button, Spin, Tabs } from 'antd';
+import { Button, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -27,7 +27,6 @@ import {
   useNavigateNoUpdate,
   useRouterBasename,
 } from '../../../application/CustomRouterContextProvider';
-import { useRemoteCollectionManagerLoading } from '../../../collection-manager/CollectionManagerProvider';
 import { useDocumentTitle } from '../../../document-title';
 import { useGlobalTheme } from '../../../global-theme';
 import { Icon } from '../../../icon';
@@ -276,10 +275,6 @@ const PageContent = memo(
     fieldSchema: Schema<any, any, any, any, any, any, any, any, any>;
     activeKey: string;
   }) => {
-    const collectionManagerLoading = useRemoteCollectionManagerLoading();
-
-    if (collectionManagerLoading) return <Spin style={{ width: '100%' }} />;
-
     if (!disablePageHeader && enablePageTabs) {
       return (
         <>
