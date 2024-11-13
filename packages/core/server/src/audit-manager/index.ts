@@ -244,10 +244,6 @@ export class AuditManager {
     const resourceUk: string = this.formatResourceUk(ctx);
 
     // 获取ip，优先使用X-Forwarded-For，如果没有则使用ctx.request.ip
-    ctx.log?.debug('audit log request header: ' + JSON.stringify(ctx.request.header));
-    ctx.log?.debug(
-      'audit log request header: X-Forwarded-For: ' + JSON.stringify(ctx.request.header['x-forwarded-for']),
-    );
     const ipvalues = ctx.request.header['x-forwarded-for'];
     let ipvalue = '';
     if (ipvalues instanceof Array) {
