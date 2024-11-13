@@ -15,6 +15,8 @@ export class ToManyInterface extends BaseInterface {
       return null;
     }
 
+    str = `${str}`.trim();
+
     const items = str.split(',');
 
     const { filterKey, targetCollection, transaction } = ctx;
@@ -28,7 +30,7 @@ export class ToManyInterface extends BaseInterface {
 
     // check if all items are found
     items.forEach((item) => {
-      if (!targetInstances.find((targetInstance) => targetInstance[filterKey] === item)) {
+      if (!targetInstances.find((targetInstance) => targetInstance[filterKey] == item)) {
         throw new Error(`"${item}" not found in ${targetCollection.model.name} ${filterKey}`);
       }
     });

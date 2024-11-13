@@ -7,12 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Field } from '@formily/core';
-import { connect, useField, useFieldSchema } from '@formily/react';
+import { connect, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useDynamicComponentProps } from '../../hoc/withDynamicSchemaProps';
 import { useComponent } from '../../schema-component';
-import { CollectionFieldOriginalContext, useCollectionField } from './CollectionFieldProvider';
+import { useCollectionField } from './CollectionFieldProvider';
 
 const CollectionFieldInternalField = (props) => {
   const fieldSchema = useFieldSchema();
@@ -28,13 +27,7 @@ const CollectionFieldInternalField = (props) => {
 };
 
 export const CollectionField = connect((props) => {
-  const fieldSchema = useFieldSchema();
-  const field = useField<Field>();
-  return (
-    <CollectionFieldOriginalContext.Provider value={{ fieldSchema, field }}>
-      <CollectionFieldInternalField {...props} />
-    </CollectionFieldOriginalContext.Provider>
-  );
+  return <CollectionFieldInternalField {...props} />;
 });
 
 CollectionField.displayName = 'CollectionField';
