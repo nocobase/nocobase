@@ -369,6 +369,10 @@ export class Collection<
     return this.fields.get(name);
   }
 
+  getFieldByField(field: string): Field {
+    return this.findField((f) => f.options.field === field);
+  }
+
   getFields() {
     return [...this.fields.values()];
   }
