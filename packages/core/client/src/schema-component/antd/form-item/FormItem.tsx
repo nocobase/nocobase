@@ -89,6 +89,9 @@ export const FormItem: any = withDynamicSchemaProps(
             css`
               .ant-formily-item-layout-horizontal {
                 max-width: 98%;
+                .ant-formily-item-control {
+                  max-width: 90%;
+                }
               }
             `,
           )}
