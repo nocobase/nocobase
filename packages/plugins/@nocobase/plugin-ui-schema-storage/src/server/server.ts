@@ -97,6 +97,8 @@ export class PluginUISchemaStorageServer extends Plugin {
       },
     });
 
+    this.app.auditManager.registerActions(['uiSchemas:remove', 'uiSchemas:insertAdjacent']);
+
     await this.importCollections(resolve(__dirname, 'collections'));
   }
 }
