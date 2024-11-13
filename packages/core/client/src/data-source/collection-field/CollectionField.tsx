@@ -93,6 +93,7 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
 
 export const CollectionField = connect((props) => {
   const fieldSchema = useFieldSchema();
+  const field = useField<Field>();
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback.Modal} onError={(err) => console.log(err)}>
       <CollectionFieldProvider name={fieldSchema.name}>
