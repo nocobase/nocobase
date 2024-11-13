@@ -260,11 +260,49 @@ describe('actions', () => {
     });
 
     it('should check username when signing up', async () => {
+      const res1 = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
+        username: '',
+      });
+      expect(res1.statusCode).toEqual(400);
+      expect(res1.error.text).toBe('Please enter a valid username');
       const res = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
         username: '@@',
       });
       expect(res.statusCode).toEqual(400);
       expect(res.error.text).toBe('Please enter a valid username');
+    });
+
+    it('should check email when signing up', async () => {
+      const repo = db.getRepository('authenticators');
+      await repo.update({
+        filter: {
+          name: 'basic',
+        },
+        values: {
+          options: {
+            public: {
+              allowSignUp: true,
+              signupForm: [{ field: 'email', show: true, required: true }],
+            },
+          },
+        },
+      });
+      const res1 = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
+        email: '',
+      });
+      expect(res1.statusCode).toEqual(400);
+      expect(res1.error.text).toBe('Please enter a valid email address');
+      const res2 = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
+        email: 'abc',
+      });
+      expect(res2.statusCode).toEqual(400);
+      expect(res2.error.text).toBe('Please enter a valid email address');
+      const res3 = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
+        email: 'test1@nocobase.com',
+        password: '123',
+        confirm_password: '123',
+      });
+      expect(res3.statusCode).toEqual(200);
     });
 
     it('should check password when signing up', async () => {
