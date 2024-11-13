@@ -37,9 +37,6 @@ const formItemWrapCss = css`
   .ant-description-textarea img {
     max-width: 100%;
   }
-  .ant-formily-item-layout-horizontal .ant-formily-item-label-wrap {
-    max-width: 98%;
-  }
 `;
 
 const formItemLabelCss = css`
@@ -86,7 +83,16 @@ export const FormItem: any = withDynamicSchemaProps(
 
     return (
       <CollectionFieldProvider allowNull={true}>
-        <BlockItem className={'nb-form-item'}>
+        <BlockItem
+          className={cx(
+            'nb-form-item',
+            css`
+              .ant-formily-item-layout-horizontal {
+                max-width: 98%;
+              }
+            `,
+          )}
+        >
           <ACLCollectionFieldProvider>
             <Item className={className} {...props} extra={extra} wrapperStyle={wrapperStyle} />
           </ACLCollectionFieldProvider>
