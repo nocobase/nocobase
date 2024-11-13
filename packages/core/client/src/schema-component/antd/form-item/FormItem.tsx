@@ -37,6 +37,9 @@ const formItemWrapCss = css`
   .ant-description-textarea img {
     max-width: 100%;
   }
+  .ant-formily-item-layout-horizontal .ant-formily-item-label-wrap {
+    max-width: 98%;
+  }
 `;
 
 const formItemLabelCss = css`
