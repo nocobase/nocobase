@@ -13,7 +13,7 @@ import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sor
 import { css, cx } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
-import { RecursionField, Schema, SchemaOptionsContext, observer, useField, useFieldSchema } from '@formily/react';
+import { Schema, SchemaOptionsContext, observer, useField, useFieldSchema } from '@formily/react';
 import { action, raw } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
@@ -134,7 +134,14 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
         }
 
         return {
-          title: <NocoBaseRecursionField name={columnSchema.name} schema={columnSchema} onlyRenderSelf />,
+          title: (
+            <NocoBaseRecursionField
+              name={columnSchema.name}
+              schema={columnSchema}
+              onlyRenderSelf
+              isUseFormilyField={false}
+            />
+          ),
           dataIndex,
           key: columnSchema.name,
           sorter: columnSchema['x-component-props']?.['sorter'],
@@ -149,7 +156,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
                 <SubFormProvider value={{ value: record, collection, fieldSchema: schema.parent }}>
                   <ColumnFieldProvider schema={columnSchema} basePath={basePath}>
                     <span role="button" className={schemaToolbarBigger}>
-                      <RecursionField basePath={basePath} schema={columnSchema} onlyRenderProperties />
+                      <NocoBaseRecursionField basePath={basePath} schema={columnSchema} onlyRenderProperties />
                     </span>
                   </ColumnFieldProvider>
                 </SubFormProvider>
@@ -169,6 +176,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
                     !isPopupVisibleControlledByURL() ||
                     schema['x-component'] !== 'Action.Container'
                   }
+                  isUseFormilyField={false}
                 />
               </span>
             );

@@ -39,6 +39,7 @@ interface INocoBaseRecursionFieldProps extends IRecursionFieldProps {
   values?: Record<string, any>;
 
   /**
+   * @default true
    * Whether to use Formily Field class - performance will be reduced but provides better compatibility with Formily
    */
   isUseFormilyField?: boolean;
@@ -189,69 +190,75 @@ const propertiesToReactElement = ({
  * Modified to better adapt to NocoBase's needs
  */
 export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = React.memo((props) => {
+  const {
+    schema,
+    name,
+    onlyRenderProperties,
+    onlyRenderSelf,
+    mapProperties,
+    filterProperties,
+    propsRecursion,
+    values,
+    isUseFormilyField = true,
+    uiSchema,
+  } = props;
   const basePath = useBasePath(props);
-  const fieldSchema = createSchemaInstance(props.schema);
+  const fieldSchema = createSchemaInstance(schema);
   const { uiSchema: collectionFiledUiSchema } = useCollectionField() || {};
 
   // Merge default Schema of collection fields
   const mergedFieldSchema = useMemo(() => {
-    if (props.uiSchema) {
-      return createMergedSchemaInstance(fieldSchema, props.uiSchema, props.onlyRenderProperties);
+    if (uiSchema) {
+      return createMergedSchemaInstance(fieldSchema, uiSchema, onlyRenderProperties);
     }
 
     if (collectionFiledUiSchema) {
-      return createMergedSchemaInstance(fieldSchema, collectionFiledUiSchema, props.onlyRenderProperties);
+      return createMergedSchemaInstance(fieldSchema, collectionFiledUiSchema, onlyRenderProperties);
     }
 
     return fieldSchema;
-  }, [collectionFiledUiSchema, fieldSchema, props.onlyRenderProperties, props.uiSchema]);
+  }, [collectionFiledUiSchema, fieldSchema, onlyRenderProperties, uiSchema]);
 
   const fieldProps = useFieldProps(mergedFieldSchema);
 
   const renderProperties = (field?: GeneralField) => {
-    if (props.onlyRenderSelf) return;
+    if (onlyRenderSelf) return;
     return propertiesToReactElement({
       schema: mergedFieldSchema,
       field,
       basePath,
-      mapProperties: props.mapProperties,
-      filterProperties: props.filterProperties,
-      propsRecursion: props.propsRecursion,
-      values: props.values,
-      isUseFormilyField: props.isUseFormilyField,
+      mapProperties,
+      filterProperties,
+      propsRecursion,
+      values,
+      isUseFormilyField,
     });
   };
 
   const render = () => {
-    if (!isValid(props.name)) return renderProperties();
+    if (!isValid(name)) return renderProperties();
     if (mergedFieldSchema.type === 'object') {
-      if (props.onlyRenderProperties) return renderProperties();
+      if (onlyRenderProperties) return renderProperties();
       return (
-        <ObjectField {...fieldProps} name={props.name} basePath={basePath}>
+        <ObjectField {...fieldProps} name={name} basePath={basePath}>
           {renderProperties}
         </ObjectField>
       );
     } else if (mergedFieldSchema.type === 'array') {
-      return <ArrayField {...fieldProps} name={props.name} basePath={basePath} />;
+      return <ArrayField {...fieldProps} name={name} basePath={basePath} />;
     } else if (mergedFieldSchema.type === 'void') {
-      if (props.onlyRenderProperties) return renderProperties();
+      if (onlyRenderProperties) return renderProperties();
       return (
-        <VoidField {...fieldProps} name={props.name} basePath={basePath}>
+        <VoidField {...fieldProps} name={name} basePath={basePath}>
           {renderProperties}
         </VoidField>
       );
     }
 
-    return props.isUseFormilyField ? (
-      <Field {...fieldProps} name={props.name} basePath={basePath} />
+    return isUseFormilyField ? (
+      <Field {...fieldProps} name={name} basePath={basePath} />
     ) : (
-      <NocoBaseField
-        name={props.name}
-        value={props.values}
-        initialValue={props.values}
-        basePath={basePath}
-        schema={mergedFieldSchema}
-      />
+      <NocoBaseField name={name} value={values} initialValue={values} basePath={basePath} schema={mergedFieldSchema} />
     );
   };
 
