@@ -8,7 +8,7 @@
  */
 
 import { Field } from '@formily/core';
-import { observer, Schema, useField, useFieldSchema, useForm } from '@formily/react';
+import { observer, RecursionField, Schema, useField, useFieldSchema, useForm } from '@formily/react';
 import { isPortalInBody } from '@nocobase/utils/client';
 import { App, Button } from 'antd';
 import classnames from 'classnames';
@@ -23,7 +23,6 @@ import {
   useCollectionRecordData,
   useDataBlockRequestGetter,
 } from '../../../data-source';
-import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { Icon } from '../../../icon';
 import { TreeRecordProvider } from '../../../modules/blocks/data-blocks/table/TreeRecordProvider';
@@ -301,7 +300,7 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
         fieldSchema={fieldSchema}
         setSubmitted={setSubmitted}
       >
-        {popover && <NocoBaseRecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
+        {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
         {!popover && <RenderButton {...buttonProps} />}
         <VariablePopupRecordProvider>{!popover && props.children}</VariablePopupRecordProvider>
         {element}

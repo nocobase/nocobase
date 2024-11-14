@@ -8,12 +8,11 @@
  */
 
 import { cx } from '@emotion/css';
-import { observer, useFieldSchema } from '@formily/react';
+import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { Space, SpaceProps, theme } from 'antd';
 import React, { CSSProperties, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { useSchemaInitializerRender } from '../../../application';
-import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { DndContext } from '../../common';
 import { useDesignable, useProps } from '../../hooks';
@@ -82,7 +81,7 @@ export const ActionBar = withDynamicSchemaProps(
                 <div>
                   <Space {...spaceProps} style={{ flexWrap: 'wrap', ...(spaceProps?.style || {}) }}>
                     {fieldSchema.mapProperties((schema, key) => {
-                      return <NocoBaseRecursionField key={key} name={key} schema={schema} />;
+                      return <RecursionField key={key} name={key} schema={schema} />;
                     })}
                   </Space>
                 </div>
@@ -129,7 +128,7 @@ export const ActionBar = withDynamicSchemaProps(
                 if (schema['x-align'] !== 'left') {
                   return null;
                 }
-                return <NocoBaseRecursionField key={key} name={key} schema={schema} />;
+                return <RecursionField key={key} name={key} schema={schema} />;
               })}
             </Space>
             <Space {...spaceProps} style={{ flexWrap: 'wrap', ...(spaceProps?.style || {}) }}>
@@ -137,7 +136,7 @@ export const ActionBar = withDynamicSchemaProps(
                 if (schema['x-align'] === 'left') {
                   return null;
                 }
-                return <NocoBaseRecursionField key={key} name={key} schema={schema} />;
+                return <RecursionField key={key} name={key} schema={schema} />;
               })}
             </Space>
           </DndContext>

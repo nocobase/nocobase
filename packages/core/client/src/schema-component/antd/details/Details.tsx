@@ -7,12 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useFieldSchema } from '@formily/react';
+import { RecursionField, useFieldSchema } from '@formily/react';
 import { Empty } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { useDataBlockRequestData } from '../../../data-source';
-import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { withSkeletonComponent } from '../../../hoc/withSkeletonComponent';
 import { FormV2 } from '../form-v2';
@@ -28,7 +27,7 @@ export const Details = withDynamicSchemaProps(
       return (
         <>
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
-          <NocoBaseRecursionField schema={schema.properties.pagination} name="pagination" />
+          <RecursionField schema={schema.properties.pagination} name="pagination" />
         </>
       );
     }

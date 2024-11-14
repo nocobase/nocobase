@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { NocoBaseRecursionField, SchemaComponentOptions, useCurrentRoles } from '@nocobase/client';
+import { RecursionField } from '@formily/react';
+import { SchemaComponentOptions, useCurrentRoles } from '@nocobase/client';
 import React from 'react';
 import { ExpiresSelect } from './ExpiresSelect';
 import { configurationSchema } from './schema';
@@ -16,7 +17,7 @@ export const Configuration = () => {
   const currentRoles = useCurrentRoles();
   return (
     <SchemaComponentOptions scope={{ currentRoles }} components={{ ExpiresSelect }}>
-      <NocoBaseRecursionField schema={configurationSchema} />
+      <RecursionField schema={configurationSchema} />
     </SchemaComponentOptions>
   );
 };

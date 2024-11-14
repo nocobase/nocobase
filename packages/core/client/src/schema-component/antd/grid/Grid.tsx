@@ -9,7 +9,7 @@
 
 import { TinyColor } from '@ctrl/tinycolor';
 import { useDndContext, useDndMonitor, useDraggable, useDroppable } from '@dnd-kit/core';
-import { ISchema, Schema, observer, useField, useFieldSchema } from '@formily/react';
+import { ISchema, RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import cls from 'classnames';
 import _ from 'lodash';
@@ -17,7 +17,6 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { SchemaComponent, useDesignable, useSchemaInitializerRender } from '../../../';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { FilterBlockProvider } from '../../../filter-provider/FilterProvider';
-import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { DndContext, DndContextProps } from '../../common/dnd-context';
 import { useToken } from '../__builtins__';
 import useStyles from './Grid.style';
@@ -376,7 +375,7 @@ export const Grid: any = observer(
                         {distributedValue ? (
                           <SchemaComponent name={schema.name} schema={schema} distributed />
                         ) : (
-                          <NocoBaseRecursionField name={schema.name} schema={schema} isUseFormilyField />
+                          <RecursionField name={schema.name} schema={schema} />
                         )}
                         {showDivider ? (
                           <RowDivider
@@ -444,7 +443,7 @@ Grid.Row = observer(
           {cols.map((schema, index) => {
             return (
               <React.Fragment key={index}>
-                <NocoBaseRecursionField name={schema.name} schema={schema} isUseFormilyField />
+                <RecursionField name={schema.name} schema={schema} />
                 {showDivider && (
                   <ColDivider
                     cols={cols}
