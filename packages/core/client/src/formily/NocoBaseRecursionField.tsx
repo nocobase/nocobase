@@ -131,29 +131,31 @@ const propertiesToReactElement = ({
 
         if (schema['x-component'] === 'CollectionField') {
           return (
-            <CollectionFieldProvider name={schema.name} schema={schema} key={`${index}-${name}`}>
-              {isBool(propsRecursion) && propsRecursion ? (
-                <NocoBaseRecursionField
-                  propsRecursion={true}
-                  filterProperties={filterProperties}
-                  mapProperties={mapProperties}
-                  schema={schema}
-                  name={name}
-                  basePath={base}
-                  values={_.get(values, name)}
-                  isUseFormilyField={isUseFormilyField}
-                />
-              ) : (
-                <NocoBaseRecursionField
-                  schema={schema}
-                  name={name}
-                  basePath={base}
-                  values={_.get(values, name)}
-                  filterProperties={filterProperties}
-                  isUseFormilyField={isUseFormilyField}
-                />
-              )}
-            </CollectionFieldProvider>
+            <IsInNocoBaseRecursionFieldContext.Provider value={true} key={`${index}-${name}`}>
+              <CollectionFieldProvider name={schema.name} schema={schema}>
+                {isBool(propsRecursion) && propsRecursion ? (
+                  <NocoBaseRecursionField
+                    propsRecursion={true}
+                    filterProperties={filterProperties}
+                    mapProperties={mapProperties}
+                    schema={schema}
+                    name={name}
+                    basePath={base}
+                    values={_.get(values, name)}
+                    isUseFormilyField={isUseFormilyField}
+                  />
+                ) : (
+                  <NocoBaseRecursionField
+                    schema={schema}
+                    name={name}
+                    basePath={base}
+                    values={_.get(values, name)}
+                    filterProperties={filterProperties}
+                    isUseFormilyField={isUseFormilyField}
+                  />
+                )}
+              </CollectionFieldProvider>
+            </IsInNocoBaseRecursionFieldContext.Provider>
           );
         }
 
@@ -183,6 +185,16 @@ const propertiesToReactElement = ({
       })}
     </Fragment>
   );
+};
+
+const IsInNocoBaseRecursionFieldContext = React.createContext(false);
+
+/**
+ * @internal
+ * Note: Only suitable for use within the CollectionField component
+ */
+export const useIsInNocoBaseRecursionFieldContext = () => {
+  return React.useContext(IsInNocoBaseRecursionFieldContext);
 };
 
 /**
