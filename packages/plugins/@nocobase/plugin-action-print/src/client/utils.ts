@@ -8,11 +8,15 @@
  */
 
 import { useDetailsBlockContext, useFormBlockContext } from '@nocobase/client';
-import { useReactToPrint } from 'react-to-print';
-
+// import { useReactToPrint } from 'react-to-print';
+import { useImported } from 'react-imported-component';
 export const useDetailPrintActionProps = () => {
   const context = useFormBlockContext();
   const { formBlockRef } = useDetailsBlockContext();
+  const { imported: useReactToPrint, loading } = useImported<any>(
+    () => import('react-to-print'),
+    (module) => module.useReactToPrint,
+  );
   const printHandler = useReactToPrint({
     content: () => {
       const content = context?.formBlockRef?.current || formBlockRef?.current;
@@ -33,6 +37,11 @@ export const useDetailPrintActionProps = () => {
         }
       }`,
   });
+  if (loading) {
+    return {
+      onClick: async () => {},
+    };
+  }
   return {
     async onClick() {
       printHandler();

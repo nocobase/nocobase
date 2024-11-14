@@ -7,9 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Bar as G2PlotBar } from '@ant-design/plots';
 import { G2PlotChart } from './g2plot';
 import { ChartType } from '../chart';
+import { createLazyComponents } from '@nocobase/client/src/lazy-helper';
+// import { Bar as G2PlotBar } from '@ant-design/plots';
+const { Bar: G2PlotBar } = createLazyComponents(() => import('@ant-design/plots'), 'Bar');
 
 export class Bar extends G2PlotChart {
   constructor() {

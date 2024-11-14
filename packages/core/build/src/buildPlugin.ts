@@ -30,6 +30,7 @@ import {
   getSourcePackages,
 } from './utils/buildPluginUtils';
 import { getDepPkgPath, getDepsConfig } from './utils/getDepsConfig';
+import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
 
 const validExts = ['.ts', '.tsx', '.js', '.jsx', '.mjs'];
 const serverGlobalFiles: string[] = ['src/**', '!src/client/**', ...globExcludeFiles];
@@ -406,6 +407,18 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
           use: ['@svgr/webpack'],
         },
         {
+          test: /\.(?:js|mjs|cjs|ts|tsx)$/,
+          exclude: /node_modules/,
+          use: {
+            loader: 'babel-loader',
+            options: {
+              targets: 'defaults',
+              // presets: [['@babel/preset-env']],
+              plugins: ['react-imported-component/babel'],
+            },
+          },
+        },
+        {
           test: /\.jsx$/,
           exclude: /[\\/]node_modules[\\/]/,
           loader: 'builtin:swc-loader',
@@ -455,6 +468,9 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
       new rspack.DefinePlugin({
         'process.env.NODE_ENV': JSON.stringify('production'),
       }),
+      // new RsdoctorRspackPlugin({
+      //   // plugin options
+      // }),
     ],
     node: {
       global: true,

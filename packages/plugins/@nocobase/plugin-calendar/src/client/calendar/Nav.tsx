@@ -11,14 +11,21 @@ import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { observer } from '@formily/react';
 import { Button } from 'antd';
 import React, { useContext } from 'react';
-import { Navigate } from 'react-big-calendar/dist/react-big-calendar.esm';
 import { CalendarToolbarContext } from './context';
 import { useDesignable } from '@nocobase/client';
+import { useImported } from 'react-imported-component';
 
 export const Nav = observer(
   () => {
+    const { imported: Navigate, loading: importing } = useImported(
+      () => import('react-big-calendar/dist/react-big-calendar.esm'),
+      (module) => module.Navigate,
+    );
     const { DesignableBar } = useDesignable();
     const { onNavigate } = useContext(CalendarToolbarContext);
+    if (importing) {
+      return null;
+    }
     return (
       <Button.Group>
         <Button icon={<LeftOutlined />} onClick={() => onNavigate(Navigate.PREVIOUS)}></Button>

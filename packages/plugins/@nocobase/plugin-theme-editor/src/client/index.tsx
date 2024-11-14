@@ -10,12 +10,22 @@
 import { Plugin, createStyles, defaultTheme, useCurrentUserSettingsMenu, useGlobalTheme } from '@nocobase/client';
 import { ConfigProvider } from 'antd';
 import _ from 'lodash';
-import React, { useEffect, useMemo } from 'react';
-import InitializeTheme from './components/InitializeTheme';
-import { ThemeEditorProvider } from './components/ThemeEditorProvider';
-import ThemeList from './components/ThemeList';
-import { ThemeListProvider } from './components/ThemeListProvider';
-import CustomTheme from './components/theme-editor';
+import React, { useEffect, useMemo, lazy } from 'react';
+// import InitializeTheme from './components/InitializeTheme';
+// import { ThemeEditorProvider } from './components/ThemeEditorProvider';
+// import ThemeList from './components/ThemeList';
+// import { ThemeListProvider } from './components/ThemeListProvider';
+// import CustomTheme from './components/theme-editor';
+import { createLazyComponents } from '@nocobase/client/src/lazy-helper';
+const InitializeTheme = lazy(() => import('./components/InitializeTheme'));
+const { ThemeEditorProvider } = createLazyComponents(
+  () => import('./components/ThemeEditorProvider'),
+  'ThemeEditorProvider',
+);
+const ThemeList = lazy(() => import('./components/ThemeList'));
+const { ThemeListProvider } = createLazyComponents(() => import('./components/ThemeListProvider'), 'ThemeListProvider');
+const CustomTheme = lazy(() => import('./components/theme-editor'));
+
 import { useThemeSettings } from './hooks/useThemeSettings';
 import { NAMESPACE } from './locale';
 

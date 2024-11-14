@@ -21,7 +21,7 @@ import qs from 'qs';
 import { ChangeEvent, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavigateFunction } from 'react-router-dom';
-import { useReactToPrint } from 'react-to-print';
+import { useImported } from 'react-imported-component';
 import {
   AssociationFilter,
   useCollection,
@@ -52,6 +52,7 @@ import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../B
 import { useOperators } from '../CollectOperators';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
+import type { IReactToPrintProps } from 'react-to-print';
 
 export * from './useBlockHeightProps';
 export * from './useDataBlockParentRecord';
@@ -1094,6 +1095,10 @@ export const useDisassociateActionProps = () => {
 
 export const useDetailPrintActionProps = () => {
   const { formBlockRef } = useFormBlockContext();
+  const { imported: useReactToPrint, loading } = useImported<any>(
+    () => import('react-to-print'),
+    (module) => module.useReactToPrint,
+  );
 
   const printHandler = useReactToPrint({
     content: () => formBlockRef.current,
@@ -1106,6 +1111,11 @@ export const useDetailPrintActionProps = () => {
         }
       }`,
   });
+  if (loading) {
+    return {
+      onClick: async () => {},
+    };
+  }
   return {
     async onClick() {
       printHandler();
