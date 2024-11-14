@@ -11,15 +11,43 @@ import { Plugin } from '@nocobase/client';
 import PluginACLClient from '@nocobase/plugin-acl/client';
 import { uid } from '@nocobase/utils/client';
 import React from 'react';
-import { DatabaseConnectionProvider } from './DatabaseConnectionProvider';
+import { createLazyComponents } from '@nocobase/client';
+// import { DatabaseConnectionProvider } from './DatabaseConnectionProvider';
+const { DatabaseConnectionProvider } = createLazyComponents(
+  () => import('./DatabaseConnectionProvider'),
+  'DatabaseConnectionProvider',
+);
+
 import { ThirdDataSource } from './ThridDataSource';
-import { BreadcumbTitle } from './component/BreadcumbTitle';
-import { CollectionManagerPage } from './component/CollectionsManager';
-import { DatabaseConnectionManagerPane } from './component/DatabaseConnectionManager';
-import { MainDataSourceManager } from './component/MainDataSourceManager';
-import { DataSourcePermissionManager } from './component/PermissionManager';
+// import { BreadcumbTitle } from './component/BreadcumbTitle';
+const { BreadcumbTitle } = createLazyComponents(() => import('./component/BreadcumbTitle'), 'BreadcumbTitle');
+
+// import { CollectionManagerPage } from './component/CollectionsManager';
+const { CollectionManagerPage } = createLazyComponents(
+  () => import('./component/CollectionsManager'),
+  'CollectionManagerPage',
+);
+// import { DatabaseConnectionManagerPane } from './component/DatabaseConnectionManager';
+const { DatabaseConnectionManagerPane } = createLazyComponents(
+  () => import('./component/DatabaseConnectionManager'),
+  'DatabaseConnectionManagerPane',
+);
+// import { MainDataSourceManager } from './component/MainDataSourceManager';
+const { MainDataSourceManager } = createLazyComponents(
+  () => import('./component/MainDataSourceManager'),
+  'MainDataSourceManager',
+);
+// import { DataSourcePermissionManager } from './component/PermissionManager';
+const { DataSourcePermissionManager } = createLazyComponents(
+  () => import('./component/PermissionManager'),
+  'DataSourcePermissionManager',
+);
 import { NAMESPACE } from './locale';
-import { CollectionMainProvider } from './component/MainDataSourceManager/CollectionMainProvider';
+// import { CollectionMainProvider } from './component/MainDataSourceManager/CollectionMainProvider';
+const { CollectionMainProvider } = createLazyComponents(
+  () => import('./component/MainDataSourceManager/CollectionMainProvider'),
+  'CollectionMainProvider',
+);
 
 export class PluginDataSourceManagerClient extends Plugin {
   types = new Map();

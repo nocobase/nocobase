@@ -16,7 +16,7 @@ import React, { useEffect, useMemo, lazy } from 'react';
 // import ThemeList from './components/ThemeList';
 // import { ThemeListProvider } from './components/ThemeListProvider';
 // import CustomTheme from './components/theme-editor';
-import { createLazyComponents } from '@nocobase/client/src/lazy-helper';
+import { createLazyComponents } from '@nocobase/client';
 const InitializeTheme = lazy(() => import('./components/InitializeTheme'));
 const { ThemeEditorProvider } = createLazyComponents(
   () => import('./components/ThemeEditorProvider'),

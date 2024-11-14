@@ -8,7 +8,7 @@
  */
 
 import React, { ComponentType, lazy } from 'react';
-import { get } from 'lodash-es';
+import { get } from 'lodash';
 import { useImported } from 'react-imported-component';
 
 export function createLazyComponents<M extends ComponentType<any>>(

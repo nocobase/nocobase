@@ -9,7 +9,7 @@
 
 import { G2PlotChart } from './g2plot';
 import { ChartType } from '../chart';
-import { createLazyComponents } from '@nocobase/client/src/lazy-helper';
+import { createLazyComponents } from '@nocobase/client';
 // import { Bar as G2PlotBar } from '@ant-design/plots';
 const { Bar: G2PlotBar } = createLazyComponents(() => import('@ant-design/plots'), 'Bar');
 

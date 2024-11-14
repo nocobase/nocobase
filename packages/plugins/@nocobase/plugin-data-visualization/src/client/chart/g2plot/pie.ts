@@ -11,7 +11,7 @@ import { G2PlotChart } from './g2plot';
 // import { Pie as G2Pie } from '@ant-design/plots';
 import { ChartType, RenderProps } from '../chart';
 
-import { createLazyComponents } from '@nocobase/client/src/lazy-helper';
+import { createLazyComponents } from '@nocobase/client';
 const { Pie: G2Pie } = createLazyComponents(() => import('@ant-design/plots'), 'Pie');
 
 export class Pie extends G2PlotChart {

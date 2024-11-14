@@ -10,7 +10,7 @@
 import { G2PlotChart } from './g2plot';
 import { ChartType, RenderProps } from '../chart';
 import lodash from 'lodash';
-import { createLazyComponents } from '@nocobase/client/src/lazy-helper';
+import { createLazyComponents } from '@nocobase/client';
 
 // import { DualAxes as G2DualAxes } from '@ant-design/plots';
 const { DualAxes: G2DualAxes } = createLazyComponents(() => import('@ant-design/plots'), 'DualAxes');

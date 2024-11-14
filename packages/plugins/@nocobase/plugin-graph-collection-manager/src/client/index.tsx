@@ -10,7 +10,7 @@
 import { Plugin } from '@nocobase/client';
 // import { GraphCollectionPane } from './GraphCollectionShortcut';
 import { NAMESPACE } from './locale';
-import { createLazyComponents } from '@nocobase/client/src/lazy-helper';
+import { createLazyComponents } from '@nocobase/client';
 
 const { GraphCollectionPane } = createLazyComponents(() => import('./GraphCollectionShortcut'), 'GraphCollectionPane');
 export class PluginGraphCollectionPlugin extends Plugin {
