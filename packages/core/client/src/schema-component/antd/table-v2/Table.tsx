@@ -26,8 +26,8 @@ import { useTranslation } from 'react-i18next';
 import { useInView } from 'react-intersection-observer';
 import { DndContext, isBulkEditAction, useDesignable, usePopupSettings, useTableSize } from '../..';
 import {
-  CollectionRecordProvider,
   RecordIndexProvider,
+  RecordProvider,
   useCollection,
   useCollectionParentRecordData,
   useDataBlockProps,
@@ -537,11 +537,11 @@ const BodyRowComponent = React.memo(
     const parentRecordData = useCollectionParentRecordData();
 
     return (
-      <CollectionRecordProvider isNew={isNewRecord(record)} record={record} parentRecord={parentRecordData}>
+      <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
         <RecordIndexProvider index={record?.__index || rowIndex}>
           <SortableRow {...props} />
         </RecordIndexProvider>
-      </CollectionRecordProvider>
+      </RecordProvider>
     );
   },
 );
