@@ -7,13 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RecursionField, useField, useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import _ from 'lodash';
 import React, { FC, Fragment, useEffect, useRef, useState } from 'react';
 import { useDesignable } from '../../';
 import { WithoutTableFieldResource } from '../../../block-provider';
 import { CollectionRecordProvider, useCollectionManager, useCollectionRecordData } from '../../../data-source';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { useOpenModeContext } from '../../../modules/popup/OpenModeProvider';
 import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { useCompile } from '../../hooks';
@@ -270,7 +271,7 @@ export const ReadPrettyInternalViewer: React.FC<ReadPrettyInternalViewerProps> =
     // The recordData here is only provided when the popup is opened, not the current row record
     <VariablePopupRecordProvider>
       <WithoutTableFieldResource.Provider value={true}>
-        <RecursionField
+        <NocoBaseRecursionField
           schema={fieldSchema}
           onlyRenderProperties
           basePath={field.address}
