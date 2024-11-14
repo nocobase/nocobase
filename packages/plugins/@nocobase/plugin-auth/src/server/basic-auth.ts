@@ -50,6 +50,30 @@ export class BasicAuth extends BaseAuth {
     return user;
   }
 
+  private verfiySignupParams(values: any) {
+    const options = this.authenticator.options?.public || {};
+    let { signupForm } = options;
+    if (!(signupForm?.length && signupForm.some((item: any) => item.show && item.required))) {
+      signupForm = [{ field: 'username', show: true, required: true }];
+    }
+    const { username, email } = values;
+    const usernameSetting = signupForm.find((item: any) => item.field === 'username');
+    if (usernameSetting && usernameSetting.show) {
+      if ((username && !this.validateUsername(username)) || (usernameSetting.required && !username)) {
+        throw new Error('Please enter a valid username');
+      }
+    }
+    const emailSetting = signupForm.find((item: any) => item.field === 'email');
+    if (emailSetting && emailSetting.show) {
+      if (email && !/^[\w-]+(\.[\w-]+)*@[\w-]+(\.[\w-]+)+$/.test(email)) {
+        throw new Error('Please enter a valid email address');
+      }
+      if (emailSetting.required && !email) {
+        throw new Error('Please enter a valid email address');
+      }
+    }
+  }
+
   async signUp() {
     const ctx = this.ctx;
     const options = this.authenticator.options?.public || {};
@@ -58,9 +82,11 @@ export class BasicAuth extends BaseAuth {
     }
     const User = ctx.db.getRepository('users');
     const { values } = ctx.action.params;
-    const { username, password, confirm_password } = values;
-    if (!this.validateUsername(username)) {
-      ctx.throw(400, ctx.t('Please enter a valid username', { ns: namespace }));
+    const { username, email, password, confirm_password } = values;
+    try {
+      this.verfiySignupParams(values);
+    } catch (error) {
+      ctx.throw(400, this.ctx.t(error.message, { ns: namespace }));
     }
     if (!password) {
       ctx.throw(400, ctx.t('Please enter a password', { ns: namespace }));
@@ -68,7 +94,7 @@ export class BasicAuth extends BaseAuth {
     if (password !== confirm_password) {
       ctx.throw(400, ctx.t('The password is inconsistent, please re-enter', { ns: namespace }));
     }
-    const user = await User.create({ values: { username, password } });
+    const user = await User.create({ values: { username, email, password } });
     return user;
   }
 
