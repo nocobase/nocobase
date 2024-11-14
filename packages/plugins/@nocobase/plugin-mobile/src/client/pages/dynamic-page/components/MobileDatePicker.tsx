@@ -66,6 +66,8 @@ const MobileDateTimePicker = connect(
           />
         </div>
         <DatePicker
+          cancelText={t('Cancel')}
+          confirmText={t('Confirm')}
           visible={visible}
           title={<a onClick={handleClear}>{t('Clear')}</a>}
           onClose={() => {
