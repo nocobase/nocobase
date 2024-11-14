@@ -108,13 +108,12 @@ const CollectionFieldInternalField = (props) => {
 export const CollectionField = connect((props) => {
   const fieldSchema = useFieldSchema();
   const isInNocoBaseRecursionField = useIsInNocoBaseRecursionFieldContext();
-  return (
+
+  return isInNocoBaseRecursionField ? (
+    <CollectionFieldInternalField {...props} />
+  ) : (
     <CollectionFieldProvider name={fieldSchema.name}>
-      {isInNocoBaseRecursionField ? (
-        <CollectionFieldInternalField {...props} />
-      ) : (
-        <CollectionFieldInternalField_deprecated {...props} />
-      )}
+      <CollectionFieldInternalField_deprecated {...props} />
     </CollectionFieldProvider>
   );
 });
