@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { IRecursionFieldProps, ISchemaFieldProps, RecursionField, Schema } from '@formily/react';
+import { IRecursionFieldProps, ISchemaFieldProps, Schema } from '@formily/react';
 import { useUpdate } from 'ahooks';
 import React, { memo, useContext, useMemo } from 'react';
+import { NocoBaseRecursionField } from '../../formily/NocoBaseRecursionField';
 import { SchemaComponentContext } from '../context';
 import { SchemaComponentOptions } from './SchemaComponentOptions';
 
@@ -67,7 +68,7 @@ const RecursionSchemaComponent = memo((props: ISchemaFieldProps & SchemaComponen
   return (
     <SchemaComponentContext.Provider value={value}>
       <SchemaComponentOptions inherit components={components} scope={scope}>
-        <RecursionField {...others} schema={schema} />
+        <NocoBaseRecursionField {...others} schema={schema} isUseFormilyField />
       </SchemaComponentOptions>
     </SchemaComponentContext.Provider>
   );
