@@ -72,7 +72,7 @@ class NocoBaseField<
     this.validator = this.props.validator;
     this.required = this.props.required || !!this.props.schema?.required;
     this.content = compile(this.props.content || this.props.schema?.['x-content']);
-    this.initialValue = this.props.initialValue || this.props.schema?.default;
+    this.initialValue = compile(this.props.initialValue || this.props.schema?.default);
     this.value = compile(this.props.value);
     this.data = this.props.data || this.props.schema?.['x-data'];
     this.decorator = this.props.decorator
