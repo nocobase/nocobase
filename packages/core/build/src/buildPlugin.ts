@@ -354,11 +354,11 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
     module: {
       rules: [
         {
-          test: /.less$/,
+          test: /\.less$/,
           use: [
             { loader: 'style-loader' },
             { loader: 'css-loader' },
-            { loader: 'less-loader' },
+            { loader: require.resolve('less-loader') },
             {
               loader: 'postcss-loader',
               options: {
