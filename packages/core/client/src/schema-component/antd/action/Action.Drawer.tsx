@@ -7,12 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer, useField, useFieldSchema } from '@formily/react';
+import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Drawer } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
-import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { ErrorFallback } from '../error-fallback';
 import { useCurrentPopupContext } from '../page/PagePopups';
 import { TabsContextProvider, useTabsContext } from '../tabs/context';
@@ -83,27 +82,25 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
             footer={
               footerSchema && (
                 <div className={'footer'}>
-                  <NocoBaseRecursionField
+                  <RecursionField
                     basePath={field.address}
                     schema={schema}
                     onlyRenderProperties
                     filterProperties={(s) => {
                       return s['x-component'] === footerNodeName;
                     }}
-                    isUseFormilyField
                   />
                 </div>
               )
             }
           >
-            <NocoBaseRecursionField
+            <RecursionField
               basePath={field.address}
               schema={schema}
               onlyRenderProperties
               filterProperties={(s) => {
                 return s['x-component'] !== footerNodeName;
               }}
-              isUseFormilyField
             />
           </Drawer>
         </TabsContextProvider>
@@ -123,7 +120,7 @@ ActionDrawer.Footer = observer(
   () => {
     const field = useField();
     const schema = useFieldSchema();
-    return <NocoBaseRecursionField basePath={field.address} schema={schema} onlyRenderProperties isUseFormilyField />;
+    return <RecursionField basePath={field.address} schema={schema} onlyRenderProperties />;
   },
   { displayName: 'ActionDrawer.Footer' },
 );
