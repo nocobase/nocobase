@@ -41,9 +41,13 @@ const ReadPretty: FC<CheckboxReadPrettyProps> = (props) => {
 };
 
 export const Checkbox: ComposedCheckbox = connect(
-  (props: AntdCheckboxProps) => {
+  (props: AntdCheckboxProps | any) => {
     const changeHandler = (val) => {
-      props?.onChange(val);
+      if (props.underFilter) {
+        props?.onChange(val?.target?.checked ? val : undefined);
+      } else {
+        props?.onChange(val);
+      }
     };
     return <AntdCheckbox {...props} onChange={changeHandler} />;
   },

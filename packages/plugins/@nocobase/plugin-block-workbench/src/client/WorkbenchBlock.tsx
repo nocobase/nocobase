@@ -94,6 +94,7 @@ const InternalIcons = () => {
                     }
                     .ant-list-item-meta-title button {
                       font-size: 14px;
+                      line-height: 14px;
                       overflow: hidden;
                       text-overflow: ellipsis;
                       width: 100%;
