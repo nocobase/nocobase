@@ -245,7 +245,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
       return (
         <Select
           open={open}
-          popupMatchSelectWidth={true}
+          popupMatchSelectWidth={false}
           autoClearSearchValue
           filterOption={false}
           filterSort={null}
