@@ -9,7 +9,10 @@
 
 import { Plugin } from '@nocobase/client';
 import 'vditor/dist/index.css';
-import { MarkdownVditor } from './components';
+// import { MarkdownVditor } from './components';
+import { lazy } from 'react';
+const MarkdownVditor = lazy(() => import('./components'));
+
 import { MarkdownVditorFieldInterface } from './interfaces/markdown-vditor';
 export class PluginFieldMarkdownVditorClient extends Plugin {
   async afterAdd() {}
