@@ -181,7 +181,7 @@ export const SubTable: any = observer(
       return {
         current: currentPage > page ? page : currentPage,
         pageSize: pageSize || 10,
-        total: field?.value?.length,
+        total: field?.value?.filter(Boolean)?.length,
         onChange: (page, pageSize) => {
           setCurrentPage(page);
           setPageSize(pageSize);
