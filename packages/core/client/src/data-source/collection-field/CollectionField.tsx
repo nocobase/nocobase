@@ -14,7 +14,7 @@ import { merge } from '@formily/shared';
 import { concat } from 'lodash';
 import React, { useEffect } from 'react';
 import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
-import { useIsInNocoBaseRecursionFieldContext } from '../../formily/NocoBaseRecursionField';
+import { useCollectionFieldUISchema, useIsInNocoBaseRecursionFieldContext } from '../../formily/NocoBaseRecursionField';
 import { useDynamicComponentProps } from '../../hoc/withDynamicSchemaProps';
 import { useCompile, useComponent } from '../../schema-component';
 import { useIsAllowToSetDefaultValue } from '../../schema-settings/hooks/useIsAllowToSetDefaultValue';
@@ -94,7 +94,7 @@ const CollectionFieldInternalField_deprecated: React.FC = (props: Props) => {
 
 const CollectionFieldInternalField = (props) => {
   const fieldSchema = useFieldSchema();
-  const { uiSchema } = useCollectionField();
+  const { uiSchema } = useCollectionFieldUISchema();
   const Component = useComponent(
     fieldSchema['x-component-props']?.['component'] || uiSchema?.['x-component'] || 'Input',
   );

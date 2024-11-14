@@ -23,8 +23,10 @@ import {
 } from '@formily/react';
 import { isBool, isFn, isValid, merge } from '@formily/shared';
 import _ from 'lodash';
-import React, { Fragment, useMemo } from 'react';
-import { CollectionFieldProvider, useCollectionField } from '../data-source/collection-field/CollectionFieldProvider';
+import React, { FC, Fragment, useMemo } from 'react';
+import { CollectionFieldOptions } from '../data-source/collection/Collection';
+import { useCollectionManager } from '../data-source/collection/CollectionManagerProvider';
+import { useCollection } from '../data-source/collection/CollectionProvider';
 import { NocoBaseField } from './NocoBaseField';
 
 interface INocoBaseRecursionFieldProps extends IRecursionFieldProps {
@@ -44,6 +46,38 @@ interface INocoBaseRecursionFieldProps extends IRecursionFieldProps {
    */
   isUseFormilyField?: boolean;
 }
+
+const CollectionFieldUISchemaContext = React.createContext<CollectionFieldOptions>({});
+
+/**
+ * @internal
+ * The difference from `useCollectionField` is that it returns empty if the current schema is not a collection field,
+ * while the value of `useCollectionField` is determined by the context in the component tree.
+ */
+export const useCollectionFieldUISchema = () => {
+  return React.useContext(CollectionFieldUISchemaContext);
+};
+
+const CollectionFieldUISchemaProvider: FC<{
+  fieldSchema: Schema;
+}> = (props) => {
+  const { children, fieldSchema } = props;
+  const collection = useCollection();
+  const collectionManager = useCollectionManager();
+  const name = fieldSchema?.name;
+
+  const value = useMemo(() => {
+    if (!collection) return null;
+    const field = fieldSchema?.['x-component-props']?.['field'];
+    return (
+      collectionManager.getCollectionField(fieldSchema?.['x-collection-field']) ||
+      field ||
+      collection.getField(field?.name || name)
+    );
+  }, [collection, collectionManager, fieldSchema, name]);
+
+  return <CollectionFieldUISchemaContext.Provider value={value}>{children}</CollectionFieldUISchemaContext.Provider>;
+};
 
 const toFieldProps = _.memoize((schema: Schema, scope: any) => {
   return schema.toFieldProps({
@@ -125,59 +159,40 @@ const propertiesToReactElement = ({
           }
         }
 
+        const content =
+          isBool(propsRecursion) && propsRecursion ? (
+            <NocoBaseRecursionField
+              propsRecursion={true}
+              filterProperties={filterProperties}
+              mapProperties={mapProperties}
+              schema={schema}
+              name={name}
+              basePath={base}
+              values={_.get(values, name)}
+              isUseFormilyField={isUseFormilyField}
+            />
+          ) : (
+            <NocoBaseRecursionField
+              schema={schema}
+              name={name}
+              basePath={base}
+              values={_.get(values, name)}
+              filterProperties={filterProperties}
+              isUseFormilyField={isUseFormilyField}
+            />
+          );
+
         if (schema['x-component'] === 'CollectionField') {
           return (
             <IsInNocoBaseRecursionFieldContext.Provider value={true} key={`${index}-${name}`}>
-              <CollectionFieldProvider name={schema.name} schema={schema}>
-                {isBool(propsRecursion) && propsRecursion ? (
-                  <NocoBaseRecursionField
-                    propsRecursion={true}
-                    filterProperties={filterProperties}
-                    mapProperties={mapProperties}
-                    schema={schema}
-                    name={name}
-                    basePath={base}
-                    values={_.get(values, name)}
-                    isUseFormilyField={isUseFormilyField}
-                  />
-                ) : (
-                  <NocoBaseRecursionField
-                    schema={schema}
-                    name={name}
-                    basePath={base}
-                    values={_.get(values, name)}
-                    filterProperties={filterProperties}
-                    isUseFormilyField={isUseFormilyField}
-                  />
-                )}
-              </CollectionFieldProvider>
+              <CollectionFieldUISchemaProvider fieldSchema={schema}>{content}</CollectionFieldUISchemaProvider>
             </IsInNocoBaseRecursionFieldContext.Provider>
           );
         }
 
         return (
           <IsInNocoBaseRecursionFieldContext.Provider value={false} key={`${index}-${name}`}>
-            {isBool(propsRecursion) && propsRecursion ? (
-              <NocoBaseRecursionField
-                propsRecursion={true}
-                filterProperties={filterProperties}
-                mapProperties={mapProperties}
-                schema={schema}
-                name={name}
-                basePath={base}
-                values={_.get(values, name)}
-                isUseFormilyField={isUseFormilyField}
-              />
-            ) : (
-              <NocoBaseRecursionField
-                schema={schema}
-                name={name}
-                basePath={base}
-                values={_.get(values, name)}
-                filterProperties={filterProperties}
-                isUseFormilyField={isUseFormilyField}
-              />
-            )}
+            <CollectionFieldUISchemaContext.Provider value={{}}>{content}</CollectionFieldUISchemaContext.Provider>
           </IsInNocoBaseRecursionFieldContext.Provider>
         );
       })}
@@ -214,7 +229,7 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
   } = props;
   const basePath = useBasePath(props);
   const fieldSchema = createSchemaInstance(schema);
-  const { uiSchema: collectionFiledUiSchema } = useCollectionField() || {};
+  const { uiSchema: collectionFiledUiSchema } = useCollectionFieldUISchema();
 
   // Merge default Schema of collection fields
   const mergedFieldSchema = useMemo(() => {

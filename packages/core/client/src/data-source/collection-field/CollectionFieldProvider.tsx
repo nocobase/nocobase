@@ -9,7 +9,7 @@
 
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 
-import { Schema, useFieldSchema, type SchemaKey } from '@formily/react';
+import { useFieldSchema, type SchemaKey } from '@formily/react';
 import type { CollectionFieldOptions } from '../collection';
 
 import { useCollection, useCollectionManager } from '../collection';
@@ -22,25 +22,23 @@ export type CollectionFieldProviderProps = {
   name?: SchemaKey;
   children?: ReactNode;
   allowNull?: boolean;
-  schema?: Schema;
 };
 
 export const CollectionFieldProvider: FC<CollectionFieldProviderProps> = (props) => {
-  const { name, children, allowNull, schema } = props;
+  const { name, children, allowNull } = props;
   const fieldSchema = useFieldSchema();
   const collection = useCollection();
   const collectionManager = useCollectionManager();
 
   const value = useMemo(() => {
     if (!collection) return null;
-    const _schema = schema || fieldSchema;
-    const field = _schema?.['x-component-props']?.['field'];
+    const field = fieldSchema?.['x-component-props']?.['field'];
     return (
-      collectionManager.getCollectionField(_schema?.['x-collection-field']) ||
+      collectionManager.getCollectionField(fieldSchema?.['x-collection-field']) ||
       field ||
       collection.getField(field?.name || name)
     );
-  }, [collection, schema, fieldSchema, collectionManager, name]);
+  }, [collection, fieldSchema, collectionManager, name]);
 
   if (!value && allowNull) {
     return <>{children}</>;
