@@ -85,6 +85,7 @@ export const fieldSettingsFormItem = new SchemaSettings({
                       title: fieldSchema.title,
                     },
                   });
+                  dn.refresh();
                 },
               };
             },
@@ -114,6 +115,7 @@ export const fieldSettingsFormItem = new SchemaSettings({
                       },
                     },
                   });
+                  dn.refresh();
                 },
               };
             },
@@ -206,7 +208,7 @@ export const fieldSettingsFormItem = new SchemaSettings({
               const { t } = useTranslation();
               const field = useField<Field>();
               const fieldSchema = useFieldSchema();
-              const { dn } = useDesignable();
+              const { dn, refresh } = useDesignable();
 
               return {
                 title: t('Required'),
@@ -221,6 +223,7 @@ export const fieldSettingsFormItem = new SchemaSettings({
                   dn.emit('patch', {
                     schema,
                   });
+                  refresh();
                 },
               };
             },
@@ -301,6 +304,7 @@ export const fieldSettingsFormItem = new SchemaSettings({
                   dn.emit('patch', {
                     schema,
                   });
+                  dn.refresh();
                 },
               };
             },
