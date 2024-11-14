@@ -68,12 +68,8 @@ const createSchemaInstance = _.memoize((schema: ISchema): Schema => {
   return new Schema(schema);
 });
 
-const toJSON = _.memoize((schema: Schema) => {
-  return schema.toJSON();
-});
-
-const createMergedSchemaInstance = _.memoize((schema: Schema, uiSchema: ISchema, onlyRenderProperties: boolean) => {
-  const clonedSchema = toJSON(schema);
+const createMergedSchemaInstance = (schema: Schema, uiSchema: ISchema, onlyRenderProperties: boolean) => {
+  const clonedSchema = schema.toJSON();
 
   if (onlyRenderProperties) {
     if (!clonedSchema.properties) {
@@ -89,7 +85,7 @@ const createMergedSchemaInstance = _.memoize((schema: Schema, uiSchema: ISchema,
 
   // Some uiSchema's type value is "void", which can cause exceptions, so we need to ignore the type field
   return new Schema(merge(_.omit(uiSchema, 'type'), clonedSchema));
-});
+};
 
 const propertiesToReactElement = ({
   schema,
