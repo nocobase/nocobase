@@ -249,7 +249,7 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
   const renderProperties = (field?: GeneralField) => {
     if (onlyRenderSelf) return;
     return propertiesToReactElement({
-      schema: mergedFieldSchema,
+      schema: fieldSchema,
       field,
       basePath,
       mapProperties,
