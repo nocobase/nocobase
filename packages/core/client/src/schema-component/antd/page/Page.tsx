@@ -305,9 +305,11 @@ function NocoBasePageHeader({ footer }: { footer: React.JSX.Element }) {
 
   useEffect(() => {
     if (fieldSchema.title) {
-      setDocumentTitle(pageTitle);
+      const title = t(fieldSchema.title);
+      setDocumentTitle(title);
+      setPageTitle(title);
     }
-  }, [fieldSchema.title, pageTitle, setDocumentTitle]);
+  }, [fieldSchema.title, pageTitle, setDocumentTitle, t]);
 
   useRequest(
     {
