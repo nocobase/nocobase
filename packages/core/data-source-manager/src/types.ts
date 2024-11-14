@@ -65,6 +65,8 @@ export interface ICollection {
 
   getField(name: string): IField;
 
+  getFieldByField(field: string): IField;
+
   [key: string]: any;
 
   unavailableActions?: () => string[];
