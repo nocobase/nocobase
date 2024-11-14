@@ -159,28 +159,30 @@ const propertiesToReactElement = ({
           );
         }
 
-        return isBool(propsRecursion) && propsRecursion ? (
-          <NocoBaseRecursionField
-            propsRecursion={true}
-            filterProperties={filterProperties}
-            mapProperties={mapProperties}
-            schema={schema}
-            key={`${index}-${name}`}
-            name={name}
-            basePath={base}
-            values={_.get(values, name)}
-            isUseFormilyField={isUseFormilyField}
-          />
-        ) : (
-          <NocoBaseRecursionField
-            schema={schema}
-            key={`${index}-${name}`}
-            name={name}
-            basePath={base}
-            values={_.get(values, name)}
-            filterProperties={filterProperties}
-            isUseFormilyField={isUseFormilyField}
-          />
+        return (
+          <IsInNocoBaseRecursionFieldContext.Provider value={false} key={`${index}-${name}`}>
+            {isBool(propsRecursion) && propsRecursion ? (
+              <NocoBaseRecursionField
+                propsRecursion={true}
+                filterProperties={filterProperties}
+                mapProperties={mapProperties}
+                schema={schema}
+                name={name}
+                basePath={base}
+                values={_.get(values, name)}
+                isUseFormilyField={isUseFormilyField}
+              />
+            ) : (
+              <NocoBaseRecursionField
+                schema={schema}
+                name={name}
+                basePath={base}
+                values={_.get(values, name)}
+                filterProperties={filterProperties}
+                isUseFormilyField={isUseFormilyField}
+              />
+            )}
+          </IsInNocoBaseRecursionFieldContext.Provider>
         );
       })}
     </Fragment>
