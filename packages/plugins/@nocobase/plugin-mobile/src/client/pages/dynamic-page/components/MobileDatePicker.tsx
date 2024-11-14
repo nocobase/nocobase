@@ -26,7 +26,6 @@ const MobileDateTimePicker = connect(
       ...rest
     } = props;
     const [visible, setVisible] = useState(false);
-    const [selectedTime, setSelectedTime] = useState(['00', '00', '00']);
 
     // 性能优化：使用 useCallback 缓存函数
     const handleConfirm = useCallback(
@@ -35,12 +34,11 @@ const MobileDateTimePicker = connect(
         const selectedDateTime = new Date(value);
         onChange(selectedDateTime);
       },
-      [selectedTime, showTime, onChange],
+      [showTime, onChange],
     );
 
     // 清空选择的日期和时间
     const handleClear = useCallback(() => {
-      setSelectedTime(['00', '00', '00']);
       setVisible(false);
       onChange(null);
     }, [onChange]);
@@ -69,6 +67,7 @@ const MobileDateTimePicker = connect(
         </div>
         <DatePicker
           visible={visible}
+          title={<a onClick={handleClear}>{t('Clear')}</a>}
           onClose={() => {
             setVisible(false);
           }}

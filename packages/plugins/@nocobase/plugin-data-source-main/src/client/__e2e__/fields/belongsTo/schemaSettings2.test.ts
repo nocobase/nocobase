@@ -155,7 +155,7 @@ test.describe('form item & edit form', () => {
       .getByLabel('block-item-CollectionField-general-form-general.oneToOneBelongsTo-oneToOneBelongsTo')
       .getByTestId(/select-object/)
       .click();
-    await expect(page.getByRole('option', { name: String(recordsOfUser[0].id), exact: true })).toBeVisible();
+    await expect(page.getByTitle(String(recordsOfUser[0].id), { exact: true })).toBeVisible();
     await expect(page.getByRole('option')).toHaveCount(2);
   });
 
