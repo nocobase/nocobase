@@ -229,7 +229,7 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
   } = props;
   const basePath = useBasePath(props);
   const fieldSchema = createSchemaInstance(schema);
-  const { uiSchema: collectionFiledUiSchema } = useCollectionFieldUISchema();
+  const { uiSchema: collectionFiledUiSchema, defaultValue } = useCollectionFieldUISchema();
 
   // Merge default Schema of collection fields
   const mergedFieldSchema = useMemo(() => {
@@ -238,11 +238,12 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
     }
 
     if (collectionFiledUiSchema) {
+      collectionFiledUiSchema.default = defaultValue;
       return createMergedSchemaInstance(fieldSchema, collectionFiledUiSchema, onlyRenderProperties);
     }
 
     return fieldSchema;
-  }, [collectionFiledUiSchema, fieldSchema, onlyRenderProperties, uiSchema]);
+  }, [collectionFiledUiSchema, defaultValue, fieldSchema, onlyRenderProperties, uiSchema]);
 
   const fieldProps = useFieldProps(mergedFieldSchema);
 
