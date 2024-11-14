@@ -53,7 +53,16 @@ const MobilePicker = connect(
             style={{ pointerEvents: 'none' }}
           />
         </div>
-        <Popup visible={visible} onMaskClick={() => setVisible(false)} destroyOnClose>
+        <Popup
+          visible={visible}
+          onMaskClick={() => {
+            setVisible(false);
+            if (value.length === 0) {
+              setSelected([]);
+            }
+          }}
+          destroyOnClose
+        >
           <div style={{ margin: '10px' }}>
             <SearchBar
               placeholder={t('search')}
