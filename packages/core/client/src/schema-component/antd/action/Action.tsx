@@ -65,7 +65,6 @@ export const Action: ComposedAction = withDynamicSchemaProps(
       onClick,
       style,
       loading,
-      openSize: os,
       disabled: propsDisabled,
       actionCallback,
       confirm: propsConfirm,
@@ -199,6 +198,8 @@ interface InternalActionProps {
   setSubmitted: (v: boolean) => void;
   getAriaLabel: (postfix?: string) => string;
   parentRecordData: any;
+  openMode?: ActionContextProps['openMode'];
+  openSize?: ActionContextProps['openSize'];
 }
 
 const InternalAction: React.FC<InternalActionProps> = observer(function Com(props) {
@@ -231,14 +232,16 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
     setSubmitted,
     getAriaLabel,
     parentRecordData,
+    openMode: om,
+    openSize: os,
     ...others
   } = props;
   const [visible, setVisible] = useState(false);
   const { wrapSSR, componentCls, hashId } = useStyles();
   const [formValueChanged, setFormValueChanged] = useState(false);
   const designerProps = fieldSchema['x-toolbar-props'] || fieldSchema['x-designer-props'];
-  const openMode = fieldSchema?.['x-component-props']?.['openMode'];
-  const openSize = fieldSchema?.['x-component-props']?.['openSize'];
+  const openMode = om ?? fieldSchema?.['x-component-props']?.['openMode'];
+  const openSize = os ?? fieldSchema?.['x-component-props']?.['openSize'];
   const refreshDataBlockRequest = fieldSchema?.['x-component-props']?.['refreshDataBlockRequest'];
   const { modal } = App.useApp();
   const form = useForm();
