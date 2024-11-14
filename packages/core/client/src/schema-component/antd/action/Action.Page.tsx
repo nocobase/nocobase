@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer, RecursionField, useFieldSchema } from '@formily/react';
+import { observer, useFieldSchema } from '@formily/react';
 import React, { useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useActionContext } from '.';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { BackButtonUsedInSubPage } from '../page/BackButtonUsedInSubPage';
 import { TabsContextProvider, useTabsContext } from '../tabs/context';
 import { useActionPageStyle } from './Action.Page.style';
@@ -39,7 +40,7 @@ export function ActionPage({ level }) {
     <div className={`${componentCls} ${hashId}`} style={style}>
       <TabsContextProvider {...tabContext} tabBarExtraContent={<BackButtonUsedInSubPage />}>
         <zIndexContext.Provider value={style.zIndex}>
-          <RecursionField schema={filedSchema} onlyRenderProperties />
+          <NocoBaseRecursionField schema={filedSchema} onlyRenderProperties />
         </zIndexContext.Provider>
       </TabsContextProvider>
     </div>

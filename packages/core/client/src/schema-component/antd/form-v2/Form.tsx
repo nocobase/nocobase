@@ -9,8 +9,8 @@
 
 import { css } from '@emotion/css';
 import { FormLayout, IFormLayoutProps } from '@formily/antd-v5';
-import { createForm, Field, Form as FormilyForm, onFieldInit, onFormInputChange } from '@formily/core';
-import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { Field, Form as FormilyForm, createForm, onFieldInit, onFormInputChange } from '@formily/core';
+import { FieldContext, FormContext, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { ConfigProvider, theme } from 'antd';
 import React, { useEffect, useMemo } from 'react';
@@ -18,6 +18,7 @@ import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
 import { getCardItemSchema } from '../../../block-provider';
 import { useTemplateBlockContext } from '../../../block-provider/TemplateBlockProvider';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { bindLinkageRulesToFiled } from '../../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 import { forEachLinkageRule } from '../../../schema-settings/LinkageRules/forEachLinkageRule';
@@ -68,7 +69,7 @@ const FormComponent: React.FC<FormProps> = (props) => {
               }
             `}
           >
-            <RecursionField basePath={f.address} schema={fieldSchema} onlyRenderProperties />
+            <NocoBaseRecursionField basePath={f.address} schema={fieldSchema} onlyRenderProperties isUseFormilyField />
           </div>
         </FormLayout>
       </FormContext.Provider>
@@ -91,7 +92,12 @@ const FormDecorator: React.FC<FormProps> = (props) => {
         <FormLayout layout={'vertical'} {...others}>
           <FieldContext.Provider value={f}>
             <Component {...field.componentProps}>
-              <RecursionField basePath={f.address} schema={fieldSchema} onlyRenderProperties />
+              <NocoBaseRecursionField
+                basePath={f.address}
+                schema={fieldSchema}
+                onlyRenderProperties
+                isUseFormilyField
+              />
             </Component>
           </FieldContext.Provider>
           {/* <FieldContext.Provider value={f}>{children}</FieldContext.Provider> */}

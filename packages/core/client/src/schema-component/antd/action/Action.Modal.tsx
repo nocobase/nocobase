@@ -8,7 +8,7 @@
  */
 
 import { css } from '@emotion/css';
-import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { observer, useField, useFieldSchema } from '@formily/react';
 import { Modal, ModalProps } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
@@ -123,7 +123,7 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
             )}
             footer={
               showFooter ? (
-                <RecursionField
+                <NocoBaseRecursionField
                   basePath={field.address}
                   schema={schema}
                   onlyRenderProperties
@@ -136,7 +136,7 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
               )
             }
           >
-            <RecursionField
+            <NocoBaseRecursionField
               basePath={field.address}
               schema={schema}
               onlyRenderProperties
