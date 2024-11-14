@@ -13,7 +13,7 @@ import { Model, modelAssociationByKey } from '@nocobase/database';
 import Application, { DefaultContext } from '@nocobase/server';
 import { Context as ActionContext, Next } from '@nocobase/actions';
 
-import WorkflowPlugin, { Trigger, WorkflowModel, toJSON } from '@nocobase/plugin-workflow';
+import WorkflowPlugin, { EventOptions, Trigger, WorkflowModel, toJSON } from '@nocobase/plugin-workflow';
 import { joinCollectionName, parseCollectionName } from '@nocobase/data-source-manager';
 
 interface Context extends ActionContext, DefaultContext {}
@@ -188,4 +188,8 @@ export default class extends Trigger {
   on(workflow: WorkflowModel) {}
 
   off(workflow: WorkflowModel) {}
+
+  async execute(workflow: WorkflowModel, context: Context, options: EventOptions) {
+    return this.workflow.trigger(workflow, context.action.params.values, { ...options, httpContext: context });
+  }
 }

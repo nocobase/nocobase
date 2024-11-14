@@ -10,165 +10,13 @@
 import { onFieldValueChange } from '@formily/core';
 import { useForm, useFormEffects, ISchema } from '@formily/react';
 import { css, SchemaComponent } from '@nocobase/client';
-import React, { useState } from 'react';
+import React from 'react';
 import { NAMESPACE } from '../../locale';
-import { appends, collection } from '../../schemas/collection';
 import { SCHEDULE_MODE } from './constants';
 import { EndsByField } from './EndsByField';
 import { OnField } from './OnField';
 import { RepeatField } from './RepeatField';
-
-const ModeFieldsets = {
-  [SCHEDULE_MODE.STATIC]: {
-    startsOn: {
-      type: 'datetime',
-      title: `{{t("Starts on", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'DatePicker',
-      'x-component-props': {
-        showTime: true,
-      },
-      required: true,
-    },
-    repeat: {
-      type: 'string',
-      title: `{{t("Repeat mode", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'RepeatField',
-      'x-reactions': [
-        {
-          target: 'endsOn',
-          fulfill: {
-            state: {
-              visible: '{{!!$self.value}}',
-            },
-          },
-        },
-        {
-          target: 'limit',
-          fulfill: {
-            state: {
-              visible: '{{!!$self.value}}',
-            },
-          },
-        },
-      ],
-    },
-    endsOn: {
-      type: 'datetime',
-      title: `{{t("Ends on", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'DatePicker',
-      'x-component-props': {
-        showTime: true,
-      },
-    },
-    limit: {
-      type: 'number',
-      title: `{{t("Repeat limit", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'InputNumber',
-      'x-component-props': {
-        placeholder: `{{t("No limit", { ns: "${NAMESPACE}" })}}`,
-        min: 0,
-      },
-    },
-  },
-  [SCHEDULE_MODE.DATE_FIELD]: {
-    collection: {
-      ...collection,
-      'x-component-props': {
-        dataSourceFilter(item) {
-          return item.options.key === 'main' || item.options.isDBInstance;
-        },
-      },
-      'x-reactions': [
-        ...collection['x-reactions'],
-        {
-          // only full path works
-          target: 'startsOn',
-          effects: ['onFieldValueChange'],
-          fulfill: {
-            state: {
-              visible: '{{!!$self.value}}',
-              value: '{{Object.create({})}}',
-            },
-          },
-        },
-      ],
-    },
-    startsOn: {
-      type: 'object',
-      title: `{{t("Starts on", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'OnField',
-      'x-reactions': [
-        {
-          target: 'repeat',
-          fulfill: {
-            state: {
-              visible: '{{!!$self.value}}',
-            },
-          },
-        },
-      ],
-      required: true,
-    },
-    repeat: {
-      type: 'string',
-      title: `{{t("Repeat mode", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'RepeatField',
-      'x-reactions': [
-        {
-          target: 'endsOn',
-          fulfill: {
-            state: {
-              visible: '{{!!$self.value}}',
-            },
-          },
-        },
-        {
-          target: 'limit',
-          fulfill: {
-            state: {
-              visible: '{{!!$self.value}}',
-            },
-          },
-        },
-      ],
-    },
-    endsOn: {
-      type: 'object',
-      title: `{{t("Ends on", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'EndsByField',
-    },
-    limit: {
-      type: 'number',
-      title: `{{t("Repeat limit", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'InputNumber',
-      'x-component-props': {
-        placeholder: `{{t("No limit", { ns: "${NAMESPACE}" })}}`,
-        min: 0,
-      },
-    },
-    appends: {
-      ...appends,
-      'x-reactions': [
-        {
-          dependencies: ['mode', 'collection'],
-          fulfill: {
-            state: {
-              visible: `{{$deps[0] === ${SCHEDULE_MODE.DATE_FIELD} && $deps[1]}}`,
-            },
-          },
-        },
-      ],
-    },
-  },
-};
+import { ScheduleModes } from './ScheduleModes';
 
 const scheduleModeOptions = [
   { value: SCHEDULE_MODE.STATIC, label: `{{t("Based on certain date", { ns: "${NAMESPACE}" })}}` },
@@ -179,11 +27,10 @@ const scheduleModeOptions = [
 ];
 
 export const ScheduleConfig = () => {
-  const { values = {}, clearFormGraph } = useForm();
-  const [mode, setMode] = useState(values.mode);
+  const { values = {}, setValues, clearFormGraph } = useForm();
   useFormEffects(() => {
     onFieldValueChange('mode', (field) => {
-      setMode(field.value);
+      setValues({ mode: field.value });
       clearFormGraph('collection');
       clearFormGraph('startsOn');
       clearFormGraph('repeat');
@@ -201,9 +48,7 @@ export const ScheduleConfig = () => {
           name: 'mode',
           'x-decorator': 'FormItem',
           'x-component': 'Radio.Group',
-          'x-component-props': {
-            options: scheduleModeOptions,
-          },
+          enum: scheduleModeOptions,
           required: true,
           default: SCHEDULE_MODE.STATIC,
         }}
@@ -213,7 +58,7 @@ export const ScheduleConfig = () => {
           {
             type: 'void',
             properties: {
-              [`mode-${mode}`]: {
+              [`mode-${values.mode}`]: {
                 type: 'void',
                 'x-component': 'fieldset',
                 'x-component-props': {
@@ -228,7 +73,7 @@ export const ScheduleConfig = () => {
                     }
                   `,
                 },
-                properties: ModeFieldsets[mode],
+                properties: ScheduleModes[values.mode]?.fieldset,
               },
             },
           } as ISchema

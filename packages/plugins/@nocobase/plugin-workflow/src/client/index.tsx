@@ -87,11 +87,6 @@ export default class PluginWorkflowClient extends Plugin {
       element: <ExecutionPage />,
     });
 
-    this.app.addComponents({
-      WorkflowPage,
-      ExecutionPage,
-    });
-
     this.app.pluginSettingsManager.add(NAMESPACE, {
       icon: 'PartitionOutlined',
       title: `{{t("Workflow", { ns: "${NAMESPACE}" })}}`,

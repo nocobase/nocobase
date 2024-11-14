@@ -34,15 +34,18 @@ import QueryInstruction from './instructions/QueryInstruction';
 import UpdateInstruction from './instructions/UpdateInstruction';
 
 import type { ExecutionModel, JobModel, WorkflowModel } from './types';
+import WorkflowRepository from './repositories/WorkflowRepository';
+import { Context } from '@nocobase/actions';
 
 type ID = number | string;
 
 type Pending = [ExecutionModel, JobModel?];
 
-type EventOptions = {
+export type EventOptions = {
   eventKey?: string;
   context?: any;
   deferred?: boolean;
+  immediately?: boolean;
   [key: string]: any;
 } & Transactionable;
 
@@ -69,20 +72,6 @@ export default class PluginWorkflowServer extends Plugin {
 
     if (instance.enabled) {
       instance.set('current', true);
-    } else if (!instance.current) {
-      const count = await Model.count({
-        where: {
-          key: instance.key,
-        },
-        transaction,
-      });
-      if (!count) {
-        instance.set('current', true);
-      }
-    }
-
-    if (!instance.changed('enabled') || !instance.enabled) {
-      return;
     }
 
     const previous = await Model.findOne({
@@ -95,8 +84,11 @@ export default class PluginWorkflowServer extends Plugin {
       },
       transaction,
     });
+    if (!previous) {
+      instance.set('current', true);
+    }
 
-    if (previous) {
+    if (instance.current && previous) {
       // NOTE: set to `null` but not `false` will not violate the unique index
       await previous.update(
         { enabled: false, current: null },
@@ -211,6 +203,12 @@ export default class PluginWorkflowServer extends Plugin {
     for (const [name, instruction] of Object.entries({ ...more })) {
       this.registerInstruction(name, instruction);
     }
+  }
+
+  async beforeLoad() {
+    this.db.registerRepositories({
+      WorkflowRepository,
+    });
   }
 
   /**
@@ -382,7 +380,7 @@ export default class PluginWorkflowServer extends Plugin {
       return;
     }
 
-    if (this.isWorkflowSync(workflow)) {
+    if (options.immediately || this.isWorkflowSync(workflow)) {
       return this.triggerSync(workflow, context, options);
     }
 
@@ -620,6 +618,17 @@ export default class PluginWorkflowServer extends Plugin {
     // this.emit('afterProcess', processor);
 
     return processor;
+  }
+
+  async execute(workflow: WorkflowModel, context: Context, options: EventOptions = {}) {
+    const trigger = this.triggers.get(workflow.type);
+    if (!trigger) {
+      throw new Error(`trigger type "${workflow.type}" of workflow ${workflow.id} is not registered`);
+    }
+    if (!trigger.execute) {
+      throw new Error(`"execute" method of trigger ${workflow.type} is not implemented`);
+    }
+    return trigger.execute(workflow, context, options);
   }
 
   /**

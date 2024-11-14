@@ -67,7 +67,11 @@ export abstract class Trigger {
   description?: string;
   // group: string;
   useVariables?(config: Record<string, any>, options?: UseVariableOptions): VariableOption[];
-  fieldset: { [key: string]: ISchema };
+  fieldset: Record<string, ISchema>;
+  triggerFieldset?: Record<string, ISchema>;
+  validate(config: Record<string, any>): boolean {
+    return true;
+  }
   view?: ISchema;
   scope?: { [key: string]: any };
   components?: { [key: string]: any };

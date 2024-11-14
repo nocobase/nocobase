@@ -10,6 +10,7 @@
 import { Transactionable } from '@nocobase/database';
 import type Plugin from '../Plugin';
 import type { WorkflowModel } from '../types';
+import Processor from '../Processor';
 
 export abstract class Trigger {
   constructor(public readonly workflow: Plugin) {}
@@ -20,6 +21,11 @@ export abstract class Trigger {
   }
   duplicateConfig?(workflow: WorkflowModel, options: Transactionable): object | Promise<object>;
   sync?: boolean;
+  execute?(
+    workflow: WorkflowModel,
+    context: any,
+    options: Transactionable,
+  ): void | Processor | Promise<void | Processor>;
 }
 
 export default Trigger;

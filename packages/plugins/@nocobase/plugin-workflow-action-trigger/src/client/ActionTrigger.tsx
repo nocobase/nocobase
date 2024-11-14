@@ -18,6 +18,7 @@ import {
   CheckboxGroupWithTooltip,
   RadioWithTooltip,
   useGetCollectionFields,
+  TriggerCollectionRecordSelect,
 } from '@nocobase/plugin-workflow/client';
 import { NAMESPACE, useLang } from '../locale';
 
@@ -194,6 +195,57 @@ export default class extends Trigger {
       ],
     },
   };
+  triggerFieldset = {
+    data: {
+      type: 'object',
+      title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("Choose a record of the collection to trigger.", { ns: "workflow" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'TriggerCollectionRecordSelect',
+      default: null,
+      required: true,
+    },
+    user: {
+      type: 'object',
+      title: `{{t("User submitted action", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'RemoteSelect',
+      'x-component-props': {
+        objectValue: true,
+        fieldNames: {
+          label: 'nickname',
+          value: 'id',
+        },
+        service: {
+          resource: 'users',
+        },
+        manual: false,
+      },
+      default: null,
+      required: true,
+    },
+    roleName: {
+      type: 'string',
+      title: `{{t("Role of user submitted action", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'RemoteSelect',
+      'x-component-props': {
+        objectValue: true,
+        fieldNames: {
+          label: 'title',
+          value: 'name',
+        },
+        service: {
+          resource: 'roles',
+        },
+        manual: false,
+      },
+      default: null,
+    },
+  };
+  validate(values) {
+    return values.collection;
+  }
   scope = {
     useCollectionDataSource,
     useWorkflowAnyExecuted,
@@ -201,6 +253,7 @@ export default class extends Trigger {
   components = {
     RadioWithTooltip,
     CheckboxGroupWithTooltip,
+    TriggerCollectionRecordSelect,
   };
   isActionTriggerable = (config, context) => {
     return !config.global && ['submit', 'customize:save', 'customize:update'].includes(context.buttonAction);

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BelongsToRepository, MockDatabase, Op } from '@nocobase/database';
+import { BelongsToRepository, MockDatabase } from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { MockServer } from '@nocobase/test';
 
@@ -921,6 +921,37 @@ describe('workflow > triggers > collection', () => {
         },
       });
       expect(e3s.length).toBe(1);
+    });
+
+    it('sync event on another', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        sync: true,
+        config: {
+          mode: 1,
+          collection: 'another:posts',
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      const e1s = await workflow.getExecutions();
+      expect(e1s.length).toBe(0);
+
+      const AnotherPostRepo = anotherDB.getRepository('posts');
+      const anotherPost = await AnotherPostRepo.create({ values: { title: 't2' } });
+
+      const e2s = await workflow.getExecutions();
+      expect(e2s.length).toBe(1);
+      expect(e2s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e2s[0].context.data.title).toBe('t2');
+
+      const p1s = await PostRepo.find();
+      expect(p1s.length).toBe(1);
+
+      const p2s = await AnotherPostRepo.find();
+      expect(p2s.length).toBe(1);
     });
   });
 });

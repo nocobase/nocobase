@@ -14,6 +14,7 @@ export default function () {
     dumpRules: 'required',
     name: 'workflows',
     shared: true,
+    repository: 'WorkflowRepository',
     fields: [
       {
         name: 'key',
@@ -72,7 +73,6 @@ export default function () {
       {
         type: 'boolean',
         name: 'current',
-        defaultValue: false,
       },
       {
         type: 'boolean',
