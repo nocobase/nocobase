@@ -354,11 +354,11 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
     module: {
       rules: [
         {
-          test: /.less$/,
+          test: /\.less$/,
           use: [
             { loader: 'style-loader' },
             { loader: 'css-loader' },
-            { loader: 'less-loader' },
+            { loader: require.resolve('less-loader') },
             {
               loader: 'postcss-loader',
               options: {
@@ -470,15 +470,15 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
 
   return new Promise((resolve, reject) => {
     compiler.run((err, stats) => {
-      if (err) {
-        reject(err);
+      const compilationErrors = stats?.compilation.errors;
+      const infos = stats.toString({
+        colors: true,
+      });
+      if (err || compilationErrors?.length) {
+        reject(err || infos);
         return;
       }
-      console.log(
-        stats.toString({
-          colors: true,
-        }),
-      );
+      console.log(infos);
       resolve(null);
     });
   });

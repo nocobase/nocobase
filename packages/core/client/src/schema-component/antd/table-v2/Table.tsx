@@ -519,7 +519,7 @@ const HeaderCellComponent = React.memo(
       return <th style={designable ? columnOpacityStyle : columnHiddenStyle}>{designable ? props.children : null}</th>;
     }
 
-    return <th {...props} className={cls(props.className, headerClass)} />;
+    return <th {..._.omit(props, 'columnHidden')} className={cls(props.className, headerClass)} />;
   },
 );
 
@@ -549,7 +549,6 @@ const BodyRowComponent = React.memo(
 BodyRowComponent.displayName = 'BodyRowComponent';
 
 const InternalBodyCellComponent = React.memo<{
-  columnHidden: boolean;
   className: string;
   style: React.CSSProperties;
   children: React.ReactNode;
@@ -602,7 +601,7 @@ const BodyCellComponent = React.memo<{
     );
   }
 
-  return <InternalBodyCellComponent {...props} />;
+  return <InternalBodyCellComponent {..._.omit(props, 'columnHidden')} />;
 });
 
 BodyCellComponent.displayName = 'BodyCellComponent';
