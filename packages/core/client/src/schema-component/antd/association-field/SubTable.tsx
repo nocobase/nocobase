@@ -181,7 +181,7 @@ export const SubTable: any = observer(
       return {
         current: currentPage > page ? page : currentPage,
         pageSize: pageSize || 10,
-        total: field?.value?.filter(Boolean)?.length,
+        total: field?.value,
         onChange: (page, pageSize) => {
           setCurrentPage(page);
           setPageSize(pageSize);
@@ -232,9 +232,14 @@ export const SubTable: any = observer(
                             onClick={() => {
                               field.value = field.value || [];
                               field.value.push(markRecordAsNew({}));
-                              // 计算总页数，并跳转到最后一页
-                              const totalPages = Math.ceil(field.value.length / (field.componentProps?.pageSize || 10));
-                              setCurrentPage(totalPages);
+                              setTimeout(() => {
+                                field.value[field.value.length - 1] = {};
+                                // 计算总页数，并跳转到最后一页
+                                const totalPages = Math.ceil(
+                                  field.value.length / (field.componentProps?.pageSize || 10),
+                                );
+                                setCurrentPage(totalPages);
+                              });
                               return field.onInput(field.value);
                             }}
                           >
