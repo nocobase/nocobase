@@ -131,14 +131,14 @@ export async function createMiddleware(ctx: Context, next: Next) {
 }
 
 export async function destroyMiddleware(ctx: Context, next: Next) {
-  const { resourceName, actionName } = ctx.action;
+  const { resourceName, actionName, sourceId } = ctx.action;
   const collection = ctx.db.getCollection(resourceName);
 
   if (collection?.options?.template !== 'file' || actionName !== 'destroy') {
     return next();
   }
 
-  const repository = ctx.db.getRepository(resourceName);
+  const repository = ctx.db.getRepository(resourceName, sourceId);
 
   const { filterByTk, filter } = ctx.action.params;
 

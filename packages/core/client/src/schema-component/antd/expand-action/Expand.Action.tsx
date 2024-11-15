@@ -9,7 +9,7 @@
 
 import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
-import { Button } from 'antd';
+import { Button, theme } from 'antd';
 import React, { forwardRef, createRef } from 'react';
 import { composeRef } from 'rc-util/lib/ref';
 import { useCompile } from '../../hooks';
@@ -66,6 +66,9 @@ const InternalExpandAction = (props, ref) => {
   const compile = useCompile();
   const internalRef = createRef<HTMLButtonElement | HTMLAnchorElement>();
   const buttonRef = composeRef(ref, internalRef);
+  const { token } = theme.useToken();
+  const actionTitle = ctx?.expandFlag ? compile(titleCollapse) : compile(titleExpand);
+  const icon = ctx?.expandFlag ? iconCollapse : iconExpand;
   return (
     //@ts-ignore
     <div className={actionDesignerCss} ref={buttonRef as React.Ref<HTMLButtonElement>}>
@@ -77,9 +80,27 @@ const InternalExpandAction = (props, ref) => {
           icon={<Icon type={ctx?.expandFlag ? iconCollapse : iconExpand} />}
           type={props.type}
           style={props?.style}
+          className={css`
+            .ant-btn-icon {
+              margin-inline-end: 0px !important;
+            }
+          `}
         >
           {props.children?.[1]}
-          <span style={{ marginLeft: 10 }}>{ctx?.expandFlag ? compile(titleCollapse) : compile(titleExpand)}</span>
+
+          {actionTitle && (
+            <span
+              className={
+                icon
+                  ? css`
+                      margin-inline-start: ${token.controlPaddingHorizontalSM}px;
+                    `
+                  : null
+              }
+            >
+              {actionTitle}
+            </span>
+          )}
         </Button>
       )}
     </div>

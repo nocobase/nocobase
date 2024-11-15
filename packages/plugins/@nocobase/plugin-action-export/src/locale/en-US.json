@@ -1,4 +1,6 @@
 {
   "Export warning": "You can export up to {{limit}} rows of data at a time, any excess will be ignored.",
-  "Start export": "Start export"
+  "Start export": "Start export",
+  "True": "True",
+  "False": "False"
 }

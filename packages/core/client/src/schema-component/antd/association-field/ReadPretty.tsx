@@ -17,21 +17,18 @@ import { ReadPrettyInternalTag } from './InternalTag';
 import { ReadPrettyInternalViewer } from './InternalViewer';
 import { useAssociationFieldContext } from './hooks';
 
-const ReadPrettyAssociationField = observer(
-  (props: any) => {
-    const { currentMode } = useAssociationFieldContext();
-    return (
-      <>
-        {['Select', 'Picker', 'CascadeSelect'].includes(currentMode) && <ReadPrettyInternalViewer {...props} />}
-        {currentMode === 'Tag' && <ReadPrettyInternalTag {...props} />}
-        {currentMode === 'Nester' && <InternalNester {...props} />}
-        {currentMode === 'SubTable' && <InternalSubTable {...props} />}
-        {currentMode === 'FileManager' && <FileManageReadPretty {...props} />}
-      </>
-    );
-  },
-  { displayName: 'ReadPrettyAssociationField' },
-);
+const ReadPrettyAssociationField = (props: any) => {
+  const { currentMode } = useAssociationFieldContext();
+  return (
+    <>
+      {['Select', 'Picker', 'CascadeSelect'].includes(currentMode) && <ReadPrettyInternalViewer {...props} />}
+      {currentMode === 'Tag' && <ReadPrettyInternalTag {...props} />}
+      {currentMode === 'Nester' && <InternalNester {...props} />}
+      {currentMode === 'SubTable' && <InternalSubTable {...props} />}
+      {currentMode === 'FileManager' && <FileManageReadPretty {...props} />}
+    </>
+  );
+};
 
 export const ReadPretty = observer(
   (props) => {

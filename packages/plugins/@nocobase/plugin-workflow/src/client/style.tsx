@@ -263,8 +263,8 @@ const useStyles = createStyles(({ css, token }) => {
       .workflow-node-remove-button {
         display: none;
         position: absolute;
-        right: 0.5em;
-        top: 0.5em;
+        right: 0;
+        top: 0;
         color: ${token.colorText};
 
         &[disabled] {
@@ -312,19 +312,24 @@ const useStyles = createStyles(({ css, token }) => {
     nodeJobButtonClass: css`
       display: flex;
       position: absolute;
-      top: calc(1em - 1px);
-      right: 1em;
+      top: 0;
+      right: 0;
       justify-content: center;
       align-items: center;
       color: ${token.colorTextLightSolid};
     `,
 
     nodeHeaderClass: css`
-      position: relative;
+      display: flex;
+      margin-bottom: 0.5em;
+
+      .workflow-node-actions {
+        position: relative;
+      }
     `,
 
     nodeMetaClass: css`
-      margin-bottom: 0.5em;
+      flex-grow: 1;
 
       .workflow-node-id {
         color: ${token.colorTextDescription};
@@ -352,7 +357,6 @@ const useStyles = createStyles(({ css, token }) => {
     `,
 
     nodeJobResultClass: css`
-      padding: 1em;
       background-color: #f3f3f3;
     `,
 

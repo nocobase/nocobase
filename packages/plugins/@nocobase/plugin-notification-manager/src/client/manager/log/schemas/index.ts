@@ -271,6 +271,7 @@ export const messageLogsManagerSchema: ISchema = {
                       type: 'void',
                       'x-component': 'FormV2',
                       'x-use-component-props': 'useEditFormProps',
+                      'x-decorator': 'BlockItemCard',
                       properties: {
                         ...detailFromProperties,
                         footer: {

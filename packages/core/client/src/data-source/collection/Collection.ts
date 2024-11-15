@@ -164,6 +164,9 @@ export class Collection {
 
     return this.primaryKey;
   }
+  getFilterTargetKey() {
+    return this.filterTargetKey || this.getPrimaryKey() || 'id';
+  }
 
   get inherits() {
     return this.options.inherits || [];
@@ -248,6 +251,10 @@ export class Collection {
    */
   getFields(predicate?: GetCollectionFieldPredicate) {
     return predicate ? filter(this.fields, predicate) : this.fields;
+  }
+
+  getAllFields(predicate?: GetCollectionFieldPredicate) {
+    return this.getFields(predicate);
   }
 
   protected getFieldsMap() {

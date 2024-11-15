@@ -7,10 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CollectionOptions } from '@nocobase/client';
 import { COLLECTION_NAME } from '../constant';
 
-const collectionOption: CollectionOptions = {
+export default {
   name: COLLECTION_NAME.logs,
   title: 'MessageLogs',
   fields: [
@@ -96,7 +95,7 @@ const collectionOption: CollectionOptions = {
     },
     {
       name: 'reason',
-      type: 'string',
+      type: 'text',
       interface: 'input',
       uiSchema: {
         type: 'string',
@@ -132,5 +131,3 @@ const collectionOption: CollectionOptions = {
     },
   ],
 };
-
-export default collectionOption;

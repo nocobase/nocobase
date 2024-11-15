@@ -75,18 +75,23 @@ describe('targetKey', () => {
       ],
     });
     await db.sync();
+
     const r1 = db.getRepository('a1');
     const r2 = db.getRepository('b1');
+
     const b1 = await r2.create({
       values: {},
     });
+
     await r1.create({
       values: {
         name: 'a1',
         b1: [b1.toJSON()],
       },
     });
+
     const b1r = await b1.reload();
+
     expect(b1r.a1Id).toBe(b1.id);
   });
 

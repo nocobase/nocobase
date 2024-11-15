@@ -480,7 +480,7 @@ export class PluginACLServer extends Plugin {
       };
     });
 
-    this.app.resourcer.use(async (ctx, next) => {
+    this.app.resourceManager.use(async function showAnonymous(ctx, next) {
       const { actionName, resourceName, params } = ctx.action;
       const { showAnonymous } = params || {};
       if (actionName === 'list' && resourceName === 'roles') {
@@ -561,7 +561,6 @@ export class PluginACLServer extends Plugin {
       }
     });
 
-    // throw error when user has no fixed params permissions
     this.app.acl.use(
       async (ctx: any, next) => {
         const action = ctx.permission?.can?.action;
@@ -570,6 +569,15 @@ export class PluginACLServer extends Plugin {
           const repository = actionUtils.getRepositoryFromParams(ctx);
 
           if (!repository) {
+            await next();
+            return;
+          }
+
+          const hasFilterByTk = (params) => {
+            return JSON.stringify(params).includes('filterByTk');
+          };
+
+          if (!hasFilterByTk(ctx.permission.mergedParams) || !hasFilterByTk(ctx.permission.rawParams)) {
             await next();
             return;
           }
@@ -598,7 +606,7 @@ export class PluginACLServer extends Plugin {
 
     // append allowedActions to list & get response
     this.app.use(
-      async (ctx, next) => {
+      async function withACLMetaMiddleware(ctx, next) {
         try {
           await withACLMeta(ctx, next);
         } catch (error) {

@@ -47,13 +47,14 @@ export const MobileTabBarItem: FC<MobileTabBarItemProps> = (props) => {
       })}
       style={{ lineHeight: 1 }}
     >
-      <Badge content={badge}>
+      <Badge content={badge} style={{ '--top': '5px' }}>
         <span className={'adm-tab-bar-item-icon'}>{icon}</span>
       </Badge>
       <span
         className={classnames('adm-tab-bar-item-title', {
           ['adm-tab-bar-item-title-with-icon']: icon,
         })}
+        style={{ fontSize: '12px' }}
       >
         {title}
       </span>

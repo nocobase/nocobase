@@ -467,7 +467,7 @@ describe('Application', () => {
         .toMatchInlineSnapshot(`
         [
           {
-            "label": "TestComponent",
+            "label": "{{t("TestComponent")}}",
             "useProps": [Function],
             "value": "TestComponent",
           },

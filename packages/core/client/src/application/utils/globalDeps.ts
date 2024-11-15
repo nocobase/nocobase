@@ -41,6 +41,7 @@ import * as ReactRouter from 'react-router';
 import * as ReactRouterDom from 'react-router-dom';
 import jsxRuntime from 'react/jsx-runtime';
 import * as nocobaseClient from '../../index';
+import * as FileSaver from 'file-saver';
 
 import type { RequireJS } from './requirejs';
 
@@ -101,4 +102,5 @@ export function defineGlobalDeps(requirejs: RequireJS) {
   requirejs.define('ahooks', () => ahooks);
   requirejs.define('@emotion/css', () => emotionCss);
   requirejs.define('dayjs', () => dayjs);
+  requirejs.define('file-saver', () => FileSaver);
 }

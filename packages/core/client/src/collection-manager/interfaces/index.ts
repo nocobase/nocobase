@@ -47,3 +47,5 @@ export * from './nanoid';
 export * from './unixTimestamp';
 export * from './dateOnly';
 export * from './datetimeNoTz';
+
+export { getUniqueKeyFromCollection } from './utils';

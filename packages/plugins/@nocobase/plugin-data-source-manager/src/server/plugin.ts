@@ -22,6 +22,7 @@ import { DataSourcesRolesResourcesModel } from './models/connections-roles-resou
 import { DataSourcesRolesResourcesActionModel } from './models/connections-roles-resources-action';
 import { DataSourceModel } from './models/data-source';
 import { DataSourcesRolesModel } from './models/data-sources-roles-model';
+import { LoadingProgress } from '@nocobase/data-source-manager';
 
 type DataSourceState = 'loading' | 'loaded' | 'loading-failed' | 'reloading' | 'reloading-failed';
 
@@ -126,6 +127,10 @@ export class PluginDataSourceManagerServer extends Plugin {
     }
   }
 
+  public dataSourceLoadingProgress: {
+    [dataSourceKey: string]: LoadingProgress;
+  } = {};
+
   async beforeLoad() {
     this.app.db.registerModels({
       DataSourcesCollectionModel,
@@ -177,6 +182,10 @@ export class PluginDataSourceManagerServer extends Plugin {
 
         const klass = this.app.dataSourceManager.factory.getClass(type);
 
+        if (!klass) {
+          throw new Error(`Data source type "${type}" is not registered`);
+        }
+
         try {
           await klass.testConnection(dataSourceOptions);
         } catch (error) {
@@ -222,7 +231,7 @@ export class PluginDataSourceManagerServer extends Plugin {
 
     const app = this.app;
 
-    this.app.use(async (ctx, next) => {
+    this.app.use(async function setDataSourceListItemStatus(ctx, next) {
       await next();
       if (!ctx.action) {
         return;
@@ -253,11 +262,11 @@ export class PluginDataSourceManagerServer extends Plugin {
               return data;
             }
 
-            const dataSourceStatus = this.dataSourceStatus[item.get('key')];
+            const dataSourceStatus = plugin.dataSourceStatus[item.get('key')];
             data['status'] = dataSourceStatus;
 
             if (dataSourceStatus === 'loading-failed' || dataSourceStatus === 'reloading-failed') {
-              data['errorMessage'] = this.dataSourceErrors[item.get('key')].message;
+              data['errorMessage'] = plugin.dataSourceErrors[item.get('key')].message;
             }
 
             return data;
@@ -324,7 +333,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       return item;
     };
 
-    this.app.resourcer.use(async (ctx, next) => {
+    this.app.resourceManager.use(async function setDataSourceListDefaultSort(ctx, next) {
       if (!ctx.action) {
         await next();
         return;
@@ -341,7 +350,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       await next();
     });
 
-    this.app.use(async (ctx, next) => {
+    this.app.use(async function handleAppendDataSourceCollection(ctx, next) {
       await next();
 
       if (!ctx.action) {
@@ -461,7 +470,9 @@ export class PluginDataSourceManagerServer extends Plugin {
 
     this.app.db.on('dataSourcesCollections.afterDestroy', async (model: DataSourcesCollectionModel, options) => {
       const dataSource = this.app.dataSourceManager.dataSources.get(model.get('dataSourceKey'));
-      dataSource.collectionManager.removeCollection(model.get('name'));
+      if (dataSource) {
+        dataSource.collectionManager.removeCollection(model.get('name'));
+      }
 
       this.sendSyncMessage(
         {
@@ -679,7 +690,7 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     // add global roles check
-    this.app.resourcer.use(async (ctx, next) => {
+    this.app.resourceManager.use(async function appendDataToRolesCheck(ctx, next) {
       const action = ctx.action;
       await next();
       const { resourceName, actionName } = action.params;
@@ -689,12 +700,12 @@ export class PluginDataSourceManagerServer extends Plugin {
 
         ctx.bodyMeta = {
           dataSources: dataSources.reduce((carry, dataSourceModel) => {
-            const dataSource = this.app.dataSourceManager.dataSources.get(dataSourceModel.get('key'));
+            const dataSource = self.app.dataSourceManager.dataSources.get(dataSourceModel.get('key'));
             if (!dataSource) {
               return carry;
             }
 
-            const dataSourceStatus = this.dataSourceStatus[dataSourceModel.get('key')];
+            const dataSourceStatus = self.dataSourceStatus[dataSourceModel.get('key')];
             if (dataSourceStatus !== 'loaded') {
               return carry;
             }

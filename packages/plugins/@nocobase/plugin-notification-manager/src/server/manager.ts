@@ -10,18 +10,25 @@
 import { Registry } from '@nocobase/utils';
 import { COLLECTION_NAME } from '../constant';
 import PluginNotificationManagerServer from './plugin';
-import type { NotificationChannelConstructor, RegisterServerTypeFnParams, SendOptions, WriteLogOptions } from './types';
+import type {
+  NotificationChannelConstructor,
+  RegisterServerTypeFnParams,
+  SendOptions,
+  SendUserOptions,
+  WriteLogOptions,
+} from './types';
+import { compile } from './utils/compile';
 
 export class NotificationManager implements NotificationManager {
   private plugin: PluginNotificationManagerServer;
-  private notificationTypes = new Registry<{ Channel: NotificationChannelConstructor }>();
+  public channelTypes = new Registry<{ Channel: NotificationChannelConstructor }>();
 
   constructor({ plugin }: { plugin: PluginNotificationManagerServer }) {
     this.plugin = plugin;
   }
 
   registerType({ type, Channel }: RegisterServerTypeFnParams) {
-    this.notificationTypes.register(type, { Channel });
+    this.channelTypes.register(type, { Channel });
   }
 
   createSendingRecord = async (options: WriteLogOptions) => {
@@ -29,45 +36,25 @@ export class NotificationManager implements NotificationManager {
     return logsRepo.create({ values: options });
   };
 
-  async parseReceivers(receiverType, receiversConfig, processor, node) {
-    const configAssignees = processor
-      .getParsedValue(node.config.assignees ?? [], node.id)
-      .flat()
-      .filter(Boolean);
-    const assignees = new Set();
-    const UserRepo = processor.options.plugin.app.db.getRepository('users');
-    for (const item of configAssignees) {
-      if (typeof item === 'object') {
-        const result = await UserRepo.find({
-          ...item,
-          fields: ['id'],
-          transaction: processor.transaction,
-        });
-        result.forEach((item) => assignees.add(item.id));
-      } else {
-        assignees.add(item);
-      }
-    }
-
-    return [...assignees];
-  }
-
   async send(params: SendOptions) {
     this.plugin.logger.info('receive sending message request', params);
     const channelsRepo = this.plugin.app.db.getRepository(COLLECTION_NAME.channels);
+    const message = compile(params.message ?? {}, params.data ?? {});
+    const messageData = { ...(params.receivers ? { receivers: params.receivers } : {}), ...message };
     const logData: any = {
       triggerFrom: params.triggerFrom,
       channelName: params.channelName,
-      message: params.message,
+      message: messageData,
     };
     try {
       const channel = await channelsRepo.findOne({ filterByTk: params.channelName });
       if (channel) {
-        const Channel = this.notificationTypes.get(channel.notificationType).Channel;
+        const Channel = this.channelTypes.get(channel.notificationType).Channel;
         const instance = new Channel(this.plugin.app);
         logData.channelTitle = channel.title;
         logData.notificationType = channel.notificationType;
-        const result = await instance.send({ message: params.message, channel });
+        logData.receivers = params.receivers;
+        const result = await instance.send({ message, channel, receivers: params.receivers });
         logData.status = result.status;
         logData.reason = result.reason;
       } else {
@@ -78,10 +65,26 @@ export class NotificationManager implements NotificationManager {
       return logData;
     } catch (error) {
       logData.status = 'failure';
-      logData.reason = error.reason;
+      this.plugin.logger.error(`notification send failed, options: ${JSON.stringify(error)}`);
+      logData.reason = JSON.stringify(error);
       this.createSendingRecord(logData);
       return logData;
     }
+  }
+  async sendToUsers(options: SendUserOptions) {
+    this.plugin.logger.info(`notificationManager.sendToUsers options: ${JSON.stringify(options)}`);
+    const { userIds, channels, message, data = {} } = options;
+    return await Promise.all(
+      channels.map((channelName) =>
+        this.send({
+          channelName,
+          message,
+          data,
+          triggerFrom: 'sendToUsers',
+          receivers: { value: userIds, type: 'userId' },
+        }),
+      ),
+    );
   }
 }
 

@@ -32,6 +32,15 @@ export class SelectInterface extends BaseInterface {
   toString(value: any, ctx?: any) {
     const enumConfig = this.options.uiSchema?.enum || [];
     const option = enumConfig.find((item) => item.value === value);
-    return option?.label || value;
+
+    if (option) {
+      if (ctx?.t) {
+        return ctx.t(option.label, { ns: 'lm-collections' });
+      }
+
+      return option.label;
+    }
+
+    return value;
   }
 }

@@ -112,13 +112,7 @@ describe('create with exception', () => {
 
     expect(response.statusCode).toEqual(400);
 
-    expect(response.body).toEqual({
-      errors: [
-        {
-          message: 'name must be unique',
-        },
-      ],
-    });
+    expect(response.body['errors'][0]['message']).toBe('name already exists');
   });
 
   it('should render error with field title', async () => {
@@ -174,7 +168,7 @@ describe('create with exception', () => {
           const db: Database = ctx.db;
 
           const sql = `INSERT INTO ${userCollection.model.tableName} (name)
-                   VALUES (:name)`;
+                       VALUES (:name)`;
 
           await db.sequelize.query(sql, {
             replacements: { name: ctx.action.params.values.name },

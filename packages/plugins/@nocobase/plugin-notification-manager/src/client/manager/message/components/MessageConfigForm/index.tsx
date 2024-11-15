@@ -7,30 +7,25 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrayItems } from '@formily/antd-v5';
-import { SchemaComponent, css } from '@nocobase/client';
-import { onFieldValueChange } from '@formily/core';
-import { observer, useField, useForm, useFormEffects } from '@formily/react';
-
-import { useAPIClient, Variable } from '@nocobase/client';
+import { SchemaComponent } from '@nocobase/client';
+import { observer, useField } from '@formily/react';
+import { useAPIClient } from '@nocobase/client';
 import { useChannelTypeMap } from '../../../../hooks';
 import { useNotificationTranslation } from '../../../../locale';
 import { COLLECTION_NAME } from '../../../../../constant';
-import { UsersAddition } from '../ReceiverConfigForm/Users/UsersAddition';
-import { UsersSelect } from '../ReceiverConfigForm/Users/Select';
 export const MessageConfigForm = observer<{ variableOptions: any }>(
   ({ variableOptions }) => {
     const field = useField();
-    const form = useForm();
-    const { channelName, receiverType } = field.form.values;
-    const [providerName, setProviderName] = useState(null);
+    const { channelName } = field.form.values;
+    const [channelType, setChannelType] = useState(null);
     const { t } = useNotificationTranslation();
     const api = useAPIClient();
     useEffect(() => {
       const onChannelChange = async () => {
         if (!channelName) {
-          setProviderName(null);
+          setChannelType(null);
           return;
         }
         const { data } = await api.request({
@@ -40,25 +35,13 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
             filterByTk: channelName,
           },
         });
-        setProviderName(data?.data?.notificationType);
+        setChannelType(data?.data?.notificationType);
       };
       onChannelChange();
     }, [channelName, api]);
 
-    useFormEffects(() => {
-      onFieldValueChange('receiverType', (value) => {
-        field.form.values.receivers = [];
-      });
-    });
-
-    // useEffect(() => {
-    //   field.form.values.receivers = [];
-    // }, [field.form.values, receiverType]);
-    const providerMap = useChannelTypeMap();
-    const { MessageConfigForm = () => null } = (providerName ? providerMap[providerName] : {}).components || {};
-
-    const ReceiverInputComponent = receiverType === 'user' ? 'UsersSelect' : 'VariableInput';
-    const ReceiverAddition = receiverType === 'user' ? UsersAddition : ArrayItems.Addition;
+    const channelTypeMap = useChannelTypeMap();
+    const { MessageConfigForm = () => null } = (channelType ? channelTypeMap[channelType] : {}).components || {};
     const createMessageFormSchema = {
       type: 'void',
       properties: {
@@ -94,11 +77,7 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
       },
     };
     return (
-      <SchemaComponent
-        schema={createMessageFormSchema}
-        components={{ MessageConfigForm, ReceiverAddition, UsersSelect, ArrayItems, VariableInput: Variable.Input }}
-        scope={{ t }}
-      />
+      <SchemaComponent schema={createMessageFormSchema} components={{ MessageConfigForm, ArrayItems }} scope={{ t }} />
     );
   },
   { displayName: 'MessageConfigForm' },

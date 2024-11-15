@@ -8,7 +8,7 @@
  */
 
 import { BaseInterface } from './base-interface';
-import { getDefaultFormat, moment2str, str2moment } from '@nocobase/utils';
+import { getDefaultFormat, str2moment } from '@nocobase/utils';
 import dayjs from 'dayjs';
 import { getJsDateFromExcel } from 'excel-date-to-js';
 
@@ -51,11 +51,7 @@ export class DatetimeInterface extends BaseInterface {
     } else if (isNumeric(value)) {
       return getJsDateFromExcel(value).toISOString();
     } else if (typeof value === 'string') {
-      const props = ctx.field?.options?.uiSchema?.['x-component-props'] || {};
-      const m = dayjs(value);
-      if (m.isValid()) {
-        return moment2str(m, props);
-      }
+      return value;
     }
 
     throw new Error(`Invalid date - ${value}`);

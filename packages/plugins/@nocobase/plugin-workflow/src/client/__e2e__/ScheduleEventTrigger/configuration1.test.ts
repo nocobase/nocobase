@@ -44,13 +44,13 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
 
     //配置工作流触发器
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     // 2、测试步骤：跳转到工作流管理页面
     await page.getByRole('link', { name: 'Workflow' }).click();
 
     // 3、预期结果：跳转路径正确
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     expect(page.url()).toBe(`${process.env.APP_BASE_URL}/admin/settings/workflow`);
 
     // 4、后置处理：删除工作流
@@ -103,17 +103,17 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
     const getWorkflowExecuted = getWorkflowObj.executed;
     expect(getWorkflowExecuted).toBe(1);
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.getByLabel('more').click();
     await page.getByLabel('revision').click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     //元素重复
     await page.getByLabel('version', { exact: true }).click();
     await page.getByLabel('version-1').click();
     await page.getByRole('link', { name: 'Workflow' }).click();
 
     // 3、预期结果：跳转路径正确
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     expect(page.url()).toBe(`${process.env.APP_BASE_URL}/admin/settings/workflow`);
 
     // 4、后置处理：删除工作流

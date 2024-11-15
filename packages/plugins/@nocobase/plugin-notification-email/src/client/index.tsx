@@ -13,6 +13,7 @@ import { tval } from '@nocobase/utils/client';
 import { channelType, NAMESPACE } from '../constant';
 import { ChannelConfigForm } from './ConfigForm';
 import { MessageConfigForm } from './MessageConfigForm';
+import { ContentConfigForm } from './ContentConfigForm';
 export class PluginNotificationMailClient extends Plugin {
   async afterAdd() {}
 
@@ -25,6 +26,7 @@ export class PluginNotificationMailClient extends Plugin {
       components: {
         ChannelConfigForm: ChannelConfigForm,
         MessageConfigForm: MessageConfigForm,
+        ContentConfigForm,
       },
     });
   }

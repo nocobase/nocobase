@@ -7,11 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import helpers from '@budibase/handlebars-helpers';
-import { dayjs, getPickerFormat } from '@nocobase/utils/client';
-import Handlebars from 'handlebars';
+import { dayjs, getPickerFormat, Handlebars } from '@nocobase/utils/client';
 import _, { every, findIndex, some } from 'lodash';
-import url from 'url';
 import { replaceVariableValue } from '../../../block-provider/hooks';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { isVariable } from '../../../variables/utils/isVariable';
@@ -170,36 +167,6 @@ const getVariablesData = (localVariables) => {
   });
   return data;
 };
-const allHelpers = helpers();
-
-//遍历所有 helper 并手动注册到 Handlebars
-Object.keys(allHelpers).forEach(function (helperName) {
-  Handlebars.registerHelper(helperName, allHelpers[helperName]);
-});
-// 自定义 helper 来处理对象
-Handlebars.registerHelper('json', function (context) {
-  return JSON.stringify(context);
-});
-
-//重写urlParse
-Handlebars.registerHelper('urlParse', function (str) {
-  try {
-    return JSON.stringify(url.parse(str));
-  } catch (error) {
-    return `Invalid URL: ${str}`;
-  }
-});
-
-Handlebars.registerHelper('dateFormat', (date, format, tz) => {
-  if (typeof tz === 'string') {
-    return dayjs(date).tz(tz).format(format);
-  }
-  return dayjs(date).format(format);
-});
-
-Handlebars.registerHelper('isNull', (value) => {
-  return _.isNull(value);
-});
 
 export async function getRenderContent(templateEngine, content, variables, localVariables, defaultParse) {
   if (content && templateEngine === 'handlebars') {

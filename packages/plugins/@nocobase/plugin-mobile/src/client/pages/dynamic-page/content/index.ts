@@ -8,5 +8,6 @@
  */
 
 export * from './MobilePageContent';
+export * from './MobilePageContentContainer';
 export * from './initializer';
 export * from './schema';

@@ -35,7 +35,7 @@ export const getPageSchema = (schema) => {
   return getPageSchema(schema.parent);
 };
 
-const getCardItemSchema = (schema) => {
+export const getCardItemSchema = (schema) => {
   if (!schema) return null;
   if (['BlockItem', 'CardItem'].includes(schema['x-component'])) {
     return schema;

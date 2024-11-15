@@ -84,17 +84,20 @@ export class DataSourceManager {
   }
 
   middleware() {
-    return async (ctx, next) => {
+    const self = this;
+
+    return async function dataSourceManager(ctx, next) {
       const name = ctx.get('x-data-source') || 'main';
 
-      if (!this.dataSources.has(name)) {
+      if (!self.dataSources.has(name)) {
         ctx.throw(`data source ${name} does not exist`);
       }
 
-      const ds = this.dataSources.get(name);
+      const ds = self.dataSources.get(name);
       ctx.dataSource = ds;
 
-      return ds.middleware(this.middlewares)(ctx, next);
+      const composedFn = ds.middleware(self.middlewares);
+      return composedFn(ctx, next);
     };
   }
 

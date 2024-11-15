@@ -68,8 +68,8 @@ const ComponentDemoPro: FC<ComponentDemoProProps> = ({
       <div style={{ margin: 'auto', maxWidth: 960 }}>
         <Segmented
           options={[
-            { value: 'overview', label: locale.demo.overview },
-            { value: 'component', label: locale.demo.components },
+            { value: 'overview', label: locale.overview },
+            { value: 'component', label: locale.components },
           ]}
           value={mode}
           onChange={setMode as any}

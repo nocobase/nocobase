@@ -9,25 +9,25 @@
 
 import { observer, useField, useFieldSchema } from '@formily/react';
 import { Input as AntdInput, Button, Space, Spin, theme } from 'antd';
+import { TextAreaProps } from 'antd/es/input';
 import type { TextAreaRef } from 'antd/es/input/TextArea';
 import cls from 'classnames';
-import React, { useCallback, useEffect, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useGlobalTheme } from '../../../global-theme';
-import { useDesignable } from '../../hooks/useDesignable';
-import { MarkdownVoidDesigner } from './Markdown.Void.Designer';
-import { useStyles } from './style';
-import { TextAreaProps } from 'antd/es/input';
-import { useBlockHeight } from '../../hooks/useBlockSize';
-import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
-import { useCollectionRecord } from '../../../data-source';
-import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks/useVariableOptions';
-import { VariableSelect } from '../variable/VariableSelect';
-import { useLocalVariables, useVariables } from '../../../variables';
-import { registerQrcodeWebComponent } from './qrcode-webcom';
-import { getRenderContent } from '../../common/utils/uitls';
-import { parseMarkdown } from './util';
 import { useCompile } from '../../';
+import { useCollectionRecord } from '../../../data-source';
+import { useGlobalTheme } from '../../../global-theme';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
+import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks/useVariableOptions';
+import { useLocalVariables, useVariables } from '../../../variables';
+import { getRenderContent } from '../../common/utils/uitls';
+import { useBlockHeight } from '../../hooks/useBlockSize';
+import { useDesignable } from '../../hooks/useDesignable';
+import { VariableSelect } from '../variable/VariableSelect';
+import { MarkdownVoidDesigner } from './Markdown.Void.Designer';
+import { registerQrcodeWebComponent } from './qrcode-webcom';
+import { useStyles } from './style';
+import { parseMarkdown } from './util';
 export interface MarkdownEditorProps extends Omit<TextAreaProps, 'onSubmit'> {
   scope: any[];
   defaultValue?: string;
@@ -37,7 +37,7 @@ export interface MarkdownEditorProps extends Omit<TextAreaProps, 'onSubmit'> {
 
 const MarkdownEditor = (props: MarkdownEditorProps) => {
   const { scope } = props;
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [value, setValue] = useState(props.defaultValue);
   const inputRef = useRef<TextAreaRef>(null);
   const [options, setOptions] = useState([]);
@@ -87,7 +87,12 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
         <span style={{ marginLeft: '.25em' }} className={'ant-formily-item-extra'}>
           {t('Syntax references')}:
         </span>
-        <a href="https://handlebarsjs.com/guide/" target="_blank" rel="noreferrer">
+
+        <a
+          href={`https://${i18n.language === 'zh-CN' ? 'docs-cn' : 'docs'}.nocobase.com/handbook/template-handlebars`}
+          target="_blank"
+          rel="noreferrer"
+        >
           Handlebars.js
         </a>
       </>
@@ -145,15 +150,16 @@ export const MarkdownVoid: any = withDynamicSchemaProps(
     useEffect(() => {
       setLoading(true);
       const cvtContentToHTML = async () => {
-        const replacedContent = await getRenderContent(
-          engine,
-          content,
-          compile(variables),
-          compile(localVariables),
-          parseMarkdown,
-        );
-
-        setHtml(replacedContent);
+        setTimeout(async () => {
+          const replacedContent = await getRenderContent(
+            engine,
+            content,
+            compile(variables),
+            compile(localVariables),
+            parseMarkdown,
+          );
+          setHtml(replacedContent);
+        });
         setLoading(false);
       };
       cvtContentToHTML();

@@ -159,7 +159,7 @@ test.describe('form item & edit form', () => {
       gotoPage: async () => {
         record = await (async (mockPage, mockRecord) => {
           const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndChoicesFields).waitForInit();
-          const record = await mockRecord('general');
+          const record = await mockRecord('general', { checkbox: false });
           await nocoPage.goto();
 
           return record;
@@ -192,15 +192,18 @@ test.describe('form item & edit form', () => {
         ).toBeDisabled();
       },
       expectEasyReading: async () => {
-        // checkbox 应该被隐藏，然后只显示一个图标
-        await expect(
-          page.getByLabel('block-item-CollectionField-general-form-general.checkbox-checkbox').getByRole('checkbox'),
-        ).not.toBeVisible();
-        await expect(
-          page
-            .getByLabel('block-item-CollectionField-general-form-general.checkbox-checkbox')
-            .getByRole('img', { name: 'check' }),
-        ).toBeVisible({ visible: record.checkbox });
+        if (record.checkbox) {
+          await expect(
+            page
+              .getByLabel('block-item-CollectionField-general-form-general.checkbox-checkbox')
+              .getByRole('img', { name: 'check' }),
+          ).toBeVisible({ visible: record.checkbox });
+        } else {
+          // 未选中状态会显示一个禁用的 checkbox
+          await expect(
+            page.getByLabel('block-item-CollectionField-general-form-general.checkbox-checkbox').getByRole('checkbox'),
+          ).toBeDisabled();
+        }
       },
     });
   });

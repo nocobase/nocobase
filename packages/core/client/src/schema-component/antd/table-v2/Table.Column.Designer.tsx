@@ -172,7 +172,7 @@ export const TableColumnDesigner = (props) => {
             title: t('Column width'),
             properties: {
               width: {
-                default: columnSchema?.['x-component-props']?.['width'] || 200,
+                default: columnSchema?.['x-component-props']?.['width'] || 100,
                 'x-decorator': 'FormItem',
                 'x-component': 'InputNumber',
                 'x-component-props': {},

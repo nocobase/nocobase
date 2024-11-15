@@ -16,16 +16,20 @@ export default class extends Migration {
   on = 'afterLoad'; // 'beforeLoad' or 'afterLoad'
   appVersion = '<=1.3.0-beta';
 
+  async getTreeCollections({ transaction }) {
+    const treeCollections = await this.app.db.getRepository('collections').find({
+      appends: ['fields'],
+      filter: {
+        'options.tree': 'adjacencyList',
+      },
+      transaction,
+    });
+    return treeCollections;
+  }
+
   async up() {
     await this.db.sequelize.transaction(async (transaction) => {
-      const treeCollections = await this.app.db.getRepository('collections').find({
-        appends: ['fields'],
-        filter: {
-          'options.tree': 'adjacencyList',
-        },
-        transaction,
-      });
-
+      const treeCollections = await this.getTreeCollections({ transaction });
       for (const treeCollection of treeCollections) {
         const name = `main_${treeCollection.name}_path`;
         const collectionOptions = {
@@ -43,11 +47,18 @@ export default class extends Migration {
             },
           ],
         };
-        if (treeCollection.options.schema) {
-          collectionOptions['schema'] = treeCollection.options.schema;
+
+        const collectionInstance = this.db.getCollection(treeCollection.name);
+        const treeCollectionSchema = collectionInstance.collectionSchema();
+
+        if (this.app.db.inDialect('postgres') && treeCollectionSchema != this.app.db.options.schema) {
+          collectionOptions['schema'] = treeCollectionSchema;
         }
+
         this.app.db.collection(collectionOptions);
+
         const treeExistsInDb = await this.app.db.getCollection(name).existsInDb({ transaction });
+
         if (!treeExistsInDb) {
           await this.app.db.getCollection(name).sync({ transaction } as SyncOptions);
           const opts = {
@@ -59,9 +70,11 @@ export default class extends Migration {
               { type: 'integer', name: 'parentId' },
             ],
           };
-          if (treeCollection.options.schema) {
-            opts['schema'] = treeCollection.options.schema;
+
+          if (treeCollectionSchema != this.app.db.options.schema) {
+            opts['schema'] = treeCollectionSchema;
           }
+
           this.app.db.collection(opts);
           const chunkSize = 1000;
           await this.app.db.getRepository(treeCollection.name).chunk({

@@ -65,6 +65,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
         optionFilter,
         dataSource: propsDataSource,
         toOptionsItem = (value) => value,
+        popupMatchSelectWidth = false,
         ...others
       } = props;
       const dataSource = useDataSourceKey();
@@ -86,7 +87,12 @@ const InternalRemoteSelect = withDynamicSchemaProps(
 
       const operator = useMemo(() => {
         if (targetField?.interface) {
-          return getInterface(targetField.interface)?.filterable?.operators[0].value || '$includes';
+          const targetInterface = getInterface(targetField.interface);
+          const initialOperator = targetInterface?.filterable?.operators[0].value || '$includes';
+          if (targetField.type === 'string') {
+            return '$includes';
+          }
+          return initialOperator;
         }
         return '$includes';
       }, [targetField]);
@@ -240,7 +246,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
       return (
         <Select
           open={open}
-          popupMatchSelectWidth={false}
+          popupMatchSelectWidth={popupMatchSelectWidth}
           autoClearSearchValue
           filterOption={false}
           filterSort={null}

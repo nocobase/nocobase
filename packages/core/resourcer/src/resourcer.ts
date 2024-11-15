@@ -306,7 +306,9 @@ export class ResourceManager {
   }
 
   middleware({ prefix, accessors, skipIfDataSourceExists = false }: KoaMiddlewareOptions = {}) {
-    return async (ctx: ResourcerContext, next: () => Promise<any>) => {
+    const self = this;
+
+    return async function resourcerMiddleware(ctx: ResourcerContext, next: () => Promise<any>) {
       if (skipIfDataSourceExists) {
         const dataSource = ctx.get('x-data-source');
         if (dataSource) {
@@ -314,7 +316,7 @@ export class ResourceManager {
         }
       }
 
-      ctx.resourcer = this;
+      ctx.resourcer = self;
 
       let params = parseRequest(
         {
@@ -322,8 +324,8 @@ export class ResourceManager {
           method: ctx.request.method,
         },
         {
-          prefix: this.options.prefix || prefix,
-          accessors: this.options.accessors || accessors,
+          prefix: self.options.prefix || prefix,
+          accessors: self.options.accessors || accessors,
         },
       );
 
@@ -332,7 +334,7 @@ export class ResourceManager {
       }
 
       try {
-        const resource = this.getResource(getNameByParams(params));
+        const resource = self.getResource(getNameByParams(params));
 
         // 为关系资源时，暂时需要再执行一遍 parseRequest
         if (resource.options.type && resource.options.type !== 'single') {
@@ -343,8 +345,8 @@ export class ResourceManager {
               type: resource.options.type,
             },
             {
-              prefix: this.options.prefix || prefix,
-              accessors: this.options.accessors || accessors,
+              prefix: self.options.prefix || prefix,
+              accessors: self.options.accessors || accessors,
             },
           );
 
@@ -354,7 +356,7 @@ export class ResourceManager {
         }
 
         // action 需要 clone 之后再赋给 ctx
-        ctx.action = this.getAction(getNameByParams(params), params.actionName).clone();
+        ctx.action = self.getAction(getNameByParams(params), params.actionName).clone();
 
         ctx.action.setContext(ctx);
         ctx.action.actionName = params.actionName;

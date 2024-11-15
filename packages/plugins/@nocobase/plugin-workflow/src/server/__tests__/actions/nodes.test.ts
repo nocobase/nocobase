@@ -10,6 +10,7 @@
 import { MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
+import { JOB_STATUS } from '../../constants';
 
 describe('workflow > actions > workflows', () => {
   let app: MockServer;
@@ -242,6 +243,34 @@ describe('workflow > actions > workflows', () => {
 
       const nodes = await workflow.getNodes();
       expect(nodes.length).toBe(0);
+    });
+  });
+
+  describe('test', () => {
+    it('test method not implemented', async () => {
+      const { status } = await agent.resource('flow_nodes').test({ values: { type: 'error' } });
+
+      expect(status).toBe(400);
+    });
+
+    it('test method implemented', async () => {
+      const {
+        status,
+        body: { data },
+      } = await agent.resource('flow_nodes').test({ values: { type: 'echo' } });
+
+      expect(status).toBe(200);
+      expect(data.status).toBe(JOB_STATUS.RESOLVED);
+    });
+
+    it('test with pending status', async () => {
+      const {
+        status,
+        body: { data },
+      } = await agent.resource('flow_nodes').test({ values: { type: 'pending' } });
+
+      expect(status).toBe(200);
+      expect(data.status).toBe(JOB_STATUS.PENDING);
     });
   });
 });

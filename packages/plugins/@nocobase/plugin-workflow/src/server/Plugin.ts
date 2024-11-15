@@ -249,6 +249,7 @@ export default class PluginWorkflowServer extends Plugin {
         'executions:destroy',
         'flow_nodes:update',
         'flow_nodes:destroy',
+        'flow_nodes:test',
       ],
     });
 

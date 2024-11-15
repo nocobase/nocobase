@@ -11,6 +11,14 @@ if (require('semver').satisfies(process.version, '<16')) {
   process.exit(1);
 }
 
+if (__dirname.includes(' ')) {
+  console.error(chalk.red(`[nocobase cli]: PathError: Invalid path "${process.cwd()}"`));
+  console.error(
+    chalk.red('[nocobase cli]: PathError: The path cannot contain spaces. Please modify the path and try again.'),
+  );
+  process.exit(1);
+}
+
 // if (require('semver').satisfies(process.version, '>16') && !process.env.UNSET_NODE_OPTIONS) {
 //   if (process.env.NODE_OPTIONS) {
 //     let opts = process.env.NODE_OPTIONS;

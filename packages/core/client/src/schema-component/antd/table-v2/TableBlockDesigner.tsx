@@ -303,6 +303,30 @@ export const TableBlockDesigner = () => {
           });
         }}
       />
+      <SchemaSettingsSelectItem
+        title={t('Table size')}
+        value={field.componentProps?.size || 'middle'}
+        options={[
+          { label: t('Large'), value: 'large' },
+          { label: t('Middle'), value: 'middle' },
+          { label: t('Small'), value: 'small' },
+        ]}
+        onChange={(size) => {
+          const schema = fieldSchema.reduceProperties((_, s) => {
+            if (s['x-component'] === 'TableV2') {
+              return s;
+            }
+          }, null);
+          schema['x-component-props'] = schema['x-component-props'] || {};
+          schema['x-component-props']['size'] = size;
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: schema['x-uid'],
+              'x-decorator-props': schema['x-component-props'],
+            },
+          });
+        }}
+      />
       <SchemaSettingsConnectDataBlocks type={FilterBlockType.TABLE} emptyDescription={t('No blocks to connect')} />
       {supportTemplate && <SchemaSettingsDivider />}
       {supportTemplate && (

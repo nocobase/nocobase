@@ -101,6 +101,7 @@ export function useGetSchemaInitializerMenuItems(onClick?: (args: any) => void) 
               onClick: handleClick,
             }
           : {
+              style: item.style,
               key,
               label,
               onClick: handleClick,

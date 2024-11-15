@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-mobile-client",
-  "version": "1.4.0-alpha",
+  "version": "1.4.0-alpha.11",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/mobile-client",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/mobile-client",
@@ -18,7 +18,7 @@
     "@types/react-dom": "17.x",
     "ahooks": "3.x",
     "antd": "5.x",
-    "antd-mobile": "^5.29.1",
+    "antd-mobile": "^5.38",
     "antd-style": "3.x",
     "classnames": "2.x",
     "react": "18.x",

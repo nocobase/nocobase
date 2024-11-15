@@ -15,6 +15,8 @@ import { SchemaSettingsFormItemTemplate, SchemaSettingsLinkageRules } from '../.
 import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
+import { SchemaSettingsLayoutItem } from '../../../../schema-settings/SchemaSettingsLayoutItem';
+
 const commonItems: SchemaSettingsItemType[] = [
   {
     name: 'title',
@@ -51,6 +53,10 @@ const commonItems: SchemaSettingsItemType[] = [
         resourceName: defaultResource,
       };
     },
+  },
+  {
+    name: 'setBlockLayout',
+    Component: SchemaSettingsLayoutItem,
   },
   {
     name: 'divider',
