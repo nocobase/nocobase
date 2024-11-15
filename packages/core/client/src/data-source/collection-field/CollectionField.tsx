@@ -93,12 +93,22 @@ const CollectionFieldInternalField_deprecated: React.FC = (props: Props) => {
 };
 
 const CollectionFieldInternalField = (props) => {
+  const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { uiSchema } = useCollectionFieldUISchema();
   const Component = useComponent(
     fieldSchema['x-component-props']?.['component'] || uiSchema?.['x-component'] || 'Input',
   );
   const dynamicProps = useDynamicComponentProps(uiSchema?.['x-use-component-props'], props);
+
+  useEffect(() => {
+    // There seems to be a bug in formily where after setting a field to readPretty, switching to editable,
+    // then back to readPretty, and refreshing the page, the field remains in editable state. The expected state is readPretty.
+    // This code is meant to fix this issue.
+    if (fieldSchema['x-read-pretty'] === true && !field.readPretty) {
+      field.readPretty = true;
+    }
+  }, [field, fieldSchema]);
 
   if (!uiSchema) return null;
 
