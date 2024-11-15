@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RemoteSchemaComponent, AssociatedFields } from '@nocobase/client';
+import { RemoteSchemaComponent, AssociationField } from '@nocobase/client';
 import React, { useCallback } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
-import { Button as MobileButton, Form as MobileForm, List as MobileList, Dialog as MobileDialog } from 'antd-mobile';
+import { Button as MobileButton, Dialog as MobileDialog } from 'antd-mobile';
 import { MobilePicker } from './components/MobilePicker';
 import { MobileDateTimePicker } from './components/MobileDatePicker';
 
@@ -20,11 +20,9 @@ const mobileComponents = {
   DatePicker: MobileDateTimePicker,
   UnixTimestamp: MobileDateTimePicker,
   Modal: MobileDialog,
-  AssociatedFields: (
-    <div contentEditable="false">
-      <AssociatedFields />
-    </div>
-  ),
+  AssociationField: (props) => {
+    return <AssociationField {...props} popupMatchSelectWidth={true} />;
+  },
 };
 
 export const MobilePage = () => {
