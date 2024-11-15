@@ -439,39 +439,33 @@ export const InternalAdminLayout = () => {
   return (
     <Layout>
       <GlobalStyleForAdminLayout />
-      <CurrentPageUidProvider>
-        <CurrentTabUidProvider>
-          <IsSubPageClosedByPageMenuProvider>
-            <Layout.Header className={layoutHeaderCss}>
-              <div style={style1}>
-                <div style={style2}>
-                  <div className={className1}>{result.loading ? null : logo}</div>
-                  <div className={className4}>
-                    <SetThemeOfHeaderSubmenu>
-                      <MenuEditor sideMenuRef={sideMenuRef} />
-                    </SetThemeOfHeaderSubmenu>
-                  </div>
-                </div>
-                <div className={className5}>
-                  <PinnedPluginList />
-                  <ConfigProvider theme={theme}>
-                    <Divider type="vertical" />
-                  </ConfigProvider>
-                  <Help />
-                  <CurrentUser />
-                </div>
-              </div>
-            </Layout.Header>
-            <AdminSideBar sideMenuRef={sideMenuRef} />
-            {/* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */}
-            <Layout.Content className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
-              <header className={layoutContentHeaderClass}></header>
-              <Outlet />
-              {/* {service.contentLoading ? render() : <Outlet />} */}
-            </Layout.Content>
-          </IsSubPageClosedByPageMenuProvider>
-        </CurrentTabUidProvider>
-      </CurrentPageUidProvider>
+      <Layout.Header className={layoutHeaderCss}>
+        <div style={style1}>
+          <div style={style2}>
+            <div className={className1}>{result.loading ? null : logo}</div>
+            <div className={className4}>
+              <SetThemeOfHeaderSubmenu>
+                <MenuEditor sideMenuRef={sideMenuRef} />
+              </SetThemeOfHeaderSubmenu>
+            </div>
+          </div>
+          <div className={className5}>
+            <PinnedPluginList />
+            <ConfigProvider theme={theme}>
+              <Divider type="vertical" />
+            </ConfigProvider>
+            <Help />
+            <CurrentUser />
+          </div>
+        </div>
+      </Layout.Header>
+      <AdminSideBar sideMenuRef={sideMenuRef} />
+      {/* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */}
+      <Layout.Content className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
+        <header className={layoutContentHeaderClass}></header>
+        <Outlet />
+        {/* {service.contentLoading ? render() : <Outlet />} */}
+      </Layout.Content>
     </Layout>
   );
 };
@@ -496,9 +490,15 @@ export const AdminProvider = (props) => {
 
 export const AdminLayout = (props) => {
   return (
-    <AdminProvider>
-      <InternalAdminLayout {...props} />
-    </AdminProvider>
+    <CurrentPageUidProvider>
+      <CurrentTabUidProvider>
+        <IsSubPageClosedByPageMenuProvider>
+          <AdminProvider>
+            <InternalAdminLayout {...props} />
+          </AdminProvider>
+        </IsSubPageClosedByPageMenuProvider>
+      </CurrentTabUidProvider>
+    </CurrentPageUidProvider>
   );
 };
 
