@@ -171,6 +171,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
                   schema={columnSchema}
                   uiSchema={uiSchema}
                   onlyRenderProperties
+                  propsRecursion
                   filterProperties={(schema) =>
                     isBulkEditAction(schema) ||
                     !isPopupVisibleControlledByURL() ||
