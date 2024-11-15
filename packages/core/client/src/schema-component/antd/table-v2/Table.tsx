@@ -210,6 +210,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
                       deleteCount: deleteCount,
                     });
                     field.value.splice(fieldIndex, deleteCount);
+                    field.setInitialValue(field.value);
                     return field.onInput(field.value);
                   });
                 }}
