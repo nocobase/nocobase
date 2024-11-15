@@ -9,6 +9,7 @@
 
 import { Context, utils } from '@nocobase/actions';
 import { MultipleRelationRepository, Op, Repository } from '@nocobase/database';
+import WorkflowPlugin from '..';
 import type { WorkflowModel } from '../types';
 
 export async function create(context: Context, next) {
@@ -218,4 +219,24 @@ export async function update(context: Context, next) {
   });
 
   await next();
+}
+
+export async function test(context: Context, next) {
+  const { values = {} } = context.action.params;
+  const { type, config = {} } = values;
+  const plugin = context.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
+  const instruction = plugin.instructions.get(type);
+  if (!instruction) {
+    context.throw(400, `instruction "${type}" not registered`);
+  }
+  if (typeof instruction.test !== 'function') {
+    context.throw(400, `test method of instruction "${type}" not implemented`);
+  }
+  try {
+    context.body = await instruction.test(config);
+  } catch (error) {
+    context.throw(500, error.message);
+  }
+
+  next();
 }

@@ -29,7 +29,7 @@ test.describe('where map block can be added', () => {
 
     // 2. 点击跳转按钮去配置页面，配置好后返回刚才的页面，应该能正常显示地图
     await page.getByRole('button', { name: 'Go to the configuration page' }).click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.waitForTimeout(1000);
     if (await page.getByRole('button', { name: 'Edit' }).first().isVisible()) {
       await page.getByRole('button', { name: 'Edit' }).first().click();
@@ -49,7 +49,7 @@ test.describe('where map block can be added', () => {
 
     // 4. 清空配置信息，以免影响其他测试用例
     await page.goto('/admin/settings/map');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.waitForTimeout(1000);
     await page.getByRole('button', { name: 'Edit' }).first().click();
     await page.getByLabel('Access key').clear();

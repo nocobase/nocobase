@@ -173,6 +173,7 @@ const workflowFieldset = {
 };
 
 export const workflowSchema: ISchema = {
+  name: 'workflow',
   type: 'void',
   properties: {
     provider: {

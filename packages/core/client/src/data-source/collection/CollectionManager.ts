@@ -141,6 +141,10 @@ export class CollectionManager {
     return this.getCollection(collectionName)?.getFields(predicate) || [];
   }
 
+  getCollectionAllFields(collectionName: string, predicate?: GetCollectionFieldPredicate) {
+    return this.getCollection(collectionName)?.getAllFields(predicate) || [];
+  }
+
   /**
    * @example
    * getFilterByTK('users', { id: 1 }); // 1
@@ -160,7 +164,6 @@ export class CollectionManager {
       );
       return;
     }
-    const getTargetKey = (collection: Collection) => collection.filterTargetKey || collection.getPrimaryKey() || 'id';
 
     const buildFilterByTk = (targetKey: string | string[], record: Record<string, any>) => {
       if (Array.isArray(targetKey)) {
@@ -175,7 +178,7 @@ export class CollectionManager {
     };
 
     if (collectionOrAssociation instanceof Collection) {
-      const targetKey = getTargetKey(collectionOrAssociation);
+      const targetKey = collectionOrAssociation.getFilterTargetKey();
       return buildFilterByTk(targetKey, collectionRecordOrAssociationRecord);
     }
 
@@ -200,7 +203,7 @@ export class CollectionManager {
       );
       return;
     }
-    const targetKey = getTargetKey(targetCollection);
+    const targetKey = targetCollection.getFilterTargetKey();
     return buildFilterByTk(targetKey, collectionRecordOrAssociationRecord);
   }
 

@@ -72,7 +72,7 @@ describe('isSpecialCaseField', () => {
       type: 'hasOne',
     };
     const fieldSchema: any = {
-      default: '',
+      default: '{{ $context }}',
     };
     const getCollectionField = vi.fn().mockReturnValue(null);
 
@@ -92,7 +92,7 @@ describe('isSpecialCaseField', () => {
       },
     };
     const fieldSchema: any = {
-      default: '',
+      default: '{{ $context }}',
       parent: parentFieldSchema,
     };
 
@@ -116,7 +116,7 @@ describe('isSpecialCaseField', () => {
       },
     };
     const fieldSchema: any = {
-      default: '',
+      default: '{{ $context }}',
       parent: parentFieldSchema,
     };
     const getCollectionField = vi.fn().mockReturnValue({

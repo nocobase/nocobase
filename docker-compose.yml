@@ -24,6 +24,24 @@ services:
       - "${DB_MYSQL_PORT}:3306"
     networks:
       - nocobase
+  kingbase:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
+    platform: linux/amd64
+    restart: always
+    privileged: true
+    networks:
+      - nocobase
+    ports:
+      - "${DB_KINGBASE_PORT}:54321"
+    environment:
+      ENABLE_CI: no
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_MODE: pg
+      NEED_START: yes
+    command: ["/usr/sbin/init"]
+    volumes:
+      - ./storage/db/kingbase:/home/kingbase/userdata
   postgres:
     image: postgres:latest
     restart: always

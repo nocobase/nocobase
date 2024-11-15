@@ -18,7 +18,7 @@ import {
   useAsyncData,
   useSchemaComponentContext,
 } from '@nocobase/client';
-import { Button, Dropdown, Empty } from 'antd';
+import { Button, Dropdown, Empty, Card } from 'antd';
 import React, { useState } from 'react';
 import channelCollection from '../../../../collections/channel';
 import messageLogCollection from '../../../../collections/messageLog';
@@ -31,6 +31,8 @@ import {
   useEditActionProps,
   useEditFormProps,
   useNotificationTypes,
+  useRecordDeleteActionProps,
+  useRecordEditActionProps,
 } from '../hooks';
 import { channelsSchema, createFormSchema } from '../schemas';
 import { ConfigForm } from './ConfigForm';
@@ -48,7 +50,7 @@ const AddNew = () => {
   const [visible, setVisible] = useState(false);
   const { NotificationTypeNameProvider, name, setName } = useNotificationTypeNameProvider();
   const api = useAPIClient();
-  const channelTypes = useChannelTypes();
+  const channelTypes = useChannelTypes().filter((item) => !(item.meta?.creatable === false));
   const items =
     channelTypes.length === 0
       ? [
@@ -128,20 +130,24 @@ export const ChannelManager = () => {
     <ExtendCollectionsProvider collections={[channelCollection, messageLogCollection]}>
       <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
         <NotificationTypesContext.Provider value={{ channelTypes: notificationTypes }}>
-          <SchemaComponent
-            schema={channelsSchema}
-            components={{ AddNew, ConfigForm }}
-            scope={{
-              useCanNotDelete,
-              t,
-              notificationTypeOptions: notificationTypes,
-              useCreateActionProps,
-              useEditActionProps,
-              useCloseActionProps,
-              useEditFormProps,
-              useCreateFormProps,
-            }}
-          />
+          <Card bordered={false}>
+            <SchemaComponent
+              schema={channelsSchema}
+              components={{ AddNew, ConfigForm }}
+              scope={{
+                useCanNotDelete,
+                t,
+                notificationTypeOptions: notificationTypes,
+                useCreateActionProps,
+                useEditActionProps,
+                useCloseActionProps,
+                useEditFormProps,
+                useCreateFormProps,
+                useRecordDeleteActionProps,
+                useRecordEditActionProps,
+              }}
+            />
+          </Card>
         </NotificationTypesContext.Provider>
       </SchemaComponentContext.Provider>
     </ExtendCollectionsProvider>

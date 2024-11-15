@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { ActionContextProvider, DropdownVisibleContext, SchemaComponent, useActionContext } from '../';
 import { useAPIClient } from '../api-client';
 import { useNavigate } from 'react-router-dom';
+import { useSystemSettings } from '../';
 
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
@@ -53,6 +54,9 @@ const schema: ISchema = {
     [uid()]: {
       'x-decorator': 'Form',
       'x-component': 'Action.Drawer',
+      'x-component-props': {
+        zIndex: 10000,
+      },
       type: 'void',
       title: '{{t("Change password")}}',
       properties: {
@@ -129,8 +133,10 @@ export const useChangePassword = () => {
   const ctx = useContext(DropdownVisibleContext);
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
+  const { data } = useSystemSettings();
+  const { enableChangePassword } = data?.data || {};
 
-  return useMemo<MenuProps['items'][0]>(() => {
+  const result = useMemo<MenuProps['items'][0]>(() => {
     return {
       key: 'password',
       eventKey: 'ChangePassword',
@@ -150,4 +156,9 @@ export const useChangePassword = () => {
       ),
     };
   }, [visible]);
+  if (enableChangePassword === false) {
+    return null;
+  }
+
+  return result;
 };

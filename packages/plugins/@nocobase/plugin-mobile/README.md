@@ -1,15 +1,30 @@
-# Mobile
+# NocoBase
 
-English | [中文](./README.zh-CN.md)
+<video width="100%" controls>
+      <source src="https://static-docs.nocobase.com/NocoBase0510.mp4" type="video/mp4">
+</video>
 
-多应用管理插件。
 
-## 安装激活
+## What is NocoBase
 
-```bash
-yarn pm enable @nocobase/plugin-mobile
-```
+NocoBase is a scalability-first, open-source no-code development platform.  
+Instead of investing years of time and millions of dollars in research and development, deploy NocoBase in a few minutes and you'll have a private, controllable, and extremely scalable no-code development platform!
 
-## 文档
+Homepage:  
+https://www.nocobase.com/
 
-[使用文档](https://docs.nocobase.com/handbook/mobile)
+Online Demo:  
+https://demo.nocobase.com/new
+
+Documents:  
+https://docs.nocobase.com/
+
+Commericial license & plugins:  
+https://www.nocobase.com/en/commercial
+
+License agreement:   
+https://www.nocobase.com/en/agreement
+
+
+## Contact Us:  
+hello@nocobase.com

@@ -69,10 +69,10 @@ test.describe('Configuration page copy to new version', () => {
     await page.waitForTimeout(1000);
 
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.getByLabel('more').click();
     await page.getByLabel('revision').click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     // 3、预期结果：新版本工作流配置内容同旧版本一样
     const formEventTriggerNode = new FormEventTriggerNode(page, workFlowName, triggerNodeCollectionName);

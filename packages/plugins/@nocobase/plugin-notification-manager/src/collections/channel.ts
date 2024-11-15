@@ -8,16 +8,20 @@
  */
 
 import { COLLECTION_NAME } from '../constant';
-import { CollectionOptions } from '@nocobase/client';
 
-const channelCollection: CollectionOptions = {
+export default {
   name: COLLECTION_NAME.channels,
-  autoGenId: false,
   filterTargetKey: 'name',
+  autoGenId: false,
+  createdAt: true,
+  createdBy: true,
+  updatedAt: true,
+  updatedBy: true,
   fields: [
     {
       name: 'name',
       type: 'uid',
+      prefix: 's_',
       primaryKey: true,
       interface: 'input',
       uiSchema: {
@@ -51,6 +55,11 @@ const channelCollection: CollectionOptions = {
       },
     },
     {
+      name: 'meta',
+      type: 'json',
+      interface: 'json',
+    },
+    {
       interface: 'input',
       type: 'string',
       name: 'notificationType',
@@ -72,55 +81,5 @@ const channelCollection: CollectionOptions = {
         title: '{{t("Description")}}',
       },
     },
-    {
-      name: 'CreatedAt',
-      type: 'date',
-      interface: 'createdAt',
-      field: 'createdAt',
-      uiSchema: {
-        type: 'datetime',
-        title: '{{t("Created at")}}',
-        'x-component': 'DatePicker',
-        'x-component-props': {},
-        'x-read-pretty': true,
-      },
-    },
-    {
-      name: 'createdBy',
-      type: 'belongsTo',
-      interface: 'createdBy',
-      description: null,
-      parentKey: null,
-      reverseKey: null,
-      target: 'users',
-      foreignKey: 'createdById',
-      uiSchema: {
-        type: 'object',
-        title: '{{t("Created by")}}',
-        'x-component': 'AssociationField',
-        'x-component-props': {
-          fieldNames: {
-            value: 'id',
-            label: 'nickname',
-          },
-        },
-        'x-read-pretty': true,
-      },
-      targetKey: 'id',
-    },
-    {
-      name: 'updatedAt',
-      type: 'date',
-      interface: 'updatedAt',
-      field: 'updatedAt',
-      uiSchema: {
-        type: 'string',
-        title: '{{t("Last updated at")}}',
-        'x-component': 'DatePicker',
-        'x-component-props': {},
-        'x-read-pretty': true,
-      },
-    },
   ],
 };
-export default channelCollection;

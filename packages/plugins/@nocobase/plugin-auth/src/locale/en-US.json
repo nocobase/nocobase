@@ -23,5 +23,10 @@
   "No authentication methods available.": "No authentication methods available.",
   "The password is inconsistent, please re-enter": "The password is inconsistent, please re-enter",
   "Sign-in": "Sign-in",
-  "Password": "Password"
+  "Password": "Password",
+  "The username/email or password is incorrect, please re-enter": "The username/email or password is incorrect, please re-enter",
+  "Show": "Show",
+  "Sign up settings": "Sign up settings",
+  "Sign up form": "Sign up form",
+  "At least one field is required": "At least one field is required"
 }

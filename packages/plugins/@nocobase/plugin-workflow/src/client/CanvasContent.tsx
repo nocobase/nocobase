@@ -18,6 +18,7 @@ import { useFlowContext } from './FlowContext';
 import { lang } from './locale';
 import useStyles from './style';
 import { TriggerConfig } from './triggers';
+import { AddNodeContextProvider } from './AddNodeContext';
 
 export function CanvasContent({ entry }) {
   const { styles } = useStyles();
@@ -27,41 +28,43 @@ export function CanvasContent({ entry }) {
   return (
     <div className="workflow-canvas-wrapper">
       <ErrorBoundary FallbackComponent={ErrorFallback} onError={console.error}>
-        <div className="workflow-canvas" style={{ zoom: zoom / 100 }}>
-          <div
-            className={cx(
-              styles.branchBlockClass,
-              css`
-                margin-top: 0 !important;
-              `,
-            )}
-          >
-            <div className={styles.branchClass}>
-              {workflow?.executed ? (
-                <Alert
-                  type="warning"
-                  message={lang('Executed workflow cannot be modified. Could be copied to a new version to modify.')}
-                  showIcon
-                  className={css`
-                    margin-bottom: 1em;
-                  `}
-                />
-              ) : null}
-              <TriggerConfig />
-              <div
-                className={cx(
-                  styles.branchBlockClass,
-                  css`
-                    margin-top: 0 !important;
-                  `,
-                )}
-              >
-                <Branch entry={entry} />
+        <AddNodeContextProvider>
+          <div className="workflow-canvas" style={{ zoom: zoom / 100 }}>
+            <div
+              className={cx(
+                styles.branchBlockClass,
+                css`
+                  margin-top: 0 !important;
+                `,
+              )}
+            >
+              <div className={styles.branchClass}>
+                {workflow?.executed ? (
+                  <Alert
+                    type="warning"
+                    message={lang('Executed workflow cannot be modified. Could be copied to a new version to modify.')}
+                    showIcon
+                    className={css`
+                      margin-bottom: 1em;
+                    `}
+                  />
+                ) : null}
+                <TriggerConfig />
+                <div
+                  className={cx(
+                    styles.branchBlockClass,
+                    css`
+                      margin-top: 0 !important;
+                    `,
+                  )}
+                >
+                  <Branch entry={entry} />
+                </div>
+                <div className={styles.terminalClass}>{lang('End')}</div>
               </div>
-              <div className={styles.terminalClass}>{lang('End')}</div>
             </div>
           </div>
-        </div>
+        </AddNodeContextProvider>
       </ErrorBoundary>
       <div className="workflow-canvas-zoomer">
         <Slider vertical reverse defaultValue={100} step={10} min={10} value={zoom} onChange={setZoom} />

@@ -18,8 +18,7 @@ interface ReferentialIntegrityCheckOptions extends Transactionable {
 export async function referentialIntegrityCheck(options: ReferentialIntegrityCheckOptions) {
   const { referencedInstance, db, transaction } = options;
 
-  // @ts-ignore
-  const collection = db.modelCollection.get(referencedInstance.constructor);
+  const collection = db.getCollectionByModelName(referencedInstance.constructor.name);
 
   const collectionName = collection.name;
   const references = db.referenceMap.getReferences(collectionName);

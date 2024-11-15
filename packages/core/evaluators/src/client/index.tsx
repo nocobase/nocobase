@@ -22,8 +22,8 @@ export interface Evaluator {
 
 export const evaluators = new Registry<Evaluator>();
 
-evaluators.register('math.js', mathjs);
 evaluators.register('formula.js', formulajs);
+evaluators.register('math.js', mathjs);
 evaluators.register('string', string);
 
 export function getOptions() {

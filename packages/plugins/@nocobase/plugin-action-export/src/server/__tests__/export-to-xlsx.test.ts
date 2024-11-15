@@ -31,6 +31,183 @@ describe('export to xlsx with preset', () => {
     await app.destroy();
   });
 
+  describe('export with date field', () => {
+    let Post;
+
+    beforeEach(async () => {
+      Post = app.db.collection({
+        name: 'posts',
+        fields: [
+          { type: 'string', name: 'title' },
+          {
+            name: 'datetime',
+            type: 'datetime',
+            interface: 'datetime',
+            uiSchema: {
+              'x-component-props': { picker: 'date', dateFormat: 'YYYY-MM-DD', gmt: false, showTime: false, utc: true },
+              type: 'string',
+              'x-component': 'DatePicker',
+              title: 'dateTz',
+            },
+          },
+          {
+            name: 'dateOnly',
+            type: 'dateOnly',
+            interface: 'date',
+            defaultToCurrentTime: false,
+            onUpdateToCurrentTime: false,
+            timezone: true,
+          },
+          {
+            name: 'datetimeNoTz',
+            type: 'datetimeNoTz',
+            interface: 'datetimeNoTz',
+            uiSchema: {
+              'x-component-props': { picker: 'date', dateFormat: 'YYYY-MM-DD', gmt: false, showTime: false, utc: true },
+              type: 'string',
+              'x-component': 'DatePicker',
+              title: 'dateTz',
+            },
+          },
+          {
+            name: 'unixTimestamp',
+            type: 'unixTimestamp',
+            interface: 'unixTimestamp',
+            uiSchema: {
+              'x-component-props': {
+                picker: 'date',
+                dateFormat: 'YYYY-MM-DD',
+                showTime: true,
+                timeFormat: 'HH:mm:ss',
+              },
+            },
+          },
+        ],
+      });
+
+      await app.db.sync();
+    });
+
+    it('should export with datetime field', async () => {
+      await Post.repository.create({
+        values: {
+          title: 'p1',
+          datetime: '2024-05-10T01:42:35.000Z',
+          dateOnly: '2024-05-10',
+          datetimeNoTz: '2024-01-01 00:00:00',
+          unixTimestamp: '2024-05-10T01:42:35.000Z',
+        },
+      });
+
+      const exporter = new XlsxExporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: Post,
+        chunkSize: 10,
+        columns: [
+          { dataIndex: ['title'], defaultTitle: 'Title' },
+          {
+            dataIndex: ['datetime'],
+            defaultTitle: 'datetime',
+          },
+          {
+            dataIndex: ['dateOnly'],
+            defaultTitle: 'dateOnly',
+          },
+          {
+            dataIndex: ['datetimeNoTz'],
+            defaultTitle: 'datetimeNoTz',
+          },
+          {
+            dataIndex: ['unixTimestamp'],
+            defaultTitle: 'unixTimestamp',
+          },
+        ],
+      });
+
+      const wb = await exporter.run();
+
+      const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+
+      try {
+        XLSX.writeFile(wb, xlsxFilePath);
+
+        // read xlsx file
+        const workbook = XLSX.readFile(xlsxFilePath);
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+        const firstUser = sheetData[1];
+        expect(firstUser[1]).toEqual('2024-05-10');
+        expect(firstUser[2]).toEqual('2024-05-10');
+        expect(firstUser[3]).toEqual('2024-01-01');
+        expect(firstUser[4]).toEqual('2024-05-10 01:42:35');
+      } finally {
+        fs.unlinkSync(xlsxFilePath);
+      }
+    });
+  });
+
+  it('should export with checkbox field', async () => {
+    const Post = app.db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'title' },
+        {
+          type: 'boolean',
+          name: 'test_field',
+          interface: 'checkbox',
+          uiSchema: {
+            type: 'boolean',
+            'x-component': 'Checkbox',
+          },
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    await Post.repository.create({
+      values: {
+        title: 'p1',
+        test_field: true,
+      },
+    });
+
+    const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: Post,
+      chunkSize: 10,
+      columns: [
+        { dataIndex: ['title'], defaultTitle: 'Title' },
+        {
+          dataIndex: ['test_field'],
+          defaultTitle: 'test_field',
+        },
+      ],
+    });
+
+    const wb = await exporter.run();
+
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+
+    try {
+      XLSX.writeFile(wb, xlsxFilePath);
+
+      // read xlsx file
+      const workbook = XLSX.readFile(xlsxFilePath);
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+      const header = sheetData[0];
+      expect(header).toEqual(['Title', 'test_field']);
+
+      const data = sheetData[1];
+      expect(data[1]).toBe('True');
+    } finally {
+      fs.unlinkSync(xlsxFilePath);
+    }
+  });
+
   it('should export number field with cell format', async () => {
     const Post = app.db.collection({
       name: 'posts',
@@ -459,7 +636,7 @@ describe('export to xlsx', () => {
             title: 'test_date',
           },
           name: 'test_date',
-          type: 'date',
+          type: 'datetime',
           interface: 'datetime',
         },
       ],
@@ -487,11 +664,7 @@ describe('export to xlsx', () => {
       ],
     });
 
-    const wb = await exporter.run({
-      get() {
-        return '+08:00';
-      },
-    });
+    const wb = await exporter.run();
 
     const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     try {
@@ -503,7 +676,7 @@ describe('export to xlsx', () => {
       const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
       const firstUser = sheetData[1];
-      expect(firstUser).toEqual(['some_title', '2024-05-10 09:42:35']);
+      expect(firstUser).toEqual(['some_title', '2024-05-10 01:42:35']);
     } finally {
       fs.unlinkSync(xlsxFilePath);
     }

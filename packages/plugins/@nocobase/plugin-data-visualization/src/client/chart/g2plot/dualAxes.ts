@@ -83,6 +83,20 @@ export class DualAxes extends G2PlotChart {
           return {
             type: 'line',
             yField,
+            tooltip: {
+              items: [
+                (data: any) => {
+                  const { [yField]: y } = data;
+                  const yFieldProps = fieldProps[yField];
+                  const name = yFieldProps?.label || yField;
+                  const value = yFieldProps?.transformer ? yFieldProps.transformer(y) : y;
+                  return {
+                    name,
+                    value,
+                  };
+                },
+              ],
+            },
             colorField: () => {
               const props = fieldProps[yField];
               return props?.label || yField;

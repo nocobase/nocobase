@@ -20,6 +20,7 @@ import {
 import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
+import { SchemaSettingsLayoutItem } from '../../../../schema-settings/SchemaSettingsLayoutItem';
 
 export const editFormBlockSettings = new SchemaSettings({
   name: 'blockSettings:editForm',
@@ -75,6 +76,10 @@ export const editFormBlockSettings = new SchemaSettings({
           resourceName: defaultResource,
         };
       },
+    },
+    {
+      name: 'setBlockLayout',
+      Component: SchemaSettingsLayoutItem,
     },
     {
       name: 'divider2',

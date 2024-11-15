@@ -8,8 +8,44 @@
  */
 
 import { Database } from '@nocobase/database';
+import lodash from 'lodash';
 
 export default {
+  async ['collections:listMeta'](ctx, next) {
+    const db = ctx.app.db as Database;
+    const results = [];
+
+    db.collections.forEach((collection) => {
+      if (!collection.options.loadedFromCollectionManager) {
+        return;
+      }
+
+      const obj = {
+        ...collection.options,
+        filterTargetKey: collection.filterTargetKey,
+      };
+
+      if (collection && collection.unavailableActions) {
+        obj['unavailableActions'] = collection.unavailableActions();
+      }
+
+      obj.fields = lodash.sortBy(
+        [...collection.fields.values()].map((field) => {
+          return {
+            ...field.options,
+          };
+        }),
+        'sort',
+      );
+
+      results.push(obj);
+    });
+
+    ctx.body = lodash.sortBy(results, 'sort');
+
+    await next();
+  },
+
   async ['collections:setFields'](ctx, next) {
     const { filterByTk, values } = ctx.action.params;
 

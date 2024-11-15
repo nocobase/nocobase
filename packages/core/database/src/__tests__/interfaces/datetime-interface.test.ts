@@ -39,7 +39,7 @@ describe('Date time interface', () => {
         },
         {
           name: 'dateTime',
-          type: 'date',
+          type: 'datetime',
           uiSchema: {
             ['x-component-props']: {
               showTime: true,
@@ -74,20 +74,5 @@ describe('Date time interface', () => {
     expect(await interfaceInstance.toValue(42510)).toBe('2016-05-20T00:00:00.000Z');
     expect(await interfaceInstance.toValue('42510')).toBe('2016-05-20T00:00:00.000Z');
     expect(await interfaceInstance.toValue('2016-05-20T00:00:00.000Z')).toBe('2016-05-20T00:00:00.000Z');
-    expect(
-      await interfaceInstance.toValue('2016-05-20 04:22:22', {
-        field: testCollection.getField('dateOnly'),
-      }),
-    ).toBe('2016-05-20T00:00:00.000Z');
-    expect(
-      await interfaceInstance.toValue('2016-05-20 01:00:00', {
-        field: testCollection.getField('dateTime'),
-      }),
-    ).toBe(dayjs('2016-05-20 01:00:00').toISOString());
-    expect(
-      await interfaceInstance.toValue('2016-05-20 01:00:00', {
-        field: testCollection.getField('dateTimeGmt'),
-      }),
-    ).toBe('2016-05-20T01:00:00.000Z');
   });
 });

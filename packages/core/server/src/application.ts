@@ -24,8 +24,17 @@ import {
 } from '@nocobase/logger';
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import { Telemetry, TelemetryOptions } from '@nocobase/telemetry';
-import { applyMixins, AsyncEmitter, importModule, Toposort, ToposortOptions } from '@nocobase/utils';
+
+import {
+  applyMixins,
+  AsyncEmitter,
+  importModule,
+  Toposort,
+  ToposortOptions,
+  wrapMiddlewareWithLogging,
+} from '@nocobase/utils';
 import { LockManager, LockManagerOptions } from '@nocobase/lock-manager';
+
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { randomUUID } from 'crypto';
 import glob from 'glob';
@@ -231,7 +240,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   private _maintainingCommandStatus: MaintainingCommandStatus;
   private _maintainingStatusBeforeCommand: MaintainingCommandStatus | null;
   private _actionCommand: Command;
-  private sqlLogger: Logger;
   public lockManager: LockManager;
 
   constructor(public options: ApplicationOptions) {
@@ -245,6 +253,24 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
   }
 
+  private static staticCommands = [];
+
+  static addCommand(callback: (app: Application) => void) {
+    this.staticCommands.push(callback);
+  }
+
+  private _sqlLogger: Logger;
+
+  get sqlLogger() {
+    return this._sqlLogger;
+  }
+
+  protected _logger: SystemLogger;
+
+  get logger() {
+    return this._logger;
+  }
+
   protected _started: Date | null = null;
 
   /**
@@ -252,12 +278,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
    */
   get started() {
     return this._started;
-  }
-
-  protected _logger: SystemLogger;
-
-  get logger() {
-    return this._logger;
   }
 
   get log() {
@@ -442,6 +462,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return packageJson.version;
   }
 
+  getPackageVersion() {
+    return packageJson.version;
+  }
+
   /**
    * This method is deprecated and should not be used.
    * Use {@link #this.pm.addPreset()} instead.
@@ -457,7 +481,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     middleware: Koa.Middleware<StateT & NewStateT, ContextT & NewContextT>,
     options?: ToposortOptions,
   ) {
-    this.middleware.add(middleware, options);
+    this.middleware.add(wrapMiddlewareWithLogging(middleware, this.logger), options);
     return this;
   }
 
@@ -546,6 +570,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._loaded = false;
   }
 
+  async createCacheManager() {
+    this._cacheManager = await createCacheManager(this, this.options.cacheManager);
+    return this._cacheManager;
+  }
+
   async load(options?: LoadOptions) {
     if (this._loaded) {
       return;
@@ -572,7 +601,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       }
     }
 
-    this._cacheManager = await createCacheManager(this, this.options.cacheManager);
+    if (this.cacheManager) {
+      await this.cacheManager.close();
+    }
+
+    this._cacheManager = await this.createCacheManager();
 
     this.log.debug('init plugins');
     this.setMaintainingMessage('init plugins');
@@ -588,10 +621,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     // Telemetry is initialized after beforeLoad hook
     // since some configuration may be registered in beforeLoad hook
-    this.telemetry.init();
-    if (this.options.telemetry?.enabled) {
-      // Start collecting telemetry data if enabled
-      this.telemetry.start();
+    if (!this.telemetry.started) {
+      this.telemetry.init();
+      if (this.options.telemetry?.enabled) {
+        // Start collecting telemetry data if enabled
+        this.telemetry.start();
+      }
     }
 
     await this.pm.load(options);
@@ -921,7 +956,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.reInit();
     await this.db.sync();
     await this.load({ hooks: false });
-
+    this._loaded = false;
     this.log.debug('emit beforeInstall', { method: 'install' });
     this.setMaintainingMessage('call beforeInstall hook...');
     await this.emitAsync('beforeInstall', this, options);
@@ -1095,12 +1130,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       // Due to the use of custom log levels,
       // we have to use any type here until Winston updates the type definitions.
     }) as any;
+
     this.requestLogger = createLogger({
       dirname: getLoggerFilePath(this.name),
       filename: 'request',
       ...(options?.request || {}),
     });
-    this.sqlLogger = this.createLogger({
+
+    this._sqlLogger = this.createLogger({
       filename: 'sql',
       level: 'debug',
     });
@@ -1109,7 +1146,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   protected closeLogger() {
     this.log?.close();
     this.requestLogger?.close();
-    this.sqlLogger?.close();
+    this._sqlLogger?.close();
   }
 
   protected init() {
@@ -1181,6 +1218,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       group: 'parseVariables',
       after: 'acl',
     });
+
     this._dataSourceManager.use(dataTemplate, { group: 'dataTemplate', after: 'acl' });
 
     this._locales = new Locale(createAppProxy(this));
@@ -1198,6 +1236,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     registerCli(this);
 
     this._version = new ApplicationVersion(this);
+
+    for (const callback of Application.staticCommands) {
+      callback(this);
+    }
   }
 
   protected createMainDataSource(options: ApplicationOptions) {
@@ -1219,15 +1261,26 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   protected createDatabase(options: ApplicationOptions) {
-    const logging = (msg: any) => {
+    const logging = (...args) => {
+      let msg = args[0];
+
       if (typeof msg === 'string') {
         msg = msg.replace(/[\r\n]/gm, '').replace(/\s+/g, ' ');
       }
+
       if (msg.includes('INSERT INTO')) {
         msg = msg.substring(0, 2000) + '...';
       }
-      this.sqlLogger.debug({ message: msg, app: this.name, reqId: this.context.reqId });
+
+      const content: any = { message: msg, app: this.name, reqId: this.context.reqId };
+
+      if (args[1] && typeof args[1] === 'number') {
+        content.executeTime = args[1];
+      }
+
+      this._sqlLogger.debug(content);
     };
+
     const dbOptions = options.database instanceof Database ? options.database.options : options.database;
     const db = new Database({
       ...dbOptions,

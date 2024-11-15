@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { test } from '@nocobase/test/e2e';
+import { test, expect } from '@nocobase/test/e2e';
 import { theDateStringShouldNotBeUTC } from './templates';
 
 test.describe('FilterAction', () => {
@@ -16,18 +16,20 @@ test.describe('FilterAction', () => {
 
     // get current date, format: YYYY-MM-DD
     const today = new Date().toISOString().split('T')[0];
-
-    // expect: should trigger a request, the request parameters contain filter: {"$and":[{"createdAt":{"$dateOn":"2024-07-10"}}]}
-    const requestPromise = page.waitForRequest(
-      // /api/users:list?pageSize=20&page=1&filter={"$and":[{"createdAt":{"$dateOn":"2024-07-10"}}]}
-      `/api/users:list?pageSize=20&page=1&filter=%7B%22%24and%22%3A%5B%7B%22createdAt%22%3A%7B%22%24dateOn%22%3A%22${today}%22%7D%7D%5D%7D`,
-    );
-
     await page.getByLabel('action-Filter.Action-Filter-').click();
     await page.getByPlaceholder('Select date').click();
     await page.getByTitle(today).click();
-    await page.getByRole('button', { name: 'Submit' }).click();
+    const [request] = await Promise.all([
+      page.waitForRequest((request) => {
+        return request.url().includes('/api/users:list');
+      }),
 
-    await requestPromise;
+      page.getByRole('button', { name: 'Submit' }).click(),
+    ]);
+    const requestUrl = request.url();
+    const queryParams1 = new URLSearchParams(new URL(requestUrl).search);
+    const filter1 = queryParams1.get('filter');
+    //请求参数符合预期
+    await expect(JSON.parse(filter1)).toEqual({ $and: [{ createdAt: { $dateOn: today } }] });
   });
 });

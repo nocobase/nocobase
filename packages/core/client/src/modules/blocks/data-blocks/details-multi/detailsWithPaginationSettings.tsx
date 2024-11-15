@@ -23,6 +23,7 @@ import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSetti
 import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
 import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 import { setDataLoadingModeSettingsItem } from './setDataLoadingModeSettingsItem';
+import { SchemaSettingsLayoutItem } from '../../../../schema-settings/SchemaSettingsLayoutItem';
 
 const commonItems: SchemaSettingsItemType[] = [
   {
@@ -211,6 +212,10 @@ const commonItems: SchemaSettingsItemType[] = [
         resourceName: defaultResource,
       };
     },
+  },
+  {
+    name: 'setBlockLayout',
+    Component: SchemaSettingsLayoutItem,
   },
   {
     name: 'divider',

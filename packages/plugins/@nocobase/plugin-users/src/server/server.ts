@@ -153,7 +153,7 @@ export default class PluginUsersServer extends Plugin {
   }
 
   async load() {
-    this.app.resourceManager.use(async (ctx, next) => {
+    this.app.resourceManager.use(async function deleteRolesCache(ctx, next) {
       await next();
       const { associatedName, resourceName, actionName, values } = ctx.action.params;
       if (
@@ -163,7 +163,7 @@ export default class PluginUsersServer extends Plugin {
         values?.length
       ) {
         // Delete cache when the members of a role changed
-        await Promise.all(values.map((userId: number) => this.app.emitAsync('cache:del:roles', { userId })));
+        await Promise.all(values.map((userId: number) => ctx.app.emitAsync('cache:del:roles', { userId })));
       }
     });
 

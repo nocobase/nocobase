@@ -43,8 +43,6 @@ export const AssociationFieldProvider = observer(
       [fieldSchema['x-component-props']?.mode],
     );
 
-    const fieldValue = useMemo(() => JSON.stringify(field.value), [field.value]);
-
     const [loading, setLoading] = useState(!field.readPretty);
 
     useEffect(() => {
@@ -93,8 +91,7 @@ export const AssociationFieldProvider = observer(
         field.value = [];
       }
       setLoading(false);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentMode, collectionField, fieldValue]);
+    }, [currentMode, collectionField, field]);
 
     if (loading) {
       return null;
@@ -102,7 +99,7 @@ export const AssociationFieldProvider = observer(
 
     return collectionField ? (
       <AssociationFieldContext.Provider
-        value={{ options: collectionField, field, allowMultiple, allowDissociate, currentMode }}
+        value={{ options: collectionField, field, fieldSchema, allowMultiple, allowDissociate, currentMode }}
       >
         {props.children}
       </AssociationFieldContext.Provider>

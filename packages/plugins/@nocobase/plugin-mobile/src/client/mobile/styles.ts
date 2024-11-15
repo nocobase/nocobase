@@ -18,7 +18,42 @@ export const useStyles = createStyles(({ token, css }) => {
       & ::-webkit-scrollbar {
         display: none;
       }
-
+      .nb-details .ant-formily-item-feedback-layout-loose {
+        margin-bottom: 5px;
+      }
+      .nb-details .ant-formily-item-layout-vertical .ant-formily-item-label {
+        margin-bottom: -8px;
+      }
+      .ant-card .ant-card-body {
+        padding-bottom: 10px;
+        padding-top: 10px;
+      }
+      .ant-pagination-simple {
+        margin-top: 0px !important;
+      }
+      .nb-action-penal-container {
+        margin-top: -10px;
+        margin-bottom: -10px;
+      }
+      .nb-action-penal-container
+        button[aria-label*='schema-initializer-WorkbenchBlock.ActionBar-workbench:configureActions'] {
+        margin-bottom: 10px;
+      }
+      .nb-action-panel {
+        padding-top: 10px;
+      }
+      .nb-action-panel .ant-avatar-circle {
+        width: 48px !important;
+        height: 48px !important;
+        line-height: 48px !important;
+      }
+      .nb-chart-block .ant-card .ant-card-body {
+        padding-bottom: 0px;
+        padding-top: 0px;
+      }
+      .nb-chart-block .noco-card-item {
+        margin-bottom: -13px;
+      }
       .ant-table-thead button[aria-label*='schema-initializer-TableV2-table:configureColumns'] > span:last-child {
         display: none !important;
       }
@@ -75,6 +110,9 @@ export const useStyles = createStyles(({ token, css }) => {
       .nb-card-list .ant-row > div {
         width: 100% !important;
         max-width: 100% !important;
+      }
+      .mobile-page-header .adm-tabs-tab {
+        font-size: 14px;
       }
     `,
   };

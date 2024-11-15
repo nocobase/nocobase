@@ -60,7 +60,7 @@ test('Collection event add data trigger, no filter no sort query common table 1 
 
   //配置查询节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'query', exact: true }).click();
@@ -138,7 +138,7 @@ test('Collection event add data trigger, no filtering and no sorting, query comm
 
   //配置查询节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'query', exact: true }).click();
@@ -217,7 +217,7 @@ test('Collection event add data trigger, no filter ID ascending, query common ta
 
   //配置查询节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'query', exact: true }).click();
@@ -326,7 +326,7 @@ test('Collection event add data trigger, no filter ID descending, query common t
   const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
   //配置查询节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'query', exact: true }).click();
@@ -436,7 +436,7 @@ test('Collection event add data trigger, no filtering and no sorting, query mult
 
   //配置查询节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'query', exact: true }).click();
@@ -540,7 +540,7 @@ test('Collection event add data trigger, no filtering and no sorting, query the 
   const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
   //配置查询节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'query', exact: true }).click();
@@ -646,7 +646,7 @@ test('Collection event add data trigger, no filtering and no sorting, query the 
   const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
   //配置查询节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'query', exact: true }).click();
@@ -775,7 +775,7 @@ test('Collection event add data trigger, filter to meet all conditions (status_s
   const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
   //配置查询节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'query', exact: true }).click();
@@ -891,7 +891,7 @@ test('Collection event add data trigger, filter to satisfy any condition (status
   const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
   //配置查询节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
   await page.getByRole('button', { name: 'query', exact: true }).click();

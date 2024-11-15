@@ -188,6 +188,40 @@ export const tableBlockSettings = new SchemaSettings({
       },
     },
     {
+      name: 'tableSize',
+      type: 'select',
+      useComponentProps() {
+        const field = useField();
+        const fieldSchema = useFieldSchema();
+        const { t } = useTranslation();
+        const { dn } = useDesignable();
+        return {
+          title: t('Table size'),
+          value: field.componentProps?.size || 'middle',
+          options: [
+            { label: t('Large'), value: 'large' },
+            { label: t('Middle'), value: 'middle' },
+            { label: t('Small'), value: 'small' },
+          ],
+          onChange: (size) => {
+            const schema = fieldSchema.reduceProperties((_, s) => {
+              if (s['x-component'] === 'TableV2') {
+                return s;
+              }
+            }, null);
+            schema['x-component-props'] = schema['x-component-props'] || {};
+            schema['x-component-props']['size'] = size;
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: schema['x-uid'],
+                'x-decorator-props': schema['x-component-props'],
+              },
+            });
+          },
+        };
+      },
+    },
+    {
       name: 'ConnectDataBlocks',
       Component: SchemaSettingsConnectDataBlocks,
       useComponentProps() {
@@ -201,6 +235,7 @@ export const tableBlockSettings = new SchemaSettings({
     {
       name: 'divider',
       type: 'divider',
+      sort: 7000,
       useVisible: () => {
         const fieldSchema = useFieldSchema();
         const supportTemplate = !fieldSchema?.['x-decorator-props']?.disableTemplate;
@@ -209,6 +244,7 @@ export const tableBlockSettings = new SchemaSettings({
     },
     {
       name: 'ConvertReferenceToDuplicate',
+      sort: 8000,
       Component: SchemaSettingsTemplate,
       useComponentProps() {
         const { name } = useCollection_deprecated();
@@ -231,10 +267,12 @@ export const tableBlockSettings = new SchemaSettings({
     {
       name: 'divider2',
       type: 'divider',
+      sort: 9000,
     },
     {
       name: 'delete',
       type: 'remove',
+      sort: 10000,
       useComponentProps: () => {
         return {
           removeParentsIfNoChildren: true,

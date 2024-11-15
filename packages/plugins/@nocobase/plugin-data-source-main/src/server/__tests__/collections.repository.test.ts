@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database, { CollectionGroupManager, Collection as DBCollection, HasManyRepository } from '@nocobase/database';
+import Database, { Collection as DBCollection, CollectionGroupManager, HasManyRepository } from '@nocobase/database';
 import Application from '@nocobase/server';
 import { createApp } from '.';
-import CollectionManagerPlugin, { CollectionRepository } from '../index';
+import { CollectionRepository } from '../index';
+import { isPg } from '@nocobase/test';
 
 describe('collections repository', () => {
   let db: Database;
@@ -26,6 +27,7 @@ describe('collections repository', () => {
   });
 
   afterEach(async () => {
+    vi.unstubAllEnvs();
     await app.destroy();
   });
 
@@ -380,13 +382,8 @@ describe('collections repository', () => {
     expect(afterRepository.load).toBeTruthy();
   });
 
-  it('should set collection schema from env', async () => {
-    if (!db.inDialect('postgres')) {
-      return;
-    }
-
-    const plugin = app.getPlugin<CollectionManagerPlugin>('data-source-main');
-    plugin.schema = 'testSchema';
+  it.runIf(isPg())('should set collection schema from env', async () => {
+    vi.stubEnv('COLLECTION_MANAGER_SCHEMA', 'testSchema');
 
     await Collection.repository.create({
       values: {

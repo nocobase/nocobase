@@ -76,6 +76,15 @@ export class Collection implements ICollection {
     return this.fields.get(name);
   }
 
+  getFieldByField(field: string): IField {
+    for (const item of this.fields.values()) {
+      if (item.options.field === field) {
+        return item;
+      }
+    }
+    return null;
+  }
+
   getFields() {
     return [...this.fields.values()];
   }

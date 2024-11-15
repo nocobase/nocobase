@@ -8,7 +8,7 @@
  */
 
 import { css } from '@emotion/css';
-import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
+import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Modal, ModalProps } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
@@ -39,11 +39,10 @@ const openSizeWidthMap = new Map<OpenSize, string>([
 
 export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = observer(
   (props) => {
-    const { footerNodeName = 'Action.Modal.Footer', width, ...others } = props;
+    const { footerNodeName = 'Action.Modal.Footer', width, zIndex: _zIndex, ...others } = props;
     const { visible, setVisible, openSize = 'middle', modalProps } = useActionContext();
     const actualWidth = width ?? openSizeWidthMap.get(openSize);
     const schema = useFieldSchema();
-    const form = useForm();
     const field = useField();
     const { token } = useToken();
     const tabContext = useTabsContext();
@@ -71,7 +70,7 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
       useSetAriaLabelForModal(visible);
     }
 
-    const zIndex = parentZIndex + (props.level || 0);
+    const zIndex = _zIndex || parentZIndex + (props.level || 0);
 
     return (
       <zIndexContext.Provider value={zIndex}>
@@ -91,7 +90,6 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
             open={visible}
             onCancel={() => {
               setVisible(false, true);
-              form.reset();
             }}
             className={classNames(
               others.className,

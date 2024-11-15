@@ -321,8 +321,8 @@ test.describe('configure actions column', () => {
   test('column width', async ({ page, mockPage }) => {
     await mockPage(oneEmptyTable).goto();
 
-    // 列宽度默认为 200
-    await expect(page.getByRole('columnheader', { name: 'Actions', exact: true })).toHaveJSProperty('offsetWidth', 200);
+    // 列宽度默认为 100
+    await expect(page.getByRole('columnheader', { name: 'Actions', exact: true })).toHaveJSProperty('offsetWidth', 100);
 
     await page.getByText('Actions', { exact: true }).hover();
     await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-').hover();

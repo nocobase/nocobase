@@ -75,7 +75,7 @@ const ComponentFullDemos: FC<ComponentFullDemosProps> = ({ demos }) => {
           title={
             <Tooltip title={demo.tokens?.join(', ')}>
               <span>
-                {locale.demo.relatedTokens}: {demo.tokens?.join(', ')}
+                {locale.relatedTokens}: {demo.tokens?.join(', ')}
                 {(demo.tokens?.length || 0) > 2 ? '...' : ''}
               </span>
             </Tooltip>

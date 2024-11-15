@@ -18,6 +18,7 @@ import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/Schem
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { SchemaSettingsConnectDataBlocks } from '../../../../schema-settings/SchemaSettingsConnectDataBlocks';
 import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
+import { SchemaSettingsLayoutItem } from '../../../../schema-settings/SchemaSettingsLayoutItem';
 
 export const filterFormBlockSettings = new SchemaSettings({
   name: 'blockSettings:filterForm',
@@ -66,6 +67,10 @@ export const filterFormBlockSettings = new SchemaSettings({
           emptyDescription: t('No blocks to connect'),
         };
       },
+    },
+    {
+      name: 'setBlockLayout',
+      Component: SchemaSettingsLayoutItem,
     },
     {
       name: 'divider',
