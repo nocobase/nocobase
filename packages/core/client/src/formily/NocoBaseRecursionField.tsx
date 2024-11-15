@@ -107,7 +107,7 @@ const createMergedSchemaInstance = (schema: Schema, uiSchema: ISchema, onlyRende
 
   if (onlyRenderProperties) {
     if (!clonedSchema.properties) {
-      throw new Error('[NocoBaseRecursionField]: properties is required');
+      return schema;
     }
 
     const firstPropertyKey = Object.keys(clonedSchema.properties)[0];
