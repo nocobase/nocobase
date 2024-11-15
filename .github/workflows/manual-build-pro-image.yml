@@ -25,19 +25,21 @@ jobs:
           - 4873:4873
     steps:
       - name: Get pro plugins
-        id: get-pro-plugins
+        id: get-info
         run: |
           if [[ "${{ github.head_ref || github.ref_name }}" == "main" ]]; then
             echo "proRepos=$(echo '${{ vars.PRO_PLUGIN_REPOS }}')" >> $GITHUB_OUTPUT
+            echo "branch=$(echo 'main')" >> $GITHUB_OUTPUT
           else
             echo "proRepos=$(echo '${{ vars.NEXT_PRO_PLUGIN_REPOS }}')" >> $GITHUB_OUTPUT
+            echo "branch=$(echo 'next')" >> $GITHUB_OUTPUT
           fi
       - uses: actions/create-github-app-token@v1
         id: app-token
         with:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
-          repositories: nocobase,pro-plugins,${{ join(fromJSON(steps.get-pro-plugins.outputs.proRepos), ',') }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(steps.get-info.outputs.proRepos), ',') }}
           skip-token-revoke: true
       - name: Checkout
         uses: actions/checkout@v4
@@ -71,14 +73,14 @@ jobs:
       - name: Clone pro repos
         shell: bash
         run: |
-          for repo in ${{ join(fromJSON(steps.get-pro-plugins.outputs.proRepos), ' ') }}
+          for repo in ${{ join(fromJSON(steps.get-info.outputs.proRepos), ' ') }}
           do
-          git clone -b ${{ github.head_ref || github.ref_name }} https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
+          git clone -b ${{ steps.get-info.outputs.branch }} https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
           done
       - name: rm .git
         run: |
           rm -rf packages/pro-plugins/.git
-          for repo in ${{ join(fromJSON(steps.get-pro-plugins.outputs.proRepos), ' ') }}
+          for repo in ${{ join(fromJSON(steps.get-info.outputs.proRepos), ' ') }}
           do
             rm -rf packages/pro-plugins/@nocobase/$repo/.git
           done
