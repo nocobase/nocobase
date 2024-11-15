@@ -131,7 +131,7 @@ describe('Input.JSON', () => {
      `);
   });
 
-  it.only('should display the error when the value is invalid', async () => {
+  it('should display the error when the value is invalid', async () => {
     const { container } = render(<App4 />);
     await waitFor(() => {
       const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
