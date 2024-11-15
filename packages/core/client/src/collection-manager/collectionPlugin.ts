@@ -44,7 +44,6 @@ import {
   RadioGroupFieldInterface,
   RichTextFieldInterface,
   SelectFieldInterface,
-  SortFieldInterface,
   SubTableFieldInterface,
   TableoidFieldInterface,
   TextareaFieldInterface,
