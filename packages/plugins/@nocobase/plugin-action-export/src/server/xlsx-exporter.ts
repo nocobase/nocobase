@@ -19,6 +19,7 @@ import {
 import XLSX from 'xlsx';
 import { deepGet } from './utils/deep-get';
 import { NumberField } from '@nocobase/database';
+import EventEmitter from 'events';
 
 type ExportColumn = {
   dataIndex: Array<string>;
@@ -35,7 +36,7 @@ type ExportOptions = {
   chunkSize?: number;
 };
 
-class XlsxExporter {
+class XlsxExporter extends EventEmitter {
   /**
    * You can adjust the maximum number of exported rows based on business needs and system
    * available resources. However, please note that you need to fully understand the risks
@@ -49,7 +50,9 @@ class XlsxExporter {
    */
   limit = process.env['EXPORT_LIMIT'] ? parseInt(process.env['EXPORT_LIMIT']) : 2000;
 
-  constructor(private options: ExportOptions) {}
+  constructor(private options: ExportOptions) {
+    super();
+  }
 
   async run(ctx?): Promise<XLSX.WorkBook> {
     const { collection, columns, chunkSize, repository } = this.options;
@@ -63,6 +66,9 @@ class XlsxExporter {
     });
 
     let startRowNumber = 2;
+
+    const total = await (repository || collection.repository).count(this.getFindOptions());
+    let current = 0;
 
     await (repository || collection.repository).chunk({
       ...this.getFindOptions(),
@@ -82,6 +88,13 @@ class XlsxExporter {
 
         await new Promise((resolve) => {
           setTimeout(resolve, 50);
+        });
+
+        current += rows.length;
+
+        this.emit('progress', {
+          total,
+          current,
         });
       },
     });

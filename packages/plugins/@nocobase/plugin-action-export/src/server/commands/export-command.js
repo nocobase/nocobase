@@ -1,5 +1,7 @@
 import process from 'node:process';
 import XlsxExporter from '../xlsx-exporter';
+import xlsxExporter from '../xlsx-exporter';
+import { isMainThread, parentPort } from 'node:worker_threads';
 
 export default function addAsyncExportCommand(app) {
   app
@@ -24,6 +26,15 @@ export default function addAsyncExportCommand(app) {
             defaultTitle: 'UserName',
           },
         ],
+      });
+
+      xlsxExporter.on('progress', (progress) => {
+        if (!isMainThread) {
+          parentPort.postMessage({
+            type: 'progress',
+            payload: progress,
+          });
+        }
       });
 
       await exporter.run();
