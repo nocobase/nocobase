@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RemoteSchemaComponent, AssociationField } from '@nocobase/client';
+import { RemoteSchemaComponent, AssociationField, useDesignable, Select } from '@nocobase/client';
 import React, { useCallback } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
 import { Button as MobileButton, Dialog as MobileDialog } from 'antd-mobile';
@@ -16,7 +16,14 @@ import { MobileDateTimePicker } from './components/MobileDatePicker';
 
 const mobileComponents = {
   Button: MobileButton,
-  Select: MobilePicker,
+  Select: (props) => {
+    const { designable } = useDesignable();
+    if (designable !== false) {
+      return <Select {...props} />;
+    } else {
+      return <MobilePicker {...props} />;
+    }
+  },
   DatePicker: MobileDateTimePicker,
   UnixTimestamp: MobileDateTimePicker,
   Modal: MobileDialog,
