@@ -7,9 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RemoteSchemaComponent } from '@nocobase/client';
+import { RemoteSchemaComponent, AssociationField } from '@nocobase/client';
 import React, { useCallback } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
+import { Button as MobileButton, Dialog as MobileDialog } from 'antd-mobile';
+import { MobilePicker } from './components/MobilePicker';
+import { MobileDateTimePicker } from './components/MobileDatePicker';
+
+const mobileComponents = {
+  Button: MobileButton,
+  Select: MobilePicker,
+  DatePicker: MobileDateTimePicker,
+  UnixTimestamp: MobileDateTimePicker,
+  Modal: MobileDialog,
+  AssociationField: (props) => {
+    return <AssociationField {...props} popupMatchSelectWidth={true} />;
+  },
+};
 
 export const MobilePage = () => {
   const { pageSchemaUid } = useParams<{ pageSchemaUid: string }>();
@@ -37,6 +51,7 @@ export const MobilePage = () => {
         NotFoundPage={'MobileNotFoundPage'}
         memoized={false}
         onPageNotFind={onPageNotFind}
+        components={mobileComponents}
       />
       {/* 用于渲染子页面 */}
       <Outlet />

@@ -200,23 +200,23 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
         render: (v, record, index) => {
           if (props.showDel(record)) {
             return (
-              <CloseOutlined
-                style={{ cursor: 'pointer', color: 'gray' }}
+              <div
                 onClick={() => {
                   return action(() => {
                     const fieldIndex = (current - 1) * pageSize + index;
+                    const deleteCount = field.value[fieldIndex] ? 1 : 2;
                     spliceArrayState(field, {
                       startIndex: fieldIndex,
-                      deleteCount: 1,
+                      deleteCount: deleteCount,
                     });
-                    field.value.splice(fieldIndex, 1);
-                    setTimeout(() => {
-                      field.value[field.value.length] = null;
-                    });
+                    field.value.splice(fieldIndex, deleteCount);
+                    field.setInitialValue(field.value);
                     return field.onInput(field.value);
                   });
                 }}
-              />
+              >
+                <CloseOutlined style={{ cursor: 'pointer', color: 'gray' }} />
+              </div>
             );
           }
           return;
@@ -474,10 +474,10 @@ const columnOpacityStyle = {
   opacity: 0.3,
 };
 
-const HeaderCellComponent = (props) => {
+const HeaderCellComponent = ({ columnHidden, ...props }) => {
   const { designable } = useDesignable();
 
-  if (props.columnHidden) {
+  if (columnHidden) {
     return <th style={designable ? columnOpacityStyle : columnHiddenStyle}>{designable ? props.children : null}</th>;
   }
 
@@ -515,10 +515,10 @@ const InternalBodyCellComponent = (props) => {
 };
 
 const displayNone = { display: 'none' };
-const BodyCellComponent = (props) => {
+const BodyCellComponent = ({ columnHidden, ...props }) => {
   const { designable } = useDesignable();
 
-  if (props.columnHidden) {
+  if (columnHidden) {
     return (
       <td style={designable ? columnOpacityStyle : columnHiddenStyle}>
         {designable ? props.children : <span style={displayNone}>{props.children}</span>}

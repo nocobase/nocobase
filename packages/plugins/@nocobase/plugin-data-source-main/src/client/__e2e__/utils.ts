@@ -332,7 +332,7 @@ export class CollectionSettings {
 
   private async ['File storage'](value: string) {
     await this.page.getByLabel('block-item-RemoteSelect-collections-File storage').getByTestId('select-single').click();
-    await this.page.getByRole('option', { name: value }).click();
+    await this.page.getByTitle(value).click();
   }
 
   private async ['Collection display name'](value: string) {
