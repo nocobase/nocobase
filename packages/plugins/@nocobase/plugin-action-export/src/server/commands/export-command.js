@@ -1,13 +1,12 @@
 import process from 'node:process';
-import { Application } from '@nocobase/server';
 import XlsxExporter from '../xlsx-exporter';
 
-export default function addAsyncExportCommand(app: Application) {
+export default function addAsyncExportCommand(app) {
   app
     .command('export:xlsx')
     .argument('<collectionName>', 'collection to export')
     .option('--dataSource', 'data source of collection', 'main')
-    .action(async (collectionName: string, options) => {
+    .action(async (collectionName, options) => {
       const { dataSource } = options;
       await app.load();
       await app.start();

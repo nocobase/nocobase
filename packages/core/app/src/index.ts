@@ -19,7 +19,4 @@ async function initializeGateway() {
   });
 }
 
-initializeGateway().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+initializeGateway();
