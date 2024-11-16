@@ -13,7 +13,7 @@ import React, { useContext } from 'react';
 import { CalendarToolbarContext } from './context';
 import { useDesignable } from '@nocobase/client';
 import { useTranslation } from '../../locale';
-import { useImported } from 'react-imported-component';
+import { useImported } from '@nocobase/client';
 
 export const Today = observer(
   (props) => {

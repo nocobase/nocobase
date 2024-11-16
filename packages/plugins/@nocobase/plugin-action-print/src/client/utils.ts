@@ -9,7 +9,7 @@
 
 import { useDetailsBlockContext, useFormBlockContext } from '@nocobase/client';
 // import { useReactToPrint } from 'react-to-print';
-import { useImported } from 'react-imported-component';
+import { useImported } from '@nocobase/client';
 export const useDetailPrintActionProps = () => {
   const context = useFormBlockContext();
   const { formBlockRef } = useDetailsBlockContext();

@@ -13,7 +13,7 @@ import { Button } from 'antd';
 import React, { useContext } from 'react';
 import { CalendarToolbarContext } from './context';
 import { useDesignable } from '@nocobase/client';
-import { useImported } from 'react-imported-component';
+import { useImported } from '@nocobase/client';
 
 export const Nav = observer(
   () => {

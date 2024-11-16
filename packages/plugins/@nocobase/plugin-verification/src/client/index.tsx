@@ -8,7 +8,12 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import { VerificationProviders } from './VerificationProviders';
+// import { VerificationProviders } from './VerificationProviders';
+import { createLazyComponents } from '@nocobase/client';
+const { VerificationProviders } = createLazyComponents(
+  () => import('./VerificationProviders'),
+  'VerificationProviders',
+);
 import { NAMESPACE } from './locale';
 
 export class PluginVerificationClient extends Plugin {

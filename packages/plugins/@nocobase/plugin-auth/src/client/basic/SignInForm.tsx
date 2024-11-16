@@ -13,7 +13,8 @@ import React, { useCallback } from 'react';
 import { useAuthTranslation } from '../locale';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from '@formily/react';
-import { useSignUpForms } from '../pages';
+import { useImported } from '@nocobase/client';
+// import { useSignUpForms } from '../pages';
 import { Authenticator } from '../authenticator';
 
 export function useRedirect(next = '/admin') {
@@ -102,6 +103,19 @@ export const SignInForm = (props: { authenticator: Authenticator }) => {
   const { t } = useAuthTranslation();
   const authenticator = props.authenticator;
   const { authType, name, options } = authenticator;
+  const {
+    imported: useSignUpForms,
+    loading,
+    loadable,
+  } = useImported(
+    () => import('../pages'),
+    (module) => module.useSignUpForms,
+  );
+
+  if (loading) {
+    throw loadable.resolution;
+  }
+
   const signUpPages = useSignUpForms();
   const allowSignUp = signUpPages[authType] && options?.allowSignUp ? true : false;
   const signUpLink = `/signup?name=${name}`;

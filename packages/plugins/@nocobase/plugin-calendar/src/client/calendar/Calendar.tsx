@@ -35,7 +35,7 @@ import { useCalenderHeight } from './hook';
 import useStyle from './style';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
-import { useImported } from 'react-imported-component';
+import { useImported } from '@nocobase/client';
 
 interface Event {
   id: string;

@@ -13,7 +13,14 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { MobileClientProvider } from './MobileClientProvider';
 import MApplication from './router/Application';
 import { mBlockInitializers, mBlockInitializers_deprecated } from './core/schema';
-import { AppConfiguration, InterfaceConfiguration } from './configuration';
+// import { AppConfiguration, InterfaceConfiguration } from './configuration';
+import { createLazyComponents } from '@nocobase/client';
+const { AppConfiguration, InterfaceConfiguration } = createLazyComponents(
+  () => import('./configuration'),
+  'AppConfiguration',
+  'InterfaceConfiguration',
+);
+
 import { NAMESPACE } from './locale';
 
 export class PluginMobileClient extends Plugin {

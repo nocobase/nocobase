@@ -470,6 +470,10 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
       }),
       // new RsdoctorRspackPlugin({
       //   // plugin options
+      //   // supports: {
+      //   //   generateTileGraph: true,
+      //   // },
+      //   mode: 'brief',
       // }),
     ],
     node: {
