@@ -322,13 +322,17 @@ export const AdminDynamicPage = () => {
     renderedPageRef.current.push(currentPageUid);
   }
 
-  return renderedPageRef.current.map((pageUid) => (
-    <div key={pageUid} style={pageUid === currentPageUid ? displayBlock : displayNone}>
-      <PageActiveContext.Provider value={pageUid === currentPageUid}>
-        <RemoteSchemaComponent onlyRenderProperties uid={pageUid} />
-      </PageActiveContext.Provider>
-    </div>
-  ));
+  return (
+    <>
+      {renderedPageRef.current.map((pageUid) => (
+        <div key={pageUid} style={pageUid === currentPageUid ? displayBlock : displayNone}>
+          <PageActiveContext.Provider value={pageUid === currentPageUid}>
+            <RemoteSchemaComponent onlyRenderProperties uid={pageUid} />
+          </PageActiveContext.Provider>
+        </div>
+      ))}
+    </>
+  );
 };
 
 const layoutContentClass = css`
