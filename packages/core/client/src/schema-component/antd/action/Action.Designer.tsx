@@ -108,13 +108,21 @@ export function ButtonEditor(props) {
         } as ISchema
       }
       onSubmit={({ title, icon, type, iconColor }) => {
-        field.form.query(new RegExp(`.${fieldSchema.name}$`)).forEach((fieldItem) => {
-          fieldItem.title = title;
-          fieldItem.componentProps.iconColor = iconColor;
-          fieldItem.componentProps.icon = icon;
-          fieldItem.componentProps.danger = type === 'danger';
-          fieldItem.componentProps.type = type || fieldItem.componentProps.type;
-        });
+        if (field.address.toString() === fieldSchema.name) {
+          field.title = title;
+          field.componentProps.iconColor = iconColor;
+          field.componentProps.icon = icon;
+          field.componentProps.danger = type === 'danger';
+          field.componentProps.type = type || field.componentProps.type;
+        } else {
+          field.form.query(new RegExp(`.${fieldSchema.name}$`)).forEach((fieldItem) => {
+            fieldItem.title = title;
+            fieldItem.componentProps.iconColor = iconColor;
+            fieldItem.componentProps.icon = icon;
+            fieldItem.componentProps.danger = type === 'danger';
+            fieldItem.componentProps.type = type || fieldItem.componentProps.type;
+          });
+        }
 
         fieldSchema.title = title;
         fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
