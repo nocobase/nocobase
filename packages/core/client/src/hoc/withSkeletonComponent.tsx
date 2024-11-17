@@ -11,7 +11,7 @@ import { Skeleton } from 'antd';
 import { useDataBlockRequest } from '../data-source/data-block/DataBlockRequestProvider';
 
 // @ts-ignore
-import React, { FC, useEffect, useRef, useState } from 'react';
+import React, { FC, useRef } from 'react';
 import { LOADING_DELAY } from '../variables/constants';
 
 interface Options {
@@ -33,16 +33,16 @@ const RenderSkeletonWithDelay: FC<{ SkeletonComponent: React.ComponentType; dela
   SkeletonComponent,
   delay,
 }) => {
-  const [delayed, setDelayed] = useState(false);
+  // const [delayed, setDelayed] = useState(false);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDelayed(true);
-    }, delay);
-    return () => clearTimeout(timer);
-  }, [delay]);
+  // useEffect(() => {
+  //   const timer = setTimeout(() => {
+  //     setDelayed(true);
+  //   }, delay);
+  //   return () => clearTimeout(timer);
+  // }, [delay]);
 
-  return delayed ? <SkeletonComponent /> : null;
+  return <SkeletonComponent />;
 };
 
 /**

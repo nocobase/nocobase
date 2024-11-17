@@ -9,4 +9,4 @@
 
 export const DEBOUNCE_WAIT = 100;
 
-export const LOADING_DELAY = 100;
+export const LOADING_DELAY = undefined;
