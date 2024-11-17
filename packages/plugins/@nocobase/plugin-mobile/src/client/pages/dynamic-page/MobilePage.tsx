@@ -14,6 +14,19 @@ import { Button as MobileButton, Dialog as MobileDialog } from 'antd-mobile';
 import { MobilePicker } from './components/MobilePicker';
 import { MobileDateTimePicker } from './components/MobileDatePicker';
 
+const AssociationFieldMobile = (props) => {
+  return <AssociationField {...props} popupMatchSelectWidth={true} />;
+};
+
+AssociationFieldMobile.SubTable = AssociationField.SubTable;
+AssociationFieldMobile.Nester = AssociationField.Nester;
+AssociationFieldMobile.AddNewer = AssociationField.Container;
+AssociationFieldMobile.Selector = AssociationField.Container;
+AssociationFieldMobile.Viewer = AssociationField.Container;
+AssociationFieldMobile.InternalSelect = AssociationField.InternalSelect;
+AssociationFieldMobile.ReadPretty = AssociationField.ReadPretty;
+AssociationFieldMobile.FileSelector = AssociationField.FileSelector;
+
 const mobileComponents = {
   Button: MobileButton,
   Select: (props) => {
@@ -34,9 +47,7 @@ const mobileComponents = {
   },
   UnixTimestamp: MobileDateTimePicker,
   Modal: MobileDialog,
-  AssociationField: (props) => {
-    return <AssociationField {...props} popupMatchSelectWidth={true} />;
-  },
+  AssociationField: AssociationFieldMobile,
 };
 
 export const MobilePage = () => {
