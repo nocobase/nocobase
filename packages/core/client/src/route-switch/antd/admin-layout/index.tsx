@@ -10,7 +10,18 @@
 import { css } from '@emotion/css';
 import { ConfigProvider, Divider, Layout } from 'antd';
 import { createGlobalStyle } from 'antd-style';
-import React, { createContext, FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  createContext,
+  FC,
+  memo,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Outlet } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
@@ -19,11 +30,12 @@ import {
   findByUid,
   findMenuItem,
   NavigateIfNotSignIn,
+  PageActiveContext,
   PinnedPluginList,
   RemoteCollectionManagerProvider,
+  RemoteSchemaComponent,
   RemoteSchemaTemplateManagerPlugin,
   RemoteSchemaTemplateManagerProvider,
-  RouteSchemaComponent,
   SchemaComponent,
   useACLRoleContext,
   useAdminSchemaUid,
@@ -294,8 +306,29 @@ const AdminSideBar = ({ sideMenuRef }) => {
   return <InternalAdminSideBar pageUid={currentPageUid} sideMenuRef={sideMenuRef} />;
 };
 
+const displayBlock = {
+  display: 'block',
+};
+
+const displayNone = {
+  display: 'none',
+};
+
 export const AdminDynamicPage = () => {
-  return <RouteSchemaComponent />;
+  const renderedPageRef = useRef([]);
+  const currentPageUid = useCurrentPageUid();
+
+  if (!renderedPageRef.current.includes(currentPageUid)) {
+    renderedPageRef.current.push(currentPageUid);
+  }
+
+  return renderedPageRef.current.map((pageUid) => (
+    <div key={pageUid} style={pageUid === currentPageUid ? displayBlock : displayNone}>
+      <PageActiveContext.Provider value={pageUid === currentPageUid}>
+        <RemoteSchemaComponent onlyRenderProperties uid={pageUid} />
+      </PageActiveContext.Provider>
+    </div>
+  ));
 };
 
 const layoutContentClass = css`
@@ -379,6 +412,27 @@ const theme = {
     colorSplit: 'rgba(255, 255, 255, 0.1)',
   },
 };
+
+const LayoutContent = () => {
+  const currentPageUid = useCurrentPageUid();
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    // Ensure the scrollbar is at the top when switching pages
+    if (containerRef.current && currentPageUid) {
+      containerRef.current.scrollTop = 0;
+    }
+  }, [currentPageUid]);
+
+  return (
+    <Layout.Content className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`} ref={containerRef}>
+      <header className={layoutContentHeaderClass}></header>
+      <Outlet />
+      {/* {service.contentLoading ? render() : <Outlet />} */}
+    </Layout.Content>
+  );
+};
+
 export const InternalAdminLayout = () => {
   const result = useSystemSettings();
   const { token } = useToken();
@@ -461,11 +515,7 @@ export const InternalAdminLayout = () => {
       </Layout.Header>
       <AdminSideBar sideMenuRef={sideMenuRef} />
       {/* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */}
-      <Layout.Content className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
-        <header className={layoutContentHeaderClass}></header>
-        <Outlet />
-        {/* {service.contentLoading ? render() : <Outlet />} */}
-      </Layout.Content>
+      <LayoutContent />
     </Layout>
   );
 };

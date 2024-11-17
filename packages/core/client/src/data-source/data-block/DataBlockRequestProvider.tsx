@@ -13,6 +13,7 @@ import _ from 'lodash';
 import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
 import { useDataLoadingMode } from '../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 import { useSourceKey } from '../../modules/blocks/useSourceKey';
+import { usePageActive } from '../../route-switch/antd/route-schema-component';
 import { CollectionRecord, CollectionRecordProvider } from '../collection-record';
 import { useDataSourceHeaders } from '../utils';
 import { AllDataBlockProps, useDataBlockProps } from './DataBlockProvider';
@@ -37,6 +38,7 @@ function useRecordRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const sourceKey = useSourceKey(association);
   const JSONParams = JSON.stringify(params);
   const JSONRecord = JSON.stringify(record);
+  const { active: pageActive } = usePageActive();
 
   const defaultService = (customParams) => {
     if (record) return Promise.resolve({ data: record });
@@ -70,7 +72,7 @@ function useRecordRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const request = useRequest<T>(service, {
     ...requestOptions,
     manual: dataLoadingMode === 'manual',
-    ready: !!action,
+    ready: !!action && pageActive,
     refreshDeps: [action, JSONParams, JSONRecord, resource, association, parentRecord, sourceId],
   });
 
