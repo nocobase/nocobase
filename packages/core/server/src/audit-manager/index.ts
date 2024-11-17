@@ -8,6 +8,7 @@
  */
 
 import { Context } from '@nocobase/actions';
+import { head } from 'lodash';
 import Stream from 'stream';
 
 function isStream(obj) {
@@ -23,16 +24,29 @@ export interface AuditLog {
   uuid: string;
   dataSource: string;
   resource: string;
-  collection?: string;
-  association?: string;
   action: string;
-  resourceUk: string;
+  sourceCollection?: string;
+  sourceRecordUK?: string;
+  targetCollection?: string;
+  targetRecordUK?: string;
   userId: string;
   roleName: string;
   ip: string;
   ua: string;
   status: number;
-  metadata: Record<string, any>;
+  metadata?: Record<string, any>;
+}
+
+export interface UserInfo {
+  userId?: string;
+  roleName?: string;
+}
+
+export interface SourceAndTarget {
+  sourceCollection?: string;
+  sourceRecordUK?: string;
+  targetCollection?: string;
+  targetRecordUK?: string;
 }
 
 export interface AuditLogger {
@@ -44,8 +58,8 @@ type Action =
   | {
       name: string;
       getMetaData?: (ctx: Context) => Promise<Record<string, any>>;
-      getUserInfo?: (ctx: Context) => Promise<Record<string, any>>;
-      getResourceUk?: (ctx: Context) => Promise<string>;
+      getUserInfo?: (ctx: Context) => Promise<UserInfo>;
+      getSourceAndTarget?: (ctx: Context) => Promise<SourceAndTarget>;
     };
 
 export class AuditManager {
@@ -111,14 +125,14 @@ export class AuditManager {
     let originAction = '';
     let getMetaData = null;
     let getUserInfo = null;
-    let getResourceUk = null;
+    let getSourceAndTarget = null;
     if (typeof action === 'string') {
       originAction = action;
     } else {
       originAction = action.name;
       getMetaData = action.getMetaData;
       getUserInfo = action.getUserInfo;
-      getResourceUk = action.getResourceUk;
+      getSourceAndTarget = action.getSourceAndTarget;
     }
     // 解析originAction, 获取actionName, resourceName
     const nameRegex = /^[a-zA-Z0-9_-]+$/;
@@ -157,8 +171,8 @@ export class AuditManager {
     if (getUserInfo) {
       saveAction.getUserInfo = getUserInfo;
     }
-    if (getResourceUk) {
-      saveAction.getResourceUk = getResourceUk;
+    if (getSourceAndTarget) {
+      saveAction.getSourceAndTarget = getSourceAndTarget;
     }
     resource.set(actionName, saveAction);
   }
@@ -221,6 +235,12 @@ export class AuditManager {
         params: ctx.request.params,
         query: ctx.request.query,
         body: ctx.request.body,
+        url: ctx.request.url,
+        headers: {
+          'x-authenticator': ctx.request?.headers['x-authenticator'],
+          'x-locale': ctx.request?.headers['x-locale'],
+          'x-timezone': ctx.request?.headers['x-timezone'],
+        },
       },
       response: {
         body,
@@ -230,19 +250,6 @@ export class AuditManager {
 
   formatAuditData(ctx: Context) {
     const { resourceName } = ctx.action;
-    let association = '';
-    let collection = '';
-    if (resourceName) {
-      const resourceArray = resourceName.split('.');
-      if (resourceArray.length > 1) {
-        collection = resourceArray[0];
-        association = resourceArray[1];
-      } else {
-        collection = resourceName;
-      }
-    }
-    const resourceUk: string = this.formatResourceUk(ctx);
-
     // 获取ip，优先使用X-Forwarded-For，如果没有则使用ctx.request.ip
     const ipvalues = ctx.request.header['x-forwarded-for'];
     let ipvalue = '';
@@ -257,16 +264,12 @@ export class AuditManager {
       uuid: ctx.reqId,
       dataSource: (ctx.request.header['x-data-source'] || 'main') as string,
       resource: resourceName,
-      association: association,
-      collection: collection,
       action: ctx.action.actionName,
-      resourceUk: resourceUk,
       userId: ctx.state?.currentUser?.id,
       roleName: ctx.state?.currentRole,
       ip: ips.length > 0 ? ips[0] : ctx.request.ip,
       ua: ctx.request.header['user-agent'],
       status: ctx.response.status,
-      metadata: null,
     };
     return auditLog;
   }
@@ -300,8 +303,8 @@ export class AuditManager {
         if (action.getUserInfo) {
           const userInfo = await action.getUserInfo(ctx);
           if (userInfo) {
-            if (userInfo.id) {
-              auditLog.userId = userInfo.id;
+            if (userInfo.userId) {
+              auditLog.userId = userInfo.userId;
             }
             if (userInfo.roleName) {
               auditLog.roleName = userInfo.roleName;
@@ -315,10 +318,13 @@ export class AuditManager {
           const defaultMetaData = await this.getDefaultMetaData(ctx);
           auditLog.metadata = { ...metadata, ...defaultMetaData };
         }
-        if (action.getResourceUk) {
-          const resourceUk = await action.getResourceUk(ctx);
-          if (resourceUk) {
-            auditLog.resourceUk = resourceUk;
+        if (action.getSourceAndTarget) {
+          const sourceAndTarget = await action.getSourceAndTarget(ctx);
+          if (sourceAndTarget) {
+            auditLog.sourceCollection = sourceAndTarget.sourceCollection;
+            auditLog.sourceRecordUK = sourceAndTarget.sourceRecordUK;
+            auditLog.targetCollection = sourceAndTarget.targetCollection;
+            auditLog.targetRecordUK = sourceAndTarget.targetRecordUK;
           }
         }
       } else {

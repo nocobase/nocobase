@@ -101,6 +101,12 @@ export class PluginAuthServer extends Plugin {
                 ...ctx.request?.body,
                 password: undefined,
               },
+              url: ctx.request?.url,
+              headers: {
+                'x-authenticator': ctx.request?.headers['x-authenticator'],
+                'x-locale': ctx.request?.headers['x-locale'],
+                'x-timezone': ctx.request?.headers['x-timezone'],
+              },
             },
             response: {
               body,
@@ -119,18 +125,18 @@ export class PluginAuthServer extends Plugin {
           const roles = await user?.getRoles();
           if (!roles) {
             return {
-              id: userId,
+              userId,
             };
           } else {
             if (roles.length === 1) {
               return {
-                id: userId,
+                userId,
                 roleName: roles[0].name,
               };
             } else {
               // 多角色的情况下暂时不返回角色名
               return {
-                id: userId,
+                userId,
               };
             }
           }
@@ -146,6 +152,12 @@ export class PluginAuthServer extends Plugin {
                 ...ctx.request?.body,
                 password: undefined,
                 confirm_password: undefined,
+              },
+              url: ctx.request?.url,
+              headers: {
+                'x-authenticator': ctx.request?.headers['x-authenticator'],
+                'x-locale': ctx.request?.headers['x-locale'],
+                'x-timezone': ctx.request?.headers['x-timezone'],
               },
             },
             response: {
