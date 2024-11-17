@@ -818,12 +818,12 @@ test('Collection event add data trigger, determine trigger node integer variable
   await apiDeleteWorkflow(workflowId);
 });
 
-test.skip('create non-branching condition node before first node, the original first node should be the next', async ({
+test('create non-branching condition node before first node, the original first node should be the next', async ({
   page,
   mockCollections,
   mockRecords,
 }) => {
-  //数据表后缀标识
+  //数据表后缀标识˝
   const triggerNodeAppendText = faker.string.alphanumeric(5);
 
   //创建触发器节点数据表
