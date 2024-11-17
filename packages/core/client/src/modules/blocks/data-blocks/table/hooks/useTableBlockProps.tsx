@@ -10,7 +10,14 @@
 import { ArrayField } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { isEqual } from 'lodash';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import {
+  // @ts-ignore
+  startTransition,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react';
 import { useTableBlockContextBasicValue } from '../../../../../block-provider/TableBlockProvider';
 import { findFilterTargets } from '../../../../../block-provider/hooks';
 import { useDataBlockRequest } from '../../../../../data-source/data-block/DataBlockRequestProvider';
@@ -46,18 +53,17 @@ export const useTableBlockProps = () => {
       const data = serviceResponse?.data || [];
       const selectedRowKeys = tableBlockContextBasicValue.field?.data?.selectedRowKeys;
 
-      if (!isEqual(field.value, data)) {
-        field.value = data;
-        field?.setInitialValue(data);
-      }
-      field.data = field.data || {};
+      startTransition(() => {
+        if (!isEqual(field.value, data)) {
+          field.value = data;
+          field?.setInitialValue(data);
+        }
+        field.data = field.data || {};
 
-      if (!isEqual(field.data.selectedRowKeys, selectedRowKeys)) {
-        field.data.selectedRowKeys = selectedRowKeys;
-      }
-
-      // 大概率是无用代码，且可能会影响性能
-      // field.componentProps.pagination = pagination;
+        if (!isEqual(field.data.selectedRowKeys, selectedRowKeys)) {
+          field.data.selectedRowKeys = selectedRowKeys;
+        }
+      });
     }
   }, [field, service?.data, isLoading, tableBlockContextBasicValue.field?.data?.selectedRowKeys]);
 
