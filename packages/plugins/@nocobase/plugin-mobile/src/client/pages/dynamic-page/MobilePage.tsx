@@ -7,24 +7,47 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RemoteSchemaComponent, AssociatedFields } from '@nocobase/client';
+import { RemoteSchemaComponent, AssociationField, useDesignable, Select, DatePicker } from '@nocobase/client';
 import React, { useCallback } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
-import { Button as MobileButton, Form as MobileForm, List as MobileList, Dialog as MobileDialog } from 'antd-mobile';
+import { Button as MobileButton, Dialog as MobileDialog } from 'antd-mobile';
 import { MobilePicker } from './components/MobilePicker';
 import { MobileDateTimePicker } from './components/MobileDatePicker';
 
+const AssociationFieldMobile = (props) => {
+  return <AssociationField {...props} popupMatchSelectWidth={true} />;
+};
+
+AssociationFieldMobile.SubTable = AssociationField.SubTable;
+AssociationFieldMobile.Nester = AssociationField.Nester;
+AssociationFieldMobile.AddNewer = AssociationField.Container;
+AssociationFieldMobile.Selector = AssociationField.Container;
+AssociationFieldMobile.Viewer = AssociationField.Container;
+AssociationFieldMobile.InternalSelect = AssociationField.InternalSelect;
+AssociationFieldMobile.ReadPretty = AssociationField.ReadPretty;
+AssociationFieldMobile.FileSelector = AssociationField.FileSelector;
+
 const mobileComponents = {
   Button: MobileButton,
-  Select: MobilePicker,
-  DatePicker: MobileDateTimePicker,
+  Select: (props) => {
+    const { designable } = useDesignable();
+    if (designable !== false) {
+      return <Select {...props} />;
+    } else {
+      return <MobilePicker {...props} />;
+    }
+  },
+  DatePicker: (props) => {
+    const { designable } = useDesignable();
+    if (designable !== false) {
+      return <DatePicker {...props} />;
+    } else {
+      return <MobileDateTimePicker {...props} />;
+    }
+  },
   UnixTimestamp: MobileDateTimePicker,
   Modal: MobileDialog,
-  AssociatedFields: (
-    <div contentEditable="false">
-      <AssociatedFields />
-    </div>
-  ),
+  AssociationField: AssociationFieldMobile,
 };
 
 export const MobilePage = () => {

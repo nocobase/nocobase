@@ -95,10 +95,14 @@ export abstract class MultipleRelationRepository extends RelationRepository {
     if (!sourceModel) return 0;
 
     const queryOptions = this.buildQueryOptions(options);
+    const include = queryOptions.include?.filter((item: { association: string }) => {
+      const association = this.targetModel.associations?.[item.association];
+      return association?.associationType !== 'BelongsToArray';
+    });
 
     const count = await sourceModel[this.accessors().get]({
       where: queryOptions.where,
-      include: queryOptions.include,
+      include,
       includeIgnoreAttributes: false,
       attributes: [
         [
