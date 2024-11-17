@@ -1094,7 +1094,11 @@ export const useDisassociateActionProps = () => {
 
 export const useDetailPrintActionProps = () => {
   const { formBlockRef } = useFormBlockContext();
-  const { imported: useReactToPrint, loading } = useImported<any>(
+  const {
+    imported: useReactToPrint,
+    loading,
+    loadable,
+  } = useImported<typeof import('react-to-print'), typeof import('react-to-print').useReactToPrint>(
     () => import('react-to-print'),
     (module) => module.useReactToPrint,
   );
