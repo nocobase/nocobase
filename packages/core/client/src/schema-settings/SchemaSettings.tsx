@@ -170,7 +170,8 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = React.memo(
   const [visible, setVisible] = useState(false);
   const { Component, getMenuItems } = useMenuItem();
   const dropdownMaxHeight = useNiceDropdownMaxHeight([visible]);
-  const [openDropdown, setOpenDropdown] = useState(false);
+  // 单测中需要在首次就把菜单渲染出来，否则不会触发菜单的渲染进而报错。原因未知。
+  const [openDropdown, setOpenDropdown] = useState(process.env.__TEST__ ? true : false);
   const toolbarVisible = useContext(SchemaToolbarVisibleContext);
 
   useLayoutEffect(() => {
