@@ -45,7 +45,7 @@ export const AuthenticatorsContextProvider: FC<{ children: React.ReactNode }> = 
 };
 
 export function AuthLayout() {
-  const { data } = useSystemSettings();
+  const { data } = useSystemSettings() || {};
   return (
     <div
       style={{

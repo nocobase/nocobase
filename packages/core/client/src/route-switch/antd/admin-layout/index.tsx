@@ -442,7 +442,7 @@ export const InternalAdminLayout = () => {
       <Layout.Header className={layoutHeaderCss}>
         <div style={style1}>
           <div style={style2}>
-            <div className={className1}>{result.loading ? null : logo}</div>
+            <div className={className1}>{result?.loading ? null : logo}</div>
             <div className={className4}>
               <SetThemeOfHeaderSubmenu>
                 <MenuEditor sideMenuRef={sideMenuRef} />

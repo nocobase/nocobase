@@ -62,7 +62,7 @@ export function withDynamicSchemaProps<T = any>(
   options: WithSchemaHookOptions = {},
 ) {
   const displayName = options.displayName || Component.displayName || Component.name;
-  const ComponentWithProps: ComponentType<T> = React.memo((props) => {
+  const ComponentWithProps: ComponentType<T> = (props) => {
     const { dn, findComponent } = useDesignable();
     const useComponentPropsStr = useMemo(() => {
       const xComponent = dn.getSchemaAttribute('x-component');
@@ -85,7 +85,7 @@ export function withDynamicSchemaProps<T = any>(
     }, [schemaProps, props]);
 
     return <Component {...memoProps}>{props.children}</Component>;
-  });
+  };
 
   Component.displayName = displayName;
   ComponentWithProps.displayName = `withSchemaProps(${displayName})`;

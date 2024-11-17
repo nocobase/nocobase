@@ -55,7 +55,7 @@ const CollectionFieldUISchemaContext = React.createContext<CollectionFieldOption
  * while the value of `useCollectionField` is determined by the context in the component tree.
  */
 export const useCollectionFieldUISchema = () => {
-  return React.useContext(CollectionFieldUISchemaContext);
+  return React.useContext(CollectionFieldUISchemaContext) || {};
 };
 
 const CollectionFieldUISchemaProvider: FC<{
