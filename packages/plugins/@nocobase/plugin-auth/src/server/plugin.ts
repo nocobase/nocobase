@@ -169,6 +169,33 @@ export class PluginAuthServer extends Plugin {
           };
         },
       },
+      {
+        name: 'auth:changePassword',
+        getMetaData: async (ctx: any) => {
+          return {
+            request: {
+              params: ctx.request.params,
+              query: ctx.request.query,
+              body: {},
+              url: ctx.request.url,
+              headers: {
+                'x-authenticator': ctx.request?.headers['x-authenticator'],
+                'x-locale': ctx.request?.headers['x-locale'],
+                'x-timezone': ctx.request?.headers['x-timezone'],
+              },
+            },
+            response: {
+              body: {},
+            },
+          };
+        },
+        getSourceAndTarget: async (ctx: any) => {
+          return {
+            sourceCollection: 'users',
+            sourceRecordUK: ctx.auth.user.id,
+          };
+        },
+      },
       'auth:signOut',
     ]);
   }

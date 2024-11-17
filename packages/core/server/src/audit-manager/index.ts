@@ -274,21 +274,6 @@ export class AuditManager {
     return auditLog;
   }
 
-  formatResourceUk(ctx: any) {
-    const { filterByTk } = ctx.action.params;
-    let resourceUk = '';
-
-    if (filterByTk) {
-      if (filterByTk instanceof Array) {
-        resourceUk = filterByTk.join(',');
-      } else {
-        resourceUk = filterByTk;
-      }
-    }
-
-    return resourceUk;
-  }
-
   async output(ctx: any, reqId: any, metadata?: Record<string, any>) {
     try {
       const { resourceName, actionName } = ctx.action;
