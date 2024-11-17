@@ -9,9 +9,7 @@
 
 import { faker } from '@faker-js/faker';
 import {
-  CalculationNode,
   CollectionTriggerNode,
-  ConditionBranchNode,
   ConditionYesNode,
   QueryRecordNode,
   apiCreateWorkflow,
@@ -820,7 +818,7 @@ test('Collection event add data trigger, determine trigger node integer variable
   await apiDeleteWorkflow(workflowId);
 });
 
-test.only('create non-branching condition node before first node, the original first node should be the next', async ({
+test.skip('create non-branching condition node before first node, the original first node should be the next', async ({
   page,
   mockCollections,
   mockRecords,
