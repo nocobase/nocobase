@@ -7,13 +7,10 @@ on:
         description: 'Base branch name'
       new:
         description: 'New branch name'
-  push:
-    branches:
-      - ci-create-branch
 
 jobs:
   get-plugins:
-    uses: nocobase/nocobase/.github/workflows/get-plugins.yml@ci-create-branch
+    uses: nocobase/nocobase/.github/workflows/get-plugins.yml@main
     secrets: inherit
   create-branch:
     needs: get-plugins
