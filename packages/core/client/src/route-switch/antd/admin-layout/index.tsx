@@ -312,9 +312,7 @@ export const AdminDynamicPage = () => {
   const currentPageUid = useCurrentPageUid();
 
   return (
-    <KeepAlive uid={currentPageUid}>
-      <RemoteSchemaComponent onlyRenderProperties uid={currentPageUid} />
-    </KeepAlive>
+    <KeepAlive uid={currentPageUid}>{(uid) => <RemoteSchemaComponent onlyRenderProperties uid={uid} />}</KeepAlive>
   );
 };
 

@@ -28,10 +28,15 @@ export const useKeepAlive = () => {
   return { active };
 };
 
+interface KeepAliveProps {
+  uid: string;
+  children: (uid: string) => React.ReactNode;
+}
+
 /**
  * Implements a Vue-like KeepAlive effect
  */
-export const KeepAlive: FC<{ uid: string }> = React.memo(({ children, uid }) => {
+export const KeepAlive: FC<KeepAliveProps> = React.memo(({ children, uid }) => {
   const renderedPageRef = useRef([]);
 
   if (!renderedPageRef.current.includes(uid)) {
@@ -42,7 +47,7 @@ export const KeepAlive: FC<{ uid: string }> = React.memo(({ children, uid }) => 
     <>
       {renderedPageRef.current.map((renderedUid) => (
         <div key={renderedUid} style={renderedUid === uid ? displayBlock : displayNone}>
-          <KeepAliveContext.Provider value={renderedUid === uid}>{children}</KeepAliveContext.Provider>
+          <KeepAliveContext.Provider value={renderedUid === uid}>{children(renderedUid)}</KeepAliveContext.Provider>
         </div>
       ))}
     </>
