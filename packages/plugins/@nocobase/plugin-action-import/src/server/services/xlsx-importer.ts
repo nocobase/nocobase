@@ -34,7 +34,7 @@ type RunOptions = {
 };
 
 export class XlsxImporter extends EventEmitter {
-  constructor(private options: ImporterOptions) {
+  constructor(protected options: ImporterOptions) {
     super();
 
     if (options.columns.length == 0) {
