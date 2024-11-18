@@ -20,11 +20,7 @@ jobs:
         repo:
           - 'nocobase'
           - 'pro-plugins'
-          - ${{ fromJSON(needs.get-plugins.outputs.custom-plugins) }}
-          - ${{ fromJSON(needs.get-plugins.outputs.rc-plugins) }}
-          - ${{ fromJSON(needs.get-plugins.outputs.beta-plugins) }}
-          - ${{ fromJSON(needs.get-plugins.outputs.alpha-plugins) }}
-          - ${{ fromJSON(needs.get-plugins.outputs.unreleased-plugins) }}
+          - ${{ fromJSON(needs.get-plugins.outputs.all-plugins) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/create-github-app-token@v1
@@ -53,4 +49,4 @@ jobs:
           git checkout ${{ inputs.base || 'next' }}
           git pull origin ${{ inputs.base || 'next' }}
           git checkout -b ${{ inputs.new || 'develop' }}
-          git push --set-upstream origin ${{ inputs.new || 'develop'}}
+          git push --set-upstream origin ${{ inputs.new || 'develop' }}
