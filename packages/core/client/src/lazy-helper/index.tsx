@@ -25,23 +25,33 @@ export function createLazyComponents<M extends Record<string, any>, K extends ke
   ...componentNames: K[]
 ) {
   if (componentNames.length === 0) {
-    return lazy(() =>
+    const LazyComponent = lazy(() =>
       factory().then((module) => ({
         default: module.default,
       })),
+    );
+    return (props) => (
+      <React.Suspense fallback={<div>Loading...</div>}>
+        <LazyComponent {...props} />
+      </React.Suspense>
     );
   }
 
   return componentNames.reduce(
     (acc, name) => {
-      acc[name] = lazy(() =>
+      const LazyComponent = lazy(() =>
         factory().then((module) => ({
           default: get(module, name),
         })),
       );
+      acc[name] = (props) => (
+        <React.Suspense fallback={<div>Loading...</div>}>
+          <LazyComponent {...props} />
+        </React.Suspense>
+      );
       return acc;
     },
-    {} as Record<K, React.LazyExoticComponent<M[K]>>,
+    {} as Record<K, React.ComponentType<any>>,
   );
 }
 
