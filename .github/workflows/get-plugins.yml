@@ -4,13 +4,13 @@ on:
   workflow_call:
     outputs:
       custom-plugins:
-        value: ${{ jobs.get-plugins.outputs.custom-plugins }}
+        value: ${{ fromJSON(jobs.get-plugins.outputs.custom-plugins) }}
       rc-plugins:
-        value: ${{ jobs.get-plugins.outputs.rc-plugins }}
+        value: ${{ fromJSON(jobs.get-plugins.outputs.rc-plugins) }}
       beta-plugins:
-        value: ${{ jobs.get-plugins.outputs.beta-plugins }}
+        value: ${{ fromJSON(jobs.get-plugins.outputs.beta-plugins) }}
       alpha-plugins:
-        value: ${{ jobs.get-plugins.outputs.alpha-plugins }}
+        value: ${{ fromJSON(jobs.get-plugins.outputs.alpha-plugins) }}
 
 jobs:
   get-plugins:
