@@ -7,7 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, FC, useContext, useRef } from 'react';
+import React, {
+  createContext,
+  FC,
+  useContext,
+  // @ts-ignore
+  useDeferredValue,
+  useRef,
+} from 'react';
 
 const displayBlock = {
   display: 'block',
@@ -17,7 +24,13 @@ const displayNone = {
   display: 'none',
 };
 
-export const KeepAliveContext = createContext(true);
+const KeepAliveContext = createContext(true);
+
+export const KeepAliveProvider: FC<{ active: boolean }> = ({ children, active }) => {
+  const deferredActive = useDeferredValue(active);
+
+  return <KeepAliveContext.Provider value={deferredActive}>{children}</KeepAliveContext.Provider>;
+};
 
 /**
  * 获取当前页面是否可见
@@ -47,7 +60,7 @@ export const KeepAlive: FC<KeepAliveProps> = React.memo(({ children, uid }) => {
     <>
       {renderedPageRef.current.map((renderedUid) => (
         <div key={renderedUid} style={renderedUid === uid ? displayBlock : displayNone}>
-          <KeepAliveContext.Provider value={renderedUid === uid}>{children(renderedUid)}</KeepAliveContext.Provider>
+          <KeepAliveProvider active={renderedUid === uid}>{children(renderedUid)}</KeepAliveProvider>
         </div>
       ))}
     </>

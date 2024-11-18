@@ -30,7 +30,7 @@ import {
 import { useDocumentTitle } from '../../../document-title';
 import { useGlobalTheme } from '../../../global-theme';
 import { Icon } from '../../../icon';
-import { KeepAliveContext, useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
+import { KeepAliveProvider, useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
 import { DndContext } from '../../common';
 import { SortableItem } from '../../common/sortable-item';
@@ -266,9 +266,9 @@ const TabPane = React.memo(({ schema, active: tabActive }: { schema: Schema; act
 
   return (
     <div style={tabActive ? displayBlock : displayNone}>
-      <KeepAliveContext.Provider value={pageActive && tabActive}>
+      <KeepAliveProvider active={pageActive && tabActive}>
         <SchemaComponent distributed schema={newSchema} />
-      </KeepAliveContext.Provider>
+      </KeepAliveProvider>
     </div>
   );
 });

@@ -14,6 +14,7 @@ import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
 import { useDataLoadingMode } from '../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 import { useSourceKey } from '../../modules/blocks/useSourceKey';
 import { useKeepAlive } from '../../route-switch/antd/admin-layout/KeepAlive';
+import { EMPTY_OBJECT } from '../../variables/constants';
 import { CollectionRecord, CollectionRecordProvider } from '../collection-record';
 import { useDataSourceHeaders } from '../utils';
 import { AllDataBlockProps, useDataBlockProps } from './DataBlockProvider';
@@ -36,8 +37,7 @@ function useRecordRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const dataBlockProps = useDataBlockProps();
   const headers = useDataSourceHeaders(dataBlockProps.dataSource);
   const sourceKey = useSourceKey(association);
-  const JSONParams = JSON.stringify(params);
-  const JSONRecord = JSON.stringify(record);
+  const [JSONParams, JSONRecord] = useMemo(() => [JSON.stringify(params), JSON.stringify(record)], [params, record]);
   const { active: pageActive } = useKeepAlive();
 
   const defaultService = (customParams) => {
@@ -126,7 +126,7 @@ export const BlockRequestProvider: FC = React.memo(({ children }) => {
     action,
     filterByTk,
     sourceId,
-    params = {},
+    params = EMPTY_OBJECT,
     association,
     collection,
     record,
@@ -134,6 +134,14 @@ export const BlockRequestProvider: FC = React.memo(({ children }) => {
     requestOptions,
     requestService,
   } = props;
+
+  const _params = useMemo(
+    () => ({
+      ...params,
+      filterByTk: filterByTk || params.filterByTk,
+    }),
+    [filterByTk, params],
+  );
 
   const recordRequest = useRecordRequest<{ data: any; parentRecord: any }>({
     action,
@@ -143,10 +151,7 @@ export const BlockRequestProvider: FC = React.memo(({ children }) => {
     collection,
     requestOptions,
     requestService,
-    params: {
-      ...params,
-      filterByTk: filterByTk || params.filterByTk,
-    },
+    params: _params,
     parentRecord,
   });
 
