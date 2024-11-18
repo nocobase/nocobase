@@ -68,11 +68,11 @@ jobs:
           git checkout ${{ steps.get-branch.outputs.targetBranch }}
           git merge ${{ steps.get-branch.outputs.baseBranch }}
           git push origin ${{ steps.get-branch.outputs.targetBranch }}
-      - name: push ${{ inputs.repository || 'nocobase' }}(${{ steps.get-branch.outputs.targetBranch }})
-        uses: ad-m/github-push-action@master
-        with:
-          branch: ${{ steps.get-branch.outputs.targetBranch }}
-          github_token: ${{ steps.app-token.outputs.token }}
-          repository: nocobase/${{ inputs.repository || 'nocobase' }}
-          tags: true
-          atomic: true
+      # - name: push ${{ inputs.repository || 'nocobase' }}(${{ steps.get-branch.outputs.targetBranch }})
+      #   uses: ad-m/github-push-action@master
+      #   with:
+      #     branch: ${{ steps.get-branch.outputs.targetBranch }}
+      #     github_token: ${{ steps.app-token.outputs.token }}
+      #     repository: nocobase/${{ inputs.repository || 'nocobase' }}
+      #     tags: true
+      #     atomic: true

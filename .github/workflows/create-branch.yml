@@ -49,4 +49,4 @@ jobs:
           git checkout ${{ inputs.base || 'next' }}
           git pull origin ${{ inputs.base || 'next' }}
           git checkout -b ${{ inputs.new || 'develop' }}
-          git push --set-upstream origin ${{ inputs.new || 'develop'}}
+          git push --set-upstream origin ${{ inputs.new || 'develop' }}
