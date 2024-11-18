@@ -1,0 +1,35 @@
+name: Get plugins
+
+on:
+  workflow_call:
+    outputs:
+      custom-plugins: ${{ jobs.get-plugins.outputs.custom-plugins }}
+      rc-plugins: ${{ jobs.get-plugins.outputs.rc-plugins }}
+      beta-plugins: ${{ jobs.get-plugins.outputs.beta-plugins }}
+      alpha-plugins: ${{ jobs.get-plugins.outputs.alpha-plugins }}
+
+jobs:
+  get-plugins:
+    runs-on: ubuntu-latest
+    outputs:
+      custom-plugins: ${{ steps.get-plugins.outputs.custom-plugins }}
+      rc-plugins: ${{ steps.get-plugins.outputs.rc-plugins }}
+      beta-plugins: ${{ steps.get-plugins.outputs.beta-plugins }}
+      alpha-plugins: ${{ steps.get-plugins.outputs.alpha-plugins }}
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: nocobase
+          skip-token-revoke: true
+      - id: get-plugins
+        shell: bash
+        run: |
+          echo "custom-plugins=$(gh search repos --owner=nocobase "props.plugin-type:custom" --json name | jq -r 'map(.name) | join(",")')" >> "$GITHUB_OUTPUT"
+          echo "rc-plugins=$(gh search repos --owner=nocobase "props.plugin-type:rc" --json name | jq -r 'map(.name) | join(",")')" >> "$GITHUB_OUTPUT"
+          echo "beta-plugins=$(gh search repos --owner=nocobase "props.plugin-type:beta" --json name | jq -r 'map(.name) | join(",")')" >> "$GITHUB_OUTPUT"
+          echo "alpha-plugins=$(gh search repos --owner=nocobase "props.plugin-type:alpha" --json name | jq -r 'map(.name) | join(",")')" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}

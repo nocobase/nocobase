@@ -1,0 +1,56 @@
+name: Create branch for plugin repos
+
+on:
+  workflow_dispatch:
+    inputs:
+      base:
+        description: 'Base branch name'
+      new:
+        description: 'New branch name'
+  push:
+    branches:
+      - ci-create-branch
+
+jobs:
+  get-plugins:
+    uses: nocobase/nocobase/.github/workflows/get-plugins.yml@ci-create-branch
+  create-branch:
+    needs: get-plugins
+    strategy:
+      matrix:
+        repo:
+          - 'nocobase'
+          - 'pro-plugins'
+          - ${{ jobs.get-plugins.outputs.custom-plugins }}
+          - ${{ jobs.get-plugins.outputs.rc-plugins }}
+          - ${{ jobs.get-plugins.outputs.beta-plugins }}
+          - ${{ jobs.get-plugins.outputs.alpha-plugins }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: ${{ matrix.repo }}
+          skip-token-revoke: true
+      - name: Get GitHub App User ID
+        id: get-user-id
+        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.base }}
+          repository: nocobase/${{ matrix.repo }}
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Create branch ${{ inputs.new }} (nocobase/${{ matrix.repo }})
+        run: |
+          git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
+          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
+          git checkout ${{ inputs.base || 'main' }}
+          git pull origin ${{ inputs.base || 'main' }}
+          git checkout -b ${{ inputs.new || 'develop' }}
+          # git push origin ${{ inputs.new }}
