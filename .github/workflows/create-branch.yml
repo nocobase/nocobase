@@ -21,10 +21,10 @@ jobs:
         repo:
           - 'nocobase'
           - 'pro-plugins'
-          - ${{ jobs.get-plugins.outputs.custom-plugins }}
-          - ${{ jobs.get-plugins.outputs.rc-plugins }}
-          - ${{ jobs.get-plugins.outputs.beta-plugins }}
-          - ${{ jobs.get-plugins.outputs.alpha-plugins }}
+          - ${{ needs.get-plugins.outputs.custom-plugins }}
+          - ${{ needs.get-plugins.outputs.rc-plugins }}
+          - ${{ needs.get-plugins.outputs.beta-plugins }}
+          - ${{ needs.get-plugins.outputs.alpha-plugins }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/create-github-app-token@v1
