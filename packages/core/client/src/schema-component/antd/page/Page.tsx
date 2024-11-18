@@ -30,7 +30,7 @@ import {
 import { useDocumentTitle } from '../../../document-title';
 import { useGlobalTheme } from '../../../global-theme';
 import { Icon } from '../../../icon';
-import { PageActiveContext, usePageActive } from '../../../route-switch/antd/route-schema-component';
+import { KeepAliveContext, useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
 import { DndContext } from '../../common';
 import { SortableItem } from '../../common/sortable-item';
@@ -244,7 +244,7 @@ const displayNone = {
 // Add a TabPane component to manage caching, implementing an effect similar to Vue's keep-alive
 const TabPane = React.memo(({ schema, active: tabActive }: { schema: Schema; active: boolean }) => {
   const mountedRef = useRef(false);
-  const { active: pageActive } = usePageActive();
+  const { active: pageActive } = useKeepAlive();
 
   if (tabActive && !mountedRef.current) {
     mountedRef.current = true;
@@ -266,9 +266,9 @@ const TabPane = React.memo(({ schema, active: tabActive }: { schema: Schema; act
 
   return (
     <div style={tabActive ? displayBlock : displayNone}>
-      <PageActiveContext.Provider value={pageActive && tabActive}>
+      <KeepAliveContext.Provider value={pageActive && tabActive}>
         <SchemaComponent distributed schema={newSchema} />
-      </PageActiveContext.Provider>
+      </KeepAliveContext.Provider>
     </div>
   );
 });

@@ -30,7 +30,6 @@ import {
   findByUid,
   findMenuItem,
   NavigateIfNotSignIn,
-  PageActiveContext,
   PinnedPluginList,
   RemoteCollectionManagerProvider,
   RemoteSchemaComponent,
@@ -58,6 +57,9 @@ import { Plugin } from '../../../application/Plugin';
 import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
 import { Help } from '../../../user/Help';
 import { VariablesProvider } from '../../../variables';
+import { KeepAlive } from './KeepAlive';
+
+export { KeepAlive };
 
 const filterByACL = (schema, options) => {
   const { allowAll, allowMenuItemIds = [] } = options;
@@ -306,32 +308,13 @@ const AdminSideBar = ({ sideMenuRef }) => {
   return <InternalAdminSideBar pageUid={currentPageUid} sideMenuRef={sideMenuRef} />;
 };
 
-const displayBlock = {
-  display: 'block',
-};
-
-const displayNone = {
-  display: 'none',
-};
-
 export const AdminDynamicPage = () => {
-  const renderedPageRef = useRef([]);
   const currentPageUid = useCurrentPageUid();
 
-  if (!renderedPageRef.current.includes(currentPageUid)) {
-    renderedPageRef.current.push(currentPageUid);
-  }
-
   return (
-    <>
-      {renderedPageRef.current.map((pageUid) => (
-        <div key={pageUid} style={pageUid === currentPageUid ? displayBlock : displayNone}>
-          <PageActiveContext.Provider value={pageUid === currentPageUid}>
-            <RemoteSchemaComponent onlyRenderProperties uid={pageUid} />
-          </PageActiveContext.Provider>
-        </div>
-      ))}
-    </>
+    <KeepAlive uid={currentPageUid}>
+      <RemoteSchemaComponent onlyRenderProperties uid={currentPageUid} />
+    </KeepAlive>
   );
 };
 
@@ -417,7 +400,7 @@ const theme = {
   },
 };
 
-const LayoutContent = () => {
+export const LayoutContent = () => {
   const currentPageUid = useCurrentPageUid();
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -526,33 +509,33 @@ export const InternalAdminLayout = () => {
 
 export const AdminProvider = (props) => {
   return (
-    <ACLRolesCheckProvider>
-      <MenuSchemaRequestProvider>
-        <RemoteCollectionManagerProvider>
-          <CurrentAppInfoProvider>
-            <NavigateIfNotSignIn>
-              <RemoteSchemaTemplateManagerProvider>
-                <VariablesProvider>{props.children}</VariablesProvider>
-              </RemoteSchemaTemplateManagerProvider>
-            </NavigateIfNotSignIn>
-          </CurrentAppInfoProvider>
-        </RemoteCollectionManagerProvider>
-      </MenuSchemaRequestProvider>
-    </ACLRolesCheckProvider>
+    <CurrentPageUidProvider>
+      <CurrentTabUidProvider>
+        <IsSubPageClosedByPageMenuProvider>
+          <ACLRolesCheckProvider>
+            <MenuSchemaRequestProvider>
+              <RemoteCollectionManagerProvider>
+                <CurrentAppInfoProvider>
+                  <NavigateIfNotSignIn>
+                    <RemoteSchemaTemplateManagerProvider>
+                      <VariablesProvider>{props.children}</VariablesProvider>
+                    </RemoteSchemaTemplateManagerProvider>
+                  </NavigateIfNotSignIn>
+                </CurrentAppInfoProvider>
+              </RemoteCollectionManagerProvider>
+            </MenuSchemaRequestProvider>
+          </ACLRolesCheckProvider>
+        </IsSubPageClosedByPageMenuProvider>
+      </CurrentTabUidProvider>
+    </CurrentPageUidProvider>
   );
 };
 
 export const AdminLayout = (props) => {
   return (
-    <CurrentPageUidProvider>
-      <CurrentTabUidProvider>
-        <IsSubPageClosedByPageMenuProvider>
-          <AdminProvider>
-            <InternalAdminLayout {...props} />
-          </AdminProvider>
-        </IsSubPageClosedByPageMenuProvider>
-      </CurrentTabUidProvider>
-    </CurrentPageUidProvider>
+    <AdminProvider>
+      <InternalAdminLayout {...props} />
+    </AdminProvider>
   );
 };
 
