@@ -31,7 +31,6 @@ jobs:
       - id: get-plugins
         shell: bash
         run: |
-          gh search repos "props.plugin-type:custom" --owner=nocobase --json name | jq -r 'map(.name) | join(",")'
           echo "custom-plugins=$(gh search repos "props.plugin-type:custom" --owner=nocobase --json name | jq -r 'map(.name) | join(",")')" >> "$GITHUB_OUTPUT"
           echo "rc-plugins=$(gh search repos "props.plugin-type:rc" --owner=nocobase --json name | jq -r 'map(.name) | join(",")')" >> "$GITHUB_OUTPUT"
           echo "beta-plugins=$(gh search repos "props.plugin-type:beta" --owner=nocobase --json name | jq -r 'map(.name) | join(",")')" >> "$GITHUB_OUTPUT"
