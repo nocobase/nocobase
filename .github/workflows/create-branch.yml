@@ -44,7 +44,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.base }}
+          ref: ${{ inputs.base || 'next' }}
           repository: nocobase/${{ matrix.repo }}
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
@@ -55,4 +55,4 @@ jobs:
           git checkout ${{ inputs.base || 'next' }}
           git pull origin ${{ inputs.base || 'next' }}
           git checkout -b ${{ inputs.new || 'develop' }}
-          # git push origin ${{ inputs.new }}
+          git push origin ${{ inputs.new }}
