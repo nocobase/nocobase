@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RemoteSchemaComponent, AssociationField, useDesignable, Select, DatePicker } from '@nocobase/client';
+import { RemoteSchemaComponent, AssociationField, useDesignable, Select, DatePicker, Action } from '@nocobase/client';
 import React, { useCallback } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
 import { Button as MobileButton, Dialog as MobileDialog } from 'antd-mobile';
@@ -20,9 +20,9 @@ const AssociationFieldMobile = (props) => {
 
 AssociationFieldMobile.SubTable = AssociationField.SubTable;
 AssociationFieldMobile.Nester = AssociationField.Nester;
-AssociationFieldMobile.AddNewer = AssociationField.Container;
-AssociationFieldMobile.Selector = AssociationField.Container;
-AssociationFieldMobile.Viewer = AssociationField.Container;
+AssociationFieldMobile.AddNewer = Action.Container;
+AssociationFieldMobile.Selector = Action.Container;
+AssociationFieldMobile.Viewer = Action.Container;
 AssociationFieldMobile.InternalSelect = AssociationField.InternalSelect;
 AssociationFieldMobile.ReadPretty = AssociationField.ReadPretty;
 AssociationFieldMobile.FileSelector = AssociationField.FileSelector;
