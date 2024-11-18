@@ -46,6 +46,50 @@ interface KeepAliveProps {
   children: (uid: string) => React.ReactNode;
 }
 
+// Evaluate device performance to determine maximum number of cached pages
+const getMaxPageCount = () => {
+  const baseCount = 5;
+  let performanceScore = baseCount;
+
+  try {
+    // Try using deviceMemory
+    const memory = (navigator as any).deviceMemory;
+    if (memory) {
+      return Math.min(Math.max(baseCount, memory * 3), 20);
+    }
+
+    // Try using performance.memory
+    const perfMemory = (performance as any).memory;
+    if (perfMemory?.jsHeapSizeLimit) {
+      // jsHeapSizeLimit is in bytes
+      const memoryGB = perfMemory.jsHeapSizeLimit / (1024 * 1024 * 1024);
+      return Math.min(Math.max(baseCount, Math.floor(memoryGB * 3)), 20);
+    }
+
+    // Fallback: Use performance.now() to test execution speed
+    const start = performance.now();
+    for (let i = 0; i < 1000000; i++) {
+      // Simple performance test
+    }
+    const duration = performance.now() - start;
+
+    // Adjust page count based on execution time
+    if (duration < 5) {
+      performanceScore = 10; // Very good performance
+    } else if (duration < 10) {
+      performanceScore = 5; // Average performance
+    }
+    // Use baseCount for poor performance
+
+    return performanceScore;
+  } catch (e) {
+    // Return base count if any error occurs
+    return baseCount;
+  }
+};
+
+const MAX_RENDERED_PAGE_COUNT = getMaxPageCount();
+
 /**
  * Implements a Vue-like KeepAlive effect
  */
@@ -54,6 +98,9 @@ export const KeepAlive: FC<KeepAliveProps> = React.memo(({ children, uid }) => {
 
   if (!renderedPageRef.current.includes(uid)) {
     renderedPageRef.current.push(uid);
+    if (renderedPageRef.current.length > MAX_RENDERED_PAGE_COUNT) {
+      renderedPageRef.current = renderedPageRef.current.slice(-MAX_RENDERED_PAGE_COUNT);
+    }
   }
 
   return (
