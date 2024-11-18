@@ -11,6 +11,8 @@ on:
         value: ${{ jobs.get-plugins.outputs.beta-plugins }}
       alpha-plugins:
         value: ${{ jobs.get-plugins.outputs.alpha-plugins }}
+      unreleased-plugins:
+        value: ${{ jobs.get-plugins.outputs.unreleased-plugins }}
 
 jobs:
   get-plugins:
@@ -20,6 +22,7 @@ jobs:
       rc-plugins: ${{ steps.get-plugins.outputs.rc-plugins }}
       beta-plugins: ${{ steps.get-plugins.outputs.beta-plugins }}
       alpha-plugins: ${{ steps.get-plugins.outputs.alpha-plugins }}
+      unreleased-plugins: ${{ steps.get-plugins.outputs.unreleased-plugins }}
     steps:
       - uses: actions/create-github-app-token@v1
         id: app-token
@@ -35,5 +38,6 @@ jobs:
           echo "rc-plugins=$(gh search repos "props.plugin-type:rc" --owner=nocobase --json name | jq -r 'map(.name) | tostring')" >> "$GITHUB_OUTPUT"
           echo "beta-plugins=$(gh search repos "props.plugin-type:beta" --owner=nocobase --json name | jq -r 'map(.name) | tostring')" >> "$GITHUB_OUTPUT"
           echo "alpha-plugins=$(gh search repos "props.plugin-type:alpha" --owner=nocobase --json name | jq -r 'map(.name) | tostring')" >> "$GITHUB_OUTPUT"
+          echo "unreleased-plugins=$(gh search repos "props.plugin-type:unreleased" --owner=nocobase --json name | jq -r 'map(.name) | tostring')" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
