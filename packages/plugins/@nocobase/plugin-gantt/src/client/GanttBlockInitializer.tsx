@@ -46,7 +46,7 @@ export const GanttBlockInitializer = ({
   return (
     <DataBlockInitializer
       {...itemConfig}
-      componentType={`Calendar`}
+      componentType={`Gantt`}
       icon={<FormOutlined />}
       onCreateBlockSchema={async (options) => {
         if (createBlockSchema) {
