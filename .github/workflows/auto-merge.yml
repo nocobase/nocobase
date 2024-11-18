@@ -35,7 +35,7 @@ jobs:
             echo "targetBranch=$(echo 'next')" >> $GITHUB_OUTPUT
           elif [[ "${{ inputs.branch || github.head_ref || github.ref_name }}" == "next" ]]; then
             echo "baseBranch=$(echo 'next')" >> $GITHUB_OUTPUT
-            echo "target=$(echo 'develop')" >> $GITHUB_OUTPUT
+            echo "targetBranch=$(echo 'develop')" >> $GITHUB_OUTPUT
           else
             exit 1
           fi
