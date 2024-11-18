@@ -3,10 +3,14 @@ name: Get plugins
 on:
   workflow_call:
     outputs:
-      custom-plugins: ${{ jobs.get-plugins.outputs.custom-plugins }}
-      rc-plugins: ${{ jobs.get-plugins.outputs.rc-plugins }}
-      beta-plugins: ${{ jobs.get-plugins.outputs.beta-plugins }}
-      alpha-plugins: ${{ jobs.get-plugins.outputs.alpha-plugins }}
+      custom-plugins:
+        value: ${{ jobs.get-plugins.outputs.custom-plugins }}
+      rc-plugins:
+        value: ${{ jobs.get-plugins.outputs.rc-plugins }}
+      beta-plugins:
+        value: ${{ jobs.get-plugins.outputs.beta-plugins }}
+      alpha-plugins:
+        value: ${{ jobs.get-plugins.outputs.alpha-plugins }}
 
 jobs:
   get-plugins:
