@@ -31,9 +31,9 @@ jobs:
       - id: get-plugins
         shell: bash
         run: |
-          echo "custom-plugins=$(gh search repos "props.plugin-type:custom" --owner=nocobase --json name | jq -r 'map(.name) | @csv')" >> "$GITHUB_OUTPUT"
-          echo "rc-plugins=$(gh search repos "props.plugin-type:rc" --owner=nocobase --json name | jq -r 'map(.name) | @csv')" >> "$GITHUB_OUTPUT"
-          echo "beta-plugins=$(gh search repos "props.plugin-type:beta" --owner=nocobase --json name | jq -r 'map(.name) | @csv')" >> "$GITHUB_OUTPUT"
-          echo "alpha-plugins=$(gh search repos "props.plugin-type:alpha" --owner=nocobase --json name | jq -r 'map(.name) | @csv')" >> "$GITHUB_OUTPUT"
+          echo "custom-plugins=$(gh search repos "props.plugin-type:custom" --owner=nocobase --json name | jq -r 'map(.name)')" >> "$GITHUB_OUTPUT"
+          echo "rc-plugins=$(gh search repos "props.plugin-type:rc" --owner=nocobase --json name | jq -r 'map(.name)')" >> "$GITHUB_OUTPUT"
+          echo "beta-plugins=$(gh search repos "props.plugin-type:beta" --owner=nocobase --json name | jq -r 'map(.name)')" >> "$GITHUB_OUTPUT"
+          echo "alpha-plugins=$(gh search repos "props.plugin-type:alpha" --owner=nocobase --json name | jq -r 'map(.name)')" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
