@@ -20,11 +20,7 @@ jobs:
         repo:
           - 'nocobase'
           - 'pro-plugins'
-          - ${{ fromJSON(needs.get-plugins.outputs.custom-plugins) }}
-          - ${{ fromJSON(needs.get-plugins.outputs.rc-plugins) }}
-          - ${{ fromJSON(needs.get-plugins.outputs.beta-plugins) }}
-          - ${{ fromJSON(needs.get-plugins.outputs.alpha-plugins) }}
-          - ${{ fromJSON(needs.get-plugins.outputs.unreleased-plugins) }}
+          - ${{ fromJSON(needs.get-plugins.outputs.all-plugins) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/create-github-app-token@v1
