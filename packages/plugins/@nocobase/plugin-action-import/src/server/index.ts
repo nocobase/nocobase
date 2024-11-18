@@ -60,3 +60,4 @@ export class PluginActionImportServer extends Plugin {
 
 export default PluginActionImportServer;
 export * from './services/xlsx-importer';
+export * from './services/template-creator';
