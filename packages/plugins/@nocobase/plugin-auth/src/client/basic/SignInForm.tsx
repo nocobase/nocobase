@@ -8,12 +8,11 @@
  */
 
 import { ISchema } from '@formily/react';
-import { SchemaComponent, useAPIClient, useCurrentUserContext } from '@nocobase/client';
+import { SchemaComponent, useAPIClient, useCurrentUserContext, useLazyHook } from '@nocobase/client';
 import React, { useCallback } from 'react';
 import { useAuthTranslation } from '../locale';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from '@formily/react';
-import { useImported } from '@nocobase/client';
 // import { useSignUpForms } from '../pages';
 import { Authenticator } from '../authenticator';
 
@@ -103,19 +102,10 @@ export const SignInForm = (props: { authenticator: Authenticator }) => {
   const { t } = useAuthTranslation();
   const authenticator = props.authenticator;
   const { authType, name, options } = authenticator;
-  const {
-    imported: useSignUpForms,
-    loading,
-    loadable,
-  } = useImported(
+  const useSignUpForms = useLazyHook<typeof import('../pages').useSignUpForms>(
     () => import('../pages'),
-    (module) => module.useSignUpForms,
+    'useSignUpForms',
   );
-
-  if (loading) {
-    throw loadable.resolution;
-  }
-
   const signUpPages = useSignUpForms();
   const allowSignUp = signUpPages[authType] && options?.allowSignUp ? true : false;
   const signUpLink = `/signup?name=${name}`;

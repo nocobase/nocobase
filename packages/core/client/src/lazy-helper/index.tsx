@@ -45,6 +45,14 @@ export function createLazyComponents<M extends Record<string, any>, K extends ke
   );
 }
 
+export function useLazyHook<T = () => any>(importor: Parameters<typeof useImported>[0], name: string) {
+  const { imported, loading, loadable } = useImported(importor, (module) => module[name]);
+  if (loading) {
+    throw loadable.resolution;
+  }
+  return imported as T;
+}
+
 export const LazyComponentLoader = ({ $_import, $_pickers, ...props }) => {
   const { imported, loading } = useImported($_import, $_pickers);
   if (loading || !imported) {
