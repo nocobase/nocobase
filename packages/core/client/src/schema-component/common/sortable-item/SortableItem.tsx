@@ -129,7 +129,12 @@ export const SortableItem: React.FC<SortableItemProps> = React.memo((props) => {
 SortableItem.displayName = 'SortableItem';
 
 export const DragHandler = (props) => {
-  const { draggable } = useContext(SortableContext);
+  const { draggable } = useContext(SortableContext) || {};
+
+  if (!draggable) {
+    return null;
+  }
+
   const { attributes, listeners, setNodeRef } = draggable;
 
   return (
