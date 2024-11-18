@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { MockServer, mockServer } from '@nocobase/test';
+import { SourceAndTarget, UserInfo } from '../audit-manager';
 
 async function createApp(options: any = {}) {
   const app = mockServer({
@@ -70,25 +71,29 @@ describe('audit manager', () => {
       });
     };
     const getUserInfo = () => {
-      return new Promise((resolve, reject) => {
+      return new Promise<UserInfo>((resolve, reject) => {
         resolve({
-          id: 1,
+          userId: '1',
         });
       });
     };
-    const getResourceUk = () => {
-      return new Promise<string>((resolve, reject) => {
-        const id = 'str';
-        resolve(id);
+    const getSourceAndTarget = () => {
+      return new Promise<SourceAndTarget>((resolve, reject) => {
+        resolve({
+          sourceCollection: 'users',
+          sourceRecordUK: '1',
+          targetCollection: 'roles',
+          targetRecordUK: '2',
+        });
       });
     };
-    app.auditManager.registerAction({ name: 'create', getMetaData, getUserInfo, getResourceUk });
+    app.auditManager.registerAction({ name: 'create', getMetaData, getUserInfo, getSourceAndTarget });
     expect(app.auditManager.resources).toMatchInlineSnapshot(`
         Map {
           "__default__" => Map {
             "create" => {
               "getMetaData": [Function],
-              "getResourceUk": [Function],
+              "getSourceAndTarget": [Function],
               "getUserInfo": [Function],
               "name": "create",
             },
@@ -167,10 +172,10 @@ describe('audit manager', () => {
 
   it('register actions with getUserInfo', async () => {
     const getUserInfo = () => {
-      return new Promise((resolve, reject) => {
+      return new Promise<UserInfo>((resolve, reject) => {
         resolve({
-          id: 1,
-          name: 'test',
+          userId: '1',
+          roleName: 'test',
         });
       });
     };
@@ -180,6 +185,33 @@ describe('audit manager', () => {
           "pm" => Map {
             "enable" => {
               "getUserInfo": [Function],
+              "name": "pm:enable",
+            },
+            "add" => {
+              "name": "pm:add",
+            },
+          },
+        }
+    `);
+  });
+
+  it('register actions with getSourceAndTarget', async () => {
+    const getSourceAndTarget = () => {
+      return new Promise<SourceAndTarget>((resolve, reject) => {
+        resolve({
+          sourceCollection: 'users',
+          sourceRecordUK: '1',
+          targetCollection: 'roles',
+          targetRecordUK: '2',
+        });
+      });
+    };
+    app.auditManager.registerActions(['pm:enable', { name: 'pm:enable', getSourceAndTarget }, 'pm:add']);
+    expect(app.auditManager.resources).toMatchInlineSnapshot(`
+      Map {
+          "pm" => Map {
+            "enable" => {
+              "getSourceAndTarget": [Function],
               "name": "pm:enable",
             },
             "add" => {
