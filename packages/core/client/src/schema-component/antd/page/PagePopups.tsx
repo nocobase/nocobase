@@ -18,6 +18,7 @@ import { Location, useLocation } from 'react-router-dom';
 import { useAPIClient } from '../../../api-client';
 import { DataBlockProvider } from '../../../data-source/data-block/DataBlockProvider';
 import { BlockRequestContextProvider } from '../../../data-source/data-block/DataBlockRequestProvider';
+import { useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
 import { SchemaComponent } from '../../core';
 import { TabsContextProvider } from '../tabs/context';
 import { usePopupSettings } from './PopupSettingsProvider';
@@ -233,7 +234,7 @@ export const insertChildToParentSchema = ({
   }
 };
 
-export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
+const InternalPagePopups = (props: { paramsList?: PopupParams[] }) => {
   const fieldSchema = useFieldSchema();
   const location = useLocation();
   const popupParams = props.paramsList || getPopupParamsFromPath(getPopupPath(location));
@@ -330,6 +331,16 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
       </PagePopupsItemProvider>
     </AllPopupsPropsProviderContext.Provider>
   );
+};
+
+export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
+  const { active } = useKeepAlive();
+
+  if (!active) {
+    return null;
+  }
+
+  return <InternalPagePopups {...props} />;
 };
 
 export const useRequestSchema = () => {
