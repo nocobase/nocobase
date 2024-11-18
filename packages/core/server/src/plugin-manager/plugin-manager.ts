@@ -453,7 +453,40 @@ export class PluginManager {
       await this.app.emitAsync('afterLoadPlugin', plugin, options);
     }
 
-    this.app.auditManager.registerActions(['pm:add', 'pm:update', 'pm:enable', 'pm:disable', 'pm:remove']);
+    const getSourceAndTargetForAddAction = async (ctx: any) => {
+      const { packageName } = ctx.action.params;
+      return {
+        sourceCollection: 'applicationPlugins',
+        sourceRecordUK: packageName,
+      };
+    };
+
+    const getSourceAndTargetForUpdateAction = async (ctx: any) => {
+      let { packageName } = ctx.action.params;
+      if (ctx.file) {
+        packageName = ctx.request.body.packageName;
+      }
+      return {
+        sourceCollection: 'applicationPlugins',
+        sourceRecordUK: packageName,
+      };
+    };
+
+    const getSourceAndTargetForOtherActions = async (ctx: any) => {
+      const { filterByTk } = ctx.action.params;
+      return {
+        sourceCollection: 'applicationPlugins',
+        sourceRecordUK: filterByTk,
+      };
+    };
+
+    this.app.auditManager.registerActions([
+      { name: 'pm:add', getSourceAndTarget: getSourceAndTargetForAddAction },
+      { name: 'pm:update', getSourceAndTarget: getSourceAndTargetForUpdateAction },
+      { name: 'pm:enable', getSourceAndTarget: getSourceAndTargetForOtherActions },
+      { name: 'pm:disable', getSourceAndTarget: getSourceAndTargetForOtherActions },
+      { name: 'pm:remove', getSourceAndTarget: getSourceAndTargetForOtherActions },
+    ]);
 
     this.app.log.debug('plugins loaded');
     this.app.setMaintainingMessage('plugins loaded');

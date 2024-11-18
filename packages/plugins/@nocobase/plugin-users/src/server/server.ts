@@ -167,8 +167,26 @@ export default class PluginUsersServer extends Plugin {
       };
     };
 
+    const getSourceAndTargetForUpdateProfileAction = async (ctx: any) => {
+      const { id } = ctx.state.currentUser;
+      let idStr = '';
+      if (typeof id === 'number') {
+        idStr = id.toString();
+      } else if (typeof id === 'string') {
+        idStr = id;
+      }
+      return {
+        sourceCollection: 'users',
+        sourceRecordUK: idStr,
+      };
+    };
+
     this.app.auditManager.registerActions([
-      { name: 'users:updateProfile', getMetaData: getMetaDataForUpdateProfileAction },
+      {
+        name: 'users:updateProfile',
+        getMetaData: getMetaDataForUpdateProfileAction,
+        getSourceAndTarget: getSourceAndTargetForUpdateProfileAction,
+      },
     ]);
   }
 
