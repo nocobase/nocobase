@@ -100,7 +100,6 @@ export function getJsonLogic() {
       return a % b;
     },
     log: function (a) {
-      console.log(a);
       return a;
     },
     $in: function (a, b) {
@@ -169,7 +168,6 @@ export function getJsonLogic() {
       // Parse both date strings
       const dateA = parseDate(a);
       const dateB = parseDate(b);
-
       if (!dateA || !dateB) {
         throw new Error('Invalid date format');
       }
@@ -654,20 +652,22 @@ function parseYear(dateStr) {
   return new Date(year, 0);
 }
 
-function parseDate(dateStr) {
-  dateStr = dateStr.trim();
-
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    // It's in "YYYY-MM-DD" format
+function parseDate(targetDateStr) {
+  let dateStr = Array.isArray(targetDateStr) ? targetDateStr[1] : targetDateStr;
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/.test(dateStr)) {
+    // ISO 8601 格式：YYYY-MM-DDTHH:mm:ss.sssZ
+    return new Date(dateStr); // 直接解析为 Date 对象
+  } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    // YYYY-MM-DD 格式
     return parseFullDate(dateStr);
   } else if (/^\d{4}-\d{2}$/.test(dateStr)) {
-    // It's in "YYYY-MM" format
+    // YYYY-MM 格式
     return parseMonth(dateStr);
   } else if (/^\d{4}Q[1-4]$/.test(dateStr)) {
-    // It's in "YYYYQn" format
+    // YYYYQn 格式
     return parseQuarter(dateStr);
   } else if (/^\d{4}$/.test(dateStr)) {
-    // It's in "YYYY" format
+    // YYYY 格式
     return parseYear(dateStr);
   }
   return null; // Invalid format
