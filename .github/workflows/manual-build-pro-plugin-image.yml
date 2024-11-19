@@ -114,7 +114,7 @@ jobs:
           trimmed_variable=$(echo "$subdirectories" | xargs)
           packageNames="@nocobase/${trimmed_variable// / @nocobase/}"
           pluginNames="${trimmed_variable//plugin-/}"
-          BEFORE_PACK_NOCOBASE="yarn add $packageNames -W"
+          BEFORE_PACK_NOCOBASE="yarn add $packageNames -W --production"
           APPEND_PRESET_LOCAL_PLUGINS="${pluginNames// /,}"
           echo "var1=$BEFORE_PACK_NOCOBASE" >> $GITHUB_OUTPUT
           echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
