@@ -10,18 +10,7 @@
 import { css } from '@emotion/css';
 import { ConfigProvider, Divider, Layout } from 'antd';
 import { createGlobalStyle } from 'antd-style';
-import React, {
-  createContext,
-  FC,
-  memo,
-  useCallback,
-  useContext,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { createContext, FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
@@ -402,7 +391,7 @@ export const LayoutContent = () => {
   const currentPageUid = useCurrentPageUid();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     // Ensure the scrollbar is at the top when switching pages
     if (containerRef.current && currentPageUid) {
       containerRef.current.scrollTop = 0;

@@ -8,7 +8,7 @@
  */
 
 import { useField, useFieldSchema } from '@formily/react';
-import React, { useLayoutEffect } from 'react';
+import React, { useEffect } from 'react';
 import { SortableItem, useCollection_deprecated, useCompile, useDesigner } from '../../../';
 import { designerCss } from './Table.Column.ActionBar';
 
@@ -34,7 +34,7 @@ export const TableColumnDecorator = (props) => {
   const field = useField();
   const { fieldSchema, uiSchema, collectionField } = useColumnSchema();
   const compile = useCompile();
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (field.title) {
       return;
     }
