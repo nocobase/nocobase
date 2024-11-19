@@ -8,6 +8,7 @@
  */
 
 import React, { ComponentType, lazy } from 'react';
+import { Spin } from 'antd';
 import { get } from 'lodash';
 import { useImported } from 'react-imported-component';
 
@@ -31,7 +32,7 @@ export function createLazyComponents<M extends Record<string, any>, K extends ke
       })),
     );
     return (props) => (
-      <React.Suspense fallback={<div>Loading...</div>}>
+      <React.Suspense fallback={<Spin />}>
         <LazyComponent {...props} />
       </React.Suspense>
     );
@@ -45,7 +46,7 @@ export function createLazyComponents<M extends Record<string, any>, K extends ke
         })),
       );
       acc[name] = (props) => (
-        <React.Suspense fallback={<div>Loading...</div>}>
+        <React.Suspense fallback={<Spin />}>
           <LazyComponent {...props} />
         </React.Suspense>
       );
