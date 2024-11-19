@@ -408,8 +408,23 @@ export const LayoutContent = () => {
   );
 };
 
-export const InternalAdminLayout = () => {
+const NocoBaseLogo = () => {
   const result = useSystemSettings();
+  const { token } = useToken();
+  const fontSizeStyle = useMemo(() => ({ fontSize: token.fontSizeHeading3 }), [token.fontSizeHeading3]);
+
+  const logo = result?.data?.data?.logo?.url ? (
+    <img className={className2} src={result?.data?.data?.logo?.url} />
+  ) : (
+    <span style={fontSizeStyle} className={className3}>
+      {result?.data?.data?.title}
+    </span>
+  );
+
+  return <div className={className1}>{result?.loading ? null : logo}</div>;
+};
+
+export const InternalAdminLayout = () => {
   const { token } = useToken();
   const sideMenuRef = useRef<HTMLDivElement>();
 
@@ -455,15 +470,6 @@ export const InternalAdminLayout = () => {
     token.colorBgHeader,
     token.colorTextHeaderMenu,
   ]);
-  const fontSizeStyle = useMemo(() => ({ fontSize: token.fontSizeHeading3 }), [token.fontSizeHeading3]);
-
-  const logo = result?.data?.data?.logo?.url ? (
-    <img className={className2} src={result?.data?.data?.logo?.url} />
-  ) : (
-    <span style={fontSizeStyle} className={className3}>
-      {result?.data?.data?.title}
-    </span>
-  );
 
   return (
     <Layout>
@@ -471,7 +477,7 @@ export const InternalAdminLayout = () => {
       <Layout.Header className={layoutHeaderCss}>
         <div style={style1}>
           <div style={style2}>
-            <div className={className1}>{result?.loading ? null : logo}</div>
+            <NocoBaseLogo />
             <div className={className4}>
               <SetThemeOfHeaderSubmenu>
                 <MenuEditor sideMenuRef={sideMenuRef} />
