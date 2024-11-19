@@ -13,7 +13,7 @@ import { Spin } from 'antd';
 import React, { memo, useMemo } from 'react';
 import { useRemoteCollectionManagerLoading } from '../../collection-manager/CollectionManagerProvider';
 import { LOADING_DELAY } from '../../variables/constants';
-import { useComponent, useSchemaComponentContext } from '../hooks';
+import { useComponent } from '../hooks';
 import { FormProvider } from './FormProvider';
 import { SchemaComponent } from './SchemaComponent';
 import { useRequestSchema } from './useRequestSchema';
@@ -51,7 +51,6 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
     schemaTransform = defaultTransform,
     onPageNotFind,
   } = props;
-  const { reset } = useSchemaComponentContext();
   const type = onlyRenderProperties ? 'getProperties' : 'getJsonSchema';
   const form = useMemo(() => createForm(), [uid]);
   const { schema, loading } = useRequestSchema({
@@ -59,7 +58,6 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
     type,
     onSuccess: (data) => {
       onSuccess && onSuccess(data);
-      reset && reset();
     },
   });
   const NotFoundComponent = useComponent(NotFoundPage);
