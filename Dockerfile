@@ -48,7 +48,13 @@ RUN cd /app \
 
 
 FROM node:20.13-bullseye-slim
-RUN apt-get update && apt-get install -y nginx
+
+RUN apt-get update && apt-get install -y nginx libaio1 \
+  && apt-get install -y --no-install-recommends postgresql-common gnupg \
+  && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
+  && apt-get install -y --no-install-recommends postgresql-client-16 \
+  && rm -rf /var/lib/apt/lists/*
+
 RUN rm -rf /etc/nginx/sites-enabled/default
 COPY ./docker/nocobase/nocobase.conf /etc/nginx/sites-enabled/nocobase.conf
 COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz
