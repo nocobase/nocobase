@@ -1,8 +1,7 @@
 {
   "name": "@nocobase/plugin-field-sort",
-  "version": "1.4.0-alpha.11",
+  "version": "1.5.0-alpha.1",
   "main": "dist/server/index.js",
-  "dependencies": {},
   "peerDependencies": {
     "@nocobase/actions": "1.x",
     "@nocobase/client": "1.x",
