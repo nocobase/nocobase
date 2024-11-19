@@ -76,7 +76,7 @@ const useDragEnd = (onDragEnd) => {
 
 export type DndContextProps = Props;
 
-const InternalDndContext = (props: Props) => {
+const InternalDndContext = React.memo((props: Props) => {
   const { t } = useTranslation();
   const [visible, setVisible] = useState(true);
 
@@ -107,7 +107,9 @@ const InternalDndContext = (props: Props) => {
       {props.children}
     </DndKitContext>
   );
-};
+});
+
+InternalDndContext.displayName = 'InternalDndContext';
 
 export const DndContext = (props: Props) => {
   const { designable } = useDesignable();
