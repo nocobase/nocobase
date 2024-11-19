@@ -47,7 +47,7 @@ interface KeepAliveProps {
 }
 
 // Evaluate device performance to determine maximum number of cached pages
-// Range: minimum 5, maximum 10
+// Range: minimum 5, maximum 20
 const getMaxPageCount = () => {
   const baseCount = 5;
   let performanceScore = baseCount;
@@ -56,7 +56,7 @@ const getMaxPageCount = () => {
     // Try using deviceMemory
     const memory = (navigator as any).deviceMemory;
     if (memory) {
-      return Math.min(Math.max(baseCount, memory * 2), 10);
+      return Math.min(Math.max(baseCount, memory * 3), 20);
     }
 
     // Try using performance.memory
@@ -64,7 +64,7 @@ const getMaxPageCount = () => {
     if (perfMemory?.jsHeapSizeLimit) {
       // jsHeapSizeLimit is in bytes
       const memoryGB = perfMemory.jsHeapSizeLimit / (1024 * 1024 * 1024);
-      return Math.min(Math.max(baseCount, Math.floor(memoryGB * 2)), 10);
+      return Math.min(Math.max(baseCount, Math.floor(memoryGB * 3)), 20);
     }
 
     // Fallback: Use performance.now() to test execution speed
@@ -75,10 +75,12 @@ const getMaxPageCount = () => {
     const duration = performance.now() - start;
 
     // Adjust page count based on execution time
-    if (duration < 5) {
-      performanceScore = 10; // Very good performance
+    if (duration < 3) {
+      performanceScore = 20; // Very good performance
+    } else if (duration < 5) {
+      performanceScore = 10; // Average performance
     } else if (duration < 10) {
-      performanceScore = 5; // Average performance
+      performanceScore = 5;
     }
     // Use baseCount for poor performance
 
