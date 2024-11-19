@@ -409,6 +409,7 @@ export const LayoutContent = () => {
     }
   }, [currentPageUid]);
 
+  /* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */
   return (
     <Layout.Content className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`} ref={containerRef}>
       <header className={layoutContentHeaderClass}></header>
@@ -499,7 +500,6 @@ export const InternalAdminLayout = () => {
         </div>
       </Layout.Header>
       <AdminSideBar sideMenuRef={sideMenuRef} />
-      {/* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */}
       <LayoutContent />
     </Layout>
   );

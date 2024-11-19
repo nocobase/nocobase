@@ -33,7 +33,7 @@ export const KeepAliveProvider: FC<{ active: boolean }> = ({ children, active })
 };
 
 /**
- * 获取当前页面是否可见
+ * Get whether the current page is visible
  * @returns
  */
 export const useKeepAlive = () => {
@@ -47,6 +47,7 @@ interface KeepAliveProps {
 }
 
 // Evaluate device performance to determine maximum number of cached pages
+// Range: minimum 5, maximum 10
 const getMaxPageCount = () => {
   const baseCount = 5;
   let performanceScore = baseCount;
@@ -55,7 +56,7 @@ const getMaxPageCount = () => {
     // Try using deviceMemory
     const memory = (navigator as any).deviceMemory;
     if (memory) {
-      return Math.min(Math.max(baseCount, memory * 3), 20);
+      return Math.min(Math.max(baseCount, memory * 2), 10);
     }
 
     // Try using performance.memory
@@ -63,7 +64,7 @@ const getMaxPageCount = () => {
     if (perfMemory?.jsHeapSizeLimit) {
       // jsHeapSizeLimit is in bytes
       const memoryGB = perfMemory.jsHeapSizeLimit / (1024 * 1024 * 1024);
-      return Math.min(Math.max(baseCount, Math.floor(memoryGB * 3)), 20);
+      return Math.min(Math.max(baseCount, Math.floor(memoryGB * 2)), 10);
     }
 
     // Fallback: Use performance.now() to test execution speed
