@@ -87,7 +87,7 @@ export async function build(pkgs: string[]) {
   if (appClient) {
     await runScript(['umi', 'build'], ROOT_PATH, {
       APP_ROOT: path.join(CORE_APP, 'client'),
-      // ANALYZE: '1',
+      ANALYZE: process.env.BUILD_ANALYZE === 'true' ? '1' : undefined,
     });
   }
   writeToCache(BUILD_ERROR, {});

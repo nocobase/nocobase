@@ -468,14 +468,15 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
       new rspack.DefinePlugin({
         'process.env.NODE_ENV': JSON.stringify('production'),
       }),
-      // new RsdoctorRspackPlugin({
-      //   // plugin options
-      //   // supports: {
-      //   //   generateTileGraph: true,
-      //   // },
-      //   mode: 'brief',
-      // }),
-    ],
+      process.env.BUILD_ANALYZE === 'true' &&
+        new RsdoctorRspackPlugin({
+          // plugin options
+          // supports: {
+          //   generateTileGraph: true,
+          // },
+          mode: 'brief',
+        }),
+    ].filter(Boolean),
     node: {
       global: true,
     },
