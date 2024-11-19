@@ -1,0 +1,47 @@
+name: Get plugins
+
+on:
+  workflow_call:
+    outputs:
+      all-plugins:
+        value: ${{ jobs.get-plugins.outputs.all-plugins }}
+      custom-plugins:
+        value: ${{ jobs.get-plugins.outputs.custom-plugins }}
+      rc-plugins:
+        value: ${{ jobs.get-plugins.outputs.rc-plugins }}
+      beta-plugins:
+        value: ${{ jobs.get-plugins.outputs.beta-plugins }}
+      alpha-plugins:
+        value: ${{ jobs.get-plugins.outputs.alpha-plugins }}
+      unreleased-plugins:
+        value: ${{ jobs.get-plugins.outputs.unreleased-plugins }}
+
+jobs:
+  get-plugins:
+    runs-on: ubuntu-latest
+    outputs:
+      all-plugins: ${{ steps.get-plugins.outputs.all-plugins }}
+      custom-plugins: ${{ steps.get-plugins.outputs.custom-plugins }}
+      rc-plugins: ${{ steps.get-plugins.outputs.rc-plugins }}
+      beta-plugins: ${{ steps.get-plugins.outputs.beta-plugins }}
+      alpha-plugins: ${{ steps.get-plugins.outputs.alpha-plugins }}
+      unreleased-plugins: ${{ steps.get-plugins.outputs.unreleased-plugins }}
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: nocobase
+          skip-token-revoke: true
+      - id: get-plugins
+        shell: bash
+        run: |
+          echo "all-plugins=$(gh search repos "props.plugin-type:custom,rc,beta,alpha,unreleased" --owner=nocobase --json name | jq -r 'map(.name) | tostring')" >> "$GITHUB_OUTPUT"
+          echo "custom-plugins=$(gh search repos "props.plugin-type:custom" --owner=nocobase --json name | jq -r 'map(.name) | tostring')" >> "$GITHUB_OUTPUT"
+          echo "rc-plugins=$(gh search repos "props.plugin-type:rc" --owner=nocobase --json name | jq -r 'map(.name) | tostring')" >> "$GITHUB_OUTPUT"
+          echo "beta-plugins=$(gh search repos "props.plugin-type:beta,rc" --owner=nocobase --json name | jq -r 'map(.name) | tostring')" >> "$GITHUB_OUTPUT"
+          echo "alpha-plugins=$(gh search repos "props.plugin-type:alpha,beta,rc" --owner=nocobase --json name | jq -r 'map(.name) | tostring')" >> "$GITHUB_OUTPUT"
+          echo "unreleased-plugins=$(gh search repos "props.plugin-type:unreleased" --owner=nocobase --json name | jq -r 'map(.name) | tostring')" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}

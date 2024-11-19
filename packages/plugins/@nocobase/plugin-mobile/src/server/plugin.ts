@@ -20,7 +20,7 @@ export class PluginMobileServer extends Plugin {
   setACL() {
     this.app.acl.registerSnippet({
       name: `ui.mobile`,
-      actions: ['mobileRoutes:create', 'mobileRoutes:update', 'mobileRoutes:destroy'],
+      actions: ['mobileRoutes:create', 'mobileRoutes:update', 'mobileRoutes:move', 'mobileRoutes:destroy'],
     });
 
     this.app.acl.registerSnippet({

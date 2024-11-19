@@ -155,7 +155,7 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
         onChange={(value) => {
           setMode(value);
           setValue({
-            mode: fieldValue?.mode,
+            mode: value || fieldValue?.mode,
           });
         }}
       >

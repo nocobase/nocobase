@@ -69,9 +69,12 @@ export const toLocal = (value: dayjs.Dayjs) => {
 };
 
 const convertQuarterToFirstDay = (quarterStr) => {
-  const year = parseInt(quarterStr.slice(0, 4)); // 提取年份
-  const quarter = parseInt(quarterStr.slice(-1)); // 提取季度数字
-  return dayjs().quarter(quarter).year(year);
+  if (dayjs(quarterStr).isValid()) {
+    const year = parseInt(quarterStr.slice(0, 4)); // 提取年份
+    const quarter = parseInt(quarterStr.slice(-1)); // 提取季度数字
+    return dayjs().quarter(quarter).year(year);
+  }
+  return null;
 };
 
 const toMoment = (val: any, options?: Str2momentOptions) => {

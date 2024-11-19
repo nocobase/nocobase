@@ -322,7 +322,7 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
 
   const globals = excludePackages.reduce<Record<string, string>>((prev, curr) => {
     if (curr.startsWith('@nocobase')) {
-      prev[`${curr}/client`] = curr;
+      prev[`${curr}/client`] = `${curr}/client`;
     }
     prev[curr] = curr;
     return prev;
