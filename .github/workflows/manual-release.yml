@@ -5,6 +5,9 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  push:
+    branches:
+      - chore/release-test
   workflow_dispatch:
 
 jobs:
@@ -49,7 +52,7 @@ jobs:
           git pull origin main
           git checkout next
           git merge main
-          git push origin next --tags --atomic
+          # git push origin next --tags --atomic
   update-version:
     needs:
       - get-plugins
@@ -115,24 +118,24 @@ jobs:
         env:
           PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.rc-plugins }}
           CUSTOM_PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.custom-plugins }}
-      - name: Push and merge into next
-        run: |
-          for repo in ${{ join(fromJSON(needs.get-plugins.outputs.rc-plugins), ' ') }} ${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ' ') }}
-          do
-            cd ./packages/pro-plugins/@nocobase/$repo
-            git push origin main --atomic --tags
-            git checkout next
-            git merge -X ours main --no-edit
-            git push origin next --tags --atomic
-            cd ../../../../
-          done
-          cd ./packages/pro-plugins
-          git push origin main --atomic --tags
-          git checkout next
-          git merge -X ours main --no-edit
-          git push origin next --tags --atomic
-          cd ../../
-          git push origin main --atomic --tags
-          git checkout next
-          git merge -X ours main --no-edit
-          git push origin next --tags --atomic
+      # - name: Push and merge into next
+      #   run: |
+      #     for repo in ${{ join(fromJSON(needs.get-plugins.outputs.rc-plugins), ' ') }} ${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ' ') }}
+      #     do
+      #       cd ./packages/pro-plugins/@nocobase/$repo
+      #       git push origin main --atomic --tags
+      #       git checkout next
+      #       git merge -X ours main --no-edit
+      #       git push origin next --tags --atomic
+      #       cd ../../../../
+      #     done
+      #     cd ./packages/pro-plugins
+      #     git push origin main --atomic --tags
+      #     git checkout next
+      #     git merge -X ours main --no-edit
+      #     git push origin next --tags --atomic
+      #     cd ../../
+      #     git push origin main --atomic --tags
+      #     git checkout next
+      #     git merge -X ours main --no-edit
+      #     git push origin next --tags --atomic
