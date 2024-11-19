@@ -378,10 +378,13 @@ async function getVersion() {
     switch (ver) {
       case 'rc':
         tagPattern = '^v[1-9]+.[0-9]+.[0-9]+$';
+        break;
       case 'beta':
         tagPattern = '^v[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+$';
+        break;
       case 'alpha':
         tagPattern = '^v[0-9]+.[0-9]+.[0-9]+-alpha.[0-9]+$';
+        break;
     }
     const { stdout: tags } = await execa(`git tag -l --sort=creatordate | grep -E "${tagPattern}" | tail -2`, {
       shell: true,

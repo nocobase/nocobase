@@ -5,20 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v1.4.0-alpha.17](https://github.com/nocobase/nocobase/compare/v1.4.0-alpha.16...v1.4.0-alpha.17) - 2024-11-19
-
-### 🚀 Improvements
-
-- **[Workflow]** support to register system variables in client ([#5676](https://github.com/nocobase/nocobase/pull/5676)) by @mytharcher
-
-### 🐛 Bug Fixes
-
-- **[client]** Fix  field permission check not affected by association field context ([#5672](https://github.com/nocobase/nocobase/pull/5672)) by @katherinehhh
-
-- **[Block: Gantt]** Fix gantt block template incorrectly calls the calendar block when adding ([#5673](https://github.com/nocobase/nocobase/pull/5673)) by @katherinehhh
-
-- **[Calendar]** Fix missing date field options with and without timezone in calendar block ([#5674](https://github.com/nocobase/nocobase/pull/5674)) by @katherinehhh
-
 ## [v1.3.50-beta](https://github.com/nocobase/nocobase/compare/v1.3.49-beta...v1.3.50-beta) - 2024-11-14
 
 ### 🐛 Bug Fixes
