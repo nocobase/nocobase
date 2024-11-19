@@ -15,9 +15,9 @@ WORKDIR /tmp
 COPY . /tmp
 RUN  yarn install && yarn build --no-dts
 
-RUN CURRENTVERSION=$(jq -r '.version' lerna.json) \
-  IFS='.-' read -r major minor patch label <<< "$CURRENTVERSION" \
-  if [ -z "$label" ]; then CURRENTVERSION = "$CURRENTVERSION-rc"; fi \
+RUN CURRENTVERSION=$(jq -r '.version' lerna.json) && \
+  IFS='.-' read -r major minor patch label <<< "$CURRENTVERSION" && \
+  if [ -z "$label" ]; then CURRENTVERSION = "$CURRENTVERSION-rc"; fi && \
   cd /tmp && \
   NEWVERSION="$(echo $CURRENTVERSION).$(date +'%Y%m%d%H%M%S')" \
   &&  git checkout -b release-$(date +'%Y%m%d%H%M%S') \
