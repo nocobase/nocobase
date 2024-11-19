@@ -47,25 +47,14 @@ export const Mobile = () => {
   // 设置的移动端 meta
   React.useEffect(() => {
     if (!isDesktop) {
-      // 检测是否是飞书 WebView
-      if (navigator.userAgent.includes('Lark')) {
-        // 可能需要与飞书的 JSBridge 配合
-        if (window.Lark) {
-          window.Lark.onReady(() => {
-            window.Lark.setTitleBar({ visible: false }); // 隐藏顶部的返回按钮
-          });
-        }
-      }
       let viewportMeta = document.querySelector('meta[name="viewport"]');
       if (!viewportMeta) {
         viewportMeta = document.createElement('meta');
         viewportMeta.setAttribute('name', 'viewport');
         document.head.appendChild(viewportMeta);
       }
-      viewportMeta.setAttribute(
-        'content',
-        'width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover',
-      );
+      viewportMeta.setAttribute('content', 'width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no');
+
       document.body.style.backgroundColor = PageBackgroundColor;
       document.body.style.overflow = 'hidden';
 
