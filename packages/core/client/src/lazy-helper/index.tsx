@@ -63,12 +63,3 @@ export function useLazyHook<T = () => any>(importor: Parameters<typeof useImport
   }
   return imported as T;
 }
-
-export const LazyComponentLoader = ({ $_import, $_pickers, ...props }) => {
-  const { imported, loading } = useImported($_import, $_pickers);
-  if (loading || !imported) {
-    return null; // TODO: add loading component here
-  }
-  const Component = imported as ComponentType<any>;
-  return <Component {...props} />;
-};
