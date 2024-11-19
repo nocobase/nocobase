@@ -1,4 +1,4 @@
-name: Auto merge main -> next
+name: Auto merge
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.inputs.repository }}
