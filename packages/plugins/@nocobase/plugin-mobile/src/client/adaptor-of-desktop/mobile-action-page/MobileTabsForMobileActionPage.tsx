@@ -16,14 +16,16 @@ import {
   SortableItem,
   Tabs as TabsOfPC,
   useBackButton,
+  useCompile,
   useDesigner,
   useSchemaInitializerRender,
   useTabsContext,
+  withDynamicSchemaProps,
 } from '@nocobase/client';
 import { Tabs } from 'antd-mobile';
 import { LeftOutline } from 'antd-mobile-icons';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { MobilePageHeader } from '../../pages/dynamic-page';
 import { MobilePageContentContainer } from '../../pages/dynamic-page/content/MobilePageContentContainer';
 import { useStyles } from '../../pages/dynamic-page/header/tabs';
@@ -39,7 +41,6 @@ export const MobileTabsForMobileActionPage: any = observer(
     const { styles } = useStyles();
     const { styles: mobileTabsForMobileActionPageStyle } = useMobileTabsForMobileActionPageStyle();
     const { goBack } = useBackButton();
-    const keyToTabRef = useRef({});
 
     const onChange = useCallback(
       (key) => {
@@ -55,7 +56,6 @@ export const MobileTabsForMobileActionPage: any = observer(
 
     const items = useMemo(() => {
       const result = fieldSchema.mapProperties((schema, key) => {
-        keyToTabRef.current[key] = <SchemaComponent name={key} schema={schema} onlyRenderProperties distributed />;
         return <Tabs.Tab title={<RecursionField name={key} schema={schema} onlyRenderSelf />} key={key}></Tabs.Tab>;
       });
 
@@ -148,18 +148,28 @@ const designerCss = css`
   }
 `;
 
-MobileTabsForMobileActionPage.TabPane = observer(
-  (props: any) => {
-    const Designer = useDesigner();
-    const field = useField();
-    return (
-      <SortableItem className={classNames('nb-action-link', designerCss, props.className)}>
-        {props.icon && <Icon style={{ marginRight: 2 }} type={props.icon} />} {props.tab || field.title}
-        <Designer />
-      </SortableItem>
-    );
-  },
-  { displayName: 'MobileTabsForMobileActionPage.TabPane' },
+MobileTabsForMobileActionPage.TabPane = withDynamicSchemaProps(
+  observer(
+    (props: any) => {
+      const Designer = useDesigner();
+      const field = useField();
+      const compile = useCompile();
+
+      if (props.hidden) {
+        return null;
+      }
+
+      return (
+        <SortableItem className={classNames('nb-action-link', designerCss, props.className)}>
+          {props.icon && <Icon style={{ marginRight: 2 }} type={props.icon} />} {props.tab || compile(field.title)}
+          <Designer />
+        </SortableItem>
+      );
+    },
+    { displayName: 'MobileTabsForMobileActionPage.TabPane' },
+  ),
 );
+
+MobileTabsForMobileActionPage.displayName = 'MobileTabsForMobileActionPage';
 
 MobileTabsForMobileActionPage.Designer = TabsOfPC.Designer;
