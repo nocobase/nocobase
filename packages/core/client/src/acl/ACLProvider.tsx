@@ -275,7 +275,7 @@ export const ACLCollectionProvider = (props) => {
     return props.children;
   }
   if (!actionPath) {
-    return props.children;
+    return <ACLActionParamsContext.Provider value={{}}>{props.children}</ACLActionParamsContext.Provider>;
   }
 
   if (!params) {
