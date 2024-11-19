@@ -241,6 +241,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
   }
 
+  private static staticCommands = [];
+
+  static addCommand(callback: (app: Application) => void) {
+    this.staticCommands.push(callback);
+  }
+
   /**
    * @experimental
    */
@@ -435,6 +441,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
    * @deprecated
    */
   getVersion() {
+    return packageJson.version;
+  }
+
+  getPackageVersion() {
     return packageJson.version;
   }
 
@@ -1187,6 +1197,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     registerCli(this);
 
     this._version = new ApplicationVersion(this);
+
+    for (const callback of Application.staticCommands) {
+      callback(this);
+    }
   }
 
   protected createMainDataSource(options: ApplicationOptions) {
