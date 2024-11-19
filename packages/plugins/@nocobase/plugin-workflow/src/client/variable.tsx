@@ -54,114 +54,6 @@ export type UseVariableOptions = {
 
 export const defaultFieldNames = { label: 'label', value: 'value', children: 'children' } as const;
 
-const getDateOptions = (t) => [
-  {
-    key: 'yesterday',
-    value: 'yesterday',
-    label: t('Yesterday'),
-  },
-  {
-    key: 'today',
-    value: 'today',
-    label: t('Today'),
-  },
-  {
-    key: 'tomorrow',
-    value: 'tomorrow',
-    label: t('Tomorrow'),
-  },
-  {
-    key: 'lastWeek',
-    value: 'lastWeek',
-    label: t('Last week'),
-  },
-  {
-    key: 'thisWeek',
-    value: 'thisWeek',
-    label: t('This week'),
-  },
-  {
-    key: 'nextWeek',
-    value: 'nextWeek',
-    label: t('Next week'),
-  },
-  {
-    key: 'lastMonth',
-    value: 'lastMonth',
-    label: t('Last month'),
-  },
-  {
-    key: 'thisMonth',
-    value: 'thisMonth',
-    label: t('This month'),
-  },
-  {
-    key: 'nextMonth',
-    value: 'nextMonth',
-    label: t('Next month'),
-  },
-  {
-    key: 'lastQuarter',
-    value: 'lastQuarter',
-    label: t('Last quarter'),
-  },
-  {
-    key: 'thisQuarter',
-    value: 'thisQuarter',
-    label: t('This quarter'),
-  },
-  {
-    key: 'nextQuarter',
-    value: 'nextQuarter',
-    label: t('Next quarter'),
-  },
-  {
-    key: 'lastYear',
-    value: 'lastYear',
-    label: t('Last year'),
-  },
-  {
-    key: 'thisYear',
-    value: 'thisYear',
-    label: t('This year'),
-  },
-  {
-    key: 'nextYear',
-    value: 'nextYear',
-    label: t('Next year'),
-  },
-  {
-    key: 'last7Days',
-    value: 'last7Days',
-    label: t('Last 7 days'),
-  },
-  {
-    key: 'next7Days',
-    value: 'next7Days',
-    label: t('Next 7 days'),
-  },
-  {
-    key: 'last30Days',
-    value: 'last30Days',
-    label: t('Last 30 days'),
-  },
-  {
-    key: 'next30Days',
-    value: 'next30Days',
-    label: t('Next 30 days'),
-  },
-  {
-    key: 'last90Days',
-    value: 'last90Days',
-    label: t('Last 90 days'),
-  },
-  {
-    key: 'next90Days',
-    value: 'next90Days',
-    label: t('Next 90 days'),
-  },
-];
-
 export const nodesOptions = {
   label: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
   value: '$jobsMapByNodeKey',
@@ -221,25 +113,10 @@ export const scopeOptions = {
 export const systemOptions = {
   label: `{{t("System variables", { ns: "${NAMESPACE}" })}}`,
   value: '$system',
-  useOptions({ types, fieldNames = defaultFieldNames }: UseVariableOptions) {
-    const { t } = useTranslation();
-    return [
-      ...(!types || types.includes('date')
-        ? [
-            {
-              key: 'now',
-              [fieldNames.label]: lang('System time'),
-              [fieldNames.value]: 'now',
-            },
-            {
-              key: 'dateRange',
-              [fieldNames.label]: lang('Date range'),
-              [fieldNames.value]: 'dateRange',
-              children: getDateOptions(t),
-            },
-          ]
-        : []),
-    ];
+  useOptions(options: UseVariableOptions) {
+    const { systemVariables } = usePlugin(WorkflowPlugin);
+    const compile = useCompile();
+    return compile(Array.from(systemVariables.getValues()));
   },
 };
 
