@@ -652,8 +652,8 @@ function parseYear(dateStr) {
   return new Date(year, 0);
 }
 
-function parseDate(dateStr) {
-  dateStr = dateStr.trim();
+function parseDate(targetDateStr) {
+  let dateStr = Array.isArray(targetDateStr) ? targetDateStr[0] : targetDateStr;
   if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/.test(dateStr)) {
     // ISO 8601 格式：YYYY-MM-DDTHH:mm:ss.sssZ
     return new Date(dateStr); // 直接解析为 Date 对象
