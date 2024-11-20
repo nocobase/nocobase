@@ -19,7 +19,7 @@ export type ExportOptions = {
 };
 
 abstract class BaseExporter<T extends ExportOptions> extends EventEmitter {
-  limit = process.env['EXPORT_LIMIT'] ? parseInt(process.env['EXPORT_LIMIT']) : 2000;
+  limit = 0;
 
   protected constructor(protected options: T) {
     super();
@@ -75,7 +75,9 @@ abstract class BaseExporter<T extends ExportOptions> extends EventEmitter {
   protected getFindOptions() {
     const { findOptions = {} } = this.options;
 
-    findOptions.limit = this.limit;
+    if (this.limit) {
+      findOptions.limit = this.limit;
+    }
 
     const appendOptions = this.getAppendOptionsFromFields();
 
