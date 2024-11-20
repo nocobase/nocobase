@@ -32,25 +32,28 @@
     "@alicloud/tea-typescript" "^1.7.1"
     "@alicloud/tea-util" "^1.4.7"
 
-"@alicloud/credentials@^2":
-  version "2.3.0"
-  resolved "https://registry.npmmirror.com/@alicloud/credentials/-/credentials-2.3.0.tgz#941233a07ba74cd2fdaa3f6a5d2a3cca5a10c184"
-  integrity sha512-x0vf/m1BzkqYXAj2Hkd22O35josx5P4VCzq/9EvTBjA7aGLX/P6JDz7QVp+gnhLjPJyvwAbErvJRYq4gIo4IMA==
+"@alicloud/credentials@^2", "@alicloud/credentials@^2.3.1":
+  version "2.4.0"
+  resolved "https://registry.npmmirror.com/@alicloud/credentials/-/credentials-2.4.0.tgz#fe4a330b1c7d8d3c4ce9c7d44c1093240fd38c1a"
+  integrity sha512-TeAyiXnqv9ZudpeMMHbGah5Gyey8Rr9i7hydesyT07zYwBAOd+yWfR6dnFH8e3l1LfRbZU/AQ+6j0DsmfIQ+KQ==
   dependencies:
     "@alicloud/tea-typescript" "^1.5.3"
     httpx "^2.2.0"
     ini "^1.3.5"
     kitx "^2.0.0"
 
-"@alicloud/credentials@^2.3.1":
-  version "2.3.1"
-  resolved "https://registry.npmmirror.com/@alicloud/credentials/-/credentials-2.3.1.tgz#ab79046cee47af2ba161954f82ad09a30fa5a3de"
-  integrity sha512-FK8N1YNVqUGOl7qOFn8h3zTwv2Tj8ON3459XXnJkAa08YBECj8o/V81D/ubxpX0yZub4RVKjknxNSHEbrASc+A==
+"@alicloud/dingtalk@^2.1.23":
+  version "2.1.63"
+  resolved "https://registry.npmmirror.com/@alicloud/dingtalk/-/dingtalk-2.1.63.tgz#7b5a2ca55710ea66d0c90a2b71bd2f8b1023395b"
+  integrity sha512-P3XU10MCMuYR7eZ1oPLjBbFaYIu2i8W+VP58QxK12MPhN5F74VNEPDHLHFIfd5uqc7foqBZHYlSuhtvTII6tqQ==
   dependencies:
-    "@alicloud/tea-typescript" "^1.5.3"
-    httpx "^2.2.0"
-    ini "^1.3.5"
-    kitx "^2.0.0"
+    "@alicloud/endpoint-util" "^0.0.1"
+    "@alicloud/gateway-dingtalk" "^1.0.2"
+    "@alicloud/gateway-spi" "^0.0.8"
+    "@alicloud/openapi-client" "^0.4.12"
+    "@alicloud/openapi-util" "^0.3.2"
+    "@alicloud/tea-typescript" "^1.7.1"
+    "@alicloud/tea-util" "^1.4.9"
 
 "@alicloud/dysmsapi20170525@2.0.17":
   version "2.0.17"
@@ -71,6 +74,15 @@
     "@alicloud/tea-typescript" "^1.5.1"
     kitx "^2.0.0"
 
+"@alicloud/gateway-dingtalk@^1.0.2":
+  version "1.0.2"
+  resolved "https://registry.npmmirror.com/@alicloud/gateway-dingtalk/-/gateway-dingtalk-1.0.2.tgz#3970f07324c59935892f5b9abce66e6c2ae29dfc"
+  integrity sha512-T8ml6kth/nCRthrtHIYnCYv7+q/41SnJaR8c99491azNSPcmMmgxis5ujYIl5irKm0cvoOCCjI9EWUFb2Tx7JA==
+  dependencies:
+    "@alicloud/gateway-spi" "^0.0.8"
+    "@alicloud/tea-typescript" "^1.7.1"
+    "@alicloud/tea-util" "^1.4.5"
+
 "@alicloud/gateway-spi@^0.0.8":
   version "0.0.8"
   resolved "https://registry.npmmirror.com/@alicloud/gateway-spi/-/gateway-spi-0.0.8.tgz#1d251986ed40d8b98690dcac8128fec0c56f0f53"
@@ -79,30 +91,7 @@
     "@alicloud/credentials" "^2"
     "@alicloud/tea-typescript" "^1.7.1"
 
-"@alicloud/openapi-client@0.4.1":
-  version "0.4.1"
-  resolved "https://registry.npmmirror.com/@alicloud/openapi-client/-/openapi-client-0.4.1.tgz#8e55a3bdfee17a00c2ec3d10feaf7bfd0eff7502"
-  integrity sha512-FNGQ9kmGi0AuNFX9yj7DDbMn8CB4TvihIIQ3ONNhLZF8Hj2asau7NiqVoftJX3F/JFq9qzJWeVbvboSM9Zq5kA==
-  dependencies:
-    "@alicloud/credentials" "^2"
-    "@alicloud/gateway-spi" "^0.0.8"
-    "@alicloud/openapi-util" "^0.2.7"
-    "@alicloud/tea-typescript" "^1.7.1"
-    "@alicloud/tea-util" "^1.4.0"
-
-"@alicloud/openapi-client@^0.4.1":
-  version "0.4.7"
-  resolved "https://registry.npmmirror.com/@alicloud/openapi-client/-/openapi-client-0.4.7.tgz#4779e0b8b5b05431f9e59e514dee0bc451de9dfa"
-  integrity sha512-PR6ufA6hFTpB4gEpsbZpT1nSnsuOTlk9WYtAzJdMBO89ZDGc2qaJ1aCECVfeSkCVnVfTgShfYS6hmz/FjfG+5w==
-  dependencies:
-    "@alicloud/credentials" "^2"
-    "@alicloud/gateway-spi" "^0.0.8"
-    "@alicloud/openapi-util" "^0.3.2"
-    "@alicloud/tea-typescript" "^1.7.1"
-    "@alicloud/tea-util" "^1.4.7"
-    "@alicloud/tea-xml" "0.0.2"
-
-"@alicloud/openapi-client@^0.4.7", "@alicloud/openapi-client@^0.4.8":
+"@alicloud/openapi-client@0.4.12", "@alicloud/openapi-client@^0.4.1", "@alicloud/openapi-client@^0.4.12", "@alicloud/openapi-client@^0.4.7", "@alicloud/openapi-client@^0.4.8", "@alicloud/openapi-client@^0.4.9":
   version "0.4.12"
   resolved "https://registry.npmmirror.com/@alicloud/openapi-client/-/openapi-client-0.4.12.tgz#7a4f00e71b025d8a487cfbeeb8aa6f63d70b2054"
   integrity sha512-WuKfFqwY3/+wuNawzfJAirNA00XDI7fm9fUhWK7siGZEh0R2XJR0Y54MLW7WWItX06fAghUvnDhKWZH3AgN+yg==
@@ -114,7 +103,7 @@
     "@alicloud/tea-util" "^1.4.9"
     "@alicloud/tea-xml" "0.0.3"
 
-"@alicloud/openapi-util@^0.2.7", "@alicloud/openapi-util@^0.2.9":
+"@alicloud/openapi-util@^0.2.9":
   version "0.2.9"
   resolved "https://registry.npmmirror.com/@alicloud/openapi-util/-/openapi-util-0.2.9.tgz#2379cd81f993dcab32066a2b892ddcbdd266d51c"
   integrity sha512-GUEYtX3lDv+WaZoDFCb0h9aZ8+IlajnSAxSHjiITbNtjCpZbA/vfd7Z/ST9YaPoT34nGqDNKiQTjqpLhaKtYBw==
@@ -134,7 +123,7 @@
     kitx "^2.1.0"
     sm3 "^1.0.3"
 
-"@alicloud/tea-typescript@^1", "@alicloud/tea-typescript@^1.5.1", "@alicloud/tea-typescript@^1.5.3", "@alicloud/tea-typescript@^1.7.1":
+"@alicloud/tea-typescript@^1", "@alicloud/tea-typescript@^1.5.1", "@alicloud/tea-typescript@^1.5.3", "@alicloud/tea-typescript@^1.7.1", "@alicloud/tea-typescript@^1.8.0":
   version "1.8.0"
   resolved "https://registry.npmmirror.com/@alicloud/tea-typescript/-/tea-typescript-1.8.0.tgz#aa9b04b6ee53e1b22aa51e224a950ea5bcd966e9"
   integrity sha512-CWXWaquauJf0sW30mgJRVu9aaXyBth5uMBCUc+5vKTK1zlgf3hIqRUjJZbjlwHwQ5y9anwcu18r48nOZb7l2QQ==
@@ -150,30 +139,13 @@
     "@alicloud/tea-typescript" "^1.5.1"
     kitx "^2.0.0"
 
-"@alicloud/tea-util@^1.3.0", "@alicloud/tea-util@^1.4.0", "@alicloud/tea-util@^1.4.4", "@alicloud/tea-util@^1.4.7":
-  version "1.4.7"
-  resolved "https://registry.npmmirror.com/@alicloud/tea-util/-/tea-util-1.4.7.tgz#40748613c3751f5373ffa8e5a0e892602ef3f78c"
-  integrity sha512-Lrpfk9kxihHsit3oMoeIMjk783AxjOvzMhLAbZcIzazKiVg3Zk/209XDe9r1lXqxII59j3V4rhC9X14y6WGYyg==
-  dependencies:
-    "@alicloud/tea-typescript" "^1.5.1"
-    kitx "^2.0.0"
-
-"@alicloud/tea-util@^1.4.9":
+"@alicloud/tea-util@^1.3.0", "@alicloud/tea-util@^1.4.4", "@alicloud/tea-util@^1.4.5", "@alicloud/tea-util@^1.4.7", "@alicloud/tea-util@^1.4.8", "@alicloud/tea-util@^1.4.9":
   version "1.4.9"
   resolved "https://registry.npmmirror.com/@alicloud/tea-util/-/tea-util-1.4.9.tgz#aa1c4f566d530e7ffc6d9fac1aded06bb0ea45ca"
   integrity sha512-S0wz76rGtoPKskQtRTGqeuqBHFj8BqUn0Vh+glXKun2/9UpaaaWmuJwcmtImk6bJZfLYEShDF/kxDmDJoNYiTw==
   dependencies:
     "@alicloud/tea-typescript" "^1.5.1"
     kitx "^2.0.0"
-
-"@alicloud/tea-xml@0.0.2":
-  version "0.0.2"
-  resolved "https://registry.npmmirror.com/@alicloud/tea-xml/-/tea-xml-0.0.2.tgz#7c97a38255d5e4f009c437facd3a2afc0ef17f45"
-  integrity sha512-Xs7v5y7YSNSDDYmiDWAC0/013VWPjS3dQU4KezSLva9VGiTVPaL3S7Nk4NrTmAYCG6MKcrRj/nGEDIWL5KRoPg==
-  dependencies:
-    "@alicloud/tea-typescript" "^1"
-    "@types/xml2js" "^0.4.5"
-    xml2js "^0.4.22"
 
 "@alicloud/tea-xml@0.0.3":
   version "0.0.3"
@@ -4470,7 +4442,7 @@
     "@emotion/sheet" "^1.4.0"
     "@emotion/utils" "^1.4.0"
 
-"@emotion/css@^11", "@emotion/css@^11.11.2", "@emotion/css@^11.7.1":
+"@emotion/css@^11.11.2", "@emotion/css@^11.7.1":
   version "11.13.0"
   resolved "https://registry.npmmirror.com/@emotion/css/-/css-11.13.0.tgz#3b44f008ce782dafa7cecff75b263af174d0c702"
   integrity sha512-BUk99ylT+YHl+W/HN7nv1RCTkDYmKKqa1qbvM/qLSQEg61gipuBF5Hptk/2/ERmX2DCv0ccuFGhz9i0KSZOqPg==
@@ -6534,6 +6506,22 @@
   integrity sha512-54/JRvkLIzzDWshCWfuhadfrfZVPiElY8Fcgmg1HroEly/EDSszzhBAsarCux+D/kOslTRquNzuyGSmUSTTHGg==
   dependencies:
     eslint-scope "5.1.1"
+
+"@nocobase/utils@1.4.0-alpha.11":
+  version "1.4.0-alpha.11"
+  resolved "https://registry.npmmirror.com/@nocobase/utils/-/utils-1.4.0-alpha.11.tgz#181951bc6628a11a1ed4b9e1d55fd9e423d27884"
+  integrity sha512-uOAiYCbQMcDmPwfA9WIxScGGykfkWSr+hfRaEJolWfaKxSfgrpLWFN23/T0+rR506m/GLRvwEBS+KlQ0M4XmWQ==
+  dependencies:
+    "@budibase/handlebars-helpers" "^0.14.0"
+    "@hapi/topo" "^6.0.0"
+    "@rc-component/mini-decimal" "^1.1.0"
+    dayjs "^1.11.9"
+    deepmerge "^4.2.2"
+    flat-to-nested "^1.1.1"
+    graphlib "^2.1.8"
+    handlebars "^4.7.8"
+    multer "^1.4.5-lts.1"
+    object-path "^0.11.8"
 
 "@node-saml/node-saml@^4.0.2":
   version "4.0.5"
@@ -10905,6 +10893,13 @@ async-listener@^0.6.0:
   dependencies:
     semver "^5.3.0"
     shimmer "^1.1.0"
+
+async-mutex@^0.3.2:
+  version "0.3.2"
+  resolved "https://registry.npmmirror.com/async-mutex/-/async-mutex-0.3.2.tgz#1485eda5bda1b0ec7c8df1ac2e815757ad1831df"
+  integrity sha512-HuTK7E7MT7jZEh1P9GtRW9+aTWiDWWi9InbZ5hjxrnRa39KS4BW04+xLBhYNS2aXhHUIKZSw3gj4Pn1pj+qGAA==
+  dependencies:
+    tslib "^2.3.1"
 
 async-mutex@^0.5.0:
   version "0.5.0"
@@ -20463,6 +20458,11 @@ logform@^2.3.2, logform@^2.4.0:
     safe-stable-stringify "^2.3.1"
     triple-beam "^1.3.0"
 
+long@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.npmmirror.com/long/-/long-4.0.0.tgz#9a7b71cfb7d361a194ea555241c92f7468d5bf28"
+  integrity sha512-XsP+KhQif4bjX1kbuSiySJFNAehNxgLb6hPRGJ9QsUr8ajHkuXGdrHmFUTUUXhDwVX2R5bY4JNZEwbUiMhV+MA==
+
 long@^5.2.0, long@^5.2.1:
   version "5.2.3"
   resolved "https://registry.npmmirror.com/long/-/long-5.2.3.tgz#a3ba97f3877cf1d778eccbcb048525ebb77499e1"
@@ -20550,6 +20550,11 @@ lru-cache@^7.14.1, lru-cache@^7.5.1:
   version "7.18.3"
   resolved "https://registry.npmmirror.com/lru-cache/-/lru-cache-7.18.3.tgz#f793896e0fd0e954a59dfdd82f0773808df6aa89"
   integrity sha512-jumlc0BIUrS3qJGgIkWZsyfAM7NCWiBcCDhnd+3NNM5KbBmLTgHVfWBcg6W+rLUsIpzpERPsvwUP7CckAQSOoA==
+
+lru.min@^1.0.0:
+  version "1.1.1"
+  resolved "https://registry.npmmirror.com/lru.min/-/lru.min-1.1.1.tgz#146e01e3a183fa7ba51049175de04667d5701f0e"
+  integrity sha512-FbAj6lXil6t8z4z3j0E5mfRlPzxkySotzUHwRXjlpRh10vc6AI6WN62ehZj82VG7M20rqogJ0GLwar2Xa05a8Q==
 
 luxon@^1.28.0:
   version "1.28.1"
@@ -21936,6 +21941,20 @@ mute-stream@0.0.8, mute-stream@~0.0.4:
   resolved "https://registry.npmmirror.com/mute-stream/-/mute-stream-0.0.8.tgz#1630c42b2251ff81e2a283de96a5497ea92e5e0d"
   integrity sha512-nnbWWOkoWyUsTjKrhgD0dcz22mdkSnpYqbEjIm2nhwhuxlSkpywJmBo8h0ZqJdkp73mb90SssHkN4rsRaBAfAA==
 
+mysql2@^2.3.3:
+  version "2.3.3"
+  resolved "https://registry.npmmirror.com/mysql2/-/mysql2-2.3.3.tgz#944f3deca4b16629052ff8614fbf89d5552545a0"
+  integrity sha512-wxJUev6LgMSgACDkb/InIFxDprRa6T95+VEoR+xPvtngtccNH2dGjEB/fVZ8yg1gWv1510c9CvXuJHi5zUm0ZA==
+  dependencies:
+    denque "^2.0.1"
+    generate-function "^2.3.1"
+    iconv-lite "^0.6.3"
+    long "^4.0.0"
+    lru-cache "^6.0.0"
+    named-placeholders "^1.1.2"
+    seq-queue "^0.0.5"
+    sqlstring "^2.3.2"
+
 mysql2@^3.11.0:
   version "3.11.0"
   resolved "https://registry.npmmirror.com/mysql2/-/mysql2-3.11.0.tgz#2a7bd7c615ab43f8167ed9922063b968f3e48f33"
@@ -21951,6 +21970,21 @@ mysql2@^3.11.0:
     seq-queue "^0.0.5"
     sqlstring "^2.3.2"
 
+mysql2@^3.9.1:
+  version "3.11.4"
+  resolved "https://registry.npmmirror.com/mysql2/-/mysql2-3.11.4.tgz#08658b6285adbace7d43b2eaa18efddb85f99501"
+  integrity sha512-Z2o3tY4Z8EvSRDwknaC40MdZ3+m0sKbpnXrShQLdxPrAvcNli7jLrD2Zd2IzsRMw4eK9Yle500FDmlkIqp+krg==
+  dependencies:
+    aws-ssl-profiles "^1.1.1"
+    denque "^2.1.0"
+    generate-function "^2.3.1"
+    iconv-lite "^0.6.3"
+    long "^5.2.1"
+    lru.min "^1.0.0"
+    named-placeholders "^1.1.3"
+    seq-queue "^0.0.5"
+    sqlstring "^2.3.2"
+
 mz@^2.7.0:
   version "2.7.0"
   resolved "https://registry.npmmirror.com/mz/-/mz-2.7.0.tgz#95008057a56cafadc2bc63dde7f9ff6955948e32"
@@ -21960,7 +21994,7 @@ mz@^2.7.0:
     object-assign "^4.0.1"
     thenify-all "^1.0.0"
 
-named-placeholders@^1.1.3:
+named-placeholders@^1.1.2, named-placeholders@^1.1.3:
   version "1.1.3"
   resolved "https://registry.npmmirror.com/named-placeholders/-/named-placeholders-1.1.3.tgz#df595799a36654da55dda6152ba7a137ad1d9351"
   integrity sha512-eLoBxg6wE/rZkJPhU/xRX1WTpkFEwDJEN96oxFrTsqBdbT5ec295Q+CoHrL9IT0DipqKhmGcaZmwOt8OON5x1w==
@@ -23433,7 +23467,7 @@ path-to-regexp@2.4.0:
   resolved "https://registry.npmmirror.com/path-to-regexp/-/path-to-regexp-2.4.0.tgz#35ce7f333d5616f1c1e1bfe266c3aba2e5b2e704"
   integrity sha512-G6zHoVqC6GGTQkZwF4lkuEyMbVOjoBKAEybQUypI1WTkqinCOrq2x6U2+phkJ1XsEMTy4LjtwPI7HW+NVrRR2w==
 
-path-to-regexp@6.2.2, path-to-regexp@^6.2.1:
+path-to-regexp@6.2.2:
   version "6.2.2"
   resolved "https://registry.npmmirror.com/path-to-regexp/-/path-to-regexp-6.2.2.tgz#324377a83e5049cbecadc5554d6a63a9a4866b36"
   integrity sha512-GQX3SSMokngb36+whdpRXE+3f9V8UzyAorlYvOGx87ufGHehNTn5lCxrKtLyZ4Yl/wEKnNnr98ZzOwwDZV5ogw==
@@ -27780,7 +27814,7 @@ string-convert@^0.2.0:
   resolved "https://registry.npmmirror.com/string-convert/-/string-convert-0.2.1.tgz#6982cc3049fbb4cd85f8b24568b9d9bf39eeff97"
   integrity sha512-u/1tdPl4yQnPBjnVrmdLo9gtuLvELKsAoRapekWggdiQNvvvum+jYF329d84NAa660KQw7pB2n36KrIKVoXa3A==
 
-"string-width-cjs@npm:string-width@^4.2.0", "string-width@^1.0.2 || 2 || 3 || 4", string-width@^4.0.0, string-width@^4.1.0, string-width@^4.2.0, string-width@^4.2.2, string-width@^4.2.3:
+"string-width-cjs@npm:string-width@^4.2.0":
   version "4.2.3"
   resolved "https://registry.npmmirror.com/string-width/-/string-width-4.2.3.tgz#269c7117d27b05ad2e536830a8ec895ef9c6d010"
   integrity sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==
@@ -27797,6 +27831,15 @@ string-width@^1.0.1, string-width@^1.0.2:
     code-point-at "^1.0.0"
     is-fullwidth-code-point "^1.0.0"
     strip-ansi "^3.0.0"
+
+"string-width@^1.0.2 || 2 || 3 || 4", string-width@^4.0.0, string-width@^4.1.0, string-width@^4.2.0, string-width@^4.2.2, string-width@^4.2.3:
+  version "4.2.3"
+  resolved "https://registry.npmmirror.com/string-width/-/string-width-4.2.3.tgz#269c7117d27b05ad2e536830a8ec895ef9c6d010"
+  integrity sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==
+  dependencies:
+    emoji-regex "^8.0.0"
+    is-fullwidth-code-point "^3.0.0"
+    strip-ansi "^6.0.1"
 
 string-width@^2.0.0, string-width@^2.1.0, string-width@^2.1.1:
   version "2.1.1"
@@ -27923,7 +27966,7 @@ stringify-entities@^4.0.0:
     character-entities-html4 "^2.0.0"
     character-entities-legacy "^3.0.0"
 
-"strip-ansi-cjs@npm:strip-ansi@^6.0.1", strip-ansi@^6.0.0, strip-ansi@^6.0.1:
+"strip-ansi-cjs@npm:strip-ansi@^6.0.1":
   version "6.0.1"
   resolved "https://registry.npmmirror.com/strip-ansi/-/strip-ansi-6.0.1.tgz#9e26c63d30f53443e9489495b2105d37b67a85d9"
   integrity sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A==
@@ -27950,6 +27993,13 @@ strip-ansi@^5.1.0:
   integrity sha512-DuRs1gKbBqsMKIZlrffwlug8MHkcnpjs5VPmL1PAh+mA30U0DTotfDZ0d2UUsXpPmPmMMJ6W773MaA3J+lbiWA==
   dependencies:
     ansi-regex "^4.1.0"
+
+strip-ansi@^6.0.0, strip-ansi@^6.0.1:
+  version "6.0.1"
+  resolved "https://registry.npmmirror.com/strip-ansi/-/strip-ansi-6.0.1.tgz#9e26c63d30f53443e9489495b2105d37b67a85d9"
+  integrity sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A==
+  dependencies:
+    ansi-regex "^5.0.1"
 
 strip-ansi@^7.0.1:
   version "7.1.0"
@@ -30419,7 +30469,7 @@ wordwrap@^1.0.0:
   resolved "https://registry.npmmirror.com/wordwrap/-/wordwrap-1.0.0.tgz#27584810891456a4171c8d0226441ade90cbcaeb"
   integrity sha512-gvVzJFlPycKc5dZN4yPkP8w7Dc37BtP1yczEneOb4uq34pXZcvrtRTmWV8W+Ume+XCxKgbjM+nevkyFPMybd4Q==
 
-"wrap-ansi-cjs@npm:wrap-ansi@^7.0.0", wrap-ansi@^7.0.0:
+"wrap-ansi-cjs@npm:wrap-ansi@^7.0.0":
   version "7.0.0"
   resolved "https://registry.npmmirror.com/wrap-ansi/-/wrap-ansi-7.0.0.tgz#67e145cff510a6a6984bdf1152911d69d2eb9e43"
   integrity sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q==
@@ -30440,6 +30490,15 @@ wrap-ansi@^6.0.1:
   version "6.2.0"
   resolved "https://registry.npmmirror.com/wrap-ansi/-/wrap-ansi-6.2.0.tgz#e9393ba07102e6c91a3b221478f0257cd2856e53"
   integrity sha512-r6lPcBGxZXlIcymEu7InxDMhdW0KDxpLgoFLcguasxCaJ/SOIZwINatK9KY/tf+ZrlywOKU0UDj3ATXUBfxJXA==
+  dependencies:
+    ansi-styles "^4.0.0"
+    string-width "^4.1.0"
+    strip-ansi "^6.0.0"
+
+wrap-ansi@^7.0.0:
+  version "7.0.0"
+  resolved "https://registry.npmmirror.com/wrap-ansi/-/wrap-ansi-7.0.0.tgz#67e145cff510a6a6984bdf1152911d69d2eb9e43"
+  integrity sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q==
   dependencies:
     ansi-styles "^4.0.0"
     string-width "^4.1.0"
@@ -30592,14 +30651,6 @@ xml-reader@2.4.3:
   dependencies:
     eventemitter3 "^2.0.0"
     xml-lexer "^0.2.2"
-
-xml2js@^0.4.22:
-  version "0.4.23"
-  resolved "https://registry.npmmirror.com/xml2js/-/xml2js-0.4.23.tgz#a0c69516752421eb2ac758ee4d4ccf58843eac66"
-  integrity sha512-ySPiMjM0+pLDftHgXY4By0uswI3SPKLDw/i3UXbnO8M/p28zqexCUoPmQFrYD+/1BzhGJSs2i1ERWKJAtiLrug==
-  dependencies:
-    sax ">=0.6.0"
-    xmlbuilder "~11.0.0"
 
 xml2js@^0.5.0:
   version "0.5.0"
