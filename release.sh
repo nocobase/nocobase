@@ -15,7 +15,7 @@ if [ "$branch" == "main" ]; then
 elif [ "$branch" == "next" ]; then
   # beta
   if [ "$1" == '--is-feat' ]; then
-    new_version="$major.$minor.0-beta.0"
+    new_version="$major.$minor.0-beta.1"
     echo $new_version;
   else
     new_pre=$((pre + 1))
@@ -26,7 +26,7 @@ elif [ "$branch" == "develop" ]; then
   # alpha
   if [ "$1" == '--is-feat' ]; then
     new_minor=$((minor + 1))
-    new_version="$major.$new_minor.0-alpha.0"
+    new_version="$major.$new_minor.0-alpha.1"
     echo $new_version;
   else
     new_pre=$((pre + 1))

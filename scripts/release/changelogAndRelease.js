@@ -378,24 +378,29 @@ async function getVersion() {
     switch (ver) {
       case 'rc':
         tagPattern = '^v[1-9]+.[0-9]+.[0-9]+$';
+        break;
       case 'beta':
         tagPattern = '^v[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+$';
+        break;
       case 'alpha':
         tagPattern = '^v[0-9]+.[0-9]+.[0-9]+-alpha.[0-9]+$';
+        break;
     }
     const { stdout: tags } = await execa(`git tag -l --sort=creatordate | grep -E "${tagPattern}" | tail -2`, {
       shell: true,
     });
+    const tagsArr = tags.split('\n');
     // 过渡处理
-    if (tags.length === 1) {
+    if (tagsArr.length === 1) {
       if (ver === 'rc') {
-        tags.unshift('v1.3.50-beta');
+        tagsArr.unshift('v1.3.50-beta');
       }
       if (ver === 'beta') {
-        tags.unshift('v1.4.0-alpha.17');
+        tagsArr.unshift('v1.4.0-alpha.17');
       }
     }
-    [from, to] = tags.split('\n');
+    from = tagsArr[0];
+    to = tagsArr[1];
   }
   console.log(`From: ${from}, To: ${to}`);
   return { from, to };
