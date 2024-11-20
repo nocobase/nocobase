@@ -21,10 +21,10 @@
     query-string "^6.9.0"
     tslib "^2.4.1"
 
-"@alicloud/credentials@^2":
-  version "2.3.0"
-  resolved "https://registry.npmmirror.com/@alicloud/credentials/-/credentials-2.3.0.tgz#941233a07ba74cd2fdaa3f6a5d2a3cca5a10c184"
-  integrity sha512-x0vf/m1BzkqYXAj2Hkd22O35josx5P4VCzq/9EvTBjA7aGLX/P6JDz7QVp+gnhLjPJyvwAbErvJRYq4gIo4IMA==
+"@alicloud/credentials@^2", "@alicloud/credentials@^2.3.1":
+  version "2.4.0"
+  resolved "https://registry.npmmirror.com/@alicloud/credentials/-/credentials-2.4.0.tgz#fe4a330b1c7d8d3c4ce9c7d44c1093240fd38c1a"
+  integrity sha512-TeAyiXnqv9ZudpeMMHbGah5Gyey8Rr9i7hydesyT07zYwBAOd+yWfR6dnFH8e3l1LfRbZU/AQ+6j0DsmfIQ+KQ==
   dependencies:
     "@alicloud/tea-typescript" "^1.5.3"
     httpx "^2.2.0"
@@ -58,30 +58,19 @@
     "@alicloud/credentials" "^2"
     "@alicloud/tea-typescript" "^1.7.1"
 
-"@alicloud/openapi-client@0.4.1":
-  version "0.4.1"
-  resolved "https://registry.npmmirror.com/@alicloud/openapi-client/-/openapi-client-0.4.1.tgz#8e55a3bdfee17a00c2ec3d10feaf7bfd0eff7502"
-  integrity sha512-FNGQ9kmGi0AuNFX9yj7DDbMn8CB4TvihIIQ3ONNhLZF8Hj2asau7NiqVoftJX3F/JFq9qzJWeVbvboSM9Zq5kA==
+"@alicloud/openapi-client@0.4.12", "@alicloud/openapi-client@^0.4.1":
+  version "0.4.12"
+  resolved "https://registry.npmmirror.com/@alicloud/openapi-client/-/openapi-client-0.4.12.tgz#7a4f00e71b025d8a487cfbeeb8aa6f63d70b2054"
+  integrity sha512-WuKfFqwY3/+wuNawzfJAirNA00XDI7fm9fUhWK7siGZEh0R2XJR0Y54MLW7WWItX06fAghUvnDhKWZH3AgN+yg==
   dependencies:
-    "@alicloud/credentials" "^2"
-    "@alicloud/gateway-spi" "^0.0.8"
-    "@alicloud/openapi-util" "^0.2.7"
-    "@alicloud/tea-typescript" "^1.7.1"
-    "@alicloud/tea-util" "^1.4.0"
-
-"@alicloud/openapi-client@^0.4.1":
-  version "0.4.7"
-  resolved "https://registry.npmmirror.com/@alicloud/openapi-client/-/openapi-client-0.4.7.tgz#4779e0b8b5b05431f9e59e514dee0bc451de9dfa"
-  integrity sha512-PR6ufA6hFTpB4gEpsbZpT1nSnsuOTlk9WYtAzJdMBO89ZDGc2qaJ1aCECVfeSkCVnVfTgShfYS6hmz/FjfG+5w==
-  dependencies:
-    "@alicloud/credentials" "^2"
+    "@alicloud/credentials" "^2.3.1"
     "@alicloud/gateway-spi" "^0.0.8"
     "@alicloud/openapi-util" "^0.3.2"
     "@alicloud/tea-typescript" "^1.7.1"
-    "@alicloud/tea-util" "^1.4.7"
-    "@alicloud/tea-xml" "0.0.2"
+    "@alicloud/tea-util" "^1.4.9"
+    "@alicloud/tea-xml" "0.0.3"
 
-"@alicloud/openapi-util@^0.2.7", "@alicloud/openapi-util@^0.2.9":
+"@alicloud/openapi-util@^0.2.9":
   version "0.2.9"
   resolved "https://registry.npmmirror.com/@alicloud/openapi-util/-/openapi-util-0.2.9.tgz#2379cd81f993dcab32066a2b892ddcbdd266d51c"
   integrity sha512-GUEYtX3lDv+WaZoDFCb0h9aZ8+IlajnSAxSHjiITbNtjCpZbA/vfd7Z/ST9YaPoT34nGqDNKiQTjqpLhaKtYBw==
@@ -117,22 +106,22 @@
     "@alicloud/tea-typescript" "^1.5.1"
     kitx "^2.0.0"
 
-"@alicloud/tea-util@^1.3.0", "@alicloud/tea-util@^1.4.0", "@alicloud/tea-util@^1.4.4", "@alicloud/tea-util@^1.4.7":
-  version "1.4.7"
-  resolved "https://registry.npmmirror.com/@alicloud/tea-util/-/tea-util-1.4.7.tgz#40748613c3751f5373ffa8e5a0e892602ef3f78c"
-  integrity sha512-Lrpfk9kxihHsit3oMoeIMjk783AxjOvzMhLAbZcIzazKiVg3Zk/209XDe9r1lXqxII59j3V4rhC9X14y6WGYyg==
+"@alicloud/tea-util@^1.3.0", "@alicloud/tea-util@^1.4.4", "@alicloud/tea-util@^1.4.9":
+  version "1.4.9"
+  resolved "https://registry.npmmirror.com/@alicloud/tea-util/-/tea-util-1.4.9.tgz#aa1c4f566d530e7ffc6d9fac1aded06bb0ea45ca"
+  integrity sha512-S0wz76rGtoPKskQtRTGqeuqBHFj8BqUn0Vh+glXKun2/9UpaaaWmuJwcmtImk6bJZfLYEShDF/kxDmDJoNYiTw==
   dependencies:
     "@alicloud/tea-typescript" "^1.5.1"
     kitx "^2.0.0"
 
-"@alicloud/tea-xml@0.0.2":
-  version "0.0.2"
-  resolved "https://registry.npmmirror.com/@alicloud/tea-xml/-/tea-xml-0.0.2.tgz#7c97a38255d5e4f009c437facd3a2afc0ef17f45"
-  integrity sha512-Xs7v5y7YSNSDDYmiDWAC0/013VWPjS3dQU4KezSLva9VGiTVPaL3S7Nk4NrTmAYCG6MKcrRj/nGEDIWL5KRoPg==
+"@alicloud/tea-xml@0.0.3":
+  version "0.0.3"
+  resolved "https://registry.npmmirror.com/@alicloud/tea-xml/-/tea-xml-0.0.3.tgz#14561d4dde59da1d5eaf87e898e26a68cea073c4"
+  integrity sha512-+/9GliugjrLglsXVrd1D80EqqKgGpyA0eQ6+1ZdUOYCaRguaSwz44trX3PaxPu/HhIPJg9PsGQQ3cSLXWZjbAA==
   dependencies:
     "@alicloud/tea-typescript" "^1"
     "@types/xml2js" "^0.4.5"
-    xml2js "^0.4.22"
+    xml2js "^0.6.0"
 
 "@amap/amap-jsapi-loader@^1.0.1":
   version "1.0.1"
@@ -27659,15 +27648,7 @@ xml-reader@2.4.3:
     eventemitter3 "^2.0.0"
     xml-lexer "^0.2.2"
 
-xml2js@^0.4.22:
-  version "0.4.23"
-  resolved "https://registry.npmmirror.com/xml2js/-/xml2js-0.4.23.tgz#a0c69516752421eb2ac758ee4d4ccf58843eac66"
-  integrity sha512-ySPiMjM0+pLDftHgXY4By0uswI3SPKLDw/i3UXbnO8M/p28zqexCUoPmQFrYD+/1BzhGJSs2i1ERWKJAtiLrug==
-  dependencies:
-    sax ">=0.6.0"
-    xmlbuilder "~11.0.0"
-
-xml2js@^0.6.2:
+xml2js@^0.6.0, xml2js@^0.6.2:
   version "0.6.2"
   resolved "https://registry.npmmirror.com/xml2js/-/xml2js-0.6.2.tgz#dd0b630083aa09c161e25a4d0901e2b2a929b499"
   integrity sha512-T4rieHaC1EXcES0Kxxj4JWgaUQHDk+qwHcYOCFHfiwKz7tOVPLq7Hjq9dM1WCMhylqMEfP7hMcOIChvotiZegA==
