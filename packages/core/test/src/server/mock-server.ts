@@ -9,9 +9,12 @@
 
 import { mockDatabase } from '@nocobase/database';
 import { Application, ApplicationOptions, AppSupervisor, Gateway, PluginManager } from '@nocobase/server';
+import { uid } from '@nocobase/utils';
 import jwt from 'jsonwebtoken';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
+import { MemoryPubSubAdapter } from './memory-pub-sub-adapter';
+import { MockDataSource } from './mock-data-source';
 
 interface ActionParams {
   filterByTk?: any;
@@ -74,6 +77,10 @@ interface ExtendedAgent extends SuperAgentTest {
 }
 
 export class MockServer extends Application {
+  registerMockDataSource() {
+    this.dataSourceManager.factory.register('mock', MockDataSource);
+  }
+
   async loadAndInstall(options: any = {}) {
     await this.load({ method: 'install' });
 
@@ -229,10 +236,25 @@ export function mockServer(options: ApplicationOptions = {}) {
     PluginManager.findPackagePatched = true;
   }
 
-  const app = new MockServer({
+  const mockServerOptions = {
     acl: false,
+    syncMessageManager: {
+      debounce: 500,
+    },
     ...options,
-  });
+  };
+
+  const app = new MockServer(mockServerOptions);
+
+  const basename = app.options.pubSubManager?.channelPrefix;
+
+  if (basename) {
+    app.pubSubManager.setAdapter(
+      MemoryPubSubAdapter.create(basename, {
+        debounce: 500,
+      }),
+    );
+  }
 
   return app;
 }
@@ -245,16 +267,68 @@ export async function startMockServer(options: ApplicationOptions = {}) {
 
 type BeforeInstallFn = (app) => Promise<void>;
 
-export async function createMockServer(
-  options: ApplicationOptions & {
-    version?: string;
-    beforeInstall?: BeforeInstallFn;
-    skipInstall?: boolean;
-    skipStart?: boolean;
-  } = {},
-) {
+export type MockServerOptions = ApplicationOptions & {
+  version?: string;
+  beforeInstall?: BeforeInstallFn;
+  skipInstall?: boolean;
+  skipStart?: boolean;
+};
+
+export type MockClusterOptions = MockServerOptions & {
+  number?: number;
+  clusterName?: string;
+  appName?: string;
+};
+
+export type MockCluster = {
+  nodes: MockServer[];
+  destroy: () => Promise<void>;
+};
+
+export async function createMockCluster({
+  number = 2,
+  clusterName = `cluster_${uid()}`,
+  appName = `app_${uid()}`,
+  ...options
+}: MockClusterOptions = {}): Promise<MockCluster> {
+  const nodes: MockServer[] = [];
+  let dbOptions;
+
+  for (let i = 0; i < number; i++) {
+    if (dbOptions) {
+      options['database'] = {
+        ...dbOptions,
+      };
+    }
+
+    const app: MockServer = await createMockServer({
+      ...options,
+      skipSupervisor: true,
+      name: clusterName + '_' + appName,
+      pubSubManager: {
+        channelPrefix: clusterName,
+      },
+    });
+
+    if (!dbOptions) {
+      dbOptions = app.db.options;
+    }
+
+    nodes.push(app);
+  }
+  return {
+    nodes,
+    async destroy() {
+      for (const node of nodes) {
+        await node.destroy();
+      }
+    },
+  };
+}
+
+export async function createMockServer(options: MockServerOptions = {}): Promise<MockServer> {
   const { version, beforeInstall, skipInstall, skipStart, ...others } = options;
-  const app: any = mockServer(others);
+  const app: MockServer = mockServer(others);
   if (!skipInstall) {
     if (beforeInstall) {
       await beforeInstall(app);

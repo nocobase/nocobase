@@ -1,0 +1,15 @@
+{
+  "name": "@nocobase/plugin-field-sort",
+  "version": "1.5.0-alpha.2",
+  "main": "dist/server/index.js",
+  "peerDependencies": {
+    "@nocobase/actions": "1.x",
+    "@nocobase/client": "1.x",
+    "@nocobase/database": "1.x",
+    "@nocobase/lock-manager": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x",
+    "lodash": "4.17.21",
+    "sequelize": "^6.26.0"
+  }
+}

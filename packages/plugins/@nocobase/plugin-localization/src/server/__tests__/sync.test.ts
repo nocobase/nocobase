@@ -22,6 +22,7 @@ describe('sync', () => {
     app = await createMockServer({
       plugins: [
         // 'data-source-manager',
+        'field-sort',
         'data-source-main',
         'localization',
         'ui-schema-storage',
