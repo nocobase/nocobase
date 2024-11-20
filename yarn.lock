@@ -27667,9 +27667,9 @@ xmlchars@^2.2.0:
   integrity sha512-JZnDKK8B0RCDw84FNdDAIpZK+JuJw+s7Lz8nksI7SIuU3UXJJslUthsi+uWBUYOwPFwW7W7PRLRfUKpxjtjFCw==
 
 xpipe@^1.0.5:
-  version "1.0.7"
-  resolved "https://registry.npmmirror.com/xpipe/-/xpipe-1.0.7.tgz#d0aff00e080a44ffbdbe45dd7658ff6c483464c8"
-  integrity sha512-QfM2M7UtQCXVHkGW46Uz/MVEkoLXQ6IUX2qSx2aehJAPaU3WgSGAkoal9HagmGo2b151jWnID8/ARiquwmIAOQ==
+  version "1.0.8"
+  resolved "https://registry.npmmirror.com/xpipe/-/xpipe-1.0.8.tgz#2e970c255cfa39592726fa3458e2465d3754767f"
+  integrity sha512-E2RGg3fUCxHGdbrM7FMOqHNhiiDRW/tgbftCd/K6w1ce4386QZvkgIq77EBsHdAOmNfQjtmIKwXp67Dy18s8Dg==
 
 xtend@^4.0.0, xtend@~4.0.0, xtend@~4.0.1:
   version "4.0.2"
