@@ -9,15 +9,20 @@ on:
     branches:
       - 'main'
       - 'next'
+      - 'develop'
     paths:
       - 'packages/**'
       - 'Dockerfile'
       - '.github/workflows/build-pro-image.yml'
 
 jobs:
+  get-plugins:
+    uses: nocobase/nocobase/.github/workflows/get-plugins.yml@main
+    secrets: inherit
   build-and-push:
     if: github.event.pull_request.head.repo.fork != true
     runs-on: ubuntu-latest
+    needs: get-plugins
     services:
       verdaccio:
         image: verdaccio/verdaccio:5
@@ -27,10 +32,12 @@ jobs:
       - name: Get pro plugins
         id: get-pro-plugins
         run: |
-          if [[ "${{ github.head_ref || github.ref_name }}" == "main" ]]; then
-            echo "proRepos=$(echo '${{ vars.PRO_PLUGIN_REPOS }}')" >> $GITHUB_OUTPUT
+          if [[ "${{ github.head_ref || github.ref_name }}" == "next" ]]; then
+            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.beta-plugins }}')" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.head_ref || github.ref_name }}" == "develop" ]]; then
+            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.alpha-plugins }}')" >> $GITHUB_OUTPUT
           else
-            echo "proRepos=$(echo '${{ vars.NEXT_PRO_PLUGIN_REPOS }}')" >> $GITHUB_OUTPUT
+            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.rc-plugins }}')" >> $GITHUB_OUTPUT
           fi
       - uses: actions/create-github-app-token@v1
         id: app-token
@@ -130,7 +137,7 @@ jobs:
           trimmed_variable=$(echo "$subdirectories" | xargs)
           packageNames="@nocobase/${trimmed_variable// / @nocobase/}"
           pluginNames="${trimmed_variable//plugin-/}"
-          BEFORE_PACK_NOCOBASE="yarn add @nocobase/plugin-notifications @nocobase/plugin-disable-pm-add $packageNames -W"
+          BEFORE_PACK_NOCOBASE="yarn add @nocobase/plugin-notifications @nocobase/plugin-disable-pm-add $packageNames -W --production"
           APPEND_PRESET_LOCAL_PLUGINS="notifications,disable-pm-add,${pluginNames// /,}"
           echo "var1=$BEFORE_PACK_NOCOBASE" >> $GITHUB_OUTPUT
           echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
