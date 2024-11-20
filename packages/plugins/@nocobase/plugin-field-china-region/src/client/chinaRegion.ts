@@ -8,8 +8,7 @@
  */
 
 import { uid } from '@formily/shared';
-import { defaultProps, operators } from './properties';
-import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
+import { defaultProps, operators, CollectionFieldInterface } from '@nocobase/client';
 
 export class ChinaRegionFieldInterface extends CollectionFieldInterface {
   name = 'chinaRegion';
