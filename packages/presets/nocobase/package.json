@@ -35,6 +35,7 @@
     "@nocobase/plugin-field-m2m-array": "1.5.0-alpha.2",
     "@nocobase/plugin-field-markdown-vditor": "1.5.0-alpha.2",
     "@nocobase/plugin-field-sequence": "1.5.0-alpha.2",
+    "@nocobase/plugin-field-sort": "1.5.0-alpha.2",
     "@nocobase/plugin-file-manager": "1.5.0-alpha.2",
     "@nocobase/plugin-gantt": "1.5.0-alpha.2",
     "@nocobase/plugin-graph-collection-manager": "1.5.0-alpha.2",
