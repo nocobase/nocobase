@@ -998,7 +998,7 @@ export const Table: any = withDynamicSchemaProps(
               )
             : React.createElement(React.Fragment, {}, children);
         },
-        [value, dragSort, getRowKey],
+        [dragSort, getRowKey], // Don't put 'value' in dependencies, otherwise it will cause the dropdown component to disappear immediately when adding association fields to the table
       );
 
       const { height: tableHeight, tableSizeRefCallback } = useTableSize();
