@@ -34,9 +34,9 @@ import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField'
 import { useCompile } from '../../hooks';
 import { ActionContextProvider } from '../action';
 import { useSubTableSpecialCase } from '../form-item/hooks/useSpecialCase';
-import { Table } from '../table-v2/Table';
 import { SubFormProvider, useAssociationFieldContext, useFieldNames } from './hooks';
 import { useTableSelectorProps } from './InternalPicker';
+import { Table } from './Table';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
 
 const subTableContainer = css`
