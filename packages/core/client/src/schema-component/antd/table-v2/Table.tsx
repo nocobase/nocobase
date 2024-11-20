@@ -50,6 +50,25 @@ import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 
+type BodyRowComponentProps = {
+  rowIndex?: number;
+  onClick?: (e: any) => void;
+  style?: React.CSSProperties;
+  className?: string;
+  record: any;
+};
+
+interface BodyCellComponentProps {
+  columnHidden?: boolean;
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+  record: any;
+  schema: any;
+  rowIndex: number;
+  isSubTable?: boolean;
+}
+
 const InViewContext = React.createContext(false);
 
 const useArrayField = (props) => {
@@ -264,13 +283,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
 // How many rows should be displayed on initial render
 const INITIAL_ROWS_NUMBER = 20;
 
-const SortableRow = (props: {
-  rowIndex: number;
-  onClick: (e: any) => void;
-  style: React.CSSProperties;
-  className: string;
-  record: any;
-}) => {
+const SortableRow = (props: BodyRowComponentProps) => {
   const { isInSubTable } = useFlag();
   const { token } = useToken();
   const id = props['data-row-key']?.toString();
@@ -526,38 +539,42 @@ const HeaderCellComponent = React.memo(
 
 HeaderCellComponent.displayName = 'HeaderCellComponent';
 
-const BodyRowComponent = React.memo(
-  (props: {
-    rowIndex: number;
-    onClick: (e: any) => void;
-    style: React.CSSProperties;
-    className: string;
-    record: any;
-  }) => {
-    const { record, rowIndex } = props;
-    const parentRecordData = useCollectionParentRecordData();
+const InternalBodyRowComponent = React.memo((props: BodyRowComponentProps) => {
+  const { record, rowIndex } = props;
+  const parentRecordData = useCollectionParentRecordData();
 
-    return (
-      <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
-        <RecordIndexProvider index={record?.__index || rowIndex}>
-          <SortableRow {...props} />
-        </RecordIndexProvider>
-      </RecordProvider>
-    );
-  },
-);
+  return (
+    <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
+      <RecordIndexProvider index={record?.__index || rowIndex}>
+        <SortableRow {...props} />
+      </RecordIndexProvider>
+    </RecordProvider>
+  );
+});
+
+InternalBodyRowComponent.displayName = 'InternalBodyRowComponent';
+
+const BodyRowComponent = React.memo((props: BodyRowComponentProps) => {
+  const prevPropsRef = useRef(props);
+
+  // 1. Initial render
+  if (prevPropsRef.current.record === props.record) {
+    return <InternalBodyRowComponent {...props} />;
+  }
+
+  // 2. On subsequent renders, only re-render when record changes. This improves refresh performance
+  if (!_.isEqual(prevPropsRef.current.record, props.record)) {
+    prevPropsRef.current = props;
+    return <InternalBodyRowComponent {...props} />;
+  }
+
+  // 3. If record hasn't changed, don't re-render
+  return <InternalBodyRowComponent {...prevPropsRef.current} />;
+});
 
 BodyRowComponent.displayName = 'BodyRowComponent';
 
-const InternalBodyCellComponent = React.memo<{
-  className: string;
-  style: React.CSSProperties;
-  children: React.ReactNode;
-  record: any;
-  schema: any;
-  rowIndex: number;
-  isSubTable: boolean;
-}>((props) => {
+const InternalBodyCellComponent = React.memo<BodyCellComponentProps>((props) => {
   const { token } = useToken();
   const inView = useContext(InViewContext);
   const isIndex = props.className?.includes('selection-column');
@@ -582,16 +599,8 @@ InternalBodyCellComponent.displayName = 'InternalBodyCellComponent';
 
 const displayNone = { display: 'none' };
 
-const BodyCellComponent = React.memo<{
-  columnHidden: boolean;
-  children: React.ReactNode;
-  className: string;
-  style: React.CSSProperties;
-  record: any;
-  schema: any;
-  rowIndex: number;
-  isSubTable: boolean;
-}>((props) => {
+const BodyCellComponent = React.memo<BodyCellComponentProps>((props) => {
+  const prevPropsRef = useRef(props);
   const { designable } = useDesignable();
 
   if (props.columnHidden) {
@@ -602,7 +611,13 @@ const BodyCellComponent = React.memo<{
     );
   }
 
-  return <InternalBodyCellComponent {..._.omit(props, 'columnHidden')} />;
+  // Only re-render Cell when record changes, this improves Table refresh performance
+  if (prevPropsRef.current.record !== props.record) {
+    prevPropsRef.current = props;
+    return <InternalBodyCellComponent {..._.omit(props, 'columnHidden')} />;
+  }
+
+  return <InternalBodyCellComponent {..._.omit(prevPropsRef.current, 'columnHidden')} />;
 });
 
 BodyCellComponent.displayName = 'BodyCellComponent';
@@ -893,7 +908,7 @@ export const Table: any = withDynamicSchemaProps(
             </DndContext>
           );
         };
-      }, [value, field, onRowDragEnd]);
+      }, [field, onRowDragEnd]); // Don't put 'value' in dependencies, otherwise it will cause the performance issue
 
       // @ts-ignore
       BodyWrapperComponent.displayName = 'BodyWrapperComponent';

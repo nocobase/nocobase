@@ -35,6 +35,12 @@ import { PluginMobileClient } from '../index';
 import { MobileAppProvider } from './MobileAppContext';
 import { useStyles } from './styles';
 
+const openModeToComponent = {
+  page: MobileActionPage,
+  drawer: ActionDrawerUsedInMobile,
+  modal: Action.Modal,
+};
+
 export const Mobile = () => {
   useToAdaptFilterActionToMobile();
   useToAdaptActionDrawerToMobile();
@@ -94,11 +100,7 @@ export const Mobile = () => {
               defaultOpenMode="page"
               isMobile={true}
               hideOpenMode
-              openModeToComponent={{
-                page: MobileActionPage,
-                drawer: ActionDrawerUsedInMobile,
-                modal: Action.Modal,
-              }}
+              openModeToComponent={openModeToComponent}
             >
               <BlockTemplateProvider componentNamePrefix="mobile-">
                 <MobileAppProvider>

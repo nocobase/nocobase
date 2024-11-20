@@ -108,13 +108,19 @@ export async function requestParentRecordData({
 
 export const BlockRequestContextProvider: FC<{ recordRequest: UseRequestResult<any> }> = (props) => {
   const recordRequestRef = useRef<UseRequestResult<any>>(props.recordRequest);
+  const prevRequestDataRef = useRef<any>(props.recordRequest?.data);
+
+  // Only reassign values when props.recordRequest?.data changes to reduce unnecessary re-renders
+  if (!_.isEqual(prevRequestDataRef.current, props.recordRequest?.data)) {
+    prevRequestDataRef.current = props.recordRequest?.data;
+  }
 
   recordRequestRef.current = props.recordRequest;
 
   return (
     <BlockRequestRefContext.Provider value={recordRequestRef}>
       <BlockRequestLoadingContext.Provider value={props.recordRequest?.loading}>
-        <BlockRequestDataContext.Provider value={props.recordRequest?.data}>
+        <BlockRequestDataContext.Provider value={prevRequestDataRef.current}>
           {props.children}
         </BlockRequestDataContext.Provider>
       </BlockRequestLoadingContext.Provider>
