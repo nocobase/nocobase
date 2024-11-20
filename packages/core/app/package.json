@@ -1,18 +1,18 @@
 {
   "name": "@nocobase/app",
-  "version": "1.4.0-alpha.17",
+  "version": "1.5.0-alpha.2",
   "description": "",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/database": "1.4.0-alpha.17",
-    "@nocobase/preset-nocobase": "1.4.0-alpha.17",
-    "@nocobase/server": "1.4.0-alpha.17"
+    "@nocobase/database": "1.5.0-alpha.2",
+    "@nocobase/preset-nocobase": "1.5.0-alpha.2",
+    "@nocobase/server": "1.5.0-alpha.2"
   },
   "devDependencies": {
     "react-imported-component": "^6.5.4",
-    "@nocobase/client": "1.4.0-alpha.17"
+    "@nocobase/client": "1.5.0-alpha.2"
   },
   "repository": {
     "type": "git",
