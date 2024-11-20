@@ -20,12 +20,15 @@ export function createNocoBaseField<Decorator extends JSXComponent, Component ex
   const address = FormPath.parse(props.basePath).concat(props.name);
   const identifier = address.toString();
   if (!identifier) return;
-  if (!this.fields[identifier] || this.props.designable) {
+  if (!this.fields[identifier]) {
     batch(() => {
       new NocoBaseField(address, props, this, this.props.designable);
     });
     this.notify(LifeCycleTypes.ON_FORM_GRAPH_CHANGE);
   }
+
+  this.fields[identifier].value = props.value;
+
   return this.fields[identifier] as any;
 }
 
