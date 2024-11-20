@@ -19,20 +19,34 @@ on:
         description: 'Please enter the pr number of nocobase/nocobase repository'
         required: false
 jobs:
+  get-plugins:
+    uses: nocobase/nocobase/.github/workflows/get-plugins.yml@main
+    secrets: inherit
   build-and-push:
     runs-on: ubuntu-latest
+    needs: get-plugins
     services:
       verdaccio:
         image: verdaccio/verdaccio:latest
         ports:
           - 4873:4873
     steps:
+      - name: Get pro plugins
+        id: get-info
+        run: |
+          if [[ "${{ github.head_ref || github.ref_name }}" == "next" ]]; then
+            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.beta-plugins }}')" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.head_ref || github.ref_name }}" == "develop" ]]; then
+            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.alpha-plugins }}')" >> $GITHUB_OUTPUT
+          else
+            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.rc-plugins }}')" >> $GITHUB_OUTPUT
+          fi
       - uses: actions/create-github-app-token@v1
         id: app-token
         with:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
-          repositories: nocobase,pro-plugins,plugin-${{ inputs.pro_plugin }},${{ join(fromJSON(vars.NEXT_PRO_PLUGIN_REPOS), ',') }},${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ',') }}
+          repositories: nocobase,pro-plugins,plugin-${{ inputs.pro_plugin }},${{ join(fromJSON(steps.get-info.outputs.proRepos), ',') }}
           skip-token-revoke: true
       - name: Checkout nocobase/nocobase
         uses: actions/checkout@v4
@@ -100,7 +114,7 @@ jobs:
           trimmed_variable=$(echo "$subdirectories" | xargs)
           packageNames="@nocobase/${trimmed_variable// / @nocobase/}"
           pluginNames="${trimmed_variable//plugin-/}"
-          BEFORE_PACK_NOCOBASE="yarn add $packageNames -W"
+          BEFORE_PACK_NOCOBASE="yarn add $packageNames -W --production"
           APPEND_PRESET_LOCAL_PLUGINS="${pluginNames// /,}"
           echo "var1=$BEFORE_PACK_NOCOBASE" >> $GITHUB_OUTPUT
           echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT

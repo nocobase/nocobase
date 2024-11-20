@@ -230,7 +230,7 @@ export const ACLCollectionProvider = (props) => {
     actionPath = `${resoureName}:list`;
   }
   if (!actionPath) {
-    return props.children;
+    return <ACLActionParamsContext.Provider value={{}}>{props.children}</ACLActionParamsContext.Provider>;
   }
   const params = parseAction(actionPath, { schema });
   if (!params) {
