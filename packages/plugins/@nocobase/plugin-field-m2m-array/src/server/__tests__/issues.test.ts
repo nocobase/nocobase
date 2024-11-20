@@ -9,14 +9,14 @@
 
 import { MockDatabase, MockServer, createMockServer } from '@nocobase/test';
 
-describe('m2m array api, bigInt targetKey', () => {
+describe('issues', () => {
   let app: MockServer;
   let db: MockDatabase;
   let agent;
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['field-m2m-array', 'data-source-manager', 'data-source-main', 'error-handler'],
+      plugins: ['field-m2m-array', 'data-source-manager', 'data-source-main', 'error-handler', 'field-sort'],
     });
     db = app.db;
     agent = app.agent();
