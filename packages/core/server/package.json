@@ -17,6 +17,7 @@
         "@nocobase/data-source-manager": "1.5.0-alpha.2",
         "@nocobase/database": "1.5.0-alpha.2",
         "@nocobase/evaluators": "1.5.0-alpha.2",
+        "@nocobase/lock-manager": "1.5.0-alpha.2",
         "@nocobase/logger": "1.5.0-alpha.2",
         "@nocobase/resourcer": "1.5.0-alpha.2",
         "@nocobase/sdk": "1.5.0-alpha.2",
