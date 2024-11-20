@@ -14,7 +14,7 @@ import { css, cx } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { Schema, SchemaOptionsContext, observer, useField, useFieldSchema } from '@formily/react';
-import { action, raw } from '@formily/reactive';
+import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
 import { useCreation, useDeepCompareEffect, useMemoizedFn } from 'ahooks';
@@ -342,7 +342,7 @@ const TableIndex = (props) => {
 
 const pageSizeOptions = [5, 10, 20, 50, 100, 200];
 
-const usePaginationProps = (pagination1, pagination2) => {
+const usePaginationProps = (pagination1, pagination2, tableProps) => {
   const { t } = useTranslation();
   const field: any = useField();
   const { token } = useToken();
@@ -388,7 +388,7 @@ const usePaginationProps = (pagination1, pagination2) => {
         showSizeChanger: true,
         hideOnSinglePage: false,
         ...pagination,
-        total: field.value?.length < pageSize || !hasNext ? pageSize * current : pageSize * current + 1,
+        total: tableProps.value?.length < pageSize || !hasNext ? pageSize * current : pageSize * current + 1,
         className: css`
           .ant-pagination-simple-pager {
             display: none !important;
@@ -414,7 +414,7 @@ const usePaginationProps = (pagination1, pagination2) => {
         },
       };
     }
-  }, [pagination, t, showTotal, field.value?.length, showTotalResult]);
+  }, [pagination, t, showTotal, tableProps.value?.length, showTotalResult]);
 
   if (pagination2 === false) {
     return false;
@@ -422,7 +422,7 @@ const usePaginationProps = (pagination1, pagination2) => {
   if (!pagination2 && pagination1 === false) {
     return false;
   }
-  return field.value?.length > 0 || result.total ? result : false;
+  return tableProps.value?.length > 0 || result.total ? result : false;
 };
 
 const headerClass = css`
@@ -622,7 +622,7 @@ interface TableProps {
   required?: boolean;
   onExpand?: (flag: boolean, record: any) => void;
   isSubTable?: boolean;
-  defaultDataSource?: any[];
+  value?: any[];
 }
 
 const InternalNocoBaseTable = React.memo(
@@ -735,7 +735,7 @@ export const Table: any = withDynamicSchemaProps(
   withSkeletonComponent(
     observer((props: TableProps) => {
       const { token } = useToken();
-      const { pagination: pagination1, useProps, ...others1 } = omit(props, ['onBlur', 'onFocus', 'value']);
+      const { pagination: pagination1, useProps, ...others1 } = omit(props, ['onBlur', 'onFocus']);
 
       // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
       const { pagination: pagination2, ...others2 } = useProps?.() || {};
@@ -751,7 +751,7 @@ export const Table: any = withDynamicSchemaProps(
         onExpand,
         loading,
         onClickRow,
-        defaultDataSource,
+        value,
         ...others
       } = { ...others1, ...others2 } as any;
       const field = useArrayField(others);
@@ -762,7 +762,7 @@ export const Table: any = withDynamicSchemaProps(
       const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();
       const { expandFlag, allIncludesChildren } = ctx;
       const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
-      const paginationProps = usePaginationProps(pagination1, pagination2);
+      const paginationProps = usePaginationProps(pagination1, pagination2, props);
       const columns = useTableColumns(others, paginationProps);
       const [expandedKeys, setExpandesKeys] = useState(() => (expandFlag ? allIncludesChildren : []));
       const [selectedRowKeys, setSelectedRowKeys] = useState<any[]>(field?.data?.selectedRowKeys || []);
@@ -861,15 +861,11 @@ export const Table: any = withDynamicSchemaProps(
       );
 
       const dataSource = useMemo(() => {
-        if (_.isEmpty(field?.value) || _.isEqual(raw(field?.value), defaultDataSource)) {
-          return defaultDataSource || [];
-        }
+        const result = Array.isArray(value) ? value : [];
+        return result.filter(Boolean);
 
-        const value = Array.isArray(field?.value) ? field.value : [];
-        return value.filter(Boolean);
-
-        // If we don't depend on "field?.value?.length", it will cause no response when clicking "Add new" in the SubTable
-      }, [field?.value, field?.value?.length, defaultDataSource]);
+        // If we don't depend on "value?.length", it will cause no response when clicking "Add new" in the SubTable
+      }, [value, value?.length]);
 
       const BodyWrapperComponent = useMemo(() => {
         return (props) => {
@@ -880,8 +876,8 @@ export const Table: any = withDynamicSchemaProps(
             }
             const fromIndex = e.active?.data.current?.sortable?.index;
             const toIndex = e.over?.data.current?.sortable?.index;
-            const from = field.value[fromIndex] || e.active;
-            const to = field.value[toIndex] || e.over;
+            const from = value?.[fromIndex] || e.active;
+            const to = value?.[toIndex] || e.over;
             void field.move(fromIndex, toIndex);
             onRowDragEnd({ from, to });
           }, []);
@@ -892,7 +888,7 @@ export const Table: any = withDynamicSchemaProps(
             </DndContext>
           );
         };
-      }, [field, onRowDragEnd]);
+      }, [value, field, onRowDragEnd]);
 
       // @ts-ignore
       BodyWrapperComponent.displayName = 'BodyWrapperComponent';
@@ -996,13 +992,13 @@ export const Table: any = withDynamicSchemaProps(
             ? React.createElement<Omit<SortableContextProps, 'children'>>(
                 SortableContext,
                 {
-                  items: field.value?.map?.(getRowKey) || [],
+                  items: value?.map?.(getRowKey) || [],
                 },
                 children,
               )
             : React.createElement(React.Fragment, {}, children);
         },
-        [field, dragSort, getRowKey],
+        [value, dragSort, getRowKey],
       );
 
       const { height: tableHeight, tableSizeRefCallback } = useTableSize();

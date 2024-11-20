@@ -29,7 +29,6 @@ export const ActionContextProvider: React.FC<ActionContextProps & { value?: Acti
     useEffect(() => {
       if (visible === false && service && !service.loading && (submitted || isSubPageClosedByPageMenu)) {
         service.refresh();
-        service.loading = true;
         setParentSubmitted?.(true); //传递给上一层
       }
 

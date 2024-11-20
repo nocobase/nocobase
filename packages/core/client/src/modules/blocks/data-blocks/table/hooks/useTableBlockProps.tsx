@@ -10,14 +10,7 @@
 import { ArrayField } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { isEqual } from 'lodash';
-import {
-  // @ts-ignore
-  startTransition,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-} from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTableBlockContextBasicValue } from '../../../../../block-provider/TableBlockProvider';
 import { findFilterTargets } from '../../../../../block-provider/hooks';
 import { useDataBlockRequest } from '../../../../../data-source/data-block/DataBlockRequestProvider';
@@ -32,7 +25,6 @@ export const useTableBlockProps = () => {
   const resource = useDataBlockResource();
   const service = useDataBlockRequest() as any;
   const { getDataBlocks } = useFilterBlock();
-  const isLoading = service?.loading;
   const tableBlockContextBasicValue = useTableBlockContextBasicValue();
 
   const ctxRef = useRef(null);
@@ -47,28 +39,26 @@ export const useTableBlockProps = () => {
     [meta?.count, meta?.page, meta?.pageSize],
   );
 
+  const data = service?.data?.data || [];
+
   useEffect(() => {
-    if (!isLoading) {
-      const serviceResponse = service?.data;
-      const data = serviceResponse?.data || [];
+    if (!service?.loading) {
       const selectedRowKeys = tableBlockContextBasicValue.field?.data?.selectedRowKeys;
 
-      startTransition(() => {
-        if (!isEqual(field.value, data)) {
-          field.value = data;
-          field?.setInitialValue(data);
-        }
-        field.data = field.data || {};
+      // if (!isEqual(field.value, data)) {
+      //   field.value = data;
+      //   field?.setInitialValue(data);
+      // }
+      field.data = field.data || {};
 
-        if (!isEqual(field.data.selectedRowKeys, selectedRowKeys)) {
-          field.data.selectedRowKeys = selectedRowKeys;
-        }
-      });
+      if (!isEqual(field.data.selectedRowKeys, selectedRowKeys)) {
+        field.data.selectedRowKeys = selectedRowKeys;
+      }
     }
-  }, [field, service?.data, isLoading, tableBlockContextBasicValue.field?.data?.selectedRowKeys]);
+  }, [field, service?.data, service?.loading, tableBlockContextBasicValue.field?.data?.selectedRowKeys]);
 
   return {
-    defaultDataSource: service?.data?.data || [],
+    value: data,
     childrenColumnName: tableBlockContextBasicValue.childrenColumnName,
     loading: service?.loading,
     showIndex: tableBlockContextBasicValue.showIndex,
