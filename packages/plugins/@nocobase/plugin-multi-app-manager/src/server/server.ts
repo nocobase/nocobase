@@ -13,7 +13,10 @@ import lodash from 'lodash';
 import path from 'path';
 import { ApplicationModel } from '../server';
 
-export type AppDbCreator = (app: Application, options?: Transactionable & { context?: any }) => Promise<void>;
+export type AppDbCreator = (
+  app: Application,
+  options?: Transactionable & { context?: any; applicationModel?: ApplicationModel },
+) => Promise<void>;
 export type AppOptionsFactory = (appName: string, mainApp: Application) => any;
 export type SubAppUpgradeHandler = (mainApp: Application) => Promise<void>;
 
@@ -61,7 +64,7 @@ const defaultSubAppUpgradeHandle: SubAppUpgradeHandler = async (mainApp: Applica
 
 const defaultDbCreator = async (app: Application) => {
   const databaseOptions = app.options.database as any;
-  const { host, port, username, password, dialect, database } = databaseOptions;
+  const { host, port, username, password, dialect, database, schema } = databaseOptions;
 
   if (dialect === 'mysql') {
     const mysql = require('mysql2/promise');
@@ -77,7 +80,7 @@ const defaultDbCreator = async (app: Application) => {
     await connection.end();
   }
 
-  if (dialect === 'postgres') {
+  if (['postgres', 'kingbase'].includes(dialect)) {
     const { Client } = require('pg');
 
     const client = new Client({
@@ -85,13 +88,17 @@ const defaultDbCreator = async (app: Application) => {
       port,
       user: username,
       password,
-      database: 'postgres',
+      database: dialect,
     });
 
     await client.connect();
 
     try {
-      await client.query(`CREATE DATABASE "${database}"`);
+      if (process.env.USE_DB_SCHEMA_IN_SUBAPP === 'true') {
+        await client.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
+      } else {
+        await client.query(`CREATE DATABASE "${database}"`);
+      }
     } catch (e) {
       console.log(e);
     }
@@ -109,6 +116,11 @@ const defaultAppOptionsFactory = (appName: string, mainApp: Application) => {
       const mainStorageDir = path.dirname(mainAppStorage);
       rawDatabaseOptions.storage = path.join(mainStorageDir, `${appName}.sqlite`);
     }
+  } else if (
+    process.env.USE_DB_SCHEMA_IN_SUBAPP === 'true' &&
+    ['postgres', 'kingbase'].includes(rawDatabaseOptions.dialect)
+  ) {
+    rawDatabaseOptions.schema = appName;
   } else {
     rawDatabaseOptions.database = appName;
   }
@@ -219,13 +231,18 @@ export class PluginMultiAppManagerServer extends Plugin {
           });
         });
 
-        // create database
-        await this.appDbCreator(subApp, {
-          transaction,
-          context: options.context,
-        });
+        const quickstart = async () => {
+          // create database
+          await this.appDbCreator(subApp, {
+            transaction,
+            applicationModel: model,
+            context: options.context,
+          });
 
-        const startPromise = subApp.runCommand('start', '--quickstart');
+          await subApp.runCommand('start', '--quickstart');
+        };
+
+        const startPromise = quickstart();
 
         if (options?.context?.waitSubAppInstall) {
           await startPromise;
