@@ -5,6 +5,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.51](https://github.com/nocobase/nocobase/compare/v1.3.50-beta...v1.3.51) - 2024-11-19
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fix  field permission check not affected by association field context ([#5672](https://github.com/nocobase/nocobase/pull/5672)) by @katherinehhh
+
+  - Fix linkage rule saving empty value changes to static empty value ([#5667](https://github.com/nocobase/nocobase/pull/5667)) by @katherinehhh
+
+- **[Collection field: Many to many (array)]** Fix the issue where retrieving records in an association collection with many to many (array) fields causes an error ([#5661](https://github.com/nocobase/nocobase/pull/5661)) by @2013xile
+
+- **[Block: Gantt]** Fix gantt block template incorrectly calls the calendar block when adding ([#5673](https://github.com/nocobase/nocobase/pull/5673)) by @katherinehhh
+
+- **[Data visualization]** Fix the issue where data transformations do not work on tooltip in dual-axes charts ([#5649](https://github.com/nocobase/nocobase/pull/5649)) by @2013xile
+
+## [v1.3.50-beta](https://github.com/nocobase/nocobase/compare/v1.3.49-beta...v1.3.50-beta) - 2024-11-14
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix issue preventing linkage rule title from being cleared during editing ([#5644](https://github.com/nocobase/nocobase/pull/5644)) by @katherinehhh
+
+- **[Comments]** Fix data scope setting not working in comment block by @katherinehhh
+
+## [v1.3.49-beta](https://github.com/nocobase/nocobase/compare/v1.3.48-beta...v1.3.49-beta) - 2024-11-13
+
+### 🚀 Improvements
+
+- **[client]** support one-to-one and many-to-many (array) field to use file collection ([#5637](https://github.com/nocobase/nocobase/pull/5637)) by @mytharcher
+
+- **[evaluators]** use Formula.js as default evaluator in calculation node ([#5626](https://github.com/nocobase/nocobase/pull/5626)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix  reset issue that reverts filter button title to default ([#5635](https://github.com/nocobase/nocobase/pull/5635)) by @katherinehhh
+
+- **[Action: Import records]** Fixed the issue that many-to-many relationship data cannot be imported through the id field ([#5623](https://github.com/nocobase/nocobase/pull/5623)) by @chareice
+
+## [v1.3.48-beta](https://github.com/nocobase/nocobase/compare/v1.3.47-beta...v1.3.48-beta) - 2024-11-11
+
+### 🚀 Improvements
+
+- **[client]** support hiding menu items ([#5624](https://github.com/nocobase/nocobase/pull/5624)) by @chenos
+
+- **[server]** add  DB_SQL_BENCHMARK  environment variable ([#5615](https://github.com/nocobase/nocobase/pull/5615)) by @chareice
+
+### 🐛 Bug Fixes
+
+- **[client]** support file collection as target of one-to-many association ([#5619](https://github.com/nocobase/nocobase/pull/5619)) by @mytharcher
+
+- **[Action: Import records]** Fixed the issue that many-to-many relationship data cannot be imported through the id field ([#5623](https://github.com/nocobase/nocobase/pull/5623)) by @chareice
+
 ## [v1.3.47-beta](https://github.com/nocobase/nocobase/compare/v1.3.46-beta...v1.3.47-beta) - 2024-11-08
 
 ### 🚀 Improvements

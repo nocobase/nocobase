@@ -528,14 +528,16 @@ const menuItemTitleStyle = {
 Menu.Item = observer(
   (props) => {
     const { t } = useMenuTranslation();
+    const { designable } = useDesignable();
     const { pushMenuItem } = useCollectMenuItems();
-    const { icon, children, ...others } = props;
+    const { icon, children, hidden, ...others } = props;
     const schema = useFieldSchema();
     const field = useField();
     const Designer = useContext(MenuItemDesignerContext);
     const item = useMemo(() => {
       return {
         ...others,
+        hidden: designable ? false : hidden,
         className: menuItemClass,
         key: schema.name,
         eventKey: schema.name,
@@ -620,7 +622,8 @@ const MenuURLButton = ({ href, params, icon }) => {
 Menu.URL = observer(
   (props) => {
     const { pushMenuItem } = useCollectMenuItems();
-    const { icon, children, ...others } = props;
+    const { designable } = useDesignable();
+    const { icon, children, hidden, ...others } = props;
     const schema = useFieldSchema();
     const field = useField();
     const Designer = useContext(MenuItemDesignerContext);
@@ -633,6 +636,7 @@ Menu.URL = observer(
     const item = useMemo(() => {
       return {
         ...others,
+        hidden: designable ? false : hidden,
         className: menuItemClass,
         key: schema.name,
         eventKey: schema.name,
@@ -646,7 +650,7 @@ Menu.URL = observer(
           </SchemaContext.Provider>
         ),
       };
-    }, [field.title, icon, props.href, schema, JSON.stringify(props.params)]);
+    }, [field.title, designable, hidden, icon, props.href, schema, JSON.stringify(props.params)]);
 
     pushMenuItem(item);
     return null;
@@ -657,9 +661,10 @@ Menu.URL = observer(
 Menu.SubMenu = observer(
   (props) => {
     const { t } = useMenuTranslation();
+    const { designable } = useDesignable();
     const { Component, getMenuItems } = useMenuItem();
     const { pushMenuItem } = useCollectMenuItems();
-    const { icon, children, ...others } = props;
+    const { icon, children, hidden, ...others } = props;
     const schema = useFieldSchema();
     const field = useField();
     const mode = useContext(MenuModeContext);
@@ -667,6 +672,7 @@ Menu.SubMenu = observer(
     const submenu = useMemo(() => {
       return {
         ...others,
+        hidden: designable ? false : hidden,
         className: menuItemClass,
         key: schema.name,
         eventKey: schema.name,

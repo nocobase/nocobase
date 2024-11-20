@@ -56,8 +56,9 @@ export function SaveMode() {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { name } = useCollection_deprecated();
-  const { getEnableFieldTree, getOnLoadData } = useCollectionState(name);
-
+  const { getEnableFieldTree, getOnLoadData } = useCollectionState(name, false, (field) => {
+    return ['belongsTo', 'belongsToMany', 'hasOne', 'hasMany'].includes(field.type);
+  });
   return (
     <SchemaSettingsModalItem
       title={t('Save mode')}
@@ -71,7 +72,6 @@ export function SaveMode() {
             saveMode: {
               'x-decorator': 'FormItem',
               'x-component': 'Radio.Group',
-              // title: t('Save mode'),
               default: field.componentProps.saveMode || 'create',
               enum: [
                 { value: 'create', label: '{{t("Insert")}}' },

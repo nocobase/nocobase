@@ -17,6 +17,7 @@ import { libInjectCss } from 'vite-plugin-lib-inject-css';
 
 import { globExcludeFiles } from './constant';
 import { PkgLog, UserConfig, getEnvDefine } from './utils';
+import { rspack } from '@rspack/core';
 
 export async function buildClient(cwd: string, userConfig: UserConfig, sourcemap: boolean = false, log: PkgLog) {
   log('build client');
@@ -29,7 +30,7 @@ export async function buildClient(cwd: string, userConfig: UserConfig, sourcemap
     return true;
   };
   await buildClientEsm(cwd, userConfig, sourcemap, external, log);
-  await buildClientLib(cwd, userConfig, sourcemap, external, log);
+  // await buildClientLib(cwd, userConfig, sourcemap, external, log);
   await buildLocale(cwd, userConfig, log);
 }
 
@@ -39,31 +40,170 @@ function buildClientEsm(cwd: string, userConfig: UserConfig, sourcemap: boolean,
   log('build client esm');
   const entry = path.join(cwd, 'src/index.ts').replaceAll(/\\/g, '/');
   const outDir = path.resolve(cwd, 'es');
-  return viteBuild(
-    userConfig.modifyViteConfig({
-      mode: process.env.NODE_ENV || 'production',
-      define: getEnvDefine(),
-      build: {
-        minify: process.env.NODE_ENV === 'production',
-        outDir,
-        cssCodeSplit: true,
-        emptyOutDir: true,
-        sourcemap,
-        lib: {
-          entry,
-          formats: ['es'],
-          fileName: 'index',
-        },
-        target: ['es2015', 'edge88', 'firefox78', 'chrome87', 'safari14'],
-        rollupOptions: {
-          cache: true,
-          treeshake: true,
-          external,
-        },
+
+  return rspack({
+    entry: {
+      index: entry,
+    },
+    output: {
+      path: outDir,
+      library: {
+        type: 'module',
       },
-      plugins: [react(), libInjectCss()],
-    }),
-  );
+      clean: true,
+    },
+    target: ['es2015', 'web'],
+    mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
+    optimization: {
+      minimize: process.env.NODE_ENV === 'production',
+      moduleIds: 'deterministic',
+      sideEffects: true,
+    },
+    resolve: {
+      tsConfig: path.join(process.cwd(), 'tsconfig.json'),
+      extensions: ['.js', '.jsx', '.ts', '.tsx', '.json', '.less', '.css'],
+    },
+    module: {
+      rules: [
+        {
+          test: /\.less$/,
+          use: [
+            { loader: 'style-loader' },
+            { loader: 'css-loader' },
+            { loader: require.resolve('less-loader') },
+            {
+              loader: 'postcss-loader',
+              options: {
+                postcssOptions: {
+                  plugins: {
+                    'postcss-preset-env': {
+                      browsers: ['last 2 versions', '> 1%', 'cover 99.5%', 'not dead'],
+                    },
+                    autoprefixer: {},
+                  },
+                },
+              },
+            },
+          ],
+          type: 'javascript/auto',
+        },
+        {
+          test: /\.css$/,
+          use: [
+            'style-loader',
+            'css-loader',
+            {
+              loader: 'postcss-loader',
+              options: {
+                postcssOptions: {
+                  plugins: {
+                    'postcss-preset-env': {
+                      browsers: ['last 2 versions', '> 1%', 'cover 99.5%', 'not dead'],
+                    },
+                    autoprefixer: {},
+                  },
+                },
+              },
+            },
+          ],
+          type: 'javascript/auto',
+        },
+        {
+          test: /\.(png|jpe?g|gif)$/i,
+          type: 'asset',
+        },
+        {
+          test: /\.svg$/i,
+          issuer: /\.[jt]sx?$/,
+          use: ['@svgr/webpack'],
+        },
+        {
+          test: /\.jsx$/,
+          exclude: /[\\/]node_modules[\\/]/,
+          loader: 'builtin:swc-loader',
+          options: {
+            sourceMap: true,
+            jsc: {
+              parser: {
+                syntax: 'ecmascript',
+                jsx: true,
+              },
+              target: 'es5',
+            },
+          },
+        },
+        {
+          test: /\.tsx$/,
+          exclude: /[\\/]node_modules[\\/]/,
+          loader: 'builtin:swc-loader',
+          options: {
+            sourceMap: true,
+            jsc: {
+              parser: {
+                syntax: 'typescript',
+                tsx: true,
+              },
+              target: 'es5',
+            },
+          },
+        },
+        {
+          test: /\.ts$/,
+          exclude: /[\\/]node_modules[\\/]/,
+          loader: 'builtin:swc-loader',
+          options: {
+            sourceMap: true,
+            jsc: {
+              parser: {
+                syntax: 'typescript',
+              },
+              target: 'es5',
+            },
+          },
+        },
+      ],
+    },
+    externals: [
+      function ({ request }, callback) {
+        if (external(request)) {
+          return callback(null, true);
+        }
+        callback();
+      }
+    ],
+    plugins: [
+      new rspack.DefinePlugin(getEnvDefine()),
+    ],
+    stats: 'errors-warnings',
+  });
+
+  // const entry = path.join(cwd, 'src/index.ts').replaceAll(/\\/g, '/');
+  // const outDir = path.resolve(cwd, 'es');
+  // return viteBuild(
+  //   userConfig.modifyViteConfig({
+  //     mode: process.env.NODE_ENV || 'production',
+  //     define: getEnvDefine(),
+  //     build: {
+  //       minify: process.env.NODE_ENV === 'production',
+  //       outDir,
+  //       cssCodeSplit: true,
+  //       emptyOutDir: true,
+  //       sourcemap,
+  //       lib: {
+  //         entry,
+  //         formats: ['es'],
+  //         fileName: 'index',
+  //       },
+  //       target: ['es2015', 'edge88', 'firefox78', 'chrome87', 'safari14'],
+  //       rollupOptions: {
+  //         cache: true,
+  //         treeshake: true,
+  //         external,
+  //       },
+  //     },
+  //     plugins: [react(), libInjectCss()],
+  //   }),
+  // );
 }
 
 async function buildClientLib(

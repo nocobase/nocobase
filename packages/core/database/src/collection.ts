@@ -175,6 +175,10 @@ export class Collection<
     const targetKey = this.options?.filterTargetKey;
 
     if (Array.isArray(targetKey)) {
+      if (targetKey.length === 1) {
+        return targetKey[0];
+      }
+
       return targetKey;
     }
 
@@ -363,6 +367,10 @@ export class Collection<
 
   getField<F extends Field>(name: string): F {
     return this.fields.get(name);
+  }
+
+  getFieldByField(field: string): Field {
+    return this.findField((f) => f.options.field === field);
   }
 
   getFields() {

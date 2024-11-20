@@ -99,7 +99,7 @@ export const AssociationFieldProvider = observer(
 
     return collectionField ? (
       <AssociationFieldContext.Provider
-        value={{ options: collectionField, field, allowMultiple, allowDissociate, currentMode }}
+        value={{ options: collectionField, field, fieldSchema, allowMultiple, allowDissociate, currentMode }}
       >
         {props.children}
       </AssociationFieldContext.Provider>

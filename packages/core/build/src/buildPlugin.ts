@@ -16,9 +16,10 @@ import path from 'path';
 import { build as tsupBuild } from 'tsup';
 import { build as viteBuild } from 'vite';
 import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
+import { rspack } from '@rspack/core';
 
 import { EsbuildSupportExts, globExcludeFiles } from './constant';
-import { PkgLog, UserConfig, getEnvDefine, getPackageJson } from './utils';
+import { PkgLog, UserConfig, getPackageJson } from './utils';
 import {
   buildCheck,
   checkFileSize,
@@ -130,6 +131,7 @@ const external = [
   'ahooks',
   'lodash',
   'china-division',
+  'file-saver',
 ];
 const pluginPrefix = (
   process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-'
@@ -158,7 +160,9 @@ export function deleteServerFiles(cwd: string, log: PkgLog) {
 
 export function writeExternalPackageVersion(cwd: string, log: PkgLog) {
   log('write external version');
-  const sourceFiles = fg.globSync(sourceGlobalFiles, { cwd, absolute: true }).map((item) => fs.readFileSync(item, 'utf-8'));
+  const sourceFiles = fg
+    .globSync(sourceGlobalFiles, { cwd, absolute: true })
+    .map((item) => fs.readFileSync(item, 'utf-8'));
   const sourcePackages = getSourcePackages(sourceFiles);
   const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix);
   const data = excludePackages.reduce<Record<string, string>>((prev, packageName) => {
@@ -174,7 +178,9 @@ export function writeExternalPackageVersion(cwd: string, log: PkgLog) {
 export async function buildServerDeps(cwd: string, serverFiles: string[], log: PkgLog) {
   log('build plugin server dependencies');
   const outDir = path.join(cwd, target_dir, 'node_modules');
-  const serverFileSource = serverFiles.filter(item => validExts.includes(path.extname(item))).map((item) => fs.readFileSync(item, 'utf-8'));
+  const serverFileSource = serverFiles
+    .filter((item) => validExts.includes(path.extname(item)))
+    .map((item) => fs.readFileSync(item, 'utf-8'));
   const sourcePackages = getSourcePackages(serverFileSource);
   const includePackages = getIncludePackages(sourcePackages, external, pluginPrefix);
   const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix);
@@ -190,7 +196,9 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: P
   if (excludePackages.length) {
     tips.push(`These packages ${chalk.yellow(excludePackages.join(', '))} will be ${chalk.italic('exclude')}.`);
   }
-  tips.push(`For more information, please refer to: ${chalk.blue('https://docs.nocobase.com/development/deps')}.`);
+  tips.push(
+    `For more information, please refer to: ${chalk.blue('https://docs.nocobase.com/development/others/deps')}.`,
+  );
   log(tips.join(' '));
 
   if (!includePackages.length) return;
@@ -268,30 +276,34 @@ export async function buildPluginServer(cwd: string, userConfig: UserConfig, sou
   const packageJson = getPackageJson(cwd);
   const serverFiles = fg.globSync(serverGlobalFiles, { cwd, absolute: true });
   buildCheck({ cwd, packageJson, entry: 'server', files: serverFiles, log });
-  const otherExts = Array.from(new Set(serverFiles.map((item) => path.extname(item)).filter((item) => !EsbuildSupportExts.includes(item))));
+  const otherExts = Array.from(
+    new Set(serverFiles.map((item) => path.extname(item)).filter((item) => !EsbuildSupportExts.includes(item))),
+  );
   if (otherExts.length) {
     log('%s will not be processed, only be copied to the dist directory.', chalk.yellow(otherExts.join(',')));
   }
 
   deleteServerFiles(cwd, log);
 
-  await tsupBuild(userConfig.modifyTsupConfig({
-    entry: serverFiles,
-    splitting: false,
-    clean: false,
-    bundle: false,
-    silent: true,
-    treeshake: false,
-    target: 'node16',
-    sourcemap,
-    outDir: path.join(cwd, target_dir),
-    format: 'cjs',
-    skipNodeModulesBundle: true,
-    loader: {
-      ...otherExts.reduce((prev, cur) => ({ ...prev, [cur]: 'copy' }), {}),
-      '.json': 'copy',
-    },
-  }));
+  await tsupBuild(
+    userConfig.modifyTsupConfig({
+      entry: serverFiles,
+      splitting: false,
+      clean: false,
+      bundle: false,
+      silent: true,
+      treeshake: false,
+      target: 'node16',
+      sourcemap,
+      outDir: path.join(cwd, target_dir),
+      format: 'cjs',
+      skipNodeModulesBundle: true,
+      loader: {
+        ...otherExts.reduce((prev, cur) => ({ ...prev, [cur]: 'copy' }), {}),
+        '.json': 'copy',
+      },
+    }),
+  );
 
   await buildServerDeps(cwd, serverFiles, log);
 }
@@ -310,52 +322,205 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
 
   const globals = excludePackages.reduce<Record<string, string>>((prev, curr) => {
     if (curr.startsWith('@nocobase')) {
-      prev[`${curr}/client`] = curr;
+      prev[`${curr}/client`] = `${curr}/client`;
     }
     prev[curr] = curr;
     return prev;
   }, {});
 
-  const entry = fg.globSync('src/client/index.{ts,tsx,js,jsx}', { absolute: true, cwd });
+  const entry = fg.globSync('index.{ts,tsx,js,jsx}', { absolute: false, cwd: path.join(cwd, 'src/client') });
   const outputFileName = 'index.js';
-
-  await viteBuild(userConfig.modifyViteConfig({
-    mode: process.env.NODE_ENV || 'production',
-    define: getEnvDefine(),
-    logLevel: 'warn',
-    build: {
-      minify: process.env.NODE_ENV === 'production',
-      outDir,
-      cssCodeSplit: false,
-      emptyOutDir: true,
-      sourcemap,
-      lib: {
-        entry,
-        formats: ['umd'],
+  const compiler = rspack({
+    mode: 'production',
+    // mode: "development",
+    context: cwd,
+    entry: './src/client/' + entry[0],
+    target: ['web', 'es5'],
+    output: {
+      path: outDir,
+      filename: outputFileName,
+      publicPath: `/static/plugins/${packageJson.name}/dist/client/`,
+      clean: true,
+      library: {
         name: packageJson.name,
-        fileName: () => outputFileName,
-      },
-      target: ['es2015', 'edge88', 'firefox78', 'chrome87', 'safari14'],
-      rollupOptions: {
-        cache: true,
-        external: [...Object.keys(globals), 'react', 'react/jsx-runtime'],
-        output: {
-          exports: 'named',
-          globals: {
-            react: 'React',
-            'react/jsx-runtime': 'jsxRuntime',
-            ...globals,
-          },
-        },
+        type: 'umd',
+        umdNamedDefine: true,
       },
     },
+    resolve: {
+      tsConfig: path.join(process.cwd(), 'tsconfig.json'),
+      extensions: ['.js', '.jsx', '.ts', '.tsx', '.json', '.less', '.css'],
+    },
+    module: {
+      rules: [
+        {
+          test: /\.less$/,
+          use: [
+            { loader: 'style-loader' },
+            { loader: 'css-loader' },
+            { loader: require.resolve('less-loader') },
+            {
+              loader: 'postcss-loader',
+              options: {
+                postcssOptions: {
+                  plugins: {
+                    'postcss-preset-env': {
+                      browsers: ['last 2 versions', '> 1%', 'cover 99.5%', 'not dead'],
+                    },
+                    autoprefixer: {},
+                  },
+                },
+              },
+            },
+          ],
+          type: 'javascript/auto',
+        },
+        {
+          test: /\.css$/,
+          use: [
+            'style-loader',
+            'css-loader',
+            {
+              loader: 'postcss-loader',
+              options: {
+                postcssOptions: {
+                  plugins: {
+                    'postcss-preset-env': {
+                      browsers: ['last 2 versions', '> 1%', 'cover 99.5%', 'not dead'],
+                    },
+                    autoprefixer: {},
+                  },
+                },
+              },
+            },
+          ],
+          type: 'javascript/auto',
+        },
+        {
+          test: /\.(png|jpe?g|gif)$/i,
+          type: 'asset',
+        },
+        {
+          test: /\.svg$/i,
+          issuer: /\.[jt]sx?$/,
+          use: ['@svgr/webpack'],
+        },
+        {
+          test: /\.jsx$/,
+          exclude: /[\\/]node_modules[\\/]/,
+          loader: 'builtin:swc-loader',
+          options: {
+            sourceMap: true,
+            jsc: {
+              parser: {
+                syntax: 'ecmascript',
+                jsx: true,
+              },
+              target: 'es5',
+            },
+          },
+        },
+        {
+          test: /\.tsx$/,
+          exclude: /[\\/]node_modules[\\/]/,
+          loader: 'builtin:swc-loader',
+          options: {
+            sourceMap: true,
+            jsc: {
+              parser: {
+                syntax: 'typescript',
+                tsx: true,
+              },
+              target: 'es5',
+            },
+          },
+        },
+        {
+          test: /\.ts$/,
+          exclude: /[\\/]node_modules[\\/]/,
+          loader: 'builtin:swc-loader',
+          options: {
+            sourceMap: true,
+            jsc: {
+              parser: {
+                syntax: 'typescript',
+              },
+              target: 'es5',
+            },
+          },
+        },
+      ],
+    },
     plugins: [
-      react(),
-      cssInjectedByJsPlugin({ styleId: packageJson.name }),
+      new rspack.DefinePlugin({
+        'process.env.NODE_ENV': JSON.stringify('production'),
+      }),
     ],
-  }));
+    node: {
+      global: true,
+    },
+    externals: {
+      react: 'React',
+      lodash: 'lodash',
+      // 'react/jsx-runtime': 'jsxRuntime',
+      ...globals,
+    },
+    stats: 'errors-warnings',
+  });
 
-  checkFileSize(outDir, log);
+  return new Promise((resolve, reject) => {
+    compiler.run((err, stats) => {
+      const compilationErrors = stats?.compilation.errors;
+      const infos = stats.toString({
+        colors: true,
+      });
+      if (err || compilationErrors?.length) {
+        reject(err || infos);
+        return;
+      }
+      console.log(infos);
+      resolve(null);
+    });
+  });
+  // await viteBuild(userConfig.modifyViteConfig({
+  //   mode: 'production',
+  //   define: {
+  //     'process.env.NODE_ENV': JSON.stringify('production'),
+  //   },
+  //   logLevel: 'warn',
+  //   build: {
+  //     minify: true,
+  //     outDir,
+  //     cssCodeSplit: false,
+  //     emptyOutDir: true,
+  //     sourcemap,
+  //     lib: {
+  //       entry,
+  //       formats: ['umd'],
+  //       name: packageJson.name,
+  //       fileName: () => outputFileName,
+  //     },
+  //     target: ['es2015', 'edge88', 'firefox78', 'chrome87', 'safari14'],
+  //     rollupOptions: {
+  //       cache: true,
+  //       external: [...Object.keys(globals), 'react', 'react/jsx-runtime'],
+  //       output: {
+  //         exports: 'named',
+  //         globals: {
+  //           react: 'React',
+  //           'react/jsx-runtime': 'jsxRuntime',
+  //           ...globals,
+  //         },
+  //       },
+  //     },
+  //   },
+  //   plugins: [
+  //     react(),
+  //     cssInjectedByJsPlugin({ styleId: packageJson.name }),
+  //   ],
+  // }));
+
+  // checkFileSize(outDir, log);
 }
 
 export async function buildPlugin(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {

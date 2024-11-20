@@ -11,7 +11,6 @@ import { Context, utils as actionUtils } from '@nocobase/actions';
 import { Cache } from '@nocobase/cache';
 import { Collection, RelationField, Transaction } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
-import { Mutex } from 'async-mutex';
 import lodash from 'lodash';
 import { resolve } from 'path';
 import { availableActionResource } from './actions/available-actions';
@@ -44,6 +43,26 @@ export class PluginACLServer extends Plugin {
       role,
       resourceName: resource.get('name') as string,
     });
+  }
+
+  async handleSyncMessage(message) {
+    const { type } = message;
+    if (type === 'syncRole') {
+      const { roleName } = message;
+      const role = await this.app.db.getRepository('roles').findOne({
+        filter: {
+          name: roleName,
+        },
+      });
+
+      await this.writeRoleToACL(role, {
+        withOutResources: true,
+      });
+
+      await this.app.emitAsync('acl:writeResources', {
+        roleName: role.get('name'),
+      });
+    }
   }
 
   async writeRolesToACL(options) {
@@ -214,6 +233,16 @@ export class PluginACLServer extends Plugin {
           transaction,
         });
       }
+
+      this.sendSyncMessage(
+        {
+          type: 'syncRole',
+          roleName: model.get('name'),
+        },
+        {
+          transaction: options.transaction,
+        },
+      );
     });
 
     this.app.db.on('roles.afterDestroy', (model) => {
@@ -275,10 +304,9 @@ export class PluginACLServer extends Plugin {
       }
     });
 
-    const mutex = new Mutex();
-
     this.app.db.on('fields.afterDestroy', async (model, options) => {
-      await mutex.runExclusive(async () => {
+      const lockKey = `${this.name}:fields.afterDestroy:${model.get('collectionName')}:${model.get('name')}`;
+      await this.app.lockManager.runExclusive(lockKey, async () => {
         const collectionName = model.get('collectionName');
         const fieldName = model.get('name');
 

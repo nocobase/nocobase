@@ -13,7 +13,7 @@ import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sor
 import { css, cx } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
-import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
+import { RecursionField, Schema, SchemaOptionsContext, observer, useField, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
@@ -30,6 +30,7 @@ import {
   RecordProvider,
   useCollection,
   useCollectionParentRecordData,
+  useDataBlockProps,
   useDataBlockRequest,
   useFlag,
   useSchemaInitializerRender,
@@ -41,7 +42,7 @@ import { isNewRecord } from '../../../data-source/collection-record/isNewRecord'
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useSatisfiedActionValues } from '../../../schema-settings/LinkageRules/useActionValues';
 import { useToken } from '../__builtins__';
-import { SubFormProvider } from '../association-field/hooks';
+import { SubFormProvider, useAssociationFieldContext } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 
@@ -129,7 +130,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
           sorter: s['x-component-props']?.['sorter'],
           columnHidden,
           ...s['x-component-props'],
-          width: columnHidden && !designable ? 0 : s['x-component-props']?.width || 200,
+          width: columnHidden && !designable ? 0 : s['x-component-props']?.width || 100,
           render: (v, record) => {
             // 这行代码会导致这里的测试不通过：packages/core/client/src/modules/blocks/data-blocks/table/__e2e__/schemaInitializer.test.ts:189
             // if (collectionFields?.length === 1 && collectionFields[0]['x-read-pretty'] && v == undefined) return null;
@@ -185,7 +186,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
         render: designable
           ? () => <div style={{ width: '100%', minWidth: '180px' }} className="nb-column-initializer" />
           : null,
-        fixed: designable ? 'right' : 'none',
+        fixed: 'right',
       },
     ];
 
@@ -199,23 +200,23 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
         render: (v, record, index) => {
           if (props.showDel(record)) {
             return (
-              <CloseOutlined
-                style={{ cursor: 'pointer', color: 'gray' }}
+              <div
                 onClick={() => {
                   return action(() => {
                     const fieldIndex = (current - 1) * pageSize + index;
+                    const deleteCount = field.value[fieldIndex] ? 1 : 2;
                     spliceArrayState(field, {
                       startIndex: fieldIndex,
-                      deleteCount: 1,
+                      deleteCount: deleteCount,
                     });
-                    field.value.splice(fieldIndex, 1);
-                    setTimeout(() => {
-                      field.value[field.value.length] = null;
-                    });
+                    field.value.splice(fieldIndex, deleteCount);
+                    field.setInitialValue(field.value);
                     return field.onInput(field.value);
                   });
                 }}
-              />
+              >
+                <CloseOutlined style={{ cursor: 'pointer', color: 'gray' }} />
+              </div>
             );
           }
           return;
@@ -321,11 +322,18 @@ const usePaginationProps = (pagination1, pagination2) => {
     [JSON.stringify({ ...pagination1, ...pagination2 })],
   );
   const { total: totalCount, current, pageSize } = pagination || {};
+  const blockProps = useDataBlockProps();
+  const original = useAssociationFieldContext();
+  const { components } = useContext(SchemaOptionsContext);
+  const C = original?.fieldSchema?.['x-component-props']?.summary?.Component || blockProps?.summary?.Component;
   const showTotal = useCallback(
     (total) => {
+      if (components[C]) {
+        return React.createElement(components[C]);
+      }
       return t('Total {{count}} items', { count: total });
     },
-    [t, totalCount],
+    [components, C, t],
   );
   const result = useMemo(() => {
     if (totalCount) {
@@ -466,10 +474,10 @@ const columnOpacityStyle = {
   opacity: 0.3,
 };
 
-const HeaderCellComponent = (props) => {
+const HeaderCellComponent = ({ columnHidden, ...props }) => {
   const { designable } = useDesignable();
 
-  if (props.columnHidden) {
+  if (columnHidden) {
     return <th style={designable ? columnOpacityStyle : columnHiddenStyle}>{designable ? props.children : null}</th>;
   }
 
@@ -507,10 +515,10 @@ const InternalBodyCellComponent = (props) => {
 };
 
 const displayNone = { display: 'none' };
-const BodyCellComponent = (props) => {
+const BodyCellComponent = ({ columnHidden, ...props }) => {
   const { designable } = useDesignable();
 
-  if (props.columnHidden) {
+  if (columnHidden) {
     return (
       <td style={designable ? columnOpacityStyle : columnHiddenStyle}>
         {designable ? props.children : <span style={displayNone}>{props.children}</span>}

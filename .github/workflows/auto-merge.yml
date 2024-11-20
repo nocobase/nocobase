@@ -1,28 +1,50 @@
-name: Auto merge main -> next
+name: Auto merge
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.inputs.repository }}
   cancel-in-progress: true
+
+run-name: Auto merge ${{ github.ref }}-${{ inputs.repository }}
 
 on:
   workflow_dispatch:
     inputs:
       repository:
         description: 'Please enter a repository name'
+      branch:
+        type: choice
+        description: 'Base branch'
+        options:
+          - main
+          - next
+        default: main
   push:
     branches:
       - 'main'
+      - 'next'
 
 jobs:
   push-commit:
     runs-on: ubuntu-latest
     steps:
+      - name: Get branch
+        id: get-branch
+        run: |
+          if [[ "${{ inputs.branch || github.head_ref || github.ref_name }}" == "main" ]]; then
+            echo "baseBranch=$(echo 'main')" >> $GITHUB_OUTPUT
+            echo "targetBranch=$(echo 'next')" >> $GITHUB_OUTPUT
+          elif [[ "${{ inputs.branch || github.head_ref || github.ref_name }}" == "next" ]]; then
+            echo "baseBranch=$(echo 'next')" >> $GITHUB_OUTPUT
+            echo "targetBranch=$(echo 'develop')" >> $GITHUB_OUTPUT
+          else
+            exit 1
+          fi
       - uses: actions/create-github-app-token@v1
         id: app-token
         with:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
-          repositories: nocobase,pro-plugins,plugin-pro-tpl,${{ join(fromJSON(vars.NEXT_PRO_PLUGIN_REPOS), ',') }},${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ',') }}
+          repositories: nocobase,${{ inputs.repository }}
           skip-token-revoke: true
       - name: Get GitHub App User ID
         id: get-user-id
@@ -32,24 +54,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: ${{ steps.get-branch.outputs.baseBranch }}
           repository: nocobase/${{ inputs.repository || 'nocobase' }}
           token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
           fetch-depth: 0
-      - name: main -> next(${{ inputs.repository || 'nocobase' }})
+      - name: ${{ steps.get-branch.outputs.baseBranch }} -> ${{ steps.get-branch.outputs.targetBranch }} (${{ inputs.repository || 'nocobase' }})
         run: |
           git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
           git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
-          git checkout main
-          git pull origin main
-          git checkout next
-          git merge main
-          git push origin next
-      - name: push ${{ inputs.repository || 'nocobase' }}(next)
-        uses: ad-m/github-push-action@master
-        with:
-          branch: next
-          github_token: ${{ steps.app-token.outputs.token }}
-          repository: nocobase/${{ inputs.repository || 'nocobase' }}
-          tags: true
-          atomic: true
+          git checkout ${{ steps.get-branch.outputs.baseBranch }}
+          git pull origin ${{ steps.get-branch.outputs.baseBranch }}
+          git checkout ${{ steps.get-branch.outputs.targetBranch }}
+          git merge ${{ steps.get-branch.outputs.baseBranch }}
+          git push origin ${{ steps.get-branch.outputs.targetBranch }}
+      # - name: push ${{ inputs.repository || 'nocobase' }}(${{ steps.get-branch.outputs.targetBranch }})
+      #   uses: ad-m/github-push-action@master
+      #   with:
+      #     branch: ${{ steps.get-branch.outputs.targetBranch }}
+      #     github_token: ${{ steps.app-token.outputs.token }}
+      #     repository: nocobase/${{ inputs.repository || 'nocobase' }}
+      #     tags: true
+      #     atomic: true

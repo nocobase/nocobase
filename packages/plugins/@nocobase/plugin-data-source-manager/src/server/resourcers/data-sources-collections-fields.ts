@@ -67,20 +67,22 @@ export default {
           },
         });
       } else {
-        await mainDb.getRepository('dataSourcesFields').update({
-          filter: {
-            name,
-            collectionName,
-            dataSourceKey,
-          },
-          values,
-        });
+        fieldRecord = (
+          await mainDb.getRepository('dataSourcesFields').update({
+            filter: {
+              name,
+              collectionName,
+              dataSourceKey,
+            },
+            values,
+          })
+        )[0];
       }
 
       const field = ctx.app.dataSourceManager.dataSources
         .get(dataSourceKey)
         .collectionManager.getCollection(collectionName)
-        .getField(name);
+        .getField(fieldRecord.get('name'));
 
       ctx.body = field.options;
 

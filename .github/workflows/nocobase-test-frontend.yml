@@ -9,6 +9,7 @@ on:
     branches:
       - main
       - next
+      - develop
     paths:
       - 'packages/**'
       - '**/yarn.lock'
@@ -33,14 +34,14 @@ jobs:
   frontend-test:
     strategy:
       matrix:
-        node_version: ['18']
+        node_version: ['20']
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     steps:
       - uses: actions/checkout@v2
 
       - name: Use Node.js ${{ matrix.node_version }}
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node_version }}
           cache: 'yarn'
