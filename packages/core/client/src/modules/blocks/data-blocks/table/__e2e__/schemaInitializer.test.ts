@@ -54,9 +54,21 @@ test.describe('configure columns', () => {
     // display collection fields -------------------------------------------------------------
     await configureColumnButton.hover();
     await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
+    await page.mouse.move(300, 0);
+
+    await configureColumnButton.hover();
     await page.getByRole('menuitem', { name: 'One to one (belongs to)' }).first().click();
+    await page.mouse.move(300, 0);
+
+    await configureColumnButton.hover();
     await page.getByRole('menuitem', { name: 'One to one (has one)' }).first().click();
+    await page.mouse.move(300, 0);
+
+    await configureColumnButton.hover();
     await page.getByRole('menuitem', { name: 'Many to one' }).first().click();
+    await page.mouse.move(300, 0);
+
+    await configureColumnButton.hover();
     await expect(page.getByRole('menuitem', { name: 'ID', exact: true }).getByRole('switch')).toBeChecked();
     await expect(
       page.getByRole('menuitem', { name: 'One to one (belongs to)' }).first().getByRole('switch'),
@@ -79,9 +91,21 @@ test.describe('configure columns', () => {
         y: 10,
       },
     });
+    await page.mouse.move(300, 0);
+
+    await configureColumnButton.hover();
     await page.getByRole('menuitem', { name: 'One to one (belongs to)' }).first().click();
+    await page.mouse.move(300, 0);
+
+    await configureColumnButton.hover();
     await page.getByRole('menuitem', { name: 'One to one (has one)' }).first().click();
+    await page.mouse.move(300, 0);
+
+    await configureColumnButton.hover();
     await page.getByRole('menuitem', { name: 'Many to one' }).first().click();
+    await page.mouse.move(300, 0);
+
+    await configureColumnButton.hover();
     await expect(page.getByRole('menuitem', { name: 'ID', exact: true }).getByRole('switch')).not.toBeChecked();
     await expect(
       page.getByRole('menuitem', { name: 'One to one (belongs to)' }).first().getByRole('switch'),

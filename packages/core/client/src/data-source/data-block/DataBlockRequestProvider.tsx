@@ -64,7 +64,9 @@ function useRecordRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
       requestParentRecordData({ sourceId, association, parentRecord, api, headers, sourceKey }),
     ]);
 
-    currentRecordData.parentRecord = parentRecordData?.data;
+    if (currentRecordData) {
+      currentRecordData.parentRecord = parentRecordData?.data;
+    }
 
     return currentRecordData;
   };
