@@ -10,7 +10,7 @@ https://github.com/nocobase/nocobase/assets/1267426/1d6a3979-d1eb-4e50-b726-2f90
 
 ## Release Notes
 
-For comprehensive update details, please visit our [blog](https://www.nocobase.com/en/blog/tags/release-notes).
+Our [blog](https://www.nocobase.com/cn/blog/tags/release-notes) is regularly updated with release notes and provides a weekly summary.
 
 ## What is NocoBase
 
