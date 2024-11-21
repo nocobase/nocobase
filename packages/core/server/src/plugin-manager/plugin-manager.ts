@@ -453,12 +453,18 @@ export class PluginManager {
     }
 
     current = 0;
+    const allPlugins = this.getPlugins();
+    const pluginInstances = [...allPlugins.values()];
+    const pluginNames = pluginInstances.map((p) => p.name);
+    const sortedPluginNames = this.sort(pluginNames);
 
-    for (const [P, plugin] of this.getPlugins()) {
+    for (const pluginName of sortedPluginNames) {
+      const plugin = this.get(pluginName);
+
       if (plugin.state.loaded) {
         continue;
       }
-      const name = plugin.name || P.name;
+      const name = plugin.name || plugin.constructor.name;
       current += 1;
       this.app.setMaintainingMessage(`load plugin [${name}], ${current}/${total}`);
 
