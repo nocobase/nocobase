@@ -60,6 +60,9 @@ export class CacheManager {
         redis: {
           store: redisStore,
           close: async (redis: RedisStore) => {
+            if (!redis.client?.isOpen) {
+              return;
+            }
             await redis.client.quit();
           },
         },

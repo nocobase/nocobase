@@ -70,10 +70,14 @@ export const useCreateCalendarBlock = () => {
 
   const createCalendarBlock = async ({ item }) => {
     const stringFieldsOptions = getCollectionFieldsOptions(item.name, 'string', { dataSource: item.dataSource });
-    const dateFieldsOptions = getCollectionFieldsOptions(item.name, ['date', 'datetime', 'dateOnly', 'datetimeNoTz'], {
-      association: ['o2o', 'obo', 'oho', 'm2o'],
-      dataSource: item.dataSource,
-    });
+    const dateFieldsOptions = getCollectionFieldsOptions(
+      item.name,
+      ['date', 'datetime', 'dateOnly', 'datetimeNoTz', 'unixTimestamp'],
+      {
+        association: ['o2o', 'obo', 'oho', 'm2o'],
+        dataSource: item.dataSource,
+      },
+    );
 
     const values = await FormDialog(
       t('Create calendar block'),

@@ -96,7 +96,7 @@ test.describe('form item & create form', () => {
           .getByLabel('block-item-CollectionField-general-form-general.oneToOneBelongsTo-oneToOneBelongsTo')
           .getByTestId(/select-object/)
           .click();
-        await page.getByRole('option', { name: String(records[0].id), exact: true }).click();
+        await page.getByTitle(String(records[0].id), { exact: true }).click();
       },
       expectReadonly: async () => {
         await expect(
@@ -165,7 +165,7 @@ test.describe('form item & create form', () => {
       .getByLabel('block-item-CollectionField-general-form-general.oneToOneBelongsTo-oneToOneBelongsTo')
       .getByTestId('select-object-single')
       .click();
-    await expect(page.getByRole('option', { name: String(records[0].id), exact: true })).toBeVisible();
+    await expect(page.getByTitle(String(records[0].id), { exact: true })).toBeVisible();
     await expect(page.getByRole('option')).toHaveCount(1);
   });
 

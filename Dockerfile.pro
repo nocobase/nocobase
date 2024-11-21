@@ -40,25 +40,22 @@ RUN cd /app \
   && rm -rf nocobase.tar.gz \
   && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
 
+RUN echo "${COMMIT_HASH}" > /tmp/commit_hash.txt
+
+
 FROM node:20.13-bullseye-slim
-RUN apt-get update && apt-get install -y nginx libaio1
+RUN apt-get update && apt-get install -y nginx libaio1 \
+  && apt-get install -y --no-install-recommends postgresql-common gnupg \
+  && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
+  && apt-get install -y --no-install-recommends postgresql-client-16 \
+  && rm -rf /var/lib/apt/lists/*
 RUN rm -rf /etc/nginx/sites-enabled/default
 
 COPY ./docker/nocobase/nocobase.conf /etc/nginx/sites-enabled/nocobase.conf
 COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz
+COPY --from=builder /tmp/commit_hash.txt /app/commit_hash.txt
 
 WORKDIR /app/nocobase
-
-RUN mkdir -p /app/nocobase/storage/uploads/ && echo "$COMMIT_HASH" >> /app/nocobase/storage/uploads/COMMIT_HASH
-
-# install postgresql-client and mysql-client
-RUN apt update && apt install -y wget postgresql-common gnupg \
-  && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
-  && apt install -y postgresql-client-16 \
-  && wget https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.1.0-1debian11_amd64.deb \
-  && dpkg -x mysql-community-client-core_8.1.0-1debian11_amd64.deb /tmp/mysql-client \
-  && cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ \
-  && cp /tmp/mysql-client/usr/bin/mysql /usr/bin/
 
 COPY ./docker/nocobase/docker-entrypoint.sh /app/
 

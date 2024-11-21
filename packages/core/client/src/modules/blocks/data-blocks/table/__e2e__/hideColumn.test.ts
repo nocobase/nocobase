@@ -21,6 +21,7 @@ test.describe('hide column', () => {
       .hover();
     await page.getByRole('menuitem', { name: 'Hide column question-circle' }).click();
     await page.mouse.move(500, 0);
+    await page.getByLabel('block-item-CardItem-users-form').click();
 
     // 2. Sub table: hide column
     await page.getByRole('button', { name: 'Role name' }).hover();
