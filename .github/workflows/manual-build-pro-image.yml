@@ -109,14 +109,16 @@ jobs:
         id: get-tag
         run: |
           if [ "${{ inputs.pr_number }}" != "" ]; then
-            echo "tag=pr-${{ inputs.pr_number }}" >> "$GITHUB_OUTPUT"
+            echo "tag=pr-${{ inputs.pr_number }}-pro" >> "$GITHUB_OUTPUT"
+          elif [ "${{ inputs.nocobase_pr_number }}" != "" ]; then
+            echo "tag=pr-${{ inputs.nocobase_pr_number }}" >> "$GITHUB_OUTPUT"
           else
             echo "tag=${{ github.head_ref || github.ref_name }}" >> "$GITHUB_OUTPUT"
           fi
       - name: Set tags
         id: set-tags
         run: |
-          echo "::set-output name=tags::${{ secrets.ALI_DOCKER_REGISTRY }}/nocobase/nocobase:${{ steps.get-tag.outputs.tag }}-pro"
+          echo "::set-output name=tags::${{ secrets.ALI_DOCKER_REGISTRY }}/nocobase/nocobase:${{ steps.get-tag.outputs.tag }}"
       - name: Set variables
         run: |
           target_directory="./packages/pro-plugins/@nocobase"
@@ -129,7 +131,7 @@ jobs:
           echo "var1=$BEFORE_PACK_NOCOBASE" >> $GITHUB_OUTPUT
           echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
         id: vars
-      - name: Build and push - ${{ steps.get-tag.outputs.tag }}-pro
+      - name: Build and push - ${{ steps.get-tag.outputs.tag }}
         uses: docker/build-push-action@v3
         with:
           context: .
@@ -144,9 +146,9 @@ jobs:
           tags: ${{ steps.set-tags.outputs.tags }}
       - name: Deploy NocoBase
         run: |
-          curl --retry 2 --location --request POST "${{secrets.NOCOBASE_DEPLOY_HOST}}${{ steps.get-tag.outputs.tag }}-pro" \
+          curl --retry 2 --location --request POST "${{secrets.NOCOBASE_DEPLOY_HOST}}${{ steps.get-tag.outputs.tag }}" \
           --header 'Content-Type: application/json' \
           -d "{
-              \"tag\": \"${{ steps.get-tag.outputs.tag }}-pro\",
+              \"tag\": \"${{ steps.get-tag.outputs.tag }}\",
               \"dialect\": \"postgres\"
           }"
