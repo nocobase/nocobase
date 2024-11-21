@@ -23,6 +23,31 @@ describe('belongs to many field', () => {
     await db.close();
   });
 
+  // bug of sequelize
+  it.skip('should set belongs to many field with has many field', async () => {
+    try {
+      const Post = db.collection({
+        name: 'posts',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'belongsToMany', name: 'tags', through: 'postsTags' },
+          {
+            type: 'hasMany',
+            name: 'postsTags',
+          },
+        ],
+      });
+
+      const Tag = db.collection({
+        name: 'tags',
+        fields: [{ type: 'string', name: 'name' }],
+      });
+    } catch (e) {
+      console.error(e);
+      expect(e).toBeUndefined();
+    }
+  });
+
   it('should check belongs to many association keys', async () => {
     const PostTag = db.collection({
       name: 'postsTags',
