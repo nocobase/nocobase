@@ -8,7 +8,7 @@
  */
 
 import { expect, test } from '@nocobase/test/e2e';
-import { shouldDisplayImageNormally } from './templates';
+import { modalOfAssignFieldValuesAndModalOfBindWorkflows, shouldDisplayImageNormally } from './templates';
 
 test.describe('zIndex', () => {
   test('should display image normally', async ({ page, mockMobilePage, mockRecord }) => {
@@ -68,5 +68,37 @@ test.describe('zIndex', () => {
     await page.waitForTimeout(300);
     await check(3);
     await page.getByLabel('Close lightbox').click();
+  });
+
+  test('modal of Assign field values and modal of Bind workflows', async ({ page, mockMobilePage, mockRecord }) => {
+    await mockMobilePage(modalOfAssignFieldValuesAndModalOfBindWorkflows).goto();
+
+    // 1. 打开 Assign field values 的弹窗
+    await page.getByTestId('select-data-picker').click();
+    await page.getByLabel('action-Action-Add new-create-').click();
+    await page.getByLabel('block-item-CardItem-roles-form').getByLabel('action-Action-Submit-submit-').hover();
+    await page.getByLabel('designer-schema-settings-Action-actionSettings:createSubmit-roles').hover();
+    await page.getByRole('menuitem', { name: 'Assign field values' }).click();
+
+    // 2. 检测弹窗是否被覆盖
+    await page.getByRole('button', { name: 'Cancel' }).hover({ timeout: 300, position: { x: 5, y: 5 } });
+    // 3. 关闭弹窗
+    await page.getByLabel('Close', { exact: true }).click();
+
+    // -----------------------------------------------------------------------------------------------------
+
+    // 1. 打开 Bind workflows 弹窗
+    await page.getByLabel('block-item-CardItem-roles-form').getByLabel('action-Action-Submit-submit-').hover();
+    await page.getByLabel('designer-schema-settings-Action-actionSettings:createSubmit-roles').hover();
+    await page.getByRole('menuitem', { name: 'Bind workflows' }).click();
+
+    // 2. 检测弹窗是否被覆盖
+    await page
+      .getByLabel('Bind workflows')
+      .getByRole('button', { name: 'Cancel' })
+      .hover({ timeout: 300, position: { x: 5, y: 5 } });
+
+    // 3. 关闭弹窗
+    await page.getByLabel('Bind workflows').getByLabel('Close', { exact: true }).click();
   });
 });
