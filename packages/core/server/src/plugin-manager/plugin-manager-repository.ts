@@ -133,11 +133,15 @@ export class PluginManagerRepository extends Repository {
     const items = await this.find({
       sort: 'id',
     });
+    const sortedItems = [];
     const map = {};
     for (const item of items) {
-      map[item.packageName] = item;
+      if (item.packageName) {
+        map[item.packageName] = item;
+      } else {
+        sortedItems.push(item);
+      }
     }
-    const sortedItems = [];
     const names = await this.sort(Object.keys(map));
     for (const name of names) {
       sortedItems.push(map[name]);
