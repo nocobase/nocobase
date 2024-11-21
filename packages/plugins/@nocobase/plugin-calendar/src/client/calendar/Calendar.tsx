@@ -8,7 +8,7 @@
  */
 
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
-import { RecursionField, Schema, observer, useFieldSchema } from '@formily/react';
+import { RecursionField, Schema, observer, useFieldSchema, Form } from '@formily/react';
 import {
   PopupContextProvider,
   RecordProvider,
@@ -20,12 +20,18 @@ import {
   useToken,
   withDynamicSchemaProps,
   useACLRoleContext,
+  useDesignable,
+  ActionContextProvider,
+  useActionContext,
+  CollectionProvider,
+  SchemaComponentOptions,
+  useFormBlockContext,
 } from '@nocobase/client';
 import { parseExpression } from 'cron-parser';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
-import get from 'lodash/get';
-import React, { useMemo, useState, useEffect } from 'react';
+import { get, cloneDeep } from 'lodash';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { Calendar as BigCalendar, View, dayjsLocalizer } from 'react-big-calendar';
 import * as dates from 'react-big-calendar/lib/utils/dates';
 import { i18nt, useTranslation } from '../../locale';
@@ -37,7 +43,8 @@ import { useCalenderHeight } from './hook';
 import useStyle from './style';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
-
+import { addNew } from './schema';
+import { useField, useForm } from '@formily/react/esm';
 interface Event {
   id: string;
   colorFieldValue: string;
@@ -215,17 +222,25 @@ const useEvents = (
   ]);
 };
 
-function findCreateSchema(schema): Schema {
-  return schema.reduceProperties((buf, current) => {
-    if (current['x-component'].endsWith('Action') && current['x-action'] === 'create') {
-      return current;
-    }
-    if (current['x-component'].endsWith('.ActionBar')) {
-      return findCreateSchema(current);
-    }
-    return buf;
-  }, null);
-}
+export const useInsertSchema = (component) => {
+  const fieldSchema = useFieldSchema();
+  const { insertAfterBegin } = useDesignable();
+  const insert = useCallback(
+    (ss) => {
+      const schema = fieldSchema.reduceProperties((buf, s) => {
+        if (s['x-component'] === 'AssociationField.' + component) {
+          return s;
+        }
+        return buf;
+      }, null);
+      if (!schema) {
+        insertAfterBegin(cloneDeep(ss));
+      }
+    },
+    [component],
+  );
+  return insert;
+};
 
 export const Calendar: any = withDynamicSchemaProps(
   observer(
@@ -245,15 +260,18 @@ export const Calendar: any = withDynamicSchemaProps(
       const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
       const parentRecordData = useCollectionParentRecordData();
       const fieldSchema = useFieldSchema();
+      const field = useField();
       const { token } = useToken();
       //nint deal with slot select to show create popup
       const { parseAction } = useACLRoleContext();
       const collection = useCollection();
       const canCreate = parseAction(`${collection.name}:create`);
-      const createActionSchema: Schema = useMemo(() => findCreateSchema(fieldSchema), [fieldSchema]);
       const startFieldName = fieldNames?.start?.[0];
       const endFieldName = fieldNames?.end?.[0];
-
+      const insertAddNewer = useInsertSchema('AddNewer');
+      const ctx = useActionContext();
+      const [visibleAddNewer, setVisibleAddNewer] = useState(false);
+      const [currentSelectDate, setCurrentSelectDate] = useState(undefined);
       useEffect(() => {
         setView(props.defaultView);
       }, [props.defaultView]);
@@ -304,7 +322,34 @@ export const Calendar: any = withDynamicSchemaProps(
           };
         }
       };
+      const useCreateFormBlockProps = () => {
+        const ctx = useFormBlockContext();
 
+        useEffect(() => {
+          if (currentSelectDate) {
+            ctx.form.setInitialvalue;
+            ctx.form?.query(startFieldName).take((field) => {
+              field.value = currentSelectDate.start;
+            });
+            ctx.form?.query(endFieldName).take((field) => {
+              field.value = currentSelectDate.end;
+            });
+          }
+        });
+
+        useEffect(() => {
+          const form: Form = ctx.form;
+
+          if (!form || ctx.service?.loading) {
+            return;
+          }
+
+          form.setInitialValues({ [startFieldName]: currentSelectDate.start, [endFieldName]: currentSelectDate.end });
+        }, [ctx.form, ctx.service?.data?.data, ctx.service?.loading]);
+        return {
+          form: ctx.form,
+        };
+      };
       return wrapSSR(
         <div className={`${hashId} ${containerClassName}`} style={{ height: height || 700 }}>
           <PopupContextProvider visible={visible} setVisible={setVisible}>
@@ -326,15 +371,10 @@ export const Calendar: any = withDynamicSchemaProps(
               onNavigate={setDate}
               onView={setView}
               onSelectSlot={(slotInfo) => {
-                //nint show create popup
-                if (canCreate && createActionSchema) {
-                  const record = {};
-                  record[startFieldName] = slotInfo.start;
-                  record[endFieldName] = slotInfo.end;
-                  openPopup({
-                    recordData: record,
-                    customActionSchema: createActionSchema,
-                  });
+                setCurrentSelectDate(slotInfo);
+                if (canCreate) {
+                  insertAddNewer(addNew);
+                  setVisibleAddNewer(true);
                 }
               }}
               onDoubleClickEvent={() => {
@@ -368,6 +408,20 @@ export const Calendar: any = withDynamicSchemaProps(
               localizer={localizer}
             />
           </PopupContextProvider>
+          <ActionContextProvider value={{ ...ctx, visible: visibleAddNewer, setVisible: setVisibleAddNewer }}>
+            <CollectionProvider name={collection.name}>
+              <SchemaComponentOptions scope={{ useCreateFormBlockProps }}>
+                <RecursionField
+                  onlyRenderProperties
+                  basePath={field.address}
+                  schema={fieldSchema}
+                  filterProperties={(s) => {
+                    return s['x-component'] === 'AssociationField.AddNewer';
+                  }}
+                />
+              </SchemaComponentOptions>
+            </CollectionProvider>
+          </ActionContextProvider>
         </div>,
       );
     },
