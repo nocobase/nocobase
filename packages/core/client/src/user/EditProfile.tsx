@@ -15,10 +15,13 @@ import { useTranslation } from 'react-i18next';
 import {
   ActionContextProvider,
   DropdownVisibleContext,
+  RemoteSchemaComponent,
   SchemaComponent,
+  SchemaComponentContext,
   useActionContext,
   useCurrentUserContext,
   useRequest,
+  useSchemaComponentContext,
   useSystemSettings,
 } from '../';
 import { useAPIClient } from '../api-client';
@@ -78,77 +81,26 @@ const schema: ISchema = {
       type: 'void',
       title: '{{t("Edit profile")}}',
       properties: {
-        nickname: {
-          type: 'string',
-          title: "{{t('Nickname')}}",
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-          'x-reactions': (field) => {
-            if (field.initialValue) {
-              field.disabled = true;
-            }
-          },
-        },
-        username: {
-          type: 'string',
-          title: '{{t("Username")}}',
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-          'x-validator': { username: true },
-          required: true,
-          'x-reactions': (field) => {
-            if (field.initialValue) {
-              field.disabled = true;
-            }
-          },
-        },
-        email: {
-          type: 'string',
-          title: '{{t("Email")}}',
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-          'x-validator': 'email',
-          'x-reactions': (field) => {
-            if (field.initialValue) {
-              field.disabled = true;
-            }
-          },
-        },
-        phone: {
-          type: 'string',
-          title: '{{t("Phone")}}',
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-          'x-reactions': (field) => {
-            if (field.initialValue) {
-              field.disabled = true;
-            }
-          },
-        },
-        footer: {
-          'x-component': 'Action.Drawer.Footer',
+        form: {
           type: 'void',
-          properties: {
-            cancel: {
-              title: 'Cancel',
-              'x-component': 'Action',
-              'x-component-props': {
-                useAction: '{{ useCloseAction }}',
-              },
-            },
-            submit: {
-              title: 'Submit',
-              'x-component': 'Action',
-              'x-component-props': {
-                type: 'primary',
-                useAction: '{{ useSaveCurrentUserValues }}',
-              },
-            },
-          },
+          'x-component': 'ProfileEditForm',
         },
       },
     },
   },
+};
+
+const ProfileEditForm = () => {
+  const scCtx = useSchemaComponentContext();
+  return (
+    <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
+      <RemoteSchemaComponent
+        uid="nocobase-user-profile-edit-form"
+        noForm={true}
+        scope={{ useEditFormBlockDecoratorProps: () => ({}) }}
+      />
+    </SchemaComponentContext.Provider>
+  );
 };
 
 export const useEditProfile = () => {
@@ -171,6 +123,7 @@ export const useEditProfile = () => {
           <ActionContextProvider value={{ visible, setVisible }}>
             <div onClick={(e) => e.stopPropagation()}>
               <SchemaComponent
+                components={{ ProfileEditForm }}
                 scope={{ useCurrentUserValues, useCloseAction, useSaveCurrentUserValues }}
                 schema={schema}
               />

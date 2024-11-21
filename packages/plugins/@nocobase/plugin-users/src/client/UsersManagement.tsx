@@ -18,6 +18,7 @@ import {
   useSchemaComponentContext,
   useRequest,
   useAPIClient,
+  RemoteSchemaComponent,
 } from '@nocobase/client';
 import React, { createContext, useEffect, useMemo, useContext } from 'react';
 import { App, Tabs, message } from 'antd';
@@ -27,6 +28,7 @@ import { css } from '@emotion/css';
 import { usersSchema, usersSettingsSchema } from './schemas/users';
 import { useUsersTranslation } from './locale';
 import { PasswordField } from './PasswordField';
+import { ProfileFormConfiguration } from './ProfileFormConfiguration';
 
 const useCancelActionProps = () => {
   const { setVisible } = useActionContext();
@@ -81,6 +83,18 @@ const useEditFormProps = () => {
   };
 };
 
+const ProfileEditForm = () => {
+  return (
+    <RemoteSchemaComponent
+      uid="nocobase-admin-profile-edit-form"
+      noForm={true}
+      // scope={{
+      //   useEditFormBlockProps: useEditFormProps,
+      // }}
+    />
+  );
+};
+
 const UsersManagementTab: React.FC = () => {
   const { t } = useUsersTranslation();
   const scCtx = useSchemaComponentContext();
@@ -89,7 +103,7 @@ const UsersManagementTab: React.FC = () => {
       <SchemaComponent
         schema={usersSchema}
         scope={{ t, useCancelActionProps, useSubmitActionProps, useEditFormProps }}
-        components={{ PasswordField }}
+        components={{ PasswordField, RemoteSchemaComponent, ProfileEditForm }}
       />
     </SchemaComponentContext.Provider>
   );
@@ -136,13 +150,11 @@ const UsersSettingsTab: React.FC = () => {
     };
   };
   return (
-    <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
-      <SchemaComponent
-        schema={usersSettingsSchema}
-        scope={{ t, useFormBlockProps, useSubmitActionProps }}
-        components={{ UsersSettingsProvider }}
-      />
-    </SchemaComponentContext.Provider>
+    <SchemaComponent
+      schema={usersSettingsSchema}
+      scope={{ t, useFormBlockProps, useSubmitActionProps }}
+      components={{ UsersSettingsProvider, ProfileFormConfiguration }}
+    />
   );
 };
 

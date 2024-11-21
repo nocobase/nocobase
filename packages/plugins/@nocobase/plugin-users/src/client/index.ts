@@ -12,9 +12,11 @@ import { tval } from '@nocobase/utils/client';
 import { UsersManagement } from './UsersManagement';
 import ACLPlugin from '@nocobase/plugin-acl/client';
 import { RoleUsersManager } from './RoleUsersManager';
+import { UsersProvider } from './UsersProvider';
 
 class PluginUsersClient extends Plugin {
   async load() {
+    this.app.use(UsersProvider);
     this.app.pluginSettingsManager.add('users-permissions', {
       title: tval('Users & Permissions', { ns: 'users' }),
       icon: 'TeamOutlined',
