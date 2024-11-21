@@ -12,6 +12,7 @@ import React from 'react';
 import App1 from '../demos/input';
 import App2 from '../demos/textarea';
 import App3 from '../demos/url';
+import App4 from '../demos/json';
 import JSON5 from 'json5';
 import JSONInput from '../demos/new-demos/json';
 import JSON5Input from '../demos/new-demos/json5';
@@ -131,18 +132,13 @@ describe('Input.JSON', () => {
   });
 
   it('should display the error when the value is invalid', async () => {
-    const { container } = render(<JSONInput />);
+    const { container } = render(<App4 />);
     await waitFor(() => {
-      expect(screen.getByText('Test').innerHTML).toBe('Test');
+      const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+      fireEvent.change(textarea, { target: { value: '{"name":nocobase}' } });
+      fireEvent.blur(textarea, { target: { value: '{"name":nocobase}' } });
+      expect(screen.getByText(/Unexpected token/)).toBeInTheDocument();
     });
-
-    const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
-    await userEvent.clear(textarea);
-    // To escape special characters, use double curly braces
-    await userEvent.type(textarea, '{{name:"nocobase"}');
-    // mock blur event
-    await userEvent.click(document.body);
-    expect(screen.getByText(/Unexpected token n/)).toBeInTheDocument();
   });
 
   it('should not display error when the value is valid JSON5', async () => {

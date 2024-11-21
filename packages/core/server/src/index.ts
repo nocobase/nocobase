@@ -15,8 +15,7 @@ export * as middlewares from './middlewares';
 export * from './migration';
 export * from './plugin';
 export * from './plugin-manager';
-
-export * from './sync-manager';
+export * from './pub-sub-manager';
 export const OFFICIAL_PLUGIN_PREFIX = '@nocobase/plugin-';
 
 export {

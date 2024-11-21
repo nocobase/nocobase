@@ -29,12 +29,15 @@ import CreateInstruction from './nodes/create';
 import UpdateInstruction from './nodes/update';
 import DestroyInstruction from './nodes/destroy';
 import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './utils';
-import { NAMESPACE } from './locale';
+import { lang, NAMESPACE } from './locale';
 import { customizeSubmitToWorkflowActionSettings } from './settings/customizeSubmitToWorkflowActionSettings';
+import { VariableOption } from './variable';
 
 export default class PluginWorkflowClient extends Plugin {
   triggers = new Registry<Trigger>();
   instructions = new Registry<Instruction>();
+  systemVariables = new Registry<VariableOption>();
+
   useTriggersOptions = () => {
     const compile = useCompile();
     return Array.from(this.triggers.getEntities()).map(([value, { title, ...options }]) => ({
@@ -67,6 +70,10 @@ export default class PluginWorkflowClient extends Plugin {
     } else {
       throw new TypeError('invalid instruction type to register');
     }
+  }
+
+  registerSystemVariable(option: VariableOption) {
+    this.systemVariables.register(option.key, option);
   }
 
   async load() {
@@ -113,6 +120,124 @@ export default class PluginWorkflowClient extends Plugin {
     this.registerInstruction('create', CreateInstruction);
     this.registerInstruction('update', UpdateInstruction);
     this.registerInstruction('destroy', DestroyInstruction);
+
+    this.registerSystemVariable({
+      key: 'now',
+      label: `{{t("System time", { ns: "${NAMESPACE}" })}}`,
+      value: 'now',
+    });
+    this.registerSystemVariable({
+      key: 'dateRange',
+      label: `{{t("Date range", { ns: "${NAMESPACE}" })}}`,
+      value: 'dateRange',
+      children: [
+        {
+          key: 'yesterday',
+          value: 'yesterday',
+          label: `{{t("Yesterday", { ns: "${NAMESPACE}" })}}`,
+        },
+        {
+          key: 'today',
+          value: 'today',
+          label: `{{t("Today", { ns: "${NAMESPACE}" })}}`,
+        },
+        {
+          key: 'tomorrow',
+          value: 'tomorrow',
+          label: `{{t("Tomorrow", { ns: "${NAMESPACE}" })}}`,
+        },
+        {
+          key: 'lastWeek',
+          value: 'lastWeek',
+          label: `{{t("Last week", { ns: "${NAMESPACE}" })}}`,
+        },
+        {
+          key: 'thisWeek',
+          value: 'thisWeek',
+          label: `{{t("This week", { ns: "${NAMESPACE}" })}}`,
+        },
+        {
+          key: 'nextWeek',
+          value: 'nextWeek',
+          label: `{{t("Next week", { ns: "${NAMESPACE}" })}}`,
+        },
+        {
+          key: 'lastMonth',
+          value: 'lastMonth',
+          label: `{{t("Last month", { ns: "${NAMESPACE}" })}}`,
+        },
+        {
+          key: 'thisMonth',
+          value: 'thisMonth',
+          label: `{{t("This month", { ns: "${NAMESPACE}" })}}`,
+        },
+        {
+          key: 'nextMonth',
+          value: 'nextMonth',
+          label: `{{t("Next month", { ns: "${NAMESPACE}" })}}`,
+        },
+        {
+          key: 'lastQuarter',
+          value: 'lastQuarter',
+          label: `{{t("Last quarter", { ns: "${NAMESPACE}" })}}`,
+        },
+        {
+          key: 'thisQuarter',
+          value: 'thisQuarter',
+          label: `{{t("This quarter", { ns: "${NAMESPACE}" })}}`,
+        },
+        {
+          key: 'nextQuarter',
+          value: 'nextQuarter',
+          label: `{{t("Next quarter", { ns: "${NAMESPACE}" })}}`,
+        },
+        {
+          key: 'lastYear',
+          value: 'lastYear',
+          label: `{{t("Last year", { ns: "${NAMESPACE}" })}}`,
+        },
+        {
+          key: 'thisYear',
+          value: 'thisYear',
+          label: `{{t("This year", { ns: "${NAMESPACE}" })}}`,
+        },
+        {
+          key: 'nextYear',
+          value: 'nextYear',
+          label: `{{t("Next year", { ns: "${NAMESPACE}" })}}`,
+        },
+        {
+          key: 'last7Days',
+          value: 'last7Days',
+          label: `{{t("Last 7 days", { ns: "${NAMESPACE}" })}}`,
+        },
+        {
+          key: 'next7Days',
+          value: 'next7Days',
+          label: `{{t("Next 7 days", { ns: "${NAMESPACE}" })}}`,
+        },
+        {
+          key: 'last30Days',
+          value: 'last30Days',
+          label: `{{t("Last 30 days", { ns: "${NAMESPACE}" })}}`,
+        },
+        {
+          key: 'next30Days',
+          value: 'next30Days',
+          label: `{{t("Next 30 days", { ns: "${NAMESPACE}" })}}`,
+        },
+        {
+          key: 'last90Days',
+          value: 'last90Days',
+          label: `{{t("Last 90 days", { ns: "${NAMESPACE}" })}}`,
+        },
+        {
+          key: 'next90Days',
+          value: 'next90Days',
+          label: `{{t("Next 90 days", { ns: "${NAMESPACE}" })}}`,
+        },
+      ],
+    });
   }
 }
 

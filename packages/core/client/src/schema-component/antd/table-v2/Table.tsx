@@ -178,7 +178,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
       return columns;
     }
     const res = [
-      ...adjustColumnOrder(columns),
+      ...columns,
       {
         title: render(),
         dataIndex: 'TABLE_COLUMN_INITIALIZER',
@@ -186,7 +186,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
         render: designable
           ? () => <div style={{ width: '100%', minWidth: '180px' }} className="nb-column-initializer" />
           : null,
-        fixed: 'right',
+        fixed: designable ? 'right' : 'none',
       },
     ];
 
@@ -200,23 +200,23 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
         render: (v, record, index) => {
           if (props.showDel(record)) {
             return (
-              <CloseOutlined
-                style={{ cursor: 'pointer', color: 'gray' }}
+              <div
                 onClick={() => {
                   return action(() => {
                     const fieldIndex = (current - 1) * pageSize + index;
+                    const deleteCount = field.value[fieldIndex] ? 1 : 2;
                     spliceArrayState(field, {
                       startIndex: fieldIndex,
-                      deleteCount: 1,
+                      deleteCount: deleteCount,
                     });
-                    field.value.splice(fieldIndex, 1);
-                    setTimeout(() => {
-                      field.value[field.value.length] = null;
-                    });
+                    field.value.splice(fieldIndex, deleteCount);
+                    field.setInitialValue(field.value);
                     return field.onInput(field.value);
                   });
                 }}
-              />
+              >
+                <CloseOutlined style={{ cursor: 'pointer', color: 'gray' }} />
+              </div>
             );
           }
           return;
@@ -224,7 +224,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
       });
     }
 
-    return res;
+    return adjustColumnOrder(res);
   }, [columns, exists, field, render, props.showDel, designable]);
 
   return tableColumns;
@@ -588,7 +588,6 @@ const InternalNocoBaseTable = React.memo(
       field,
       ...others
     } = props;
-
     return (
       <div
         className={cx(
@@ -608,6 +607,12 @@ const InternalNocoBaseTable = React.memo(
                   }
                   .ant-table-body {
                     min-height: ${tableHeight}px;
+                  }
+                  .ant-table-small .ant-table-cell {
+                    padding: 8px 16px;
+                  }
+                  .ant-table-middle .ant-table-cell {
+                    padding: 12px 16px;
                   }
                 }
               }

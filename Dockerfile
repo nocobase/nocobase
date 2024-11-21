@@ -15,10 +15,16 @@ WORKDIR /tmp
 COPY . /tmp
 RUN  yarn install && yarn build --no-dts
 
-RUN cd /tmp && \
-    NEWVERSION="$(cat lerna.json | jq '.version' | tr -d '"').$(date +'%Y%m%d%H%M%S')" \
-        &&  git checkout -b release-$(date +'%Y%m%d%H%M%S') \
-        && yarn lerna version ${NEWVERSION} -y --no-git-tag-version
+SHELL ["/bin/bash", "-c"]
+
+RUN CURRENTVERSION="$(jq -r '.version' lerna.json)" && \
+  IFS='.-' read -r major minor patch label <<< "$CURRENTVERSION" && \
+  if [ -z "$label" ]; then CURRENTVERSION="$CURRENTVERSION-rc"; fi && \
+  cd /tmp && \
+  NEWVERSION="$(echo $CURRENTVERSION).$(date +'%Y%m%d%H%M%S')" \
+  &&  git checkout -b release-$(date +'%Y%m%d%H%M%S') \
+  && yarn lerna version ${NEWVERSION} -y --no-git-tag-version
+
 RUN git config user.email "test@mail.com"  \
     && git config user.name "test" && git add .  \
     && git commit -m "chore(versions): test publish packages"
@@ -46,6 +52,7 @@ RUN echo "${COMMIT_HASH}" > /tmp/commit_hash.txt
 FROM node:20.13-bullseye-slim
 RUN apt-get update && apt-get install -y nginx libaio1
 RUN rm -rf /etc/nginx/sites-enabled/default
+
 COPY ./docker/nocobase/nocobase.conf /etc/nginx/sites-enabled/nocobase.conf
 COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz
 COPY --from=builder /tmp/commit_hash.txt /app/commit_hash.txt

@@ -60,11 +60,14 @@ export class AttachmentFileTypes {
 export const attachmentFileTypes = new AttachmentFileTypes();
 
 export function matchMimetype(file: FileModel | UploadFile<any>, type: string) {
-  if ('originFileObj' in file) {
-    return match(file.type, type);
+  if (!file) {
+    return false;
   }
-  if ('mimetype' in file) {
-    return match(file.mimetype, type);
+  if ((<UploadFile>file).originFileObj) {
+    return match((<UploadFile>file).type, type);
+  }
+  if ((<FileModel>file).mimetype) {
+    return match((<FileModel>file).mimetype, type);
   }
   if (file.url) {
     const [fileUrl] = file.url.split('?');

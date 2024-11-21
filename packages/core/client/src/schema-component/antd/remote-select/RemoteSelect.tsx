@@ -65,6 +65,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
         optionFilter,
         dataSource: propsDataSource,
         toOptionsItem = (value) => value,
+        popupMatchSelectWidth = false,
         ...others
       } = props;
       const dataSource = useDataSourceKey();
@@ -245,7 +246,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
       return (
         <Select
           open={open}
-          popupMatchSelectWidth={false}
+          popupMatchSelectWidth={popupMatchSelectWidth}
           autoClearSearchValue
           filterOption={false}
           filterSort={null}

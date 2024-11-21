@@ -195,26 +195,26 @@ export const tableBlockSettings = new SchemaSettings({
         const fieldSchema = useFieldSchema();
         const { t } = useTranslation();
         const { dn } = useDesignable();
+        const schema = fieldSchema.reduceProperties((_, s) => {
+          if (s['x-component'] === 'TableV2') {
+            return s;
+          }
+        }, null);
         return {
           title: t('Table size'),
-          value: field.componentProps?.size || 'middle',
+          value: schema?.['x-component-props']?.size || 'middle',
           options: [
             { label: t('Large'), value: 'large' },
             { label: t('Middle'), value: 'middle' },
             { label: t('Small'), value: 'small' },
           ],
           onChange: (size) => {
-            const schema = fieldSchema.reduceProperties((_, s) => {
-              if (s['x-component'] === 'TableV2') {
-                return s;
-              }
-            }, null);
             schema['x-component-props'] = schema['x-component-props'] || {};
             schema['x-component-props']['size'] = size;
             dn.emit('patch', {
               schema: {
                 ['x-uid']: schema['x-uid'],
-                'x-decorator-props': schema['x-component-props'],
+                'x-component-props': schema['x-component-props'],
               },
             });
           },

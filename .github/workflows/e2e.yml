@@ -27,8 +27,14 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: nocobase,pro-plugins,plugin-workflow-approval
+          skip-token-revoke: true
       - uses: actions/checkout@v4
-
       - name: Checkout pro-plugins
         continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
         uses: actions/checkout@v4
@@ -37,7 +43,16 @@ jobs:
           ref: main
           path: packages/pro-plugins
           fetch-depth: 0
-          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Checkout plugin-workflow-approval
+        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/plugin-workflow-approval
+          ref: main
+          path: packages/pro-plugins/@nocobase/plugin-workflow-approval
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
       - run: |
           cd packages/pro-plugins &&
           if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
@@ -49,6 +64,18 @@ jobs:
               git checkout main
             fi
           fi
+          cd ../../
+          cd packages/pro-plugins/@nocobase/plugin-workflow-approval &&
+          if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
+            git checkout ${{ github.head_ref || github.ref_name }}
+          else
+            if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
+              git checkout ${{ github.event.pull_request.base.ref }}
+            else
+              git checkout main
+            fi
+          fi
+          cd ../../../../
         continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
       - name: Git logs
         run: |
@@ -71,7 +98,7 @@ jobs:
             packages/**/lib/
             packages/**/dist/
             !packages/**/node_modules/**
-    timeout-minutes: 20
+    # timeout-minutes: 20
 
   core-and-plugins:
     name: Core and plugins
@@ -290,6 +317,13 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: nocobase,pro-plugins,plugin-workflow-approval
+          skip-token-revoke: true
       - uses: actions/checkout@v4
       - name: Checkout pro-plugins
         continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
@@ -299,7 +333,16 @@ jobs:
           ref: main
           path: packages/pro-plugins
           fetch-depth: 0
-          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Checkout plugin-workflow-approval
+        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/plugin-workflow-approval
+          ref: main
+          path: packages/pro-plugins/@nocobase/plugin-workflow-approval
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
       - run: |
           cd packages/pro-plugins &&
           if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
@@ -311,10 +354,22 @@ jobs:
               git checkout main
             fi
           fi
+          cd ../../
+          cd packages/pro-plugins/@nocobase/plugin-workflow-approval &&
+          if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
+            git checkout ${{ github.head_ref || github.ref_name }}
+          else
+            if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
+              git checkout ${{ github.event.pull_request.base.ref }}
+            else
+              git checkout main
+            fi
+          fi
+          cd ../../../../
         continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
       - name: Git logs
         run: |
-          cd packages/pro-plugins && git log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit -n 10
+          cd packages/pro-plugins/@nocobase/plugin-workflow-approval && git log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit -n 10
         continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
       - name: Set variables
         continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
