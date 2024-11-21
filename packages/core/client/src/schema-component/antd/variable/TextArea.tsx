@@ -223,7 +223,8 @@ function useVariablesFromValue(value: string, delimiters: [string, string] = ['{
 
 export function TextArea(props) {
   const { wrapSSR, hashId, componentCls } = useStyles();
-  const { value = '', scope, onChange, changeOnSelect, style, fieldNames, delimiters = ['{{', '}}'] } = props;
+  const { scope, onChange, changeOnSelect, style, fieldNames, delimiters = ['{{', '}}'] } = props;
+  const value = typeof props.value === 'string' ? props.value : props.value == null ? '' : props.value.toString();
   const variables = useVariablesFromValue(value, delimiters);
   const inputRef = useRef<HTMLDivElement>(null);
   const [options, setOptions] = useState([]);
