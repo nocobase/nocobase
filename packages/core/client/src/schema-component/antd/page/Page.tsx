@@ -22,6 +22,7 @@ import { FormDialog } from '..';
 import { antTableCell } from '../../../acl/style';
 import { useRequest } from '../../../api-client';
 import {
+  CurrentTabUidContext,
   useCurrentSearchParams,
   useCurrentTabUid,
   useNavigateNoUpdate,
@@ -209,7 +210,7 @@ Page.displayName = 'NocoBasePage';
 export const PageTabs = () => {
   const { loading, disablePageHeader, enablePageTabs, fieldSchema, tabUid } = useOutletContext<any>();
   return (
-    <>
+    <CurrentTabUidContext.Provider value={tabUid}>
       <PageContent
         loading={loading}
         disablePageHeader={disablePageHeader}
@@ -219,7 +220,7 @@ export const PageTabs = () => {
       />
       {/* used to match the route with name "admin.page.tab.popup" */}
       <Outlet />
-    </>
+    </CurrentTabUidContext.Provider>
   );
 };
 

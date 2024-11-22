@@ -33,7 +33,10 @@ LocationSearchContext.displayName = 'LocationSearchContext';
 const IsAdminPageContext = React.createContext<boolean>(false);
 IsAdminPageContext.displayName = 'IsAdminPageContext';
 
-const CurrentPageUidContext = React.createContext<string>('');
+/**
+ * @internal
+ */
+export const CurrentPageUidContext = React.createContext<string>('');
 CurrentPageUidContext.displayName = 'CurrentPageUidContext';
 
 const MatchAdminContext = React.createContext<boolean>(false);
@@ -45,7 +48,10 @@ MatchAdminNameContext.displayName = 'MatchAdminNameContext';
 const IsInSettingsPageContext = React.createContext<boolean>(false);
 IsInSettingsPageContext.displayName = 'IsInSettingsPageContext';
 
-const CurrentTabUidContext = React.createContext<string>('');
+/**
+ * @internal
+ */
+export const CurrentTabUidContext = React.createContext<string>('');
 CurrentTabUidContext.displayName = 'CurrentTabUidContext';
 
 const SearchParamsContext = React.createContext<URLSearchParams>(new URLSearchParams());

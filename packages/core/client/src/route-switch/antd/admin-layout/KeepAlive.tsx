@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import _ from 'lodash';
 import React, {
   createContext,
   FC,
@@ -15,6 +16,8 @@ import React, {
   useDeferredValue,
   useRef,
 } from 'react';
+import { UNSAFE_LocationContext, UNSAFE_RouteContext } from 'react-router-dom';
+import { CurrentPageUidContext } from '../../../application/CustomRouterContextProvider';
 
 const displayBlock = {
   display: 'block',
@@ -28,8 +31,44 @@ const KeepAliveContext = createContext(true);
 
 export const KeepAliveProvider: FC<{ active: boolean }> = ({ children, active }) => {
   const deferredActive = useDeferredValue(active);
+  const currentLocationContext = useContext(UNSAFE_LocationContext);
+  const currentRouteContext = useContext(UNSAFE_RouteContext);
+  const prevLocationContextRef = useRef(currentLocationContext);
+  const prevRouteContextRef = useRef(currentRouteContext);
 
-  return <KeepAliveContext.Provider value={deferredActive}>{children}</KeepAliveContext.Provider>;
+  if (
+    active &&
+    // Skip comparing location key to improve LocationContext rendering performance
+    !_.isEqual(_.omit(prevLocationContextRef.current.location, 'key'), _.omit(currentLocationContext.location, 'key'))
+  ) {
+    prevLocationContextRef.current = currentLocationContext;
+  }
+
+  if (active && !_.isEqual(prevRouteContextRef.current, currentRouteContext)) {
+    prevRouteContextRef.current = currentRouteContext;
+  }
+
+  // When the page is inactive, we use UNSAFE_LocationContext and UNSAFE_RouteContext to prevent child components
+  // from receiving Context updates, thereby optimizing performance.
+  // This is based on how React Context works:
+  // 1. When Context value changes, React traverses the component tree from top to bottom
+  // 2. During traversal, React finds components using that Context and marks them for update
+  // 3. When encountering the same Context Provider, traversal stops, avoiding unnecessary child component updates
+  return (
+    <KeepAliveContext.Provider value={deferredActive}>
+      <UNSAFE_LocationContext.Provider value={prevLocationContextRef.current}>
+        <UNSAFE_RouteContext.Provider value={prevRouteContextRef.current}>{children}</UNSAFE_RouteContext.Provider>
+      </UNSAFE_LocationContext.Provider>
+    </KeepAliveContext.Provider>
+  );
+};
+
+/**
+ * Used on components that don't need KeepAlive context, to improve performance when Context values change
+ * @returns
+ */
+export const KeepAliveContextCleaner: FC = ({ children }) => {
+  return <KeepAliveContext.Provider value={true}>{children}</KeepAliveContext.Provider>;
 };
 
 /**
@@ -109,9 +148,11 @@ export const KeepAlive: FC<KeepAliveProps> = React.memo(({ children, uid }) => {
   return (
     <>
       {renderedPageRef.current.map((renderedUid) => (
-        <div key={renderedUid} style={renderedUid === uid ? displayBlock : displayNone}>
-          <KeepAliveProvider active={renderedUid === uid}>{children(renderedUid)}</KeepAliveProvider>
-        </div>
+        <CurrentPageUidContext.Provider value={renderedUid} key={renderedUid}>
+          <div style={renderedUid === uid ? displayBlock : displayNone}>
+            <KeepAliveProvider active={renderedUid === uid}>{children(renderedUid)}</KeepAliveProvider>
+          </div>
+        </CurrentPageUidContext.Provider>
       ))}
     </>
   );
