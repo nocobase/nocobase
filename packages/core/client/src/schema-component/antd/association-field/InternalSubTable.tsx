@@ -81,6 +81,7 @@ export const InternalSubTable = observer(
             `}
             layout={'vertical'}
             bordered={false}
+            feedbackLayout="popover"
           >
             <SchemaOptionsContext.Provider
               value={{

@@ -43,7 +43,7 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { SchemaSettingsItemType, VariablesContext } from '../';
+import { SchemaSettingsItemType, VariablesContext, useZIndexContext, zIndexContext } from '../';
 import { APIClientProvider } from '../api-client/APIClientProvider';
 import { useAPIClient } from '../api-client/hooks/useAPIClient';
 import { ApplicationContext, LocationSearchContext, useApp, useLocationSearch } from '../application';
@@ -629,6 +629,9 @@ export const SchemaSettingsActionModalItem: FC<SchemaSettingsActionModalItemProp
   const compile = useCompile();
   const api = useAPIClient();
   const upLevelActiveFields = useFormActiveFields();
+  const parentZIndex = useZIndexContext();
+
+  const zIndex = parentZIndex + 10;
 
   const form = useMemo(
     () =>
@@ -682,7 +685,7 @@ export const SchemaSettingsActionModalItem: FC<SchemaSettingsActionModalItemProp
 
   const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLLIElement>): void => e.stopPropagation(), []);
   return (
-    <>
+    <zIndexContext.Provider value={zIndex}>
       <SchemaSettingsItem
         title={compile(title)}
         {...others}
@@ -699,6 +702,7 @@ export const SchemaSettingsActionModalItem: FC<SchemaSettingsActionModalItemProp
           destroyOnClose
           open={visible}
           onCancel={cancelHandler}
+          zIndex={zIndex}
           footer={
             <Space>
               <Button onClick={cancelHandler}>{t('Cancel')}</Button>
@@ -723,7 +727,7 @@ export const SchemaSettingsActionModalItem: FC<SchemaSettingsActionModalItemProp
         </Modal>,
         document.body,
       )}
-    </>
+    </zIndexContext.Provider>
   );
 });
 SchemaSettingsActionModalItem.displayName = 'SchemaSettingsActionModalItem';

@@ -98,7 +98,7 @@ jobs:
             packages/**/lib/
             packages/**/dist/
             !packages/**/node_modules/**
-    timeout-minutes: 20
+    # timeout-minutes: 20
 
   core-and-plugins:
     name: Core and plugins
