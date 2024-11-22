@@ -230,7 +230,6 @@ export default class extends Trigger {
       'x-decorator': 'FormItem',
       'x-component': 'RemoteSelect',
       'x-component-props': {
-        objectValue: true,
         fieldNames: {
           label: 'title',
           value: 'name',

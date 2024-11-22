@@ -185,11 +185,22 @@ export default class extends Trigger {
     }
   }
 
-  on(workflow: WorkflowModel) {}
-
-  off(workflow: WorkflowModel) {}
-
   async execute(workflow: WorkflowModel, context: Context, options: EventOptions) {
-    return this.workflow.trigger(workflow, context.action.params.values, { ...options, httpContext: context });
+    const { values } = context.action.params;
+    const UserModel = context.app.db.getModel('users');
+    const user = UserModel.build(values.user);
+    const roleName = values.roleName || (await user.getRoles({ transaction: options.transaction }))[0]?.name;
+    return this.workflow.trigger(
+      workflow,
+      {
+        data: values.data,
+        user: values.user,
+        roleName,
+      },
+      {
+        ...options,
+        httpContext: context,
+      },
+    );
   }
 }
