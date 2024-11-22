@@ -142,12 +142,13 @@ function TriggerExecution() {
                 'x-decorator': 'FormItem',
                 'x-component': 'Input.JSON',
                 'x-component-props': {
-                  className: css`
-                    padding: 1em;
-                    background-color: #f3f3f3;
-                  `,
+                  className: styles.nodeJobResultClass,
+                  autoSize: {
+                    minRows: 4,
+                    maxRows: 32,
+                  },
                 },
-                'x-read-pretty': true,
+                'x-disabled': true,
               },
             },
           },

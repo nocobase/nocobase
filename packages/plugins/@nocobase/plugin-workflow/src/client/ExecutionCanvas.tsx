@@ -111,6 +111,10 @@ function JobModal() {
                   'x-component': 'Input.JSON',
                   'x-component-props': {
                     className: styles.nodeJobResultClass,
+                    autoSize: {
+                      minRows: 4,
+                      maxRows: 32,
+                    },
                   },
                   // 'x-read-pretty': true,
                   'x-disabled': true,

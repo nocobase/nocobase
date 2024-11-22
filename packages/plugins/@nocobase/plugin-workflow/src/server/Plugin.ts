@@ -365,7 +365,7 @@ export default class PluginWorkflowServer extends Plugin {
     options: EventOptions = {},
   ): void | Promise<Processor | null> {
     const logger = this.getLogger(workflow.id);
-    if (!workflow.enabled) {
+    if (!options.immediately && !workflow.enabled) {
       logger.warn(`workflow ${workflow.id} is not enabled, event will be ignored`);
       return;
     }

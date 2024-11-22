@@ -14,8 +14,8 @@ import Processor from '../Processor';
 
 export abstract class Trigger {
   constructor(public readonly workflow: Plugin) {}
-  abstract on(workflow: WorkflowModel): void;
-  abstract off(workflow: WorkflowModel): void;
+  on(workflow: WorkflowModel): void {}
+  off(workflow: WorkflowModel): void {}
   validateEvent(workflow: WorkflowModel, context: any, options: Transactionable): boolean | Promise<boolean> {
     return true;
   }

@@ -40,12 +40,14 @@ export default class PluginWorkflowClient extends Plugin {
 
   useTriggersOptions = () => {
     const compile = useCompile();
-    return Array.from(this.triggers.getEntities()).map(([value, { title, ...options }]) => ({
-      value,
-      label: compile(title),
-      color: 'gold',
-      options,
-    }));
+    return Array.from(this.triggers.getEntities())
+      .map(([value, { title, ...options }]) => ({
+        value,
+        label: compile(title),
+        color: 'gold',
+        options,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
   };
 
   isWorkflowSync(workflow) {
