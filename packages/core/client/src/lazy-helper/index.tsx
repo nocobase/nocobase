@@ -78,7 +78,7 @@ export function lazy<M extends Record<string, any>, K extends keyof M & string>(
  *
  * This hook uses `useImported` to dynamically import a module and return a specific export
  * from the module. It throws a promise while the module is being loaded, which can be caught
- * by an parent error boundary to show a loading state.
+ * by the parent error boundary to show a loading state.
  *
  * @template T - The type of the export being picked from the module.
  *
