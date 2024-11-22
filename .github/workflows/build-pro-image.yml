@@ -16,6 +16,14 @@ on:
       - 'Dockerfile.pro'
       - 'package.json'
       - '.github/workflows/build-pro-image.yml'
+  pull_request:
+    branches:
+      - '**'
+    paths:
+      - 'packages/**'
+      - 'docker/nocobase/**'
+      - 'Dockerfile'
+      - '.github/workflows/build-docker-image.yml'
 
 jobs:
   get-plugins:
@@ -131,7 +139,7 @@ jobs:
       - name: Set tags
         id: set-tags
         run: |
-          echo "::set-output name=tags::${{ secrets.ALI_DOCKER_REGISTRY }}/${{ steps.meta.outputs.tags }}-pro"
+          echo "::set-output name=tags::${{ secrets.ALI_DOCKER_REGISTRY }}/${{ steps.meta.outputs.tags }}"
       - name: Set variables
         run: |
           target_directory="./packages/pro-plugins/@nocobase"
@@ -162,7 +170,7 @@ jobs:
           IMAGE_TAG: ${{ steps.meta.outputs.tags }}
         run: |
           echo $IMAGE_TAG
-          export APP_NAME=$(echo $IMAGE_TAG | cut -d ":" -f 2)-pro
+          export APP_NAME=$(echo $IMAGE_TAG | cut -d ":" -f 2)
           echo $APP_NAME
           curl --retry 2 --location --request POST "${{secrets.NOCOBASE_DEPLOY_HOST}}$APP_NAME" \
             --header 'Content-Type: application/json' \

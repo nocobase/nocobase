@@ -57,7 +57,6 @@ export default function () {
       {
         type: 'hasMany',
         name: 'executions',
-        onDelete: 'CASCADE',
       },
       {
         type: 'integer',

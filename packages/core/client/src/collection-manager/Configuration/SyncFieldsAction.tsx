@@ -15,6 +15,7 @@ import { Button } from 'antd';
 import { cloneDeep, omit } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useParams } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
@@ -172,8 +173,11 @@ export const SyncFieldsActionCom = (props) => {
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
+  const { name = 'main' } = useParams();
+
   return (
-    record.template === 'view' && (
+    record.template === 'view' &&
+    name === 'main' && (
       <RecordProvider record={record}>
         <ActionContextProvider value={{ visible, setVisible, drawerProps: { width: 900 } }}>
           {children || (
