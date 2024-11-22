@@ -362,7 +362,7 @@ export class Designable {
       }
     });
 
-    this.emit('patch', { schema });
+    return this.emit('patch', { schema });
   }
 
   getSchemaAttribute(key: string | string[], defaultValue?: any) {
