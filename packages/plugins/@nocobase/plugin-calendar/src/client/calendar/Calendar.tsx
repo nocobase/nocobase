@@ -35,7 +35,7 @@ import { useCalenderHeight } from './hook';
 import useStyle from './style';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
-import { useImported } from '@nocobase/client';
+import { useLazyHook } from '@nocobase/client';
 
 interface Event {
   id: string;
@@ -101,9 +101,9 @@ const useEvents = (
   date: Date,
   view: (typeof Weeks)[number],
 ) => {
-  const { imported: parseExpression, loading: parserLoading } = useImported(
+  const parseExpression = useLazyHook<typeof import('cron-parser').parseExpression>(
     () => import('cron-parser'),
-    (module) => module.parseExpression,
+    'parseExpression',
   );
   const { t } = useTranslation();
   const { fields } = useCollection();
@@ -240,28 +240,22 @@ export const Calendar: any = withDynamicSchemaProps(
       const { openPopup } = usePopupUtils({
         setVisible,
       });
-      const { imported: reactBigCalendar, loading: importing } = useImported(
+      const reactBigCalendar = useLazyHook(
         () => import('react-big-calendar'),
-        (module) => {
-          // import { Calendar as BigCalendar, View, dayjsLocalizer } from 'react-big-calendar';
-          return {
-            BigCalendar: module.Calendar,
-            dayjsLocalizer: module.dayjsLocalizer,
-          };
-        },
+        (module) => ({
+          BigCalendar: module.Calendar,
+          dayjsLocalizer: module.dayjsLocalizer,
+        }),
       );
-      // import * as dates from 'react-big-calendar/lib/utils/dates';
-      const { imported: eq, loading: utilsLoading } = useImported(
+
+      const eq = useLazyHook<typeof import('react-big-calendar/lib/utils/dates').eq>(
         () => import('react-big-calendar/lib/utils/dates'),
-        (module) => module.eq,
+        'eq',
       );
 
       const localizer = useMemo(() => {
-        if (importing) {
-          return null;
-        }
         return reactBigCalendar.dayjsLocalizer(dayjs);
-      }, [reactBigCalendar, importing]);
+      }, [reactBigCalendar]);
 
       // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
       const { dataSource, fieldNames, showLunar, defaultView } = useProps(props);
@@ -342,67 +336,65 @@ export const Calendar: any = withDynamicSchemaProps(
             <RecordProvider record={record} parent={parentRecordData}>
               <CalendarRecordViewer />
             </RecordProvider>
-            {importing ? null : (
-              <BigCalendar
-                popup
-                selectable
-                events={events}
-                eventPropGetter={eventPropGetter}
-                view={view}
-                views={Weeks}
-                date={date}
-                step={60}
-                showMultiDayTimes
-                messages={messages}
-                onNavigate={setDate}
-                onView={setView}
-                onSelectSlot={(slotInfo) => {
-                  //nint show create popup
-                  if (canCreate && createActionSchema) {
-                    const record = {};
-                    record[startFieldName] = slotInfo.start;
-                    record[endFieldName] = slotInfo.end;
-                    openPopup({
-                      recordData: record,
-                      customActionSchema: createActionSchema,
-                    });
-                  }
-                }}
-                onDoubleClickEvent={() => {
-                  console.log('onDoubleClickEvent');
-                }}
-                onSelectEvent={(event) => {
-                  const record = dataSource?.find((item) => item[fieldNames.id] === event.id);
-                  if (!record) {
-                    return;
-                  }
-                  record.__event = {
-                    ...event,
-                    start: formatDate(dayjs(event.start)),
-                    end: formatDate(dayjs(event.end)),
-                  };
-
-                  setRecord(record);
+            <BigCalendar
+              popup
+              selectable
+              events={events}
+              eventPropGetter={eventPropGetter}
+              view={view}
+              views={Weeks}
+              date={date}
+              step={60}
+              showMultiDayTimes
+              messages={messages}
+              onNavigate={setDate}
+              onView={setView}
+              onSelectSlot={(slotInfo) => {
+                //nint show create popup
+                if (canCreate && createActionSchema) {
+                  const record = {};
+                  record[startFieldName] = slotInfo.start;
+                  record[endFieldName] = slotInfo.end;
                   openPopup({
                     recordData: record,
-                    customActionSchema: findEventSchema(fieldSchema),
+                    customActionSchema: createActionSchema,
                   });
-                }}
-                formats={{
-                  monthHeaderFormat: 'YYYY-M',
-                  agendaDateFormat: 'M-DD',
-                  dayHeaderFormat: 'YYYY-M-DD',
-                  dayRangeHeaderFormat: ({ start, end }, culture, local) => {
-                    if (!utilsLoading && eq(start, end, 'month')) {
-                      return local.format(start, 'YYYY-M', culture);
-                    }
-                    return `${local.format(start, 'YYYY-M', culture)} - ${local.format(end, 'YYYY-M', culture)}`;
-                  },
-                }}
-                components={components}
-                localizer={localizer}
-              />
-            )}
+                }
+              }}
+              onDoubleClickEvent={() => {
+                console.log('onDoubleClickEvent');
+              }}
+              onSelectEvent={(event) => {
+                const record = dataSource?.find((item) => item[fieldNames.id] === event.id);
+                if (!record) {
+                  return;
+                }
+                record.__event = {
+                  ...event,
+                  start: formatDate(dayjs(event.start)),
+                  end: formatDate(dayjs(event.end)),
+                };
+
+                setRecord(record);
+                openPopup({
+                  recordData: record,
+                  customActionSchema: findEventSchema(fieldSchema),
+                });
+              }}
+              formats={{
+                monthHeaderFormat: 'YYYY-M',
+                agendaDateFormat: 'M-DD',
+                dayHeaderFormat: 'YYYY-M-DD',
+                dayRangeHeaderFormat: ({ start, end }, culture, local) => {
+                  if (eq(start, end, 'month')) {
+                    return local.format(start, 'YYYY-M', culture);
+                  }
+                  return `${local.format(start, 'YYYY-M', culture)} - ${local.format(end, 'YYYY-M', culture)}`;
+                },
+              }}
+              components={components}
+              localizer={localizer}
+            />
           </PopupContextProvider>
         </div>,
       );

@@ -21,13 +21,13 @@ import qs from 'qs';
 import { ChangeEvent, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavigateFunction } from 'react-router-dom';
-import { useImported } from 'react-imported-component';
 import {
   AssociationFilter,
   useCollection,
   useCollectionRecord,
   useDataSourceHeaders,
   useFormActiveFields,
+  useLazyHook,
   useParsedFilter,
   useRouterBasename,
   useTableBlockContext,
@@ -1094,15 +1094,10 @@ export const useDisassociateActionProps = () => {
 
 export const useDetailPrintActionProps = () => {
   const { formBlockRef } = useFormBlockContext();
-  const {
-    imported: useReactToPrint,
-    loading,
-    loadable,
-  } = useImported<typeof import('react-to-print'), typeof import('react-to-print').useReactToPrint>(
+  const useReactToPrint = useLazyHook<typeof import('react-to-print').useReactToPrint>(
     () => import('react-to-print'),
-    (module) => module.useReactToPrint,
+    'useReactToPrint',
   );
-
   const printHandler = useReactToPrint({
     content: () => formBlockRef.current,
     pageStyle: `@media print {
@@ -1114,11 +1109,6 @@ export const useDetailPrintActionProps = () => {
         }
       }`,
   });
-  if (loading) {
-    return {
-      onClick: async () => {},
-    };
-  }
   return {
     async onClick() {
       printHandler();

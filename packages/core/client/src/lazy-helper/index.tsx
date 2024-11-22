@@ -56,8 +56,12 @@ export function lazy<M extends Record<string, any>, K extends keyof M & string>(
   );
 }
 
-export function useLazyHook<T = () => any>(importor: Parameters<typeof useImported>[0], name: string) {
-  const { imported, loading, loadable } = useImported(importor, (module) => module[name]);
+export function useLazyHook<T = () => any>(
+  importor: Parameters<typeof useImported>[0],
+  picker: string | ((module: any) => T),
+): T {
+  const exportPicker = typeof picker === 'function' ? picker : (module) => module[picker];
+  const { imported, loading, loadable } = useImported(importor, exportPicker);
   if (loading) {
     throw loadable.resolution;
   }
