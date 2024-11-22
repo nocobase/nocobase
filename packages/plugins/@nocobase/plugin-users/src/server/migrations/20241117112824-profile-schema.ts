@@ -9,7 +9,11 @@
 
 import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import { Migration } from '@nocobase/server';
-import { adminProfileEditFormSchema, userProfileEditFormSchema } from '../profile/edit-form-schema';
+import {
+  adminProfileCreateFormSchema,
+  adminProfileEditFormSchema,
+  userProfileEditFormSchema,
+} from '../profile/edit-form-schema';
 
 export default class extends Migration {
   on = 'afterLoad'; // 'beforeLoad' or 'afterLoad'
@@ -17,12 +21,20 @@ export default class extends Migration {
 
   async up() {
     const repo = this.db.getRepository<UiSchemaRepository>('uiSchemas');
-    const adminSchema = await repo.findOne({
+    const adminCreateSchema = await repo.findOne({
+      filter: {
+        'x-uid': 'nocobase-admin-profile-create-form',
+      },
+    });
+    if (!adminCreateSchema) {
+      await repo.insert(adminProfileCreateFormSchema);
+    }
+    const adminEditSchema = await repo.findOne({
       filter: {
         'x-uid': 'nocobase-admin-profile-edit-form',
       },
     });
-    if (!adminSchema) {
+    if (!adminEditSchema) {
       await repo.insert(adminProfileEditFormSchema);
     }
     const userSchema = await repo.findOne({
