@@ -165,7 +165,7 @@ jobs:
         with:
           context: ./docker/nocobase
           build-args: |
-            CNA_VERSION: ${{ steps.get-info.outputs.defaultTag }}
+            CNA_VERSION=${{ steps.get-info.outputs.defaultTag }}
           platforms: linux/amd64,linux/arm64
           push: true
           tags: nocobase/nocobase:${{ steps.get-info.outputs.defaultTag }},${{ steps.meta.outputs.tags }},${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/nocobase/nocobase:${{ steps.get-info.outputs.defaultTag }},${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/${{ steps.meta.outputs.tags }}

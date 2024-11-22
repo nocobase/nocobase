@@ -7,27 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { rspack } from '@rspack/core';
 import ncc from '@vercel/ncc';
-import react from '@vitejs/plugin-react';
 import chalk from 'chalk';
 import fg from 'fast-glob';
 import fs from 'fs-extra';
 import path from 'path';
 import { build as tsupBuild } from 'tsup';
-import { build as viteBuild } from 'vite';
-import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
-import { rspack } from '@rspack/core';
 
 import { EsbuildSupportExts, globExcludeFiles } from './constant';
 import { PkgLog, UserConfig, getPackageJson } from './utils';
 import {
   buildCheck,
-  checkFileSize,
   checkRequire,
   getExcludePackages,
   getIncludePackages,
   getPackagesFromFiles,
-  getSourcePackages,
+  getSourcePackages
 } from './utils/buildPluginUtils';
 import { getDepPkgPath, getDepsConfig } from './utils/getDepsConfig';
 import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
@@ -47,8 +43,10 @@ const external = [
   '@nocobase/database',
   '@nocobase/data-source-manager',
   '@nocobase/evaluators',
+  '@nocobase/lock-manager',
   '@nocobase/logger',
   '@nocobase/resourcer',
+  '@nocobase/telemetry',
   '@nocobase/sdk',
   '@nocobase/server',
   '@nocobase/test',
