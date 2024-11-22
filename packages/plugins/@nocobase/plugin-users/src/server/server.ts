@@ -14,7 +14,11 @@ import * as actions from './actions/users';
 import { UserModel } from './models/UserModel';
 import PluginUserDataSyncServer from '@nocobase/plugin-user-data-sync';
 import { UserDataSyncResource } from './user-data-sync-resource';
-import { adminProfileEditFormSchema, userProfileEditFormSchema } from './profile/edit-form-schema';
+import {
+  adminProfileCreateFormSchema,
+  adminProfileEditFormSchema,
+  userProfileEditFormSchema,
+} from './profile/edit-form-schema';
 import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 
 export default class PluginUsersServer extends Plugin {
@@ -226,6 +230,7 @@ export default class PluginUsersServer extends Plugin {
 
   async initProfileSchema() {
     const uiSchemas = this.db.getRepository<UiSchemaRepository>('uiSchemas');
+    await uiSchemas.insert(adminProfileCreateFormSchema);
     await uiSchemas.insert(adminProfileEditFormSchema);
     await uiSchemas.insert(userProfileEditFormSchema);
   }

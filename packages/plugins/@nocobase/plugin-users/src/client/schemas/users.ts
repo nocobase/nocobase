@@ -159,13 +159,7 @@ export const usersSchema: ISchema = {
           properties: {
             filter: {
               type: 'void',
-              title: '{{ t("Filter") }}',
-              'x-action': 'filter',
-              'x-component': 'Filter.Action',
-              'x-use-component-props': 'useFilterActionProps',
-              'x-component-props': {
-                icon: 'FilterOutlined',
-              },
+              'x-component': 'FilterAction',
               'x-align': 'left',
             },
             refresh: {
@@ -206,55 +200,9 @@ export const usersSchema: ISchema = {
                   'x-decorator': 'FormV2',
                   title: '{{t("Add user")}}',
                   properties: {
-                    nickname: {
-                      'x-component': 'CollectionField',
-                      'x-decorator': 'FormItem',
-                    },
-                    username: {
-                      'x-component': 'CollectionField',
-                      'x-decorator': 'FormItem',
-                    },
-                    email: {
-                      title: '{{t("Email")}}',
-                      'x-component': 'Input',
-                      'x-validator': 'email',
-                      'x-decorator': 'FormItem',
-                      required: false,
-                    },
-                    phone: {
-                      title: '{{t("Phone")}}',
-                      'x-component': 'Input',
-                      'x-decorator': 'FormItem',
-                      required: false,
-                    },
-                    password: {
-                      'x-component': 'CollectionField',
-                      'x-decorator': 'FormItem',
-                      required: true,
-                    },
-                    roles: {
-                      'x-component': 'CollectionField',
-                      'x-collection-field': 'users.roles',
-                      'x-decorator': 'FormItem',
-                    },
-                    footer: {
+                    form: {
                       type: 'void',
-                      'x-component': 'Action.Drawer.Footer',
-                      properties: {
-                        cancel: {
-                          title: '{{t("Cancel")}}',
-                          'x-component': 'Action',
-                          'x-use-component-props': 'useCancelActionProps',
-                        },
-                        submit: {
-                          title: '{{t("Submit")}}',
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            type: 'primary',
-                          },
-                          'x-use-component-props': 'useSubmitActionProps',
-                        },
-                      },
+                      'x-component': 'ProfileCreateForm',
                     },
                   },
                 },
@@ -453,13 +401,6 @@ export const usersSettingsSchema: ISchema = {
           'x-component': 'FormV2',
           'x-use-component-props': 'useFormBlockProps',
           properties: {
-            basic: {
-              type: 'void',
-              'x-component': 'Divider',
-              'x-component-props': {
-                children: '{{t("Basic")}}',
-              },
-            },
             enableEditProfile: {
               type: 'string',
               'x-component': 'Checkbox',
@@ -478,31 +419,6 @@ export const usersSettingsSchema: ISchema = {
               title: '{{t("Save")}}',
               'x-component': 'Action',
               'x-use-component-props': 'useSubmitActionProps',
-            },
-            profileEditForm: {
-              type: 'void',
-              'x-component': 'Divider',
-              'x-component-props': {
-                children: '{{t("Profile editing form")}}',
-              },
-            },
-            configureProfileForm: {
-              title: 'Configure',
-              type: 'void',
-              'x-component': 'Action',
-              properties: {
-                drawer: {
-                  type: 'void',
-                  'x-component': 'Action.Drawer',
-                  title: "{{t('Configure profile editing form')}}",
-                  properties: {
-                    form: {
-                      type: 'void',
-                      'x-component': 'ProfileFormConfiguration',
-                    },
-                  },
-                },
-              },
             },
           },
         },
