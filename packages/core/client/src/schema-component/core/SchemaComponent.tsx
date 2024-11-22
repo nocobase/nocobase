@@ -50,21 +50,23 @@ const RecursionSchemaComponent = memo((props: ISchemaFieldProps & SchemaComponen
   const ctx = useContext(SchemaComponentContext);
   const schema = useMemo(() => toSchema(_schema), [_schema]);
   const refresh = useUpdate();
+  const value = useMemo(
+    () => ({
+      ...ctx,
+      distributed: ctx.distributed == false ? false : distributed,
+      refresh: () => {
+        refresh();
+        if (ctx.distributed === false || distributed === false) {
+          ctx.refresh?.();
+        }
+        onChange?.(schema);
+      },
+    }),
+    [ctx, distributed, onChange, refresh, schema],
+  );
 
   return (
-    <SchemaComponentContext.Provider
-      value={{
-        ...ctx,
-        distributed: ctx.distributed == false ? false : distributed,
-        refresh: () => {
-          refresh();
-          if (ctx.distributed === false || distributed === false) {
-            ctx.refresh?.();
-          }
-          onChange?.(schema);
-        },
-      }}
-    >
+    <SchemaComponentContext.Provider value={value}>
       <SchemaComponentOptions inherit components={components} scope={scope}>
         <NocoBaseRecursionField {...others} schema={schema} isUseFormilyField />
       </SchemaComponentOptions>

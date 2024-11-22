@@ -201,8 +201,8 @@ const MenuEditor = (props) => {
   }, [currentPageUid, isMatchAdmin, isMatchAdminName, schema, setTitle]);
 
   const scope = useMemo(() => {
-    return { useMenuProps, onSelect, sideMenuRef, defaultSelectedUid: currentPageUid };
-  }, [currentPageUid, onSelect, sideMenuRef]);
+    return { useMenuProps, onSelect, sideMenuRef };
+  }, [onSelect, sideMenuRef]);
 
   return <SchemaComponent distributed scope={scope} schema={schema} />;
 };
