@@ -12,7 +12,7 @@ import { randomUUID } from 'crypto';
 
 import LRUCache from 'lru-cache';
 
-import { Op, Transactionable } from '@nocobase/database';
+import { Op, Transaction, Transactionable } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
@@ -64,7 +64,7 @@ export default class PluginWorkflowServer extends Plugin {
   private meter = null;
   private checker: NodeJS.Timeout = null;
 
-  private onBeforeSave = async (instance: WorkflowModel, options) => {
+  private onBeforeSave = async (instance: WorkflowModel, { transaction }) => {
     const Model = <typeof WorkflowModel>instance.constructor;
 
     if (instance.enabled) {
@@ -74,7 +74,7 @@ export default class PluginWorkflowServer extends Plugin {
         where: {
           key: instance.key,
         },
-        transaction: options.transaction,
+        transaction,
       });
       if (!count) {
         instance.set('current', true);
@@ -93,7 +93,7 @@ export default class PluginWorkflowServer extends Plugin {
           [Op.ne]: instance.id,
         },
       },
-      transaction: options.transaction,
+      transaction,
     });
 
     if (previous) {
@@ -101,35 +101,33 @@ export default class PluginWorkflowServer extends Plugin {
       await previous.update(
         { enabled: false, current: null },
         {
-          transaction: options.transaction,
+          transaction,
           hooks: false,
         },
       );
 
-      this.toggle(previous, false);
+      this.toggle(previous, false, { transaction });
     }
   };
 
-  async onSync(message) {
+  async handleSyncMessage(message) {
     if (message.type === 'statusChange') {
-      const workflowId = Number.parseInt(message.workflowId, 10);
-      const enabled = Number.parseInt(message.enabled, 10);
-      if (enabled) {
-        let workflow = this.enabledCache.get(workflowId);
+      if (message.enabled) {
+        let workflow = this.enabledCache.get(message.workflowId);
         if (workflow) {
           await workflow.reload();
         } else {
           workflow = await this.db.getRepository('workflows').findOne({
-            filterByTk: workflowId,
+            filterByTk: message.workflowId,
           });
         }
         if (workflow) {
-          this.toggle(workflow, true, true);
+          this.toggle(workflow, true, { silent: true });
         }
       } else {
-        const workflow = this.enabledCache.get(workflowId);
+        const workflow = this.enabledCache.get(message.workflowId);
         if (workflow) {
-          this.toggle(workflow, false, true);
+          this.toggle(workflow, false, { silent: true });
         }
       }
     }
@@ -271,13 +269,17 @@ export default class PluginWorkflowServer extends Plugin {
     });
 
     db.on('workflows.beforeSave', this.onBeforeSave);
-    db.on('workflows.afterCreate', (model: WorkflowModel) => {
+    db.on('workflows.afterCreate', (model: WorkflowModel, { transaction }) => {
       if (model.enabled) {
-        this.toggle(model);
+        this.toggle(model, true, { transaction });
       }
     });
-    db.on('workflows.afterUpdate', (model: WorkflowModel) => this.toggle(model));
-    db.on('workflows.beforeDestroy', (model: WorkflowModel) => this.toggle(model, false));
+    db.on('workflows.afterUpdate', (model: WorkflowModel, { transaction }) =>
+      this.toggle(model, model.enabled, { transaction }),
+    );
+    db.on('workflows.afterDestroy', (model: WorkflowModel, { transaction }) =>
+      this.toggle(model, false, { transaction }),
+    );
 
     // [Life Cycle]:
     //   * load all workflows in db
@@ -293,7 +295,7 @@ export default class PluginWorkflowServer extends Plugin {
       });
 
       workflows.forEach((workflow: WorkflowModel) => {
-        this.toggle(workflow);
+        this.toggle(workflow, true, { silent: true });
       });
 
       this.checker = setInterval(() => {
@@ -306,7 +308,7 @@ export default class PluginWorkflowServer extends Plugin {
 
     this.app.on('beforeStop', async () => {
       for (const workflow of this.enabledCache.values()) {
-        this.toggle(workflow, false);
+        this.toggle(workflow, false, { silent: true });
       }
 
       this.ready = false;
@@ -323,7 +325,11 @@ export default class PluginWorkflowServer extends Plugin {
     });
   }
 
-  private toggle(workflow: WorkflowModel, enable?: boolean, silent = false) {
+  private toggle(
+    workflow: WorkflowModel,
+    enable?: boolean,
+    { silent, transaction }: { silent?: boolean } & Transactionable = {},
+  ) {
     const type = workflow.get('type');
     const trigger = this.triggers.get(type);
     if (!trigger) {
@@ -344,11 +350,14 @@ export default class PluginWorkflowServer extends Plugin {
       this.enabledCache.delete(workflow.id);
     }
     if (!silent) {
-      this.sync({
-        type: 'statusChange',
-        workflowId: `${workflow.id}`,
-        enabled: `${Number(next)}`,
-      });
+      this.sendSyncMessage(
+        {
+          type: 'statusChange',
+          workflowId: workflow.id,
+          enabled: next,
+        },
+        { transaction },
+      );
     }
   }
 
@@ -358,6 +367,10 @@ export default class PluginWorkflowServer extends Plugin {
     options: EventOptions = {},
   ): void | Promise<Processor | null> {
     const logger = this.getLogger(workflow.id);
+    if (!workflow.enabled) {
+      logger.warn(`workflow ${workflow.id} is not enabled, event will be ignored`);
+      return;
+    }
     if (!this.ready) {
       logger.warn(`app is not ready, event of workflow ${workflow.id} will be ignored`);
       logger.debug(`ignored event data:`, context);

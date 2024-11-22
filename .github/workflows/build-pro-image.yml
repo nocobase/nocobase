@@ -7,6 +7,7 @@ concurrency:
 on:
   push:
     branches:
+      - 'develop'
       - 'main'
       - 'next'
       - 'develop'
@@ -76,7 +77,7 @@ jobs:
             if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
               git checkout ${{ github.event.pull_request.base.ref }}
             else
-              git checkout main
+              git checkout next
             fi
           fi
       - name: Clone pro repos
@@ -96,7 +97,7 @@ jobs:
               if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
                 git checkout ${{ github.event.pull_request.base.ref }}
               else
-                git checkout main
+                git checkout next
               fi
             fi
             cd ../../../../
@@ -138,7 +139,7 @@ jobs:
       - name: Set tags
         id: set-tags
         run: |
-          echo "::set-output name=tags::${{ secrets.ALI_DOCKER_REGISTRY }}/${{ steps.meta.outputs.tags }}-pro"
+          echo "::set-output name=tags::${{ secrets.ALI_DOCKER_REGISTRY }}/${{ steps.meta.outputs.tags }}"
       - name: Set variables
         run: |
           target_directory="./packages/pro-plugins/@nocobase"

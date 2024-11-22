@@ -8,7 +8,7 @@
  */
 
 import { Database } from '@nocobase/database';
-import { MockServer, mockServer } from '@nocobase/test';
+import { MockServer, createMockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 
 describe('middleware', () => {
@@ -17,14 +17,13 @@ describe('middleware', () => {
   let agent;
 
   beforeEach(async () => {
-    app = mockServer({
+    app = await createMockServer({
       registerActions: true,
       acl: true,
-      plugins: ['users', 'auth', 'acl', 'data-source-manager'],
+      plugins: ['users', 'auth', 'acl', 'field-sort', 'data-source-manager'],
     });
 
     // app.plugin(ApiKeysPlugin);
-    await app.loadAndInstall({ clean: true });
     db = app.db;
     agent = app.agent();
   });

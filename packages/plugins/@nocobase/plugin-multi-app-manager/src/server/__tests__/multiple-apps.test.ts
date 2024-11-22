@@ -22,7 +22,7 @@ describe('multiple apps', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['nocobase', 'multi-app-manager'],
+      plugins: ['nocobase', 'field-sort', 'multi-app-manager'],
     });
     db = app.db;
   });
@@ -127,43 +127,6 @@ describe('multiple apps', () => {
     expect(err).toBeDefined();
 
     expect(await db.getRepository('applications').count()).toBe(0);
-  });
-
-  it('should upgrade sub app', async () => {
-    await db.getRepository('applications').create({
-      values: {
-        name: 'test1',
-        options: {
-          plugins: ['nocobase'],
-        },
-      },
-      context: {
-        waitSubAppInstall: true,
-      },
-    });
-
-    await db.getRepository('applications').create({
-      values: {
-        name: 'test2',
-        options: {
-          plugins: ['nocobase'],
-        },
-      },
-      context: {
-        waitSubAppInstall: true,
-      },
-    });
-
-    await app.runCommand('restart');
-    await app.runCommand('upgrade');
-    // const subAppStatus = AppSupervisor.getInstance().getAppStatus(name);
-    // expect(subAppStatus).toEqual('running');
-    //
-    // const subApp = await AppSupervisor.getInstance().getApp(name);
-    // await subApp.runCommand('upgrade');
-    //
-    // await AppSupervisor.getInstance().removeApp(name);
-    // expect(await db.getRepository('applications').count()).toBe(1);
   });
 
   it('should list application with status', async () => {

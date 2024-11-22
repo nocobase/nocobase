@@ -19,7 +19,7 @@ describe('token-blacklist', () => {
 
   beforeAll(async () => {
     app = await createMockServer({
-      plugins: ['auth'],
+      plugins: ['field-sort', 'auth'],
     });
     db = app.db;
     repo = db.getRepository('tokenBlacklist');

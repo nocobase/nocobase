@@ -136,10 +136,12 @@ const useEvents = (
 
       const push = (eventStart: Dayjs = start.clone()) => {
         // 必须在这个月的开始时间和结束时间，且在日程的开始时间之后
-        if (eventStart.isBefore(start) || !eventStart.isBetween(startDate, endDate)) {
+        if (
+          eventStart.isBefore(start) || // 开始时间早于 start
+          (!eventStart.isBetween(startDate, endDate) && !end.isBetween(startDate, endDate)) // 开始时间和结束时间不在月份范围内
+        ) {
           return;
         }
-
         let out = false;
         const res = exclude?.some((d) => {
           if (d.endsWith('_after')) {
@@ -163,6 +165,7 @@ const useEvents = (
 
         events.push(event);
       };
+
       if (cron === 'every_week') {
         let nextStart = start
           .clone()
