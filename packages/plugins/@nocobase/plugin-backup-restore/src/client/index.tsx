@@ -9,8 +9,8 @@
 
 import { Plugin } from '@nocobase/client';
 // import { BackupAndRestoreList } from './Configuration';
-import { createLazyComponents } from '@nocobase/client';
-const { BackupAndRestoreList } = createLazyComponents(() => import('./Configuration'), 'BackupAndRestoreList');
+import { lazy } from '@nocobase/client';
+const { BackupAndRestoreList } = lazy(() => import('./Configuration'), 'BackupAndRestoreList');
 import { DuplicatorProvider } from './DuplicatorProvider';
 import { NAMESPACE } from './locale';
 

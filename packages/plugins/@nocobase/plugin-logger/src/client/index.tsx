@@ -10,8 +10,8 @@
 import { Plugin } from '@nocobase/client';
 import { lang } from './locale';
 // import { LogsDownloader } from './LogsDownloader';
-import { createLazyComponents } from '@nocobase/client';
-const { LogsDownloader } = createLazyComponents(() => import('./LogsDownloader'), 'LogsDownloader');
+import { lazy } from '@nocobase/client';
+const { LogsDownloader } = lazy(() => import('./LogsDownloader'), 'LogsDownloader');
 
 export class PluginLoggerClient extends Plugin {
   async afterAdd() {

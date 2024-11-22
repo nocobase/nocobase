@@ -10,8 +10,8 @@
 import { Plugin } from '@nocobase/client';
 import { MultiAppManagerProvider } from './MultiAppManagerProvider';
 // import { AppManager } from './AppManager';
-import { createLazyComponents } from '@nocobase/client';
-const { AppManager } = createLazyComponents(() => import('./AppManager'), 'AppManager');
+import { lazy } from '@nocobase/client';
+const { AppManager } = lazy(() => import('./AppManager'), 'AppManager');
 
 import { NAMESPACE } from '../locale';
 

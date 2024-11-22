@@ -7,26 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { ComponentType, lazy } from 'react';
+import React, { ComponentType, lazy as ReactLazy } from 'react';
 import { Spin } from 'antd';
 import { get } from 'lodash';
 import { useImported } from 'react-imported-component';
 
-export function createLazyComponents<M extends ComponentType<any>>(
+export function lazy<M extends ComponentType<any>>(
   factory: () => Promise<{ default: M }>,
 ): React.LazyExoticComponent<M>;
 
-export function createLazyComponents<M extends Record<string, any>, K extends keyof M & string>(
+export function lazy<M extends Record<string, any>, K extends keyof M & string>(
   factory: () => Promise<M>,
   ...componentNames: K[]
 ): Record<K, React.LazyExoticComponent<M[K]>>;
 
-export function createLazyComponents<M extends Record<string, any>, K extends keyof M & string>(
+export function lazy<M extends Record<string, any>, K extends keyof M & string>(
   factory: () => Promise<M>,
   ...componentNames: K[]
 ) {
   if (componentNames.length === 0) {
-    const LazyComponent = lazy(() =>
+    const LazyComponent = ReactLazy(() =>
       factory().then((module) => ({
         default: module.default,
       })),
@@ -40,7 +40,7 @@ export function createLazyComponents<M extends Record<string, any>, K extends ke
 
   return componentNames.reduce(
     (acc, name) => {
-      const LazyComponent = lazy(() =>
+      const LazyComponent = ReactLazy(() =>
         factory().then((module) => ({
           default: get(module, name),
         })),

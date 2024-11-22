@@ -11,9 +11,9 @@ import { Pie } from './pie';
 import { DualAxes } from './dualAxes';
 import { G2PlotChart } from './g2plot';
 
-import { createLazyComponents } from '@nocobase/client';
+import { lazy } from '@nocobase/client';
 // import { Area, Column, Line, Scatter, Bar } from '@ant-design/plots';
-const { Area, Column, Line, Scatter, Bar } = createLazyComponents(
+const { Area, Column, Line, Scatter, Bar } = lazy(
   () => import('@ant-design/plots'),
   'Area',
   'Column',

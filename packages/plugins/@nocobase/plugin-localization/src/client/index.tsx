@@ -9,8 +9,8 @@
 
 import { Plugin } from '@nocobase/client';
 // import { Localization } from './Localization';
-import { createLazyComponents } from '@nocobase/client';
-const { Localization } = createLazyComponents(() => import('./Localization'), 'Localization');
+import { lazy } from '@nocobase/client';
+const { Localization } = lazy(() => import('./Localization'), 'Localization');
 import { NAMESPACE } from './locale';
 
 export class PluginLocalizationClient extends Plugin {

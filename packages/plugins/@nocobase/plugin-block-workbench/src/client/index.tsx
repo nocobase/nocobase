@@ -27,10 +27,10 @@ import {
   WorkbenchCustomRequestActionSchemaInitializerItem,
   workbenchActionSettingsCustomRequest,
 } from './WorkbenchCustomRequestActionSchemaInitializerItem';
-import { createLazyComponents } from '@nocobase/client';
+import { lazy } from '@nocobase/client';
 export class PluginBlockWorkbenchClient extends Plugin {
   async load() {
-    const { QRCodeScanner } = createLazyComponents(() => import('./components/qrcode-scanner'), 'QRCodeScanner');
+    const { QRCodeScanner } = lazy(() => import('./components/qrcode-scanner'), 'QRCodeScanner');
     this.app.addComponents({ WorkbenchBlock, QRCodeScanner, WorkbenchAction });
 
     // 新增工作台区块的设置器

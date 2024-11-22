@@ -10,9 +10,9 @@
 import { Plugin } from '@nocobase/client';
 // import { GraphCollectionPane } from './GraphCollectionShortcut';
 import { NAMESPACE } from './locale';
-import { createLazyComponents } from '@nocobase/client';
+import { lazy } from '@nocobase/client';
 
-const { GraphCollectionPane } = createLazyComponents(() => import('./GraphCollectionShortcut'), 'GraphCollectionPane');
+const { GraphCollectionPane } = lazy(() => import('./GraphCollectionShortcut'), 'GraphCollectionPane');
 export class PluginGraphCollectionPlugin extends Plugin {
   async load() {
     this.app.pluginSettingsManager.add(`data-source-manager/main.graph`, {

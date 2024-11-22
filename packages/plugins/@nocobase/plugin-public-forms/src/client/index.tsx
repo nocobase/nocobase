@@ -11,16 +11,10 @@ import { ISchema, Plugin } from '@nocobase/client';
 // import { AdminPublicFormList } from './components/AdminPublicFormList';
 // import { AdminPublicFormPage } from './components/AdminPublicFormPage';
 // import { PublicFormPage } from './components/PublicFormPage';
-import { createLazyComponents } from '@nocobase/client';
-const { AdminPublicFormList } = createLazyComponents(
-  () => import('./components/AdminPublicFormList'),
-  'AdminPublicFormList',
-);
-const { AdminPublicFormPage } = createLazyComponents(
-  () => import('./components/AdminPublicFormPage'),
-  'AdminPublicFormPage',
-);
-const { PublicFormPage } = createLazyComponents(() => import('./components/PublicFormPage'), 'PublicFormPage');
+import { lazy } from '@nocobase/client';
+const { AdminPublicFormList } = lazy(() => import('./components/AdminPublicFormList'), 'AdminPublicFormList');
+const { AdminPublicFormPage } = lazy(() => import('./components/AdminPublicFormPage'), 'AdminPublicFormPage');
+const { PublicFormPage } = lazy(() => import('./components/PublicFormPage'), 'PublicFormPage');
 
 import { formSchemaCallback } from './schemas/formSchemaCallback';
 import { publicFormBlockSettings, publicMarkdownBlockSettings } from './settings';

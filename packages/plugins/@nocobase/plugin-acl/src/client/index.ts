@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, createLazyComponents } from '@nocobase/client';
+import { Plugin, lazy } from '@nocobase/client';
 import { ACLSettingsUI } from './ACLSettingsUI';
 // import { RolesManagement } from './RolesManagement';
-const { RolesManagement } = createLazyComponents(() => import('./RolesManagement'), 'RolesManagement');
+const { RolesManagement } = lazy(() => import('./RolesManagement'), 'RolesManagement');
 import { RolesManager } from './roles-manager';
 
 export class PluginACLClient extends Plugin {

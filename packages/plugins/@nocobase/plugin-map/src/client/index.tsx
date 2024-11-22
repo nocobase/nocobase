@@ -14,8 +14,8 @@ import { mapActionInitializers, mapActionInitializers_deprecated } from './block
 import { mapBlockSettings } from './block/MapBlock.Settings';
 import { useMapBlockProps } from './block/MapBlockProvider';
 // import { Configuration, Map } from './components';
-import { createLazyComponents } from '@nocobase/client';
-const { Configuration, Map } = createLazyComponents(() => import('./components'), 'Configuration', 'Map');
+import { lazy } from '@nocobase/client';
+const { Configuration, Map } = lazy(() => import('./components'), 'Configuration', 'Map');
 
 import { fields } from './fields';
 import { fieldSettingsComponentMap } from './fields/fieldSettingsComponentMap';

@@ -11,40 +11,31 @@ import { Plugin } from '@nocobase/client';
 import PluginACLClient from '@nocobase/plugin-acl/client';
 import { uid } from '@nocobase/utils/client';
 import React from 'react';
-import { createLazyComponents } from '@nocobase/client';
+import { lazy } from '@nocobase/client';
 // import { DatabaseConnectionProvider } from './DatabaseConnectionProvider';
-const { DatabaseConnectionProvider } = createLazyComponents(
-  () => import('./DatabaseConnectionProvider'),
-  'DatabaseConnectionProvider',
-);
+const { DatabaseConnectionProvider } = lazy(() => import('./DatabaseConnectionProvider'), 'DatabaseConnectionProvider');
 
 import { ThirdDataSource } from './ThridDataSource';
 // import { BreadcumbTitle } from './component/BreadcumbTitle';
-const { BreadcumbTitle } = createLazyComponents(() => import('./component/BreadcumbTitle'), 'BreadcumbTitle');
+const { BreadcumbTitle } = lazy(() => import('./component/BreadcumbTitle'), 'BreadcumbTitle');
 
 // import { CollectionManagerPage } from './component/CollectionsManager';
-const { CollectionManagerPage } = createLazyComponents(
-  () => import('./component/CollectionsManager'),
-  'CollectionManagerPage',
-);
+const { CollectionManagerPage } = lazy(() => import('./component/CollectionsManager'), 'CollectionManagerPage');
 // import { DatabaseConnectionManagerPane } from './component/DatabaseConnectionManager';
-const { DatabaseConnectionManagerPane } = createLazyComponents(
+const { DatabaseConnectionManagerPane } = lazy(
   () => import('./component/DatabaseConnectionManager'),
   'DatabaseConnectionManagerPane',
 );
 // import { MainDataSourceManager } from './component/MainDataSourceManager';
-const { MainDataSourceManager } = createLazyComponents(
-  () => import('./component/MainDataSourceManager'),
-  'MainDataSourceManager',
-);
+const { MainDataSourceManager } = lazy(() => import('./component/MainDataSourceManager'), 'MainDataSourceManager');
 // import { DataSourcePermissionManager } from './component/PermissionManager';
-const { DataSourcePermissionManager } = createLazyComponents(
+const { DataSourcePermissionManager } = lazy(
   () => import('./component/PermissionManager'),
   'DataSourcePermissionManager',
 );
 import { NAMESPACE } from './locale';
 // import { CollectionMainProvider } from './component/MainDataSourceManager/CollectionMainProvider';
-const { CollectionMainProvider } = createLazyComponents(
+const { CollectionMainProvider } = lazy(
   () => import('./component/MainDataSourceManager/CollectionMainProvider'),
   'CollectionMainProvider',
 );

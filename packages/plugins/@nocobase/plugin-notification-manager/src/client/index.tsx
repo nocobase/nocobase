@@ -10,13 +10,13 @@
 import { Plugin } from '@nocobase/client';
 import { lang as t } from './locale';
 // import { ChannelManager } from './manager/channel/components';
-import { createLazyComponents } from '@nocobase/client';
-const { ChannelManager } = createLazyComponents(() => import('./manager/channel/components'), 'ChannelManager');
+import { lazy } from '@nocobase/client';
+const { ChannelManager } = lazy(() => import('./manager/channel/components'), 'ChannelManager');
 
 import { RegisterChannelOptions } from './manager/channel/types';
 import { useNotificationTypes } from './manager/channel/hooks';
 // import { LogManager } from './manager/log/components/Manager';
-const { LogManager } = createLazyComponents(() => import('./manager/log/components/Manager'), 'LogManager');
+const { LogManager } = lazy(() => import('./manager/log/components/Manager'), 'LogManager');
 
 import NotificationManager from './notification-manager';
 

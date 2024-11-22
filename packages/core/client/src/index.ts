@@ -60,7 +60,7 @@ export * from './testUtils';
 export * from './user';
 export * from './variables';
 export * from './lazy-helper';
-export * from 'react-imported-component';
+export { useImported } from 'react-imported-component';
 
 export { withDynamicSchemaProps } from './hoc/withDynamicSchemaProps';
 

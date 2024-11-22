@@ -16,14 +16,11 @@ import React, { useEffect, useMemo, lazy } from 'react';
 // import ThemeList from './components/ThemeList';
 // import { ThemeListProvider } from './components/ThemeListProvider';
 // import CustomTheme from './components/theme-editor';
-import { createLazyComponents } from '@nocobase/client';
+import { lazy } from '@nocobase/client';
 const InitializeTheme = lazy(() => import('./components/InitializeTheme'));
-const { ThemeEditorProvider } = createLazyComponents(
-  () => import('./components/ThemeEditorProvider'),
-  'ThemeEditorProvider',
-);
+const { ThemeEditorProvider } = lazy(() => import('./components/ThemeEditorProvider'), 'ThemeEditorProvider');
 const ThemeList = lazy(() => import('./components/ThemeList'));
-const { ThemeListProvider } = createLazyComponents(() => import('./components/ThemeListProvider'), 'ThemeListProvider');
+const { ThemeListProvider } = lazy(() => import('./components/ThemeListProvider'), 'ThemeListProvider');
 const CustomTheme = lazy(() => import('./components/theme-editor'));
 
 import { useThemeSettings } from './hooks/useThemeSettings';

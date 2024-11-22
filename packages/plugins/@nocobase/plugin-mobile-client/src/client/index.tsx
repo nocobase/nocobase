@@ -14,8 +14,8 @@ import { MobileClientProvider } from './MobileClientProvider';
 import MApplication from './router/Application';
 import { mBlockInitializers, mBlockInitializers_deprecated } from './core/schema';
 // import { AppConfiguration, InterfaceConfiguration } from './configuration';
-import { createLazyComponents } from '@nocobase/client';
-const { AppConfiguration, InterfaceConfiguration } = createLazyComponents(
+import { lazy } from '@nocobase/client';
+const { AppConfiguration, InterfaceConfiguration } = lazy(
   () => import('./configuration'),
   'AppConfiguration',
   'InterfaceConfiguration',

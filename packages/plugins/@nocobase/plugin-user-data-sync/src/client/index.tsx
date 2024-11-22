@@ -12,8 +12,8 @@ import { Registry, tval } from '@nocobase/utils/client';
 import { ComponentType } from 'react';
 import { NAMESPACE } from './locale';
 // import { UserDataSyncSource } from './UserDataSyncSource';
-import { createLazyComponents } from '@nocobase/client';
-const { UserDataSyncSource } = createLazyComponents(() => import('./UserDataSyncSource'), 'UserDataSyncSource');
+import { lazy } from '@nocobase/client';
+const { UserDataSyncSource } = lazy(() => import('./UserDataSyncSource'), 'UserDataSyncSource');
 
 export type SourceOptions = {
   components: Partial<{

@@ -7,33 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, createLazyComponents, useLazyHook } from '@nocobase/client';
+import { Plugin, lazy, useLazyHook } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 import { ComponentType } from 'react';
 import { presetAuthType } from '../preset';
 // import { AuthProvider } from './AuthProvider';
-const { AuthProvider } = createLazyComponents(() => import('./AuthProvider'), 'AuthProvider');
+const { AuthProvider } = lazy(() => import('./AuthProvider'), 'AuthProvider');
 import type { Authenticator as AuthenticatorType } from './authenticator';
 // import { Options, SignInForm, SignUpForm } from './basic';
-const { Options, SignInForm, SignUpForm } = createLazyComponents(
-  () => import('./basic'),
-  'Options',
-  'SignInForm',
-  'SignUpForm',
-);
+const { Options, SignInForm, SignUpForm } = lazy(() => import('./basic'), 'Options', 'SignInForm', 'SignUpForm');
 import { NAMESPACE } from './locale';
 // import { AuthLayout, SignInPage, SignUpPage } from './pages';
-const { AuthLayout, SignInPage, SignUpPage } = createLazyComponents(
-  () => import('./pages'),
-  'AuthLayout',
-  'SignInPage',
-  'SignUpPage',
-);
+const { AuthLayout, SignInPage, SignUpPage } = lazy(() => import('./pages'), 'AuthLayout', 'SignInPage', 'SignUpPage');
 // import { Authenticator } from './settings/Authenticator';
-const { Authenticator } = createLazyComponents(() => import('./settings/Authenticator'), 'Authenticator');
+const { Authenticator } = lazy(() => import('./settings/Authenticator'), 'Authenticator');
 
 // export { AuthenticatorsContextProvider, AuthLayout } from './pages/AuthLayout';
-const { AuthenticatorsContextProvider, AuthLayout: ExportAuthLayout } = createLazyComponents(
+const { AuthenticatorsContextProvider, AuthLayout: ExportAuthLayout } = lazy(
   () => import('./pages'),
   'AuthenticatorsContextProvider',
   'AuthLayout',

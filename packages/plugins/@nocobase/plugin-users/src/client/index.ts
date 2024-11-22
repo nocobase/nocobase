@@ -12,9 +12,9 @@ import { tval } from '@nocobase/utils/client';
 // import { UsersManagement } from './UsersManagement';
 import ACLPlugin from '@nocobase/plugin-acl/client';
 // import { RoleUsersManager } from './RoleUsersManager';
-import { createLazyComponents } from '@nocobase/client';
-const { UsersManagement } = createLazyComponents(() => import('./UsersManagement'), 'UsersManagement');
-const { RoleUsersManager } = createLazyComponents(() => import('./RoleUsersManager'), 'RoleUsersManager');
+import { lazy } from '@nocobase/client';
+const { UsersManagement } = lazy(() => import('./UsersManagement'), 'UsersManagement');
+const { RoleUsersManager } = lazy(() => import('./RoleUsersManager'), 'RoleUsersManager');
 
 class PluginUsersClient extends Plugin {
   async load() {

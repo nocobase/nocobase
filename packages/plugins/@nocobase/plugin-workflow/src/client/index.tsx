@@ -17,10 +17,10 @@ import { Registry } from '@nocobase/utils/client';
 // import { ExecutionPage } from './ExecutionPage';
 // import { WorkflowPage } from './WorkflowPage';
 // import { WorkflowPane } from './WorkflowPane';
-import { createLazyComponents } from '@nocobase/client';
-const { ExecutionPage } = createLazyComponents(() => import('./ExecutionPage'), 'ExecutionPage');
-const { WorkflowPage } = createLazyComponents(() => import('./WorkflowPage'), 'WorkflowPage');
-const { WorkflowPane } = createLazyComponents(() => import('./WorkflowPane'), 'WorkflowPane');
+import { lazy } from '@nocobase/client';
+const { ExecutionPage } = lazy(() => import('./ExecutionPage'), 'ExecutionPage');
+const { WorkflowPage } = lazy(() => import('./WorkflowPage'), 'WorkflowPage');
+const { WorkflowPane } = lazy(() => import('./WorkflowPane'), 'WorkflowPane');
 
 import { Trigger } from './triggers';
 import CollectionTrigger from './triggers/collection';
