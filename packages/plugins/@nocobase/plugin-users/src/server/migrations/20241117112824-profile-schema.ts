@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import { Migration } from '@nocobase/server';
 import { adminProfileEditFormSchema, userProfileEditFormSchema } from '../profile/edit-form-schema';
 
@@ -15,7 +16,7 @@ export default class extends Migration {
   appVersion = '<1.5.0-alpha.5';
 
   async up() {
-    const repo = this.db.getRepository<any>('uiSchemas');
+    const repo = this.db.getRepository<UiSchemaRepository>('uiSchemas');
     const adminSchema = await repo.findOne({
       filter: {
         'x-uid': 'nocobase-admin-profile-edit-form',

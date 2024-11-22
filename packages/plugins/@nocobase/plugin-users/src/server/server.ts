@@ -19,6 +19,7 @@ import {
   adminProfileEditFormSchema,
   userProfileEditFormSchema,
 } from './profile/edit-form-schema';
+import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 
 export default class PluginUsersServer extends Plugin {
   async beforeLoad() {
@@ -228,7 +229,7 @@ export default class PluginUsersServer extends Plugin {
   }
 
   async initProfileSchema() {
-    const uiSchemas = this.db.getRepository<any>('uiSchemas');
+    const uiSchemas = this.db.getRepository<UiSchemaRepository>('uiSchemas');
     await uiSchemas.insert(adminProfileCreateFormSchema);
     await uiSchemas.insert(adminProfileEditFormSchema);
     await uiSchemas.insert(userProfileEditFormSchema);
