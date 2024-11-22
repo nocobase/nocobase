@@ -12,7 +12,7 @@ import { onFieldInputValueChange } from '@formily/core';
 import { connect, mapProps, observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Space, message } from 'antd';
-import { last } from 'lodash';
+import { isEqual } from 'lodash';
 import { isFunction } from 'mathjs';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -89,7 +89,7 @@ const InternalAssociationSelect = observer(
           if (
             linkageFields.includes(fieldPath?.props?.name) &&
             field.value &&
-            last(fieldPath?.indexes) === last(field?.indexes) &&
+            isEqual(fieldPath?.indexes, field?.indexes) &&
             fieldPath?.props?.name !== field.props.name
           ) {
             field.setValue(undefined);
