@@ -10,7 +10,7 @@
 import { Plugin, createStyles, defaultTheme, useCurrentUserSettingsMenu, useGlobalTheme } from '@nocobase/client';
 import { ConfigProvider } from 'antd';
 import _ from 'lodash';
-import React, { useEffect, useMemo, lazy } from 'react';
+import React, { useEffect, useMemo } from 'react';
 // import InitializeTheme from './components/InitializeTheme';
 // import { ThemeEditorProvider } from './components/ThemeEditorProvider';
 // import ThemeList from './components/ThemeList';
