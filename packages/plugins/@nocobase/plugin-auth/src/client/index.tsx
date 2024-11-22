@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, lazy, useLazyHook } from '@nocobase/client';
+import { Plugin, lazy, useLazy } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 import { ComponentType } from 'react';
 import { presetAuthType } from '../preset';
@@ -88,7 +88,7 @@ export { AuthenticatorsContext, useAuthenticator } from './authenticator';
 export type { Authenticator } from './authenticator';
 // export { useSignIn } from './basic';
 const useSignIn = function (name: string) {
-  const useSignIn = useLazyHook<typeof import('./basic').useSignIn>(() => import('./basic'), 'useSignIn');
+  const useSignIn = useLazy<typeof import('./basic').useSignIn>(() => import('./basic'), 'useSignIn');
   return useSignIn(name);
 };
 

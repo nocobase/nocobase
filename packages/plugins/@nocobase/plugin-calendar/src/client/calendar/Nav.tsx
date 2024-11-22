@@ -12,11 +12,11 @@ import { observer } from '@formily/react';
 import { Button } from 'antd';
 import React, { useContext } from 'react';
 import { CalendarToolbarContext } from './context';
-import { useDesignable, useLazyHook } from '@nocobase/client';
+import { useDesignable, useLazy } from '@nocobase/client';
 
 export const Nav = observer(
   () => {
-    const Navigate = useLazyHook<typeof import('react-big-calendar/dist/react-big-calendar.esm').Navigate>(
+    const Navigate = useLazy<typeof import('react-big-calendar/dist/react-big-calendar.esm').Navigate>(
       () => import('react-big-calendar/dist/react-big-calendar.esm'),
       'Navigate',
     );

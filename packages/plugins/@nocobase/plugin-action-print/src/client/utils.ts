@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useDetailsBlockContext, useFormBlockContext, useLazyHook } from '@nocobase/client';
+import { useDetailsBlockContext, useFormBlockContext, useLazy } from '@nocobase/client';
 // import { useReactToPrint } from 'react-to-print';
 export const useDetailPrintActionProps = () => {
   const context = useFormBlockContext();
   const { formBlockRef } = useDetailsBlockContext();
-  const useReactToPrint = useLazyHook<typeof import('react-to-print').useReactToPrint>(
+  const useReactToPrint = useLazy<typeof import('react-to-print').useReactToPrint>(
     () => import('react-to-print'),
     'useReactToPrint',
   );

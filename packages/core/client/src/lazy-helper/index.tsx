@@ -56,7 +56,7 @@ export function lazy<M extends Record<string, any>, K extends keyof M & string>(
   );
 }
 
-export function useLazyHook<T = () => any>(
+export function useLazy<T = () => any>(
   importor: Parameters<typeof useImported>[0],
   picker: string | ((module: any) => T),
 ): T {

@@ -35,7 +35,7 @@ import { useCalenderHeight } from './hook';
 import useStyle from './style';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
-import { useLazyHook } from '@nocobase/client';
+import { useLazy } from '@nocobase/client';
 
 interface Event {
   id: string;
@@ -101,7 +101,7 @@ const useEvents = (
   date: Date,
   view: (typeof Weeks)[number],
 ) => {
-  const parseExpression = useLazyHook<typeof import('cron-parser').parseExpression>(
+  const parseExpression = useLazy<typeof import('cron-parser').parseExpression>(
     () => import('cron-parser'),
     'parseExpression',
   );
@@ -240,7 +240,7 @@ export const Calendar: any = withDynamicSchemaProps(
       const { openPopup } = usePopupUtils({
         setVisible,
       });
-      const reactBigCalendar = useLazyHook(
+      const reactBigCalendar = useLazy(
         () => import('react-big-calendar'),
         (module) => ({
           BigCalendar: module.Calendar,
@@ -248,7 +248,7 @@ export const Calendar: any = withDynamicSchemaProps(
         }),
       );
 
-      const eq = useLazyHook<typeof import('react-big-calendar/lib/utils/dates').eq>(
+      const eq = useLazy<typeof import('react-big-calendar/lib/utils/dates').eq>(
         () => import('react-big-calendar/lib/utils/dates'),
         'eq',
       );

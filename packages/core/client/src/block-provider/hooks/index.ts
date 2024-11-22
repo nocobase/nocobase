@@ -27,7 +27,7 @@ import {
   useCollectionRecord,
   useDataSourceHeaders,
   useFormActiveFields,
-  useLazyHook,
+  useLazy,
   useParsedFilter,
   useRouterBasename,
   useTableBlockContext,
@@ -1094,7 +1094,7 @@ export const useDisassociateActionProps = () => {
 
 export const useDetailPrintActionProps = () => {
   const { formBlockRef } = useFormBlockContext();
-  const useReactToPrint = useLazyHook<typeof import('react-to-print').useReactToPrint>(
+  const useReactToPrint = useLazy<typeof import('react-to-print').useReactToPrint>(
     () => import('react-to-print'),
     'useReactToPrint',
   );
