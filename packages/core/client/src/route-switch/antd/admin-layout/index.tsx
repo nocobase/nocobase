@@ -10,7 +10,19 @@
 import { css } from '@emotion/css';
 import { ConfigProvider, Divider, Layout } from 'antd';
 import { createGlobalStyle } from 'antd-style';
-import React, { createContext, FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  createContext,
+  FC,
+  memo,
+  // @ts-ignore
+  startTransition,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Outlet } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
@@ -113,7 +125,9 @@ const MenuSchemaRequestProvider: FC = ({ children }) => {
           const s = findMenuItem(schema);
           if (s) {
             navigate(`/admin/${s['x-uid']}`);
-            setTitle(s.title);
+            startTransition(() => {
+              setTitle(s.title);
+            });
           } else {
             navigate(`/admin/`);
           }
@@ -126,12 +140,16 @@ const MenuSchemaRequestProvider: FC = ({ children }) => {
         // url 为 `admin/xxx` 的情况
         const s = findByUid(schema, currentPageUid);
         if (s) {
-          setTitle(s.title);
+          startTransition(() => {
+            setTitle(s.title);
+          });
         } else {
           const s = findMenuItem(schema);
           if (s) {
             navigate(`/admin/${s['x-uid']}`);
-            setTitle(s.title);
+            startTransition(() => {
+              setTitle(s.title);
+            });
           } else {
             navigate(`/admin/`);
           }
@@ -160,8 +178,10 @@ const MenuEditor = (props) => {
   const onSelect = useCallback(
     ({ item }: { item; key; keyPath; domEvent }) => {
       const schema = item.props.schema;
-      setTitle(schema.title);
-      setCurrent(schema);
+      startTransition(() => {
+        setTitle(schema.title);
+        setCurrent(schema);
+      });
       navigate(`/admin/${schema['x-uid']}`);
     },
     [navigate, setTitle],
@@ -195,7 +215,9 @@ const MenuEditor = (props) => {
     if (isMatchAdminName) {
       const s = findByUid(schema, currentPageUid);
       if (s) {
-        setTitle(s.title);
+        startTransition(() => {
+          setTitle(s.title);
+        });
       }
     }
   }, [currentPageUid, isMatchAdmin, isMatchAdminName, schema, setTitle]);
