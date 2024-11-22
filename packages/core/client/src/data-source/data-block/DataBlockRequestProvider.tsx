@@ -23,7 +23,10 @@ import { useDataBlockResource } from './DataBlockResourceProvider';
 const BlockRequestRefContext = createContext<React.MutableRefObject<UseRequestResult<any>>>(null);
 BlockRequestRefContext.displayName = 'BlockRequestRefContext';
 
-const BlockRequestLoadingContext = createContext<boolean>(false);
+/**
+ * @internal
+ */
+export const BlockRequestLoadingContext = createContext<boolean>(false);
 BlockRequestLoadingContext.displayName = 'BlockRequestLoadingContext';
 
 const BlockRequestDataContext = createContext<any>(null);
@@ -109,10 +112,21 @@ export async function requestParentRecordData({
 export const BlockRequestContextProvider: FC<{ recordRequest: UseRequestResult<any> }> = (props) => {
   const recordRequestRef = useRef<UseRequestResult<any>>(props.recordRequest);
   const prevRequestDataRef = useRef<any>(props.recordRequest?.data);
+  const { active: pageActive } = useKeepAlive();
+  const prevPageActiveRef = useRef(pageActive);
 
   // Only reassign values when props.recordRequest?.data changes to reduce unnecessary re-renders
-  if (!_.isEqual(prevRequestDataRef.current, props.recordRequest?.data)) {
+  if (
+    pageActive &&
+    prevPageActiveRef.current &&
+    !props.recordRequest?.loading &&
+    !_.isEqual(prevRequestDataRef.current, props.recordRequest?.data)
+  ) {
     prevRequestDataRef.current = props.recordRequest?.data;
+  }
+
+  if (pageActive !== prevPageActiveRef.current) {
+    prevPageActiveRef.current = pageActive;
   }
 
   recordRequestRef.current = props.recordRequest;

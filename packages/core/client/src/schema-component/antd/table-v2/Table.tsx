@@ -26,6 +26,7 @@ import { useTranslation } from 'react-i18next';
 import { useInView } from 'react-intersection-observer';
 import { DndContext, isBulkEditAction, useDesignable, usePopupSettings, useTableSize } from '../..';
 import {
+  BlockRequestLoadingContext,
   RecordIndexProvider,
   RecordProvider,
   useCollection,
@@ -1055,25 +1056,31 @@ export const Table: any = withDynamicSchemaProps(
         // If spinning is set to undefined, it will cause the subtable to always display loading, so we need to convert it here.
         // We use Spin here instead of Table's loading prop because using Spin here reduces unnecessary re-renders.
         <Spin spinning={!!loading}>
-          <InternalNocoBaseTable
-            tableHeight={tableHeight}
-            SortableWrapper={SortableWrapper}
-            tableSizeRefCallback={tableSizeRefCallback}
-            defaultRowKey={defaultRowKey}
-            dataSource={dataSource}
-            {...others}
-            {...restProps}
-            paginationProps={paginationProps}
-            components={components}
-            onTableChange={onTableChange}
-            onRow={onRow}
-            rowClassName={rowClassName}
-            scroll={scroll}
-            columns={columns}
-            expandable={expandable}
-            field={field}
-            size={size}
-          />
+          {/**
+           * In subsequent component tree, loading context won't be used anymore,
+           * so setting a fixed value here improves BlockRequestLoadingContext rendering performance
+           */}
+          <BlockRequestLoadingContext.Provider value={false}>
+            <InternalNocoBaseTable
+              tableHeight={tableHeight}
+              SortableWrapper={SortableWrapper}
+              tableSizeRefCallback={tableSizeRefCallback}
+              defaultRowKey={defaultRowKey}
+              dataSource={dataSource}
+              {...others}
+              {...restProps}
+              paginationProps={paginationProps}
+              components={components}
+              onTableChange={onTableChange}
+              onRow={onRow}
+              rowClassName={rowClassName}
+              scroll={scroll}
+              columns={columns}
+              expandable={expandable}
+              field={field}
+              size={size}
+            />
+          </BlockRequestLoadingContext.Provider>
         </Spin>
       );
     }),
