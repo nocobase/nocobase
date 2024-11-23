@@ -19,7 +19,10 @@ export const PopupRouteContextResetter: FC = React.memo(({ children }) => {
   const prevLocationContextRef = useRef(currentLocationContext);
   const prevRouteContextRef = useRef(currentRouteContext);
 
-  if (!currentLocationContext.location.pathname.includes('/popups/')) {
+  if (
+    !currentLocationContext.location.pathname.includes('/popups/') &&
+    currentLocationContext.location.pathname !== prevLocationContextRef.current.location.pathname
+  ) {
     prevLocationContextRef.current = currentLocationContext;
     prevRouteContextRef.current = currentRouteContext;
   }
