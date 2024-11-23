@@ -8,21 +8,13 @@
  */
 
 import _ from 'lodash';
-import React, {
-  createContext,
-  FC,
-  useContext,
-  // @ts-ignore
-  useDeferredValue,
-  useRef,
-} from 'react';
+import React, { createContext, FC, useContext, useRef } from 'react';
 import { UNSAFE_LocationContext, UNSAFE_RouteContext } from 'react-router-dom';
 import { CurrentPageUidContext } from '../../../application/CustomRouterContextProvider';
 
 const KeepAliveContext = createContext(true);
 
 export const KeepAliveProvider: FC<{ active: boolean }> = ({ children, active }) => {
-  const deferredActive = useDeferredValue(active);
   const currentLocationContext = useContext(UNSAFE_LocationContext);
   const currentRouteContext = useContext(UNSAFE_RouteContext);
   const prevLocationContextRef = useRef(currentLocationContext);
@@ -47,7 +39,7 @@ export const KeepAliveProvider: FC<{ active: boolean }> = ({ children, active })
   // 2. During traversal, React finds components using that Context and marks them for update
   // 3. When encountering the same Context Provider, traversal stops, avoiding unnecessary child component updates
   return (
-    <KeepAliveContext.Provider value={deferredActive}>
+    <KeepAliveContext.Provider value={active}>
       <UNSAFE_LocationContext.Provider value={prevLocationContextRef.current}>
         <UNSAFE_RouteContext.Provider value={prevRouteContextRef.current}>{children}</UNSAFE_RouteContext.Provider>
       </UNSAFE_LocationContext.Provider>

@@ -41,6 +41,7 @@ import { useToken } from '../__builtins__';
 import { ErrorFallback } from '../error-fallback';
 import { useStyles } from './Page.style';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
+import { PopupRouteContextResetter } from './PopupRouteContextResetter';
 
 interface PageProps {
   className?: string;
@@ -292,37 +293,41 @@ const TabPane = React.memo(({ schema, active: tabActive }: { schema: Schema; act
   );
 });
 
-const PageContent = memo(
-  ({
-    loading,
-    disablePageHeader,
-    enablePageTabs,
-    fieldSchema,
-    activeKey,
-  }: {
-    loading: boolean;
-    disablePageHeader: any;
-    enablePageTabs: any;
-    fieldSchema: Schema<any, any, any, any, any, any, any, any, any>;
-    activeKey: string;
-  }) => {
-    if (!disablePageHeader && enablePageTabs) {
-      return (
-        <>
-          {fieldSchema.mapProperties((schema) => (
-            <TabPane key={schema.name} schema={schema} active={schema.name === activeKey} />
-          ))}
-        </>
-      );
-    }
+interface PageContentProps {
+  loading: boolean;
+  disablePageHeader: any;
+  enablePageTabs: any;
+  fieldSchema: Schema<any, any, any, any, any, any, any, any, any>;
+  activeKey: string;
+}
 
+const InternalPageContent = (props: PageContentProps) => {
+  const { loading, disablePageHeader, enablePageTabs, fieldSchema, activeKey } = props;
+
+  if (!disablePageHeader && enablePageTabs) {
     return (
-      <div className={className1}>
-        <SchemaComponent schema={fieldSchema} distributed />
-      </div>
+      <>
+        {fieldSchema.mapProperties((schema) => (
+          <TabPane key={schema.name} schema={schema} active={schema.name === activeKey} />
+        ))}
+      </>
     );
-  },
-);
+  }
+
+  return (
+    <div className={className1}>
+      <SchemaComponent schema={fieldSchema} distributed />
+    </div>
+  );
+};
+
+const PageContent = memo((props: PageContentProps) => {
+  return (
+    <PopupRouteContextResetter>
+      <InternalPageContent {...props} />
+    </PopupRouteContextResetter>
+  );
+});
 
 function NocoBasePageHeader({ footer }: { footer: React.JSX.Element }) {
   const fieldSchema = useFieldSchema();
