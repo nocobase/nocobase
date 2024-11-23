@@ -54,15 +54,15 @@ export default class CollectionTrigger extends Trigger {
   // async function, should return promise
   private static async handler(this: CollectionTrigger, workflow: WorkflowModel, data: Model, options) {
     const [dataSourceName] = parseCollectionName(workflow.config.collection);
-    const { transaction } = options;
-    const ctx = await this.prepare(workflow, data, options);
+    const transaction = this.workflow.useDataSourceTransaction(dataSourceName, options.transaction);
+    const ctx = await this.prepare(workflow, data, { ...options, transaction });
     if (!ctx) {
       return;
     }
 
     if (workflow.sync) {
       await this.workflow.trigger(workflow, ctx, {
-        transaction: this.workflow.useDataSourceTransaction(dataSourceName, transaction),
+        transaction,
       });
     } else {
       if (transaction) {
