@@ -21,9 +21,13 @@ import { useDesigner } from '../../hooks/useDesigner';
 import { useTabsContext } from './context';
 import { TabsDesigner } from './Tabs.Designer';
 
-const RecursionFieldMemo = React.memo(RecursionField);
+const MemoizeRecursionField = React.memo(RecursionField);
+MemoizeRecursionField.displayName = 'MemoizeRecursionField';
 
-export const Tabs: any = (props: TabsProps) => {
+const MemoizeTabs = React.memo(AntdTabs);
+MemoizeTabs.displayName = 'MemoizeTabs';
+
+export const Tabs: any = React.memo((props: TabsProps) => {
   const fieldSchema = useFieldSchema();
   const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
   const contextProps = useTabsContext();
@@ -33,7 +37,7 @@ export const Tabs: any = (props: TabsProps) => {
     const result = fieldSchema.mapProperties((schema, key: string) => {
       return {
         key,
-        label: <RecursionFieldMemo name={key} schema={schema} onlyRenderSelf />,
+        label: <MemoizeRecursionField name={key} schema={schema} onlyRenderSelf />,
         children: (
           <PaneRoot key={key} {...(PaneRoot !== React.Fragment ? { active: key === contextProps.activeKey } : {})}>
             <SchemaComponent name={key} schema={schema} onlyRenderProperties distributed />
@@ -45,21 +49,28 @@ export const Tabs: any = (props: TabsProps) => {
     return result;
   }, [fieldSchema.mapProperties((s, key) => key).join()]);
 
+  const tabBarExtraContent = useMemo(
+    () => ({
+      right: render(),
+      left: contextProps?.tabBarExtraContent,
+    }),
+    [contextProps?.tabBarExtraContent, render],
+  );
+
   return (
     <DndContext>
-      <AntdTabs
+      <MemoizeTabs
         {...contextProps}
         destroyInactiveTabPane
-        tabBarExtraContent={{
-          right: render(),
-          left: contextProps?.tabBarExtraContent,
-        }}
+        tabBarExtraContent={tabBarExtraContent}
         style={props.style}
         items={items}
       />
     </DndContext>
   );
-};
+});
+
+Tabs.displayName = 'Tabs';
 
 const designerCss = css`
   position: relative;

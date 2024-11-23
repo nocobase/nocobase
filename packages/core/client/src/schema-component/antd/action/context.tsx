@@ -8,7 +8,7 @@
  */
 
 import { useFieldSchema } from '@formily/react';
-import React, { createContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, FC, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useIsSubPageClosedByPageMenu } from '../../../application/CustomRouterContextProvider';
 import { useDataBlockRequest } from '../../../data-source';
 import { useCurrentPopupContext } from '../page/PagePopups';
@@ -65,3 +65,17 @@ const useBlockServiceInActionButton = () => {
 
   return service;
 };
+
+/**
+ * Provides the latest Action context value without re-rendering components to improve rendering performance
+ */
+export const ActionContextNoRerender: FC = React.memo((props) => {
+  const value = useContext(ActionContext);
+  const valueRef = useRef({});
+
+  Object.assign(valueRef.current, value);
+
+  return <ActionContext.Provider value={valueRef.current}>{props.children}</ActionContext.Provider>;
+});
+
+ActionContextNoRerender.displayName = 'ActionContextNoRerender';

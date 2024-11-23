@@ -18,6 +18,7 @@ import { useToken } from '../../../style';
 import { ErrorFallback } from '../error-fallback';
 import { useCurrentPopupContext } from '../page/PagePopups';
 import { TabsContextProvider, useTabsContext } from '../tabs/context';
+import { ActionContextNoRerender } from './context';
 import { useActionContext } from './hooks';
 import { useSetAriaLabelForModal } from './hooks/useSetAriaLabelForModal';
 import { ActionDrawerProps, ComposedActionDrawer, OpenSize } from './types';
@@ -74,79 +75,81 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
     const zIndex = _zIndex || parentZIndex + (props.level || 0);
 
     return (
-      <zIndexContext.Provider value={zIndex}>
-        <TabsContextProvider {...tabContext} tabBarExtraContent={null}>
-          <Modal
-            zIndex={zIndex}
-            width={actualWidth}
-            title={field.title}
-            {...(others as ModalProps)}
-            {...modalProps}
-            styles={styles}
-            style={{
-              ...modalProps?.style,
-              ...others?.style,
-            }}
-            destroyOnClose
-            open={visible}
-            onCancel={() => {
-              setVisible(false, true);
-            }}
-            className={classNames(
-              others.className,
-              modalProps?.className,
-              css`
-                &.nb-action-popup {
-                  .ant-modal-header {
-                    display: none;
-                  }
-
-                  .ant-modal-content {
-                    background: var(--nb-box-bg);
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    padding-bottom: 0;
-                  }
-
-                  // 这里的样式是为了保证页面 tabs 标签下面的分割线和页面内容对齐（页面内边距可以通过主题编辑器调节）
-                  .ant-tabs-nav {
-                    padding-left: ${token.paddingLG - token.paddingPageHorizontal}px;
-                    padding-right: ${token.paddingLG - token.paddingPageHorizontal}px;
-                    margin-left: ${token.paddingPageHorizontal - token.paddingLG}px;
-                    margin-right: ${token.paddingPageHorizontal - token.paddingLG}px;
-                  }
-
-                  .ant-modal-footer {
-                    display: ${showFooter ? 'block' : 'none'};
-                  }
-                }
-              `,
-            )}
-            footer={
-              showFooter ? (
-                <NocoBaseRecursionField
-                  basePath={field.address}
-                  schema={schema}
-                  onlyRenderProperties
-                  filterProperties={(s) => {
-                    return s['x-component'] === footerNodeName;
-                  }}
-                />
-              ) : (
-                false
-              )
-            }
-          >
-            <NocoBaseRecursionField
-              basePath={field.address}
-              schema={schema}
-              onlyRenderProperties
-              filterProperties={(s) => {
-                return s['x-component'] !== footerNodeName;
+      <ActionContextNoRerender>
+        <zIndexContext.Provider value={zIndex}>
+          <TabsContextProvider {...tabContext} tabBarExtraContent={null}>
+            <Modal
+              zIndex={zIndex}
+              width={actualWidth}
+              title={field.title}
+              {...(others as ModalProps)}
+              {...modalProps}
+              styles={styles}
+              style={{
+                ...modalProps?.style,
+                ...others?.style,
               }}
-            />
-          </Modal>
-        </TabsContextProvider>
-      </zIndexContext.Provider>
+              destroyOnClose
+              open={visible}
+              onCancel={() => {
+                setVisible(false, true);
+              }}
+              className={classNames(
+                others.className,
+                modalProps?.className,
+                css`
+                  &.nb-action-popup {
+                    .ant-modal-header {
+                      display: none;
+                    }
+
+                    .ant-modal-content {
+                      background: var(--nb-box-bg);
+                      border: 1px solid rgba(255, 255, 255, 0.1);
+                      padding-bottom: 0;
+                    }
+
+                    // 这里的样式是为了保证页面 tabs 标签下面的分割线和页面内容对齐（页面内边距可以通过主题编辑器调节）
+                    .ant-tabs-nav {
+                      padding-left: ${token.paddingLG - token.paddingPageHorizontal}px;
+                      padding-right: ${token.paddingLG - token.paddingPageHorizontal}px;
+                      margin-left: ${token.paddingPageHorizontal - token.paddingLG}px;
+                      margin-right: ${token.paddingPageHorizontal - token.paddingLG}px;
+                    }
+
+                    .ant-modal-footer {
+                      display: ${showFooter ? 'block' : 'none'};
+                    }
+                  }
+                `,
+              )}
+              footer={
+                showFooter ? (
+                  <NocoBaseRecursionField
+                    basePath={field.address}
+                    schema={schema}
+                    onlyRenderProperties
+                    filterProperties={(s) => {
+                      return s['x-component'] === footerNodeName;
+                    }}
+                  />
+                ) : (
+                  false
+                )
+              }
+            >
+              <NocoBaseRecursionField
+                basePath={field.address}
+                schema={schema}
+                onlyRenderProperties
+                filterProperties={(s) => {
+                  return s['x-component'] !== footerNodeName;
+                }}
+              />
+            </Modal>
+          </TabsContextProvider>
+        </zIndexContext.Provider>
+      </ActionContextNoRerender>
     );
   },
   { displayName: 'ActionModal' },

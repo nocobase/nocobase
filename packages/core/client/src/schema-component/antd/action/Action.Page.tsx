@@ -10,7 +10,7 @@
 import { observer, useFieldSchema } from '@formily/react';
 import React, { useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { useActionContext } from '.';
+import { ActionContextNoRerender, useActionContext } from '.';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { BackButtonUsedInSubPage } from '../page/BackButtonUsedInSubPage';
 import { TabsContextProvider, useTabsContext } from '../tabs/context';
@@ -38,11 +38,13 @@ export function ActionPage({ level }) {
 
   const actionPageNode = (
     <div className={`${componentCls} ${hashId}`} style={style}>
-      <TabsContextProvider {...tabContext} tabBarExtraContent={<BackButtonUsedInSubPage />}>
-        <zIndexContext.Provider value={style.zIndex}>
-          <NocoBaseRecursionField schema={filedSchema} onlyRenderProperties />
-        </zIndexContext.Provider>
-      </TabsContextProvider>
+      <ActionContextNoRerender>
+        <TabsContextProvider {...tabContext} tabBarExtraContent={<BackButtonUsedInSubPage />}>
+          <zIndexContext.Provider value={style.zIndex}>
+            <NocoBaseRecursionField schema={filedSchema} onlyRenderProperties />
+          </zIndexContext.Provider>
+        </TabsContextProvider>
+      </ActionContextNoRerender>
     </div>
   );
 
