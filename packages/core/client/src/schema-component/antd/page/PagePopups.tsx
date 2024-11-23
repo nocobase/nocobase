@@ -267,7 +267,8 @@ const InternalPagePopups = (props: { paramsList?: PopupParams[] }) => {
           }
         }
 
-        const result = _.cloneDeep(_.omit(schema, 'parent')) as Schema;
+        // Using toJSON for deep clone, faster than lodash's cloneDeep
+        const result = _.omit(new Schema(schema).toJSON(), 'parent');
         result['x-read-pretty'] = true;
 
         return result;
