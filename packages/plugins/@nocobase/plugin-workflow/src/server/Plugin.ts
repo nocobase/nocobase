@@ -36,6 +36,7 @@ import UpdateInstruction from './instructions/UpdateInstruction';
 import type { ExecutionModel, JobModel, WorkflowModel } from './types';
 import WorkflowRepository from './repositories/WorkflowRepository';
 import { Context } from '@nocobase/actions';
+import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 
 type ID = number | string;
 
@@ -639,8 +640,8 @@ export default class PluginWorkflowServer extends Plugin {
    * @returns {Trasaction}
    */
   useDataSourceTransaction(dataSourceName = 'main', transaction, create = false) {
-    // @ts-ignore
-    const { db } = this.app.dataSourceManager.dataSources.get(dataSourceName).collectionManager;
+    const { db } = this.app.dataSourceManager.dataSources.get(dataSourceName)
+      .collectionManager as SequelizeCollectionManager;
     if (!db) {
       return;
     }
