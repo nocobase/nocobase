@@ -12,6 +12,7 @@ import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { MockServer } from '@nocobase/test';
 
 import { EXECUTION_STATUS } from '../../constants';
+import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 
 describe('workflow > triggers > collection', () => {
   let app: MockServer;
@@ -834,8 +835,7 @@ describe('workflow > triggers > collection', () => {
   describe('multiple data source', () => {
     let anotherDB: MockDatabase;
     beforeEach(async () => {
-      // @ts-ignore
-      anotherDB = app.dataSourceManager.dataSources.get('another').collectionManager.db;
+      anotherDB = (app.dataSourceManager.dataSources.get('another').collectionManager as SequelizeCollectionManager).db;
     });
 
     it('collection trigger on another', async () => {

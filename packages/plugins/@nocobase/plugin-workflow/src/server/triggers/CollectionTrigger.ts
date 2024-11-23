@@ -56,6 +56,9 @@ export default class CollectionTrigger extends Trigger {
     const [dataSourceName] = parseCollectionName(workflow.config.collection);
     const { transaction } = options;
     const ctx = await this.prepare(workflow, data, options);
+    if (!ctx) {
+      return;
+    }
 
     if (workflow.sync) {
       await this.workflow.trigger(workflow, ctx, {
