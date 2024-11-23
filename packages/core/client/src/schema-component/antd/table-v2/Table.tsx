@@ -18,7 +18,7 @@ import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
 import { useCreation, useDeepCompareEffect, useMemoizedFn } from 'ahooks';
-import { Table as AntdTable, Spin, TableColumnProps } from 'antd';
+import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
 import React, { useCallback, useContext, useMemo, useRef, useState } from 'react';
@@ -45,6 +45,7 @@ import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField'
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { withSkeletonComponent } from '../../../hoc/withSkeletonComponent';
 import { useSatisfiedActionValues } from '../../../schema-settings/LinkageRules/useActionValues';
+import { HighPerformanceSpin } from '../../common/high-performance-spin/HighPerformanceSpin';
 import { useToken } from '../__builtins__';
 import { SubFormProvider, useAssociationFieldContext } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
@@ -1055,7 +1056,7 @@ export const Table: any = withDynamicSchemaProps(
       return (
         // If spinning is set to undefined, it will cause the subtable to always display loading, so we need to convert it here.
         // We use Spin here instead of Table's loading prop because using Spin here reduces unnecessary re-renders.
-        <Spin spinning={!!loading}>
+        <HighPerformanceSpin spinning={!!loading}>
           {/**
            * In subsequent component tree, loading context won't be used anymore,
            * so setting a fixed value here improves BlockRequestLoadingContext rendering performance
@@ -1081,7 +1082,7 @@ export const Table: any = withDynamicSchemaProps(
               size={size}
             />
           </BlockRequestLoadingContext.Provider>
-        </Spin>
+        </HighPerformanceSpin>
       );
     }),
     {
