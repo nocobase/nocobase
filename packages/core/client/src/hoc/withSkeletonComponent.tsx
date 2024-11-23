@@ -11,8 +11,7 @@ import { Skeleton } from 'antd';
 import { useDataBlockRequest } from '../data-source/data-block/DataBlockRequestProvider';
 
 // @ts-ignore
-import React, { FC, useRef } from 'react';
-import { LOADING_DELAY } from '../variables/constants';
+import React, { useDeferredValue, useRef } from 'react';
 
 interface Options {
   displayName?: string;
@@ -29,22 +28,6 @@ const useDefaultLoading = () => {
   return !!useDataBlockRequest()?.loading;
 };
 
-const RenderSkeletonWithDelay: FC<{ SkeletonComponent: React.ComponentType; delay: number }> = ({
-  SkeletonComponent,
-  delay,
-}) => {
-  // const [delayed, setDelayed] = useState(false);
-
-  // useEffect(() => {
-  //   const timer = setTimeout(() => {
-  //     setDelayed(true);
-  //   }, delay);
-  //   return () => clearTimeout(timer);
-  // }, [delay]);
-
-  return <SkeletonComponent />;
-};
-
 /**
  * Display skeleton component while component is making API requests
  * @param Component
@@ -52,19 +35,14 @@ const RenderSkeletonWithDelay: FC<{ SkeletonComponent: React.ComponentType; dela
  * @returns
  */
 export const withSkeletonComponent = (Component: React.ComponentType<any>, options?: Options) => {
-  const {
-    useLoading = useDefaultLoading,
-    displayName,
-    SkeletonComponent = Skeleton,
-    delay = LOADING_DELAY,
-  } = options || {};
+  const { useLoading = useDefaultLoading, displayName, SkeletonComponent = Skeleton } = options || {};
 
   const Result = React.memo((props: any) => {
-    const loading = useLoading();
+    const loading = useDeferredValue(useLoading());
     const mountedRef = useRef(false);
 
     if (!mountedRef.current && loading) {
-      return <RenderSkeletonWithDelay SkeletonComponent={SkeletonComponent} delay={delay} />;
+      return <SkeletonComponent />;
     }
 
     mountedRef.current = true;
