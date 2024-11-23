@@ -27,6 +27,7 @@ import React, { FC, Fragment, useMemo } from 'react';
 import { CollectionFieldOptions } from '../data-source/collection/Collection';
 import { useCollectionManager } from '../data-source/collection/CollectionManagerProvider';
 import { useCollection } from '../data-source/collection/CollectionProvider';
+import { EMPTY_OBJECT } from '../variables';
 import { NocoBaseField } from './NocoBaseField';
 
 interface INocoBaseRecursionFieldProps extends IRecursionFieldProps {
@@ -191,7 +192,9 @@ const propertiesToReactElement = ({
 
         return (
           <IsInNocoBaseRecursionFieldContext.Provider value={false} key={`${index}-${name}`}>
-            <CollectionFieldUISchemaContext.Provider value={{}}>{content}</CollectionFieldUISchemaContext.Provider>
+            <CollectionFieldUISchemaContext.Provider value={EMPTY_OBJECT}>
+              {content}
+            </CollectionFieldUISchemaContext.Provider>
           </IsInNocoBaseRecursionFieldContext.Provider>
         );
       })}

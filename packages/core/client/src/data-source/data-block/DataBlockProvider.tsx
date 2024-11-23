@@ -174,7 +174,7 @@ export const AssociationOrCollectionProvider = (props: {
 };
 
 export const DataBlockProvider: FC<Partial<AllDataBlockProps>> = withDynamicSchemaProps(
-  (props) => {
+  React.memo((props) => {
     const { collection, association, dataSource, children, hidden, ...resets } = props as Partial<AllDataBlockProps>;
     const { dn } = useDesignable();
     if (hidden) {
@@ -205,7 +205,7 @@ export const DataBlockProvider: FC<Partial<AllDataBlockProps>> = withDynamicSche
         </CollectionManagerProvider>
       </DataBlockContext.Provider>
     );
-  },
+  }),
   { displayName: 'DataBlockProvider' },
 );
 

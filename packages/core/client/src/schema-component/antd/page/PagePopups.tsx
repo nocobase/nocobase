@@ -77,6 +77,41 @@ export const PopupVisibleProvider: FC<PopupsVisibleProviderProps> = React.memo((
 
 PopupVisibleProvider.displayName = 'PopupVisibleProvider';
 
+const VisibleProvider: FC<{ popupuid: string }> = React.memo(({ children, popupuid }) => {
+  const { closePopup } = usePopupUtils();
+  const [visible, _setVisible] = useState(true);
+  const setVisible = useCallback(
+    (visible: boolean) => {
+      if (!visible) {
+        _setVisible(false);
+
+        if (process.env.__E2E__) {
+          setTimeout(() => {
+            closePopup();
+            // Deleting here ensures that the next time the same popup is opened, it will generate another random key.
+            deleteRandomNestedSchemaKey(popupuid);
+          });
+          return;
+        }
+
+        // Leave some time to refresh the block data
+        setTimeout(() => {
+          closePopup();
+          // Deleting here ensures that the next time the same popup is opened, it will generate another random key.
+          deleteRandomNestedSchemaKey(popupuid);
+        }, 300);
+      }
+    },
+    [closePopup, popupuid],
+  );
+
+  return (
+    <PopupVisibleProvider visible={visible} setVisible={setVisible}>
+      {children}
+    </PopupVisibleProvider>
+  );
+});
+
 const PopupParamsProvider: FC<Omit<PopupProps, 'hidden'>> = (props) => {
   const value = useMemo(() => {
     return {
@@ -119,29 +154,6 @@ const PagePopupsItemProvider: FC<{
    */
   currentLevel: number;
 }> = ({ params, context, currentLevel, children }) => {
-  const { closePopup } = usePopupUtils();
-  const [visible, _setVisible] = useState(true);
-  const setVisible = (visible: boolean) => {
-    if (!visible) {
-      _setVisible(false);
-
-      if (process.env.__E2E__) {
-        setTimeout(() => {
-          closePopup();
-          // Deleting here ensures that the next time the same popup is opened, it will generate another random key.
-          deleteRandomNestedSchemaKey(params.popupuid);
-        });
-        return;
-      }
-
-      // Leave some time to refresh the block data
-      setTimeout(() => {
-        closePopup();
-        // Deleting here ensures that the next time the same popup is opened, it will generate another random key.
-        deleteRandomNestedSchemaKey(params.popupuid);
-      }, 300);
-    }
-  };
   const storedContext = { ...getStoredPopupContext(params.popupuid) };
 
   if (!context) {
@@ -158,35 +170,35 @@ const PagePopupsItemProvider: FC<{
   if (_.isEmpty(context)) {
     return (
       <PopupParamsProvider params={params} context={context} currentLevel={currentLevel}>
-        <PopupVisibleProvider visible={visible} setVisible={setVisible}>
-          <div style={{ display: 'none' }}>{children}</div>
-        </PopupVisibleProvider>
+        <VisibleProvider popupuid={params.popupuid}>
+          <div style={displayNone}>{children}</div>
+        </VisibleProvider>
       </PopupParamsProvider>
     );
   }
 
   return (
     <PopupParamsProvider params={params} context={context} currentLevel={currentLevel}>
-      <PopupVisibleProvider visible={visible} setVisible={setVisible}>
-        <DataBlockProvider
-          dataSource={context.dataSource}
-          collection={params.collection || context.collection}
-          association={context.association}
-          sourceId={params.sourceid}
-          filterByTk={parseQueryString(params.filterbytk)}
-          // @ts-ignore
-          record={storedContext.record}
-          parentRecord={storedContext.parentRecord}
-          action="get"
-        >
-          {/* Pass the service of the block where the button is located down, to refresh the block's data when the popup is closed */}
-          <BlockRequestContextProvider recordRequest={storedContext.service}>
-            <PopupTabsPropsProvider>
+      <DataBlockProvider
+        dataSource={context.dataSource}
+        collection={params.collection || context.collection}
+        association={context.association}
+        sourceId={params.sourceid}
+        filterByTk={parseQueryString(params.filterbytk)}
+        // @ts-ignore
+        record={storedContext.record}
+        parentRecord={storedContext.parentRecord}
+        action="get"
+      >
+        {/* Pass the service of the block where the button is located down, to refresh the block's data when the popup is closed */}
+        <BlockRequestContextProvider recordRequest={storedContext.service}>
+          <PopupTabsPropsProvider>
+            <VisibleProvider popupuid={params.popupuid}>
               <div style={displayNone}>{children}</div>
-            </PopupTabsPropsProvider>
-          </BlockRequestContextProvider>
-        </DataBlockProvider>
-      </PopupVisibleProvider>
+            </VisibleProvider>
+          </PopupTabsPropsProvider>
+        </BlockRequestContextProvider>
+      </DataBlockProvider>
     </PopupParamsProvider>
   );
 };
