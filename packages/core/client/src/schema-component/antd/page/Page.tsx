@@ -42,7 +42,11 @@ import { ErrorFallback } from '../error-fallback';
 import { useStyles } from './Page.style';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 
-export const Page = React.memo((props: any) => {
+interface PageProps {
+  className?: string;
+}
+
+const InternalPage = React.memo((props: PageProps) => {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const dn = useDesignable();
@@ -61,7 +65,6 @@ export const Page = React.memo((props: any) => {
     () => currentTabUid || searchParams.get('tab') || Object.keys(fieldSchema.properties || {}).shift(),
     [fieldSchema.properties, searchParams, currentTabUid],
   );
-  const { wrapSSR, hashId, componentCls } = useStyles();
   const { token } = useToken();
 
   // 这里的样式是为了保证页面 tabs 标签下面的分割线和页面内容对齐（页面内边距可以通过主题编辑器调节）
@@ -178,8 +181,8 @@ export const Page = React.memo((props: any) => {
     [currentTabUid, disablePageHeader, enablePageTabs, fieldSchema, loading],
   );
 
-  return wrapSSR(
-    <div className={`${componentCls} ${hashId} ${antTableCell}`}>
+  return (
+    <>
       <NocoBasePageHeader footer={footer} />
       <div className="nb-page-wrapper">
         <ErrorBoundary FallbackComponent={ErrorFallback} onError={console.error}>
@@ -201,7 +204,22 @@ export const Page = React.memo((props: any) => {
           )}
         </ErrorBoundary>
       </div>
-    </div>,
+    </>
+  );
+});
+
+const hiddenStyle = {
+  transform: 'translateX(100%)',
+};
+
+export const Page = React.memo((props: PageProps) => {
+  const { hashId, componentCls } = useStyles();
+  const { active: pageActive } = useKeepAlive();
+
+  return (
+    <div className={`${componentCls} ${hashId} ${antTableCell}`} style={pageActive ? null : hiddenStyle}>
+      <InternalPage className={props.className} />
+    </div>
   );
 });
 

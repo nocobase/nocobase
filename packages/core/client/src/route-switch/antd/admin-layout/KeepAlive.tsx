@@ -19,14 +19,6 @@ import React, {
 import { UNSAFE_LocationContext, UNSAFE_RouteContext } from 'react-router-dom';
 import { CurrentPageUidContext } from '../../../application/CustomRouterContextProvider';
 
-const displayBlock = {
-  display: 'block',
-};
-
-const displayNone = {
-  display: 'none',
-};
-
 const KeepAliveContext = createContext(true);
 
 export const KeepAliveProvider: FC<{ active: boolean }> = ({ children, active }) => {
@@ -149,9 +141,7 @@ export const KeepAlive: FC<KeepAliveProps> = React.memo(({ children, uid }) => {
     <>
       {renderedPageRef.current.map((renderedUid) => (
         <CurrentPageUidContext.Provider value={renderedUid} key={renderedUid}>
-          <div style={renderedUid === uid ? displayBlock : displayNone}>
-            <KeepAliveProvider active={renderedUid === uid}>{children(renderedUid)}</KeepAliveProvider>
-          </div>
+          <KeepAliveProvider active={renderedUid === uid}>{children(renderedUid)}</KeepAliveProvider>
         </CurrentPageUidContext.Provider>
       ))}
     </>

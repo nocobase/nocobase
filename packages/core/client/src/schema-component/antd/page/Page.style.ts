@@ -14,9 +14,12 @@ export const useStyles = genStyleHook('nb-page', (token) => {
 
   return {
     [componentCls]: {
-      position: 'relative',
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
       zIndex: 20,
-      flex: 1,
       display: 'flex',
       flexDirection: 'column',
       overflow: 'auto',
@@ -120,5 +123,5 @@ export const useStyles = genStyleHook('nb-page', (token) => {
         flex: 1,
       },
     },
-  };
+  } as any;
 });

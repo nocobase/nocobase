@@ -331,7 +331,6 @@ const layoutContentClass = css`
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow-y: auto;
   height: 100vh;
   > div {
     position: relative;
@@ -409,22 +408,19 @@ const theme = {
   },
 };
 
+const pageContentStyle = {
+  flex: 1,
+  overflow: 'hidden',
+};
+
 export const LayoutContent = () => {
-  const currentPageUid = useCurrentPageUid();
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // Ensure the scrollbar is at the top when switching pages
-    if (containerRef.current && currentPageUid) {
-      containerRef.current.scrollTop = 0;
-    }
-  }, [currentPageUid]);
-
   /* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */
   return (
-    <Layout.Content className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`} ref={containerRef}>
+    <Layout.Content className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
       <header className={layoutContentHeaderClass}></header>
-      <Outlet />
+      <div style={pageContentStyle}>
+        <Outlet />
+      </div>
       {/* {service.contentLoading ? render() : <Outlet />} */}
     </Layout.Content>
   );
