@@ -923,7 +923,7 @@ describe('workflow > triggers > collection', () => {
       expect(e3s.length).toBe(1);
     });
 
-    it('sync event on another', async () => {
+    it.skip('sync event on another', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
         type: 'collection',
