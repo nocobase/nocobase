@@ -1,5 +1,5 @@
 import XLSX from 'xlsx';
-import BaseExporter, { ExportOptions } from './services/base-exporter';
+import { BaseExporter, ExportOptions } from './services/base-exporter';
 import { NumberField } from '@nocobase/database';
 
 type ExportColumn = {

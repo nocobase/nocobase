@@ -18,7 +18,7 @@ export type ExportOptions = {
   chunkSize?: number;
 };
 
-abstract class BaseExporter<T extends ExportOptions> extends EventEmitter {
+abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends EventEmitter {
   limit = 0;
 
   protected constructor(protected options: T) {
@@ -148,4 +148,4 @@ abstract class BaseExporter<T extends ExportOptions> extends EventEmitter {
   }
 }
 
-export default BaseExporter;
+export { BaseExporter };
