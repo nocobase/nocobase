@@ -123,9 +123,8 @@ export const SettingsMenu: React.FC<{
         key: 'divider_1',
         type: 'divider',
       },
-      editProfile,
       changePassword,
-      (editProfile || changePassword) && {
+      changePassword && {
         key: 'divider_2',
         type: 'divider',
       },
@@ -162,7 +161,6 @@ export const SettingsMenu: React.FC<{
     api.auth,
     changePassword,
     controlApp,
-    editProfile,
     languageSettings,
     navigate,
     redirectUrl,

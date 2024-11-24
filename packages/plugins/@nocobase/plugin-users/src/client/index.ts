@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/client';
+import { AdminProvider, Plugin, SystemSettingsProvider } from '@nocobase/client';
 import { tval } from '@nocobase/utils/client';
 import { UsersManagement } from './UsersManagement';
 import ACLPlugin from '@nocobase/plugin-acl/client';
@@ -16,7 +16,10 @@ import { UsersProvider } from './UsersProvider';
 
 class PluginUsersClient extends Plugin {
   async load() {
-    this.app.use(UsersProvider);
+    console.log(this.app.providers);
+    const providerIndex = this.app.providers.findIndex((provider) => provider[0] === SystemSettingsProvider);
+    this.app.providers.splice(providerIndex + 1, 0, [UsersProvider, {}]);
+    // this.app.addProvider(UsersProvider);
     this.app.pluginSettingsManager.add('users-permissions', {
       title: tval('Users & Permissions', { ns: 'users' }),
       icon: 'TeamOutlined',

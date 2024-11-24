@@ -386,14 +386,13 @@ export const userProfileEditFormSchema = {
       'x-decorator-props': {
         collection: 'users',
         dataSource: 'main',
-        type: 'update',
       },
-      'x-use-decorator-props': 'useEditFormBlockDecoratorProps',
+      // 'x-use-decorator-props': 'useEditFormBlockDecoratorProps',
       properties: {
         edit: {
           type: 'void',
           'x-component': 'FormV2',
-          'x-use-component-props': 'useEditFormBlockProps',
+          'x-use-component-props': 'useProfileFormProps',
           properties: {
             grid: {
               type: 'void',
@@ -511,7 +510,7 @@ export const userProfileEditFormSchema = {
                     type: 'primary',
                     htmlType: 'submit',
                   },
-                  'x-use-component-props': 'useUpdateActionProps',
+                  'x-use-component-props': 'useUpdateProfileActionProps',
                 },
               },
             },
