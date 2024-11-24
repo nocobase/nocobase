@@ -9,6 +9,7 @@
 
 import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
+import { createMemoryHistory } from 'history';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Router } from 'react-router-dom';
@@ -30,8 +31,9 @@ export const LinkMenuItem = () => {
     const values = await FormDialog(
       t('Add link'),
       () => {
+        const history = createMemoryHistory();
         return (
-          <Router location={location} navigator={null}>
+          <Router location={history.location} navigator={history}>
             <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
               <FormLayout layout={'vertical'}>
                 <SchemaComponent
