@@ -22,7 +22,7 @@ import { error } from '@nocobase/utils/client';
 import { Menu as AntdMenu, MenuProps } from 'antd';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { createDesignable, DndContext, SortableItem, useDesignable, useDesigner } from '../..';
+import { createDesignable, DndContext, SchemaComponentContext, SortableItem, useDesignable, useDesigner } from '../..';
 import { Icon, useAPIClient, useParseURLAndParams, useSchemaInitializerRender } from '../../../';
 import { useCollectMenuItems, useMenuItem } from '../../../hooks/useMenuItem';
 import { useProps } from '../../hooks/useProps';
@@ -30,7 +30,6 @@ import { useMenuTranslation } from './locale';
 import { MenuDesigner } from './Menu.Designer';
 import { findKeysByUid, findMenuItem } from './util';
 
-import { useUpdate } from 'ahooks';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 const subMenuDesignerCss = css`
@@ -211,6 +210,7 @@ const HeaderMenu = React.memo<{
   onChange: any;
   onFocus: any;
   theme: any;
+  refreshId: number;
 }>(
   ({
     schema,
@@ -228,6 +228,10 @@ const HeaderMenu = React.memo<{
     onChange,
     onFocus,
     theme,
+    /**
+     * Used to refresh the component
+     */
+    refreshId,
   }) => {
     const { Component, getMenuItems } = useMenuItem();
     const items = useMemo(() => {
@@ -250,7 +254,8 @@ const HeaderMenu = React.memo<{
       }
 
       return result;
-    }, [children, designable]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [children, designable, refreshId]);
 
     const handleSelect = useCallback(
       (info: { item; key; keyPath; domEvent }) => {
@@ -322,9 +327,13 @@ const SideMenu = React.memo<any>(
     t,
     api,
     designable,
+    refreshId,
+    refresh,
   }) => {
+    // Used to refresh component
+    refreshId;
+
     const { Component, getMenuItems } = useMenuItem();
-    const refresh = useUpdate();
 
     // 使用 ref 用来防止闭包问题
     const sideMenuSchemaRef = useRef(sideMenuSchema);
@@ -475,49 +484,65 @@ export const Menu: ComposedMenu = React.memo((props) => {
       setDefaultOpenKeys(dOpenKeys || keys);
     }
   }, [selectedUid]);
+
   useEffect(() => {
     if (['inline', 'mix'].includes(mode)) {
       setDefaultOpenKeys(defaultSelectedKeys);
     }
   }, [defaultSelectedKeys]);
-  const { designable } = useDesignable();
+
+  const ctx = useContext(SchemaComponentContext);
+  const refreshIdRef = useRef(0);
+  const ctxRefresh = ctx.refresh;
+  const refresh = useCallback(() => {
+    refreshIdRef.current += 1;
+    ctxRefresh?.();
+  }, [ctxRefresh]);
+
+  const newCtx = useMemo(() => ({ ...ctx, refresh }), [ctx, refresh]);
+
   return (
     <DndContext>
-      <MenuItemDesignerContext.Provider value={Designer}>
-        <MenuModeContext.Provider value={mode}>
-          <HeaderMenu
-            disabled={disabled}
-            onBlur={onBlur}
-            onChange={onChange}
-            onFocus={onFocus}
-            theme={theme}
-            schema={schema}
-            mode={mode}
-            onSelect={onSelect}
-            setDefaultSelectedKeys={setDefaultSelectedKeys}
-            defaultSelectedKeys={defaultSelectedKeys}
-            defaultOpenKeys={defaultOpenKeys}
-            selectedKeys={selectedKeys}
-            designable={designable}
-            render={render}
-          >
-            {children}
-          </HeaderMenu>
-          <SideMenu
-            mode={mode}
-            sideMenuSchema={sideMenuSchema}
-            sideMenuRef={sideMenuRef}
-            openKeys={defaultOpenKeys}
-            setOpenKeys={setDefaultOpenKeys}
-            selectedKeys={selectedKeys}
-            onSelect={onSelect}
-            render={render}
-            t={t}
-            api={api}
-            designable={designable}
-          />
-        </MenuModeContext.Provider>
-      </MenuItemDesignerContext.Provider>
+      <SchemaComponentContext.Provider value={newCtx}>
+        <MenuItemDesignerContext.Provider value={Designer}>
+          <MenuModeContext.Provider value={mode}>
+            <HeaderMenu
+              disabled={disabled}
+              onBlur={onBlur}
+              onChange={onChange}
+              onFocus={onFocus}
+              theme={theme}
+              schema={schema}
+              mode={mode}
+              onSelect={onSelect}
+              setDefaultSelectedKeys={setDefaultSelectedKeys}
+              defaultSelectedKeys={defaultSelectedKeys}
+              defaultOpenKeys={defaultOpenKeys}
+              selectedKeys={selectedKeys}
+              designable={ctx.designable}
+              render={render}
+              refreshId={refreshIdRef.current}
+            >
+              {children}
+            </HeaderMenu>
+            <SideMenu
+              mode={mode}
+              sideMenuSchema={sideMenuSchema}
+              sideMenuRef={sideMenuRef}
+              openKeys={defaultOpenKeys}
+              setOpenKeys={setDefaultOpenKeys}
+              selectedKeys={selectedKeys}
+              onSelect={onSelect}
+              render={render}
+              t={t}
+              api={api}
+              designable={ctx.designable}
+              refreshId={refreshIdRef.current}
+              refresh={refresh}
+            />
+          </MenuModeContext.Provider>
+        </MenuItemDesignerContext.Provider>
+      </SchemaComponentContext.Provider>
     </DndContext>
   );
 });
