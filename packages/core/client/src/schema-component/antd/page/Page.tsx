@@ -14,7 +14,7 @@ import { FormLayout } from '@formily/antd-v5';
 import { Schema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
 import { Button, Tabs } from 'antd';
 import classNames from 'classnames';
-import React, { memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { NavigateFunction, Outlet, useOutletContext } from 'react-router-dom';
@@ -49,17 +49,10 @@ interface PageProps {
 }
 
 const InternalPage = React.memo((props: PageProps) => {
-  const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
-  const dn = useDesignable();
-  const { theme } = useGlobalTheme();
-  const { getAriaLabel } = useGetAriaLabelOfSchemaInitializer();
   const currentTabUid = props.currentTabUid;
-  const basenameOfCurrentRouter = useRouterBasename();
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
   const enablePageTabs = fieldSchema['x-component-props']?.enablePageTabs;
-  const options = useContext(SchemaOptionsContext);
-  const navigate = useNavigateNoUpdate();
   const searchParams = useCurrentSearchParams();
   const loading = false;
   const activeKey = useMemo(
@@ -67,116 +60,6 @@ const InternalPage = React.memo((props: PageProps) => {
     () => currentTabUid || searchParams.get('tab') || Object.keys(fieldSchema.properties || {}).shift(),
     [fieldSchema.properties, searchParams, currentTabUid],
   );
-  const { token } = useToken();
-
-  // 这里的样式是为了保证页面 tabs 标签下面的分割线和页面内容对齐（页面内边距可以通过主题编辑器调节）
-  const tabBarStyle = useMemo(
-    () => ({
-      paddingLeft: token.paddingLG - token.paddingPageHorizontal,
-      paddingRight: token.paddingLG - token.paddingPageHorizontal,
-      marginLeft: token.paddingPageHorizontal - token.paddingLG,
-      marginRight: token.paddingPageHorizontal - token.paddingLG,
-    }),
-    [token.paddingLG, token.paddingPageHorizontal],
-  );
-
-  const handleTabsChange = useCallback(
-    (activeKey: string): void => {
-      navigateToTab({ activeKey, navigate, basename: basenameOfCurrentRouter });
-    },
-    [basenameOfCurrentRouter, navigate],
-  );
-
-  const tabBarExtraContent = useMemo(() => {
-    return (
-      dn.designable && (
-        <Button
-          aria-label={getAriaLabel('tabs')}
-          icon={<PlusOutlined />}
-          className={'addTabBtn'}
-          type={'dashed'}
-          onClick={async () => {
-            const values = await FormDialog(
-              t('Add tab'),
-              () => {
-                return (
-                  <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
-                    <FormLayout layout={'vertical'}>
-                      <SchemaComponent
-                        schema={{
-                          properties: {
-                            title: {
-                              title: t('Tab name'),
-                              'x-component': 'Input',
-                              'x-decorator': 'FormItem',
-                              required: true,
-                            },
-                            icon: {
-                              title: t('Icon'),
-                              'x-component': 'IconPicker',
-                              'x-decorator': 'FormItem',
-                            },
-                          },
-                        }}
-                      />
-                    </FormLayout>
-                  </SchemaComponentOptions>
-                );
-              },
-              theme,
-            ).open({
-              initialValues: {},
-            });
-            const { title, icon } = values;
-            dn.insertBeforeEnd({
-              type: 'void',
-              title,
-              'x-icon': icon,
-              'x-component': 'Grid',
-              'x-initializer': 'page:addBlock',
-              properties: {},
-            });
-          }}
-        >
-          {t('Add tab')}
-        </Button>
-      )
-    );
-  }, [dn, getAriaLabel, options?.components, options?.scope, t, theme]);
-
-  const items = useMemo(() => {
-    return fieldSchema.mapProperties((schema) => {
-      return {
-        label: (
-          <SortableItem
-            id={schema.name as string}
-            schema={schema}
-            className={classNames('nb-action-link', 'designerCss', props.className)}
-          >
-            {schema['x-icon'] && <Icon style={{ marginRight: 8 }} type={schema['x-icon']} />}
-            <span>{schema.title || t('Unnamed')}</span>
-            <PageTabDesigner schema={schema} />
-          </SortableItem>
-        ),
-        key: schema.name as string,
-      };
-    });
-  }, [fieldSchema, props.className, t, fieldSchema.mapProperties((schema) => schema.title || t('Unnamed')).join()]);
-
-  const footer = useMemo(() => {
-    return enablePageTabs ? (
-      <DndContext>
-        <Tabs
-          size={'small'}
-          activeKey={activeKey}
-          tabBarStyle={tabBarStyle}
-          onChange={handleTabsChange}
-          tabBarExtraContent={tabBarExtraContent}
-          items={items}
-        />
-      </DndContext>
-    ) : null;
-  }, [activeKey, enablePageTabs, handleTabsChange, items, tabBarExtraContent, tabBarStyle]);
 
   const outletContext = useMemo(
     () => ({ loading, disablePageHeader, enablePageTabs, fieldSchema, tabUid: currentTabUid }),
@@ -185,7 +68,7 @@ const InternalPage = React.memo((props: PageProps) => {
 
   return (
     <>
-      <NocoBasePageHeader footer={footer} />
+      <NocoBasePageHeader activeKey={activeKey} className={props.className} />
       <div className="nb-page-wrapper">
         <ErrorBoundary FallbackComponent={ErrorFallback} onError={console.error}>
           {currentTabUid ? (
@@ -339,7 +222,129 @@ const PageContent = memo((props: PageContentProps) => {
   );
 });
 
-function NocoBasePageHeader({ footer }: { footer: React.JSX.Element }) {
+const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = React.memo(({ className, activeKey }) => {
+  const fieldSchema = useFieldSchema();
+  const { t } = useTranslation();
+  const { token } = useToken();
+  const basenameOfCurrentRouter = useRouterBasename();
+  const navigate = useNavigateNoUpdate();
+  const handleTabsChange = useCallback(
+    (activeKey: string): void => {
+      navigateToTab({ activeKey, navigate, basename: basenameOfCurrentRouter });
+    },
+    [basenameOfCurrentRouter, navigate],
+  );
+  const dn = useDesignable();
+  const { getAriaLabel } = useGetAriaLabelOfSchemaInitializer();
+  const options = useContext(SchemaOptionsContext);
+  const { theme } = useGlobalTheme();
+
+  const tabBarExtraContent = useMemo(() => {
+    return (
+      dn.designable && (
+        <Button
+          aria-label={getAriaLabel('tabs')}
+          icon={<PlusOutlined />}
+          className={'addTabBtn'}
+          type={'dashed'}
+          onClick={async () => {
+            const values = await FormDialog(
+              t('Add tab'),
+              () => {
+                return (
+                  <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
+                    <FormLayout layout={'vertical'}>
+                      <SchemaComponent
+                        schema={{
+                          properties: {
+                            title: {
+                              title: t('Tab name'),
+                              'x-component': 'Input',
+                              'x-decorator': 'FormItem',
+                              required: true,
+                            },
+                            icon: {
+                              title: t('Icon'),
+                              'x-component': 'IconPicker',
+                              'x-decorator': 'FormItem',
+                            },
+                          },
+                        }}
+                      />
+                    </FormLayout>
+                  </SchemaComponentOptions>
+                );
+              },
+              theme,
+            ).open({
+              initialValues: {},
+            });
+            const { title, icon } = values;
+            dn.insertBeforeEnd({
+              type: 'void',
+              title,
+              'x-icon': icon,
+              'x-component': 'Grid',
+              'x-initializer': 'page:addBlock',
+              properties: {},
+            });
+          }}
+        >
+          {t('Add tab')}
+        </Button>
+      )
+    );
+  }, [dn, getAriaLabel, options?.components, options?.scope, t, theme]);
+
+  const enablePageTabs = fieldSchema['x-component-props']?.enablePageTabs;
+
+  // 这里的样式是为了保证页面 tabs 标签下面的分割线和页面内容对齐（页面内边距可以通过主题编辑器调节）
+  const tabBarStyle = useMemo(
+    () => ({
+      paddingLeft: token.paddingLG - token.paddingPageHorizontal,
+      paddingRight: token.paddingLG - token.paddingPageHorizontal,
+      marginLeft: token.paddingPageHorizontal - token.paddingLG,
+      marginRight: token.paddingPageHorizontal - token.paddingLG,
+    }),
+    [token.paddingLG, token.paddingPageHorizontal],
+  );
+
+  const items = useMemo(() => {
+    return fieldSchema.mapProperties((schema) => {
+      return {
+        label: (
+          <SortableItem
+            id={schema.name as string}
+            schema={schema}
+            className={classNames('nb-action-link', 'designerCss', className)}
+          >
+            {schema['x-icon'] && <Icon style={{ marginRight: 8 }} type={schema['x-icon']} />}
+            <span>{schema.title || t('Unnamed')}</span>
+            <PageTabDesigner schema={schema} />
+          </SortableItem>
+        ),
+        key: schema.name as string,
+      };
+    });
+  }, [fieldSchema, className, t, fieldSchema.mapProperties((schema) => schema.title || t('Unnamed')).join()]);
+
+  return enablePageTabs ? (
+    <DndContext>
+      <Tabs
+        size={'small'}
+        activeKey={activeKey}
+        tabBarStyle={tabBarStyle}
+        onChange={handleTabsChange}
+        tabBarExtraContent={tabBarExtraContent}
+        items={items}
+      />
+    </DndContext>
+  ) : null;
+});
+
+NocoBasePageHeaderTabs.displayName = 'NocoBasePageHeaderTabs';
+
+const NocoBasePageHeader = React.memo(({ activeKey, className }: { activeKey: string; className: string }) => {
   const fieldSchema = useFieldSchema();
   const { setTitle: setDocumentTitle } = useDocumentTitle();
   const { t } = useTranslation();
@@ -379,12 +384,14 @@ function NocoBasePageHeader({ footer }: { footer: React.JSX.Element }) {
           ghost={false}
           // 如果标题为空的时候会导致 PageHeader 不渲染，所以这里设置一个空白字符，然后再设置高度为 0
           title={hidePageTitle ? ' ' : pageTitle || ' '}
-          footer={footer}
+          footer={<NocoBasePageHeaderTabs className={className} activeKey={activeKey} />}
         />
       )}
     </>
   );
-}
+});
+
+NocoBasePageHeader.displayName = 'NocoBasePageHeader';
 
 export function navigateToTab({
   activeKey,
