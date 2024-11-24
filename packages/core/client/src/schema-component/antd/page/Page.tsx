@@ -44,6 +44,7 @@ import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 import { PopupRouteContextResetter } from './PopupRouteContextResetter';
 
 interface PageProps {
+  currentTabUid: string;
   className?: string;
 }
 
@@ -53,7 +54,7 @@ const InternalPage = React.memo((props: PageProps) => {
   const dn = useDesignable();
   const { theme } = useGlobalTheme();
   const { getAriaLabel } = useGetAriaLabelOfSchemaInitializer();
-  const currentTabUid = useCurrentTabUid();
+  const currentTabUid = props.currentTabUid;
   const basenameOfCurrentRouter = useRouterBasename();
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
   const enablePageTabs = fieldSchema['x-component-props']?.enablePageTabs;
@@ -216,10 +217,19 @@ const hiddenStyle = {
 export const Page = React.memo((props: PageProps) => {
   const { hashId, componentCls } = useStyles();
   const { active: pageActive } = useKeepAlive();
+  const currentTabUid = useCurrentTabUid();
+  const tabUidRef = useRef(currentTabUid);
+
+  if (pageActive) {
+    tabUidRef.current = currentTabUid;
+  }
 
   return (
     <div className={`${componentCls} ${hashId} ${antTableCell}`} style={pageActive ? null : hiddenStyle}>
-      <InternalPage className={props.className} />
+      {/* Avoid passing values down to improve rendering performance */}
+      <CurrentTabUidContext.Provider value={''}>
+        <InternalPage currentTabUid={tabUidRef.current} className={props.className} />
+      </CurrentTabUidContext.Provider>
     </div>
   );
 });

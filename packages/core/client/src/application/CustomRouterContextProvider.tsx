@@ -223,6 +223,9 @@ export const useIsInSettingsPage = () => {
   return React.useContext(IsInSettingsPageContext);
 };
 
+/**
+ * @internal
+ */
 export const useCurrentTabUid = () => {
   return React.useContext(CurrentTabUidContext);
 };
