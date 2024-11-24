@@ -178,3 +178,16 @@ jobs:
                 \"tag\": \"$APP_NAME\",
                 \"dialect\": \"postgres\"
             }"
+      - name: Deploy NocoBase V2
+        env:
+          IMAGE_TAG: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo $IMAGE_TAG
+          export APP_NAME=$(echo $IMAGE_TAG | cut -d ":" -f 2)
+          echo $APP_NAME
+          curl --retry 2 --location --request POST "${{secrets.NOCOBASE_DEPLOY_HOST_V2}}$APP_NAME" \
+            --header 'Content-Type: application/json' \
+            -d "{
+                \"tag\": \"$APP_NAME\",
+                \"dialect\": \"postgres\"
+            }"

@@ -100,7 +100,7 @@ async function multipart(ctx: Context, next: Next) {
       return ctx.throw(400, err);
     }
     ctx.logger.error(err);
-    return ctx.throw(500);
+    return ctx.throw(500, err);
   }
 
   const values = getFileData(ctx);
