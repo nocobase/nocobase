@@ -282,7 +282,7 @@ const InternalPagePopups = (props: { paramsList?: PopupParams[] }) => {
         // Using toJSON for deep clone, faster than lodash's cloneDeep
         const result = _.cloneDeepWith(_.omit(schema, 'parent'), (value) => {
           // If we clone the Tabs component, it will cause the configuration to be lost when reopening the popup after modifying its settings
-          if (value['x-component'] === 'Tabs') {
+          if (value?.['x-component'] === 'Tabs') {
             return value;
           }
         });
