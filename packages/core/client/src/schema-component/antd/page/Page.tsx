@@ -12,6 +12,7 @@ import { PageHeader as AntdPageHeader } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
 import { Schema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
+import { useUpdate } from 'ahooks';
 import { Button, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -35,6 +36,7 @@ import { KeepAliveProvider, useKeepAlive } from '../../../route-switch/antd/admi
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
 import { DndContext } from '../../common';
 import { SortableItem } from '../../common/sortable-item';
+import { SchemaComponentContext } from '../../context';
 import { SchemaComponent, SchemaComponentOptions } from '../../core';
 import { useDesignable } from '../../hooks';
 import { useToken } from '../__builtins__';
@@ -238,6 +240,9 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = Rea
   const { getAriaLabel } = useGetAriaLabelOfSchemaInitializer();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
+  const ctx = useContext(SchemaComponentContext);
+  const refresh = useUpdate();
+  ctx.refresh = refresh;
 
   const tabBarExtraContent = useMemo(() => {
     return (
@@ -329,16 +334,18 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = Rea
   }, [fieldSchema, className, t, fieldSchema.mapProperties((schema) => schema.title || t('Unnamed')).join()]);
 
   return enablePageTabs ? (
-    <DndContext>
-      <Tabs
-        size={'small'}
-        activeKey={activeKey}
-        tabBarStyle={tabBarStyle}
-        onChange={handleTabsChange}
-        tabBarExtraContent={tabBarExtraContent}
-        items={items}
-      />
-    </DndContext>
+    <SchemaComponentContext.Provider value={ctx}>
+      <DndContext>
+        <Tabs
+          size={'small'}
+          activeKey={activeKey}
+          tabBarStyle={tabBarStyle}
+          onChange={handleTabsChange}
+          tabBarExtraContent={tabBarExtraContent}
+          items={items}
+        />
+      </DndContext>
+    </SchemaComponentContext.Provider>
   ) : null;
 });
 
