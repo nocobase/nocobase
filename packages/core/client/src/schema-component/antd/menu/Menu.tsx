@@ -30,6 +30,7 @@ import { useMenuTranslation } from './locale';
 import { MenuDesigner } from './Menu.Designer';
 import { findKeysByUid, findMenuItem } from './util';
 
+import { useUpdate } from 'ahooks';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 const subMenuDesignerCss = css`
@@ -320,10 +321,10 @@ const SideMenu = React.memo<any>(
     render,
     t,
     api,
-    refresh,
     designable,
   }) => {
     const { Component, getMenuItems } = useMenuItem();
+    const refresh = useUpdate();
 
     // 使用 ref 用来防止闭包问题
     const sideMenuSchemaRef = useRef(sideMenuSchema);
@@ -336,35 +337,31 @@ const SideMenu = React.memo<any>(
       [onSelect],
     );
 
-    const items = useMemo(() => {
-      const result = getMenuItems(() => {
-        return <RecursionField key={uid()} schema={sideMenuSchema} onlyRenderProperties />;
+    const items = getMenuItems(() => {
+      return <RecursionField key={uid()} schema={sideMenuSchema} onlyRenderProperties />;
+    });
+
+    if (designable) {
+      items.push({
+        key: 'x-designer-button',
+        disabled: true,
+        label: render({
+          'data-testid': 'schema-initializer-Menu-side',
+          insert: (s) => {
+            const dn = createDesignable({
+              t,
+              api,
+              refresh: refresh,
+              current: sideMenuSchemaRef.current,
+            });
+            dn.loadAPIClientEvents();
+            dn.insertAdjacent('beforeEnd', s);
+          },
+        }),
+        order: 1,
+        notdelete: true,
       });
-
-      if (designable) {
-        result.push({
-          key: 'x-designer-button',
-          disabled: true,
-          label: render({
-            'data-testid': 'schema-initializer-Menu-side',
-            insert: (s) => {
-              const dn = createDesignable({
-                t,
-                api,
-                refresh,
-                current: sideMenuSchemaRef.current,
-              });
-              dn.loadAPIClientEvents();
-              dn.insertAdjacent('beforeEnd', s);
-            },
-          }),
-          order: 1,
-          notdelete: true,
-        });
-      }
-
-      return result;
-    }, [getMenuItems, designable, sideMenuSchema, render, t, api, refresh]);
+    }
 
     return (
       mode === 'mix' &&
@@ -426,7 +423,6 @@ export const Menu: ComposedMenu = React.memo((props) => {
   const { t } = useTranslation();
   const Designer = useDesigner();
   const schema = useFieldSchema();
-  const { refresh } = useDesignable();
   const api = useAPIClient();
   const { render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
   const sideMenuRef = useSideMenuRef();
@@ -518,7 +514,6 @@ export const Menu: ComposedMenu = React.memo((props) => {
             render={render}
             t={t}
             api={api}
-            refresh={refresh}
             designable={designable}
           />
         </MenuModeContext.Provider>
