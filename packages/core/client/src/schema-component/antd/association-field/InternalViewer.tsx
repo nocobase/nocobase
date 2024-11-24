@@ -10,7 +10,7 @@
 import { useField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import _ from 'lodash';
-import React, { FC, Fragment, useEffect, useRef, useState } from 'react';
+import React, { FC, Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useDesignable } from '../../';
 import { WithoutTableFieldResource } from '../../../block-provider';
 import { CollectionRecordProvider, useCollectionManager, useCollectionRecordData } from '../../../data-source';
@@ -49,6 +49,8 @@ export interface ButtonListProps {
     value: string;
   };
 }
+
+const recordStyle: any = { overflowWrap: 'inherit', whiteSpace: 'normal' };
 
 const RenderRecord = React.memo(
   ({
@@ -170,13 +172,13 @@ const RenderRecord = React.memo(
       return null;
     }
 
-    return <div style={{ overflowWrap: 'inherit', whiteSpace: 'normal' }}>{result}</div>;
+    return <div style={recordStyle}>{result}</div>;
   },
 );
 
 RenderRecord.displayName = 'RenderRecord';
 
-const ButtonLinkList: FC<ButtonListProps> = (props) => {
+const ButtonLinkList: FC<ButtonListProps> = React.memo((props) => {
   const fieldSchema = useFieldSchema();
   const cm = useCollectionManager();
   const { enableLink } = fieldSchema['x-component-props'] || {};
@@ -212,7 +214,9 @@ const ButtonLinkList: FC<ButtonListProps> = (props) => {
       setBtnHover={props.setBtnHover}
     />
   );
-};
+});
+
+ButtonLinkList.displayName = 'ButtonLinkList';
 
 interface ReadPrettyInternalViewerProps {
   ButtonList: FC<ButtonListProps>;
@@ -263,7 +267,21 @@ export const ReadPrettyInternalViewer: React.FC<ReadPrettyInternalViewerProps> =
     </EllipsisWithTooltip>
   );
 
-  if (enableLink === false || !btnHover) {
+  const actionContextValue = useMemo(
+    () => ({
+      visible: visible || visibleWithURL,
+      setVisible: (value) => {
+        setVisible?.(value);
+        setVisibleWithURL?.(value);
+      },
+      openMode: defaultOpenMode,
+      snapshot: collectionField?.interface === 'snapshot',
+      fieldSchema: fieldSchema,
+    }),
+    [collectionField?.interface, defaultOpenMode, fieldSchema, setVisibleWithURL, visible, visibleWithURL],
+  );
+
+  if (enableLink === false) {
     return btnElement;
   }
 
@@ -285,20 +303,9 @@ export const ReadPrettyInternalViewer: React.FC<ReadPrettyInternalViewerProps> =
 
   return (
     <PopupVisibleProvider visible={false}>
-      <ActionContextProvider
-        value={{
-          visible: visible || visibleWithURL,
-          setVisible: (value) => {
-            setVisible?.(value);
-            setVisibleWithURL?.(value);
-          },
-          openMode: defaultOpenMode,
-          snapshot: collectionField?.interface === 'snapshot',
-          fieldSchema: fieldSchema,
-        }}
-      >
+      <ActionContextProvider value={actionContextValue}>
         {btnElement}
-        {renderWithoutTableFieldResourceProvider()}
+        {btnHover && renderWithoutTableFieldResourceProvider()}
       </ActionContextProvider>
     </PopupVisibleProvider>
   );

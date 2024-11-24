@@ -9,7 +9,7 @@
 
 import { ISchema, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
-import { useCallback, useContext } from 'react';
+import { useCallback, useContext, useRef } from 'react';
 import { useLocationNoUpdate, useNavigateNoUpdate } from '../../../application';
 import { useTableBlockContextBasicValue } from '../../../block-provider/TableBlockProvider';
 import {
@@ -160,6 +160,9 @@ export const usePopupUtils = (
   );
   const blockData = useDataBlockRequestData();
   const tableBlockContextBasicValue = useTableBlockContextBasicValue() || ({} as any);
+  // Whether the button has been clicked
+  const isClickedRef = useRef(false);
+  const timerRef = useRef(null);
 
   const setVisibleFromAction = options.setVisible || _setVisibleFromAction;
 
@@ -222,6 +225,24 @@ export const usePopupUtils = (
       popupUidUsedInURL?: string;
       customActionSchema?: ISchema;
     } = {}) => {
+      // Prevent duplicate URLs
+      if (isClickedRef.current) {
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+        }
+        timerRef.current = setTimeout(() => {
+          isClickedRef.current = false;
+        }, 500);
+
+        return;
+      }
+
+      isClickedRef.current = true;
+
+      timerRef.current = setTimeout(() => {
+        isClickedRef.current = false;
+      }, 500);
+
       if (!isPopupVisibleControlledByURL()) {
         return setVisibleFromAction?.(true);
       }
@@ -279,6 +300,8 @@ export const usePopupUtils = (
   );
 
   const closePopup = useCallback(() => {
+    isClickedRef.current = false;
+
     if (!isPopupVisibleControlledByURL()) {
       return setVisibleFromAction?.(false);
     }
