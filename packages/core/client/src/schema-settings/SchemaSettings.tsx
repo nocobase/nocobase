@@ -39,7 +39,6 @@ import React, {
   useCallback,
   useContext,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useState,
 } from 'react';
@@ -176,7 +175,7 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = React.memo(
   const [openDropdown, setOpenDropdown] = useState(process.env.__TEST__ ? true : false);
   const toolbarVisible = useContext(SchemaToolbarVisibleContext);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (toolbarVisible) {
       setOpenDropdown(false);
     }
