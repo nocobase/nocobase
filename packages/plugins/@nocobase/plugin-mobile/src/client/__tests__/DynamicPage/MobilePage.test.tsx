@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
 import { act, render, screen, userEvent, waitFor, waitForApp } from '@nocobase/test/client';
-import Basic from '../../demos/pages-dynamic-page-basic';
+import React from 'react';
 import NotFound from '../../demos/pages-dynamic-page-404';
+import Basic from '../../demos/pages-dynamic-page-basic';
 import Schema from '../../demos/pages-dynamic-page-schema';
 // import Settings from '../../demos/pages-dynamic-page-settings'
 
@@ -46,7 +46,7 @@ describe('MobilePage', () => {
 
     await waitFor(() => {
       expect(screen.queryByText('Tab1 Content')).toBeInTheDocument();
-      expect(screen.queryAllByRole('button')).toHaveLength(4);
+      expect(screen.queryAllByRole('button')).toHaveLength(5);
     });
   });
 
