@@ -11,8 +11,9 @@ import { css } from '@emotion/css';
 import { observer, useField, useFieldSchema } from '@formily/react';
 import { Modal, ModalProps } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
+// @ts-ignore
+import React, { FC, startTransition, useEffect, useMemo, useState } from 'react';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { useToken } from '../../../style';
 import { ErrorFallback } from '../error-fallback';
@@ -38,6 +39,34 @@ const openSizeWidthMap = new Map<OpenSize, string>([
   ['middle', '60%'],
   ['large', '80%'],
 ]);
+
+const ActionModalContent: FC<{ footerNodeName: string; field: any; schema: any }> = React.memo(
+  ({ footerNodeName, field, schema }) => {
+    // Improve the speed of opening the drawer
+    const [deferredVisible, setDeferredVisible] = useState(false);
+
+    useEffect(() => {
+      startTransition(() => {
+        setDeferredVisible(true);
+      });
+    }, []);
+
+    if (!deferredVisible) {
+      return null;
+    }
+
+    return (
+      <NocoBaseRecursionField
+        basePath={field.address}
+        schema={schema}
+        onlyRenderProperties
+        filterProperties={(s) => {
+          return s['x-component'] !== footerNodeName;
+        }}
+      />
+    );
+  },
+);
 
 export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = observer(
   (props) => {
@@ -138,14 +167,7 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
                 )
               }
             >
-              <NocoBaseRecursionField
-                basePath={field.address}
-                schema={schema}
-                onlyRenderProperties
-                filterProperties={(s) => {
-                  return s['x-component'] !== footerNodeName;
-                }}
-              />
+              <ActionModalContent footerNodeName={footerNodeName} field={field} schema={schema} />
             </Modal>
           </TabsContextProvider>
         </zIndexContext.Provider>

@@ -10,7 +10,8 @@
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Drawer } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useMemo } from 'react';
+// @ts-ignore
+import React, { FC, startTransition, useCallback, useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { ErrorFallback } from '../error-fallback';
 import { useCurrentPopupContext } from '../page/PagePopups';
@@ -39,6 +40,41 @@ const openSizeWidthMap = new Map<OpenSize, string>([
   ['middle', '50%'],
   ['large', '70%'],
 ]);
+
+const ActionDrawerContent: FC<{ footerNodeName: string; field: any; schema: any }> = React.memo(
+  ({ footerNodeName, field, schema }) => {
+    // Improve the speed of opening the drawer
+    const [deferredVisible, setDeferredVisible] = useState(false);
+    const filterOutFooterNode = useCallback(
+      (s) => {
+        return s['x-component'] !== footerNodeName;
+      },
+      [footerNodeName],
+    );
+
+    useEffect(() => {
+      startTransition(() => {
+        setDeferredVisible(true);
+      });
+    }, []);
+
+    if (!deferredVisible) {
+      return null;
+    }
+
+    return (
+      <MemoizeRecursionField
+        basePath={field.address}
+        schema={schema}
+        onlyRenderProperties
+        filterProperties={filterOutFooterNode}
+      />
+    );
+  },
+);
+
+ActionDrawerContent.displayName = 'ActionDrawerContent';
+
 export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
   (props) => {
     const { footerNodeName = 'Action.Drawer.Footer', zIndex: _zIndex, ...others } = props;
@@ -70,12 +106,6 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
     const zIndex = _zIndex || parentZIndex + (props.level || 0);
 
     const onClose = useCallback(() => setVisible(false, true), [setVisible]);
-    const filterOutFooterNode = useCallback(
-      (s) => {
-        return s['x-component'] !== footerNodeName;
-      },
-      [footerNodeName],
-    );
     const keepFooterNode = useCallback(
       (s) => {
         return s['x-component'] === footerNodeName;
@@ -111,12 +141,7 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
                 )
               }
             >
-              <MemoizeRecursionField
-                basePath={field.address}
-                schema={schema}
-                onlyRenderProperties
-                filterProperties={filterOutFooterNode}
-              />
+              <ActionDrawerContent footerNodeName={footerNodeName} field={field} schema={schema} />
             </Drawer>
           </TabsContextProvider>
         </zIndexContext.Provider>
