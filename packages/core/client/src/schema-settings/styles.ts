@@ -16,7 +16,6 @@ export const useStyles = genStyleHook('nb-schema-toolbar', (token) => {
     [componentCls]: {
       position: 'absolute',
       zIndex: 999,
-      display: 'none',
       top: 0,
       left: 0,
       right: 0,
@@ -24,6 +23,10 @@ export const useStyles = genStyleHook('nb-schema-toolbar', (token) => {
       border: '2px solid var(--colorBorderSettingsHover)',
       background: 'var(--colorBgSettingsHover)',
       pointerEvents: 'none',
+
+      '&.hidden': {
+        clipPath: 'inset(100%)',
+      },
 
       '.ant-space-item .anticon': {
         margin: 0,

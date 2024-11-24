@@ -14,6 +14,7 @@ import React from 'react';
 import { DragHandler, useDesignable } from '../..';
 import { useSchemaSettingsRender } from '../../../application/schema-settings/hooks/useSchemaSettingsRender';
 import { SchemaToolbarProvider } from '../../../application/schema-toolbar/context';
+import { SchemaToolbar } from '../../../schema-settings/GeneralSchemaDesigner';
 import { useGetAriaLabelOfDesigner } from '../../../schema-settings/hooks/useGetAriaLabelOfDesigner';
 
 export const PageDesigner = ({ title }) => {
@@ -28,13 +29,7 @@ export const PageDesigner = ({ title }) => {
   }
   return (
     <SchemaToolbarProvider title={title}>
-      <div className={'general-schema-designer'}>
-        <div className={'general-schema-designer-icons'}>
-          <Space size={2} align={'center'}>
-            {render()}
-          </Space>
-        </div>
-      </div>
+      <SchemaToolbar settings="PageSettings" showBorder={false} />
     </SchemaToolbarProvider>
   );
 };

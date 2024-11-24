@@ -12,7 +12,8 @@ import { css } from '@emotion/css';
 import { useField, useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import classNames from 'classnames';
-import React, { createContext, FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+// @ts-ignore
+import React, { createContext, FC, startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer, SchemaSettings, SchemaToolbarProvider, useSchemaInitializerRender } from '../application';
 import { useSchemaSettingsRender } from '../application/schema-settings/hooks/useSchemaSettingsRender';
@@ -198,7 +199,7 @@ export interface SchemaToolbarProps {
   onVisibleChange?: (nextVisible: boolean) => void;
 }
 
-const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
+const InternalSchemaToolbar: FC<SchemaToolbarProps> = React.memo((props) => {
   const fieldSchema = useFieldSchema();
   const {
     title,
@@ -288,7 +289,7 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
   useEffect(() => {
     const toolbarElement = toolbarRef.current;
     let parentElement = toolbarElement?.parentElement;
-    while (parentElement && window.getComputedStyle(parentElement).height === '0px') {
+    while (parentElement && parentElement.clientHeight === 0) {
       parentElement = parentElement.parentElement;
     }
     if (!parentElement) {
@@ -297,14 +298,14 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
 
     function show() {
       if (toolbarElement) {
-        toolbarElement.style.display = 'block';
+        toolbarElement.classList.remove('hidden');
         props.onVisibleChange?.(true);
       }
     }
 
     function hide() {
       if (toolbarElement) {
-        toolbarElement.style.display = 'none';
+        toolbarElement.classList.add('hidden');
         props.onVisibleChange?.(false);
       }
     }
@@ -322,11 +323,20 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
     };
   }, [props.onVisibleChange]);
 
+  const containerStyle = useMemo(
+    () => ({
+      border: showBorder ? 'auto' : 0,
+      background: showBackground ? 'auto' : 0,
+      ...toolbarStyle,
+    }),
+    [showBackground, showBorder, toolbarStyle],
+  );
+
   return (
     <div
       ref={toolbarRef}
-      className={classNames(componentCls, hashId, toolbarClassName, 'schema-toolbar')}
-      style={{ border: showBorder ? 'auto' : 0, background: showBackground ? 'auto' : 0, ...toolbarStyle }}
+      className={classNames(componentCls, hashId, toolbarClassName, 'schema-toolbar', 'hidden')}
+      style={containerStyle}
     >
       {titleArr && (
         <div className={'toolbar-title'}>
@@ -351,7 +361,9 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
       </div>
     </div>
   );
-};
+});
+
+InternalSchemaToolbar.displayName = 'InternalSchemaToolbar';
 
 /**
  * @internal
@@ -363,7 +375,9 @@ export const SchemaToolbar: FC<SchemaToolbarProps> = React.memo((props) => {
   const [visible, setVisible] = useState(false);
 
   const onVisibleChange = useCallback((nextVisible: boolean) => {
-    setVisible(nextVisible);
+    startTransition(() => {
+      setVisible(nextVisible);
+    });
   }, []);
 
   if (!designable) {

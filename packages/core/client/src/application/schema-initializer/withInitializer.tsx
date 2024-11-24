@@ -85,6 +85,14 @@ export function withInitializer<T>(C: ComponentType<T>) {
         `;
       }, [token.paddingXXS]);
 
+      const contentStyle: any = useMemo(
+        () => ({
+          maxHeight: dropdownMaxHeight,
+          overflowY: 'auto',
+        }),
+        [dropdownMaxHeight],
+      );
+
       // designable 为 false 时，不渲染
       if (!designable && propsDesignable !== true) {
         return null;
@@ -111,13 +119,7 @@ export function withInitializer<T>(C: ComponentType<T>) {
                 open={visible}
                 onOpenChange={setVisible}
                 content={wrapSSR(
-                  <div
-                    className={`${componentCls} ${hashId}`}
-                    style={{
-                      maxHeight: dropdownMaxHeight,
-                      overflowY: 'auto',
-                    }}
-                  >
+                  <div className={`${componentCls} ${hashId}`} style={contentStyle}>
                     <ConfigProvider
                       theme={{
                         components: {
