@@ -7,18 +7,134 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaComponent } from '@nocobase/client';
-import React from 'react';
+import { SchemaComponent, useCollectionManager, useRecord } from '@nocobase/client';
+import React, { useEffect, useMemo } from 'react';
 import { lang, useAuthTranslation } from '../locale';
 import { FormTab, ArrayTable } from '@formily/antd-v5';
 import { Alert } from 'antd';
+import { uid } from '@formily/shared';
+
+const SignupFormSettings = () => {
+  const record = useRecord();
+  const cm = useCollectionManager();
+  const userCollection = cm.getCollection('users');
+  const fields = userCollection.fields.filter(
+    (field) => !field.hidden && !field.target && field.interface && !field.uiSchema?.['x-read-pretty'],
+  );
+  const enumArr = fields.map((field) => ({ value: field.name, label: field.uiSchema?.title }));
+  const value = useMemo(() => {
+    const fieldValue = record.options?.public?.signupForm || [];
+    for (const field of fields) {
+      const exist = fieldValue.find((item: any) => item.field === field.name);
+      if (!exist) {
+        fieldValue.push({
+          field: field.name,
+          show: field.name === 'username' || field.name === 'email',
+          required: field.name === 'username',
+        });
+      }
+    }
+    return fieldValue;
+  }, [fields, record]);
+  useEffect(() => {
+    record.options = {
+      ...record.options,
+      public: {
+        ...record.options?.public,
+        signupForm: value,
+      },
+    };
+  }, [record, value]);
+
+  return (
+    <SchemaComponent
+      components={{ ArrayTable }}
+      schema={{
+        type: 'void',
+        properties: {
+          signupForm: {
+            title: '{{t("Sign up form")}}',
+            type: 'array',
+            'x-decorator': 'FormItem',
+            'x-component': 'ArrayTable',
+            'x-component-props': {
+              bordered: false,
+            },
+            'x-validator': `{{ (value) => {
+  const field = value?.filter((item) => item.show && item.required);
+  if (!field?.length) {
+    return t('At least one field is required');
+  }
+} }}`,
+            default: value,
+            items: {
+              type: 'object',
+              'x-decorator': 'ArrayItems.Item',
+              properties: {
+                column0: {
+                  type: 'void',
+                  'x-component': 'ArrayTable.Column',
+                  'x-component-props': { width: 20, align: 'center' },
+                  properties: {
+                    sort: {
+                      type: 'void',
+                      'x-component': 'ArrayTable.SortHandle',
+                    },
+                  },
+                },
+                column1: {
+                  type: 'void',
+                  'x-component': 'ArrayTable.Column',
+                  'x-component-props': { width: 100, title: lang('Field') },
+                  properties: {
+                    field: {
+                      type: 'string',
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Select',
+                      enum: enumArr,
+                      'x-read-pretty': true,
+                    },
+                  },
+                },
+                column2: {
+                  type: 'void',
+                  'x-component': 'ArrayTable.Column',
+                  'x-component-props': { width: 80, title: lang('Show') },
+                  properties: {
+                    show: {
+                      type: 'boolean',
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Checkbox',
+                    },
+                  },
+                },
+                column3: {
+                  type: 'void',
+                  'x-component': 'ArrayTable.Column',
+                  'x-component-props': { width: 80, title: lang('Required') },
+                  properties: {
+                    required: {
+                      type: 'boolean',
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Checkbox',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }}
+    />
+  );
+};
 
 export const Options = () => {
   const { t } = useAuthTranslation();
   return (
     <SchemaComponent
       scope={{ t }}
-      components={{ Alert, FormTab, ArrayTable }}
+      components={{ Alert, SignupFormSettings, FormTab }}
       schema={{
         type: 'object',
         properties: {
@@ -52,96 +168,9 @@ export const Options = () => {
                         'x-component': 'Checkbox',
                         default: true,
                       },
-                      signupForm: {
-                        title: '{{t("Sign up form")}}',
-                        type: 'array',
-                        'x-decorator': 'FormItem',
-                        'x-component': 'ArrayTable',
-                        'x-component-props': {
-                          bordered: false,
-                        },
-                        'x-validator': `{{ (value) => {
-  const field = value?.filter((item) => item.show && item.required);
-  if (!field?.length) {
-    return t('At least one field is required');
-  }
-} }}`,
-                        default: [
-                          {
-                            field: 'username',
-                            show: true,
-                            required: true,
-                          },
-                          {
-                            field: 'email',
-                            show: false,
-                            required: false,
-                          },
-                        ],
-                        items: {
-                          type: 'object',
-                          'x-decorator': 'ArrayItems.Item',
-                          properties: {
-                            column0: {
-                              type: 'void',
-                              'x-component': 'ArrayTable.Column',
-                              'x-component-props': { width: 20, align: 'center' },
-                              properties: {
-                                sort: {
-                                  type: 'void',
-                                  'x-component': 'ArrayTable.SortHandle',
-                                },
-                              },
-                            },
-                            column1: {
-                              type: 'void',
-                              'x-component': 'ArrayTable.Column',
-                              'x-component-props': { width: 100, title: lang('Field') },
-                              properties: {
-                                field: {
-                                  type: 'string',
-                                  'x-decorator': 'FormItem',
-                                  'x-component': 'Select',
-                                  enum: [
-                                    {
-                                      label: lang('Username'),
-                                      value: 'username',
-                                    },
-                                    {
-                                      label: lang('Email'),
-                                      value: 'email',
-                                    },
-                                  ],
-                                  'x-read-pretty': true,
-                                },
-                              },
-                            },
-                            column2: {
-                              type: 'void',
-                              'x-component': 'ArrayTable.Column',
-                              'x-component-props': { width: 80, title: lang('Show') },
-                              properties: {
-                                show: {
-                                  type: 'boolean',
-                                  'x-decorator': 'FormItem',
-                                  'x-component': 'Checkbox',
-                                },
-                              },
-                            },
-                            column3: {
-                              type: 'void',
-                              'x-component': 'ArrayTable.Column',
-                              'x-component-props': { width: 80, title: lang('Required') },
-                              properties: {
-                                required: {
-                                  type: 'boolean',
-                                  'x-decorator': 'FormItem',
-                                  'x-component': 'Checkbox',
-                                },
-                              },
-                            },
-                          },
-                        },
+                      [uid()]: {
+                        type: 'void',
+                        'x-component': 'SignupFormSettings',
                       },
                     },
                   },
