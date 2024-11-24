@@ -50,8 +50,6 @@ export interface ButtonListProps {
   };
 }
 
-const recordStyle: any = { overflowWrap: 'inherit', whiteSpace: 'normal' };
-
 const RenderRecord = React.memo(
   ({
     fieldNames,
@@ -172,7 +170,7 @@ const RenderRecord = React.memo(
       return null;
     }
 
-    return <div style={recordStyle}>{result}</div>;
+    return <>{result}</>;
   },
 );
 

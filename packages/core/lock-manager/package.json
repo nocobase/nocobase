@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/lock-manager",
-  "version": "1.5.0-alpha.4",
+  "version": "1.5.0-alpha.5",
   "main": "lib/index.js",
   "license": "AGPL-3.0",
   "devDependencies": {
