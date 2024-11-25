@@ -152,3 +152,11 @@ jobs:
               \"tag\": \"${{ steps.get-tag.outputs.tag }}\",
               \"dialect\": \"postgres\"
           }"
+      - name: Deploy NocoBase V2
+        run: |
+          curl --retry 2 --location --request POST "${{secrets.NOCOBASE_DEPLOY_HOST_V2}}${{ steps.get-tag.outputs.tag }}" \
+          --header 'Content-Type: application/json' \
+          -d "{
+              \"tag\": \"${{ steps.get-tag.outputs.tag }}\",
+              \"dialect\": \"postgres\"
+          }"
