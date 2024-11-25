@@ -113,6 +113,7 @@ export const useStyles = createStyles(({ token, css }) => {
       }
       .mobile-page-header .adm-tabs-tab {
         font-size: 14px;
+        height: 100%;
       }
     `,
   };
