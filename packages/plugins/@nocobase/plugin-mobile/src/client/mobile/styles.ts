@@ -18,6 +18,12 @@ export const useStyles = createStyles(({ token, css }) => {
       & ::-webkit-scrollbar {
         display: none;
       }
+      .ant-menu {
+        font-size: 14px !important;
+      }
+      .ant-formily-item {
+        font-size: 14px !important;
+      }
       .nb-details .ant-formily-item-feedback-layout-loose {
         margin-bottom: 5px;
       }
