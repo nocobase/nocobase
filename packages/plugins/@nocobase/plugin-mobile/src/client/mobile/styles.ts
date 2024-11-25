@@ -110,6 +110,7 @@ export const useStyles = genStyleHook('nb-mobile', (token) => {
       },
       '.mobile-page-header .adm-tabs-tab': {
         fontSize: '14px',
+        height: '100%',
       },
     },
   };
