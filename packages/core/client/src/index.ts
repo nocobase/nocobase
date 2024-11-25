@@ -29,7 +29,6 @@ export * from './appInfo';
 export * from './application';
 export * from './async-data-provider';
 export * from './block-provider';
-export * from './china-region';
 export * from './collection-manager';
 
 export * from './common';

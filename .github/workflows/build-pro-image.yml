@@ -5,25 +5,24 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
-    branches:
-      - 'develop'
-      - 'main'
-      - 'next'
-      - 'develop'
-    paths:
-      - 'packages/**'
-      - 'Dockerfile.pro'
-      - 'package.json'
-      - '.github/workflows/build-pro-image.yml'
-  pull_request:
-    branches:
-      - '**'
-    paths:
-      - 'packages/**'
-      - 'docker/nocobase/**'
-      - 'Dockerfile'
-      - '.github/workflows/build-docker-image.yml'
+  workflow_dispatch:
+  # push:
+  #   branches:
+  #     - 'main'
+  #     - 'next'
+  #     - 'develop'
+  #   paths:
+  #     - 'packages/**'
+  #     - 'Dockerfile'
+  #     - '.github/workflows/build-pro-image.yml'
+  # pull_request:
+  #   branches:
+  #     - '**'
+  #   paths:
+  #     - 'packages/**'
+  #     - 'docker/nocobase/**'
+  #     - 'Dockerfile'
+  #     - '.github/workflows/build-docker-image.yml'
 
 jobs:
   get-plugins:
