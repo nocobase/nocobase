@@ -54,7 +54,7 @@ const CollectionFieldUISchemaContext = React.createContext<CollectionFieldOption
 const RefreshContext = React.createContext<() => void>(_.noop);
 
 const RefreshProvider: FC<{ refresh: () => void }> = ({ children, refresh }) => {
-  const parentRefresh = useRefresh();
+  const parentRefresh = useRefreshFieldSchema();
 
   const value = useCallback(() => {
     parentRefresh?.();
@@ -64,7 +64,11 @@ const RefreshProvider: FC<{ refresh: () => void }> = ({ children, refresh }) => 
   return <RefreshContext.Provider value={value}>{children}</RefreshContext.Provider>;
 };
 
-export const useRefresh = () => {
+/**
+ * Create a new fieldSchema instance to refresh the component after modifying fieldSchema
+ * @returns
+ */
+export const useRefreshFieldSchema = () => {
   return React.useContext(RefreshContext);
 };
 

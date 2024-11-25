@@ -85,7 +85,6 @@ import { useDataSourceManager } from '../data-source/data-source/DataSourceManag
 import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
 import { FlagProvider } from '../flag-provider';
-import { useRefresh } from '../formily/NocoBaseRecursionField';
 import { useGlobalTheme } from '../global-theme';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
 import {
@@ -97,7 +96,7 @@ import { useRecord } from '../record-provider';
 import { ActionContextProvider } from '../schema-component/antd/action/context';
 import { SubFormProvider, useSubFormValue } from '../schema-component/antd/association-field/hooks';
 import { FormDialog } from '../schema-component/antd/form-dialog';
-import { SchemaComponentContext } from '../schema-component/context';
+import { SchemaComponentContext, useNewRefreshContext } from '../schema-component/context';
 import { FormProvider } from '../schema-component/core/FormProvider';
 import { RemoteSchemaComponent } from '../schema-component/core/RemoteSchemaComponent';
 import { SchemaComponent } from '../schema-component/core/SchemaComponent';
@@ -175,15 +174,14 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = React.memo(
   // 单测中需要在首次就把菜单渲染出来，否则不会触发菜单的渲染进而报错。原因未知。
   const [openDropdown, setOpenDropdown] = useState(process.env.__TEST__ ? true : false);
   const toolbarVisible = useContext(SchemaToolbarVisibleContext);
-  const refreshFieldSchema = useRefresh();
+  const refreshCtx = useContext(SchemaComponentContext);
+  const newRefreshCtx = useNewRefreshContext(refreshCtx.refresh);
 
-  const refresh = useCallback(() => {
-    refreshFieldSchema();
-  }, [refreshFieldSchema]);
-
-  if (dn) {
-    dn.refresh = refresh;
-  }
+  const newDn: any = useMemo(() => {
+    const result = Object.create(dn);
+    result.refresh = newRefreshCtx.refresh;
+    return result;
+  }, [dn, newRefreshCtx.refresh]);
 
   useEffect(() => {
     if (toolbarVisible) {
@@ -216,28 +214,30 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = React.memo(
   const items = getMenuItems(() => props.children);
 
   return (
-    <SchemaSettingsProvider visible={visible} setVisible={setVisible} dn={dn} {...others}>
-      <Component />
-      <Dropdown
-        open={visible}
-        onOpenChange={changeMenu}
-        overlayClassName={css`
-          .ant-dropdown-menu-item-group-list {
-            max-height: 300px;
-            overflow-y: auto;
+    <SchemaComponentContext.Provider value={newRefreshCtx}>
+      <SchemaSettingsProvider visible={visible} setVisible={setVisible} dn={newDn} {...others}>
+        <Component />
+        <Dropdown
+          open={visible}
+          onOpenChange={changeMenu}
+          overlayClassName={css`
+            .ant-dropdown-menu-item-group-list {
+              max-height: 300px;
+              overflow-y: auto;
+            }
+          `}
+          menu={
+            {
+              items,
+              'data-testid': 'schema-settings-menu',
+              style: { maxHeight: dropdownMaxHeight, overflowY: 'auto' },
+            } as any
           }
-        `}
-        menu={
-          {
-            items,
-            'data-testid': 'schema-settings-menu',
-            style: { maxHeight: dropdownMaxHeight, overflowY: 'auto' },
-          } as any
-        }
-      >
-        <div data-testid={props['data-testid']}>{typeof title === 'string' ? <span>{title}</span> : title}</div>
-      </Dropdown>
-    </SchemaSettingsProvider>
+        >
+          <div data-testid={props['data-testid']}>{typeof title === 'string' ? <span>{title}</span> : title}</div>
+        </Dropdown>
+      </SchemaSettingsProvider>
+    </SchemaComponentContext.Provider>
   );
 });
 

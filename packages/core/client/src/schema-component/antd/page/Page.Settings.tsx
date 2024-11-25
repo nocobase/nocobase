@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useTranslation } from 'react-i18next';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../..';
 import { SchemaSettings } from '../../../application/schema-settings';
 import { useSchemaToolbar } from '../../../application/schema-toolbar';

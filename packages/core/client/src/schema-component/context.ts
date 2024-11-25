@@ -7,8 +7,36 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createContext } from 'react';
+import { useUpdate } from 'ahooks';
+import { createContext, useCallback, useContext, useMemo } from 'react';
+import { useRefreshFieldSchema } from '../formily/NocoBaseRecursionField';
 import { ISchemaComponentContext } from './types';
 
 export const SchemaComponentContext = createContext<ISchemaComponentContext>({});
 SchemaComponentContext.displayName = 'SchemaComponentContext.Provider';
+
+/**
+ * Get a new refresh context, used to refresh the block that uses this hook
+ * @returns
+ */
+export const useNewRefreshContext = (refresh?: () => void) => {
+  const oldCtx = useContext(SchemaComponentContext);
+  const newCtx = useMemo(() => ({ ...oldCtx }), [oldCtx]);
+  const refreshFieldSchema = useRefreshFieldSchema();
+  const update = useUpdate();
+
+  const _refresh = useCallback(() => {
+    // refresh fieldSchema
+    refreshFieldSchema();
+    // refresh current component
+    update();
+    refresh?.();
+  }, [refreshFieldSchema, update, refresh]);
+
+  if (oldCtx) {
+    Object.assign(newCtx, oldCtx);
+    newCtx.refresh = _refresh;
+  }
+
+  return newCtx;
+};

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC, memo, useEffect, useMemo, useRef } from 'react';
+import React, { FC, useEffect, useMemo, useRef } from 'react';
 
 import _ from 'lodash';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
@@ -102,7 +102,7 @@ export const SchemaSettingsChildren: FC<SchemaSettingsChildrenProps> = (props) =
 const useChildrenDefault = () => undefined;
 const useComponentPropsDefault = () => undefined;
 const useVisibleDefault = () => true;
-export const SchemaSettingsChild: FC<SchemaSettingsItemType> = memo((props) => {
+export const SchemaSettingsChild: FC<SchemaSettingsItemType> = (props) => {
   const {
     useVisible = useVisibleDefault,
     useChildren = useChildrenDefault,
@@ -145,5 +145,4 @@ export const SchemaSettingsChild: FC<SchemaSettingsItemType> = memo((props) => {
       </C>
     </SchemaSettingItemContext.Provider>
   );
-});
-SchemaSettingsChild.displayName = 'SchemaSettingsChild';
+};
