@@ -222,7 +222,7 @@ test.describe('PageHeader', () => {
         const navigationBarPositionElement = page.getByTestId(`mobile-navigation-action-bar-${position}`);
         await navigationBarPositionElement
           .getByLabel('schema-initializer-MobileNavigationActionBar-mobile:navigation-bar:actions')
-          .click();
+          .hover();
         await page.getByRole('menuitem', { name: 'Link' }).click();
         await page.getByRole('textbox').fill('Test________');
         await page.getByLabel('action-Action-Submit').click();
@@ -261,6 +261,7 @@ test.describe('PageHeader', () => {
       }
 
       await doPosition('left');
+      await page.reload();
       await doPosition('right');
     });
   });

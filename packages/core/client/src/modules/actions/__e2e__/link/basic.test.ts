@@ -64,7 +64,7 @@ test.describe('Link', () => {
     await expect(page.getByRole('button', { name: users[1].username, exact: true })).toBeVisible();
 
     // 4. click the Link button，check the data of the table block
-    await page.getByLabel('action-Action.Link-Link-customize:link-users-table-0').click();
+    await page.getByLabel('action-Action.Link-Link-customize:link-users-table-1').click();
     await expect(page.getByRole('button', { name: users[0].username, exact: true })).not.toBeVisible();
     await expect(page.getByRole('button', { name: 'nocobase', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: users[1].username, exact: true })).toBeVisible();
