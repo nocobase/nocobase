@@ -169,7 +169,7 @@ const RenderRecord = React.memo(
       return null;
     }
 
-    return <div style={{ overflowWrap: 'inherit', whiteSpace: 'normal' }}>{result}</div>;
+    return <>{result}</>;
   },
 );
 
