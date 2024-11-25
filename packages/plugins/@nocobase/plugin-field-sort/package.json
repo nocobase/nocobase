@@ -8,12 +8,12 @@
   "description.zh-CN": "用于对数据表的数据进行排序。",
   "main": "dist/server/index.js",
   "devDependencies": {
-    "@nocobase/actions": "1.x",
-    "@nocobase/client": "1.x",
-    "@nocobase/database": "1.x",
-    "@nocobase/lock-manager": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x",
+    "@nocobase/actions": "1.5.0-alpha.5",
+    "@nocobase/client": "1.5.0-alpha.5",
+    "@nocobase/database": "1.5.0-alpha.5",
+    "@nocobase/lock-manager": "1.5.0-alpha.5",
+    "@nocobase/server": "1.5.0-alpha.5",
+    "@nocobase/test": "1.5.0-alpha.5",
     "lodash": "4.17.21",
     "sequelize": "^6.26.0"
   },
