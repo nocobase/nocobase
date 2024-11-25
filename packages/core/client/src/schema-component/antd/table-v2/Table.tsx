@@ -21,7 +21,7 @@ import { useCreation, useDeepCompareEffect, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
-import React, { useCallback, useContext, useMemo, useRef, useState } from 'react';
+import React, { FC, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInView } from 'react-intersection-observer';
 import { DndContext, isBulkEditAction, useDesignable, usePopupSettings, useTableSize } from '../..';
@@ -47,8 +47,7 @@ import { withSkeletonComponent } from '../../../hoc/withSkeletonComponent';
 import { useSatisfiedActionValues } from '../../../schema-settings/LinkageRules/useActionValues';
 import { HighPerformanceSpin } from '../../common/high-performance-spin/HighPerformanceSpin';
 import { useToken } from '../__builtins__';
-import { SubFormProvider, useAssociationFieldContext } from '../association-field/hooks';
-import { ColumnFieldProvider } from './components/ColumnFieldProvider';
+import { useAssociationFieldContext } from '../association-field/hooks';
 import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 
@@ -110,6 +109,35 @@ const useColumnsDeepMemoized = (columns: any[]) => {
   return oldObj.value;
 };
 
+const TableCellRender: FC<{
+  record: any;
+  columnSchema: Schema;
+  uiSchema: any;
+  filterProperties: (schema: Schema) => boolean;
+  schemaToolbarBigger: string;
+  field: ArrayField;
+  index: number;
+}> = React.memo(({ record, columnSchema, uiSchema, filterProperties, schemaToolbarBigger, field, index }) => {
+  const basePath = field.address.concat(record.__index || index);
+
+  return (
+    <span role="button" className={schemaToolbarBigger}>
+      <NocoBaseRecursionField
+        values={record}
+        basePath={basePath}
+        schema={columnSchema}
+        uiSchema={uiSchema}
+        onlyRenderProperties
+        propsRecursion
+        filterProperties={filterProperties}
+        isUseFormilyField={false}
+      />
+    </span>
+  );
+});
+
+TableCellRender.displayName = 'TableCellRender';
+
 const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginationProps) => {
   const { token } = useToken();
   const field = useArrayField(props);
@@ -126,6 +154,12 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
   const { current, pageSize } = paginationProps;
   const hasChangedColumns = useColumnsDeepMemoized(columnsSchemas);
   const { isPopupVisibleControlledByURL } = usePopupSettings();
+
+  const filterProperties = useCallback(
+    (schema) =>
+      isBulkEditAction(schema) || !isPopupVisibleControlledByURL() || schema['x-component'] !== 'Action.Container',
+    [isPopupVisibleControlledByURL],
+  );
 
   const schemaToolbarBigger = useMemo(() => {
     return css`
@@ -170,37 +204,16 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
           ...columnSchema['x-component-props'],
           width: columnHidden && !designable ? 0 : columnSchema['x-component-props']?.width || 100,
           render: (value, record, index) => {
-            const basePath = field.address.concat(record.__index || index);
-
-            if (props.isSubTable) {
-              return (
-                <SubFormProvider value={{ value: record, collection, fieldSchema: schema.parent }}>
-                  <ColumnFieldProvider schema={columnSchema} basePath={basePath}>
-                    <span role="button" className={schemaToolbarBigger}>
-                      <NocoBaseRecursionField basePath={basePath} schema={columnSchema} onlyRenderProperties />
-                    </span>
-                  </ColumnFieldProvider>
-                </SubFormProvider>
-              );
-            }
-
             return (
-              <span role="button" className={schemaToolbarBigger}>
-                <NocoBaseRecursionField
-                  values={record}
-                  basePath={basePath}
-                  schema={columnSchema}
-                  uiSchema={uiSchema}
-                  onlyRenderProperties
-                  propsRecursion
-                  filterProperties={(schema) =>
-                    isBulkEditAction(schema) ||
-                    !isPopupVisibleControlledByURL() ||
-                    schema['x-component'] !== 'Action.Container'
-                  }
-                  isUseFormilyField={false}
-                />
-              </span>
+              <TableCellRender
+                record={record}
+                columnSchema={columnSchema}
+                uiSchema={uiSchema}
+                filterProperties={filterProperties}
+                schemaToolbarBigger={schemaToolbarBigger}
+                field={field}
+                index={index}
+              />
             );
           },
           onCell: (record, rowIndex) => {
@@ -222,7 +235,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
 
     // 这里不能把 columnsSchema 作为依赖，因为其每次都会变化，这里使用 hasChangedColumns 作为依赖
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [hasChangedColumns, field.address, collection, schemaToolbarBigger, designable, isPopupVisibleControlledByURL],
+    [hasChangedColumns, field.address, collection, schemaToolbarBigger, designable, filterProperties],
   );
 
   const tableColumns = useMemo(() => {
@@ -602,7 +615,6 @@ InternalBodyCellComponent.displayName = 'InternalBodyCellComponent';
 const displayNone = { display: 'none' };
 
 const BodyCellComponent = React.memo<BodyCellComponentProps>((props) => {
-  const prevPropsRef = useRef(props);
   const { designable } = useDesignable();
 
   if (props.columnHidden) {
@@ -613,13 +625,7 @@ const BodyCellComponent = React.memo<BodyCellComponentProps>((props) => {
     );
   }
 
-  // Only re-render Cell when record changes, this improves Table refresh performance
-  if (prevPropsRef.current.record !== props.record) {
-    prevPropsRef.current = props;
-    return <InternalBodyCellComponent {..._.omit(props, 'columnHidden')} />;
-  }
-
-  return <InternalBodyCellComponent {..._.omit(prevPropsRef.current, 'columnHidden')} />;
+  return <InternalBodyCellComponent {..._.omit(props, 'columnHidden')} />;
 });
 
 BodyCellComponent.displayName = 'BodyCellComponent';

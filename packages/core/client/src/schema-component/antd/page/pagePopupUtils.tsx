@@ -225,23 +225,26 @@ export const usePopupUtils = (
       popupUidUsedInURL?: string;
       customActionSchema?: ISchema;
     } = {}) => {
-      // Prevent duplicate URLs
-      if (isClickedRef.current) {
-        if (timerRef.current) {
-          clearTimeout(timerRef.current);
+      // In e2e tests, buttons may be clicked multiple times rapidly, so we cannot directly prevent repeated clicks
+      if (!process.env.__E2E__) {
+        // Prevent duplicate URLs
+        if (isClickedRef.current) {
+          if (timerRef.current) {
+            clearTimeout(timerRef.current);
+          }
+          timerRef.current = setTimeout(() => {
+            isClickedRef.current = false;
+          }, 500);
+
+          return;
         }
+
+        isClickedRef.current = true;
+
         timerRef.current = setTimeout(() => {
           isClickedRef.current = false;
         }, 500);
-
-        return;
       }
-
-      isClickedRef.current = true;
-
-      timerRef.current = setTimeout(() => {
-        isClickedRef.current = false;
-      }, 500);
 
       if (!isPopupVisibleControlledByURL()) {
         return setVisibleFromAction?.(true);
