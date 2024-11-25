@@ -46,7 +46,7 @@ describe('MobilePage', () => {
 
     await waitFor(() => {
       expect(screen.queryByText('Tab1 Content')).toBeInTheDocument();
-      expect(screen.queryAllByRole('button')).toHaveLength(5);
+      expect(screen.queryAllByRole('button')).toHaveLength(4);
     });
   });
 
