@@ -115,6 +115,11 @@ export const useStyles = createStyles(({ token, css }) => {
         font-size: 14px;
         height: 100%;
       }
+      .nb-mobile-setting {
+        [data-menu-id$='-theme'] {
+          display: none;
+        }
+      }
     `,
   };
 });
