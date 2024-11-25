@@ -165,8 +165,8 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
 
     const toCenter = useMemoizedFn((position) => {
       if (map.current) {
-        map.current.setCenter(position);
-        map.current.setZoom(zoom);
+        map.current?.setCenter?.(position);
+        map.current?.setZoom?.(zoom);
       }
     });
 
