@@ -9,7 +9,7 @@
 
 import { ISchema, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
-import { useCallback, useContext, useRef } from 'react';
+import { useCallback, useContext } from 'react';
 import { useLocationNoUpdate, useNavigateNoUpdate } from '../../../application';
 import { useTableBlockContextBasicValue } from '../../../block-provider/TableBlockProvider';
 import {
@@ -123,6 +123,30 @@ export const getPopupPathFromParams = (params: PopupParams) => {
   return `/popups/${popupPath.map((item) => encodePathValue(item)).join('/')}`;
 };
 
+let isClicked = false;
+let timer = null;
+// Used to prevent URL duplication caused by rapid repeated clicks
+export const quickClick = (duration = 500) => {
+  if (isClicked) {
+    if (timer) {
+      clearTimeout(timer);
+    }
+    timer = setTimeout(() => {
+      isClicked = false;
+    }, duration);
+
+    return true;
+  }
+
+  isClicked = true;
+
+  timer = setTimeout(() => {
+    isClicked = false;
+  }, duration);
+
+  return false;
+};
+
 /**
  * Note: use this hook in a plugin is not recommended
  * @returns
@@ -160,9 +184,6 @@ export const usePopupUtils = (
   );
   const blockData = useDataBlockRequestData();
   const tableBlockContextBasicValue = useTableBlockContextBasicValue() || ({} as any);
-  // Whether the button has been clicked
-  const isClickedRef = useRef(false);
-  const timerRef = useRef(null);
 
   const setVisibleFromAction = options.setVisible || _setVisibleFromAction;
 
@@ -225,29 +246,13 @@ export const usePopupUtils = (
       popupUidUsedInURL?: string;
       customActionSchema?: ISchema;
     } = {}) => {
-      // In e2e tests, buttons may be clicked multiple times rapidly, so we cannot directly prevent repeated clicks
-      if (!process.env.__E2E__) {
-        // Prevent duplicate URLs
-        if (isClickedRef.current) {
-          if (timerRef.current) {
-            clearTimeout(timerRef.current);
-          }
-          timerRef.current = setTimeout(() => {
-            isClickedRef.current = false;
-          }, 500);
-
-          return;
-        }
-
-        isClickedRef.current = true;
-
-        timerRef.current = setTimeout(() => {
-          isClickedRef.current = false;
-        }, 500);
-      }
-
       if (!isPopupVisibleControlledByURL()) {
         return setVisibleFromAction?.(true);
+      }
+
+      // In e2e tests, buttons may be clicked multiple times rapidly, so we cannot directly prevent repeated clicks
+      if (!process.env.__E2E__ && quickClick()) {
+        return;
       }
 
       const currentPopupUidWithoutOpened = customActionSchema?.['x-uid'] || fieldSchema?.['x-uid'];
@@ -303,7 +308,7 @@ export const usePopupUtils = (
   );
 
   const closePopup = useCallback(() => {
-    isClickedRef.current = false;
+    isClicked = false;
 
     if (!isPopupVisibleControlledByURL()) {
       return setVisibleFromAction?.(false);

@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { getPopupParamsFromPath, getPopupPathFromParams, removeLastPopupPath } from '../pagePopupUtils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getPopupParamsFromPath, getPopupPathFromParams, quickClick, removeLastPopupPath } from '../pagePopupUtils';
 
 describe('getPopupParamsFromPath', () => {
   it('should parse the path and return the popup parameters', () => {
@@ -128,5 +129,67 @@ describe('removeLastPopupPath', () => {
     const result = removeLastPopupPath(path);
 
     expect(result).toBe('');
+  });
+});
+
+describe('quickClick', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.runAllTimers();
+  });
+
+  it('should return false on first click', () => {
+    expect(quickClick()).toBe(false);
+  });
+
+  it('should return true on rapid repeated clicks', () => {
+    expect(quickClick()).toBe(false); // first click
+    expect(quickClick()).toBe(true); // second click
+    expect(quickClick()).toBe(true); // third click
+  });
+
+  it('should reset after duration', () => {
+    expect(quickClick()).toBe(false); // first click
+
+    // Fast forward time by default duration (500ms)
+    vi.advanceTimersByTime(500);
+
+    expect(quickClick()).toBe(false); // should be treated as first click again
+  });
+
+  it('should clear previous timer on rapid clicks', () => {
+    expect(quickClick()).toBe(false); // first click
+
+    // Advance time partially
+    vi.advanceTimersByTime(200);
+
+    expect(quickClick()).toBe(true); // second click should reset timer
+
+    // Advance time by less than full duration from second click
+    vi.advanceTimersByTime(400);
+
+    expect(quickClick()).toBe(true); // should still be considered rapid click
+  });
+
+  it('should handle multiple sequences of clicks', () => {
+    // First sequence
+    expect(quickClick()).toBe(false);
+    expect(quickClick()).toBe(true);
+
+    // Wait for reset
+    vi.advanceTimersByTime(500);
+
+    // Second sequence
+    expect(quickClick()).toBe(false);
+    expect(quickClick()).toBe(true);
+
+    // Wait for reset
+    vi.advanceTimersByTime(500);
+
+    // Third sequence
+    expect(quickClick()).toBe(false);
   });
 });
