@@ -65,7 +65,7 @@ test('menu permission ', async ({ page, mockPage, mockRole, updateRole }) => {
   await expect(page.getByRole('row', { name: 'page2' }).locator('.ant-checkbox-input')).toBeChecked({ checked: true });
   //通过路由访问无权限的菜单,跳到有权限的第一个菜单
   await page.goto(`/admin/${uid1}`);
-  await expect(page.locator('.nb-page-wrapper').nth(1)).toBeVisible();
+  await expect(page.locator('.nb-page-wrapper')).toBeVisible();
   expect(page.url()).toContain(uid2);
 });
 
