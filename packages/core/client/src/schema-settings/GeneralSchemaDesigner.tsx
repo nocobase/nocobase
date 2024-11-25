@@ -125,6 +125,7 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
   if (!designable) {
     return null;
   }
+
   return (
     <SchemaToolbarProvider {...contextValue}>
       <div className={classNames('general-schema-designer', overrideAntdCSS)}>

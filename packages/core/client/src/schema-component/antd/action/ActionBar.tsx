@@ -9,7 +9,7 @@
 
 import { cx } from '@emotion/css';
 import { observer, useFieldSchema } from '@formily/react';
-import { Space, SpaceProps, theme } from 'antd';
+import { Space, SpaceProps } from 'antd';
 import React, { CSSProperties, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { useSchemaInitializerRender } from '../../../application';
@@ -61,7 +61,6 @@ const Portal: React.FC = (props) => {
 export const ActionBar = withDynamicSchemaProps(
   observer((props: any) => {
     const { forceProps = {} } = useActionBarContext();
-    const { token } = theme.useToken();
     // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const { layout = 'two-columns', style, spaceProps, ...others } = { ...useProps(props), ...forceProps } as any;
 

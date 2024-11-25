@@ -22,8 +22,9 @@ import {
   VoidField,
 } from '@formily/react';
 import { isBool, isFn, isValid, merge } from '@formily/shared';
+import { useUpdate } from 'ahooks';
 import _ from 'lodash';
-import React, { FC, Fragment, useMemo } from 'react';
+import React, { FC, Fragment, useCallback, useMemo } from 'react';
 import { CollectionFieldOptions } from '../data-source/collection/Collection';
 import { useCollectionManager } from '../data-source/collection/CollectionManagerProvider';
 import { useCollection } from '../data-source/collection/CollectionProvider';
@@ -49,6 +50,23 @@ interface INocoBaseRecursionFieldProps extends IRecursionFieldProps {
 }
 
 const CollectionFieldUISchemaContext = React.createContext<CollectionFieldOptions>({});
+
+const RefreshContext = React.createContext<() => void>(_.noop);
+
+const RefreshProvider: FC<{ refresh: () => void }> = ({ children, refresh }) => {
+  const parentRefresh = useRefresh();
+
+  const value = useCallback(() => {
+    parentRefresh?.();
+    refresh();
+  }, [parentRefresh, refresh]);
+
+  return <RefreshContext.Provider value={value}>{children}</RefreshContext.Provider>;
+};
+
+export const useRefresh = () => {
+  return React.useContext(RefreshContext);
+};
 
 /**
  * @internal
@@ -232,6 +250,12 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
   const basePath = useBasePath(props);
   const fieldSchema = createSchemaInstance(schema);
   const { uiSchema: collectionFiledUiSchema, defaultValue } = useCollectionFieldUISchema();
+  const update = useUpdate();
+
+  const refresh = useCallback(() => {
+    createSchemaInstance.cache.delete(schema);
+    update();
+  }, [schema, update]);
 
   // Merge default Schema of collection fields
   const mergedFieldSchema = useMemo(() => {
@@ -295,7 +319,11 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
   // The original fieldSchema is still passed down to maintain compatibility with NocoBase usage.
   // fieldSchema stores some user-defined content. If we pass down mergedFieldSchema instead,
   // some default schema values would also be saved in fieldSchema.
-  return <SchemaContext.Provider value={fieldSchema}>{render()}</SchemaContext.Provider>;
+  return (
+    <SchemaContext.Provider value={fieldSchema}>
+      <RefreshProvider refresh={refresh}>{render()}</RefreshProvider>
+    </SchemaContext.Provider>
+  );
 });
 
 NocoBaseRecursionField.displayName = 'NocoBaseRecursionField';

@@ -19,14 +19,11 @@ import { useGetAriaLabelOfDesigner } from '../../../schema-settings/hooks/useGet
 
 export const PageDesigner = ({ title }) => {
   const { designable } = useDesignable();
-  const fieldSchema = useFieldSchema();
-  const { render } = useSchemaSettingsRender(
-    fieldSchema['x-settings'] || 'PageSettings',
-    fieldSchema['x-settings-props'],
-  );
+
   if (!designable) {
     return null;
   }
+
   return (
     <SchemaToolbarProvider title={title}>
       <SchemaToolbar settings="PageSettings" showBorder={false} />

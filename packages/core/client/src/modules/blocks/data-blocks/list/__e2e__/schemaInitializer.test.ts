@@ -36,6 +36,7 @@ test.describe('where list block can be added', () => {
     await page.getByRole('menuitem', { name: 'Associated records right' }).hover();
     await page.getByRole('menuitem', { name: 'Roles' }).click();
     await page.mouse.move(300, 0);
+    await page.waitForTimeout(300);
     await page.getByLabel('schema-initializer-Grid-').nth(1).hover();
     await page.getByRole('menuitem', { name: 'Role name' }).click();
     await page.mouse.move(300, 0);

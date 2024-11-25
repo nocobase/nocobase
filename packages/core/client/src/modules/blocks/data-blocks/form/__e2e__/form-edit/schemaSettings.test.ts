@@ -152,16 +152,20 @@ test.describe('edit form block schema settings', () => {
   });
   // https://nocobase.height.app/T-3825
   test('Unsaved changes warning display', async ({ page, mockPage, mockRecord }) => {
-    await mockPage(T3825).goto();
+    const nocoPage = await mockPage(T3825).waitForInit();
     await mockRecord('general', { number: 9, formula: 10 });
+    await nocoPage.goto();
+
     await expect(page.getByLabel('block-item-CardItem-general-')).toBeVisible();
     //没有改动时不显示提示
     await page.getByLabel('action-Action.Link-Edit record-update-general-table-').click();
     await page.getByLabel('drawer-Action.Container-general-Edit record-mask').click();
-    await expect(page.getByLabel('action-Action-Add new-create-')).toBeVisible();
+    await expect(page.getByText('Unsaved changes')).not.toBeVisible();
+
     //有改动时显示提示
+    // TODO: 不知道为什么，这里需要等待一下，点击后才能打开弹窗
+    await page.waitForTimeout(1000);
     await page.getByLabel('action-Action.Link-Edit record-update-general-table-').click();
-    await page.getByRole('spinbutton').fill('');
     await page.getByRole('spinbutton').fill('10');
     await expect(page.getByLabel('block-item-CollectionField-general-form-general.formula-formula')).toHaveText(
       'formula:11',
