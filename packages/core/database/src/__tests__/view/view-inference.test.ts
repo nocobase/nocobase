@@ -127,6 +127,8 @@ describe('view inference', function () {
     });
 
     const createdAt = UserCollection.model.rawAttributes['createdAt'].field;
+    expect(inferredFields[createdAt]['field']).toBeDefined();
+
     if (db.isMySQLCompatibleDialect()) {
       expect(inferredFields[createdAt]['type']).toBe('datetimeNoTz');
     } else {

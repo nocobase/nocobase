@@ -450,7 +450,7 @@ describe('view collection', function () {
 
     const dropViewSQL = `DROP VIEW IF EXISTS test_view`;
     await db.sequelize.query(dropViewSQL);
-    const viewSQL = `CREATE VIEW test_view AS select 1+1 as "Uppercase"`;
+    const viewSQL = `CREATE VIEW test_view AS select 1+1 as "t_Uppercase"`;
     await db.sequelize.query(viewSQL);
 
     await collectionRepository.create({
@@ -458,7 +458,7 @@ describe('view collection', function () {
         name: 'view_collection',
         viewName: 'test_view',
         isView: true,
-        fields: [{ type: 'string', name: 'upper_case', field: 'Uppercase' }],
+        fields: [{ type: 'string', name: 'upper_case', field: 't_Uppercase' }],
         schema: db.inDialect('postgres') ? 'public' : undefined,
       },
       context: {},
@@ -466,7 +466,7 @@ describe('view collection', function () {
 
     const viewCollection = db.getCollection('view_collection');
 
-    expect(viewCollection.model.rawAttributes['upper_case'].field).toEqual('Uppercase');
+    expect(viewCollection.model.rawAttributes['upper_case'].field).toEqual('t_Uppercase');
     const results = await viewCollection.repository.find();
     expect(results.length).toBe(1);
   });
