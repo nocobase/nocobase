@@ -10,7 +10,7 @@
 import { css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { exchangeArrayState } from '@formily/core/esm/shared/internals';
-import { observer, RecursionField, useFieldSchema } from '@formily/react';
+import { observer, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { isArr } from '@formily/shared';
 import { Button } from 'antd';
@@ -30,12 +30,13 @@ import { CollectionProvider_deprecated } from '../../../collection-manager';
 import { CollectionRecordProvider, useCollection, useCollectionRecord } from '../../../data-source';
 import { markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
 import { FlagProvider } from '../../../flag-provider';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider } from '../action';
 import { useSubTableSpecialCase } from '../form-item/hooks/useSpecialCase';
-import { Table } from '../table-v2/Table';
 import { SubFormProvider, useAssociationFieldContext, useFieldNames } from './hooks';
 import { useTableSelectorProps } from './InternalPicker';
+import { Table } from './Table';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
 
 const subTableContainer = css`
@@ -281,7 +282,7 @@ export const SubTable: any = observer(
                       useCreateActionProps,
                     }}
                   >
-                    <RecursionField
+                    <NocoBaseRecursionField
                       onlyRenderProperties
                       basePath={field.address}
                       schema={fieldSchema.parent}

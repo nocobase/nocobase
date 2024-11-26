@@ -8,23 +8,25 @@
  */
 
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
-import { RecursionField, Schema, observer, useFieldSchema } from '@formily/react';
+import { RecursionField, Schema, useFieldSchema } from '@formily/react';
 import {
   PopupContextProvider,
   RecordProvider,
   getLabelFormatValue,
+  useACLRoleContext,
   useCollection,
   useCollectionParentRecordData,
+  useLazy,
   usePopupUtils,
   useProps,
   useToken,
   withDynamicSchemaProps,
-  useACLRoleContext,
+  withSkeletonComponent,
 } from '@nocobase/client';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
-import { get } from 'lodash-es';
-import React, { useMemo, useState, useEffect } from 'react';
+import { get } from 'lodash';
+import React, { useEffect, useMemo, useState } from 'react';
 import type { View } from 'react-big-calendar';
 import { i18nt, useTranslation } from '../../locale';
 import { CalendarRecordViewer, findEventSchema } from './CalendarRecordViewer';
@@ -35,7 +37,6 @@ import { useCalenderHeight } from './hook';
 import useStyle from './style';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
-import { useLazy } from '@nocobase/client';
 
 interface Event {
   id: string;
@@ -234,7 +235,7 @@ function findCreateSchema(schema): Schema {
 }
 
 export const Calendar: any = withDynamicSchemaProps(
-  observer(
+  withSkeletonComponent(
     (props: any) => {
       const [visible, setVisible] = useState(false);
       const { openPopup } = usePopupUtils({

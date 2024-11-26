@@ -12,7 +12,7 @@ import React from 'react';
 import { GridRowContext } from '../../../../schema-component/antd/grid/Grid';
 import { SchemaToolbar } from '../../../../schema-settings';
 
-export const TableColumnSchemaToolbar = (props) => {
+export const TableColumnSchemaToolbar = React.memo((props: any) => {
   return (
     <GridRowContext.Provider value={null}>
       <SchemaToolbar
@@ -23,4 +23,6 @@ export const TableColumnSchemaToolbar = (props) => {
       />
     </GridRowContext.Provider>
   );
-};
+});
+
+TableColumnSchemaToolbar.displayName = 'TableColumnSchemaToolbar';

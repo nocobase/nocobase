@@ -61,7 +61,7 @@ export * from './variables';
 export * from './lazy-helper';
 
 export { withDynamicSchemaProps } from './hoc/withDynamicSchemaProps';
-
+export { withSkeletonComponent } from './hoc/withSkeletonComponent';
 export { SchemaSettingsActionLinkItem } from './modules/actions/link/customizeLinkActionSettings';
 export { useURLAndHTMLSchema } from './modules/actions/link/useURLAndHTMLSchema';
 export * from './modules/blocks/BlockSchemaToolbar';
@@ -80,3 +80,6 @@ export { VariablePopupRecordProvider } from './modules/variable/variablesProvide
 export { useCurrentPopupRecord } from './modules/variable/variablesProvider/VariablePopupRecordProvider';
 
 export { languageCodes } from './locale';
+
+// Override Formily API
+export { NocoBaseRecursionField } from './formily/NocoBaseRecursionField';

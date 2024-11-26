@@ -9,10 +9,8 @@
 
 import _ from 'lodash';
 import React, { FC, useEffect } from 'react';
-import { useStyles } from './styles';
 
 export const MobilePageContentContainer: FC<{ hideTabBar?: boolean }> = ({ children, hideTabBar }) => {
-  const { styles } = useStyles();
   const [mobileTabBarHeight, setMobileTabBarHeight] = React.useState(0);
   const [mobilePageHeader, setMobilePageHeader] = React.useState(0);
   useEffect(() => {
@@ -29,11 +27,13 @@ export const MobilePageContentContainer: FC<{ hideTabBar?: boolean }> = ({ child
     <>
       {mobilePageHeader ? <div style={{ height: mobilePageHeader }}></div> : null}
       <div
-        className={`${styles.mobilePageContent} mobile-page-content`}
+        className="mobile-page-content"
         data-testid="mobile-page-content"
         style={{
           height: `calc(100% - ${(mobileTabBarHeight || 0) + (mobilePageHeader || 0)}px)`,
           boxSizing: 'border-box',
+          maxWidth: '100%',
+          overflowX: 'hidden',
         }}
       >
         {children}

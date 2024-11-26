@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { render, renderReadPrettyApp, screen, userEvent } from '@nocobase/test/client';
+import { Checkbox } from '@nocobase/client';
+import { fireEvent, render, renderReadPrettyApp, screen, userEvent } from '@nocobase/test/client';
 import React from 'react';
 import App1 from '../demos/checkbox';
 import App2 from '../demos/checkbox.group';
-import { Checkbox } from '@nocobase/client';
 
 describe('Checkbox', () => {
   it('should display the title', () => {
@@ -123,13 +123,17 @@ describe('Checkbox.Group', () => {
 
     const option1 = screen.getByLabelText('选项1');
     const option2 = screen.getByLabelText('选项2');
-    await userEvent.click(option1);
+
+    fireEvent.click(option1);
+
     expect(Array.from(container.querySelectorAll('.ant-tag')).map((el) => el.innerHTML)).toMatchInlineSnapshot(`
       [
         "选项1",
       ]
     `);
-    await userEvent.click(option2);
+
+    fireEvent.click(option2);
+
     expect(Array.from(container.querySelectorAll('.ant-tag')).map((el) => el.innerHTML)).toMatchInlineSnapshot(`
       [
         "选项1",
@@ -138,8 +142,8 @@ describe('Checkbox.Group', () => {
     `);
 
     // should be hidden when unchecked
-    await userEvent.click(option1);
-    await userEvent.click(option2);
+    fireEvent.click(option1);
+    fireEvent.click(option2);
     expect(container.querySelectorAll('.ant-tag')).toMatchInlineSnapshot(`NodeList []`);
   });
 });

@@ -7,71 +7,78 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createStyles } from '@nocobase/client';
+import { genStyleHook } from '@nocobase/client';
 
-export const useInternalPopoverNesterUsedInMobileStyle = createStyles(({ css, token }: any) => {
-  return {
-    header: css`
-      height: var(--nb-mobile-page-header-height);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid ${token.colorSplit};
-      position: sticky;
-      top: 0;
-      background-color: white;
-      z-index: 1000;
+export const useInternalPopoverNesterUsedInMobileStyle = genStyleHook(
+  'nb-internal-popover-nester-used-in-mobile',
+  (token) => {
+    const { componentCls } = token;
 
-      // to match the button named 'Add block'
-      & + .nb-grid-container > .nb-grid > .nb-grid-warp > .ant-btn {
-        // 18px is the token marginBlock value
-        margin: 12px 12px calc(12px + 18px);
-      }
-    `,
+    return {
+      [componentCls]: {
+        '.nb-internal-popover-nester-used-in-mobile-header': {
+          height: 'var(--nb-mobile-page-header-height)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderBottom: `1px solid ${token.colorSplit}`,
+          position: 'sticky',
+          top: 0,
+          backgroundColor: 'white',
+          zIndex: 1000,
 
-    placeholder: css`
-      display: inline-block;
-      padding: 12px;
-      visibility: hidden;
-    `,
+          // to match the button named 'Add block'
+          '& + .nb-grid-container > .nb-grid > .nb-grid-warp > .ant-btn': {
+            // 18px is the token marginBlock value
+            margin: '12px 12px calc(12px + 18px)',
+          },
+        },
 
-    closeIcon: css`
-      display: inline-block;
-      padding: 12px;
-      cursor: pointer;
-    `,
+        '.nb-internal-popover-nester-used-in-mobile-placeholder': {
+          display: 'inline-block',
+          padding: '12px',
+          visibility: 'hidden',
+        },
 
-    body: css`
-      border-top-left-radius: 8px;
-      border-top-right-radius: 8px;
-      max-height: calc(100% - var(--nb-mobile-page-header-height));
-      overflow-y: auto;
-      overflow-x: hidden;
-      // background-color: ${token.colorBgLayout};
+        '.nb-internal-popover-nester-used-in-mobile-close-icon': {
+          display: 'inline-block',
+          padding: '12px',
+          cursor: 'pointer',
+        },
 
-      .popover-subform-container {
-        min-width: initial;
-        max-width: initial;
-        max-height: initial;
-        overflow: hidden;
-        .ant-card {
-          border-radius: 0;
-        }
-      }
-    `,
+        '.nb-internal-popover-nester-used-in-mobile-body': {
+          borderTopLeftRadius: '8px',
+          borderTopRightRadius: '8px',
+          maxHeight: 'calc(100% - var(--nb-mobile-page-header-height))',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          // backgroundColor: token.colorBgLayout,
 
-    footer: css`
-      padding: 8px var(--nb-mobile-page-tabs-content-padding);
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      position: sticky;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 1000;
-      border-top: 1px solid ${token.colorSplit};
-      background-color: ${token.colorBgLayout};
-    `,
-  };
-});
+          '.popover-subform-container': {
+            minWidth: 'initial',
+            maxWidth: 'initial',
+            maxHeight: 'initial',
+            overflow: 'hidden',
+            '.ant-card': {
+              borderRadius: 0,
+            },
+          },
+        },
+
+        '.nb-internal-popover-nester-used-in-mobile-footer': {
+          padding: '8px var(--nb-mobile-page-tabs-content-padding)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-end',
+          position: 'sticky',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1000,
+          borderTop: `1px solid ${token.colorSplit}`,
+          backgroundColor: token.colorBgLayout,
+        },
+      },
+    };
+  },
+);

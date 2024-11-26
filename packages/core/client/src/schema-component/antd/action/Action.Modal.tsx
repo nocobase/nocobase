@@ -8,15 +8,18 @@
  */
 
 import { css } from '@emotion/css';
-import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { observer, useField, useFieldSchema } from '@formily/react';
 import { Modal, ModalProps } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
+// @ts-ignore
+import React, { FC, startTransition, useEffect, useMemo, useState } from 'react';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { useToken } from '../../../style';
 import { ErrorFallback } from '../error-fallback';
 import { useCurrentPopupContext } from '../page/PagePopups';
 import { TabsContextProvider, useTabsContext } from '../tabs/context';
+import { ActionContextNoRerender } from './context';
 import { useActionContext } from './hooks';
 import { useSetAriaLabelForModal } from './hooks/useSetAriaLabelForModal';
 import { ActionDrawerProps, ComposedActionDrawer, OpenSize } from './types';
@@ -36,6 +39,34 @@ const openSizeWidthMap = new Map<OpenSize, string>([
   ['middle', '60%'],
   ['large', '80%'],
 ]);
+
+const ActionModalContent: FC<{ footerNodeName: string; field: any; schema: any }> = React.memo(
+  ({ footerNodeName, field, schema }) => {
+    // Improve the speed of opening the drawer
+    const [deferredVisible, setDeferredVisible] = useState(false);
+
+    useEffect(() => {
+      startTransition(() => {
+        setDeferredVisible(true);
+      });
+    }, []);
+
+    if (!deferredVisible) {
+      return null;
+    }
+
+    return (
+      <NocoBaseRecursionField
+        basePath={field.address}
+        schema={schema}
+        onlyRenderProperties
+        filterProperties={(s) => {
+          return s['x-component'] !== footerNodeName;
+        }}
+      />
+    );
+  },
+);
 
 export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = observer(
   (props) => {
@@ -73,86 +104,81 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
     const zIndex = _zIndex || parentZIndex + (props.level || 0);
 
     return (
-      <zIndexContext.Provider value={zIndex}>
-        <TabsContextProvider {...tabContext} tabBarExtraContent={null}>
-          <Modal
-            zIndex={zIndex}
-            width={actualWidth}
-            title={field.title}
-            {...(others as ModalProps)}
-            {...modalProps}
-            styles={styles}
-            style={{
-              ...modalProps?.style,
-              ...others?.style,
-            }}
-            destroyOnClose
-            open={visible}
-            onCancel={() => {
-              setVisible(false, true);
-            }}
-            className={classNames(
-              others.className,
-              modalProps?.className,
-              css`
-                &.nb-action-popup {
-                  .ant-modal-header {
-                    display: none;
-                  }
-
-                  .ant-modal-content {
-                    background: var(--nb-box-bg);
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    padding-bottom: 0;
-                  }
-
-                  // 这里的样式是为了保证页面 tabs 标签下面的分割线和页面内容对齐（页面内边距可以通过主题编辑器调节）
-                  .ant-tabs-nav {
-                    padding-left: ${token.paddingLG - token.paddingPageHorizontal}px;
-                    padding-right: ${token.paddingLG - token.paddingPageHorizontal}px;
-                    margin-left: ${token.paddingPageHorizontal - token.paddingLG}px;
-                    margin-right: ${token.paddingPageHorizontal - token.paddingLG}px;
-                  }
-
-                  .ant-modal-footer {
-                    display: ${showFooter ? 'block' : 'none'};
-                  }
-                }
-              `,
-            )}
-            footer={
-              showFooter ? (
-                <RecursionField
-                  basePath={field.address}
-                  schema={schema}
-                  onlyRenderProperties
-                  filterProperties={(s) => {
-                    return s['x-component'] === footerNodeName;
-                  }}
-                />
-              ) : (
-                false
-              )
-            }
-          >
-            <RecursionField
-              basePath={field.address}
-              schema={schema}
-              onlyRenderProperties
-              filterProperties={(s) => {
-                return s['x-component'] !== footerNodeName;
+      <ActionContextNoRerender>
+        <zIndexContext.Provider value={zIndex}>
+          <TabsContextProvider {...tabContext} tabBarExtraContent={null}>
+            <Modal
+              zIndex={zIndex}
+              width={actualWidth}
+              title={field.title}
+              {...(others as ModalProps)}
+              {...modalProps}
+              styles={styles}
+              style={{
+                ...modalProps?.style,
+                ...others?.style,
               }}
-            />
-          </Modal>
-        </TabsContextProvider>
-      </zIndexContext.Provider>
+              destroyOnClose
+              open={visible}
+              onCancel={() => {
+                setVisible(false, true);
+              }}
+              className={classNames(
+                others.className,
+                modalProps?.className,
+                css`
+                  &.nb-action-popup {
+                    .ant-modal-header {
+                      display: none;
+                    }
+
+                    .ant-modal-content {
+                      background: var(--nb-box-bg);
+                      border: 1px solid rgba(255, 255, 255, 0.1);
+                      padding-bottom: 0;
+                    }
+
+                    // 这里的样式是为了保证页面 tabs 标签下面的分割线和页面内容对齐（页面内边距可以通过主题编辑器调节）
+                    .ant-tabs-nav {
+                      padding-left: ${token.paddingLG - token.paddingPageHorizontal}px;
+                      padding-right: ${token.paddingLG - token.paddingPageHorizontal}px;
+                      margin-left: ${token.paddingPageHorizontal - token.paddingLG}px;
+                      margin-right: ${token.paddingPageHorizontal - token.paddingLG}px;
+                    }
+
+                    .ant-modal-footer {
+                      display: ${showFooter ? 'block' : 'none'};
+                    }
+                  }
+                `,
+              )}
+              footer={
+                showFooter ? (
+                  <NocoBaseRecursionField
+                    basePath={field.address}
+                    schema={schema}
+                    onlyRenderProperties
+                    filterProperties={(s) => {
+                      return s['x-component'] === footerNodeName;
+                    }}
+                  />
+                ) : (
+                  false
+                )
+              }
+            >
+              <ActionModalContent footerNodeName={footerNodeName} field={field} schema={schema} />
+            </Modal>
+          </TabsContextProvider>
+        </zIndexContext.Provider>
+      </ActionContextNoRerender>
     );
   },
   { displayName: 'ActionModal' },
 );
 
 export const ActionModal: ComposedActionDrawer<ModalProps> = (props) => (
-  <ErrorBoundary FallbackComponent={ModalErrorFallback} onError={(err) => console.log(err)}>
+  <ErrorBoundary FallbackComponent={ModalErrorFallback} onError={console.log}>
     <InternalActionModal {...props} />
   </ErrorBoundary>
 );
@@ -161,7 +187,7 @@ ActionModal.Footer = observer(
   () => {
     const field = useField();
     const schema = useFieldSchema();
-    return <RecursionField basePath={field.address} schema={schema} onlyRenderProperties />;
+    return <NocoBaseRecursionField basePath={field.address} schema={schema} onlyRenderProperties />;
   },
   { displayName: 'ActionModal.Footer' },
 );
