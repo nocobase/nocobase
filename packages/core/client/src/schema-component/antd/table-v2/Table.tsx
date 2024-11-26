@@ -571,14 +571,16 @@ InternalBodyRowComponent.displayName = 'InternalBodyRowComponent';
 
 const BodyRowComponent = React.memo((props: BodyRowComponentProps) => {
   const prevPropsRef = useRef(props);
+  const mountedRef = useRef(false);
 
   // 1. Initial render
-  if (prevPropsRef.current.record === props.record) {
+  if (prevPropsRef.current.record === props.record && !mountedRef.current) {
+    mountedRef.current = true;
     return <InternalBodyRowComponent {...props} />;
   }
 
   // 2. On subsequent renders, only re-render when record changes. This improves refresh performance
-  if (!_.isEqual(prevPropsRef.current.record, props.record)) {
+  if (prevPropsRef.current.record !== props.record || !_.isEqual(prevPropsRef.current.style, props.style)) {
     prevPropsRef.current = props;
     return <InternalBodyRowComponent {...props} />;
   }
