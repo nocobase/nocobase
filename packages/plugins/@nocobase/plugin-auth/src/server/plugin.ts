@@ -101,7 +101,7 @@ export class PluginAuthServer extends Plugin {
                 ...ctx.request?.body,
                 password: undefined,
               },
-              url: ctx.request?.url,
+              path: ctx.request?.path,
               headers: {
                 'x-authenticator': ctx.request?.headers['x-authenticator'],
                 'x-locale': ctx.request?.headers['x-locale'],
@@ -153,7 +153,7 @@ export class PluginAuthServer extends Plugin {
                 password: undefined,
                 confirm_password: undefined,
               },
-              url: ctx.request?.url,
+              path: ctx.request?.path,
               headers: {
                 'x-authenticator': ctx.request?.headers['x-authenticator'],
                 'x-locale': ctx.request?.headers['x-locale'],
@@ -177,7 +177,7 @@ export class PluginAuthServer extends Plugin {
               params: ctx.request.params,
               query: ctx.request.query,
               body: {},
-              url: ctx.request.url,
+              path: ctx.request.path,
               headers: {
                 'x-authenticator': ctx.request?.headers['x-authenticator'],
                 'x-locale': ctx.request?.headers['x-locale'],
@@ -191,8 +191,8 @@ export class PluginAuthServer extends Plugin {
         },
         getSourceAndTarget: async (ctx: any) => {
           return {
-            sourceCollection: 'users',
-            sourceRecordUK: ctx.auth.user.id,
+            targetCollection: 'users',
+            targetRecordUK: ctx.auth.user.id,
           };
         },
       },

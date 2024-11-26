@@ -235,7 +235,7 @@ export class AuditManager {
         params: ctx.request.params,
         query: ctx.request.query,
         body: ctx.request.body,
-        url: ctx.request.url,
+        path: ctx.request.path,
         headers: {
           'x-authenticator': ctx.request?.headers['x-authenticator'],
           'x-locale': ctx.request?.headers['x-locale'],

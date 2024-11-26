@@ -456,8 +456,8 @@ export class PluginManager {
     const getSourceAndTargetForAddAction = async (ctx: any) => {
       const { packageName } = ctx.action.params;
       return {
-        sourceCollection: 'applicationPlugins',
-        sourceRecordUK: packageName,
+        targetCollection: 'applicationPlugins',
+        targetRecordUK: packageName,
       };
     };
 
@@ -467,16 +467,16 @@ export class PluginManager {
         packageName = ctx.request.body.packageName;
       }
       return {
-        sourceCollection: 'applicationPlugins',
-        sourceRecordUK: packageName,
+        targetCollection: 'applicationPlugins',
+        targetRecordUK: packageName,
       };
     };
 
     const getSourceAndTargetForOtherActions = async (ctx: any) => {
       const { filterByTk } = ctx.action.params;
       return {
-        sourceCollection: 'applicationPlugins',
-        sourceRecordUK: filterByTk,
+        targetCollection: 'applicationPlugins',
+        targetRecordUK: filterByTk,
       };
     };
 

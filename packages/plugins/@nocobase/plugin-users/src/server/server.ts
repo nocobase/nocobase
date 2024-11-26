@@ -160,6 +160,7 @@ export default class PluginUsersServer extends Plugin {
             ...ctx.request.body,
             password: '******',
           },
+          path: ctx.request.path,
         },
         response: {
           body: ctx.body,
@@ -176,8 +177,8 @@ export default class PluginUsersServer extends Plugin {
         idStr = id;
       }
       return {
-        sourceCollection: 'users',
-        sourceRecordUK: idStr,
+        targetCollection: 'users',
+        targetRecordUK: idStr,
       };
     };
 
