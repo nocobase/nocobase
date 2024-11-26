@@ -346,31 +346,36 @@ const SideMenu = React.memo<any>(
       [onSelect],
     );
 
-    const items = getMenuItems(() => {
-      return <RecursionField key={uid()} schema={sideMenuSchema} onlyRenderProperties />;
-    });
-
-    if (designable) {
-      items.push({
-        key: 'x-designer-button',
-        disabled: true,
-        label: render({
-          'data-testid': 'schema-initializer-Menu-side',
-          insert: (s) => {
-            const dn = createDesignable({
-              t,
-              api,
-              refresh: refresh,
-              current: sideMenuSchemaRef.current,
-            });
-            dn.loadAPIClientEvents();
-            dn.insertAdjacent('beforeEnd', s);
-          },
-        }),
-        order: 1,
-        notdelete: true,
+    const items = useMemo(() => {
+      const result = getMenuItems(() => {
+        return <RecursionField key={uid()} schema={sideMenuSchema} onlyRenderProperties />;
       });
-    }
+
+      if (designable) {
+        result.push({
+          key: 'x-designer-button',
+          disabled: true,
+          label: render({
+            'data-testid': 'schema-initializer-Menu-side',
+            insert: (s) => {
+              const dn = createDesignable({
+                t,
+                api,
+                refresh: refresh,
+                current: sideMenuSchemaRef.current,
+              });
+              dn.loadAPIClientEvents();
+              dn.insertAdjacent('beforeEnd', s);
+            },
+          }),
+          order: 1,
+          notdelete: true,
+        });
+      }
+
+      return result;
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [api, designable, getMenuItems, refresh, render, sideMenuSchema, t, refreshId]);
 
     return (
       mode === 'mix' &&
