@@ -8,7 +8,7 @@
  */
 
 import dayjs from 'dayjs';
-import { get } from 'lodash-es';
+import { get } from 'lodash';
 import solarLunar from 'solarlunar-es';
 import { i18nt } from '../../locale';
 

@@ -11,7 +11,6 @@
     "@nocobase/server": "1.5.0-alpha.5"
   },
   "devDependencies": {
-    "react-imported-component": "^6.5.4",
     "@nocobase/client": "1.5.0-alpha.5"
   },
   "repository": {

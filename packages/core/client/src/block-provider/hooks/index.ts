@@ -27,7 +27,6 @@ import {
   useCollectionRecord,
   useDataSourceHeaders,
   useFormActiveFields,
-  useLazy,
   useParsedFilter,
   useRouterBasename,
   useTableBlockContext,
@@ -52,7 +51,6 @@ import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../B
 import { useOperators } from '../CollectOperators';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
-import type { IReactToPrintProps } from 'react-to-print';
 
 export * from './useBlockHeightProps';
 export * from './useDataBlockParentRecord';
@@ -1088,30 +1086,6 @@ export const useDisassociateActionProps = () => {
         setVisible?.(false);
         setFormValueChanged?.(false);
       }
-    },
-  };
-};
-
-export const useDetailPrintActionProps = () => {
-  const { formBlockRef } = useFormBlockContext();
-  const useReactToPrint = useLazy<typeof import('react-to-print').useReactToPrint>(
-    () => import('react-to-print'),
-    'useReactToPrint',
-  );
-  const printHandler = useReactToPrint({
-    content: () => formBlockRef.current,
-    pageStyle: `@media print {
-        * {
-          margin: 0;
-        }
-        :not(.ant-formily-item-control-content-component) > div.ant-formily-layout>div:first-child {
-          overflow: hidden; height: 0;
-        }
-      }`,
-  });
-  return {
-    async onClick() {
-      printHandler();
     },
   };
 };
