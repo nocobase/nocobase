@@ -105,6 +105,14 @@ const SignupFormSettings = () => {
                       type: 'boolean',
                       'x-decorator': 'FormItem',
                       'x-component': 'Checkbox',
+                      'x-reactions': {
+                        dependencies: ['.required'],
+                        fulfill: {
+                          state: {
+                            value: '{{ $deps[0] || $self.value }}',
+                          },
+                        },
+                      },
                     },
                   },
                 },
@@ -117,6 +125,14 @@ const SignupFormSettings = () => {
                       type: 'boolean',
                       'x-decorator': 'FormItem',
                       'x-component': 'Checkbox',
+                      'x-reactions': {
+                        dependencies: ['.show'],
+                        fulfill: {
+                          state: {
+                            value: '{{ !$deps[0] ? false : $self.value }}',
+                          },
+                        },
+                      },
                     },
                   },
                 },
