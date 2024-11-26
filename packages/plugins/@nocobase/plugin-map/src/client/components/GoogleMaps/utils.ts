@@ -28,7 +28,6 @@ export const getCurrentPosition: () => Promise<{ lat: number; lng: number }> = (
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          console.log(position);
           const { latitude, longitude } = position.coords;
           resolve({ lat: latitude, lng: longitude });
         },
@@ -41,7 +40,6 @@ export const getCurrentPosition: () => Promise<{ lat: number; lng: number }> = (
         },
       );
     } else {
-      console.log(8888);
       defaultLatLng();
     }
   });

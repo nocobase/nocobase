@@ -192,7 +192,7 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
         }
       });
 
-      map.current.setCenter(bounds.getCenter());
+      map.current?.setCenter?.(bounds.getCenter());
     });
 
     const onFocusOverlay = () => {
