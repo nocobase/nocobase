@@ -292,7 +292,7 @@ export const useTableSelectorProps = () => {
   useEffect(() => {
     if (!ctx?.service?.loading) {
       const data = ctx?.service?.data?.data.map((v) => {
-        return _.omit(v, collectionField?.foreignKey);
+        return v;
       });
       field.value = data;
       field?.setInitialValue?.(data);
