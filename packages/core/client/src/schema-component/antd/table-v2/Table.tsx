@@ -57,6 +57,7 @@ type BodyRowComponentProps = {
   style?: React.CSSProperties;
   className?: string;
   record: any;
+  children: React.ReactNode[];
 };
 
 interface BodyCellComponentProps {
@@ -580,7 +581,12 @@ const BodyRowComponent = React.memo((props: BodyRowComponentProps) => {
   }
 
   // 2. On subsequent renders, only re-render when record changes. This improves refresh performance
-  if (prevPropsRef.current.record !== props.record || !_.isEqual(prevPropsRef.current.style, props.style)) {
+  if (
+    prevPropsRef.current.record !== props.record ||
+    prevPropsRef.current.children.length !== props.children.length ||
+    prevPropsRef.current.onClick !== props.onClick ||
+    !_.isEqual(prevPropsRef.current.style, props.style)
+  ) {
     prevPropsRef.current = props;
     return <InternalBodyRowComponent {...props} />;
   }

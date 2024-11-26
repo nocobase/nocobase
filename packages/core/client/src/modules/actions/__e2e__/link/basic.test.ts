@@ -65,9 +65,9 @@ test.describe('Link', () => {
 
     // 4. click the Link button，check the data of the table block
     await page.getByLabel('action-Action.Link-Link-customize:link-users-table-1').click();
-    await expect(page.getByRole('button', { name: users[0].username, exact: true })).not.toBeVisible();
+    await expect(page.getByRole('button', { name: users[1].username, exact: true })).not.toBeVisible();
     await expect(page.getByRole('button', { name: 'nocobase', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: users[1].username, exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: users[0].username, exact: true })).toBeVisible();
 
     // 5. Change the operator of the data scope from "is not" to "is"
     await page.getByLabel('block-item-CardItem-users-').hover();
@@ -79,15 +79,15 @@ test.describe('Link', () => {
     await page.getByRole('menuitemcheckbox', { name: 'URL search params right' }).click();
     await page.getByRole('menuitemcheckbox', { name: 'id', exact: true }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
-    await expect(page.getByRole('button', { name: users[0].username, exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: users[1].username, exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'nocobase', exact: true })).not.toBeVisible();
-    await expect(page.getByRole('button', { name: users[1].username, exact: true })).not.toBeVisible();
+    await expect(page.getByRole('button', { name: users[0].username, exact: true })).not.toBeVisible();
 
     // 6. Re-enter the page (to eliminate the query string in the URL), at this time the value of the variable is undefined, and all data should be displayed
     await nocoPage.goto();
-    await expect(page.getByRole('button', { name: users[0].username, exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'nocobase', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: users[1].username, exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'nocobase', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: users[0].username, exact: true })).toBeVisible();
   });
 
   test('open in new window', async ({ page, mockPage, mockRecords }) => {
