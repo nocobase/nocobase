@@ -30,10 +30,8 @@ const useTableSelectorProps = () => {
     },
     onRowSelectionChange(selectedRowKeys) {
       const scopeRows = flatData(field.value) || [];
-      const allSelectedRows = rcSelectRows || [];
-      const otherRows = differenceBy(allSelectedRows, scopeRows);
-      const unionSelectedRows = unionBy(otherRows, selectedRowKeys);
-      const unionSelectedRowKeys = unionSelectedRows.map((item) => item[rowKey]);
+      const unionSelectedRows = unionBy(scopeRows, selectedRowKeys);
+      const unionSelectedRowKeys = selectedRowKeys.map((item) => item[rowKey]);
       setSelectedRows?.(unionSelectedRows);
       onRowSelectionChange?.(unionSelectedRowKeys, unionSelectedRows);
     },
