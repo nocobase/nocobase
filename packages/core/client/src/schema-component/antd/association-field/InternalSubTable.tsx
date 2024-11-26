@@ -52,9 +52,6 @@ export const InternalSubTable = observer(
                   border: none !important;
                   background: none;
                 }
-                .ant-checkbox-wrapper {
-                  margin-left: 8px;
-                }
                 .ant-table {
                   margin: 0px !important;
                 }
