@@ -28,14 +28,20 @@ export const getCurrentPosition: () => Promise<{ lat: number; lng: number }> = (
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          console.log(position);
           const { latitude, longitude } = position.coords;
           resolve({ lat: latitude, lng: longitude });
         },
         () => {
           defaultLatLng();
         },
+        {
+          timeout: 2000, // 设置最大等待时间，单位毫秒
+          maximumAge: 0, // 不使用缓存的地理位置
+        },
       );
     } else {
+      console.log(8888);
       defaultLatLng();
     }
   });
