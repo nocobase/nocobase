@@ -215,7 +215,7 @@ const InternalGridCard = (props: GridCardProps) => {
             }}
             renderItem={(item, index) => {
               return (
-                <Col style={{ height: '100%' }}>
+                <Col style={{ height: '100%', marginTop: '6px' }}>
                   <RecursionField
                     key={index}
                     basePath={field.address}
