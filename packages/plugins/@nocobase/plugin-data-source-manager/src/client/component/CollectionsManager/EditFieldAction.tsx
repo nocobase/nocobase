@@ -27,9 +27,7 @@ import {
   useRequest,
   useResourceActionContext,
 } from '@nocobase/client';
-import cloneDeep from 'lodash/cloneDeep';
-import omit from 'lodash/omit';
-import set from 'lodash/set';
+import { cloneDeep, omit, set } from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';

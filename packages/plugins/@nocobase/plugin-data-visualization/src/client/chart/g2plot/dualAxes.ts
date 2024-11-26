@@ -9,8 +9,11 @@
 
 import { G2PlotChart } from './g2plot';
 import { ChartType, RenderProps } from '../chart';
-import { DualAxes as G2DualAxes } from '@ant-design/plots';
 import lodash from 'lodash';
+import { lazy } from '@nocobase/client';
+
+// import { DualAxes as G2DualAxes } from '@ant-design/plots';
+const { DualAxes: G2DualAxes } = lazy(() => import('@ant-design/plots'), 'DualAxes');
 
 export class DualAxes extends G2PlotChart {
   constructor() {
