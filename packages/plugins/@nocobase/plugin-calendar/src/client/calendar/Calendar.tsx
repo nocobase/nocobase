@@ -21,13 +21,11 @@ import {
   withDynamicSchemaProps,
   useACLRoleContext,
 } from '@nocobase/client';
-import { parseExpression } from 'cron-parser';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
-import get from 'lodash/get';
+import { get } from 'lodash-es';
 import React, { useMemo, useState, useEffect } from 'react';
-import { Calendar as BigCalendar, View, dayjsLocalizer } from 'react-big-calendar';
-import * as dates from 'react-big-calendar/lib/utils/dates';
+import type { View } from 'react-big-calendar';
 import { i18nt, useTranslation } from '../../locale';
 import { CalendarRecordViewer, findEventSchema } from './CalendarRecordViewer';
 import Header from './components/Header';
@@ -37,6 +35,7 @@ import { useCalenderHeight } from './hook';
 import useStyle from './style';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
+import { useLazy } from '@nocobase/client';
 
 interface Event {
   id: string;
@@ -47,7 +46,6 @@ interface Event {
 }
 
 const Weeks = ['month', 'week', 'day'] as View[];
-const localizer = dayjsLocalizer(dayjs);
 
 const getColorString = (
   colorFieldValue: string,
@@ -103,6 +101,10 @@ const useEvents = (
   date: Date,
   view: (typeof Weeks)[number],
 ) => {
+  const parseExpression = useLazy<typeof import('cron-parser').parseExpression>(
+    () => import('cron-parser'),
+    'parseExpression',
+  );
   const { t } = useTranslation();
   const { fields } = useCollection();
   const labelUiSchema = fields.find((v) => v.name === fieldNames?.title)?.uiSchema;
@@ -215,6 +217,7 @@ const useEvents = (
     view,
     t,
     enumUiSchema?.uiSchema?.enum,
+    parseExpression,
   ]);
 };
 
@@ -237,6 +240,22 @@ export const Calendar: any = withDynamicSchemaProps(
       const { openPopup } = usePopupUtils({
         setVisible,
       });
+      const reactBigCalendar = useLazy(
+        () => import('react-big-calendar'),
+        (module) => ({
+          BigCalendar: module.Calendar,
+          dayjsLocalizer: module.dayjsLocalizer,
+        }),
+      );
+
+      const eq = useLazy<typeof import('react-big-calendar/lib/utils/dates').eq>(
+        () => import('react-big-calendar/lib/utils/dates'),
+        'eq',
+      );
+
+      const localizer = useMemo(() => {
+        return reactBigCalendar.dayjsLocalizer(dayjs);
+      }, [reactBigCalendar]);
 
       // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
       const { dataSource, fieldNames, showLunar, defaultView } = useProps(props);
@@ -308,6 +327,8 @@ export const Calendar: any = withDynamicSchemaProps(
         }
       };
 
+      const BigCalendar = reactBigCalendar?.BigCalendar;
+
       return wrapSSR(
         <div className={`${hashId} ${containerClassName}`} style={{ height: height || 700 }}>
           <PopupContextProvider visible={visible} setVisible={setVisible}>
@@ -348,7 +369,11 @@ export const Calendar: any = withDynamicSchemaProps(
                 if (!record) {
                   return;
                 }
-                record.__event = { ...event, start: formatDate(dayjs(event.start)), end: formatDate(dayjs(event.end)) };
+                record.__event = {
+                  ...event,
+                  start: formatDate(dayjs(event.start)),
+                  end: formatDate(dayjs(event.end)),
+                };
 
                 setRecord(record);
                 openPopup({
@@ -361,7 +386,7 @@ export const Calendar: any = withDynamicSchemaProps(
                 agendaDateFormat: 'M-DD',
                 dayHeaderFormat: 'YYYY-M-DD',
                 dayRangeHeaderFormat: ({ start, end }, culture, local) => {
-                  if (dates.eq(start, end, 'month')) {
+                  if (eq(start, end, 'month')) {
                     return local.format(start, 'YYYY-M', culture);
                   }
                   return `${local.format(start, 'YYYY-M', culture)} - ${local.format(end, 'YYYY-M', culture)}`;

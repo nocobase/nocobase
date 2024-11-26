@@ -58,6 +58,7 @@ export * from './system-settings';
 export * from './testUtils';
 export * from './user';
 export * from './variables';
+export * from './lazy-helper';
 
 export { withDynamicSchemaProps } from './hoc/withDynamicSchemaProps';
 

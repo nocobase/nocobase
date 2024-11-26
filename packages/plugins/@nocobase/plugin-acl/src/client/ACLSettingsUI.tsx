@@ -10,9 +10,14 @@
 import { TabsProps } from 'antd/es/tabs/index';
 import React from 'react';
 import { TFunction } from 'react-i18next';
-import { GeneralPermissions } from './permissions/GeneralPermissions';
-import { MenuItemsProvider } from './permissions/MenuItemsProvider';
-import { MenuPermissions } from './permissions/MenuPermissions';
+import { lazy } from '@nocobase/client';
+// import { GeneralPermissions } from './permissions/GeneralPermissions';
+// import { MenuItemsProvider } from './permissions/MenuItemsProvider';
+// import { MenuPermissions } from './permissions/MenuPermissions';
+const { GeneralPermissions } = lazy(() => import('./permissions/GeneralPermissions'), 'GeneralPermissions');
+const { MenuItemsProvider } = lazy(() => import('./permissions/MenuItemsProvider'), 'MenuItemsProvider');
+const { MenuPermissions } = lazy(() => import('./permissions/MenuPermissions'), 'MenuPermissions');
+
 import { Role } from './RolesManagerProvider';
 
 interface PermissionsTabsProps {

@@ -21,7 +21,6 @@ import qs from 'qs';
 import { ChangeEvent, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavigateFunction } from 'react-router-dom';
-import { useReactToPrint } from 'react-to-print';
 import {
   AssociationFilter,
   useCollection,
@@ -1087,27 +1086,6 @@ export const useDisassociateActionProps = () => {
         setVisible?.(false);
         setFormValueChanged?.(false);
       }
-    },
-  };
-};
-
-export const useDetailPrintActionProps = () => {
-  const { formBlockRef } = useFormBlockContext();
-
-  const printHandler = useReactToPrint({
-    content: () => formBlockRef.current,
-    pageStyle: `@media print {
-        * {
-          margin: 0;
-        }
-        :not(.ant-formily-item-control-content-component) > div.ant-formily-layout>div:first-child {
-          overflow: hidden; height: 0;
-        }
-      }`,
-  });
-  return {
-    async onClick() {
-      printHandler();
     },
   };
 };
