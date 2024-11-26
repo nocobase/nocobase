@@ -39,7 +39,9 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   /**
    * useRequest() `service` parameter
    */
-  service: ResourceActionOptions<P>;
+  service: ResourceActionOptions<P> & {
+    defaultParams?: any;
+  };
   target: string;
   mapOptions?: (data: any) => SelectProps['fieldNames'];
   dataSource?: string;
@@ -177,6 +179,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
         {
           manual,
           debounceWait: wait,
+          defaultParams: [service.defaultParams],
         },
       );
       const runDep = useMemo(
