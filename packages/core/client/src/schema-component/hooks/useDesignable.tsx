@@ -28,7 +28,7 @@ interface CreateDesignableProps {
   model?: GeneralField;
   query?: Query;
   api?: APIClient;
-  refresh?: () => void;
+  refresh?: (options?: { refreshParent?: boolean }) => void;
   onSuccess?: any;
   t?: any;
   /**
@@ -315,9 +315,9 @@ export class Designable {
     return false;
   }
 
-  refresh() {
+  refresh(options?: { refreshParent?: boolean }) {
     const { refresh } = this.options;
-    return refresh?.();
+    return refresh?.(options);
   }
 
   deepMerge(schema: ISchema) {

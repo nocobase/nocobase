@@ -51,15 +51,20 @@ interface INocoBaseRecursionFieldProps extends IRecursionFieldProps {
 
 const CollectionFieldUISchemaContext = React.createContext<CollectionFieldOptions>({});
 
-const RefreshContext = React.createContext<() => void>(_.noop);
+const RefreshContext = React.createContext<(options?: { refreshParent?: boolean }) => void>(_.noop);
 
-const RefreshProvider: FC<{ refresh: () => void }> = ({ children, refresh }) => {
-  const parentRefresh = useRefreshFieldSchema();
+const RefreshProvider: FC<{ refresh: (options?: { refreshParent?: boolean }) => void }> = ({ children, refresh }) => {
+  const refreshParent = useRefreshFieldSchema();
 
-  const value = useCallback(() => {
-    parentRefresh?.();
-    refresh();
-  }, [parentRefresh, refresh]);
+  const value = useCallback(
+    (options?: { refreshParent?: boolean }) => {
+      if (options?.refreshParent) {
+        refreshParent?.();
+      }
+      refresh();
+    },
+    [refreshParent, refresh],
+  );
 
   return <RefreshContext.Provider value={value}>{children}</RefreshContext.Provider>;
 };

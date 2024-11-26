@@ -25,13 +25,16 @@ export const useNewRefreshContext = (refresh?: () => void) => {
   const refreshFieldSchema = useRefreshFieldSchema();
   const update = useUpdate();
 
-  const _refresh = useCallback(() => {
-    // refresh fieldSchema
-    refreshFieldSchema();
-    // refresh current component
-    update();
-    refresh?.();
-  }, [refreshFieldSchema, update, refresh]);
+  const _refresh = useCallback(
+    (options?: { refreshParent?: boolean }) => {
+      // refresh fieldSchema
+      refreshFieldSchema(options);
+      // refresh current component
+      update();
+      refresh?.();
+    },
+    [refreshFieldSchema, update, refresh],
+  );
 
   if (oldCtx) {
     Object.assign(newCtx, oldCtx);
