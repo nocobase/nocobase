@@ -416,7 +416,7 @@ export const Calendar: any = withDynamicSchemaProps(
               <SchemaComponentOptions scope={{ useCreateFormBlockProps }}>
                 <RecursionField
                   onlyRenderProperties
-                  basePath={field.address}
+                  basePath={field?.address}
                   schema={fieldSchema}
                   filterProperties={(s) => {
                     return s['x-component'] === 'AssociationField.AddNewer';
