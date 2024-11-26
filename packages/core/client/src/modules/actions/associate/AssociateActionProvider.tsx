@@ -20,7 +20,7 @@ import { flatData } from '../../../schema-component/antd/association-field/util'
 
 const useTableSelectorProps = () => {
   const field: any = useField();
-  const { setSelectedRows, selectedRows: rcSelectRows = [] } = useContext(RecordPickerContext);
+  const { setSelectedRows } = useContext(RecordPickerContext);
   const { onRowSelectionChange, rowKey = 'id', ...others } = useTsp();
   return {
     ...others,
