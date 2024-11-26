@@ -10,7 +10,7 @@
 import { onFieldValueChange } from '@formily/core';
 import { useForm, useFormEffects, ISchema } from '@formily/react';
 import { css, SchemaComponent } from '@nocobase/client';
-import React from 'react';
+import React, { useState } from 'react';
 import { NAMESPACE } from '../../locale';
 import { SCHEDULE_MODE } from './constants';
 import { EndsByField } from './EndsByField';
@@ -27,10 +27,11 @@ const scheduleModeOptions = [
 ];
 
 export const ScheduleConfig = () => {
-  const { values = {}, setValues, clearFormGraph } = useForm();
+  const { values = {}, clearFormGraph } = useForm();
+  const [mode, setMode] = useState(values.mode);
   useFormEffects(() => {
     onFieldValueChange('mode', (field) => {
-      setValues({ mode: field.value });
+      setMode(field.value);
       clearFormGraph('collection');
       clearFormGraph('startsOn');
       clearFormGraph('repeat');
@@ -58,7 +59,7 @@ export const ScheduleConfig = () => {
           {
             type: 'void',
             properties: {
-              [`mode-${values.mode}`]: {
+              [`mode-${mode}`]: {
                 type: 'void',
                 'x-component': 'fieldset',
                 'x-component-props': {
@@ -73,7 +74,7 @@ export const ScheduleConfig = () => {
                     }
                   `,
                 },
-                properties: ScheduleModes[values.mode]?.fieldset,
+                properties: ScheduleModes[mode]?.fieldset,
               },
             },
           } as ISchema
