@@ -7,12 +7,54 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { SchemaComponentsContext, SchemaExpressionScopeContext, SchemaOptionsContext } from '@formily/react';
 import _ from 'lodash';
 import React, { createContext, FC, useContext, useRef } from 'react';
 import { UNSAFE_LocationContext, UNSAFE_RouteContext } from 'react-router-dom';
+import { ACLContext } from '../../../acl/ACLProvider';
 import { CurrentPageUidContext } from '../../../application/CustomRouterContextProvider';
+import { SchemaComponentContext } from '../../../schema-component/context';
 
 const KeepAliveContext = createContext(true);
+
+/**
+ * Intercept designable updates to prevent performance issues
+ * @param param0
+ * @returns
+ */
+const DesignableInterceptor: FC<{ active: boolean }> = ({ children, active }) => {
+  const designableContext = useContext(SchemaComponentContext);
+  const schemaOptionsContext = useContext(SchemaOptionsContext);
+  const schemaComponentsContext = useContext(SchemaComponentsContext);
+  const expressionScopeContext = useContext(SchemaExpressionScopeContext);
+  const aclContext = useContext(ACLContext);
+
+  const designableContextRef = useRef(designableContext);
+  const schemaOptionsContextRef = useRef(schemaOptionsContext);
+  const schemaComponentsContextRef = useRef(schemaComponentsContext);
+  const expressionScopeContextRef = useRef(expressionScopeContext);
+  const aclContextRef = useRef(aclContext);
+
+  if (active) {
+    designableContextRef.current = designableContext;
+    schemaOptionsContextRef.current = schemaOptionsContext;
+    schemaComponentsContextRef.current = schemaComponentsContext;
+    expressionScopeContextRef.current = expressionScopeContext;
+    aclContextRef.current = aclContext;
+  }
+
+  return (
+    <SchemaComponentContext.Provider value={designableContextRef.current}>
+      <SchemaOptionsContext.Provider value={schemaOptionsContextRef.current}>
+        <SchemaComponentsContext.Provider value={schemaComponentsContextRef.current}>
+          <SchemaExpressionScopeContext.Provider value={expressionScopeContextRef.current}>
+            <ACLContext.Provider value={aclContextRef.current}>{children}</ACLContext.Provider>
+          </SchemaExpressionScopeContext.Provider>
+        </SchemaComponentsContext.Provider>
+      </SchemaOptionsContext.Provider>
+    </SchemaComponentContext.Provider>
+  );
+};
 
 export const KeepAliveProvider: FC<{ active: boolean }> = ({ children, active }) => {
   const currentLocationContext = useContext(UNSAFE_LocationContext);
@@ -40,9 +82,11 @@ export const KeepAliveProvider: FC<{ active: boolean }> = ({ children, active })
   // 3. When encountering the same Context Provider, traversal stops, avoiding unnecessary child component updates
   return (
     <KeepAliveContext.Provider value={active}>
-      <UNSAFE_LocationContext.Provider value={prevLocationContextRef.current}>
-        <UNSAFE_RouteContext.Provider value={prevRouteContextRef.current}>{children}</UNSAFE_RouteContext.Provider>
-      </UNSAFE_LocationContext.Provider>
+      <DesignableInterceptor active={active}>
+        <UNSAFE_LocationContext.Provider value={prevLocationContextRef.current}>
+          <UNSAFE_RouteContext.Provider value={prevRouteContextRef.current}>{children}</UNSAFE_RouteContext.Provider>
+        </UNSAFE_LocationContext.Provider>
+      </DesignableInterceptor>
     </KeepAliveContext.Provider>
   );
 };

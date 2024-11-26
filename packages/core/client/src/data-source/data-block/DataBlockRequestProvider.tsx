@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC, createContext, useContext, useMemo, useRef } from 'react';
+// @ts-ignore
+import React, { FC, createContext, useContext, useDeferredValue, useMemo, useRef } from 'react';
 
 import _ from 'lodash';
 import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
@@ -113,14 +114,17 @@ export const BlockRequestContextProvider: FC<{ recordRequest: UseRequestResult<a
   const prevRequestDataRef = useRef<any>(props.recordRequest?.data);
   const { active: pageActive } = useKeepAlive();
   const prevPageActiveRef = useRef(pageActive);
+  // Prevent page switching lag
+  const deferredPageActive = useDeferredValue(pageActive);
 
-  if (pageActive && !prevPageActiveRef.current) {
+  if (deferredPageActive && !prevPageActiveRef.current) {
     props.recordRequest?.refresh();
   }
 
   // Only reassign values when props.recordRequest?.data changes to reduce unnecessary re-renders
   if (
-    pageActive &&
+    deferredPageActive &&
+    // the stage when loading just ended
     prevPageActiveRef.current &&
     !props.recordRequest?.loading &&
     !_.isEqual(prevRequestDataRef.current, props.recordRequest?.data)
@@ -128,8 +132,8 @@ export const BlockRequestContextProvider: FC<{ recordRequest: UseRequestResult<a
     prevRequestDataRef.current = props.recordRequest?.data;
   }
 
-  if (pageActive !== prevPageActiveRef.current) {
-    prevPageActiveRef.current = pageActive;
+  if (deferredPageActive !== prevPageActiveRef.current) {
+    prevPageActiveRef.current = deferredPageActive;
   }
 
   recordRequestRef.current = props.recordRequest;
