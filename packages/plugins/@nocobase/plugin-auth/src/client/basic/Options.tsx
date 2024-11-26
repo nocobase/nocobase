@@ -61,9 +61,9 @@ const SignupFormSettings = () => {
               bordered: false,
             },
             'x-validator': `{{ (value) => {
-  const field = value?.filter((item) => item.show && item.required);
-  if (!field?.length) {
-    return t('At least one field is required');
+  const check = value?.some((item) => ['username', 'email'].includes(item.field) && item.show && item.required);
+  if (!check) {
+    return t('At least one of the username or email fields is required');
   }
 } }}`,
             default: value,

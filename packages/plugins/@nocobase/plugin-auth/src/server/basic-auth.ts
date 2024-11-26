@@ -52,10 +52,20 @@ export class BasicAuth extends BaseAuth {
 
   private verfiySignupParams(values: any) {
     const options = this.authenticator.options?.public || {};
-    let { signupForm } = options;
-    if (!(signupForm?.length && signupForm.some((item: any) => item.show && item.required))) {
-      signupForm = [{ field: 'username', show: true, required: true }];
+    const { signupForm = [] } = options;
+    if (
+      !(
+        signupForm.length &&
+        signupForm.some(
+          (item: { field: string; show: boolean; required: boolean }) =>
+            ['username', 'email'].includes(item.field) && item.show && item.required,
+        )
+      )
+    ) {
+      // At least one of the username or email fields is required
+      signupForm.push({ field: 'username', show: true, required: true });
     }
+
     const { username, email } = values;
     const usernameSetting = signupForm.find((item: any) => item.field === 'username');
     if (usernameSetting && usernameSetting.show) {
@@ -72,6 +82,13 @@ export class BasicAuth extends BaseAuth {
         throw new Error('Please enter a valid email address');
       }
     }
+
+    const requiredFields = signupForm.filter((item: any) => item.show && item.required);
+    requiredFields.forEach((item: { field: string }) => {
+      if (!values[item.field]) {
+        throw new Error(`Please enter ${item.field}`);
+      }
+    });
   }
 
   async signUp() {
