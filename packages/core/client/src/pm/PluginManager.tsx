@@ -62,6 +62,7 @@ function BulkEnableButton({ plugins = [] }) {
     <>
       <Button onClick={() => setIsModalOpen(true)}>{t('Bulk enable')}</Button>
       <Modal
+        width={800}
         title={t('Bulk enable')}
         open={isModalOpen}
         onOk={async () => {
@@ -112,10 +113,17 @@ function BulkEnableButton({ plugins = [] }) {
               title: t('Plugin'),
               dataIndex: 'displayName',
               ellipsis: true,
+              width: 200,
             },
             {
               title: t('Description'),
               dataIndex: 'description',
+              ellipsis: true,
+            },
+            {
+              title: t('Package name'),
+              dataIndex: 'packageName',
+              width: 260,
               ellipsis: true,
             },
           ]}
