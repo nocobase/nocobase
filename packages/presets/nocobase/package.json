@@ -100,7 +100,6 @@
     "@nocobase/plugin-data-source-manager",
     "@nocobase/plugin-data-visualization",
     "@nocobase/plugin-error-handler",
-    "@nocobase/plugin-field-china-region",
     "@nocobase/plugin-field-formula",
     "@nocobase/plugin-field-sequence",
     "@nocobase/plugin-file-manager",
