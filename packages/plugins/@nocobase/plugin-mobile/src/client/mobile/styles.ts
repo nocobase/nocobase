@@ -18,12 +18,6 @@ export const useStyles = createStyles(({ token, css }) => {
       & ::-webkit-scrollbar {
         display: none;
       }
-      .ant-menu {
-        font-size: 14px !important;
-      }
-      .ant-formily-item {
-        font-size: 14px !important;
-      }
       .nb-details .ant-formily-item-feedback-layout-loose {
         margin-bottom: 5px;
       }
@@ -120,6 +114,11 @@ export const useStyles = createStyles(({ token, css }) => {
       .mobile-page-header .adm-tabs-tab {
         font-size: 14px;
         height: 100%;
+      }
+      .nb-mobile-setting {
+        [data-menu-id$='-theme'] {
+          display: none;
+        }
       }
     `,
   };
