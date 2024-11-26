@@ -85,11 +85,12 @@ function BulkEnableButton({ plugins = [] }) {
           placeholder={t('Search plugin...')}
           onChange={(e) => {
             setItems(
-              plugins.filter((plugin: { displayName: string; description: string }) => {
+              plugins.filter((plugin: { enabled: boolean; displayName: string; description: string }) => {
                 const value = e.target.value;
                 return (
-                  plugin.displayName.toLowerCase().includes(value.toLowerCase()) ||
-                  plugin.description.toLowerCase().includes(value.toLowerCase())
+                  !plugin.enabled &&
+                  (plugin.displayName.toLowerCase().includes(value.toLowerCase()) ||
+                    plugin.description?.toLowerCase().includes(value.toLowerCase()))
                 );
               }),
             );
