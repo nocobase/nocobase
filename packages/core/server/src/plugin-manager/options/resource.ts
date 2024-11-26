@@ -96,7 +96,8 @@ export default {
       if (!filterByTk) {
         ctx.throw(400, 'plugin name invalid');
       }
-      app.runAsCLI(['pm', 'enable', filterByTk], { from: 'user' });
+      const keys = Array.isArray(filterByTk) ? filterByTk : [filterByTk];
+      app.runAsCLI(['pm', 'enable', ...keys], { from: 'user' });
       ctx.body = filterByTk;
       await next();
     },
