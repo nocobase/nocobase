@@ -65,6 +65,11 @@ const FormComponent: React.FC<FormProps> = (props) => {
                 margin-right: -${token.marginLG}px;
                 padding-left: ${token.marginLG}px;
                 padding-right: ${token.marginLG}px;
+                .ant-formily-item-layout-horizontal {
+                  .ant-formily-item-control {
+                    max-width: calc(100% - ${labelWidth}px);
+                  }
+                }
               }
             `}
           >
