@@ -78,6 +78,9 @@ export default (app: Application) => {
       try {
         await app.pm.enable(plugins);
       } catch (error) {
+        await app.tryReloadOrRestart({
+          recover: true,
+        });
         throw new PluginCommandError(`Failed to enable plugin`, { cause: error });
       }
     });

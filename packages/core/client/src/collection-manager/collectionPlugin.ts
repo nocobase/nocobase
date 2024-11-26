@@ -13,7 +13,6 @@ import { InheritanceCollectionMixin } from './mixins/InheritanceCollectionMixin'
 import {
   CheckboxFieldInterface,
   CheckboxGroupFieldInterface,
-  ChinaRegionFieldInterface,
   CollectionSelectFieldInterface,
   ColorFieldInterface,
   CreatedAtFieldInterface,
@@ -129,7 +128,6 @@ export class CollectionPlugin extends Plugin {
     this.dataSourceManager.addFieldInterfaces([
       CheckboxFieldInterface,
       CheckboxGroupFieldInterface,
-      ChinaRegionFieldInterface,
       CollectionSelectFieldInterface,
       ColorFieldInterface,
       CreatedAtFieldInterface,
