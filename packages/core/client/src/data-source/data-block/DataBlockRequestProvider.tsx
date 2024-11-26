@@ -41,7 +41,6 @@ function useRecordRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const headers = useDataSourceHeaders(dataBlockProps.dataSource);
   const sourceKey = useSourceKey(association);
   const [JSONParams, JSONRecord] = useMemo(() => [JSON.stringify(params), JSON.stringify(record)], [params, record]);
-  const { active: pageActive } = useKeepAlive();
 
   const defaultService = (customParams) => {
     if (record) return Promise.resolve({ data: record });
@@ -77,7 +76,7 @@ function useRecordRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const request = useRequest<T>(service, {
     ...requestOptions,
     manual: dataLoadingMode === 'manual',
-    ready: !!action && pageActive,
+    ready: !!action,
     refreshDeps: [action, JSONParams, JSONRecord, resource, association, parentRecord, sourceId],
   });
 
@@ -114,6 +113,10 @@ export const BlockRequestContextProvider: FC<{ recordRequest: UseRequestResult<a
   const prevRequestDataRef = useRef<any>(props.recordRequest?.data);
   const { active: pageActive } = useKeepAlive();
   const prevPageActiveRef = useRef(pageActive);
+
+  if (pageActive && !prevPageActiveRef.current) {
+    props.recordRequest?.refresh();
+  }
 
   // Only reassign values when props.recordRequest?.data changes to reduce unnecessary re-renders
   if (
