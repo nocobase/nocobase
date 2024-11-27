@@ -42,7 +42,7 @@ function withPopupWrapper<T>(WrappedComponent: React.ComponentType<T>) {
     const ctx = useActionContext();
     const field: any = useField();
     const fieldSchema = useFieldSchema();
-    const { enableLink } = fieldSchema['x-component-props'];
+    const { enableLink, openMode, openSize } = fieldSchema['x-component-props'];
     const handleClick = () => {
       insertPopup(popupSchema);
       setVisible(true);
@@ -62,6 +62,8 @@ function withPopupWrapper<T>(WrappedComponent: React.ComponentType<T>) {
                 setVisible(flag);
               });
             },
+            openMode: openMode || 'drawer',
+            openSize,
           }}
         >
           <CollectionProvider name={collection.name}>

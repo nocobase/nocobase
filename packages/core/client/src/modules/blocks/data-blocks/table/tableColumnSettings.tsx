@@ -25,7 +25,6 @@ import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Tabl
 import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
 import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
 import { isPatternDisabled } from '../../../../schema-settings/isPatternDisabled';
-
 export const tableColumnSettings = new SchemaSettings({
   name: 'fieldSettings:TableColumn',
   items: [
@@ -423,41 +422,7 @@ export const tableColumnSettings = new SchemaSettings({
             };
           },
         },
-        {
-          name: 'enableLink',
-          type: 'switch',
-          useVisible() {
-            const field = useField();
-            const { fieldSchema } = useColumnSchema();
-            return fieldSchema['x-read-pretty'] || field.readPretty;
-          },
-          useComponentProps() {
-            const { t } = useTranslation();
-            const field = useField();
-            const { fieldSchema } = useColumnSchema();
-            const { dn } = useDesignable();
-            return {
-              title: t('Enable link'),
-              checked: fieldSchema['x-component-props']?.enableLink,
-              onChange(flag) {
-                fieldSchema['x-component-props'] = {
-                  ...fieldSchema?.['x-component-props'],
-                  enableLink: flag,
-                };
-                field.componentProps['enableLink'] = flag;
-                dn.emit('patch', {
-                  schema: {
-                    'x-uid': fieldSchema['x-uid'],
-                    'x-component-props': {
-                      ...fieldSchema?.['x-component-props'],
-                    },
-                  },
-                });
-                dn.refresh();
-              },
-            };
-          },
-        },
+
         fieldComponentSettingsItem,
       ],
     },

@@ -28,7 +28,6 @@ export const Input: ComposedInput = Object.assign(
   connect(
     AntdInput,
     mapProps((props, field) => {
-      console.log(props);
       return {
         ...props,
         suffix: <span>{field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffix}</span>,
