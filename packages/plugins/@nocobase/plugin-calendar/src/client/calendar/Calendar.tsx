@@ -8,7 +8,7 @@
  */
 
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
-import { RecursionField, Schema, observer, useFieldSchema, Form } from '@formily/react';
+import { RecursionField, Schema, observer, useFieldSchema, Form, useField } from '@formily/react';
 import {
   PopupContextProvider,
   RecordProvider,
@@ -44,7 +44,6 @@ import useStyle from './style';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
 import { addNew } from './schema';
-import { useField } from '@formily/react/esm';
 interface Event {
   id: string;
   colorFieldValue: string;
