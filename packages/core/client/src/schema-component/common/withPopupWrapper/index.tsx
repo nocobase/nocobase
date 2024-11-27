@@ -35,6 +35,8 @@ export const useInsertSchema = () => {
 function withPopupWrapper<T>(WrappedComponent: React.ComponentType<T>) {
   return (props: T) => {
     const [visible, setVisible] = useState(false);
+    const [formValueChanged, setFormValueChanged] = useState(false);
+
     const insertPopup = useInsertSchema();
     const collection = useCollection();
     const ctx = useActionContext();
@@ -49,7 +51,19 @@ function withPopupWrapper<T>(WrappedComponent: React.ComponentType<T>) {
     return enableLink ? (
       <a onClick={handleClick}>
         <WrappedComponent {...props} />
-        <ActionContext.Provider value={{ ...ctx, visible: visible, setVisible: setVisible }}>
+        <ActionContext.Provider
+          value={{
+            ...ctx,
+            formValueChanged,
+            setFormValueChanged,
+            visible: visible,
+            setVisible: (flag) => {
+              setTimeout(() => {
+                setVisible(flag);
+              });
+            },
+          }}
+        >
           <CollectionProvider name={collection.name}>
             <SchemaComponentOptions>
               <RecursionField
