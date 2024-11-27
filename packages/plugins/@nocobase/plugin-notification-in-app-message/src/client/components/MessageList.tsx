@@ -104,7 +104,9 @@ const MessageList = observer(() => {
                     style={{
                       fontWeight: message.status === 'unread' ? 'bold' : 'normal',
                       cursor: 'pointer',
-                      width: '100%',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
                     }}
                   >
                     {message.title}
