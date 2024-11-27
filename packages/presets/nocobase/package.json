@@ -22,7 +22,6 @@
     "@nocobase/plugin-block-iframe": "1.5.0-alpha.5",
     "@nocobase/plugin-block-workbench": "1.5.0-alpha.5",
     "@nocobase/plugin-calendar": "1.5.0-alpha.5",
-    "@nocobase/plugin-charts": "1.5.0-alpha.5",
     "@nocobase/plugin-client": "1.5.0-alpha.5",
     "@nocobase/plugin-collection-sql": "1.5.0-alpha.5",
     "@nocobase/plugin-collection-tree": "1.5.0-alpha.5",
@@ -77,7 +76,6 @@
   },
   "deprecated": [
     "@nocobase/plugin-audit-logs",
-    "@nocobase/plugin-charts",
     "@nocobase/plugin-mobile-client",
     "@nocobase/plugin-snapshot-field"
   ],
