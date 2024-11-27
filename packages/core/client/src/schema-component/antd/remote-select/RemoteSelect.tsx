@@ -179,7 +179,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
         {
           manual,
           debounceWait: wait,
-          defaultParams: [service.defaultParams],
+          ...(service.defaultParams ? { defaultParams: [service.defaultParams] } : {}),
         },
       );
       const runDep = useMemo(
