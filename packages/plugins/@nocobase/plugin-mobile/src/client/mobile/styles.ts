@@ -18,6 +18,11 @@ export const useStyles = createStyles(({ token, css }) => {
       & ::-webkit-scrollbar {
         display: none;
       }
+      .nb-card-list {
+        .nb-card-item-warper {
+          margin-top: 0.375rem;
+        }
+      }
       .nb-details .ant-formily-item-feedback-layout-loose {
         margin-bottom: 5px;
       }

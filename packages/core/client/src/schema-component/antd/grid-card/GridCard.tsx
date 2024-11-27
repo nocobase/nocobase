@@ -215,7 +215,7 @@ const InternalGridCard = (props: GridCardProps) => {
             }}
             renderItem={(item, index) => {
               return (
-                <Col style={{ height: '100%', marginTop: '6px' }}>
+                <Col style={{ height: '100%' }} className="nb-card-item-warper">
                   <RecursionField
                     key={index}
                     basePath={field.address}
