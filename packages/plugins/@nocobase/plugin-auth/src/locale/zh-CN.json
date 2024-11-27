@@ -28,5 +28,5 @@
   "Show": "显示",
   "Sign up settings": "注册设置",
   "Sign up form": "注册表单",
-  "At least one field is required": "至少需要设置一个必填字段"
+  "At least one of the username or email fields is required": "至少需要设置用户名或邮箱中的一个字段为必填字段"
 }

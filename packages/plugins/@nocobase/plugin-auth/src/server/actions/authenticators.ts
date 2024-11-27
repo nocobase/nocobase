@@ -49,7 +49,7 @@ export default {
         authType: authenticator.authType,
         authTypeTitle: authType?.title || '',
         title: authenticator.title,
-        options: authenticator.options?.public || {},
+        options: authType?.getPublicOptions?.(authenticator.options) || authenticator.options?.public || {},
       };
     });
     await next();
