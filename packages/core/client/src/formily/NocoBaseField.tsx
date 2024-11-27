@@ -13,6 +13,11 @@ import { useCompile } from '../schema-component/hooks/useCompile';
 import { NocoBaseReactiveField } from './NocoBaseReactiveField';
 import { createNocoBaseField } from './createNocoBaseField';
 
+/**
+ * To maintain high performance of Table, this component removes Formily-related components
+ * @param props component props
+ * @returns
+ */
 export const NocoBaseField = <D extends JSXComponent, C extends JSXComponent>(
   props: IFieldProps<D, C> & { schema: Schema },
 ) => {

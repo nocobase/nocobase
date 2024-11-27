@@ -34,10 +34,9 @@ const renderChildren = (children: RenderPropsChildren<GeneralField>, field?: Gen
   isFn(children) ? children(field, form) : children;
 
 /**
- * Based on @formily/react v2.3.2 ReactiveInternal component
- * Modified to better adapt to NocoBase's needs
+ * To maintain high performance of Table, this component removes Formily-related code
  */
-const ReactiveInternal: React.FC<IReactiveFieldProps> = (props) => {
+const NocoBaseReactiveInternal: React.FC<IReactiveFieldProps> = (props) => {
   const components = useContext(SchemaComponentsContext);
   if (!props.field) {
     return <Fragment>{renderChildren(props.children)}</Fragment>;
@@ -103,13 +102,13 @@ const ReactiveInternal: React.FC<IReactiveFieldProps> = (props) => {
   return renderDecorator(renderComponent());
 };
 
-ReactiveInternal.displayName = 'NocoBaseReactiveInternal';
+NocoBaseReactiveInternal.displayName = 'NocoBaseReactiveInternal';
 
 /**
  * Based on @formily/react v2.3.2 NocoBaseReactiveField component
  * Modified to better adapt to NocoBase's needs
  */
-export const NocoBaseReactiveField = observer(ReactiveInternal, {
+export const NocoBaseReactiveField = observer(NocoBaseReactiveInternal, {
   forwardRef: true,
 });
 
