@@ -86,6 +86,7 @@ export const Mobile = () => {
               marginBlock: 18,
               borderRadiusBlock: 0,
               boxShadowTertiary: 'none',
+              fontSize: 14,
             },
           }}
         >

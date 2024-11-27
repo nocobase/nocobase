@@ -18,6 +18,9 @@ export const useStyles = createStyles(({ token, css }) => {
       & ::-webkit-scrollbar {
         display: none;
       }
+      .nb-card-list {
+        background-color: rgb(245, 245, 245);
+      }
       .nb-details .ant-formily-item-feedback-layout-loose {
         margin-bottom: 5px;
       }
@@ -114,6 +117,11 @@ export const useStyles = createStyles(({ token, css }) => {
       .mobile-page-header .adm-tabs-tab {
         font-size: 14px;
         height: 100%;
+      }
+      .nb-mobile-setting {
+        [data-menu-id$='-theme'] {
+          display: none;
+        }
       }
     `,
   };
