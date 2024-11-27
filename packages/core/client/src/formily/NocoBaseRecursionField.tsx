@@ -121,7 +121,7 @@ const useFieldProps = (schema: Schema) => {
 const useBasePath = (props: IRecursionFieldProps) => {
   const parent = useField();
   if (props.onlyRenderProperties) {
-    return props.basePath || parent?.address.concat(props.name);
+    return props.basePath || parent?.address?.concat(props.name);
   }
   return props.basePath || parent?.address;
 };

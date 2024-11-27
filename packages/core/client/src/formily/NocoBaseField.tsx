@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FieldContext, IFieldProps, JSXComponent, Schema, useField, useForm } from '@formily/react';
-import React from 'react';
+import { FieldContext, IFieldProps, JSXComponent, Schema } from '@formily/react';
+import React, { useMemo } from 'react';
 import { useCompile } from '../schema-component/hooks/useCompile';
 import { NocoBaseReactiveField } from './NocoBaseReactiveField';
 import { createNocoBaseField } from './createNocoBaseField';
@@ -17,13 +17,12 @@ export const NocoBaseField = <D extends JSXComponent, C extends JSXComponent>(
   props: IFieldProps<D, C> & { schema: Schema },
 ) => {
   const compile = useCompile();
-  const form = useForm();
-  const parent = useField();
-  const field = createNocoBaseField.call(form, { basePath: parent?.address, compile, ...props });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const field = useMemo(() => createNocoBaseField({ ...props, compile }), []);
 
   return (
-    <FieldContext.Provider value={field}>
-      <NocoBaseReactiveField field={field}>{props.children}</NocoBaseReactiveField>
+    <FieldContext.Provider value={field as any}>
+      <NocoBaseReactiveField field={field as any}>{props.children}</NocoBaseReactiveField>
     </FieldContext.Provider>
   );
 };

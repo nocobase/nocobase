@@ -7,29 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormPath, FormPathPattern, IFieldFactoryProps, IFieldProps, LifeCycleTypes } from '@formily/core';
-import { Field } from '@formily/core/esm/models/Field';
-import { locateNode } from '@formily/core/esm/shared/internals';
+import { IFieldProps } from '@formily/core';
 import { JSXComponent, Schema } from '@formily/react';
-import { batch, define, observable, raw } from '@formily/reactive';
+import { define, observable } from '@formily/reactive';
 import { toArr } from '@formily/shared';
 
-export function createNocoBaseField<Decorator extends JSXComponent, Component extends JSXComponent>(
-  props: IFieldFactoryProps<Decorator, Component> & { compile: (source: any) => any },
-): Field<Decorator, Component> {
-  const address = FormPath.parse(props.basePath).concat(props.name);
-  const identifier = address.toString();
-  if (!identifier) return;
-  if (!this.fields[identifier]) {
-    batch(() => {
-      new NocoBaseField(address, props, this, this.props.designable);
-    });
-    this.notify(LifeCycleTypes.ON_FORM_GRAPH_CHANGE);
-  }
-
-  this.fields[identifier].value = props.value;
-
-  return this.fields[identifier] as any;
+export function createNocoBaseField<Decorator extends JSXComponent, Component extends JSXComponent>(props: any) {
+  return new NocoBaseField(props);
 }
 
 /**
@@ -40,35 +24,79 @@ class NocoBaseField<
   Component extends JSXComponent = any,
   TextType = any,
   ValueType = any,
-> extends Field {
-  declare props: IFieldProps<Decorator, Component, TextType, ValueType> & {
+> {
+  props: IFieldProps<Decorator, Component, TextType, ValueType> & {
     schema: Schema;
     compile: (source: any) => any;
   };
+  initialized: boolean;
+  loading: boolean;
+  validating: boolean;
+  submitting: boolean;
+  selfModified: boolean;
+  active: boolean;
+  visited: boolean;
+  mounted: boolean;
+  unmounted: boolean;
+  inputValues: any[];
+  inputValue: any;
+  feedbacks: any[];
+  title: string;
+  description: string;
+  display: string;
+  pattern: string;
+  editable: boolean;
+  disabled: boolean;
+  readOnly: boolean;
+  readPretty: boolean;
+  visible: boolean;
+  hidden: boolean;
+  dataSource: any[];
+  validator: any;
+  required: boolean;
+  content: string;
+  initialValue: any;
+  value: any;
+  data: any;
+  decorator: any[];
+  component: any[];
+  decoratorProps: any;
+  componentProps: any;
+  decoratorType: any;
+  componentType: any;
+  path: any;
+  form: any;
+
+  constructor(props: any) {
+    this.props = props;
+    this.initialize();
+    this.makeObservable();
+  }
 
   protected initialize() {
     const compile = this.props.compile;
 
-    this.initialized = false;
+    this.pattern = 'readPretty';
+    this.readPretty = true;
+
+    this.initialized = true;
     this.loading = false;
     this.validating = false;
     this.submitting = false;
     this.selfModified = false;
     this.active = false;
-    this.visited = false;
-    this.mounted = false;
+    this.visited = true;
+    this.mounted = true;
     this.unmounted = false;
     this.inputValues = [];
     this.inputValue = null;
     this.feedbacks = [];
     this.title = compile(this.props.title || this.props.schema?.title);
     this.description = compile(this.props.description || this.props.schema?.['description']);
-    this.display = this.props.display || this.props.schema?.['x-display'];
-    this.pattern = this.props.pattern || this.props.schema?.['x-pattern'];
+    this.display = 'visible';
     this.editable = this.props.editable || this.props.schema?.['x-editable'];
     this.disabled = this.props.disabled || this.props.schema?.['x-disabled'];
     this.readOnly = this.props.readOnly || this.props.schema?.['x-read-only'];
-    this.readPretty = this.props.readPretty || this.props.schema?.['x-read-pretty'];
     this.visible = this.props.visible || this.props.schema?.['x-visible'];
     this.hidden = this.props.hidden || this.props.schema?.['x-hidden'];
     this.dataSource = compile(this.props.dataSource || (this.props.schema?.enum as any));
@@ -84,11 +112,13 @@ class NocoBaseField<
     this.component = this.props.component
       ? toArr(this.props.component)
       : [this.props.schema?.['x-component'], this.props.schema?.['x-component-props']];
-  }
+    this.decoratorProps = this.props.schema?.['x-decorator-props'];
+    this.componentProps = this.props.schema?.['x-component-props'];
+    this.decoratorType = this.props.schema?.['x-decorator'];
+    this.componentType = this.props.schema?.['x-component'];
 
-  locate(address: FormPathPattern) {
-    raw(this.form.fields)[address.toString()] = this as any;
-    locateNode(this as any, address);
+    this.path = {};
+    this.form = {};
   }
 
   protected makeObservable() {
@@ -96,7 +126,4 @@ class NocoBaseField<
       componentProps: observable,
     });
   }
-
-  // Set as an empty function to prevent parent class from executing this method
-  protected makeReactive() {}
 }
