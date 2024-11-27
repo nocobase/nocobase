@@ -431,6 +431,35 @@ export class Gateway extends EventEmitter {
 
     this.wsServer = new WSServer();
 
+    this.wsServer.on('message', async ({ client, message }) => {
+      const app = await AppSupervisor.getInstance().getApp(client.app);
+      const parsedMessage = JSON.parse(message.toString());
+
+      if (!parsedMessage.type) {
+        return;
+      }
+
+      // check app has event listener
+
+      if (!app.listenerCount(`ws:setTag`)) {
+        app.on('ws:setTag', ({ clientId, tagKey, tagValue }) => {
+          this.wsServer.setClientTag(clientId, tagKey, tagValue);
+        });
+
+        app.on('ws:sendToTag', ({ tagKey, tagValue, message }) => {
+          this.wsServer.sendToConnectionsByTag(tagKey, tagValue, message);
+        });
+      }
+
+      const eventName = `ws:message:${parsedMessage.type}`;
+
+      app.emit(eventName, {
+        clientId: client.id,
+        tags: [...client.tags],
+        payload: parsedMessage.payload,
+      });
+    });
+
     this.server.on('upgrade', (request, socket, head) => {
       const { pathname } = parse(request.url);
 

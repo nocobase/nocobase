@@ -79,6 +79,29 @@ export class PluginAuthServer extends Plugin {
     this.app.on('cache:del:auth', async ({ userId }) => {
       await this.cache.del(`auth:${userId}`);
     });
+
+    this.app.on('ws:message:auth:token', async ({ clientId, payload }) => {
+      const auth = await this.app.authManager.get('basic', {
+        getBearerToken: () => payload.token,
+        app: this.app,
+        db: this.app.db,
+        cache: this.app.cache,
+        logger: this.app.logger,
+      } as any);
+
+      const user = await auth.check();
+
+      this.app.emit(`ws:setTag`, {
+        clientId,
+        tagKey: 'userId',
+        tagValue: user.id,
+      });
+
+      this.app.emit(`ws:authorized`, {
+        clientId,
+        userId: user.id,
+      });
+    });
   }
 
   async install(options?: InstallOptions) {

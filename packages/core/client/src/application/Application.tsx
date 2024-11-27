@@ -76,6 +76,8 @@ export interface ApplicationOptions {
 }
 
 export class Application {
+  public eventBus = new EventTarget();
+
   public providers: ComponentAndProps[] = [];
   public router: RouterManager;
   public scopes: Record<string, any> = {};
@@ -96,13 +98,13 @@ export class Application {
   public schemaInitializerManager: SchemaInitializerManager;
   public schemaSettingsManager: SchemaSettingsManager;
   public dataSourceManager: DataSourceManager;
-
   public name: string;
 
   loading = true;
   maintained = false;
   maintaining = false;
   error = null;
+
   get pm() {
     return this.pluginManager;
   }
@@ -140,6 +142,46 @@ export class Application {
     this.i18n.on('languageChanged', (lng) => {
       this.apiClient.auth.locale = lng;
     });
+    this.initListeners();
+  }
+
+  private initListeners() {
+    this.eventBus.addEventListener('auth:tokenChanged', (event: CustomEvent) => {
+      this.setTokenInWebSocket(event.detail.token);
+    });
+
+    this.eventBus.addEventListener('maintaining:end', () => {
+      if (this.apiClient.auth.token) {
+        this.setTokenInWebSocket(this.apiClient.auth.token);
+      }
+    });
+  }
+
+  protected setTokenInWebSocket(token: string) {
+    if (this.maintaining) {
+      return;
+    }
+
+    this.ws.send(
+      JSON.stringify({
+        type: 'auth:token',
+        payload: {
+          token,
+        },
+      }),
+    );
+  }
+
+  setMaintaining(maintaining: boolean) {
+    // if maintaining is the same, do nothing
+    if (this.maintaining === maintaining) {
+      return;
+    }
+
+    this.maintaining = maintaining;
+    if (!maintaining) {
+      this.eventBus.dispatchEvent(new Event('maintaining:end'));
+    }
   }
 
   private initRequireJs() {
@@ -240,48 +282,16 @@ export class Application {
   }
 
   async load() {
-    let loadFailed = false;
-    this.ws.on('message', (event) => {
-      const data = JSON.parse(event.data);
-      console.log(data.payload);
-      if (data?.payload?.refresh) {
-        window.location.reload();
-        return;
-      }
-      if (data.type === 'notification') {
-        this.notification[data.payload?.type || 'info']({ message: data.payload?.message });
-        return;
-      }
-      const maintaining = data.type === 'maintaining' && data.payload.code !== 'APP_RUNNING';
-      if (maintaining) {
-        this.maintaining = true;
-        this.error = data.payload;
-      } else {
-        // console.log('loadFailed', loadFailed);
-        if (loadFailed) {
-          window.location.reload();
-          return;
-        }
-        this.maintaining = false;
-        this.maintained = true;
-        this.error = null;
-      }
-    });
-    this.ws.on('serverDown', () => {
-      this.maintaining = true;
-      this.maintained = false;
-    });
-    this.ws.connect();
     try {
       this.loading = true;
       await this.pm.load();
+      await this.loadWebSocket();
     } catch (error) {
       if (this.ws.enabled) {
         await new Promise((resolve) => {
           setTimeout(() => resolve(null), 1000);
         });
       }
-      loadFailed = true;
       const toError = (error) => {
         if (typeof error?.response?.data === 'string') {
           return { message: error?.response?.data };
@@ -301,6 +311,55 @@ export class Application {
       console.error(error, this.error);
     }
     this.loading = false;
+  }
+
+  async loadWebSocket() {
+    this.ws.on('message', (event) => {
+      const data = JSON.parse(event.data);
+
+      if (data?.payload?.refresh) {
+        window.location.reload();
+        return;
+      }
+      if (data.type === 'notification') {
+        this.notification[data.payload?.type || 'info']({ message: data.payload?.message });
+        return;
+      }
+      const maintaining = data.type === 'maintaining' && data.payload.code !== 'APP_RUNNING';
+
+      if (maintaining) {
+        this.setMaintaining(true);
+        this.error = data.payload;
+      } else {
+        this.setMaintaining(false);
+        this.maintained = true;
+        this.error = null;
+
+        const type = data.type;
+        if (!type) {
+          return;
+        }
+
+        const eventName = `ws:message:${type}`;
+        console.log({ eventName });
+        this.eventBus.dispatchEvent(new CustomEvent(eventName, { detail: data.payload }));
+      }
+    });
+
+    this.ws.on('serverDown', () => {
+      this.maintaining = true;
+      this.maintained = false;
+    });
+
+    this.ws.on('open', () => {
+      const token = this.apiClient.auth.token;
+
+      if (token) {
+        this.setTokenInWebSocket(token);
+      }
+    });
+
+    this.ws.connect();
   }
 
   getComponent<T = any>(Component: ComponentTypeAndString<T>, isShowError = true): ComponentType<T> | undefined {
