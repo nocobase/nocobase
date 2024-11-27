@@ -50,6 +50,26 @@ export class PluginAuthServer extends Plugin {
     this.app.authManager.registerTypes(presetAuthType, {
       auth: BasicAuth,
       title: tval('Password', { ns: namespace }),
+      getPublicOptions: (options) => {
+        const usersCollection = this.db.getCollection('users');
+        const signupForm =
+          options?.public?.signupForm
+            ?.filter((field: { show: boolean }) => field.show)
+            .map((item: { field: string; required: boolean }) => {
+              const field = usersCollection.getField(item.field);
+              return {
+                ...item,
+                uiSchema: {
+                  ...field.options?.uiSchema,
+                  required: item.required,
+                },
+              };
+            }) || [];
+        return {
+          ...options?.public,
+          signupForm,
+        };
+      },
     });
     // Register actions
     Object.entries(authActions).forEach(

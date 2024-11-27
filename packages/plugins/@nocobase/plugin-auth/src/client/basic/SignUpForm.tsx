@@ -26,23 +26,6 @@ export interface UseSignupProps {
   };
 }
 
-const schemas = {
-  username: {
-    type: 'string',
-    'x-component': 'Input',
-    'x-validator': { username: true },
-    'x-decorator': 'FormItem',
-    'x-component-props': { placeholder: '{{t("Username")}}', style: {} },
-  },
-  email: {
-    type: 'string',
-    'x-component': 'Input',
-    'x-validator': 'email',
-    'x-decorator': 'FormItem',
-    'x-component-props': { placeholder: '{{t("Email")}}', style: {} },
-  },
-};
-
 export const useSignUp = (props?: UseSignupProps) => {
   const navigate = useNavigate();
   const form = useForm();
@@ -69,9 +52,10 @@ const getSignupPageSchema = (fieldSchemas: any): ISchema => ({
     password: {
       type: 'string',
       required: true,
+      title: '{{t("Password")}}',
       'x-component': 'Password',
       'x-decorator': 'FormItem',
-      'x-component-props': { placeholder: '{{t("Password")}}', checkStrength: true, style: {} },
+      'x-component-props': { checkStrength: true, style: {} },
       'x-reactions': [
         {
           dependencies: ['.confirm_password'],
@@ -88,7 +72,8 @@ const getSignupPageSchema = (fieldSchemas: any): ISchema => ({
       required: true,
       'x-component': 'Password',
       'x-decorator': 'FormItem',
-      'x-component-props': { placeholder: '{{t("Confirm password")}}', style: {} },
+      title: '{{t("Confirm password")}}',
+      'x-component-props': { style: {} },
       'x-reactions': [
         {
           dependencies: ['.password'],
@@ -147,15 +132,13 @@ export const SignUpForm = ({ authenticatorName: name }: { authenticatorName: str
   const fieldSchemas = useMemo(() => {
     return signupForm
       .filter((field: { show: boolean }) => field.show)
-      .reduce((prev: any, item: { field: string; required: boolean }) => {
-        const field = item.field;
-        if (schemas[field]) {
-          prev[field] = schemas[field];
-          if (item.required) {
-            prev[field].required = true;
-          }
-          return prev;
-        }
+      .reduce((prev: any, item: { field: string; required: boolean; uiSchema: any }) => {
+        prev[item.field] = {
+          ...item.uiSchema,
+          required: item.required,
+          'x-decorator': 'FormItem',
+        };
+        return prev;
       }, {});
   }, [signupForm]);
   if (!options?.allowSignUp) {
