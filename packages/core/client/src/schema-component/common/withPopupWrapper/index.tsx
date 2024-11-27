@@ -42,7 +42,7 @@ function withPopupWrapper<T>(WrappedComponent: React.ComponentType<T>) {
     const ctx = useActionContext();
     const field: any = useField();
     const fieldSchema = useFieldSchema();
-    const { enableLink, openMode, openSize } = fieldSchema['x-component-props'];
+    const { enableLink, openMode, openSize } = fieldSchema?.['x-component-props'] || {};
     const handleClick = () => {
       insertPopup(popupSchema);
       setVisible(true);
