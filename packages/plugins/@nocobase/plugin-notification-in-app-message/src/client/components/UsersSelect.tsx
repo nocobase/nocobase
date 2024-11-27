@@ -36,7 +36,6 @@ export function UsersSelect(props) {
 
 function InternalUsersSelect({ value, onChange }) {
   const scope = useWorkflowVariableOptions({ types: [isUserKeyField] });
-
   return (
     <Variable.Input scope={scope} value={value} onChange={onChange}>
       <RemoteSelect
@@ -46,6 +45,7 @@ function InternalUsersSelect({ value, onChange }) {
         }}
         service={{
           resource: 'users',
+          defaultParams: value ? { filter: { id: value } } : undefined,
         }}
         manual={false}
         value={value}
