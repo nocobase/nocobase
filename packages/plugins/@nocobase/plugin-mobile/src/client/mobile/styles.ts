@@ -19,9 +19,7 @@ export const useStyles = createStyles(({ token, css }) => {
         display: none;
       }
       .nb-card-list {
-        .nb-card-item-warper {
-          margin-top: 6px;
-        }
+        background-color: rgb(245, 245, 245);
       }
       .nb-details .ant-formily-item-feedback-layout-loose {
         margin-bottom: 5px;
