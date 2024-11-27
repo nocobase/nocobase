@@ -329,12 +329,11 @@ export const Calendar: any = withDynamicSchemaProps(
 
         useEffect(() => {
           if (currentSelectDate) {
-            ctx.form.setInitialvalue;
             ctx.form?.query(startFieldName).take((field) => {
-              field.value = currentSelectDate.start;
+              field.initialValues = currentSelectDate.start;
             });
             ctx.form?.query(endFieldName).take((field) => {
-              field.value = currentSelectDate.end;
+              field.initialValues = currentSelectDate.end;
             });
           }
         });
