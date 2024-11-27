@@ -62,7 +62,7 @@ function withPopupWrapper<T>(WrappedComponent: React.ComponentType<T>) {
                 setVisible(flag);
               });
             },
-            openMode: openMode || 'drawer',
+            openMode: openMode,
             openSize,
           }}
         >
