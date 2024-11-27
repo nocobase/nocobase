@@ -10,7 +10,6 @@
     "@ant-design/cssinjs": "^1.11.1",
     "@ant-design/icons": "^5.1.4",
     "@ant-design/pro-layout": "^7.16.11",
-    "@antv/g2plot": "^2.4.18",
     "@budibase/handlebars-helpers": "^0.14.0",
     "@ctrl/tinycolor": "^3.6.0",
     "@dnd-kit/core": "^5.0.1",
