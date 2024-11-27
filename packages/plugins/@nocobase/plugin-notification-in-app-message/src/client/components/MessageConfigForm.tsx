@@ -100,7 +100,7 @@ export const MessageConfigForm = ({ variableOptions }) => {
               url: {
                 type: 'string',
                 required: false,
-                title: `{{t("PC detail URL")}}`,
+                title: `{{t("Details page for desktop")}}`,
                 'x-decorator': 'FormItem',
                 'x-component': 'Variable.TextArea',
                 'x-component-props': {
@@ -114,7 +114,7 @@ export const MessageConfigForm = ({ variableOptions }) => {
               mobileUrl: {
                 type: 'string',
                 required: false,
-                title: `{{t("Mobile detail URL")}}`,
+                title: `{{t("Details page for mobile")}}`,
                 'x-decorator': 'FormItem',
                 'x-component': 'Variable.TextArea',
                 'x-component-props': {
