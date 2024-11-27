@@ -371,6 +371,41 @@ describe('actions', () => {
       expect(res.error.text).toBe('Please enter a password');
     });
 
+    it('should write correct user data when signing up', async () => {
+      const repo = db.getRepository('authenticators');
+      await repo.update({
+        filter: {
+          name: 'basic',
+        },
+        values: {
+          options: {
+            public: {
+              allowSignUp: true,
+              signupForm: [
+                { field: 'username', show: true, required: true },
+                { field: 'nickname', show: true, required: true },
+              ],
+            },
+          },
+        },
+      });
+      const res = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
+        username: 'test',
+        nickname: 'Test',
+        phone: '12345678901',
+        password: '123456',
+        confirm_password: '123456',
+      });
+      expect(res.statusCode).toEqual(200);
+      const user = await db.getRepository('users').findOne({
+        filter: {
+          username: 'test',
+        },
+      });
+      expect(user.nickname).toBe('Test');
+      expect(user.phone).toBeNull();
+    });
+
     it('should sign user out when changing password', async () => {
       const userRepo = db.getRepository('users');
       const user = await userRepo.create({

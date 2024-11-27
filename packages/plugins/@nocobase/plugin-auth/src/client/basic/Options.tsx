@@ -24,17 +24,18 @@ const SignupFormSettings = () => {
   const enumArr = fields.map((field) => ({ value: field.name, label: field.uiSchema?.title }));
   const value = useMemo(() => {
     const fieldValue = record.options?.public?.signupForm || [];
+    const newValue = fieldValue.filter((item: any) => fields.find((field) => field.name === item.field));
     for (const field of fields) {
-      const exist = fieldValue.find((item: any) => item.field === field.name);
+      const exist = newValue.find((item: any) => item.field === field.name);
       if (!exist) {
-        fieldValue.push({
+        newValue.push({
           field: field.name,
           show: field.name === 'username' || field.name === 'email',
           required: field.name === 'username',
         });
       }
     }
-    return fieldValue;
+    return newValue;
   }, [fields, record]);
   useEffect(() => {
     record.options = {

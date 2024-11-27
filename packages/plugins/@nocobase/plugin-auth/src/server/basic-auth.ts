@@ -11,6 +11,7 @@ import { AuthConfig, BaseAuth } from '@nocobase/auth';
 import { PasswordField } from '@nocobase/database';
 import crypto from 'crypto';
 import { namespace } from '../preset';
+import _ from 'lodash';
 
 export class BasicAuth extends BaseAuth {
   constructor(config: AuthConfig) {
@@ -50,9 +51,10 @@ export class BasicAuth extends BaseAuth {
     return user;
   }
 
-  private verfiySignupParams(values: any) {
+  private getSignupFormSettings() {
     const options = this.authenticator.options?.public || {};
-    const { signupForm = [] } = options;
+    let { signupForm = [] } = options;
+    signupForm = signupForm.filter((item: { show: boolean }) => item.show);
     if (
       !(
         signupForm.length &&
@@ -65,15 +67,25 @@ export class BasicAuth extends BaseAuth {
       // At least one of the username or email fields is required
       signupForm.push({ field: 'username', show: true, required: true });
     }
+    return signupForm;
+  }
 
+  private verfiySignupParams(
+    signupFormSettings: {
+      field: string;
+      show: boolean;
+      required: boolean;
+    }[],
+    values: any,
+  ) {
     const { username, email } = values;
-    const usernameSetting = signupForm.find((item: any) => item.field === 'username');
+    const usernameSetting = signupFormSettings.find((item: any) => item.field === 'username');
     if (usernameSetting && usernameSetting.show) {
       if ((username && !this.validateUsername(username)) || (usernameSetting.required && !username)) {
         throw new Error('Please enter a valid username');
       }
     }
-    const emailSetting = signupForm.find((item: any) => item.field === 'email');
+    const emailSetting = signupFormSettings.find((item: any) => item.field === 'email');
     if (emailSetting && emailSetting.show) {
       if (email && !/^[\w-]+(\.[\w-]+)*@[\w-]+(\.[\w-]+)+$/.test(email)) {
         throw new Error('Please enter a valid email address');
@@ -83,7 +95,7 @@ export class BasicAuth extends BaseAuth {
       }
     }
 
-    const requiredFields = signupForm.filter((item: any) => item.show && item.required);
+    const requiredFields = signupFormSettings.filter((item: any) => item.show && item.required);
     requiredFields.forEach((item: { field: string }) => {
       if (!values[item.field]) {
         throw new Error(`Please enter ${item.field}`);
@@ -99,9 +111,10 @@ export class BasicAuth extends BaseAuth {
     }
     const User = ctx.db.getRepository('users');
     const { values } = ctx.action.params;
-    const { username, email, password, confirm_password } = values;
+    const { password, confirm_password } = values;
+    const signupFormSettings = this.getSignupFormSettings();
     try {
-      this.verfiySignupParams(values);
+      this.verfiySignupParams(signupFormSettings, values);
     } catch (error) {
       ctx.throw(400, this.ctx.t(error.message, { ns: namespace }));
     }
@@ -111,7 +124,9 @@ export class BasicAuth extends BaseAuth {
     if (password !== confirm_password) {
       ctx.throw(400, ctx.t('The password is inconsistent, please re-enter', { ns: namespace }));
     }
-    const user = await User.create({ values: { username, email, password } });
+    const fields = signupFormSettings.map((item: { field: string }) => item.field);
+    const userValues = _.pick(values, fields);
+    const user = await User.create({ values: { ...userValues, password } });
     return user;
   }
 
