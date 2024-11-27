@@ -125,10 +125,7 @@ export const SignUpForm = ({ authenticatorName: name }: { authenticatorName: str
   };
   const authenticator = useAuthenticator(name);
   const { options } = authenticator;
-  let { signupForm } = options;
-  if (!(signupForm?.length && signupForm.some((item: any) => item.show && item.required))) {
-    signupForm = [{ field: 'username', show: true, required: true }];
-  }
+  const { signupForm } = options;
   const fieldSchemas = useMemo(() => {
     return signupForm
       .filter((field: { show: boolean }) => field.show)

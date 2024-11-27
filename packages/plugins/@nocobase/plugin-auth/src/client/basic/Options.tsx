@@ -30,7 +30,7 @@ const SignupFormSettings = () => {
       if (!exist) {
         newValue.push({
           field: field.name,
-          show: field.name === 'username' || field.name === 'email',
+          show: field.name === 'username',
           required: field.name === 'username',
         });
       }
