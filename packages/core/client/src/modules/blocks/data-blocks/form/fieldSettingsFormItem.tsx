@@ -19,7 +19,7 @@ import { useCollectionManager_deprecated, useCollection_deprecated } from '../..
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { useCollection } from '../../../../data-source';
 import { fieldComponentSettingsItem } from '../../../../data-source/commonsSettingsItem';
-import { useDesignable, useValidateSchema, useCompile } from '../../../../schema-component';
+import { useCompile, useDesignable, useValidateSchema } from '../../../../schema-component';
 import {
   useIsFieldReadPretty,
   useIsFormReadPretty,
@@ -137,7 +137,7 @@ export const fieldSettingsFormItem = new SchemaSettings({
 
               return {
                 title: t('Display title'),
-                checked: fieldSchema['x-decorator-props']?.['showTitle'] ?? true,
+                checked: field.decoratorProps.showTitle ?? true,
                 onChange(checked) {
                   fieldSchema['x-decorator-props'] = fieldSchema['x-decorator-props'] || {};
                   fieldSchema['x-decorator-props']['showTitle'] = checked;
@@ -189,7 +189,6 @@ export const fieldSettingsFormItem = new SchemaSettings({
                       description: fieldSchema.description,
                     },
                   });
-                  dn.refresh();
                 },
               };
             },
@@ -249,7 +248,7 @@ export const fieldSettingsFormItem = new SchemaSettings({
 
               return {
                 title: t('Required'),
-                checked: fieldSchema.required as boolean,
+                checked: field.required as boolean,
                 onChange(required) {
                   const schema = {
                     ['x-uid']: fieldSchema['x-uid'],
@@ -341,7 +340,6 @@ export const fieldSettingsFormItem = new SchemaSettings({
                   dn.emit('patch', {
                     schema,
                   });
-
                   dn.refresh();
                 },
               };

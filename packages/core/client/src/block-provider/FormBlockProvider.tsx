@@ -9,23 +9,21 @@
 
 import { createForm, Form } from '@formily/core';
 import { Schema, useField } from '@formily/react';
-import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import {
   CollectionRecord,
   useCollectionManager,
   useCollectionParentRecordData,
   useCollectionRecord,
+  useCollectionRecordData,
 } from '../data-source';
 import { withDynamicSchemaProps } from '../hoc/withDynamicSchemaProps';
 import { useTreeParentRecord } from '../modules/blocks/data-blocks/table/TreeRecordProvider';
 import { RecordProvider } from '../record-provider';
-import { useActionContext } from '../schema-component';
+import { useActionContext, useDesignable } from '../schema-component';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
 import { FormActiveFieldsProvider } from './hooks/useFormActiveFields';
-import { useDesignable } from '../schema-component';
-import { useCollectionRecordData } from '../data-source';
 
 export const FormBlockContext = createContext<{
   form?: any;
@@ -88,10 +86,6 @@ const InternalFormBlockProvider = (props) => {
     service,
     updateAssociationValues,
   ]);
-
-  if (service.loading && Object.keys(form?.initialValues || {})?.length === 0 && action) {
-    return <Spin />;
-  }
 
   return (
     <FormBlockContext.Provider value={formBlockValue}>

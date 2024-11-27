@@ -7,36 +7,35 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { DownOutlined, PlusOutlined } from '@ant-design/icons';
+import { createForm } from '@formily/core';
+import { Schema, useForm } from '@formily/react';
 import {
   ActionContextProvider,
+  ActionProps,
+  ExtendCollectionsProvider,
+  ReadPretty,
   SchemaComponent,
   useAPIClient,
   useActionContext,
-  useRequest,
-  ExtendCollectionsProvider,
-  useDataBlockRequest,
-  useDataBlockResource,
   useCollection,
   useCollectionRecordData,
-  ActionProps,
+  useDataBlockRequestGetter,
+  useDataBlockResource,
+  useRequest,
 } from '@nocobase/client';
-import { App as AntdApp } from 'antd';
+import { App as AntdApp, Button, Dropdown, Empty } from 'antd';
 import React, { useContext, useMemo, useState } from 'react';
+import { Options, useValuesFromOptions } from './Options';
+import { NAMESPACE, useUserDataSyncSourceTranslation } from './locale';
 import {
-  userDataSyncSourcesSchema,
   createFormSchema,
   sourceCollection,
+  taskCollection,
   tasksTableBlockSchema,
+  userDataSyncSourcesSchema,
 } from './schemas/user-data-sync-sources';
-import { Button, Dropdown, Empty } from 'antd';
-import { PlusOutlined, DownOutlined } from '@ant-design/icons';
 import { SourceTypeContext, SourceTypesContext, useSourceTypes } from './sourceType';
-import { useValuesFromOptions, Options } from './Options';
-import { NAMESPACE, useUserDataSyncSourceTranslation } from './locale';
-import { Schema, useForm } from '@formily/react';
-import { taskCollection } from './schemas/user-data-sync-sources';
-import { createForm } from '@formily/core';
-import { ReadPretty } from '@nocobase/client';
 
 const useEditFormProps = () => {
   const recordData = useCollectionRecordData();
@@ -57,7 +56,7 @@ const useSubmitActionProps = () => {
   const { setVisible } = useActionContext();
   const form = useForm();
   const resource = useDataBlockResource();
-  const { runAsync } = useDataBlockRequest();
+  const { getDataBlockRequest } = useDataBlockRequestGetter();
   const collection = useCollection();
   return {
     type: 'primary',
@@ -72,7 +71,7 @@ const useSubmitActionProps = () => {
       } else {
         await resource.create({ values });
       }
-      await runAsync();
+      await getDataBlockRequest()?.runAsync();
       setVisible(false);
     },
   };
@@ -82,7 +81,7 @@ function useDeleteActionProps(): ActionProps {
   const record = useCollectionRecordData();
   const resource = useDataBlockResource();
   const collection = useCollection();
-  const { runAsync } = useDataBlockRequest();
+  const { getDataBlockRequest } = useDataBlockRequestGetter();
   const { t } = useUserDataSyncSourceTranslation();
   return {
     confirm: {
@@ -93,7 +92,7 @@ function useDeleteActionProps(): ActionProps {
       await resource.destroy({
         filterByTk: record[collection.filterTargetKey],
       });
-      await runAsync();
+      await getDataBlockRequest()?.runAsync();
     },
   };
 }
@@ -102,12 +101,12 @@ function useSyncActionProps(): ActionProps {
   const { message } = AntdApp.useApp();
   const record = useCollectionRecordData();
   const api = useAPIClient();
-  const { runAsync } = useDataBlockRequest();
+  const { getDataBlockRequest } = useDataBlockRequestGetter();
   const { t } = useUserDataSyncSourceTranslation();
   return {
     async onClick() {
       await api.resource('userData').pull({ name: record['name'] });
-      await runAsync();
+      await getDataBlockRequest()?.runAsync();
       message.success(
         t("The synchronization has started. You can click on 'Tasks' to view the synchronization status.", {
           ns: NAMESPACE,
@@ -148,16 +147,14 @@ const useTasksTableBlockProps = () => {
 };
 
 function useRetryActionProps(): ActionProps {
-  const { message } = AntdApp.useApp();
   const record = useCollectionRecordData();
   const collection = useCollection();
   const api = useAPIClient();
-  const { runAsync } = useDataBlockRequest();
-  const { t } = useUserDataSyncSourceTranslation();
+  const { getDataBlockRequest } = useDataBlockRequestGetter();
   return {
     async onClick() {
       await api.resource('userData').retry({ id: record[collection.filterTargetKey], sourceId: record['sourceId'] });
-      await runAsync();
+      await getDataBlockRequest()?.runAsync();
     },
   };
 }

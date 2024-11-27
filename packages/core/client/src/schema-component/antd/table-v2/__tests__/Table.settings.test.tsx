@@ -7,12 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  BlockSchemaComponentPlugin,
-  FixedBlock,
-  TableBlockProvider,
-  useTableBlockDecoratorProps,
-} from '@nocobase/client';
+import { BlockSchemaComponentPlugin, TableBlockProvider, useTableBlockDecoratorProps } from '@nocobase/client';
 import {
   CheckSettingsOptions,
   checkSchema,
@@ -289,7 +284,6 @@ describe('Table.settings', () => {
       appOptions: {
         components: {
           TableBlockProviderWithSchema,
-          FixedBlock,
         },
         plugins: [BlockSchemaComponentPlugin],
         scopes: {

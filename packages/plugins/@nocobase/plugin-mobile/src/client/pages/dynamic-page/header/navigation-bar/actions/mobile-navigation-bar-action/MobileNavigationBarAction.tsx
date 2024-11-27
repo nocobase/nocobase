@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC, useMemo } from 'react';
-import { Button, ButtonProps, Space } from 'antd-mobile';
 import { cx, Icon, useSchemaToolbar } from '@nocobase/client';
+import { Button, ButtonProps, Space } from 'antd-mobile';
+import React, { FC, useMemo } from 'react';
 import { useStyles } from './styles';
 
 interface MobileNavigationBarActionProps extends ButtonProps {
@@ -30,18 +30,18 @@ export const MobileNavigationBarAction: FC<MobileNavigationBarActionProps> = Rea
   const designer = children[1];
   const contentLength = [icon, title].filter(Boolean).length;
   const iconElement = useMemo(() => (typeof icon === 'string' ? <Icon type={icon} /> : icon), [icon]);
-  const { styles } = useStyles();
+  const { componentCls, hashId } = useStyles();
   return (
-    <div ref={ref}>
+    <div ref={ref} className={cx(componentCls, hashId)}>
       <Button
         onClick={onClick}
         color={color}
         size={contentLength <= 1 ? undefined : 'mini'}
-        className={cx(className, styles.navigationBarAction, {
-          [styles.navigationBarActionIconAndTitle]: contentLength > 1,
-          [styles.navigationBarActionTitle]: contentLength === 1 && title,
-          [styles.navigationBarActionIcon]: contentLength === 1 && icon,
-        })}
+        className={cx(className, 'nb-navigation-bar-action', {
+          'nb-navigation-bar-action-icon-and-title': contentLength > 1,
+          'nb-navigation-bar-action-title': contentLength === 1 && title,
+          'nb-navigation-bar-action-icon': contentLength === 1 && icon,
+        } as any)}
         style={style}
         fill={contentLength <= 1 ? 'none' : fill}
       >

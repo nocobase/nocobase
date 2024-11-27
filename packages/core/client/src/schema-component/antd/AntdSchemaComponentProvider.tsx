@@ -13,7 +13,6 @@ import { Plugin } from '../../application/Plugin';
 import * as common from '../common';
 import { SchemaComponentOptions } from '../core';
 import { useFilterActionProps } from './filter/useFilterActionProps';
-import { requestChartData } from './g2plot/requestChartData';
 
 import { actionSettings } from './action';
 import { formV1Settings } from './form';
@@ -25,10 +24,7 @@ import { pageSettings, pageTabSettings } from './page';
 export const AntdSchemaComponentProvider = (props) => {
   const { children } = props;
   return (
-    <SchemaComponentOptions
-      scope={{ requestChartData, useFilterActionProps }}
-      components={{ ...components, ...common } as any}
-    >
+    <SchemaComponentOptions scope={{ useFilterActionProps }} components={{ ...components, ...common } as any}>
       {children}
     </SchemaComponentOptions>
   );
@@ -50,7 +46,6 @@ export class AntdSchemaComponentPlugin extends Plugin {
 
   addScopes() {
     this.app.addScopes({
-      requestChartData,
       useFilterActionProps,
     });
   }

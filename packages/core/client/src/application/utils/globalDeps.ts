@@ -101,6 +101,5 @@ export function defineGlobalDeps(requirejs: RequireJS) {
   requirejs.define('lodash', () => lodash);
   requirejs.define('ahooks', () => ahooks);
   requirejs.define('@emotion/css', () => emotionCss);
-  requirejs.define('dayjs', () => dayjs);
   requirejs.define('file-saver', () => FileSaver);
 }

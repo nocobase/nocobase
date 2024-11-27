@@ -9,8 +9,9 @@
 
 import { useExpressionScope } from '@formily/react';
 import _ from 'lodash';
-import React, { ComponentType, useMemo } from 'react';
+import React, { ComponentType, Suspense, useMemo } from 'react';
 import { useDesignable } from '../schema-component';
+import { Spin } from 'antd';
 
 const useDefaultDynamicComponentProps = () => undefined;
 
@@ -84,7 +85,11 @@ export function withDynamicSchemaProps<T = any>(
       return { ...props, ...schemaProps };
     }, [schemaProps, props]);
 
-    return <Component {...memoProps}>{props.children}</Component>;
+    return (
+      <Suspense fallback={<Spin />}>
+        <Component {...memoProps}>{props.children}</Component>
+      </Suspense>
+    );
   };
 
   Component.displayName = displayName;

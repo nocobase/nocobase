@@ -12,14 +12,10 @@ import { flatten, getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { useCallback, useEffect, useState } from 'react';
 import { FilterTarget, findFilterTargets } from '../block-provider/hooks';
-import {
-  CollectionFieldOptions_deprecated,
-  FieldOptions,
-  useCollectionManager_deprecated,
-  useCollection_deprecated,
-} from '../collection-manager';
+import { CollectionFieldOptions_deprecated, FieldOptions } from '../collection-manager';
 import { Collection } from '../data-source/collection/Collection';
 import { useCollection } from '../data-source/collection/CollectionProvider';
+import { useAllCollectionsInheritChainGetter } from '../data-source/data-source/DataSourceManagerProvider';
 import { removeNullCondition } from '../schema-component';
 import { DataBlock, useFilterBlock } from './FilterProvider';
 
@@ -68,7 +64,7 @@ export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
   const { getDataBlocks } = useFilterBlock();
   const fieldSchema = useFieldSchema();
   const collection = useCollection();
-  const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
+  const { getAllCollectionsInheritChain } = useAllCollectionsInheritChainGetter();
 
   // Form 和 Collapse 仅支持同表的数据区块
   if (filterBlockType === FilterBlockType.FORM || filterBlockType === FilterBlockType.COLLAPSE) {
@@ -168,9 +164,7 @@ export const transformToFilter = (
 };
 
 export const useAssociatedFields = () => {
-  const { fields } = useCollection_deprecated();
-
-  return fields.filter((field) => isAssocField(field)) || [];
+  return useCollection()?.fields.filter((field) => isAssocField(field)) || [];
 };
 
 export const isAssocField = (field?: FieldOptions) => {

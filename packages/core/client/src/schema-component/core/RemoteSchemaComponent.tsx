@@ -11,7 +11,9 @@ import { createForm } from '@formily/core';
 import { Schema } from '@formily/react';
 import { Spin } from 'antd';
 import React, { memo, useMemo } from 'react';
-import { useComponent, useSchemaComponentContext } from '../hooks';
+import { useRemoteCollectionManagerLoading } from '../../collection-manager/CollectionManagerProvider';
+import { LOADING_DELAY } from '../../variables/constants';
+import { useComponent } from '../hooks';
 import { FormProvider } from './FormProvider';
 import { SchemaComponent } from './SchemaComponent';
 import { useRequestSchema } from './useRequestSchema';
@@ -43,34 +45,26 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
     hidden,
     scope,
     uid,
-    memoized = true,
     components,
     onSuccess,
     NotFoundPage,
     schemaTransform = defaultTransform,
     onPageNotFind,
   } = props;
-  const { reset } = useSchemaComponentContext();
   const type = onlyRenderProperties ? 'getProperties' : 'getJsonSchema';
-  const conf = {
-    url: `/uiSchemas:${type}/${uid}`,
-  };
   const form = useMemo(() => createForm(), [uid]);
   const { schema, loading } = useRequestSchema({
     uid,
     type,
     onSuccess: (data) => {
       onSuccess && onSuccess(data);
-      reset && reset();
     },
   });
   const NotFoundComponent = useComponent(NotFoundPage);
-  if (loading || hidden) {
-    return (
-      <div style={{ textAlign: 'center', marginTop: 20 }}>
-        <Spin />
-      </div>
-    );
+  const collectionManagerLoading = useRemoteCollectionManagerLoading();
+
+  if (collectionManagerLoading || loading || hidden) {
+    return <Spin style={{ width: '100%', marginTop: 20 }} delay={LOADING_DELAY} />;
   }
 
   if (!schema || Object.keys(schema).length === 0) {

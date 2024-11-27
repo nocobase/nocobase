@@ -10,8 +10,9 @@
 import { css, cx } from '@emotion/css';
 import { usePrefixCls } from '@formily/antd-v5/esm/__builtins__';
 import { useFieldSchema } from '@formily/react';
-import { Image, Typography } from 'antd';
+import { Image } from 'antd';
 import cls from 'classnames';
+import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { useCompile } from '../../hooks';
 import { EllipsisWithTooltip } from './EllipsisWithTooltip';
@@ -59,7 +60,7 @@ ReadPretty.Input = (props: InputReadPrettyProps) => {
     >
       {props.addonBefore}
       {props.prefix}
-      <EllipsisWithTooltip ellipsis={props.ellipsis}>{content}</EllipsisWithTooltip>
+      {props.ellipsis ? <EllipsisWithTooltip ellipsis={props.ellipsis}>{content}</EllipsisWithTooltip> : content}
       {props.suffix}
       {props.addonAfter}
     </div>
@@ -80,6 +81,10 @@ export interface TextAreaReadPrettyProps {
   prefixCls?: string;
 }
 
+const toHTML = _.memoize((value: string) => ({ __html: HTMLEncode(value).split('\n').join('<br/>') }));
+const lineHeight = { lineHeight: 'inherit' };
+const html = (value: string) => <div style={lineHeight} dangerouslySetInnerHTML={toHTML(value)} />;
+
 ReadPretty.TextArea = (props) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const prefixCls = usePrefixCls('description-textarea', props);
@@ -90,21 +95,13 @@ ReadPretty.TextArea = (props) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const content = useMemo(() => {
     const value = compile(props.value ?? '');
-    const html = (
-      <div
-        style={{ lineHeight: 'inherit' }}
-        dangerouslySetInnerHTML={{
-          __html: HTMLEncode(value).split('\n').join('<br/>'),
-        }}
-      />
-    );
 
     return ellipsis ? (
-      <EllipsisWithTooltip ellipsis={ellipsis} popoverContent={atop ? html : value}>
+      <EllipsisWithTooltip ellipsis={ellipsis} popoverContent={atop ? html(value) : value}>
         {text || value}
       </EllipsisWithTooltip>
     ) : atop ? (
-      html
+      html(value)
     ) : (
       value
     );
@@ -124,12 +121,12 @@ ReadPretty.TextArea = (props) => {
   );
 };
 
-function convertToText(html: string) {
+const convertToText = _.memoize((html: string) => {
   const temp = document.createElement('div');
   temp.innerHTML = html;
   const text = temp.innerText;
   return text?.replace(/[\n\r]/g, '') || '';
-}
+});
 
 export interface HtmlReadPrettyProps {
   value?: any;
@@ -144,6 +141,7 @@ export interface HtmlReadPrettyProps {
   prefixCls?: string;
 }
 
+const lineHeight142 = { lineHeight: '1.42' };
 ReadPretty.Html = (props) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const prefixCls = usePrefixCls('description-textarea', props);
@@ -155,18 +153,23 @@ ReadPretty.Html = (props) => {
     const { autop = true, ellipsis } = props;
     const html = (
       <div
-        style={{ lineHeight: '1.42' }}
+        style={lineHeight142}
         dangerouslySetInnerHTML={{
           __html: value,
         }}
       />
     );
     const text = convertToText(value);
-    return (
-      <EllipsisWithTooltip ellipsis={ellipsis} popoverContent={autop ? html : value}>
-        {ellipsis ? text : html}
-      </EllipsisWithTooltip>
-    );
+
+    if (ellipsis) {
+      return (
+        <EllipsisWithTooltip ellipsis={ellipsis} popoverContent={autop ? html : value}>
+          {text}
+        </EllipsisWithTooltip>
+      );
+    }
+
+    return autop ? html : value;
   }, [props.value]);
 
   return (
@@ -195,13 +198,14 @@ export interface URLReadPrettyProps {
   ellipsis?: boolean;
 }
 
+const ellipsisStyle = { textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', display: 'block' };
 ReadPretty.URL = (props: URLReadPrettyProps) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const prefixCls = usePrefixCls('description-url', props);
   const content = props.value && (
-    <Typography.Link ellipsis={props.ellipsis} target={'_blank'} href={props.value as any}>
+    <a style={props.ellipsis ? ellipsisStyle : undefined} target="_blank" rel="noopener noreferrer" href={props.value}>
       {props.value}
-    </Typography.Link>
+    </a>
   );
   return (
     <div className={cls(prefixCls, props.className)} style={{ whiteSpace: 'normal', ...props.style }}>
@@ -214,17 +218,18 @@ ReadPretty.URL = (props: URLReadPrettyProps) => {
   );
 };
 
+const sizes = {
+  small: 24,
+  middle: 48,
+  large: 72,
+};
+
 ReadPretty.Preview = function Preview(props: any) {
   const fieldSchema = useFieldSchema();
   const size = fieldSchema['x-component-props']?.['size'] || 'small';
   if (!props.value) {
     return props.value;
   }
-  const sizes = {
-    small: 24,
-    middle: 48,
-    large: 72,
-  };
   return (
     <Image
       style={

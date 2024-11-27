@@ -13,7 +13,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { useCollectionManager_deprecated } from '../collection-manager';
 import { withDynamicSchemaProps } from '../hoc/withDynamicSchemaProps';
 import { useTableBlockParams } from '../modules/blocks/data-blocks/table/hooks/useTableBlockDecoratorProps';
-import { FixedBlockWrapper, SchemaComponentOptions } from '../schema-component';
+import { SchemaComponentOptions } from '../schema-component';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useBlockHeightProps } from './hooks';
 /**
@@ -21,6 +21,16 @@ import { useBlockHeightProps } from './hooks';
  */
 export const TableBlockContext = createContext<any>({});
 TableBlockContext.displayName = 'TableBlockContext';
+
+const TableBlockContextBasicValue = createContext<{
+  field: any;
+  rowKey: string;
+  dragSortBy?: string;
+  childrenColumnName?: string;
+  showIndex?: boolean;
+  dragSort?: boolean;
+}>(null);
+TableBlockContextBasicValue.displayName = 'TableBlockContextBasicValue';
 
 /**
  * @internal
@@ -50,6 +60,7 @@ interface Props {
   collection?: string;
   children?: any;
   expandFlag?: boolean;
+  dragSortBy?: string;
 }
 
 const InternalTableBlockProvider = (props: Props) => {
@@ -61,7 +72,7 @@ const InternalTableBlockProvider = (props: Props) => {
     childrenColumnName,
     expandFlag: propsExpandFlag = false,
     fieldNames,
-    ...others
+    collection,
   } = props;
   const field: any = useField();
   const { resource, service } = useBlockRequestContext();
@@ -89,28 +100,57 @@ const InternalTableBlockProvider = (props: Props) => {
     [expandFlag],
   );
 
+  // Split from value to prevent unnecessary re-renders
+  const basicValue = useMemo(
+    () => ({
+      field,
+      rowKey,
+      childrenColumnName,
+      showIndex,
+      dragSort,
+      dragSortBy: props.dragSortBy,
+    }),
+    [field, rowKey, childrenColumnName, showIndex, dragSort, props.dragSortBy],
+  );
+
+  // Keep the original for compatibility
+  const value = useMemo(
+    () => ({
+      collection,
+      field,
+      service,
+      resource,
+      params,
+      showIndex,
+      dragSort,
+      rowKey,
+      expandFlag,
+      childrenColumnName,
+      allIncludesChildren,
+      setExpandFlag: setExpandFlagValue,
+      heightProps,
+    }),
+    [
+      allIncludesChildren,
+      childrenColumnName,
+      collection,
+      dragSort,
+      expandFlag,
+      field,
+      heightProps,
+      params,
+      resource,
+      rowKey,
+      service,
+      setExpandFlagValue,
+      showIndex,
+    ],
+  );
+
   return (
-    <FixedBlockWrapper>
-      <TableBlockContext.Provider
-        value={{
-          ...others,
-          field,
-          service,
-          resource,
-          params,
-          showIndex,
-          dragSort,
-          rowKey,
-          expandFlag,
-          childrenColumnName,
-          allIncludesChildren,
-          setExpandFlag: setExpandFlagValue,
-          heightProps,
-        }}
-      >
-        {props.children}
-      </TableBlockContext.Provider>
-    </FixedBlockWrapper>
+    <TableBlockContext.Provider value={value}>
+      <TableBlockContextBasicValue.Provider value={basicValue}>{props.children}</TableBlockContextBasicValue.Provider>
+    </TableBlockContext.Provider>
   );
 };
 
@@ -189,4 +229,11 @@ export const TableBlockProvider = withDynamicSchemaProps((props) => {
  */
 export const useTableBlockContext = () => {
   return useContext(TableBlockContext);
+};
+
+/**
+ * @internal
+ */
+export const useTableBlockContextBasicValue = () => {
+  return useContext(TableBlockContextBasicValue);
 };

@@ -8,6 +8,7 @@
  */
 
 import React, { FC, useCallback, useMemo } from 'react';
+import { useIsInSettingsPage } from '../../../application/CustomRouterContextProvider';
 
 const PopupSettingsContext = React.createContext({
   enableURL: true,
@@ -31,6 +32,7 @@ export const PopupSettingsProvider: FC<{
  */
 export const usePopupSettings = () => {
   const { enableURL } = React.useContext(PopupSettingsContext);
+  const isInSettingsPage = useIsInSettingsPage();
 
   const isPopupVisibleControlledByURL = useCallback(() => {
     const pathname = window.location.pathname;
@@ -39,8 +41,8 @@ export const usePopupSettings = () => {
     const isNewMobileMode = pathname?.includes('/m/');
     const isPCMode = pathname?.includes('/admin/');
 
-    return (isPCMode || isNewMobileMode) && !isOldMobileMode && enableURL;
-  }, [enableURL]);
+    return (isPCMode || isNewMobileMode) && !isOldMobileMode && enableURL && !isInSettingsPage;
+  }, [enableURL, isInSettingsPage]);
 
   return {
     /** 弹窗窗口的显隐是否由 URL 控制 */

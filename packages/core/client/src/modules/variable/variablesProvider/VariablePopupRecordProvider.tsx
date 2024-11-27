@@ -24,7 +24,7 @@ export const VariablePopupRecordProvider: FC<{
     recordData?: Record<string, any>;
     collection?: Collection;
   };
-}> = (props) => {
+}> = React.memo((props) => {
   const { t } = useTranslation();
   const recordData = useCollectionRecordData();
   const collection = useCollection();
@@ -51,7 +51,9 @@ export const VariablePopupRecordProvider: FC<{
       </CurrentPopupRecordContext.Provider>
     </CurrentParentPopupRecordContext.Provider>
   );
-};
+});
+
+VariablePopupRecordProvider.displayName = 'VariablePopupRecordProvider';
 
 export const useCurrentPopupRecord = () => {
   return React.useContext(CurrentPopupRecordContext);
