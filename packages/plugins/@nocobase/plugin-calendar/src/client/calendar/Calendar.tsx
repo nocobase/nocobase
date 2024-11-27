@@ -330,10 +330,14 @@ export const Calendar: any = withDynamicSchemaProps(
         useEffect(() => {
           if (currentSelectDate) {
             ctx.form?.query(startFieldName).take((field) => {
-              field.initialValues = currentSelectDate.start;
+              if (!field.initialValues) {
+                field.initialValues = currentSelectDate.start;
+              }
             });
             ctx.form?.query(endFieldName).take((field) => {
-              field.initialValues = currentSelectDate.end;
+              if (!field.initialValues) {
+                field.initialValues = currentSelectDate.end;
+              }
             });
           }
         });
@@ -345,7 +349,12 @@ export const Calendar: any = withDynamicSchemaProps(
             return;
           }
 
-          form.setInitialValues({ [startFieldName]: currentSelectDate.start, [endFieldName]: currentSelectDate.end });
+          if (!form.initialValues[endFieldName]) {
+            form.setInitialValuesIn([endFieldName], currentSelectDate.end);
+          }
+          if (!form.initialValues[startFieldName]) {
+            form.setInitialValuesIn([startFieldName], currentSelectDate.start);
+          }
         }, [ctx.form, ctx.service?.data?.data, ctx.service?.loading]);
         return {
           form: ctx.form,
