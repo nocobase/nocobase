@@ -19,7 +19,7 @@ import {
 import cls from 'classnames';
 import dayjs from 'dayjs';
 import React from 'react';
-
+import { Input } from '../input';
 export type ReadPrettyComposed = {
   DatePicker: React.FC<ReadPrettyDatePickerProps>;
   DateRangePicker: React.FC<DateRangePickerReadPrettyProps>;
@@ -46,7 +46,11 @@ ReadPretty.DatePicker = function DatePicker(props: any) {
     const labels = dayjs.isDayjs(m) ? m.format(format) : '';
     return isArr(labels) ? labels.join('~') : labels;
   };
-  return <div className={cls(prefixCls, props.className)}>{getLabels()}</div>;
+  return (
+    <div className={cls(prefixCls, props.className)}>
+      <Input.ReadPretty value={getLabels()} />
+    </div>
+  );
 };
 
 export interface DateRangePickerReadPrettyProps extends Str2momentOptions, GetDefaultFormatProps {
@@ -70,7 +74,7 @@ ReadPretty.DateRangePicker = function DateRangePicker(props: DateRangePickerRead
 
   return (
     <div className={cls(prefixCls, props.className)} style={props.style}>
-      {getLabels()}
+      <Input.ReadPretty value={getLabels()} />
     </div>
   );
 };

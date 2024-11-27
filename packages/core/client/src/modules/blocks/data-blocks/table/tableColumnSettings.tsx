@@ -9,7 +9,7 @@
 
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/json-schema';
-import { useField, useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema, useForm } from '@formily/react';
 import { Tooltip } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -417,6 +417,41 @@ export const tableColumnSettings = new SchemaSettings({
                 field.componentProps.columnHidden = v;
                 dn.emit('patch', {
                   schema,
+                });
+                dn.refresh();
+              },
+            };
+          },
+        },
+        {
+          name: 'enableLink',
+          type: 'switch',
+          useVisible() {
+            const field = useField();
+            const { fieldSchema } = useColumnSchema();
+            return fieldSchema['x-read-pretty'] || field.readPretty;
+          },
+          useComponentProps() {
+            const { t } = useTranslation();
+            const field = useField();
+            const { fieldSchema } = useColumnSchema();
+            const { dn } = useDesignable();
+            return {
+              title: t('Enable link'),
+              checked: fieldSchema['x-component-props']?.enableLink,
+              onChange(flag) {
+                fieldSchema['x-component-props'] = {
+                  ...fieldSchema?.['x-component-props'],
+                  enableLink: flag,
+                };
+                field.componentProps['enableLink'] = flag;
+                dn.emit('patch', {
+                  schema: {
+                    'x-uid': fieldSchema['x-uid'],
+                    'x-component-props': {
+                      ...fieldSchema?.['x-component-props'],
+                    },
+                  },
                 });
                 dn.refresh();
               },
