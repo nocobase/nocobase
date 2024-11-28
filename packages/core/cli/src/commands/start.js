@@ -61,7 +61,9 @@ module.exports = (cli) => {
         return;
       }
       await postCheck(opts);
-      deleteSockFiles();
+      if (!opts.daemon) {
+        deleteSockFiles();
+      }
       const instances = opts.instances || process.env.CLUSTER_MODE;
       const instancesArgs = instances ? ['-i', instances] : [];
       if (opts.daemon) {
