@@ -17,7 +17,7 @@ import { SchemaInitializer } from '../SchemaInitializer';
 import { SchemaInitializerOptions } from '../types';
 import { withInitializer } from '../withInitializer';
 
-const InitializerComponent: FC<SchemaInitializerOptions<any, any>> = React.memo((options) => {
+const InitializerComponent: FC<SchemaInitializerOptions<any, any>> = (options) => {
   const Component: any = options.Component || SchemaInitializerButton;
 
   const ItemsComponent: any = options.ItemsComponent || SchemaInitializerItems;
@@ -31,7 +31,8 @@ const InitializerComponent: FC<SchemaInitializerOptions<any, any>> = React.memo(
   const C = useMemo(() => withInitializer(Component), [Component]);
 
   return React.createElement(C, options, React.createElement(ItemsComponent, itemsComponentProps));
-});
+};
+
 InitializerComponent.displayName = 'InitializerComponent';
 
 export function useSchemaInitializerRender<P1 = ButtonProps, P2 = {}>(

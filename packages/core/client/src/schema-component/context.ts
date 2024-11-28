@@ -16,7 +16,7 @@ export const SchemaComponentContext = createContext<ISchemaComponentContext>({})
 SchemaComponentContext.displayName = 'SchemaComponentContext.Provider';
 
 /**
- * Get a new refresh context, used to refresh the block that uses this hook
+ * Get a new refresh context, used to refresh the component that uses this hook
  * @returns
  */
 export const useNewRefreshContext = (refresh?: () => void) => {
