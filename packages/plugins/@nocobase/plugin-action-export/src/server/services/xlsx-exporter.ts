@@ -10,6 +10,7 @@ type ExportColumn = {
 
 type XlsxExportOptions = Omit<ExportOptions, 'fields'> & {
   columns: Array<ExportColumn>;
+  limit?: number;
 };
 
 export class XlsxExporter extends BaseExporter<XlsxExportOptions & { fields: Array<Array<string>> }> {
@@ -33,6 +34,7 @@ export class XlsxExporter extends BaseExporter<XlsxExportOptions & { fields: Arr
   constructor(options: XlsxExportOptions) {
     const fields = options.columns.map((col) => col.dataIndex);
     super({ ...options, fields });
+    this.limit = options.limit;
   }
 
   async init(ctx?): Promise<void> {
