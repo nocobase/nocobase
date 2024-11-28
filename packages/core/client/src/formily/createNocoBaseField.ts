@@ -111,8 +111,8 @@ class NocoBaseField<
     this.component = this.props.component
       ? toArr(this.props.component)
       : [this.props.schema?.['x-component'], this.props.schema?.['x-component-props']];
-    this.decoratorProps = this.props.schema?.['x-decorator-props'];
-    this.componentProps = this.props.schema?.['x-component-props'];
+    this.decoratorProps = this.props.schema?.['x-decorator-props'] || {};
+    this.componentProps = this.props.schema?.['x-component-props'] || {};
     this.decoratorType = this.props.schema?.['x-decorator'];
     this.componentType = this.props.schema?.['x-component'];
 

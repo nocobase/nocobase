@@ -78,7 +78,7 @@ const useSortableItemId = (props) => {
   if (props.id) {
     return props.id;
   }
-  return field.address.toString();
+  return field.address?.toString();
 };
 
 interface SortableItemProps extends HTMLAttributes<HTMLDivElement> {
