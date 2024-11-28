@@ -91,6 +91,10 @@ export class PluginAuthServer extends Plugin {
 
       const user = await auth.check();
 
+      if (!user) {
+        this.app.logger.error(`Invalid token: ${payload.token}`);
+        return;
+      }
       this.app.emit(`ws:setTag`, {
         clientId,
         tagKey: 'userId',

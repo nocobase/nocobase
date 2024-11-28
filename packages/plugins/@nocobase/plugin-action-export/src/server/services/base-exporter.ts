@@ -8,6 +8,8 @@ import {
 } from '@nocobase/data-source-manager';
 import EventEmitter from 'events';
 import { deepGet } from '../utils/deep-get';
+import path from 'path';
+import os from 'os';
 
 export type ExportOptions = {
   collectionManager: ICollectionManager;
@@ -146,6 +148,11 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
       return render(deepValue);
     }
     return render(value);
+  }
+
+  public generateOutputPath(prefix = 'export', ext = '', destination = os.tmpdir()): string {
+    const fileName = `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+    return path.join(destination, fileName);
   }
 }
 
