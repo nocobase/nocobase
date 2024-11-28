@@ -25,7 +25,7 @@ export const useStyles = genStyleHook('nb-schema-toolbar', (token) => {
       pointerEvents: 'none',
 
       '&.hidden': {
-        clipPath: 'inset(100%)',
+        transform: 'scale(0)',
       },
 
       '&.hidden-e2e': {
