@@ -47,18 +47,18 @@ class XlsxExporter extends BaseExporter<XlsxExportOptions & { fields: Array<Arra
     this.startRowNumber = 2;
   }
 
-  async addRows(rows: Array<any>, ctx?): Promise<void> {
-    const chunkData = rows.map((r) => {
-      return this.options.columns.map((col) => {
-        return this.formatValue(r, col.dataIndex, ctx);
-      });
-    });
+  async handleRow(row: any, ctx?): Promise<void> {
+    const rowData = [
+      this.options.columns.map((col) => {
+        return this.formatValue(row, col.dataIndex, ctx);
+      }),
+    ];
 
-    XLSX.utils.sheet_add_aoa(this.worksheet, chunkData, {
+    XLSX.utils.sheet_add_aoa(this.worksheet, rowData, {
       origin: `A${this.startRowNumber}`,
     });
 
-    this.startRowNumber += rows.length;
+    this.startRowNumber += 1;
   }
 
   async finalize(): Promise<XLSX.WorkBook> {

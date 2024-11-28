@@ -27,7 +27,7 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
 
   abstract init(ctx?): Promise<void>;
   abstract finalize(): Promise<any>;
-  abstract addRows(rows: Array<any>, ctx?): Promise<void>;
+  abstract handleRow(row: any, ctx?): Promise<void>;
 
   async run(ctx?): Promise<any> {
     await this.init(ctx);
@@ -41,14 +41,15 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
       ...this.getFindOptions(),
       chunkSize: chunkSize || 200,
       callback: async (rows, options) => {
-        await this.addRows(rows, ctx);
+        for (const row of rows) {
+          await this.handleRow(row, ctx);
+          current += 1;
 
-        current += rows.length;
-
-        this.emit('progress', {
-          total,
-          current,
-        });
+          this.emit('progress', {
+            total,
+            current,
+          });
+        }
       },
     });
 
