@@ -217,7 +217,7 @@ const InternalGridCard = withSkeletonComponent(
               }}
               renderItem={(item, index) => {
                 return (
-                  <Col style={{ height: '100%' }}>
+                  <Col style={{ height: '100%' }} className="nb-card-item-warper">
                     <RecursionField
                       key={index}
                       basePath={field.address}

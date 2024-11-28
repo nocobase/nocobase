@@ -20,6 +20,9 @@ export const useStyles = genStyleHook('nb-mobile', (token) => {
       '& ::-webkit-scrollbar': {
         display: 'none',
       },
+      '.nb-card-list': {
+        backgroundColor: 'rgb(245, 245, 245)',
+      },
       '.nb-details .ant-formily-item-feedback-layout-loose': {
         marginBottom: '5px',
       },
@@ -111,6 +114,11 @@ export const useStyles = genStyleHook('nb-mobile', (token) => {
       '.mobile-page-header .adm-tabs-tab': {
         fontSize: '14px',
         height: '100%',
+      },
+      '.nb-mobile-setting': {
+        '[data-menu-id$="-theme"]': {
+          display: 'none',
+        },
       },
     },
   };
