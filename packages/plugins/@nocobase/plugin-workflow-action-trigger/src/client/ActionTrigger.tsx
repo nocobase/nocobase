@@ -205,13 +205,12 @@ export default class extends Trigger {
       default: null,
       required: true,
     },
-    user: {
-      type: 'object',
+    userId: {
+      type: 'number',
       title: `{{t("User submitted action", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'RemoteSelect',
       'x-component-props': {
-        objectValue: true,
         fieldNames: {
           label: 'nickname',
           value: 'id',
