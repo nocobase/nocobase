@@ -62,11 +62,10 @@ function BulkEnableButton({ plugins = [] }) {
     <>
       <Button onClick={() => setIsModalOpen(true)}>{t('Bulk enable')}</Button>
       <Modal
-        width={800}
+        width={1000}
         title={t('Bulk enable')}
         open={isModalOpen}
         onOk={async () => {
-          console.log(selectedRowKeys);
           await api.request({
             url: 'pm:enable',
             params: {
@@ -99,8 +98,26 @@ function BulkEnableButton({ plugins = [] }) {
         <Table
           rowSelection={{
             type: 'checkbox',
-            onChange(selectedRowKeys) {
-              setSelectedRowKeys(selectedRowKeys);
+            selectedRowKeys,
+            onChange(selectedKeys) {
+              const names = items.map((item) => item.name);
+              setSelectedRowKeys((preSelectedRowKeys) => {
+                if (selectedKeys.length === 0) {
+                  return preSelectedRowKeys.filter((key) => !names.includes(key));
+                }
+                if (selectedKeys.length === names.length) {
+                  return _.uniq([...preSelectedRowKeys, ...selectedKeys]);
+                }
+                return preSelectedRowKeys;
+              });
+            },
+            onSelect(record) {
+              setSelectedRowKeys((preSelectedRowKeys) => {
+                if (preSelectedRowKeys.includes(record.name)) {
+                  return preSelectedRowKeys.filter((key) => key !== record.name);
+                }
+                return preSelectedRowKeys.concat(record.name);
+              });
             },
           }}
           rowKey={'name'}
@@ -114,17 +131,17 @@ function BulkEnableButton({ plugins = [] }) {
               title: t('Plugin'),
               dataIndex: 'displayName',
               ellipsis: true,
-              width: 200,
             },
             {
               title: t('Description'),
               dataIndex: 'description',
               ellipsis: true,
+              width: 300,
             },
             {
               title: t('Package name'),
               dataIndex: 'packageName',
-              width: 260,
+              width: 300,
               ellipsis: true,
             },
           ]}

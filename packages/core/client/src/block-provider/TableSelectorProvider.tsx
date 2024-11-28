@@ -102,7 +102,7 @@ const useAssociationNames2 = (collection) => {
 export const recursiveParent = (schema: Schema, component) => {
   return schema['x-component'] === component
     ? schema
-    : schema.parent
+    : schema.parent && schema?.['x-component'] !== 'AssociationField.Viewer'
       ? recursiveParent(schema.parent, component)
       : null;
 };
