@@ -23,7 +23,6 @@ import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
 import React, { FC, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useInView } from 'react-intersection-observer';
 import { DndContext, isBulkEditAction, useDesignable, usePopupSettings, useTableSize } from '../..';
 import {
   BlockRequestLoadingContext,
@@ -49,6 +48,7 @@ import { GetStyleRules } from '../../../schema-settings/LinkageRules/useActionVa
 import { HighPerformanceSpin } from '../../common/high-performance-spin/HighPerformanceSpin';
 import { useToken } from '../__builtins__';
 import { useAssociationFieldContext } from '../association-field/hooks';
+import { DelayRender } from './DelayRender';
 import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 
@@ -71,8 +71,6 @@ interface BodyCellComponentProps {
   rowIndex: number;
   isSubTable?: boolean;
 }
-
-const InViewContext = React.createContext(false);
 
 const useArrayField = (props) => {
   const field = useField<ArrayField>();
@@ -301,20 +299,12 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
 const INITIAL_ROWS_NUMBER = 20;
 
 const SortableRow = (props: BodyRowComponentProps) => {
-  const { isInSubTable } = useFlag();
   const { token } = useToken();
   const id = props['data-row-key']?.toString();
   const { setNodeRef, isOver, active, over } = useSortable({
     id,
   });
   const { rowIndex, ...others } = props;
-
-  const { ref, inView } = useInView({
-    threshold: 0,
-    triggerOnce: true,
-    initialInView: !!process.env.__E2E__ || isInSubTable || (rowIndex || 0) < INITIAL_ROWS_NUMBER,
-    skip: !!process.env.__E2E__ || isInSubTable,
-  });
 
   const classObj = useMemo(() => {
     const borderColor = new TinyColor(token.colorSettings).setAlpha(0.6).toHex8String();
@@ -337,20 +327,24 @@ const SortableRow = (props: BodyRowComponentProps) => {
       ? classObj.topActiveClass
       : classObj.bottomActiveClass;
 
-  return (
-    <InViewContext.Provider value={inView}>
-      <tr
-        ref={(node) => {
-          if (active?.id !== id) {
-            setNodeRef(node);
-          }
-          ref(node);
-        }}
-        {...others}
-        className={classNames(props.className, { [className]: active && isOver })}
-      />
-    </InViewContext.Provider>
+  const row = (
+    <tr
+      ref={(node) => {
+        if (active?.id !== id) {
+          setNodeRef(node);
+        }
+      }}
+      {...others}
+      className={classNames(props.className, { [className]: active && isOver })}
+    />
   );
+
+  if (rowIndex < INITIAL_ROWS_NUMBER) {
+    return row;
+  }
+
+  // Delay rendering of other rows to prevent long page jank
+  return <DelayRender>{row}</DelayRender>;
 };
 
 const SortHandle = (props) => {
@@ -599,29 +593,17 @@ const BodyRowComponent = React.memo((props: BodyRowComponentProps) => {
 BodyRowComponent.displayName = 'BodyRowComponent';
 
 const InternalBodyCellComponent = React.memo<BodyCellComponentProps>((props) => {
-  const { token } = useToken();
-  const inView = useContext(InViewContext);
-  const isIndex = props.className?.includes('selection-column');
   const { record, schema, rowIndex, isSubTable, ...others } = props;
   const styleRules = schema?.[LinkageRuleDataKeyMap['style']];
   const [dynamicStyle, setDynamicStyle] = useState({});
   const style = useMemo(() => ({ ...props.style, ...dynamicStyle }), [props.style, dynamicStyle]);
-  const skeletonStyle = useMemo(
-    () => ({
-      height: '1em',
-      backgroundColor: token.colorFillSecondary,
-      borderRadius: `${token.borderRadiusSM}px`,
-    }),
-    [token.borderRadiusSM, token.colorFillSecondary],
-  );
 
   return (
     <>
       {/* To improve rendering performance, do not render GetStyleRules component when no style rules are set */}
       {!_.isEmpty(styleRules) && <GetStyleRules record={record} schema={schema} onStyleChange={setDynamicStyle} />}
       <td {...others} className={classNames(props.className, cellClass)} style={style}>
-        {/* Lazy rendering cannot be used in sub-tables. */}
-        {isSubTable || inView || isIndex ? props.children : <div style={skeletonStyle} />}
+        {props.children}
       </td>
     </>
   );
