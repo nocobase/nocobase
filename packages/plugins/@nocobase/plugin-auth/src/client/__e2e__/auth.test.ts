@@ -24,12 +24,9 @@ test.describe('auth', () => {
 
     await page.goto('/');
     await page.getByRole('link', { name: 'Create an account' }).click();
-    await page.getByPlaceholder('Username').click();
-    await page.getByPlaceholder('Username').fill(username);
-    await page.getByPlaceholder('Password', { exact: true }).click();
-    await page.getByPlaceholder('Password', { exact: true }).fill('zidonghuaceshi123');
-    await page.getByPlaceholder('Confirm password').click();
-    await page.getByPlaceholder('Confirm password').fill('zidonghuaceshi123');
+    await page.getByLabel('block-item-Input-Username').getByRole('textbox').fill(username);
+    await page.getByLabel('block-item-Password-Password').getByRole('textbox').fill('zidonghuaceshi123');
+    await page.getByLabel('block-item-Password-Confirm').getByRole('textbox').fill('zidonghuaceshi123');
     await page.getByRole('button', { name: 'Sign up' }).click();
 
     await expect(page.getByText('Sign up successfully, and automatically jump to the sign in page')).toBeVisible();

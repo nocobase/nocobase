@@ -128,7 +128,12 @@ export class PluginManagerRepository extends Repository {
     }
     const sorter = new Topo.Sorter<string>();
     for (const pluginName of pluginNames) {
-      const packageJson = await PluginManager.getPackageJson(pluginName);
+      let packageJson: any = {};
+      try {
+        packageJson = await PluginManager.getPackageJson(pluginName);
+      } catch (error) {
+        packageJson = {};
+      }
       const peerDependencies = Object.keys(packageJson?.peerDependencies || {});
       sorter.add(pluginName, { after: peerDependencies, group: packageJson?.packageName || pluginName });
     }
