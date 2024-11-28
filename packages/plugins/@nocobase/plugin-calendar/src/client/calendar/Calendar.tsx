@@ -8,7 +8,7 @@
  */
 
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
-import { RecursionField, Schema, observer, useFieldSchema, Form, useField } from '@formily/react';
+import { RecursionField, Schema, observer, useFieldSchema, useField } from '@formily/react';
 import {
   PopupContextProvider,
   RecordProvider,
@@ -26,6 +26,7 @@ import {
   CollectionProvider,
   SchemaComponentOptions,
   useFormBlockContext,
+  handleDateChangeOnForm,
 } from '@nocobase/client';
 import { parseExpression } from 'cron-parser';
 import type { Dayjs } from 'dayjs';
@@ -324,6 +325,7 @@ export const Calendar: any = withDynamicSchemaProps(
           };
         }
       };
+      // 快速创建行程
       const useCreateFormBlockProps = () => {
         const ctx = useFormBlockContext();
         let startDateValue = currentSelectDate.start;
@@ -332,7 +334,7 @@ export const Calendar: any = withDynamicSchemaProps(
         const endCollectionField = collection.getField(endFieldName);
 
         useEffect(() => {
-          const form: Form = ctx.form;
+          const form = ctx.form;
           if (!form || ctx.service?.loading) {
             return;
           }
@@ -345,20 +347,23 @@ export const Calendar: any = withDynamicSchemaProps(
               ...endCollectionField.uiSchema?.['x-component-props'],
               ...ctx.form?.query(endFieldName).take()?.componentProps,
             };
-            if (startFieldProps.utc) {
-              startDateValue = currentSelectDate.start.toISOString();
-            } else {
-              startDateValue = dayjs(currentSelectDate.start)
-                .startOf(startFieldProps.picker)
-                .format(startFieldProps.format || startFieldProps.dateFormat);
-            }
-            if (endFieldProps.utc) {
-              endDataValue = currentSelectDate.end.toISOString();
-            } else {
-              endDataValue = dayjs(currentSelectDate.end)
-                .startOf(endFieldProps.picker)
-                .format(endFieldProps.format || endFieldProps.dateFormat);
-            }
+
+            startDateValue = handleDateChangeOnForm(
+              currentSelectDate.start,
+              startFieldProps.dateOnly,
+              startFieldProps.utc,
+              startFieldProps.picker,
+              startFieldProps.showTime,
+              startFieldProps.gtm,
+            );
+            endDataValue = handleDateChangeOnForm(
+              currentSelectDate.end,
+              endFieldProps.dateOnly,
+              endFieldProps.utc,
+              endFieldProps.picker,
+              endFieldProps.showTime,
+              endFieldProps.gtm,
+            );
             if (!form.initialValues[startFieldName]) {
               form.setInitialValuesIn([startFieldName], startDateValue);
             }
