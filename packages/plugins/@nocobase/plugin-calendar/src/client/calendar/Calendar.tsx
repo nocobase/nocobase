@@ -326,34 +326,45 @@ export const Calendar: any = withDynamicSchemaProps(
       };
       const useCreateFormBlockProps = () => {
         const ctx = useFormBlockContext();
-
-        useEffect(() => {
-          if (currentSelectDate) {
-            ctx.form?.query(startFieldName).take((field) => {
-              if (!field.initialValues) {
-                field.initialValues = currentSelectDate.start;
-              }
-            });
-            ctx.form?.query(endFieldName).take((field) => {
-              if (!field.initialValues) {
-                field.initialValues = currentSelectDate.end;
-              }
-            });
-          }
-        });
+        let startDateValue = currentSelectDate.start;
+        let endDataValue = currentSelectDate.end;
+        const startCollectionField = collection.getField(startFieldName);
+        const endCollectionField = collection.getField(endFieldName);
 
         useEffect(() => {
           const form: Form = ctx.form;
-
           if (!form || ctx.service?.loading) {
             return;
           }
-
-          if (!form.initialValues[endFieldName]) {
-            form.setInitialValuesIn([endFieldName], currentSelectDate.end);
-          }
-          if (!form.initialValues[startFieldName]) {
-            form.setInitialValuesIn([startFieldName], currentSelectDate.start);
+          if (currentSelectDate) {
+            const startFieldProps = {
+              ...startCollectionField.uiSchema?.['x-component-props'],
+              ...ctx.form?.query(startFieldName).take()?.componentProps,
+            };
+            const endFieldProps = {
+              ...endCollectionField.uiSchema?.['x-component-props'],
+              ...ctx.form?.query(endFieldName).take()?.componentProps,
+            };
+            if (startFieldProps.utc) {
+              startDateValue = currentSelectDate.start.toISOString();
+            } else {
+              startDateValue = dayjs(currentSelectDate.start)
+                .startOf(startFieldProps.picker)
+                .format(startFieldProps.format || startFieldProps.dateFormat);
+            }
+            if (endFieldProps.utc) {
+              endDataValue = currentSelectDate.end.toISOString();
+            } else {
+              endDataValue = dayjs(currentSelectDate.end)
+                .startOf(endFieldProps.picker)
+                .format(endFieldProps.format || endFieldProps.dateFormat);
+            }
+            if (!form.initialValues[startFieldName]) {
+              form.setInitialValuesIn([startFieldName], startDateValue);
+            }
+            if (!form.initialValues[endFieldName]) {
+              form.setInitialValuesIn([endFieldName], endDataValue);
+            }
           }
         }, [ctx.form, ctx.service?.data?.data, ctx.service?.loading]);
         return {
