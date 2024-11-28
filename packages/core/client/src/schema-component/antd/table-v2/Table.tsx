@@ -13,7 +13,7 @@ import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sor
 import { css, cx } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
-import { Schema, SchemaOptionsContext, observer, useField, useFieldSchema } from '@formily/react';
+import { observer, Schema, SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
@@ -21,7 +21,7 @@ import { useCreation, useDeepCompareEffect, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
-import React, { FC, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import React, { createContext, FC, MutableRefObject, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, isBulkEditAction, useDesignable, usePopupSettings, useTableSize } from '../..';
 import {
@@ -647,6 +647,12 @@ interface TableProps {
   value?: any[];
 }
 
+export const TableElementRefContext = createContext<MutableRefObject<HTMLDivElement | null> | null>(null);
+
+export const useTableElementRef = () => {
+  return useContext(TableElementRefContext);
+};
+
 const InternalNocoBaseTable = React.memo(
   (props: {
     tableHeight: number;
@@ -689,6 +695,18 @@ const InternalNocoBaseTable = React.memo(
       field,
       ...others
     } = props;
+    const tableElementRef = useTableElementRef();
+
+    const refCallback = useCallback(
+      (ref) => {
+        if (tableElementRef) {
+          tableElementRef.current = ref;
+        }
+        tableSizeRefCallback(ref);
+      },
+      [tableElementRef, tableSizeRefCallback],
+    );
+
     return (
       <div
         className={cx(
@@ -731,7 +749,7 @@ const InternalNocoBaseTable = React.memo(
       >
         <SortableWrapper>
           <AntdTable
-            ref={tableSizeRefCallback as any}
+            ref={refCallback}
             rowKey={defaultRowKey}
             // rowKey={(record) => record.id}
             dataSource={dataSource}
