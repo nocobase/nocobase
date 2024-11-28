@@ -44,7 +44,8 @@ import { isNewRecord } from '../../../data-source/collection-record/isNewRecord'
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { withSkeletonComponent } from '../../../hoc/withSkeletonComponent';
-import { useSatisfiedActionValues } from '../../../schema-settings/LinkageRules/useActionValues';
+import { LinkageRuleDataKeyMap } from '../../../schema-settings/LinkageRules/type';
+import { GetStyleRules } from '../../../schema-settings/LinkageRules/useActionValues';
 import { HighPerformanceSpin } from '../../common/high-performance-spin/HighPerformanceSpin';
 import { useToken } from '../__builtins__';
 import { useAssociationFieldContext } from '../association-field/hooks';
@@ -602,19 +603,27 @@ const InternalBodyCellComponent = React.memo<BodyCellComponentProps>((props) => 
   const inView = useContext(InViewContext);
   const isIndex = props.className?.includes('selection-column');
   const { record, schema, rowIndex, isSubTable, ...others } = props;
-  const { valueMap } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
-  const style = useMemo(() => Object.assign({ ...props.style }, valueMap), [props.style, valueMap]);
-  const skeletonStyle = {
-    height: '1em',
-    backgroundColor: token.colorFillSecondary,
-    borderRadius: `${token.borderRadiusSM}px`,
-  };
+  const styleRules = schema?.[LinkageRuleDataKeyMap['style']];
+  const [dynamicStyle, setDynamicStyle] = useState({});
+  const style = useMemo(() => ({ ...props.style, ...dynamicStyle }), [props.style, dynamicStyle]);
+  const skeletonStyle = useMemo(
+    () => ({
+      height: '1em',
+      backgroundColor: token.colorFillSecondary,
+      borderRadius: `${token.borderRadiusSM}px`,
+    }),
+    [token.borderRadiusSM, token.colorFillSecondary],
+  );
 
   return (
-    <td {...others} className={classNames(props.className, cellClass)} style={style}>
-      {/* Lazy rendering cannot be used in sub-tables. */}
-      {isSubTable || inView || isIndex ? props.children : <div style={skeletonStyle} />}
-    </td>
+    <>
+      {/* To improve rendering performance, do not render GetStyleRules component when no style rules are set */}
+      {!_.isEmpty(styleRules) && <GetStyleRules record={record} schema={schema} onStyleChange={setDynamicStyle} />}
+      <td {...others} className={classNames(props.className, cellClass)} style={style}>
+        {/* Lazy rendering cannot be used in sub-tables. */}
+        {isSubTable || inView || isIndex ? props.children : <div style={skeletonStyle} />}
+      </td>
+    </>
   );
 });
 

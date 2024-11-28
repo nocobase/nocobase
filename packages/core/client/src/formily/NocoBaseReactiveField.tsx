@@ -37,14 +37,12 @@ const renderChildren = (children: RenderPropsChildren<GeneralField>, field?: Gen
  */
 const NocoBaseReactiveInternal: React.FC<IReactiveFieldProps> = (props) => {
   const components = useContext(SchemaComponentsContext);
-  if (!props.field) {
-    return <Fragment>{renderChildren(props.children)}</Fragment>;
-  }
   const field: any = props.field;
   const content = mergeChildren(
     renderChildren(props.children, field, field.form),
     field.content ?? field.componentProps.children,
   );
+
   if (field.display !== 'visible') return null;
 
   const getComponent = (target: any) => {

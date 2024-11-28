@@ -7,14 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { uid } from '@formily/shared';
 import { Form, onFormValuesChange } from '@formily/core';
-import { useVariables, useLocalVariables } from '../../variables';
-import { useFieldSchema } from '@formily/react';
-import { LinkageRuleCategory, LinkageRuleDataKeyMap } from './type';
-import { getSatisfiedValueMap } from './compute-rules';
+import { Schema, useFieldSchema } from '@formily/react';
+import { uid } from '@formily/shared';
 import { isEmpty } from 'lodash';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useLocalVariables, useVariables } from '../../variables';
+import { getSatisfiedValueMap } from './compute-rules';
+import { LinkageRuleCategory, LinkageRuleDataKeyMap } from './type';
+
 export function useSatisfiedActionValues({
   formValues,
   category = 'default',
@@ -33,10 +34,11 @@ export function useSatisfiedActionValues({
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: { values: formValues } as any });
   const localSchema = schema ?? fieldSchema;
-  const linkageRules = rules ?? localSchema[LinkageRuleDataKeyMap[category]];
+  const styleRules = rules ?? localSchema[LinkageRuleDataKeyMap[category]];
+
   const compute = useCallback(() => {
-    if (linkageRules && formValues) {
-      getSatisfiedValueMap({ rules: linkageRules, variables, localVariables })
+    if (styleRules && formValues) {
+      getSatisfiedValueMap({ rules: styleRules, variables, localVariables })
         .then((valueMap) => {
           if (!isEmpty(valueMap)) {
             setValueMap(valueMap);
@@ -46,11 +48,11 @@ export function useSatisfiedActionValues({
           throw new Error(err.message);
         });
     }
-  }, [variables, localVariables, linkageRules, formValues]);
+  }, [variables, localVariables, styleRules, formValues]);
+
   useEffect(() => {
     compute();
-  }, [compute]);
-  useEffect(() => {
+
     if (form) {
       const id = uid();
       form.addEffects(id, () => {
@@ -63,5 +65,22 @@ export function useSatisfiedActionValues({
       };
     }
   }, [form, compute]);
+
   return { valueMap };
 }
+
+export const GetStyleRules: React.FC<{
+  record: Record<string, any>;
+  schema: Schema;
+  onStyleChange?: (value: Record<string, any>) => void;
+}> = React.memo(({ record, schema, onStyleChange }) => {
+  const { valueMap } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
+
+  useEffect(() => {
+    onStyleChange(valueMap);
+  }, [onStyleChange, valueMap]);
+
+  return null;
+});
+
+GetStyleRules.displayName = 'GetStyleRules';
