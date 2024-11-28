@@ -12,7 +12,7 @@ import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
-import { useDataBlockRequest } from '../../../data-source';
+import { useDataBlockRequestData } from '../../../data-source';
 import { useFlag } from '../../../flag-provider/hooks/useFlag';
 import { useBaseVariable } from './useBaseVariable';
 
@@ -63,11 +63,11 @@ export const useFormVariable = ({ collectionName, collectionField, schema, noDis
 };
 
 const useCurrentFormData = () => {
-  const ctx: any = useDataBlockRequest();
-  if (ctx?.data?.data?.length > 1) {
+  const data = useDataBlockRequestData();
+  if (data?.data?.length > 1) {
     return;
   }
-  return ctx?.data?.data?.[0] || ctx?.data?.data;
+  return data?.data?.[0] || data?.data;
 };
 
 /**

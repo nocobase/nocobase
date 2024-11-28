@@ -8,11 +8,12 @@
  */
 
 import { cx } from '@emotion/css';
-import { RecursionField, observer, useFieldSchema } from '@formily/react';
-import { Space, SpaceProps, theme } from 'antd';
+import { observer, useFieldSchema } from '@formily/react';
+import { Space, SpaceProps } from 'antd';
 import React, { CSSProperties, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { useSchemaInitializerRender } from '../../../application';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { DndContext } from '../../common';
 import { useDesignable, useProps } from '../../hooks';
@@ -60,7 +61,6 @@ const Portal: React.FC = (props) => {
 export const ActionBar = withDynamicSchemaProps(
   observer((props: any) => {
     const { forceProps = {} } = useActionBarContext();
-    const { token } = theme.useToken();
     // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const { layout = 'two-columns', style, spaceProps, ...others } = { ...useProps(props), ...forceProps } as any;
 
@@ -81,7 +81,7 @@ export const ActionBar = withDynamicSchemaProps(
                 <div>
                   <Space {...spaceProps} style={{ flexWrap: 'wrap', ...(spaceProps?.style || {}) }}>
                     {fieldSchema.mapProperties((schema, key) => {
-                      return <RecursionField key={key} name={key} schema={schema} />;
+                      return <NocoBaseRecursionField key={key} name={key} schema={schema} />;
                     })}
                   </Space>
                 </div>
@@ -128,7 +128,7 @@ export const ActionBar = withDynamicSchemaProps(
                 if (schema['x-align'] !== 'left') {
                   return null;
                 }
-                return <RecursionField key={key} name={key} schema={schema} />;
+                return <NocoBaseRecursionField key={key} name={key} schema={schema} />;
               })}
             </Space>
             <Space {...spaceProps} style={{ flexWrap: 'wrap', ...(spaceProps?.style || {}) }}>
@@ -136,7 +136,7 @@ export const ActionBar = withDynamicSchemaProps(
                 if (schema['x-align'] === 'left') {
                   return null;
                 }
-                return <RecursionField key={key} name={key} schema={schema} />;
+                return <NocoBaseRecursionField key={key} name={key} schema={schema} />;
               })}
             </Space>
           </DndContext>

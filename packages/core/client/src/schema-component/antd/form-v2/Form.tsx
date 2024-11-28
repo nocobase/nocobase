@@ -10,13 +10,15 @@
 import { css } from '@emotion/css';
 import { FormLayout, IFormLayoutProps } from '@formily/antd-v5';
 import { Field, Form as FormilyForm, createForm, onFieldInit, onFormInputChange } from '@formily/core';
-import { FieldContext, FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
+import { FieldContext, FormContext, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { ConfigProvider, Spin, theme } from 'antd';
+import { ConfigProvider, theme } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
+import { getCardItemSchema } from '../../../block-provider';
 import { useTemplateBlockContext } from '../../../block-provider/TemplateBlockProvider';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { bindLinkageRulesToFiled } from '../../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 import { forEachLinkageRule } from '../../../schema-settings/LinkageRules/forEachLinkageRule';
@@ -24,7 +26,6 @@ import { useToken } from '../../../style';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { useProps } from '../../hooks/useProps';
 import { useFormBlockHeight } from './hook';
-import { getCardItemSchema } from '../../../block-provider';
 
 export interface FormProps extends IFormLayoutProps {
   form?: FormilyForm;
@@ -65,10 +66,15 @@ const FormComponent: React.FC<FormProps> = (props) => {
                 margin-right: -${token.marginLG}px;
                 padding-left: ${token.marginLG}px;
                 padding-right: ${token.marginLG}px;
+                .ant-formily-item-layout-horizontal {
+                  .ant-formily-item-control {
+                    max-width: calc(100% - ${labelWidth}px);
+                  }
+                }
               }
             `}
           >
-            <RecursionField basePath={f.address} schema={fieldSchema} onlyRenderProperties />
+            <NocoBaseRecursionField basePath={f.address} schema={fieldSchema} onlyRenderProperties isUseFormilyField />
           </div>
         </FormLayout>
       </FormContext.Provider>
@@ -91,7 +97,12 @@ const FormDecorator: React.FC<FormProps> = (props) => {
         <FormLayout layout={'vertical'} {...others}>
           <FieldContext.Provider value={f}>
             <Component {...field.componentProps}>
-              <RecursionField basePath={f.address} schema={fieldSchema} onlyRenderProperties />
+              <NocoBaseRecursionField
+                basePath={f.address}
+                schema={fieldSchema}
+                onlyRenderProperties
+                isUseFormilyField
+              />
             </Component>
           </FieldContext.Provider>
           {/* <FieldContext.Provider value={f}>{children}</FieldContext.Provider> */}
@@ -236,13 +247,11 @@ export const Form: React.FC<FormProps> & {
     return (
       <ConfigProvider componentDisabled={formDisabled} theme={theme}>
         <form onSubmit={(e) => e.preventDefault()} className={formLayoutCss}>
-          <Spin spinning={field.loading || false}>
-            {form ? (
-              <WithForm form={form} {...others} disabled={formDisabled} />
-            ) : (
-              <WithoutForm {...others} disabled={formDisabled} />
-            )}
-          </Spin>
+          {form ? (
+            <WithForm form={form} {...others} disabled={formDisabled} />
+          ) : (
+            <WithoutForm {...others} disabled={formDisabled} />
+          )}
         </form>
       </ConfigProvider>
     );

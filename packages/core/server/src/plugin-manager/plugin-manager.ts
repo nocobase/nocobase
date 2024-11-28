@@ -130,9 +130,11 @@ export class PluginManager {
    */
   static async getPackageJson(nameOrPkg: string) {
     const { packageName } = await this.parseName(nameOrPkg);
-    const file = await fs.realpath(resolve(process.env.NODE_MODULES_PATH, packageName, 'package.json'));
-    const data = await fs.readFile(file, { encoding: 'utf-8' });
-    return JSON.parse(data);
+    const packageFile = resolve(process.env.NODE_MODULES_PATH, packageName, 'package.json');
+    if (!(await fs.exists(packageFile))) {
+      throw new Error(`Cannot find plugin '${nameOrPkg}'`);
+    }
+    return fs.readJSON(packageFile);
   }
 
   /**
@@ -452,6 +454,41 @@ export class PluginManager {
       plugin.state.loaded = true;
       await this.app.emitAsync('afterLoadPlugin', plugin, options);
     }
+
+    const getSourceAndTargetForAddAction = async (ctx: any) => {
+      const { packageName } = ctx.action.params;
+      return {
+        targetCollection: 'applicationPlugins',
+        targetRecordUK: packageName,
+      };
+    };
+
+    const getSourceAndTargetForUpdateAction = async (ctx: any) => {
+      let { packageName } = ctx.action.params;
+      if (ctx.file) {
+        packageName = ctx.request.body.packageName;
+      }
+      return {
+        targetCollection: 'applicationPlugins',
+        targetRecordUK: packageName,
+      };
+    };
+
+    const getSourceAndTargetForOtherActions = async (ctx: any) => {
+      const { filterByTk } = ctx.action.params;
+      return {
+        targetCollection: 'applicationPlugins',
+        targetRecordUK: filterByTk,
+      };
+    };
+
+    this.app.auditManager.registerActions([
+      { name: 'pm:add', getSourceAndTarget: getSourceAndTargetForAddAction },
+      { name: 'pm:update', getSourceAndTarget: getSourceAndTargetForUpdateAction },
+      { name: 'pm:enable', getSourceAndTarget: getSourceAndTargetForOtherActions },
+      { name: 'pm:disable', getSourceAndTarget: getSourceAndTargetForOtherActions },
+      { name: 'pm:remove', getSourceAndTarget: getSourceAndTargetForOtherActions },
+    ]);
 
     this.app.log.debug('plugins loaded');
     this.app.setMaintainingMessage('plugins loaded');

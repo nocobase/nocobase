@@ -21,46 +21,56 @@ import { useDesigner } from '../../hooks/useDesigner';
 import { useTabsContext } from './context';
 import { TabsDesigner } from './Tabs.Designer';
 
-export const Tabs: any = observer(
-  (props: TabsProps) => {
-    const fieldSchema = useFieldSchema();
-    const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
-    const contextProps = useTabsContext();
-    const { PaneRoot = React.Fragment as React.FC<any> } = contextProps;
+const MemoizeRecursionField = React.memo(RecursionField);
+MemoizeRecursionField.displayName = 'MemoizeRecursionField';
 
-    const items = useMemo(() => {
-      const result = fieldSchema.mapProperties((schema, key: string) => {
-        return {
-          key,
-          label: <RecursionField name={key} schema={schema} onlyRenderSelf />,
-          children: (
-            <PaneRoot key={key} {...(PaneRoot !== React.Fragment ? { active: key === contextProps.activeKey } : {})}>
-              <SchemaComponent name={key} schema={schema} onlyRenderProperties distributed />
-            </PaneRoot>
-          ),
-        };
-      });
+const MemoizeTabs = React.memo(AntdTabs);
+MemoizeTabs.displayName = 'MemoizeTabs';
 
-      return result;
-    }, [fieldSchema.mapProperties((s, key) => key).join()]);
+export const Tabs: any = React.memo((props: TabsProps) => {
+  const fieldSchema = useFieldSchema();
+  const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
+  const contextProps = useTabsContext();
+  const { PaneRoot = React.Fragment as React.FC<any> } = contextProps;
 
-    return (
-      <DndContext>
-        <AntdTabs
-          {...contextProps}
-          destroyInactiveTabPane
-          tabBarExtraContent={{
-            right: render(),
-            left: contextProps?.tabBarExtraContent,
-          }}
-          style={props.style}
-          items={items}
-        />
-      </DndContext>
-    );
-  },
-  { displayName: 'Tabs' },
-);
+  const items = useMemo(() => {
+    const result = fieldSchema.mapProperties((schema, key: string) => {
+      return {
+        key,
+        label: <MemoizeRecursionField name={key} schema={schema} onlyRenderSelf />,
+        children: (
+          <PaneRoot key={key} {...(PaneRoot !== React.Fragment ? { active: key === contextProps.activeKey } : {})}>
+            <SchemaComponent name={key} schema={schema} onlyRenderProperties distributed />
+          </PaneRoot>
+        ),
+      };
+    });
+
+    return result;
+  }, [fieldSchema.mapProperties((s, key) => key).join()]);
+
+  const tabBarExtraContent = useMemo(
+    () => ({
+      right: render(),
+      left: contextProps?.tabBarExtraContent,
+    }),
+    [contextProps?.tabBarExtraContent, render],
+  );
+
+  return (
+    <DndContext>
+      <MemoizeTabs
+        {...contextProps}
+        destroyInactiveTabPane
+        tabBarExtraContent={tabBarExtraContent}
+        style={props.style}
+        items={items}
+      />
+    </DndContext>
+  );
+});
+
+Tabs.displayName = 'Tabs';
 
 const designerCss = css`
   position: relative;

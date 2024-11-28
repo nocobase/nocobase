@@ -13,7 +13,7 @@ import { theme } from 'antd';
 import { debounce } from 'lodash';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useDesignable } from '..';
-import { useCollection, useDataBlockRequest } from '../../';
+import { useCollection, useDataBlockRequestData } from '../../';
 import { getPageSchema, useBlockHeightProps } from '../../block-provider/hooks';
 import { useTableBlockContext } from '../../block-provider/TableBlockProvider';
 import { HeightMode } from '../../schema-settings/SchemaSettingsBlockHeightItem';
@@ -92,7 +92,7 @@ const useTableHeight = () => {
   const schema = useFieldSchema();
   const heightProps = tableHeightProps || blockHeightProps;
   const pageFullScreenHeight = useFullScreenHeight(heightProps);
-  const { data } = useDataBlockRequest() ?? {};
+  const data = useDataBlockRequestData();
   const { name } = useCollection();
   const { count, pageSize } = (data as any)?.meta || ({} as any);
   const hasPagination = count > pageSize;

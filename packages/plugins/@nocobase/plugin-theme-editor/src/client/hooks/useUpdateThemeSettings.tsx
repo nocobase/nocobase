@@ -7,14 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useAPIClient, useCurrentUserContext, useSystemSettings } from '@nocobase/client';
+import { useAPIClient, useCurrentUserContext } from '@nocobase/client';
 import { error } from '@nocobase/utils/client';
 import { useCallback } from 'react';
 
 export function useUpdateThemeSettings() {
   const api = useAPIClient();
   const currentUser = useCurrentUserContext();
-  const systemSettings = useSystemSettings();
 
   const updateUserThemeSettings = useCallback(
     async (themeId: number | null) => {

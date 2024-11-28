@@ -7,10 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router-dom';
-import { App, Breadcrumb, Button, Dropdown, Result, Spin, Switch, Tag, Tooltip, message } from 'antd';
 import { DownOutlined, EllipsisOutlined, RightOutlined } from '@ant-design/icons';
 import {
   ActionContextProvider,
@@ -23,16 +19,20 @@ import {
   useResourceContext,
 } from '@nocobase/client';
 import { str2moment } from '@nocobase/utils/client';
+import { App, Breadcrumb, Button, Dropdown, Result, Spin, Switch, Tag, Tooltip, message } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { CanvasContent } from './CanvasContent';
+import { ExecutionStatusColumn } from './components/ExecutionStatus';
 import { ExecutionLink } from './ExecutionLink';
 import { FlowContext, useFlowContext } from './FlowContext';
+import { useRefreshActionProps } from './hooks/useRefreshActionProps';
 import { lang } from './locale';
 import { executionSchema } from './schemas/executions';
 import useStyles from './style';
-import { linkNodes, getWorkflowDetailPath } from './utils';
-import { ExecutionStatusColumn } from './components/ExecutionStatus';
-import { useRefreshActionProps } from './hooks/useRefreshActionProps';
+import { getWorkflowDetailPath, linkNodes } from './utils';
 
 function ExecutionResourceProvider({ request, filter = {}, ...others }) {
   const { workflow } = useFlowContext();
@@ -67,7 +67,7 @@ export function WorkflowCanvas() {
   useEffect(() => {
     const { title } = data?.data ?? {};
     setTitle?.(`${lang('Workflow')}${title ? `: ${title}` : ''}`);
-  }, [data?.data]);
+  }, [data?.data, setTitle]);
 
   if (!data?.data) {
     if (loading) {

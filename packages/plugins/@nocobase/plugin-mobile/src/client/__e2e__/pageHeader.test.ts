@@ -171,7 +171,7 @@ test.describe('PageHeader', () => {
 
     test('Item：add and remove', async ({ page }) => {
       // 添加页面内容
-      await page.getByLabel('schema-initializer-Grid-mobile:addBlock').click();
+      await page.getByLabel('schema-initializer-Grid-mobile:addBlock').hover();
       await page.getByRole('menuitem', { name: 'form Markdown' }).click();
       await expect(page.getByLabel('block-item-Markdown.Void-')).toBeVisible();
 
@@ -182,21 +182,24 @@ test.describe('PageHeader', () => {
       await expect(page.getByTestId('mobile-page-tabs').getByTestId(`mobile-page-tabs-${title}`)).toHaveText(title);
 
       // 第一项也显示删除了
-      await page.getByTestId('mobile-page-tabs').getByTestId(`mobile-page-tabs-Unnamed`).click();
-      await page.getByTestId('mobile-page-tabs-Unnamed').getByLabel('designer-schema-settings-MobilePageTabs').click();
+      await page.getByTestId('mobile-page-tabs').getByTestId(`mobile-page-tabs-Unnamed`).hover();
+      await page.getByTestId('mobile-page-tabs-Unnamed').getByLabel('designer-schema-settings-MobilePageTabs').hover();
       await expect(page.getByRole('menuitem', { name: 'Delete' })).toBeVisible();
       await expect(page.getByRole('menuitem', { name: 'Edit', exact: true })).toBeVisible();
 
       // 新增显示删除和编辑
-      await page.getByTestId('mobile-page-tabs').getByTestId(`mobile-page-tabs-${title}`).click();
-      await page.getByTestId(`mobile-page-tabs-${title}`).getByLabel('designer-schema-settings-MobilePageTabs').click();
+      await page.getByTestId('mobile-page-tabs').getByTestId(`mobile-page-tabs-${title}`).hover();
+      await page.getByTestId(`mobile-page-tabs-${title}`).getByLabel('designer-schema-settings-MobilePageTabs').hover();
       await expect(page.getByRole('menuitem', { name: 'Delete' })).toBeVisible();
       await expect(page.getByRole('menuitem', { name: 'Edit', exact: true })).toBeVisible();
 
       // 切换页面，第一个 tab 的内容不显示
+      await page.getByTestId('mobile-page-tabs').getByTestId(`mobile-page-tabs-${title}`).click();
       await expect(page.getByLabel('block-item-Markdown.Void-')).not.toBeVisible();
 
       // 删除
+      await page.getByTestId('mobile-page-tabs').getByTestId(`mobile-page-tabs-${title}`).hover();
+      await page.getByTestId(`mobile-page-tabs-${title}`).getByLabel('designer-schema-settings-MobilePageTabs').hover();
       await page.getByRole('menuitem', { name: 'Delete' }).click();
       await page.getByRole('button', { name: 'OK' }).click();
       await expect(page.getByTestId('mobile-page-tabs')).not.toContainText(title);
@@ -219,7 +222,7 @@ test.describe('PageHeader', () => {
         const navigationBarPositionElement = page.getByTestId(`mobile-navigation-action-bar-${position}`);
         await navigationBarPositionElement
           .getByLabel('schema-initializer-MobileNavigationActionBar-mobile:navigation-bar:actions')
-          .click();
+          .hover();
         await page.getByRole('menuitem', { name: 'Link' }).click();
         await page.getByRole('textbox').fill('Test________');
         await page.getByLabel('action-Action-Submit').click();
@@ -258,6 +261,7 @@ test.describe('PageHeader', () => {
       }
 
       await doPosition('left');
+      await page.reload();
       await doPosition('right');
     });
   });

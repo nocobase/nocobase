@@ -32,6 +32,7 @@ export type AuthManagerOptions = {
 type AuthConfig = {
   auth: AuthExtend<Auth>; // The authentication class.
   title?: string; // The display name of the authentication type.
+  getPublicOptions?: (options: Record<string, any>) => Record<string, any>; // Get the public options.
 };
 
 export class AuthManager {

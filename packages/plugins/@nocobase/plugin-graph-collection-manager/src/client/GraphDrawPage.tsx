@@ -30,14 +30,14 @@ import {
   useCollectionManager_deprecated,
   useCompile,
   useCurrentAppInfo,
-  useDataSourceManager,
   useDataSource,
+  useDataSourceManager,
   useGlobalTheme,
 } from '@nocobase/client';
 import { App, Button, ConfigProvider, Layout, Spin, Switch, Tooltip } from 'antd';
 import dagre from 'dagre';
 import lodash from 'lodash';
-import React, { createContext, forwardRef, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAsyncDataSource, useCreateActionAndRefreshCM } from './action-hooks';
 import { AddCollectionAction } from './components/AddCollectionAction';
@@ -51,6 +51,7 @@ import { SimpleNodeView } from './components/ViewNode';
 import useStyles from './style';
 import {
   cleanGraphContainer,
+  collection,
   formatData,
   getChildrenCollections,
   getDiffEdge,
@@ -58,7 +59,6 @@ import {
   getInheritCollections,
   getPopupContainer,
   useGCMTranslation,
-  collection,
 } from './utils';
 const { drop, groupBy, last, maxBy, minBy, take, uniq } = lodash;
 
@@ -391,7 +391,9 @@ export const GraphDrawPage = React.memo(() => {
   const app = useApp();
   const {
     data: { database },
-  } = currentAppInfo;
+  } = currentAppInfo || {
+    data: { database: {} as any },
+  };
   const scope = { ...options?.scope };
   const components = { ...options?.components };
   const saveGraphPositionAction = async (data) => {

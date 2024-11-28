@@ -30,6 +30,7 @@ function InternalUsersSelect({ value, onChange, variableOptions }) {
         }}
         service={{
           resource: 'users',
+          defaultParams: value ? { filter: { id: value } } : undefined,
         }}
         manual={false}
         value={value}
