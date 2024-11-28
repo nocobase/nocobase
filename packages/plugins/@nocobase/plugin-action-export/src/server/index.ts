@@ -52,4 +52,6 @@ export class PluginActionExportServer extends Plugin {
 }
 
 export default PluginActionExportServer;
+
 export * from './services/base-exporter';
+export * from './services/xlsx-exporter';

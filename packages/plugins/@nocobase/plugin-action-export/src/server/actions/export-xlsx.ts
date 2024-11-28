@@ -10,7 +10,7 @@
 import { Context, Next } from '@nocobase/actions';
 import { Repository } from '@nocobase/database';
 
-import XlsxExporter from '../xlsx-exporter';
+import { XlsxExporter } from '../services/xlsx-exporter';
 import XLSX from 'xlsx';
 import { Mutex } from 'async-mutex';
 import { DataSource } from '@nocobase/data-source-manager';

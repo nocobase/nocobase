@@ -1,5 +1,5 @@
 import XLSX from 'xlsx';
-import { BaseExporter, ExportOptions } from './services/base-exporter';
+import { BaseExporter, ExportOptions } from './base-exporter';
 import { NumberField } from '@nocobase/database';
 
 type ExportColumn = {
@@ -12,7 +12,7 @@ type XlsxExportOptions = Omit<ExportOptions, 'fields'> & {
   columns: Array<ExportColumn>;
 };
 
-class XlsxExporter extends BaseExporter<XlsxExportOptions & { fields: Array<Array<string>> }> {
+export class XlsxExporter extends BaseExporter<XlsxExportOptions & { fields: Array<Array<string>> }> {
   /**
    * You can adjust the maximum number of exported rows based on business needs and system
    * available resources. However, please note that you need to fully understand the risks
@@ -94,5 +94,3 @@ class XlsxExporter extends BaseExporter<XlsxExportOptions & { fields: Array<Arra
 function isNumeric(n) {
   return !isNaN(parseFloat(n)) && isFinite(n);
 }
-
-export default XlsxExporter;

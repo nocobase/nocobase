@@ -9,7 +9,7 @@
 
 import { createMockServer, MockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
-import XlsxExporter from '../xlsx-exporter';
+import { XlsxExporter } from '../services/xlsx-exporter';
 import XLSX from 'xlsx';
 import fs from 'fs';
 import path from 'path';
