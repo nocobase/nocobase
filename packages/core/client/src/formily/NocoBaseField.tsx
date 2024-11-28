@@ -28,6 +28,7 @@ export const NocoBaseField = <D extends JSXComponent, C extends JSXComponent>(
 
   // update componentProps to rerender field component
   Object.assign(field.componentProps, fieldSchema['x-component-props']);
+  field.value = props.value;
 
   return (
     <FieldContext.Provider value={field as any}>
