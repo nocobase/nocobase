@@ -9,7 +9,6 @@
 
 import { IFieldProps } from '@formily/core';
 import { JSXComponent, Schema } from '@formily/react';
-import { define, observable } from '@formily/reactive';
 import { toArr } from '@formily/shared';
 
 export function createNocoBaseField<Decorator extends JSXComponent, Component extends JSXComponent>(props: any) {
@@ -70,7 +69,7 @@ class NocoBaseField<
   constructor(props: any) {
     this.props = props;
     this.initialize();
-    this.makeObservable();
+    // this.makeObservable();
   }
 
   protected initialize() {
@@ -121,9 +120,9 @@ class NocoBaseField<
     this.form = {};
   }
 
-  protected makeObservable() {
-    define(this, {
-      componentProps: observable,
-    });
-  }
+  // protected makeObservable() {
+  //   define(this, {
+  //     componentProps: observable,
+  //   });
+  // }
 }

@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Form, GeneralField, isVoidField } from '@formily/core';
+import { Form, GeneralField } from '@formily/core';
 import { RenderPropsChildren, SchemaComponentsContext } from '@formily/react';
-import { observer } from '@formily/reactive-react';
 import { FormPath, isFn } from '@formily/shared';
 import React, { Fragment, useContext } from 'react';
 interface IReactiveFieldProps {
@@ -41,7 +40,7 @@ const NocoBaseReactiveInternal: React.FC<IReactiveFieldProps> = (props) => {
   if (!props.field) {
     return <Fragment>{renderChildren(props.children)}</Fragment>;
   }
-  const field = props.field;
+  const field: any = props.field;
   const content = mergeChildren(
     renderChildren(props.children, field, field.form),
     field.content ?? field.componentProps.children,
@@ -62,27 +61,8 @@ const NocoBaseReactiveInternal: React.FC<IReactiveFieldProps> = (props) => {
 
   const renderComponent = () => {
     if (!field.componentType) return content;
-    const value = !isVoidField(field) ? field.value : undefined;
-    const onChange = !isVoidField(field)
-      ? (...args: any[]) => {
-          field.onInput(...args);
-          field.componentProps?.onChange?.(...args);
-        }
-      : field.componentProps?.onChange;
-    const onFocus = !isVoidField(field)
-      ? (...args: any[]) => {
-          field.onFocus(...args);
-          field.componentProps?.onFocus?.(...args);
-        }
-      : field.componentProps?.onFocus;
-    const onBlur = !isVoidField(field)
-      ? (...args: any[]) => {
-          field.onBlur(...args);
-          field.componentProps?.onBlur?.(...args);
-        }
-      : field.componentProps?.onBlur;
-    const disabled = !isVoidField(field) ? field.pattern === 'disabled' || field.pattern === 'readPretty' : undefined;
-    const readOnly = !isVoidField(field) ? field.pattern === 'readOnly' : undefined;
+    const disabled = true;
+    const readOnly = true;
 
     return React.createElement(
       getComponent(field.componentType),
@@ -90,10 +70,7 @@ const NocoBaseReactiveInternal: React.FC<IReactiveFieldProps> = (props) => {
         disabled,
         readOnly,
         ...field.componentProps,
-        value,
-        onChange,
-        onFocus,
-        onBlur,
+        value: field.value,
       },
       content,
     );
@@ -108,8 +85,6 @@ NocoBaseReactiveInternal.displayName = 'NocoBaseReactiveInternal';
  * Based on @formily/react v2.3.2 NocoBaseReactiveField component
  * Modified to better adapt to NocoBase's needs
  */
-export const NocoBaseReactiveField = observer(NocoBaseReactiveInternal, {
-  forwardRef: true,
-});
+export const NocoBaseReactiveField = NocoBaseReactiveInternal;
 
 NocoBaseReactiveField.displayName = 'NocoBaseReactiveField';
