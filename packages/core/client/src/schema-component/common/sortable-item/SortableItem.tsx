@@ -121,7 +121,7 @@ export const SortableItem: React.FC<SortableItemProps> = React.memo((props) => {
 
   return React.createElement(
     component || 'div',
-    _.omit(others, ['children', 'schema', 'overStyle', 'style', 'openMode', 'id', 'eid', 'removeParentsIfNoChildren']),
+    _.omit(others, ['children', 'schema', 'overStyle', 'openMode', 'id', 'eid', 'removeParentsIfNoChildren']),
     props.children,
   );
 });

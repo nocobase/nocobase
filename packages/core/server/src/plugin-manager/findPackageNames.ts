@@ -35,6 +35,7 @@ async function trim(packageNames: string[]) {
 const excludes = [
   '@nocobase/plugin-audit-logs',
   '@nocobase/plugin-backup-restore',
+  '@nocobase/plugin-charts',
   '@nocobase/plugin-disable-pm-add',
   '@nocobase/plugin-mobile-client',
   '@nocobase/plugin-mock-collections',

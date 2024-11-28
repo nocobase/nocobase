@@ -118,6 +118,8 @@ export class PluginClientServer extends Plugin {
         },
       },
     });
+
+    this.app.auditManager.registerActions(['app:restart', 'app:clearCache']);
   }
 }
 

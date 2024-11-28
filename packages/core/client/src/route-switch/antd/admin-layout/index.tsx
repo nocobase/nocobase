@@ -408,9 +408,9 @@ const theme = {
   },
 };
 
-const pageContentStyle = {
+const pageContentStyle: React.CSSProperties = {
   flex: 1,
-  overflow: 'hidden',
+  overflowY: 'auto',
 };
 
 export const LayoutContent = () => {
