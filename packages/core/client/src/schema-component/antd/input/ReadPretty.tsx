@@ -289,6 +289,5 @@ ReadPretty.JSON = (props: JSONTextAreaReadPrettyProps) => {
 ReadPretty.Input = withPopupWrapper(ReadPretty.Input);
 ReadPretty.TextArea = withPopupWrapper(ReadPretty.TextArea);
 ReadPretty.Html = withPopupWrapper(ReadPretty.Html);
-ReadPretty.URL = withPopupWrapper(ReadPretty.URL);
 ReadPretty.Preview = withPopupWrapper(ReadPretty.Preview);
 ReadPretty.JSON = withPopupWrapper(ReadPretty.JSON);

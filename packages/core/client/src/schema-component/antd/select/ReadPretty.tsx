@@ -15,6 +15,7 @@ import React, { useEffect, useState } from 'react';
 import { useCollectionField } from '../../../data-source/collection-field/CollectionFieldProvider';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 import { FieldNames, defaultFieldNames, getCurrentOptions } from './utils';
+import { withPopupWrapper } from '../../common/withPopupWrapper';
 
 export interface SelectReadPrettyProps {
   value: any;
@@ -27,7 +28,7 @@ export interface SelectReadPrettyProps {
   fieldNames?: FieldNames;
 }
 
-export const ReadPretty = observer(
+const ReadPrettyInternal = observer(
   (props: SelectReadPrettyProps) => {
     const [loading, setLoading] = useState(true);
     const [content, setContent] = useState<React.ReactNode[]>([]);
@@ -51,7 +52,7 @@ export const ReadPretty = observer(
       }
 
       const content = currentOptions.map((option, index) => (
-        <Tag key={index} color={option[fieldNames.color]} icon={option.icon}>
+        <Tag key={index} color={option[fieldNames.color]} icon={option.icon} style={{ color: 'inherit' }}>
           {option[fieldNames.label]}
         </Tag>
       ));
@@ -75,3 +76,5 @@ export const ReadPretty = observer(
   },
   { displayName: 'SelectReadPretty' },
 );
+
+export const ReadPretty = withPopupWrapper(ReadPrettyInternal);

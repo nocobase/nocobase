@@ -35,6 +35,7 @@ import { useIsShowMultipleSwitch } from '../../../../schema-settings/hooks/useIs
 import { useLocalVariables, useVariables } from '../../../../variables';
 import { useOpenModeContext } from '../../../popup/OpenModeProvider';
 import { useDataBlockProps } from '../../../../data-source';
+import { enableLinkSettingsItem, openModeSettingsItem } from '../Input/inputComponentSettings';
 
 const enableLink = {
   name: 'enableLink',
@@ -382,6 +383,14 @@ export const selectComponentFieldSettings = new SchemaSettings({
         return useIsAssociationField() && readPretty;
       },
     },
+    {
+      ...enableLinkSettingsItem,
+      useVisible() {
+        const readPretty = useIsFieldReadPretty();
+        return !useIsAssociationField() && readPretty;
+      },
+    },
+    openModeSettingsItem,
   ],
 });
 

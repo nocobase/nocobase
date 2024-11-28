@@ -104,29 +104,26 @@ export const enableLinkSettingsItem: SchemaSettingsItemType = {
   },
 };
 
+export const openModeSettingsItem: SchemaSettingsItemType = {
+  name: 'openMode',
+  Component: SchemaSettingOpenModeSchemaItems,
+  useComponentProps() {
+    const { hideOpenMode } = useOpenModeContext();
+    const { fieldSchema } = useColumnSchema();
+
+    return {
+      openMode: !hideOpenMode,
+      openSize: !hideOpenMode,
+      targetSchema: fieldSchema,
+    };
+  },
+  useVisible() {
+    const field = useField();
+    const { fieldSchema } = useColumnSchema();
+    return (fieldSchema?.['x-read-pretty'] || field.readPretty) && fieldSchema?.['x-component-props']?.enableLink;
+  },
+};
 export const inputComponentSettings = new SchemaSettings({
   name: 'fieldSettings:component:Input',
-  items: [
-    ellipsisSettingsItem,
-    enableLinkSettingsItem,
-    {
-      name: 'openMode',
-      Component: SchemaSettingOpenModeSchemaItems,
-      useComponentProps() {
-        const { hideOpenMode } = useOpenModeContext();
-        const { fieldSchema } = useColumnSchema();
-
-        return {
-          openMode: !hideOpenMode,
-          openSize: !hideOpenMode,
-          targetSchema: fieldSchema,
-        };
-      },
-      useVisible() {
-        const field = useField();
-        const { fieldSchema } = useColumnSchema();
-        return (fieldSchema?.['x-read-pretty'] || field.readPretty) && fieldSchema?.['x-component-props']?.enableLink;
-      },
-    },
-  ],
+  items: [ellipsisSettingsItem, enableLinkSettingsItem, openModeSettingsItem],
 });

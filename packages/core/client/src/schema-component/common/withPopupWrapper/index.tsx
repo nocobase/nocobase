@@ -36,7 +36,6 @@ function withPopupWrapper<T>(WrappedComponent: React.ComponentType<T>) {
   return (props: T) => {
     const [visible, setVisible] = useState(false);
     const [formValueChanged, setFormValueChanged] = useState(false);
-
     const insertPopup = useInsertSchema();
     const collection = useCollection();
     const ctx = useActionContext();
@@ -47,7 +46,6 @@ function withPopupWrapper<T>(WrappedComponent: React.ComponentType<T>) {
       insertPopup(popupSchema);
       setVisible(true);
     };
-
     return enableLink ? (
       <a onClick={handleClick}>
         <WrappedComponent {...props} />
