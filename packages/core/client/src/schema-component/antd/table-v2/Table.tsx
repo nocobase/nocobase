@@ -49,6 +49,7 @@ import { HighPerformanceSpin } from '../../common/high-performance-spin/HighPerf
 import { useToken } from '../__builtins__';
 import { useAssociationFieldContext } from '../association-field/hooks';
 import { DelayRender } from './DelayRender';
+import { RenderTextInCell } from './RenderTextInCell';
 import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 
@@ -182,7 +183,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
         }, []);
         const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : columnSchema.name;
         const columnHidden = !!columnSchema['x-component-props']?.['columnHidden'];
-        const { uiSchema, defaultValue } = collection?.getField(dataIndex) || {};
+        const { uiSchema, defaultValue, interface: _interface } = collection?.getField(dataIndex) || {};
 
         if (uiSchema) {
           uiSchema.default = defaultValue;
@@ -204,6 +205,15 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
           ...columnSchema['x-component-props'],
           width: columnHidden && !designable ? 0 : columnSchema['x-component-props']?.width || 100,
           render: (value, record, index) => {
+            if (['sequence', 'input', 'textarea', 'phone', 'email'].includes(_interface)) {
+              return (
+                <RenderTextInCell
+                  value={value}
+                  ellipsis={Object.values(columnSchema.properties)[0]?.['x-component-props']?.ellipsis}
+                />
+              );
+            }
+
             return (
               <TableCellRender
                 record={record}
