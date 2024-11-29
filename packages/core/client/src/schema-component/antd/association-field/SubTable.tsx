@@ -64,7 +64,7 @@ const subTableContainer = css`
 `;
 
 const tableClassName = css`
-  .ant-formily-item.ant-formily-item-feedback-layout-loose {
+  .ant-formily-item-feedback-layout-popover {
     margin-bottom: 0px !important;
   }
   .ant-formily-editable {
@@ -201,7 +201,6 @@ export const SubTable: any = observer(
               <SubFormProvider value={{ value: null, collection, fieldSchema: fieldSchema.parent, skip: true }}>
                 <Table
                   className={tableClassName}
-                  bordered
                   size={'small'}
                   field={field}
                   showIndex
