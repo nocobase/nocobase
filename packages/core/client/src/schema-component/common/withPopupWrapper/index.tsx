@@ -11,7 +11,7 @@ import React, { useState, useCallback } from 'react';
 import { RecursionField, useFieldSchema, useField } from '@formily/react';
 import { cloneDeep } from 'lodash';
 import { popupSchema } from './schema';
-import { useDesignable, useActionContext, ActionContext, SchemaComponentOptions } from '../../';
+import { useDesignable, useActionContext, ActionContext, SchemaComponentOptions, ActionContextProvider } from '../../';
 import { CollectionProvider, useCollection } from '../../../data-source';
 
 export const useInsertSchema = () => {
@@ -49,7 +49,7 @@ function withPopupWrapper<T>(WrappedComponent: React.ComponentType<T>) {
     return enableLink ? (
       <a onClick={handleClick}>
         <WrappedComponent {...props} />
-        <ActionContext.Provider
+        <ActionContextProvider
           value={{
             ...ctx,
             formValueChanged,
@@ -76,7 +76,7 @@ function withPopupWrapper<T>(WrappedComponent: React.ComponentType<T>) {
               />
             </SchemaComponentOptions>
           </CollectionProvider>
-        </ActionContext.Provider>
+        </ActionContextProvider>
       </a>
     ) : (
       <WrappedComponent {...props} />
