@@ -54,16 +54,16 @@ jobs:
               sleep 10
             done
             if [[ "$plugins" == "[]" ]]; then
-              echo "Get empty result, command: $1, attempts: $i"
+              echo "Get empty result, attempts: $i"
               exit 1
             fi
             echo $plugins
           }
-          echo "all-plugins=$(retry gh search repos 'props.plugin-type:custom,rc,beta,alpha,unreleased' --owner=nocobase --json name | jq -r 'map(.name) | tostring')" >> "$GITHUB_OUTPUT"
-          echo "custom-plugins=$(retry gh search repos 'props.plugin-type:custom' --owner=nocobase --json name | jq -r 'map(.name) | tostring')" >> "$GITHUB_OUTPUT"
-          echo "rc-plugins=$(retry gh search repos 'props.plugin-type:rc' --owner=nocobase --json name | jq -r 'map(.name) | tostring')" >> "$GITHUB_OUTPUT"
-          echo "beta-plugins=$(retry gh search repos 'props.plugin-type:beta,rc' --owner=nocobase --json name | jq -r 'map(.name) | tostring')" >> "$GITHUB_OUTPUT"
-          echo "alpha-plugins=$(retry gh search repos 'props.plugin-type:alpha,beta,rc' --owner=nocobase --json name | jq -r 'map(.name) | tostring')" >> "$GITHUB_OUTPUT"
-          echo "unreleased-plugins=$(retry gh search repos 'props.plugin-type:unreleased' --owner=nocobase --json name | jq -r 'map(.name) | tostring')" >> "$GITHUB_OUTPUT"
+          echo "all-plugins=$(retry $(gh search repos 'props.plugin-type:custom,rc,beta,alpha,unreleased' --owner=nocobase --json name | jq -r 'map(.name) | tostring'))" >> "$GITHUB_OUTPUT"
+          echo "custom-plugins=$(retry $(gh search repos 'props.plugin-type:custom' --owner=nocobase --json name | jq -r 'map(.name) | tostring'))" >> "$GITHUB_OUTPUT"
+          echo "rc-plugins=$(retry $(gh search repos 'props.plugin-type:rc' --owner=nocobase --json name | jq -r 'map(.name) | tostring'))" >> "$GITHUB_OUTPUT"
+          echo "beta-plugins=$(retry $(gh search repos 'props.plugin-type:beta,rc' --owner=nocobase --json name | jq -r 'map(.name) | tostring'))" >> "$GITHUB_OUTPUT"
+          echo "alpha-plugins=$(retry $(gh search repos 'props.plugin-type:alpha,beta,rc' --owner=nocobase --json name | jq -r 'map(.name) | tostring'))" >> "$GITHUB_OUTPUT"
+          echo "unreleased-plugins=$(retry $(gh search repos 'props.plugin-type:unreleased' --owner=nocobase --json name | jq -r 'map(.name) | tostring'))" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
