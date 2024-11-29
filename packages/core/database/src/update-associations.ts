@@ -350,7 +350,9 @@ export async function updateSingleAssociation(
       }
 
       if (updateAssociationValues.includes(key)) {
-        await instance.update(value, { ...options, transaction });
+        const updateValues = { ...value };
+        delete updateValues[association.foreignKey];
+        await instance.update(updateValues, { ...options, transaction });
       }
 
       await updateAssociations(instance, value, {
