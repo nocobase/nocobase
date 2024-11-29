@@ -111,7 +111,9 @@ export const openModeSettingsItem: SchemaSettingsItemType = {
   Component: SchemaSettingOpenModeSchemaItems,
   useComponentProps() {
     const { hideOpenMode } = useOpenModeContext();
-    const { fieldSchema } = useColumnSchema();
+    const { fieldSchema: columnSchema } = useColumnSchema();
+    const schema = useFieldSchema();
+    const fieldSchema = columnSchema || schema;
 
     return {
       openMode: !hideOpenMode,
@@ -121,7 +123,9 @@ export const openModeSettingsItem: SchemaSettingsItemType = {
   },
   useVisible() {
     const field = useField();
-    const { fieldSchema } = useColumnSchema();
+    const { fieldSchema: columnSchema } = useColumnSchema();
+    const schema = useFieldSchema();
+    const fieldSchema = columnSchema || schema;
     return (fieldSchema?.['x-read-pretty'] || field.readPretty) && fieldSchema?.['x-component-props']?.enableLink;
   },
 };
