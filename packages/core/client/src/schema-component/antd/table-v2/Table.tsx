@@ -339,6 +339,8 @@ const SortableRow = (props: BodyRowComponentProps) => {
     />
   );
 
+  return row;
+
   if (rowIndex < INITIAL_ROWS_NUMBER) {
     return row;
   }
