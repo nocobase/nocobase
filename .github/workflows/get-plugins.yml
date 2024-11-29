@@ -44,8 +44,8 @@ jobs:
         shell: bash
         run: |
           function retry() {
-            local i = 0
-            local plugins = "[]"
+            local i=0
+            local plugins="[]"
             until [ "$i" -ge 2 ]
             do
               plugins=$($@) && [[ "$plugins" != "[]" ]] && break
