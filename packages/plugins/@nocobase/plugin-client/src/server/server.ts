@@ -8,11 +8,12 @@
  */
 
 import { Plugin } from '@nocobase/server';
+import fs from 'fs';
+import * as process from 'node:process';
 import { resolve } from 'path';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
-import * as process from 'node:process';
 
 async function getLang(ctx) {
   const SystemSetting = ctx.db.getRepository('systemSettings');
@@ -69,6 +70,25 @@ export class PluginClientServer extends Plugin {
       actions: ['app:restart', 'app:clearCache'],
     });
     const dialect = this.app.db.sequelize.getDialect();
+
+    this.app.use(
+      async (ctx, next) => {
+        if (ctx.path === '/api/favicon.ico') {
+          ctx.withoutDataWrapping = true;
+          const { APP_PACKAGE_ROOT } = process.env;
+          console.log(ctx.cookies.get('app'));
+          const fileStream = fs.createReadStream(resolve(APP_PACKAGE_ROOT, 'client/public/favicon/favicon.ico'));
+          ctx.set('Content-Type', 'image/x-icon');
+          ctx.set('Cache-Control', 'public, max-age=0');
+          ctx.body = fileStream;
+          return;
+        }
+        await next();
+      },
+      {
+        tag: 'favicon',
+      },
+    );
 
     this.app.resource({
       name: 'app',
