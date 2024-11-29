@@ -13,7 +13,7 @@ import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sor
 import { css, cx } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
-import { Schema, SchemaOptionsContext, observer, useField, useFieldSchema } from '@formily/react';
+import { observer, Schema, SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
@@ -24,7 +24,15 @@ import _, { omit } from 'lodash';
 import React, { FC, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInView } from 'react-intersection-observer';
-import { DndContext, isBulkEditAction, useDesignable, usePopupSettings, useTableSize } from '../..';
+import {
+  DndContext,
+  isBulkEditAction,
+  SchemaComponentContext,
+  useDesignable,
+  useNewRefreshContext,
+  usePopupSettings,
+  useTableSize,
+} from '../..';
 import {
   BlockRequestLoadingContext,
   RecordIndexProvider,
@@ -830,6 +838,8 @@ export const Table: any = withDynamicSchemaProps(
 
       const highlightRow = useMemo(() => (onClickRow ? highlightRowCss : ''), [highlightRowCss, onClickRow]);
 
+      const newRefreshContext = useNewRefreshContext();
+
       const onRow = useMemo(() => {
         if (onClickRow) {
           return (record, rowIndex) => {
@@ -1088,25 +1098,27 @@ export const Table: any = withDynamicSchemaProps(
            * so setting a fixed value here improves BlockRequestLoadingContext rendering performance
            */}
           <BlockRequestLoadingContext.Provider value={false}>
-            <InternalNocoBaseTable
-              tableHeight={tableHeight}
-              SortableWrapper={SortableWrapper}
-              tableSizeRefCallback={tableSizeRefCallback}
-              defaultRowKey={defaultRowKey}
-              dataSource={dataSource}
-              {...others}
-              {...restProps}
-              paginationProps={paginationProps}
-              components={components}
-              onTableChange={onTableChange}
-              onRow={onRow}
-              rowClassName={rowClassName}
-              scroll={scroll}
-              columns={columns}
-              expandable={expandable}
-              field={field}
-              size={size}
-            />
+            <SchemaComponentContext.Provider value={newRefreshContext}>
+              <InternalNocoBaseTable
+                tableHeight={tableHeight}
+                SortableWrapper={SortableWrapper}
+                tableSizeRefCallback={tableSizeRefCallback}
+                defaultRowKey={defaultRowKey}
+                dataSource={dataSource}
+                {...others}
+                {...restProps}
+                paginationProps={paginationProps}
+                components={components}
+                onTableChange={onTableChange}
+                onRow={onRow}
+                rowClassName={rowClassName}
+                scroll={scroll}
+                columns={columns}
+                expandable={expandable}
+                field={field}
+                size={size}
+              />
+            </SchemaComponentContext.Provider>
           </BlockRequestLoadingContext.Provider>
         </HighPerformanceSpin>
       );

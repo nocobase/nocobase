@@ -243,7 +243,7 @@ export const useIsInNocoBaseRecursionFieldContext = () => {
  * Based on @formily/react v2.3.2 RecursionField component
  * Modified to better adapt to NocoBase's needs
  */
-export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = React.memo((props) => {
+export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = (props) => {
   const {
     schema,
     name,
@@ -333,6 +333,4 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
       <RefreshProvider refresh={refresh}>{render()}</RefreshProvider>
     </SchemaContext.Provider>
   );
-});
-
-NocoBaseRecursionField.displayName = 'NocoBaseRecursionField';
+};
