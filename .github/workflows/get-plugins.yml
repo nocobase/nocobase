@@ -55,7 +55,7 @@ jobs:
             done
             echo $plugins
           }
-          allPlugins=$(retry aaa)
+          allPlugins=$(retry custom,rc,beta,alpha,unreleased)
           if [[ "$allPlugins" == "[]" ]]; then
             echo "Get all plugins empty"
             exit 1
