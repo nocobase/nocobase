@@ -48,7 +48,7 @@ jobs:
             local plugins = "[]"
             until [ "$i" -ge 2 ]
             do
-              plugins=$($1) && [[ "$plugins" != "[]" ]] && break
+              plugins=$($@) && [[ "$plugins" != "[]" ]] && break
               i=$((i+1))
               sleep 10
             done
