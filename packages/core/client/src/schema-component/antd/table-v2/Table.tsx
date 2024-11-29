@@ -127,7 +127,7 @@ const TableCellRender: FC<{
   schemaToolbarBigger: string;
   field: ArrayField;
   index: number;
-}> = React.memo(({ record, columnSchema, uiSchema, filterProperties, schemaToolbarBigger, field, index }) => {
+}> = ({ record, columnSchema, uiSchema, filterProperties, schemaToolbarBigger, field, index }) => {
   const basePath = field.address.concat(record.__index || index);
 
   return (
@@ -144,9 +144,7 @@ const TableCellRender: FC<{
       />
     </span>
   );
-});
-
-TableCellRender.displayName = 'TableCellRender';
+};
 
 const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginationProps) => {
   const { token } = useToken();
@@ -164,6 +162,14 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
   const { current, pageSize } = paginationProps;
   const hasChangedColumns = useColumnsDeepMemoized(columnsSchemas);
   const { isPopupVisibleControlledByURL } = usePopupSettings();
+
+  // Used to force the component to re-render
+  const [refreshId, setRefreshId] = useState(0);
+  const refresh = useCallback(() => {
+    setRefreshId((v) => v + 1);
+  }, []);
+
+  const newRefreshContext = useNewRefreshContext(refresh);
 
   const filterProperties = useCallback(
     (schema) =>
@@ -200,12 +206,14 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
 
         return {
           title: (
-            <NocoBaseRecursionField
-              name={columnSchema.name}
-              schema={columnSchema}
-              onlyRenderSelf
-              isUseFormilyField={false}
-            />
+            <SchemaComponentContext.Provider value={newRefreshContext}>
+              <NocoBaseRecursionField
+                name={columnSchema.name}
+                schema={columnSchema}
+                onlyRenderSelf
+                isUseFormilyField={false}
+              />
+            </SchemaComponentContext.Provider>
           ),
           dataIndex,
           key: columnSchema.name,
@@ -245,7 +253,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
 
     // 这里不能把 columnsSchema 作为依赖，因为其每次都会变化，这里使用 hasChangedColumns 作为依赖
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [hasChangedColumns, field.address, collection, schemaToolbarBigger, designable, filterProperties],
+    [hasChangedColumns, field.address, collection, schemaToolbarBigger, designable, filterProperties, refreshId],
   );
 
   const tableColumns = useMemo(() => {
@@ -838,8 +846,6 @@ export const Table: any = withDynamicSchemaProps(
 
       const highlightRow = useMemo(() => (onClickRow ? highlightRowCss : ''), [highlightRowCss, onClickRow]);
 
-      const newRefreshContext = useNewRefreshContext();
-
       const onRow = useMemo(() => {
         if (onClickRow) {
           return (record, rowIndex) => {
@@ -1098,27 +1104,25 @@ export const Table: any = withDynamicSchemaProps(
            * so setting a fixed value here improves BlockRequestLoadingContext rendering performance
            */}
           <BlockRequestLoadingContext.Provider value={false}>
-            <SchemaComponentContext.Provider value={newRefreshContext}>
-              <InternalNocoBaseTable
-                tableHeight={tableHeight}
-                SortableWrapper={SortableWrapper}
-                tableSizeRefCallback={tableSizeRefCallback}
-                defaultRowKey={defaultRowKey}
-                dataSource={dataSource}
-                {...others}
-                {...restProps}
-                paginationProps={paginationProps}
-                components={components}
-                onTableChange={onTableChange}
-                onRow={onRow}
-                rowClassName={rowClassName}
-                scroll={scroll}
-                columns={columns}
-                expandable={expandable}
-                field={field}
-                size={size}
-              />
-            </SchemaComponentContext.Provider>
+            <InternalNocoBaseTable
+              tableHeight={tableHeight}
+              SortableWrapper={SortableWrapper}
+              tableSizeRefCallback={tableSizeRefCallback}
+              defaultRowKey={defaultRowKey}
+              dataSource={dataSource}
+              {...others}
+              {...restProps}
+              paginationProps={paginationProps}
+              components={components}
+              onTableChange={onTableChange}
+              onRow={onRow}
+              rowClassName={rowClassName}
+              scroll={scroll}
+              columns={columns}
+              expandable={expandable}
+              field={field}
+              size={size}
+            />
           </BlockRequestLoadingContext.Provider>
         </HighPerformanceSpin>
       );
