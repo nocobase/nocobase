@@ -21,6 +21,7 @@ import { SchemaComponentContext } from '../context';
 import { addAppVersion } from './addAppVersion';
 
 // @ts-ignore
+import { useUpdate } from 'ahooks';
 import clientPkg from '../../../package.json';
 import { useRefreshFieldSchema } from '../../formily/NocoBaseRecursionField';
 
@@ -753,10 +754,12 @@ export function useDesignable() {
     },
     [],
   );
+  const update = useUpdate();
   const refresh = useCallback(() => {
     refreshFromContext?.();
     refreshFieldSchema?.();
-  }, [refreshFromContext, refreshFieldSchema]);
+    update();
+  }, [refreshFromContext, refreshFieldSchema, update]);
   const field = useField();
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();

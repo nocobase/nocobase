@@ -112,7 +112,7 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
 
     const onClose = useCallback(
       (e) => {
-        setVisible(false);
+        setVisible(false, true);
         onCloseFromProps?.(e);
       },
       [setVisible, onCloseFromProps],
