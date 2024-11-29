@@ -28,6 +28,7 @@ import {
   SchemaComponentOptions,
   useFormBlockContext,
   handleDateChangeOnForm,
+  withSkeletonComponent,
 } from '@nocobase/client';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
