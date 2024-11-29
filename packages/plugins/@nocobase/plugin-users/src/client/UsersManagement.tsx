@@ -30,7 +30,6 @@ import { css } from '@emotion/css';
 import { usersSchema, usersSettingsSchema } from './schemas/users';
 import { useUsersTranslation } from './locale';
 import { PasswordField } from './PasswordField';
-import { ProfileFormConfiguration } from './ProfileFormConfiguration';
 
 const useCancelActionProps = () => {
   const { setVisible } = useActionContext();
@@ -197,7 +196,7 @@ const UsersSettingsTab: React.FC = () => {
     <SchemaComponent
       schema={usersSettingsSchema}
       scope={{ t, useFormBlockProps, useSubmitActionProps }}
-      components={{ UsersSettingsProvider, ProfileFormConfiguration }}
+      components={{ UsersSettingsProvider }}
     />
   );
 };

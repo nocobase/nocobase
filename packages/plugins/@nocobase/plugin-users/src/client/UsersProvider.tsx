@@ -25,7 +25,7 @@ import { MenuProps } from 'antd';
 import { useUsersTranslation } from './locale';
 import { uid } from '@formily/shared';
 import { createForm } from '@formily/core';
-import { useForm } from '@formily/react';
+import { useForm, useFieldSchema } from '@formily/react';
 
 const useProfileFormProps = () => {
   const { data } = useCurrentUserContext();
@@ -49,15 +49,20 @@ const useUpdateProfileActionProps = () => {
   const { setVisible } = useActionContext();
   const form = useForm();
   const api = useAPIClient();
+  const actionSchema = useFieldSchema();
 
   return {
     type: 'primary',
     htmlType: 'submit',
     async onClick() {
+      const { triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
       const values = await form.submit<any>();
       setVisible(false);
       await api.resource('users').updateProfile({
         values,
+        triggerWorkflows: triggerWorkflows?.length
+          ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+          : undefined,
       });
       ctx.mutate({
         data: {

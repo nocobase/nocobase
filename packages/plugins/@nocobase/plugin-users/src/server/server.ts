@@ -173,6 +173,15 @@ export default class PluginUsersServer extends Plugin {
       }
     });
 
+    this.app.resourceManager.use(async (ctx, next) => {
+      const { resourceName, actionName } = ctx.action;
+      if (resourceName === 'users' && actionName === 'updateProfile') {
+        // for triggering workflows
+        ctx.action.actionName = 'update';
+      }
+      await next();
+    });
+
     const userDataSyncPlugin = this.app.pm.get('user-data-sync') as PluginUserDataSyncServer;
     if (userDataSyncPlugin && userDataSyncPlugin.enabled) {
       userDataSyncPlugin.resourceManager.registerResource(new UserDataSyncResource(this.db, this.app.logger));
