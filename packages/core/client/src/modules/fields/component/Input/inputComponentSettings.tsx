@@ -79,7 +79,9 @@ export const enableLinkSettingsItem: SchemaSettingsItemType = {
   useComponentProps() {
     const { t } = useTranslation();
     const field = useField();
-    const { fieldSchema } = useColumnSchema();
+    const { fieldSchema: columnSchema } = useColumnSchema();
+    const schema = useFieldSchema();
+    const fieldSchema = columnSchema || schema;
     const { dn } = useDesignable();
     return {
       title: t('Enable link'),

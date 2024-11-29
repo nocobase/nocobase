@@ -30,41 +30,6 @@ import { getTempFieldState } from '../../../../schema-settings/LinkageRules/bind
 import { ActionType } from '../../../../schema-settings/LinkageRules/type';
 import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
 
-const enableLink = {
-  name: 'enableLink',
-  type: 'switch',
-  useVisible() {
-    const field = useField();
-    return field.readPretty;
-  },
-  useComponentProps() {
-    const { t } = useTranslation();
-    const field = useField<Field>();
-    const fieldSchema = useFieldSchema();
-    const { dn } = useDesignable();
-    return {
-      title: t('Enable link'),
-      checked: fieldSchema['x-component-props']?.enableLink,
-      onChange(flag) {
-        fieldSchema['x-component-props'] = {
-          ...fieldSchema?.['x-component-props'],
-          enableLink: flag,
-        };
-        field.componentProps['enableLink'] = flag;
-        dn.emit('patch', {
-          schema: {
-            'x-uid': fieldSchema['x-uid'],
-            'x-component-props': {
-              ...fieldSchema?.['x-component-props'],
-            },
-          },
-        });
-        dn.refresh();
-      },
-    };
-  },
-};
-
 export const fieldSettingsFormItem = new SchemaSettings({
   name: 'fieldSettings:FormItem',
   items: [
@@ -501,7 +466,6 @@ export const fieldSettingsFormItem = new SchemaSettings({
               };
             },
           },
-          enableLink,
           fieldComponentSettingsItem,
         ];
       },
