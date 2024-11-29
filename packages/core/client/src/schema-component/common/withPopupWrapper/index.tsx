@@ -7,11 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { RecursionField, useFieldSchema, useField } from '@formily/react';
 import { cloneDeep } from 'lodash';
 import { popupSchema } from './schema';
-import { useDesignable, useActionContext, ActionContext, SchemaComponentOptions, ActionContextProvider } from '../../';
+import { App } from 'antd';
+import {
+  useDesignable,
+  useActionContext,
+  SchemaComponentOptions,
+  ActionContextProvider,
+  useGetAriaLabelOfAction,
+} from '../../';
+import { PopupVisibleProvider } from '../../antd/page/PagePopups';
+import { usePopupUtils } from '../../antd/page/pagePopupUtils';
+
 import { CollectionProvider, useCollection } from '../../../data-source';
 
 export const useInsertSchema = () => {
@@ -42,27 +52,42 @@ function withPopupWrapper<T>(WrappedComponent: React.ComponentType<T>) {
     const field: any = useField();
     const fieldSchema = useFieldSchema();
     const { enableLink, openMode, openSize } = fieldSchema?.['x-component-props'] || {};
+    const { getAriaLabel } = useGetAriaLabelOfAction(field.title);
+    const { visibleWithURL, setVisibleWithURL } = usePopupUtils();
+    const { openPopup } = usePopupUtils();
+
+    const openPopupRef = useRef(null);
+    openPopupRef.current = openPopup;
+
     const handleClick = () => {
       insertPopup(popupSchema);
-      setVisible(true);
+      openPopupRef.current();
+      console.log(333);
     };
+    const { setSubmitted } = ctx;
+
+    const { modal } = App.useApp();
+
+    const handleVisibleChange = useCallback(
+      (value: boolean): void => {
+        setVisible?.(value);
+        setVisibleWithURL?.(value);
+      },
+      [setVisibleWithURL],
+    );
     return enableLink ? (
-      <a onClick={handleClick}>
-        <WrappedComponent {...props} />
+      <PopupVisibleProvider visible={false}>
         <ActionContextProvider
-          value={{
-            ...ctx,
-            formValueChanged,
-            setFormValueChanged,
-            visible: visible,
-            setVisible: (flag) => {
-              setTimeout(() => {
-                setVisible(flag);
-              });
-            },
-            openMode: openMode,
-            openSize,
-          }}
+          button={<WrappedComponent {...props} />}
+          visible={visible || visibleWithURL}
+          setVisible={handleVisibleChange}
+          formValueChanged={formValueChanged}
+          setFormValueChanged={setFormValueChanged}
+          openMode={openMode}
+          openSize={openSize}
+          containerRefKey={'field-popup'}
+          fieldSchema={fieldSchema}
+          setSubmitted={setSubmitted}
         >
           <CollectionProvider name={collection.name}>
             <SchemaComponentOptions>
@@ -76,8 +101,11 @@ function withPopupWrapper<T>(WrappedComponent: React.ComponentType<T>) {
               />
             </SchemaComponentOptions>
           </CollectionProvider>
+          <a onClick={handleClick}>
+            <WrappedComponent {...props} />
+          </a>
         </ActionContextProvider>
-      </a>
+      </PopupVisibleProvider>
     ) : (
       <WrappedComponent {...props} />
     );
