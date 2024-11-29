@@ -107,7 +107,7 @@ export const useEditProfile = () => {
   const ctx = useContext(DropdownVisibleContext);
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
-  const { data } = useSystemSettings();
+  const { data } = useSystemSettings() || {};
   const { enableEditProfile } = data?.data || {};
   const result = useMemo<MenuProps['items'][0]>(() => {
     return {

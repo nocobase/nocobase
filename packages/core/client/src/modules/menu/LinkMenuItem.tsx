@@ -9,6 +9,7 @@
 
 import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
+import { createMemoryHistory } from 'history';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Router } from 'react-router-dom';
@@ -23,15 +24,16 @@ export const LinkMenuItem = () => {
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
-  const { styles } = useStyles();
+  const { componentCls, hashId } = useStyles();
   const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
 
   const handleClick = useCallback(async () => {
     const values = await FormDialog(
       t('Add link'),
       () => {
+        const history = createMemoryHistory();
         return (
-          <Router location={location} navigator={null}>
+          <Router location={history.location} navigator={history}>
             <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
               <FormLayout layout={'vertical'}>
                 <SchemaComponent
@@ -86,5 +88,5 @@ export const LinkMenuItem = () => {
     });
   }, [insert, options.components, options.scope, t, theme]);
 
-  return <SchemaInitializerItem title={t('Link')} onClick={handleClick} className={styles.menuItem} />;
+  return <SchemaInitializerItem title={t('Link')} onClick={handleClick} className={`${componentCls} ${hashId}`} />;
 };

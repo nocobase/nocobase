@@ -33,7 +33,7 @@ export const MobileActionPage = ({ level, footerNodeName }) => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const ctx = useActionContext();
-  const { styles } = useMobileActionPageStyle();
+  const { componentCls, hashId } = useMobileActionPageStyle();
   const tabContext = useTabsContext();
   const containerDOM = useMemo(() => document.querySelector('.nb-mobile-subpages-slot'), []);
   const parentZIndex = useZIndexContext();
@@ -61,12 +61,12 @@ export const MobileActionPage = ({ level, footerNodeName }) => {
 
   const actionPageNode = (
     <zIndexContext.Provider value={newZIndex}>
-      <div className={styles.container} style={zIndexStyle}>
+      <div className={`${componentCls} ${hashId}`} style={zIndexStyle}>
         <TabsContextProvider {...tabContext} tabBarExtraContent={<BackButtonUsedInSubPage />} tabBarGutter={48}>
           <SchemaComponent components={components} schema={fieldSchema} onlyRenderProperties />
         </TabsContextProvider>
         {footerSchema && (
-          <div className={styles.footer} style={zIndexStyle}>
+          <div className="nb-mobile-action-page-footer" style={zIndexStyle}>
             <RecursionField
               basePath={field.address}
               schema={fieldSchema}

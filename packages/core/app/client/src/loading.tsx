@@ -7,11 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createStyles } from 'antd-style';
+import React from 'react';
+import { Spin } from 'antd';
 
-export const useStyles = createStyles(() => ({
-  mobilePageContent: {
-    maxWidth: '100%',
-    overflowX: 'hidden',
-  },
-}));
+export default function Loading() {
+  return (
+    <Spin
+      style={{
+        width: '100vw',
+        height: '100vh',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    />
+  );
+}

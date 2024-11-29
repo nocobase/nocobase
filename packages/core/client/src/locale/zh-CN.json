@@ -1027,5 +1027,10 @@
   "Add & Update": "添加 & 更新",
   "Table size":"表格大小",
   "Hide column": "隐藏列",
-  "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "在配置模式下，整个列会变为透明色。在非配置模式下，整个列将被隐藏。即使整个列被隐藏了，其配置的默认值和其他设置仍然有效。"
+  "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "在配置模式下，整个列会变为透明色。在非配置模式下，整个列将被隐藏。即使整个列被隐藏了，其配置的默认值和其他设置仍然有效。",
+  "Plugin": "插件",
+  "Bulk enable": "批量激活",
+  "Search plugin...": "搜索插件...",
+  "Package name": "包名",
+  "Associate":"关联"
 }

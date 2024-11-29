@@ -10,11 +10,12 @@
 import { merge } from '@formily/shared';
 import { useRequest as useReq, useSetState } from 'ahooks';
 import { Options, Result } from 'ahooks/es/useRequest/src/types';
+import { SetState } from 'ahooks/lib/useSetState';
 import { AxiosRequestConfig } from 'axios';
 import cloneDeep from 'lodash/cloneDeep';
+import { useMemo } from 'react';
 import { assign } from './assign';
 import { useAPIClient } from './useAPIClient';
-import { SetState } from 'ahooks/lib/useSetState';
 
 type FunctionService = (...args: any[]) => Promise<any>;
 
@@ -72,5 +73,7 @@ export function useRequest<P>(service: UseRequestService<P>, options: UseRequest
   };
 
   const result = useReq<P, any>(tempService, tempOptions);
-  return { ...result, state, setState };
+  return useMemo(() => {
+    return { ...result, state, setState };
+  }, [result, setState, state]);
 }

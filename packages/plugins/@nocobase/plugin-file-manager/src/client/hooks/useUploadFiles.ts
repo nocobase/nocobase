@@ -10,18 +10,16 @@
 import {
   RecordPickerContext,
   useActionContext,
-  useBlockRequestContext,
   useCollection,
   useDataBlockProps,
-  useDataBlockRequest,
+  useDataBlockRequestGetter,
   useSourceId,
-  useSourceIdFromParentRecord,
 } from '@nocobase/client';
 import { useContext, useMemo } from 'react';
 import { useStorageRules } from './useStorageRules';
 
 export const useUploadFiles = () => {
-  const service = useDataBlockRequest();
+  const { getDataBlockRequest } = useDataBlockRequestGetter();
   const { association } = useDataBlockProps();
   const { setVisible } = useActionContext();
   const collection = useCollection();
@@ -51,7 +49,7 @@ export const useUploadFiles = () => {
         if (file.status !== 'uploading' && uploadingFiles[file.uid]) {
           delete uploadingFiles[file.uid];
           if (--pendingNumber === 0) {
-            service?.refresh?.();
+            getDataBlockRequest()?.refresh?.();
             setSelectedRows?.((preRows) => [
               ...preRows,
               ...fileList.filter((file) => file.status === 'done').map((file) => file.response.data),

@@ -104,7 +104,7 @@ export const ChartFilterFormItem = observer(
             <CollectionFieldProvider name={schema.name} allowNull={!schema['x-collection-field']}>
               <ACLCollectionFieldProvider>
                 {/* {exists ? ( */}
-                <ErrorBoundary onError={(err) => console.log(err)} FallbackComponent={ErrorFallback}>
+                <ErrorBoundary onError={console.log} FallbackComponent={ErrorFallback}>
                   <FormItem className={className} {...props} extra={extra} />
                 </ErrorBoundary>
                 {/* ) : ( */}

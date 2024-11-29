@@ -9,14 +9,20 @@
 
 import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import { onFieldInputValueChange } from '@formily/core';
-import { RecursionField, connect, mapProps, observer, useField, useFieldSchema, useForm } from '@formily/react';
+import { connect, mapProps, observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Space, message } from 'antd';
+import { isEqual } from 'lodash';
 import { isFunction } from 'mathjs';
-import { last } from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ClearCollectionFieldContext, RecordProvider, useAPIClient, useCollectionRecordData } from '../../../';
+import {
+  ClearCollectionFieldContext,
+  NocoBaseRecursionField,
+  RecordProvider,
+  useAPIClient,
+  useCollectionRecordData,
+} from '../../../';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { getInnermostKeyAndValue } from '../../common/utils/uitls';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
@@ -83,7 +89,7 @@ const InternalAssociationSelect = observer(
           if (
             linkageFields.includes(fieldPath?.props?.name) &&
             field.value &&
-            last(fieldPath?.indexes) === last(field?.indexes) &&
+            isEqual(fieldPath?.indexes, field?.indexes) &&
             fieldPath?.props?.name !== field.props.name
           ) {
             field.setValue(undefined);
@@ -152,7 +158,7 @@ const InternalAssociationSelect = observer(
             <RecordProvider isNew={true} record={null} parent={recordData}>
               {/* 快捷添加按钮添加的添加的是一个普通的 form 区块（非关系区块），不应该与任何字段有关联，所以在这里把字段相关的上下文给清除掉 */}
               <ClearCollectionFieldContext>
-                <RecursionField
+                <NocoBaseRecursionField
                   onlyRenderProperties
                   basePath={field.address}
                   schema={fieldSchema}

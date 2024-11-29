@@ -22,7 +22,7 @@ export const PageMenuItem = () => {
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
-  const { styles } = useStyles();
+  const { componentCls, hashId } = useStyles();
 
   const handleClick = useCallback(async () => {
     const values = await FormDialog(
@@ -92,5 +92,5 @@ export const PageMenuItem = () => {
       },
     });
   }, [insert, options.components, options.scope, t, theme]);
-  return <SchemaInitializerItem title={t('Page')} onClick={handleClick} className={styles.menuItem} />;
+  return <SchemaInitializerItem title={t('Page')} onClick={handleClick} className={`${componentCls} ${hashId}`} />;
 };

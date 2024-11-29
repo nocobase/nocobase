@@ -9,6 +9,7 @@
 
 import { Plugin } from '@nocobase/client';
 import { useChinaRegionDataSource, useChinaRegionLoadData } from './ChinaRegionProvider';
+import { ChinaRegionFieldInterface } from './chinaRegion';
 
 export class PluginFieldChinaRegionClient extends Plugin {
   async load() {
@@ -16,6 +17,7 @@ export class PluginFieldChinaRegionClient extends Plugin {
       useChinaRegionDataSource,
       useChinaRegionLoadData,
     });
+    this.app.dataSourceManager.addFieldInterfaces([ChinaRegionFieldInterface]);
   }
 }
 

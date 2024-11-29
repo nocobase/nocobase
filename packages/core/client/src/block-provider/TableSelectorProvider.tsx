@@ -102,7 +102,7 @@ const useAssociationNames2 = (collection) => {
 export const recursiveParent = (schema: Schema, component) => {
   return schema['x-component'] === component
     ? schema
-    : schema.parent
+    : schema.parent && schema?.['x-component'] !== 'AssociationField.Viewer'
       ? recursiveParent(schema.parent, component)
       : null;
 };
@@ -292,7 +292,7 @@ export const useTableSelectorProps = () => {
   useEffect(() => {
     if (!ctx?.service?.loading) {
       const data = ctx?.service?.data?.data.map((v) => {
-        return _.omit(v, collectionField?.foreignKey);
+        return v;
       });
       field.value = data;
       field?.setInitialValue?.(data);

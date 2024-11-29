@@ -156,6 +156,45 @@ export default class PluginUsersServer extends Plugin {
       name: `pm.${this.name}`,
       actions: ['users:*'],
     });
+
+    const getMetaDataForUpdateProfileAction = async (ctx: any) => {
+      return {
+        request: {
+          params: ctx.request.params,
+          query: ctx.request.query,
+          body: {
+            ...ctx.request.body,
+            password: '******',
+          },
+          path: ctx.request.path,
+        },
+        response: {
+          body: ctx.body,
+        },
+      };
+    };
+
+    const getSourceAndTargetForUpdateProfileAction = async (ctx: any) => {
+      const { id } = ctx.state.currentUser;
+      let idStr = '';
+      if (typeof id === 'number') {
+        idStr = id.toString();
+      } else if (typeof id === 'string') {
+        idStr = id;
+      }
+      return {
+        targetCollection: 'users',
+        targetRecordUK: idStr,
+      };
+    };
+
+    this.app.auditManager.registerActions([
+      {
+        name: 'users:updateProfile',
+        getMetaData: getMetaDataForUpdateProfileAction,
+        getSourceAndTarget: getSourceAndTargetForUpdateProfileAction,
+      },
+    ]);
   }
 
   async load() {

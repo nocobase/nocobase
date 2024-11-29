@@ -18,10 +18,10 @@ on:
           - main
           - next
         default: main
-  push:
-    branches:
-      - 'main'
-      - 'next'
+  # push:
+  #   branches:
+  #     - 'main'
+  #     - 'next'
 
 jobs:
   push-commit:

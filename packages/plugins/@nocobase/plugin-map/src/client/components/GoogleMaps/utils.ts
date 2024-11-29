@@ -34,6 +34,10 @@ export const getCurrentPosition: () => Promise<{ lat: number; lng: number }> = (
         () => {
           defaultLatLng();
         },
+        {
+          timeout: 2000, // 设置最大等待时间，单位毫秒
+          maximumAge: 0, // 不使用缓存的地理位置
+        },
       );
     } else {
       defaultLatLng();

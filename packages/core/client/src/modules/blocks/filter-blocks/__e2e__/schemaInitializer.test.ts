@@ -97,6 +97,7 @@ test.describe('where filter block can be added', () => {
 
     // 1. 测试用表单筛选关系区块
     await page.getByLabel('action-Action.Link-View record-view-users-table-1').click();
+    await page.waitForTimeout(1000);
     await page.getByLabel('schema-initializer-Grid-popup').hover();
     await page.getByRole('menuitem', { name: 'form Form right' }).hover();
     await page.getByRole('menuitem', { name: 'Roles' }).click();

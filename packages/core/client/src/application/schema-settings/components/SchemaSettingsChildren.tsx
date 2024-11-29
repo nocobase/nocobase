@@ -7,8 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC, memo, useEffect, useMemo, useRef } from 'react';
+import React, { FC, useEffect, useMemo, useRef } from 'react';
 
+import _ from 'lodash';
+import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { useFieldComponentName } from '../../../common/useFieldComponentName';
 import { ErrorFallback, useFindComponent } from '../../../schema-component';
 import {
@@ -27,7 +29,6 @@ import {
 } from '../../../schema-settings/SchemaSettings';
 import { SchemaSettingItemContext } from '../context/SchemaSettingItemContext';
 import { SchemaSettingsItemType } from '../types';
-import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 
 export interface SchemaSettingsChildrenProps {
   children: SchemaSettingsItemType[];
@@ -60,6 +61,10 @@ const SchemaSettingsChildErrorFallback: FC<
   );
 };
 
+const getFallbackComponent = _.memoize((key: string) => {
+  return (props) => <SchemaSettingsChildErrorFallback {...props} title={key} />;
+});
+
 export const SchemaSettingsChildren: FC<SchemaSettingsChildrenProps> = (props) => {
   const { children } = props;
   const { visible } = useSchemaSettings();
@@ -85,11 +90,7 @@ export const SchemaSettingsChildren: FC<SchemaSettingsChildrenProps> = (props) =
           // 一个不会重复的 key，保证每次渲染都是新的组件。
           const key = `${fieldComponentName ? fieldComponentName + '-' : ''}${item?.name}`;
           return (
-            <ErrorBoundary
-              key={key}
-              FallbackComponent={(props) => <SchemaSettingsChildErrorFallback {...props} title={key} />}
-              onError={(err) => console.log(err)}
-            >
+            <ErrorBoundary key={key} FallbackComponent={getFallbackComponent(key)} onError={console.log}>
               <SchemaSettingsChild {...item} />
             </ErrorBoundary>
           );
@@ -101,7 +102,7 @@ export const SchemaSettingsChildren: FC<SchemaSettingsChildrenProps> = (props) =
 const useChildrenDefault = () => undefined;
 const useComponentPropsDefault = () => undefined;
 const useVisibleDefault = () => true;
-export const SchemaSettingsChild: FC<SchemaSettingsItemType> = memo((props) => {
+export const SchemaSettingsChild: FC<SchemaSettingsItemType> = (props) => {
   const {
     useVisible = useVisibleDefault,
     useChildren = useChildrenDefault,
@@ -144,5 +145,4 @@ export const SchemaSettingsChild: FC<SchemaSettingsItemType> = memo((props) => {
       </C>
     </SchemaSettingItemContext.Provider>
   );
-});
-SchemaSettingsChild.displayName = 'SchemaSettingsChild';
+};
