@@ -718,11 +718,14 @@ const InternalNocoBaseTable = React.memo(
                   .ant-table-body {
                     min-height: ${tableHeight}px;
                   }
-                  .ant-table-small .ant-table-cell {
-                    padding: 8px 16px;
+                  .ant-table-cell {
+                    padding: 16px 8px;
                   }
                   .ant-table-middle .ant-table-cell {
-                    padding: 12px 16px;
+                    padding: 12px 8px;
+                  }
+                  .ant-table-small .ant-table-cell {
+                    padding: 8px 8px;
                   }
                 }
               }

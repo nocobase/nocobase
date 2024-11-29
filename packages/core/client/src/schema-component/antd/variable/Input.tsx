@@ -460,7 +460,7 @@ export function Input(props: VariableInputProps) {
         </div>
       ) : (
         <div style={{ flex: 1 }}>
-          {children && isFieldValue ? (
+          {children && (isFieldValue || !nullable) ? (
             children
           ) : ConstantComponent ? (
             <ConstantComponent

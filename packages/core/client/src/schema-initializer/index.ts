@@ -115,7 +115,8 @@ import { TableCollectionFieldInitializer } from '../modules/fields/initializer/T
 import { menuItemInitializer, menuItemInitializer_deprecated } from '../modules/menu/menuItemInitializer';
 import { blockInitializers, blockInitializers_deprecated } from '../modules/page/BlockInitializers';
 import { DividerFormItemInitializer } from '../modules/blocks/other-blocks/divider/DividerFormItemInitializer';
-
+import { AssociateActionInitializer } from '../modules/actions/associate/AssociateActionInitializer';
+import { AssociateActionProvider } from '../modules/actions/associate/AssociateActionProvider';
 import {
   customFormItemInitializers,
   customFormItemInitializers_deprecated,
@@ -185,6 +186,8 @@ export class SchemaInitializerPlugin extends Plugin {
       FilterActionInitializer,
       RefreshActionInitializer,
       DividerFormItemInitializer,
+      AssociateActionInitializer,
+      AssociateActionProvider,
     } as any);
 
     this.app.schemaInitializerManager.add(blockInitializers_deprecated);

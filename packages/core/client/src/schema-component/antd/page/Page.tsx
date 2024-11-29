@@ -95,7 +95,7 @@ const InternalPage = React.memo((props: PageProps) => {
 });
 
 const hiddenStyle = {
-  transform: 'translateX(100%)',
+  transform: 'scale(0)',
 };
 
 export const Page = React.memo((props: PageProps) => {
