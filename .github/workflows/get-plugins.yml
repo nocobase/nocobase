@@ -41,6 +41,7 @@ jobs:
           owner: nocobase
           skip-token-revoke: true
       - id: get-plugins
+        name: Get plugins
         shell: bash
         run: |
           function retry() {
@@ -48,7 +49,7 @@ jobs:
             local plugins="[]"
             until [ "$i" -ge 2 ]
             do
-              plugins=$($@) && [[ "$plugins" != "[]" ]] && break
+              plugins="[]" && [[ "$plugins" != "[]" ]] && break
               i=$((i+1))
               sleep 10
             done
