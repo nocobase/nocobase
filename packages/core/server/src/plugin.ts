@@ -248,13 +248,6 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
     return results;
   }
-
-  private async getPluginBasePath() {
-    if (!this.options.packageName) {
-      return;
-    }
-    return getPluginBasePath(this.options.packageName);
-  }
 }
 
 export default Plugin;
