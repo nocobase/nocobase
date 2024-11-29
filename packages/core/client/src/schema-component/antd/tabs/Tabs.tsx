@@ -11,7 +11,7 @@ import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Tabs as AntdTabs, TabPaneProps, TabsProps } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { useSchemaInitializerRender } from '../../../application';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { Icon } from '../../../icon';
@@ -33,7 +33,8 @@ export const Tabs: any = React.memo((props: TabsProps) => {
   const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
   const contextProps = useTabsContext();
   const { PaneRoot = React.Fragment as React.FC<any> } = contextProps;
-  const newRefreshContext = useNewRefreshContext();
+  const parentRefreshContext = useContext(SchemaComponentContext);
+  const newRefreshContext = useNewRefreshContext(parentRefreshContext.refresh);
 
   const items = useMemo(() => {
     const result = fieldSchema.mapProperties((schema, key: string) => {
