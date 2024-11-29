@@ -390,7 +390,21 @@ export const selectComponentFieldSettings = new SchemaSettings({
         return !useIsAssociationField() && readPretty;
       },
     },
-    openModeSettingsItem,
+    {
+      ...openModeSettingsItem,
+      useVisible() {
+        const field = useField();
+        const isAssociationField = useIsAssociationField();
+        const { fieldSchema: columnSchema } = useColumnSchema();
+        const schema = useFieldSchema();
+        const fieldSchema = columnSchema || schema;
+        return (
+          (fieldSchema?.['x-read-pretty'] || field.readPretty) &&
+          (fieldSchema?.['x-component-props']?.enableLink ||
+            (isAssociationField && fieldSchema?.['x-component-props']?.enableLink !== false))
+        );
+      },
+    },
   ],
 });
 

@@ -18,6 +18,7 @@ import {
 import { useDesignable } from '../../../../schema-component/hooks/useDesignable';
 import { SchemaSettingOpenModeSchemaItems } from '../../../../schema-items';
 import { useOpenModeContext } from '../../../../';
+import { useBlockContext } from '../../../../';
 export const ellipsisSettingsItem: SchemaSettingsItemType = {
   name: 'ellipsis',
   type: 'switch',
@@ -73,8 +74,11 @@ export const enableLinkSettingsItem: SchemaSettingsItemType = {
   type: 'switch',
   useVisible() {
     const field = useField();
-    const { fieldSchema } = useColumnSchema();
-    return fieldSchema?.['x-read-pretty'] || field.readPretty;
+    const { fieldSchema: columnSchema } = useColumnSchema();
+    const schema = useFieldSchema();
+    const fieldSchema = columnSchema || schema;
+    const { name } = useBlockContext();
+    return name !== 'kanban' && (fieldSchema?.['x-read-pretty'] || field.readPretty);
   },
   useComponentProps() {
     const { t } = useTranslation();
