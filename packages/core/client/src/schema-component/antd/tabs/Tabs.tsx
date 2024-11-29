@@ -16,6 +16,7 @@ import { useSchemaInitializerRender } from '../../../application';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { Icon } from '../../../icon';
 import { DndContext, SortableItem } from '../../common';
+import { SchemaComponentContext, useNewRefreshContext } from '../../context';
 import { SchemaComponent } from '../../core';
 import { useDesigner } from '../../hooks/useDesigner';
 import { useTabsContext } from './context';
@@ -32,6 +33,7 @@ export const Tabs: any = React.memo((props: TabsProps) => {
   const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
   const contextProps = useTabsContext();
   const { PaneRoot = React.Fragment as React.FC<any> } = contextProps;
+  const newRefreshContext = useNewRefreshContext();
 
   const items = useMemo(() => {
     const result = fieldSchema.mapProperties((schema, key: string) => {
@@ -58,15 +60,17 @@ export const Tabs: any = React.memo((props: TabsProps) => {
   );
 
   return (
-    <DndContext>
-      <MemoizeTabs
-        {...contextProps}
-        destroyInactiveTabPane
-        tabBarExtraContent={tabBarExtraContent}
-        style={props.style}
-        items={items}
-      />
-    </DndContext>
+    <SchemaComponentContext.Provider value={newRefreshContext}>
+      <DndContext>
+        <MemoizeTabs
+          {...contextProps}
+          destroyInactiveTabPane
+          tabBarExtraContent={tabBarExtraContent}
+          style={props.style}
+          items={items}
+        />
+      </DndContext>
+    </SchemaComponentContext.Provider>
   );
 });
 

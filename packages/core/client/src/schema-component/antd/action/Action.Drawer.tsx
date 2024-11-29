@@ -77,7 +77,7 @@ ActionDrawerContent.displayName = 'ActionDrawerContent';
 
 export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
   (props) => {
-    const { footerNodeName = 'Action.Drawer.Footer', zIndex: _zIndex, ...others } = props;
+    const { footerNodeName = 'Action.Drawer.Footer', zIndex: _zIndex, onClose: onCloseFromProps, ...others } = props;
     const { visible, setVisible, openSize = 'middle', drawerProps } = useActionContext();
     const schema = useFieldSchema();
     const field = useField();
@@ -105,7 +105,13 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
 
     const zIndex = _zIndex || parentZIndex + (props.level || 0);
 
-    const onClose = useCallback(() => setVisible(false, true), [setVisible]);
+    const onClose = useCallback(
+      (e) => {
+        setVisible(false);
+        onCloseFromProps?.(e);
+      },
+      [setVisible, onCloseFromProps],
+    );
     const keepFooterNode = useCallback(
       (s) => {
         return s['x-component'] === footerNodeName;

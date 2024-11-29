@@ -1031,5 +1031,6 @@
   "Plugin": "插件",
   "Bulk enable": "批量激活",
   "Search plugin...": "搜索插件...",
-  "Package name": "包名"
+  "Package name": "包名",
+  "Associate":"关联"
 }
