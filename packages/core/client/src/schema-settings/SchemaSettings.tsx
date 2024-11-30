@@ -527,6 +527,7 @@ export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
             }
             await confirm?.onOk?.();
             delete form.values[fieldSchema.name];
+            dn.refresh({ refreshParentSchema: true });
             removeActiveFieldName?.(fieldSchema.name as string);
             form?.query(new RegExp(`${fieldSchema.parent.name}.${fieldSchema.name}$`)).forEach((field: Field) => {
               // 如果字段被删掉，那么在提交的时候不应该提交这个字段

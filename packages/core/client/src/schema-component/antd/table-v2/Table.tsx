@@ -41,7 +41,7 @@ import {
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { useTableBlockContext } from '../../../block-provider/TableBlockProvider';
 import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
-import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
+import { NocoBaseRecursionField, RefreshComponentProvider } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { withSkeletonComponent } from '../../../hoc/withSkeletonComponent';
 import { LinkageRuleDataKeyMap } from '../../../schema-settings/LinkageRules/type';
@@ -196,12 +196,14 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
 
         return {
           title: (
-            <NocoBaseRecursionField
-              name={columnSchema.name}
-              schema={columnSchema}
-              onlyRenderSelf
-              isUseFormilyField={false}
-            />
+            <RefreshComponentProvider refresh={refresh}>
+              <NocoBaseRecursionField
+                name={columnSchema.name}
+                schema={columnSchema}
+                onlyRenderSelf
+                isUseFormilyField={false}
+              />
+            </RefreshComponentProvider>
           ),
           dataIndex,
           key: columnSchema.name,
