@@ -10,7 +10,7 @@
 import React, { ComponentType, lazy as ReactLazy } from 'react';
 import { Spin } from 'antd';
 import { get } from 'lodash';
-import { useImported } from 'react-imported-component';
+import { useImported, loadableResource } from 'react-imported-component';
 
 /**
  * Lazily loads a React component or multiple components.
@@ -93,9 +93,13 @@ export function useLazy<T = () => any>(
   picker: string | ((module: any) => T),
 ): T {
   const exportPicker = typeof picker === 'function' ? picker : (module) => module[picker];
-  const { imported, loading, loadable } = useImported(importor, exportPicker);
-  if (loading) {
-    throw loadable.resolution;
+  const loadable = loadableResource(importor);
+  if (!loadable.payload) {
+    throw new Promise((resolve, reject) => {
+      loadable.loadIfNeeded();
+      loadable.resolution.then(resolve).catch(reject);
+    });
   }
+  const imported = exportPicker(loadable.payload);
   return imported as T;
 }

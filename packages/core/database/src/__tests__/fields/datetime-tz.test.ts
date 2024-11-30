@@ -133,6 +133,49 @@ describe('date-field', () => {
     await db.close();
   });
 
+  it('should set default value if collection is middle table in belongs to many association', async () => {
+    const middleTable = db.collection({
+      name: 'test_middle',
+      fields: [{ name: 'date1', type: 'datetimeTz', defaultToCurrentTime: true, allowNull: false }],
+    });
+
+    const sourceTable = db.collection({
+      name: 'test_source',
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+        },
+        {
+          name: 'target',
+          target: 'test_target',
+          type: 'belongsToMany',
+          through: 'test_middle',
+        },
+      ],
+    });
+
+    const targetTable = db.collection({
+      name: 'test_target',
+      fields: [
+        { name: 'name', type: 'string' },
+        { name: 'source', target: 'test_source', type: 'belongsToMany', through: 'test_middle' },
+      ],
+    });
+
+    await db.sync();
+
+    const sourceInstance = await sourceTable.repository.create({ values: { name: 'source' } });
+    const targetInstance = await targetTable.repository.create({ values: { name: 'target' } });
+
+    await sourceTable.repository.update({
+      values: {
+        target: [targetInstance.get('id')],
+      },
+      filter: { id: sourceInstance.get('id') },
+    });
+  });
+
   it('should set default to current time', async () => {
     const c1 = db.collection({
       name: 'test11',

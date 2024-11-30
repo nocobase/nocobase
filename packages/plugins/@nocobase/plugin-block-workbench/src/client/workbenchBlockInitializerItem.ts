@@ -14,7 +14,7 @@ import { blockSchema } from './blockSchema';
 export const workbenchBlockInitializerItem: SchemaInitializerItemType = {
   type: 'item',
   name: 'workbenchBlock',
-  icon: 'FileImageOutlined',
+  icon: 'AppstoreAddOutlined',
   useComponentProps() {
     const { t } = useTranslation('@nocobase/plugin-block-workbench');
     const { insert } = useSchemaInitializer();
