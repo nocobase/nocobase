@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { TableOutlined } from '@ant-design/icons';
+import { ProfileOutlined } from '@ant-design/icons';
 import React, { useCallback } from 'react';
 import { useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
 import { useCollectionManager_deprecated } from '../../../../collection-manager';
@@ -50,7 +50,7 @@ export const DetailsBlockInitializer = ({
   return (
     <DataBlockInitializer
       {...itemConfig}
-      icon={<TableOutlined />}
+      icon={<ProfileOutlined />}
       componentType={componentType}
       onCreateBlockSchema={async (options) => {
         if (createBlockSchema) {
