@@ -51,9 +51,12 @@ interface INocoBaseRecursionFieldProps extends IRecursionFieldProps {
 
 const CollectionFieldUISchemaContext = React.createContext<CollectionFieldOptions>({});
 
-const RefreshContext = React.createContext<(options?: { refreshParent?: boolean }) => void>(_.noop);
+const RefreshFieldSchemaContext = React.createContext<(options?: { refreshParent?: boolean }) => void>(_.noop);
 
-const RefreshProvider: FC<{ refresh: (options?: { refreshParent?: boolean }) => void }> = ({ children, refresh }) => {
+const RefreshFieldSchemaProvider: FC<{ refresh: (options?: { refreshParent?: boolean }) => void }> = ({
+  children,
+  refresh,
+}) => {
   const refreshParent = useRefreshFieldSchema();
 
   const value = useCallback(
@@ -66,7 +69,7 @@ const RefreshProvider: FC<{ refresh: (options?: { refreshParent?: boolean }) => 
     [refreshParent, refresh],
   );
 
-  return <RefreshContext.Provider value={value}>{children}</RefreshContext.Provider>;
+  return <RefreshFieldSchemaContext.Provider value={value}>{children}</RefreshFieldSchemaContext.Provider>;
 };
 
 /**
@@ -74,7 +77,7 @@ const RefreshProvider: FC<{ refresh: (options?: { refreshParent?: boolean }) => 
  * @returns
  */
 export const useRefreshFieldSchema = () => {
-  return React.useContext(RefreshContext);
+  return React.useContext(RefreshFieldSchemaContext);
 };
 
 /**
@@ -340,7 +343,7 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
   // some default schema values would also be saved in fieldSchema.
   return (
     <SchemaContext.Provider value={fieldSchema}>
-      <RefreshProvider refresh={refresh}>{render()}</RefreshProvider>
+      <RefreshFieldSchemaProvider refresh={refresh}>{render()}</RefreshFieldSchemaProvider>
     </SchemaContext.Provider>
   );
 });
