@@ -23,13 +23,14 @@ import { addAppVersion } from './addAppVersion';
 // @ts-ignore
 import { useUpdate } from 'ahooks';
 import clientPkg from '../../../package.json';
+import { useRefreshComponent, useRefreshFieldSchema } from '../../formily/NocoBaseRecursionField';
 
 interface CreateDesignableProps {
   current: Schema;
   model?: GeneralField;
   query?: Query;
   api?: APIClient;
-  refresh?: (options?: { refreshParent?: boolean }) => void;
+  refresh?: (options?: { refreshParentSchema?: boolean }) => void;
   onSuccess?: any;
   t?: any;
   /**
@@ -316,7 +317,7 @@ export class Designable {
     return false;
   }
 
-  refresh(options?: { refreshParent?: boolean }) {
+  refresh(options?: { refreshParentSchema?: boolean }) {
     const { refresh } = this.options;
     return refresh?.(options);
   }
@@ -753,11 +754,20 @@ export function useDesignable() {
     [],
   );
   const update = useUpdate();
-  const refresh = useCallback(() => {
-    refreshFromContext?.();
-    // refresh current component
-    update();
-  }, [refreshFromContext, update]);
+  const refreshFieldSchema = useRefreshFieldSchema();
+  const refreshComponent = useRefreshComponent();
+  const refresh = useCallback(
+    (options?: { refreshParentSchema?: boolean }) => {
+      refreshFromContext?.();
+      // refresh current component
+      update();
+      // refresh fieldSchema context value
+      refreshFieldSchema?.(options);
+      // refresh component context value
+      refreshComponent?.();
+    },
+    [refreshFromContext, update, refreshFieldSchema, refreshComponent],
+  );
   const field = useField();
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();

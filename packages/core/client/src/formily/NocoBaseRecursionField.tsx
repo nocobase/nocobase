@@ -51,17 +51,17 @@ interface INocoBaseRecursionFieldProps extends IRecursionFieldProps {
 
 const CollectionFieldUISchemaContext = React.createContext<CollectionFieldOptions>({});
 
-const RefreshFieldSchemaContext = React.createContext<(options?: { refreshParent?: boolean }) => void>(_.noop);
+const RefreshFieldSchemaContext = React.createContext<(options?: { refreshParentSchema?: boolean }) => void>(_.noop);
 
-const RefreshFieldSchemaProvider: FC<{ refresh: (options?: { refreshParent?: boolean }) => void }> = ({
+const RefreshFieldSchemaProvider: FC<{ refresh: (options?: { refreshParentSchema?: boolean }) => void }> = ({
   children,
   refresh,
 }) => {
   const refreshParent = useRefreshFieldSchema();
 
   const value = useCallback(
-    (options?: { refreshParent?: boolean }) => {
-      if (options?.refreshParent) {
+    (options?: { refreshParentSchema?: boolean }) => {
+      if (options?.refreshParentSchema) {
         refreshParent?.();
       }
       refresh();
@@ -70,6 +70,16 @@ const RefreshFieldSchemaProvider: FC<{ refresh: (options?: { refreshParent?: boo
   );
 
   return <RefreshFieldSchemaContext.Provider value={value}>{children}</RefreshFieldSchemaContext.Provider>;
+};
+
+const RefreshComponentContext = React.createContext<() => void>(_.noop);
+
+export const RefreshComponentProvider: FC<{ refresh: () => void }> = ({ children, refresh }) => {
+  return <RefreshComponentContext.Provider value={refresh}>{children}</RefreshComponentContext.Provider>;
+};
+
+export const useRefreshComponent = () => {
+  return React.useContext(RefreshComponentContext);
 };
 
 /**
