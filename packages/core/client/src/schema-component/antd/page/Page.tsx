@@ -29,6 +29,7 @@ import {
   useRouterBasename,
 } from '../../../application/CustomRouterContextProvider';
 import { useDocumentTitle } from '../../../document-title';
+import { RefreshComponentProvider, useRefreshFieldSchema } from '../../../formily/NocoBaseRecursionField';
 import { useGlobalTheme } from '../../../global-theme';
 import { Icon } from '../../../icon';
 import { KeepAliveProvider, useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
@@ -102,6 +103,7 @@ export const Page = React.memo((props: PageProps) => {
   const { active: pageActive } = useKeepAlive();
   const currentTabUid = useCurrentTabUid();
   const tabUidRef = useRef(currentTabUid);
+  const refreshFieldSchema = useRefreshFieldSchema();
 
   if (pageActive) {
     tabUidRef.current = currentTabUid;
@@ -111,7 +113,9 @@ export const Page = React.memo((props: PageProps) => {
     <div className={`${componentCls} ${hashId} ${antTableCell}`} style={pageActive ? null : hiddenStyle}>
       {/* Avoid passing values down to improve rendering performance */}
       <CurrentTabUidContext.Provider value={''}>
-        <InternalPage currentTabUid={tabUidRef.current} className={props.className} />
+        <RefreshComponentProvider refresh={refreshFieldSchema}>
+          <InternalPage currentTabUid={tabUidRef.current} className={props.className} />
+        </RefreshComponentProvider>
       </CurrentTabUidContext.Provider>
     </div>
   );

@@ -10,7 +10,7 @@
 import { Field, GeneralField } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Col, Row } from 'antd';
-import { isArray } from 'lodash';
+import _, { isArray } from 'lodash';
 import template from 'lodash/template';
 import React, { createContext, useContext, useMemo } from 'react';
 import { Link } from 'react-router-dom';
@@ -33,6 +33,7 @@ import {
   useCollectionManager_deprecated,
   useCollection_deprecated,
 } from '../collection-manager';
+import { RefreshComponentProvider } from '../formily/NocoBaseRecursionField';
 import { useSourceId } from '../modules/blocks/useSourceId';
 import { RecordProvider, useRecordIndex } from '../record-provider';
 import { useAssociationNames } from './hooks';
@@ -261,7 +262,8 @@ export const BlockProvider = (props: {
     <BlockContext.Provider value={blockValue}>
       <DataBlockProvider {...(props as any)} params={params} parentRecord={parentRecord || parentRecordFromHook}>
         <BlockRequestProvider_deprecated {...props} updateAssociationValues={updateAssociationValues} params={params}>
-          {props.children}
+          {/* Prevents refreshing of parent components */}
+          <RefreshComponentProvider refresh={_.noop}>{props.children}</RefreshComponentProvider>
         </BlockRequestProvider_deprecated>
       </DataBlockProvider>
     </BlockContext.Provider>
