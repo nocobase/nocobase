@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormOutlined } from '@ant-design/icons';
+import { ProjectOutlined } from '@ant-design/icons';
 import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext, useForm } from '@formily/react';
 import React, { useContext } from 'react';
@@ -131,7 +131,7 @@ export const KanbanBlockInitializer = ({
     <DataBlockInitializer
       {...itemConfig}
       componentType={`Kanban`}
-      icon={<FormOutlined />}
+      icon={<ProjectOutlined />}
       onCreateBlockSchema={async (options) => {
         if (createBlockSchema) {
           return createBlockSchema(options);
