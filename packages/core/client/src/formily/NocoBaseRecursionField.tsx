@@ -280,11 +280,13 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
     const parent = fieldSchema.parent;
     newFieldSchemaRef.current = new Schema(fieldSchema.toJSON(), parent);
 
-    Object.keys(parent.properties).forEach((key) => {
-      if (parent.properties[key] === fieldSchema) {
-        parent.properties[key] = newFieldSchemaRef.current;
-      }
-    });
+    if (parent?.properties) {
+      Object.keys(parent.properties).forEach((key) => {
+        if (parent.properties[key] === fieldSchema) {
+          parent.properties[key] = newFieldSchemaRef.current;
+        }
+      });
+    }
 
     update();
   }, [fieldSchema, update]);
