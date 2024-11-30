@@ -202,7 +202,7 @@ export const tableBlockSettings = new SchemaSettings({
         }, null);
         return {
           title: t('Table size'),
-          value: schema?.['x-component-props']?.size || 'middle',
+          value: schema?.['x-component-props']?.size || 'small',
           options: [
             { label: t('Large'), value: 'large' },
             { label: t('Middle'), value: 'middle' },
