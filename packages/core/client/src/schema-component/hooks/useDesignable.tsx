@@ -23,7 +23,6 @@ import { addAppVersion } from './addAppVersion';
 // @ts-ignore
 import { useUpdate } from 'ahooks';
 import clientPkg from '../../../package.json';
-import { useRefreshFieldSchema } from '../../formily/NocoBaseRecursionField';
 
 interface CreateDesignableProps {
   current: Schema;
@@ -745,7 +744,6 @@ export function useFindComponent() {
 // TODO
 export function useDesignable() {
   const { designable, setDesignable, refresh: refreshFromContext, reset } = useContext(SchemaComponentContext);
-  const refreshFieldSchema = useRefreshFieldSchema();
   const schemaOptions = useContext(SchemaOptionsContext);
   const components = useMemo(() => schemaOptions?.components || {}, [schemaOptions]);
   const DesignableBar = useMemo(
@@ -757,9 +755,9 @@ export function useDesignable() {
   const update = useUpdate();
   const refresh = useCallback(() => {
     refreshFromContext?.();
-    refreshFieldSchema?.();
+    // refresh current component
     update();
-  }, [refreshFromContext, refreshFieldSchema, update]);
+  }, [refreshFromContext, update]);
   const field = useField();
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();

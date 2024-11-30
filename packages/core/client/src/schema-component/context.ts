@@ -27,10 +27,11 @@ export const useNewRefreshContext = (refresh?: () => void) => {
 
   const _refresh = useCallback(
     (options?: { refreshParent?: boolean }) => {
-      // refresh fieldSchema
+      // refresh fieldSchema context value
       refreshFieldSchema(options);
       // refresh current component
       update();
+      // custom refresh
       refresh?.();
     },
     [refreshFieldSchema, update, refresh],
