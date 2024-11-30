@@ -352,7 +352,11 @@ export async function updateSingleAssociation(
 
       if (updateAssociationValues.includes(key)) {
         const updateValues = { ...value };
-        delete updateValues[association.foreignKey];
+
+        if (association.associationType === 'HasOne') {
+          delete updateValues[association.foreignKey];
+        }
+
         await instance.update(updateValues, { ...options, transaction });
       }
 
@@ -542,6 +546,10 @@ export async function updateMultipleAssociation(
         continue;
       }
       if (updateAssociationValues.includes(key)) {
+        if (association.associationType === 'HasMany') {
+          delete item[association.foreignKey];
+        }
+
         await instance.update(item, { ...options, transaction });
       }
       await updateAssociations(instance, item, {
