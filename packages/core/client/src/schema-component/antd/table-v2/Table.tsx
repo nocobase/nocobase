@@ -24,15 +24,7 @@ import _, { omit } from 'lodash';
 import React, { FC, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInView } from 'react-intersection-observer';
-import {
-  DndContext,
-  isBulkEditAction,
-  SchemaComponentContext,
-  useDesignable,
-  useNewRefreshContext,
-  usePopupSettings,
-  useTableSize,
-} from '../..';
+import { DndContext, isBulkEditAction, useDesignable, usePopupSettings, useTableSize } from '../..';
 import {
   BlockRequestLoadingContext,
   RecordIndexProvider,
@@ -169,8 +161,6 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
     setRefreshId((v) => v + 1);
   }, []);
 
-  const newRefreshContext = useNewRefreshContext(refresh);
-
   const filterProperties = useCallback(
     (schema) =>
       isBulkEditAction(schema) || !isPopupVisibleControlledByURL() || schema['x-component'] !== 'Action.Container',
@@ -206,14 +196,12 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
 
         return {
           title: (
-            <SchemaComponentContext.Provider value={newRefreshContext}>
-              <NocoBaseRecursionField
-                name={columnSchema.name}
-                schema={columnSchema}
-                onlyRenderSelf
-                isUseFormilyField={false}
-              />
-            </SchemaComponentContext.Provider>
+            <NocoBaseRecursionField
+              name={columnSchema.name}
+              schema={columnSchema}
+              onlyRenderSelf
+              isUseFormilyField={false}
+            />
           ),
           dataIndex,
           key: columnSchema.name,

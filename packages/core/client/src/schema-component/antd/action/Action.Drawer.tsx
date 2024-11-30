@@ -14,7 +14,6 @@ import classNames from 'classnames';
 import React, { FC, startTransition, useCallback, useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
-import { SchemaComponentContext, useNewRefreshContext } from '../../context';
 import { ErrorFallback } from '../error-fallback';
 import { useCurrentPopupContext } from '../page/PagePopups';
 import { TabsContextProvider, useTabsContext } from '../tabs/context';
@@ -53,7 +52,6 @@ const ActionDrawerContent: FC<{ footerNodeName: string; field: any; schema: any 
       },
       [footerNodeName],
     );
-    const newRefreshContext = useNewRefreshContext();
 
     useEffect(() => {
       startTransition(() => {
@@ -66,14 +64,12 @@ const ActionDrawerContent: FC<{ footerNodeName: string; field: any; schema: any 
     }
 
     return (
-      <SchemaComponentContext.Provider value={newRefreshContext}>
-        <NocoBaseRecursionField
-          basePath={field.address}
-          schema={schema}
-          onlyRenderProperties
-          filterProperties={filterOutFooterNode}
-        />
-      </SchemaComponentContext.Provider>
+      <NocoBaseRecursionField
+        basePath={field.address}
+        schema={schema}
+        onlyRenderProperties
+        filterProperties={filterOutFooterNode}
+      />
     );
   },
 );

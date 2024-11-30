@@ -89,6 +89,9 @@ export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (prop
       scope,
       components,
       reset,
+      /**
+       * @deprecated
+       */
       refresh,
       designable: designableValue,
       setDesignable,

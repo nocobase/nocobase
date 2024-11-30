@@ -16,7 +16,6 @@ import { useSchemaInitializerRender } from '../../../application';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { DndContext } from '../../common';
-import { SchemaComponentContext, useNewRefreshContext } from '../../context';
 import { useDesignable, useProps } from '../../hooks';
 
 export interface ActionBarProps {
@@ -148,13 +147,7 @@ const InternalActionBar: FC = (props: any) => {
 
 export const ActionBar = withDynamicSchemaProps(
   (props: any) => {
-    const newRefreshContext = useNewRefreshContext();
-
-    return (
-      <SchemaComponentContext.Provider value={newRefreshContext}>
-        <InternalActionBar {...props} />
-      </SchemaComponentContext.Provider>
-    );
+    return <InternalActionBar {...props} />;
   },
   { displayName: 'ActionBar' },
 );

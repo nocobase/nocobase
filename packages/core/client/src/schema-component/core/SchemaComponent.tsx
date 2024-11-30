@@ -8,7 +8,7 @@
  */
 
 import { IRecursionFieldProps, ISchemaFieldProps, Schema } from '@formily/react';
-import { useUpdate } from 'ahooks';
+import _ from 'lodash';
 import React, { memo, useContext, useMemo } from 'react';
 import { NocoBaseRecursionField } from '../../formily/NocoBaseRecursionField';
 import { SchemaComponentContext } from '../context';
@@ -49,20 +49,13 @@ const RecursionSchemaComponent = memo((props: ISchemaFieldProps & SchemaComponen
   const { components, scope, schema: _schema, distributed, onChange, ...others } = props;
   const ctx = useContext(SchemaComponentContext);
   const schema = useMemo(() => toSchema(_schema), [_schema]);
-  const refresh = useUpdate();
   const value = useMemo(
     () => ({
       ...ctx,
       distributed: ctx.distributed == false ? false : distributed,
-      refresh: () => {
-        refresh();
-        if (ctx.distributed === false || distributed === false) {
-          ctx.refresh?.();
-        }
-        onChange?.(schema);
-      },
+      refresh: _.noop,
     }),
-    [ctx, distributed, onChange, refresh, schema],
+    [ctx, distributed],
   );
 
   return (

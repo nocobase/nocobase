@@ -10,18 +10,16 @@
 import { Card, CardProps } from 'antd';
 import React, { useMemo } from 'react';
 import { useToken } from '../../../style';
-import { SchemaComponentContext, useNewRefreshContext } from '../../context';
 
 export const BlockItemCard = React.forwardRef<HTMLDivElement, CardProps>(({ children, ...props }, ref) => {
   const { token } = useToken();
   const style = useMemo(() => {
     return { marginBottom: token.marginBlock };
   }, [token.marginBlock]);
-  const newRefreshContext = useNewRefreshContext();
 
   return (
     <Card ref={ref} bordered={false} style={style} {...props}>
-      <SchemaComponentContext.Provider value={newRefreshContext}>{children}</SchemaComponentContext.Provider>
+      {children}
     </Card>
   );
 });

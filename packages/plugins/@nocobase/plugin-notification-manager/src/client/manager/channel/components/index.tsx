@@ -18,8 +18,8 @@ import {
   useAsyncData,
   useSchemaComponentContext,
 } from '@nocobase/client';
-import { Button, Dropdown, Empty, Card } from 'antd';
-import React, { useState } from 'react';
+import { Button, Card, Dropdown, Empty } from 'antd';
+import React, { useMemo, useState } from 'react';
 import channelCollection from '../../../../collections/channel';
 import messageLogCollection from '../../../../collections/messageLog';
 import { useNotificationTranslation } from '../../../locale';
@@ -125,10 +125,11 @@ export const ChannelManager = () => {
   const { t } = useNotificationTranslation();
   const notificationTypes = useNotificationTypes();
   const scCtx = useSchemaComponentContext();
+  const schemaComponentContext = useMemo(() => ({ ...scCtx, designable: false }), [scCtx]);
 
   return (
     <ExtendCollectionsProvider collections={[channelCollection, messageLogCollection]}>
-      <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
+      <SchemaComponentContext.Provider value={schemaComponentContext}>
         <NotificationTypesContext.Provider value={{ channelTypes: notificationTypes }}>
           <Card bordered={false}>
             <SchemaComponent
