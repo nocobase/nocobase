@@ -29,11 +29,13 @@ import {
   BlockRequestLoadingContext,
   RecordIndexProvider,
   RecordProvider,
+  useAssociationNames,
   useCollection,
   useCollectionParentRecordData,
   useDataBlockProps,
   useDataBlockRequest,
   useDataBlockRequestData,
+  useDataBlockRequestGetter,
   useFlag,
   useSchemaInitializerRender,
   useTableSelectorContext,
@@ -138,6 +140,28 @@ const TableCellRender: FC<{
   );
 };
 
+const useRefreshTableColumns = () => {
+  const { params: blockParams, dataSource } = useDataBlockProps() || {};
+  const { getDataBlockRequest } = useDataBlockRequestGetter();
+  const { getAssociationAppends } = useAssociationNames(dataSource);
+  const prevParamsRef = useRef(blockParams);
+
+  // refreshId changes on each refresh, forcing certain useEffect hooks to re-execute
+  const [refreshId, setRefreshId] = useState(0);
+  const refresh = useCallback(() => {
+    setRefreshId((v) => v + 1);
+    const { appends } = getAssociationAppends();
+    const service = getDataBlockRequest();
+
+    if (!_.isEqual(prevParamsRef.current.appends, appends)) {
+      prevParamsRef.current = { ...blockParams, appends };
+      service.run(prevParamsRef.current);
+    }
+  }, [blockParams, getAssociationAppends, getDataBlockRequest]);
+
+  return { refresh, refreshId };
+};
+
 const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginationProps) => {
   const { token } = useToken();
   const field = useArrayField(props);
@@ -154,12 +178,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
   const { current, pageSize } = paginationProps;
   const hasChangedColumns = useColumnsDeepMemoized(columnsSchemas);
   const { isPopupVisibleControlledByURL } = usePopupSettings();
-
-  // Used to force the component to re-render
-  const [refreshId, setRefreshId] = useState(0);
-  const refresh = useCallback(() => {
-    setRefreshId((v) => v + 1);
-  }, []);
+  const { refresh, refreshId } = useRefreshTableColumns();
 
   const filterProperties = useCallback(
     (schema) =>
@@ -253,7 +272,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
     const res = [
       ...columns,
       {
-        title: render(),
+        title: <RefreshComponentProvider refresh={refresh}>{render()}</RefreshComponentProvider>,
         dataIndex: 'TABLE_COLUMN_INITIALIZER',
         key: 'TABLE_COLUMN_INITIALIZER',
         render: designable
