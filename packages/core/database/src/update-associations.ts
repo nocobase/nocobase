@@ -421,7 +421,7 @@ export async function updateMultipleAssociation(
   const createAccessor = association.accessors.create;
 
   if (isUndefinedOrNull(value)) {
-    await model[setAccessor](null, { transaction, context, individualHooks: true });
+    await model[setAccessor](null, { transaction, context, individualHooks: true, validate: false });
     model.setDataValue(key, null);
     return;
   }
@@ -433,7 +433,7 @@ export async function updateMultipleAssociation(
   }
 
   if (isStringOrNumber(value)) {
-    await model[setAccessor](value, { transaction, context, individualHooks: true });
+    await model[setAccessor](value, { transaction, context, individualHooks: true, validate: false });
     return;
   }
 
@@ -472,7 +472,7 @@ export async function updateMultipleAssociation(
   }
 
   // associate targets in lists1
-  await model[setAccessor](setItems, { transaction, context, individualHooks: true });
+  await model[setAccessor](setItems, { transaction, context, individualHooks: true, validate: false });
 
   const newItems = [];
 
