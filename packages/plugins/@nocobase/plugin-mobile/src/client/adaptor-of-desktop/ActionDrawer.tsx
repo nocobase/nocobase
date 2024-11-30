@@ -7,8 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Action, SchemaComponent, useActionContext, useZIndexContext, zIndexContext } from '@nocobase/client';
+import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
+import {
+  Action,
+  NocoBaseRecursionField,
+  SchemaComponent,
+  useActionContext,
+  useZIndexContext,
+  zIndexContext,
+} from '@nocobase/client';
 import { ConfigProvider } from 'antd';
 import { Popup } from 'antd-mobile';
 import { CloseOutline } from 'antd-mobile-icons';
@@ -109,7 +116,7 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
           )}
           {footerSchema ? (
             <div className="nb-mobile-action-drawer-footer" style={isSpecialSchema ? specialStyle : null}>
-              <RecursionField
+              <NocoBaseRecursionField
                 basePath={field.address}
                 schema={fieldSchema}
                 onlyRenderProperties

@@ -8,8 +8,9 @@
  */
 
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
-import { RecursionField, Schema, useFieldSchema } from '@formily/react';
+import { Schema, useFieldSchema } from '@formily/react';
 import {
+  NocoBaseRecursionField,
   PopupContextProvider,
   RecordProvider,
   getLabelFormatValue,
@@ -85,7 +86,7 @@ function Toolbar(props: ToolbarProps) {
   );
   return (
     <CalendarToolbarContext.Provider value={props}>
-      <RecursionField name={toolBarSchema.name} schema={toolBarSchema} />
+      <NocoBaseRecursionField name={toolBarSchema.name} schema={toolBarSchema} />
     </CalendarToolbarContext.Provider>
   );
 }

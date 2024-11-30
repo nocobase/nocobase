@@ -11,7 +11,6 @@ import { css } from '@emotion/css';
 import {
   FieldContext,
   observer,
-  RecursionField,
   SchemaContext,
   SchemaExpressionScopeContext,
   useField,
@@ -23,7 +22,13 @@ import { Menu as AntdMenu, MenuProps } from 'antd';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { createDesignable, DndContext, SchemaComponentContext, SortableItem, useDesignable, useDesigner } from '../..';
-import { Icon, useAPIClient, useParseURLAndParams, useSchemaInitializerRender } from '../../../';
+import {
+  Icon,
+  NocoBaseRecursionField,
+  useAPIClient,
+  useParseURLAndParams,
+  useSchemaInitializerRender,
+} from '../../../';
 import { useCollectMenuItems, useMenuItem } from '../../../hooks/useMenuItem';
 import { useProps } from '../../hooks/useProps';
 import { useMenuTranslation } from './locale';
@@ -348,7 +353,7 @@ const SideMenu = React.memo<any>(
 
     const items = useMemo(() => {
       const result = getMenuItems(() => {
-        return <RecursionField key={uid()} schema={sideMenuSchema} onlyRenderProperties />;
+        return <NocoBaseRecursionField key={uid()} schema={sideMenuSchema} onlyRenderProperties />;
       });
 
       if (designable) {
@@ -728,7 +733,7 @@ Menu.SubMenu = observer(
           </SchemaContext.Provider>
         ),
         children: getMenuItems(() => {
-          return <RecursionField schema={schema} onlyRenderProperties />;
+          return <NocoBaseRecursionField schema={schema} onlyRenderProperties />;
         }),
       };
     }, [field.title, icon, schema, children, Designer]);

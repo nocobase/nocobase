@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RecursionField, useFieldSchema } from '@formily/react';
-import { cx, SchemaToolbarProvider } from '@nocobase/client';
+import { useFieldSchema } from '@formily/react';
+import { cx, NocoBaseRecursionField, SchemaToolbarProvider } from '@nocobase/client';
 import { NavBar } from 'antd-mobile';
 import React, { FC } from 'react';
 
@@ -31,12 +31,12 @@ export const MobilePageNavigationBar: FC = () => {
         back={null}
         left={
           <SchemaToolbarProvider position="left">
-            <RecursionField name="actionBarLeft" schema={fieldSchema} onlyRenderProperties />
+            <NocoBaseRecursionField name="actionBarLeft" schema={fieldSchema} onlyRenderProperties />
           </SchemaToolbarProvider>
         }
         right={
           <SchemaToolbarProvider position="right">
-            <RecursionField name="actionBarRight" schema={fieldSchema} onlyRenderProperties />
+            <NocoBaseRecursionField name="actionBarRight" schema={fieldSchema} onlyRenderProperties />
           </SchemaToolbarProvider>
         }
       >
@@ -44,7 +44,7 @@ export const MobilePageNavigationBar: FC = () => {
       </NavBar>
 
       <SchemaToolbarProvider position="bottom">
-        <RecursionField name="actionBarBottom" schema={fieldSchema} onlyRenderProperties />
+        <NocoBaseRecursionField name="actionBarBottom" schema={fieldSchema} onlyRenderProperties />
       </SchemaToolbarProvider>
     </div>
   );

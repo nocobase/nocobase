@@ -9,11 +9,12 @@
 
 import { FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';
-import { RecursionField, Schema, SchemaOptionsContext, observer, useField, useForm } from '@formily/react';
+import { Schema, SchemaOptionsContext, observer, useField, useForm } from '@formily/react';
 import {
   APIClientProvider,
   FormDialog,
   FormProvider,
+  NocoBaseRecursionField,
   SchemaComponent,
   SchemaComponentOptions,
   css,
@@ -49,7 +50,7 @@ export const Options = observer(
         setSchema(new Schema(template.configurableProperties || {}));
       }
     }, [form.values.type]);
-    return <RecursionField schema={s} />;
+    return <NocoBaseRecursionField schema={s} />;
   },
   { displayName: 'Options' },
 );
