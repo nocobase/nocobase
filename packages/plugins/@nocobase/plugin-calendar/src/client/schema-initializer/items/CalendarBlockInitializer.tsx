@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormOutlined } from '@ant-design/icons';
+import { CalendarOutlined } from '@ant-design/icons';
 import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
 import {
@@ -46,7 +46,7 @@ export const CalendarBlockInitializer = ({
     <DataBlockInitializer
       {...itemConfig}
       componentType={`Calendar`}
-      icon={<FormOutlined />}
+      icon={<CalendarOutlined />}
       onCreateBlockSchema={async (options) => {
         if (createBlockSchema) {
           return createBlockSchema(options);
