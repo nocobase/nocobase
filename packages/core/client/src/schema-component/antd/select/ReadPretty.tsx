@@ -41,15 +41,15 @@ export const ReadPretty = observer(
     if (isArrayField(field) && field?.value?.length === 0) {
       return <div />;
     }
-
     return (
       <div>
         <EllipsisWithTooltip ellipsis={props.ellipsis}>
-          {currentOptions.map((option, key) => (
-            <Tag key={key} color={option[fieldNames.color]} icon={option.icon}>
-              {option[fieldNames.label]}
-            </Tag>
-          ))}
+          {field.value &&
+            currentOptions.map((option, key) => (
+              <Tag key={key} color={option[fieldNames.color]} icon={option.icon}>
+                {option[fieldNames.label]}
+              </Tag>
+            ))}
         </EllipsisWithTooltip>
       </div>
     );
