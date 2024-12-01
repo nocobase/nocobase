@@ -10,6 +10,7 @@
 import { GeneralField, Query } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { useUpdate } from 'ahooks';
 import { message } from 'antd';
 import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
@@ -17,13 +18,12 @@ import set from 'lodash/set';
 import React, { ComponentType, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { APIClient, useAPIClient } from '../../api-client';
+import { useRefreshComponent, useRefreshFieldSchema } from '../../formily/NocoBaseRecursionField';
 import { SchemaComponentContext } from '../context';
 import { addAppVersion } from './addAppVersion';
 
 // @ts-ignore
-import { useUpdate } from 'ahooks';
 import clientPkg from '../../../package.json';
-import { useRefreshComponent, useRefreshFieldSchema } from '../../formily/NocoBaseRecursionField';
 
 interface CreateDesignableProps {
   current: Schema;
