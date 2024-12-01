@@ -54,7 +54,7 @@ module.exports = (cli) => {
       const restart = _.debounce(async () => {
         console.log('restarting...');
         await run('yarn', ['nocobase', 'pm2-restart']);
-      });
+      }, 500);
 
       watcher
         .on('ready', () => {
