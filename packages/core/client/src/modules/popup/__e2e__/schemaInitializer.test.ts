@@ -19,7 +19,7 @@ test.describe('add blocks to the popup', () => {
 
     // 点击 Details -> Current record 选项创建详情区块
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'table Details' }).hover();
+    await page.getByRole('menuitem', { name: 'Details' }).hover();
     await page.getByRole('menuitem', { name: 'Current record' }).click();
     await page.getByLabel('schema-initializer-Grid-details:configureFields-roles').hover();
     await page.getByRole('menuitem', { name: 'Role UID' }).click();
