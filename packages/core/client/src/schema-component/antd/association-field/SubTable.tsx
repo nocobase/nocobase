@@ -62,6 +62,9 @@ const subTableContainer = css`
     transform: translateY(0);
     opacity: 1;
   }
+  .ant-table-cell .ant-formily-item-control {
+    max-width: 100% !important;
+  }
 `;
 
 const tableClassName = css`
