@@ -6,7 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
+const _ = require('lodash');
 const { Command } = require('commander');
 const { isDev, run, postCheck, downloadPro, promptForTs } = require('../util');
 const { existsSync, rmSync } = require('fs');
@@ -51,10 +51,26 @@ module.exports = (cli) => {
         depth: 1, // 只监听第一层目录
       });
 
-      watcher.on('addDir', async (pathname) => {
-        console.log('pathname', pathname);
+      const restart = _.debounce(async () => {
+        console.log('restarting...');
         await run('yarn', ['nocobase', 'pm2-restart']);
       });
+
+      watcher
+        .on('ready', () => {
+          console.log('Initial scan complete.');
+          isReady = true;
+        })
+        .on('addDir', async (pathname) => {
+          console.log('addDir....', isReady);
+          if (!isReady) return;
+          restart();
+        })
+        .on('unlinkDir', async (pathname) => {
+          console.log('unlinkDir....', isReady);
+          if (!isReady) return;
+          restart();
+        });
 
       if (opts.port) {
         process.env.APP_PORT = opts.port;
