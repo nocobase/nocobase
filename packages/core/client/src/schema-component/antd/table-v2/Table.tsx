@@ -28,11 +28,13 @@ import {
   BlockRequestLoadingContext,
   RecordIndexProvider,
   RecordProvider,
+  useAssociationNames,
   useCollection,
   useCollectionParentRecordData,
   useDataBlockProps,
   useDataBlockRequest,
   useDataBlockRequestData,
+  useDataBlockRequestGetter,
   useFlag,
   useSchemaInitializerRender,
   useTableSelectorContext,
@@ -40,7 +42,7 @@ import {
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { useTableBlockContext } from '../../../block-provider/TableBlockProvider';
 import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
-import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
+import { NocoBaseRecursionField, RefreshComponentProvider } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { withSkeletonComponent } from '../../../hoc/withSkeletonComponent';
 import { LinkageRuleDataKeyMap } from '../../../schema-settings/LinkageRules/type';
@@ -118,7 +120,7 @@ const TableCellRender: FC<{
   schemaToolbarBigger: string;
   field: ArrayField;
   index: number;
-}> = React.memo(({ record, columnSchema, uiSchema, filterProperties, schemaToolbarBigger, field, index }) => {
+}> = ({ record, columnSchema, uiSchema, filterProperties, schemaToolbarBigger, field, index }) => {
   const basePath = field.address.concat(record.__index || index);
 
   return (
@@ -135,9 +137,29 @@ const TableCellRender: FC<{
       />
     </span>
   );
-});
+};
 
-TableCellRender.displayName = 'TableCellRender';
+const useRefreshTableColumns = () => {
+  const { params: blockParams, dataSource } = useDataBlockProps() || {};
+  const { getDataBlockRequest } = useDataBlockRequestGetter();
+  const { getAssociationAppends } = useAssociationNames(dataSource);
+  const prevParamsRef = useRef(blockParams);
+
+  // refreshId changes on each refresh, forcing certain useEffect hooks to re-execute
+  const [refreshId, setRefreshId] = useState(0);
+  const refresh = useCallback(() => {
+    setRefreshId((v) => v + 1);
+    const { appends } = getAssociationAppends();
+    const service = getDataBlockRequest();
+
+    if (!_.isEqual(prevParamsRef.current.appends, appends)) {
+      prevParamsRef.current = { ...blockParams, appends };
+      service.run(prevParamsRef.current);
+    }
+  }, [blockParams, getAssociationAppends, getDataBlockRequest]);
+
+  return { refresh, refreshId };
+};
 
 const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginationProps) => {
   const { token } = useToken();
@@ -155,6 +177,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
   const { current, pageSize } = paginationProps;
   const hasChangedColumns = useColumnsDeepMemoized(columnsSchemas);
   const { isPopupVisibleControlledByURL } = usePopupSettings();
+  const { refresh, refreshId } = useRefreshTableColumns();
 
   const filterProperties = useCallback(
     (schema) =>
@@ -191,12 +214,14 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
 
         return {
           title: (
-            <NocoBaseRecursionField
-              name={columnSchema.name}
-              schema={columnSchema}
-              onlyRenderSelf
-              isUseFormilyField={false}
-            />
+            <RefreshComponentProvider refresh={refresh}>
+              <NocoBaseRecursionField
+                name={columnSchema.name}
+                schema={columnSchema}
+                onlyRenderSelf
+                isUseFormilyField={false}
+              />
+            </RefreshComponentProvider>
           ),
           dataIndex,
           key: columnSchema.name,
@@ -245,7 +270,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
 
     // 这里不能把 columnsSchema 作为依赖，因为其每次都会变化，这里使用 hasChangedColumns 作为依赖
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [hasChangedColumns, field.address, collection, schemaToolbarBigger, designable, filterProperties],
+    [hasChangedColumns, field.address, collection, schemaToolbarBigger, designable, filterProperties, refreshId],
   );
 
   const tableColumns = useMemo(() => {
@@ -255,7 +280,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
     const res = [
       ...columns,
       {
-        title: render(),
+        title: <RefreshComponentProvider refresh={refresh}>{render()}</RefreshComponentProvider>,
         dataIndex: 'TABLE_COLUMN_INITIALIZER',
         key: 'TABLE_COLUMN_INITIALIZER',
         render: designable
@@ -816,7 +841,7 @@ export const Table: any = withDynamicSchemaProps(
       } = { ...others1, ...others2 } as any;
       const field = useArrayField(others);
       const schema = useFieldSchema();
-      const { size = 'middle' } = schema?.['x-component-props'] || {};
+      const { size = 'small' } = schema?.['x-component-props'] || {};
       const collection = useCollection();
       const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
       const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();

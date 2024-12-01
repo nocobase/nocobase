@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RecursionField, useField, useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import {
   BackButtonUsedInSubPage,
+  NocoBaseRecursionField,
   SchemaComponent,
   TabsContextProvider,
   useActionContext,
@@ -67,7 +68,7 @@ export const MobileActionPage = ({ level, footerNodeName }) => {
         </TabsContextProvider>
         {footerSchema && (
           <div className="nb-mobile-action-page-footer" style={zIndexStyle}>
-            <RecursionField
+            <NocoBaseRecursionField
               basePath={field.address}
               schema={fieldSchema}
               onlyRenderProperties

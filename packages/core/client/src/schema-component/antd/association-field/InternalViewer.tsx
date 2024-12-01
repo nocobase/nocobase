@@ -155,7 +155,7 @@ const RenderRecord = React.memo(
       ellipsisWithTooltipRef,
       enableLink,
       fieldNames?.label,
-      fieldSchema?.properties,
+      fieldSchema,
       getLabelUiSchema,
       insertViewer,
       isTreeCollection,

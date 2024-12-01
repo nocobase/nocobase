@@ -13,6 +13,7 @@ import classNames from 'classnames';
 // @ts-ignore
 import React, { FC, startTransition, useCallback, useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { ErrorFallback } from '../error-fallback';
 import { useCurrentPopupContext } from '../page/PagePopups';
 import { TabsContextProvider, useTabsContext } from '../tabs/context';
@@ -63,7 +64,7 @@ const ActionDrawerContent: FC<{ footerNodeName: string; field: any; schema: any 
     }
 
     return (
-      <MemoizeRecursionField
+      <NocoBaseRecursionField
         basePath={field.address}
         schema={schema}
         onlyRenderProperties
@@ -107,7 +108,7 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
 
     const onClose = useCallback(
       (e) => {
-        setVisible(false);
+        setVisible(false, true);
         onCloseFromProps?.(e);
       },
       [setVisible, onCloseFromProps],

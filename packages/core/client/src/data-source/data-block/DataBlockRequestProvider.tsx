@@ -225,10 +225,27 @@ export const useDataBlockRequest = <T extends {}>(): UseRequestResult<{ data: T 
 };
 
 /**
- * Compared to `useDataBlockRequest`, the advantage of this hook is that it prevents unnecessary re-renders.
- * For example, if you only need to use methods like `refresh` or `run`, it's recommended to use this hook,
- * as it avoids component re-rendering when re-triggering requests.
- * @returns
+ * Compared to `useDataBlockRequest`, this Hook helps prevent unnecessary re-renders.
+ *
+ * This Hook returns a stable function reference that won't change between renders. When you only need
+ * methods like `refresh` or `run`, using this Hook is recommended because:
+ *
+ * 1. It returns a memoized object containing only the getter function
+ * 2. The getter function accesses the latest request data through a ref, avoiding re-renders
+ * 3. Unlike useDataBlockRequest which returns request state directly, this Hook provides indirect access
+ *    through a getter, breaking the reactive dependency chain
+ *
+ * For example:
+ * ```ts
+ * // This will re-render when request state changes
+ * const { refresh } = useDataBlockRequest();
+ *
+ * // This won't re-render when request state changes
+ * const { getDataBlockRequest } = useDataBlockRequestGetter();
+ * const refresh = getDataBlockRequest().refresh;
+ * ```
+ *
+ * @returns An object containing the getDataBlockRequest method that provides access to the request instance
  */
 export const useDataBlockRequestGetter = () => {
   const contextRef = useContext(BlockRequestRefContext);

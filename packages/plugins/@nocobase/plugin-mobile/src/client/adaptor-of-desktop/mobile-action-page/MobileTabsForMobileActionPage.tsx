@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { observer, useField, useFieldSchema } from '@formily/react';
 import {
   css,
   DndContext,
   Icon,
+  NocoBaseRecursionField,
   SchemaComponent,
   SortableItem,
   Tabs as TabsOfPC,
@@ -54,7 +55,9 @@ export const MobileTabsForMobileActionPage: any = observer(
 
     const items = useMemo(() => {
       const result = fieldSchema.mapProperties((schema, key) => {
-        return <Tabs.Tab title={<RecursionField name={key} schema={schema} onlyRenderSelf />} key={key}></Tabs.Tab>;
+        return (
+          <Tabs.Tab title={<NocoBaseRecursionField name={key} schema={schema} onlyRenderSelf />} key={key}></Tabs.Tab>
+        );
       });
 
       return result;

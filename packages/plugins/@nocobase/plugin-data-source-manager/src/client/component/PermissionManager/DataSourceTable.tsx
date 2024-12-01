@@ -41,12 +41,13 @@ export const useAvailableActions = () => {
   return useContext(AvailableActionsContext);
 };
 
+const schemaComponentContext = { designable: false };
 export const DataSourceTable = () => {
   const record = useRecord();
   const plugin = usePlugin(PluginDataSourceManagerClient);
   return (
     <div>
-      <SchemaComponentContext.Provider value={{ designable: false }}>
+      <SchemaComponentContext.Provider value={schemaComponentContext}>
         <AvailableActionsProver>
           <SchemaComponent
             schema={dataSourceSchema(plugin.getExtendedTabs())}

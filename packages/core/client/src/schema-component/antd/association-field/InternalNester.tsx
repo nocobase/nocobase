@@ -54,9 +54,11 @@ export const InternalNester = observer(
       labelWidth = 120,
       labelWrap = true,
     } = fieldSchema?.['x-component-props'] || {};
+
     useEffect(() => {
       insertNester(schema.Nester);
     }, []);
+
     return (
       <CollectionProvider_deprecated name={collectionField.target}>
         <ACLCollectionProvider actionPath={`${collectionField.target}:${actionName || 'view'}`}>

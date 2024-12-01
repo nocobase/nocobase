@@ -186,8 +186,10 @@ export const ConfigurationTable = () => {
       });
     });
   };
+  const schemaComponentContext = useMemo(() => ({ ...ctx, designable: false, dataSourceData }), [ctx, dataSourceData]);
+
   return (
-    <SchemaComponentContext.Provider value={{ ...ctx, designable: false, dataSourceData }}>
+    <SchemaComponentContext.Provider value={schemaComponentContext}>
       <SchemaComponent
         schema={collectionSchema}
         components={{

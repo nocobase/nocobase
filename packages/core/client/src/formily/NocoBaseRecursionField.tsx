@@ -24,7 +24,7 @@ import {
 import { isBool, isFn, isValid, merge } from '@formily/shared';
 import { useUpdate } from 'ahooks';
 import _ from 'lodash';
-import React, { FC, Fragment, useCallback, useMemo } from 'react';
+import React, { FC, Fragment, useCallback, useMemo, useRef } from 'react';
 import { CollectionFieldOptions } from '../data-source/collection/Collection';
 import { useCollectionManager } from '../data-source/collection/CollectionManagerProvider';
 import { useCollection } from '../data-source/collection/CollectionProvider';
@@ -51,14 +51,17 @@ interface INocoBaseRecursionFieldProps extends IRecursionFieldProps {
 
 const CollectionFieldUISchemaContext = React.createContext<CollectionFieldOptions>({});
 
-const RefreshContext = React.createContext<(options?: { refreshParent?: boolean }) => void>(_.noop);
+const RefreshFieldSchemaContext = React.createContext<(options?: { refreshParentSchema?: boolean }) => void>(_.noop);
 
-const RefreshProvider: FC<{ refresh: (options?: { refreshParent?: boolean }) => void }> = ({ children, refresh }) => {
+const RefreshFieldSchemaProvider: FC<{ refresh: (options?: { refreshParentSchema?: boolean }) => void }> = ({
+  children,
+  refresh,
+}) => {
   const refreshParent = useRefreshFieldSchema();
 
   const value = useCallback(
-    (options?: { refreshParent?: boolean }) => {
-      if (options?.refreshParent) {
+    (options?: { refreshParentSchema?: boolean }) => {
+      if (options?.refreshParentSchema) {
         refreshParent?.();
       }
       refresh();
@@ -66,7 +69,17 @@ const RefreshProvider: FC<{ refresh: (options?: { refreshParent?: boolean }) => 
     [refreshParent, refresh],
   );
 
-  return <RefreshContext.Provider value={value}>{children}</RefreshContext.Provider>;
+  return <RefreshFieldSchemaContext.Provider value={value}>{children}</RefreshFieldSchemaContext.Provider>;
+};
+
+const RefreshComponentContext = React.createContext<() => void>(_.noop);
+
+export const RefreshComponentProvider: FC<{ refresh: () => void }> = ({ children, refresh }) => {
+  return <RefreshComponentContext.Provider value={refresh}>{children}</RefreshComponentContext.Provider>;
+};
+
+export const useRefreshComponent = () => {
+  return React.useContext(RefreshComponentContext);
 };
 
 /**
@@ -74,7 +87,7 @@ const RefreshProvider: FC<{ refresh: (options?: { refreshParent?: boolean }) => 
  * @returns
  */
 export const useRefreshFieldSchema = () => {
-  return React.useContext(RefreshContext);
+  return React.useContext(RefreshFieldSchemaContext);
 };
 
 /**
@@ -125,10 +138,6 @@ const useBasePath = (props: IRecursionFieldProps) => {
   }
   return props.basePath || parent?.address;
 };
-
-const createSchemaInstance = _.memoize((schema: ISchema): Schema => {
-  return new Schema(schema);
-});
 
 const createMergedSchemaInstance = (schema: Schema, uiSchema: ISchema, onlyRenderProperties: boolean) => {
   const clonedSchema = schema.toJSON();
@@ -257,14 +266,30 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
     uiSchema,
   } = props;
   const basePath = useBasePath(props);
-  const fieldSchema = createSchemaInstance(schema);
+  const newFieldSchemaRef = useRef(null);
+  const oldFieldSchema = useMemo(() => {
+    newFieldSchemaRef.current = null;
+    return new Schema(schema);
+  }, [schema]);
   const { uiSchema: collectionFiledUiSchema, defaultValue } = useCollectionFieldUISchema();
   const update = useUpdate();
 
+  const fieldSchema: Schema = newFieldSchemaRef.current || oldFieldSchema;
+
   const refresh = useCallback(() => {
-    createSchemaInstance.cache.delete(schema);
+    const parent = fieldSchema.parent;
+    newFieldSchemaRef.current = new Schema(fieldSchema.toJSON(), parent);
+
+    if (parent?.properties) {
+      Object.keys(parent.properties).forEach((key) => {
+        if (parent.properties[key] === fieldSchema) {
+          parent.properties[key] = newFieldSchemaRef.current;
+        }
+      });
+    }
+
     update();
-  }, [schema, update]);
+  }, [fieldSchema, update]);
 
   // Merge default Schema of collection fields
   const mergedFieldSchema = useMemo(() => {
@@ -330,7 +355,7 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
   // some default schema values would also be saved in fieldSchema.
   return (
     <SchemaContext.Provider value={fieldSchema}>
-      <RefreshProvider refresh={refresh}>{render()}</RefreshProvider>
+      <RefreshFieldSchemaProvider refresh={refresh}>{render()}</RefreshFieldSchemaProvider>
     </SchemaContext.Provider>
   );
 });

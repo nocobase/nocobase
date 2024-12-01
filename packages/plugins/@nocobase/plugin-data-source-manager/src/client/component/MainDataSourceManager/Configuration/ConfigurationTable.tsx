@@ -28,7 +28,7 @@ import {
   useRecord,
 } from '@nocobase/client';
 import { getPickerFormat } from '@nocobase/utils/client';
-import React, { useContext, useState } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CollectionFields } from './CollectionFields';
 import { collectionSchema } from './schemas/collections';
@@ -212,8 +212,10 @@ export const ConfigurationTable = () => {
   };
 
   const ctx = useContext(SchemaComponentContext);
+  const schemaComponentContext = useMemo(() => ({ ...ctx, designable: false }), [ctx]);
+
   return (
-    <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
+    <SchemaComponentContext.Provider value={schemaComponentContext}>
       <SchemaComponent
         schema={collectionSchema}
         components={{
