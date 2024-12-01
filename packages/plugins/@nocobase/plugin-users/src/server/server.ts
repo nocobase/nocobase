@@ -278,6 +278,9 @@ export default class PluginUsersServer extends Plugin {
 
   async initProfileSchema() {
     const uiSchemas = this.db.getRepository<UiSchemaRepository>('uiSchemas');
+    if (!uiSchemas) {
+      return;
+    }
     await uiSchemas.insert(adminProfileCreateFormSchema);
     await uiSchemas.insert(adminProfileEditFormSchema);
     await uiSchemas.insert(userProfileEditFormSchema);
