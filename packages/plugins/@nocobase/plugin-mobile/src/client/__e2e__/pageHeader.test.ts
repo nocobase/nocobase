@@ -172,7 +172,7 @@ test.describe('PageHeader', () => {
     test('Item：add and remove', async ({ page }) => {
       // 添加页面内容
       await page.getByLabel('schema-initializer-Grid-mobile:addBlock').hover();
-      await page.getByRole('menuitem', { name: 'form Markdown' }).click();
+      await page.getByRole('menuitem', { name: 'Markdown' }).click();
       await expect(page.getByLabel('block-item-Markdown.Void-')).toBeVisible();
 
       await page.getByLabel('action-Action-undefined').click();
