@@ -284,8 +284,8 @@ export class Application {
   async load() {
     try {
       this.loading = true;
-      await this.pm.load();
       await this.loadWebSocket();
+      await this.pm.load();
     } catch (error) {
       if (this.ws.enabled) {
         await new Promise((resolve) => {
