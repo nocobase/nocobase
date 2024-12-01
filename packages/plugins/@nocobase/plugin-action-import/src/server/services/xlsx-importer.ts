@@ -241,6 +241,10 @@ export class XlsxImporter extends EventEmitter {
       rows.shift();
     }
 
+    if (rows.length === 0) {
+      throw new Error(`Empty file`);
+    }
+
     const headers = rows[0];
 
     const columns = this.options.columns;

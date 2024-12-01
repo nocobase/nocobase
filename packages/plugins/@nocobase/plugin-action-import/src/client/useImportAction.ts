@@ -25,11 +25,15 @@ import { NAMESPACE } from './constants';
 import { useImportContext } from './context';
 import { ImportStatus } from './ImportModal';
 import { useEffect } from 'react';
+import { useFields } from './useFields';
+import { initImportSettings } from './ImportActionInitializer';
+import { useImportActionContext } from './ImportActionContext';
 
 const useImportSchema = (s: Schema) => {
   let schema = s;
   while (schema && schema['x-action'] !== 'importXlsx') {
     schema = schema.parent;
+    console.log('schema', schema);
   }
   return { schema };
 };
@@ -43,13 +47,11 @@ const toArr = (v: any) => {
 
 export const useDownloadXlsxTemplateAction = () => {
   const { service, resource } = useBlockRequestContext();
-  const apiClient = useAPIClient();
-  const actionSchema = useFieldSchema();
   const compile = useCompile();
   const { getCollectionJoinField, getCollectionField } = useCollectionManager_deprecated();
   const { name, title, getField } = useCollection_deprecated();
   const { t } = useTranslation(NAMESPACE);
-  const { schema: importSchema } = useImportSchema(actionSchema);
+  const { fieldSchema: importSchema } = useImportActionContext();
   return {
     async run() {
       const { importColumns, explain } = lodash.cloneDeep(
@@ -94,24 +96,23 @@ export const useDownloadXlsxTemplateAction = () => {
   };
 };
 
-export const useImportStartAction = () => {
+export const useImportStartAction = ({ setVisible, fieldSchema: importSchema, form }) => {
   const { service, resource } = useBlockRequestContext();
   const apiClient = useAPIClient();
-  const actionSchema = useFieldSchema();
   const compile = useCompile();
   const { getCollectionJoinField, getCollectionField } = useCollectionManager_deprecated();
   const { name, title, getField } = useCollection_deprecated();
   const { t } = useTranslation(NAMESPACE);
-  const { schema: importSchema } = useImportSchema(actionSchema);
-  const form = useForm();
-  const { setVisible, fieldSchema } = useActionContext();
+  const fields = useFields(name);
   const { setImportModalVisible, setImportStatus, setImportResult } = useImportContext();
   const { upload } = form.values;
   const dataBlockProps = useDataBlockProps() || ({} as any);
   const headers = useDataSourceHeaders(dataBlockProps.dataSource);
+
   useEffect(() => {
     form.reset();
   }, []);
+
   return {
     async run() {
       const { importColumns, explain } = lodash.cloneDeep(
@@ -159,6 +160,5 @@ export const useImportStartAction = () => {
         setVisible(true);
       }
     },
-    disabled: upload?.length === 0 || form.errors?.length > 0,
   };
 };
