@@ -10,12 +10,12 @@
 import { App, Button, Result, Typography } from 'antd';
 import React, { FC, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DEFAULT_DATA_SOURCE_KEY } from '../../data-source/data-source/DataSourceManager';
 import { EllipsisWithTooltip, useCompile, useDesignable } from '../../schema-component';
-import { BlockItemCard } from '../../schema-component/antd/block-item/BlockItemCard';
-import { useCollection } from '../collection';
-import { useDataSourceManager } from '../data-source';
 import { useDataSource } from '../data-source/DataSourceProvider';
+import { useDataSourceManager } from '../data-source';
+import { DEFAULT_DATA_SOURCE_KEY } from '../../data-source/data-source/DataSourceManager';
+import { useCollection } from '../collection';
+import { BlockItemCard } from '../../schema-component/antd/block-item/BlockItemCard';
 
 export interface CollectionDeletedPlaceholderProps {
   type: 'Collection' | 'Field' | 'Data Source' | 'Block template';

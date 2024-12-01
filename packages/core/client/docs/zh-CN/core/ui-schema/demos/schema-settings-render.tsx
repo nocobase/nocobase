@@ -11,11 +11,11 @@ import {
   SchemaSettingsModalItem,
   createDesignable,
   useAPIClient,
+  useRefreshFieldSchema,
   useSchemaSettings,
   useSchemaSettingsRender,
 } from '@nocobase/client';
 import React, { useMemo } from 'react';
-import { useRefreshFieldSchema } from '../../../../../src/formily/NocoBaseRecursionField';
 
 class PluginHello extends Plugin {
   async load() {
