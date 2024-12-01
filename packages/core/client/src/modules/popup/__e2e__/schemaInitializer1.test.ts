@@ -88,7 +88,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await expect(page.getByText('test8')).toBeVisible();
 
     // add blocks
-    await addBlock(['table Details right', 'Current record']);
+    await addBlock(['Details right', 'Current record']);
     await addBlock(['form Form (Edit)']);
     await addBlock(['Markdown']);
 
@@ -116,7 +116,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     // add relationship blocks
-    await addBlock(['table Details right', 'Associated records', 'Many to one']);
+    await addBlock(['Details right', 'Associated records', 'Many to one']);
     await expect(page.getByLabel('block-item-CardItem-users-')).toBeVisible();
     await addBlock(['table Table right', 'Associated records', 'One to many']);
     await expect(page.getByLabel('block-item-CardItem-users-table')).toBeVisible();
@@ -192,7 +192,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     // add relationship blocks
     // 下拉列表中，可选择以下区块进行创建
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
-    await expect(page.getByRole('menuitem', { name: 'table Details right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Details right' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'form Form (Edit)' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'form Form (Add new) right' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'form Form (Add new) right' })).toBeVisible();
@@ -258,7 +258,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     // add relationship blocks
     // 下拉列表中，可选择以下区块进行创建
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
-    await expect(page.getByRole('menuitem', { name: 'table Details right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Details right' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'form Form (Edit)' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'form Form (Add new) right' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'form Form (Add new) right' })).toBeVisible();
