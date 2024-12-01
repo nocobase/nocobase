@@ -9,8 +9,8 @@
 
 import React from 'react';
 
-import { render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import { CollectionDeletedPlaceholder, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import { App } from 'antd';
 
 function renderAppOptions(name?: any, designable?: boolean) {
