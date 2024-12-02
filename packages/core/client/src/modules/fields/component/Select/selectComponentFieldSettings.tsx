@@ -386,8 +386,9 @@ export const selectComponentFieldSettings = new SchemaSettings({
     {
       ...enableLinkSettingsItem,
       useVisible() {
+        const collectionField = useCollectionField();
         const readPretty = useIsFieldReadPretty();
-        return !useIsAssociationField() && readPretty;
+        return !useIsAssociationField() && readPretty && collectionField.interface !== 'multipleSelect';
       },
     },
     {
