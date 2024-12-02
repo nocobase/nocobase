@@ -22,6 +22,7 @@ import {
   SchemaComponentOptions,
   Uploader,
   useActionContext,
+  useDesignable,
 } from '../..';
 import {
   TableSelectorParamsProvider,
@@ -157,6 +158,7 @@ const InternalFileManager = (props) => {
   const [selectedRows, setSelectedRows] = useState([]);
   const insertSelector = useInsertSchema('Selector');
   const fieldNames = useFieldNames(props);
+  const { designable } = useDesignable();
   const field: any = useField();
   const [options, setOptions] = useState([]);
   const { getField } = useCollection_deprecated();
@@ -167,7 +169,11 @@ const InternalFileManager = (props) => {
   const handleSelect = (ev) => {
     ev.stopPropagation();
     ev.preventDefault();
-    insertSelector(schema.Selector);
+    if (designable) {
+      insertSelector(schema.Selector);
+    } else {
+      fieldSchema.addProperty('selector', schema.Selector);
+    }
     setVisibleSelector(true);
     setSelectedRows([]);
   };
