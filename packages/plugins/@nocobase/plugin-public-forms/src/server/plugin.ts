@@ -162,11 +162,17 @@ export class PluginPublicFormsServer extends Plugin {
       return next();
     }
     const { resourceName, actionName } = ctx.action;
+    const collection = this.db.getCollection(resourceName);
     if (actionName === 'create' && ctx.PublicForm['collectionName'] === resourceName) {
       ctx.permission = {
         skip: true,
       };
-    } else if (actionName === 'list' && ctx.PublicForm['targetCollections'].includes(resourceName)) {
+    } else if (
+      (actionName === 'list' && ctx.PublicForm['targetCollections'].includes(resourceName)) ||
+      (collection.options.template === 'file' && actionName === 'create') ||
+      (resourceName === 'storages' && actionName === 'getRules') ||
+      (resourceName === 'map-configuration' && actionName === 'get')
+    ) {
       ctx.permission = {
         skip: true,
       };
