@@ -63,7 +63,6 @@ jobs:
             exit 1
           fi
           rcPlugins=$(retry rc)
-          rcPlugins=$(retry custom)
           if [[ "$rcPlugins" == "[]" ]]; then
             echo "Get rc plugins empty"
             exit 1
