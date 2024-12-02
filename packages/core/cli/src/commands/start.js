@@ -61,11 +61,20 @@ module.exports = (cli) => {
         return;
       }
       await postCheck(opts);
-      deleteSockFiles();
+      if (!opts.daemon) {
+        deleteSockFiles();
+      }
       const instances = opts.instances || process.env.CLUSTER_MODE;
       const instancesArgs = instances ? ['-i', instances] : [];
       if (opts.daemon) {
-        run('pm2', ['start', ...instancesArgs, `${APP_PACKAGE_ROOT}/lib/index.js`, '--', ...process.argv.slice(2)]);
+        await run('pm2', [
+          'start',
+          ...instancesArgs,
+          `${APP_PACKAGE_ROOT}/lib/index.js`,
+          '--',
+          ...process.argv.slice(2),
+        ]);
+        process.exit();
       } else {
         run(
           'pm2-runtime',

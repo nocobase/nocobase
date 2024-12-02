@@ -11,7 +11,8 @@ else
     CONTENT="/node_modules
 /docker
 /docs
-/src"
+/src
+/dist/node_modules/external-db-data-source/src"
 fi
 
 echo $CONTENT

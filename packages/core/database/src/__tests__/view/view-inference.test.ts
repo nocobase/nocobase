@@ -128,6 +128,7 @@ describe('view inference', function () {
 
     const createdAt = UserCollection.model.rawAttributes['createdAt'].field;
     expect(inferredFields[createdAt]['type']).toBe('date');
+    expect(inferredFields[createdAt]['field']).toBeDefined();
 
     if (db.options.dialect == 'sqlite') {
       expect(inferredFields['name']).toMatchObject({

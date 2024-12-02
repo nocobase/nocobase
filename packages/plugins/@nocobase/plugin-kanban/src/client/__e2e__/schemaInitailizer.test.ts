@@ -17,8 +17,8 @@ test.describe('blockInitializers should add kanban block', () => {
     await mockRecord('general');
     await mockPage().goto();
     await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
-    await expect(page.getByRole('menuitem', { name: 'form Kanban right' })).toBeVisible();
-    await page.getByRole('menuitem', { name: 'form Kanban right' }).click();
+    await expect(page.getByRole('menuitem', { name: 'Kanban right' })).toBeVisible();
+    await page.getByRole('menuitem', { name: 'Kanban right' }).click();
     await page.getByRole('menuitem', { name: 'General' }).click();
     await page.getByLabel('block-item-Select-Grouping field').locator('.ant-select').click();
     await page.getByRole('option', { name: 'Single select' }).click();

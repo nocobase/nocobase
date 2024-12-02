@@ -15,10 +15,16 @@ WORKDIR /tmp
 COPY . /tmp
 RUN  yarn install && yarn build --no-dts
 
-RUN cd /tmp && \
-    NEWVERSION="$(cat lerna.json | jq '.version' | tr -d '"').$(date +'%Y%m%d%H%M%S')" \
-        &&  git checkout -b release-$(date +'%Y%m%d%H%M%S') \
-        && yarn lerna version ${NEWVERSION} -y --no-git-tag-version
+SHELL ["/bin/bash", "-c"]
+
+RUN CURRENTVERSION="$(jq -r '.version' lerna.json)" && \
+  IFS='.-' read -r major minor patch label <<< "$CURRENTVERSION" && \
+  if [ -z "$label" ]; then CURRENTVERSION="$CURRENTVERSION-rc"; fi && \
+  cd /tmp && \
+  NEWVERSION="$(echo $CURRENTVERSION).$(date +'%Y%m%d%H%M%S')" \
+  &&  git checkout -b release-$(date +'%Y%m%d%H%M%S') \
+  && yarn lerna version ${NEWVERSION} -y --no-git-tag-version
+
 RUN git config user.email "test@mail.com"  \
     && git config user.name "test" && git add .  \
     && git commit -m "chore(versions): test publish packages"
@@ -42,7 +48,16 @@ RUN cd /app \
 
 
 FROM node:20.13-bullseye-slim
-RUN apt-get update && apt-get install -y nginx
+
+RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN sh -c 'echo "deb http://mirrors.ustc.edu.cn/postgresql/repos/apt bullseye-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+RUN wget --quiet -O - http://mirrors.ustc.edu.cn/postgresql/repos/apt/ACCC4CF8.asc | apt-key add -
+
+RUN apt-get update && apt-get -y --no-install-recommends install nginx libaio1 postgresql-client-16 postgresql-client-17 \
+  && rm -rf /var/lib/apt/lists/*
+
 RUN rm -rf /etc/nginx/sites-enabled/default
 COPY ./docker/nocobase/nocobase.conf /etc/nginx/sites-enabled/nocobase.conf
 COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz

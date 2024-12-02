@@ -23,7 +23,7 @@ export class PresetNocoBase extends Plugin {
     'verification',
     'users',
     'acl',
-    'field-china-region',
+    // 'field-china-region',
     'workflow',
     'workflow-action-trigger',
     'workflow-aggregate',
@@ -73,6 +73,7 @@ export class PresetNocoBase extends Plugin {
     'workflow-mailer',
     'field-m2m-array',
     'backup-restore',
+    'field-china-region',
   ];
 
   splitNames(name: string) {

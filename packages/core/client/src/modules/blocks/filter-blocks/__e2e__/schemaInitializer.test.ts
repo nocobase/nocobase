@@ -21,7 +21,7 @@ test.describe('where filter block can be added', () => {
     await page.getByRole('menuitem', { name: 'form Form right' }).nth(1).hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
     await page.getByLabel('schema-initializer-Grid-page:').hover();
-    await page.getByRole('menuitem', { name: 'table Collapse right' }).hover();
+    await page.getByRole('menuitem', { name: 'Collapse right' }).hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
 
     // 2. 区块中能正常创建字段和按钮，且能正常显示字段值
