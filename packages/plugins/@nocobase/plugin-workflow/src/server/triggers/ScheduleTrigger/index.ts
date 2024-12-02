@@ -47,7 +47,8 @@ export default class ScheduleTrigger extends Trigger {
   }
 
   async execute(workflow, context: Context, options) {
-    return this.workflow.trigger(workflow, { date: context.action.params.values?.date ?? new Date() }, options);
+    const { values } = context.action.params;
+    return this.workflow.trigger(workflow, { ...values, date: values?.date ?? new Date() }, options);
   }
 
   // async validateEvent(workflow: WorkflowModel, context: any, options: Transactionable): Promise<boolean> {
