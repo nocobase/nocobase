@@ -795,7 +795,7 @@ export const Table: any = withDynamicSchemaProps(
       } = { ...others1, ...others2 } as any;
       const field = useArrayField(others);
       const schema = useFieldSchema();
-      const { size = 'middle' } = schema?.['x-component-props'] || {};
+      const { size = 'small' } = schema?.['x-component-props'] || {};
       const collection = useCollection();
       const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
       const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();

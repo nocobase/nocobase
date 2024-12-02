@@ -346,6 +346,7 @@ exports.initEnv = function initEnv() {
     PLAYWRIGHT_AUTH_FILE: resolve(process.cwd(), 'storage/playwright/.auth/admin.json'),
     CACHE_DEFAULT_STORE: 'memory',
     CACHE_MEMORY_MAX: 2000,
+    BROWSERSLIST_IGNORE_OLD_DATA: true,
     PLUGIN_STATICS_PATH: '/static/plugins/',
     LOGGER_BASE_PATH: 'storage/logs',
     APP_SERVER_BASE_URL: '',

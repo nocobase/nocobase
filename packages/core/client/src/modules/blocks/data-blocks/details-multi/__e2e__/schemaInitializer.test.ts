@@ -31,7 +31,7 @@ test.describe('where multi data details block can be added', () => {
     // 1. 打开弹窗，通过 Associated records 添加一个详情区块
     await page.getByLabel('action-Action.Link-View').click();
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Details right' }).hover();
     await page.getByRole('menuitem', { name: 'Associated records right' }).hover();
     await page.getByRole('menuitem', { name: 'Roles' }).click();
     await page.mouse.move(300, 0);
@@ -42,7 +42,7 @@ test.describe('where multi data details block can be added', () => {
 
     // 2. 打开弹窗，通过 Other records 添加一个详情区块
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Details right' }).hover();
     await page.getByRole('menuitem', { name: 'Other records right' }).hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
     await page.mouse.move(300, 0);

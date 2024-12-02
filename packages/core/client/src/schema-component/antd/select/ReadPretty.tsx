@@ -51,11 +51,13 @@ const ReadPrettyInternal = observer(
         return;
       }
 
-      const content = currentOptions.map((option, index) => (
-        <Tag key={index} color={option[fieldNames.color]} icon={option.icon} style={{ color: 'inherit' }}>
-          {option[fieldNames.label]}
-        </Tag>
-      ));
+      const content =
+        field.value &&
+        currentOptions.map((option, index) => (
+          <Tag key={index} color={option[fieldNames.color]} icon={option.icon} style={{ color: 'inherit' }}>
+            {option[fieldNames.label]}
+          </Tag>
+        ));
       setContent(content);
       setLoading(false);
     }, [
