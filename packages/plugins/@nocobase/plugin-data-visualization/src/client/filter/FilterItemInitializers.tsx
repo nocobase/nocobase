@@ -30,6 +30,7 @@ import {
   useDesignable,
   useGlobalTheme,
   useSchemaInitializerItem,
+  CollectionFieldUISchemaProvider,
 } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Alert, ConfigProvider, Typography } from 'antd';
@@ -95,25 +96,17 @@ export const ChartFilterFormItem = observer(
     const dataSource = schema?.['x-data-source'] || DEFAULT_DATA_SOURCE_KEY;
     const collectionField = schema?.['x-collection-field'] || '';
     const [collection] = collectionField.split('.');
-    // const { getIsChartCollectionExists } = useChartData();
-    // const exists = (schema.name as string).startsWith('custom.') || getIsChartCollectionExists(dataSource, collection);
     return (
       <BlockItem className={'nb-form-item'}>
         <CollectionManagerProvider dataSource={dataSource}>
           <CollectionProvider name={collection} allowNull={!collection}>
-            <CollectionFieldProvider name={schema.name} allowNull={!schema['x-collection-field']}>
+            <CollectionFieldUISchemaProvider fieldSchema={schema}>
               <ACLCollectionFieldProvider>
-                {/* {exists ? ( */}
                 <ErrorBoundary onError={console.log} FallbackComponent={ErrorFallback}>
                   <FormItem className={className} {...props} extra={extra} />
                 </ErrorBoundary>
-                {/* ) : ( */}
-                {/*   <div style={{ color: '#ccc', marginBottom: '10px' }}> */}
-                {/*     {t('The chart using the collection of this field have been deleted. Please  remove this field.')} */}
-                {/*   </div> */}
-                {/* )} */}
               </ACLCollectionFieldProvider>
-            </CollectionFieldProvider>
+            </CollectionFieldUISchemaProvider>
           </CollectionProvider>
         </CollectionManagerProvider>
       </BlockItem>

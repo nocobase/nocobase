@@ -82,4 +82,4 @@ export { useCurrentPopupRecord } from './modules/variable/variablesProvider/Vari
 export { languageCodes } from './locale';
 
 // Override Formily API
-export { NocoBaseRecursionField } from './formily/NocoBaseRecursionField';
+export { NocoBaseRecursionField, CollectionFieldUISchemaProvider } from './formily/NocoBaseRecursionField';

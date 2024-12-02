@@ -86,7 +86,7 @@ export const useCollectionFieldUISchema = () => {
   return React.useContext(CollectionFieldUISchemaContext) || {};
 };
 
-const CollectionFieldUISchemaProvider: FC<{
+export const CollectionFieldUISchemaProvider: FC<{
   fieldSchema: Schema;
 }> = (props) => {
   const { children, fieldSchema } = props;
