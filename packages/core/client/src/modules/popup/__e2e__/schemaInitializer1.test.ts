@@ -89,7 +89,7 @@ test.describe('where to open a popup and what can be added to it', () => {
 
     // add blocks
     await addBlock(['Details right', 'Current record']);
-    await addBlock(['form Form (Edit)']);
+    await addBlock(['Form (Edit)']);
     await addBlock(['Markdown']);
 
     await expect(page.getByText('GeneralConfigure actionsConfigure fields')).toBeVisible();
@@ -180,7 +180,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByRole('menuitem', { name: 'Details' }).hover();
     await page.getByRole('menuitem', { name: 'Current record' }).click();
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
-    await page.getByRole('menuitem', { name: 'form Form (Edit)' }).first().click();
+    await page.getByRole('menuitem', { name: 'Form (Edit)' }).first().click();
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'Markdown' }).click();
     await page.mouse.move(300, 0);
@@ -193,9 +193,9 @@ test.describe('where to open a popup and what can be added to it', () => {
     // 下拉列表中，可选择以下区块进行创建
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
     await expect(page.getByRole('menuitem', { name: 'Details right' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'form Form (Edit)' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'form Form (Add new) right' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'form Form (Add new) right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Form (Edit)' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Form (Add new) right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Form (Add new) right' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Table right' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'List right' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Grid Card right' })).toBeVisible();
@@ -246,7 +246,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByRole('menuitem', { name: 'Details' }).hover();
     await page.getByRole('menuitem', { name: 'Current record' }).click();
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
-    await page.getByRole('menuitem', { name: 'form Form (Edit)' }).first().click();
+    await page.getByRole('menuitem', { name: 'Form (Edit)' }).first().click();
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'Markdown' }).click();
     await page.mouse.move(300, 0);
@@ -259,9 +259,9 @@ test.describe('where to open a popup and what can be added to it', () => {
     // 下拉列表中，可选择以下区块进行创建
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
     await expect(page.getByRole('menuitem', { name: 'Details right' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'form Form (Edit)' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'form Form (Add new) right' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'form Form (Add new) right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Form (Edit)' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Form (Add new) right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Form (Add new) right' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Table right' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'List right' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Grid Card right' })).toBeVisible();

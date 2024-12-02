@@ -305,6 +305,14 @@ describe('FieldSettingsFormItem', () => {
               type: 'switch',
             },
             {
+              title: 'Open mode',
+              type: 'select',
+            },
+            {
+              title: 'Popup size',
+              type: 'select',
+            },
+            {
               title: 'Delete',
               type: 'delete',
             },
