@@ -12,13 +12,7 @@ import { RecursionField, useFieldSchema, useField } from '@formily/react';
 import { cloneDeep } from 'lodash';
 import { popupSchema } from './schema';
 import { App } from 'antd';
-import {
-  useDesignable,
-  useActionContext,
-  SchemaComponentOptions,
-  ActionContextProvider,
-  useGetAriaLabelOfAction,
-} from '../../';
+import { useDesignable, useActionContext, SchemaComponentOptions, ActionContextProvider } from '../../';
 import { PopupVisibleProvider } from '../../antd/page/PagePopups';
 import { usePopupUtils } from '../../antd/page/pagePopupUtils';
 
@@ -52,7 +46,6 @@ function withPopupWrapper<T>(WrappedComponent: React.ComponentType<T>) {
     const field: any = useField();
     const fieldSchema = useFieldSchema();
     const { enableLink, openMode, openSize } = fieldSchema?.['x-component-props'] || {};
-    const { getAriaLabel } = useGetAriaLabelOfAction(field.title);
     const { visibleWithURL, setVisibleWithURL } = usePopupUtils();
     const { openPopup } = usePopupUtils();
 
