@@ -112,35 +112,6 @@ export class PluginACLServer extends Plugin {
       ],
     });
 
-    // change resource fields to association fields
-    this.app.acl.beforeGrantAction((ctx) => {
-      const actionName = this.app.acl.resolveActionAlias(ctx.actionName);
-      const collection = this.app.db.getCollection(ctx.resourceName);
-
-      if (!collection) {
-        return;
-      }
-
-      const fieldsParams = ctx.params.fields;
-
-      if (!fieldsParams) {
-        return;
-      }
-
-      if (actionName == 'view' || actionName == 'export') {
-        const associationsFields = fieldsParams.filter((fieldName) => {
-          const field = collection.getField(fieldName);
-          return field instanceof RelationField;
-        });
-
-        ctx.params = {
-          ...ctx.params,
-          fields: lodash.difference(fieldsParams, associationsFields),
-          appends: associationsFields,
-        };
-      }
-    });
-
     this.app.resourcer.define(availableActionResource);
     this.app.resourcer.define(roleCollectionsResource);
 
@@ -547,7 +518,7 @@ export class PluginACLServer extends Plugin {
 
           const hasFilterByTk = (params) => {
             return JSON.stringify(params).includes('filterByTk');
-          }
+          };
 
           if (!hasFilterByTk(ctx.permission.mergedParams) || !hasFilterByTk(ctx.permission.rawParams)) {
             await next();
@@ -573,7 +544,6 @@ export class PluginACLServer extends Plugin {
         group: 'after',
       },
     );
-
 
     const withACLMeta = createWithACLMetaMiddleware();
 
