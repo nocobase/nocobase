@@ -51,6 +51,9 @@ export const useTableSelectorProps = () => {
     rowKey,
     rowSelection: {
       type: multiple ? 'checkbox' : 'radio',
+      selectedRowKeys: rcSelectRows
+        ?.filter((item) => options.every((row) => row[rowKey] !== item[rowKey]))
+        .map((item) => item[rowKey]),
     },
     onRowSelectionChange(selectedRowKeys, selectedRows) {
       if (multiple) {
