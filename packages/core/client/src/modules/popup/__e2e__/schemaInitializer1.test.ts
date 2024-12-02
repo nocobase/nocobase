@@ -198,7 +198,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await expect(page.getByRole('menuitem', { name: 'form Form (Add new) right' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'table Table right' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'ordered-list List right' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'ordered-list Grid Card right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Grid Card right' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Calendar' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Gantt' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Kanban' })).toBeVisible();
@@ -264,7 +264,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await expect(page.getByRole('menuitem', { name: 'form Form (Add new) right' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'table Table right' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'ordered-list List right' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'ordered-list Grid Card right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Grid Card right' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Calendar' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Gantt' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Kanban' })).toBeVisible();

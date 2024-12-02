@@ -13,6 +13,7 @@ import BigNumber from 'bignumber.js';
 import { format } from 'd3-format';
 import * as math from 'mathjs';
 import React, { useMemo } from 'react';
+import { withPopupWrapper } from '../../common/withPopupWrapper';
 
 function countDecimalPlaces(value) {
   const number = Number(value);
@@ -164,7 +165,7 @@ export interface InputNumberReadPrettyProps {
   addonAfter?: React.ReactNode;
 }
 
-export const ReadPretty: React.FC<InputNumberReadPrettyProps> = (props) => {
+export const ReadPretty: React.FC<InputNumberReadPrettyProps> = withPopupWrapper((props) => {
   const { step, formatStyle, value, addonBefore, addonAfter, unitConversion, unitConversionType, separator } = props;
   const result = useMemo(() => {
     return formatNumber({ step, formatStyle, value, unitConversion, unitConversionType, separator });
@@ -181,4 +182,4 @@ export const ReadPretty: React.FC<InputNumberReadPrettyProps> = (props) => {
       {addonAfter}
     </div>
   );
-};
+});
