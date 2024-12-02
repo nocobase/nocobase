@@ -17,6 +17,11 @@ export default class extends StorageType {
     const { S3Client } = require('@aws-sdk/client-s3');
     const multerS3 = require('multer-s3');
     const { accessKeyId, secretAccessKey, bucket, acl = 'public-read', ...options } = storage.options;
+    if (options.endpoint) {
+      options.forcePathStyle = true;
+    } else {
+      options.endpoint = undefined;
+    }
     const s3 = new S3Client({
       ...options,
       credentials: {

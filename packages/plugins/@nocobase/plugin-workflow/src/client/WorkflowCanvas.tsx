@@ -31,13 +31,13 @@ import {
 import { dayjs } from '@nocobase/utils/client';
 
 import { CanvasContent } from './CanvasContent';
+import { ExecutionStatusColumn } from './components/ExecutionStatus';
 import { ExecutionLink } from './ExecutionLink';
 import { FlowContext, useFlowContext } from './FlowContext';
 import { lang, NAMESPACE } from './locale';
 import { executionSchema } from './schemas/executions';
 import useStyles from './style';
 import { linkNodes, getWorkflowDetailPath } from './utils';
-import { ExecutionStatusColumn } from './components/ExecutionStatus';
 import { Fieldset } from './components/Fieldset';
 import { useRefreshActionProps } from './hooks/useRefreshActionProps';
 import { useTrigger } from './triggers';

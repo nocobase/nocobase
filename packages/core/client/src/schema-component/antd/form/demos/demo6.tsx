@@ -2,6 +2,7 @@ import { FormItem, Input } from '@formily/antd-v5';
 import { ISchema, observer, useForm } from '@formily/react';
 import { Action, CustomRouterContextProvider, Form, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import { Card } from 'antd';
+import { createMemoryHistory } from 'history';
 import React from 'react';
 import { Router } from 'react-router-dom';
 
@@ -57,8 +58,9 @@ const useSubmit = () => {
 };
 
 export default observer(() => {
+  const history = createMemoryHistory();
   return (
-    <Router location={window.location} navigator={null}>
+    <Router location={history.location} navigator={history}>
       <CustomRouterContextProvider>
         <SchemaComponentProvider scope={{ useSubmit }} components={{ Card, Output, Action, Form, Input, FormItem }}>
           <SchemaComponent schema={schema} />

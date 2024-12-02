@@ -9,17 +9,16 @@
 
 import { ArrayField } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
-import { Spin } from 'antd';
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import {
-  useACLRoleContext,
-  useCollection_deprecated,
-  FixedBlockWrapper,
   BlockProvider,
+  useACLRoleContext,
   useBlockRequestContext,
   useCollection,
+  useCollection_deprecated,
 } from '@nocobase/client';
+import { Spin } from 'antd';
 import { isEqual } from 'lodash';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { toColumns } from './Kanban';
 
 export const KanbanBlockContext = createContext<any>({});
@@ -48,23 +47,21 @@ const InternalKanbanBlockProvider = (props) => {
   }
   field.loaded = true;
   return (
-    <FixedBlockWrapper>
-      <KanbanBlockContext.Provider
-        value={{
-          props: {
-            resource: props.resource,
-          },
-          field,
-          service,
-          resource,
-          groupField,
-          // fixedBlock: field?.decoratorProps?.fixedBlock,
-          sortField: props?.sortField,
-        }}
-      >
-        {props.children}
-      </KanbanBlockContext.Provider>
-    </FixedBlockWrapper>
+    <KanbanBlockContext.Provider
+      value={{
+        props: {
+          resource: props.resource,
+        },
+        field,
+        service,
+        resource,
+        groupField,
+        // fixedBlock: field?.decoratorProps?.fixedBlock,
+        sortField: props?.sortField,
+      }}
+    >
+      {props.children}
+    </KanbanBlockContext.Provider>
   );
 };
 

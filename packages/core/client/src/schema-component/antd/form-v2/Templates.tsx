@@ -92,7 +92,7 @@ export const useFormDataTemplates = () => {
   };
 };
 
-export const Templates = ({ style = {}, form }: { style?: React.CSSProperties; form?: any }) => {
+export const Templates = React.memo(({ style = {}, form }: { style?: React.CSSProperties; form?: any }) => {
   const { token } = useToken();
   const { templates, display, enabled, defaultTemplate } = useFormDataTemplates();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
@@ -201,7 +201,9 @@ export const Templates = ({ style = {}, form }: { style?: React.CSSProperties; f
       </Space>
     </div>
   );
-};
+});
+
+Templates.displayName = 'NocoBaseFormDataTemplates';
 
 function findDataTemplates(fieldSchema): ITemplate {
   const formSchema = findFormBlock(fieldSchema);

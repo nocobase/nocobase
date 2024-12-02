@@ -11,7 +11,7 @@ import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
-import { RecursionField, observer, useFieldSchema } from '@formily/react';
+import { observer, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { each } from '@formily/shared';
 import { Button, Card, Divider, Tooltip } from 'antd';
@@ -25,6 +25,7 @@ import {
 } from '../../../data-source/collection-record/CollectionRecordProvider';
 import { isNewRecord, markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
 import { FlagProvider } from '../../../flag-provider';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { RecordIndexProvider, RecordProvider } from '../../../record-provider';
 import { isPatternDisabled, isSystemField } from '../../../schema-settings';
 import {
@@ -205,7 +206,7 @@ const ToManyNester = observer(
                   <RecordProvider isNew={isNewRecord(value)} record={value} parent={recordData}>
                     <RecordIndexProvider index={index}>
                       <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
-                        <RecursionField
+                        <NocoBaseRecursionField
                           onlyRenderProperties
                           basePath={field.address.concat(index)}
                           schema={fieldSchema}

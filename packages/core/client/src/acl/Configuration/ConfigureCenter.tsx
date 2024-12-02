@@ -8,15 +8,15 @@
  */
 
 import { Checkbox, message, Table } from 'antd';
+import { omit } from 'lodash';
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
+import { useApp } from '../../application';
 import { SettingsCenterContext } from '../../pm';
 import { useRecord } from '../../record-provider';
-import { useStyles } from '../style';
-import { useApp } from '../../application';
 import { useCompile } from '../../schema-component';
-import { omit } from 'lodash';
+import { antTableCell } from '../style';
 
 const getParentKeys = (tree, func, path = []) => {
   if (!tree) return [];
@@ -49,7 +49,6 @@ export const SettingCenterProvider = (props) => {
 
 export const SettingsCenterConfigure = () => {
   const app = useApp();
-  const { styles } = useStyles();
   const record = useRecord();
   const api = useAPIClient();
   const compile = useCompile();
@@ -96,7 +95,7 @@ export const SettingsCenterConfigure = () => {
   };
   return (
     <Table
-      className={styles}
+      className={antTableCell}
       loading={loading}
       rowKey={'key'}
       pagination={false}

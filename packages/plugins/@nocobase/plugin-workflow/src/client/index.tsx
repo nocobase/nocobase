@@ -14,9 +14,14 @@ import { isValid } from '@formily/shared';
 import { Plugin, useCompile, WorkflowConfig } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 
-import { ExecutionPage } from './ExecutionPage';
-import { WorkflowPage } from './WorkflowPage';
-import { WorkflowPane } from './WorkflowPane';
+// import { ExecutionPage } from './ExecutionPage';
+// import { WorkflowPage } from './WorkflowPage';
+// import { WorkflowPane } from './WorkflowPane';
+import { lazy } from '@nocobase/client';
+const { ExecutionPage } = lazy(() => import('./ExecutionPage'), 'ExecutionPage');
+const { WorkflowPage } = lazy(() => import('./WorkflowPage'), 'WorkflowPage');
+const { WorkflowPane } = lazy(() => import('./WorkflowPane'), 'WorkflowPane');
+
 import { Trigger } from './triggers';
 import CollectionTrigger from './triggers/collection';
 import ScheduleTrigger from './triggers/schedule';

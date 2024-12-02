@@ -7,21 +7,25 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { waitFor, screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { GetAppComponentOptions } from '../web';
-import userEvent from '@testing-library/user-event';
 import { renderAppOptions, renderReadPrettyApp } from './renderAppOptions';
 import { expectNoTsError } from './utils';
 
 export async function showSettingsMenu(container: HTMLElement | Document = document) {
   await waitFor(() => {
-    expectNoTsError(container.querySelector('[aria-label^="designer-schema-settings-"]')).toBeInTheDocument();
+    return expectNoTsError(container.querySelector('[aria-label^="designer-schema-settings-"]')).toBeInTheDocument();
   });
 
-  await userEvent.hover(container.querySelector('[aria-label^="designer-schema-settings-"]'));
+  const button = await waitFor(() => {
+    return container.querySelector('[aria-label^="designer-schema-settings-"]');
+  });
+
+  fireEvent.mouseEnter(button);
+  fireEvent.mouseOver(button);
 
   await waitFor(() => {
-    expectNoTsError(screen.queryByTestId('schema-settings-menu')).toBeInTheDocument();
+    return expectNoTsError(screen.queryByTestId('schema-settings-menu')).toBeInTheDocument();
   });
 }
 

@@ -21,7 +21,7 @@ test.describe('where filter block can be added', () => {
     await page.getByRole('menuitem', { name: 'form Form right' }).nth(1).hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
     await page.getByLabel('schema-initializer-Grid-page:').hover();
-    await page.getByRole('menuitem', { name: 'table Collapse right' }).hover();
+    await page.getByRole('menuitem', { name: 'Collapse right' }).hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
 
     // 2. 区块中能正常创建字段和按钮，且能正常显示字段值
@@ -97,6 +97,7 @@ test.describe('where filter block can be added', () => {
 
     // 1. 测试用表单筛选关系区块
     await page.getByLabel('action-Action.Link-View record-view-users-table-1').click();
+    await page.waitForTimeout(1000);
     await page.getByLabel('schema-initializer-Grid-popup').hover();
     await page.getByRole('menuitem', { name: 'form Form right' }).hover();
     await page.getByRole('menuitem', { name: 'Roles' }).click();

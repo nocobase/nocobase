@@ -9,13 +9,14 @@
 
 import { ButtonProps } from 'antd';
 import React, { FC, useMemo } from 'react';
+import { useOpenModeContext } from '../../../modules/popup/OpenModeProvider';
 import { useApp } from '../../hooks';
 import { SchemaInitializerItems } from '../components';
 import { SchemaInitializerButton } from '../components/SchemaInitializerButton';
 import { SchemaInitializer } from '../SchemaInitializer';
 import { SchemaInitializerOptions } from '../types';
 import { withInitializer } from '../withInitializer';
-import { useOpenModeContext } from '../../../modules/popup/OpenModeProvider';
+
 const InitializerComponent: FC<SchemaInitializerOptions<any, any>> = React.memo((options) => {
   const Component: any = options.Component || SchemaInitializerButton;
 

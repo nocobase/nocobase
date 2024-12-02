@@ -9,7 +9,7 @@
 
 import { uid } from '@formily/shared';
 import { Divider, Empty, Input, MenuProps } from 'antd';
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../../';
 
@@ -36,10 +36,11 @@ export const SearchFields = ({ value: outValue, onChange, name }) => {
   useEffect(() => {
     const focusInput = () => {
       if (
+        inputRef.current &&
         document.activeElement?.id !== inputRef.current.input.id &&
         getPrefixAndCompare(document.activeElement?.id, inputRef.current.input.id)
       ) {
-        inputRef.current?.focus();
+        inputRef.current.focus();
       }
     };
 

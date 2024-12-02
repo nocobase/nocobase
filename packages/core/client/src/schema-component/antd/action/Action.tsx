@@ -8,18 +8,22 @@
  */
 
 import { Field } from '@formily/core';
-import { observer, RecursionField, Schema, useField, useFieldSchema, useForm } from '@formily/react';
+import { observer, Schema, useField, useFieldSchema, useForm } from '@formily/react';
 import { isPortalInBody } from '@nocobase/utils/client';
 import { App, Button } from 'antd';
 import classnames from 'classnames';
-import { default as lodash } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { ErrorFallback, StablePopover, TabsContextProvider, useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { useACLActionParamsContext } from '../../../acl';
-import { useCollectionParentRecordData, useCollectionRecordData, useDataBlockRequest } from '../../../data-source';
+import {
+  useCollectionParentRecordData,
+  useCollectionRecordData,
+  useDataBlockRequestGetter,
+} from '../../../data-source';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { Icon } from '../../../icon';
 import { TreeRecordProvider } from '../../../modules/blocks/data-blocks/table/TreeRecordProvider';
@@ -50,10 +54,10 @@ const useA = () => {
   };
 };
 
-const handleError = (err) => console.log(err);
+const handleError = console.log;
 
 export const Action: ComposedAction = withDynamicSchemaProps(
-  observer((props: ActionProps) => {
+  React.memo((props: ActionProps) => {
     const {
       popover,
       containerRefKey,
@@ -76,7 +80,6 @@ export const Action: ComposedAction = withDynamicSchemaProps(
       confirmTitle,
       ...others
     } = useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-    const { t } = useTranslation();
     const Designer = useDesigner();
     const field = useField<any>();
     const fieldSchema = useFieldSchema();
@@ -92,11 +95,6 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const { setSubmitted } = useActionContext();
     const { getAriaLabel } = useGetAriaLabelOfAction(title);
     const parentRecordData = useCollectionParentRecordData();
-
-    const actionTitle = useMemo(() => {
-      const res = title || compile(fieldSchema.title);
-      return lodash.isString(res) ? t(res) : res;
-    }, [title, fieldSchema.title, t]);
 
     useEffect(() => {
       if (field.stateOfLinkageRules) {
@@ -131,7 +129,6 @@ export const Action: ComposedAction = withDynamicSchemaProps(
         fieldSchema={fieldSchema}
         designable={designable}
         field={field}
-        actionTitle={actionTitle}
         icon={icon}
         loading={loading}
         handleMouseEnter={handleMouseEnter}
@@ -167,7 +164,6 @@ interface InternalActionProps {
   fieldSchema: Schema;
   designable: boolean;
   field: Field;
-  actionTitle: string;
   icon: string;
   loading: boolean;
   handleMouseEnter: (e: React.MouseEvent) => void;
@@ -207,7 +203,6 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
     fieldSchema,
     designable,
     field,
-    actionTitle,
     icon,
     loading,
     handleMouseEnter,
@@ -258,7 +253,6 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
     designable,
     field,
     aclCtx,
-    actionTitle,
     icon,
     loading,
     disabled,
@@ -273,7 +267,6 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
     getAriaLabel,
     type,
     Designer,
-    openMode,
     onClick,
     refreshDataBlockRequest,
     fieldSchema,
@@ -283,17 +276,23 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
     modal,
     setSubmitted,
     confirmTitle,
+    title,
   };
+
+  const handleVisibleChange = useCallback(
+    (value: boolean): void => {
+      setVisible?.(value);
+      setVisibleWithURL?.(value);
+    },
+    [setVisibleWithURL],
+  );
 
   let result = (
     <PopupVisibleProvider visible={false}>
       <ActionContextProvider
         button={RenderButton(buttonProps)}
         visible={visible || visibleWithURL}
-        setVisible={(value) => {
-          setVisible?.(value);
-          setVisibleWithURL?.(value);
-        }}
+        setVisible={handleVisibleChange}
         formValueChanged={formValueChanged}
         setFormValueChanged={setFormValueChanged}
         openMode={openMode}
@@ -302,7 +301,7 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
         fieldSchema={fieldSchema}
         setSubmitted={setSubmitted}
       >
-        {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
+        {popover && <NocoBaseRecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
         {!popover && <RenderButton {...buttonProps} />}
         <VariablePopupRecordProvider>{!popover && props.children}</VariablePopupRecordProvider>
         {element}
@@ -378,15 +377,14 @@ Action.Page = ActionPage;
 export default Action;
 
 // TODO: Plugin-related code should not exist in the core. It would be better to implement it by modifying the schema, but it would cause incompatibility.
-function isBulkEditAction(fieldSchema) {
+export function isBulkEditAction(fieldSchema) {
   return fieldSchema['x-action'] === 'customize:bulkEdit';
 }
 
-function RenderButton({
+const RenderButton = ({
   designable,
   field,
   aclCtx,
-  actionTitle,
   icon,
   loading,
   disabled,
@@ -401,7 +399,6 @@ function RenderButton({
   getAriaLabel,
   type,
   Designer,
-  openMode,
   onClick,
   refreshDataBlockRequest,
   fieldSchema,
@@ -411,14 +408,12 @@ function RenderButton({
   modal,
   setSubmitted,
   confirmTitle,
-}) {
-  const service = useDataBlockRequest();
+  title,
+}) => {
+  const { getDataBlockRequest } = useDataBlockRequestGetter();
   const { t } = useTranslation();
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { openPopup } = usePopupUtils();
-
-  const serviceRef = useRef(null);
-  serviceRef.current = service;
 
   const openPopupRef = useRef(null);
   openPopupRef.current = openPopup;
@@ -437,7 +432,7 @@ function RenderButton({
             onClick(e, () => {
               if (refreshDataBlockRequest !== false) {
                 setSubmitted?.(true);
-                serviceRef.current?.refresh?.();
+                getDataBlockRequest()?.refresh?.();
               }
             });
           } else if (isBulkEditAction(fieldSchema) || !isPopupVisibleControlledByURL()) {
@@ -458,8 +453,8 @@ function RenderButton({
         };
         if (confirm?.enable !== false && confirm?.content) {
           modal.confirm({
-            title: t(confirm.title, { title: confirmTitle || actionTitle }),
-            content: t(confirm.content, { title: confirmTitle || actionTitle }),
+            title: t(confirm.title, { title: confirmTitle || title || field?.title }),
+            content: t(confirm.content, { title: confirmTitle || title || field?.title }),
             onOk,
           });
         } else {
@@ -468,22 +463,24 @@ function RenderButton({
       }
     },
     [
-      disabled,
       aclCtx,
-      confirm?.enable,
       confirm?.content,
+      confirm?.enable,
       confirm?.title,
-      onClick,
+      confirmTitle,
+      disabled,
+      field,
       fieldSchema,
       isPopupVisibleControlledByURL,
+      modal,
+      onClick,
       refreshDataBlockRequest,
+      run,
       setSubmitted,
       setVisible,
-      run,
-      modal,
       t,
-      confirmTitle,
-      actionTitle,
+      title,
+      getDataBlockRequest,
     ],
   );
 
@@ -492,7 +489,6 @@ function RenderButton({
       designable={designable}
       field={field}
       aclCtx={aclCtx}
-      actionTitle={actionTitle}
       icon={icon}
       loading={loading}
       disabled={disabled}
@@ -507,17 +503,19 @@ function RenderButton({
       type={type}
       Designer={Designer}
       designerProps={designerProps}
+      title={title}
       {...others}
     />
   );
-}
+};
+
+RenderButton.displayName = 'RenderButton';
 
 const RenderButtonInner = observer(
   (props: {
     designable: boolean;
     field: Field;
     aclCtx: any;
-    actionTitle: string;
     icon: string;
     loading: boolean;
     disabled: boolean;
@@ -532,12 +530,12 @@ const RenderButtonInner = observer(
     type: string;
     Designer: React.ElementType;
     designerProps: any;
+    title: string;
   }) => {
     const {
       designable,
       field,
       aclCtx,
-      actionTitle,
       icon,
       loading,
       disabled,
@@ -552,12 +550,15 @@ const RenderButtonInner = observer(
       type,
       Designer,
       designerProps,
+      title,
       ...others
     } = props;
 
     if (!designable && (field?.data?.hidden || !aclCtx)) {
       return null;
     }
+
+    const actionTitle = title || field?.title;
 
     return (
       <SortableItem

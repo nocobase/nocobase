@@ -14,6 +14,8 @@ import { customizeAddRecordActionSettings } from '../modules/actions/add-record/
 import { bulkDeleteActionSettings } from '../modules/actions/bulk-destroy/bulkDeleteActionSettings';
 import { deleteActionSettings } from '../modules/actions/delete/deleteActionSettings';
 import { disassociateActionSettings } from '../modules/actions/disassociate/disassociateActionSettings';
+import { associateActionSettings } from '../modules/actions/associate/associateActionSettings';
+
 import { expendableActionSettings } from '../modules/actions/expand-collapse/expendableActionSettings';
 import { filterActionSettings } from '../modules/actions/filter/filterActionSettings';
 import { customizeLinkActionSettings } from '../modules/actions/link/customizeLinkActionSettings';
@@ -103,6 +105,7 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(editActionSettings);
     this.schemaSettingsManager.add(deleteActionSettings);
     this.schemaSettingsManager.add(disassociateActionSettings);
+    this.schemaSettingsManager.add(associateActionSettings);
     this.schemaSettingsManager.add(bulkDeleteActionSettings);
     this.schemaSettingsManager.add(customizeAddRecordActionSettings);
     this.schemaSettingsManager.add(customizePopupActionSettings);

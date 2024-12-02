@@ -7,6 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+// 注意: 这行必须放到顶部，否则会导致 Data sources 页面报错，原因未知
+import { useBlockRequestContext } from '../block-provider/BlockProvider';
+
 import { Field } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import { omit } from 'lodash';
@@ -14,14 +17,21 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo } fro
 import { Navigate } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
 import { useAppSpin } from '../application/hooks/useAppSpin';
-import { useBlockRequestContext } from '../block-provider/BlockProvider';
 import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
-import { CollectionNotAllowViewPlaceholder, useCollection, useCollectionManager } from '../data-source';
+import {
+  CollectionNotAllowViewPlaceholder,
+  useCollection,
+  useCollectionManager,
+  useCollectionRecordData,
+  useDataBlockProps,
+} from '../data-source';
 import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
-import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
 
 import { useApp } from '../application';
+
+// 注意: 必须要对 useBlockRequestContext 进行引用，否则会导致 Data sources 页面报错，原因未知
+useBlockRequestContext;
 
 export const ACLContext = createContext<any>({});
 ACLContext.displayName = 'ACLContext';
@@ -172,18 +182,17 @@ const getIgnoreScope = (options: any = {}) => {
 
 const useAllowedActions = () => {
   const service = useResourceActionContext();
-  const result = useBlockRequestContext();
-  return result?.allowedActions ?? service?.data?.meta?.allowedActions;
+  return service?.data?.meta?.allowedActions;
 };
 
 const useResourceName = () => {
   const service = useResourceActionContext();
-  const result = useBlockRequestContext() || { service };
+  const dataBlockProps = useDataBlockProps();
   return (
-    result?.props?.resource ||
-    result?.props?.association ||
-    result?.props?.collection ||
-    result?.service?.defaultRequest?.resource
+    dataBlockProps?.resource ||
+    dataBlockProps?.association ||
+    dataBlockProps?.collection ||
+    service?.defaultRequest?.resource
   );
 };
 
@@ -283,14 +292,14 @@ export const useACLActionParamsContext = () => {
 
 export const useRecordPkValue = () => {
   const collection = useCollection();
-  const record = useRecord();
+  const recordData = useCollectionRecordData();
 
   if (!collection) {
     return;
   }
 
   const primaryKey = collection.getPrimaryKey();
-  return record?.[primaryKey];
+  return recordData?.[primaryKey];
 };
 
 export const ACLActionProvider = (props) => {

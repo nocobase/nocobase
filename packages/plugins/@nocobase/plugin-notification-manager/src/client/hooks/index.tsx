@@ -7,18 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, useContext, useMemo } from 'react';
+import { createForm } from '@formily/core';
+import { useForm } from '@formily/react';
 import {
-  ActionProps,
   useActionContext,
   useCollection,
   useCollectionRecordData,
-  useDataBlockRequest,
+  useDataBlockRequestGetter,
   useDataBlockResource,
 } from '@nocobase/client';
 import { App as AntdApp } from 'antd';
-import { createForm } from '@formily/core';
-import { useForm } from '@formily/react';
+import React, { createContext, useContext, useMemo } from 'react';
 
 export { ChannelTypeMapContext, useChannelTypeMap } from './channel';
 
@@ -27,7 +26,7 @@ export const useSubmitActionProps = () => {
   const { message } = AntdApp.useApp();
   const form = useForm();
   const resource = useDataBlockResource();
-  const { runAsync } = useDataBlockRequest();
+  const { getDataBlockRequest } = useDataBlockRequestGetter();
   const collection = useCollection();
   return {
     type: 'primary',
@@ -44,7 +43,7 @@ export const useSubmitActionProps = () => {
           values,
         });
       }
-      await runAsync();
+      await getDataBlockRequest()?.runAsync();
       message.success('Saved successfully!');
       setVisible(false);
     },

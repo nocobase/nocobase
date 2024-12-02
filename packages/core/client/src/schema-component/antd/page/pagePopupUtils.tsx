@@ -11,7 +11,7 @@ import { ISchema, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useCallback, useContext } from 'react';
 import { useLocationNoUpdate, useNavigateNoUpdate } from '../../../application';
-import { useTableBlockContext } from '../../../block-provider/TableBlockProvider';
+import { useTableBlockContextBasicValue } from '../../../block-provider/TableBlockProvider';
 import {
   CollectionRecord,
   useAssociationName,
@@ -19,7 +19,8 @@ import {
   useCollectionManager,
   useCollectionParentRecord,
   useCollectionRecord,
-  useDataBlockRequest,
+  useDataBlockRequestData,
+  useDataBlockRequestGetter,
   useDataSourceKey,
 } from '../../../data-source';
 import { ActionContext } from '../action/context';
@@ -50,7 +51,7 @@ export interface PopupContextStorage extends PopupContext {
   service?: any;
   sourceId?: string;
   /** Specifically prepared for the 'Table selected records' variable */
-  tableBlockContext?: { field: any; service: any; rowKey: any; collection: string };
+  tableBlockContext?: { field: any; blockData: any; rowKey: any; collection: string };
 }
 
 const popupsContextStorage: Record<string, PopupContextStorage> = {};
@@ -122,6 +123,30 @@ export const getPopupPathFromParams = (params: PopupParams) => {
   return `/popups/${popupPath.map((item) => encodePathValue(item)).join('/')}`;
 };
 
+let isClicked = false;
+let timer = null;
+// Used to prevent URL duplication caused by rapid repeated clicks
+export const quickClick = (duration = 500) => {
+  if (isClicked) {
+    if (timer) {
+      clearTimeout(timer);
+    }
+    timer = setTimeout(() => {
+      isClicked = false;
+    }, duration);
+
+    return true;
+  }
+
+  isClicked = true;
+
+  timer = setTimeout(() => {
+    isClicked = false;
+  }, duration);
+
+  return false;
+};
+
 /**
  * Note: use this hook in a plugin is not recommended
  * @returns
@@ -147,7 +172,7 @@ export const usePopupUtils = (
   const association = useAssociationName();
   const { visible, setVisible } = useContext(PopupVisibleProviderContext) || { visible: false, setVisible: _.noop };
   const { params: popupParams } = useCurrentPopupContext();
-  const service = useDataBlockRequest();
+  const { getDataBlockRequest } = useDataBlockRequestGetter();
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { setVisible: _setVisibleFromAction } = useContext(ActionContext);
   const { updatePopupContext } = usePopupContextInActionOrAssociationField();
@@ -157,7 +182,8 @@ export const usePopupUtils = (
       (_parentRecordData || parentRecord?.data)?.[cm.getSourceKeyByAssociation(association)],
     [parentRecord, association],
   );
-  const tableBlockContext = useTableBlockContext();
+  const blockData = useDataBlockRequestData();
+  const tableBlockContextBasicValue = useTableBlockContextBasicValue() || ({} as any);
 
   const setVisibleFromAction = options.setVisible || _setVisibleFromAction;
 
@@ -224,6 +250,11 @@ export const usePopupUtils = (
         return setVisibleFromAction?.(true);
       }
 
+      // In e2e tests, buttons may be clicked multiple times rapidly, so we cannot directly prevent repeated clicks
+      if (!process.env.__E2E__ && quickClick()) {
+        return;
+      }
+
       const currentPopupUidWithoutOpened = customActionSchema?.['x-uid'] || fieldSchema?.['x-uid'];
       const sourceId = getSourceId(parentRecordData);
 
@@ -244,12 +275,12 @@ export const usePopupUtils = (
         schema: customActionSchema || fieldSchema,
         record: new CollectionRecord({ isNew: false, data: recordData }),
         parentRecord: parentRecordData ? new CollectionRecord({ isNew: false, data: parentRecordData }) : parentRecord,
-        service,
+        service: getDataBlockRequest(),
         dataSource: dataSourceKey,
         collection: collection?.name,
         association,
         sourceId,
-        tableBlockContext,
+        tableBlockContext: { ...tableBlockContextBasicValue, collection: collection?.name, blockData },
       });
 
       updatePopupContext(getNewPopupContext(), customActionSchema);
@@ -266,16 +297,19 @@ export const usePopupUtils = (
       navigate,
       parentRecord,
       record,
-      service,
+      getDataBlockRequest,
       location,
       isPopupVisibleControlledByURL,
       getSourceId,
       getNewPopupContext,
-      tableBlockContext,
+      blockData,
+      tableBlockContextBasicValue,
     ],
   );
 
   const closePopup = useCallback(() => {
+    isClicked = false;
+
     if (!isPopupVisibleControlledByURL()) {
       return setVisibleFromAction?.(false);
     }

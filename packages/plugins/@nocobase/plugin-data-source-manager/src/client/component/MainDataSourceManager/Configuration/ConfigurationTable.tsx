@@ -10,26 +10,26 @@
 import { useForm } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
-import React, { useContext, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
-  useAPIClient,
-  useCurrentAppInfo,
-  useRecord,
-  useApp,
+  AddSubFieldAction,
+  CollectionCategoriesContext,
+  DataSourceContext_deprecated,
+  EditSubFieldAction,
+  FieldSummary,
   SchemaComponent,
   SchemaComponentContext,
-  useCompile,
+  TemplateSummary,
+  useAPIClient,
+  useApp,
   useCancelAction,
   useCollectionManager_deprecated,
-  DataSourceContext_deprecated,
-  AddSubFieldAction,
-  EditSubFieldAction,
-  CollectionCategoriesContext,
-  FieldSummary,
-  TemplateSummary,
+  useCompile,
+  useCurrentAppInfo,
+  useRecord,
 } from '@nocobase/client';
 import { getPickerFormat } from '@nocobase/utils/client';
+import React, { useContext, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CollectionFields } from './CollectionFields';
 import { collectionSchema } from './schemas/collections';
 
@@ -104,7 +104,9 @@ export const ConfigurationTable = () => {
   const { interfaces, getCollections, getCollection } = useCollectionManager_deprecated();
   const {
     data: { database },
-  } = useCurrentAppInfo();
+  } = useCurrentAppInfo() || {
+    data: { database: {} as any },
+  };
 
   const data = useContext(CollectionCategoriesContext);
   const api = useAPIClient();

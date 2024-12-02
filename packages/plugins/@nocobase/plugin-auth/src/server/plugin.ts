@@ -10,7 +10,6 @@
 import { Cache } from '@nocobase/cache';
 import { Model } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { resolve } from 'path';
 import { namespace, presetAuthType, presetAuthenticator } from '../preset';
 import authActions from './actions/auth';
 import authenticatorsActions from './actions/authenticators';
@@ -50,13 +49,46 @@ export class PluginAuthServer extends Plugin {
     this.app.authManager.registerTypes(presetAuthType, {
       auth: BasicAuth,
       title: tval('Password', { ns: namespace }),
+      getPublicOptions: (options) => {
+        const usersCollection = this.db.getCollection('users');
+        let signupForm = options?.public?.signupForm || [];
+        signupForm = signupForm.filter((item: { show: boolean }) => item.show);
+        if (
+          !(
+            signupForm.length &&
+            signupForm.some(
+              (item: { field: string; show: boolean; required: boolean }) =>
+                ['username', 'email'].includes(item.field) && item.show && item.required,
+            )
+          )
+        ) {
+          // At least one of the username or email fields is required
+          signupForm.unshift({ field: 'username', show: true, required: true });
+        }
+        signupForm = signupForm
+          .filter((field: { show: boolean }) => field.show)
+          .map((item: { field: string; required: boolean }) => {
+            const field = usersCollection.getField(item.field);
+            return {
+              ...item,
+              uiSchema: {
+                ...field.options?.uiSchema,
+                required: item.required,
+              },
+            };
+          });
+        return {
+          ...options?.public,
+          signupForm,
+        };
+      },
     });
     // Register actions
     Object.entries(authActions).forEach(
-      ([action, handler]) => this.app.resourcer.getResource('auth')?.addAction(action, handler),
+      ([action, handler]) => this.app.resourceManager.getResource('auth')?.addAction(action, handler),
     );
     Object.entries(authenticatorsActions).forEach(([action, handler]) =>
-      this.app.resourcer.registerAction(`authenticators:${action}`, handler),
+      this.app.resourceManager.registerActionHandler(`authenticators:${action}`, handler),
     );
     // Set up ACL
     ['check', 'signIn', 'signUp'].forEach((action) => this.app.acl.allow('auth', action));
@@ -79,6 +111,126 @@ export class PluginAuthServer extends Plugin {
     this.app.on('cache:del:auth', async ({ userId }) => {
       await this.cache.del(`auth:${userId}`);
     });
+
+    this.app.auditManager.registerActions([
+      {
+        name: 'auth:signIn',
+        getMetaData: async (ctx: any) => {
+          let body = {};
+          if (ctx.status === 200) {
+            body = {
+              data: {
+                ...ctx.body.data,
+                token: undefined,
+              },
+            };
+          } else {
+            body = ctx.body;
+          }
+          return {
+            request: {
+              params: ctx.request?.params,
+              body: {
+                ...ctx.request?.body,
+                password: undefined,
+              },
+              path: ctx.request?.path,
+              headers: {
+                'x-authenticator': ctx.request?.headers['x-authenticator'],
+                'x-locale': ctx.request?.headers['x-locale'],
+                'x-timezone': ctx.request?.headers['x-timezone'],
+              },
+            },
+            response: {
+              body,
+            },
+          };
+        },
+        getUserInfo: async (ctx: any) => {
+          if (!ctx.body?.data?.user) {
+            return null;
+          }
+          // 查询用户角色
+          const userId = ctx.body.data.user.id;
+          const user = await ctx.db.getRepository('users').findOne({
+            filterByTk: userId,
+          });
+          const roles = await user?.getRoles();
+          if (!roles) {
+            return {
+              userId,
+            };
+          } else {
+            if (roles.length === 1) {
+              return {
+                userId,
+                roleName: roles[0].name,
+              };
+            } else {
+              // 多角色的情况下暂时不返回角色名
+              return {
+                userId,
+              };
+            }
+          }
+        },
+      },
+      {
+        name: 'auth:signUp',
+        getMetaData: async (ctx: any) => {
+          return {
+            request: {
+              params: ctx.request?.params,
+              body: {
+                ...ctx.request?.body,
+                password: undefined,
+                confirm_password: undefined,
+              },
+              path: ctx.request?.path,
+              headers: {
+                'x-authenticator': ctx.request?.headers['x-authenticator'],
+                'x-locale': ctx.request?.headers['x-locale'],
+                'x-timezone': ctx.request?.headers['x-timezone'],
+              },
+            },
+            response: {
+              body: {
+                ...ctx.response?.body,
+                token: undefined,
+              },
+            },
+          };
+        },
+      },
+      {
+        name: 'auth:changePassword',
+        getMetaData: async (ctx: any) => {
+          return {
+            request: {
+              params: ctx.request.params,
+              query: ctx.request.query,
+              body: {},
+              path: ctx.request.path,
+              headers: {
+                'x-authenticator': ctx.request?.headers['x-authenticator'],
+                'x-locale': ctx.request?.headers['x-locale'],
+                'x-timezone': ctx.request?.headers['x-timezone'],
+              },
+            },
+            response: {
+              body: {},
+            },
+          };
+        },
+        getSourceAndTarget: async (ctx: any) => {
+          return {
+            targetCollection: 'users',
+            targetRecordUK: ctx.auth.user.id,
+          };
+        },
+      },
+      'auth:signOut',
+    ]);
   }
 
   async install(options?: InstallOptions) {

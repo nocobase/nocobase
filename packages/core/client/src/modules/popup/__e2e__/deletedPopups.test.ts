@@ -22,9 +22,9 @@ test.describe('deleted popups', () => {
     await expect(page.getByText('Sorry, the page you visited does not exist.')).toHaveCount(3);
 
     // close the popups
-    await page.getByLabel('drawer-Action.Container-Error message-mask').click();
-    await page.getByLabel('drawer-Action.Container-Error message-mask').click();
-    await page.getByLabel('drawer-Action.Container-Error message-mask').click();
+    await page.getByLabel('drawer-Action.Container-Error message-mask').nth(2).click();
+    await page.getByLabel('drawer-Action.Container-Error message-mask').nth(1).click();
+    await page.getByLabel('drawer-Action.Container-Error message-mask').nth(0).click();
 
     await expect(page.getByText('Sorry, the page you visited does not exist.')).toHaveCount(0);
   });

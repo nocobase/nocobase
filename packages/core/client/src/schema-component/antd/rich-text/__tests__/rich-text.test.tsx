@@ -7,13 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { render, screen, userEvent } from '@nocobase/test/client';
+import { render, screen, sleep, userEvent } from '@nocobase/test/client';
 import React from 'react';
 import App1 from '../demos/demo1';
 
 describe('RichText', () => {
   it('should display the value of user input', async () => {
     const { container } = render(<App1 />);
+
+    // wait for editor to be rendered
+    await sleep(300);
+
     const editor = container.querySelector('.ql-editor') as HTMLElement;
 
     editor.focus();

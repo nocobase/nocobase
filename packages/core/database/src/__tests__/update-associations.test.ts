@@ -26,6 +26,88 @@ describe('update associations', () => {
       await db.close();
     });
 
+    it('should update has one association with foreign key', async () => {
+      const User = db.collection({
+        name: 'users',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'hasOne', name: 'profile', foreignKey: 'userId', target: 'profiles' },
+        ],
+      });
+
+      const Profile = db.collection({
+        name: 'profiles',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'bigInt', name: 'userId' },
+          { type: 'belongsTo', name: 'user', foreignKey: 'userId' },
+        ],
+      });
+
+      await db.sync();
+
+      // create user
+      const user = await User.repository.create({ values: { name: 'user1' } });
+      const profile = await Profile.repository.create({ values: { name: 'profile1' } });
+
+      const profileData = profile.toJSON();
+      await User.repository.update({
+        filterByTk: user.id,
+        values: {
+          profile: {
+            ...profileData,
+            userId: null,
+          },
+        },
+        updateAssociationValues: ['profile'],
+      });
+
+      const profile1 = await Profile.repository.findOne({ filterByTk: profile.id });
+      expect(profile1['userId']).toBe(user.id);
+    });
+
+    it('should update has many association with foreign key', async () => {
+      const User = db.collection({
+        name: 'users',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'hasMany', name: 'profiles', foreignKey: 'userId', target: 'profiles' },
+        ],
+      });
+
+      const Profile = db.collection({
+        name: 'profiles',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'bigInt', name: 'userId' },
+          { type: 'belongsTo', name: 'user', foreignKey: 'userId' },
+        ],
+      });
+
+      await db.sync();
+
+      // create user
+      const user = await User.repository.create({ values: { name: 'user1' } });
+      const profile = await Profile.repository.create({ values: { name: 'profile1' } });
+
+      const profileData = profile.toJSON();
+      await User.repository.update({
+        filterByTk: user.id,
+        values: {
+          profiles: [
+            {
+              ...profileData,
+              userId: null,
+            },
+          ],
+        },
+        updateAssociationValues: ['profiles'],
+      });
+
+      const profile1 = await Profile.repository.findOne({ filterByTk: profile.id });
+      expect(profile1['userId']).toBe(user.id);
+    });
+
     test('update belongs to with foreign key and object', async () => {
       const throughAB = db.collection({
         name: 'throughAB',

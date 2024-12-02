@@ -97,7 +97,7 @@ export class QueryParser {
         attributes: dimensionAttributes,
         group,
         fieldMap: dimensionFieldMap,
-      } = this.parseDimensions(ctx, dimensions, hasAgg, ctx.timezone);
+      } = this.parseDimensions(ctx, dimensions, hasAgg, ctx.get?.('x-timezone'));
       const order = this.parseOrders(ctx, orders, hasAgg);
 
       ctx.action.params.values = {

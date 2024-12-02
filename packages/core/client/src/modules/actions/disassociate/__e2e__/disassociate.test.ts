@@ -22,19 +22,13 @@ test('basic', async ({ page, mockPage, mockRecord }) => {
   await page.getByRole('menuitem', { name: 'manyToMany' }).click();
 
   // 2. Table 中显示 Role UID 字段
-  await page
-    .getByTestId('drawer-Action.Container-collection1-Edit record')
-    .getByLabel('schema-initializer-TableV2-')
-    .hover();
+  await page.getByLabel('Edit', { exact: true }).getByLabel('schema-initializer-TableV2-').hover();
   await page.getByRole('menuitem', { name: 'singleLineText' }).click();
 
   // 3. 显示 Disassociate 按钮
+  await page.getByLabel('Edit', { exact: true }).getByRole('button', { name: 'Actions', exact: true }).hover();
   await page
-    .getByTestId('drawer-Action.Container-collection1-Edit record')
-    .getByRole('button', { name: 'Actions', exact: true })
-    .hover();
-  await page
-    .getByTestId('drawer-Action.Container-collection1-Edit record')
+    .getByLabel('Edit', { exact: true })
     .getByLabel('designer-schema-initializer-TableV2.Column-fieldSettings:TableColumn-collection2')
     .hover();
   await page.getByRole('menuitem', { name: 'Disassociate' }).click();
@@ -42,7 +36,7 @@ test('basic', async ({ page, mockPage, mockRecord }) => {
   // 4. 点击 Disassociate 按钮，解除关联
   await expect(
     page
-      .getByTestId('drawer-Action.Container-collection1-Edit record')
+      .getByLabel('Edit', { exact: true })
       .getByLabel('block-item-CardItem-')
       .getByText(record.manyToMany[0].singleLineText),
   ).toBeVisible();
@@ -50,7 +44,7 @@ test('basic', async ({ page, mockPage, mockRecord }) => {
   await page.getByRole('button', { name: 'OK', exact: true }).click();
   await expect(
     page
-      .getByTestId('drawer-Action.Container-collection1-Edit record')
+      .getByLabel('Edit', { exact: true })
       .getByLabel('block-item-CardItem-')
       .getByText(record.manyToMany[0].singleLineText),
   ).toBeHidden();

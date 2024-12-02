@@ -6,7 +6,7 @@ ARG BEFORE_PACK_NOCOBASE="ls -l"
 ARG PLUGINS_DIRS
 
 ENV PLUGINS_DIRS=${PLUGINS_DIRS}
-ENV COMMIT_HASH=${COMMIT_HASH}
+
 
 RUN npx npm-cli-adduser --username test --password test -e test@nocobase.com -r $VERDACCIO_URL
 
@@ -46,18 +46,25 @@ RUN cd /app \
   && rm -rf nocobase.tar.gz \
   && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
 
-RUN echo "${COMMIT_HASH}" > /tmp/commit_hash.txt
-
 
 FROM node:20.13-bullseye-slim
-RUN apt-get update && apt-get install -y nginx libaio1
-RUN rm -rf /etc/nginx/sites-enabled/default
 
+RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN sh -c 'echo "deb http://mirrors.ustc.edu.cn/postgresql/repos/apt bullseye-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+RUN wget --quiet -O - http://mirrors.ustc.edu.cn/postgresql/repos/apt/ACCC4CF8.asc | apt-key add -
+
+RUN apt-get update && apt-get -y --no-install-recommends install nginx libaio1 postgresql-client-16 postgresql-client-17 \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN rm -rf /etc/nginx/sites-enabled/default
 COPY ./docker/nocobase/nocobase.conf /etc/nginx/sites-enabled/nocobase.conf
 COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz
-COPY --from=builder /tmp/commit_hash.txt /app/commit_hash.txt
 
 WORKDIR /app/nocobase
+
+RUN mkdir -p /app/nocobase/storage/uploads/ && echo "$COMMIT_HASH" >> /app/nocobase/storage/uploads/COMMIT_HASH
 
 COPY ./docker/nocobase/docker-entrypoint.sh /app/
 

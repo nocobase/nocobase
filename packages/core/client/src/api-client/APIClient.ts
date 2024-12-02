@@ -120,7 +120,9 @@ export class APIClient extends APIClientSDK {
 
   toErrMessages(error) {
     if (typeof error?.response?.data === 'string') {
-      return [{ message: error?.response?.data }];
+      const tempElement = document.createElement('div');
+      tempElement.innerHTML = error?.response?.data;
+      return [{ message: tempElement.textContent || tempElement.innerText }];
     }
     return (
       error?.response?.data?.errors ||

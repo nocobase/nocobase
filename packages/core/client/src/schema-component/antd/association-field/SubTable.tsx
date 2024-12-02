@@ -10,7 +10,7 @@
 import { css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { exchangeArrayState } from '@formily/core/esm/shared/internals';
-import { observer, RecursionField, useFieldSchema } from '@formily/react';
+import { observer, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { isArr } from '@formily/shared';
 import { Button } from 'antd';
@@ -30,12 +30,13 @@ import { CollectionProvider_deprecated } from '../../../collection-manager';
 import { CollectionRecordProvider, useCollection, useCollectionRecord } from '../../../data-source';
 import { markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
 import { FlagProvider } from '../../../flag-provider';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider } from '../action';
 import { useSubTableSpecialCase } from '../form-item/hooks/useSpecialCase';
-import { Table } from '../table-v2/Table';
 import { SubFormProvider, useAssociationFieldContext, useFieldNames } from './hooks';
 import { useTableSelectorProps } from './InternalPicker';
+import { Table } from './Table';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
 
 const subTableContainer = css`
@@ -61,10 +62,13 @@ const subTableContainer = css`
     transform: translateY(0);
     opacity: 1;
   }
+  .ant-table-cell .ant-formily-item-control {
+    max-width: 100% !important;
+  }
 `;
 
 const tableClassName = css`
-  .ant-formily-item.ant-formily-item-feedback-layout-loose {
+  .ant-formily-item-feedback-layout-popover {
     margin-bottom: 0px !important;
   }
   .ant-formily-editable {
@@ -201,7 +205,6 @@ export const SubTable: any = observer(
               <SubFormProvider value={{ value: null, collection, fieldSchema: fieldSchema.parent, skip: true }}>
                 <Table
                   className={tableClassName}
-                  bordered
                   size={'small'}
                   field={field}
                   showIndex
@@ -281,7 +284,7 @@ export const SubTable: any = observer(
                       useCreateActionProps,
                     }}
                   >
-                    <RecursionField
+                    <NocoBaseRecursionField
                       onlyRenderProperties
                       basePath={field.address}
                       schema={fieldSchema.parent}

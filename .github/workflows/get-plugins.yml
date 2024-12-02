@@ -2,6 +2,9 @@ name: Get plugins
 
 on:
   workflow_call:
+    secrets:
+      NOCOBASE_APP_PRIVATE_KEY:
+        required: true
     outputs:
       all-plugins:
         value: ${{ jobs.get-plugins.outputs.all-plugins }}
@@ -35,13 +38,51 @@ jobs:
           owner: nocobase
           skip-token-revoke: true
       - id: get-plugins
+        name: Get plugins
         shell: bash
         run: |
-          echo "all-plugins=$(gh search repos "props.plugin-type:custom,rc,beta,alpha,unreleased" --owner=nocobase --json name | jq -r 'map(.name) | tostring')" >> "$GITHUB_OUTPUT"
-          echo "custom-plugins=$(gh search repos "props.plugin-type:custom" --owner=nocobase --json name | jq -r 'map(.name) | tostring')" >> "$GITHUB_OUTPUT"
-          echo "rc-plugins=$(gh search repos "props.plugin-type:rc" --owner=nocobase --json name | jq -r 'map(.name) | tostring')" >> "$GITHUB_OUTPUT"
-          echo "beta-plugins=$(gh search repos "props.plugin-type:beta,rc" --owner=nocobase --json name | jq -r 'map(.name) | tostring')" >> "$GITHUB_OUTPUT"
-          echo "alpha-plugins=$(gh search repos "props.plugin-type:alpha,beta,rc" --owner=nocobase --json name | jq -r 'map(.name) | tostring')" >> "$GITHUB_OUTPUT"
-          echo "unreleased-plugins=$(gh search repos "props.plugin-type:unreleased" --owner=nocobase --json name | jq -r 'map(.name) | tostring')" >> "$GITHUB_OUTPUT"
+          function retry() {
+            local i=0
+            local plugins="[]"
+            until [ "$i" -ge 2 ]
+            do
+              plugins=$(gh search repos "props.plugin-type:$1" --owner=nocobase --json name | jq -r 'map(.name) | tostring') && [[ "$plugins" != "[]" ]] && break
+              i=$((i+1))
+              sleep 10
+            done
+            echo $plugins
+          }
+          allPlugins=$(retry custom,rc,beta,alpha,unreleased)
+          if [[ "$allPlugins" == "[]" ]]; then
+            echo "Get all plugins empty"
+            exit 1
+          fi
+          customPlugins=$(retry custom)
+          if [[ "$customPlugins" == "[]" ]]; then
+            echo "Get custom plugins empty"
+            exit 1
+          fi
+          rcPlugins=$(retry rc)
+          if [[ "$rcPlugins" == "[]" ]]; then
+            echo "Get rc plugins empty"
+            exit 1
+          fi
+          betaPlugins=$(retry beta,rc)
+          if [[ "$betaPlugins" == "[]" ]]; then
+            echo "Get beta plugins empty"
+            exit 1
+          fi
+          alphaPlugins=$(retry alpha,beta,rc)
+          if [[ "$alphaPlugins" == "[]" ]]; then
+            echo "Get alpha plugins empty"
+            exit 1
+          fi
+          unreleasedPlugins=$(retry unreleased)
+          echo "all-plugins=$allPlugins" >> "$GITHUB_OUTPUT"
+          echo "custom-plugins=$customPlugins" >> "$GITHUB_OUTPUT"
+          echo "rc-plugins=$rcPlugins" >> "$GITHUB_OUTPUT"
+          echo "beta-plugins=$betaPlugins" >> "$GITHUB_OUTPUT"
+          echo "alpha-plugins=$alphaPlugins" >> "$GITHUB_OUTPUT"
+          echo "unreleased-plugins=$unreleasedPlugins" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
