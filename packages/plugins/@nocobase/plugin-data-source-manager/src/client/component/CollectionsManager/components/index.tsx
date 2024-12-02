@@ -41,7 +41,7 @@ export const SourceKey = observer(
         <Select
           disabled={sourceKey}
           options={options}
-          defaultValue={options?.[0]?.value || sourceKey}
+          defaultValue={sourceKey || options?.[0]?.value}
           onChange={props?.onChange}
           showSearch
         />
