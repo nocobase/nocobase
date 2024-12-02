@@ -309,7 +309,7 @@ describe('FieldSettingsFormItem', () => {
               type: 'select',
             },
             {
-              title: 'Open size',
+              title: 'Popup size',
               type: 'select',
             },
             {
