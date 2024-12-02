@@ -12,7 +12,7 @@ import { randomUUID } from 'crypto';
 
 import LRUCache from 'lru-cache';
 
-import { Op, Transaction, Transactionable } from '@nocobase/database';
+import { Op, Transactionable } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
@@ -46,7 +46,7 @@ export type EventOptions = {
   eventKey?: string;
   context?: any;
   deferred?: boolean;
-  immediately?: boolean;
+  manually?: boolean;
   [key: string]: any;
 } & Transactionable;
 
@@ -371,7 +371,7 @@ export default class PluginWorkflowServer extends Plugin {
       logger.debug(`ignored event data:`, context);
       return;
     }
-    if (!options.immediately && !workflow.enabled) {
+    if (!options.manually && !workflow.enabled) {
       logger.warn(`workflow ${workflow.id} is not enabled, event will be ignored`);
       return;
     }
@@ -381,7 +381,7 @@ export default class PluginWorkflowServer extends Plugin {
       return;
     }
 
-    if (options.immediately || this.isWorkflowSync(workflow)) {
+    if (options.manually || this.isWorkflowSync(workflow)) {
       return this.triggerSync(workflow, context, options);
     }
 
