@@ -9,7 +9,7 @@
 
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/json-schema';
-import { useField, useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema, useForm } from '@formily/react';
 import { Tooltip } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -25,7 +25,6 @@ import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Tabl
 import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
 import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
 import { isPatternDisabled } from '../../../../schema-settings/isPatternDisabled';
-
 export const tableColumnSettings = new SchemaSettings({
   name: 'fieldSettings:TableColumn',
   items: [
@@ -423,6 +422,7 @@ export const tableColumnSettings = new SchemaSettings({
             };
           },
         },
+
         fieldComponentSettingsItem,
       ],
     },

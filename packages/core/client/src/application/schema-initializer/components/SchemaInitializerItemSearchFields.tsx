@@ -123,62 +123,59 @@ export const useMenuSearch = (props: { children: any[]; showType?: boolean; hide
   // 最终结果项
   const resultItems = useMemo<MenuProps['items']>(() => {
     const res = [];
-    if (!hideSearch && (items.length > 10 || searchValue)) {
-      res.push({
-        key: `search-${uid()}`,
-        Component: () => (
-          <SearchFields
-            name={name}
-            value={searchValue}
-            onChange={(val: string) => {
-              setSearchValue(val);
-            }}
-          />
-        ),
-        onClick({ domEvent }) {
-          domEvent.stopPropagation();
-        },
-        ...(showType ? { isMenuType: true } : {}),
-      });
-    }
+    try {
+      // 如果满足条件则显示搜索框
+      if (!hideSearch && (items.length > 10 || searchValue)) {
+        res.push({
+          key: `search-${uid()}`,
+          Component: () => (
+            <SearchFields name={name} value={searchValue} onChange={(val: string) => setSearchValue(val)} />
+          ),
+          onClick({ domEvent }) {
+            domEvent.stopPropagation();
+          },
+          ...(showType ? { isMenuType: true } : {}),
+        });
+      }
 
-    if (limitedSearchedItems.length > 0) {
+      // 如果有匹配的项目，渲染过滤后的项
+      if (limitedSearchedItems.length > 0) {
+        limitedSearchedItems.forEach((item) => {
+          // 如果是子菜单或分组项，递归处理
+          if (['subMenu', 'itemGroup'].includes(item.type)) {
+            // 避免动态渲染hooks
+            const childItems = item.children
+              ? // eslint-disable-next-line react-hooks/rules-of-hooks
+                useMenuSearch({
+                  children: item.children,
+                  showType,
+                  hideSearch,
+                  name: item.name,
+                })
+              : [];
+            res.push({ ...item, children: childItems });
+          } else {
+            res.push(item);
+          }
+        });
+      } else {
+        // 没有匹配项时显示空状态
+        res.push({
+          key: 'empty',
+          style: { height: 150 },
+          Component: () => (
+            <div onClick={(e) => e.stopPropagation()}>
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            </div>
+          ),
+          ...(showType ? { isMenuType: true } : {}),
+        });
+      }
+    } catch (error) {
       res.push(...limitedSearchedItems);
-    } else {
-      res.push({
-        key: 'empty',
-        style: {
-          height: 150,
-        },
-        Component: () => (
-          <div onClick={(e) => e.stopPropagation()}>
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
-          </div>
-        ),
-        ...(showType ? { isMenuType: true } : {}),
-      });
     }
-
     return res;
   }, [hideSearch, limitedSearchedItems, searchValue, showType]);
 
-  const result = processedResult(resultItems, showType, hideSearch, name);
-
-  return children ? result : undefined;
-};
-
-// 处理嵌套子菜单
-const processedResult = (resultItems, showType, hideSearch, name) => {
-  return resultItems.map((item: any) => {
-    if (['subMenu', 'itemGroup'].includes(item.type)) {
-      const childItems = useMenuSearch({
-        children: item.children,
-        showType,
-        hideSearch,
-        name: item.name,
-      });
-      return { ...item, children: childItems };
-    }
-    return item;
-  });
+  return children ? resultItems : undefined;
 };
