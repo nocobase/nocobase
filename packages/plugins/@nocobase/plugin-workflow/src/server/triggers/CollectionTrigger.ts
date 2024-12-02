@@ -75,7 +75,7 @@ export default class CollectionTrigger extends Trigger {
     }
   }
 
-  async prepare(workflow: WorkflowModel, data: Model, options) {
+  async prepare(workflow: WorkflowModel, data: Model | Record<string, any>, options) {
     const { condition, changed, mode, appends } = workflow.config;
     const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
     const { collectionManager } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName);
@@ -85,6 +85,7 @@ export default class CollectionTrigger extends Trigger {
 
     // NOTE: if no configured fields changed, do not trigger
     if (
+      data instanceof Model &&
       changed &&
       changed.length &&
       changed
