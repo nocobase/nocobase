@@ -58,14 +58,16 @@ class Package {
       return [version, this.data.versions[version].dist.tarball];
     }
 
-    if (version.includes('beta')) {
-      version = version.split('beta')[0] + 'beta';
-    } else if (version.includes('alpha')) {
-      const prefix = (version = version.split('alpha')[0]);
-      version = Object.keys(this.data.versions)
-        .filter((ver) => ver.startsWith(`${prefix}alpha`))
-        .sort()
-        .pop();
+    const keys = version.split('.');
+    const length = keys.length;
+
+    if (version.includes('rc')) {
+      version = version.split('-').shift();
+    }
+
+    if (length === 5) {
+      keys.pop();
+      version = keys.join('.');
     }
 
     if (version === 'latest') {
@@ -93,9 +95,23 @@ class Package {
     return false;
   }
 
+  async isDownloaded(version) {
+    const packageFile = path.resolve(process.env.PLUGIN_STORAGE_PATH, this.packageName, 'package.json');
+    if (await fs.exists(packageFile)) {
+      const json = await fs.readJson(packageFile);
+      if (json.version === version) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   async download(options = {}) {
     if (await this.isDevPackage()) {
       console.log(chalk.yellowBright(`Skipped: ${this.packageName} is dev package`));
+      return;
+    }
+    if (await this.isDownloaded(options.version)) {
       return;
     }
     await this.getInfo();
@@ -105,6 +121,9 @@ class Package {
     }
     try {
       const [version, url] = this.getTarball(options.version);
+      if (await this.isDownloaded(version)) {
+        return;
+      }
       const response = await axios({
         url,
         responseType: 'stream',
@@ -200,8 +219,12 @@ module.exports = (cli) => {
     .command('download-pro')
     .option('-V, --version [version]')
     .action(async () => {
-      const { NOCOBASE_PKG_URL, NOCOBASE_PKG_USERNAME, NOCOBASE_PKG_PASSWORD } = process.env;
-      if (!(NOCOBASE_PKG_URL && NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD)) {
+      const {
+        NOCOBASE_PKG_URL = 'https://pkg.nocobase.com/',
+        NOCOBASE_PKG_USERNAME,
+        NOCOBASE_PKG_PASSWORD,
+      } = process.env;
+      if (!(NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD)) {
         return;
       }
       const credentials = { username: NOCOBASE_PKG_USERNAME, password: NOCOBASE_PKG_PASSWORD };
