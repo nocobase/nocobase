@@ -5,6 +5,124 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.4.0](https://github.com/nocobase/nocobase/compare/v1.3.53...v1.4.0) - 2024-12-03
+
+## 🎉 主要新特性
+
+### 简化插件的添加和更新流程
+
+![20241201170853](https://static-docs.nocobase.com/20241201170853.png)
+
+- 插件列表直接读取本地目录
+- 合并插件添加和更新流程
+- 界面支持批量激活插件
+- 简化商业插件下载和升级流程
+
+参考文档：
+
+- [发布日志 / 简化插件的添加和更新流程](https://www.nocobase.com/cn/blog/simplify-the-process-of-adding-and-updating-plugins)
+
+### 通知
+
+![20241201171806](https://static-docs.nocobase.com/20241201171806.png)
+
+- 站内信：支持用户在 NocoBase 应用内实时接收消息通知；
+- 电子邮件：通过电子邮件渠道发送通知，目前只支持 SMTP 传输方式；
+- 企微通知：通过企业微信渠道发送通知。
+
+参考文档：
+
+- [通知管理](https://docs-cn.nocobase.com/handbook/notification-manager)
+
+### 用户数据同步
+
+![20241201172843](https://static-docs.nocobase.com/20241201172843.png)
+
+参考文档：
+
+- [用户数据同步](https://docs-cn.nocobase.com/handbook/user-data-sync)
+
+### 备份管理器
+
+![20241201170237](https://static-docs.nocobase.com/20241201170237.png)
+
+参考文档：
+
+- 备份管理器
+
+### KingbaseES 数据源
+
+使用人大金仓（KingbaseES）数据库作为数据源，可以作为主数据库，也可以作为外部数据库使用。
+
+参考文档：
+
+- [数据源 - 人大金仓（KingbaseES）](https://docs-cn.nocobase.com/handbook/data-source-kingbase)
+
+### Oracle 外部数据源
+
+使用外部的 Oracle 数据库作为数据源。
+
+参考文档：
+
+- [外部数据源 - Oracle](https://docs-cn.nocobase.com/handbook/data-source-external-oracle)
+
+### 公开表单
+
+对外分享公开表单，向匿名用户收集信息。
+
+![20241201165614](https://static-docs.nocobase.com/20241201165614.png)
+
+参考文档：
+
+- [公开表单](https://docs-cn.nocobase.com/handbook/public-forms)
+
+### 分步表单
+
+参考文档：
+
+- [分步表单](https://docs-cn.nocobase.com/handbook/block-steps-from)
+
+### 附件（URL）
+
+支持 URL 格式的附件。
+
+参考文档：
+
+- [数据表字段：附件（URL）](https://docs-cn.nocobase.com/handbook/field-attachment-url)
+
+### 掩码字段
+
+![20241201165938](https://static-docs.nocobase.com/20241201165938.png)
+
+参考文档：
+
+- [掩码字段](https://docs-cn.nocobase.com/handbook/field-component-mask)
+
+### 工作流 JavaScript 节点
+
+参考文档：
+
+- [工作流 JavaScript 节点](https://docs-cn.nocobase.com/handbook/workflow-javascript)
+
+### 数据可视化：Echarts
+
+参考文档：
+
+- [数据可视化：Echarts](https://docs-cn.nocobase.com/handbook/data-visualization-echarts)
+
+### 操作面板
+
+用于放置各种快捷操作，目前支持：
+
+- 链接
+- 扫二维码
+- 弹窗
+- 自定义请求
+
+参考文档：
+
+- [操作面板](https://docs-cn.nocobase.com/handbook/block-action-panel)
+
 ## [v1.3.53](https://github.com/nocobase/nocobase/compare/v1.3.52...v1.3.53) - 2024-11-28
 
 ### 🚀 优化
