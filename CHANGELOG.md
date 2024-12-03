@@ -7,9 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v1.4.0](https://github.com/nocobase/nocobase/compare/v1.3.53...v1.4.0) - 2024-12-03
 
-## Major New Features
+## 🎉 Major New Features
 
-### Simplified Plugin Addition and Update Process
+### Simplify the process of adding and updating plugins
 
 ![20241201170853](https://static-docs.nocobase.com/20241201170853.png)
 
@@ -22,13 +22,16 @@ Reference documentation:
 
 * [Release Notes / Simplify the process of adding and updating plugins](https://www.nocobase.com/en/blog/simplify-the-process-of-adding-and-updating-plugins)
 
-### Notifications
+### Notification
 
 ![20241201171806](https://static-docs.nocobase.com/20241201171806.png)
 
-* In-app messages: Enables users to receive real-time notifications within the NocoBase app.
-* Email notifications: Sends notifications via email, currently supporting SMTP transmission only.
-* WeCom notifications: Sends notifications through the WeCom channel.
+* **Notification: In-app message**
+  It supports users in receiving real-time message notifications within the NocoBase application;
+* **Notification: Email**
+  Used for sending email notifications with built-in SMTP transport. Details;
+* **Notification: WeCom**
+  Sends notifications through the WeCom channel.
 
 Reference documentation:
 
@@ -42,29 +45,13 @@ Reference documentation:
 
 * [User Data Synchronization](https://docs.nocobase.com/handbook/user-data-sync)
 
-### Backups Manager
+### Backup Manager
 
 ![20241201170237](https://static-docs.nocobase.com/20241201170237.png)
 
 Reference documentation:
 
-* [Backups Manager](https://docs.nocobase.com/handbook/backups)
-
-### KingbaseES Data Source
-
-Use the KingbaseES database as a data source, either as the primary database or an external database.
-
-Reference documentation:
-
-* [Data Source - KingbaseES](https://docs.nocobase.com/handbook/data-source-kingbase)
-
-### Oracle External Data Source
-
-Use external Oracle databases as a data source.
-
-Reference documentation:
-
-* [External Data Source - Oracle](https://docs.nocobase.com/handbook/data-source-external-oracle)
+* [Backup Manager](https://docs.nocobase.com/handbook/backups)
 
 ### Public Forms
 
@@ -76,48 +63,84 @@ Reference documentation:
 
 * [Public Forms](https://docs.nocobase.com/handbook/public-forms)
 
-### Step-by-Step Forms
+### Data Source: KingbaseES
+
+Use the KingbaseES database as a data source, either as the main database or an external database.
+
+![20241024121815](https://static-docs.nocobase.com/20241024121815.png)
 
 Reference documentation:
 
-* [Step-by-Step Forms](https://docs.nocobase.com/handbook/block-steps-form)
+* [Data Source - KingbaseES](https://docs.nocobase.com/handbook/data-source-kingbase)
 
-### Attachments (URL)
+### Data Source: External Oracle
+
+Use external Oracle databases as a data source.
+
+![628abc5eb797e6b903d4b548f773a13b.png](https://static-docs.nocobase.com/628abc5eb797e6b903d4b548f773a13b.png)
+
+Reference documentation:
+
+* [External Data Source - Oracle](https://docs.nocobase.com/handbook/data-source-external-oracle)
+
+### Collection Field: Attachments (URL)
 
 Supports URL-based attachments.
+
+![e8772bec3d4b1771c1b21d087c9a4185.png](https://static-docs.nocobase.com/e8772bec3d4b1771c1b21d087c9a4185.png)
 
 Reference documentation:
 
 * [Data Table Field: Attachments (URL)](https://docs.nocobase.com/handbook/field-attachment-url)
 
-### Masked Fields
+### Field Component: Mask
 
 ![20241201165938](https://static-docs.nocobase.com/20241201165938.png)
 
 Reference documentation:
 
-* [Masked Fields](https://docs.nocobase.com/handbook/field-component-mask)
+* [Field component: Mask](https://docs.nocobase.com/handbook/field-component-mask)
 
-### Workflow JavaScript Nodes
+### Workflow: JavaScript
+
+JavaScript nodes allow users to execute JavaScript within a workflow. The script can use variables from upstream nodes in the process as parameters and the return value of the script can be used in downstream nodes.
+
+![20241202203655](https://static-docs.nocobase.com/20241202203655.png)
 
 Reference documentation:
 
-* [Workflow - JavaScript Nodes](https://docs.nocobase.com/handbook/workflow-javascript)
+* [Workflow - JavaScript](https://docs.nocobase.com/handbook/workflow-javascript)
 
-### Data Visualization: Echarts
+### Data Visualization: ECharts
+
+Added ECharts, supporting funnel, radar and more charts, and providing more user-friendly configurations.
+
+![data-visualization-echarts](https://static-docs.nocobase.com/202410091022965.png)
 
 Reference documentation:
 
 * [Data Visualization: Echarts](https://docs.nocobase.com/handbook/data-visualization-echarts)
 
-### Action Panel
+### Block: Multi-step form
+
+![a503e153e8d714b9ca56f512142aeef1.png](https://static-docs.nocobase.com/a503e153e8d714b9ca56f512142aeef1.png)
+
+Reference documentation:
+
+* [Multi-step form](https://docs.nocobase.com/handbook/block-multi-step-from)
+
+### Block: Action Panel
 
 Designed to house various quick actions, currently supports:
 
-* Links
-* QR code scanning
-* Pop-ups
-* Custom requests
+* Link
+* Scan QR code
+* Popup
+* Custom request
+
+Supports both grid and list layouts
+
+![9942e6741e99195713f9e2981b02f228.png](https://static-docs.nocobase.com/9942e6741e99195713f9e2981b02f228.png)
 
 Reference documentation:
 
