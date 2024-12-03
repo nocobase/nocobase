@@ -5,9 +5,6 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
-    branches:
-      - chore/ci-next-to-main
   workflow_dispatch:
 
 jobs:
@@ -23,13 +20,13 @@ jobs:
       - name: Get repos
         id: get-repos
         run: |
-          # if [[ "${{ github.head_ref || github.ref_name }}" == "next" ]]; then
+          if [[ "${{ github.head_ref || github.ref_name }}" == "next" ]]; then
             echo "proRepos=$(echo '${{ needs.get-plugins.outputs.beta-plugins }}')" >> $GITHUB_OUTPUT
-          # elif [[ "${{ github.head_ref || github.ref_name }}" == "develop" ]]; then
-          #   echo "proRepos=$(echo '${{ needs.get-plugins.outputs.alpha-plugins }}')" >> $GITHUB_OUTPUT
-          # else
-          #   exit 1
-          # fi
+          elif [[ "${{ github.head_ref || github.ref_name }}" == "develop" ]]; then
+            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.alpha-plugins }}')" >> $GITHUB_OUTPUT
+          else
+            exit 1
+          fi
   merge:
     runs-on: ubuntu-latest
     needs:
@@ -47,15 +44,15 @@ jobs:
       - name: Get info
         id: get-info
         run: |
-          # if [[ "${{ github.head_ref || github.ref_name }}" == "next" ]]; then
+          if [[ "${{ github.head_ref || github.ref_name }}" == "next" ]]; then
             echo "baseBranch=$(echo 'next')" >> $GITHUB_OUTPUT
             echo "targetBranch=$(echo 'main')" >> $GITHUB_OUTPUT
-          # elif [[ "${{ github.head_ref || github.ref_name }}" == "develop" ]]; then
-          #   echo "baseBranch=$(echo 'develop')" >> $GITHUB_OUTPUT
-          #   echo "targetBranch=$(echo 'next')" >> $GITHUB_OUTPUT
-          # else
-          #   exit 1
-          # fi
+          elif [[ "${{ github.head_ref || github.ref_name }}" == "develop" ]]; then
+            echo "baseBranch=$(echo 'develop')" >> $GITHUB_OUTPUT
+            echo "targetBranch=$(echo 'next')" >> $GITHUB_OUTPUT
+          else
+            exit 1
+          fi
       - uses: actions/create-github-app-token@v1
         id: app-token
         with:
@@ -83,8 +80,10 @@ jobs:
           git checkout ${{ steps.get-info.outputs.baseBranch }}
           git pull origin ${{ steps.get-info.outputs.baseBranch }}
           git merge ${{ steps.get-info.outputs.targetBranch }}
+          git push origin ${{ steps.get-info.outputs.baseBranch }} --atomic --tags
       - name: Merge ${{ steps.get-info.outputs.baseBranch }} into ${{ steps.get-info.outputs.targetBranch }}
         shell: bash
         run: |
           git checkout ${{ steps.get-info.outputs.targetBranch }}
           git merge ${{ steps.get-info.outputs.baseBranch }}
+          git push origin ${{ steps.get-info.outputs.targetBranch }} --atomic --tags
