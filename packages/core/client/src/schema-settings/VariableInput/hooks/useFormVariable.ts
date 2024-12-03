@@ -117,7 +117,7 @@ export const useCurrentFormVariable = ({
     title: t('Current form'),
     collectionName: collectionName,
     noDisabled,
-    dataSource: dataSource.key,
+    dataSource: dataSource?.key,
     returnFields: (fields, option) => {
       // fix https://nocobase.height.app/T-2277
       return fields;
