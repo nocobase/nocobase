@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { get } from 'lodash';
+import { get, pick } from 'lodash';
 import { BelongsTo, HasOne } from 'sequelize';
 import { Model, modelAssociationByKey } from '@nocobase/database';
 import Application, { DefaultContext } from '@nocobase/server';
 import { Context as ActionContext, Next } from '@nocobase/actions';
 
-import WorkflowPlugin, { Trigger, WorkflowModel, toJSON } from '@nocobase/plugin-workflow';
+import WorkflowPlugin, { EventOptions, Trigger, WorkflowModel, toJSON } from '@nocobase/plugin-workflow';
 import { joinCollectionName, parseCollectionName } from '@nocobase/data-source-manager';
 
 interface Context extends ActionContext, DefaultContext {}
@@ -185,7 +185,46 @@ export default class extends Trigger {
     }
   }
 
-  on(workflow: WorkflowModel) {}
+  async execute(workflow: WorkflowModel, context: Context, options: EventOptions) {
+    const { values } = context.action.params;
+    const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
+    const { collectionManager } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName);
+    const { filterTargetKey, repository } = collectionManager.getCollection(collectionName);
+    const filterByTk = Array.isArray(filterTargetKey)
+      ? pick(
+          values.data,
+          filterTargetKey.sort((a, b) => a.localeCompare(b)),
+        )
+      : values.data[filterTargetKey];
+    const UserRepo = context.app.db.getRepository('users');
+    const actor = await UserRepo.findOne({
+      filterByTk: values.userId,
+      appends: ['roles'],
+    });
+    if (!actor) {
+      throw new Error('user not found');
+    }
+    const { roles, ...user } = actor.desensitize().get();
+    const roleName = values.roleName || roles?.[0]?.name;
 
-  off(workflow: WorkflowModel) {}
+    let { data } = values;
+    if (workflow.config.appends?.length) {
+      data = await repository.findOne({
+        filterByTk,
+        appends: workflow.config.appends,
+      });
+    }
+    return this.workflow.trigger(
+      workflow,
+      {
+        data,
+        user,
+        roleName,
+      },
+      {
+        ...options,
+        httpContext: context,
+      },
+    );
+  }
 }
