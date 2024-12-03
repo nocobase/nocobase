@@ -10,6 +10,9 @@ on:
       is_feat:
         description: 'is feat'
         type: boolean
+      add_minor:
+        description: 'add minor number'
+        type: boolean
 
 jobs:
   get-plugins:
@@ -115,11 +118,12 @@ jobs:
           git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
           git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
           echo "packages/pro-plugins" >> .git/info/exclude
-          bash release.sh $IS_FEAT
+          bash release.sh $IS_FEAT $ADD_MINOR
         env:
           PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.beta-plugins }}
           CUSTOM_PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.custom-plugins }}
           IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
+          ADD_MINOR: ${{ inputs.add_minor && '--add-minor' || '' }}
       - name: Push and merge into next
         run: |
           for repo in ${{ join(fromJSON(needs.get-plugins.outputs.beta-plugins), ' ') }} ${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ' ') }}

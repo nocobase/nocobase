@@ -54,7 +54,7 @@ const ReadPrettyInternal = observer(
       const content =
         field.value &&
         currentOptions.map((option, index) => (
-          <Tag key={index} color={option[fieldNames.color]} icon={option.icon} style={{ color: 'inherit' }}>
+          <Tag key={index} color={option[fieldNames.color]} icon={option.icon}>
             {option[fieldNames.label]}
           </Tag>
         ));

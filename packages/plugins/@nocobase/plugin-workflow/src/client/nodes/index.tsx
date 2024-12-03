@@ -159,9 +159,6 @@ export function useAvailableUpstreams(node, filter?) {
  */
 export function useUpstreamScopes(node) {
   const stack: any[] = [];
-  if (!node) {
-    return [];
-  }
 
   for (let current = node; current; current = current.upstream) {
     if (current.upstream && current.branchIndex != null) {
@@ -406,11 +403,12 @@ function TestButton() {
   const form = useMemo(() => createForm(), []);
 
   return (
-    <NodeContext.Provider value={{ type: node.type, config: values }}>
+    <NodeContext.Provider value={{ ...node, config: values }}>
       <VariableKeysContext.Provider value={keys}>
         <SchemaComponent
           components={{
             Alert,
+            TestFormFieldset,
           }}
           scope={{
             useCancelAction,
@@ -451,7 +449,7 @@ function TestButton() {
                     type: 'object',
                     title: '{{t("Replace variables", { ns: "workflow" })}}',
                     'x-decorator': 'FormItem',
-                    'x-component': TestFormFieldset,
+                    'x-component': 'TestFormFieldset',
                   },
                   actions: {
                     type: 'void',
