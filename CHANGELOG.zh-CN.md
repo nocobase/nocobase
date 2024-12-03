@@ -30,7 +30,7 @@
 - 电子邮件：通过电子邮件渠道发送通知，目前只支持 SMTP 传输方式；
 - 企微通知：通过企业微信渠道发送通知。
 
-参考手册
+参考文档：
 
 - [通知管理](https://docs-cn.nocobase.com/handbook/notification-manager)
 
