@@ -27,6 +27,17 @@ AssociationFieldMobile.InternalSelect = AssociationField.InternalSelect;
 AssociationFieldMobile.ReadPretty = AssociationField.ReadPretty;
 AssociationFieldMobile.FileSelector = AssociationField.FileSelector;
 
+const DatePickerMobile = (props) => {
+  const { designable } = useDesignable();
+  if (designable !== false) {
+    return <DatePicker {...props} />;
+  } else {
+    return <MobileDateTimePicker {...props} />;
+  }
+};
+DatePickerMobile.FilterWithPicker = DatePicker.FilterWithPicker;
+DatePickerMobile.RangePicker = DatePicker.RangePicker;
+
 const mobileComponents = {
   Button: MobileButton,
   Select: (props) => {
@@ -37,14 +48,7 @@ const mobileComponents = {
       return <MobilePicker {...props} />;
     }
   },
-  DatePicker: (props) => {
-    const { designable } = useDesignable();
-    if (designable !== false) {
-      return <DatePicker {...props} />;
-    } else {
-      return <MobileDateTimePicker {...props} />;
-    }
-  },
+  DatePicker: DatePickerMobile,
   UnixTimestamp: MobileDateTimePicker,
   Modal: MobileDialog,
   AssociationField: AssociationFieldMobile,
