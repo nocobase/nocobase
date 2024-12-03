@@ -140,4 +140,54 @@ export default {
     },
     properties: {},
   },
+  AddNewAction: {
+    type: 'void',
+    'x-component': 'AssociationField.SubTable.AddNewAction',
+    properties: {
+      'add-new': {
+        type: 'void',
+        title: '{{ t("Add new") }}',
+        'x-component': 'Action',
+        'x-designer': 'Action.Designer',
+        'x-action': '',
+        'x-designer-props': {
+          enableDrag: false,
+        },
+        'x-action-settings': {
+          removable: false,
+          disableSecondConFirm: true,
+        },
+        'x-component-props': {
+          block: true,
+          type: 'default',
+          onClick: '{{handleAddNew}}',
+        },
+      },
+    },
+  },
+  SelectAction: {
+    type: 'void',
+    'x-component': 'AssociationField.SubTable.SelectAction',
+    properties: {
+      select: {
+        type: 'void',
+        title: '{{ t("Select") }}',
+        'x-component': 'Action',
+        'x-action': '',
+        'x-designer': 'Action.Designer',
+        'x-designer-props': {
+          enableDrag: false,
+        },
+        'x-action-settings': {
+          removable: false,
+          disableSecondConFirm: true,
+        },
+        'x-component-props': {
+          block: true,
+          type: 'default',
+          onClick: '{{handleSelect}}',
+        },
+      },
+    },
+  },
 };
