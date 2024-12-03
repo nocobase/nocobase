@@ -17,7 +17,7 @@ import set from 'lodash/set';
 import React, { ComponentType, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { APIClient, useAPIClient } from '../../api-client';
-import { COMPONENT_LAZY_LOADED } from '../../lazy-helper';
+import { LAZY_COMPONENT_KEY } from '../../lazy-helper';
 import { SchemaComponentContext } from '../context';
 import { addAppVersion } from './addAppVersion';
 
@@ -780,7 +780,7 @@ export function useDesignable() {
           return component;
         }
         const c = get(components, component);
-        return c[COMPONENT_LAZY_LOADED] ?? c;
+        return c[LAZY_COMPONENT_KEY] ?? c;
       },
       [get],
     ),

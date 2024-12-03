@@ -12,7 +12,7 @@ import { Spin } from 'antd';
 import { get } from 'lodash';
 import { useImported, loadableResource } from 'react-imported-component';
 
-export const COMPONENT_LAZY_LOADED = Symbol('$$component_lazy_loaded');
+export const LAZY_COMPONENT_KEY = Symbol('LAZY_COMPONENT_KEY');
 
 /**
  * Lazily loads a React component or multiple components.
@@ -48,7 +48,7 @@ export function lazy<M extends Record<string, any>, K extends keyof M & string>(
     const LazyComponent = ReactLazy(() =>
       factory().then((module) => {
         const ret = module.default;
-        Component[COMPONENT_LAZY_LOADED] = ret;
+        Component[LAZY_COMPONENT_KEY] = ret;
         return {
           default: ret,
         };
@@ -67,7 +67,7 @@ export function lazy<M extends Record<string, any>, K extends keyof M & string>(
       const LazyComponent = ReactLazy(() =>
         factory().then((module) => {
           const component = get(module, name);
-          acc[name][COMPONENT_LAZY_LOADED] = component;
+          acc[name][LAZY_COMPONENT_KEY] = component;
           return {
             default: component,
           };
