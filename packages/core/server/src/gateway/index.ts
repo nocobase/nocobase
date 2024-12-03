@@ -178,9 +178,7 @@ export class Gateway extends EventEmitter {
   }
 
   responseErrorWithCode(code, res, options) {
-    const log = this.getLogger(options.appName, res);
     const error = applyErrorWithArgs(getErrorWithCode(code), options);
-    log.error(error.message, { method: 'responseErrorWithCode', error });
     this.responseError(res, error);
   }
 
@@ -233,8 +231,6 @@ export class Gateway extends EventEmitter {
     }
 
     const handleApp = await this.getRequestHandleAppName(req as IncomingRequest);
-    const log = this.getLogger(handleApp, res);
-
     const hasApp = AppSupervisor.getInstance().hasApp(handleApp);
 
     if (!hasApp) {
@@ -244,7 +240,6 @@ export class Gateway extends EventEmitter {
     let appStatus = AppSupervisor.getInstance().getAppStatus(handleApp, 'initializing');
 
     if (appStatus === 'not_found') {
-      log.warn(`app not found`, { method: 'requestHandler' });
       this.responseErrorWithCode('APP_NOT_FOUND', res, { appName: handleApp });
       return;
     }
@@ -263,7 +258,6 @@ export class Gateway extends EventEmitter {
     const app = await AppSupervisor.getInstance().getApp(handleApp);
 
     if (appStatus !== 'running') {
-      log.warn(`app is not running`, { method: 'requestHandler', status: appStatus });
       this.responseErrorWithCode(`${appStatus}`, res, { app, appName: handleApp });
       return;
     }
