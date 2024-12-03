@@ -48,7 +48,7 @@
 
 参考文档：
 
-- 备份管理器
+- [备份管理器](https://docs-cn.nocobase.com/handbook/backups)
 
 ### KingbaseES 数据源
 

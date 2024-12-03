@@ -7,6 +7,121 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v1.4.0](https://github.com/nocobase/nocobase/compare/v1.3.53...v1.4.0) - 2024-12-03
 
+## Major New Features
+
+### Simplified Plugin Addition and Update Process
+
+![20241201170853](https://static-docs.nocobase.com/20241201170853.png)
+
+* The plugin list now reads directly from the local directory.
+* Combined the processes for adding and updating plugins.
+* Interface supports batch activation of plugins.
+* Simplified the download and upgrade process for commercial plugins.
+
+Reference documentation:
+
+* [Release Notes / Simplify the process of adding and updating plugins](https://www.nocobase.com/en/blog/simplify-the-process-of-adding-and-updating-plugins)
+
+### Notifications
+
+![20241201171806](https://static-docs.nocobase.com/20241201171806.png)
+
+* In-app messages: Enables users to receive real-time notifications within the NocoBase app.
+* Email notifications: Sends notifications via email, currently supporting SMTP transmission only.
+* WeCom notifications: Sends notifications through the WeCom channel.
+
+Reference documentation:
+
+* [Notification Management](https://docs.nocobase.com/handbook/notification-manager)
+
+### User Data Synchronization
+
+![20241201172843](https://static-docs.nocobase.com/20241201172843.png)
+
+Reference documentation:
+
+* [User Data Synchronization](https://docs.nocobase.com/handbook/user-data-sync)
+
+### Backups Manager
+
+![20241201170237](https://static-docs.nocobase.com/20241201170237.png)
+
+Reference documentation:
+
+* [Backups Manager](https://docs.nocobase.com/handbook/backups)
+
+### KingbaseES Data Source
+
+Use the KingbaseES database as a data source, either as the primary database or an external database.
+
+Reference documentation:
+
+* [Data Source - KingbaseES](https://docs.nocobase.com/handbook/data-source-kingbase)
+
+### Oracle External Data Source
+
+Use external Oracle databases as a data source.
+
+Reference documentation:
+
+* [External Data Source - Oracle](https://docs.nocobase.com/handbook/data-source-external-oracle)
+
+### Public Forms
+
+Share public forms externally to collect information from anonymous users.
+
+![20241201165614](https://static-docs.nocobase.com/20241201165614.png)
+
+Reference documentation:
+
+* [Public Forms](https://docs.nocobase.com/handbook/public-forms)
+
+### Step-by-Step Forms
+
+Reference documentation:
+
+* [Step-by-Step Forms](https://docs.nocobase.com/handbook/block-steps-form)
+
+### Attachments (URL)
+
+Supports URL-based attachments.
+
+Reference documentation:
+
+* [Data Table Field: Attachments (URL)](https://docs.nocobase.com/handbook/field-attachment-url)
+
+### Masked Fields
+
+![20241201165938](https://static-docs.nocobase.com/20241201165938.png)
+
+Reference documentation:
+
+* [Masked Fields](https://docs.nocobase.com/handbook/field-component-mask)
+
+### Workflow JavaScript Nodes
+
+Reference documentation:
+
+* [Workflow - JavaScript Nodes](https://docs.nocobase.com/handbook/workflow-javascript)
+
+### Data Visualization: Echarts
+
+Reference documentation:
+
+* [Data Visualization: Echarts](https://docs.nocobase.com/handbook/data-visualization-echarts)
+
+### Action Panel
+
+Designed to house various quick actions, currently supports:
+
+* Links
+* QR code scanning
+* Pop-ups
+* Custom requests
+
+Reference documentation:
+
+* [Action Panel](https://docs.nocobase.com/handbook/block-action-panel)
 
 ## [v1.3.53](https://github.com/nocobase/nocobase/compare/v1.3.52...v1.3.53) - 2024-11-28
 
