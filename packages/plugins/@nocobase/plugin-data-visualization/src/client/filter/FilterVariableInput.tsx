@@ -13,7 +13,7 @@ import {
   VariableScopeProvider,
   getShouldChange,
   CollectionProvider,
-  CollectionFieldUISchemaProvider,
+  IsInNocoBaseRecursionFieldContext,
 } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import React, { useEffect } from 'react';
@@ -46,9 +46,9 @@ export const ChartFilterVariableInput: React.FC<any> = (props) => {
         {...componentProps}
         renderSchemaComponent={() => (
           <CollectionProvider name={collection} allowNull={!collection}>
-            <CollectionFieldUISchemaProvider fieldSchema={fieldSchema}>
+            <IsInNocoBaseRecursionFieldContext.Provider value={false}>
               <SchemaComponent schema={schema} />
-            </CollectionFieldUISchemaProvider>
+            </IsInNocoBaseRecursionFieldContext.Provider>
           </CollectionProvider>
         )}
         fieldNames={{}}

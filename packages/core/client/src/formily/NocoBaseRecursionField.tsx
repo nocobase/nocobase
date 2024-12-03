@@ -229,7 +229,7 @@ const propertiesToReactElement = ({
   );
 };
 
-const IsInNocoBaseRecursionFieldContext = React.createContext(false);
+export const IsInNocoBaseRecursionFieldContext = React.createContext(false);
 
 /**
  * @internal

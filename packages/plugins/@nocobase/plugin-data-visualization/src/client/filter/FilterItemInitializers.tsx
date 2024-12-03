@@ -22,6 +22,7 @@ import {
   DEFAULT_DATA_SOURCE_KEY,
   FormDialog,
   HTMLEncode,
+  IsInNocoBaseRecursionFieldContext,
   SchemaComponent,
   SchemaComponentOptions,
   SchemaInitializerItem,
@@ -30,7 +31,6 @@ import {
   useDesignable,
   useGlobalTheme,
   useSchemaInitializerItem,
-  CollectionFieldUISchemaProvider,
 } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Alert, ConfigProvider, Typography } from 'antd';
@@ -100,13 +100,15 @@ export const ChartFilterFormItem = observer(
       <BlockItem className={'nb-form-item'}>
         <CollectionManagerProvider dataSource={dataSource}>
           <CollectionProvider name={collection} allowNull={!collection}>
-            <CollectionFieldUISchemaProvider fieldSchema={schema}>
+            <CollectionFieldProvider name={schema.name} allowNull={!schema['x-collection-field']}>
               <ACLCollectionFieldProvider>
                 <ErrorBoundary onError={console.log} FallbackComponent={ErrorFallback}>
-                  <FormItem className={className} {...props} extra={extra} />
+                  <IsInNocoBaseRecursionFieldContext.Provider value={false}>
+                    <FormItem className={className} {...props} extra={extra} />
+                  </IsInNocoBaseRecursionFieldContext.Provider>
                 </ErrorBoundary>
               </ACLCollectionFieldProvider>
-            </CollectionFieldUISchemaProvider>
+            </CollectionFieldProvider>
           </CollectionProvider>
         </CollectionManagerProvider>
       </BlockItem>
