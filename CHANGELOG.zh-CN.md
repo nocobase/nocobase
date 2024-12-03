@@ -142,6 +142,7 @@ JavaScript 节点允许用户在工作流中执行一段自定义的服务端 Ja
 参考文档：
 
 - [操作面板](https://docs-cn.nocobase.com/handbook/block-action-panel)
+
 ## [v1.3.55](https://github.com/nocobase/nocobase/compare/v1.3.54...v1.3.55) - 2024-12-03
 
 ### 🚀 优化

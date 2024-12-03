@@ -145,6 +145,7 @@ Supports both grid and list layouts
 Reference documentation:
 
 * [Action Panel](https://docs.nocobase.com/handbook/block-action-panel)
+
 ## [v1.3.55](https://github.com/nocobase/nocobase/compare/v1.3.54...v1.3.55) - 2024-12-03
 
 ### 🚀 Improvements
