@@ -36,6 +36,8 @@ const DatePickerMobile = (props) => {
   }
 };
 DatePickerMobile.FilterWithPicker = DatePicker.FilterWithPicker;
+DatePickerMobile.RangePicker = DatePicker.RangePicker;
+
 const mobileComponents = {
   Button: MobileButton,
   Select: (props) => {
