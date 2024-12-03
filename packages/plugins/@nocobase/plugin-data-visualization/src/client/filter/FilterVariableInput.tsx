@@ -13,6 +13,7 @@ import {
   VariableScopeProvider,
   getShouldChange,
   CollectionProvider,
+  IsInNocoBaseRecursionFieldContext,
 } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import React, { useEffect } from 'react';
@@ -26,14 +27,10 @@ export const ChartFilterVariableInput: React.FC<any> = (props) => {
   const schema = {
     ...fieldSchema,
     'x-component': fieldSchema['x-component'] || 'Input',
-    'x-decorator': 'CollectionProvider',
-    'x-decorator-props': {
-      name: collection,
-      allowNull: !collection,
-    },
     title: '',
     name: 'value',
     default: '',
+    'x-read-pretty': false,
   };
   const componentProps = fieldSchema['x-component-props'] || {};
   const handleChange = useMemoizedFn(onChange);
@@ -47,7 +44,13 @@ export const ChartFilterVariableInput: React.FC<any> = (props) => {
     <VariableScopeProvider scope={options}>
       <VariableInput
         {...componentProps}
-        renderSchemaComponent={() => <SchemaComponent schema={schema} components={{ CollectionProvider }} />}
+        renderSchemaComponent={() => (
+          <CollectionProvider name={collection} allowNull={!collection}>
+            <IsInNocoBaseRecursionFieldContext.Provider value={false}>
+              <SchemaComponent schema={schema} />
+            </IsInNocoBaseRecursionFieldContext.Provider>
+          </CollectionProvider>
+        )}
         fieldNames={{}}
         value={value?.value}
         scope={options}

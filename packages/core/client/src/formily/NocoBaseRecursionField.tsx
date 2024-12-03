@@ -86,7 +86,7 @@ export const useCollectionFieldUISchema = () => {
   return React.useContext(CollectionFieldUISchemaContext) || {};
 };
 
-const CollectionFieldUISchemaProvider: FC<{
+export const CollectionFieldUISchemaProvider: FC<{
   fieldSchema: Schema;
 }> = (props) => {
   const { children, fieldSchema } = props;
@@ -229,7 +229,7 @@ const propertiesToReactElement = ({
   );
 };
 
-const IsInNocoBaseRecursionFieldContext = React.createContext(false);
+export const IsInNocoBaseRecursionFieldContext = React.createContext(false);
 
 /**
  * @internal
