@@ -9,6 +9,7 @@
 
 import { createForm, Form } from '@formily/core';
 import { Schema, useField } from '@formily/react';
+import { useUpdate } from 'ahooks';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import {
   CollectionRecord,
@@ -126,6 +127,8 @@ export const FormBlockProvider = withDynamicSchemaProps((props) => {
   const { designable } = useDesignable();
   const collection = props.collection || cm.getCollection(association).name;
 
+  const refresh = useUpdate();
+
   if (!designable && __collection) {
     if (__collection !== collection) {
       return null;
@@ -133,7 +136,7 @@ export const FormBlockProvider = withDynamicSchemaProps((props) => {
   }
 
   return (
-    <TemplateBlockProvider>
+    <TemplateBlockProvider onTemplateLoaded={refresh}>
       <BlockProvider
         name={props.name || 'form'}
         {...props}
