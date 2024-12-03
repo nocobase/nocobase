@@ -546,7 +546,9 @@ describe('workflow > action-trigger', () => {
       const [e1] = await w1.getExecutions();
       expect(e1.id).toBe(res1.body.data.execution.id);
       expect(e1.context.data).toMatchObject({ id: data.id, categoryId: category.id, category: { title: 'c1' } });
-      expect(e1.context.user).toMatchObject(omit(users[1].toJSON(), ['createdAt', 'updatedAt']));
+      expect(e1.context.user).toMatchObject(
+        omit(users[1].toJSON(), ['createdAt', 'updatedAt', 'createdById', 'updatedById']),
+      );
     });
   });
 
