@@ -1692,12 +1692,13 @@ export function useLinkActionProps(componentProps?: any) {
   const { t } = useTranslation();
   const url = componentPropsValue?.['url'];
   const searchParams = componentPropsValue?.['params'] || [];
+  const type = componentPropsValue?.['type'] || 'default';
   const openInNewWindow = fieldSchema?.['x-component-props']?.['openInNewWindow'];
   const { parseURLAndParams } = useParseURLAndParams();
   const basenameOfCurrentRouter = useRouterBasename();
 
   return {
-    type: 'default',
+    type,
     async onClick() {
       if (!url) {
         message.warning(t('Please configure the URL'));
