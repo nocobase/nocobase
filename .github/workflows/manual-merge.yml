@@ -32,7 +32,9 @@ jobs:
           # fi
   merge:
     runs-on: ubuntu-latest
-    needs: get-repos
+    needs:
+      - get-plugins
+      - get-repos
     strategy:
       fail-fast: false
       matrix:
