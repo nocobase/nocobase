@@ -96,23 +96,24 @@ export const useDownloadXlsxTemplateAction = () => {
   };
 };
 
-export const useImportStartAction = ({ setVisible, fieldSchema: importSchema, form }) => {
+export const useImportStartAction = () => {
   const { service, resource } = useBlockRequestContext();
   const apiClient = useAPIClient();
+  const actionSchema = useFieldSchema();
   const compile = useCompile();
   const { getCollectionJoinField, getCollectionField } = useCollectionManager_deprecated();
   const { name, title, getField } = useCollection_deprecated();
   const { t } = useTranslation(NAMESPACE);
-  const fields = useFields(name);
+  const { schema: importSchema } = useImportSchema(actionSchema);
+  const form = useForm();
+  const { setVisible, fieldSchema } = useActionContext();
   const { setImportModalVisible, setImportStatus, setImportResult } = useImportContext();
   const { upload } = form.values;
-  const dataBlockProps = useDataBlockProps() || ({} as any);
+  const dataBlockProps = useDataBlockProps();
   const headers = useDataSourceHeaders(dataBlockProps.dataSource);
-
   useEffect(() => {
     form.reset();
   }, []);
-
   return {
     async run() {
       const { importColumns, explain } = lodash.cloneDeep(
@@ -160,5 +161,6 @@ export const useImportStartAction = ({ setVisible, fieldSchema: importSchema, fo
         setVisible(true);
       }
     },
+    disabled: upload?.length === 0 || form.errors?.length > 0,
   };
 };
