@@ -61,10 +61,11 @@ const RefreshFieldSchemaProvider: FC<{ refresh: (options?: { refreshParentSchema
 
   const value = useCallback(
     (options?: { refreshParentSchema?: boolean }) => {
+      refresh();
+
       if (options?.refreshParentSchema) {
         refreshParent?.();
       }
-      refresh();
     },
     [refreshParent, refresh],
   );
@@ -282,7 +283,7 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
 
     if (parent?.properties) {
       Object.keys(parent.properties).forEach((key) => {
-        if (parent.properties[key] === fieldSchema) {
+        if (key === fieldSchema.name) {
           parent.properties[key] = newFieldSchemaRef.current;
         }
       });

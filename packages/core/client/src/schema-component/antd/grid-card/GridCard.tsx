@@ -12,13 +12,9 @@ import { FormLayout } from '@formily/antd-v5';
 import { ArrayField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import { List as AntdList, Col, PaginationProps } from 'antd';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { getCardItemSchema } from '../../../block-provider';
-import {
-  NocoBaseRecursionField,
-  RefreshComponentProvider,
-  useRefreshFieldSchema,
-} from '../../../formily/NocoBaseRecursionField';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { withSkeletonComponent } from '../../../hoc/withSkeletonComponent';
 import { SortableItem } from '../../common';

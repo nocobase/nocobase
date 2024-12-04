@@ -221,7 +221,6 @@ export class Designable {
       message.success(t('Saved successfully'), 0.2);
     });
     this.on('initializeActionContext', async ({ schema }) => {
-      this.refresh();
       if (!schema?.['x-uid']) {
         return;
       }
