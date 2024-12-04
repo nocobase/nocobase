@@ -28,7 +28,7 @@ export type ImporterOptions = {
   explain?: string;
 };
 
-type RunOptions = {
+export type RunOptions = {
   transaction?: Transaction;
   context?: any;
 };
@@ -164,7 +164,7 @@ export class XlsxImporter extends EventEmitter {
     this.emit('seqReset', { maxVal, seqName: autoIncrInfo.seqName });
   }
 
-  async performImport(options?: RunOptions) {
+  async performImport(options?: RunOptions): Promise<any> {
     const transaction = options?.transaction;
     const rows = this.getData();
     const chunks = lodash.chunk(rows, this.options.chunkSize || 200);
