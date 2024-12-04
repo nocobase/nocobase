@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.4.2](https://github.com/nocobase/nocobase/compare/v1.4.1...v1.4.2) - 2024-12-04
+
+### 🐛 Bug Fixes
+
+- **[Workflow]** Fix async workflow tag disappeared in workflow table ([#5787](https://github.com/nocobase/nocobase/pull/5787)) by @mytharcher
+
 ## [v1.4.1](https://github.com/nocobase/nocobase/compare/v1.4.0...v1.4.1) - 2024-12-04
 
 ### 🚀 Improvements
