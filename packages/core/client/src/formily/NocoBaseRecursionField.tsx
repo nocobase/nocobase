@@ -24,10 +24,11 @@ import {
 import { isBool, isFn, isValid, merge } from '@formily/shared';
 import { useUpdate } from 'ahooks';
 import _ from 'lodash';
-import React, { FC, Fragment, useCallback, useMemo, useRef } from 'react';
+import React, { FC, Fragment, useCallback, useContext, useMemo, useRef } from 'react';
 import { CollectionFieldOptions } from '../data-source/collection/Collection';
 import { useCollectionManager } from '../data-source/collection/CollectionManagerProvider';
 import { useCollection } from '../data-source/collection/CollectionProvider';
+import { SchemaComponentOnChangeContext } from '../schema-component/core/SchemaComponent';
 import { EMPTY_OBJECT } from '../variables';
 import { NocoBaseField } from './NocoBaseField';
 
@@ -274,6 +275,7 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
   }, [schema]);
   const { uiSchema: collectionFiledUiSchema, defaultValue } = useCollectionFieldUISchema();
   const update = useUpdate();
+  const { onChange: onChangeFromContext } = useContext(SchemaComponentOnChangeContext);
 
   const fieldSchema: Schema = newFieldSchemaRef.current || oldFieldSchema;
 
@@ -290,7 +292,8 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
     }
 
     update();
-  }, [fieldSchema, update]);
+    onChangeFromContext?.();
+  }, [fieldSchema, onChangeFromContext, update]);
 
   // Merge default Schema of collection fields
   const mergedFieldSchema = useMemo(() => {
