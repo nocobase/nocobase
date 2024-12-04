@@ -229,7 +229,14 @@ const AddFieldAction = (props) => {
     const { availableFieldInterfaces } = getTemplate(record.template) || {};
     const { exclude, include } = availableFieldInterfaces || {};
     const optionArr = [];
+
     fieldOptions.forEach((v) => {
+      if (v.children.find((h) => h.allowExternalCreation)) {
+        optionArr.push({
+          ...v,
+          children: v.children.filter((h) => h.allowExternalCreation),
+        });
+      }
       if (v.key === 'relation') {
         let children = [];
         if (include?.length) {
