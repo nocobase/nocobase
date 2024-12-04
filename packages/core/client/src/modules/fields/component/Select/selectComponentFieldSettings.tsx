@@ -35,6 +35,7 @@ import { useIsShowMultipleSwitch } from '../../../../schema-settings/hooks/useIs
 import { useLocalVariables, useVariables } from '../../../../variables';
 import { useOpenModeContext } from '../../../popup/OpenModeProvider';
 import { useDataBlockProps } from '../../../../data-source';
+import { enableLinkSettingsItem, openModeSettingsItem } from '../Input/inputComponentSettings';
 
 const enableLink = {
   name: 'enableLink',
@@ -380,6 +381,29 @@ export const selectComponentFieldSettings = new SchemaSettings({
       useVisible() {
         const readPretty = useIsFieldReadPretty();
         return useIsAssociationField() && readPretty;
+      },
+    },
+    {
+      ...enableLinkSettingsItem,
+      useVisible() {
+        const collectionField = useCollectionField();
+        const readPretty = useIsFieldReadPretty();
+        return !useIsAssociationField() && readPretty && collectionField.interface !== 'multipleSelect';
+      },
+    },
+    {
+      ...openModeSettingsItem,
+      useVisible() {
+        const field = useField();
+        const isAssociationField = useIsAssociationField();
+        const { fieldSchema: columnSchema } = useColumnSchema();
+        const schema = useFieldSchema();
+        const fieldSchema = columnSchema || schema;
+        return (
+          (fieldSchema?.['x-read-pretty'] || field.readPretty) &&
+          (fieldSchema?.['x-component-props']?.enableLink ||
+            (isAssociationField && fieldSchema?.['x-component-props']?.enableLink !== false))
+        );
       },
     },
   ],

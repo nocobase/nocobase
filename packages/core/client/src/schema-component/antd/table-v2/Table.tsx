@@ -17,7 +17,7 @@ import { observer, Schema, SchemaOptionsContext, useField, useFieldSchema } from
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
-import { useCreation, useDeepCompareEffect, useMemoizedFn } from 'ahooks';
+import { useDeepCompareEffect, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
@@ -42,7 +42,11 @@ import {
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { useTableBlockContext } from '../../../block-provider/TableBlockProvider';
 import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
-import { NocoBaseRecursionField, RefreshComponentProvider } from '../../../formily/NocoBaseRecursionField';
+import {
+  NocoBaseRecursionField,
+  RefreshComponentProvider,
+  useRefreshFieldSchema,
+} from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { withSkeletonComponent } from '../../../hoc/withSkeletonComponent';
 import { LinkageRuleDataKeyMap } from '../../../schema-settings/LinkageRules/type';
@@ -101,17 +105,6 @@ function adjustColumnOrder(columns) {
   return [...leftFixedColumns, ...normalColumns, ...rightFixedColumns];
 }
 
-const useColumnsDeepMemoized = (columns: any[]) => {
-  const columnsJSON = getSchemaArrJSON(columns);
-  const oldObj = useCreation(() => ({ value: _.cloneDeep(columnsJSON) }), []);
-
-  if (!_.isEqual(columnsJSON, oldObj.value)) {
-    oldObj.value = _.cloneDeep(columnsJSON);
-  }
-
-  return oldObj.value;
-};
-
 const TableCellRender: FC<{
   record: any;
   columnSchema: Schema;
@@ -144,11 +137,9 @@ const useRefreshTableColumns = () => {
   const { getDataBlockRequest } = useDataBlockRequestGetter();
   const { getAssociationAppends } = useAssociationNames(dataSource);
   const prevParamsRef = useRef(blockParams);
+  const refreshFieldSchema = useRefreshFieldSchema();
 
-  // refreshId changes on each refresh, forcing certain useEffect hooks to re-execute
-  const [refreshId, setRefreshId] = useState(0);
   const refresh = useCallback(() => {
-    setRefreshId((v) => v + 1);
     const { appends } = getAssociationAppends();
     const service = getDataBlockRequest();
 
@@ -156,9 +147,11 @@ const useRefreshTableColumns = () => {
       prevParamsRef.current = { ...blockParams, appends };
       service.run(prevParamsRef.current);
     }
-  }, [blockParams, getAssociationAppends, getDataBlockRequest]);
 
-  return { refresh, refreshId };
+    refreshFieldSchema?.();
+  }, [blockParams, getAssociationAppends, getDataBlockRequest, refreshFieldSchema]);
+
+  return { refresh };
 };
 
 const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginationProps) => {
@@ -168,16 +161,17 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
   const { schemaInWhitelist } = useACLFieldWhitelist();
   const { designable } = useDesignable();
   const { exists, render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
-  const columnsSchemas = schema.reduceProperties((buf, s) => {
-    if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
-      return buf.concat([s]);
-    }
-    return buf;
-  }, []);
+  const columnsSchemas = useMemo(() => {
+    return schema.reduceProperties((buf, s) => {
+      if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
+        return buf.concat([s]);
+      }
+      return buf;
+    }, []);
+  }, [schema, schemaInWhitelist]);
   const { current, pageSize } = paginationProps;
-  const hasChangedColumns = useColumnsDeepMemoized(columnsSchemas);
   const { isPopupVisibleControlledByURL } = usePopupSettings();
-  const { refresh, refreshId } = useRefreshTableColumns();
+  const { refresh } = useRefreshTableColumns();
 
   const filterProperties = useCallback(
     (schema) =>
@@ -256,7 +250,6 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
               record,
               schema: columnSchema,
               rowIndex,
-              isSubTable: props.isSubTable,
               columnHidden,
             };
           },
@@ -268,9 +261,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
         } as TableColumnProps<any>;
       }),
 
-    // 这里不能把 columnsSchema 作为依赖，因为其每次都会变化，这里使用 hasChangedColumns 作为依赖
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [hasChangedColumns, field.address, collection, schemaToolbarBigger, designable, filterProperties, refreshId],
+    [columnsSchemas, collection, refresh, designable, filterProperties, schemaToolbarBigger, field],
   );
 
   const tableColumns = useMemo(() => {

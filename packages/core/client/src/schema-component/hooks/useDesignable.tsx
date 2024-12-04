@@ -19,6 +19,7 @@ import React, { ComponentType, useCallback, useContext, useEffect, useMemo } fro
 import { useTranslation } from 'react-i18next';
 import { APIClient, useAPIClient } from '../../api-client';
 import { useRefreshComponent, useRefreshFieldSchema } from '../../formily/NocoBaseRecursionField';
+import { LAZY_COMPONENT_KEY } from '../../lazy-helper';
 import { SchemaComponentContext } from '../context';
 import { addAppVersion } from './addAppVersion';
 
@@ -220,7 +221,6 @@ export class Designable {
       message.success(t('Saved successfully'), 0.2);
     });
     this.on('initializeActionContext', async ({ schema }) => {
-      this.refresh();
       if (!schema?.['x-uid']) {
         return;
       }
@@ -795,7 +795,8 @@ export function useDesignable() {
         if (typeof component !== 'string') {
           return component;
         }
-        return get(components, component);
+        const c = get(components, component);
+        return c[LAZY_COMPONENT_KEY] ?? c;
       },
       [get],
     ),

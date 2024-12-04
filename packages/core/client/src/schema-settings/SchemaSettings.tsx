@@ -290,7 +290,6 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
           const sdn = createDesignable({
             t,
             api,
-            refresh: dn.refresh.bind(dn),
             current: templateSchema.parent,
           });
           sdn.loadAPIClientEvents();
@@ -361,7 +360,6 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
         const sdn = createDesignable({
           t,
           api,
-          refresh: dn.refresh.bind(dn),
           current: gridSchema.parent,
         });
         sdn.loadAPIClientEvents();
@@ -390,6 +388,7 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
             'x-template-key': key,
           },
         });
+        dn.refresh();
       }}
     >
       {t('Save as block template')}

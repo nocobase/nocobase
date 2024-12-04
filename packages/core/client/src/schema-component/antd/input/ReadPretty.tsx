@@ -17,6 +17,7 @@ import React, { useMemo } from 'react';
 import { useCompile } from '../../hooks';
 import { EllipsisWithTooltip } from './EllipsisWithTooltip';
 import { HTMLEncode } from './shared';
+import { withPopupWrapper } from '../../common/withPopupWrapper';
 
 export type InputReadPrettyComposed = {
   Input: React.FC<InputReadPrettyProps>;
@@ -284,3 +285,9 @@ ReadPretty.JSON = (props: JSONTextAreaReadPrettyProps) => {
 
   return JSONContent;
 };
+
+ReadPretty.Input = withPopupWrapper(ReadPretty.Input);
+ReadPretty.TextArea = withPopupWrapper(ReadPretty.TextArea);
+ReadPretty.Html = withPopupWrapper(ReadPretty.Html);
+ReadPretty.Preview = withPopupWrapper(ReadPretty.Preview);
+ReadPretty.JSON = withPopupWrapper(ReadPretty.JSON);

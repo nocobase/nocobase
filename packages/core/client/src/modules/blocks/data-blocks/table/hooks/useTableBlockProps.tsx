@@ -133,12 +133,8 @@ export const useTableBlockProps = () => {
         dataBlocks.forEach((block) => {
           const target = targets.find((target) => target.uid === block.uid);
           if (!target) return;
-
-          const isForeignKey = block.foreignKeyFields?.some((field) => field.name === target.field);
-          const sourceKey = getSourceKey(currentBlock, target.field);
-          const recordKey = isForeignKey ? sourceKey : tableBlockContextBasicValue.rowKey;
-          const value = [record[recordKey]];
-
+          const sourceKey = getSourceKey(currentBlock, target.field) || tableBlockContextBasicValue.rowKey || 'id';
+          const value = [record[sourceKey]];
           const param = block.service.params?.[0] || {};
           // 保留原有的 filter
           const storedFilter = block.service.params?.[1]?.filters || {};
@@ -192,5 +188,5 @@ export const useTableBlockProps = () => {
 
 function getSourceKey(currentBlock: DataBlock, field: string) {
   const associationField = currentBlock?.associatedFields?.find((item) => item.foreignKey === field);
-  return associationField?.sourceKey || 'id';
+  return associationField?.sourceKey || field?.split?.('.')?.[1];
 }

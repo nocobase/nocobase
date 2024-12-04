@@ -45,12 +45,14 @@ export default class PluginWorkflowClient extends Plugin {
 
   useTriggersOptions = () => {
     const compile = useCompile();
-    return Array.from(this.triggers.getEntities()).map(([value, { title, ...options }]) => ({
-      value,
-      label: compile(title),
-      color: 'gold',
-      options,
-    }));
+    return Array.from(this.triggers.getEntities())
+      .map(([value, { title, ...options }]) => ({
+        value,
+        label: compile(title),
+        color: 'gold',
+        options,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
   };
 
   isWorkflowSync(workflow) {
@@ -90,11 +92,6 @@ export default class PluginWorkflowClient extends Plugin {
     this.app.router.add('admin.workflow.executions.id', {
       path: getWorkflowExecutionsPath(':id'),
       element: <ExecutionPage />,
-    });
-
-    this.app.addComponents({
-      WorkflowPage,
-      ExecutionPage,
     });
 
     this.app.pluginSettingsManager.add(NAMESPACE, {

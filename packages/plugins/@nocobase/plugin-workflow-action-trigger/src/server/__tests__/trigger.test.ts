@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { omit } from 'lodash';
 import Database from '@nocobase/database';
 import { EXECUTION_STATUS } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
@@ -22,12 +23,14 @@ describe('workflow > action-trigger', () => {
   let CategoryRepo;
   let WorkflowModel;
   let UserRepo;
+  let root;
+  let rootAgent;
   let users;
   let userAgents;
 
   beforeEach(async () => {
     app = await getApp({
-      plugins: ['users', 'auth', Plugin],
+      plugins: ['users', 'auth', 'acl', 'data-source-manager', 'system-settings', Plugin],
     });
     await app.pm.get('auth').install();
     agent = app.agent();
@@ -36,6 +39,9 @@ describe('workflow > action-trigger', () => {
     PostRepo = db.getCollection('posts').repository;
     CategoryRepo = db.getCollection('categories').repository;
     UserRepo = db.getCollection('users').repository;
+
+    root = await UserRepo.findOne({});
+    rootAgent = app.agent().login(root);
 
     users = await UserRepo.create({
       values: [
@@ -293,6 +299,9 @@ describe('workflow > action-trigger', () => {
     });
   });
 
+  /**
+   * @deprecated
+   */
   describe('directly trigger', () => {
     it('no collection configured should not be triggered', async () => {
       const workflow = await WorkflowModel.create({
@@ -506,6 +515,40 @@ describe('workflow > action-trigger', () => {
 
       const e2s = await workflow.getExecutions();
       expect(e2s.length).toBe(2);
+    });
+  });
+
+  describe('manually execute', () => {
+    it('root execute', async () => {
+      const w1 = await WorkflowModel.create({
+        type: 'action',
+        config: {
+          collection: 'posts',
+          appends: ['category'],
+        },
+      });
+
+      const p1 = await PostRepo.create({
+        values: { title: 't1', category: { title: 'c1' } },
+      });
+
+      const { category, ...data } = p1.toJSON();
+      const res1 = await rootAgent.resource('workflows').execute({
+        filterByTk: w1.id,
+        values: {
+          data,
+          userId: users[1].id,
+        },
+      });
+
+      expect(res1.status).toBe(200);
+      expect(res1.body.data.execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const [e1] = await w1.getExecutions();
+      expect(e1.id).toBe(res1.body.data.execution.id);
+      expect(e1.context.data).toMatchObject({ id: data.id, categoryId: category.id, category: { title: 'c1' } });
+      expect(e1.context.user).toMatchObject(
+        omit(users[1].toJSON(), ['createdAt', 'updatedAt', 'createdById', 'updatedById']),
+      );
     });
   });
 

@@ -2,9 +2,9 @@
   "name": "@nocobase/plugin-user-data-sync",
   "displayName": "User data synchronization",
   "displayName.zh-CN": "用户数据同步",
-  "description": "Provide user data source management and user data synchronization interface. The data source can be DingTalk, WeCom, etc., and can be expanded.",
-  "description.zh-CN": "提供用户数据源管理，用户数据同步接口，数据源可为钉钉、企业微信等，可扩展。",
-  "version": "1.5.0-alpha.5",
+  "description": "Reigster and manage extensible user data synchronization sources, with HTTP API provided by default. Support for synchronizing data to resources such as users and departments.",
+  "description.zh-CN": "注册和管理可扩展的用户数据同步来源，默认提供 HTTP API。支持向用户和部门等资源同步数据。",
+  "version": "1.6.0-alpha.2",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "1.x",

@@ -247,7 +247,7 @@ const getSourceData = (recordData, fieldSchema) => {
 export const ReadPrettyInternalViewer: React.FC<ReadPrettyInternalViewerProps> = (props) => {
   const { value, ButtonList = ButtonLinkList } = props;
   const fieldSchema = useFieldSchema();
-  const { enableLink } = fieldSchema['x-component-props'] || {};
+  const { enableLink, openMode, openSize } = fieldSchema['x-component-props'] || {};
   // value 做了转换，但 props.value 和原来 useField().value 的值不一致
   const field = useField();
   const [visible, setVisible] = useState(false);
@@ -272,9 +272,10 @@ export const ReadPrettyInternalViewer: React.FC<ReadPrettyInternalViewerProps> =
         setVisible?.(value);
         setVisibleWithURL?.(value);
       },
-      openMode: defaultOpenMode,
+      openMode: openMode || defaultOpenMode,
       snapshot: collectionField?.interface === 'snapshot',
       fieldSchema: fieldSchema,
+      openSize,
     }),
     [collectionField?.interface, defaultOpenMode, fieldSchema, setVisibleWithURL, visible, visibleWithURL],
   );

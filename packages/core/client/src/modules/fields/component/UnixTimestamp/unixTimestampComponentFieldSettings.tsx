@@ -11,6 +11,7 @@ import { useFieldSchema } from '@formily/react';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { SchemaSettingsDateFormat } from '../../../../schema-settings/SchemaSettingsDateFormat';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
+import { enableLinkSettingsItem, openModeSettingsItem } from '../Input/inputComponentSettings';
 
 export const unixTimestampComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:UnixTimestamp',
@@ -27,5 +28,7 @@ export const unixTimestampComponentFieldSettings = new SchemaSettings({
         };
       },
     },
+    enableLinkSettingsItem,
+    openModeSettingsItem,
   ],
 });

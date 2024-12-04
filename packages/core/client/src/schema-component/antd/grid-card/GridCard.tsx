@@ -12,7 +12,7 @@ import { FormLayout } from '@formily/antd-v5';
 import { ArrayField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import { List as AntdList, Col, PaginationProps } from 'antd';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { getCardItemSchema } from '../../../block-provider';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
@@ -128,25 +128,18 @@ const InternalGridCard = withSkeletonComponent(
     const field = useField<ArrayField>();
     const Designer = useDesigner();
     const height = useGridCardBodyHeight();
-    const [schemaMap] = useState(new Map());
     const getSchema = useCallback(
       (key) => {
-        if (!schemaMap.has(key)) {
-          schemaMap.set(
-            key,
-            new Schema({
-              type: 'object',
-              properties: {
-                [key]: {
-                  ...fieldSchema.properties['item'],
-                },
-              },
-            }),
-          );
-        }
-        return schemaMap.get(key);
+        return new Schema({
+          type: 'object',
+          properties: {
+            [key]: {
+              ...fieldSchema.properties['item'],
+            },
+          },
+        });
       },
-      [fieldSchema.properties, schemaMap],
+      [fieldSchema.properties],
     );
 
     const onPaginationChange: PaginationProps['onChange'] = useCallback(

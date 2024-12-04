@@ -97,20 +97,18 @@ export const SearchFields = ({ value: outValue, onChange, name }) => {
     </div>
   );
 };
-
+let currentName = null;
 export const useMenuSearch = (props: { children: any[]; showType?: boolean; hideSearch?: boolean; name?: string }) => {
   const { children, showType, hideSearch, name } = props;
-  const items = children?.concat?.() || [];
-  const [searchValue, setSearchValue] = useState(null);
   const compile = useCompile();
-
+  const [searchValue, setSearchValue] = useState(null);
   // 处理搜索逻辑
-  const limitedSearchedItems = useMemo(() => {
-    if (!searchValue || searchValue === '') {
-      return items;
+  const filteredItems = (data, name) => {
+    if (!searchValue || searchValue === '' || (currentName && currentName !== name)) {
+      return data;
     }
     const lowerSearchValue = searchValue.toLocaleLowerCase();
-    return items.filter((item) => {
+    return data.filter((item) => {
       return (
         (item.title || item.label) &&
         String(compile(item.title || item.label))
@@ -118,23 +116,27 @@ export const useMenuSearch = (props: { children: any[]; showType?: boolean; hide
           .includes(lowerSearchValue)
       );
     });
-  }, [searchValue, items]);
+  };
 
-  // 最终结果项
-  const resultItems = useMemo<MenuProps['items']>(() => {
+  // 递归处理菜单项，传递每一层的filteredItems
+  const generateResultItems = (items: any[], name, parentItems: Set<any> = new Set()): MenuProps['items'] => {
     const res = [];
-    if (!hideSearch && (items.length > 10 || searchValue)) {
+    // 如果满足条件则显示搜索框
+    if (!hideSearch && (items.length > 10 || searchValue) && !['subMenu', 'itemGroup'].includes(items[0]?.type)) {
       res.push({
         key: `search-${uid()}`,
-        Component: () => (
-          <SearchFields
-            name={name}
-            value={searchValue}
-            onChange={(val: string) => {
-              setSearchValue(val);
-            }}
-          />
-        ),
+        Component: () => {
+          return (
+            <SearchFields
+              name={name}
+              value={!currentName || currentName === name ? searchValue : ''}
+              onChange={(val: string) => {
+                currentName = name;
+                setSearchValue(val);
+              }}
+            />
+          );
+        },
         onClick({ domEvent }) {
           domEvent.stopPropagation();
         },
@@ -142,14 +144,30 @@ export const useMenuSearch = (props: { children: any[]; showType?: boolean; hide
       });
     }
 
-    if (limitedSearchedItems.length > 0) {
-      res.push(...limitedSearchedItems);
-    } else {
+    // 递归处理所有项，包含子菜单
+    items.forEach((item) => {
+      if (parentItems.has(item)) return;
+
+      parentItems.add(item);
+
+      // 过滤当前项是否匹配搜索条件
+      if (['subMenu', 'itemGroup'].includes(item.type)) {
+        // 对子菜单项进行递归处理
+        const result =
+          !currentName || currentName === item.name ? filteredItems(item.children.concat(), item.name) : item.children;
+        const filteredChildren = generateResultItems(result, item.name, parentItems);
+        res.push({ ...item, children: filteredChildren });
+      } else {
+        // 处理非子菜单项
+        res.push(item);
+      }
+    });
+
+    // 如果没有匹配项时显示空状态
+    if (items.length === 0) {
       res.push({
         key: 'empty',
-        style: {
-          height: 150,
-        },
+        style: { height: 150 },
         Component: () => (
           <div onClick={(e) => e.stopPropagation()}>
             <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
@@ -160,25 +178,10 @@ export const useMenuSearch = (props: { children: any[]; showType?: boolean; hide
     }
 
     return res;
-  }, [hideSearch, limitedSearchedItems, searchValue, showType]);
+  };
 
-  const result = processedResult(resultItems, showType, hideSearch, name);
+  // 获取最终的结果项，处理根级菜单项
+  const resultItems = generateResultItems(filteredItems(children?.concat() || [], name), name);
 
-  return children ? result : undefined;
-};
-
-// 处理嵌套子菜单
-const processedResult = (resultItems, showType, hideSearch, name) => {
-  return resultItems.map((item: any) => {
-    if (['subMenu', 'itemGroup'].includes(item.type)) {
-      const childItems = useMenuSearch({
-        children: item.children,
-        showType,
-        hideSearch,
-        name: item.name,
-      });
-      return { ...item, children: childItems };
-    }
-    return item;
-  });
+  return children ? resultItems : undefined;
 };

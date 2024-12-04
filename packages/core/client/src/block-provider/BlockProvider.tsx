@@ -38,6 +38,7 @@ import { useSourceId } from '../modules/blocks/useSourceId';
 import { RecordProvider, useRecordIndex } from '../record-provider';
 import { useAssociationNames } from './hooks';
 import { useDataBlockParentRecord } from './hooks/useDataBlockParentRecord';
+import { useUpdate } from 'ahooks';
 
 /**
  * @deprecated
@@ -244,6 +245,7 @@ export const BlockProvider = (props: {
 }) => {
   const { name, dataSource, useParams, parentRecord } = props;
   const parentRecordFromHook = useCompatDataBlockParentRecord(props);
+  const refresh = useUpdate();
 
   // 新版（1.0）已弃用 useParams，这里之所以继续保留是为了兼容旧版的 UISchema
   const paramsFromHook = useParams?.();
@@ -262,8 +264,7 @@ export const BlockProvider = (props: {
     <BlockContext.Provider value={blockValue}>
       <DataBlockProvider {...(props as any)} params={params} parentRecord={parentRecord || parentRecordFromHook}>
         <BlockRequestProvider_deprecated {...props} updateAssociationValues={updateAssociationValues} params={params}>
-          {/* Prevents refreshing of parent components */}
-          <RefreshComponentProvider refresh={_.noop}>{props.children}</RefreshComponentProvider>
+          <RefreshComponentProvider refresh={refresh}>{props.children}</RefreshComponentProvider>
         </BlockRequestProvider_deprecated>
       </DataBlockProvider>
     </BlockContext.Provider>

@@ -12,6 +12,8 @@ import { Spin } from 'antd';
 import { get } from 'lodash';
 import { useImported, loadableResource } from 'react-imported-component';
 
+export const LAZY_COMPONENT_KEY = Symbol('LAZY_COMPONENT_KEY');
+
 /**
  * Lazily loads a React component or multiple components.
  *
@@ -44,23 +46,32 @@ export function lazy<M extends Record<string, any>, K extends keyof M & string>(
 ) {
   if (componentNames.length === 0) {
     const LazyComponent = ReactLazy(() =>
-      factory().then((module) => ({
-        default: module.default,
-      })),
+      factory().then((module) => {
+        const ret = module.default;
+        Component[LAZY_COMPONENT_KEY] = ret;
+        return {
+          default: ret,
+        };
+      }),
     );
-    return (props) => (
+    const Component = (props) => (
       <React.Suspense fallback={<Spin />}>
         <LazyComponent {...props} />
       </React.Suspense>
     );
+    return Component;
   }
 
   return componentNames.reduce(
     (acc, name) => {
       const LazyComponent = ReactLazy(() =>
-        factory().then((module) => ({
-          default: get(module, name),
-        })),
+        factory().then((module) => {
+          const component = get(module, name);
+          acc[name][LAZY_COMPONENT_KEY] = component;
+          return {
+            default: component,
+          };
+        }),
       );
       acc[name] = (props) => (
         <React.Suspense fallback={<Spin />}>

@@ -24,10 +24,11 @@ import {
 import { isBool, isFn, isValid, merge } from '@formily/shared';
 import { useUpdate } from 'ahooks';
 import _ from 'lodash';
-import React, { FC, Fragment, useCallback, useMemo, useRef } from 'react';
+import React, { FC, Fragment, useCallback, useContext, useMemo, useRef } from 'react';
 import { CollectionFieldOptions } from '../data-source/collection/Collection';
 import { useCollectionManager } from '../data-source/collection/CollectionManagerProvider';
 import { useCollection } from '../data-source/collection/CollectionProvider';
+import { SchemaComponentOnChangeContext } from '../schema-component/core/SchemaComponent';
 import { EMPTY_OBJECT } from '../variables';
 import { NocoBaseField } from './NocoBaseField';
 
@@ -61,10 +62,11 @@ const RefreshFieldSchemaProvider: FC<{ refresh: (options?: { refreshParentSchema
 
   const value = useCallback(
     (options?: { refreshParentSchema?: boolean }) => {
+      refresh();
+
       if (options?.refreshParentSchema) {
         refreshParent?.();
       }
-      refresh();
     },
     [refreshParent, refresh],
   );
@@ -99,7 +101,7 @@ export const useCollectionFieldUISchema = () => {
   return React.useContext(CollectionFieldUISchemaContext) || {};
 };
 
-const CollectionFieldUISchemaProvider: FC<{
+export const CollectionFieldUISchemaProvider: FC<{
   fieldSchema: Schema;
 }> = (props) => {
   const { children, fieldSchema } = props;
@@ -238,7 +240,7 @@ const propertiesToReactElement = ({
   );
 };
 
-const IsInNocoBaseRecursionFieldContext = React.createContext(false);
+export const IsInNocoBaseRecursionFieldContext = React.createContext(false);
 
 /**
  * @internal
@@ -273,6 +275,7 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
   }, [schema]);
   const { uiSchema: collectionFiledUiSchema, defaultValue } = useCollectionFieldUISchema();
   const update = useUpdate();
+  const { onChange: onChangeFromContext } = useContext(SchemaComponentOnChangeContext);
 
   const fieldSchema: Schema = newFieldSchemaRef.current || oldFieldSchema;
 
@@ -282,14 +285,15 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
 
     if (parent?.properties) {
       Object.keys(parent.properties).forEach((key) => {
-        if (parent.properties[key] === fieldSchema) {
+        if (key === fieldSchema.name) {
           parent.properties[key] = newFieldSchemaRef.current;
         }
       });
     }
 
     update();
-  }, [fieldSchema, update]);
+    onChangeFromContext?.();
+  }, [fieldSchema, onChangeFromContext, update]);
 
   // Merge default Schema of collection fields
   const mergedFieldSchema = useMemo(() => {

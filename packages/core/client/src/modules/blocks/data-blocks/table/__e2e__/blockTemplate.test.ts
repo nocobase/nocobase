@@ -30,7 +30,7 @@ test.describe('block template', () => {
     // The template saved above cannot be used to create a association block.
     await page.getByLabel('action-Action.Link-View-view-').click();
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Table right' }).hover();
     await page.getByRole('menuitem', { name: 'Associated records right' }).hover();
 
     // The saved template should not be displayed (no arrow should be shown)
@@ -54,7 +54,7 @@ test.describe('block template', () => {
     await page.waitForTimeout(500);
 
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Details right' }).hover();
     await page.getByRole('menuitem', { name: 'Associated records right' }).hover();
     await page.getByRole('menuitem', { name: 'Roles right' }).hover();
     await page.getByRole('menuitem', { name: 'Duplicate template right' }).hover();
@@ -79,7 +79,7 @@ test.describe('block template', () => {
 
     // The template saved above cannot be used to create a non-association block.
     await page.getByLabel('schema-initializer-Grid-page:').hover();
-    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Table right' }).hover();
     await page.getByRole('menuitem', { name: 'Roles right' }).hover();
     await page.getByRole('menuitem', { name: 'Duplicate template right' }).hover();
     await expect(page.getByRole('menuitem', { name: 'Roles_Table' })).toBeVisible();
@@ -95,7 +95,7 @@ test.describe('block template', () => {
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Details right' }).hover();
     await page.getByRole('menuitem', { name: 'Current record right' }).hover();
     await page.getByRole('menuitem', { name: 'Duplicate template right' }).hover();
     await expect(page.getByRole('menuitem', { name: 'association_block_detail_item' })).toBeVisible();

@@ -104,7 +104,7 @@ test.describe('actions schema settings', () => {
 
       // 配置出一个表单
       await page.getByLabel('schema-initializer-Grid-popup').hover();
-      await page.getByRole('menuitem', { name: 'form Form right' }).hover();
+      await page.getByRole('menuitem', { name: 'Form right' }).hover();
       await page.getByRole('menuitem', { name: 'Current collection' }).click();
 
       await page.getByLabel('schema-initializer-Grid-form:').hover();

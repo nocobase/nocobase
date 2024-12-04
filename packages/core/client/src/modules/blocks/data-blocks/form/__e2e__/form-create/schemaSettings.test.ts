@@ -337,7 +337,7 @@ test.describe('set default value', () => {
     // 3. Table 数据选择器中使用 `Current popup record`
     // 创建 Table 区块
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Table right' }).hover();
     await page.getByRole('menuitem', { name: 'Other records right' }).hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
     await page.mouse.move(300, 0);
@@ -465,7 +465,7 @@ test.describe('set default value', () => {
     // 3. Table 数据选择器中使用 `Parent popup record`
     // 创建 Table 区块
     await page.getByLabel('schema-initializer-Grid-popup').nth(1).hover();
-    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Table right' }).hover();
     await page.getByRole('menuitem', { name: 'Other records right' }).hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
     await page.mouse.move(300, 0);
@@ -595,7 +595,7 @@ test.describe('set default value', () => {
     // 3. Table 数据选择器中使用 `Parent popup record`
     // 创建 Table 区块
     await page.getByLabel('schema-initializer-Grid-popup').nth(1).hover();
-    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Table right' }).hover();
     await page.getByRole('menuitem', { name: 'Other records right' }).hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
     await page.mouse.move(300, 0);
@@ -733,7 +733,7 @@ test.describe('set default value', () => {
     // 3. Table 数据选择器中使用 `Parent popup record`
     // 创建 Table 区块
     await page.getByLabel('schema-initializer-Grid-popup').nth(1).hover();
-    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Table right' }).hover();
     await page.getByRole('menuitem', { name: 'Other records right' }).hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
     await page.mouse.move(300, 0);
