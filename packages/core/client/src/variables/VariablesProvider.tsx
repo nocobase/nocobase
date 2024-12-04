@@ -117,7 +117,7 @@ const VariablesProvider = ({ children, filterVariables }: any) => {
         const key = list[index];
         const { fieldPath } = getFieldPath(list.slice(0, index + 1).join('.'), _variableToCollectionName);
         const associationField: CollectionFieldOptions_deprecated = getCollectionJoinField(fieldPath, dataSource);
-        const collectionPrimaryKey = getCollection(collectionName)?.getPrimaryKey();
+        const collectionPrimaryKey = getCollection(collectionName, dataSource)?.getPrimaryKey();
         if (Array.isArray(current)) {
           const result = current.map((item) => {
             if (!options?.doNotRequest && shouldToRequest(item?.[key]) && item?.[collectionPrimaryKey] != null) {
