@@ -37,8 +37,50 @@ export class XlsxImporter extends EventEmitter {
   constructor(protected options: ImporterOptions) {
     super();
 
+    if (typeof options.columns === 'string') {
+      options.columns = JSON.parse(options.columns);
+    }
+
     if (options.columns.length == 0) {
       throw new Error(`columns is empty`);
+    }
+  }
+
+  async validate() {
+    // Validate column configuration
+    if (this.options.columns.length == 0) {
+      throw new Error(`columns is empty`);
+    }
+
+    // Validate data
+    const firstSheet = this.firstSheet();
+    const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: null });
+
+    if (this.options.explain) {
+      rows.shift();
+    }
+
+    if (rows.length === 0) {
+      throw new Error(`Empty file`);
+    }
+
+    const headers = rows[0];
+    const columns = this.options.columns;
+
+    // Validate headers
+    for (let i = 0; i < columns.length; i++) {
+      const column = columns[i];
+      if (column.defaultTitle !== headers[i]) {
+        throw new Error(`Invalid header: ${column.defaultTitle} !== ${headers[i]}`);
+      }
+    }
+
+    // Validate field existence
+    for (const column of this.options.columns) {
+      const field = this.options.collection.getField(column.dataIndex[0]);
+      if (!field) {
+        throw new Error(`Field not found: ${column.dataIndex[0]}`);
+      }
     }
   }
 
@@ -52,6 +94,7 @@ export class XlsxImporter extends EventEmitter {
     }
 
     try {
+      await this.validate();
       const imported = await this.performImport(options);
 
       // @ts-ignore
@@ -64,7 +107,6 @@ export class XlsxImporter extends EventEmitter {
       return imported;
     } catch (error) {
       transaction && (await transaction.rollback());
-
       throw error;
     }
   }
@@ -241,23 +283,7 @@ export class XlsxImporter extends EventEmitter {
       rows.shift();
     }
 
-    if (rows.length === 0) {
-      throw new Error(`Empty file`);
-    }
-
-    const headers = rows[0];
-
-    const columns = this.options.columns;
-
-    // validate headers
-    for (let i = 0; i < columns.length; i++) {
-      const column = columns[i];
-      if (column.defaultTitle !== headers[i]) {
-        throw new Error(`Invalid header: ${column.defaultTitle} !== ${headers[i]}`);
-      }
-    }
-
-    // remove header
+    // Remove header row
     rows.shift();
 
     return rows;
