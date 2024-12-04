@@ -9,6 +9,7 @@
 
 import { useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
+import { useBlockContext, useOpenModeContext } from '../../../../';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { SchemaSettingsItemType } from '../../../../application/schema-settings/types';
 import {
@@ -17,8 +18,6 @@ import {
 } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { useDesignable } from '../../../../schema-component/hooks/useDesignable';
 import { SchemaSettingOpenModeSchemaItems } from '../../../../schema-items';
-import { useOpenModeContext } from '../../../../';
-import { useBlockContext } from '../../../../';
 export const ellipsisSettingsItem: SchemaSettingsItemType = {
   name: 'ellipsis',
   type: 'switch',
@@ -100,7 +99,6 @@ export const enableLinkSettingsItem: SchemaSettingsItemType = {
             },
           },
         });
-        dn.refresh();
       },
     };
   },

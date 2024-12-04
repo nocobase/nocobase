@@ -7,16 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useCallback, useRef } from 'react';
-import { RecursionField, useFieldSchema, useField } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { cloneDeep } from 'lodash';
-import { popupSchema } from './schema';
-import { App } from 'antd';
-import { useDesignable, useActionContext, SchemaComponentOptions, ActionContextProvider } from '../../';
+import React, { useCallback, useRef, useState } from 'react';
+import { ActionContextProvider, SchemaComponentOptions, useActionContext, useDesignable } from '../../';
 import { PopupVisibleProvider } from '../../antd/page/PagePopups';
 import { usePopupUtils } from '../../antd/page/pagePopupUtils';
+import { popupSchema } from './schema';
 
 import { CollectionProvider, useCollection } from '../../../data-source';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 
 export const useInsertSchema = () => {
   const fieldSchema = useFieldSchema();
@@ -33,6 +33,10 @@ export const useInsertSchema = () => {
     }
   }, []);
   return insert;
+};
+
+const filterProperties = (s) => {
+  return s['x-component'] === 'Action.Container';
 };
 
 // 高阶组件：用来包装每个组件并添加弹窗功能
@@ -59,8 +63,6 @@ function withPopupWrapper<T>(WrappedComponent: React.ComponentType<T>) {
     };
     const { setSubmitted } = ctx;
 
-    const { modal } = App.useApp();
-
     const handleVisibleChange = useCallback(
       (value: boolean): void => {
         setVisible?.(value);
@@ -84,13 +86,11 @@ function withPopupWrapper<T>(WrappedComponent: React.ComponentType<T>) {
         >
           <CollectionProvider name={collection.name}>
             <SchemaComponentOptions>
-              <RecursionField
+              <NocoBaseRecursionField
                 onlyRenderProperties
                 basePath={field?.address}
                 schema={fieldSchema}
-                filterProperties={(s) => {
-                  return s['x-component'] === 'Action.Container';
-                }}
+                filterProperties={filterProperties}
               />
             </SchemaComponentOptions>
           </CollectionProvider>
