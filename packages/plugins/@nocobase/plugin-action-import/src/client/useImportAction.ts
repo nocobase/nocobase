@@ -161,12 +161,14 @@ export const useImportStartAction = () => {
         formData.append('triggerWorkflow', JSON.stringify(triggerWorkflow));
       }
 
-
       if (identifyDuplicates) {
-        formData.append('duplicateOption', JSON.stringify({
-          fields: referenceFields,
-          mode: duplicateStrategy,
-        }));
+        formData.append(
+          'duplicateOption',
+          JSON.stringify({
+            uniqueField: referenceFields,
+            mode: duplicateStrategy,
+          }),
+        );
       }
 
       setVisible(false);
