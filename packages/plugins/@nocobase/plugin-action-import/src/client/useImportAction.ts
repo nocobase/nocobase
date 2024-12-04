@@ -144,6 +144,21 @@ export const useImportStartAction = () => {
       formData.append('file', uploadFiles[0]);
       formData.append('columns', JSON.stringify(columns));
       formData.append('explain', explain);
+
+      const { triggerWorkflow, identifyDuplicates, referenceFields, duplicateStrategy } = form.values;
+
+      if (triggerWorkflow !== undefined) {
+        formData.append('triggerWorkflow', JSON.stringify(triggerWorkflow));
+      }
+
+
+      if (identifyDuplicates) {
+        formData.append('duplicateOption', JSON.stringify({
+          fields: referenceFields,
+          mode: duplicateStrategy,
+        }));
+      }
+
       setVisible(false);
       setImportModalVisible(true);
       setImportStatus(ImportStatus.IMPORTING);
