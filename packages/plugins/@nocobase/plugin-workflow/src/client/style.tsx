@@ -29,6 +29,7 @@ const useStyles = createStyles(({ css, token }) => {
         header {
           display: flex;
           align-items: center;
+          gap: 1em;
         }
 
         aside {
@@ -104,17 +105,18 @@ const useStyles = createStyles(({ css, token }) => {
           strong {
             font-weight: normal;
           }
+        }
 
-          > .enabled {
-            strong {
-              font-weight: bold;
-            }
+        &.enabled {
+          strong {
+            font-weight: bold;
           }
+        }
 
-          > .unexecuted {
-            strong {
-              font-style: italic;
-            }
+        &.unexecuted {
+          strong {
+            font-style: italic;
+            opacity: 0.75;
           }
         }
       }

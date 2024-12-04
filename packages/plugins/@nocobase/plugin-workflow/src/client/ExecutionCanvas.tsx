@@ -111,8 +111,13 @@ function JobModal() {
                   'x-component': 'Input.JSON',
                   'x-component-props': {
                     className: styles.nodeJobResultClass,
+                    autoSize: {
+                      minRows: 4,
+                      maxRows: 32,
+                    },
                   },
-                  'x-read-pretty': true,
+                  // 'x-read-pretty': true,
+                  'x-disabled': true,
                 },
               },
             },
@@ -152,7 +157,7 @@ function ExecutionsDropdown(props) {
         setExecutionsBefore(data.data);
       })
       .catch(() => {});
-  }, [execution]);
+  }, [execution.id]);
 
   useEffect(() => {
     if (!execution) {
@@ -175,7 +180,7 @@ function ExecutionsDropdown(props) {
         setExecutionsAfter(data.data.reverse());
       })
       .catch(() => {});
-  }, [execution]);
+  }, [execution.id]);
 
   const onClick = useCallback(
     ({ key }) => {
@@ -183,7 +188,7 @@ function ExecutionsDropdown(props) {
         navigate(getWorkflowExecutionsPath(key));
       }
     },
-    [execution],
+    [execution.id],
   );
 
   return execution ? (

@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.4.1](https://github.com/nocobase/nocobase/compare/v1.4.0...v1.4.1) - 2024-12-04
+
+### 🚀 Improvements
+
+- **[cli]** optimize the pkg command ([#5785](https://github.com/nocobase/nocobase/pull/5785)) by @chenos
+
+### 🐛 Bug Fixes
+
+- **[Mobile]** Fix missing date input field in filter operation on mobile ([#5786](https://github.com/nocobase/nocobase/pull/5786)) by @katherinehhh
+
 ## [v1.4.0](https://github.com/nocobase/nocobase/compare/v1.3.53...v1.4.0) - 2024-12-03
 
 ## 🎉 Major New Features
