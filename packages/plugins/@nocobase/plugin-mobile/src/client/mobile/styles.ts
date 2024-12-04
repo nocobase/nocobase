@@ -42,8 +42,9 @@ export const useStyles = createStyles(({ token, css }) => {
         button[aria-label*='schema-initializer-WorkbenchBlock.ActionBar-workbench:configureActions'] {
         margin-bottom: 10px;
       }
-      .nb-action-panel {
-        padding-top: 10px;
+      .ant-list-item {
+        padding-top: 8px;
+        padding-bottom: 8px;
       }
       .nb-action-panel .ant-avatar-circle {
         width: 48px !important;
