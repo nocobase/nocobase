@@ -19,6 +19,7 @@ import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { compatibleDataId } from '../../../schema-settings/DataTemplates/FormDataTemplates';
 import { useToken } from '../__builtins__';
 import { RemoteSelect } from '../remote-select';
+import { useDataSourceHeaders, useDataSourceKey } from '../../../data-source';
 
 export interface ITemplate {
   config?: {
@@ -101,6 +102,8 @@ export const Templates = ({ style = {}, form }: { style?: React.CSSProperties; f
   const [targetTemplateData, setTemplateData] = useState(null);
   const api = useAPIClient();
   const { t } = useTranslation();
+  const dataSource = useDataSourceKey();
+  const headers = useDataSourceHeaders(dataSource);
   useEffect(() => {
     if (enabled && defaultTemplate && form) {
       form.__template = true;
@@ -211,12 +214,17 @@ function findDataTemplates(fieldSchema): ITemplate {
   return {} as ITemplate;
 }
 
-export async function fetchTemplateData(api, template: { collection: string; dataId: number; fields: string[] }, t) {
+export async function fetchTemplateData(
+  api,
+  template: { collection: string; dataId: number; fields: string[] },
+  t,
+  headers?,
+) {
   if (template.fields.length === 0 || !template.dataId) {
     return;
   }
   return api
-    .resource(template.collection)
+    .resource(template.collection, undefined, headers)
     .get({
       filterByTk: template.dataId,
       fields: template.fields,
