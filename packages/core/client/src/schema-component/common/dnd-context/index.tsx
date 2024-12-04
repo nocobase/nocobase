@@ -47,7 +47,7 @@ const useDragEnd = (onDragEnd) => {
       const dn = createDesignable({
         t,
         api,
-        refresh,
+        refresh: ({ refreshParentSchema = true } = {}) => refresh({ refreshParentSchema }),
         current: overSchema,
       });
 
@@ -70,7 +70,7 @@ const useDragEnd = (onDragEnd) => {
         return;
       }
     },
-    [onDragEnd],
+    [api, onDragEnd, refresh, t],
   );
 };
 

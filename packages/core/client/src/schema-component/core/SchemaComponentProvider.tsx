@@ -10,7 +10,7 @@
 import { createForm } from '@formily/core';
 import { FormProvider, Schema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { useUpdate } from 'ahooks';
+import _ from 'lodash';
 import React, { useCallback, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaComponentContext } from '../context';
@@ -56,7 +56,6 @@ export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (prop
   const { designable, onDesignableChange, components, children } = props;
   const ctx = useContext(SchemaComponentContext);
   const ctxOptions = useSchemaOptionsContext();
-  const refresh = useUpdate();
   const [formId, setFormId] = useState(() => uid());
   const form = useMemo(() => props.form || createForm(), [formId]);
   const { t } = useTranslation();
@@ -89,11 +88,14 @@ export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (prop
       scope,
       components,
       reset,
-      refresh,
+      /**
+       * @deprecated
+       */
+      refresh: _.noop,
       designable: designableValue,
       setDesignable,
     }),
-    [components, designableValue, refresh, reset, scope, setDesignable],
+    [components, designableValue, reset, scope, setDesignable],
   );
 
   return (

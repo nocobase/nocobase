@@ -10,10 +10,11 @@
 import { css, cx } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
 import { ArrayField } from '@formily/core';
-import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { Schema, useField, useFieldSchema } from '@formily/react';
 import { List as AntdList, Col, PaginationProps } from 'antd';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { getCardItemSchema } from '../../../block-provider';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { withSkeletonComponent } from '../../../hoc/withSkeletonComponent';
 import { SortableItem } from '../../common';
@@ -127,25 +128,18 @@ const InternalGridCard = withSkeletonComponent(
     const field = useField<ArrayField>();
     const Designer = useDesigner();
     const height = useGridCardBodyHeight();
-    const [schemaMap] = useState(new Map());
     const getSchema = useCallback(
       (key) => {
-        if (!schemaMap.has(key)) {
-          schemaMap.set(
-            key,
-            new Schema({
-              type: 'object',
-              properties: {
-                [key]: {
-                  ...fieldSchema.properties['item'],
-                },
-              },
-            }),
-          );
-        }
-        return schemaMap.get(key);
+        return new Schema({
+          type: 'object',
+          properties: {
+            [key]: {
+              ...fieldSchema.properties['item'],
+            },
+          },
+        });
       },
-      [fieldSchema.properties, schemaMap],
+      [fieldSchema.properties],
     );
 
     const onPaginationChange: PaginationProps['onChange'] = useCallback(
@@ -218,13 +212,13 @@ const InternalGridCard = withSkeletonComponent(
               renderItem={(item, index) => {
                 return (
                   <Col style={{ height: '100%' }} className="nb-card-item-warper">
-                    <RecursionField
+                    <NocoBaseRecursionField
                       key={index}
                       basePath={field.address}
                       name={index}
                       onlyRenderProperties
                       schema={getSchema(index)}
-                    ></RecursionField>
+                    ></NocoBaseRecursionField>
                   </Col>
                 );
               }}

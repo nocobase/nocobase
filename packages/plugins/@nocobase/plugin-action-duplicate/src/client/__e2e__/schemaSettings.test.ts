@@ -124,7 +124,7 @@ test.describe('direct duplicate & copy into the form and continue to fill in', (
       .getByTestId('drawer-Action.Container-general2-Duplicate')
       .getByLabel('schema-initializer-Grid-popup')
       .hover();
-    await page.getByRole('menuitem', { name: 'form Form right' }).hover();
+    await page.getByRole('menuitem', { name: 'Form right' }).hover();
     await page.getByRole('menuitem', { name: 'Current collection' }).click();
     await page
       .getByTestId('drawer-Action.Container-general2-Duplicate')

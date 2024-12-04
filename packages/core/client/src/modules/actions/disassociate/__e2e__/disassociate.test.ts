@@ -17,7 +17,7 @@ test('basic', async ({ page, mockPage, mockRecord }) => {
   // 1. 打开弹窗，并创建一个 Table 关系区块
   await page.getByLabel('action-Action.Link-Edit record-update-collection1-table-0').click();
   await page.getByLabel('schema-initializer-Grid-popup').hover();
-  await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+  await page.getByRole('menuitem', { name: 'Table right' }).hover();
   await page.getByRole('menuitem', { name: 'Associated records' }).hover();
   await page.getByRole('menuitem', { name: 'manyToMany' }).click();
 

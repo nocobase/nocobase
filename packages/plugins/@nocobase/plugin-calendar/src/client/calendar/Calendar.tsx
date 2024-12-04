@@ -8,44 +8,44 @@
  */
 
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
-import { RecursionField, Schema, observer, useFieldSchema, useField } from '@formily/react';
+import { Schema, useField, useFieldSchema } from '@formily/react';
 import {
+  ActionContextProvider,
+  CollectionProvider,
+  NocoBaseRecursionField,
   PopupContextProvider,
   RecordProvider,
+  SchemaComponentOptions,
   getLabelFormatValue,
+  handleDateChangeOnForm,
   useACLRoleContext,
+  useActionContext,
   useCollection,
   useCollectionParentRecordData,
+  useDesignable,
+  useFormBlockContext,
   useLazy,
   usePopupUtils,
   useProps,
   useToken,
   withDynamicSchemaProps,
-  useDesignable,
-  ActionContextProvider,
-  useActionContext,
-  CollectionProvider,
-  SchemaComponentOptions,
-  useFormBlockContext,
-  handleDateChangeOnForm,
   withSkeletonComponent,
 } from '@nocobase/client';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
-import { get, cloneDeep } from 'lodash';
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { Calendar as BigCalendar, View, dayjsLocalizer } from 'react-big-calendar';
-import * as dates from 'react-big-calendar/lib/utils/dates';
+import { cloneDeep, get } from 'lodash';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { View } from 'react-big-calendar';
 import { i18nt, useTranslation } from '../../locale';
 import { CalendarRecordViewer, findEventSchema } from './CalendarRecordViewer';
 import Header from './components/Header';
 import { CalendarToolbarContext } from './context';
 import GlobalStyle from './global.style';
 import { useCalenderHeight } from './hook';
+import { addNew } from './schema';
 import useStyle from './style';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
-import { addNew } from './schema';
 interface Event {
   id: string;
   colorFieldValue: string;
@@ -93,7 +93,7 @@ function Toolbar(props: ToolbarProps) {
   );
   return (
     <CalendarToolbarContext.Provider value={props}>
-      <RecursionField name={toolBarSchema.name} schema={toolBarSchema} />
+      <NocoBaseRecursionField name={toolBarSchema.name} schema={toolBarSchema} />
     </CalendarToolbarContext.Provider>
   );
 }
@@ -464,7 +464,7 @@ export const Calendar: any = withDynamicSchemaProps(
           <ActionContextProvider value={{ ...ctx, visible: visibleAddNewer, setVisible: setVisibleAddNewer }}>
             <CollectionProvider name={collection.name}>
               <SchemaComponentOptions scope={{ useCreateFormBlockProps }}>
-                <RecursionField
+                <NocoBaseRecursionField
                   onlyRenderProperties
                   basePath={field?.address}
                   schema={fieldSchema}

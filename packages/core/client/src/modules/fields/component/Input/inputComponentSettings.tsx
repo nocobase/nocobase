@@ -42,6 +42,15 @@ export const ellipsisSettingsItem: SchemaSettingsItemType = {
       checked: !!schema['x-component-props']?.ellipsis,
       hidden,
       onChange: async (checked) => {
+        if (tableFieldSchema && tableFieldInstanceList) {
+          tableFieldInstanceList.forEach((fieldInstance) => {
+            fieldInstance.componentProps.ellipsis = checked;
+          });
+          schema['x-component-props']['ellipsis'] = checked;
+        } else {
+          formField.componentProps.ellipsis = checked;
+        }
+
         await dn.emit('patch', {
           schema: {
             'x-uid': schema['x-uid'],
@@ -51,19 +60,6 @@ export const ellipsisSettingsItem: SchemaSettingsItemType = {
             },
           },
         });
-
-        if (tableFieldSchema && tableFieldInstanceList) {
-          tableFieldInstanceList.forEach((fieldInstance) => {
-            fieldInstance.componentProps.ellipsis = checked;
-          });
-          schema['x-component-props']['ellipsis'] = checked;
-          const path = formField.path?.splice(formField.path?.length - 1, 1);
-          formField.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
-            f.componentProps.ellipsis = checked;
-          });
-        } else {
-          formField.componentProps.ellipsis = checked;
-        }
       },
     };
   },

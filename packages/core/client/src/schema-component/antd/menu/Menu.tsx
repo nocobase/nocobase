@@ -11,7 +11,6 @@ import { css } from '@emotion/css';
 import {
   FieldContext,
   observer,
-  RecursionField,
   SchemaContext,
   SchemaExpressionScopeContext,
   useField,
@@ -23,14 +22,22 @@ import { Menu as AntdMenu, MenuProps } from 'antd';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { createDesignable, DndContext, SchemaComponentContext, SortableItem, useDesignable, useDesigner } from '../..';
-import { Icon, useAPIClient, useParseURLAndParams, useSchemaInitializerRender } from '../../../';
+import {
+  Icon,
+  NocoBaseRecursionField,
+  useAPIClient,
+  useParseURLAndParams,
+  useSchemaInitializerRender,
+} from '../../../';
 import { useCollectMenuItems, useMenuItem } from '../../../hooks/useMenuItem';
 import { useProps } from '../../hooks/useProps';
 import { useMenuTranslation } from './locale';
 import { MenuDesigner } from './Menu.Designer';
 import { findKeysByUid, findMenuItem } from './util';
 
+import { useUpdate } from 'ahooks';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useRefreshComponent, useRefreshFieldSchema } from '../../../formily/NocoBaseRecursionField';
 
 const subMenuDesignerCss = css`
   position: relative;
@@ -210,7 +217,6 @@ const HeaderMenu = React.memo<{
   onChange: any;
   onFocus: any;
   theme: any;
-  refreshId: number;
 }>(
   ({
     schema,
@@ -228,10 +234,6 @@ const HeaderMenu = React.memo<{
     onChange,
     onFocus,
     theme,
-    /**
-     * Used to refresh the component
-     */
-    refreshId,
   }) => {
     const { Component, getMenuItems } = useMenuItem();
     const items = useMemo(() => {
@@ -255,7 +257,7 @@ const HeaderMenu = React.memo<{
 
       return result;
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [children, designable, refreshId]);
+    }, [children, designable]);
 
     const handleSelect = useCallback(
       (info: { item; key; keyPath; domEvent }) => {
@@ -327,17 +329,24 @@ const SideMenu = React.memo<any>(
     t,
     api,
     designable,
-    refreshId,
-    refresh,
   }) => {
-    // Used to refresh component
-    refreshId;
-
     const { Component, getMenuItems } = useMenuItem();
 
-    // 使用 ref 用来防止闭包问题
-    const sideMenuSchemaRef = useRef(sideMenuSchema);
-    sideMenuSchemaRef.current = sideMenuSchema;
+    const update = useUpdate();
+    const refreshFieldSchema = useRefreshFieldSchema();
+    const refreshComponent = useRefreshComponent();
+    const refresh = useCallback(
+      (options?: { refreshParentSchema?: boolean }) => {
+        console.log('refresh');
+        // refresh current component
+        update();
+        // refresh fieldSchema context value
+        refreshFieldSchema?.(options);
+        // refresh component context value
+        refreshComponent?.();
+      },
+      [update, refreshFieldSchema, refreshComponent],
+    );
 
     const handleSelect = useCallback(
       (info) => {
@@ -348,7 +357,7 @@ const SideMenu = React.memo<any>(
 
     const items = useMemo(() => {
       const result = getMenuItems(() => {
-        return <RecursionField key={uid()} schema={sideMenuSchema} onlyRenderProperties />;
+        return <NocoBaseRecursionField key={uid()} schema={sideMenuSchema} onlyRenderProperties />;
       });
 
       if (designable) {
@@ -362,7 +371,7 @@ const SideMenu = React.memo<any>(
                 t,
                 api,
                 refresh: refresh,
-                current: sideMenuSchemaRef.current,
+                current: sideMenuSchema,
               });
               dn.loadAPIClientEvents();
               dn.insertAdjacent('beforeEnd', s);
@@ -374,8 +383,7 @@ const SideMenu = React.memo<any>(
       }
 
       return result;
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [api, designable, getMenuItems, refresh, render, sideMenuSchema, t, refreshId]);
+    }, [api, designable, getMenuItems, refresh, render, sideMenuSchema, t]);
 
     return (
       mode === 'mix' &&
@@ -497,57 +505,44 @@ export const Menu: ComposedMenu = React.memo((props) => {
   }, [defaultSelectedKeys]);
 
   const ctx = useContext(SchemaComponentContext);
-  const refreshIdRef = useRef(0);
-  const ctxRefresh = ctx.refresh;
-  const refresh = useCallback(() => {
-    refreshIdRef.current += 1;
-    ctxRefresh?.();
-  }, [ctxRefresh]);
-
-  const newCtx = useMemo(() => ({ ...ctx, refresh }), [ctx, refresh]);
 
   return (
     <DndContext>
-      <SchemaComponentContext.Provider value={newCtx}>
-        <MenuItemDesignerContext.Provider value={Designer}>
-          <MenuModeContext.Provider value={mode}>
-            <HeaderMenu
-              disabled={disabled}
-              onBlur={onBlur}
-              onChange={onChange}
-              onFocus={onFocus}
-              theme={theme}
-              schema={schema}
-              mode={mode}
-              onSelect={onSelect}
-              setDefaultSelectedKeys={setDefaultSelectedKeys}
-              defaultSelectedKeys={defaultSelectedKeys}
-              defaultOpenKeys={defaultOpenKeys}
-              selectedKeys={selectedKeys}
-              designable={ctx.designable}
-              render={render}
-              refreshId={refreshIdRef.current}
-            >
-              {children}
-            </HeaderMenu>
-            <SideMenu
-              mode={mode}
-              sideMenuSchema={sideMenuSchema}
-              sideMenuRef={sideMenuRef}
-              openKeys={defaultOpenKeys}
-              setOpenKeys={setDefaultOpenKeys}
-              selectedKeys={selectedKeys}
-              onSelect={onSelect}
-              render={render}
-              t={t}
-              api={api}
-              designable={ctx.designable}
-              refreshId={refreshIdRef.current}
-              refresh={refresh}
-            />
-          </MenuModeContext.Provider>
-        </MenuItemDesignerContext.Provider>
-      </SchemaComponentContext.Provider>
+      <MenuItemDesignerContext.Provider value={Designer}>
+        <MenuModeContext.Provider value={mode}>
+          <HeaderMenu
+            disabled={disabled}
+            onBlur={onBlur}
+            onChange={onChange}
+            onFocus={onFocus}
+            theme={theme}
+            schema={schema}
+            mode={mode}
+            onSelect={onSelect}
+            setDefaultSelectedKeys={setDefaultSelectedKeys}
+            defaultSelectedKeys={defaultSelectedKeys}
+            defaultOpenKeys={defaultOpenKeys}
+            selectedKeys={selectedKeys}
+            designable={ctx.designable}
+            render={render}
+          >
+            {children}
+          </HeaderMenu>
+          <SideMenu
+            mode={mode}
+            sideMenuSchema={sideMenuSchema}
+            sideMenuRef={sideMenuRef}
+            openKeys={defaultOpenKeys}
+            setOpenKeys={setDefaultOpenKeys}
+            selectedKeys={selectedKeys}
+            onSelect={onSelect}
+            render={render}
+            t={t}
+            api={api}
+            designable={ctx.designable}
+          />
+        </MenuModeContext.Provider>
+      </MenuItemDesignerContext.Provider>
     </DndContext>
   );
 });
@@ -728,7 +723,7 @@ Menu.SubMenu = observer(
           </SchemaContext.Provider>
         ),
         children: getMenuItems(() => {
-          return <RecursionField schema={schema} onlyRenderProperties />;
+          return <NocoBaseRecursionField schema={schema} onlyRenderProperties />;
         }),
       };
     }, [field.title, icon, schema, children, Designer]);

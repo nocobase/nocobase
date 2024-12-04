@@ -8,11 +8,12 @@
  */
 
 import { css, cx } from '@emotion/css';
-import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
+import { observer, useField, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
   CollectionProvider_deprecated,
   FormBlockContext,
+  NocoBaseRecursionField,
   PopupSettingsProvider,
   RecordProvider,
   TabsContextProvider,
@@ -208,7 +209,7 @@ export const DuplicateAction = observer(
                 <RecordProvider record={{ ...parentRecordData, __collection: duplicateCollection || __collection }}>
                   <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
                     <PopupSettingsProvider enableURL={false}>
-                      <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
+                      <NocoBaseRecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
                     </PopupSettingsProvider>
                   </ActionContextProvider>
                 </RecordProvider>

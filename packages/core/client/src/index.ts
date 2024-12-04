@@ -41,6 +41,7 @@ export * from './global-theme';
 export * from './hooks';
 export * from './i18n';
 export * from './icon';
+export * from './lazy-helper';
 export { default as locale } from './locale';
 export * from './nocobase-buildin-plugin';
 export * from './plugin-manager';
@@ -58,7 +59,6 @@ export * from './system-settings';
 export * from './testUtils';
 export * from './user';
 export * from './variables';
-export * from './lazy-helper';
 
 export { withDynamicSchemaProps } from './hoc/withDynamicSchemaProps';
 export { withSkeletonComponent } from './hoc/withSkeletonComponent';
@@ -83,7 +83,8 @@ export { languageCodes } from './locale';
 
 // Override Formily API
 export {
-  NocoBaseRecursionField,
   CollectionFieldUISchemaProvider,
   IsInNocoBaseRecursionFieldContext,
+  NocoBaseRecursionField,
+  useRefreshFieldSchema,
 } from './formily/NocoBaseRecursionField';

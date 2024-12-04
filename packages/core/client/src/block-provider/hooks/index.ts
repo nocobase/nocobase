@@ -1590,7 +1590,7 @@ export const useAssociationNames = (dataSource?: string) => {
   const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated(dataSource);
   const fieldSchema = useFieldSchema();
 
-  const getAssociationAppends = () => {
+  const getAssociationAppends = useCallback(() => {
     const updateAssociationValues = new Set([]);
     let appends = new Set([]);
 
@@ -1606,7 +1606,7 @@ export const useAssociationNames = (dataSource?: string) => {
     appends = fillParentFields(appends);
 
     return { appends: [...appends], updateAssociationValues: [...updateAssociationValues] };
-  };
+  }, [dataSource, fieldSchema, getCollection, getCollectionJoinField]);
 
   return { getAssociationAppends };
 };

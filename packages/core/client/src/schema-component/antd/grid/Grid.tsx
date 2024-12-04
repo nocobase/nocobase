@@ -297,7 +297,7 @@ const useRowProperties = () => {
       }
       return buf;
     }, []);
-  }, [Object.keys(fieldSchema.properties || {}).join(',')]);
+  }, [fieldSchema]);
 };
 
 const useColProperties = () => {
@@ -309,7 +309,7 @@ const useColProperties = () => {
       }
       return buf;
     }, []);
-  }, [Object.keys(fieldSchema.properties || {}).join(',')]);
+  }, [fieldSchema]);
 };
 
 const DndWrapper = (props) => {
@@ -361,7 +361,7 @@ export const Grid: any = observer(
 
     useEffect(() => {
       gridRef.current && setPrintContent?.(gridRef.current);
-    }, [gridRef.current]);
+    }, [setPrintContent]);
 
     const gridContextValue = useMemo(() => {
       return {
@@ -498,7 +498,7 @@ Grid.Col = observer(
         width = `calc(${w}% - ${token.marginBlock}px *  ${(showDivider ? cols.length + 1 : 0) / cols.length})`;
       }
       return { width };
-    }, [cols?.length, schema?.['x-component-props']?.['width'], token.marginBlock]);
+    }, [cols.length, schema, showDivider, token.marginBlock]);
 
     const { isOver, setNodeRef } = useDroppable({
       id: field.address.toString(),
