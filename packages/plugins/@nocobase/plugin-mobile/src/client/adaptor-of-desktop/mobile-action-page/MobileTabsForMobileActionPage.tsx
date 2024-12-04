@@ -82,9 +82,9 @@ export const MobileTabsForMobileActionPage: any = observer(
       <>
         <MobilePageHeader>
           <div className={styles.mobilePageTabs} data-testid="mobile-action-page-tabs">
-            <div className={mobileTabsForMobileActionPageStyle.backButton} onClick={goBack}>
+            {/* <div className={mobileTabsForMobileActionPageStyle.backButton} onClick={goBack}>
               <LeftOutline />
-            </div>
+            </div> */}
             <DndContext>
               <Tabs activeKey={activeKey} onChange={onChange} className={styles.mobilePageTabsList}>
                 {items}
