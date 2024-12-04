@@ -155,7 +155,7 @@ export const useImportStartAction = () => {
       formData.append('columns', JSON.stringify(columns));
       formData.append('explain', explain);
 
-      const { triggerWorkflow, identifyDuplicates, referenceFields, duplicateStrategy } = form.values;
+      const { triggerWorkflow, identifyDuplicates, uniqueField, duplicateStrategy } = form.values;
 
       if (triggerWorkflow !== undefined) {
         formData.append('triggerWorkflow', JSON.stringify(triggerWorkflow));
@@ -165,7 +165,7 @@ export const useImportStartAction = () => {
         formData.append(
           'duplicateOption',
           JSON.stringify({
-            uniqueField: referenceFields,
+            uniqueField,
             mode: duplicateStrategy,
           }),
         );
