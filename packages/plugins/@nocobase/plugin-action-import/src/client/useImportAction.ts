@@ -147,7 +147,9 @@ export const useImportStartAction = () => {
           return column;
         })
         .filter(Boolean);
+
       const formData = new FormData();
+
       const uploadFiles = form.values.upload.map((f) => f.originFileObj);
       formData.append('file', uploadFiles[0]);
       formData.append('columns', JSON.stringify(columns));
@@ -169,12 +171,13 @@ export const useImportStartAction = () => {
 
       setVisible(false);
       setImportModalVisible(true);
-      setImportStatus(ImportStatus.IMPORTING);
+
       try {
         const { data }: any = await apiClient.axios.post(`${name}:importXlsx`, formData, {
           headers,
           timeout: 10 * 60 * 1000,
         });
+
         form.reset();
 
         if (!data.data.taskId) {
@@ -183,7 +186,7 @@ export const useImportStartAction = () => {
           setImportStatus(ImportStatus.IMPORTED);
         } else {
           setImportModalVisible(false);
-          setVisible(true);
+          setVisible(false);
         }
       } catch (error) {
         setImportModalVisible(false);
