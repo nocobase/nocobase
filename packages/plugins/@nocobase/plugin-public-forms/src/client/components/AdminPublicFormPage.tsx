@@ -30,11 +30,9 @@ import { usePublicSubmitActionProps } from '../hooks';
 import { usePublicFormTranslation, NAMESPACE } from '../locale';
 
 const PublicFormQRCode = () => {
-  const params = useParams();
   const [open, setOpen] = useState(false);
-  const baseURL = window.location.origin;
   const { t } = usePublicFormTranslation();
-  const link = `${baseURL}/public-forms/${params.name}`;
+  const link = window.location.href;
   const handleQRCodeOpen = (newOpen: boolean) => {
     setOpen(newOpen);
   };
