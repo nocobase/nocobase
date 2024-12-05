@@ -47,6 +47,10 @@ export const useStyles = genStyleHook('nb-mobile', (token) => {
       '.nb-action-panel': {
         paddingTop: '10px',
       },
+      '.ant-list-item': {
+        paddingTop: '8px',
+        paddingBottom: '8px',
+      },
       '.nb-action-panel .ant-avatar-circle': {
         width: '48px !important',
         height: '48px !important',
