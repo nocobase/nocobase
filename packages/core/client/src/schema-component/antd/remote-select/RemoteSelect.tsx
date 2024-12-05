@@ -39,7 +39,9 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   /**
    * useRequest() `service` parameter
    */
-  service: ResourceActionOptions<P>;
+  service: ResourceActionOptions<P> & {
+    defaultParams?: any;
+  };
   target: string;
   mapOptions?: (data: any) => SelectProps['fieldNames'];
   dataSource?: string;
@@ -65,6 +67,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
         optionFilter,
         dataSource: propsDataSource,
         toOptionsItem = (value) => value,
+        popupMatchSelectWidth = false,
         ...others
       } = props;
       const dataSource = useDataSourceKey();
@@ -176,6 +179,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
         {
           manual,
           debounceWait: wait,
+          ...(service.defaultParams ? { defaultParams: [service.defaultParams] } : {}),
         },
       );
       const runDep = useMemo(
@@ -245,7 +249,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
       return (
         <Select
           open={open}
-          popupMatchSelectWidth={false}
+          popupMatchSelectWidth={popupMatchSelectWidth}
           autoClearSearchValue
           filterOption={false}
           filterSort={null}

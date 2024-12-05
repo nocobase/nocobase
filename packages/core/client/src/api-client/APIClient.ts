@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { APIClient as APIClientSDK, getSubAppName } from '@nocobase/sdk';
+import { APIClient as APIClientSDK } from '@nocobase/sdk';
 import { Result } from 'ahooks/es/useRequest/src/types';
 import { notification } from 'antd';
 import React from 'react';
@@ -91,10 +91,10 @@ export class APIClient extends APIClientSDK {
   interceptors() {
     this.axios.interceptors.request.use((config) => {
       config.headers['X-With-ACL-Meta'] = true;
-      const appName = this.app ? getSubAppName(this.app.getPublicPath()) : null;
-      if (appName) {
-        config.headers['X-App'] = appName;
-      }
+      const headers = this.getHeaders();
+      Object.keys(headers).forEach((key) => {
+        config.headers[key] = headers[key];
+      });
       return config;
     });
     super.interceptors();
@@ -120,7 +120,9 @@ export class APIClient extends APIClientSDK {
 
   toErrMessages(error) {
     if (typeof error?.response?.data === 'string') {
-      return [{ message: error?.response?.data }];
+      const tempElement = document.createElement('div');
+      tempElement.innerHTML = error?.response?.data;
+      return [{ message: tempElement.textContent || tempElement.innerText }];
     }
     return (
       error?.response?.data?.errors ||

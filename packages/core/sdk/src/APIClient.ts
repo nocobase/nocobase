@@ -125,7 +125,7 @@ export class Auth {
    * use {@link Auth#locale} instead
    */
   getLocale() {
-    return this.getOption('locale');
+    return this.getOption('locale') || 'en-US';
   }
 
   /**

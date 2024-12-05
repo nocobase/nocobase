@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import Topo from '@hapi/topo';
 import { Repository } from '@nocobase/database';
-import lodash from 'lodash';
+import { default as _, default as lodash } from 'lodash';
 import { PluginManager } from './plugin-manager';
 
 export class PluginManagerRepository extends Repository {
@@ -120,17 +121,50 @@ export class PluginManagerRepository extends Repository {
     return pluginNames;
   }
 
+  async sort(names: string[]) {
+    const pluginNames = _.castArray(names);
+    if (pluginNames.length === 1) {
+      return pluginNames;
+    }
+    const sorter = new Topo.Sorter<string>();
+    for (const pluginName of pluginNames) {
+      let packageJson: any = {};
+      try {
+        packageJson = await PluginManager.getPackageJson(pluginName);
+      } catch (error) {
+        packageJson = {};
+      }
+      const peerDependencies = Object.keys(packageJson?.peerDependencies || {});
+      sorter.add(pluginName, { after: peerDependencies, group: packageJson?.packageName || pluginName });
+    }
+    return sorter.nodes;
+  }
+
   async getItems() {
     const exists = await this.collection.existsInDb();
     if (!exists) {
       return [];
     }
-    return await this.find({
+    const items = await this.find({
       sort: 'id',
       filter: {
         enabled: true,
       },
     });
+    const sortedItems = [];
+    const map = {};
+    for (const item of items) {
+      if (item.packageName) {
+        map[item.packageName] = item;
+      } else {
+        sortedItems.push(item);
+      }
+    }
+    const names = await this.sort(Object.keys(map));
+    for (const name of names) {
+      sortedItems.push(map[name]);
+    }
+    return sortedItems;
   }
 
   async init() {

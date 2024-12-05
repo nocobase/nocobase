@@ -87,8 +87,8 @@ test.describe('configure actions column', () => {
       expect(Math.floor(box.width)).toBe(width);
     };
 
-    // 列宽度默认为 200
-    await expectActionsColumnWidth(200);
+    // 列宽度默认为 100
+    await expectActionsColumnWidth(100);
 
     await page.getByText('Actions', { exact: true }).hover();
     await page.getByLabel('designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-users').hover();

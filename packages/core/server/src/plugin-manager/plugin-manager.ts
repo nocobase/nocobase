@@ -130,9 +130,11 @@ export class PluginManager {
    */
   static async getPackageJson(nameOrPkg: string) {
     const { packageName } = await this.parseName(nameOrPkg);
-    const file = await fs.realpath(resolve(process.env.NODE_MODULES_PATH, packageName, 'package.json'));
-    const data = await fs.readFile(file, { encoding: 'utf-8' });
-    return JSON.parse(data);
+    const packageFile = resolve(process.env.NODE_MODULES_PATH, packageName, 'package.json');
+    if (!(await fs.exists(packageFile))) {
+      throw new Error(`Cannot find plugin '${nameOrPkg}'`);
+    }
+    return fs.readJSON(packageFile);
   }
 
   /**

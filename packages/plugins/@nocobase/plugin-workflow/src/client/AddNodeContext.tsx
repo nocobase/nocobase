@@ -140,7 +140,7 @@ function useAddNodeSubmitAction() {
             },
           },
         });
-        if (form.values.downstreamBranchIndex !== false && newNode.downstreamId) {
+        if (typeof form.values.downstreamBranchIndex === 'number' && newNode.downstreamId) {
           await api.resource('flow_nodes').update({
             filterByTk: newNode.downstreamId,
             values: {

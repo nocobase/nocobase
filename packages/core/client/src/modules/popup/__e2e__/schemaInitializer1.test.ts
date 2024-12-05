@@ -88,8 +88,8 @@ test.describe('where to open a popup and what can be added to it', () => {
     await expect(page.getByText('test8')).toBeVisible();
 
     // add blocks
-    await addBlock(['table Details right', 'Current record']);
-    await addBlock(['form Form (Edit)']);
+    await addBlock(['Details right', 'Current record']);
+    await addBlock(['Form (Edit)']);
     await addBlock(['Markdown']);
 
     await expect(page.getByText('GeneralConfigure actionsConfigure fields')).toBeVisible();
@@ -116,9 +116,9 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     // add relationship blocks
-    await addBlock(['table Details right', 'Associated records', 'Many to one']);
+    await addBlock(['Details right', 'Associated records', 'Many to one']);
     await expect(page.getByLabel('block-item-CardItem-users-')).toBeVisible();
-    await addBlock(['table Table right', 'Associated records', 'One to many']);
+    await addBlock(['Table right', 'Associated records', 'One to many']);
     await expect(page.getByLabel('block-item-CardItem-users-table')).toBeVisible();
 
     async function addBlock(names: string[]) {
@@ -180,7 +180,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByRole('menuitem', { name: 'Details' }).hover();
     await page.getByRole('menuitem', { name: 'Current record' }).click();
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
-    await page.getByRole('menuitem', { name: 'form Form (Edit)' }).first().click();
+    await page.getByRole('menuitem', { name: 'Form (Edit)' }).first().click();
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'Markdown' }).click();
     await page.mouse.move(300, 0);
@@ -192,13 +192,13 @@ test.describe('where to open a popup and what can be added to it', () => {
     // add relationship blocks
     // 下拉列表中，可选择以下区块进行创建
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
-    await expect(page.getByRole('menuitem', { name: 'table Details right' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'form Form (Edit)' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'form Form (Add new) right' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'form Form (Add new) right' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'table Table right' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'ordered-list List right' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'ordered-list Grid Card right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Details right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Form (Edit)' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Form (Add new) right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Form (Add new) right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Table right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'List right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Grid Card right' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Calendar' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Gantt' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Kanban' })).toBeVisible();
@@ -211,7 +211,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await expect(page.getByLabel('block-item-CardItem-users-')).toBeVisible();
 
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
-    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Table right' }).hover();
     await page.getByRole('menuitem', { name: 'Associated records' }).hover();
     await page.getByRole('menuitem', { name: 'One to many' }).click();
     await page.mouse.move(300, 0);
@@ -246,7 +246,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByRole('menuitem', { name: 'Details' }).hover();
     await page.getByRole('menuitem', { name: 'Current record' }).click();
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
-    await page.getByRole('menuitem', { name: 'form Form (Edit)' }).first().click();
+    await page.getByRole('menuitem', { name: 'Form (Edit)' }).first().click();
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'Markdown' }).click();
     await page.mouse.move(300, 0);
@@ -258,13 +258,13 @@ test.describe('where to open a popup and what can be added to it', () => {
     // add relationship blocks
     // 下拉列表中，可选择以下区块进行创建
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
-    await expect(page.getByRole('menuitem', { name: 'table Details right' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'form Form (Edit)' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'form Form (Add new) right' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'form Form (Add new) right' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'table Table right' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'ordered-list List right' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'ordered-list Grid Card right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Details right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Form (Edit)' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Form (Add new) right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Form (Add new) right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Table right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'List right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Grid Card right' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Calendar' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Gantt' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Kanban' })).toBeVisible();
@@ -277,7 +277,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await expect(page.getByLabel('block-item-CardItem-users-')).toBeVisible();
 
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
-    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Table right' }).hover();
     await page.getByRole('menuitem', { name: 'Associated records' }).hover();
     await page.getByRole('menuitem', { name: 'One to many' }).click();
     await page.mouse.move(300, 0);

@@ -13,6 +13,7 @@ import { Tabs as AntdTabs, TabPaneProps, TabsProps } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import { useSchemaInitializerRender } from '../../../application';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { Icon } from '../../../icon';
 import { DndContext, SortableItem } from '../../common';
 import { SchemaComponent } from '../../core';
@@ -109,18 +110,27 @@ const designerCss = css`
   }
 `;
 
-Tabs.TabPane = observer(
-  (props: TabPaneProps & { icon?: any }) => {
-    const Designer = useDesigner();
-    const field = useField();
-    return (
-      <SortableItem className={classNames('nb-action-link', designerCss, props.className)}>
-        {props.icon && <Icon style={{ marginRight: 2 }} type={props.icon} />} {props.tab || field.title}
-        <Designer />
-      </SortableItem>
-    );
-  },
-  { displayName: 'Tabs.TabPane' },
+Tabs.TabPane = withDynamicSchemaProps(
+  observer(
+    (props: TabPaneProps & { icon?: any; hidden?: boolean }) => {
+      const Designer = useDesigner();
+      const field = useField();
+
+      if (props.hidden) {
+        return null;
+      }
+
+      return (
+        <SortableItem className={classNames('nb-action-link', designerCss, props.className)}>
+          {props.icon && <Icon style={{ marginRight: 2 }} type={props.icon} />} {props.tab || field.title}
+          <Designer />
+        </SortableItem>
+      );
+    },
+    { displayName: 'Tabs.TabPane' },
+  ),
 );
+
+Tabs.TabPane.displayName = 'Tabs.TabPane';
 
 Tabs.Designer = TabsDesigner;

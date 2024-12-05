@@ -23,7 +23,7 @@ describe('export to xlsx with preset', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['nocobase', 'map'],
+      plugins: ['nocobase', 'map', 'field-china-region'],
     });
   });
 

@@ -1,0 +1,95 @@
+name: Manual release develop
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+    inputs:
+      is_feat:
+        description: 'is feat'
+        type: boolean
+
+jobs:
+  get-plugins:
+    uses: nocobase/nocobase/.github/workflows/get-plugins.yml@main
+    secrets: inherit
+  update-version:
+    needs: get-plugins
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(needs.get-plugins.outputs.alpha-plugins), ',') }},${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ',') }}
+          skip-token-revoke: true
+      - name: Get GitHub App User ID
+        id: get-user-id
+        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/nocobase
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: true
+          fetch-depth: 0
+          ref: develop
+      - name: Checkout pro-plugins
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/pro-plugins
+          path: packages/pro-plugins
+          fetch-depth: 0
+          ref: develop
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: true
+      - name: Clone pro repos
+        shell: bash
+        run: |
+          for repo in ${{ join(fromJSON(needs.get-plugins.outputs.alpha-plugins), ' ') }} ${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ' ') }}
+          do
+          git clone -b develop https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
+          done
+      - name: Set Node.js 18
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install Lerna
+        run: npm install -g lerna@4 auto-changelog@2
+      - name: Run release.sh
+        shell: bash
+        run: |
+          cd ./packages/pro-plugins
+          git checkout develop
+          for repo in ${{ join(fromJSON(needs.get-plugins.outputs.alpha-plugins), ' ') }} ${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ' ') }}
+          do
+            echo "@nocobase/$repo" >> .git/info/exclude
+          done
+          echo "$(<.git/info/exclude )"
+          cd ./../..
+          git checkout develop
+          git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
+          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
+          echo "packages/pro-plugins" >> .git/info/exclude
+          bash release.sh $IS_FEAT
+        env:
+          IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
+          PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.alpha-plugins }}
+          CUSTOM_PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.custom-plugins }}
+      - name: Push
+        run: |
+          for repo in ${{ join(fromJSON(needs.get-plugins.outputs.alpha-plugins), ' ') }} ${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ' ') }}
+          do
+            cd ./packages/pro-plugins/@nocobase/$repo
+            git push origin develop --atomic --tags
+            cd ../../../../
+          done
+          cd ./packages/pro-plugins
+          git push origin develop --atomic --tags
+          cd ../../
+          git push origin develop --tags --atomic

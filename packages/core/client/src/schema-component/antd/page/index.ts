@@ -12,7 +12,7 @@ export * from './FixedBlock';
 export * from './FixedBlockDesignerItem';
 export * from './Page';
 export * from './Page.Settings';
-export { PagePopups } from './PagePopups';
+export { PagePopups, useCurrentPopupContext } from './PagePopups';
 export { getPopupPathFromParams, getStoredPopupContext, storePopupContext, withSearchParams } from './pagePopupUtils';
 export * from './PageTab.Settings';
 export { PopupSettingsProvider, usePopupSettings } from './PopupSettingsProvider';
