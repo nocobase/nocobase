@@ -19,6 +19,7 @@
   "Done": "完成",
   "Yes": "是",
   "No": "否",
+  "Please select": "请选择",
   "Field {{fieldName}} does not exist": "字段 {{fieldName}} 不存在",
   "can not find value": "找不到对应值",
   "password is empty": "密码为空",
