@@ -8,6 +8,7 @@
   "Download template": "下载模板",
   "Step 1: Download template": "1.下载模板",
   "Step 2: Upload Excel": "2.上传完善后的表格",
+  "Step 3: Import options": "3.导入选项",
   "Download tips": "- 下载模板后，按格式填写数据\r\n - 只导入第一张工作表\r\n - 请勿改模板表头，防止导入失败",
   "Import warnings": "每次最多导入 {{limit}} 行数据，超出的将被忽略。",
   "Upload placeholder": "将文件拖曳到此处或点击上传，文件大小不超过10M",
