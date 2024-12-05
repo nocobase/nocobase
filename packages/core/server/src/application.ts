@@ -71,6 +71,7 @@ import { InstallOptions, PluginManager } from './plugin-manager';
 import { SyncManager } from './sync-manager';
 
 import packageJson from '../package.json';
+import { ServiceContainer } from './service-container';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -234,6 +235,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   private _maintainingCommandStatus: MaintainingCommandStatus;
   private _maintainingStatusBeforeCommand: MaintainingCommandStatus | null;
   private _actionCommand: Command;
+
+  public container = new ServiceContainer();
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -753,9 +756,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     try {
       const commandName = options?.from === 'user' ? argv[0] : argv[2];
+
       if (!this.cli.hasCommand(commandName)) {
         await this.pm.loadCommands();
       }
+
       const command = await this.cli.parseAsync(argv, options);
 
       this.setMaintaining({

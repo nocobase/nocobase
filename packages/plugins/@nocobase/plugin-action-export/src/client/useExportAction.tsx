@@ -50,11 +50,14 @@ export const useExportAction = () => {
         content: t('Export warning', { limit: exportLimit }),
         okText: t('Start export'),
       });
+
       if (!confirmed) {
         return;
       }
+
       field.data.loading = true;
       const { exportSettings } = lodash.cloneDeep(actionSchema?.['x-action-settings'] ?? {});
+
       exportSettings.forEach((es) => {
         const { uiSchema, interface: fieldInterface } =
           getCollectionJoinField(`${name}.${es.dataIndex.join('.')}`) ?? {};
@@ -68,6 +71,7 @@ export const useExportAction = () => {
         }
         es.defaultTitle = uiSchema?.title;
       });
+
       const { data } = await resource.export(
         {
           title: compile(title),
@@ -83,6 +87,7 @@ export const useExportAction = () => {
           responseType: 'blob',
         },
       );
+
       const blob = new Blob([data], { type: 'application/x-xls' });
       field.data.loading = false;
       saveAs(blob, `${compile(title)}.xlsx`);

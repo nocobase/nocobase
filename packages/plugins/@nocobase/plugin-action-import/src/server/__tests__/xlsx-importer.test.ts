@@ -26,6 +26,85 @@ describe('xlsx importer', () => {
     await app.destroy();
   });
 
+  describe('validate empty data', () => {
+    let User;
+
+    beforeEach(async () => {
+      User = app.db.collection({
+        name: 'users',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
+      });
+      await app.db.sync();
+    });
+
+    it('should throw error when file only has header row', async () => {
+      const templateCreator = new TemplateCreator({
+        collection: User,
+        columns: [
+          {
+            dataIndex: ['name'],
+            defaultTitle: 'Name',
+          },
+        ],
+      });
+
+      const template = await templateCreator.run();
+      // template already has header row, no need to add data
+
+      const importer = new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: User,
+        columns: [
+          {
+            dataIndex: ['name'],
+            defaultTitle: 'Name',
+          },
+        ],
+        workbook: template,
+      });
+
+      await expect(importer.validate()).rejects.toThrow('No data to import');
+    });
+
+    it('should pass validation when file has header and data rows', async () => {
+      const templateCreator = new TemplateCreator({
+        collection: User,
+        columns: [
+          {
+            dataIndex: ['name'],
+            defaultTitle: 'Name',
+          },
+        ],
+      });
+
+      const template = await templateCreator.run();
+      const worksheet = template.Sheets[template.SheetNames[0]];
+
+      XLSX.utils.sheet_add_aoa(worksheet, [['Test Data 1'], ['Test Data 2']], {
+        origin: 'A2',
+      });
+
+      const importer = new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: User,
+        columns: [
+          {
+            dataIndex: ['name'],
+            defaultTitle: 'Name',
+          },
+        ],
+        workbook: template,
+      });
+
+      await expect(importer.validate()).resolves.toBeUndefined();
+    });
+  });
+
   describe('import with date field', () => {
     let User;
 

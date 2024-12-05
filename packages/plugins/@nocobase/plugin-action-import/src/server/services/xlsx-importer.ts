@@ -19,7 +19,7 @@ export type ImportColumn = {
   defaultTitle: string;
 };
 
-type ImporterOptions = {
+export type ImporterOptions = {
   collectionManager: ICollectionManager;
   collection: ICollection;
   columns: Array<ImportColumn>;
@@ -28,17 +28,64 @@ type ImporterOptions = {
   explain?: string;
 };
 
-type RunOptions = {
+export type RunOptions = {
   transaction?: Transaction;
   context?: any;
 };
 
 export class XlsxImporter extends EventEmitter {
-  constructor(private options: ImporterOptions) {
+  constructor(protected options: ImporterOptions) {
     super();
+
+    if (typeof options.columns === 'string') {
+      options.columns = JSON.parse(options.columns);
+    }
 
     if (options.columns.length == 0) {
       throw new Error(`columns is empty`);
+    }
+  }
+
+  async validate() {
+    // Validate column configuration
+    if (this.options.columns.length == 0) {
+      throw new Error(`columns is empty`);
+    }
+
+    // Validate data
+    const firstSheet = this.firstSheet();
+    const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: null });
+
+    if (this.options.explain) {
+      rows.shift();
+    }
+
+    if (rows.length === 0) {
+      throw new Error(`Empty file`);
+    }
+
+    // At least need header row and one data row
+    if (rows.length === 1) {
+      throw new Error(`No data to import`);
+    }
+
+    const headers = rows[0];
+    const columns = this.options.columns;
+
+    // Validate headers
+    for (let i = 0; i < columns.length; i++) {
+      const column = columns[i];
+      if (column.defaultTitle !== headers[i]) {
+        throw new Error(`Invalid header: ${column.defaultTitle} !== ${headers[i]}`);
+      }
+    }
+
+    // Validate field existence
+    for (const column of this.options.columns) {
+      const field = this.options.collection.getField(column.dataIndex[0]);
+      if (!field) {
+        throw new Error(`Field not found: ${column.dataIndex[0]}`);
+      }
     }
   }
 
@@ -52,6 +99,7 @@ export class XlsxImporter extends EventEmitter {
     }
 
     try {
+      await this.validate();
       const imported = await this.performImport(options);
 
       // @ts-ignore
@@ -64,7 +112,6 @@ export class XlsxImporter extends EventEmitter {
       return imported;
     } catch (error) {
       transaction && (await transaction.rollback());
-
       throw error;
     }
   }
@@ -122,7 +169,7 @@ export class XlsxImporter extends EventEmitter {
     this.emit('seqReset', { maxVal, seqName: autoIncrInfo.seqName });
   }
 
-  async performImport(options?: RunOptions) {
+  async performImport(options?: RunOptions): Promise<any> {
     const transaction = options?.transaction;
     const rows = this.getData();
     const chunks = lodash.chunk(rows, this.options.chunkSize || 200);
@@ -180,10 +227,10 @@ export class XlsxImporter extends EventEmitter {
             rowValues[dataKey] = await interfaceInstance.toValue(this.trimString(str), ctx);
           }
 
-          await this.options.collection.repository.create({
+          await this.performInsert({
             values: rowValues,
-            context: options?.context,
             transaction,
+            context: options?.context,
           });
 
           imported += 1;
@@ -204,6 +251,17 @@ export class XlsxImporter extends EventEmitter {
     }
 
     return imported;
+  }
+
+  async performInsert(insertOptions: { values: any; transaction: Transaction; context: any; hooks?: boolean }) {
+    const { values, transaction, context } = insertOptions;
+
+    return this.options.collection.repository.create({
+      values,
+      context,
+      transaction,
+      hooks: insertOptions.hooks == undefined ? true : insertOptions.hooks,
+    });
   }
 
   renderErrorMessage(error) {
@@ -230,19 +288,7 @@ export class XlsxImporter extends EventEmitter {
       rows.shift();
     }
 
-    const headers = rows[0];
-
-    const columns = this.options.columns;
-
-    // validate headers
-    for (let i = 0; i < columns.length; i++) {
-      const column = columns[i];
-      if (column.defaultTitle !== headers[i]) {
-        throw new Error(`Invalid header: ${column.defaultTitle} !== ${headers[i]}`);
-      }
-    }
-
-    // remove header
+    // Remove header row
     rows.shift();
 
     return rows;
