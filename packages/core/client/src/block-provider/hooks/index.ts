@@ -1590,7 +1590,6 @@ export const useAssociationNames = (dataSource?: string) => {
   const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated(dataSource);
   const fieldSchema = useFieldSchema();
   const prevAppends = useRef(null);
-  const prevUpdateAssociationValues = useRef(null);
 
   const getAssociationAppends = useCallback(() => {
     const updateAssociationValues = new Set([]);
@@ -1612,13 +1611,11 @@ export const useAssociationNames = (dataSource?: string) => {
 
     const result = {
       appends: _.isEqual(prevAppends.current, newAppends) ? prevAppends.current : newAppends,
-      updateAssociationValues: _.isEqual(prevUpdateAssociationValues.current, newUpdateAssociationValues)
-        ? prevUpdateAssociationValues.current
-        : newUpdateAssociationValues,
+      // `updateAssociationValues` needs to be recreated each time to ensure test case passes in: core/client/src/modules/blocks/data-blocks/table/__e2e__/schemaSettings.test.ts:886:9
+      updateAssociationValues: newUpdateAssociationValues,
     };
 
     prevAppends.current = result.appends;
-    prevUpdateAssociationValues.current = result.updateAssociationValues;
 
     return result;
   }, [dataSource, fieldSchema, getCollection, getCollectionJoinField]);
