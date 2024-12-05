@@ -64,6 +64,11 @@ export class XlsxImporter extends EventEmitter {
       throw new Error(`Empty file`);
     }
 
+    // At least need header row and one data row
+    if (rows.length === 1) {
+      throw new Error(`No data to import`);
+    }
+
     const headers = rows[0];
     const columns = this.options.columns;
 
