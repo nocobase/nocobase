@@ -361,11 +361,11 @@ export const Calendar: any = withDynamicSchemaProps(
           }
           if (currentSelectDate) {
             const startFieldProps = {
-              ...startCollectionField.uiSchema?.['x-component-props'],
+              ...startCollectionField?.uiSchema?.['x-component-props'],
               ...ctx.form?.query(startFieldName).take()?.componentProps,
             };
             const endFieldProps = {
-              ...endCollectionField.uiSchema?.['x-component-props'],
+              ...endCollectionField?.uiSchema?.['x-component-props'],
               ...ctx.form?.query(endFieldName).take()?.componentProps,
             };
 
