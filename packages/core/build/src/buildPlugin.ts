@@ -23,7 +23,7 @@ import {
   getExcludePackages,
   getIncludePackages,
   getPackagesFromFiles,
-  getSourcePackages
+  getSourcePackages,
 } from './utils/buildPluginUtils';
 import { getDepPkgPath, getDepsConfig } from './utils/getDepsConfig';
 import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
@@ -338,6 +338,7 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
     output: {
       path: outDir,
       filename: outputFileName,
+      chunkFilename: '[chunkhash].js',
       publicPath: `/static/plugins/${packageJson.name}/dist/client/`,
       clean: true,
       library: {
