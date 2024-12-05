@@ -106,10 +106,13 @@ export const handleDateChangeOnForm = (value, dateOnly, utc, picker, showTime, g
 };
 
 export const mapDatePicker = function () {
-  return (props: any) => {
+  return (props: any, field) => {
     const { dateOnly, showTime, picker = 'date', utc, gmt, underFilter } = props;
     const format = getDefaultFormat(props);
     const onChange = props.onChange;
+    if (dayjs(props.value).isValid()) {
+      field.value = moment2str(dayjs(props.value), { ...props });
+    }
     return {
       ...props,
       format: format,
