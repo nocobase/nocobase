@@ -152,6 +152,8 @@ export function useTableColumnInitializerFields() {
             display: 'none',
           },
         },
+        // 目前版本 1.4.0-alpha.2，先在这里占个位，后面会用到
+        'x-use-decorator-props': isSubTable ? 'useSubTableFormItemProps' : 'useTableFormItemProps',
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, readPretty: true, block: 'Table' });
       return {
@@ -176,7 +178,7 @@ export function useTableColumnInitializerFields() {
 }
 
 export function useAssociatedTableColumnInitializerFields() {
-  const { name, fields } = useCollection_deprecated();
+  const { fields } = useCollection_deprecated();
   const { t } = useTranslation();
   const { getInterface, getCollectionFields, getCollection } = useCollectionManager_deprecated();
   const groups = fields
@@ -346,6 +348,8 @@ export function useInheritsTableColumnInitializerFields() {
                 display: 'none',
               },
             },
+            // 目前版本 1.4.0-alpha.2，先在这里占个位，后面会用到
+            'x-use-decorator-props': isSubTable ? 'useSubTableFormItemProps' : 'useTableFormItemProps',
           };
           return {
             name: k?.uiSchema?.title || k.name,
