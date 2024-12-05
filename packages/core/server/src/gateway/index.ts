@@ -30,6 +30,7 @@ import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
 import { WSServer } from './ws-server';
 import { isMainThread, workerData } from 'node:worker_threads';
+import process from 'node:process';
 
 const compress = promisify(compression());
 
@@ -442,6 +443,10 @@ export class Gateway extends EventEmitter {
 
         app.on('ws:sendToTag', ({ tagKey, tagValue, message }) => {
           this.wsServer.sendToConnectionsByTag(tagKey, tagValue, message);
+        });
+
+        app.on('ws:authorized', ({ clientId, userId }) => {
+          this.wsServer.sendToConnectionsByTag('userId', userId, { type: 'authorized' });
         });
       }
 

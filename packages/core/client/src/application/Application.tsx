@@ -105,11 +105,24 @@ export class Application {
   maintaining = false;
   error = null;
 
+  private wsAuthorized = false;
+
   get pm() {
     return this.pluginManager;
   }
   get disableAcl() {
     return this.options.disableAcl;
+  }
+
+  get isWsAuthorized() {
+    return this.wsAuthorized;
+  }
+
+  setWsAuthorized(authorized: boolean) {
+    this.wsAuthorized = authorized;
+    if (authorized) {
+      this.eventBus.dispatchEvent(new CustomEvent('ws:message:authorized'));
+    }
   }
 
   constructor(protected options: ApplicationOptions = {}) {
@@ -316,6 +329,10 @@ export class Application {
   }
 
   async loadWebSocket() {
+    this.eventBus.addEventListener('ws:message:authorized', () => {
+      this.setWsAuthorized(true);
+    });
+
     this.ws.on('message', (event) => {
       const data = JSON.parse(event.data);
 
@@ -343,7 +360,6 @@ export class Application {
         }
 
         const eventName = `ws:message:${type}`;
-        console.log({ eventName });
         this.eventBus.dispatchEvent(new CustomEvent(eventName, { detail: data.payload }));
       }
     });
