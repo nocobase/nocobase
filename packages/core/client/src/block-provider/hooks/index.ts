@@ -18,7 +18,7 @@ import _ from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
 import qs from 'qs';
-import { ChangeEvent, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
+import { ChangeEvent, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavigateFunction } from 'react-router-dom';
 import {
@@ -1589,8 +1589,6 @@ export const getAppends = ({
 export const useAssociationNames = (dataSource?: string) => {
   const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated(dataSource);
   const fieldSchema = useFieldSchema();
-  const prevAppends = useRef(null);
-  const prevUpdateAssociationValues = useRef(null);
 
   const getAssociationAppends = useCallback(() => {
     const updateAssociationValues = new Set([]);
@@ -1607,20 +1605,7 @@ export const useAssociationNames = (dataSource?: string) => {
     });
     appends = fillParentFields(appends);
 
-    const newAppends = [...appends];
-    const newUpdateAssociationValues = [...updateAssociationValues];
-
-    const result = {
-      appends: _.isEqual(prevAppends.current, newAppends) ? prevAppends.current : newAppends,
-      updateAssociationValues: _.isEqual(prevUpdateAssociationValues.current, newUpdateAssociationValues)
-        ? prevUpdateAssociationValues.current
-        : newUpdateAssociationValues,
-    };
-
-    prevAppends.current = result.appends;
-    prevUpdateAssociationValues.current = result.updateAssociationValues;
-
-    return result;
+    return { appends: [...appends], updateAssociationValues: [...updateAssociationValues] };
   }, [dataSource, fieldSchema, getCollection, getCollectionJoinField]);
 
   return { getAssociationAppends };
