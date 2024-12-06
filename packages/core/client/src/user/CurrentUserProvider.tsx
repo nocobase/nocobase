@@ -46,13 +46,17 @@ export const CurrentUserProvider = (props) => {
   return <CurrentUserContext.Provider value={result}>{props.children}</CurrentUserContext.Provider>;
 };
 
-export const NavigateIfNotSignIn = ({ children }) => {
-  const result = useCurrentUserContext();
+export const NavigateToSigninWithRedirect = () => {
   const { pathname, search } = useLocationNoUpdate();
   const redirect = `?redirect=${pathname}${search}`;
+  return <Navigate replace to={`/signin${redirect}`} />;
+};
+
+export const NavigateIfNotSignIn = ({ children }) => {
+  const result = useCurrentUserContext();
 
   if (result.loading === false && !result.data?.data?.id) {
-    return <Navigate replace to={`/signin${redirect}`} />;
+    return <NavigateToSigninWithRedirect />;
   }
   return <>{children}</>;
 };
