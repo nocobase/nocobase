@@ -104,11 +104,11 @@ export const OverridingCollectionField = (props) => {
   return <OverridingFieldAction item={record} parentItem={parentRecordData} {...props} />;
 };
 
-const getIsOverriding = (currentFields, record) => {
-  const flag = currentFields.find((v) => {
+const getIsOverriding = (currentCollection, currentFields, record) => {
+  const targetField = currentFields.find((v) => {
     return v.name === record.name;
   });
-  return flag;
+  return targetField.collectionName === currentCollection;
 };
 export const OverridingFieldAction = (props) => {
   const { scope, getContainer, item: record, parentItem: parentRecord, children, currentCollection } = props;
@@ -130,7 +130,8 @@ export const OverridingFieldAction = (props) => {
   };
   const [data, setData] = useState<any>({});
   const currentFields = getCurrentCollectionFields(currentCollection);
-  const disabled = getIsOverriding(currentFields, record);
+  const disabled = getIsOverriding(currentCollection, currentFields, record);
+
   const currentCollections = useMemo(() => {
     return collections.map((v) => {
       return {
