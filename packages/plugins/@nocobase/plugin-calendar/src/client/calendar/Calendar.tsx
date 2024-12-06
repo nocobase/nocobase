@@ -434,7 +434,14 @@ export const Calendar: any = withDynamicSchemaProps(
               localizer={localizer}
             />
           </PopupContextProvider>
-          <ActionContextProvider value={{ ...ctx, visible: visibleAddNewer, setVisible: setVisibleAddNewer }}>
+          <ActionContextProvider
+            value={{
+              ...ctx,
+              visible: visibleAddNewer,
+              setVisible: setVisibleAddNewer,
+              openMode: findEventSchema(fieldSchema)?.['x-component-props']?.['openMode'],
+            }}
+          >
             <CollectionProvider name={collection.name}>
               <SchemaComponentOptions scope={{ useCreateFormBlockProps }}>
                 <RecursionField
