@@ -284,6 +284,8 @@ export class AuditManager {
       const auditLog: AuditLog = this.formatAuditData(ctx);
       auditLog.uuid = reqId;
       auditLog.status = ctx.status;
+      const defaultMetaData = await this.getDefaultMetaData(ctx);
+      auditLog.metadata = { ...metadata, ...defaultMetaData };
       if (typeof action !== 'string') {
         if (action.getUserInfo) {
           const userInfo = await action.getUserInfo(ctx);
@@ -298,10 +300,9 @@ export class AuditManager {
         }
         if (action.getMetaData) {
           const extra = await action.getMetaData(ctx);
-          auditLog.metadata = { ...metadata, ...extra };
-        } else {
-          const defaultMetaData = await this.getDefaultMetaData(ctx);
-          auditLog.metadata = { ...metadata, ...defaultMetaData };
+          if (extra) {
+            auditLog.metadata = { ...auditLog.metadata, ...extra };
+          }
         }
         if (action.getSourceAndTarget) {
           const sourceAndTarget = await action.getSourceAndTarget(ctx);
@@ -312,9 +313,6 @@ export class AuditManager {
             auditLog.targetRecordUK = sourceAndTarget.targetRecordUK;
           }
         }
-      } else {
-        const defaultMetaData = await this.getDefaultMetaData(ctx);
-        auditLog.metadata = { ...metadata, ...defaultMetaData };
       }
       this.logger.log(auditLog);
     } catch (err) {
