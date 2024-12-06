@@ -32,7 +32,10 @@ import { usePublicFormTranslation, NAMESPACE } from '../locale';
 const PublicFormQRCode = () => {
   const [open, setOpen] = useState(false);
   const { t } = usePublicFormTranslation();
-  const link = window.location.href;
+  const params = useParams();
+  const isUnderSubApp = window.location.pathname.startsWith('/apps');
+  const link =
+    window.location.origin + (isUnderSubApp ? `/apps/public-forms/${params.name}` : `/public-forms/${params.name}`);
   const handleQRCodeOpen = (newOpen: boolean) => {
     setOpen(newOpen);
   };
