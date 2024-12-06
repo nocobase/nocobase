@@ -42,7 +42,7 @@ export interface PopupProps {
    */
   hidden: boolean;
   /**
-   * Used to identify the level of the current popup, where 0 represents the first level.
+   * Used to identify the level of the current popup, where 1 represents the first level.
    */
   currentLevel: number;
   /**
@@ -150,7 +150,7 @@ const PagePopupsItemProvider: FC<{
   params: PopupParams;
   context: PopupContext;
   /**
-   * Used to identify the level of the current popup, where 0 represents the first level.
+   * Used to identify the level of the current popup, where 1 represents the first level.
    */
   currentLevel: number;
 }> = ({ params, context, currentLevel, children }) => {
