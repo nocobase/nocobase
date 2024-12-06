@@ -157,6 +157,7 @@ export default {
           removable: false,
           disableSecondConFirm: true,
         },
+        'x-use-component-props': 'useSubTableAddNewProps',
         'x-component-props': {
           type: 'default',
           onClick: '{{handleAddNew}}',

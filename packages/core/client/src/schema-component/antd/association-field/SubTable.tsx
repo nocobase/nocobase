@@ -208,13 +208,20 @@ export const SubTable: any = observer(
       };
     }, [field.value?.length, pageSize, currentPage]);
 
-    const handleAddNew = () => {
-      field.value = field.value || [];
-      field.value.push(markRecordAsNew({}));
-      // 计算总页数，并跳转到最后一页
-      const totalPages = Math.ceil(field.value.length / (field.componentProps?.pageSize || 10));
-      setCurrentPage(totalPages);
-      return field.onInput(field.value);
+    const useSubTableAddNewProps = () => {
+      const { field } = useAssociationFieldContext<ArrayField>();
+      return {
+        onClick() {
+          field.value = field.value || [];
+          field.value.push(markRecordAsNew({}));
+          // 计算总页数，并跳转到最后一页
+          const totalPages = Math.ceil(field.value.length / (field.componentProps?.pageSize || 10));
+          setTimeout(() => {
+            setCurrentPage(totalPages);
+          });
+          return field.onInput(field.value);
+        },
+      };
     };
     const handleSelect = () => {
       setVisibleSelector(true);
@@ -250,7 +257,7 @@ export const SubTable: any = observer(
                   isSubTable={true}
                 />
                 {field.editable && (
-                  <SchemaComponentOptions scope={{ handleAddNew, handleSelect }}>
+                  <SchemaComponentOptions scope={{ useSubTableAddNewProps, handleSelect }}>
                     <Space
                       style={{
                         marginTop: '10px',
