@@ -18,7 +18,7 @@ import { popupSchema } from './schema';
 import { CollectionProvider, useCollection } from '../../../data-source';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 
-export const useInsertSchema = () => {
+const useInsertSchema = () => {
   const fieldSchema = useFieldSchema();
   const { insertAfterBegin } = useDesignable();
   const insert = useCallback(

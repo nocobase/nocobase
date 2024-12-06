@@ -230,7 +230,7 @@ const useEvents = (
   ]);
 };
 
-export const useInsertSchema = (component) => {
+const useInsertSchema = (component) => {
   const fieldSchema = useFieldSchema();
   const { insertAfterBegin } = useDesignable();
   const insert = useCallback(
@@ -245,7 +245,7 @@ export const useInsertSchema = (component) => {
         insertAfterBegin(cloneDeep(ss));
       }
     },
-    [component],
+    [component, fieldSchema, insertAfterBegin],
   );
   return insert;
 };
