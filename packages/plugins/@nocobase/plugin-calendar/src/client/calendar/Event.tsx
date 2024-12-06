@@ -13,6 +13,7 @@ import {
   useActionContext,
   useCollection,
   useCollectionRecordData,
+  usePopupSettings,
   VariablePopupRecordProvider,
 } from '@nocobase/client';
 import React, { useCallback } from 'react';
@@ -23,12 +24,16 @@ export const Event = observer(
     const { visible, setVisible } = useActionContext();
     const recordData = useCollectionRecordData();
     const collection = useCollection();
+    const { isPopupVisibleControlledByURL } = usePopupSettings();
+
+    // Fix the issue where closing a popup opened through the 'Calendar Block' causes all popups to close
+    const _setVisible = isPopupVisibleControlledByURL() ? null : setVisible;
 
     const close = useCallback(() => {
       setVisible(false);
     }, [setVisible]);
     return (
-      <PopupContextProvider visible={visible} setVisible={setVisible}>
+      <PopupContextProvider visible={visible} setVisible={_setVisible}>
         <DeleteEventContext.Provider value={{ close, allowDeleteEvent: true }}>
           <VariablePopupRecordProvider recordData={recordData} collection={collection}>
             {props.children}
