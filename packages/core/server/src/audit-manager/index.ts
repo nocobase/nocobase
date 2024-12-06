@@ -301,7 +301,13 @@ export class AuditManager {
         if (action.getMetaData) {
           const extra = await action.getMetaData(ctx);
           if (extra) {
-            auditLog.metadata = { ...auditLog.metadata, ...extra };
+            if (extra.request) {
+              auditLog.metadata.request = { ...auditLog.metadata.request, ...extra.request };
+            }
+            if (extra.response) {
+              auditLog.metadata.response = { ...auditLog.metadata.response, ...extra.response };
+            }
+            auditLog.metadata = { ...extra, ...auditLog.metadata };
           }
         }
         if (action.getSourceAndTarget) {
