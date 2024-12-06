@@ -37,5 +37,6 @@
   "Failed reason": "失败原因",
   "Log detail": "日志详情",
   "Message": "消息内容",
-  "Notification manager": "通知管理"
+  "Notification manager": "通知管理",
+  "Randomly generated and can not be modified. Support letters, numbers and underscores, must start with an letter.": "随机生成，不可修改。支持英文、数字和下划线，必须以英文字母开头。。"
 }
