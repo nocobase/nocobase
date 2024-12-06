@@ -252,7 +252,11 @@ export const SubTable: any = observer(
                 {field.editable && (
                   <SchemaComponentOptions scope={{ handleAddNew, handleSelect }}>
                     <Space
-                      style={{ marginTop: '10px', position: field.value.length ? 'absolute' : 'relative', bottom: '0' }}
+                      style={{
+                        marginTop: '10px',
+                        position: field.value?.length ? 'absolute' : 'relative',
+                        bottom: '0',
+                      }}
                     >
                       {allowAddnew !== false && (
                         <RecursionField
