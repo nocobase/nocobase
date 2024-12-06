@@ -158,9 +158,9 @@ export default {
           disableSecondConFirm: true,
         },
         'x-component-props': {
-          block: true,
           type: 'default',
           onClick: '{{handleAddNew}}',
+          size: 'small',
         },
       },
     },
@@ -183,9 +183,9 @@ export default {
           disableSecondConFirm: true,
         },
         'x-component-props': {
-          block: true,
           type: 'default',
           onClick: '{{handleSelect}}',
+          size: 'small',
         },
       },
     },

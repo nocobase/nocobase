@@ -15,6 +15,7 @@ import { action } from '@formily/reactive';
 import { isArr } from '@formily/shared';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Space } from 'antd';
 import {
   FormProvider,
   RecordPickerContext,
@@ -79,19 +80,17 @@ const tableClassName = css`
 `;
 
 const addNewButtonClassName = css`
-  width: 100%;
   .ant-btn {
-    display: block;
-    border-radius: 0px;
-    border-right: 1px solid rgba(0, 0, 0, 0.06);
+    // display: block;
+    // border-radius: 0px;
+    // border-right: 1px solid rgba(0, 0, 0, 0.06);
   }
 `;
 
 const selectButtonClassName = css`
-  width: 100%;
   .ant-btn {
-    display: block;
-    border-radius: 0px;
+    // display: block;
+    // border-radius: 0px;
   }
 `;
 
@@ -248,34 +247,36 @@ export const SubTable: any = observer(
                   }
                   pagination={paginationConfig}
                   rowSelection={{ type: 'none', hideSelectAll: true }}
-                  footer={() =>
-                    field.editable && (
-                      <SchemaComponentOptions scope={{ handleAddNew, handleSelect }}>
-                        {allowAddnew !== false && (
-                          <RecursionField
-                            onlyRenderProperties
-                            basePath={field.address}
-                            schema={fieldSchema.parent}
-                            filterProperties={(s) => {
-                              return s['x-component'] === 'AssociationField.SubTable.AddNewAction';
-                            }}
-                          />
-                        )}
-                        {allowSelectExistingRecord && (
-                          <RecursionField
-                            onlyRenderProperties
-                            basePath={field.address}
-                            schema={fieldSchema.parent}
-                            filterProperties={(s) => {
-                              return s['x-component'] === 'AssociationField.SubTable.SelectAction';
-                            }}
-                          />
-                        )}
-                      </SchemaComponentOptions>
-                    )
-                  }
                   isSubTable={true}
                 />
+                {field.editable && (
+                  <SchemaComponentOptions scope={{ handleAddNew, handleSelect }}>
+                    <Space
+                      style={{ marginTop: '10px', position: field.value.length ? 'absolute' : 'relative', bottom: '0' }}
+                    >
+                      {allowAddnew !== false && (
+                        <RecursionField
+                          onlyRenderProperties
+                          basePath={field.address}
+                          schema={fieldSchema.parent}
+                          filterProperties={(s) => {
+                            return s['x-component'] === 'AssociationField.SubTable.AddNewAction';
+                          }}
+                        />
+                      )}
+                      {allowSelectExistingRecord && (
+                        <RecursionField
+                          onlyRenderProperties
+                          basePath={field.address}
+                          schema={fieldSchema.parent}
+                          filterProperties={(s) => {
+                            return s['x-component'] === 'AssociationField.SubTable.SelectAction';
+                          }}
+                        />
+                      )}
+                    </Space>
+                  </SchemaComponentOptions>
+                )}
               </SubFormProvider>
             </FormActiveFieldsProvider>
           </CollectionRecordProvider>
