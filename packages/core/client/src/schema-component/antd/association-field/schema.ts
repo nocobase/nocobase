@@ -149,7 +149,7 @@ export default {
         title: '{{ t("Add new") }}',
         'x-component': 'Action',
         'x-designer': 'Action.Designer',
-        'x-action': '',
+        'x-action': null,
         'x-designer-props': {
           enableDrag: false,
         },
@@ -173,7 +173,7 @@ export default {
         type: 'void',
         title: '{{ t("Select") }}',
         'x-component': 'Action',
-        'x-action': '',
+        'x-action': null,
         'x-designer': 'Action.Designer',
         'x-designer-props': {
           enableDrag: false,
