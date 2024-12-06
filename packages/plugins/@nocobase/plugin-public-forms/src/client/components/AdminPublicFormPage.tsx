@@ -20,6 +20,7 @@ import {
   FormItem,
   Checkbox,
   VariablesProvider,
+  useApp,
 } from '@nocobase/client';
 import { Breadcrumb, Button, Dropdown, Space, Spin, Switch, Input, message, Popover, QRCode } from 'antd';
 import React, { useState } from 'react';
@@ -32,10 +33,12 @@ import { usePublicFormTranslation, NAMESPACE } from '../locale';
 const PublicFormQRCode = () => {
   const [open, setOpen] = useState(false);
   const { t } = usePublicFormTranslation();
+  const baseURL = window.location.origin;
   const params = useParams();
   const isUnderSubApp = window.location.pathname.startsWith('/apps');
+  const app = useApp();
   const link =
-    window.location.origin + (isUnderSubApp ? `/apps/public-forms/${params.name}` : `/public-forms/${params.name}`);
+    baseURL + (isUnderSubApp ? `/apps/${app.name}/public-forms/${params.name}` : `/public-forms/${params.name}`);
   const handleQRCodeOpen = (newOpen: boolean) => {
     setOpen(newOpen);
   };
@@ -55,6 +58,7 @@ export function AdminPublicFormPage() {
   const { t } = usePublicFormTranslation();
   const { theme } = useGlobalTheme();
   const apiClient = useAPIClient();
+  const app = useApp();
   const { data, loading, refresh } = useRequest<any>({
     url: `publicForms:get/${params.name}`,
   });
@@ -102,7 +106,10 @@ export function AdminPublicFormPage() {
 
   const handleCopyLink = () => {
     const baseURL = window.location.origin;
-    const link = `${baseURL}/public-forms/${params.name}`;
+    const isUnderSubApp = window.location.pathname.startsWith('/apps');
+    const link =
+      baseURL + (isUnderSubApp ? `/apps/${app.name}/public-forms/${params.name}` : `/public-forms/${params.name}`);
+    console.log(link);
     navigator.clipboard.writeText(link);
     message.success(t('Link copied successfully'));
   };
