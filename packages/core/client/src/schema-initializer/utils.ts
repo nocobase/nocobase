@@ -121,6 +121,7 @@ export function useTableColumnInitializerFields() {
   const isReadPretty = isSubTable ? form.readPretty : true;
 
   return currentFields
+    .filter((v) => v.collectionName === name)
     .filter((field) => field?.interface && field?.interface !== 'subTable' && !field?.treeChildren)
     .map((field) => {
       const interfaceConfig = getInterface(field.interface);

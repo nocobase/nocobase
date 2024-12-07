@@ -25,6 +25,9 @@ export const InternalSubTable = observer(
     const fieldSchema = useFieldSchema();
     const insert = useInsertSchema('SubTable');
     const insertSelector = useInsertSchema('Selector');
+    const insertSelect = useInsertSchema('SubTable.SelectAction');
+    const insertAddNewAction = useInsertSchema('SubTable.AddNewAction');
+
     const { options } = useAssociationFieldContext();
     const { actionName } = useACLActionParamsContext();
     useEffect(() => {
@@ -34,8 +37,14 @@ export const InternalSubTable = observer(
     useEffect(() => {
       if (field.componentProps?.allowSelectExistingRecord) {
         insertSelector(schema.Selector);
+        insertSelect(schema.SelectAction);
       }
     }, [field.componentProps?.allowSelectExistingRecord]);
+    useEffect(() => {
+      if (field.componentProps?.allowAddnew !== false) {
+        insertAddNewAction(schema.AddNewAction);
+      }
+    }, [field.componentProps?.allowAddnew]);
     const option = useSchemaOptionsContext();
     const components = {
       ...option.components,
