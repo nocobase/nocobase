@@ -599,7 +599,8 @@ export default class PluginWorkflowServer extends Plugin {
 
   private async process(execution: ExecutionModel, job?: JobModel, options: Transactionable = {}): Promise<Processor> {
     if (execution.status === EXECUTION_STATUS.QUEUEING) {
-      await execution.update({ status: EXECUTION_STATUS.STARTED }, { transaction: options.transaction });
+      const transaction = await this.useDataSourceTransaction('main', options.transaction);
+      await execution.update({ status: EXECUTION_STATUS.STARTED }, { transaction });
     }
     const logger = this.getLogger(execution.workflowId);
     const processor = this.createProcessor(execution, options);

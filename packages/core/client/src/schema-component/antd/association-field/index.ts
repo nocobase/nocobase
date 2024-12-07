@@ -14,7 +14,7 @@ import { FileSelector } from './FileManager';
 import { InternalPicker } from './InternalPicker';
 import { Nester } from './Nester';
 import { ReadPretty } from './ReadPretty';
-import { SubTable, AddNewAction, SelectAction } from './SubTable';
+import { SubTable } from './SubTable';
 
 export {
   AssociationFieldMode,
@@ -32,7 +32,5 @@ AssociationField.Viewer = Action.Container;
 AssociationField.InternalSelect = InternalPicker;
 AssociationField.ReadPretty = ReadPretty;
 AssociationField.FileSelector = FileSelector;
-AssociationField.SubTable.AddNewAction = AddNewAction;
-AssociationField.SubTable.SelectAction = SelectAction;
 
 export { useAssociationFieldContext } from './hooks';

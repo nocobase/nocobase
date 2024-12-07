@@ -724,7 +724,6 @@ const InternalNocoBaseTable = React.memo(
       ...others
     } = props;
     const { token } = useToken();
-
     return (
       <div
         className={cx(
