@@ -14,6 +14,7 @@ import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { observer, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { each } from '@formily/shared';
+import { useUpdate } from 'ahooks';
 import { Button, Card, Divider, Tooltip } from 'antd';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -25,7 +26,7 @@ import {
 } from '../../../data-source/collection-record/CollectionRecordProvider';
 import { isNewRecord, markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
 import { FlagProvider } from '../../../flag-provider';
-import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
+import { NocoBaseRecursionField, RefreshComponentProvider } from '../../../formily/NocoBaseRecursionField';
 import { RecordIndexProvider, RecordProvider } from '../../../record-provider';
 import { isPatternDisabled, isSystemField } from '../../../schema-settings';
 import {
@@ -114,6 +115,7 @@ const ToManyNester = observer(
     const { t } = useTranslation();
     const recordData = useCollectionRecordData();
     const collection = useCollection();
+    const update = useUpdate();
 
     if (!Array.isArray(field.value)) {
       field.value = [];
@@ -154,72 +156,74 @@ const ToManyNester = observer(
           }
         `}
       >
-        {field.value.map((value, index) => {
-          let allowed = allowDissociate;
-          if (!allowDissociate) {
-            allowed = !value?.[options.targetKey];
-          }
-          return (
-            <React.Fragment key={index}>
-              <div style={{ textAlign: 'right' }}>
-                {field.editable && allowMultiple && (
-                  <Tooltip key={'add'} title={t('Add new')}>
-                    <PlusOutlined
-                      style={{ zIndex: 1000, marginRight: '10px', color: '#a8a3a3' }}
-                      onClick={() => {
-                        action(() => {
-                          if (!Array.isArray(field.value)) {
-                            field.value = [];
-                          }
-                          field.value.splice(index + 1, 0, markRecordAsNew({}));
-                          each(field.form.fields, (targetField, key) => {
-                            if (!targetField) {
-                              delete field.form.fields[key];
+        <RefreshComponentProvider refresh={update}>
+          {field.value.map((value, index) => {
+            let allowed = allowDissociate;
+            if (!allowDissociate) {
+              allowed = !value?.[options.targetKey];
+            }
+            return (
+              <React.Fragment key={index}>
+                <div style={{ textAlign: 'right' }}>
+                  {field.editable && allowMultiple && (
+                    <Tooltip key={'add'} title={t('Add new')}>
+                      <PlusOutlined
+                        style={{ zIndex: 1000, marginRight: '10px', color: '#a8a3a3' }}
+                        onClick={() => {
+                          action(() => {
+                            if (!Array.isArray(field.value)) {
+                              field.value = [];
                             }
+                            field.value.splice(index + 1, 0, markRecordAsNew({}));
+                            each(field.form.fields, (targetField, key) => {
+                              if (!targetField) {
+                                delete field.form.fields[key];
+                              }
+                            });
+                            return field.onInput(field.value);
                           });
-                          return field.onInput(field.value);
-                        });
-                      }}
-                    />
-                  </Tooltip>
-                )}
-                {!field.readPretty && allowed && (
-                  <Tooltip key={'remove'} title={t('Remove')}>
-                    <CloseOutlined
-                      style={{ zIndex: 1000, color: '#a8a3a3' }}
-                      onClick={() => {
-                        action(() => {
-                          spliceArrayState(field as any, {
-                            startIndex: index,
-                            deleteCount: 1,
+                        }}
+                      />
+                    </Tooltip>
+                  )}
+                  {!field.readPretty && allowed && (
+                    <Tooltip key={'remove'} title={t('Remove')}>
+                      <CloseOutlined
+                        style={{ zIndex: 1000, color: '#a8a3a3' }}
+                        onClick={() => {
+                          action(() => {
+                            spliceArrayState(field as any, {
+                              startIndex: index,
+                              deleteCount: 1,
+                            });
+                            field.value.splice(index, 1);
+                            return field.onInput(field.value);
                           });
-                          field.value.splice(index, 1);
-                          return field.onInput(field.value);
-                        });
-                      }}
-                    />
-                  </Tooltip>
-                )}
-              </div>
-              <FormActiveFieldsProvider name="nester">
-                <SubFormProvider value={{ value, collection, fieldSchema: fieldSchema.parent }}>
-                  <RecordProvider isNew={isNewRecord(value)} record={value} parent={recordData}>
-                    <RecordIndexProvider index={index}>
-                      <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
-                        <NocoBaseRecursionField
-                          onlyRenderProperties
-                          basePath={field.address.concat(index)}
-                          schema={fieldSchema}
-                        />
-                      </DefaultValueProvider>
-                    </RecordIndexProvider>
-                  </RecordProvider>
-                </SubFormProvider>
-              </FormActiveFieldsProvider>
-              <Divider />
-            </React.Fragment>
-          );
-        })}
+                        }}
+                      />
+                    </Tooltip>
+                  )}
+                </div>
+                <FormActiveFieldsProvider name="nester">
+                  <SubFormProvider value={{ value, collection, fieldSchema: fieldSchema.parent }}>
+                    <RecordProvider isNew={isNewRecord(value)} record={value} parent={recordData}>
+                      <RecordIndexProvider index={index}>
+                        <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
+                          <NocoBaseRecursionField
+                            onlyRenderProperties
+                            basePath={field.address.concat(index)}
+                            schema={fieldSchema}
+                          />
+                        </DefaultValueProvider>
+                      </RecordIndexProvider>
+                    </RecordProvider>
+                  </SubFormProvider>
+                </FormActiveFieldsProvider>
+                <Divider />
+              </React.Fragment>
+            );
+          })}
+        </RefreshComponentProvider>
       </Card>
     ) : (
       <>

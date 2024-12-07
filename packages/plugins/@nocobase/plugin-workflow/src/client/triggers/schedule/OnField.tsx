@@ -16,7 +16,7 @@ import { FieldsSelect } from '../../components/FieldsSelect';
 import { lang } from '../../locale';
 
 function dateFieldFilter(field) {
-  return !field.hidden && (field.uiSchema ? field.type === 'date' : false);
+  return !field.hidden && (field.uiSchema ? ['date', 'datetimeTz', 'datetimeNoTz'].includes(field.type) : false);
 }
 
 export function OnField({ value: propsValue, onChange }) {

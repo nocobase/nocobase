@@ -7,32 +7,39 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useCallback, useRef } from 'react';
-import { RecursionField, useFieldSchema, useField } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { cloneDeep } from 'lodash';
-import { popupSchema } from './schema';
-import { App } from 'antd';
-import { useDesignable, useActionContext, SchemaComponentOptions, ActionContextProvider } from '../../';
+import React, { useCallback, useState } from 'react';
+import { ActionContextProvider, SchemaComponentOptions, useActionContext, useDesignable } from '../../';
 import { PopupVisibleProvider } from '../../antd/page/PagePopups';
 import { usePopupUtils } from '../../antd/page/pagePopupUtils';
+import { popupSchema } from './schema';
 
 import { CollectionProvider, useCollection } from '../../../data-source';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 
-export const useInsertSchema = () => {
+const useInsertSchema = () => {
   const fieldSchema = useFieldSchema();
   const { insertAfterBegin } = useDesignable();
-  const insert = useCallback((ss) => {
-    const schema = fieldSchema.reduceProperties((buf, s) => {
-      if (s['x-component'] === 'Action.Container') {
-        return s;
+  const insert = useCallback(
+    (ss) => {
+      const schema = fieldSchema.reduceProperties((buf, s) => {
+        if (s['x-component'] === 'Action.Container') {
+          return s;
+        }
+        return buf;
+      }, null);
+      if (!schema) {
+        insertAfterBegin(cloneDeep(ss));
       }
-      return buf;
-    }, null);
-    if (!schema) {
-      insertAfterBegin(cloneDeep(ss));
-    }
-  }, []);
+    },
+    [fieldSchema, insertAfterBegin],
+  );
   return insert;
+};
+
+const filterProperties = (s) => {
+  return s['x-component'] === 'Action.Container';
 };
 
 // 高阶组件：用来包装每个组件并添加弹窗功能
@@ -49,17 +56,14 @@ function withPopupWrapper<T>(WrappedComponent: React.ComponentType<T>) {
     const { visibleWithURL, setVisibleWithURL } = usePopupUtils();
     const { openPopup } = usePopupUtils();
 
-    const openPopupRef = useRef(null);
-    openPopupRef.current = openPopup;
-
-    const handleClick = () => {
+    const handleClick = useCallback(() => {
       insertPopup(popupSchema);
-      openPopupRef.current();
-      console.log(333);
-    };
+      // Only open the popup when the popup schema exists
+      if (fieldSchema.properties) {
+        openPopup();
+      }
+    }, [fieldSchema, insertPopup, openPopup]);
     const { setSubmitted } = ctx;
-
-    const { modal } = App.useApp();
 
     const handleVisibleChange = useCallback(
       (value: boolean): void => {
@@ -84,13 +88,11 @@ function withPopupWrapper<T>(WrappedComponent: React.ComponentType<T>) {
         >
           <CollectionProvider name={collection.name}>
             <SchemaComponentOptions>
-              <RecursionField
+              <NocoBaseRecursionField
                 onlyRenderProperties
                 basePath={field?.address}
                 schema={fieldSchema}
-                filterProperties={(s) => {
-                  return s['x-component'] === 'Action.Container';
-                }}
+                filterProperties={filterProperties}
               />
             </SchemaComponentOptions>
           </CollectionProvider>

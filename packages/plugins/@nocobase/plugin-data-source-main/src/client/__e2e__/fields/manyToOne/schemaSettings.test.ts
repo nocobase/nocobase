@@ -151,7 +151,6 @@ test.describe('table column & table', () => {
 });
 
 test.describe('table column & sub-table', () => {
-  // https://nocobase.height.app/T-3377
   test('title field', async ({ page, mockPage }) => {
     await mockPage(T3377).goto();
 

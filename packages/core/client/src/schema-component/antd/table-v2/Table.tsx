@@ -723,6 +723,7 @@ const InternalNocoBaseTable = React.memo(
       field,
       ...others
     } = props;
+    const { token } = useToken();
     const tableElementRef = useTableElementRef();
 
     const refCallback = useCallback(
@@ -759,10 +760,10 @@ const InternalNocoBaseTable = React.memo(
                     padding: 16px 8px;
                   }
                   .ant-table-middle .ant-table-cell {
-                    padding: 12px 8px;
+                    padding: 12px ${token.paddingXS}px;
                   }
                   .ant-table-small .ant-table-cell {
-                    padding: 8px 8px;
+                    padding: 8px ${token.paddingXS}px;
                   }
                 }
               }

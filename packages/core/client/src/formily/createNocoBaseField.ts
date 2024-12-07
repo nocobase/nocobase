@@ -10,6 +10,7 @@
 import { IFieldProps } from '@formily/core';
 import { JSXComponent, Schema } from '@formily/react';
 import { toArr } from '@formily/shared';
+import _ from 'lodash';
 
 export function createNocoBaseField<Decorator extends JSXComponent, Component extends JSXComponent>(props: any) {
   return new NocoBaseField(props);
@@ -65,6 +66,7 @@ class NocoBaseField<
   componentType: any;
   path: any;
   form: any;
+  address: any;
 
   constructor(props: any) {
     this.props = props;
@@ -118,6 +120,9 @@ class NocoBaseField<
 
     this.path = {};
     this.form = {};
+    this.address = {
+      concat: _.noop,
+    };
   }
 
   // protected makeObservable() {

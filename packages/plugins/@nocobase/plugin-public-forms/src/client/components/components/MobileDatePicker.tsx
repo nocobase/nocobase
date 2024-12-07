@@ -40,6 +40,7 @@ const MobileDateTimePicker = connect(
       ...rest
     } = props;
     const [visible, setVisible] = useState(false);
+    console.log(getPrecision(timeFormat));
 
     // 性能优化：使用 useCallback 缓存函数
     const handleConfirm = useCallback(

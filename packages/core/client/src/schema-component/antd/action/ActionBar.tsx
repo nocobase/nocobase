@@ -76,7 +76,7 @@ const InternalActionBar: FC = (props: any) => {
             {...others}
             className={cx(others.className, 'nb-action-bar')}
           >
-            {
+            {props.children && (
               <div>
                 <Space {...spaceProps} style={{ flexWrap: 'wrap', ...(spaceProps?.style || {}) }}>
                   {fieldSchema.mapProperties((schema, key) => {
@@ -84,7 +84,7 @@ const InternalActionBar: FC = (props: any) => {
                   })}
                 </Space>
               </div>
-            }
+            )}
             {render({ style: { margin: '0 !important' } })}
           </div>
         </DndContext>

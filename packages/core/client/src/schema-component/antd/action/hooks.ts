@@ -63,5 +63,5 @@ export const useLinkageAction = () => {
   const fieldSchema = useFieldSchema();
   const isRecordAction = useIsDetailBlock();
   const isAction = ['Action.Link', 'Action'].includes(fieldSchema['x-component']);
-  return isAction && isRecordAction;
+  return isAction && isRecordAction && fieldSchema['x-action'];
 };

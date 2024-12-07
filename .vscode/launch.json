@@ -78,7 +78,7 @@
       "request": "launch",
       "name": "Debug Migration",
       "runtimeExecutable": "yarn",
-      "runtimeArgs": ["run", "--inspect-brk", "nocobase", "migrator", "up"],
+      "runtimeArgs": ["run", "--inspect-brk", "nocobase", "upgrade"],
       "skipFiles": ["<node_internals>/**"],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen"

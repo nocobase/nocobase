@@ -26,8 +26,8 @@ import {
 import { ActionContext } from '../action/context';
 import { PopupVisibleProviderContext, useCurrentPopupContext } from './PagePopups';
 import { usePopupSettings } from './PopupSettingsProvider';
+import { getPopupLayerState, removePopupLayerState, setPopupLayerState } from './popupState';
 import { PopupContext, usePopupContextInActionOrAssociationField } from './usePopupContextInActionOrAssociationField';
-
 export interface PopupParams {
   /** popup uid */
   popupuid: string;
@@ -123,30 +123,6 @@ export const getPopupPathFromParams = (params: PopupParams) => {
   return `/popups/${popupPath.map((item) => encodePathValue(item)).join('/')}`;
 };
 
-let isClicked = false;
-let timer = null;
-// Used to prevent URL duplication caused by rapid repeated clicks
-export const quickClick = (duration = 500) => {
-  if (isClicked) {
-    if (timer) {
-      clearTimeout(timer);
-    }
-    timer = setTimeout(() => {
-      isClicked = false;
-    }, duration);
-
-    return true;
-  }
-
-  isClicked = true;
-
-  timer = setTimeout(() => {
-    isClicked = false;
-  }, duration);
-
-  return false;
-};
-
 /**
  * Note: use this hook in a plugin is not recommended
  * @returns
@@ -171,7 +147,7 @@ export const usePopupUtils = (
   const cm = useCollectionManager();
   const association = useAssociationName();
   const { visible, setVisible } = useContext(PopupVisibleProviderContext) || { visible: false, setVisible: _.noop };
-  const { params: popupParams } = useCurrentPopupContext();
+  const { params: popupParams, currentLevel = 0 } = useCurrentPopupContext();
   const { getDataBlockRequest } = useDataBlockRequestGetter();
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { setVisible: _setVisibleFromAction } = useContext(ActionContext);
@@ -250,12 +226,8 @@ export const usePopupUtils = (
         return setVisibleFromAction?.(true);
       }
 
-      // In e2e tests, buttons may be clicked multiple times rapidly, so we cannot directly prevent repeated clicks
-      if (!process.env.__E2E__ && quickClick()) {
-        return;
-      }
-
-      const currentPopupUidWithoutOpened = customActionSchema?.['x-uid'] || fieldSchema?.['x-uid'];
+      const schema = customActionSchema || fieldSchema;
+      const currentPopupUidWithoutOpened = schema?.['x-uid'];
       const sourceId = getSourceId(parentRecordData);
 
       recordData = recordData || record?.data;
@@ -272,7 +244,7 @@ export const usePopupUtils = (
       }
 
       storePopupContext(currentPopupUidWithoutOpened, {
-        schema: customActionSchema || fieldSchema,
+        schema,
         record: new CollectionRecord({ isNew: false, data: recordData }),
         parentRecord: parentRecordData ? new CollectionRecord({ isNew: false, data: parentRecordData }) : parentRecord,
         service: getDataBlockRequest(),
@@ -285,7 +257,20 @@ export const usePopupUtils = (
 
       updatePopupContext(getNewPopupContext(), customActionSchema);
 
-      navigate(withSearchParams(`${url}${pathname}`));
+      // Only open the popup when the popup schema exists
+      if (schema.properties) {
+        const nextLevel = currentLevel + 1;
+
+        if (getPopupLayerState(nextLevel)) {
+          return;
+        }
+        navigate(withSearchParams(`${url}${pathname}`));
+        setPopupLayerState(nextLevel, true);
+      } else {
+        console.error(
+          `[NocoBase] The popup schema is invalid, please check the schema: \n${JSON.stringify(schema, null, 2)}`,
+        );
+      }
     },
     [
       association,
@@ -304,18 +289,18 @@ export const usePopupUtils = (
       getNewPopupContext,
       blockData,
       tableBlockContextBasicValue,
+      currentLevel,
     ],
   );
 
   const closePopup = useCallback(() => {
-    isClicked = false;
-
     if (!isPopupVisibleControlledByURL()) {
       return setVisibleFromAction?.(false);
     }
 
     navigate(withSearchParams(removeLastPopupPath(location.pathname)), { replace: true });
-  }, [isPopupVisibleControlledByURL, setVisibleFromAction, navigate, location?.pathname]);
+    removePopupLayerState(currentLevel);
+  }, [isPopupVisibleControlledByURL, setVisibleFromAction, navigate, location?.pathname, currentLevel]);
 
   const changeTab = useCallback(
     (key: string) => {

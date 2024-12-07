@@ -916,7 +916,6 @@ test.describe('actions schema settings', () => {
         supportedOptions: ['Edit button', 'Linkage rules', 'Open mode', 'Popup size', 'Delete'],
       });
 
-      // https://nocobase.height.app/T-3235
       // add child 表单中的 Parent 字段应该有数据
       await page.getByLabel('action-Action.Link-Add child-').click({
         position: { x: 5, y: 5 }, // 防止按钮被遮挡

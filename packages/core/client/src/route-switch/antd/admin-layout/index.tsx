@@ -523,19 +523,19 @@ export const AdminProvider = (props) => {
     <CurrentPageUidProvider>
       <CurrentTabUidProvider>
         <IsSubPageClosedByPageMenuProvider>
-          <ACLRolesCheckProvider>
-            <MenuSchemaRequestProvider>
-              <RemoteCollectionManagerProvider>
-                <CurrentAppInfoProvider>
-                  <NavigateIfNotSignIn>
+          <NavigateIfNotSignIn>
+            <ACLRolesCheckProvider>
+              <MenuSchemaRequestProvider>
+                <RemoteCollectionManagerProvider>
+                  <CurrentAppInfoProvider>
                     <RemoteSchemaTemplateManagerProvider>
                       <VariablesProvider>{props.children}</VariablesProvider>
                     </RemoteSchemaTemplateManagerProvider>
-                  </NavigateIfNotSignIn>
-                </CurrentAppInfoProvider>
-              </RemoteCollectionManagerProvider>
-            </MenuSchemaRequestProvider>
-          </ACLRolesCheckProvider>
+                  </CurrentAppInfoProvider>
+                </RemoteCollectionManagerProvider>
+              </MenuSchemaRequestProvider>
+            </ACLRolesCheckProvider>
+          </NavigateIfNotSignIn>
         </IsSubPageClosedByPageMenuProvider>
       </CurrentTabUidProvider>
     </CurrentPageUidProvider>

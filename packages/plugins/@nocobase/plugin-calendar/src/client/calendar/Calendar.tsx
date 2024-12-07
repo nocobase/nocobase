@@ -230,7 +230,7 @@ const useEvents = (
   ]);
 };
 
-export const useInsertSchema = (component) => {
+const useInsertSchema = (component) => {
   const fieldSchema = useFieldSchema();
   const { insertAfterBegin } = useDesignable();
   const insert = useCallback(
@@ -245,7 +245,7 @@ export const useInsertSchema = (component) => {
         insertAfterBegin(cloneDeep(ss));
       }
     },
-    [component],
+    [component, fieldSchema, insertAfterBegin],
   );
   return insert;
 };
@@ -361,11 +361,11 @@ export const Calendar: any = withDynamicSchemaProps(
           }
           if (currentSelectDate) {
             const startFieldProps = {
-              ...startCollectionField.uiSchema?.['x-component-props'],
+              ...startCollectionField?.uiSchema?.['x-component-props'],
               ...ctx.form?.query(startFieldName).take()?.componentProps,
             };
             const endFieldProps = {
-              ...endCollectionField.uiSchema?.['x-component-props'],
+              ...endCollectionField?.uiSchema?.['x-component-props'],
               ...ctx.form?.query(endFieldName).take()?.componentProps,
             };
 

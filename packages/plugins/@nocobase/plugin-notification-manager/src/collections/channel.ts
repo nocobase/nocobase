@@ -28,10 +28,9 @@ export default {
         type: 'string',
         title: '{{t("Channel name")}}',
         'x-component': 'Input',
-        'x-read-pretty': true,
         required: true,
         description:
-          "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+          "{{t('Randomly generated and can not be modified. Support letters, numbers and underscores, must start with an letter.')}}",
       },
     },
     {
