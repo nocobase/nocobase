@@ -155,7 +155,7 @@ test.describe('table column & sub-table', () => {
   test('title field', async ({ page, mockPage }) => {
     await mockPage(T3377).goto();
 
-    await page.locator('.nb-sub-table-addNew').click();
+    await page.getByRole('button', { name: 'Add new' }).click();
     await page.getByTestId('select-object-multiple').click();
 
     // 下拉列表中应该有值

@@ -716,7 +716,7 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
             'duplicate',
             'customize:create',
           ].includes(fieldSchema['x-action'] || '');
-          return !isPopupAction && !fieldSchema?.['x-action-settings']?.disableSecondConFirm;
+          return !isPopupAction && !fieldSchema?.['x-action-settings'].disableSecondConFirm;
         },
       },
       {
