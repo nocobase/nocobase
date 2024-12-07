@@ -9,7 +9,7 @@
 
 import { useField, useFieldSchema } from '@formily/react';
 import { cloneDeep } from 'lodash';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ActionContextProvider, SchemaComponentOptions, useActionContext, useDesignable } from '../../';
 import { PopupVisibleProvider } from '../../antd/page/PagePopups';
 import { usePopupUtils } from '../../antd/page/pagePopupUtils';
@@ -18,20 +18,23 @@ import { popupSchema } from './schema';
 import { CollectionProvider, useCollection } from '../../../data-source';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 
-export const useInsertSchema = () => {
+const useInsertSchema = () => {
   const fieldSchema = useFieldSchema();
   const { insertAfterBegin } = useDesignable();
-  const insert = useCallback((ss) => {
-    const schema = fieldSchema.reduceProperties((buf, s) => {
-      if (s['x-component'] === 'Action.Container') {
-        return s;
+  const insert = useCallback(
+    (ss) => {
+      const schema = fieldSchema.reduceProperties((buf, s) => {
+        if (s['x-component'] === 'Action.Container') {
+          return s;
+        }
+        return buf;
+      }, null);
+      if (!schema) {
+        insertAfterBegin(cloneDeep(ss));
       }
-      return buf;
-    }, null);
-    if (!schema) {
-      insertAfterBegin(cloneDeep(ss));
-    }
-  }, []);
+    },
+    [fieldSchema, insertAfterBegin],
+  );
   return insert;
 };
 
@@ -53,14 +56,13 @@ function withPopupWrapper<T>(WrappedComponent: React.ComponentType<T>) {
     const { visibleWithURL, setVisibleWithURL } = usePopupUtils();
     const { openPopup } = usePopupUtils();
 
-    const openPopupRef = useRef(null);
-    openPopupRef.current = openPopup;
-
-    const handleClick = () => {
+    const handleClick = useCallback(() => {
       insertPopup(popupSchema);
-      openPopupRef.current();
-      console.log(333);
-    };
+      // Only open the popup when the popup schema exists
+      if (fieldSchema.properties) {
+        openPopup();
+      }
+    }, [fieldSchema, insertPopup, openPopup]);
     const { setSubmitted } = ctx;
 
     const handleVisibleChange = useCallback(

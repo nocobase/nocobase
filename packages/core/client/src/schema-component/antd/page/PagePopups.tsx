@@ -24,6 +24,7 @@ import { TabsContextProvider } from '../tabs/context';
 import { usePopupSettings } from './PopupSettingsProvider';
 import { deleteRandomNestedSchemaKey, getRandomNestedSchemaKey } from './nestedSchemaKeyStorage';
 import { PopupParams, getPopupParamsFromPath, getStoredPopupContext, usePopupUtils } from './pagePopupUtils';
+import { removePopupLayerState, setPopupLayerState } from './popupState';
 import {
   PopupContext,
   getPopupContextFromActionOrAssociationFieldSchema,
@@ -42,7 +43,7 @@ export interface PopupProps {
    */
   hidden: boolean;
   /**
-   * Used to identify the level of the current popup, where 0 represents the first level.
+   * Used to identify the level of the current popup, where 1 represents the first level.
    */
   currentLevel: number;
   /**
@@ -150,11 +151,18 @@ const PagePopupsItemProvider: FC<{
   params: PopupParams;
   context: PopupContext;
   /**
-   * Used to identify the level of the current popup, where 0 represents the first level.
+   * Used to identify the level of the current popup, where 1 represents the first level.
    */
   currentLevel: number;
 }> = ({ params, context, currentLevel, children }) => {
   const storedContext = { ...getStoredPopupContext(params.popupuid) };
+
+  useEffect(() => {
+    setPopupLayerState(currentLevel, true);
+    return () => {
+      removePopupLayerState(currentLevel);
+    };
+  }, [currentLevel]);
 
   if (!context) {
     context = _.omitBy(
