@@ -54,7 +54,6 @@ import { GetStyleRules } from '../../../schema-settings/LinkageRules/useActionVa
 import { HighPerformanceSpin } from '../../common/high-performance-spin/HighPerformanceSpin';
 import { useToken } from '../__builtins__';
 import { useAssociationFieldContext } from '../association-field/hooks';
-import { DelayRender } from './DelayRender';
 import { RenderTextInCell } from './RenderTextInCell';
 import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
@@ -321,9 +320,6 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
   return tableColumns;
 };
 
-// How many rows should be displayed on initial render
-const INITIAL_ROWS_NUMBER = 20;
-
 const SortableRow = (props: BodyRowComponentProps) => {
   const { token } = useToken();
   const id = props['data-row-key']?.toString();
@@ -366,13 +362,6 @@ const SortableRow = (props: BodyRowComponentProps) => {
   );
 
   return row;
-
-  if (rowIndex < INITIAL_ROWS_NUMBER) {
-    return row;
-  }
-
-  // Delay rendering of other rows to prevent long page jank
-  return <DelayRender>{row}</DelayRender>;
 };
 
 const SortHandle = (props) => {
