@@ -24,6 +24,7 @@ import { TabsContextProvider } from '../tabs/context';
 import { usePopupSettings } from './PopupSettingsProvider';
 import { deleteRandomNestedSchemaKey, getRandomNestedSchemaKey } from './nestedSchemaKeyStorage';
 import { PopupParams, getPopupParamsFromPath, getStoredPopupContext, usePopupUtils } from './pagePopupUtils';
+import { removePopupLayerState, setPopupLayerState } from './popupState';
 import {
   PopupContext,
   getPopupContextFromActionOrAssociationFieldSchema,
@@ -155,6 +156,13 @@ const PagePopupsItemProvider: FC<{
   currentLevel: number;
 }> = ({ params, context, currentLevel, children }) => {
   const storedContext = { ...getStoredPopupContext(params.popupuid) };
+
+  useEffect(() => {
+    setPopupLayerState(currentLevel, true);
+    return () => {
+      removePopupLayerState(currentLevel);
+    };
+  }, [currentLevel]);
 
   if (!context) {
     context = _.omitBy(
