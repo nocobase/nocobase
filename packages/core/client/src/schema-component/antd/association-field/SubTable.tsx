@@ -255,7 +255,7 @@ export const SubTable: any = observer(
                       <Action.Link
                         useAction={useSubTableAddNewProps}
                         title={
-                          <Space style={{ gap: 2 }}>
+                          <Space style={{ gap: 2 }} className="nb-sub-table-addNew">
                             <PlusSquareOutlined /> {t('Add new')}
                           </Space>
                         }
