@@ -13,7 +13,7 @@ import { oneEmptyTableWithUsers } from './templatesOfBug';
 const deleteButton = async (page: Page, name: string) => {
   await page.getByRole('button', { name }).hover();
   await page.getByRole('button', { name }).getByLabel('designer-schema-settings-').hover();
-  await page.getByText('Delete').click();
+  await page.getByRole('menuitem', { name: 'Delete' }).click();
   await page.getByRole('button', { name: 'OK', exact: true }).click();
 };
 
