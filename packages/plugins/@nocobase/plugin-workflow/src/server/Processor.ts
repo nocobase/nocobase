@@ -44,6 +44,11 @@ export default class Processor {
   /**
    * @experimental
    */
+  mainTransaction: Transaction;
+
+  /**
+   * @experimental
+   */
   nodes: FlowNodeModel[] = [];
 
   /**
@@ -105,12 +110,15 @@ export default class Processor {
   public async prepare() {
     const {
       execution,
-      transaction,
       options: { plugin },
     } = this;
     if (!execution.workflow) {
       execution.workflow = plugin.enabledCache.get(execution.workflowId);
     }
+
+    this.mainTransaction = plugin.useDataSourceTransaction('main', this.transaction);
+
+    const transaction = this.mainTransaction;
 
     const nodes = await execution.workflow.getNodes({ transaction });
 
@@ -156,7 +164,7 @@ export default class Processor {
       this.logger.debug(`config of node`, { data: node.config });
       job = await instruction(node, prevJob, this);
       if (!job) {
-        return null;
+        return this.exit();
       }
     } catch (err) {
       // for uncaught error, set to error
@@ -250,7 +258,10 @@ export default class Processor {
   public async exit(s?: number) {
     if (typeof s === 'number') {
       const status = (<typeof Processor>this.constructor).StatusMap[s] ?? Math.sign(s);
-      await this.execution.update({ status }, { transaction: this.transaction });
+      await this.execution.update({ status }, { transaction: this.mainTransaction });
+    }
+    if (this.mainTransaction && this.mainTransaction !== this.transaction) {
+      await this.mainTransaction.commit();
     }
     this.logger.info(`execution (${this.execution.id}) exiting with status ${this.execution.status}`);
     return null;
@@ -262,7 +273,7 @@ export default class Processor {
    */
   async saveJob(payload: JobModel | Record<string, any>): Promise<JobModel> {
     const { database } = <typeof ExecutionModel>this.execution.constructor;
-    const { transaction } = this;
+    const { mainTransaction: transaction } = this;
     const { model } = database.getCollection('jobs');
     let job;
     if (payload instanceof model) {
