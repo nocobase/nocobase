@@ -380,6 +380,7 @@ export const useFormItemInitializerFields = (options?: any) => {
   const action = fieldSchema?.['x-action'];
 
   return currentFields
+    .filter((v) => v.collectionName === name)
     ?.filter((field) => field?.interface && !field?.treeChildren)
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
@@ -447,6 +448,7 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
   const action = fieldSchema?.['x-action'];
 
   return currentFields
+    .filter((v) => v.collectionName === name)
     ?.filter((field) => field?.interface && getInterface(field.interface)?.filterable)
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);

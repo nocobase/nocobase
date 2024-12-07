@@ -13,6 +13,20 @@ import { mapDatePicker, DatePicker as NBDatePicker } from '@nocobase/client';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 
+function getPrecision(timeFormat: string): 'hour' | 'minute' | 'second' {
+  const lowerFormat = timeFormat.toLowerCase();
+
+  if (/\bss?\b/.test(lowerFormat)) {
+    return 'second';
+  } else if (/\bmm?\b/.test(lowerFormat)) {
+    return 'minute';
+  } else if (/\bhh?\b/.test(lowerFormat)) {
+    return 'hour';
+  } else {
+    throw new Error('Invalid time format');
+  }
+}
+
 const MobileDateTimePicker = connect(
   (props) => {
     const { t } = useTranslation();
@@ -73,7 +87,7 @@ const MobileDateTimePicker = connect(
           onClose={() => {
             setVisible(false);
           }}
-          precision={showTime ? 'second' : picker === 'date' ? 'day' : picker}
+          precision={showTime ? getPrecision(timeFormat) : picker === 'date' ? 'day' : picker}
           renderLabel={labelRenderer}
           min={new Date(1000, 0, 1)}
           max={new Date(9999, 11, 31)}
