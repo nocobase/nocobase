@@ -69,11 +69,6 @@ const subTableContainer = css`
   .ant-table-thead .ant-table-cell {
     font-weight: normal;
   }
-  .ant-table-placeholder {
-    .ant-table-expanded-row-fixed {
-      padding: 8px 8px;
-    }
-  }
 `;
 
 const tableClassName = css`
