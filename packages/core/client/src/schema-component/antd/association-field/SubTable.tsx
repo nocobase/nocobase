@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { PlusSquareOutlined, ZoomInOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { exchangeArrayState } from '@formily/core/esm/shared/internals';
@@ -16,8 +17,6 @@ import { isArr } from '@formily/shared';
 import { Space } from 'antd';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Space } from 'antd';
-import { PlusSquareOutlined, ZoomInOutlined } from '@ant-design/icons';
 
 import {
   FormProvider,
@@ -35,7 +34,7 @@ import { markRecordAsNew } from '../../../data-source/collection-record/isNewRec
 import { FlagProvider } from '../../../flag-provider';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { useCompile } from '../../hooks';
-import { ActionContextProvider, Action } from '../action';
+import { Action, ActionContextProvider } from '../action';
 import { useSubTableSpecialCase } from '../form-item/hooks/useSpecialCase';
 import { SubFormProvider, useAssociationFieldContext, useFieldNames } from './hooks';
 import { useTableSelectorProps } from './InternalPicker';
