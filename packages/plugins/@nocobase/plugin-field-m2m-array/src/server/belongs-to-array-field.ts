@@ -25,7 +25,10 @@ export class BelongsToArrayField extends RelationField {
     if (!values || values[name] === undefined) {
       return;
     }
-    const value: any[] = values[name] || [];
+    let value: any[] = values[name] || [];
+    if (!Array.isArray(value)) {
+      value = [value];
+    }
     const tks = [];
     const items = [];
     for (const item of value) {
