@@ -195,7 +195,7 @@ const InternalFileManager = (props) => {
   const pickerProps = {
     size: 'small',
     fieldNames,
-    multiple: ['o2m', 'm2m'].includes(collectionField?.interface) && multiple,
+    multiple: ['o2m', 'm2m', 'mbm'].includes(collectionField?.interface) && multiple,
     association: {
       target: collectionField?.target,
     },
