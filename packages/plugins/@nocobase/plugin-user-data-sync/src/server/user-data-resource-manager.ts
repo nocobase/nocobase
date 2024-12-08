@@ -266,7 +266,7 @@ export class UserDataResourceManager {
         },
       });
     }
-    if (!processed) {
+    if (!processed && data.sourceName === 'api') {
       throw new Error(`dataType "${dataType}" is not support`);
     }
     return syncResults;
