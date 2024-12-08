@@ -129,20 +129,10 @@ export class PluginAuthServer extends Plugin {
           }
           return {
             request: {
-              params: ctx.request?.params,
               body: {
                 ...ctx.request?.body,
                 password: undefined,
               },
-              path: ctx.request?.path,
-              headers: {
-                'x-authenticator': ctx.request?.headers['x-authenticator'],
-                'x-locale': ctx.request?.headers['x-locale'],
-                'x-timezone': ctx.request?.headers['x-timezone'],
-              },
-            },
-            response: {
-              body,
             },
           };
         },
@@ -180,23 +170,10 @@ export class PluginAuthServer extends Plugin {
         getMetaData: async (ctx: any) => {
           return {
             request: {
-              params: ctx.request?.params,
               body: {
                 ...ctx.request?.body,
                 password: undefined,
                 confirm_password: undefined,
-              },
-              path: ctx.request?.path,
-              headers: {
-                'x-authenticator': ctx.request?.headers['x-authenticator'],
-                'x-locale': ctx.request?.headers['x-locale'],
-                'x-timezone': ctx.request?.headers['x-timezone'],
-              },
-            },
-            response: {
-              body: {
-                ...ctx.response?.body,
-                token: undefined,
               },
             },
           };
@@ -207,15 +184,7 @@ export class PluginAuthServer extends Plugin {
         getMetaData: async (ctx: any) => {
           return {
             request: {
-              params: ctx.request.params,
-              query: ctx.request.query,
               body: {},
-              path: ctx.request.path,
-              headers: {
-                'x-authenticator': ctx.request?.headers['x-authenticator'],
-                'x-locale': ctx.request?.headers['x-locale'],
-                'x-timezone': ctx.request?.headers['x-timezone'],
-              },
             },
             response: {
               body: {},
