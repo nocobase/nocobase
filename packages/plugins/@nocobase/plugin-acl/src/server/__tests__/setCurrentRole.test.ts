@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { vi } from 'vitest';
 import Database from '@nocobase/database';
 import UsersPlugin from '@nocobase/plugin-users';
 import { MockServer } from '@nocobase/test';
+import { vi } from 'vitest';
 import { setCurrentRole } from '../middlewares/setCurrentRole';
 import { prepareApp } from './prepare';
 
@@ -67,7 +67,7 @@ describe('role', () => {
     expect(ctx.state.currentRole).toBe('root');
   });
 
-  it('should use default role when the role does not belong to the user', async () => {
+  it('should throw error', async () => {
     ctx.state.currentUser = await db.getRepository('users').findOne({
       appends: ['roles'],
     });
@@ -79,7 +79,10 @@ describe('role', () => {
     const throwFn = vi.fn();
     ctx.throw = throwFn;
     await setCurrentRole(ctx, () => {});
-    expect(ctx.state.currentRole).toBe('root');
+    expect(throwFn).lastCalledWith(401, {
+      code: 'ROLE_NOT_FOUND_FOR_USER',
+      message: 'The role does not belong to the user',
+    });
   });
 
   it('should set role with anonymous', async () => {
