@@ -194,14 +194,12 @@ export class UserDataResourceManager {
     await this.saveOriginRecords(data);
     const { dataType, sourceName, records, matchKey } = data;
     const sourceUks = records.map((record) => record.uid);
-    let processed = false;
     const syncResults: SyncResult[] = [];
     for (const resource of this.resources.nodes) {
       if (!resource.accepts.includes(dataType)) {
         continue;
       }
       const associateResource = resource.name;
-      processed = true;
       const originRecords = await this.findOriginRecords({ sourceName, sourceUks, dataType });
       if (!(originRecords && originRecords.length)) {
         continue;
@@ -265,9 +263,6 @@ export class UserDataResourceManager {
           failedRecords,
         },
       });
-    }
-    if (!processed && data.sourceName === 'api') {
-      throw new Error(`dataType "${dataType}" is not support`);
     }
     return syncResults;
   }
