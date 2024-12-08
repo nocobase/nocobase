@@ -50,6 +50,12 @@ export async function setCurrentRole(ctx: Context, next) {
   // 1. If the X-Role is set, use the specified role
   if (currentRole) {
     role = userRoles.find((role) => role.name === currentRole)?.name;
+    if (!role) {
+      return ctx.throw(401, {
+        code: 'ROLE_NOT_FOUND_FOR_USER',
+        message: ctx.t('The role does not belong to the user', { ns: 'acl' }),
+      });
+    }
   }
   // 2. If the X-Role is not set, or the X-Role does not belong to the user, use the default role
   if (!role) {
