@@ -8,19 +8,20 @@
  */
 
 import { createStyles } from '@nocobase/client';
-
+import { PageBackgroundColor } from '../constants';
 export const useStyles = createStyles(({ token, css }) => {
   return {
     nbMobile: css`
+      body {
+        background-color: ${PageBackgroundColor};
+      }
       -webkit-overflow-scrolling: touch;
       display: initial;
 
       & ::-webkit-scrollbar {
         display: none;
       }
-      .nb-card-list {
-        background-color: rgb(245, 245, 245);
-      }
+
       .nb-details .ant-formily-item-feedback-layout-loose {
         margin-bottom: 5px;
       }
