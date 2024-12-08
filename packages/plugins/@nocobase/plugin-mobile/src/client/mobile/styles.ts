@@ -44,9 +44,6 @@ export const useStyles = genStyleHook('nb-mobile', (token) => {
         {
           marginBottom: '10px',
         },
-      '.nb-action-panel': {
-        paddingTop: '10px',
-      },
       '.ant-list-item': {
         paddingTop: '8px',
         paddingBottom: '8px',
