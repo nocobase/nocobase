@@ -240,7 +240,9 @@ export const SubTable: any = observer(
                   pagination={paginationConfig}
                   rowSelection={{ type: 'none', hideSelectAll: true }}
                   isSubTable={true}
-                  locale={{ emptyText: <span>{t('Please add or select record')}</span> }}
+                  locale={{
+                    emptyText: <span> {field.editable ? t('Please add or select record') : t('No data')}</span>,
+                  }}
                 />
                 {field.editable && (
                   <Space
