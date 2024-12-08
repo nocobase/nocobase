@@ -49,6 +49,7 @@ async function importXlsxAction(ctx: Context, next: Next) {
     columns,
     workbook,
     explain: (ctx.request.body as any).explain,
+    repository,
   });
 
   const importedCount = await importer.run({
