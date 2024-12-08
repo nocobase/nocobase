@@ -1007,7 +1007,7 @@ test.describe('table column schema settings', () => {
     await page.getByRole('spinbutton').fill('1');
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page.reload();
-    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.locator('.nb-sub-table-addNew').click();
     await page.getByTestId('select-object-multiple').click();
     await expect(page.getByRole('option', { name: record1.singleLineText, exact: true })).toBeVisible();
   });
