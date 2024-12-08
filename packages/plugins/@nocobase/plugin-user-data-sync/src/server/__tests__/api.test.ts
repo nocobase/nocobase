@@ -51,4 +51,23 @@ describe('api', async () => {
       nickname: 'test',
     });
   });
+
+  it('push data with unsupported type', async () => {
+    const res = await agent.resource('userData').push({
+      values: {
+        dataType: 'unsupported',
+        records: [
+          {
+            uid: '1',
+            nickname: 'test',
+          },
+        ],
+      },
+    });
+    expect(res.status).toBe(500);
+    expect(res.body.data).toMatchObject({
+      code: 500,
+      message: 'dataType unsupported is not supported',
+    });
+  });
 });
