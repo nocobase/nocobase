@@ -190,6 +190,7 @@ export async function getRenderContent(templateEngine, content, variables, local
       const html = await replaceVariableValue(content, variables, localVariables);
       return await defaultParse(html);
     } catch (error) {
+      console.log(error);
       return content;
     }
   }
