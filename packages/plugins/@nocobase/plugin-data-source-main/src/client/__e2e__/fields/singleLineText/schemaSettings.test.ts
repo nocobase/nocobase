@@ -138,7 +138,7 @@ test.describe('table column & sub-table in edit form', () => {
       unsupportedVariables: ['Parent popup record'],
       variableValue: ['Current user', 'Nickname'],
       expectVariableValue: async () => {
-        await page.getByRole('button', { name: 'Add new' }).click();
+        await page.locator('.nb-sub-table-addNew').click();
         await expect(
           page
             .getByLabel('block-item-CollectionField-general-form-general.singleLineText-singleLineText')
