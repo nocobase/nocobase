@@ -8,6 +8,7 @@
  */
 
 import { genStyleHook } from '@nocobase/client';
+import { PageBackgroundColor } from '../constants';
 
 export const useStyles = genStyleHook('nb-mobile', (token) => {
   const { componentCls } = token;
@@ -20,8 +21,8 @@ export const useStyles = genStyleHook('nb-mobile', (token) => {
       '& ::-webkit-scrollbar': {
         display: 'none',
       },
-      '.nb-card-list': {
-        backgroundColor: 'rgb(245, 245, 245)',
+      body: {
+        backgroundColor: PageBackgroundColor,
       },
       '.nb-details .ant-formily-item-feedback-layout-loose': {
         marginBottom: '5px',
