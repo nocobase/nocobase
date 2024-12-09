@@ -110,7 +110,7 @@ export const mapDatePicker = function () {
     const { dateOnly, showTime, picker = 'date', utc, gmt, underFilter } = props;
     const format = getDefaultFormat(props);
     const onChange = props.onChange;
-    if (dayjs(props.value).isValid() && field) {
+    if (props.value && dayjs(props.value).isValid() && field) {
       field.value = moment2str(dayjs(props.value), { ...props });
     }
     return {
