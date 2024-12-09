@@ -96,6 +96,7 @@ const useLocalVariables = (props?: Props) => {
           name: '$nRecord',
           ctx: currentRecordCtx,
           collectionName: collectionNameOfRecord,
+          dataSource: currentParentRecordDataSource,
         },
         {
           name: '$nParentRecord',
