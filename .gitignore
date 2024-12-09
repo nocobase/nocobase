@@ -31,7 +31,7 @@ packages/core/app/client/src/.plugins
 storage/plugins
 storage/tar
 storage/tmp
-storage/print-templates/*
+storage/print-templates
 storage/app.watch.ts
 storage/.upgrading
 storage/logs-e2e
