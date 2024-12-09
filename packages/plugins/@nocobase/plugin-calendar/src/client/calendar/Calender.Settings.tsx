@@ -169,7 +169,7 @@ export const calendarBlockSettings = new SchemaSettings({
       },
     },
     {
-      name: 'eventOpenMethod',
+      name: 'eventOpenMode',
       Component: SchemaSettingsSelectItem,
       useComponentProps() {
         const { t } = useTranslation();
@@ -193,7 +193,7 @@ export const calendarBlockSettings = new SchemaSettings({
           ];
         }, [t, isPopupVisibleControlledByURL()]);
         return {
-          title: t('Event Open Method'),
+          title: t('Event Open Mode'),
           value: eventSchema['x-component-props']?.['openMode'] || 'drawer',
           options: modeOptions,
           onChange: (v) => {
