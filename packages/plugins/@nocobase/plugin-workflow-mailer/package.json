@@ -11,7 +11,7 @@
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-smtp-mailer",
   "devDependencies": {
     "antd": "5.x",
-    "nodemailer": "6.9.13",
+    "nodemailer": "6.9.16",
     "react": "18.x"
   },
   "peerDependencies": {

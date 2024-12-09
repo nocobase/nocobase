@@ -5,7 +5,7 @@
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {
-    "@types/nodemailer": "6.4.4",
+    "@types/nodemailer": "6.4.17",
     "nodemailer": "^6.6.1",
     "nodemailer-mock": "^1.5.11"
   },
