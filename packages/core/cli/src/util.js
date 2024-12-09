@@ -337,6 +337,7 @@ exports.initEnv = function initEnv() {
     LOCAL_STORAGE_DEST: 'storage/uploads',
     PLUGIN_STORAGE_PATH: resolve(process.cwd(), 'storage/plugins'),
     MFSU_AD: 'none',
+    MAKO_AD: 'none',
     WS_PATH: '/ws',
     SOCKET_PATH: 'storage/gateway.sock',
     NODE_MODULES_PATH: resolve(process.cwd(), 'node_modules'),

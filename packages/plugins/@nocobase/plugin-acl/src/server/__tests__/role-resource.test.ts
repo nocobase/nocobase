@@ -169,6 +169,9 @@ describe('role resource api', () => {
     // update resource actions
     response = await adminAgent.resource('roles.resources').update({
       associatedIndex: role.get('name') as string,
+      filter: {
+        name: 'c1',
+      },
       values: {
         name: 'c1',
         usingActionsConfig: true,
