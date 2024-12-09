@@ -43,9 +43,6 @@ describe('acl', () => {
 
     adminAgent = app.agent().login(admin);
     uiSchemaRepository = db.getRepository('uiSchemas');
-  });
-
-  it('should throw error when filter is empty during update resource', async () => {
     await db.getRepository('collections').create({
       context: {},
       values: {
@@ -107,7 +104,9 @@ describe('acl', () => {
     });
 
     expect(createResp.statusCode).toEqual(200);
+  });
 
+  it('should throw error when filter is empty', async () => {
     const updateResp = await adminAgent.resource('posts').update({
       filter: {},
       values: {
@@ -124,5 +123,41 @@ describe('acl', () => {
         },
       }),
     ).toBe(0);
+  });
+
+  it('should throw error when no filter is passed', async () => {
+    const updateResp = await adminAgent.resource('posts').update({
+      values: {
+        title: 'new title',
+      },
+    });
+
+    expect(updateResp.statusCode).not.toBe(200);
+  });
+
+  it('should not throw error when filter is not empty', async () => {
+    const updateResp = await adminAgent.resource('posts').update({
+      filter: {
+        title: 'old title',
+      },
+      values: {
+        title: 'new title',
+      },
+    });
+
+    expect(updateResp.statusCode).toBe(200);
+  });
+
+  it('should not throw error when filter by tk is passed', async () => {
+    const post = await db.getRepository('posts').findOne();
+
+    const updateResp = await adminAgent.resource('posts').update({
+      filterByTk: post.id,
+      values: {
+        title: 'new title',
+      },
+    });
+
+    expect(updateResp.statusCode).toBe(200);
   });
 });
