@@ -5,6 +5,72 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.4.6](https://github.com/nocobase/nocobase/compare/v1.4.5...v1.4.6) - 2024-12-08
+
+### 🐛 Bug Fixes
+
+- **[Action: Import records]** fix import data with table in associations ([#5833](https://github.com/nocobase/nocobase/pull/5833)) by @chareice
+
+- **[Access control]** Fix the problem of using fields to query the relationship in the ACL ([#5832](https://github.com/nocobase/nocobase/pull/5832)) by @chareice
+
+## [v1.4.5](https://github.com/nocobase/nocobase/compare/v1.4.4...v1.4.5) - 2024-12-08
+
+### 🐛 Bug Fixes
+
+- **[Access control]** Refresh the page when the user's role is incorrect ([#5821](https://github.com/nocobase/nocobase/pull/5821)) by @chenos
+
+## [v1.4.4](https://github.com/nocobase/nocobase/compare/v1.4.3...v1.4.4) - 2024-12-08
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fix  issue with external data source fields not display in table block ([#5825](https://github.com/nocobase/nocobase/pull/5825)) by @katherinehhh
+
+  - Fix display issue for inherited fields in form configuration ([#5822](https://github.com/nocobase/nocobase/pull/5822)) by @katherinehhh
+
+  - Fix inherited fields not appear in field list and cannot override ([#5800](https://github.com/nocobase/nocobase/pull/5800)) by @katherinehhh
+
+- **[Data visualization]** Fix the issue when formatting timezone-aware date fields in MySQL ([#5829](https://github.com/nocobase/nocobase/pull/5829)) by @2013xile
+
+- **[Workflow]**
+  - Fix transaction across data sources which cause collection event error ([#5818](https://github.com/nocobase/nocobase/pull/5818)) by @mytharcher
+
+  - Fix date type missed in date field based schedule configuration ([#5816](https://github.com/nocobase/nocobase/pull/5816)) by @mytharcher
+
+- **[Collection field: Many to many (array)]** Fix the issue where updating m2m array fields in single relation collection does not take effect ([#5820](https://github.com/nocobase/nocobase/pull/5820)) by @2013xile
+
+- **[Calendar]**
+  - Fix  error when clicking on a blank date in the calendar ([#5803](https://github.com/nocobase/nocobase/pull/5803)) by @katherinehhh
+
+  - Fix the issue where closing a popup opened through the 'Calendar Block' causes all popups to close ([#5793](https://github.com/nocobase/nocobase/pull/5793)) by @zhangzhonghe
+
+- **[Public forms]** Fix incorrect QC code scan path in sub-application public form ([#5799](https://github.com/nocobase/nocobase/pull/5799)) by @katherinehhh
+
+## [v1.4.3](https://github.com/nocobase/nocobase/compare/v1.4.2...v1.4.3) - 2024-12-05
+
+### 🚀 Improvements
+
+- **[test]** Allow login with role name in test cases ([#5794](https://github.com/nocobase/nocobase/pull/5794)) by @mytharcher
+
+- **[Notification: In-app message]** update titles for detail URLs in in-app-message forms and localization files ([#5742](https://github.com/nocobase/nocobase/pull/5742)) by @sheldon66
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fix the issue where the token is not cleared after a user without a role encounters a sign in error and clicks the “Sign in with another account” button ([#5790](https://github.com/nocobase/nocobase/pull/5790)) by @2013xile
+
+  - Loss of request headers on silent requests ([#5795](https://github.com/nocobase/nocobase/pull/5795)) by @chenos
+
+  - Blank page when user has no role ([#5797](https://github.com/nocobase/nocobase/pull/5797)) by @chenos
+
+  - Fix scrollbar issue in sub-table with size small under compact theme ([#5796](https://github.com/nocobase/nocobase/pull/5796)) by @katherinehhh
+
+## [v1.4.2](https://github.com/nocobase/nocobase/compare/v1.4.1...v1.4.2) - 2024-12-04
+
+### 🐛 Bug Fixes
+
+- **[Workflow]** Fix async workflow tag disappeared in workflow table ([#5787](https://github.com/nocobase/nocobase/pull/5787)) by @mytharcher
+
 ## [v1.4.1](https://github.com/nocobase/nocobase/compare/v1.4.0...v1.4.1) - 2024-12-04
 
 ### 🚀 Improvements

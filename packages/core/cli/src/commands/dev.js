@@ -30,10 +30,10 @@ module.exports = (cli) => {
   cli
     .command('dev')
     .option('-p, --port [port]')
-    .option('--client')
-    .option('--server')
+    .option('-c, --client')
+    .option('-s, --server')
     .option('--db-sync')
-    .option('--inspect [port]')
+    .option('-i, --inspect [port]')
     .allowUnknownOption()
     .action(async (opts) => {
       let subprocess;
