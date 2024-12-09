@@ -401,6 +401,7 @@ test.describe('table block schema settings', () => {
       await page.getByLabel('designer-schema-settings-CardItem-blockSettings:detailsWithPagination-roles').hover();
       await page.getByRole('menuitem', { name: 'Delete' }).click();
       await page.getByRole('button', { name: 'OK', exact: true }).click();
+      await page.waitForTimeout(300);
 
       await page.getByLabel('block-item-CardItem-roles-').hover();
       await page.getByLabel('designer-schema-settings-CardItem-blockSettings:table-roles').hover();
