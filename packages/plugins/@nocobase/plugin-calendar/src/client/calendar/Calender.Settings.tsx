@@ -193,7 +193,7 @@ export const calendarBlockSettings = new SchemaSettings({
           ];
         }, [t, isPopupVisibleControlledByURL()]);
         return {
-          title: t('Event Open Mode'),
+          title: t('Event open mode'),
           value: eventSchema['x-component-props']?.['openMode'] || 'drawer',
           options: modeOptions,
           onChange: (v) => {
