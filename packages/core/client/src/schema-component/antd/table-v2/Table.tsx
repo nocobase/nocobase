@@ -233,15 +233,17 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
             }
 
             return (
-              <TableCellRender
-                record={record}
-                columnSchema={columnSchema}
-                uiSchema={uiSchema}
-                filterProperties={filterProperties}
-                schemaToolbarBigger={schemaToolbarBigger}
-                field={field}
-                index={index}
-              />
+              <RefreshComponentProvider refresh={refresh}>
+                <TableCellRender
+                  record={record}
+                  columnSchema={columnSchema}
+                  uiSchema={uiSchema}
+                  filterProperties={filterProperties}
+                  schemaToolbarBigger={schemaToolbarBigger}
+                  field={field}
+                  index={index}
+                />
+              </RefreshComponentProvider>
             );
           },
           onCell: (record, rowIndex) => {

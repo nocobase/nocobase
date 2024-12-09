@@ -80,6 +80,9 @@ describe('createCalendarBlockSchema', () => {
                 },
                 "type": "void",
                 "x-component": "CalendarV2.Event",
+                "x-component-props": {
+                  "openMode": "drawer",
+                },
               },
               "toolBar": {
                 "type": "void",

@@ -26,6 +26,7 @@ type ImporterOptions = {
   workbook: WorkBook;
   chunkSize?: number;
   explain?: string;
+  repository?: any;
 };
 
 type RunOptions = {
@@ -34,12 +35,16 @@ type RunOptions = {
 };
 
 export class XlsxImporter extends EventEmitter {
+  private repository;
+
   constructor(private options: ImporterOptions) {
     super();
 
     if (options.columns.length == 0) {
       throw new Error(`columns is empty`);
     }
+
+    this.repository = options.repository ? options.repository : options.collection.repository;
   }
 
   async run(options: RunOptions = {}) {
@@ -180,7 +185,7 @@ export class XlsxImporter extends EventEmitter {
             rowValues[dataKey] = await interfaceInstance.toValue(this.trimString(str), ctx);
           }
 
-          await this.options.collection.repository.create({
+          await this.repository.create({
             values: rowValues,
             context: options?.context,
             transaction,

@@ -25,7 +25,10 @@ export const useStyles = genStyleHook('nb-schema-toolbar', (token) => {
       pointerEvents: 'none',
 
       '&.hidden': {
+        // Visually hide the element while keeping it in document flow to prevent reflow/repaint
         transform: 'scale(0)',
+        // Prevent element from receiving any pointer events (clicks, hovers etc) to avoid interfering with other elements
+        pointerEvents: 'none',
       },
 
       '&.hidden-e2e': {

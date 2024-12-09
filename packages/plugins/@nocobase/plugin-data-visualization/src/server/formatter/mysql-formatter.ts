@@ -8,6 +8,7 @@
  */
 
 import { Col, Formatter } from './formatter';
+import moment from 'moment-timezone';
 
 export class MySQLFormatter extends Formatter {
   convertFormat(format: string) {
@@ -21,14 +22,10 @@ export class MySQLFormatter extends Formatter {
   }
 
   formatDate(field: Col, format: string, timezoneOffset?: string) {
-    const timezone = this.getTimezoneByOffset(timezoneOffset);
+    const tz = moment.tz(process.env.TZ || 'UTC').format('Z');
     format = this.convertFormat(format);
-    if (timezone) {
-      return this.sequelize.fn(
-        'date_format',
-        this.sequelize.fn('convert_tz', field, process.env.TZ || 'UTC', timezone),
-        format,
-      );
+    if (timezoneOffset && tz !== timezoneOffset) {
+      return this.sequelize.fn('date_format', this.sequelize.fn('convert_tz', field, tz, timezoneOffset), format);
     }
     return this.sequelize.fn('date_format', field, format);
   }
