@@ -9,7 +9,7 @@
 
 import { useField, useFieldSchema } from '@formily/react';
 import { cloneDeep } from 'lodash';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { ActionContextProvider, SchemaComponentOptions, useActionContext, useDesignable } from '../../';
 import { PopupVisibleProvider } from '../../antd/page/PagePopups';
 import { usePopupUtils } from '../../antd/page/pagePopupUtils';
@@ -55,14 +55,35 @@ function withPopupWrapper<T>(WrappedComponent: React.ComponentType<T>) {
     const { enableLink, openMode, openSize } = fieldSchema?.['x-component-props'] || {};
     const { visibleWithURL, setVisibleWithURL } = usePopupUtils();
     const { openPopup } = usePopupUtils();
+    const needWaitForFieldSchemaUpdatedRef = useRef(false);
+    const fieldSchemaRef = useRef(fieldSchema);
+    fieldSchemaRef.current = fieldSchema;
+
+    const getCustomActionSchema = useCallback(() => {
+      return fieldSchemaRef.current;
+    }, []);
 
     const handleClick = useCallback(() => {
-      insertPopup(popupSchema);
-      // Only open the popup when the popup schema exists
-      if (fieldSchema.properties) {
+      if (!fieldSchema.properties) {
+        insertPopup(popupSchema);
+        needWaitForFieldSchemaUpdatedRef.current = true;
+      }
+
+      if (needWaitForFieldSchemaUpdatedRef.current) {
+        // When first inserting, the fieldSchema instance will be updated to a new instance.
+        // We need to wait for the instance update before opening the popup to prevent configuration loss.
+        setTimeout(() => {
+          openPopup({
+            customActionSchema: getCustomActionSchema(),
+          });
+        });
+        needWaitForFieldSchemaUpdatedRef.current = false;
+
+        // Only open the popup when the popup schema exists
+      } else if (fieldSchema.properties) {
         openPopup();
       }
-    }, [fieldSchema, insertPopup, openPopup]);
+    }, [fieldSchema, insertPopup, openPopup, getCustomActionSchema]);
     const { setSubmitted } = ctx;
 
     const handleVisibleChange = useCallback(
