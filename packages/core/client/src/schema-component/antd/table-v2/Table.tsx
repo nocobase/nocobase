@@ -226,15 +226,17 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
           width: columnHidden && !designable ? 0 : columnSchema['x-component-props']?.width || 100,
           render: (value, record, index) => {
             return (
-              <TableCellRender
-                record={record}
-                columnSchema={columnSchema}
-                uiSchema={uiSchema}
-                filterProperties={filterProperties}
-                schemaToolbarBigger={schemaToolbarBigger}
-                field={field}
-                index={index}
-              />
+              <RefreshComponentProvider refresh={refresh}>
+                <TableCellRender
+                  record={record}
+                  columnSchema={columnSchema}
+                  uiSchema={uiSchema}
+                  filterProperties={filterProperties}
+                  schemaToolbarBigger={schemaToolbarBigger}
+                  field={field}
+                  index={index}
+                />
+              </RefreshComponentProvider>
             );
           },
           onCell: (record, rowIndex) => {

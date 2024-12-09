@@ -86,5 +86,6 @@ export {
   CollectionFieldUISchemaProvider,
   IsInNocoBaseRecursionFieldContext,
   NocoBaseRecursionField,
+  RefreshComponentProvider,
   useRefreshFieldSchema,
 } from './formily/NocoBaseRecursionField';

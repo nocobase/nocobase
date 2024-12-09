@@ -9,7 +9,7 @@
 
 import { observer, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
-import React, { Fragment, useRef } from 'react';
+import React, { Fragment, useCallback, useRef } from 'react';
 import { useDesignable } from '../../';
 import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { useCollectionRecordData } from '../../../data-source/collection-record/CollectionRecordProvider';
@@ -50,6 +50,13 @@ const ButtonTabList: React.FC<ButtonListProps> = observer(
     const isTreeCollection = targetCollection?.template === 'tree';
     const { openPopup } = usePopupUtils();
     const recordData = useCollectionRecordData();
+    const needWaitForFieldSchemaUpdatedRef = useRef(false);
+    const fieldSchemaRef = useRef(fieldSchema);
+    fieldSchemaRef.current = fieldSchema;
+
+    const getCustomActionSchema = useCallback(() => {
+      return fieldSchemaRef.current;
+    }, []);
 
     const renderRecords = () =>
       toArr(props.value).map((record, index, arr) => {
@@ -77,13 +84,28 @@ const ButtonTabList: React.FC<ButtonListProps> = observer(
                     props.setBtnHover(true);
                     e.stopPropagation();
                     e.preventDefault();
-                    if (designable) {
+                    if (designable && !fieldSchema.properties) {
                       insertViewer(schema.Viewer);
+                      needWaitForFieldSchemaUpdatedRef.current = true;
                     }
-                    openPopup({
-                      recordData: record,
-                      parentRecordData: recordData,
-                    });
+
+                    if (needWaitForFieldSchemaUpdatedRef.current) {
+                      // When first inserting, the fieldSchema instance will be updated to a new instance.
+                      // We need to wait for the instance update before opening the popup to prevent configuration loss.
+                      setTimeout(() => {
+                        openPopup({
+                          recordData: record,
+                          parentRecordData: recordData,
+                          customActionSchema: getCustomActionSchema(),
+                        });
+                        needWaitForFieldSchemaUpdatedRef.current = false;
+                      });
+                    } else {
+                      openPopup({
+                        recordData: record,
+                        parentRecordData: recordData,
+                      });
+                    }
                     ellipsisWithTooltipRef?.current?.setPopoverVisible(false);
                   }}
                 >

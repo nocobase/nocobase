@@ -141,6 +141,7 @@ test.describe('configure actions', () => {
     await expect(
       page.getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname').getByRole('textbox'),
     ).toBeHidden();
+    await page.mouse.move(600, 0);
 
     // 再次点击添加按钮，默认值应该正常显示出来
     await page.locator('.nb-sub-table-addNew').click();

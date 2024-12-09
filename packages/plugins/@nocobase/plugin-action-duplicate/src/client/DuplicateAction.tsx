@@ -16,6 +16,7 @@ import {
   NocoBaseRecursionField,
   PopupSettingsProvider,
   RecordProvider,
+  RefreshComponentProvider,
   TabsContextProvider,
   fetchTemplateData,
   useACLActionParamsContext,
@@ -30,6 +31,7 @@ import {
   useRecord,
 } from '@nocobase/client';
 import { App, Button } from 'antd';
+import _ from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -209,7 +211,9 @@ export const DuplicateAction = observer(
                 <RecordProvider record={{ ...parentRecordData, __collection: duplicateCollection || __collection }}>
                   <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
                     <PopupSettingsProvider enableURL={false}>
-                      <NocoBaseRecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
+                      <RefreshComponentProvider refresh={_.noop}>
+                        <NocoBaseRecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
+                      </RefreshComponentProvider>
                     </PopupSettingsProvider>
                   </ActionContextProvider>
                 </RecordProvider>
