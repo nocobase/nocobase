@@ -151,13 +151,7 @@ export const MarkdownVoid: any = withDynamicSchemaProps(
       setLoading(true);
       const cvtContentToHTML = async () => {
         setTimeout(async () => {
-          const replacedContent = await getRenderContent(
-            engine,
-            content,
-            compile(variables),
-            compile(JSON.parse(JSON.stringify(localVariables))),
-            parseMarkdown,
-          );
+          const replacedContent = await getRenderContent(engine, content, variables, localVariables, parseMarkdown);
           setHtml(replacedContent);
         });
         setLoading(false);
