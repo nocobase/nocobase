@@ -155,7 +155,7 @@ export const MarkdownVoid: any = withDynamicSchemaProps(
             engine,
             content,
             compile(variables),
-            compile(localVariables),
+            compile(JSON.parse(JSON.stringify(localVariables))),
             parseMarkdown,
           );
           setHtml(replacedContent);
