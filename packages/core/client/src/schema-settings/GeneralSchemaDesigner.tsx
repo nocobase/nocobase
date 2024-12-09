@@ -19,6 +19,7 @@ import { SchemaInitializer, SchemaSettings, SchemaToolbarProvider, useSchemaInit
 import { useSchemaSettingsRender } from '../application/schema-settings/hooks/useSchemaSettingsRender';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
 import { useDataSource } from '../data-source/data-source/DataSourceProvider';
+import { RefreshComponentProvider, useRefreshFieldSchema } from '../formily/NocoBaseRecursionField';
 import { DragHandler, useCompile, useDesignable, useGridContext, useGridRowContext } from '../schema-component';
 import { gridRowColWrap } from '../schema-initializer/utils';
 import { SchemaSettingsDropdown } from './SchemaSettings';
@@ -227,6 +228,11 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = React.memo((props) => {
   const dataSources = dm?.getDataSources();
   const dataSourceContext = useDataSource();
   const dataSource = dataSources?.length > 1 && dataSourceContext;
+  const refreshFieldSchema = useRefreshFieldSchema();
+
+  const refresh = useCallback(() => {
+    refreshFieldSchema({ refreshParentSchema: true });
+  }, [refreshFieldSchema]);
 
   const titleArr = useMemo(() => {
     if (!title) return undefined;
@@ -358,7 +364,7 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = React.memo((props) => {
       <div className={classNames('toolbar-icons', spaceWrapperClassName)} style={spaceWrapperStyle}>
         <Space size={3} align={'center'} className={spaceClassName} style={spaceStyle}>
           {dragElement}
-          {initializerElement}
+          <RefreshComponentProvider refresh={refresh}>{initializerElement}</RefreshComponentProvider>
           {settingsElement}
         </Space>
       </div>
