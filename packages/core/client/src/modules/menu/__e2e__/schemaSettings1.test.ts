@@ -144,5 +144,6 @@ test.describe('group page menus schema settings', () => {
 
 async function showSettings(page: Page, pageName: string) {
   await page.locator('.ant-layout-header').getByText(pageName, { exact: true }).hover();
-  await page.getByRole('button', { name: 'designer-schema-settings-' }).hover();
+  // hover 方法有时会失效，所以用 click 替代，原因未知
+  await page.getByRole('button', { name: 'designer-schema-settings-' }).click();
 }
