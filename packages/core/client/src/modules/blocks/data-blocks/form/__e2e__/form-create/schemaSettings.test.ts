@@ -271,7 +271,8 @@ test.describe('set default value', () => {
 
     // 1. 为 Nickname 设置默认值
     await page.getByLabel('block-item-CollectionField-').getByRole('textbox').hover();
-    await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FormItem-users-users.').hover();
+    // hover 方法有时会失效，所以用 click 替代，原因未知
+    await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FormItem-users-users.').click();
     await page.getByRole('menuitem', { name: 'Set default value' }).click();
     await page.getByLabel('block-item-VariableInput-').getByRole('textbox').click();
     await page.getByLabel('block-item-VariableInput-').getByRole('textbox').fill('abcd');
