@@ -27,6 +27,7 @@ import {
   useDesignable,
   useFormBlockContext,
   useRecord,
+  useCollection,
 } from '@nocobase/client';
 import { App, Button } from 'antd';
 import React, { useMemo, useState } from 'react';
@@ -87,6 +88,7 @@ export const DuplicateAction = observer(
     const { duplicateFields, duplicateMode = 'quickDulicate', duplicateCollection } = fieldSchema['x-component-props'];
     const record = useRecord();
     const parentRecordData: any = useCollectionParentRecordData();
+    const collection = useCollection();
     const { id, __collection } = record;
     const ctx = useActionContext();
     const { name } = useCollection_deprecated();
@@ -102,7 +104,7 @@ export const DuplicateAction = observer(
     }, [designable, field?.data?.hidden]);
     const template = {
       key: 'duplicate',
-      dataId: id,
+      dataId: record[collection.filterTargetKey],
       default: true,
       fields:
         duplicateFields?.filter((v) => {
