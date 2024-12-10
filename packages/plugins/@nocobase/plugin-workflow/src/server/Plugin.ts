@@ -33,7 +33,7 @@ import DestroyInstruction from './instructions/DestroyInstruction';
 import QueryInstruction from './instructions/QueryInstruction';
 import UpdateInstruction from './instructions/UpdateInstruction';
 
-import type { ExecutionModel, JobModel, WorkflowModel } from './types';
+import type { ExecutionModel, JobModel, WorkflowModel, ContextOptions } from './types';
 import WorkflowRepository from './repositories/WorkflowRepository';
 import { Context } from '@nocobase/actions';
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
@@ -624,7 +624,7 @@ export default class PluginWorkflowServer extends Plugin {
     return processor;
   }
 
-  async execute(workflow: WorkflowModel, context: Context, options: EventOptions = {}) {
+  async execute(workflow: WorkflowModel, contextOptions: ContextOptions, options: EventOptions = {}) {
     const trigger = this.triggers.get(workflow.type);
     if (!trigger) {
       throw new Error(`trigger type "${workflow.type}" of workflow ${workflow.id} is not registered`);
@@ -632,7 +632,7 @@ export default class PluginWorkflowServer extends Plugin {
     if (!trigger.execute) {
       throw new Error(`"execute" method of trigger ${workflow.type} is not implemented`);
     }
-    return trigger.execute(workflow, context, options);
+    return trigger.execute(workflow, contextOptions, options);
   }
 
   /**

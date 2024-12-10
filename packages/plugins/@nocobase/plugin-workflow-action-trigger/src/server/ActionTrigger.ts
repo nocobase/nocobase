@@ -185,8 +185,8 @@ export default class extends Trigger {
     }
   }
 
-  async execute(workflow: WorkflowModel, context: Context, options: EventOptions) {
-    const { values } = context.action.params;
+  async execute(workflow: WorkflowModel, values, options: EventOptions) {
+    // const { values } = context.action.params;
     const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
     const { collectionManager } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName);
     const { filterTargetKey, repository } = collectionManager.getCollection(collectionName);
@@ -196,7 +196,7 @@ export default class extends Trigger {
           filterTargetKey.sort((a, b) => a.localeCompare(b)),
         )
       : values.data[filterTargetKey];
-    const UserRepo = context.app.db.getRepository('users');
+    const UserRepo = this.workflow.app.db.getRepository('users');
     const actor = await UserRepo.findOne({
       filterByTk: values.userId,
       appends: ['roles'],
@@ -223,7 +223,7 @@ export default class extends Trigger {
       },
       {
         ...options,
-        httpContext: context,
+        httpContext: {},
       },
     );
   }
