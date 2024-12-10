@@ -12,14 +12,14 @@ import { Collection } from '@nocobase/database';
 
 export async function dataTemplate(ctx: Context, next) {
   const { resourceName, actionName } = ctx.action;
-  const { isTemplate, fields } = ctx.action.params;
+  const { isTemplate, fields, appends } = ctx.action.params;
 
   await next();
 
-  if (isTemplate && actionName === 'get' && fields.length > 0) {
+  if (isTemplate && actionName === 'get') {
     ctx.body = traverseJSON(JSON.parse(JSON.stringify(ctx.body)), {
       collection: ctx.db.getCollection(resourceName),
-      include: fields,
+      include: [...(fields || []), ...(appends || [])],
     });
   }
 }
