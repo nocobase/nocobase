@@ -9,8 +9,9 @@
 
 import { Field, GeneralField } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
+import { useUpdate } from 'ahooks';
 import { Col, Row } from 'antd';
-import _, { isArray } from 'lodash';
+import { isArray } from 'lodash';
 import template from 'lodash/template';
 import React, { createContext, useContext, useMemo } from 'react';
 import { Link } from 'react-router-dom';
@@ -38,7 +39,6 @@ import { useSourceId } from '../modules/blocks/useSourceId';
 import { RecordProvider, useRecordIndex } from '../record-provider';
 import { useAssociationNames } from './hooks';
 import { useDataBlockParentRecord } from './hooks/useDataBlockParentRecord';
-import { useUpdate } from 'ahooks';
 
 /**
  * @deprecated
