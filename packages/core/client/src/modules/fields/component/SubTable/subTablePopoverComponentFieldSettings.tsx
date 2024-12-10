@@ -72,7 +72,7 @@ const fieldComponent: any = {
     };
   },
 };
-const allowSelectExistingRecord = {
+export const allowSelectExistingRecord = {
   name: 'allowSelectExistingRecord',
   type: 'switch',
   useVisible() {
