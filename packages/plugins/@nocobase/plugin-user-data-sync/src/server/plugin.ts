@@ -55,7 +55,7 @@ export class PluginUserDataSyncServer extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.${this.name}`,
-      actions: ['userData:*', 'userDataSyncSources:*'],
+      actions: ['userData:*', 'userDataSyncSources:*', 'userDataSyncTasks:*'],
     });
   }
 
