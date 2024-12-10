@@ -26,6 +26,15 @@ export default {
     const data = ctx.action.params.values || {};
     const plugin = ctx.app.pm.get(PluginUserDataSyncServer) as PluginUserDataSyncServer;
     try {
+      let supported = false;
+      for (const resource of plugin.resourceManager.resources.nodes) {
+        if (resource.accepts.includes(data.dataType)) {
+          supported = true;
+        }
+      }
+      if (!supported) {
+        throw new Error(`dataType ${data.dataType} is not supported`);
+      }
       const result = await plugin.syncService.push(data);
       ctx.body = { code: 0, message: 'success', result };
     } catch (error) {
