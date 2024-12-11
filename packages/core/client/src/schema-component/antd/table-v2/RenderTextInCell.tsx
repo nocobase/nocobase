@@ -14,7 +14,15 @@ const style: React.CSSProperties = { overflowWrap: 'break-word', whiteSpace: 'no
 
 export const RenderTextInCell: FC<{ value: string; ellipsis: boolean }> = ({ value, ellipsis = false }) => {
   if (ellipsis) {
-    return <EllipsisWithTooltip ellipsis>{value}</EllipsisWithTooltip>;
+    return (
+      <EllipsisWithTooltip role="button" ellipsis>
+        {value}
+      </EllipsisWithTooltip>
+    );
   }
-  return <span style={style}>{value}</span>;
+  return (
+    <span role="button" style={style}>
+      {value}
+    </span>
+  );
 };
