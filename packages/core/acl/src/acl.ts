@@ -477,6 +477,16 @@ export class ACL extends EventEmitter {
                 }
                 return (x as any[]).filter((i) => y.includes(i.split('.').shift()));
               },
+              fields: (x, y) => {
+                if (!x) {
+                  return [];
+                }
+                if (!y) {
+                  return x;
+                }
+
+                return x.filter((field) => y.includes(field));
+              },
             });
             ctx.permission.mergedParams = lodash.cloneDeep(resourcerAction.params);
           }
