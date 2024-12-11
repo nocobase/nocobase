@@ -23,7 +23,7 @@ import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
 import React, { createContext, FC, MutableRefObject, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DndContext, isBulkEditAction, useDesignable, usePopupSettings, useTableSize } from '../..';
+import { DndContext, isBulkEditAction, useCompile, useDesignable, usePopupSettings, useTableSize } from '../..';
 import {
   BlockRequestLoadingContext,
   RecordIndexProvider,
@@ -171,6 +171,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
   const { current, pageSize } = paginationProps;
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { refresh } = useRefreshTableColumns();
+  const compile = useCompile();
 
   const filterProperties = useCallback(
     (schema) =>
@@ -223,10 +224,12 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
           ...columnSchema['x-component-props'],
           width: columnHidden && !designable ? 0 : columnSchema['x-component-props']?.width || 100,
           render: (value, record, index) => {
-            if (['sequence', 'input', 'textarea', 'phone', 'email'].includes(_interface)) {
+            const { enableLink } = Object.values(columnSchema.properties)[0]['x-component-props'] || {};
+
+            if (!enableLink && ['sequence', 'input', 'textarea', 'phone', 'email'].includes(_interface)) {
               return (
                 <RenderTextInCell
-                  value={value}
+                  value={compile(value || _.get(record, Object.keys(columnSchema.properties)[0]))}
                   ellipsis={Object.values(columnSchema.properties)[0]?.['x-component-props']?.ellipsis}
                 />
               );
