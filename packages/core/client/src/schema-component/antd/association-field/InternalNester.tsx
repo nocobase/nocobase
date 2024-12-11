@@ -44,6 +44,7 @@ export const InternalNester = observer(
     const field = useField();
     const fieldSchema = useFieldSchema();
     const insertNester = useInsertSchema('Nester');
+    const insertSelector = useInsertSchema('Selector');
     const { options: collectionField } = useAssociationFieldContext();
     const showTitle = fieldSchema['x-decorator-props']?.showTitle ?? true;
     const { actionName } = useACLActionParamsContext();
@@ -58,7 +59,11 @@ export const InternalNester = observer(
     useEffect(() => {
       insertNester(schema.Nester);
     }, []);
-
+    useEffect(() => {
+      if (field.componentProps?.allowSelectExistingRecord) {
+        insertSelector(schema.Selector);
+      }
+    }, [field.componentProps?.allowSelectExistingRecord]);
     return (
       <CollectionProvider_deprecated name={collectionField.target}>
         <ACLCollectionProvider actionPath={`${collectionField.target}:${actionName || 'view'}`}>
