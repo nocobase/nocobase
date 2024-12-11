@@ -25,6 +25,7 @@ const mapTimeFormat = function () {
     return {
       ...props,
       format,
+      inputReadOnly: true,
       value: dayjsable(props.value, format),
       onChange: (value: dayjs.Dayjs | dayjs.Dayjs[]) => {
         if (onChange) {
