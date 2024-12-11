@@ -619,6 +619,9 @@ const InternalNocoBaseTable = React.memo(
                   .ant-table-small .ant-table-cell {
                     padding: 8px ${token.paddingXS}px;
                   }
+                  .ant-table-cell-fix-right {
+                    padding: 8px 16px !important;
+                  }
                 }
               }
             }
