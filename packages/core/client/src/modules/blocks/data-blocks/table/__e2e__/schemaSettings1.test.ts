@@ -413,5 +413,5 @@ test.describe('table block schema settings', () => {
 
 async function showSettingsMenu(page) {
   await page.getByLabel('block-item-CardItem-general-table').hover();
-  await page.getByLabel('designer-schema-settings-CardItem-TableBlockDesigner-general').hover();
+  await page.getByLabel('designer-schema-settings-CardItem-TableBlockDesigner-general').click();
 }

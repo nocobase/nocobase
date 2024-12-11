@@ -13,8 +13,8 @@ import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sor
 import { css, cx } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
-import { Schema, SchemaOptionsContext, observer, useField, useFieldSchema } from '@formily/react';
-import { action, raw } from '@formily/reactive';
+import { RecursionField, Schema, SchemaOptionsContext, observer, useField, useFieldSchema } from '@formily/react';
+import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
 import { useCreation, useDeepCompareEffect, useMemoizedFn } from 'ahooks';
@@ -24,7 +24,7 @@ import _, { omit } from 'lodash';
 import React, { useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInView } from 'react-intersection-observer';
-import { DndContext, isBulkEditAction, useDesignable, usePopupSettings, useTableSize } from '../..';
+import { DndContext, useDesignable, useTableSize } from '../..';
 import {
   RecordIndexProvider,
   RecordProvider,
@@ -32,7 +32,6 @@ import {
   useCollectionParentRecordData,
   useDataBlockProps,
   useDataBlockRequest,
-  useDataBlockRequestData,
   useFlag,
   useSchemaInitializerRender,
   useTableSelectorContext,
@@ -40,14 +39,11 @@ import {
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { useTableBlockContext } from '../../../block-provider/TableBlockProvider';
 import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
-import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
-import { withSkeletonComponent } from '../../../hoc/withSkeletonComponent';
 import { useSatisfiedActionValues } from '../../../schema-settings/LinkageRules/useActionValues';
 import { useToken } from '../__builtins__';
 import { SubFormProvider, useAssociationFieldContext } from '../association-field/hooks';
 import { ColumnFieldProvider } from '../table-v2/components/ColumnFieldProvider';
-import { TableSkeleton } from '../table-v2/TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from '../table-v2/utils';
 
 const InViewContext = React.createContext(false);
@@ -78,7 +74,7 @@ function adjustColumnOrder(columns) {
   return [...leftFixedColumns, ...normalColumns, ...rightFixedColumns];
 }
 
-const useColumnsDeepMemoized = (columns: any[]) => {
+export const useColumnsDeepMemoized = (columns: any[]) => {
   const columnsJSON = getSchemaArrJSON(columns);
   const oldObj = useCreation(() => ({ value: _.cloneDeep(columnsJSON) }), []);
 
@@ -96,15 +92,15 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
   const { schemaInWhitelist } = useACLFieldWhitelist();
   const { designable } = useDesignable();
   const { exists, render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
-  const columnsSchemas = schema.reduceProperties((buf, s) => {
+  const parentRecordData = useCollectionParentRecordData();
+  const columnsSchema = schema.reduceProperties((buf, s) => {
     if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
       return buf.concat([s]);
     }
     return buf;
   }, []);
   const { current, pageSize } = paginationProps;
-  const hasChangedColumns = useColumnsDeepMemoized(columnsSchemas);
-  const { isPopupVisibleControlledByURL } = usePopupSettings();
+  const hasChangedColumns = useColumnsDeepMemoized(columnsSchema);
 
   const schemaToolbarBigger = useMemo(() => {
     return css`
@@ -113,79 +109,52 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
         padding: ${token.paddingContentVerticalLG}px ${token.paddingSM + 4}px;
       }
     `;
-  }, [token.paddingContentVerticalLG, token.marginSM, token.margin]);
+  }, [token.paddingContentVerticalLG, token.marginSM]);
 
   const collection = useCollection();
 
   const columns = useMemo(
     () =>
-      columnsSchemas?.map((columnSchema: Schema) => {
-        const collectionFields = columnSchema.reduceProperties((buf, s) => {
+      columnsSchema?.map((s: Schema) => {
+        const collectionFields = s.reduceProperties((buf, s) => {
           if (isCollectionFieldComponent(s)) {
             return buf.concat([s]);
           }
         }, []);
-        const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : columnSchema.name;
-        const columnHidden = !!columnSchema['x-component-props']?.['columnHidden'];
-        const { uiSchema, defaultValue } = collection?.getField(dataIndex) || {};
-
-        if (uiSchema) {
-          uiSchema.default = defaultValue;
-        }
-
+        const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : s.name;
+        const columnHidden = !!s['x-component-props']?.['columnHidden'];
         return {
-          title: (
-            <NocoBaseRecursionField
-              name={columnSchema.name}
-              schema={columnSchema}
-              onlyRenderSelf
-              isUseFormilyField={false}
-            />
-          ),
+          title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
           dataIndex,
-          key: columnSchema.name,
-          sorter: columnSchema['x-component-props']?.['sorter'],
+          key: s.name,
+          sorter: s['x-component-props']?.['sorter'],
           columnHidden,
-          ...columnSchema['x-component-props'],
-          width: columnHidden && !designable ? 0 : columnSchema['x-component-props']?.width || 100,
-          render: (value, record, index) => {
+          ...s['x-component-props'],
+          width: columnHidden && !designable ? 0 : s['x-component-props']?.width || 100,
+          render: (v, record) => {
+            // 这行代码会导致这里的测试不通过：packages/core/client/src/modules/blocks/data-blocks/table/__e2e__/schemaInitializer.test.ts:189
+            // if (collectionFields?.length === 1 && collectionFields[0]['x-read-pretty'] && v == undefined) return null;
+
+            const index = field.value?.indexOf(record);
             const basePath = field.address.concat(record.__index || index);
-
-            if (props.isSubTable) {
-              return (
-                <SubFormProvider value={{ value: record, collection, fieldSchema: schema.parent }}>
-                  <ColumnFieldProvider schema={columnSchema} basePath={basePath}>
-                    <span role="button" className={schemaToolbarBigger}>
-                      <NocoBaseRecursionField basePath={basePath} schema={columnSchema} onlyRenderProperties />
-                    </span>
-                  </ColumnFieldProvider>
-                </SubFormProvider>
-              );
-            }
-
             return (
-              <span role="button" className={schemaToolbarBigger}>
-                <NocoBaseRecursionField
-                  values={record}
-                  basePath={basePath}
-                  schema={columnSchema}
-                  uiSchema={uiSchema}
-                  onlyRenderProperties
-                  propsRecursion
-                  filterProperties={(schema) =>
-                    isBulkEditAction(schema) ||
-                    !isPopupVisibleControlledByURL() ||
-                    schema['x-component'] !== 'Action.Container'
-                  }
-                  isUseFormilyField={false}
-                />
-              </span>
+              <SubFormProvider value={{ value: record, collection, fieldSchema: schema.parent }}>
+                <RecordIndexProvider index={record.__index || index}>
+                  <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
+                    <ColumnFieldProvider schema={s} basePath={basePath}>
+                      <span role="button" className={schemaToolbarBigger}>
+                        <RecursionField basePath={basePath} schema={s} onlyRenderProperties />
+                      </span>
+                    </ColumnFieldProvider>
+                  </RecordProvider>
+                </RecordIndexProvider>
+              </SubFormProvider>
             );
           },
           onCell: (record, rowIndex) => {
             return {
               record,
-              schema: columnSchema,
+              schema: s,
               rowIndex,
               isSubTable: props.isSubTable,
               columnHidden,
@@ -201,7 +170,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
 
     // 这里不能把 columnsSchema 作为依赖，因为其每次都会变化，这里使用 hasChangedColumns 作为依赖
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [hasChangedColumns, field.address, collection, schemaToolbarBigger, designable, isPopupVisibleControlledByURL],
+    [hasChangedColumns, field.value, field.address, collection, parentRecordData, schemaToolbarBigger, designable],
   );
 
   const tableColumns = useMemo(() => {
@@ -209,7 +178,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
       return columns;
     }
     const res = [
-      ...adjustColumnOrder(columns),
+      ...columns,
       {
         title: render(),
         dataIndex: 'TABLE_COLUMN_INITIALIZER',
@@ -217,7 +186,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
         render: designable
           ? () => <div style={{ width: '100%', minWidth: '180px' }} className="nb-column-initializer" />
           : null,
-        fixed: 'right',
+        fixed: designable ? 'right' : 'none',
       },
     ];
 
@@ -255,7 +224,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
       });
     }
 
-    return res;
+    return adjustColumnOrder(res);
   }, [columns, exists, field, render, props.showDel, designable]);
 
   return tableColumns;
@@ -269,7 +238,6 @@ const SortableRow = (props: {
   onClick: (e: any) => void;
   style: React.CSSProperties;
   className: string;
-  record: any;
 }) => {
   const { isInSubTable } = useFlag();
   const { token } = useToken();
@@ -346,7 +314,8 @@ const usePaginationProps = (pagination1, pagination2) => {
   const { t } = useTranslation();
   const field: any = useField();
   const { token } = useToken();
-  const { meta } = useDataBlockRequestData() || {};
+  const { data } = useDataBlockRequest() || ({} as any);
+  const { meta } = data || {};
   const { hasNext } = meta || {};
   const pagination = useMemo(
     () => ({ ...pagination1, ...pagination2 }),
@@ -366,19 +335,14 @@ const usePaginationProps = (pagination1, pagination2) => {
     },
     [components, C, t],
   );
-
-  const showTotalResult = useMemo(() => {
-    return {
-      pageSizeOptions,
-      showTotal,
-      showSizeChanger: true,
-      ...pagination,
-    };
-  }, [pagination, showTotal]);
-
   const result = useMemo(() => {
     if (totalCount) {
-      return showTotalResult;
+      return {
+        pageSizeOptions,
+        showTotal,
+        showSizeChanger: true,
+        ...pagination,
+      };
     } else {
       return {
         pageSizeOptions,
@@ -414,7 +378,7 @@ const usePaginationProps = (pagination1, pagination2) => {
         },
       };
     }
-  }, [pagination, t, showTotal, field.value?.length, showTotalResult]);
+  }, [pagination, t, showTotal, field.value?.length]);
 
   if (pagination2 === false) {
     return false;
@@ -490,13 +454,13 @@ const rowSelectCheckboxCheckedClassHover = css`
   }
 `;
 
-const HeaderWrapperComponent = React.memo((props) => {
+const HeaderWrapperComponent = (props) => {
   return (
     <DndContext>
       <thead {...props} />
     </DndContext>
   );
-});
+};
 
 // Style when Hidden is enabled in table column configuration
 const columnHiddenStyle = {
@@ -510,54 +474,26 @@ const columnOpacityStyle = {
   opacity: 0.3,
 };
 
-HeaderWrapperComponent.displayName = 'HeaderWrapperComponent';
+const HeaderCellComponent = ({ columnHidden, ...props }) => {
+  const { designable } = useDesignable();
 
-const HeaderCellComponent = React.memo(
-  (props: { className: string; columnHidden: boolean; children: React.ReactNode }) => {
-    const { designable } = useDesignable();
+  if (columnHidden) {
+    return <th style={designable ? columnOpacityStyle : columnHiddenStyle}>{designable ? props.children : null}</th>;
+  }
 
-    if (props.columnHidden) {
-      return <th style={designable ? columnOpacityStyle : columnHiddenStyle}>{designable ? props.children : null}</th>;
-    }
+  return <th {...props} className={cls(props.className, headerClass)} />;
+};
 
-    return <th {..._.omit(props, 'columnHidden')} className={cls(props.className, headerClass)} />;
-  },
-);
-
-HeaderCellComponent.displayName = 'HeaderCellComponent';
-
-const BodyRowComponent = React.memo(
-  (props: {
-    rowIndex: number;
-    onClick: (e: any) => void;
-    style: React.CSSProperties;
-    className: string;
-    record: any;
-  }) => {
-    const { record, rowIndex } = props;
-    const parentRecordData = useCollectionParentRecordData();
-
-    return (
-      <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
-        <RecordIndexProvider index={record?.__index || rowIndex}>
-          <SortableRow {...props} />
-        </RecordIndexProvider>
-      </RecordProvider>
-    );
-  },
-);
-
-BodyRowComponent.displayName = 'BodyRowComponent';
-
-const InternalBodyCellComponent = React.memo<{
-  className: string;
-  style: React.CSSProperties;
-  children: React.ReactNode;
-  record: any;
-  schema: any;
+const BodyRowComponent = (props: {
   rowIndex: number;
-  isSubTable: boolean;
-}>((props) => {
+  onClick: (e: any) => void;
+  style: React.CSSProperties;
+  className: string;
+}) => {
+  return <SortableRow {...props} />;
+};
+
+const InternalBodyCellComponent = (props) => {
   const { token } = useToken();
   const inView = useContext(InViewContext);
   const isIndex = props.className?.includes('selection-column');
@@ -566,7 +502,7 @@ const InternalBodyCellComponent = React.memo<{
   const style = useMemo(() => Object.assign({ ...props.style }, valueMap), [props.style, valueMap]);
   const skeletonStyle = {
     height: '1em',
-    backgroundColor: token.colorFillSecondary,
+    backgroundColor: 'rgba(0, 0, 0, 0.06)',
     borderRadius: `${token.borderRadiusSM}px`,
   };
 
@@ -576,25 +512,13 @@ const InternalBodyCellComponent = React.memo<{
       {isSubTable || inView || isIndex ? props.children : <div style={skeletonStyle} />}
     </td>
   );
-});
-
-InternalBodyCellComponent.displayName = 'InternalBodyCellComponent';
+};
 
 const displayNone = { display: 'none' };
-
-const BodyCellComponent = React.memo<{
-  columnHidden: boolean;
-  children: React.ReactNode;
-  className: string;
-  style: React.CSSProperties;
-  record: any;
-  schema: any;
-  rowIndex: number;
-  isSubTable: boolean;
-}>((props) => {
+const BodyCellComponent = ({ columnHidden, ...props }) => {
   const { designable } = useDesignable();
 
-  if (props.columnHidden) {
+  if (columnHidden) {
     return (
       <td style={designable ? columnOpacityStyle : columnHiddenStyle}>
         {designable ? props.children : <span style={displayNone}>{props.children}</span>}
@@ -602,10 +526,8 @@ const BodyCellComponent = React.memo<{
     );
   }
 
-  return <InternalBodyCellComponent {..._.omit(props, 'columnHidden')} />;
-});
-
-BodyCellComponent.displayName = 'BodyCellComponent';
+  return <InternalBodyCellComponent {...props} />;
+};
 
 interface TableProps {
   /** @deprecated */
@@ -622,7 +544,6 @@ interface TableProps {
   required?: boolean;
   onExpand?: (flag: boolean, record: any) => void;
   isSubTable?: boolean;
-  defaultDataSource?: any[];
 }
 
 const InternalNocoBaseTable = React.memo(
@@ -667,6 +588,7 @@ const InternalNocoBaseTable = React.memo(
       field,
       ...others
     } = props;
+    const { token } = useToken();
 
     return (
       <div
@@ -687,6 +609,15 @@ const InternalNocoBaseTable = React.memo(
                   }
                   .ant-table-body {
                     min-height: ${tableHeight}px;
+                  }
+                  .ant-table-cell {
+                    padding: 16px 8px;
+                  }
+                  .ant-table-middle .ant-table-cell {
+                    padding: 12px ${token.paddingXS}px;
+                  }
+                  .ant-table-small .ant-table-cell {
+                    padding: 8px ${token.paddingXS}px;
                   }
                 }
               }
@@ -731,354 +662,326 @@ const InternalNocoBaseTable = React.memo(
 
 InternalNocoBaseTable.displayName = 'InternalNocoBaseTable';
 
-/**
- * copy from packages/core/client/src/schema-component/antd/table-v2/Table.tsx
- * The purpose is to separate the sub-table and normal table components to reduce complexity
- *
- * TODO: Need to refactor to remove logic unrelated to sub-table
- */
 export const Table: any = withDynamicSchemaProps(
-  withSkeletonComponent(
-    observer((props: TableProps) => {
-      const { token } = useToken();
-      const { pagination: pagination1, useProps, ...others1 } = omit(props, ['onBlur', 'onFocus', 'value']);
+  observer((props: TableProps) => {
+    const { token } = useToken();
+    const { pagination: pagination1, useProps, ...others1 } = omit(props, ['onBlur', 'onFocus', 'value']);
 
-      // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-      const { pagination: pagination2, ...others2 } = useProps?.() || {};
+    // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
+    const { pagination: pagination2, ...others2 } = useProps?.() || {};
 
-      const {
-        dragSort = false,
-        showIndex = true,
-        onRowSelectionChange,
-        onChange: onTableChange,
-        rowSelection,
-        rowKey,
-        required,
-        onExpand,
-        loading,
-        onClickRow,
-        defaultDataSource,
-        ...others
-      } = { ...others1, ...others2 } as any;
-      const field = useArrayField(others);
-      const schema = useFieldSchema();
-      const { size = 'middle' } = schema?.['x-component-props'] || {};
-      const collection = useCollection();
-      const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
-      const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();
-      const { expandFlag, allIncludesChildren } = ctx;
-      const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
-      const paginationProps = usePaginationProps(pagination1, pagination2);
-      const columns = useTableColumns(others, paginationProps);
-      const [expandedKeys, setExpandesKeys] = useState(() => (expandFlag ? allIncludesChildren : []));
-      const [selectedRowKeys, setSelectedRowKeys] = useState<any[]>(field?.data?.selectedRowKeys || []);
-      const [selectedRow, setSelectedRow] = useState([]);
-      const isRowSelect = rowSelection?.type !== 'none';
-      const defaultRowKeyMap = useRef(new Map());
-      const highlightRowCss = useMemo(() => {
-        return css`
-          & > td {
-            background-color: ${token.controlItemBgActive} !important;
-          }
-          &:hover > td {
-            background-color: ${token.controlItemBgActiveHover} !important;
-          }
-        `;
-      }, [token.controlItemBgActive, token.controlItemBgActiveHover]);
-
-      const highlightRow = useMemo(() => (onClickRow ? highlightRowCss : ''), [highlightRowCss, onClickRow]);
-
-      const onRow = useMemo(() => {
-        if (onClickRow) {
-          return (record, rowIndex) => {
-            return {
-              onClick: (e) => {
-                if (isPortalInBody(e.target)) {
-                  return;
-                }
-                onClickRow(record, setSelectedRow, selectedRow);
-              },
-              rowIndex,
-              record,
-            };
-          };
+    const {
+      dragSort = false,
+      showIndex = true,
+      onRowSelectionChange,
+      onChange: onTableChange,
+      rowSelection,
+      rowKey,
+      required,
+      onExpand,
+      loading,
+      onClickRow,
+      ...others
+    } = { ...others1, ...others2 } as any;
+    const field = useArrayField(others);
+    const schema = useFieldSchema();
+    const { size = 'small' } = schema?.['x-component-props'] || {};
+    const collection = useCollection();
+    const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
+    const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();
+    const { expandFlag, allIncludesChildren } = ctx;
+    const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
+    const paginationProps = usePaginationProps(pagination1, pagination2);
+    const columns = useTableColumns(others, paginationProps);
+    const [expandedKeys, setExpandesKeys] = useState(() => (expandFlag ? allIncludesChildren : []));
+    const [selectedRowKeys, setSelectedRowKeys] = useState<any[]>(field?.data?.selectedRowKeys || []);
+    const [selectedRow, setSelectedRow] = useState([]);
+    const isRowSelect = rowSelection?.type !== 'none';
+    const defaultRowKeyMap = useRef(new Map());
+    const highlightRowCss = useMemo(() => {
+      return css`
+        & > td {
+          background-color: ${token.controlItemBgActive} !important;
         }
+        &:hover > td {
+          background-color: ${token.controlItemBgActiveHover} !important;
+        }
+      `;
+    }, [token.controlItemBgActive, token.controlItemBgActiveHover]);
 
+    const highlightRow = useMemo(() => (onClickRow ? highlightRowCss : ''), [highlightRowCss, onClickRow]);
+
+    const onRow = useMemo(() => {
+      if (onClickRow) {
         return (record, rowIndex) => {
           return {
+            onClick: (e) => {
+              if (isPortalInBody(e.target)) {
+                return;
+              }
+              onClickRow(record, setSelectedRow, selectedRow);
+            },
             rowIndex,
-            record,
           };
         };
-      }, [onClickRow, selectedRow]);
+      }
+      return null;
+    }, [onClickRow, selectedRow]);
 
-      useDeepCompareEffect(() => {
-        const newExpandesKeys = expandFlag ? allIncludesChildren : [];
-        if (!_.isEqual(newExpandesKeys, expandedKeys)) {
-          setExpandesKeys(newExpandesKeys);
+    useDeepCompareEffect(() => {
+      const newExpandesKeys = expandFlag ? allIncludesChildren : [];
+      if (!_.isEqual(newExpandesKeys, expandedKeys)) {
+        setExpandesKeys(newExpandesKeys);
+      }
+    }, [expandFlag, allIncludesChildren]);
+
+    /**
+     * 为没有设置 key 属性的表格行生成一个唯一的 key
+     * 1. rowKey 的默认值是 “key”，所以先判断有没有 record.key；
+     * 2. 如果没有就生成一个唯一的 key，并以 record 的值作为索引；
+     * 3. 这样下次就能取到对应的 key 的值；
+     *
+     * 这里有效的前提是：数组中对应的 record 的引用不会发生改变。
+     *
+     * @param record
+     * @returns
+     */
+    const defaultRowKey = useCallback((record: any) => {
+      if (rowKey) {
+        return getRowKey(record);
+      }
+      if (record.key) {
+        return record.key;
+      }
+
+      if (defaultRowKeyMap.current.has(record)) {
+        return defaultRowKeyMap.current.get(record);
+      }
+
+      const key = uid();
+      defaultRowKeyMap.current.set(record, key);
+      return key;
+    }, []);
+
+    const getRowKey = useCallback(
+      (record: any) => {
+        if (Array.isArray(rowKey)) {
+          // 使用多个字段值组合生成唯一键
+          return rowKey
+            .map((keyField) => {
+              return record[keyField]?.toString() || '';
+            })
+            .join('-');
+        } else if (typeof rowKey === 'string') {
+          return record[rowKey];
+        } else {
+          // 如果 rowKey 是函数或未提供，使用 defaultRowKey
+          return (rowKey ?? defaultRowKey)(record)?.toString();
         }
-      }, [expandFlag, allIncludesChildren]);
-
-      /**
-       * 为没有设置 key 属性的表格行生成一个唯一的 key
-       * 1. rowKey 的默认值是 “key”，所以先判断有没有 record.key；
-       * 2. 如果没有就生成一个唯一的 key，并以 record 的值作为索引；
-       * 3. 这样下次就能取到对应的 key 的值；
-       *
-       * 这里有效的前提是：数组中对应的 record 的引用不会发生改变。
-       *
-       * @param record
-       * @returns
-       */
-      const defaultRowKey = useCallback((record: any) => {
-        if (rowKey) {
-          return getRowKey(record);
-        }
-        if (record.key) {
-          return record.key;
-        }
-
-        if (defaultRowKeyMap.current.has(record)) {
-          return defaultRowKeyMap.current.get(record);
-        }
-
-        const key = uid();
-        defaultRowKeyMap.current.set(record, key);
-        return key;
-      }, []);
-
-      const getRowKey = useCallback(
-        (record: any) => {
-          if (Array.isArray(rowKey)) {
-            // 使用多个字段值组合生成唯一键
-            return rowKey
-              .map((keyField) => {
-                return record[keyField]?.toString() || '';
-              })
-              .join('-');
-          } else if (typeof rowKey === 'string') {
-            return record[rowKey];
-          } else {
-            // 如果 rowKey 是函数或未提供，使用 defaultRowKey
-            return (rowKey ?? defaultRowKey)(record)?.toString();
-          }
-        },
-        [JSON.stringify(rowKey), defaultRowKey],
-      );
-
-      const dataSource = useMemo(() => {
-        if (_.isEmpty(field?.value) || _.isEqual(raw(field?.value), defaultDataSource)) {
-          return defaultDataSource || [];
-        }
-
-        const value = Array.isArray(field?.value) ? field.value : [];
-        return value.filter(Boolean);
-
-        // If we don't depend on "field?.value?.length", it will cause no response when clicking "Add new" in the SubTable
-      }, [field?.value, field?.value?.length, defaultDataSource]);
-
-      const BodyWrapperComponent = useMemo(() => {
-        return (props) => {
-          const onDragEndCallback = useCallback((e) => {
-            if (!e.active || !e.over) {
-              console.warn('move cancel');
-              return;
-            }
-            const fromIndex = e.active?.data.current?.sortable?.index;
-            const toIndex = e.over?.data.current?.sortable?.index;
-            const from = field.value[fromIndex] || e.active;
-            const to = field.value[toIndex] || e.over;
-            void field.move(fromIndex, toIndex);
-            onRowDragEnd({ from, to });
-          }, []);
-
-          return (
-            <DndContext onDragEnd={onDragEndCallback}>
-              <tbody {...props} />
-            </DndContext>
-          );
-        };
-      }, [field, onRowDragEnd]);
-
-      // @ts-ignore
-      BodyWrapperComponent.displayName = 'BodyWrapperComponent';
-
-      const components = useMemo(() => {
-        return {
-          header: {
-            wrapper: HeaderWrapperComponent,
-            cell: HeaderCellComponent,
-          },
-          body: {
-            wrapper: BodyWrapperComponent,
-            row: BodyRowComponent,
-            cell: BodyCellComponent,
-          },
-        };
-      }, [BodyWrapperComponent]);
-
-      const memoizedRowSelection = useMemo(() => rowSelection, [JSON.stringify(rowSelection)]);
-
-      const restProps = useMemo(
-        () => ({
-          rowSelection: memoizedRowSelection
-            ? {
-                type: 'checkbox',
-                selectedRowKeys: selectedRowKeys,
-                onChange(selectedRowKeys: any[], selectedRows: any[]) {
-                  field.data = field.data || {};
-                  field.data.selectedRowKeys = selectedRowKeys;
-                  field.data.selectedRowData = selectedRows;
-                  setSelectedRowKeys(selectedRowKeys);
-                  onRowSelectionChange?.(selectedRowKeys, selectedRows);
-                },
-                getCheckboxProps(record) {
-                  return {
-                    'aria-label': `checkbox`,
-                  };
-                },
-                renderCell: (checked, record, index, originNode) => {
-                  if (!dragSort && !showIndex) {
-                    return originNode;
-                  }
-                  const current = paginationProps?.current;
-
-                  const pageSize = paginationProps?.pageSize || 20;
-                  if (current) {
-                    index = index + (current - 1) * pageSize + 1;
-                  } else {
-                    index = index + 1;
-                  }
-                  if (record.__index) {
-                    index = extractIndex(record.__index);
-                  }
-                  return (
-                    <div
-                      role="button"
-                      aria-label={`table-index-${index}`}
-                      className={classNames(checked ? 'checked' : floatLeftClass, rowSelectCheckboxWrapperClass, {
-                        [rowSelectCheckboxWrapperClassHover]: isRowSelect,
-                      })}
-                    >
-                      <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
-                        {dragSort && <SortHandle id={getRowKey(record)} />}
-                        {showIndex && <TableIndex index={index} />}
-                      </div>
-                      {isRowSelect && (
-                        <div
-                          className={classNames(
-                            'nb-origin-node',
-                            checked ? 'checked' : null,
-                            rowSelectCheckboxCheckedClassHover,
-                          )}
-                        >
-                          {originNode}
-                        </div>
-                      )}
-                    </div>
-                  );
-                },
-                ...memoizedRowSelection,
-              }
-            : undefined,
-        }),
-        [
-          memoizedRowSelection,
-          selectedRowKeys,
-          onRowSelectionChange,
-          showIndex,
-          dragSort,
-          field,
-          getRowKey,
-          isRowSelect,
-          memoizedRowSelection,
-          paginationProps,
-        ],
-      );
-
-      const SortableWrapper = useCallback<React.FC>(
-        ({ children }) => {
-          return dragSort
-            ? React.createElement<Omit<SortableContextProps, 'children'>>(
-                SortableContext,
-                {
-                  items: field.value?.map?.(getRowKey) || [],
-                },
-                children,
-              )
-            : React.createElement(React.Fragment, {}, children);
-        },
-        [field, dragSort, getRowKey],
-      );
-
-      const { height: tableHeight, tableSizeRefCallback } = useTableSize();
-      const scroll = useMemo(() => {
-        return {
-          x: 'max-content',
-          y: dataSource.length > 0 ? tableHeight : undefined,
-        };
-      }, [tableHeight, dataSource]);
-
-      const rowClassName = useCallback(
-        (record) => (selectedRow.includes(record[rowKey]) ? highlightRow : ''),
-        [selectedRow, highlightRow, JSON.stringify(rowKey)],
-      );
-
-      const onExpandValue = useCallback(
-        (flag, record) => {
-          const newKeys = flag
-            ? [...expandedKeys, record[collection.getPrimaryKey()]]
-            : expandedKeys.filter((i) => record[collection.getPrimaryKey()] !== i);
-          setExpandesKeys(newKeys);
-          onExpand?.(flag, record);
-        },
-        [expandedKeys, onExpand, collection],
-      );
-
-      const expandable = useMemo(() => {
-        return {
-          onExpand: onExpandValue,
-          expandedRowKeys: expandedKeys,
-        };
-      }, [expandedKeys, onExpandValue]);
-      return (
-        // If spinning is set to undefined, it will cause the subtable to always display loading, so we need to convert it here.
-        // We use Spin here instead of Table's loading prop because using Spin here reduces unnecessary re-renders.
-        <Spin spinning={!!loading}>
-          <InternalNocoBaseTable
-            tableHeight={tableHeight}
-            SortableWrapper={SortableWrapper}
-            tableSizeRefCallback={tableSizeRefCallback}
-            defaultRowKey={defaultRowKey}
-            dataSource={dataSource}
-            {...others}
-            {...restProps}
-            paginationProps={paginationProps}
-            components={components}
-            onTableChange={onTableChange}
-            onRow={onRow}
-            rowClassName={rowClassName}
-            scroll={scroll}
-            columns={columns}
-            expandable={expandable}
-            field={field}
-            size={size}
-          />
-        </Spin>
-      );
-    }),
-    {
-      useLoading() {
-        const service = useDataBlockRequest();
-        const { isInSubTable } = useFlag();
-
-        if (isInSubTable) {
-          return false;
-        }
-        return !!service?.loading;
       },
-      SkeletonComponent: TableSkeleton,
-    },
-  ),
+      [JSON.stringify(rowKey), defaultRowKey],
+    );
+
+    const dataSource = useMemo(() => {
+      const value = Array.isArray(field?.value) ? field.value : [];
+      return value.filter(Boolean);
+
+      // If we don't depend on "field?.value?.length", it will cause no response when clicking "Add new" in the SubTable
+    }, [field?.value, field?.value?.length]);
+
+    const BodyWrapperComponent = useMemo(() => {
+      return (props) => {
+        const onDragEndCallback = useCallback((e) => {
+          if (!e.active || !e.over) {
+            console.warn('move cancel');
+            return;
+          }
+          const fromIndex = e.active?.data.current?.sortable?.index;
+          const toIndex = e.over?.data.current?.sortable?.index;
+          const from = field.value[fromIndex] || e.active;
+          const to = field.value[toIndex] || e.over;
+          void field.move(fromIndex, toIndex);
+          onRowDragEnd({ from, to });
+        }, []);
+
+        return (
+          <DndContext onDragEnd={onDragEndCallback}>
+            <tbody {...props} />
+          </DndContext>
+        );
+      };
+    }, [field, onRowDragEnd]);
+
+    // @ts-ignore
+    BodyWrapperComponent.displayName = 'BodyWrapperComponent';
+
+    const components = useMemo(() => {
+      return {
+        header: {
+          wrapper: HeaderWrapperComponent,
+          cell: HeaderCellComponent,
+        },
+        body: {
+          wrapper: BodyWrapperComponent,
+          row: BodyRowComponent,
+          cell: BodyCellComponent,
+        },
+      };
+    }, [BodyWrapperComponent]);
+
+    const memoizedRowSelection = useMemo(() => rowSelection, [JSON.stringify(rowSelection)]);
+
+    const restProps = useMemo(
+      () => ({
+        rowSelection: memoizedRowSelection
+          ? {
+              type: 'checkbox',
+              selectedRowKeys: selectedRowKeys,
+              onChange(selectedRowKeys: any[], selectedRows: any[]) {
+                field.data = field.data || {};
+                field.data.selectedRowKeys = selectedRowKeys;
+                field.data.selectedRowData = selectedRows;
+                setSelectedRowKeys(selectedRowKeys);
+                onRowSelectionChange?.(selectedRowKeys, selectedRows);
+              },
+              getCheckboxProps(record) {
+                return {
+                  'aria-label': `checkbox`,
+                };
+              },
+              renderCell: (checked, record, index, originNode) => {
+                if (!dragSort && !showIndex) {
+                  return originNode;
+                }
+                const current = paginationProps?.current;
+
+                const pageSize = paginationProps?.pageSize || 20;
+                if (current) {
+                  index = index + (current - 1) * pageSize + 1;
+                } else {
+                  index = index + 1;
+                }
+                if (record.__index) {
+                  index = extractIndex(record.__index);
+                }
+                return (
+                  <div
+                    role="button"
+                    aria-label={`table-index-${index}`}
+                    className={classNames(checked ? 'checked' : floatLeftClass, rowSelectCheckboxWrapperClass, {
+                      [rowSelectCheckboxWrapperClassHover]: isRowSelect,
+                    })}
+                  >
+                    <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
+                      {dragSort && <SortHandle id={getRowKey(record)} />}
+                      {showIndex && <TableIndex index={index} />}
+                    </div>
+                    {isRowSelect && (
+                      <div
+                        className={classNames(
+                          'nb-origin-node',
+                          checked ? 'checked' : null,
+                          rowSelectCheckboxCheckedClassHover,
+                        )}
+                      >
+                        {originNode}
+                      </div>
+                    )}
+                  </div>
+                );
+              },
+              ...memoizedRowSelection,
+            }
+          : undefined,
+      }),
+      [
+        memoizedRowSelection,
+        selectedRowKeys,
+        onRowSelectionChange,
+        showIndex,
+        dragSort,
+        field,
+        getRowKey,
+        isRowSelect,
+        memoizedRowSelection,
+        paginationProps,
+      ],
+    );
+
+    const SortableWrapper = useCallback<React.FC>(
+      ({ children }) => {
+        return dragSort
+          ? React.createElement<Omit<SortableContextProps, 'children'>>(
+              SortableContext,
+              {
+                items: field.value?.map?.(getRowKey) || [],
+              },
+              children,
+            )
+          : React.createElement(React.Fragment, {}, children);
+      },
+      [field, dragSort, getRowKey],
+    );
+
+    const { height: tableHeight, tableSizeRefCallback } = useTableSize();
+    const maxContent = useMemo(() => {
+      return {
+        x: 'max-content',
+      };
+    }, []);
+    const scroll = useMemo(() => {
+      return {
+        x: 'max-content',
+        y: dataSource.length > 0 ? tableHeight : undefined,
+      };
+    }, [tableHeight, maxContent, dataSource]);
+
+    const rowClassName = useCallback(
+      (record) => (selectedRow.includes(record[rowKey]) ? highlightRow : ''),
+      [selectedRow, highlightRow, JSON.stringify(rowKey)],
+    );
+
+    const onExpandValue = useCallback(
+      (flag, record) => {
+        const newKeys = flag
+          ? [...expandedKeys, record[collection.getPrimaryKey()]]
+          : expandedKeys.filter((i) => record[collection.getPrimaryKey()] !== i);
+        setExpandesKeys(newKeys);
+        onExpand?.(flag, record);
+      },
+      [expandedKeys, onExpand, collection],
+    );
+
+    const expandable = useMemo(() => {
+      return {
+        onExpand: onExpandValue,
+        expandedRowKeys: expandedKeys,
+      };
+    }, [expandedKeys, onExpandValue]);
+    return (
+      // If spinning is set to undefined, it will cause the subtable to always display loading, so we need to convert it here
+      <Spin spinning={!!loading}>
+        <InternalNocoBaseTable
+          tableHeight={tableHeight}
+          SortableWrapper={SortableWrapper}
+          tableSizeRefCallback={tableSizeRefCallback}
+          defaultRowKey={defaultRowKey}
+          dataSource={dataSource}
+          {...others}
+          {...restProps}
+          paginationProps={paginationProps}
+          components={components}
+          onTableChange={onTableChange}
+          onRow={onRow}
+          rowClassName={rowClassName}
+          scroll={scroll}
+          columns={columns}
+          expandable={expandable}
+          field={field}
+          size={size}
+        />
+      </Spin>
+    );
+  }),
   { displayName: 'NocoBaseTable' },
 );

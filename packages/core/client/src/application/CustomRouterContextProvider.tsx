@@ -16,6 +16,7 @@ import {
   NavigateOptions,
   useHref,
   useLocation,
+  useMatch,
   useNavigate,
   useParams,
   useSearchParams,
@@ -112,15 +113,13 @@ const IsInSettingsPageProvider: FC = ({ children }) => {
 };
 
 const MatchAdminProvider: FC = ({ children }) => {
-  const location = useLocation();
-  const matchAdmin = location.pathname === '/admin' || location.pathname == '/admin/';
-  return <MatchAdminContext.Provider value={matchAdmin}>{children}</MatchAdminContext.Provider>;
+  const isMatchAdmin = !!useMatch('/admin');
+  return <MatchAdminContext.Provider value={isMatchAdmin}>{children}</MatchAdminContext.Provider>;
 };
 
 const MatchAdminNameProvider: FC = ({ children }) => {
-  const location = useLocation();
-  const matchAdminName = /^\/admin\/.+/.test(location.pathname);
-  return <MatchAdminNameContext.Provider value={matchAdminName}>{children}</MatchAdminNameContext.Provider>;
+  const isMatchAdminName = !!useMatch('/admin/:name');
+  return <MatchAdminNameContext.Provider value={isMatchAdminName}>{children}</MatchAdminNameContext.Provider>;
 };
 
 const IsAdminPageProvider: FC = ({ children }) => {
