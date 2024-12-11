@@ -68,7 +68,7 @@ export function WorkflowTasks() {
 
   const items = useMemo(
     () =>
-      Array.from(workflowPlugin.taskTypes.getKeys()).map((key) => {
+      Array.from(workflowPlugin.taskTypes.getKeys()).map((key: string) => {
         return {
           key,
           label: <MenuLink type={key} />,
