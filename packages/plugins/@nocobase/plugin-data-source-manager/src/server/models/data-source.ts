@@ -98,6 +98,7 @@ export class DataSourceModel extends Model {
         name: dataSourceKey,
         logger: app.logger.child({ dataSourceKey }),
         sqlLogger: app.sqlLogger.child({ dataSourceKey }),
+        cache: app.cache,
       });
 
       dataSource.on('loadingProgress', (progress) => {
