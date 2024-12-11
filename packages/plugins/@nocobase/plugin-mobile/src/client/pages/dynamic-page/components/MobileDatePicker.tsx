@@ -122,8 +122,6 @@ const MobileRangePicker = (props) => {
     props.onChange([props.value?.[0], selectedDateTime]);
     setEndDate(selectedDateTime);
   };
-  console.log(props.value);
-
   return (
     <div
       style={{
@@ -134,6 +132,7 @@ const MobileRangePicker = (props) => {
     >
       <div style={{ flex: 1, marginRight: '8px' }}>
         <MobileDateTimePicker
+          {...props}
           value={startDate}
           max={endDate}
           onChange={handleStartDateChange}
@@ -143,7 +142,7 @@ const MobileRangePicker = (props) => {
       </div>
       <span
         style={{
-          margin: '0 8px',
+          margin: '0px',
           fontSize: '16px',
           color: '#333',
         }}
@@ -152,6 +151,7 @@ const MobileRangePicker = (props) => {
       </span>
       <div style={{ flex: 1, marginLeft: '8px' }}>
         <MobileDateTimePicker
+          {...props}
           value={endDate}
           min={startDate}
           onChange={handleEndDateChange}
