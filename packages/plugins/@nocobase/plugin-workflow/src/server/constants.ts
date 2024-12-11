@@ -29,3 +29,7 @@ export const JOB_STATUS = {
   REJECTED: -5,
   RETRY_NEEDED: -6,
 } as const;
+
+export const EXECUTION_EVENT = {
+  AFTER_CREATE: 'AFTER_CREATE',
+} as const;

@@ -9,6 +9,7 @@
 
 import path from 'path';
 import { randomUUID } from 'crypto';
+import { EventEmitter } from 'events';
 
 import LRUCache from 'lru-cache';
 
@@ -19,7 +20,7 @@ import { Registry } from '@nocobase/utils';
 import { Logger, LoggerOptions } from '@nocobase/logger';
 import Processor from './Processor';
 import initActions from './actions';
-import { EXECUTION_STATUS } from './constants';
+import { EXECUTION_EVENT, EXECUTION_STATUS } from './constants';
 import initFunctions, { CustomFunction } from './functions';
 import Trigger from './triggers';
 import CollectionTrigger from './triggers/CollectionTrigger';
@@ -57,6 +58,7 @@ export default class PluginWorkflowServer extends Plugin {
   triggers: Registry<Trigger> = new Registry();
   functions: Registry<CustomFunction> = new Registry();
   enabledCache: Map<number, WorkflowModel> = new Map();
+  executionEvent = new EventEmitter();
 
   private ready = false;
   private executing: Promise<void> | null = null;
@@ -527,8 +529,10 @@ export default class PluginWorkflowServer extends Plugin {
     const logger = this.getLogger(event[0].id);
     logger.info(`preparing execution for event`);
 
+    const executionEvent = this.executionEvent;
     try {
       const execution = await this.createExecution(...event);
+      executionEvent.emit(EXECUTION_EVENT.AFTER_CREATE, execution);
       // NOTE: cache first execution for most cases
       if (execution?.status === EXECUTION_STATUS.QUEUEING && !this.executing && !this.pending.length) {
         this.pending.push([execution]);
@@ -624,7 +628,7 @@ export default class PluginWorkflowServer extends Plugin {
     return processor;
   }
 
-  async execute(workflow: WorkflowModel, contextOptions: ContextOptions, options: EventOptions = {}) {
+  async execute(workflow: WorkflowModel, values, options: EventOptions = {}) {
     const trigger = this.triggers.get(workflow.type);
     if (!trigger) {
       throw new Error(`trigger type "${workflow.type}" of workflow ${workflow.id} is not registered`);
@@ -632,7 +636,7 @@ export default class PluginWorkflowServer extends Plugin {
     if (!trigger.execute) {
       throw new Error(`"execute" method of trigger ${workflow.type} is not implemented`);
     }
-    return trigger.execute(workflow, contextOptions, options);
+    return trigger.execute(workflow, values, options);
   }
 
   /**
