@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useField, useFieldSchema } from '@formily/react';
+import { observer, useField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import _ from 'lodash';
 import React, { FC, Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -196,7 +196,7 @@ const RenderRecord = React.memo(
 
 RenderRecord.displayName = 'RenderRecord';
 
-const ButtonLinkList: FC<ButtonListProps> = React.memo((props) => {
+const ButtonLinkList: FC<ButtonListProps> = observer((props) => {
   const fieldSchema = useFieldSchema();
   const cm = useCollectionManager();
   const { enableLink } = fieldSchema['x-component-props'] || {};

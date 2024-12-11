@@ -10,7 +10,7 @@
 import { registerActions } from '@nocobase/actions';
 import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocobase/auth';
 import { Cache, CacheManager, CacheManagerOptions } from '@nocobase/cache';
-import { DataSourceManager, SequelizeDataSource } from '@nocobase/data-source-manager';
+import { DataSourceManager, SequelizeCollectionManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import {
   createLogger,
@@ -25,6 +25,7 @@ import {
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import { Telemetry, TelemetryOptions } from '@nocobase/telemetry';
 
+import { LockManager, LockManagerOptions } from '@nocobase/lock-manager';
 import {
   applyMixins,
   AsyncEmitter,
@@ -33,7 +34,6 @@ import {
   ToposortOptions,
   wrapMiddlewareWithLogging,
 } from '@nocobase/utils';
-import { LockManager, LockManagerOptions } from '@nocobase/lock-manager';
 
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { randomUUID } from 'crypto';
@@ -73,6 +73,7 @@ import { createPubSubManager, PubSubManager, PubSubManagerOptions } from './pub-
 import { SyncMessageManager } from './sync-message-manager';
 
 import packageJson from '../package.json';
+import { availableActions } from './acl/available-action';
 import { AuditManager } from './audit-manager';
 
 export type PluginType = string | typeof Plugin;
@@ -1220,6 +1221,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.resourceManager.define({
       name: 'auth',
       actions: authActions,
+    });
+
+    this._dataSourceManager.afterAddDataSource((dataSource) => {
+      if (dataSource.collectionManager instanceof SequelizeCollectionManager) {
+        for (const [actionName, actionParams] of Object.entries(availableActions)) {
+          dataSource.acl.setAvailableAction(actionName, actionParams);
+        }
+      }
     });
 
     this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth' });

@@ -27,7 +27,11 @@ const TemplateBlockProvider: FC<{ onTemplateLoaded?: () => void }> = ({ onTempla
   const [templateFinished, setTemplateFinished] = useState(false);
   const onTemplateSuccess = useCallback(() => {
     setTemplateFinished(true);
-    onTemplateLoaded?.();
+
+    // Wait for the render to stabilize before invoking onTemplateLoaded, to ensure we can get the latest template schema
+    setTimeout(() => {
+      onTemplateLoaded?.();
+    });
   }, [onTemplateLoaded]);
   const value = useMemo(() => ({ templateFinished, onTemplateSuccess }), [onTemplateSuccess, templateFinished]);
   return <TemplateBlockContext.Provider value={value}>{children}</TemplateBlockContext.Provider>;

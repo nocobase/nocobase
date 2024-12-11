@@ -197,6 +197,9 @@ export const findFormBlock = (schema: Schema) => {
     if (schema['x-decorator'] === 'FormBlockProvider') {
       return schema;
     }
+    if (schema['x-component'] === 'AssociationField.Selector') {
+      return null;
+    }
     schema = schema.parent;
   }
   return null;
