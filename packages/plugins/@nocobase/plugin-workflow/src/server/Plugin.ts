@@ -34,7 +34,7 @@ import DestroyInstruction from './instructions/DestroyInstruction';
 import QueryInstruction from './instructions/QueryInstruction';
 import UpdateInstruction from './instructions/UpdateInstruction';
 
-import type { ExecutionModel, JobModel, WorkflowModel, ContextOptions } from './types';
+import type { ExecutionModel, JobModel, WorkflowModel } from './types';
 import WorkflowRepository from './repositories/WorkflowRepository';
 import { Context } from '@nocobase/actions';
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
@@ -48,6 +48,7 @@ export type EventOptions = {
   context?: any;
   deferred?: boolean;
   manually?: boolean;
+  force?: boolean;
   [key: string]: any;
 } & Transactionable;
 
@@ -373,7 +374,7 @@ export default class PluginWorkflowServer extends Plugin {
       logger.debug(`ignored event data:`, context);
       return;
     }
-    if (!options.manually && !workflow.enabled) {
+    if (!options.force && !options.manually && !workflow.enabled) {
       logger.warn(`workflow ${workflow.id} is not enabled, event will be ignored`);
       return;
     }
