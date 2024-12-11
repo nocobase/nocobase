@@ -28,5 +28,6 @@
   "Workflow todos": "工作流待办",
   "Task node": "任务节点",
   "Unprocessed": "未处理",
-  "Please check one of your update record form, and add at least one filter condition in form settings.": "请检查您的其中的更新数据表单，并在表单设置中至少添加一个筛选条件。"
+  "Please check one of your update record form, and add at least one filter condition in form settings.": "请检查您的其中的更新数据表单，并在表单设置中至少添加一个筛选条件。",
+  "My manual tasks": "我的人工任务"
 }
