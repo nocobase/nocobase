@@ -186,7 +186,8 @@ test.describe('actions schema settings', () => {
   test.describe('filter', () => {
     const showMenu = async (page: Page) => {
       await page.getByRole('button', { name: 'Filter' }).hover();
-      await page.getByLabel('designer-schema-settings-Filter.Action-Filter.Action.Designer-general').hover();
+      // hover 方法有时会失效，所以用 click 替代，原因未知
+      await page.getByLabel('designer-schema-settings-Filter.Action-Filter.Action.Designer-general').click();
     };
 
     test('supported options', async ({ page, mockPage }) => {

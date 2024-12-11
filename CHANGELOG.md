@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.4.8](https://github.com/nocobase/nocobase/compare/v1.4.7...v1.4.8) - 2024-12-10
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fix data template issue in filter form configured in association field record picker ([#5837](https://github.com/nocobase/nocobase/pull/5837)) by @katherinehhh
+
+  - Fix issue with Markdown string templates not loading data of association data  （External dataSource） ([#5791](https://github.com/nocobase/nocobase/pull/5791)) by @katherinehhh
+
+- **[User data synchronization]** Skip unsupported data types during synchronization instead of throwing an error. ([#5835](https://github.com/nocobase/nocobase/pull/5835)) by @chenzhizdt
+
+- **[Backup manager]**
+  - Fixed slow popup of download window for large backup files by @gchust
+
+  - Fixed the issue where restoring a backup sub-application causes all applications to restart by @gchust
+
+## [v1.4.7](https://github.com/nocobase/nocobase/compare/v1.4.6...v1.4.7) - 2024-12-09
+
+### 🐛 Bug Fixes
+
+- **[Mobile]** Fix mobile background color display issue ([#5809](https://github.com/nocobase/nocobase/pull/5809)) by @katherinehhh
+
 ## [v1.4.6](https://github.com/nocobase/nocobase/compare/v1.4.5...v1.4.6) - 2024-12-08
 
 ### 🐛 Bug Fixes
