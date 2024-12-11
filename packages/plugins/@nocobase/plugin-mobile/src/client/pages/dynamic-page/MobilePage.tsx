@@ -20,7 +20,7 @@ import React, { useCallback } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
 import { Button as MobileButton, Dialog as MobileDialog } from 'antd-mobile';
 import { MobilePicker } from './components/MobilePicker';
-import { MobileDateTimePicker } from './components/MobileDatePicker';
+import { MobileDateTimePicker, MobileRangePicker } from './components/MobileDatePicker';
 
 const AssociationFieldMobile = (props) => {
   return <AssociationField {...props} popupMatchSelectWidth={true} />;
@@ -44,7 +44,7 @@ const DatePickerMobile = (props) => {
   }
 };
 DatePickerMobile.FilterWithPicker = DatePicker.FilterWithPicker;
-DatePickerMobile.RangePicker = DatePicker.RangePicker;
+DatePickerMobile.RangePicker = MobileRangePicker;
 
 const mobileComponents = {
   Button: MobileButton,

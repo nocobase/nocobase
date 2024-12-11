@@ -37,7 +37,7 @@ const MobileDateTimePicker = connect(
       timeFormat = 'HH:mm',
       showTime = false,
       picker,
-      ...rest
+      ...others
     } = props;
     const [visible, setVisible] = useState(false);
 
@@ -74,7 +74,7 @@ const MobileDateTimePicker = connect(
             onClick={() => setVisible(true)}
             value={value}
             picker={picker}
-            {...rest}
+            {...others}
             popupStyle={{ display: 'none' }}
             style={{ pointerEvents: 'none', width: '100%' }}
           />
@@ -89,11 +89,12 @@ const MobileDateTimePicker = connect(
           }}
           precision={showTime ? getPrecision(timeFormat) : picker === 'date' ? 'day' : picker}
           renderLabel={labelRenderer}
-          min={new Date(1000, 0, 1)}
-          max={new Date(9999, 11, 31)}
+          min={others.min || new Date(1000, 0, 1)}
+          max={others.max || new Date(9999, 11, 31)}
           onConfirm={(val) => {
             handleConfirm(val);
           }}
+          placeholder={others.placeholder}
         />
       </>
     );
@@ -102,4 +103,64 @@ const MobileDateTimePicker = connect(
   mapReadPretty(NBDatePicker.ReadPretty),
 );
 
-export { MobileDateTimePicker };
+const MobileRangePicker = (props) => {
+  const [startDate, setStartDate] = useState(props.value?.[0]);
+  const [endDate, setEndDate] = useState(props.value?.[1]);
+  const { t } = useTranslation();
+
+  const handleStartDateChange = (value) => {
+    const selectedDateTime = new Date(value);
+    props.onChange([selectedDateTime, props.value?.[1]]);
+    setStartDate(selectedDateTime);
+    if (endDate && value > endDate) {
+      setEndDate(null); // 重置结束日期
+    }
+  };
+
+  const handleEndDateChange = (value) => {
+    const selectedDateTime = new Date(value);
+    props.onChange([props.value?.[0], selectedDateTime]);
+    setEndDate(selectedDateTime);
+  };
+  console.log(props.value);
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        marginBottom: '16px',
+      }}
+    >
+      <div style={{ flex: 1, marginRight: '8px' }}>
+        <MobileDateTimePicker
+          value={startDate}
+          max={endDate}
+          onChange={handleStartDateChange}
+          style={{ width: '100%' }}
+          placeholder={t('Start date')}
+        />
+      </div>
+      <span
+        style={{
+          margin: '0 8px',
+          fontSize: '16px',
+          color: '#333',
+        }}
+      >
+        ~
+      </span>
+      <div style={{ flex: 1, marginLeft: '8px' }}>
+        <MobileDateTimePicker
+          value={endDate}
+          min={startDate}
+          onChange={handleEndDateChange}
+          style={{ width: '100%' }}
+          placeholder={t('End date')}
+        />
+      </div>
+    </div>
+  );
+};
+
+export { MobileDateTimePicker, MobileRangePicker };
