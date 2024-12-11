@@ -80,6 +80,7 @@ const MobileDateTimePicker = connect(
           />
         </div>
         <DatePicker
+          {...others}
           cancelText={t('Cancel')}
           confirmText={t('Confirm')}
           visible={visible}
@@ -94,7 +95,6 @@ const MobileDateTimePicker = connect(
           onConfirm={(val) => {
             handleConfirm(val);
           }}
-          placeholder={others.placeholder}
         />
       </>
     );
