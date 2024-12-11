@@ -144,6 +144,7 @@ const ToManyNester = observer(
     const useNesterSelectProps = () => {
       return {
         run() {
+          console.log(2);
           setVisibleSelector(true);
         },
       };
@@ -225,6 +226,7 @@ const ToManyNester = observer(
       const filter = list.length ? { $and: [{ [`${targetKey}.$ne`]: list }] } : {};
       return filter;
     };
+    console.log(visibleSelector);
     return field.value.length > 0 ? (
       <Card
         bordered={true}
@@ -277,50 +279,51 @@ const ToManyNester = observer(
                     </RecordProvider>
                   </SubFormProvider>
                 </FormActiveFieldsProvider>
-                {field.editable && allowMultiple && (
-                  <p style={{ float: 'right' }}>
-                    <Action.Link
-                      useProps={() => {
-                        return {
-                          onClick: () => {
-                            action(() => {
-                              if (!Array.isArray(field.value)) {
-                                field.value = [];
-                              }
-                              field.value.splice(index + 1, 0, markRecordAsNew({}));
-                              each(field.form.fields, (targetField, key) => {
-                                if (!targetField) {
-                                  delete field.form.fields[key];
-                                }
-                              });
-                              return field.onInput(field.value);
-                            });
-                          },
-                        };
-                      }}
-                      title={
-                        <Space style={{ gap: 2 }} className="nb-sub-table-addNew">
-                          <PlusOutlined /> {t('Add new')}
-                        </Space>
-                      }
-                    />
-                  </p>
-                )}
 
                 <Divider />
               </React.Fragment>
             );
           })}
-          {allowSelectExistingRecord && (
-            <Action.Link
-              useAction={useNesterSelectProps}
-              title={
-                <Space style={{ gap: 2 }}>
-                  <ZoomInOutlined /> {t('Select record')}
-                </Space>
-              }
-            />
-          )}
+          <Space>
+            {field.editable && allowMultiple && (
+              <Action.Link
+                useProps={() => {
+                  return {
+                    onClick: () => {
+                      action(() => {
+                        if (!Array.isArray(field.value)) {
+                          field.value = [];
+                        }
+                        const index = field.value.length;
+                        field.value.splice(index, 0, markRecordAsNew({}));
+                        each(field.form.fields, (targetField, key) => {
+                          if (!targetField) {
+                            delete field.form.fields[key];
+                          }
+                        });
+                        return field.onInput(field.value);
+                      });
+                    },
+                  };
+                }}
+                title={
+                  <Space style={{ gap: 2 }} className="nb-sub-table-addNew">
+                    <PlusOutlined /> {t('Add new')}
+                  </Space>
+                }
+              />
+            )}
+            {allowSelectExistingRecord && (
+              <Action.Link
+                useAction={useNesterSelectProps}
+                title={
+                  <Space style={{ gap: 2 }}>
+                    <ZoomInOutlined /> {t('Select record')}
+                  </Space>
+                }
+              />
+            )}
+          </Space>
         </RefreshComponentProvider>
         <ActionContextProvider
           value={{
