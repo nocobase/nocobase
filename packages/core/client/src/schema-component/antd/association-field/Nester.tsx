@@ -122,7 +122,7 @@ const ToOneNester = (props) => {
 };
 
 const ToManyNester = observer(
-  (props) => {
+  (props: any) => {
     const fieldSchema = useFieldSchema();
     const {
       options: collectionField,
