@@ -8,7 +8,7 @@
  */
 
 import { Popover } from 'antd';
-import React, { CSSProperties, forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import React, { CSSProperties, forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 
 const getContentWidth = (el: HTMLElement) => {
   if (el) {
@@ -37,6 +37,7 @@ interface IEllipsisWithTooltipProps {
   ellipsis: boolean;
   popoverContent: unknown;
   children: any;
+  role?: string;
 }
 
 const popoverStyle = {
@@ -58,26 +59,24 @@ export const EllipsisWithTooltip = forwardRef((props: Partial<IEllipsisWithToolt
     [],
   );
 
+  const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLDivElement, MouseEvent>): void => {
+    const el = e.target as any;
+    const isShowTooltips = isOverflowTooltip(elRef.current);
+    if (isShowTooltips) {
+      setEllipsis(el.scrollWidth >= el.clientWidth);
+    }
+  }, []);
+
   const divContent = useMemo(
     () =>
       props.ellipsis ? (
-        <div
-          ref={elRef}
-          style={ellipsisDefaultStyle}
-          onMouseEnter={(e) => {
-            const el = e.target as any;
-            const isShowTooltips = isOverflowTooltip(elRef.current);
-            if (isShowTooltips) {
-              setEllipsis(el.scrollWidth >= el.clientWidth);
-            }
-          }}
-        >
+        <div ref={elRef} role={props.role} style={ellipsisDefaultStyle} onMouseEnter={handleMouseEnter}>
           {props.children}
         </div>
       ) : (
         props.children
       ),
-    [props.children, props.ellipsis],
+    [handleMouseEnter, props.children, props.ellipsis, props.role],
   );
 
   if (!props.ellipsis || !ellipsis) {

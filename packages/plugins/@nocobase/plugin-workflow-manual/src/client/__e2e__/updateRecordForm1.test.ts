@@ -173,11 +173,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
-    await page
-      .locator(`//td[span[text()="${manualNodeName}"]]`)
-      .locator('xpath=preceding-sibling::td[1]')
-      .locator('text=View')
-      .click();
+    await page.locator('tr', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
     // const manualNodeRecord = faker.number.float({ min: 0, max: 100, precision: 2 });
     await page.getByLabel('存续').check();
     await page.getByRole('button', { name: 'Continue the process' }).click();
@@ -356,11 +352,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
-    await page
-      .locator(`//td[span[text()="${manualNodeName}"]]`)
-      .locator('xpath=preceding-sibling::td[1]')
-      .locator('text=View')
-      .click();
+    await page.locator('tr', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
     await page.getByLabel('软件销售', { exact: true }).check();
     await page.getByLabel('软件开发', { exact: true }).check();
     await page.getByRole('button', { name: 'Continue the process' }).click();
@@ -545,11 +537,7 @@ test.describe('field data update', () => {
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
-    await page
-      .locator(`//td[span[text()="${manualNodeName}"]]`)
-      .locator('xpath=preceding-sibling::td[1]')
-      .locator('text=View')
-      .click();
+    await page.locator('tr', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
     const manualNodeRecord = dayjs().format('YYYY-MM-DD');
     await page.getByPlaceholder('Select date').click();
     await page.getByTitle(manualNodeRecord.toString()).click();

@@ -130,11 +130,7 @@ test.describe('field data entry', () => {
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
-    await page
-      .locator(`//td[span[text()="${manualNodeName}"]]`)
-      .locator('xpath=preceding-sibling::td[1]')
-      .locator('text=View')
-      .click();
+    await page.locator('tr', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
     // 定义获取2位小数
     const manualNodeRecord = faker.number.float({ min: 0, max: 100, precision: 2 });
     await page.getByRole('spinbutton').fill(manualNodeRecord.toString());
@@ -270,11 +266,7 @@ test.describe('field data entry', () => {
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
-    await page
-      .locator(`//td[span[text()="${manualNodeName}"]]`)
-      .locator('xpath=preceding-sibling::td[1]')
-      .locator('text=View')
-      .click();
+    await page.locator('tr', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
     // const manualNodeRecord = faker.number.float();
     await page.getByRole('checkbox').check();
     await page.getByRole('button', { name: 'Continue the process' }).click();
@@ -409,11 +401,7 @@ test.describe('field data entry', () => {
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
-    await page
-      .locator(`//td[span[text()="${manualNodeName}"]]`)
-      .locator('xpath=preceding-sibling::td[1]')
-      .locator('text=View')
-      .click();
+    await page.locator('tr', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
     await page.getByTestId('select-single').click();
     await page.getByRole('option', { name: '存续' }).click();
     await page.getByRole('button', { name: 'Continue the process' }).click();
