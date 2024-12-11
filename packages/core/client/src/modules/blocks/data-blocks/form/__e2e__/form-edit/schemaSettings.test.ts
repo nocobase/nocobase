@@ -183,7 +183,7 @@ test.describe('actions schema settings', () => {
       page,
       showMenu: async () => {
         await page.getByRole('button', { name: 'Submit' }).hover();
-        await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-users' }).hover();
+        await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-users' }).click();
       },
       supportedOptions: ['Edit button', 'Delete'],
     });
