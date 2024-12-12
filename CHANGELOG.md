@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.4.9](https://github.com/nocobase/nocobase/compare/v1.4.8...v1.4.9) - 2024-12-12
+
+### 🐛 Bug Fixes
+
+- **[sdk]** Remove the default locale ([#5867](https://github.com/nocobase/nocobase/pull/5867)) by @chenos
+
+- **[client]**
+  - Fix the issue where nested association field variables in data scope have empty values ([#5866](https://github.com/nocobase/nocobase/pull/5866)) by @zhangzhonghe
+
+  - Fix  scroll bar appearing when there are fewer columns with a right fixed column ([#5864](https://github.com/nocobase/nocobase/pull/5864)) by @katherinehhh
+
+  - Fix wrong position style of `FilterItem` component ([#5851](https://github.com/nocobase/nocobase/pull/5851)) by @mytharcher
+
+- **[Backup manager]** Fixed backup download failure for sub-apps with custom domain by @gchust
+
 ## [v1.4.8](https://github.com/nocobase/nocobase/compare/v1.4.7...v1.4.8) - 2024-12-10
 
 ### 🐛 Bug Fixes
