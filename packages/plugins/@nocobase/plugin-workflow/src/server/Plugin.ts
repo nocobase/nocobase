@@ -613,7 +613,7 @@ export default class PluginWorkflowServer extends Plugin {
       await (job ? processor.resume(job) : processor.start());
       logger.info(`execution (${execution.id}) finished with status: ${execution.status}`, { execution });
       if (execution.status && execution.workflow.options?.deleteExecutionOnStatus?.includes(execution.status)) {
-        await execution.destroy();
+        await execution.destroy({ transaction: processor.mainTransaction });
       }
     } catch (err) {
       logger.error(`execution (${execution.id}) error: ${err.message}`, err);
