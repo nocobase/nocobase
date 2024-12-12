@@ -129,6 +129,7 @@ const ToManyNester = observer(
       field,
       allowMultiple,
       allowDissociate,
+      currentMode,
     } = useAssociationFieldContext<ArrayField>();
     const { allowSelectExistingRecord } = field.componentProps;
     const { t } = useTranslation();
@@ -140,11 +141,9 @@ const ToManyNester = observer(
     const fieldNames = useFieldNames(props);
     const compile = useCompile();
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
-
     const useNesterSelectProps = () => {
       return {
         run() {
-          console.log(2);
           setVisibleSelector(true);
         },
       };
@@ -226,7 +225,6 @@ const ToManyNester = observer(
       const filter = list.length ? { $and: [{ [`${targetKey}.$ne`]: list }] } : {};
       return filter;
     };
-    console.log(visibleSelector);
     return field.value.length > 0 ? (
       <Card
         bordered={true}
@@ -313,7 +311,7 @@ const ToManyNester = observer(
                 }
               />
             )}
-            {allowSelectExistingRecord && (
+            {field.editable && allowSelectExistingRecord && currentMode === 'Nester' && (
               <Action.Link
                 useAction={useNesterSelectProps}
                 title={
