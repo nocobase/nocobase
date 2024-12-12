@@ -295,11 +295,42 @@ export class PluginDataSourceMainServer extends Plugin {
     });
 
     const loadCollections = async () => {
+      const startTime = Date.now();
       this.log.debug('loading custom collections', { method: 'loadCollections' });
       this.app.setMaintainingMessage('loading custom collections');
-      await this.app.db.getRepository<CollectionRepository>('collections').load({
+
+      const collectionsRepo = this.app.db.getRepository<CollectionRepository>('collections');
+      const fieldsRepo = this.app.db.getRepository('fields');
+
+      // 获取统计信息
+      const collectionsCount = await collectionsRepo.count();
+      const fieldsCount = await fieldsRepo.count();
+
+      this.log.info(`Start loading ${collectionsCount} collections and ${fieldsCount} fields...`, {
+        method: 'loadCollections',
+      });
+
+      await collectionsRepo.load({
         filter: this.loadFilter,
       });
+
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
+      this.log.info(
+        `Collections loaded in ${duration}ms (${collectionsCount} collections, ${fieldsCount} fields, avg: ${(
+          duration / (collectionsCount || 1)
+        ).toFixed(2)}ms per collection)`,
+        {
+          method: 'loadCollections',
+          statistics: {
+            duration,
+            collectionsCount,
+            fieldsCount,
+            avgTimePerCollection: (duration / (collectionsCount || 1)).toFixed(2),
+          },
+        },
+      );
     };
 
     this.app.on('beforeStart', loadCollections);
