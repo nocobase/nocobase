@@ -19,7 +19,7 @@ export const formFieldDependsOnSubtableFieldsWithLinkageRules = {
         },
         {
           name: 'result',
-          interface: 'number',
+          interface: 'integer',
         },
       ],
     },
@@ -28,15 +28,15 @@ export const formFieldDependsOnSubtableFieldsWithLinkageRules = {
       fields: [
         {
           name: 'count',
-          interface: 'number',
+          interface: 'integer',
         },
         {
           name: 'price',
-          interface: 'number',
+          interface: 'integer',
         },
         {
           name: 'totalPrice',
-          interface: 'number',
+          interface: 'integer',
         },
       ],
     },

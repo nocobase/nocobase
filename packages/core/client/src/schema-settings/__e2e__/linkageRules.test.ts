@@ -36,15 +36,23 @@ test.describe('linkage rules', () => {
     // 4. 编辑表单中的 result 字段值，应该是由子表格中填入的值计算得出的
     await expect(
       page.getByLabel('block-item-CollectionField-test-form-test.result-result').getByRole('spinbutton'),
-    ).toHaveValue(calcResult(record));
+    ).toHaveValue(String(calcResult(record)));
 
     // 5. 在子表格中新增并输入新的值，result 字段值会自动计算
     await page.getByLabel('action-AssociationField.').click();
-    await page.getByRole('row', { name: 'table-index-3 block-item-' }).getByRole('spinbutton').first().fill('10');
-    await page.getByRole('row', { name: 'table-index-3 block-item-' }).getByRole('spinbutton').nth(1).fill('10');
+    await page
+      .getByRole('row', { name: `table-index-${record.subtable.length + 1} block-item-` })
+      .getByRole('spinbutton')
+      .first()
+      .fill('10');
+    await page
+      .getByRole('row', { name: `table-index-${record.subtable.length + 1} block-item-` })
+      .getByRole('spinbutton')
+      .nth(1)
+      .fill('10');
     await expect(
       page.getByLabel('block-item-CollectionField-test-form-test.result-result').getByRole('spinbutton'),
-    ).toHaveValue(calcResult(record) + 10 * 10);
+    ).toHaveValue(String(calcResult(record) + 10 * 10));
   });
 });
 
