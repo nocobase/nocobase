@@ -18,6 +18,7 @@ export const useActionContext = () => {
   const ctx = useContext(ActionContext);
   const { t } = useTranslation();
   const { modal } = App.useApp();
+  const form = useForm();
 
   return {
     ...ctx,
@@ -30,6 +31,7 @@ export const useActionContext = () => {
             async onOk() {
               ctx.setFormValueChanged(false);
               ctx.setVisible?.(false);
+              form?.reset?.();
             },
           });
         } else {
