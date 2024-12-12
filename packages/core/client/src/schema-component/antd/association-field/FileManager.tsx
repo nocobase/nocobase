@@ -171,12 +171,19 @@ const InternalFileManager = (props) => {
     if (designable) {
       insertSelector(schema.Selector);
     } else {
-      fieldSchema.addProperty('selector', schema.Selector);
+      const selectSchema = fieldSchema.reduceProperties((buf, s) => {
+        if (s['x-component'] === 'AssociationField.Selector') {
+          return s;
+        }
+        return buf;
+      }, null);
+      if (!selectSchema) {
+        fieldSchema.addProperty('selector', schema.Selector);
+      }
     }
     setVisibleSelector(true);
     setSelectedRows([]);
   };
-
   useEffect(() => {
     if (value && Object.keys(value).length > 0) {
       const opts = (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean).map((option) => {
