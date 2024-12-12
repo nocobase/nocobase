@@ -28,7 +28,7 @@ export const Edit = withDynamicSchemaProps((props) => {
   const apiClient = useAPIClient();
   const cdn = useCDN();
   const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
-  const locale = apiClient.auth.locale;
+  const locale = apiClient.auth.locale || 'en-US';
 
   const lang: any = useMemo(() => {
     const currentLang = locale.replace(/-/g, '_');
