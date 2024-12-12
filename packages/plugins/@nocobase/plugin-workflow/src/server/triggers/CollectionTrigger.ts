@@ -222,9 +222,13 @@ export default class CollectionTrigger extends Trigger {
     const ctx = await this.prepare(workflow, values?.data, options);
     const [dataSourceName] = parseCollectionName(workflow.config.collection);
     const { transaction } = options;
-    return this.workflow.trigger(workflow, ctx, {
-      ...options,
-      transaction: this.workflow.useDataSourceTransaction(dataSourceName, transaction),
-    });
+    return this.workflow.trigger(
+      workflow,
+      { ...ctx, stacks: values.stacks },
+      {
+        ...options,
+        transaction: this.workflow.useDataSourceTransaction(dataSourceName, transaction),
+      },
+    );
   }
 }
