@@ -90,16 +90,14 @@ export const FilterItem = observer(
             onChange={onOperatorsChange}
             placeholder={t('Comparision')}
           />
-          <Space>
-            {!operator?.noValue ? (
-              <DynamicComponent value={value} schema={schema} collectionField={collectionField} onChange={setValue} />
-            ) : null}
-            {!props.disabled && (
-              <a role="button" aria-label="icon-close">
-                <CloseCircleOutlined onClick={remove} style={removeStyle} />
-              </a>
-            )}
-          </Space>
+          {!operator?.noValue ? (
+            <DynamicComponent value={value} schema={schema} collectionField={collectionField} onChange={setValue} />
+          ) : null}
+          {!props.disabled && (
+            <a role="button" aria-label="icon-close">
+              <CloseCircleOutlined onClick={remove} style={removeStyle} />
+            </a>
+          )}
         </Space>
       </div>
     );
