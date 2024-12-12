@@ -467,6 +467,8 @@ export class ACL extends EventEmitter {
               }
             }
 
+            const isEmptyFields = resourcerAction.params.fields && resourcerAction.params.fields.length === 0;
+
             resourcerAction.mergeParams(parsedParams, {
               appends: (x, y) => {
                 if (!x) {
@@ -478,6 +480,11 @@ export class ACL extends EventEmitter {
                 return (x as any[]).filter((i) => y.includes(i.split('.').shift()));
               },
             });
+
+            if (isEmptyFields) {
+              resourcerAction.params.fields = [];
+            }
+
             ctx.permission.mergedParams = lodash.cloneDeep(resourcerAction.params);
           }
         } catch (e) {
