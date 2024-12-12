@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.4.10](https://github.com/nocobase/nocobase/compare/v1.4.9...v1.4.10) - 2024-12-12
+
+### 🎉 New Features
+
+- **[Action: Custom request]** Support using 'Current form' variable in custom request buttons ([#5871](https://github.com/nocobase/nocobase/pull/5871)) by @zhangzhonghe
+
+### 🚀 Improvements
+
+- **[Data visualization]** Allows to use foreign keys in query configuration of charts ([#5869](https://github.com/nocobase/nocobase/pull/5869)) by @2013xile
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix issue where file table selector is not display in non-configuration mode when using file select ([#5874](https://github.com/nocobase/nocobase/pull/5874)) by @katherinehhh
+
+- **[Access control]** Fixed issues related to replication records after configuring permissions ([#5839](https://github.com/nocobase/nocobase/pull/5839)) by @chareice
+
+- **[Workflow]** Fix transaction timeout when deleting execution automatically ([#5870](https://github.com/nocobase/nocobase/pull/5870)) by @mytharcher
+
 ## [v1.4.9](https://github.com/nocobase/nocobase/compare/v1.4.8...v1.4.9) - 2024-12-12
 
 ### 🐛 Bug Fixes
