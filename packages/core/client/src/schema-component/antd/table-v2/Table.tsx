@@ -21,10 +21,9 @@ import { useDeepCompareEffect, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
-import React, { FC, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import React, { createContext, FC, MutableRefObject, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useInView } from 'react-intersection-observer';
-import { DndContext, isBulkEditAction, useDesignable, usePopupSettings, useTableSize } from '../..';
+import { DndContext, isBulkEditAction, useCompile, useDesignable, usePopupSettings, useTableSize } from '../..';
 import {
   BlockRequestLoadingContext,
   RecordIndexProvider,
@@ -55,6 +54,7 @@ import { GetStyleRules } from '../../../schema-settings/LinkageRules/useActionVa
 import { HighPerformanceSpin } from '../../common/high-performance-spin/HighPerformanceSpin';
 import { useToken } from '../__builtins__';
 import { useAssociationFieldContext } from '../association-field/hooks';
+import { RenderTextInCell } from './RenderTextInCell';
 import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 
@@ -77,8 +77,6 @@ interface BodyCellComponentProps {
   rowIndex: number;
   isSubTable?: boolean;
 }
-
-const InViewContext = React.createContext(false);
 
 const useArrayField = (props) => {
   const field = useField<ArrayField>();
@@ -173,6 +171,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
   const { current, pageSize } = paginationProps;
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { refresh } = useRefreshTableColumns();
+  const compile = useCompile();
 
   const filterProperties = useCallback(
     (schema) =>
@@ -201,7 +200,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
         }, []);
         const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : columnSchema.name;
         const columnHidden = !!columnSchema['x-component-props']?.['columnHidden'];
-        const { uiSchema, defaultValue } = collection?.getField(dataIndex) || {};
+        const { uiSchema, defaultValue, interface: _interface } = collection?.getField(dataIndex) || {};
 
         if (uiSchema) {
           uiSchema.default = defaultValue;
@@ -225,6 +224,17 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
           ...columnSchema['x-component-props'],
           width: columnHidden && !designable ? 0 : columnSchema['x-component-props']?.width || 100,
           render: (value, record, index) => {
+            const { enableLink } = Object.values(columnSchema.properties)[0]['x-component-props'] || {};
+
+            if (!enableLink && ['sequence', 'input', 'textarea', 'phone', 'email'].includes(_interface)) {
+              return (
+                <RenderTextInCell
+                  value={compile(value || _.get(record, Object.keys(columnSchema.properties)[0]))}
+                  ellipsis={Object.values(columnSchema.properties)[0]?.['x-component-props']?.ellipsis}
+                />
+              );
+            }
+
             return (
               <RefreshComponentProvider refresh={refresh}>
                 <TableCellRender
@@ -315,24 +325,13 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
   return tableColumns;
 };
 
-// How many rows should be displayed on initial render
-const INITIAL_ROWS_NUMBER = 20;
-
 const SortableRow = (props: BodyRowComponentProps) => {
-  const { isInSubTable } = useFlag();
   const { token } = useToken();
   const id = props['data-row-key']?.toString();
   const { setNodeRef, isOver, active, over } = useSortable({
     id,
   });
   const { rowIndex, ...others } = props;
-
-  const { ref, inView } = useInView({
-    threshold: 0,
-    triggerOnce: true,
-    initialInView: !!process.env.__E2E__ || isInSubTable || (rowIndex || 0) < INITIAL_ROWS_NUMBER,
-    skip: !!process.env.__E2E__ || isInSubTable,
-  });
 
   const classObj = useMemo(() => {
     const borderColor = new TinyColor(token.colorSettings).setAlpha(0.6).toHex8String();
@@ -355,20 +354,19 @@ const SortableRow = (props: BodyRowComponentProps) => {
       ? classObj.topActiveClass
       : classObj.bottomActiveClass;
 
-  return (
-    <InViewContext.Provider value={inView}>
-      <tr
-        ref={(node) => {
-          if (active?.id !== id) {
-            setNodeRef(node);
-          }
-          ref(node);
-        }}
-        {...others}
-        className={classNames(props.className, { [className]: active && isOver })}
-      />
-    </InViewContext.Provider>
+  const row = (
+    <tr
+      ref={(node) => {
+        if (active?.id !== id) {
+          setNodeRef(node);
+        }
+      }}
+      {...others}
+      className={classNames(props.className, { [className]: active && isOver })}
+    />
   );
+
+  return row;
 };
 
 const SortHandle = (props) => {
@@ -617,29 +615,17 @@ const BodyRowComponent = React.memo((props: BodyRowComponentProps) => {
 BodyRowComponent.displayName = 'BodyRowComponent';
 
 const InternalBodyCellComponent = React.memo<BodyCellComponentProps>((props) => {
-  const { token } = useToken();
-  const inView = useContext(InViewContext);
-  const isIndex = props.className?.includes('selection-column');
   const { record, schema, rowIndex, isSubTable, ...others } = props;
   const styleRules = schema?.[LinkageRuleDataKeyMap['style']];
   const [dynamicStyle, setDynamicStyle] = useState({});
   const style = useMemo(() => ({ ...props.style, ...dynamicStyle }), [props.style, dynamicStyle]);
-  const skeletonStyle = useMemo(
-    () => ({
-      height: '1em',
-      backgroundColor: token.colorFillSecondary,
-      borderRadius: `${token.borderRadiusSM}px`,
-    }),
-    [token.borderRadiusSM, token.colorFillSecondary],
-  );
 
   return (
     <>
       {/* To improve rendering performance, do not render GetStyleRules component when no style rules are set */}
       {!_.isEmpty(styleRules) && <GetStyleRules record={record} schema={schema} onStyleChange={setDynamicStyle} />}
       <td {...others} className={classNames(props.className, cellClass)} style={style}>
-        {/* Lazy rendering cannot be used in sub-tables. */}
-        {isSubTable || inView || isIndex ? props.children : <div style={skeletonStyle} />}
+        {props.children}
       </td>
     </>
   );
@@ -682,6 +668,12 @@ interface TableProps {
   isSubTable?: boolean;
   value?: any[];
 }
+
+export const TableElementRefContext = createContext<MutableRefObject<HTMLDivElement | null> | null>(null);
+
+export const useTableElementRef = () => {
+  return useContext(TableElementRefContext);
+};
 
 const InternalNocoBaseTable = React.memo(
   (props: {
@@ -726,6 +718,18 @@ const InternalNocoBaseTable = React.memo(
       ...others
     } = props;
     const { token } = useToken();
+    const tableElementRef = useTableElementRef();
+
+    const refCallback = useCallback(
+      (ref) => {
+        if (tableElementRef) {
+          tableElementRef.current = ref;
+        }
+        tableSizeRefCallback(ref);
+      },
+      [tableElementRef, tableSizeRefCallback],
+    );
+
     return (
       <div
         className={cx(
@@ -755,6 +759,9 @@ const InternalNocoBaseTable = React.memo(
                   .ant-table-small .ant-table-cell {
                     padding: 8px ${token.paddingXS}px;
                   }
+                  .ant-table-cell-fix-right {
+                    padding: 8px 16px !important;
+                  }
                 }
               }
             }
@@ -768,7 +775,7 @@ const InternalNocoBaseTable = React.memo(
       >
         <SortableWrapper>
           <AntdTable
-            ref={tableSizeRefCallback as any}
+            ref={refCallback}
             rowKey={defaultRowKey}
             // rowKey={(record) => record.id}
             dataSource={dataSource}
