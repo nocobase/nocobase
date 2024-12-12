@@ -14,15 +14,30 @@ function isNumeric(str: any) {
 }
 
 export class DatetimeNoTzInterface extends DatetimeInterface {
+  protected formatDateTimeToString(dateInfo: {
+    year: string;
+    month: string;
+    day: string;
+    hour?: string;
+    minute?: string;
+    second?: string;
+  }) {
+    const { year, month, day, hour, minute, second } = dateInfo;
+    if (hour !== undefined && minute !== undefined && second !== undefined) {
+      return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+    }
+    return `${year}-${month}-${day}`;
+  }
+
   async toValue(value: any, ctx: any = {}): Promise<any> {
     if (!value) {
       return null;
     }
 
     if (typeof value === 'string') {
-      const match = /^(\d{4})[-/]?(\d{2})[-/]?(\d{2})$/.exec(value);
-      if (match) {
-        return `${match[1]}-${match[2]}-${match[3]}`;
+      const dateInfo = this.parseDateString(value);
+      if (dateInfo) {
+        return this.formatDateTimeToString(dateInfo);
       }
     }
 
