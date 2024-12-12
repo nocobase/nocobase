@@ -305,7 +305,7 @@ const ToManyNester = observer(
                   };
                 }}
                 title={
-                  <Space style={{ gap: 2 }} className="nb-sub-table-addNew">
+                  <Space style={{ gap: 2 }} className="nb-sub-form-addNew">
                     <PlusOutlined /> {t('Add new')}
                   </Space>
                 }
