@@ -456,3 +456,247 @@ export const associationSelectDataScope = {
     },
   ],
 };
+export const usingMultiLevelAssociationFieldValuesInDataScope = {
+  collections: [
+    {
+      name: 'test',
+      fields: [
+        {
+          name: 'a',
+          interface: 'm2m',
+          target: 'A',
+        },
+        {
+          name: 'b',
+          interface: 'm2m',
+          target: 'B',
+        },
+      ],
+    },
+    {
+      name: 'A',
+      fields: [
+        {
+          name: 'b',
+          interface: 'm2m',
+          target: 'B',
+        },
+      ],
+    },
+    {
+      name: 'B',
+    },
+  ],
+  pageSchema: {
+    _isJSONSchemaObject: true,
+    version: '2.0',
+    type: 'void',
+    'x-component': 'Page',
+    properties: {
+      dvf2mwe6bvn: {
+        _isJSONSchemaObject: true,
+        version: '2.0',
+        type: 'void',
+        'x-component': 'Grid',
+        'x-initializer': 'page:addBlock',
+        properties: {
+          '98y2p0ausvb': {
+            _isJSONSchemaObject: true,
+            version: '2.0',
+            type: 'void',
+            'x-component': 'Grid.Row',
+            'x-app-version': '1.4.8',
+            properties: {
+              t865qbsqxhb: {
+                _isJSONSchemaObject: true,
+                version: '2.0',
+                type: 'void',
+                'x-component': 'Grid.Col',
+                'x-app-version': '1.4.8',
+                properties: {
+                  '4ceh9f8smkv': {
+                    _isJSONSchemaObject: true,
+                    version: '2.0',
+                    type: 'void',
+                    'x-acl-action-props': {
+                      skipScopeCheck: true,
+                    },
+                    'x-acl-action': 'test:create',
+                    'x-decorator': 'FormBlockProvider',
+                    'x-use-decorator-props': 'useCreateFormBlockDecoratorProps',
+                    'x-decorator-props': {
+                      dataSource: 'main',
+                      collection: 'test',
+                    },
+                    'x-toolbar': 'BlockSchemaToolbar',
+                    'x-settings': 'blockSettings:createForm',
+                    'x-component': 'CardItem',
+                    'x-app-version': '1.4.8',
+                    properties: {
+                      dq224dw86wj: {
+                        _isJSONSchemaObject: true,
+                        version: '2.0',
+                        type: 'void',
+                        'x-component': 'FormV2',
+                        'x-use-component-props': 'useCreateFormBlockProps',
+                        'x-app-version': '1.4.8',
+                        properties: {
+                          grid: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            'x-component': 'Grid',
+                            'x-initializer': 'form:configureFields',
+                            'x-app-version': '1.4.8',
+                            properties: {
+                              y6j67vnmhw4: {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                'x-component': 'Grid.Row',
+                                'x-app-version': '1.4.8',
+                                properties: {
+                                  bef7a7oph86: {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    'x-component': 'Grid.Col',
+                                    'x-app-version': '1.4.8',
+                                    properties: {
+                                      a: {
+                                        _isJSONSchemaObject: true,
+                                        version: '2.0',
+                                        type: 'string',
+                                        'x-toolbar': 'FormItemSchemaToolbar',
+                                        'x-settings': 'fieldSettings:FormItem',
+                                        'x-component': 'CollectionField',
+                                        'x-decorator': 'FormItem',
+                                        'x-collection-field': 'test.a',
+                                        'x-component-props': {
+                                          fieldNames: {
+                                            label: 'id',
+                                            value: 'id',
+                                          },
+                                        },
+                                        'x-app-version': '1.4.8',
+                                        'x-uid': 'y3gtqj8pdqb',
+                                        'x-async': false,
+                                        'x-index': 1,
+                                      },
+                                    },
+                                    'x-uid': 'xad7ytjjufv',
+                                    'x-async': false,
+                                    'x-index': 1,
+                                  },
+                                },
+                                'x-uid': '4gj0r5upoq0',
+                                'x-async': false,
+                                'x-index': 1,
+                              },
+                              shmpsuanpwa: {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                'x-component': 'Grid.Row',
+                                'x-app-version': '1.4.8',
+                                properties: {
+                                  uzy27mws6no: {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    'x-component': 'Grid.Col',
+                                    'x-app-version': '1.4.8',
+                                    properties: {
+                                      b: {
+                                        'x-uid': '7h0yrs8u2bl',
+                                        _isJSONSchemaObject: true,
+                                        version: '2.0',
+                                        type: 'string',
+                                        'x-toolbar': 'FormItemSchemaToolbar',
+                                        'x-settings': 'fieldSettings:FormItem',
+                                        'x-component': 'CollectionField',
+                                        'x-decorator': 'FormItem',
+                                        'x-collection-field': 'test.b',
+                                        'x-component-props': {
+                                          fieldNames: {
+                                            label: 'id',
+                                            value: 'id',
+                                          },
+                                          service: {
+                                            params: {
+                                              filter: {
+                                                $and: [
+                                                  {
+                                                    id: {
+                                                      $eq: '{{$nForm.a.b.id}}',
+                                                    },
+                                                  },
+                                                ],
+                                              },
+                                            },
+                                          },
+                                        },
+                                        'x-app-version': '1.4.8',
+                                        'x-async': false,
+                                        'x-index': 1,
+                                      },
+                                    },
+                                    'x-uid': 'by3u5cxvah1',
+                                    'x-async': false,
+                                    'x-index': 1,
+                                  },
+                                },
+                                'x-uid': 'gdn131j2208',
+                                'x-async': false,
+                                'x-index': 2,
+                              },
+                            },
+                            'x-uid': '9navauip2qh',
+                            'x-async': false,
+                            'x-index': 1,
+                          },
+                          culdrszlt2z: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            'x-initializer': 'createForm:configureActions',
+                            'x-component': 'ActionBar',
+                            'x-component-props': {
+                              layout: 'one-column',
+                            },
+                            'x-app-version': '1.4.8',
+                            'x-uid': 'l8uhg0tzxdh',
+                            'x-async': false,
+                            'x-index': 2,
+                          },
+                        },
+                        'x-uid': 'b4m5no3h8xp',
+                        'x-async': false,
+                        'x-index': 1,
+                      },
+                    },
+                    'x-uid': 'a0lixg1oxfr',
+                    'x-async': false,
+                    'x-index': 1,
+                  },
+                },
+                'x-uid': 'nrbzm8f8wp9',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'co3ws9xtbww',
+            'x-async': false,
+            'x-index': 1,
+          },
+        },
+        'x-uid': 'ybhswoe7nee',
+        'x-async': false,
+        'x-index': 1,
+      },
+    },
+    'x-uid': 'd5c5o9pl70o',
+    'x-async': true,
+    'x-index': 1,
+  },
+};
