@@ -14,6 +14,8 @@ import { PluginMobileClient } from '../index';
 interface MobileAppContextProps {
   showTabBar?: boolean;
   setShowTabBar?: (showTabBar: boolean) => void;
+  showBackButton?: boolean;
+  setShowBackButton?: (showBackButton: boolean) => void;
 }
 
 export const MobileAppContext = createContext<MobileAppContextProps>(undefined);
@@ -30,8 +32,17 @@ export const MobileAppProvider: FC<MobileAppProviderProps> = ({ children }) => {
     _setShowTabBar(showTabBar);
     mobilePlugin.updateOptions({ showTabBar });
   };
+  const [showBackButton, _setShowBackButton] = React.useState(mobilePlugin.getPluginOptions()?.showBackButton ?? true);
+  const setShowBackButton = (showBackButton: boolean) => {
+    _setShowBackButton(showBackButton);
+    mobilePlugin.updateOptions({ showBackButton });
+  };
 
-  return <MobileAppContext.Provider value={{ showTabBar, setShowTabBar }}>{children}</MobileAppContext.Provider>;
+  return (
+    <MobileAppContext.Provider value={{ showTabBar, setShowTabBar, showBackButton, setShowBackButton }}>
+      {children}
+    </MobileAppContext.Provider>
+  );
 };
 
 export const useMobileApp = () => {
