@@ -8,6 +8,7 @@
  */
 
 import lodash from 'lodash';
+import { filterMatch } from '@nocobase/database';
 
 export default {
   name: 'dataSources.collections',
@@ -46,15 +47,9 @@ export default {
 
       const { paginate, filter } = ctx.action.params;
 
-      const filterTitle = lodash.get(filter, '$and.0.title.$includes')?.toLowerCase();
-      const filterName = lodash.get(filter, '$and.0.name.$includes')?.toLowerCase();
-
       const collections = lodash.sortBy(
         dataSource.collectionManager.getCollections().filter((collection) => {
-          return (
-            (!filterTitle || lodash.get(collection, 'options.title')?.toLowerCase().includes(filterTitle)) &&
-            (!filterName || collection.options.name.toLowerCase().includes(filterName))
-          );
+          return filterMatch(collection.options, filter);
         }),
         'name',
       );
