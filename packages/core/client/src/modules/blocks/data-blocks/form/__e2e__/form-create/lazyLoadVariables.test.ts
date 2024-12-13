@@ -28,7 +28,7 @@ test.describe('variables with default value', () => {
         .getByRole('textbox'),
     ).toHaveValue('1');
 
-    // https://nocobase.height.app/T-2805 ----------------------------------------------------------------------
+    // ----------------------------------------------------------------------
     await page
       .getByLabel('block-item-CollectionField-general-form-general.m2oField0-m2oField0')
       .getByTestId('select-object-single')

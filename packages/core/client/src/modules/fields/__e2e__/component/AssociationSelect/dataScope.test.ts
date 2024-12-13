@@ -8,7 +8,7 @@
  */
 
 import { expect, test } from '@nocobase/test/e2e';
-import { associationSelectDataScope } from './templatesOfBug';
+import { associationSelectDataScope, usingMultiLevelAssociationFieldValuesInDataScope } from './templatesOfBug';
 
 test.describe('AssociationSelect ', () => {
   test('data scope linkage with other association select field', async ({ page, mockPage, mockRecord }) => {
@@ -41,5 +41,65 @@ test.describe('AssociationSelect ', () => {
     const filter1 = queryParams1.get('filter');
     //请求参数符合预期
     await expect(JSON.parse(filter1)).toEqual({ $and: [{ school: { id: { $eq: 1 } } }] });
+  });
+
+  test('using multi-level association field values in data scope', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(usingMultiLevelAssociationFieldValuesInDataScope).waitForInit();
+    await nocoPage.goto();
+    const record = await mockRecord('test', 2);
+
+    // 1. 一开始字段 b 的下拉列表为空
+    await page
+      .getByLabel('block-item-CollectionField-test-form-test.b-b')
+      .getByTestId('select-object-multiple')
+      .click();
+    await expect(page.getByText('No data')).toBeVisible();
+
+    // 2. 当给字段 a 选择一个值后，字段 b 的下拉列表中会显示符合条件的值
+    await page
+      .getByLabel('block-item-CollectionField-test-form-test.a-a')
+      .getByTestId('select-object-multiple')
+      .click();
+    await page.getByRole('option', { name: record.a[0].id }).click();
+    // 关闭下拉框
+    await page.click('body', {
+      position: {
+        x: 0,
+        y: 0,
+      },
+    });
+    await page
+      .getByLabel('block-item-CollectionField-test-form-test.b-b')
+      .getByTestId('select-object-multiple')
+      .click();
+    for (const item of record.a[0].b) {
+      await expect(page.getByRole('option', { name: item.id })).toBeVisible();
+    }
+
+    // 3. 当给字段 a 的值变化时，字段 b 的下拉列表也会变化
+    await page.click('body', {
+      position: {
+        x: 0,
+        y: 0,
+      },
+    });
+    await page
+      .getByLabel('block-item-CollectionField-test-form-test.a-a')
+      .getByTestId('select-object-multiple')
+      .click();
+    await page.getByRole('option', { name: record.a[1].id }).click();
+    await page.click('body', {
+      position: {
+        x: 0,
+        y: 0,
+      },
+    });
+    await page
+      .getByLabel('block-item-CollectionField-test-form-test.b-b')
+      .getByTestId('select-object-multiple')
+      .click();
+    for (const item of record.a[1].b) {
+      await expect(page.getByRole('option', { name: item.id })).toBeVisible();
+    }
   });
 });
