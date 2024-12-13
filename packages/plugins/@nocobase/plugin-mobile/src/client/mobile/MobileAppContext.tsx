@@ -9,6 +9,7 @@
 
 import { usePlugin } from '@nocobase/client';
 import React, { FC, createContext } from 'react';
+import { css } from '@emotion/css';
 import { PluginMobileClient } from '../index';
 
 interface MobileAppContextProps {
