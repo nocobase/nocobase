@@ -40,7 +40,15 @@ export const MobileAppProvider: FC<MobileAppProviderProps> = ({ children }) => {
 
   return (
     <MobileAppContext.Provider value={{ showTabBar, setShowTabBar, showBackButton, setShowBackButton }}>
-      {children}
+      <div
+        className={css`
+          .nb-message-back-action .adm-nav-bar-left {
+            visibility: ${showBackButton ? 'visible' : 'hidden'};
+          }
+        `}
+      >
+        {children}
+      </div>
     </MobileAppContext.Provider>
   );
 };
