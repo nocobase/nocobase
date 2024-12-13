@@ -18,7 +18,7 @@ export async function dataTemplate(ctx: Context, next) {
 
   if (isTemplate && actionName === 'get') {
     ctx.body = traverseJSON(JSON.parse(JSON.stringify(ctx.body)), {
-      collection: ctx.db.getCollection(resourceName),
+      collection: ctx.getCurrentRepository().collection,
       include: [...(fields || []), ...(appends || [])],
     });
   }
