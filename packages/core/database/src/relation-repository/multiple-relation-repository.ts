@@ -20,10 +20,11 @@ import {
   TargetKey,
   TK,
   UpdateOptions,
+  Repository,
 } from '../repository';
 import { updateModelByValues } from '../update-associations';
 import { UpdateGuard } from '../update-guard';
-import { RelationRepository, transaction } from './relation-repository';
+import { RelationRepository, transaction, FirstOrCreateOptions } from './relation-repository';
 
 type FindAndCountOptions = CommonFindOptions;
 
@@ -204,5 +205,45 @@ export abstract class MultipleRelationRepository extends RelationRepository {
 
   protected accessors() {
     return <MultiAssociationAccessors>super.accessors();
+  }
+
+  /**
+   * Get the first record matching the attributes or create it.
+   */
+  @transaction()
+  async firstOrCreate(options: FirstOrCreateOptions) {
+    const { filterKeys, values, transaction, hooks } = options;
+    const filter = Repository.valuesToFilter(values, filterKeys);
+
+    const instance = await this.findOne({ filter, transaction });
+
+    if (instance) {
+      return instance;
+    }
+
+    return this.create({ values, transaction, hooks });
+  }
+
+  /**
+   * Get the first record matching the attributes or update it.
+   */
+  @transaction()
+  async updateOrCreate(options: FirstOrCreateOptions) {
+    const { filterKeys, values, transaction, hooks } = options;
+    const filter = Repository.valuesToFilter(values, filterKeys);
+
+    const instance = await this.findOne({ filter, transaction });
+
+    if (instance) {
+      const updated = await this.update({
+        filter,
+        values,
+        transaction,
+        hooks,
+      });
+      return updated[0];
+    }
+
+    return this.create({ values, transaction, hooks });
   }
 }

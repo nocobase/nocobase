@@ -16,13 +16,20 @@ import { RelationField } from '../fields/relation-field';
 import FilterParser from '../filter-parser';
 import { Model } from '../model';
 import { OptionsParser } from '../options-parser';
-import { CreateOptions, Filter, FindOptions, TargetKey } from '../repository';
+import { CreateOptions, Filter, FindOptions, TargetKey, Repository } from '../repository';
 import { updateAssociations } from '../update-associations';
 import { UpdateGuard } from '../update-guard';
 
 export const transaction = transactionWrapperBuilder(function () {
   return this.sourceCollection.model.sequelize.transaction();
 });
+
+export interface FirstOrCreateOptions {
+  filterKeys: string[];
+  values?: any;
+  transaction?: Transaction;
+  hooks?: boolean;
+}
 
 export abstract class RelationRepository {
   sourceCollection: Collection;
@@ -222,5 +229,21 @@ export abstract class RelationRepository {
     }
 
     return null;
+  }
+
+  /**
+   * Get the first record matching the attributes or create it.
+   * This method should be implemented by subclasses that support it.
+   */
+  async firstOrCreate(options: FirstOrCreateOptions): Promise<any> {
+    throw new Error('This relation type does not support firstOrCreate');
+  }
+
+  /**
+   * Get the first record matching the attributes or update it.
+   * This method should be implemented by subclasses that support it.
+   */
+  async updateOrCreate(options: FirstOrCreateOptions): Promise<any> {
+    throw new Error('This relation type does not support updateOrCreate');
   }
 }

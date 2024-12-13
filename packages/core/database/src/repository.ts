@@ -240,6 +240,11 @@ interface FirstOrCreateOptions extends Transactionable {
   hooks?: boolean;
 }
 
+interface RelationRepositoryOptions extends Transactionable {
+  values?: Values;
+  hooks?: boolean;
+}
+
 export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes> {
   database: Database;
   collection: Collection;

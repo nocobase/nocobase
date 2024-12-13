@@ -234,6 +234,108 @@ describe('has many repository', () => {
     expect(posts.length).toEqual(2);
   });
 
+  test('firstOrCreate - should create when not exists', async () => {
+    const u1 = await User.repository.create({
+      values: { name: 'u1' },
+    });
+
+    const UserPostRepository = new HasManyRepository(User, 'posts', u1.id);
+    const post = await UserPostRepository.firstOrCreate({
+      filterKeys: ['title'],
+      values: {
+        title: 't1',
+        status: 'draft',
+      },
+    });
+
+    expect(post.title).toBe('t1');
+    expect(post.status).toBe('draft');
+    expect(post.userId).toBe(u1.id);
+
+    // Verify that the record was actually created
+    const found = await UserPostRepository.findOne({
+      filter: {
+        title: 't1',
+      },
+    });
+    expect(found.id).toBe(post.id);
+  });
+
+  test('firstOrCreate - should return existing record when exists', async () => {
+    const u1 = await User.repository.create({
+      values: { name: 'u1' },
+    });
+
+    const UserPostRepository = new HasManyRepository(User, 'posts', u1.id);
+
+    // Create an existing record first
+    const existing = await UserPostRepository.create({
+      values: {
+        title: 't1',
+        status: 'published',
+      },
+    });
+
+    // Try firstOrCreate with same title
+    const post = await UserPostRepository.firstOrCreate({
+      filterKeys: ['title'],
+      values: {
+        title: 't1',
+        status: 'draft', // Different status
+      },
+    });
+
+    expect(post.id).toBe(existing.id);
+    expect(post.status).toBe('published'); // Status should remain unchanged
+  });
+
+  test('updateOrCreate - should create when not exists', async () => {
+    const u1 = await User.repository.create({
+      values: { name: 'u1' },
+    });
+
+    const UserPostRepository = new HasManyRepository(User, 'posts', u1.id);
+    const post = await UserPostRepository.updateOrCreate({
+      filterKeys: ['title'],
+      values: {
+        title: 't1',
+        status: 'draft',
+      },
+    });
+
+    expect(post.title).toBe('t1');
+    expect(post.status).toBe('draft');
+    expect(post.userId).toBe(u1.id);
+  });
+
+  test('updateOrCreate - should update when exists', async () => {
+    const u1 = await User.repository.create({
+      values: { name: 'u1' },
+    });
+
+    const UserPostRepository = new HasManyRepository(User, 'posts', u1.id);
+
+    // Create an existing record first
+    const existing = await UserPostRepository.create({
+      values: {
+        title: 't1',
+        status: 'published',
+      },
+    });
+
+    // Use updateOrCreate to update the record
+    const post = await UserPostRepository.updateOrCreate({
+      filterKeys: ['title'],
+      values: {
+        title: 't1',
+        status: 'draft',
+      },
+    });
+
+    expect(post.id).toBe(existing.id);
+    expect(post.status).toBe('draft'); // Status should be updated
+  });
+
   test('update', async () => {
     const u1 = await User.repository.create({
       values: { name: 'u1' },
