@@ -39,7 +39,7 @@ export const useSetChartSize = (
           setHeight(entry.contentRect.width * ratio);
           return;
         }
-        setHeight(entry.contentRect.height);
+        setHeight(entry.contentRect.height > 400 ? entry.contentRect.height : 400);
       });
     });
     observer.observe(el);
