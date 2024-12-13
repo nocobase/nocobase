@@ -13,6 +13,7 @@ import { XlsxImporter } from '../services/xlsx-importer';
 import XLSX from 'xlsx';
 import * as process from 'node:process';
 import moment from 'moment';
+import dayjs = require('dayjs');
 
 describe('xlsx importer', () => {
   let app: MockServer;
@@ -192,7 +193,15 @@ describe('xlsx importer', () => {
 
       const worksheet = template.Sheets[template.SheetNames[0]];
 
-      XLSX.utils.sheet_add_aoa(worksheet, [['test', 77383]], { origin: 'A2' });
+      XLSX.utils.sheet_add_aoa(
+        worksheet,
+        [
+          ['test', 77383],
+          ['test2', 20241112],
+          ['test3', '2024-11-12'],
+        ],
+        { origin: 'A2' },
+      );
 
       const importer = new XlsxImporter({
         collectionManager: app.mainDataSource.collectionManager,
@@ -205,6 +214,8 @@ describe('xlsx importer', () => {
 
       const users = (await User.repository.find()).map((user) => user.toJSON());
       expect(moment(users[0]['unixTimestamp']).toISOString()).toEqual('2111-11-12T00:00:00.000Z');
+      expect(moment(users[1]['unixTimestamp'])).toBeDefined();
+      expect(moment(users[2]['unixTimestamp'])).toBeDefined();
     });
 
     it('should import with datetimeTz', async () => {
