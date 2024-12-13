@@ -13,7 +13,6 @@ import { XlsxImporter } from '../services/xlsx-importer';
 import XLSX from 'xlsx';
 import * as process from 'node:process';
 import moment from 'moment';
-import dayjs = require('dayjs');
 
 describe('xlsx importer', () => {
   let app: MockServer;
