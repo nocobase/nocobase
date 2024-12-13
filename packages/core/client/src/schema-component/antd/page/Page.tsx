@@ -12,12 +12,12 @@ import { PageHeader as AntdPageHeader } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
 import { Schema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
-import { Button, Tabs } from 'antd';
+import { Button, Tabs, Result } from 'antd';
 import classNames from 'classnames';
 import React, { FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
-import { NavigateFunction, Outlet, useOutletContext } from 'react-router-dom';
+import { NavigateFunction, Outlet, useOutletContext, useParams } from 'react-router-dom';
 import { FormDialog } from '..';
 import { antTableCell } from '../../../acl/style';
 import { useRequest } from '../../../api-client';
@@ -27,6 +27,7 @@ import {
   useCurrentTabUid,
   useNavigateNoUpdate,
   useRouterBasename,
+  useCurrentPageUid,
 } from '../../../application/CustomRouterContextProvider';
 import { useDocumentTitle } from '../../../document-title';
 import { useGlobalTheme } from '../../../global-theme';
@@ -42,11 +43,40 @@ import { ErrorFallback } from '../error-fallback';
 import { useStyles } from './Page.style';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 import { PopupRouteContextResetter } from './PopupRouteContextResetter';
+import { useACLRoleContext } from '../../../';
 
 interface PageProps {
   currentTabUid: string;
   className?: string;
 }
+
+const PageContentProvider = (props) => {
+  const ctx = useACLRoleContext();
+  const currentPageUid = useCurrentPageUid();
+  const { t } = useTranslation();
+
+  if (ctx.allowMenuItemIds.includes(currentPageUid) || ctx.allowAll) {
+    return props.children;
+  }
+  return (
+    <Result
+      style={{ position: 'absolute', right: '50%' }}
+      status="403"
+      title="403"
+      subTitle={t('Sorry, you are not authorized to access this page.')}
+      extra={
+        <Button
+          type="primary"
+          onClick={() => {
+            history.back();
+          }}
+        >
+          {t('Back')}
+        </Button>
+      }
+    />
+  );
+};
 
 const InternalPage = React.memo((props: PageProps) => {
   const fieldSchema = useFieldSchema();
@@ -65,9 +95,8 @@ const InternalPage = React.memo((props: PageProps) => {
     () => ({ loading, disablePageHeader, enablePageTabs, fieldSchema, tabUid: currentTabUid }),
     [currentTabUid, disablePageHeader, enablePageTabs, fieldSchema, loading],
   );
-
   return (
-    <>
+    <PageContentProvider>
       <NocoBasePageHeader activeKey={activeKey} className={props.className} />
       <div className="nb-page-wrapper">
         <ErrorBoundary FallbackComponent={ErrorFallback} onError={console.error}>
@@ -89,7 +118,7 @@ const InternalPage = React.memo((props: PageProps) => {
           )}
         </ErrorBoundary>
       </div>
-    </>
+    </PageContentProvider>
   );
 });
 
