@@ -11,8 +11,7 @@ import { expect, test } from '@nocobase/test/e2e';
 import { ellipsis } from './templates';
 
 test.describe('ellipsis', () => {
-  // 手动操作是正常的，先 skip
-  test.skip('Input & Input.URL & Input.TextArea & Input.JSON & RichText & Markdown & MarkdownVditor', async ({
+  test('Input & Input.URL & Input.TextArea & Input.JSON & RichText & Markdown & MarkdownVditor', async ({
     page,
     mockPage,
     mockRecord,
