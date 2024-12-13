@@ -19,7 +19,7 @@ import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { compatibleDataId } from '../../../schema-settings/DataTemplates/FormDataTemplates';
 import { useToken } from '../__builtins__';
 import { RemoteSelect } from '../remote-select';
-import { useDataSourceHeaders, useDataSourceKey } from '../../../data-source/';
+import { useDataSourceHeaders, useDataSourceKey } from '../../../data-source';
 
 export interface ITemplate {
   config?: {
@@ -217,6 +217,7 @@ function findDataTemplates(fieldSchema): ITemplate {
 export async function fetchTemplateData(
   api,
   template: { collection: string; dataId: number; fields: string[] },
+  t,
   headers?,
 ) {
   if (template.fields.length === 0 || !template.dataId) {
