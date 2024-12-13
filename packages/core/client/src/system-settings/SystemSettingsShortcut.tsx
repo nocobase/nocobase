@@ -37,16 +37,16 @@ const useCloseAction = () => {
 const useSystemSettingsValues = (options) => {
   const { visible } = useActionContext();
   const result = useSystemSettings();
-  return useRequest(() => Promise.resolve(result.data), {
+  return useRequest(() => Promise.resolve(result?.data), {
     ...options,
-    refreshDeps: [visible],
+    refreshDeps: [visible, result?.data],
   });
 };
 
 const useSaveSystemSettingsValues = () => {
   const { setVisible } = useActionContext();
   const form = useForm();
-  const { mutate, data } = useSystemSettings();
+  const { mutate, data } = useSystemSettings() || {};
   const api = useAPIClient();
   const { t } = useTranslation();
   return {

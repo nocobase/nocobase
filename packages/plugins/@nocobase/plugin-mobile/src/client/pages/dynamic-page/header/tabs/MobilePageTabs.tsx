@@ -23,7 +23,7 @@ export const MobilePageTabs: FC = () => {
   const { displayTabs = false } = useMobilePage();
 
   const navigate = useNavigate();
-  const { styles } = useStyles();
+  const { componentCls, hashId } = useStyles();
   const { tabSchemaUid } = useParams<{ tabSchemaUid: string }>();
   const [activeKey, setActiveKey] = React.useState<string>(() => {
     return tabSchemaUid || activeTabBarItem?.children?.[0]?.schemaUid;
@@ -52,9 +52,9 @@ export const MobilePageTabs: FC = () => {
   if (!displayTabs) return null;
 
   return (
-    <div className={styles.mobilePageTabs} data-testid="mobile-page-tabs">
+    <div className={`${componentCls} ${hashId}`} data-testid="mobile-page-tabs">
       <DndContext onDragEnd={handleDragEnd}>
-        <Tabs activeKey={activeKey} onChange={handleChange} className={styles.mobilePageTabsList}>
+        <Tabs activeKey={activeKey} onChange={handleChange} className="nb-mobile-page-tabs-list">
           {activeTabBarItem.children?.map((item) => (
             <Tabs.Tab
               data-testid={`mobile-page-tabs-${item.title}`}

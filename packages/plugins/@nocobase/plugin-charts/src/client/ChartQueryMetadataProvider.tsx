@@ -28,6 +28,9 @@ const options = {
 };
 
 export const ChartQueryMetadataProvider: React.FC = (props) => {
+  // TODO：旧版插件已弃用，待删除
+  return <>{props.children}</>;
+
   const api = useAPIClient();
   const location = useLocation();
 

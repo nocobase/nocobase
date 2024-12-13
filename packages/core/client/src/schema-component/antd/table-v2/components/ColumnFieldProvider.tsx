@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RecursionField } from '@formily/react';
 import React, { useMemo } from 'react';
 import { useCollection } from '../../../../data-source';
+import { NocoBaseRecursionField } from '../../../../formily/NocoBaseRecursionField';
 import { useRecord } from '../../../../record-provider';
 
 export const ColumnFieldProvider = (props: { schema: any; basePath: any; children: any }) => {
@@ -45,7 +45,7 @@ export const ColumnFieldProvider = (props: { schema: any; basePath: any; childre
         },
       },
     };
-    return <RecursionField basePath={basePath} schema={newSchema} onlyRenderProperties />;
+    return <NocoBaseRecursionField basePath={basePath} schema={newSchema} onlyRenderProperties isUseFormilyField />;
   }
   return props.children;
 };

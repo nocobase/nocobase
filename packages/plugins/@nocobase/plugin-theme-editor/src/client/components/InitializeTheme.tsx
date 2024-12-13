@@ -9,15 +9,14 @@
 
 import { defaultTheme as presetTheme, useAPIClient, useCurrentUserContext, useGlobalTheme } from '@nocobase/client';
 import { error } from '@nocobase/utils/client';
-import { Spin } from 'antd';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { changeAlgorithmFromFunctionToString } from '../utils/changeAlgorithmFromFunctionToString';
 import { changeAlgorithmFromStringToFunction } from '../utils/changeAlgorithmFromStringToFunction';
 import { useThemeListContext } from './ThemeListProvider';
 
 const ThemeIdContext = React.createContext<{
-  currentThemeId: number;
-  defaultThemeId: number;
+  currentThemeId?: number;
+  defaultThemeId?: number;
 }>({} as any);
 
 export const useThemeId = () => {
@@ -75,24 +74,15 @@ const InitializeTheme: React.FC = ({ children }) => {
     }
   }, [api.auth, currentUser?.data?.data?.systemSettings?.themeId, data, run, setTheme, defaultTheme]);
 
-  if (loading && !data) {
-    return (
-      <div style={{ textAlign: 'center', marginTop: 20 }}>
-        <Spin />
-      </div>
-    );
-  }
+  const value =
+    (loading && !data) || currentUser.loading
+      ? {}
+      : {
+          currentThemeId: themeId.current,
+          defaultThemeId: defaultTheme?.id,
+        };
 
-  return (
-    <ThemeIdContext.Provider
-      value={{
-        currentThemeId: themeId.current,
-        defaultThemeId: defaultTheme?.id,
-      }}
-    >
-      {children}
-    </ThemeIdContext.Provider>
-  );
+  return <ThemeIdContext.Provider value={value}>{children}</ThemeIdContext.Provider>;
 };
 
 InitializeTheme.displayName = 'InitializeTheme';

@@ -12,7 +12,11 @@ import { useCurrentAppInfo } from '../../appInfo';
 const useDialect = () => {
   const {
     data: { database },
-  } = useCurrentAppInfo();
+  } = useCurrentAppInfo() || {
+    data: {
+      database: {} as any,
+    },
+  };
 
   const isDialect = (dialect: string) => database?.dialect === dialect;
 

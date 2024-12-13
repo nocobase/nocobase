@@ -7,25 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createStyles } from 'antd-style';
+import { genStyleHook } from '@nocobase/client';
 
-export const useStyles = createStyles(() => ({
-  mobilePageNavigationBar: {
-    '.adm-nav-bar': {
-      maxWidth: '100%',
-      height: 49,
-      overflow: 'hidden',
+export const useStyles = genStyleHook('nb-mobile-page-navigation-bar', (token) => {
+  const { componentCls } = token;
+  return {
+    [componentCls]: {
+      '.adm-nav-bar': {
+        maxWidth: '100%',
+        height: 49,
+        overflow: 'hidden',
 
-      '.adm-nav-bar-left': {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'flex-start',
-      },
-      '.adm-nav-bar-right': {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
+        '.adm-nav-bar-left': {
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+        },
+        '.adm-nav-bar-right': {
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-end',
+        },
       },
     },
-  },
-}));
+  };
+});

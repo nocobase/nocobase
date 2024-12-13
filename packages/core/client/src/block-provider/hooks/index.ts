@@ -18,13 +18,13 @@ import _ from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
 import qs from 'qs';
-import { ChangeEvent, useCallback, useContext, useEffect, useMemo } from 'react';
+import { ChangeEvent, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavigateFunction } from 'react-router-dom';
-import { useReactToPrint } from 'react-to-print';
 import {
   AssociationFilter,
   useCollection,
+  useCollectionManager,
   useCollectionRecord,
   useDataSourceHeaders,
   useFormActiveFields,
@@ -437,15 +437,15 @@ export const updateFilterTargets = (fieldSchema, targets: FilterTarget['targets'
 const useDoFilter = () => {
   const form = useForm();
   const { getDataBlocks } = useFilterBlock();
-  const { getCollectionJoinField } = useCollectionManager_deprecated();
+  const cm = useCollectionManager();
   const { getOperators } = useOperators();
   const fieldSchema = useFieldSchema();
   const { name } = useCollection();
   const { targets = [], uid } = useMemo(() => findFilterTargets(fieldSchema), [fieldSchema]);
 
   const getFilterFromCurrentForm = useCallback(() => {
-    return removeNullCondition(transformToFilter(form.values, getOperators(), getCollectionJoinField, name));
-  }, [form.values, getCollectionJoinField, getOperators, name]);
+    return removeNullCondition(transformToFilter(form.values, getOperators(), cm.getCollectionField.bind(cm), name));
+  }, [form.values, cm, getOperators, name]);
 
   const doFilter = useCallback(
     async ({ doNothingWhenFilterIsEmpty = false } = {}) => {
@@ -495,7 +495,11 @@ const useDoFilter = () => {
 
   // 这里的代码是为了实现：筛选表单的筛选操作在首次渲染时自动执行一次
   useEffect(() => {
-    doFilter({ doNothingWhenFilterIsEmpty: true });
+    // 使用 setTimeout 是为了等待筛选表单的变量解析完成，否则会因为获取的 filter 为空而导致筛选表单的筛选操作不执行。
+    // 另外，如果不加 100 毫秒的延迟，会导致数据区块列表更新后，不触发筛选操作的问题。
+    setTimeout(() => {
+      doFilter({ doNothingWhenFilterIsEmpty: true });
+    }, 100);
   }, [getDataBlocks().length]);
 
   return {
@@ -1091,27 +1095,6 @@ export const useDisassociateActionProps = () => {
   };
 };
 
-export const useDetailPrintActionProps = () => {
-  const { formBlockRef } = useFormBlockContext();
-
-  const printHandler = useReactToPrint({
-    content: () => formBlockRef.current,
-    pageStyle: `@media print {
-        * {
-          margin: 0;
-        }
-        :not(.ant-formily-item-control-content-component) > div.ant-formily-layout>div:first-child {
-          overflow: hidden; height: 0;
-        }
-      }`,
-  });
-  return {
-    async onClick() {
-      printHandler();
-    },
-  };
-};
-
 export const useBulkDestroyActionProps = () => {
   const { field } = useBlockRequestContext();
   const { resource, service } = useBlockRequestContext();
@@ -1295,12 +1278,12 @@ export const useAssociationFilterBlockProps = () => {
   const field = useField();
   const { props: blockProps } = useBlockRequestContext();
   const headers = useDataSourceHeaders(blockProps?.dataSource);
-  const cm = useCollectionManager_deprecated();
+  const cm = useCollectionManager();
   const { filter, parseVariableLoading } = useParsedFilter({ filterOption: field.componentProps?.params?.filter });
 
   let list, handleSearchInput, params, run, data, valueKey, labelKey, filterKey;
 
-  valueKey = collectionField?.target ? cm.getCollection(collectionField.target)?.getPrimaryKey() : 'id';
+  valueKey = collectionField?.target ? cm?.getCollection(collectionField.target)?.getPrimaryKey() : 'id';
   labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
 
   // eslint-disable-next-line prefer-const
@@ -1606,8 +1589,9 @@ export const getAppends = ({
 export const useAssociationNames = (dataSource?: string) => {
   const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated(dataSource);
   const fieldSchema = useFieldSchema();
+  const prevAppends = useRef(null);
 
-  const getAssociationAppends = () => {
+  const getAssociationAppends = useCallback(() => {
     const updateAssociationValues = new Set([]);
     let appends = new Set([]);
 
@@ -1622,10 +1606,19 @@ export const useAssociationNames = (dataSource?: string) => {
     });
     appends = fillParentFields(appends);
 
-    console.log('appends', appends);
+    const newAppends = [...appends];
+    const newUpdateAssociationValues = [...updateAssociationValues];
 
-    return { appends: [...appends], updateAssociationValues: [...updateAssociationValues] };
-  };
+    const result = {
+      appends: _.isEqual(prevAppends.current, newAppends) ? prevAppends.current : newAppends,
+      // `updateAssociationValues` needs to be recreated each time to ensure test case passes in: core/client/src/modules/blocks/data-blocks/table/__e2e__/schemaSettings.test.ts:886:9
+      updateAssociationValues: newUpdateAssociationValues,
+    };
+
+    prevAppends.current = result.appends;
+
+    return result;
+  }, [dataSource, fieldSchema, getCollection, getCollectionJoinField]);
 
   return { getAssociationAppends };
 };

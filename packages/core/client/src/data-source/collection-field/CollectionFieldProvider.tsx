@@ -38,7 +38,7 @@ export const CollectionFieldProvider: FC<CollectionFieldProviderProps> = (props)
       field ||
       collection.getField(field?.name || name)
     );
-  }, [collection, fieldSchema, name, collectionManager]);
+  }, [collection, fieldSchema, collectionManager, name]);
 
   if (!value && allowNull) {
     return <>{children}</>;

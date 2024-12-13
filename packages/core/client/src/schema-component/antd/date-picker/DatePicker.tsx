@@ -7,18 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
+import { connect, mapProps, mapReadPretty, useField, useFieldSchema, observer } from '@formily/react';
 import { DatePicker as AntdDatePicker, DatePickerProps as AntdDatePickerProps, Space, Select } from 'antd';
 import { RangePickerProps } from 'antd/es/date-picker';
 import dayjs from 'dayjs';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getPickerFormat } from '@nocobase/utils/client';
 import { useTranslation } from 'react-i18next';
 import { ReadPretty, ReadPrettyComposed } from './ReadPretty';
 import { getDateRanges, mapDatePicker, mapRangePicker, inferPickerType } from './util';
 import { useCompile } from '../../';
 import { useVariables, useLocalVariables, isVariable } from '../../../variables';
-
+import { autorun } from '@formily/reactive';
 interface IDatePickerProps {
   utc?: boolean;
 }
@@ -55,86 +55,100 @@ export const DatePicker: ComposedDatePicker = (props: any) => {
   const value = Array.isArray(props.value) ? props.value[0] : props.value;
   const { parseVariable } = useVariables();
   const localVariables = useLocalVariables();
-  let disabledDate;
-  let disabledTime;
-  // 设置了日期范围限制条件
-  if (props._maxDate || props._minDate) {
-    let minDateTime = dayjs(props._minDate);
-    let maxDateTime = dayjs(props._maxDate);
-    // 如果使用了变量先进行变量解析
-    if (isVariable(props._maxDate)) {
-      parseVariable(props._maxDate, localVariables)
-        .then((result) => {
-          maxDateTime = dayjs(result.value);
-        })
-        .catch((err) => console.error(err));
-    }
-    if (isVariable(props._minDate)) {
-      parseVariable(props._minDate, localVariables)
-        .then((result) => {
-          minDateTime = dayjs(result.value);
-        })
-        .catch((err) => console.error(err));
-    }
+  const [disabledDate, setDisabledDate] = useState(null);
+  const [disabledTime, setDisabledTime] = useState(null);
+  const disposeRef = useRef(null);
 
-    // 根据最小日期和最大日期限定日期时间
-    disabledDate = (current) => {
-      // 确保 current 是一个 dayjs 对象
-      const currentDate = dayjs(current);
-      return currentDate.isBefore(minDateTime, 'minute') || currentDate.isAfter(maxDateTime, 'minute');
+  useEffect(() => {
+    if (disposeRef.current) {
+      disposeRef.current();
+    }
+    disposeRef.current = autorun(() => {
+      limitDate();
+    });
+    return () => {
+      disposeRef.current();
     };
+  }, [props._maxDate, props._minDate, localVariables, parseVariable]);
 
-    // 禁用时分秒
-    disabledTime = (current) => {
-      if (!current || !minDateTime || !maxDateTime) {
-        return { disabledHours: () => [], disabledMinutes: () => [], disabledSeconds: () => [] };
+  const limitDate = async () => {
+    if (props._maxDate || props._minDate) {
+      let minDateTimePromise = Promise.resolve(dayjs(props._minDate));
+      let maxDateTimePromise = Promise.resolve(dayjs(props._maxDate));
+
+      if (isVariable(props._maxDate)) {
+        maxDateTimePromise = parseVariable(props._maxDate, localVariables).then((result) => dayjs(result.value));
+      }
+      if (isVariable(props._minDate)) {
+        minDateTimePromise = parseVariable(props._minDate, localVariables).then((result) => dayjs(result.value));
       }
 
-      const currentDate = dayjs(current);
-      const hours = [];
-      const minutes = [];
-      const seconds = [];
+      const [minDateTime, maxDateTime] = await Promise.all([minDateTimePromise, maxDateTimePromise]);
 
-      // 如果是 minDate 那天，则禁用早于 minDateTime 的时间
-      if (currentDate.isSame(minDateTime, 'day')) {
-        for (let hour = 0; hour < minDateTime.hour(); hour++) {
-          hours.push(hour);
-        }
-        for (let minute = 0; minute < minDateTime.minute(); minute++) {
-          minutes.push(minute);
-        }
-        for (let second = 0; second < minDateTime.second(); second++) {
-          seconds.push(second);
-        }
-      }
-
-      // 如果是 maxDate 那天，则禁用晚于 maxDateTime 的时间
-      if (currentDate.isSame(maxDateTime, 'day')) {
-        for (let hour = maxDateTime.hour() + 1; hour <= 23; hour++) {
-          hours.push(hour);
-        }
-        for (let minute = maxDateTime.minute() + 1; minute <= 59; minute++) {
-          minutes.push(minute);
-        }
-        for (let second = maxDateTime.second() + 1; second <= 59; second++) {
-          seconds.push(second);
-        }
-      }
-
-      return {
-        disabledHours: () => hours,
-        disabledMinutes: (selectedHour) => {
-          if (hours.includes(selectedHour)) return Array.from({ length: 60 }, (_, i) => i);
-          return minutes;
-        },
-        disabledSeconds: (selectedHour, selectedMinute) => {
-          if (hours.includes(selectedHour) || minutes.includes(selectedMinute))
-            return Array.from({ length: 60 }, (_, i) => i);
-          return seconds;
-        },
+      const fullTimeArr = Array.from({ length: 60 }, (_, i) => i);
+      // 根据最小日期和最大日期限定日期时间
+      const disabledDate = (current) => {
+        // 确保 current 是一个 dayjs 对象
+        const currentDate = dayjs(current);
+        return currentDate.isBefore(minDateTime, 'minute') || currentDate.isAfter(maxDateTime, 'minute');
       };
-    };
-  }
+
+      // 禁用时分秒
+      const disabledTime = (current) => {
+        if (!current || !minDateTime || !maxDateTime) {
+          return { disabledHours: () => [], disabledMinutes: () => [], disabledSeconds: () => [] };
+        }
+
+        const currentDate = dayjs(current);
+        const isCurrentMinDay = currentDate.isSame(minDateTime, 'day');
+        const isCurrentMaxDay = currentDate.isSame(maxDateTime, 'day');
+
+        const disabledHours = () => {
+          const hours = [];
+          if (isCurrentMinDay) {
+            hours.push(...Array.from({ length: minDateTime.hour() }, (_, i) => i));
+          }
+          if (isCurrentMaxDay) {
+            hours.push(...Array.from({ length: 24 - maxDateTime.hour() }, (_, i) => i + maxDateTime.hour() + 1));
+          }
+          return hours;
+        };
+
+        const getDisabledMinutes = (selectedHour: number) => {
+          if (isCurrentMinDay && selectedHour === minDateTime.hour()) {
+            return fullTimeArr.filter((i) => i < minDateTime.minute());
+          }
+          if (isCurrentMaxDay && selectedHour === maxDateTime.hour()) {
+            return fullTimeArr.filter((i) => i > maxDateTime.minute());
+          }
+          return [];
+        };
+
+        const getDisabledSeconds = (selectedHour: number, selectedMinute: number) => {
+          if (isCurrentMinDay && selectedHour === minDateTime.hour() && selectedMinute === minDateTime.minute()) {
+            return fullTimeArr.filter((i) => i < minDateTime.second());
+          }
+          if (isCurrentMaxDay && selectedHour === maxDateTime.hour() && selectedMinute === maxDateTime.minute()) {
+            return fullTimeArr.filter((i) => i > maxDateTime.second());
+          }
+          return [];
+        };
+
+        return {
+          disabledHours,
+          disabledMinutes: getDisabledMinutes,
+          disabledSeconds: getDisabledSeconds,
+        };
+      };
+      setDisabledDate(() => {
+        return disabledDate;
+      });
+      setDisabledTime(() => {
+        return disabledTime;
+      });
+    }
+  };
+
   const newProps = {
     utc,
     ...props,

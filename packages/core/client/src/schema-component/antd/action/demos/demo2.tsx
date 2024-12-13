@@ -10,6 +10,7 @@ import {
   SchemaComponentProvider,
   useActionContext,
 } from '@nocobase/client';
+import { createMemoryHistory } from 'history';
 import React, { useState } from 'react';
 import { Router } from 'react-router-dom';
 
@@ -57,9 +58,10 @@ const schema: ISchema = {
 };
 
 export default observer(() => {
+  const history = createMemoryHistory();
   const [visible, setVisible] = useState(false);
   return (
-    <Router location={window.location} navigator={null}>
+    <Router location={history.location} navigator={history}>
       <CustomRouterContextProvider>
         <SchemaComponentProvider components={{ Form, Action, Input, FormItem }}>
           <ActionContextProvider value={{ visible, setVisible }}>

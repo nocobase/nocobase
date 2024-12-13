@@ -8,15 +8,17 @@
  */
 
 import { useField, useFieldSchema } from '@formily/react';
-import { uniqBy } from 'lodash';
-import React, { createContext, useCallback, useEffect, useRef } from 'react';
+import _ from 'lodash';
 import { CollectionFieldOptions_deprecated } from '../collection-manager';
 import { Collection } from '../data-source/collection/Collection';
 import { useCollection } from '../data-source/collection/CollectionProvider';
-import { useDataBlockRequest } from '../data-source/data-block/DataBlockRequestProvider';
+import { useDataBlockRequestGetter } from '../data-source/data-block/DataBlockRequestProvider';
 import { useDataLoadingMode } from '../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 import { removeNullCondition } from '../schema-component';
 import { mergeFilter, useAssociatedFields } from './utils';
+
+// @ts-ignore
+import React, { createContext, useCallback, useEffect, useMemo, useRef } from 'react';
 
 enum FILTER_OPERATOR {
   AND = '$and',
@@ -70,8 +72,8 @@ export interface DataBlock {
 }
 
 interface FilterContextValue {
-  dataBlocks: DataBlock[];
-  setDataBlocks: React.Dispatch<React.SetStateAction<DataBlock[]>>;
+  getDataBlocks: () => DataBlock[];
+  setDataBlocks: (value: DataBlock[] | ((prev: DataBlock[]) => DataBlock[])) => void;
 }
 
 const FilterContext = createContext<FilterContextValue>(null);
@@ -82,10 +84,25 @@ FilterContext.displayName = 'FilterContext';
  * @param props
  * @returns
  */
-export const FilterBlockProvider: React.FC = ({ children }) => {
-  const [dataBlocks, setDataBlocks] = React.useState<DataBlock[]>([]);
-  return <FilterContext.Provider value={{ dataBlocks, setDataBlocks }}>{children}</FilterContext.Provider>;
-};
+export const FilterBlockProvider: React.FC = React.memo(({ children }) => {
+  const dataBlocksRef = React.useRef<DataBlock[]>([]);
+
+  const setDataBlocks = useCallback((value) => {
+    if (typeof value === 'function') {
+      dataBlocksRef.current = value(dataBlocksRef.current);
+    } else {
+      dataBlocksRef.current = value;
+    }
+  }, []);
+
+  const getDataBlocks = useCallback(() => dataBlocksRef.current, []);
+
+  const value = useMemo(() => ({ getDataBlocks, setDataBlocks }), [getDataBlocks, setDataBlocks]);
+
+  return <FilterContext.Provider value={value}>{children}</FilterContext.Provider>;
+});
+
+FilterBlockProvider.displayName = 'FilterBlockProvider';
 
 /**
  * 用于收集当前页面中的数据区块的信息，用于在过滤区块中使用
@@ -101,7 +118,7 @@ export const DataBlockCollector = ({
 }) => {
   const collection = useCollection();
   const { recordDataBlocks } = useFilterBlock();
-  const service = useDataBlockRequest();
+  const { getDataBlockRequest } = useDataBlockRequestGetter();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const associatedFields = useAssociatedFields();
@@ -115,13 +132,14 @@ export const DataBlockCollector = ({
     field.decoratorProps.blockType !== 'filter';
 
   const addBlockToDataBlocks = useCallback(() => {
+    const service = getDataBlockRequest();
     recordDataBlocks({
       uid: fieldSchema['x-uid'],
       title: field.componentProps.title,
       doFilter: service.runAsync as any,
       collection,
       associatedFields,
-      foreignKeyFields: collection.getFields('isForeignKey') as ForeignKeyField[],
+      foreignKeyFields: collection?.getFields('isForeignKey') as ForeignKeyField[],
       defaultFilter: params?.filter || {},
       service,
       dom: container.current,
@@ -156,7 +174,7 @@ export const DataBlockCollector = ({
     fieldSchema,
     params?.filter,
     recordDataBlocks,
-    service,
+    getDataBlockRequest,
   ]);
 
   useEffect(() => {
@@ -172,33 +190,41 @@ export const DataBlockCollector = ({
  */
 export const useFilterBlock = () => {
   const ctx = React.useContext(FilterContext);
+
   // 有可能存在页面没有提供 FilterBlockProvider 的情况，比如内部使用的数据表管理页面
-  const getDataBlocks = useCallback<() => DataBlock[]>(() => ctx?.dataBlocks || [], [ctx?.dataBlocks]);
+  const getDataBlocks = useCallback<() => DataBlock[]>(() => ctx?.getDataBlocks() || [], [ctx]);
+
+  const recordDataBlocks = useCallback(
+    (block: DataBlock) => {
+      const existingBlock = ctx?.getDataBlocks().find((item) => item.uid === block.uid);
+
+      if (existingBlock) {
+        // 这里的值有可能会变化，所以需要更新
+        Object.assign(existingBlock, block);
+        return;
+      }
+
+      ctx?.setDataBlocks((prev) => [...prev, block]);
+    },
+    [ctx],
+  );
+
+  const removeDataBlock = useCallback(
+    (uid: string) => {
+      if (ctx?.getDataBlocks().every((item) => item.uid !== uid)) return;
+      ctx?.setDataBlocks((prev) => prev.filter((item) => item.uid !== uid));
+    },
+    [ctx],
+  );
 
   if (!ctx) {
     return {
       inProvider: false,
-      recordDataBlocks: () => {},
+      recordDataBlocks: _.noop,
       getDataBlocks,
-      removeDataBlock: () => {},
+      removeDataBlock: _.noop,
     };
   }
-  const { dataBlocks, setDataBlocks } = ctx;
-  const recordDataBlocks = (block: DataBlock) => {
-    const existingBlock = dataBlocks.find((item) => item.uid === block.uid);
-
-    if (existingBlock) {
-      // 这里的值有可能会变化，所以需要更新
-      Object.assign(existingBlock, block);
-      return;
-    }
-    // 由于 setDataBlocks 是异步操作，所以上面的 existingBlock 在判断时有可能用的是旧的 dataBlocks,所以下面还需要根据 uid 进行去重操作
-    setDataBlocks((prev) => uniqBy([...prev, block], 'uid'));
-  };
-  const removeDataBlock = (uid: string) => {
-    if (dataBlocks.every((item) => item.uid !== uid)) return;
-    setDataBlocks((prev) => prev.filter((item) => item.uid !== uid));
-  };
 
   return {
     recordDataBlocks,

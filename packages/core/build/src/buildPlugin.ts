@@ -7,21 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { rspack } from '@rspack/core';
 import ncc from '@vercel/ncc';
-import react from '@vitejs/plugin-react';
 import chalk from 'chalk';
 import fg from 'fast-glob';
 import fs from 'fs-extra';
 import path from 'path';
 import { build as tsupBuild } from 'tsup';
-import { build as viteBuild } from 'vite';
-import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
 
 import { EsbuildSupportExts, globExcludeFiles } from './constant';
-import { PkgLog, UserConfig, getEnvDefine, getPackageJson } from './utils';
+import { PkgLog, UserConfig, getPackageJson } from './utils';
 import {
   buildCheck,
-  checkFileSize,
   checkRequire,
   getExcludePackages,
   getIncludePackages,
@@ -29,6 +26,7 @@ import {
   getSourcePackages,
 } from './utils/buildPluginUtils';
 import { getDepPkgPath, getDepsConfig } from './utils/getDepsConfig';
+import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
 
 const validExts = ['.ts', '.tsx', '.js', '.jsx', '.mjs'];
 const serverGlobalFiles: string[] = ['src/**', '!src/client/**', ...globExcludeFiles];
@@ -45,8 +43,10 @@ const external = [
   '@nocobase/database',
   '@nocobase/data-source-manager',
   '@nocobase/evaluators',
+  '@nocobase/lock-manager',
   '@nocobase/logger',
   '@nocobase/resourcer',
+  '@nocobase/telemetry',
   '@nocobase/sdk',
   '@nocobase/server',
   '@nocobase/test',
@@ -130,6 +130,7 @@ const external = [
   'ahooks',
   'lodash',
   'china-division',
+  'file-saver',
 ];
 const pluginPrefix = (
   process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-'
@@ -194,7 +195,9 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: P
   if (excludePackages.length) {
     tips.push(`These packages ${chalk.yellow(excludePackages.join(', '))} will be ${chalk.italic('exclude')}.`);
   }
-  tips.push(`For more information, please refer to: ${chalk.blue('https://docs.nocobase.com/development/deps')}.`);
+  tips.push(
+    `For more information, please refer to: ${chalk.blue('https://docs.nocobase.com/development/others/deps')}.`,
+  );
   log(tips.join(' '));
 
   if (!includePackages.length) return;
@@ -318,51 +321,226 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
 
   const globals = excludePackages.reduce<Record<string, string>>((prev, curr) => {
     if (curr.startsWith('@nocobase')) {
-      prev[`${curr}/client`] = curr;
+      prev[`${curr}/client`] = `${curr}/client`;
     }
     prev[curr] = curr;
     return prev;
   }, {});
 
-  const entry = fg.globSync('src/client/index.{ts,tsx,js,jsx}', { absolute: true, cwd });
+  const entry = fg.globSync('index.{ts,tsx,js,jsx}', { absolute: false, cwd: path.join(cwd, 'src/client') });
   const outputFileName = 'index.js';
-
-  await viteBuild(
-    userConfig.modifyViteConfig({
-      mode: process.env.NODE_ENV || 'production',
-      define: getEnvDefine(),
-      logLevel: 'warn',
-      build: {
-        minify: process.env.NODE_ENV === 'production',
-        outDir,
-        cssCodeSplit: false,
-        emptyOutDir: true,
-        sourcemap,
-        lib: {
-          entry,
-          formats: ['umd'],
-          name: packageJson.name,
-          fileName: () => outputFileName,
+  const compiler = rspack({
+    mode: 'production',
+    // mode: "development",
+    context: cwd,
+    entry: './src/client/' + entry[0],
+    target: ['web', 'es5'],
+    output: {
+      path: outDir,
+      filename: outputFileName,
+      chunkFilename: '[chunkhash].js',
+      publicPath: `/static/plugins/${packageJson.name}/dist/client/`,
+      clean: true,
+      library: {
+        name: packageJson.name,
+        type: 'umd',
+        umdNamedDefine: true,
+      },
+    },
+    resolve: {
+      tsConfig: path.join(process.cwd(), 'tsconfig.json'),
+      extensions: ['.js', '.jsx', '.ts', '.tsx', '.json', '.less', '.css'],
+    },
+    module: {
+      rules: [
+        {
+          test: /\.less$/,
+          use: [
+            { loader: 'style-loader' },
+            { loader: 'css-loader' },
+            { loader: require.resolve('less-loader') },
+            {
+              loader: 'postcss-loader',
+              options: {
+                postcssOptions: {
+                  plugins: {
+                    'postcss-preset-env': {
+                      browsers: ['last 2 versions', '> 1%', 'cover 99.5%', 'not dead'],
+                    },
+                    autoprefixer: {},
+                  },
+                },
+              },
+            },
+          ],
+          type: 'javascript/auto',
         },
-        target: ['es2015', 'edge88', 'firefox78', 'chrome87', 'safari14'],
-        rollupOptions: {
-          cache: true,
-          external: [...Object.keys(globals), 'react', 'react/jsx-runtime'],
-          output: {
-            exports: 'named',
-            globals: {
-              react: 'React',
-              'react/jsx-runtime': 'jsxRuntime',
-              ...globals,
+        {
+          test: /\.css$/,
+          use: [
+            'style-loader',
+            'css-loader',
+            {
+              loader: 'postcss-loader',
+              options: {
+                postcssOptions: {
+                  plugins: {
+                    'postcss-preset-env': {
+                      browsers: ['last 2 versions', '> 1%', 'cover 99.5%', 'not dead'],
+                    },
+                    autoprefixer: {},
+                  },
+                },
+              },
+            },
+          ],
+          type: 'javascript/auto',
+        },
+        {
+          test: /\.(png|jpe?g|gif)$/i,
+          type: 'asset',
+        },
+        {
+          test: /\.svg$/i,
+          issuer: /\.[jt]sx?$/,
+          use: ['@svgr/webpack'],
+        },
+        {
+          test: /\.(?:js|mjs|cjs|ts|tsx)$/,
+          exclude: /node_modules/,
+          use: {
+            loader: 'babel-loader',
+            options: {
+              targets: 'defaults',
+              // presets: [['@babel/preset-env']],
+              plugins: ['react-imported-component/babel'],
             },
           },
         },
-      },
-      plugins: [react(), cssInjectedByJsPlugin({ styleId: packageJson.name })],
-    }),
-  );
+        {
+          test: /\.jsx$/,
+          exclude: /[\\/]node_modules[\\/]/,
+          loader: 'builtin:swc-loader',
+          options: {
+            sourceMap: true,
+            jsc: {
+              parser: {
+                syntax: 'ecmascript',
+                jsx: true,
+              },
+              target: 'es5',
+            },
+          },
+        },
+        {
+          test: /\.tsx$/,
+          exclude: /[\\/]node_modules[\\/]/,
+          loader: 'builtin:swc-loader',
+          options: {
+            sourceMap: true,
+            jsc: {
+              parser: {
+                syntax: 'typescript',
+                tsx: true,
+              },
+              target: 'es5',
+            },
+          },
+        },
+        {
+          test: /\.ts$/,
+          exclude: /[\\/]node_modules[\\/]/,
+          loader: 'builtin:swc-loader',
+          options: {
+            sourceMap: true,
+            jsc: {
+              parser: {
+                syntax: 'typescript',
+              },
+              target: 'es5',
+            },
+          },
+        },
+      ],
+    },
+    plugins: [
+      new rspack.DefinePlugin({
+        'process.env.NODE_ENV': JSON.stringify('production'),
+      }),
+      process.env.BUILD_ANALYZE === 'true' &&
+        new RsdoctorRspackPlugin({
+          // plugin options
+          // supports: {
+          //   generateTileGraph: true,
+          // },
+          mode: 'brief',
+        }),
+    ].filter(Boolean),
+    node: {
+      global: true,
+    },
+    externals: {
+      react: 'React',
+      lodash: 'lodash',
+      // 'react/jsx-runtime': 'jsxRuntime',
+      ...globals,
+    },
+    stats: 'errors-warnings',
+  });
 
-  checkFileSize(outDir, log);
+  return new Promise((resolve, reject) => {
+    compiler.run((err, stats) => {
+      const compilationErrors = stats?.compilation.errors;
+      const infos = stats.toString({
+        colors: true,
+      });
+      if (err || compilationErrors?.length) {
+        reject(err || infos);
+        return;
+      }
+      console.log(infos);
+      resolve(null);
+    });
+  });
+  // await viteBuild(userConfig.modifyViteConfig({
+  //   mode: 'production',
+  //   define: {
+  //     'process.env.NODE_ENV': JSON.stringify('production'),
+  //   },
+  //   logLevel: 'warn',
+  //   build: {
+  //     minify: true,
+  //     outDir,
+  //     cssCodeSplit: false,
+  //     emptyOutDir: true,
+  //     sourcemap,
+  //     lib: {
+  //       entry,
+  //       formats: ['umd'],
+  //       name: packageJson.name,
+  //       fileName: () => outputFileName,
+  //     },
+  //     target: ['es2015', 'edge88', 'firefox78', 'chrome87', 'safari14'],
+  //     rollupOptions: {
+  //       cache: true,
+  //       external: [...Object.keys(globals), 'react', 'react/jsx-runtime'],
+  //       output: {
+  //         exports: 'named',
+  //         globals: {
+  //           react: 'React',
+  //           'react/jsx-runtime': 'jsxRuntime',
+  //           ...globals,
+  //         },
+  //       },
+  //     },
+  //   },
+  //   plugins: [
+  //     react(),
+  //     cssInjectedByJsPlugin({ styleId: packageJson.name }),
+  //   ],
+  // }));
+
+  // checkFileSize(outDir, log);
 }
 
 export async function buildPlugin(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {

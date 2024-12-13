@@ -27,8 +27,8 @@ import {
   useResourceContext,
 } from '@nocobase/client';
 import { tval } from '@nocobase/utils/client';
-import cloneDeep from 'lodash/cloneDeep';
-import omit from 'lodash/omit';
+// import cloneDeep from 'lodash/cloneDeep';
+import { cloneDeep, omit } from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
@@ -139,7 +139,7 @@ export const useUpdateCollectionActionAndRefreshCM = (options) => {
   const ctx = useActionContext();
   const { name } = useParams();
   const { refresh } = useResourceActionContext();
-  const { resource, targetKey } = useResourceContext();
+  const { targetKey } = useResourceContext();
   const { [targetKey]: filterByTk } = useRecord();
   const api = useAPIClient();
   const dm = useDataSourceManager();

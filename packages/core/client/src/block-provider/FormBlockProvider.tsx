@@ -9,23 +9,22 @@
 
 import { createForm, Form } from '@formily/core';
 import { Schema, useField } from '@formily/react';
-import { Spin } from 'antd';
+import { useUpdate } from 'ahooks';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import {
   CollectionRecord,
   useCollectionManager,
   useCollectionParentRecordData,
   useCollectionRecord,
+  useCollectionRecordData,
 } from '../data-source';
 import { withDynamicSchemaProps } from '../hoc/withDynamicSchemaProps';
 import { useTreeParentRecord } from '../modules/blocks/data-blocks/table/TreeRecordProvider';
 import { RecordProvider } from '../record-provider';
-import { useActionContext } from '../schema-component';
+import { useActionContext, useDesignable } from '../schema-component';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
 import { FormActiveFieldsProvider } from './hooks/useFormActiveFields';
-import { useDesignable } from '../schema-component';
-import { useCollectionRecordData } from '../data-source';
 
 export const FormBlockContext = createContext<{
   form?: any;
@@ -89,10 +88,6 @@ const InternalFormBlockProvider = (props) => {
     updateAssociationValues,
   ]);
 
-  if (service.loading && Object.keys(form?.initialValues || {})?.length === 0 && action) {
-    return <Spin />;
-  }
-
   return (
     <FormBlockContext.Provider value={formBlockValue}>
       <RecordProvider isNew={record?.isNew} parent={record?.parentRecord?.data} record={record?.data}>
@@ -132,6 +127,8 @@ export const FormBlockProvider = withDynamicSchemaProps((props) => {
   const { designable } = useDesignable();
   const collection = props.collection || cm.getCollection(association).name;
 
+  const refresh = useUpdate();
+
   if (!designable && __collection) {
     if (__collection !== collection) {
       return null;
@@ -139,7 +136,7 @@ export const FormBlockProvider = withDynamicSchemaProps((props) => {
   }
 
   return (
-    <TemplateBlockProvider>
+    <TemplateBlockProvider onTemplateLoaded={refresh}>
       <BlockProvider
         name={props.name || 'form'}
         {...props}

@@ -144,6 +144,7 @@ test.describe('table block schema settings', () => {
       await page.getByRole('spinbutton').click();
       await page.getByRole('spinbutton').fill('1');
       await page.getByRole('button', { name: 'OK', exact: true }).click();
+      await page.reload();
 
       // 被筛选之后数据只有一条（有一行是空的）
       await expect(page.getByRole('row')).toHaveCount(2);
@@ -169,6 +170,7 @@ test.describe('table block schema settings', () => {
       await page.getByRole('menuitemcheckbox', { name: 'Current user' }).click();
       await page.getByRole('menuitemcheckbox', { name: 'Nickname' }).click();
       await page.getByRole('button', { name: 'OK', exact: true }).click();
+      await page.reload();
 
       // 被筛选之后数据只有一条（有一行是空的）
       await expect(page.getByRole('row')).toHaveCount(2);
@@ -213,6 +215,7 @@ test.describe('table block schema settings', () => {
       await page.getByRole('option', { name: 'ID', exact: true }).click();
       await page.getByText('DESC', { exact: true }).click();
       await page.getByRole('button', { name: 'OK', exact: true }).click();
+      await page.reload();
 
       // 显示出来 email 和 ID
       await page.getByLabel('schema-initializer-TableV2-table:configureColumns-general').hover();
@@ -398,6 +401,7 @@ test.describe('table block schema settings', () => {
       await page.getByLabel('designer-schema-settings-CardItem-blockSettings:detailsWithPagination-roles').hover();
       await page.getByRole('menuitem', { name: 'Delete' }).click();
       await page.getByRole('button', { name: 'OK', exact: true }).click();
+      await page.waitForTimeout(300);
 
       await page.getByLabel('block-item-CardItem-roles-').hover();
       await page.getByLabel('designer-schema-settings-CardItem-blockSettings:table-roles').hover();
@@ -409,5 +413,5 @@ test.describe('table block schema settings', () => {
 
 async function showSettingsMenu(page) {
   await page.getByLabel('block-item-CardItem-general-table').hover();
-  await page.getByLabel('designer-schema-settings-CardItem-TableBlockDesigner-general').hover();
+  await page.getByLabel('designer-schema-settings-CardItem-TableBlockDesigner-general').click();
 }

@@ -35,12 +35,18 @@ import { PluginMobileClient } from '../index';
 import { MobileAppProvider } from './MobileAppContext';
 import { useStyles } from './styles';
 
+const openModeToComponent = {
+  page: MobileActionPage,
+  drawer: ActionDrawerUsedInMobile,
+  modal: Action.Modal,
+};
+
 export const Mobile = () => {
   useToAdaptFilterActionToMobile();
   useToAdaptActionDrawerToMobile();
   useToAddMobilePopupBlockInitializers();
 
-  const { styles } = useStyles();
+  const { componentCls, hashId } = useStyles();
   const mobilePlugin = usePlugin(PluginMobileClient);
   const MobileRouter = mobilePlugin.getRouterComponent();
   const AdminProviderComponent = mobilePlugin?.options?.config?.skipLogin ? React.Fragment : AdminProvider;
@@ -90,16 +96,12 @@ export const Mobile = () => {
             },
           }}
         >
-          <AntdAppProvider className={`mobile-container ${styles.nbMobile}`}>
+          <AntdAppProvider className={`mobile-container ${componentCls} ${hashId}`}>
             <OpenModeProvider
               defaultOpenMode="page"
               isMobile={true}
               hideOpenMode
-              openModeToComponent={{
-                page: MobileActionPage,
-                drawer: ActionDrawerUsedInMobile,
-                modal: Action.Modal,
-              }}
+              openModeToComponent={openModeToComponent}
             >
               <BlockTemplateProvider componentNamePrefix="mobile-">
                 <MobileAppProvider>

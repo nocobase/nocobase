@@ -18,3 +18,4 @@ export * from './SimpleDesigner';
 export * from './renderEngineReference';
 export * from './Calculation';
 export * from './Fieldset';
+export * from './TriggerCollectionRecordSelect';

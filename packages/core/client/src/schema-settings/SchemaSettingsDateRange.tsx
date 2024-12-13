@@ -12,10 +12,17 @@ import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaComponent } from '../schema-component';
 import { SchemaSettingsModalItem } from './SchemaSettings';
-import { useCollectionManager_deprecated, useRecord, useDesignable, VariableInput, useFormBlockContext } from '..';
+import {
+  useCollectionManager_deprecated,
+  useRecord,
+  useDesignable,
+  VariableInput,
+  useFormBlockContext,
+  FlagProvider,
+} from '..';
 import { isVariable } from '../variables/utils/isVariable';
 
-export const SchemaSettingsDateRange = function DateFormatConfig(props: { fieldSchema: Schema }) {
+export const SchemaSettingsDateRange = function DateRangeConfig(props: { fieldSchema: Schema }) {
   const { fieldSchema } = props;
   const field: any = useField();
   const { dn } = useDesignable();
@@ -92,6 +99,7 @@ export const SchemaSettingsDateRange = function DateFormatConfig(props: { fieldS
       schema={
         {
           type: 'object',
+          'x-decorator': '',
           properties: {
             minDate: {
               type: 'string',
@@ -135,6 +143,10 @@ export const SchemaSettingsDateRange = function DateFormatConfig(props: { fieldS
           schema,
         });
         dn.refresh();
+      }}
+      // 这里是为了在新增表单中设置日期范围时设置的值能正常显示
+      ModalContextProvider={(props) => {
+        return <FlagProvider isInFormDataTemplate={true}>{props.children}</FlagProvider>;
       }}
     />
   );

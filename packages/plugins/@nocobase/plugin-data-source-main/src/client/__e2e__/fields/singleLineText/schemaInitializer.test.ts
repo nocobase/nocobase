@@ -15,7 +15,7 @@ test.describe('form item & filter form', () => {
 
     // 在页面上创建一个筛选表单，并在表单中添加一个字段
     await page.getByLabel('schema-initializer-Grid-page:').hover();
-    await page.getByRole('menuitem', { name: 'form Form right' }).nth(1).click();
+    await page.getByRole('menuitem', { name: 'Form right' }).nth(1).click();
     await page.getByRole('menuitem', { name: 'Users' }).click();
     await page.getByLabel('schema-initializer-Grid-filterForm:configureFields-users').hover();
     await page.getByRole('menuitem', { name: 'Nickname' }).click();

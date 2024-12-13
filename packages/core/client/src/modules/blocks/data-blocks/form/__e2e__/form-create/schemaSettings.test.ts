@@ -271,7 +271,8 @@ test.describe('set default value', () => {
 
     // 1. 为 Nickname 设置默认值
     await page.getByLabel('block-item-CollectionField-').getByRole('textbox').hover();
-    await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FormItem-users-users.').hover();
+    // hover 方法有时会失效，所以用 click 替代，原因未知
+    await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FormItem-users-users.').click();
     await page.getByRole('menuitem', { name: 'Set default value' }).click();
     await page.getByLabel('block-item-VariableInput-').getByRole('textbox').click();
     await page.getByLabel('block-item-VariableInput-').getByRole('textbox').fill('abcd');
@@ -331,7 +332,7 @@ test.describe('set default value', () => {
     // 3. Table 数据选择器中使用 `Current popup record`
     // 创建 Table 区块
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Table right' }).hover();
     await page.getByRole('menuitem', { name: 'Other records right' }).hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
     await page.mouse.move(300, 0);
@@ -459,7 +460,7 @@ test.describe('set default value', () => {
     // 3. Table 数据选择器中使用 `Parent popup record`
     // 创建 Table 区块
     await page.getByLabel('schema-initializer-Grid-popup').nth(1).hover();
-    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Table right' }).hover();
     await page.getByRole('menuitem', { name: 'Other records right' }).hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
     await page.mouse.move(300, 0);
@@ -589,7 +590,7 @@ test.describe('set default value', () => {
     // 3. Table 数据选择器中使用 `Parent popup record`
     // 创建 Table 区块
     await page.getByLabel('schema-initializer-Grid-popup').nth(1).hover();
-    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Table right' }).hover();
     await page.getByRole('menuitem', { name: 'Other records right' }).hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
     await page.mouse.move(300, 0);
@@ -726,17 +727,17 @@ test.describe('set default value', () => {
 
     // 3. Table 数据选择器中使用 `Parent popup record`
     // 创建 Table 区块
-    await page.getByLabel('schema-initializer-Grid-popup').first().hover();
-    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByLabel('schema-initializer-Grid-popup').nth(1).hover();
+    await page.getByRole('menuitem', { name: 'Table right' }).hover();
     await page.getByRole('menuitem', { name: 'Other records right' }).hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
     await page.mouse.move(300, 0);
     // 显示 Nickname 字段
-    await page.getByLabel('schema-initializer-TableV2-').nth(1).hover();
+    await page.getByLabel('schema-initializer-TableV2-').nth(2).hover();
     await page.getByRole('menuitem', { name: 'Nickname' }).click();
     await page.mouse.move(300, 0);
     // 设置数据范围（使用 `Parent popup record` 变量）
-    await page.getByLabel('block-item-CardItem-users-table').nth(1).hover();
+    await page.getByLabel('block-item-CardItem-users-table').nth(2).hover();
     await page.getByRole('button', { name: 'designer-schema-settings-' }).hover();
     await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
     await page.getByText('Add condition', { exact: true }).click();

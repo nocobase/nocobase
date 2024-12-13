@@ -8,9 +8,9 @@
  */
 
 import { useFieldSchema } from '@formily/react';
-import _ from 'lodash';
-import React, { createContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { createContext, FC, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { UseRequestResult } from '../../../api-client/hooks/useRequest';
+import { useIsSubPageClosedByPageMenu } from '../../../application/CustomRouterContextProvider';
 import { useDataBlockRequest } from '../../../data-source';
 import { useCurrentPopupContext } from '../page/PagePopups';
 import { getBlockService, storeBlockService } from '../page/pagePopupUtils';
@@ -19,59 +19,44 @@ import { ActionContextProps } from './types';
 export const ActionContext = createContext<ActionContextProps>({});
 ActionContext.displayName = 'ActionContext';
 
-/**
- * Used to determine if the user closed the sub-page by clicking on the page menu
- * @returns
- */
-const useIsSubPageClosedByPageMenu = () => {
-  // Used to trigger re-rendering when URL changes
-  const params = useParams();
-  const prevParamsRef = useRef<any>({});
-  const fieldSchema = useFieldSchema();
+let loading = false;
+export const ActionContextProvider: React.FC<ActionContextProps & { value?: ActionContextProps }> = React.memo(
+  (props) => {
+    const [submitted, setSubmitted] = useState(false); //是否有提交记录
+    const { visible } = { ...props, ...props.value };
+    const { setSubmitted: setParentSubmitted } = { ...props, ...props.value };
+    const service = useBlockServiceInActionButton();
+    const isSubPageClosedByPageMenu = useIsSubPageClosedByPageMenu(useFieldSchema());
 
-  const isSubPageClosedByPageMenu = useMemo(() => {
-    const result =
-      _.isEmpty(params['*']) &&
-      fieldSchema?.['x-component-props']?.openMode === 'page' &&
-      !!prevParamsRef.current['*']?.includes(fieldSchema['x-uid']);
+    useEffect(() => {
+      const run = async () => {
+        if (visible === false && service && !loading && (submitted || isSubPageClosedByPageMenu)) {
+          // Prevent multiple requests from being triggered
+          loading = true;
+          await service.refreshAsync();
+          loading = false;
 
-    prevParamsRef.current = params;
+          setParentSubmitted?.(true); //传递给上一层
+        }
+      };
 
-    return result;
-  }, [fieldSchema, params]);
+      run();
 
-  return isSubPageClosedByPageMenu;
-};
+      return () => {
+        setSubmitted(false);
+      };
+    }, [visible, service?.refresh, setParentSubmitted, isSubPageClosedByPageMenu]);
 
-export const ActionContextProvider: React.FC<ActionContextProps & { value?: ActionContextProps }> = (props) => {
-  const [submitted, setSubmitted] = useState(false); //是否有提交记录
-  const { visible } = { ...props, ...props.value };
-  const { setSubmitted: setParentSubmitted } = { ...props, ...props.value };
-  const service = useBlockServiceInActionButton();
-  const isSubPageClosedByPageMenu = useIsSubPageClosedByPageMenu();
+    const value = useMemo(() => ({ ...props, ...props?.value, submitted, setSubmitted }), [props, submitted]);
 
-  useEffect(() => {
-    if (visible === false && service && !service.loading && (submitted || isSubPageClosedByPageMenu)) {
-      service.refresh();
-      service.loading = true;
-      setParentSubmitted?.(true); //传递给上一层
-    }
+    return <ActionContext.Provider value={value}>{props.children}</ActionContext.Provider>;
+  },
+);
 
-    return () => {
-      setSubmitted(false);
-    };
-  }, [visible, service?.refresh, setParentSubmitted, isSubPageClosedByPageMenu]);
+ActionContextProvider.displayName = 'ActionContextProvider';
 
-  return (
-    <ActionContext.Provider value={{ ...props, ...props?.value, submitted, setSubmitted }}>
-      {props.children}
-    </ActionContext.Provider>
-  );
-};
-
-const useBlockServiceInActionButton = () => {
+const useBlockServiceInActionButton = (): UseRequestResult<any> => {
   const { params } = useCurrentPopupContext();
-  const fieldSchema = useFieldSchema();
   const popupUidWithoutOpened = useFieldSchema()?.['x-uid'];
   const service = useDataBlockRequest();
   const currentPopupUid = params?.popupuid;
@@ -81,7 +66,7 @@ const useBlockServiceInActionButton = () => {
     if (popupUidWithoutOpened && currentPopupUid !== popupUidWithoutOpened) {
       storeBlockService(popupUidWithoutOpened, { service });
     }
-  }, [popupUidWithoutOpened, service, currentPopupUid, fieldSchema]);
+  }, [currentPopupUid, popupUidWithoutOpened, service]);
 
   // 关闭弹窗时，获取到对应的 service
   if (currentPopupUid === popupUidWithoutOpened) {
@@ -90,3 +75,17 @@ const useBlockServiceInActionButton = () => {
 
   return service;
 };
+
+/**
+ * Provides the latest Action context value without re-rendering components to improve rendering performance
+ */
+export const ActionContextNoRerender: FC = React.memo((props) => {
+  const value = useContext(ActionContext);
+  const valueRef = useRef({});
+
+  Object.assign(valueRef.current, value);
+
+  return <ActionContext.Provider value={valueRef.current}>{props.children}</ActionContext.Provider>;
+});
+
+ActionContextNoRerender.displayName = 'ActionContextNoRerender';
