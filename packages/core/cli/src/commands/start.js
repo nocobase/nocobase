@@ -58,16 +58,13 @@ module.exports = (cli) => {
 
       watcher
         .on('ready', () => {
-          console.log('Initial scan complete.');
           isReady = true;
         })
         .on('addDir', async (pathname) => {
-          console.log('addDir....', isReady);
           if (!isReady) return;
           restart();
         })
         .on('unlinkDir', async (pathname) => {
-          console.log('unlinkDir....', isReady);
           if (!isReady) return;
           restart();
         });
