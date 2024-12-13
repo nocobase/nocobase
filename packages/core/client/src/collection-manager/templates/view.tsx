@@ -73,7 +73,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
         when: '{{isPG}}',
         fulfill: {
           state: {
-            value: "{{$deps[0].split('_')?.[0]}}",
+            value: "{{$deps[0].split('@')?.[0]}}",
           },
         },
         otherwise: {
@@ -91,7 +91,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
         when: '{{isPG}}',
         fulfill: {
           state: {
-            value: '{{$deps[0].match(/^([^_]+)_(.*)$/)?.[2]}}',
+            value: "{{$deps[0].split('@')?.[1]}}",
           },
         },
         otherwise: {
