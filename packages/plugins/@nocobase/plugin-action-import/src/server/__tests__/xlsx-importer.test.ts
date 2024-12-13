@@ -105,6 +105,7 @@ describe('xlsx importer', () => {
         [
           ['test', 77383],
           ['test2', '2021-10-18'],
+          ['test3', 20241112],
         ],
         { origin: 'A2' },
       );
@@ -121,6 +122,7 @@ describe('xlsx importer', () => {
       const users = (await User.repository.find()).map((user) => user.toJSON());
       expect(users[0]['dateOnly']).toBe('2111-11-12');
       expect(users[1]['dateOnly']).toBe('2021-10-18');
+      expect(users[2]['dateOnly']).toBe('2024-11-12');
     });
 
     it.skipIf(process.env['DB_DIALECT'] === 'sqlite')('should import with datetimeNoTz', async () => {
