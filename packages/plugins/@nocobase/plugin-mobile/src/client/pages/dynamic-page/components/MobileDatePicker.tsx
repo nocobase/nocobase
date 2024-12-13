@@ -9,8 +9,17 @@
 
 import React, { useState, useCallback } from 'react';
 import { DatePicker } from 'antd-mobile';
-import { mapDatePicker, DatePicker as NBDatePicker } from '@nocobase/client';
-import { connect, mapProps, mapReadPretty } from '@formily/react';
+import { Space, Select } from 'antd';
+import {
+  mapDatePicker,
+  DatePicker as NBDatePicker,
+  useDatePickerContext,
+  useCompile,
+  inferPickerType,
+} from '@nocobase/client';
+import dayjs from 'dayjs';
+import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
+import { getPickerFormat } from '@nocobase/utils/client';
 import { useTranslation } from 'react-i18next';
 
 function getPrecision(timeFormat: string): 'hour' | 'minute' | 'second' {
@@ -67,6 +76,7 @@ const MobileDateTimePicker = connect(
           return data;
       }
     }, []);
+
     return (
       <>
         <div contentEditable="false" onClick={() => setVisible(true)}>
@@ -88,7 +98,7 @@ const MobileDateTimePicker = connect(
           onClose={() => {
             setVisible(false);
           }}
-          precision={showTime ? getPrecision(timeFormat) : picker === 'date' ? 'day' : picker}
+          precision={showTime && picker === 'date' ? getPrecision(timeFormat) : picker === 'date' ? 'day' : picker}
           renderLabel={labelRenderer}
           min={others.min || new Date(1000, 0, 1)}
           max={others.max || new Date(9999, 11, 31)}
@@ -163,4 +173,77 @@ const MobileRangePicker = (props) => {
   );
 };
 
-export { MobileDateTimePicker, MobileRangePicker };
+const MobileDateFilterWithPicker = (props: any) => {
+  const { picker = 'date', format } = props;
+  const { utc = true } = useDatePickerContext();
+  const value = Array.isArray(props.value) ? props.value[0] : props.value;
+  const compile = useCompile();
+  const fieldSchema = useFieldSchema();
+  const targetPicker = value ? inferPickerType(value) : picker;
+  const targetFormat = getPickerFormat(targetPicker) || format;
+  const field: any = useField();
+  const newProps = {
+    utc,
+    ...props,
+    underFilter: true,
+    showTime: props.showTime ? { defaultValue: dayjs('00:00:00', 'HH:mm:ss') } : false,
+    format: targetFormat,
+    picker: targetPicker,
+    onChange: (val) => {
+      props.onChange(undefined);
+      setTimeout(() => {
+        props.onChange(val);
+      });
+    },
+  };
+  const [stateProps, setStateProps] = useState(newProps);
+  return (
+    <Space.Compact>
+      <Select
+        // @ts-ignore
+        role="button"
+        data-testid="select-picker"
+        style={{ width: '100px' }}
+        popupMatchSelectWidth={false}
+        defaultValue={targetPicker}
+        options={compile([
+          {
+            label: '{{t("Date")}}',
+            value: 'date',
+          },
+
+          {
+            label: '{{t("Month")}}',
+            value: 'month',
+          },
+          {
+            label: '{{t("Quarter")}}',
+            value: 'quarter',
+          },
+          {
+            label: '{{t("Year")}}',
+            value: 'year',
+          },
+        ])}
+        onChange={(value) => {
+          const format = getPickerFormat(value);
+          field.setComponentProps({
+            picker: value,
+            format,
+          });
+          newProps.picker = value;
+          newProps.format = format;
+          setStateProps(newProps);
+          fieldSchema['x-component-props'] = {
+            ...props,
+            picker: value,
+            format,
+          };
+          field.value = null;
+        }}
+      />
+      <MobileDateTimePicker {...stateProps} value={value} />
+    </Space.Compact>
+  );
+};
+export { MobileDateTimePicker, MobileRangePicker, MobileDateFilterWithPicker };
