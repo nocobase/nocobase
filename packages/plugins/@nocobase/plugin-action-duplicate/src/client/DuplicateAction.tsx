@@ -27,6 +27,8 @@ import {
   useDesignable,
   useFormBlockContext,
   useRecord,
+  useDataSourceHeaders,
+  useDataSourceKey,
 } from '@nocobase/client';
 import { App, Button } from 'antd';
 import React, { useMemo, useState } from 'react';
@@ -95,6 +97,9 @@ export const DuplicateAction = observer(
     const collectionFields = getCollectionFields(__collection || name);
     const formctx = useFormBlockContext();
     const aclCtx = useACLActionParamsContext();
+    const dataSource = useDataSourceKey();
+    const headers = useDataSourceHeaders(dataSource);
+
     const buttonStyle = useMemo(() => {
       return {
         opacity: designable && (field?.data?.hidden || !aclCtx) && 0.1,
@@ -114,7 +119,7 @@ export const DuplicateAction = observer(
     const handelQuickDuplicate = async () => {
       setLoading(true);
       try {
-        const data = await fetchTemplateData(api, template, t);
+        const data = await fetchTemplateData(api, template, headers);
         await resource['create']({
           values: {
             ...data,
