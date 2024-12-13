@@ -16,9 +16,10 @@ import { ReadPretty } from './ReadPretty';
 
 type ComposedTimePicker = React.FC<AntdTimePickerProps> & {
   RangePicker?: React.FC<TimeRangePickerProps>;
+  ReadPretty?: React.FC<any>;
 };
 
-const mapTimeFormat = function () {
+export const mapTimeFormat = function () {
   return (props: any, field) => {
     const format = props['format'] || 'HH:mm:ss';
     const onChange = props.onChange;
@@ -43,5 +44,5 @@ export const TimePicker: ComposedTimePicker = connect(
 );
 
 TimePicker.RangePicker = connect(AntdTimePicker.RangePicker, mapProps(mapTimeFormat()), mapReadPretty(ReadPretty));
-
+TimePicker.ReadPretty = ReadPretty;
 export default TimePicker;

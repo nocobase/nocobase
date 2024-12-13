@@ -8,7 +8,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { DatePicker } from 'antd-mobile';
+import { DatePicker, Picker } from 'antd-mobile';
 import { Space, Select } from 'antd';
 import {
   mapDatePicker,
@@ -16,6 +16,8 @@ import {
   useDatePickerContext,
   useCompile,
   inferPickerType,
+  TimePicker as NBTimePicker,
+  mapTimeFormat,
 } from '@nocobase/client';
 import dayjs from 'dayjs';
 import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
@@ -246,4 +248,40 @@ const MobileDateFilterWithPicker = (props: any) => {
     </Space.Compact>
   );
 };
-export { MobileDateTimePicker, MobileRangePicker, MobileDateFilterWithPicker };
+
+type ComposedMobileTimePicker = React.FC<any> & {
+  RangePicker?: React.FC<any>;
+  ReadPretty?: React.FC<any>;
+};
+
+const MobileTimePicker: ComposedMobileTimePicker = connect(
+  (props) => {
+    const [visible, setVisible] = useState(false);
+    // 小时、分钟和秒的数据
+    const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
+    const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
+    const seconds = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
+
+    const timeData = [
+      hours, // 小时
+      minutes, // 分钟
+      seconds, // 秒
+    ];
+    const handleTimeChange = (value: [string, string, string]) => {
+      props.onChange(`${value[0]}:${value[1]}:${value[2]}`);
+      setVisible(false);
+    };
+
+    return (
+      <div contentEditable="false" onClick={() => setVisible(true)}>
+        <NBTimePicker {...props} style={{ pointerEvents: 'none' }} />
+        <Picker onConfirm={handleTimeChange} columns={timeData} visible={visible} />
+      </div>
+    );
+  },
+  mapProps(mapTimeFormat()),
+  mapReadPretty(NBTimePicker.ReadPretty),
+);
+
+MobileTimePicker.RangePicker = NBTimePicker.RangePicker;
+export { MobileDateTimePicker, MobileRangePicker, MobileDateFilterWithPicker, MobileTimePicker };

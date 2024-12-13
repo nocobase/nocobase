@@ -15,12 +15,18 @@ import {
   DatePicker,
   Action,
   SchemaComponentOptions,
+  TimePicker,
 } from '@nocobase/client';
 import React, { useCallback } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
 import { Button as MobileButton, Dialog as MobileDialog } from 'antd-mobile';
 import { MobilePicker } from './components/MobilePicker';
-import { MobileDateTimePicker, MobileRangePicker, MobileDateFilterWithPicker } from './components/MobileDatePicker';
+import {
+  MobileDateTimePicker,
+  MobileRangePicker,
+  MobileDateFilterWithPicker,
+  MobileTimePicker,
+} from './components/MobileDatePicker';
 
 const AssociationFieldMobile = (props) => {
   return <AssociationField {...props} popupMatchSelectWidth={true} />;
@@ -68,6 +74,14 @@ const mobileComponents = {
   UnixTimestamp: MobileDateTimePicker,
   Modal: MobileDialog,
   AssociationField: AssociationFieldMobile,
+  TimePicker: (props) => {
+    const { designable } = useDesignable();
+    if (designable !== false) {
+      return <TimePicker {...props} />;
+    } else {
+      return <MobileTimePicker {...props} />;
+    }
+  },
 };
 
 export const MobilePage = () => {
