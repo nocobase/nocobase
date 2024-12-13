@@ -266,7 +266,11 @@ const PreviewCom = (props) => {
 };
 
 function areEqual(prevProps, nextProps) {
-  return nextProps.name === prevProps.name && nextProps.sources === prevProps.sources;
+  return (
+    nextProps.viewName === prevProps.viewName &&
+    nextProps.schema === prevProps.schema &&
+    nextProps.source === prevProps.source
+  );
 }
 
 export const PreviewFields = React.memo(PreviewCom, areEqual);
