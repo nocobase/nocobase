@@ -125,6 +125,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
       type: 'array',
       'x-component': PreviewFields,
       'x-hidden': '{{ !createOnly }}',
+      'x-decorator': 'FormItem',
       'x-reactions': {
         dependencies: ['name'],
         fulfill: {
@@ -133,6 +134,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
           },
         },
       },
+      description: `{{t( "Fields can only be used correctly if they are defined with an interface.")}}`,
     },
     preview: {
       type: 'void',
