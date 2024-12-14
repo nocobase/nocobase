@@ -38,6 +38,7 @@ export const ExecutionStatusOptions = [
     label: `{{t("Queueing", { ns: "${NAMESPACE}" })}}`,
     color: 'blue',
     icon: <HourglassOutlined />,
+    statusType: 'info',
     description: `{{t("Triggered but still waiting in queue to execute.", { ns: "${NAMESPACE}" })}}`,
   },
   {
@@ -45,6 +46,7 @@ export const ExecutionStatusOptions = [
     label: `{{t("On going", { ns: "${NAMESPACE}" })}}`,
     color: 'gold',
     icon: <LoadingOutlined />,
+    statusType: 'warning',
     description: `{{t("Started and executing, maybe waiting for an async callback (manual, delay etc.).", { ns: "${NAMESPACE}" })}}`,
   },
   {
@@ -52,6 +54,7 @@ export const ExecutionStatusOptions = [
     label: `{{t("Resolved", { ns: "${NAMESPACE}" })}}`,
     color: 'green',
     icon: <CheckOutlined />,
+    statusType: 'success',
     description: `{{t("Successfully finished.", { ns: "${NAMESPACE}" })}}`,
   },
   {
@@ -59,6 +62,7 @@ export const ExecutionStatusOptions = [
     label: `{{t("Failed", { ns: "${NAMESPACE}" })}}`,
     color: 'red',
     icon: <ExclamationOutlined />,
+    statusType: 'error',
     description: `{{t("Failed to satisfy node configurations.", { ns: "${NAMESPACE}" })}}`,
   },
   {
@@ -66,6 +70,7 @@ export const ExecutionStatusOptions = [
     label: `{{t("Error", { ns: "${NAMESPACE}" })}}`,
     color: 'red',
     icon: <CloseOutlined />,
+    statusType: 'error',
     description: `{{t("Some node meets error.", { ns: "${NAMESPACE}" })}}`,
   },
   {
@@ -73,6 +78,7 @@ export const ExecutionStatusOptions = [
     label: `{{t("Aborted", { ns: "${NAMESPACE}" })}}`,
     color: 'red',
     icon: <MinusOutlined rotate={90} />,
+    statusType: 'error',
     description: `{{t("Running of some node was aborted by program flow.", { ns: "${NAMESPACE}" })}}`,
   },
   {
@@ -80,6 +86,7 @@ export const ExecutionStatusOptions = [
     label: `{{t("Canceled", { ns: "${NAMESPACE}" })}}`,
     color: 'volcano',
     icon: <MinusOutlined rotate={45} />,
+    statusType: 'error',
     description: `{{t("Manually canceled whole execution when waiting.", { ns: "${NAMESPACE}" })}}`,
   },
   {
@@ -87,6 +94,7 @@ export const ExecutionStatusOptions = [
     label: `{{t("Rejected", { ns: "${NAMESPACE}" })}}`,
     color: 'volcano',
     icon: <MinusOutlined />,
+    statusType: 'error',
     description: `{{t("Rejected from a manual node.", { ns: "${NAMESPACE}" })}}`,
   },
   {
@@ -94,6 +102,7 @@ export const ExecutionStatusOptions = [
     label: `{{t("Retry needed", { ns: "${NAMESPACE}" })}}`,
     color: 'volcano',
     icon: <RedoOutlined />,
+    statusType: 'error',
     description: `{{t("General failed but should do another try.", { ns: "${NAMESPACE}" })}}`,
   },
 ];

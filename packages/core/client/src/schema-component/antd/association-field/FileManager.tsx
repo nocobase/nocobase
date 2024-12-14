@@ -7,11 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RecursionField, connect, useExpressionScope, useField, useFieldSchema } from '@formily/react';
-import { differenceBy, unionBy } from 'lodash';
-import cls from 'classnames';
-import React, { useContext, useEffect, useState } from 'react';
+import { PlusOutlined } from '@ant-design/icons';
+import { connect, useExpressionScope, useField, useFieldSchema } from '@formily/react';
 import { Upload as AntdUpload } from 'antd';
+import cls from 'classnames';
+import { differenceBy, unionBy } from 'lodash';
+import React, { useContext, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   AttachmentList,
   FormProvider,
@@ -31,16 +33,15 @@ import {
   useCollection_deprecated,
   useCollectionManager_deprecated,
 } from '../../../collection-manager';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider } from '../action';
 import { EllipsisWithTooltip } from '../input';
 import { Upload } from '../upload';
+import { useStyles } from '../upload/style';
 import { useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
-import { useTranslation } from 'react-i18next';
-import { PlusOutlined } from '@ant-design/icons';
-import { useStyles } from '../upload/style';
 
 const useTableSelectorProps = () => {
   const field: any = useField();
@@ -171,12 +172,19 @@ const InternalFileManager = (props) => {
     if (designable) {
       insertSelector(schema.Selector);
     } else {
-      fieldSchema.addProperty('selector', schema.Selector);
+      const selectSchema = fieldSchema.reduceProperties((buf, s) => {
+        if (s['x-component'] === 'AssociationField.Selector') {
+          return s;
+        }
+        return buf;
+      }, null);
+      if (!selectSchema) {
+        fieldSchema.addProperty('selector', schema.Selector);
+      }
     }
     setVisibleSelector(true);
     setSelectedRows([]);
   };
-
   useEffect(() => {
     if (value && Object.keys(value).length > 0) {
       const opts = (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean).map((option) => {
@@ -247,7 +255,7 @@ const InternalFileManager = (props) => {
             <FormProvider>
               <TableSelectorParamsProvider params={{}}>
                 <SchemaComponentOptions scope={{ usePickActionProps, useTableSelectorProps }}>
-                  <RecursionField
+                  <NocoBaseRecursionField
                     onlyRenderProperties
                     basePath={field.address}
                     schema={fieldSchema}
@@ -275,4 +283,4 @@ const FileManageReadPretty = connect((props) => {
   );
 });
 
-export { FileManageReadPretty, InternalFileManager, FileSelector };
+export { FileManageReadPretty, FileSelector, InternalFileManager };

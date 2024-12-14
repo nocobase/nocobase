@@ -7,18 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Schema } from '@formily/react';
+import { uid } from '@formily/shared';
 import { useAPIClient } from '@nocobase/client';
 import { Empty, Result, Spin, Typography } from 'antd';
 import React, { useContext, useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+import { useChart } from '../chart/group';
 import { useData, useFieldTransformer, useFieldsWithAssociation } from '../hooks';
 import { useChartsTranslation } from '../locale';
 import { getField } from '../utils';
-import { ChartRendererContext } from './ChartRendererProvider';
-import { useChart } from '../chart/group';
-import { Schema } from '@formily/react';
 import { ChartRendererDesigner } from './ChartRendererDesigner';
-import { uid } from '@formily/shared';
+import { ChartRendererContext } from './ChartRendererProvider';
 const { Paragraph, Text } = Typography;
 
 const ErrorFallback = ({ error }) => {
@@ -83,13 +83,7 @@ export const ChartRenderer: React.FC & {
 
   return (
     <Spin spinning={service.loading}>
-      <ErrorBoundary
-        key={errorKey}
-        onError={(error) => {
-          console.error(error);
-        }}
-        FallbackComponent={ErrorFallback}
-      >
+      <ErrorBoundary key={errorKey} onError={console.error} FallbackComponent={ErrorFallback}>
         {!service.loading && <C {...compiledProps} />}
       </ErrorBoundary>
     </Spin>

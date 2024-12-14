@@ -32,10 +32,11 @@ test.describe('where list block can be added', () => {
     // 1. 打开弹窗，通过 Associated records 创建一个列表区块
     await page.getByLabel('action-Action.Link-View').click();
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'ordered-list List right' }).hover();
+    await page.getByRole('menuitem', { name: 'List right' }).hover();
     await page.getByRole('menuitem', { name: 'Associated records right' }).hover();
     await page.getByRole('menuitem', { name: 'Roles' }).click();
     await page.mouse.move(300, 0);
+    await page.waitForTimeout(300);
     await page.getByLabel('schema-initializer-Grid-').nth(1).hover();
     await page.getByRole('menuitem', { name: 'Role name' }).click();
     await page.mouse.move(300, 0);
@@ -45,7 +46,7 @@ test.describe('where list block can be added', () => {
 
     // 2. 通过 Other records 创建一个列表区块
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'ordered-list List right' }).hover();
+    await page.getByRole('menuitem', { name: 'List right' }).hover();
     await page.getByRole('menuitem', { name: 'Other records right' }).hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
     await page.mouse.move(300, 0);

@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useBlockRequestContext } from '../../../block-provider/BlockProvider';
+import { useDataBlockProps } from '../../../data-source/data-block/DataBlockProvider';
 
 export const useBlockCollection = () => {
-  const ctx = useBlockRequestContext();
-  const name: string = ctx.props?.collection || ctx.props?.resource;
+  const blockProps = useDataBlockProps();
+  const name: string = blockProps?.collection || blockProps?.resource;
 
   return { name };
 };

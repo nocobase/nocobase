@@ -48,7 +48,6 @@ export function SchemaSettingsBlockTitleItem() {
             'x-component-props': fieldSchema['x-component-props'],
           },
         });
-        dn.refresh();
       }}
     />
   );

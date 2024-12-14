@@ -16,7 +16,7 @@ import { SchemaSettings } from '../../../../application/schema-settings/SchemaSe
 import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
-import { useCollectionField } from '../../../../data-source';
+import { useCollectionField, useDataBlockProps } from '../../../../data-source';
 import { useRecord } from '../../../../record-provider';
 import { removeNullCondition, useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
@@ -34,7 +34,7 @@ import { SchemaSettingsSortingRule } from '../../../../schema-settings/SchemaSet
 import { useIsShowMultipleSwitch } from '../../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useLocalVariables, useVariables } from '../../../../variables';
 import { useOpenModeContext } from '../../../popup/OpenModeProvider';
-import { useDataBlockProps } from '../../../../data-source';
+import { enableLinkSettingsItem, openModeSettingsItem } from '../Input/inputComponentSettings';
 
 const enableLink = {
   name: 'enableLink',
@@ -67,7 +67,6 @@ const enableLink = {
             },
           },
         });
-        dn.refresh();
       },
     };
   },
@@ -380,6 +379,29 @@ export const selectComponentFieldSettings = new SchemaSettings({
       useVisible() {
         const readPretty = useIsFieldReadPretty();
         return useIsAssociationField() && readPretty;
+      },
+    },
+    {
+      ...enableLinkSettingsItem,
+      useVisible() {
+        const collectionField = useCollectionField();
+        const readPretty = useIsFieldReadPretty();
+        return !useIsAssociationField() && readPretty && collectionField.interface !== 'multipleSelect';
+      },
+    },
+    {
+      ...openModeSettingsItem,
+      useVisible() {
+        const field = useField();
+        const isAssociationField = useIsAssociationField();
+        const { fieldSchema: columnSchema } = useColumnSchema();
+        const schema = useFieldSchema();
+        const fieldSchema = columnSchema || schema;
+        return (
+          (fieldSchema?.['x-read-pretty'] || field.readPretty) &&
+          (fieldSchema?.['x-component-props']?.enableLink ||
+            (isAssociationField && fieldSchema?.['x-component-props']?.enableLink !== false))
+        );
       },
     },
   ],

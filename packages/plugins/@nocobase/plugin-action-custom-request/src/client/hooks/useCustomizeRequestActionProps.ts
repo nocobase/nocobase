@@ -11,10 +11,11 @@ import { useField, useFieldSchema, useForm } from '@formily/react';
 import {
   useAPIClient,
   useActionContext,
+  useBlockContext,
+  useCollectionRecordData,
   useCompile,
   useDataSourceKey,
   useNavigateNoUpdate,
-  useRecord,
 } from '@nocobase/client';
 import { isURL } from '@nocobase/utils/client';
 import { App } from 'antd';
@@ -26,8 +27,9 @@ export const useCustomizeRequestActionProps = () => {
   const actionSchema = useFieldSchema();
   const compile = useCompile();
   const form = useForm();
+  const { name: blockType } = useBlockContext();
   // const { getPrimaryKey } = useCollection_deprecated();
-  const record = useRecord();
+  const recordData = useCollectionRecordData();
   const fieldSchema = useFieldSchema();
   const actionField = useField();
   const { setVisible } = useActionContext();
@@ -42,11 +44,6 @@ export const useCustomizeRequestActionProps = () => {
         await form.submit();
       }
 
-      let formValues = { ...record };
-      if (xAction === 'customize:form:request') {
-        formValues = form.values;
-      }
-
       actionField.data ??= {};
       actionField.data.loading = true;
       try {
@@ -58,8 +55,9 @@ export const useCustomizeRequestActionProps = () => {
               // id: record[getPrimaryKey()],
               // appends: result.params[0]?.appends,
               dataSourceKey,
-              data: formValues,
+              data: recordData,
             },
+            $nForm: blockType === 'form' ? form.values : undefined,
           },
           responseType: fieldSchema['x-response-type'] === 'stream' ? 'blob' : 'json',
         });

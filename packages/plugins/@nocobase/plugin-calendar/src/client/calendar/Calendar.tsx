@@ -8,43 +8,44 @@
  */
 
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
-import { RecursionField, Schema, observer, useFieldSchema, useField } from '@formily/react';
+import { Schema, useField, useFieldSchema } from '@formily/react';
 import {
+  ActionContextProvider,
+  CollectionProvider,
+  NocoBaseRecursionField,
   PopupContextProvider,
   RecordProvider,
+  SchemaComponentOptions,
   getLabelFormatValue,
+  handleDateChangeOnForm,
+  useACLRoleContext,
+  useActionContext,
   useCollection,
   useCollectionParentRecordData,
+  useDesignable,
+  useFormBlockContext,
+  useLazy,
   usePopupUtils,
   useProps,
   useToken,
   withDynamicSchemaProps,
-  useACLRoleContext,
-  useDesignable,
-  ActionContextProvider,
-  useActionContext,
-  CollectionProvider,
-  SchemaComponentOptions,
-  useFormBlockContext,
-  handleDateChangeOnForm,
+  withSkeletonComponent,
 } from '@nocobase/client';
-import { parseExpression } from 'cron-parser';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
-import { get, cloneDeep } from 'lodash';
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { Calendar as BigCalendar, View, dayjsLocalizer } from 'react-big-calendar';
-import * as dates from 'react-big-calendar/lib/utils/dates';
+import { cloneDeep, get } from 'lodash';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { View } from 'react-big-calendar';
 import { i18nt, useTranslation } from '../../locale';
 import { CalendarRecordViewer, findEventSchema } from './CalendarRecordViewer';
 import Header from './components/Header';
 import { CalendarToolbarContext } from './context';
 import GlobalStyle from './global.style';
 import { useCalenderHeight } from './hook';
+import { addNew } from './schema';
 import useStyle from './style';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
-import { addNew } from './schema';
 interface Event {
   id: string;
   colorFieldValue: string;
@@ -54,7 +55,6 @@ interface Event {
 }
 
 const Weeks = ['month', 'week', 'day'] as View[];
-const localizer = dayjsLocalizer(dayjs);
 
 const getColorString = (
   colorFieldValue: string,
@@ -93,7 +93,7 @@ function Toolbar(props: ToolbarProps) {
   );
   return (
     <CalendarToolbarContext.Provider value={props}>
-      <RecursionField name={toolBarSchema.name} schema={toolBarSchema} />
+      <NocoBaseRecursionField name={toolBarSchema.name} schema={toolBarSchema} />
     </CalendarToolbarContext.Provider>
   );
 }
@@ -110,6 +110,10 @@ const useEvents = (
   date: Date,
   view: (typeof Weeks)[number],
 ) => {
+  const parseExpression = useLazy<typeof import('cron-parser').parseExpression>(
+    () => import('cron-parser'),
+    'parseExpression',
+  );
   const { t } = useTranslation();
   const { fields } = useCollection();
   const labelUiSchema = fields.find((v) => v.name === fieldNames?.title)?.uiSchema;
@@ -222,10 +226,11 @@ const useEvents = (
     view,
     t,
     enumUiSchema?.uiSchema?.enum,
+    parseExpression,
   ]);
 };
 
-export const useInsertSchema = (component) => {
+const useInsertSchema = (component) => {
   const fieldSchema = useFieldSchema();
   const { insertAfterBegin } = useDesignable();
   const insert = useCallback(
@@ -240,18 +245,34 @@ export const useInsertSchema = (component) => {
         insertAfterBegin(cloneDeep(ss));
       }
     },
-    [component],
+    [component, fieldSchema, insertAfterBegin],
   );
   return insert;
 };
 
 export const Calendar: any = withDynamicSchemaProps(
-  observer(
+  withSkeletonComponent(
     (props: any) => {
       const [visible, setVisible] = useState(false);
       const { openPopup } = usePopupUtils({
         setVisible,
       });
+      const reactBigCalendar = useLazy(
+        () => import('react-big-calendar'),
+        (module) => ({
+          BigCalendar: module.Calendar,
+          dayjsLocalizer: module.dayjsLocalizer,
+        }),
+      );
+
+      const eq = useLazy<typeof import('react-big-calendar/lib/utils/dates').eq>(
+        () => import('react-big-calendar/lib/utils/dates'),
+        'eq',
+      );
+
+      const localizer = useMemo(() => {
+        return reactBigCalendar.dayjsLocalizer(dayjs);
+      }, [reactBigCalendar]);
 
       // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
       const { dataSource, fieldNames, showLunar, defaultView } = useProps(props);
@@ -376,6 +397,8 @@ export const Calendar: any = withDynamicSchemaProps(
           form: ctx.form,
         };
       };
+      const BigCalendar = reactBigCalendar?.BigCalendar;
+
       return wrapSSR(
         <div className={`${hashId} ${containerClassName}`} style={{ height: height || 700 }}>
           <PopupContextProvider visible={visible} setVisible={setVisible}>
@@ -411,7 +434,11 @@ export const Calendar: any = withDynamicSchemaProps(
                 if (!record) {
                   return;
                 }
-                record.__event = { ...event, start: formatDate(dayjs(event.start)), end: formatDate(dayjs(event.end)) };
+                record.__event = {
+                  ...event,
+                  start: formatDate(dayjs(event.start)),
+                  end: formatDate(dayjs(event.end)),
+                };
 
                 setRecord(record);
                 openPopup({
@@ -424,7 +451,7 @@ export const Calendar: any = withDynamicSchemaProps(
                 agendaDateFormat: 'M-DD',
                 dayHeaderFormat: 'YYYY-M-DD',
                 dayRangeHeaderFormat: ({ start, end }, culture, local) => {
-                  if (dates.eq(start, end, 'month')) {
+                  if (eq(start, end, 'month')) {
                     return local.format(start, 'YYYY-M', culture);
                   }
                   return `${local.format(start, 'YYYY-M', culture)} - ${local.format(end, 'YYYY-M', culture)}`;
@@ -434,10 +461,17 @@ export const Calendar: any = withDynamicSchemaProps(
               localizer={localizer}
             />
           </PopupContextProvider>
-          <ActionContextProvider value={{ ...ctx, visible: visibleAddNewer, setVisible: setVisibleAddNewer }}>
+          <ActionContextProvider
+            value={{
+              ...ctx,
+              visible: visibleAddNewer,
+              setVisible: setVisibleAddNewer,
+              openMode: findEventSchema(fieldSchema)?.['x-component-props']?.['openMode'],
+            }}
+          >
             <CollectionProvider name={collection.name}>
               <SchemaComponentOptions scope={{ useCreateFormBlockProps }}>
-                <RecursionField
+                <NocoBaseRecursionField
                   onlyRenderProperties
                   basePath={field?.address}
                   schema={fieldSchema}

@@ -32,6 +32,7 @@ storage/plugins
 storage/tar
 storage/tmp
 storage/cache
+storage/print-templates
 storage/app.watch.ts
 storage/.upgrading
 storage/logs-e2e

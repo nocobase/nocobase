@@ -8,7 +8,8 @@
  */
 
 import { SchemaExpressionScopeContext, SchemaOptionsContext } from '@formily/react';
-import { act, renderHook, waitFor } from '@nocobase/test/client';
+import { act, renderHook, sleep, waitFor } from '@nocobase/test/client';
+import { createMemoryHistory } from 'history';
 import React from 'react';
 import { Router } from 'react-router';
 import { APIClientProvider } from '../../api-client';
@@ -170,8 +171,9 @@ mockRequest.onGet('/someBelongsToField/0/belongsToField:get').reply(() => {
 });
 
 const Providers = ({ children }) => {
+  const history = createMemoryHistory();
   return (
-    <Router location={window.location} navigator={null}>
+    <Router location={history.location} navigator={history}>
       <APIClientProvider apiClient={apiClient}>
         <CurrentUserProvider>
           <SchemaOptionsContext.Provider value={{}}>
@@ -192,6 +194,7 @@ describe('useVariables', () => {
     });
 
     await waitFor(async () => {
+      await sleep(100);
       expect(result.current.ctxRef.current).toMatchInlineSnapshot(`
         {
           "$date": {
@@ -489,6 +492,7 @@ describe('useVariables', () => {
     });
 
     await waitFor(async () => {
+      await sleep(100);
       expect(result.current.ctxRef.current).toMatchInlineSnapshot(`
         {
           "$date": {

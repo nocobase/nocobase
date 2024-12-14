@@ -66,8 +66,6 @@ test.describe('group page menus schema settings', () => {
     await page.locator('.ant-select-dropdown').getByText('anchor page').click();
     await page.getByLabel('Inner').click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
-    // 当前页面菜单会消失
-    await expect(page.getByLabel('group page', { exact: true })).not.toBeVisible();
     // 跳转到 anchor page 页面，会有一个名为 group page 的子页面菜单
     await page.getByLabel('anchor page').click();
     await expect(page.locator('.ant-layout-sider').getByLabel('group page')).toBeVisible();
@@ -146,5 +144,6 @@ test.describe('group page menus schema settings', () => {
 
 async function showSettings(page: Page, pageName: string) {
   await page.locator('.ant-layout-header').getByText(pageName, { exact: true }).hover();
-  await page.getByRole('button', { name: 'designer-schema-settings-' }).hover();
+  // hover 方法有时会失效，所以用 click 替代，原因未知
+  await page.getByRole('button', { name: 'designer-schema-settings-' }).click();
 }

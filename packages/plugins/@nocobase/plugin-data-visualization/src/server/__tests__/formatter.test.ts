@@ -8,7 +8,7 @@
  */
 
 import { Database } from '@nocobase/database';
-import { MockServer, createMockServer } from '@nocobase/test';
+import { createMockServer, MockServer } from '@nocobase/test';
 import compose from 'koa-compose';
 import { parseFieldAndAssociations, queryData } from '../actions/query';
 import { createQueryParser } from '../query-parser';
@@ -20,7 +20,7 @@ describe('formatter', () => {
   beforeAll(async () => {
     app = await createMockServer({
       acl: true,
-      plugins: ['users', 'auth', 'data-visualization'],
+      plugins: ['users', 'auth', 'field-sort', 'data-visualization'],
     });
     db = app.db;
   });

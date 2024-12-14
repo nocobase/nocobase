@@ -12,7 +12,7 @@ import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
-import { useDataBlockRequest } from '../../../data-source';
+import { useDataBlockRequestData, useDataSource } from '../../../data-source';
 import { useFlag } from '../../../flag-provider/hooks/useFlag';
 import { useBaseVariable } from './useBaseVariable';
 
@@ -63,11 +63,11 @@ export const useFormVariable = ({ collectionName, collectionField, schema, noDis
 };
 
 const useCurrentFormData = () => {
-  const ctx: any = useDataBlockRequest();
-  if (ctx?.data?.data?.length > 1) {
+  const data = useDataBlockRequestData();
+  if (data?.data?.length > 1) {
     return;
   }
-  return ctx?.data?.data?.[0] || ctx?.data?.data;
+  return data?.data?.[0] || data?.data;
 };
 
 /**
@@ -107,6 +107,7 @@ export const useCurrentFormVariable = ({
   const { currentFormCtx, shouldDisplayCurrentForm } = useCurrentFormContext({ form: _form });
   const { t } = useTranslation();
   const { collectionName } = useFormBlockContext();
+  const dataSource = useDataSource();
   const currentFormSettings = useBaseVariable({
     collectionField,
     uiSchema: schema,
@@ -116,6 +117,7 @@ export const useCurrentFormVariable = ({
     title: t('Current form'),
     collectionName: collectionName,
     noDisabled,
+    dataSource: dataSource?.key,
     returnFields: (fields, option) => {
       // fix https://nocobase.height.app/T-2277
       return fields;

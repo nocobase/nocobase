@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createStyles } from 'antd-style';
+import { genStyleHook } from '../../../schema-component/antd/__builtins__/style';
 
-export const useStyles = createStyles(() => {
+export const useStyles = genStyleHook('nb-array-collapse', (token) => {
+  const { componentCls } = token;
   return {
-    arrayCollapseItem: {
+    [componentCls]: {
       marginBottom: '10px',
     },
   };

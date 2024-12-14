@@ -7,53 +7,78 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC, createContext, useContext, useMemo } from 'react';
+// @ts-ignore
+import React, { FC, createContext, useContext, useDeferredValue, useMemo, useRef } from 'react';
 
 import _ from 'lodash';
 import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
 import { useDataLoadingMode } from '../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 import { useSourceKey } from '../../modules/blocks/useSourceKey';
+import { useKeepAlive } from '../../route-switch/antd/admin-layout/KeepAlive';
+import { EMPTY_OBJECT } from '../../variables/constants';
 import { CollectionRecord, CollectionRecordProvider } from '../collection-record';
 import { useDataSourceHeaders } from '../utils';
 import { AllDataBlockProps, useDataBlockProps } from './DataBlockProvider';
 import { useDataBlockResource } from './DataBlockResourceProvider';
 
-export const BlockRequestContext = createContext<UseRequestResult<any>>(null);
-BlockRequestContext.displayName = 'BlockRequestContext';
+const BlockRequestRefContext = createContext<React.MutableRefObject<UseRequestResult<any>>>(null);
+BlockRequestRefContext.displayName = 'BlockRequestRefContext';
 
-function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
+/**
+ * @internal
+ */
+export const BlockRequestLoadingContext = createContext<boolean>(false);
+BlockRequestLoadingContext.displayName = 'BlockRequestLoadingContext';
+
+const BlockRequestDataContext = createContext<any>(null);
+BlockRequestDataContext.displayName = 'BlockRequestDataContext';
+
+function useRecordRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const dataLoadingMode = useDataLoadingMode();
   const resource = useDataBlockResource();
-  const { action, params = {}, record, requestService, requestOptions } = options;
+  const { action, params = {}, record, requestService, requestOptions, sourceId, association, parentRecord } = options;
+  const api = useAPIClient();
+  const dataBlockProps = useDataBlockProps();
+  const headers = useDataSourceHeaders(dataBlockProps.dataSource);
+  const sourceKey = useSourceKey(association);
+  const [JSONParams, JSONRecord] = useMemo(() => [JSON.stringify(params), JSON.stringify(record)], [params, record]);
 
-  const service = useMemo(() => {
-    return (
-      requestService ||
-      ((customParams) => {
-        if (record) return Promise.resolve({ data: record });
-        if (!action) {
-          throw new Error(`[nocobase]: The 'action' parameter is missing in the 'DataBlockRequestProvider' component`);
-        }
+  const defaultService = (customParams) => {
+    if (record) return Promise.resolve({ data: record });
+    if (!action) {
+      throw new Error(`[nocobase]: The 'action' parameter is missing in the 'DataBlockRequestProvider' component`);
+    }
 
-        // fix https://nocobase.height.app/T-4876/description
-        if (action === 'get' && _.isNil(params.filterByTk)) {
-          return console.warn(
-            '[nocobase]: The "filterByTk" parameter is missing in the "DataBlockRequestProvider" component',
-          );
-        }
+    // fix https://nocobase.height.app/T-4876/description
+    if (action === 'get' && _.isNil(params.filterByTk)) {
+      return console.warn(
+        '[nocobase]: The "filterByTk" parameter is missing in the "DataBlockRequestProvider" component',
+      );
+    }
 
-        const paramsValue = params.filterByTk === undefined ? _.omit(params, 'filterByTk') : params;
+    const paramsValue = params.filterByTk === undefined ? _.omit(params, 'filterByTk') : params;
 
-        return resource[action]?.({ ...paramsValue, ...customParams }).then((res) => res.data);
-      })
-    );
-  }, [resource, action, JSON.stringify(params), JSON.stringify(record), requestService]);
+    return resource[action]?.({ ...paramsValue, ...customParams }).then((res) => res.data);
+  };
+
+  const service = async (...arg) => {
+    const [currentRecordData, parentRecordData] = await Promise.all([
+      (requestService || defaultService)(...arg),
+      requestParentRecordData({ sourceId, association, parentRecord, api, headers, sourceKey }),
+    ]);
+
+    if (currentRecordData) {
+      currentRecordData.parentRecord = parentRecordData?.data;
+    }
+
+    return currentRecordData;
+  };
 
   const request = useRequest<T>(service, {
     ...requestOptions,
     manual: dataLoadingMode === 'manual',
     ready: !!action,
-    refreshDeps: [action, JSON.stringify(params), JSON.stringify(record), resource],
+    refreshDeps: [action, JSONParams, JSONRecord, resource, association, parentRecord, sourceId],
   });
 
   return request;
@@ -84,29 +109,53 @@ export async function requestParentRecordData({
   return res.data;
 }
 
-function useParentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
-  const { sourceId, association, parentRecord } = options;
-  const api = useAPIClient();
-  const dataBlockProps = useDataBlockProps();
-  const headers = useDataSourceHeaders(dataBlockProps.dataSource);
-  const sourceKey = useSourceKey(association);
-  return useRequest<T>(
-    () => {
-      return requestParentRecordData({ sourceId, association, parentRecord, api, headers, sourceKey });
-    },
-    {
-      refreshDeps: [association, parentRecord, sourceId],
-    },
-  );
-}
+export const BlockRequestContextProvider: FC<{ recordRequest: UseRequestResult<any> }> = (props) => {
+  const recordRequestRef = useRef<UseRequestResult<any>>(props.recordRequest);
+  const prevRequestDataRef = useRef<any>(props.recordRequest?.data);
+  const { active: pageActive } = useKeepAlive();
+  const prevPageActiveRef = useRef(pageActive);
+  // Prevent page switching lag
+  const deferredPageActive = useDeferredValue(pageActive);
 
-export const BlockRequestProvider: FC = ({ children }) => {
+  if (deferredPageActive && !prevPageActiveRef.current) {
+    props.recordRequest?.refresh();
+  }
+
+  // Only reassign values when props.recordRequest?.data changes to reduce unnecessary re-renders
+  if (
+    deferredPageActive &&
+    // the stage when loading just ended
+    prevPageActiveRef.current &&
+    !props.recordRequest?.loading &&
+    !_.isEqual(prevRequestDataRef.current, props.recordRequest?.data)
+  ) {
+    prevRequestDataRef.current = props.recordRequest?.data;
+  }
+
+  if (deferredPageActive !== prevPageActiveRef.current) {
+    prevPageActiveRef.current = deferredPageActive;
+  }
+
+  recordRequestRef.current = props.recordRequest;
+
+  return (
+    <BlockRequestRefContext.Provider value={recordRequestRef}>
+      <BlockRequestLoadingContext.Provider value={props.recordRequest?.loading}>
+        <BlockRequestDataContext.Provider value={prevRequestDataRef.current}>
+          {props.children}
+        </BlockRequestDataContext.Provider>
+      </BlockRequestLoadingContext.Provider>
+    </BlockRequestRefContext.Provider>
+  );
+};
+
+export const BlockRequestProvider: FC = React.memo(({ children }) => {
   const props = useDataBlockProps();
   const {
     action,
     filterByTk,
     sourceId,
-    params = {},
+    params = EMPTY_OBJECT,
     association,
     collection,
     record,
@@ -115,7 +164,15 @@ export const BlockRequestProvider: FC = ({ children }) => {
     requestService,
   } = props;
 
-  const currentRequest = useCurrentRequest<{ data: any }>({
+  const _params = useMemo(
+    () => ({
+      ...params,
+      filterByTk: filterByTk || params.filterByTk,
+    }),
+    [filterByTk, params],
+  );
+
+  const recordRequest = useRecordRequest<{ data: any; parentRecord: any }>({
     action,
     sourceId,
     record,
@@ -123,37 +180,28 @@ export const BlockRequestProvider: FC = ({ children }) => {
     collection,
     requestOptions,
     requestService,
-    params: {
-      ...params,
-      filterByTk: filterByTk || params.filterByTk,
-    },
-  });
-
-  const parentRequest = useParentRequest<{ data: any }>({
-    sourceId,
-    association,
+    params: _params,
     parentRecord,
   });
 
+  const parentRecordData = recordRequest.data?.parentRecord;
+
   const memoizedParentRecord = useMemo(() => {
     return (
-      parentRequest.data?.data &&
+      parentRecordData &&
       new CollectionRecord({
         isNew: false,
-        data:
-          parentRequest.data?.data instanceof CollectionRecord
-            ? parentRequest.data?.data.data
-            : parentRequest.data?.data,
+        data: parentRecordData instanceof CollectionRecord ? parentRecordData.data : parentRecordData,
       })
     );
-  }, [parentRequest.data?.data]);
+  }, [parentRecordData]);
 
   return (
-    <BlockRequestContext.Provider value={currentRequest}>
+    <BlockRequestContextProvider recordRequest={recordRequest}>
       {action !== 'list' ? (
         <CollectionRecordProvider
           isNew={action == null}
-          record={currentRequest.data?.data || record}
+          record={recordRequest.data?.data || record}
           parentRecord={memoizedParentRecord || parentRecord}
         >
           {children}
@@ -163,11 +211,55 @@ export const BlockRequestProvider: FC = ({ children }) => {
           {children}
         </CollectionRecordProvider>
       )}
-    </BlockRequestContext.Provider>
+    </BlockRequestContextProvider>
+  );
+});
+
+BlockRequestProvider.displayName = 'DataBlockRequestProvider';
+
+export const useDataBlockRequest = <T extends {}>(): UseRequestResult<{ data: T }> => {
+  const contextRef = useContext(BlockRequestRefContext);
+  const loading = useContext(BlockRequestLoadingContext);
+  const data = useContext(BlockRequestDataContext);
+  return useMemo(() => (contextRef ? { ...contextRef.current, loading, data } : null), [contextRef, data, loading]);
+};
+
+/**
+ * Compared to `useDataBlockRequest`, this Hook helps prevent unnecessary re-renders.
+ *
+ * This Hook returns a stable function reference that won't change between renders. When you only need
+ * methods like `refresh` or `run`, using this Hook is recommended because:
+ *
+ * 1. It returns a memoized object containing only the getter function
+ * 2. The getter function accesses the latest request data through a ref, avoiding re-renders
+ * 3. Unlike useDataBlockRequest which returns request state directly, this Hook provides indirect access
+ *    through a getter, breaking the reactive dependency chain
+ *
+ * For example:
+ * ```ts
+ * // This will re-render when request state changes
+ * const { refresh } = useDataBlockRequest();
+ *
+ * // This won't re-render when request state changes
+ * const { getDataBlockRequest } = useDataBlockRequestGetter();
+ * const refresh = getDataBlockRequest().refresh;
+ * ```
+ *
+ * @returns An object containing the getDataBlockRequest method that provides access to the request instance
+ */
+export const useDataBlockRequestGetter = () => {
+  const contextRef = useContext(BlockRequestRefContext);
+  return useMemo(
+    () => ({
+      getDataBlockRequest: () => (contextRef ? contextRef.current : null),
+    }),
+    [contextRef],
   );
 };
 
-export const useDataBlockRequest = <T extends {}>(): UseRequestResult<{ data: T }> => {
-  const context = useContext(BlockRequestContext);
-  return context;
+/**
+ * When only data is needed, it's recommended to use this hook to avoid unnecessary re-renders
+ */
+export const useDataBlockRequestData = () => {
+  return useContext(BlockRequestDataContext);
 };

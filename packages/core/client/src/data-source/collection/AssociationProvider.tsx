@@ -57,5 +57,7 @@ export const AssociationProvider: FC<AssociationProviderProps> = (props) => {
  */
 export const useAssociationName = () => {
   const field = useCollectionField();
-  return field ? `${field.collectionName}.${field.name}` : null;
+  return field && ['belongsToMany', 'belongsTo', 'hasMany', 'hasOne'].includes(field.type)
+    ? `${field.collectionName}.${field.name}`
+    : null;
 };
