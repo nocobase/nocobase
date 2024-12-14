@@ -17,7 +17,7 @@ export const defaultTheme: Omit<ThemeItem, 'id'> = {
   optional: true,
   isBuiltIn: true,
   uid: 'default',
-  default: true,
+  default: process.env.__E2E__ ? true : false,
 };
 
 export const dark: Omit<ThemeItem, 'id'> = {
@@ -44,7 +44,7 @@ export const compact: Omit<ThemeItem, 'id'> = {
   optional: true,
   isBuiltIn: true,
   uid: 'compact',
-  default: false,
+  default: process.env.__E2E__ ? false : true,
 };
 
 /** 同时包含 `紧凑` 和 `暗黑` 两种模式 */
