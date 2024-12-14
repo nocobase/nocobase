@@ -45,7 +45,7 @@ export default {
         throw new Error(`dataSource ${dataSourceKey} not found`);
       }
 
-      const { paginate, filter } = ctx.action.params;
+      const { paginate, filter = {} } = ctx.action.params;
 
       const collections = lodash.sortBy(
         dataSource.collectionManager.getCollections().filter((collection) => {
