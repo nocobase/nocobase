@@ -13,6 +13,7 @@ import { setCurrentRole } from '@nocobase/plugin-acl';
 import { ACL, AvailableActionOptions } from '@nocobase/acl';
 import { DataSourcesRolesModel } from './data-sources-roles-model';
 import PluginDataSourceManagerServer from '../plugin';
+import * as path from 'path';
 
 const availableActions: {
   [key: string]: AvailableActionOptions;
@@ -99,6 +100,7 @@ export class DataSourceModel extends Model {
         logger: app.logger.child({ dataSourceKey }),
         sqlLogger: app.sqlLogger.child({ dataSourceKey }),
         cache: app.cache,
+        storagePath: path.join(process.cwd(), 'storage', 'cache', 'apps', app.name),
       });
 
       dataSource.on('loadingProgress', (progress) => {
