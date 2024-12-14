@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import lodash from 'lodash';
 import { SingleAssociationAccessors, Transactionable } from 'sequelize';
 import injectTargetCollection from '../decorators/target-collection-decorator';
 import { Model } from '../model';
-import { TargetKey, UpdateOptions, FindOptions } from './types';
+import { FindOptions, TargetKey, UpdateOptions } from './types';
 import { updateModelByValues } from '../update-associations';
 import { RelationRepository, transaction } from './relation-repository';
 
@@ -92,6 +91,7 @@ export abstract class SingleRelationRepository extends RelationRepository {
 
     const target = await this.find({
       transaction,
+      // @ts-ignore
       targetCollection: options.targetCollection,
     });
 

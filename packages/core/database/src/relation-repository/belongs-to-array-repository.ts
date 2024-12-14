@@ -14,7 +14,7 @@ import { transactionWrapperBuilder } from '../decorators/transaction-decorator';
 import { FindOptions } from '../repository';
 import { MultipleRelationRepository } from './multiple-relation-repository';
 import Database from '../database';
-import { Model, Op } from 'sequelize';
+import { Model } from '../model';
 
 const transaction = transactionWrapperBuilder(function () {
   return this.collection.model.sequelize.transaction();
