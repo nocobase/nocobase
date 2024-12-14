@@ -11,17 +11,9 @@ import lodash from 'lodash';
 import { SingleAssociationAccessors, Transactionable } from 'sequelize';
 import injectTargetCollection from '../decorators/target-collection-decorator';
 import { Model } from '../model';
-import { Appends, Except, Fields, Filter, TargetKey, UpdateOptions } from '../repository';
+import { TargetKey, UpdateOptions, FindOptions } from './types';
 import { updateModelByValues } from '../update-associations';
 import { RelationRepository, transaction } from './relation-repository';
-
-export interface SingleRelationFindOption extends Transactionable {
-  fields?: Fields;
-  except?: Except;
-  appends?: Appends;
-  filter?: Filter;
-  targetCollection?: string;
-}
 
 interface SetOption extends Transactionable {
   tk?: TargetKey;
@@ -55,7 +47,7 @@ export abstract class SingleRelationRepository extends RelationRepository {
     });
   }
 
-  async find(options?: SingleRelationFindOption): Promise<any> {
+  async find(options?: FindOptions): Promise<any> {
     const targetRepository = this.targetCollection.repository;
 
     const sourceModel = await this.getSourceModel(await this.getTransaction(options));
@@ -74,7 +66,7 @@ export abstract class SingleRelationRepository extends RelationRepository {
     return await targetRepository.findOne(findOptions);
   }
 
-  async findOne(options?: SingleRelationFindOption): Promise<Model<any>> {
+  async findOne(options?: FindOptions): Promise<Model<any>> {
     return this.find({ ...options, filterByTk: null } as any);
   }
 
