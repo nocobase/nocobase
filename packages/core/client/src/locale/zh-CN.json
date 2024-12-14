@@ -308,10 +308,10 @@
   "Relationship type": "关系类型",
   "Inverse relationship type": "反向关系类型",
   "Source collection": "源数据表",
-  "Source key": "源数据表字段标识",
+  "Source key": "源数据表标识字段",
   "Target collection": "目标数据表",
   "Through collection": "中间数据表",
-  "Target key": "目标数据表字段标识",
+  "Target key": "目标数据表标识字段",
   "Foreign key": "外键",
   "One to one": "一对一",
   "One to many": "一对多",
@@ -1032,5 +1032,7 @@
   "Bulk enable": "批量激活",
   "Search plugin...": "搜索插件...",
   "Package name": "包名",
-  "Associate":"关联"
+  "Associate":"关联",
+  "Please add or select record":"请添加或选择数据",
+  "No data":"暂无数据"
 }

@@ -41,7 +41,6 @@ const AppSpin = () => {
 };
 
 const useErrorProps = (app: Application, error: any) => {
-  const api = useAPIClient();
   if (!error) {
     return {};
   }
@@ -57,7 +56,7 @@ const useErrorProps = (app: Application, error: any) => {
             type="primary"
             key="try"
             onClick={() => {
-              api.auth.setToken(null);
+              app.apiClient.auth.setToken(null);
               window.location.reload();
             }}
           >

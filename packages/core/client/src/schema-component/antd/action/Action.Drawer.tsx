@@ -13,6 +13,7 @@ import classNames from 'classnames';
 // @ts-ignore
 import React, { FC, startTransition, useCallback, useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { ErrorFallback } from '../error-fallback';
 import { useCurrentPopupContext } from '../page/PagePopups';
 import { TabsContextProvider, useTabsContext } from '../tabs/context';
@@ -63,7 +64,7 @@ const ActionDrawerContent: FC<{ footerNodeName: string; field: any; schema: any 
     }
 
     return (
-      <MemoizeRecursionField
+      <NocoBaseRecursionField
         basePath={field.address}
         schema={schema}
         onlyRenderProperties
@@ -77,7 +78,7 @@ ActionDrawerContent.displayName = 'ActionDrawerContent';
 
 export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
   (props) => {
-    const { footerNodeName = 'Action.Drawer.Footer', zIndex: _zIndex, ...others } = props;
+    const { footerNodeName = 'Action.Drawer.Footer', zIndex: _zIndex, onClose: onCloseFromProps, ...others } = props;
     const { visible, setVisible, openSize = 'middle', drawerProps } = useActionContext();
     const schema = useFieldSchema();
     const field = useField();
@@ -105,7 +106,13 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
 
     const zIndex = _zIndex || parentZIndex + (props.level || 0);
 
-    const onClose = useCallback(() => setVisible(false, true), [setVisible]);
+    const onClose = useCallback(
+      (e) => {
+        setVisible(false, true);
+        onCloseFromProps?.(e);
+      },
+      [setVisible, onCloseFromProps],
+    );
     const keepFooterNode = useCallback(
       (s) => {
         return s['x-component'] === footerNodeName;

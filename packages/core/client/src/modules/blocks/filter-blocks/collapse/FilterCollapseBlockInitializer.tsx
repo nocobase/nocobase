@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { TableOutlined } from '@ant-design/icons';
+import { RightSquareOutlined } from '@ant-design/icons';
 import React from 'react';
 
 import { useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
@@ -31,7 +31,7 @@ export const FilterCollapseBlockInitializer = ({
     <DataBlockInitializer
       {...itemConfig}
       onlyCurrentDataSource={onlyCurrentDataSource}
-      icon={<TableOutlined />}
+      icon={<RightSquareOutlined />}
       componentType={`FilterCollapse`}
       onCreateBlockSchema={async ({ item }) => {
         const schema = createCollapseBlockSchema({

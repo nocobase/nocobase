@@ -18,7 +18,7 @@ import _ from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
 import qs from 'qs';
-import { ChangeEvent, useCallback, useContext, useEffect, useMemo } from 'react';
+import { ChangeEvent, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavigateFunction } from 'react-router-dom';
 import {
@@ -1589,8 +1589,9 @@ export const getAppends = ({
 export const useAssociationNames = (dataSource?: string) => {
   const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated(dataSource);
   const fieldSchema = useFieldSchema();
+  const prevAppends = useRef(null);
 
-  const getAssociationAppends = () => {
+  const getAssociationAppends = useCallback(() => {
     const updateAssociationValues = new Set([]);
     let appends = new Set([]);
 
@@ -1605,8 +1606,19 @@ export const useAssociationNames = (dataSource?: string) => {
     });
     appends = fillParentFields(appends);
 
-    return { appends: [...appends], updateAssociationValues: [...updateAssociationValues] };
-  };
+    const newAppends = [...appends];
+    const newUpdateAssociationValues = [...updateAssociationValues];
+
+    const result = {
+      appends: _.isEqual(prevAppends.current, newAppends) ? prevAppends.current : newAppends,
+      // `updateAssociationValues` needs to be recreated each time to ensure test case passes in: core/client/src/modules/blocks/data-blocks/table/__e2e__/schemaSettings.test.ts:886:9
+      updateAssociationValues: newUpdateAssociationValues,
+    };
+
+    prevAppends.current = result.appends;
+
+    return result;
+  }, [dataSource, fieldSchema, getCollection, getCollectionJoinField]);
 
   return { getAssociationAppends };
 };
@@ -1692,12 +1704,13 @@ export function useLinkActionProps(componentProps?: any) {
   const { t } = useTranslation();
   const url = componentPropsValue?.['url'];
   const searchParams = componentPropsValue?.['params'] || [];
+  const type = componentPropsValue?.['type'] || 'default';
   const openInNewWindow = fieldSchema?.['x-component-props']?.['openInNewWindow'];
   const { parseURLAndParams } = useParseURLAndParams();
   const basenameOfCurrentRouter = useRouterBasename();
 
   return {
-    type: 'default',
+    type,
     async onClick() {
       if (!url) {
         message.warning(t('Please configure the URL'));

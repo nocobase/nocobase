@@ -14,7 +14,7 @@ import React from 'react';
 export interface ISchemaComponentContext {
   scope?: any;
   components?: SchemaReactComponents;
-  refresh?: (options?: { refreshParent?: boolean }) => void;
+  refresh?: (options?: { refreshParentSchema?: boolean }) => void;
   reset?: () => void;
   designable?: boolean;
   setDesignable?: (value: boolean) => void;

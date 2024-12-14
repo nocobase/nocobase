@@ -18,6 +18,7 @@ import { useDataBlockResource } from '../../../../../data-source/data-block/Data
 import { DataBlock, useFilterBlock } from '../../../../../filter-provider/FilterProvider';
 import { mergeFilter } from '../../../../../filter-provider/utils';
 import { removeNullCondition } from '../../../../../schema-component';
+import { useTableElementRef } from '../../../../../schema-component/antd/table-v2/Table';
 
 export const useTableBlockProps = () => {
   const field = useField<ArrayField>();
@@ -30,13 +31,20 @@ export const useTableBlockProps = () => {
   const ctxRef = useRef(null);
   ctxRef.current = { service, resource };
   const meta = service?.data?.meta || {};
+  const tableElementRef = useTableElementRef();
+  const onPaginationChange = useCallback(() => {
+    if (tableElementRef?.current) {
+      tableElementRef.current.parentElement?.scrollIntoView({ block: 'start' });
+    }
+  }, [tableElementRef]);
   const pagination = useMemo(
     () => ({
       pageSize: meta?.pageSize,
       total: meta?.count,
       current: meta?.page,
+      onChange: onPaginationChange,
     }),
-    [meta?.count, meta?.page, meta?.pageSize],
+    [meta?.count, meta?.page, meta?.pageSize, onPaginationChange],
   );
 
   const data = service?.data?.data || [];
@@ -125,12 +133,8 @@ export const useTableBlockProps = () => {
         dataBlocks.forEach((block) => {
           const target = targets.find((target) => target.uid === block.uid);
           if (!target) return;
-
-          const isForeignKey = block.foreignKeyFields?.some((field) => field.name === target.field);
-          const sourceKey = getSourceKey(currentBlock, target.field);
-          const recordKey = isForeignKey ? sourceKey : tableBlockContextBasicValue.rowKey;
-          const value = [record[recordKey]];
-
+          const sourceKey = getSourceKey(currentBlock, target.field) || tableBlockContextBasicValue.rowKey || 'id';
+          const value = [record[sourceKey]];
           const param = block.service.params?.[0] || {};
           // 保留原有的 filter
           const storedFilter = block.service.params?.[1]?.filters || {};
@@ -184,5 +188,5 @@ export const useTableBlockProps = () => {
 
 function getSourceKey(currentBlock: DataBlock, field: string) {
   const associationField = currentBlock?.associatedFields?.find((item) => item.foreignKey === field);
-  return associationField?.sourceKey || 'id';
+  return associationField?.sourceKey || field?.split?.('.')?.[1];
 }

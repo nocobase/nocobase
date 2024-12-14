@@ -7,7 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RemoteSchemaComponent, AssociationField, useDesignable, Select, DatePicker, Action } from '@nocobase/client';
+import {
+  RemoteSchemaComponent,
+  AssociationField,
+  useDesignable,
+  Select,
+  DatePicker,
+  Action,
+  SchemaComponentOptions,
+} from '@nocobase/client';
 import React, { useCallback } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
 import { Button as MobileButton, Dialog as MobileDialog } from 'antd-mobile';
@@ -27,6 +35,17 @@ AssociationFieldMobile.InternalSelect = AssociationField.InternalSelect;
 AssociationFieldMobile.ReadPretty = AssociationField.ReadPretty;
 AssociationFieldMobile.FileSelector = AssociationField.FileSelector;
 
+const DatePickerMobile = (props) => {
+  const { designable } = useDesignable();
+  if (designable !== false) {
+    return <DatePicker {...props} />;
+  } else {
+    return <MobileDateTimePicker {...props} />;
+  }
+};
+DatePickerMobile.FilterWithPicker = DatePicker.FilterWithPicker;
+DatePickerMobile.RangePicker = DatePicker.RangePicker;
+
 const mobileComponents = {
   Button: MobileButton,
   Select: (props) => {
@@ -37,14 +56,7 @@ const mobileComponents = {
       return <MobilePicker {...props} />;
     }
   },
-  DatePicker: (props) => {
-    const { designable } = useDesignable();
-    if (designable !== false) {
-      return <DatePicker {...props} />;
-    } else {
-      return <MobileDateTimePicker {...props} />;
-    }
-  },
+  DatePicker: DatePickerMobile,
   UnixTimestamp: MobileDateTimePicker,
   Modal: MobileDialog,
   AssociationField: AssociationFieldMobile,
@@ -79,7 +91,10 @@ export const MobilePage = () => {
         components={mobileComponents}
       />
       {/* 用于渲染子页面 */}
-      <Outlet />
+      <SchemaComponentOptions components={mobileComponents}>
+        <Outlet />
+      </SchemaComponentOptions>
+
       <div className="nb-mobile-subpages-slot"></div>
     </>
   );

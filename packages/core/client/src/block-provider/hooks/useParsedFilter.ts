@@ -57,12 +57,27 @@ export function useParsedFilter({ filterOption }: { filterOption: any }) {
               throw new Error(`useParsedFilter: can not find variable ${variableName}`);
             }
 
-            const result = getValuesByPath(
-              {
-                [variableName]: variable?.ctx || {},
-              },
-              getPath(value),
-            );
+            let result = null;
+            const path = getPath(value);
+            const keys = path.split('.');
+
+            // For a path like 'a.b.c', if ctx.a exists but ctx.a.b doesn't,
+            // we return the value of ctx.a. This ensures the `run` function is triggered
+            // when field 'a' changes.
+            keys.forEach((key, index) => {
+              const subpath = keys.slice(0, index + 1).join('.');
+              const _result = getValuesByPath(
+                {
+                  [variableName]: variable?.ctx || {},
+                },
+                subpath,
+              );
+
+              if (!_.isEmpty(_result)) {
+                result = _result;
+              }
+            });
+
             return result;
           },
         });

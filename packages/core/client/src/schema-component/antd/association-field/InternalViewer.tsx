@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useField, useFieldSchema } from '@formily/react';
+import { observer, useField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import _ from 'lodash';
-import React, { FC, Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import React, { FC, Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDesignable } from '../../';
 import { WithoutTableFieldResource } from '../../../block-provider';
 import { CollectionRecordProvider, useCollectionManager, useCollectionRecordData } from '../../../data-source';
@@ -86,6 +86,13 @@ const RenderRecord = React.memo(
   }) => {
     const [loading, setLoading] = useState(true);
     const [result, setResult] = useState<React.ReactNode[]>([]);
+    const needWaitForFieldSchemaUpdatedRef = useRef(false);
+    const fieldSchemaRef = useRef(fieldSchema);
+    fieldSchemaRef.current = fieldSchema;
+
+    const getCustomActionSchema = useCallback(() => {
+      return fieldSchemaRef.current;
+    }, []);
 
     // The map method here maybe quite time-consuming, especially in table blocks.
     // Therefore, we use an asynchronous approach to render the list,
@@ -122,11 +129,23 @@ const RenderRecord = React.memo(
                     setBtnHover(true);
                     e.stopPropagation();
                     e.preventDefault();
-                    if (designable) {
+                    if (designable && !fieldSchema.properties) {
                       insertViewer(schema.Viewer);
+                      needWaitForFieldSchemaUpdatedRef.current = true;
                     }
 
-                    if (fieldSchema.properties) {
+                    if (needWaitForFieldSchemaUpdatedRef.current) {
+                      // When first inserting, the fieldSchema instance will be updated to a new instance.
+                      // We need to wait for the instance update before opening the popup to prevent configuration loss.
+                      setTimeout(() => {
+                        openPopup({
+                          recordData: record,
+                          parentRecordData: recordData,
+                          customActionSchema: getCustomActionSchema(),
+                        });
+                      });
+                      needWaitForFieldSchemaUpdatedRef.current = false;
+                    } else if (fieldSchema.properties) {
                       openPopup({
                         recordData: record,
                         parentRecordData: recordData,
@@ -155,7 +174,7 @@ const RenderRecord = React.memo(
       ellipsisWithTooltipRef,
       enableLink,
       fieldNames?.label,
-      fieldSchema?.properties,
+      fieldSchema,
       getLabelUiSchema,
       insertViewer,
       isTreeCollection,
@@ -164,6 +183,7 @@ const RenderRecord = React.memo(
       setBtnHover,
       snapshot,
       value,
+      getCustomActionSchema,
     ]);
 
     if (loading) {
@@ -176,7 +196,7 @@ const RenderRecord = React.memo(
 
 RenderRecord.displayName = 'RenderRecord';
 
-const ButtonLinkList: FC<ButtonListProps> = React.memo((props) => {
+const ButtonLinkList: FC<ButtonListProps> = observer((props) => {
   const fieldSchema = useFieldSchema();
   const cm = useCollectionManager();
   const { enableLink } = fieldSchema['x-component-props'] || {};
@@ -247,7 +267,7 @@ const getSourceData = (recordData, fieldSchema) => {
 export const ReadPrettyInternalViewer: React.FC<ReadPrettyInternalViewerProps> = (props) => {
   const { value, ButtonList = ButtonLinkList } = props;
   const fieldSchema = useFieldSchema();
-  const { enableLink } = fieldSchema['x-component-props'] || {};
+  const { enableLink, openMode, openSize } = fieldSchema['x-component-props'] || {};
   // value 做了转换，但 props.value 和原来 useField().value 的值不一致
   const field = useField();
   const [visible, setVisible] = useState(false);
@@ -272,9 +292,10 @@ export const ReadPrettyInternalViewer: React.FC<ReadPrettyInternalViewerProps> =
         setVisible?.(value);
         setVisibleWithURL?.(value);
       },
-      openMode: defaultOpenMode,
+      openMode: openMode || defaultOpenMode,
       snapshot: collectionField?.interface === 'snapshot',
       fieldSchema: fieldSchema,
+      openSize,
     }),
     [collectionField?.interface, defaultOpenMode, fieldSchema, setVisibleWithURL, visible, visibleWithURL],
   );

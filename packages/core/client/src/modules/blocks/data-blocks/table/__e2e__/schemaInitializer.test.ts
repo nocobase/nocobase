@@ -163,7 +163,7 @@ test.describe('configure columns', () => {
       .getByText(record.manyToOne1.id)
       .click();
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Details right' }).hover();
     await page.getByRole('menuitem', { name: 'Current record' }).click();
     await page.getByLabel('schema-initializer-Grid-details:configureFields-targetCollection1').hover();
     await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
@@ -176,7 +176,7 @@ test.describe('configure columns', () => {
       .getByText(record.manyToOne1.manyToOne2.id)
       .click();
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Details right' }).hover();
     await page.getByRole('menuitem', { name: 'Current record' }).click();
     await page.getByLabel('schema-initializer-Grid-details:configureFields-targetCollection2').hover();
     await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
@@ -189,7 +189,7 @@ test.describe('configure columns', () => {
       .getByText(record.manyToOne1.manyToOne2.manyToOne3.id)
       .click();
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Details right' }).hover();
     await page.getByRole('menuitem', { name: 'Current record' }).click();
     await page.getByLabel('schema-initializer-Grid-details:configureFields-emptyCollection').hover();
     await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
@@ -203,7 +203,7 @@ test.describe('configure columns', () => {
     // 1. 点击行操作按钮打开弹窗，创建一个详情区块，并配置第一、二、三级关系字段
     await page.getByLabel('action-Action.Link-Edit-').first().click();
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Details right' }).hover();
     await page.getByRole('menuitem', { name: 'Current record' }).click();
     await page.getByLabel('schema-initializer-Grid-details:configureFields-general').hover();
     await page.getByRole('menuitem', { name: 'manyToOne1', exact: true }).click();
@@ -222,7 +222,7 @@ test.describe('configure columns', () => {
       .getByTestId('drawer-AssociationField.Viewer-targetCollection1-View record')
       .getByLabel('schema-initializer-Grid-popup')
       .hover();
-    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Details right' }).hover();
     await page.getByRole('menuitem', { name: 'Current record' }).click();
     await page.getByLabel('schema-initializer-Grid-details:configureFields-targetCollection1').hover();
     await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
@@ -242,7 +242,7 @@ test.describe('configure columns', () => {
       .getByTestId('drawer-AssociationField.Viewer-targetCollection2-View record')
       .getByLabel('schema-initializer-Grid-popup')
       .hover();
-    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Details right' }).hover();
     await page.getByRole('menuitem', { name: 'Current record' }).click();
     await page.getByLabel('schema-initializer-Grid-details:configureFields-targetCollection2').hover();
     await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
@@ -262,7 +262,7 @@ test.describe('configure columns', () => {
       .getByTestId('drawer-AssociationField.Viewer-emptyCollection-View record')
       .getByLabel('schema-initializer-Grid-popup')
       .hover();
-    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Details right' }).hover();
     await page.getByRole('menuitem', { name: 'Current record' }).click();
     await page.getByLabel('schema-initializer-Grid-details:configureFields-emptyCollection').hover();
     await page.getByRole('menuitem', { name: 'ID', exact: true }).click();

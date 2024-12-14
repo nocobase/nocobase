@@ -7,20 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RecursionField, observer, useFieldSchema } from '@formily/react';
+import { css } from '@emotion/css';
+import { observer, useFieldSchema } from '@formily/react';
 import {
   CollectionContext,
   DataSourceContext,
   DndContext,
+  Icon,
+  NocoBaseRecursionField,
+  useBlockHeight,
   useDesignable,
   useSchemaInitializerRender,
   withDynamicSchemaProps,
-  Icon,
-  useBlockHeight,
 } from '@nocobase/client';
-import { css } from '@emotion/css';
-import { Space, List, Avatar, theme } from 'antd';
-import React, { createContext, useState, useEffect } from 'react';
+import { Avatar, List, Space, theme } from 'antd';
+import React, { createContext, useEffect, useState } from 'react';
 import { WorkbenchLayout } from './workbenchBlockSettings';
 
 const ConfigureActionsButton = observer(
@@ -72,7 +73,7 @@ const InternalIcons = () => {
         {layout === WorkbenchLayout.Grid ? (
           <Space wrap size={gap}>
             {fieldSchema.mapProperties((s, key) => (
-              <RecursionField name={key} schema={s} key={key} />
+              <NocoBaseRecursionField name={key} schema={s} key={key} />
             ))}
           </Space>
         ) : (
@@ -91,6 +92,7 @@ const InternalIcons = () => {
                       overflow: hidden;
                       text-overflow: ellipsis;
                       font-size: 14px;
+                      margin: 0 0 0 0;
                     }
                     .ant-list-item-meta-title button {
                       font-size: 14px;
@@ -103,7 +105,7 @@ const InternalIcons = () => {
                 >
                   <List.Item.Meta
                     avatar={<Avatar style={{ backgroundColor }} icon={<Icon type={icon} />} />}
-                    title={<RecursionField name={key} schema={s} key={key} />}
+                    title={<NocoBaseRecursionField name={key} schema={s} key={key} />}
                   ></List.Item.Meta>
                 </List.Item>
               );

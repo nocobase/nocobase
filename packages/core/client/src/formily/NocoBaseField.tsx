@@ -7,23 +7,32 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FieldContext, IFieldProps, JSXComponent, Schema, useField, useForm } from '@formily/react';
-import React from 'react';
+import { FieldContext, IFieldProps, JSXComponent, Schema, useFieldSchema } from '@formily/react';
+import React, { useMemo } from 'react';
 import { useCompile } from '../schema-component/hooks/useCompile';
 import { NocoBaseReactiveField } from './NocoBaseReactiveField';
 import { createNocoBaseField } from './createNocoBaseField';
 
+/**
+ * To maintain high performance of Table, this component removes Formily-related components
+ * @param props component props
+ * @returns
+ */
 export const NocoBaseField = <D extends JSXComponent, C extends JSXComponent>(
   props: IFieldProps<D, C> & { schema: Schema },
 ) => {
   const compile = useCompile();
-  const form = useForm();
-  const parent = useField();
-  const field = createNocoBaseField.call(form, { basePath: parent?.address, compile, ...props });
+  const fieldSchema = useFieldSchema();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const field = useMemo(() => createNocoBaseField({ ...props, compile }), []);
+
+  // update componentProps to rerender field component
+  Object.assign(field.componentProps, fieldSchema['x-component-props']);
+  field.value = props.value;
 
   return (
-    <FieldContext.Provider value={field}>
-      <NocoBaseReactiveField field={field}>{props.children}</NocoBaseReactiveField>
+    <FieldContext.Provider value={field as any}>
+      <NocoBaseReactiveField field={field as any}>{props.children}</NocoBaseReactiveField>
     </FieldContext.Provider>
   );
 };

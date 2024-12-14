@@ -453,6 +453,22 @@ export class ACL extends EventEmitter {
             ctx.permission.parsedParams = parsedParams;
             ctx.log?.debug && ctx.log.debug('acl parsedParams', parsedParams);
             ctx.permission.rawParams = lodash.cloneDeep(resourcerAction.params);
+
+            if (parsedParams.appends && resourcerAction.params.fields) {
+              for (const queryField of resourcerAction.params.fields) {
+                if (parsedParams.appends.indexOf(queryField) !== -1) {
+                  // move field to appends
+                  if (!resourcerAction.params.appends) {
+                    resourcerAction.params.appends = [];
+                  }
+                  resourcerAction.params.appends.push(queryField);
+                  resourcerAction.params.fields = resourcerAction.params.fields.filter((f) => f !== queryField);
+                }
+              }
+            }
+
+            const isEmptyFields = resourcerAction.params.fields && resourcerAction.params.fields.length === 0;
+
             resourcerAction.mergeParams(parsedParams, {
               appends: (x, y) => {
                 if (!x) {
@@ -464,6 +480,11 @@ export class ACL extends EventEmitter {
                 return (x as any[]).filter((i) => y.includes(i.split('.').shift()));
               },
             });
+
+            if (isEmptyFields) {
+              resourcerAction.params.fields = [];
+            }
+
             ctx.permission.mergedParams = lodash.cloneDeep(resourcerAction.params);
           }
         } catch (e) {

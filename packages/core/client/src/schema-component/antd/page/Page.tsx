@@ -35,7 +35,6 @@ import { KeepAliveProvider, useKeepAlive } from '../../../route-switch/antd/admi
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
 import { DndContext } from '../../common';
 import { SortableItem } from '../../common/sortable-item';
-import { SchemaComponentContext, useNewRefreshContext } from '../../context';
 import { SchemaComponent, SchemaComponentOptions } from '../../core';
 import { useDesignable } from '../../hooks';
 import { useToken } from '../__builtins__';
@@ -94,8 +93,11 @@ const InternalPage = React.memo((props: PageProps) => {
   );
 });
 
-const hiddenStyle = {
+const hiddenStyle: React.CSSProperties = {
+  // Visually hide the element while keeping it in document flow to prevent reflow/repaint
   transform: 'scale(0)',
+  // Prevent element from receiving any pointer events (clicks, hovers etc) to avoid interfering with other elements
+  pointerEvents: 'none',
 };
 
 export const Page = React.memo((props: PageProps) => {
@@ -348,7 +350,6 @@ const NocoBasePageHeader = React.memo(({ activeKey, className }: { activeKey: st
   const { setTitle: setDocumentTitle } = useDocumentTitle();
   const { t } = useTranslation();
   const [pageTitle, setPageTitle] = useState(() => t(fieldSchema.title));
-  const newRefreshCtx = useNewRefreshContext();
 
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
   const enablePageTabs = fieldSchema['x-component-props']?.enablePageTabs;
@@ -376,7 +377,7 @@ const NocoBasePageHeader = React.memo(({ activeKey, className }: { activeKey: st
   );
 
   return (
-    <SchemaComponentContext.Provider value={newRefreshCtx}>
+    <>
       <PageDesigner title={pageTitle} />
       {!disablePageHeader && (
         <AntdPageHeader
@@ -387,7 +388,7 @@ const NocoBasePageHeader = React.memo(({ activeKey, className }: { activeKey: st
           footer={<NocoBasePageHeaderTabs className={className} activeKey={activeKey} />}
         />
       )}
-    </SchemaComponentContext.Provider>
+    </>
   );
 });
 

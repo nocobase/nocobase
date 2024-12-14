@@ -73,10 +73,13 @@ describe('actions', () => {
     });
 
     it('should keep at least one authenticator', async () => {
-      await repo.createMany({
-        records: [{ name: 'test', authType: 'testType', enabled: true }],
+      await repo.destroy({ truncate: true });
+      const authenticator = await repo.create({
+        values: { name: 'test', authType: 'testType', enabled: true },
       });
-      const res = await agent.resource('authenticators').destroy();
+      const res = await agent.resource('authenticators').destroy({
+        filterByTk: authenticator.id,
+      });
       expect(res.statusCode).toBe(400);
       expect(await repo.count()).toBe(1);
     });

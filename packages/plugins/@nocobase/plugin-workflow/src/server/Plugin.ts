@@ -12,7 +12,7 @@ import { randomUUID } from 'crypto';
 
 import LRUCache from 'lru-cache';
 
-import { Op, Transaction, Transactionable } from '@nocobase/database';
+import { Op, Transactionable } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
@@ -34,15 +34,19 @@ import QueryInstruction from './instructions/QueryInstruction';
 import UpdateInstruction from './instructions/UpdateInstruction';
 
 import type { ExecutionModel, JobModel, WorkflowModel } from './types';
+import WorkflowRepository from './repositories/WorkflowRepository';
+import { Context } from '@nocobase/actions';
+import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 
 type ID = number | string;
 
 type Pending = [ExecutionModel, JobModel?];
 
-type EventOptions = {
+export type EventOptions = {
   eventKey?: string;
   context?: any;
   deferred?: boolean;
+  manually?: boolean;
   [key: string]: any;
 } & Transactionable;
 
@@ -69,20 +73,6 @@ export default class PluginWorkflowServer extends Plugin {
 
     if (instance.enabled) {
       instance.set('current', true);
-    } else if (!instance.current) {
-      const count = await Model.count({
-        where: {
-          key: instance.key,
-        },
-        transaction,
-      });
-      if (!count) {
-        instance.set('current', true);
-      }
-    }
-
-    if (!instance.changed('enabled') || !instance.enabled) {
-      return;
     }
 
     const previous = await Model.findOne({
@@ -95,8 +85,11 @@ export default class PluginWorkflowServer extends Plugin {
       },
       transaction,
     });
+    if (!previous) {
+      instance.set('current', true);
+    }
 
-    if (previous) {
+    if (instance.current && previous) {
       // NOTE: set to `null` but not `false` will not violate the unique index
       await previous.update(
         { enabled: false, current: null },
@@ -211,6 +204,12 @@ export default class PluginWorkflowServer extends Plugin {
     for (const [name, instruction] of Object.entries({ ...more })) {
       this.registerInstruction(name, instruction);
     }
+  }
+
+  async beforeLoad() {
+    this.db.registerRepositories({
+      WorkflowRepository,
+    });
   }
 
   /**
@@ -367,13 +366,13 @@ export default class PluginWorkflowServer extends Plugin {
     options: EventOptions = {},
   ): void | Promise<Processor | null> {
     const logger = this.getLogger(workflow.id);
-    if (!workflow.enabled) {
-      logger.warn(`workflow ${workflow.id} is not enabled, event will be ignored`);
-      return;
-    }
     if (!this.ready) {
       logger.warn(`app is not ready, event of workflow ${workflow.id} will be ignored`);
       logger.debug(`ignored event data:`, context);
+      return;
+    }
+    if (!options.manually && !workflow.enabled) {
+      logger.warn(`workflow ${workflow.id} is not enabled, event will be ignored`);
       return;
     }
     // `null` means not to trigger
@@ -382,7 +381,7 @@ export default class PluginWorkflowServer extends Plugin {
       return;
     }
 
-    if (this.isWorkflowSync(workflow)) {
+    if (options.manually || this.isWorkflowSync(workflow)) {
       return this.triggerSync(workflow, context, options);
     }
 
@@ -454,11 +453,13 @@ export default class PluginWorkflowServer extends Plugin {
     context,
     options: EventOptions,
   ): Promise<ExecutionModel | null> {
-    const { transaction = await this.db.sequelize.transaction(), deferred } = options;
+    const { deferred } = options;
+    const transaction = await this.useDataSourceTransaction('main', options.transaction, true);
+    const sameTransaction = options.transaction === transaction;
     const trigger = this.triggers.get(workflow.type);
     const valid = await trigger.validateEvent(workflow, context, { ...options, transaction });
     if (!valid) {
-      if (!options.transaction) {
+      if (!sameTransaction) {
         await transaction.commit();
       }
       return null;
@@ -476,7 +477,7 @@ export default class PluginWorkflowServer extends Plugin {
         { transaction },
       );
     } catch (err) {
-      if (!options.transaction) {
+      if (!sameTransaction) {
         await transaction.rollback();
       }
       throw err;
@@ -502,7 +503,7 @@ export default class PluginWorkflowServer extends Plugin {
       },
     );
 
-    if (!options.transaction) {
+    if (!sameTransaction) {
       await transaction.commit();
     }
 
@@ -598,7 +599,8 @@ export default class PluginWorkflowServer extends Plugin {
 
   private async process(execution: ExecutionModel, job?: JobModel, options: Transactionable = {}): Promise<Processor> {
     if (execution.status === EXECUTION_STATUS.QUEUEING) {
-      await execution.update({ status: EXECUTION_STATUS.STARTED }, { transaction: options.transaction });
+      const transaction = await this.useDataSourceTransaction('main', options.transaction);
+      await execution.update({ status: EXECUTION_STATUS.STARTED }, { transaction });
     }
     const logger = this.getLogger(execution.workflowId);
     const processor = this.createProcessor(execution, options);
@@ -611,7 +613,7 @@ export default class PluginWorkflowServer extends Plugin {
       await (job ? processor.resume(job) : processor.start());
       logger.info(`execution (${execution.id}) finished with status: ${execution.status}`, { execution });
       if (execution.status && execution.workflow.options?.deleteExecutionOnStatus?.includes(execution.status)) {
-        await execution.destroy();
+        await execution.destroy({ transaction: processor.mainTransaction });
       }
     } catch (err) {
       logger.error(`execution (${execution.id}) error: ${err.message}`, err);
@@ -622,6 +624,17 @@ export default class PluginWorkflowServer extends Plugin {
     return processor;
   }
 
+  async execute(workflow: WorkflowModel, context: Context, options: EventOptions = {}) {
+    const trigger = this.triggers.get(workflow.type);
+    if (!trigger) {
+      throw new Error(`trigger type "${workflow.type}" of workflow ${workflow.id} is not registered`);
+    }
+    if (!trigger.execute) {
+      throw new Error(`"execute" method of trigger ${workflow.type} is not implemented`);
+    }
+    return trigger.execute(workflow, context, options);
+  }
+
   /**
    * @experimental
    * @param {string} dataSourceName
@@ -630,8 +643,8 @@ export default class PluginWorkflowServer extends Plugin {
    * @returns {Trasaction}
    */
   useDataSourceTransaction(dataSourceName = 'main', transaction, create = false) {
-    // @ts-ignore
-    const { db } = this.app.dataSourceManager.dataSources.get(dataSourceName).collectionManager;
+    const { db } = this.app.dataSourceManager.dataSources.get(dataSourceName)
+      .collectionManager as SequelizeCollectionManager;
     if (!db) {
       return;
     }

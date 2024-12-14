@@ -36,6 +36,7 @@ export const InternalSubTable = observer(
         insertSelector(schema.Selector);
       }
     }, [field.componentProps?.allowSelectExistingRecord]);
+
     const option = useSchemaOptionsContext();
     const components = {
       ...option.components,

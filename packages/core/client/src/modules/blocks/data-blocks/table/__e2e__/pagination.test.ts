@@ -23,7 +23,7 @@ test.describe('pagination', () => {
 
     // 1. 创建一个 Table
     await page.getByLabel('schema-initializer-Grid-page:').hover();
-    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Table right' }).hover();
     await page.getByRole('menuitem', { name: 'collectionName' }).click();
     // 显示出 ID
     await page.getByLabel('schema-initializer-TableV2-').hover();

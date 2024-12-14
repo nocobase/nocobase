@@ -122,10 +122,10 @@ describe('QuickEdit', () => {
     await renderAppOptions(getRenderOptions());
 
     await waitFor(() => {
-      expect(document.querySelector('.ant-table-footer button')).toBeInTheDocument();
+      expect(document.querySelector('.nb-sub-table-addNew')).toBeInTheDocument();
     });
 
-    await userEvent.click(document.querySelector('.ant-table-footer button'));
+    await userEvent.click(document.querySelector('.nb-sub-table-addNew'));
     await waitFor(() => {
       expect(document.querySelector('.ant-table-row')).toBeInTheDocument();
     });
@@ -146,10 +146,10 @@ describe('QuickEdit', () => {
     await renderAppOptions(getRenderOptions(true));
 
     await waitFor(() => {
-      expect(document.querySelector('.ant-table-footer button')).toBeInTheDocument();
+      expect(document.querySelector('.nb-sub-table-addNew')).toBeInTheDocument();
     });
 
-    await userEvent.click(document.querySelector('.ant-table-footer button'));
+    await userEvent.click(document.querySelector('.nb-sub-table-addNew'));
     await waitFor(() => {
       expect(document.querySelector('.ant-table-row')).toBeInTheDocument();
       expect(document.querySelector('.ant-description-textarea')).toHaveTextContent('aaa');

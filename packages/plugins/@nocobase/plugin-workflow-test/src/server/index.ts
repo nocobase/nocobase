@@ -15,7 +15,7 @@ import { MockClusterOptions, MockServer, createMockCluster, createMockServer, mo
 import functions from './functions';
 import triggers from './triggers';
 import instructions from './instructions';
-import { SequelizeDataSource } from '@nocobase/data-source-manager';
+import { SequelizeCollectionManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 import { uid } from '@nocobase/utils';
 export { sleep } from '@nocobase/test';
 
@@ -70,8 +70,8 @@ export async function getApp({
     }),
   );
   const another = app.dataSourceManager.dataSources.get('another');
-  // @ts-ignore
-  const anotherDB = another.collectionManager.db;
+
+  const anotherDB = (another.collectionManager as SequelizeCollectionManager).db;
 
   await anotherDB.import({
     directory: path.resolve(__dirname, 'collections'),

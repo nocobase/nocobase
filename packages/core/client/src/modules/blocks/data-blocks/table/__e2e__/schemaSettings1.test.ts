@@ -322,7 +322,7 @@ test.describe('table block schema settings', () => {
 
       // 1. 创建一个详情区块
       await page.getByLabel('schema-initializer-Grid-page:').hover();
-      await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+      await page.getByRole('menuitem', { name: 'Details right' }).hover();
       await page.getByRole('menuitem', { name: 'Roles' }).click();
       await page.mouse.move(300, 0);
       await page.getByLabel('schema-initializer-Grid-details:configureFields-roles').hover();
@@ -362,7 +362,7 @@ test.describe('table block schema settings', () => {
 
       // 1. 创建一个详情区块
       await page.getByLabel('schema-initializer-Grid-page:').hover();
-      await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+      await page.getByRole('menuitem', { name: 'Details right' }).hover();
       await page.getByRole('menuitem', { name: 'Roles' }).click();
       await page.mouse.move(300, 0);
       await page.getByLabel('schema-initializer-Grid-details:configureFields-roles').hover();
@@ -401,6 +401,7 @@ test.describe('table block schema settings', () => {
       await page.getByLabel('designer-schema-settings-CardItem-blockSettings:detailsWithPagination-roles').hover();
       await page.getByRole('menuitem', { name: 'Delete' }).click();
       await page.getByRole('button', { name: 'OK', exact: true }).click();
+      await page.waitForTimeout(300);
 
       await page.getByLabel('block-item-CardItem-roles-').hover();
       await page.getByLabel('designer-schema-settings-CardItem-blockSettings:table-roles').hover();
@@ -412,5 +413,5 @@ test.describe('table block schema settings', () => {
 
 async function showSettingsMenu(page) {
   await page.getByLabel('block-item-CardItem-general-table').hover();
-  await page.getByLabel('designer-schema-settings-CardItem-TableBlockDesigner-general').hover();
+  await page.getByLabel('designer-schema-settings-CardItem-TableBlockDesigner-general').click();
 }

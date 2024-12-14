@@ -23,8 +23,9 @@ import {
   useCollectionManager_deprecated,
   useDesignable,
   useFormBlockContext,
+  usePopupSettings,
 } from '@nocobase/client';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from '../../locale';
 import { useCalendarBlockContext } from '../schema-initializer/CalendarBlockProvider';
 
@@ -160,6 +161,52 @@ export const calendarBlockSettings = new SchemaSettings({
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],
                 'x-decorator-props': field.decoratorProps,
+              },
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'eventOpenMode',
+      Component: SchemaSettingsSelectItem,
+      useComponentProps() {
+        const { t } = useTranslation();
+        const fieldSchema = useFieldSchema();
+        const field = useField();
+        const { dn } = useDesignable();
+        const { isPopupVisibleControlledByURL } = usePopupSettings();
+        const eventSchema = Object.values(fieldSchema['properties'])?.[0]?.['properties']['event'];
+        const modeOptions = useMemo(() => {
+          if (isPopupVisibleControlledByURL()) {
+            return [
+              { label: t('Drawer'), value: 'drawer' },
+              { label: t('Dialog'), value: 'modal' },
+              { label: t('Page'), value: 'page' },
+            ];
+          }
+
+          return [
+            { label: t('Drawer'), value: 'drawer' },
+            { label: t('Dialog'), value: 'modal' },
+          ];
+        }, [t, isPopupVisibleControlledByURL()]);
+        return {
+          title: t('Event open mode'),
+          value: eventSchema['x-component-props']?.['openMode'] || 'drawer',
+          options: modeOptions,
+          onChange: (v) => {
+            if (eventSchema['x-component-props']) {
+              eventSchema['x-component-props']['openMode'] = v;
+            } else {
+              eventSchema['x-component-props'] = {};
+              eventSchema['x-component-props']['openMode'] = v;
+            }
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: eventSchema['x-uid'],
+                'x-component-props': eventSchema['x-component-props'],
               },
             });
             dn.refresh();

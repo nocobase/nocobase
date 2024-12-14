@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { APIClient as APIClientSDK, getSubAppName } from '@nocobase/sdk';
+import { APIClient as APIClientSDK } from '@nocobase/sdk';
 import { Result } from 'ahooks/es/useRequest/src/types';
 import { notification } from 'antd';
 import React from 'react';
@@ -75,7 +75,7 @@ export class APIClient extends APIClientSDK {
 
   getHeaders() {
     const headers = super.getHeaders();
-    const appName = this.app.getName();
+    const appName = this.app?.getName();
     if (appName) {
       headers['X-App'] = appName;
     }
@@ -91,10 +91,10 @@ export class APIClient extends APIClientSDK {
   interceptors() {
     this.axios.interceptors.request.use((config) => {
       config.headers['X-With-ACL-Meta'] = true;
-      const appName = this.app ? getSubAppName(this.app.getPublicPath()) : null;
-      if (appName) {
-        config.headers['X-App'] = appName;
-      }
+      const headers = this.getHeaders();
+      Object.keys(headers).forEach((key) => {
+        config.headers[key] = headers[key];
+      });
       return config;
     });
     super.interceptors();
@@ -109,9 +109,14 @@ export class APIClient extends APIClientSDK {
         // TODO(yangqia): improve error code and message
         if (errs.find((error: { code?: string }) => error.code === 'ROLE_NOT_FOUND_ERR')) {
           this.auth.setRole(null);
+          window.location.reload();
         }
         if (errs.find((error: { code?: string }) => error.code === 'TOKEN_INVALID')) {
           this.auth.setToken(null);
+        }
+        if (errs.find((error: { code?: string }) => error.code === 'ROLE_NOT_FOUND_FOR_USER')) {
+          this.auth.setRole(null);
+          window.location.reload();
         }
         throw error;
       },

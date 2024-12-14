@@ -10,10 +10,11 @@
 import { css, cx } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
 import { ArrayField } from '@formily/core';
-import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { Schema, useField, useFieldSchema } from '@formily/react';
 import { List as AntdList, PaginationProps, theme } from 'antd';
 import React, { useCallback, useState } from 'react';
 import { getCardItemSchema } from '../../../block-provider';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { withSkeletonComponent } from '../../../hoc/withSkeletonComponent';
 import { SortableItem } from '../../common';
@@ -159,13 +160,13 @@ const InternalList = withSkeletonComponent(
                 {field.value?.length
                   ? field.value.map((item, index) => {
                       return (
-                        <RecursionField
+                        <NocoBaseRecursionField
                           basePath={field.address}
                           key={index}
                           name={index}
                           onlyRenderProperties
                           schema={getSchema(index)}
-                        ></RecursionField>
+                        ></NocoBaseRecursionField>
                       );
                     })
                   : null}

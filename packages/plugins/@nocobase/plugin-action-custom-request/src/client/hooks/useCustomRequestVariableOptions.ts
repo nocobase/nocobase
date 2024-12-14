@@ -9,6 +9,7 @@
 
 import {
   DEFAULT_DATA_SOURCE_KEY,
+  useBlockContext,
   useCollection_deprecated,
   useCollectionFilterOptions,
   useCollectionRecordData,
@@ -24,6 +25,7 @@ export const useCustomRequestVariableOptions = () => {
   const userFieldOptions = useCollectionFilterOptions('users', DEFAULT_DATA_SOURCE_KEY);
   const compile = useCompile();
   const recordData = useCollectionRecordData();
+  const { name: blockType } = useBlockContext();
 
   const [fields, userFields] = useMemo(() => {
     return [compile(fieldsOptions), compile(userFieldOptions)];
@@ -34,6 +36,11 @@ export const useCustomRequestVariableOptions = () => {
       recordData && {
         name: 'currentRecord',
         title: t('Current record', { ns: 'client' }),
+        children: [...fields],
+      },
+      blockType === 'form' && {
+        name: '$nForm',
+        title: t('Current form', { ns: 'client' }),
         children: [...fields],
       },
       {
@@ -52,5 +59,5 @@ export const useCustomRequestVariableOptions = () => {
         children: null,
       },
     ].filter(Boolean);
-  }, [recordData, t, fields, userFields]);
+  }, [recordData, t, fields, blockType, userFields]);
 };

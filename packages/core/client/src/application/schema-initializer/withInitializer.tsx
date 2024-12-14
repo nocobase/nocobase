@@ -54,7 +54,7 @@ export function withInitializer<T>(C: ComponentType<T>) {
             insertAdjacent(insertPosition, wrapCallback(schema, { isInSubTable }), { onSuccess });
           }
         },
-        [insertCallback, wrapCallback, insertAdjacent, insertPosition, onSuccess],
+        [insertCallback, wrapCallback, isInSubTable, insertAdjacent, insertPosition, onSuccess],
       );
 
       const { wrapSSR, hashId, componentCls } = useSchemaInitializerStyles();

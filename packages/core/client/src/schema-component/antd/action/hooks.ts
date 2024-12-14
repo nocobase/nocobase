@@ -18,6 +18,7 @@ export const useActionContext = () => {
   const ctx = useContext(ActionContext);
   const { t } = useTranslation();
   const { modal } = App.useApp();
+  const form = useForm();
 
   return {
     ...ctx,
@@ -31,6 +32,7 @@ export const useActionContext = () => {
               async onOk() {
                 ctx.setFormValueChanged(false);
                 ctx.setVisible?.(false);
+                form?.reset?.();
               },
             });
           } else {
@@ -63,5 +65,5 @@ export const useLinkageAction = () => {
   const fieldSchema = useFieldSchema();
   const isRecordAction = useIsDetailBlock();
   const isAction = ['Action.Link', 'Action'].includes(fieldSchema['x-component']);
-  return isAction && isRecordAction;
+  return isAction && isRecordAction && fieldSchema['x-action'];
 };

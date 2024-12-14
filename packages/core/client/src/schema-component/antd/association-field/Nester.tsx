@@ -7,34 +7,48 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
+import { CloseOutlined, PlusOutlined, ZoomInOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { observer, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { each } from '@formily/shared';
-import { Button, Card, Divider, Tooltip } from 'antd';
-import React, { useCallback, useContext } from 'react';
+import { useUpdate } from 'ahooks';
+import { Button, Card, Divider, Tooltip, Space } from 'antd';
+import React, { useCallback, useContext, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormActiveFieldsProvider } from '../../../block-provider/hooks/useFormActiveFields';
-import { useCollection } from '../../../data-source';
+import { useCollection, CollectionProvider } from '../../../data-source';
+import { useCreateActionProps } from '../../../block-provider/hooks';
 import {
   useCollectionRecord,
   useCollectionRecordData,
 } from '../../../data-source/collection-record/CollectionRecordProvider';
 import { isNewRecord, markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
 import { FlagProvider } from '../../../flag-provider';
-import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
+import { NocoBaseRecursionField, RefreshComponentProvider } from '../../../formily/NocoBaseRecursionField';
 import { RecordIndexProvider, RecordProvider } from '../../../record-provider';
 import { isPatternDisabled, isSystemField } from '../../../schema-settings';
+import { TableSelectorParamsProvider } from '../../../block-provider/TableSelectorProvider';
 import {
   DefaultValueProvider,
   IsAllowToSetDefaultValueParams,
   interfacesOfUnsupportedDefaultValue,
 } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { AssociationFieldContext } from './context';
-import { SubFormProvider, useAssociationFieldContext } from './hooks';
+import { SubFormProvider, useAssociationFieldContext, useFieldNames } from './hooks';
+import { Action, ActionContextProvider } from '../action';
+import { useCompile } from '../../hooks';
+import {
+  FormProvider,
+  RecordPickerProvider,
+  SchemaComponentOptions,
+  useActionContext,
+  RecordPickerContext,
+} from '../..';
+import { useTableSelectorProps } from './InternalPicker';
+import { getLabelFormatValue, useLabelUiSchema } from './util';
 
 export const Nester = (props) => {
   const { options } = useContext(AssociationFieldContext);
@@ -108,13 +122,32 @@ const ToOneNester = (props) => {
 };
 
 const ToManyNester = observer(
-  (props) => {
+  (props: any) => {
     const fieldSchema = useFieldSchema();
-    const { options, field, allowMultiple, allowDissociate } = useAssociationFieldContext<ArrayField>();
+    const {
+      options: collectionField,
+      field,
+      allowMultiple,
+      allowDissociate,
+      currentMode,
+    } = useAssociationFieldContext<ArrayField>();
+    const { allowSelectExistingRecord } = field.componentProps;
     const { t } = useTranslation();
     const recordData = useCollectionRecordData();
     const collection = useCollection();
-
+    const update = useUpdate();
+    const [visibleSelector, setVisibleSelector] = useState(false);
+    const [selectedRows, setSelectedRows] = useState([]);
+    const fieldNames = useFieldNames(props);
+    const compile = useCompile();
+    const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
+    const useNesterSelectProps = () => {
+      return {
+        run() {
+          setVisibleSelector(true);
+        },
+      };
+    };
     if (!Array.isArray(field.value)) {
       field.value = [];
     }
@@ -144,6 +177,54 @@ const ToManyNester = observer(
       );
     }, []);
 
+    const usePickActionProps = () => {
+      const { setVisible } = useActionContext();
+      const { selectedRows, setSelectedRows } = useContext(RecordPickerContext);
+      return {
+        onClick() {
+          selectedRows.map((v) => field.value.push(markRecordAsNew(v)));
+          field.onInput(field.value);
+          field.initialValue = field.value;
+          setSelectedRows([]);
+          setVisible(false);
+        },
+      };
+    };
+    const options = useMemo(() => {
+      if (field.value && Object.keys(field.value).length > 0) {
+        const opts = (Array.isArray(field.value) ? field.value : field.value ? [field.value] : [])
+          .filter(Boolean)
+          .map((option) => {
+            const label = option?.[fieldNames.label];
+            return {
+              ...option,
+              [fieldNames.label]: getLabelFormatValue(compile(labelUiSchema), compile(label)),
+            };
+          });
+        return opts;
+      }
+      return [];
+    }, [field.value, fieldNames?.label]);
+
+    const pickerProps = {
+      size: 'small',
+      fieldNames: field.componentProps.fieldNames,
+      multiple: true,
+      association: {
+        target: collectionField?.target,
+      },
+      options,
+      onChange: props?.onChange,
+      selectedRows,
+      setSelectedRows,
+      collectionField,
+    };
+    const getFilter = () => {
+      const targetKey = collectionField?.targetKey || 'id';
+      const list = (field.value || []).map((option) => option?.[targetKey]).filter(Boolean);
+      const filter = list.length ? { $and: [{ [`${targetKey}.$ne`]: list }] } : {};
+      return filter;
+    };
     return field.value.length > 0 ? (
       <Card
         bordered={true}
@@ -154,72 +235,127 @@ const ToManyNester = observer(
           }
         `}
       >
-        {field.value.map((value, index) => {
-          let allowed = allowDissociate;
-          if (!allowDissociate) {
-            allowed = !value?.[options.targetKey];
-          }
-          return (
-            <React.Fragment key={index}>
-              <div style={{ textAlign: 'right' }}>
-                {field.editable && allowMultiple && (
-                  <Tooltip key={'add'} title={t('Add new')}>
-                    <PlusOutlined
-                      style={{ zIndex: 1000, marginRight: '10px', color: '#a8a3a3' }}
-                      onClick={() => {
-                        action(() => {
-                          if (!Array.isArray(field.value)) {
-                            field.value = [];
+        <RefreshComponentProvider refresh={update}>
+          {field.value.map((value, index) => {
+            let allowed = allowDissociate;
+            if (!allowDissociate) {
+              allowed = !value?.[collectionField.targetKey];
+            }
+            return (
+              <React.Fragment key={index}>
+                <div style={{ textAlign: 'right' }}>
+                  {!field.readPretty && allowed && (
+                    <Tooltip key={'remove'} title={t('Remove')}>
+                      <CloseOutlined
+                        style={{ zIndex: 1000, color: '#a8a3a3' }}
+                        onClick={() => {
+                          action(() => {
+                            spliceArrayState(field as any, {
+                              startIndex: index,
+                              deleteCount: 1,
+                            });
+                            field.value.splice(index, 1);
+                            return field.onInput(field.value);
+                          });
+                        }}
+                      />
+                    </Tooltip>
+                  )}
+                </div>
+                <FormActiveFieldsProvider name="nester">
+                  <SubFormProvider value={{ value, collection, fieldSchema: fieldSchema.parent }}>
+                    <RecordProvider isNew={isNewRecord(value)} record={value} parent={recordData}>
+                      <RecordIndexProvider index={index}>
+                        <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
+                          <NocoBaseRecursionField
+                            onlyRenderProperties
+                            basePath={field.address.concat(index)}
+                            schema={fieldSchema}
+                          />
+                        </DefaultValueProvider>
+                      </RecordIndexProvider>
+                    </RecordProvider>
+                  </SubFormProvider>
+                </FormActiveFieldsProvider>
+
+                <Divider />
+              </React.Fragment>
+            );
+          })}
+          <Space>
+            {field.editable && allowMultiple && (
+              <Action.Link
+                useProps={() => {
+                  return {
+                    onClick: () => {
+                      action(() => {
+                        if (!Array.isArray(field.value)) {
+                          field.value = [];
+                        }
+                        const index = field.value.length;
+                        field.value.splice(index, 0, markRecordAsNew({}));
+                        each(field.form.fields, (targetField, key) => {
+                          if (!targetField) {
+                            delete field.form.fields[key];
                           }
-                          field.value.splice(index + 1, 0, markRecordAsNew({}));
-                          each(field.form.fields, (targetField, key) => {
-                            if (!targetField) {
-                              delete field.form.fields[key];
-                            }
-                          });
-                          return field.onInput(field.value);
                         });
+                        return field.onInput(field.value);
+                      });
+                    },
+                  };
+                }}
+                title={
+                  <Space style={{ gap: 2 }} className="nb-sub-form-addNew">
+                    <PlusOutlined /> {t('Add new')}
+                  </Space>
+                }
+              />
+            )}
+            {field.editable && allowSelectExistingRecord && currentMode === 'Nester' && (
+              <Action.Link
+                useAction={useNesterSelectProps}
+                title={
+                  <Space style={{ gap: 2 }}>
+                    <ZoomInOutlined /> {t('Select record')}
+                  </Space>
+                }
+              />
+            )}
+          </Space>
+        </RefreshComponentProvider>
+        <ActionContextProvider
+          value={{
+            openSize: 'middle',
+            openMode: 'drawer',
+            visible: visibleSelector,
+            setVisible: setVisibleSelector,
+          }}
+        >
+          <RecordPickerProvider {...pickerProps}>
+            <CollectionProvider name={collectionField?.target}>
+              <FormProvider>
+                <TableSelectorParamsProvider params={{ filter: getFilter() }}>
+                  <SchemaComponentOptions
+                    scope={{
+                      usePickActionProps,
+                      useTableSelectorProps,
+                      useCreateActionProps,
+                    }}
+                  >
+                    <NocoBaseRecursionField
+                      onlyRenderProperties
+                      basePath={field.address}
+                      schema={fieldSchema.parent}
+                      filterProperties={(s) => {
+                        return s['x-component'] === 'AssociationField.Selector';
                       }}
                     />
-                  </Tooltip>
-                )}
-                {!field.readPretty && allowed && (
-                  <Tooltip key={'remove'} title={t('Remove')}>
-                    <CloseOutlined
-                      style={{ zIndex: 1000, color: '#a8a3a3' }}
-                      onClick={() => {
-                        action(() => {
-                          spliceArrayState(field as any, {
-                            startIndex: index,
-                            deleteCount: 1,
-                          });
-                          field.value.splice(index, 1);
-                          return field.onInput(field.value);
-                        });
-                      }}
-                    />
-                  </Tooltip>
-                )}
-              </div>
-              <FormActiveFieldsProvider name="nester">
-                <SubFormProvider value={{ value, collection, fieldSchema: fieldSchema.parent }}>
-                  <RecordProvider isNew={isNewRecord(value)} record={value} parent={recordData}>
-                    <RecordIndexProvider index={index}>
-                      <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
-                        <NocoBaseRecursionField
-                          onlyRenderProperties
-                          basePath={field.address.concat(index)}
-                          schema={fieldSchema}
-                        />
-                      </DefaultValueProvider>
-                    </RecordIndexProvider>
-                  </RecordProvider>
-                </SubFormProvider>
-              </FormActiveFieldsProvider>
-              <Divider />
-            </React.Fragment>
-          );
-        })}
+                  </SchemaComponentOptions>
+                </TableSelectorParamsProvider>
+              </FormProvider>
+            </CollectionProvider>
+          </RecordPickerProvider>
+        </ActionContextProvider>
       </Card>
     ) : (
       <>

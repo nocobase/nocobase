@@ -43,6 +43,7 @@ export const fieldSettingsFormItem = new SchemaSettings({
           title: t('Generic properties'),
         };
       },
+
       useChildren(): any {
         return [
           {

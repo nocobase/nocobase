@@ -1,6 +1,6 @@
 English | [中文](./README.zh-CN.md) | [日本語](./README.ja-JP.md)
 
-https://github.com/nocobase/nocobase/assets/1267426/1d6a3979-d1eb-4e50-b726-2f90c3f82eeb
+https://github.com/user-attachments/assets/a50c100a-4561-4e06-b2d2-d48098659ec0
 
 ## We'd love your support!
 

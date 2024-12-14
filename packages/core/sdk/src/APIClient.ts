@@ -22,7 +22,7 @@ type ResourceActionOptions<P = any> = {
   params?: P;
 };
 
-type ResourceAction = (params?: ActionParams) => Promise<any>;
+type ResourceAction = (params?: ActionParams, opts?: any) => Promise<any>;
 
 export type IResource = {
   [key: string]: ResourceAction;
@@ -125,7 +125,7 @@ export class Auth {
    * use {@link Auth#locale} instead
    */
   getLocale() {
-    return this.getOption('locale') || 'en-US';
+    return this.getOption('locale');
   }
 
   /**

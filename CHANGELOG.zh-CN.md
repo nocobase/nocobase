@@ -5,6 +5,301 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.4.10](https://github.com/nocobase/nocobase/compare/v1.4.9...v1.4.10) - 2024-12-12
+
+### 🎉 新特性
+
+- **[操作：自定义请求]** 支持在自定义请求按钮中使用“当前表单”变量 ([#5871](https://github.com/nocobase/nocobase/pull/5871)) by @zhangzhonghe
+
+### 🚀 优化
+
+- **[数据可视化]** 支持在图表的查询配置中使用外键 ([#5869](https://github.com/nocobase/nocobase/pull/5869)) by @2013xile
+
+### 🐛 修复
+
+- **[client]** 修复关联文件表，使用数据选择器时在配置模式下显示文件表区块，非配置模式下未显示的问题 ([#5874](https://github.com/nocobase/nocobase/pull/5874)) by @katherinehhh
+
+- **[权限控制]** 修复配置权限之后复制记录相关问题 ([#5839](https://github.com/nocobase/nocobase/pull/5839)) by @chareice
+
+- **[工作流]** 修复自动删除执行记录时事务超时的问题 ([#5870](https://github.com/nocobase/nocobase/pull/5870)) by @mytharcher
+
+## [v1.4.9](https://github.com/nocobase/nocobase/compare/v1.4.8...v1.4.9) - 2024-12-12
+
+### 🐛 修复
+
+- **[sdk]** 移除默认 locale ([#5867](https://github.com/nocobase/nocobase/pull/5867)) by @chenos
+
+- **[client]**
+  - 修复数据范围中，选择嵌套的关系字段变量，变量值为空的问题 ([#5866](https://github.com/nocobase/nocobase/pull/5866)) by @zhangzhonghe
+
+  - 修复 列数少时右固定列滚动条出现 ([#5864](https://github.com/nocobase/nocobase/pull/5864)) by @katherinehhh
+
+  - 修复筛选组件样式错位问题 ([#5851](https://github.com/nocobase/nocobase/pull/5851)) by @mytharcher
+
+- **[备份管理器]** 修复自定义域名的子应用下载备份文件失败的问题 by @gchust
+
+## [v1.4.8](https://github.com/nocobase/nocobase/compare/v1.4.7...v1.4.8) - 2024-12-10
+
+### 🐛 修复
+
+- **[client]**
+  - 修复 关系字段 record picker 中配置的筛选表单出现数据模板缺陷 ([#5837](https://github.com/nocobase/nocobase/pull/5837)) by @katherinehhh
+
+  - 修复 Markdown string template 关系变量没有按需加载的问题（外部数据源） ([#5791](https://github.com/nocobase/nocobase/pull/5791)) by @katherinehhh
+
+- **[用户数据同步]** 同步数据时跳过不支持的数据类型，而不是直接报错。 ([#5835](https://github.com/nocobase/nocobase/pull/5835)) by @chenzhizdt
+
+- **[备份管理器]**
+  - 修复备份文件较大时下载窗口弹出过慢的问题 by @gchust
+
+  - 修复备份还原子应用时会引起所有应用重启的问题 by @gchust
+
+## [v1.4.7](https://github.com/nocobase/nocobase/compare/v1.4.6...v1.4.7) - 2024-12-09
+
+### 🐛 修复
+
+- **[移动端]** 修复移动端背景色问题，导致看起来区块之间没有间隙 ([#5809](https://github.com/nocobase/nocobase/pull/5809)) by @katherinehhh
+
+## [v1.4.6](https://github.com/nocobase/nocobase/compare/v1.4.5...v1.4.6) - 2024-12-08
+
+### 🐛 修复
+
+- **[操作：导入记录]** 修复关联表格导入的问题 ([#5833](https://github.com/nocobase/nocobase/pull/5833)) by @chareice
+
+- **[权限控制]** 修复 ACL 中使用 fields 查询关系的问题 ([#5832](https://github.com/nocobase/nocobase/pull/5832)) by @chareice
+
+## [v1.4.5](https://github.com/nocobase/nocobase/compare/v1.4.4...v1.4.5) - 2024-12-08
+
+### 🐛 修复
+
+- **[权限控制]** 用户角色不对时刷新页面 ([#5821](https://github.com/nocobase/nocobase/pull/5821)) by @chenos
+
+## [v1.4.4](https://github.com/nocobase/nocobase/compare/v1.4.3...v1.4.4) - 2024-12-08
+
+### 🐛 修复
+
+- **[client]**
+  - 修复表格区块中外部数据源字段列表没有显示 ([#5825](https://github.com/nocobase/nocobase/pull/5825)) by @katherinehhh
+
+  - 修复表单配置字段继承字段的显示问题 ([#5822](https://github.com/nocobase/nocobase/pull/5822)) by @katherinehhh
+
+  - 修复表继承缺陷：字段列表未显示继承表字段且在数据表中无法重写继承字段 ([#5800](https://github.com/nocobase/nocobase/pull/5800)) by @katherinehhh
+
+- **[数据可视化]** 修复在 MySQL 中格式化带时区的日期字段的问题 ([#5829](https://github.com/nocobase/nocobase/pull/5829)) by @2013xile
+
+- **[工作流]**
+  - 修复由于事务引起的外部数据源数据表同步事件触发错误 ([#5818](https://github.com/nocobase/nocobase/pull/5818)) by @mytharcher
+
+  - 修复定时任务时间字段配置中缺少的日期类型 ([#5816](https://github.com/nocobase/nocobase/pull/5816)) by @mytharcher
+
+- **[数据表字段：多对多 (数组)]** 修复更新对一关联表中多对多（数组）字段不生效的问题 ([#5820](https://github.com/nocobase/nocobase/pull/5820)) by @2013xile
+
+- **[日历]**
+  - 修复日历点击空白日期时报错的问题 ([#5803](https://github.com/nocobase/nocobase/pull/5803)) by @katherinehhh
+
+  - 修复关闭通过“日历区块”打开的弹窗，导致所有弹窗都关闭的问题 ([#5793](https://github.com/nocobase/nocobase/pull/5793)) by @zhangzhonghe
+
+- **[公开表单]** 修复子应用中公开表 QC code 扫码打开路径不正确 ([#5799](https://github.com/nocobase/nocobase/pull/5799)) by @katherinehhh
+
+## [v1.4.3](https://github.com/nocobase/nocobase/compare/v1.4.2...v1.4.3) - 2024-12-05
+
+### 🚀 优化
+
+- **[test]** 支持测试用例中登录方法包含角色名称 ([#5794](https://github.com/nocobase/nocobase/pull/5794)) by @mytharcher
+
+- **[通知：站内信]** 更新站内信详情链接的标题 ([#5742](https://github.com/nocobase/nocobase/pull/5742)) by @sheldon66
+
+### 🐛 修复
+
+- **[client]**
+  - 修复无角色用户登录报错后，点击“登录其他账号”按钮时，token未清除的问题 ([#5790](https://github.com/nocobase/nocobase/pull/5790)) by @2013xile
+
+  - 静默请求时丢失请求头信息 ([#5795](https://github.com/nocobase/nocobase/pull/5795)) by @chenos
+
+  - 用户无角色时页面空白 ([#5797](https://github.com/nocobase/nocobase/pull/5797)) by @chenos
+
+  - 修复紧凑主题下子表格 size 为 small 时出现滚动条 ([#5796](https://github.com/nocobase/nocobase/pull/5796)) by @katherinehhh
+
+## [v1.4.2](https://github.com/nocobase/nocobase/compare/v1.4.1...v1.4.2) - 2024-12-04
+
+### 🐛 修复
+
+- **[工作流]** 修复异步工作流在工作流列表中未展示字段标识 ([#5787](https://github.com/nocobase/nocobase/pull/5787)) by @mytharcher
+
+## [v1.4.1](https://github.com/nocobase/nocobase/compare/v1.4.0...v1.4.1) - 2024-12-04
+
+### 🚀 优化
+
+- **[cli]** 优化 pkg 命令 ([#5785](https://github.com/nocobase/nocobase/pull/5785)) by @chenos
+
+### 🐛 修复
+
+- **[移动端]** 修复 移动端筛选操作缺少日期输入框 ([#5786](https://github.com/nocobase/nocobase/pull/5786)) by @katherinehhh
+
+## [v1.4.0](https://github.com/nocobase/nocobase/compare/v1.3.53...v1.4.0) - 2024-12-03
+
+## 🎉 主要新特性
+
+### 简化插件的添加和更新流程
+
+![20241201170853](https://static-docs.nocobase.com/20241201170853.png)
+
+- 插件列表直接读取本地目录
+- 合并插件添加和更新流程
+- 界面支持批量激活插件
+- 简化商业插件下载和升级流程
+
+参考文档：
+
+- [发布日志 / 简化插件的添加和更新流程](https://www.nocobase.com/cn/blog/simplify-the-process-of-adding-and-updating-plugins)
+
+### 通知
+
+![20241201171806](https://static-docs.nocobase.com/20241201171806.png)
+
+- 站内信：支持用户在 NocoBase 应用内实时接收消息通知；
+- 电子邮件：通过电子邮件渠道发送通知，目前只支持 SMTP 传输方式；
+- 企微通知：通过企业微信渠道发送通知。
+
+参考文档：
+
+- [通知管理](https://docs-cn.nocobase.com/handbook/notification-manager)
+
+### 用户数据同步
+
+![20241201172843](https://static-docs.nocobase.com/20241201172843.png)
+
+参考文档：
+
+- [用户数据同步](https://docs-cn.nocobase.com/handbook/user-data-sync)
+
+### 备份管理器
+
+![20241201170237](https://static-docs.nocobase.com/20241201170237.png)
+
+参考文档：
+
+- [备份管理器](https://docs-cn.nocobase.com/handbook/backups)
+
+### 公开表单
+
+对外分享公开表单，向匿名用户收集信息。
+
+![20241201165614](https://static-docs.nocobase.com/20241201165614.png)
+
+参考文档：
+
+- [公开表单](https://docs-cn.nocobase.com/handbook/public-forms)
+
+### 数据源：人大金仓（KingbaseES）
+
+使用人大金仓（KingbaseES）数据库作为数据源，可以作为主数据库，也可以作为外部数据库使用。
+
+![20241024121815](https://static-docs.nocobase.com/20241024121815.png)
+
+参考文档：
+
+- [数据源 - 人大金仓（KingbaseES）](https://docs-cn.nocobase.com/handbook/data-source-kingbase)
+
+### 数据源：外部 Oracle
+
+使用外部的 Oracle 数据库作为数据源。
+
+![701f8271f153d417e6f25c8ba74c931d.png](https://static-docs.nocobase.com/701f8271f153d417e6f25c8ba74c931d.png)
+
+参考文档：
+
+- [数据源：外部 Oracle](https://docs-cn.nocobase.com/handbook/data-source-external-oracle)
+
+### 数据表字段：附件（URL）
+
+支持 URL 格式的附件
+
+![e8772bec3d4b1771c1b21d087c9a4185.png](https://static-docs.nocobase.com/e8772bec3d4b1771c1b21d087c9a4185.png)
+
+参考文档：
+
+- [数据表字段：附件（URL）](https://docs-cn.nocobase.com/handbook/field-attachment-url)
+
+### 字段组件：掩码
+
+![20241201165938](https://static-docs.nocobase.com/20241201165938.png)
+
+参考文档：
+
+- [字段组件：掩码](https://docs-cn.nocobase.com/handbook/field-component-mask)
+
+### 工作流：JavaScript
+
+JavaScript 节点允许用户在工作流中执行一段自定义的服务端 JavaScript 脚本。脚本中可以使用流程上游的变量作为参数，并且可以将脚本的返回值提供给下游节点使用。
+
+![20241202203655](https://static-docs.nocobase.com/20241202203655.png)
+
+参考文档：
+
+- [工作流 - JavaScript](https://docs-cn.nocobase.com/handbook/workflow-javascript)
+
+### 数据可视化：ECharts
+
+新增 ECharts 的图表的支持，支持漏斗图、雷达图等更多图形，并提供更友好的图形配置项。
+
+![data-visualization-echarts](https://static-docs.nocobase.com/202410091022965.png)
+
+参考文档：
+
+- [数据可视化：ECharts](https://docs-cn.nocobase.com/handbook/data-visualization-echarts)
+
+### 区块：分步表单
+
+![a503e153e8d714b9ca56f512142aeef1.png](https://static-docs.nocobase.com/a503e153e8d714b9ca56f512142aeef1.png)
+
+参考文档：
+
+- [分步表单](https://docs-cn.nocobase.com/handbook/block-multi-step-from)
+
+### 区块：操作面板
+
+用于放置各种快捷操作，目前支持：
+
+- 链接
+- 扫二维码
+- 弹窗
+- 自定义请求
+
+支持栅格和列表两种布局
+
+![48bd2e280aa887f3e5bd43d6c79d6b46.png](https://static-docs.nocobase.com/48bd2e280aa887f3e5bd43d6c79d6b46.png)
+
+参考文档：
+
+- [操作面板](https://docs-cn.nocobase.com/handbook/block-action-panel)
+
+## [v1.3.55](https://github.com/nocobase/nocobase/compare/v1.3.54...v1.3.55) - 2024-12-03
+
+### 🚀 优化
+
+- **[client]** 区块初始化器使用更匹配类型含义的图标 ([#5757](https://github.com/nocobase/nocobase/pull/5757)) by @mytharcher
+
+### 🐛 修复
+
+- **[client]**
+  - 修复图标变更后导致的 E2E 用例执行失败 ([#5768](https://github.com/nocobase/nocobase/pull/5768)) by @mytharcher
+
+  - 修复 select 数据为空时应显示空白 ([#5762](https://github.com/nocobase/nocobase/pull/5762)) by @katherinehhh
+
+- **[database]** 修复带外键更新关系字段的问题 ([#5754](https://github.com/nocobase/nocobase/pull/5754)) by @chareice
+
+- **[数据源管理]** 修复 source key 显示不正确 ([#5771](https://github.com/nocobase/nocobase/pull/5771)) by @katherinehhh
+
+- **[工作流：自定义操作事件]**
+  - 允许所有角色都可触发外部数据源数据表上的自定义操作事件 by @mytharcher
+
+  - 修复自定义操作事件默认数据源 by @mytharcher
+
+  - 修复自定义操作事件数据源不匹配的错误 by @mytharcher
+
+  - 修复自定义操作事件在关系区块无法触发的问题 by @mytharcher
+
 ## [v1.3.53](https://github.com/nocobase/nocobase/compare/v1.3.52...v1.3.53) - 2024-11-28
 
 ### 🚀 优化

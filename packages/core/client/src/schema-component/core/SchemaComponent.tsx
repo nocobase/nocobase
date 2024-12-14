@@ -8,14 +8,14 @@
  */
 
 import { IRecursionFieldProps, ISchemaFieldProps, Schema } from '@formily/react';
-import { useUpdate } from 'ahooks';
-import React, { memo, useContext, useMemo } from 'react';
+import _ from 'lodash';
+import React, { createContext, memo, useContext, useMemo } from 'react';
 import { NocoBaseRecursionField } from '../../formily/NocoBaseRecursionField';
 import { SchemaComponentContext } from '../context';
 import { SchemaComponentOptions } from './SchemaComponentOptions';
 
 type SchemaComponentOnChange = {
-  onChange?: (s: Schema) => void;
+  onChange?: (s?: Schema) => void;
 };
 
 function toSchema(schema?: any) {
@@ -45,32 +45,49 @@ interface DistributedProps {
   distributed?: boolean;
 }
 
+/**
+ * Used to pass the onChange callback function.
+ *
+ * The onChange callback will be triggered whenever a descendant Schema changes.
+ */
+export const SchemaComponentOnChangeContext = createContext<SchemaComponentOnChange>({ onChange: _.noop });
+
 const RecursionSchemaComponent = memo((props: ISchemaFieldProps & SchemaComponentOnChange & DistributedProps) => {
-  const { components, scope, schema: _schema, distributed, onChange, ...others } = props;
+  const { components, scope, schema: _schema, distributed, onChange: _onChange, ...others } = props;
   const ctx = useContext(SchemaComponentContext);
   const schema = useMemo(() => toSchema(_schema), [_schema]);
-  const refresh = useUpdate();
   const value = useMemo(
     () => ({
       ...ctx,
       distributed: ctx.distributed == false ? false : distributed,
-      refresh: () => {
-        refresh();
-        if (ctx.distributed === false || distributed === false) {
-          ctx.refresh?.();
-        }
-        onChange?.(schema);
+      /**
+       * @deprecated
+       */
+      refresh: _.noop,
+    }),
+    [ctx, distributed],
+  );
+
+  const { onChange: onChangeFromContext } = useContext(SchemaComponentOnChangeContext);
+
+  const onChangeValue = useMemo(
+    () => ({
+      onChange: () => {
+        _onChange?.(schema);
+        onChangeFromContext?.();
       },
     }),
-    [ctx, distributed, onChange, refresh, schema],
+    [_onChange, onChangeFromContext, schema],
   );
 
   return (
-    <SchemaComponentContext.Provider value={value}>
-      <SchemaComponentOptions inherit components={components} scope={scope}>
-        <NocoBaseRecursionField {...others} schema={schema} isUseFormilyField />
-      </SchemaComponentOptions>
-    </SchemaComponentContext.Provider>
+    <SchemaComponentOnChangeContext.Provider value={onChangeValue}>
+      <SchemaComponentContext.Provider value={value}>
+        <SchemaComponentOptions inherit components={components} scope={scope}>
+          <NocoBaseRecursionField {...others} schema={schema} isUseFormilyField />
+        </SchemaComponentOptions>
+      </SchemaComponentContext.Provider>
+    </SchemaComponentOnChangeContext.Provider>
   );
 });
 

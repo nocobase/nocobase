@@ -104,7 +104,7 @@ test.describe('actions schema settings', () => {
 
       // 配置出一个表单
       await page.getByLabel('schema-initializer-Grid-popup').hover();
-      await page.getByRole('menuitem', { name: 'form Form right' }).hover();
+      await page.getByRole('menuitem', { name: 'Form right' }).hover();
       await page.getByRole('menuitem', { name: 'Current collection' }).click();
 
       await page.getByLabel('schema-initializer-Grid-form:').hover();
@@ -186,7 +186,8 @@ test.describe('actions schema settings', () => {
   test.describe('filter', () => {
     const showMenu = async (page: Page) => {
       await page.getByRole('button', { name: 'Filter' }).hover();
-      await page.getByLabel('designer-schema-settings-Filter.Action-Filter.Action.Designer-general').hover();
+      // hover 方法有时会失效，所以用 click 替代，原因未知
+      await page.getByLabel('designer-schema-settings-Filter.Action-Filter.Action.Designer-general').click();
     };
 
     test('supported options', async ({ page, mockPage }) => {
@@ -916,7 +917,6 @@ test.describe('actions schema settings', () => {
         supportedOptions: ['Edit button', 'Linkage rules', 'Open mode', 'Popup size', 'Delete'],
       });
 
-      // https://nocobase.height.app/T-3235
       // add child 表单中的 Parent 字段应该有数据
       await page.getByLabel('action-Action.Link-Add child-').click({
         position: { x: 5, y: 5 }, // 防止按钮被遮挡
@@ -992,7 +992,7 @@ test.describe('table column schema settings', () => {
     await nocoPage.goto();
 
     // 1. 关系字段下拉框中应该有数据
-    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.locator('.nb-sub-table-addNew').click();
     await page.getByTestId('select-object-multiple').click();
     await expect(page.getByRole('option', { name: record1.singleLineText, exact: true })).toBeVisible();
 
@@ -1007,7 +1007,7 @@ test.describe('table column schema settings', () => {
     await page.getByRole('spinbutton').fill('1');
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page.reload();
-    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.locator('.nb-sub-table-addNew').click();
     await page.getByTestId('select-object-multiple').click();
     await expect(page.getByRole('option', { name: record1.singleLineText, exact: true })).toBeVisible();
   });

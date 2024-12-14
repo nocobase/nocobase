@@ -8,9 +8,9 @@
  */
 
 import { cx } from '@emotion/css';
-import { observer, useFieldSchema } from '@formily/react';
+import { useFieldSchema } from '@formily/react';
 import { Space, SpaceProps } from 'antd';
-import React, { CSSProperties, useContext } from 'react';
+import React, { CSSProperties, FC, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { useSchemaInitializerRender } from '../../../application';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
@@ -58,92 +58,96 @@ const Portal: React.FC = (props) => {
   );
 };
 
-export const ActionBar = withDynamicSchemaProps(
-  observer((props: any) => {
-    const { forceProps = {} } = useActionBarContext();
-    // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-    const { layout = 'two-columns', style, spaceProps, ...others } = { ...useProps(props), ...forceProps } as any;
+const InternalActionBar: FC = (props: any) => {
+  const { forceProps = {} } = useActionBarContext();
+  // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
+  const { layout = 'two-columns', style, spaceProps, ...others } = { ...useProps(props), ...forceProps } as any;
 
-    const fieldSchema = useFieldSchema();
-    const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
-    const { designable } = useDesignable();
+  const fieldSchema = useFieldSchema();
+  const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
+  const { designable } = useDesignable();
 
-    if (layout === 'one-column') {
-      return (
-        <Portal>
-          <DndContext>
-            <div
-              style={{ display: 'flex', alignItems: 'center', gap: 8, ...style, marginTop: 0 }}
-              {...others}
-              className={cx(others.className, 'nb-action-bar')}
-            >
-              {props.children && (
-                <div>
-                  <Space {...spaceProps} style={{ flexWrap: 'wrap', ...(spaceProps?.style || {}) }}>
-                    {fieldSchema.mapProperties((schema, key) => {
-                      return <NocoBaseRecursionField key={key} name={key} schema={schema} />;
-                    })}
-                  </Space>
-                </div>
-              )}
-              {render({ style: { margin: '0 !important' } })}
-            </div>
-          </DndContext>
-        </Portal>
-      );
-    }
-    const hasActions = Object.keys(fieldSchema.properties ?? {}).length > 0;
+  if (layout === 'one-column') {
     return (
-      <div
-        style={
-          !designable && !hasActions
-            ? undefined
-            : {
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                overflowX: 'auto',
-                flexShrink: 0,
-                gap: '8px',
-                ...style,
-              }
-        }
-        {...others}
-        className={cx(others.className, 'nb-action-bar')}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            width: '100%',
-            overflow: 'hidden',
-            flexWrap: 'wrap',
-            gap: '8px',
-          }}
-        >
-          <DndContext>
-            <Space {...spaceProps} style={{ flexWrap: 'wrap' }}>
-              {fieldSchema.mapProperties((schema, key) => {
-                if (schema['x-align'] !== 'left') {
-                  return null;
-                }
-                return <NocoBaseRecursionField key={key} name={key} schema={schema} />;
-              })}
-            </Space>
-            <Space {...spaceProps} style={{ flexWrap: 'wrap', ...(spaceProps?.style || {}) }}>
-              {fieldSchema.mapProperties((schema, key) => {
-                if (schema['x-align'] === 'left') {
-                  return null;
-                }
-                return <NocoBaseRecursionField key={key} name={key} schema={schema} />;
-              })}
-            </Space>
-          </DndContext>
-        </div>
-        {render()}
-      </div>
+      <Portal>
+        <DndContext>
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: 8, ...style, marginTop: 0 }}
+            {...others}
+            className={cx(others.className, 'nb-action-bar')}
+          >
+            {props.children && (
+              <div>
+                <Space {...spaceProps} style={{ flexWrap: 'wrap', ...(spaceProps?.style || {}) }}>
+                  {fieldSchema.mapProperties((schema, key) => {
+                    return <NocoBaseRecursionField key={key} name={key} schema={schema} />;
+                  })}
+                </Space>
+              </div>
+            )}
+            {render({ style: { margin: '0 !important' } })}
+          </div>
+        </DndContext>
+      </Portal>
     );
-  }),
+  }
+  const hasActions = Object.keys(fieldSchema.properties ?? {}).length > 0;
+  return (
+    <div
+      style={
+        !designable && !hasActions
+          ? undefined
+          : {
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              overflowX: 'auto',
+              flexShrink: 0,
+              gap: '8px',
+              ...style,
+            }
+      }
+      {...others}
+      className={cx(others.className, 'nb-action-bar')}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          width: '100%',
+          overflow: 'hidden',
+          flexWrap: 'wrap',
+          gap: '8px',
+        }}
+      >
+        <DndContext>
+          <Space {...spaceProps} style={{ flexWrap: 'wrap' }}>
+            {fieldSchema.mapProperties((schema, key) => {
+              if (schema['x-align'] !== 'left') {
+                return null;
+              }
+              return <NocoBaseRecursionField key={key} name={key} schema={schema} />;
+            })}
+          </Space>
+          <Space {...spaceProps} style={{ flexWrap: 'wrap', ...(spaceProps?.style || {}) }}>
+            {fieldSchema.mapProperties((schema, key) => {
+              if (schema['x-align'] === 'left') {
+                return null;
+              }
+              return <NocoBaseRecursionField key={key} name={key} schema={schema} />;
+            })}
+          </Space>
+        </DndContext>
+      </div>
+      {render()}
+    </div>
+  );
+};
+
+export const ActionBar = withDynamicSchemaProps(
+  (props: any) => {
+    return <InternalActionBar {...props} />;
+  },
   { displayName: 'ActionBar' },
 );

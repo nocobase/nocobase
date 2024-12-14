@@ -9,11 +9,12 @@
 
 import { createForm } from '@formily/core';
 import { FormContext, useField, useFieldSchema } from '@formily/react';
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useCollectionManager_deprecated } from '../collection-manager';
 import { withDynamicSchemaProps } from '../hoc/withDynamicSchemaProps';
 import { useTableBlockParams } from '../modules/blocks/data-blocks/table/hooks/useTableBlockDecoratorProps';
 import { SchemaComponentOptions } from '../schema-component';
+import { TableElementRefContext } from '../schema-component/antd/table-v2/Table';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useBlockHeightProps } from './hooks';
 /**
@@ -79,6 +80,7 @@ const InternalTableBlockProvider = (props: Props) => {
   const fieldSchema = useFieldSchema();
   const [expandFlag, setExpandFlag] = useState(fieldNames || propsExpandFlag ? true : false);
   const { heightProps } = useBlockHeightProps();
+  const tableElementRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setExpandFlag(fieldNames || propsExpandFlag);
@@ -148,9 +150,11 @@ const InternalTableBlockProvider = (props: Props) => {
   );
 
   return (
-    <TableBlockContext.Provider value={value}>
-      <TableBlockContextBasicValue.Provider value={basicValue}>{props.children}</TableBlockContextBasicValue.Provider>
-    </TableBlockContext.Provider>
+    <TableElementRefContext.Provider value={tableElementRef}>
+      <TableBlockContext.Provider value={value}>
+        <TableBlockContextBasicValue.Provider value={basicValue}>{props.children}</TableBlockContextBasicValue.Provider>
+      </TableBlockContext.Provider>
+    </TableElementRefContext.Provider>
   );
 };
 
@@ -187,7 +191,7 @@ export const TableBlockProvider = withDynamicSchemaProps((props) => {
   const fieldSchema = useFieldSchema();
   const { getCollection, getCollectionField } = useCollectionManager_deprecated(props.dataSource);
   const collection = getCollection(props.collection, props.dataSource);
-  const { treeTable, pagingMode } = fieldSchema?.['x-decorator-props'] || {};
+  const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
   const { params, parseVariableLoading } = useTableBlockParamsCompat(props);
   let childrenColumnName = 'children';
 

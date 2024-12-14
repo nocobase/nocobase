@@ -108,7 +108,7 @@ export abstract class SingleRelationRepository extends RelationRepository {
     }
 
     await updateModelByValues(target, options?.values, {
-      ...lodash.omit(options, 'values'),
+      ...options,
       transaction,
     });
 

@@ -10,6 +10,7 @@
 import { GeneralField, Query } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { useUpdate } from 'ahooks';
 import { message } from 'antd';
 import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
@@ -17,6 +18,8 @@ import set from 'lodash/set';
 import React, { ComponentType, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { APIClient, useAPIClient } from '../../api-client';
+import { useRefreshComponent, useRefreshFieldSchema } from '../../formily/NocoBaseRecursionField';
+import { LAZY_COMPONENT_KEY } from '../../lazy-helper';
 import { SchemaComponentContext } from '../context';
 import { addAppVersion } from './addAppVersion';
 
@@ -28,7 +31,7 @@ interface CreateDesignableProps {
   model?: GeneralField;
   query?: Query;
   api?: APIClient;
-  refresh?: (options?: { refreshParent?: boolean }) => void;
+  refresh?: (options?: { refreshParentSchema?: boolean }) => void;
   onSuccess?: any;
   t?: any;
   /**
@@ -218,7 +221,6 @@ export class Designable {
       message.success(t('Saved successfully'), 0.2);
     });
     this.on('initializeActionContext', async ({ schema }) => {
-      this.refresh();
       if (!schema?.['x-uid']) {
         return;
       }
@@ -315,7 +317,7 @@ export class Designable {
     return false;
   }
 
-  refresh(options?: { refreshParent?: boolean }) {
+  refresh(options?: { refreshParentSchema?: boolean }) {
     const { refresh } = this.options;
     return refresh?.(options);
   }
@@ -742,7 +744,7 @@ export function useFindComponent() {
 
 // TODO
 export function useDesignable() {
-  const { designable, setDesignable, refresh, reset } = useContext(SchemaComponentContext);
+  const { designable, setDesignable, refresh: refreshFromContext, reset } = useContext(SchemaComponentContext);
   const schemaOptions = useContext(SchemaOptionsContext);
   const components = useMemo(() => schemaOptions?.components || {}, [schemaOptions]);
   const DesignableBar = useMemo(
@@ -750,6 +752,21 @@ export function useDesignable() {
       return <></>;
     },
     [],
+  );
+  const update = useUpdate();
+  const refreshFieldSchema = useRefreshFieldSchema();
+  const refreshComponent = useRefreshComponent();
+  const refresh = useCallback(
+    (options?: { refreshParentSchema?: boolean }) => {
+      refreshFromContext?.();
+      // refresh current component
+      update();
+      // refresh fieldSchema context value
+      refreshFieldSchema?.(options);
+      // refresh component context value
+      refreshComponent?.();
+    },
+    [refreshFromContext, update, refreshFieldSchema, refreshComponent],
   );
   const field = useField();
   const fieldSchema = useFieldSchema();
@@ -778,7 +795,8 @@ export function useDesignable() {
         if (typeof component !== 'string') {
           return component;
         }
-        return get(components, component);
+        const c = get(components, component);
+        return c[LAZY_COMPONENT_KEY] ?? c;
       },
       [get],
     ),

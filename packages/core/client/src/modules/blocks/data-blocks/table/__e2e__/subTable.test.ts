@@ -24,7 +24,7 @@ test.describe('subTable', () => {
     const expectedDateAfterModify = '2024-11-08';
 
     // 1. Click "Add new" to add a row, default values should display correctly`
-    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.locator('.nb-sub-table-addNew').click();
     await expect(page.getByTestId('select-object-single').getByText('Super Admin')).toBeVisible();
     await expect(
       page.getByLabel('block-item-CollectionField-group-form-group.timeStart-').getByPlaceholder('Select date'),
@@ -34,7 +34,7 @@ test.describe('subTable', () => {
     ).toHaveValue(expectedDateBeforeModify);
 
     // 2. Click "Add new" again to add another row, default values should display correctly
-    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.locator('.nb-sub-table-addNew').click();
     await expect(page.getByTestId('select-object-single').getByText('Super Admin').nth(1)).toBeVisible();
     await expect(
       page.getByLabel('block-item-CollectionField-group-form-group.timeStart-').nth(1).getByPlaceholder('Select date'),
