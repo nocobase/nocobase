@@ -13,11 +13,11 @@ import {
   useActionContext,
   useCollection,
   useCollectionRecordData,
-  useDataBlockRequest,
   useDataBlockResource,
   useSchemaComponentContext,
   useRequest,
   useAPIClient,
+  useBlockRequestContext,
 } from '@nocobase/client';
 import React, { createContext, useEffect, useMemo, useContext } from 'react';
 import { App, Tabs, message } from 'antd';
@@ -45,7 +45,7 @@ const useSubmitActionProps = () => {
   const { message } = App.useApp();
   const form = useForm();
   const resource = useDataBlockResource();
-  const { runAsync } = useDataBlockRequest();
+  const { service } = useBlockRequestContext();
   const { t } = useUsersTranslation();
   const collection = useCollection();
 
@@ -62,7 +62,7 @@ const useSubmitActionProps = () => {
       } else {
         await resource.create({ values });
       }
-      await runAsync();
+      await service.refresh();
       message.success(t('Saved successfully'));
       setVisible(false);
       form.reset();
