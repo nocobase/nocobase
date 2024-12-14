@@ -109,7 +109,6 @@ export function AdminPublicFormPage() {
     const isUnderSubApp = window.location.pathname.startsWith('/apps');
     const link =
       baseURL + (isUnderSubApp ? `/apps/${app.name}/public-forms/${params.name}` : `/public-forms/${params.name}`);
-    console.log(link);
     navigator.clipboard.writeText(link);
     message.success(t('Link copied successfully'));
   };
@@ -120,7 +119,6 @@ export function AdminPublicFormPage() {
         style={{
           margin: '-24px',
           padding: '10px',
-          background: '#fff',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
