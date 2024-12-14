@@ -7,8 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model, ModelStatic, Transaction, WhereOptions } from 'sequelize';
-import { Collection } from '../collection';
+import { Transaction } from 'sequelize';
+import {
+  CreateOptions as SequelizeCreateOptions,
+  UpdateOptions as SequelizeUpdateOptions,
+} from 'sequelize/types/model';
+import { AssociationKeysToBeUpdate, BlackList, Values, WhiteList } from '@nocobase/database';
 
 export type TargetKey = string | number | { [key: string]: any };
 
@@ -46,22 +50,23 @@ export interface CountOptions extends CommonOptions {
   filter?: Filter;
 }
 
-export interface CreateOptions extends CommonOptions {
-  values?: any;
-  hooks?: boolean;
+export interface CreateOptions extends SequelizeCreateOptions {
+  values?: Values | Values[];
+  whitelist?: WhiteList;
+  blacklist?: BlackList;
+  updateAssociationValues?: AssociationKeysToBeUpdate;
   context?: any;
 }
 
-export interface UpdateOptions extends CommonOptions {
-  values?: any;
+export interface UpdateOptions extends Omit<SequelizeUpdateOptions, 'where'> {
+  values: Values;
   filter?: Filter;
   filterByTk?: TargetKey;
-  hooks?: boolean;
-  truncate?: boolean;
-  individualHooks?: boolean;
-  fields?: string[];
+  whitelist?: WhiteList;
+  blacklist?: BlackList;
+  updateAssociationValues?: AssociationKeysToBeUpdate;
+  targetCollection?: string;
   context?: any;
-  updateAssociationValues?: string[];
 }
 
 export interface DestroyOptions extends CommonOptions {
