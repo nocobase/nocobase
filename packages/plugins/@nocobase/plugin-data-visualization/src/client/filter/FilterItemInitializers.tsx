@@ -22,6 +22,7 @@ import {
   DEFAULT_DATA_SOURCE_KEY,
   FormDialog,
   HTMLEncode,
+  IsInNocoBaseRecursionFieldContext,
   SchemaComponent,
   SchemaComponentOptions,
   SchemaInitializerItem,
@@ -95,23 +96,17 @@ export const ChartFilterFormItem = observer(
     const dataSource = schema?.['x-data-source'] || DEFAULT_DATA_SOURCE_KEY;
     const collectionField = schema?.['x-collection-field'] || '';
     const [collection] = collectionField.split('.');
-    // const { getIsChartCollectionExists } = useChartData();
-    // const exists = (schema.name as string).startsWith('custom.') || getIsChartCollectionExists(dataSource, collection);
     return (
       <BlockItem className={'nb-form-item'}>
         <CollectionManagerProvider dataSource={dataSource}>
           <CollectionProvider name={collection} allowNull={!collection}>
             <CollectionFieldProvider name={schema.name} allowNull={!schema['x-collection-field']}>
               <ACLCollectionFieldProvider>
-                {/* {exists ? ( */}
-                <ErrorBoundary onError={(err) => console.log(err)} FallbackComponent={ErrorFallback}>
-                  <FormItem className={className} {...props} extra={extra} />
+                <ErrorBoundary onError={console.log} FallbackComponent={ErrorFallback}>
+                  <IsInNocoBaseRecursionFieldContext.Provider value={false}>
+                    <FormItem className={className} {...props} extra={extra} />
+                  </IsInNocoBaseRecursionFieldContext.Provider>
                 </ErrorBoundary>
-                {/* ) : ( */}
-                {/*   <div style={{ color: '#ccc', marginBottom: '10px' }}> */}
-                {/*     {t('The chart using the collection of this field have been deleted. Please  remove this field.')} */}
-                {/*   </div> */}
-                {/* )} */}
               </ACLCollectionFieldProvider>
             </CollectionFieldProvider>
           </CollectionProvider>

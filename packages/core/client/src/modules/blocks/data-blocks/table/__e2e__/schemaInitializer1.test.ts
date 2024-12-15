@@ -36,7 +36,7 @@ test.describe('where table block can be added', () => {
 
     // 添加当前表关系区块
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Table right' }).hover();
     await page.getByRole('menuitem', { name: 'Associated records' }).hover();
     await page.getByRole('menuitem', { name: 'childAssociationField' }).click();
     await page
@@ -47,7 +47,7 @@ test.describe('where table block can be added', () => {
 
     // 添加父表关系区块
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Table right' }).hover();
     await page.getByRole('menuitem', { name: 'Associated records' }).hover();
     await page.getByRole('menuitem', { name: 'parentAssociationField' }).click();
     await page.getByLabel('schema-initializer-TableV2-table:configureColumns-parentTargetCollection').hover();
@@ -69,7 +69,7 @@ test.describe('where table block can be added', () => {
 
     // 通过 Other records 创建一个表格区块
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Table right' }).hover();
     await page.getByRole('menuitem', { name: 'Other records right' }).hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
     await page.mouse.move(300, 0);
@@ -99,7 +99,7 @@ test.describe('where table block can be added', () => {
     await page.getByLabel('action-Action.Link-View-view-').first().click();
     //表格关系区块
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'table Table right' }).click();
+    await page.getByRole('menuitem', { name: 'Table right' }).click();
     await page.getByText('Associated records').hover();
     const [request] = await Promise.all([
       page.waitForRequest((request) => request.url().includes('uiSchemas:insertAdjacent')),

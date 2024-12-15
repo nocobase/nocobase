@@ -8,16 +8,17 @@
  */
 
 import { cx } from '@emotion/css';
-import { SpaceProps } from 'antd';
-import React, { CSSProperties, useContext } from 'react';
-import { ISchema, RecursionField, observer, useFieldSchema } from '@formily/react';
+import { ISchema, observer, useFieldSchema } from '@formily/react';
 import {
   DndContext,
+  NocoBaseRecursionField,
   useProps,
   useSchemaInitializerRender,
   useSchemaToolbar,
   withDynamicSchemaProps,
 } from '@nocobase/client';
+import { SpaceProps } from 'antd';
+import React, { CSSProperties, useContext } from 'react';
 
 export interface ActionBarProps {
   style?: CSSProperties;
@@ -81,7 +82,7 @@ export const MobileNavigationActionBar = withDynamicSchemaProps(
             {position === 'left' && render({})}
             {props.children && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <RecursionField
+                <NocoBaseRecursionField
                   onlyRenderProperties
                   schema={fieldSchema}
                   filterProperties={(schema) => schema['x-position'] === position}
@@ -91,7 +92,7 @@ export const MobileNavigationActionBar = withDynamicSchemaProps(
             {position === 'right' && render({})}
           </div>
         ) : (
-          <RecursionField
+          <NocoBaseRecursionField
             onlyRenderProperties
             schema={fieldSchema}
             filterProperties={(schema) => schema['x-position'] === position}

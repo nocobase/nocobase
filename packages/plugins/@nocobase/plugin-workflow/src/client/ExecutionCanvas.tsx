@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Breadcrumb, Button, Dropdown, message, Modal, Result, Space, Spin, Tag, Tooltip } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Breadcrumb, Button, Dropdown, message, Modal, Result, Space, Spin, Tag, Tooltip } from 'antd';
 
 import {
   ActionContextProvider,
@@ -24,16 +24,16 @@ import {
 } from '@nocobase/client';
 import { str2moment } from '@nocobase/utils/client';
 
+import { DownOutlined, ExclamationCircleFilled, StopOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import WorkflowPlugin from '.';
 import { CanvasContent } from './CanvasContent';
+import { StatusButton } from './components/StatusButton';
 import { ExecutionStatusOptionsMap, JobStatusOptions } from './constants';
 import { FlowContext, useFlowContext } from './FlowContext';
 import { lang, NAMESPACE } from './locale';
 import useStyles from './style';
-import { linkNodes, getWorkflowDetailPath, getWorkflowExecutionsPath } from './utils';
-import { DownOutlined, ExclamationCircleFilled, StopOutlined } from '@ant-design/icons';
-import { StatusButton } from './components/StatusButton';
-import { useTranslation } from 'react-i18next';
+import { getWorkflowDetailPath, getWorkflowExecutionsPath, linkNodes } from './utils';
 
 function attachJobs(nodes, jobs: any[] = []): void {
   const nodesMap = new Map();
@@ -111,8 +111,13 @@ function JobModal() {
                   'x-component': 'Input.JSON',
                   'x-component-props': {
                     className: styles.nodeJobResultClass,
+                    autoSize: {
+                      minRows: 4,
+                      maxRows: 32,
+                    },
                   },
-                  'x-read-pretty': true,
+                  // 'x-read-pretty': true,
+                  'x-disabled': true,
                 },
               },
             },
@@ -152,7 +157,7 @@ function ExecutionsDropdown(props) {
         setExecutionsBefore(data.data);
       })
       .catch(() => {});
-  }, [execution]);
+  }, [execution.id]);
 
   useEffect(() => {
     if (!execution) {
@@ -175,7 +180,7 @@ function ExecutionsDropdown(props) {
         setExecutionsAfter(data.data.reverse());
       })
       .catch(() => {});
-  }, [execution]);
+  }, [execution.id]);
 
   const onClick = useCallback(
     ({ key }) => {
@@ -183,7 +188,7 @@ function ExecutionsDropdown(props) {
         navigate(getWorkflowExecutionsPath(key));
       }
     },
-    [execution],
+    [execution.id],
   );
 
   return execution ? (
@@ -229,7 +234,7 @@ export function ExecutionCanvas() {
   useEffect(() => {
     const { workflow } = data?.data ?? {};
     setTitle?.(`${workflow?.title ? `${workflow.title} - ` : ''}${lang('Execution history')}`);
-  }, [data?.data]);
+  }, [data?.data, setTitle]);
 
   const onCancel = useCallback(() => {
     Modal.confirm({

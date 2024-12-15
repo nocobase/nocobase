@@ -67,7 +67,11 @@ export abstract class Trigger {
   description?: string;
   // group: string;
   useVariables?(config: Record<string, any>, options?: UseVariableOptions): VariableOption[];
-  fieldset: { [key: string]: ISchema };
+  fieldset: Record<string, ISchema>;
+  triggerFieldset?: Record<string, ISchema>;
+  validate(config: Record<string, any>): boolean {
+    return true;
+  }
   view?: ISchema;
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
@@ -138,12 +142,13 @@ function TriggerExecution() {
                 'x-decorator': 'FormItem',
                 'x-component': 'Input.JSON',
                 'x-component-props': {
-                  className: css`
-                    padding: 1em;
-                    background-color: #f3f3f3;
-                  `,
+                  className: styles.nodeJobResultClass,
+                  autoSize: {
+                    minRows: 4,
+                    maxRows: 32,
+                  },
                 },
-                'x-read-pretty': true,
+                'x-disabled': true,
               },
             },
           },

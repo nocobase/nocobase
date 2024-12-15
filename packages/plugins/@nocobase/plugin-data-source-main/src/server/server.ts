@@ -10,7 +10,6 @@
 import { Filter, InheritedCollection, UniqueConstraintError } from '@nocobase/database';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import { Plugin } from '@nocobase/server';
-import { Mutex } from 'async-mutex';
 import lodash from 'lodash';
 import path from 'path';
 import { CollectionRepository } from '.';
@@ -38,9 +37,10 @@ export class PluginDataSourceMainServer extends Plugin {
     this.loadFilter = filter;
   }
 
-  async onSync(message) {
+  async handleSyncMessage(message) {
     const { type, collectionName } = message;
-    if (type === 'newCollection') {
+
+    if (type === 'syncCollection') {
       const collectionModel: CollectionModel = await this.app.db.getCollection('collections').repository.findOne({
         filter: {
           name: collectionName,
@@ -48,6 +48,26 @@ export class PluginDataSourceMainServer extends Plugin {
       });
 
       await collectionModel.load();
+    }
+
+    if (type === 'removeField') {
+      const { collectionName, fieldName } = message;
+      const collection = this.app.db.getCollection(collectionName);
+      if (!collection) {
+        return;
+      }
+
+      return collection.removeFieldFromDb(fieldName);
+    }
+
+    if (type === 'removeCollection') {
+      const { collectionName } = message;
+      const collection = this.app.db.getCollection(collectionName);
+      if (!collection) {
+        return;
+      }
+
+      collection.remove();
     }
   }
 
@@ -79,10 +99,15 @@ export class PluginDataSourceMainServer extends Plugin {
             transaction,
           });
 
-          this.app.syncManager.publish(this.name, {
-            type: 'newCollection',
-            collectionName: model.get('name'),
-          });
+          this.sendSyncMessage(
+            {
+              type: 'syncCollection',
+              collectionName: model.get('name'),
+            },
+            {
+              transaction,
+            },
+          );
         }
       },
     );
@@ -100,6 +125,16 @@ export class PluginDataSourceMainServer extends Plugin {
       }
 
       await model.remove(removeOptions);
+
+      this.sendSyncMessage(
+        {
+          type: 'removeCollection',
+          collectionName: model.get('name'),
+        },
+        {
+          transaction: options.transaction,
+        },
+      );
     });
 
     // 要在 beforeInitOptions 之前处理
@@ -249,6 +284,16 @@ export class PluginDataSourceMainServer extends Plugin {
         };
 
         await collection.sync(syncOptions);
+
+        this.sendSyncMessage(
+          {
+            type: 'syncCollection',
+            collectionName: model.get('collectionName'),
+          },
+          {
+            transaction,
+          },
+        );
       }
     });
 
@@ -256,10 +301,21 @@ export class PluginDataSourceMainServer extends Plugin {
     this.app.db.on('fields.beforeDestroy', beforeDestoryField(this.app.db));
     this.app.db.on('fields.beforeDestroy', beforeDestroyForeignKey(this.app.db));
 
-    const mutex = new Mutex();
     this.app.db.on('fields.beforeDestroy', async (model: FieldModel, options) => {
-      await mutex.runExclusive(async () => {
+      const lockKey = `${this.name}:fields.beforeDestroy:${model.get('collectionName')}`;
+      await this.app.lockManager.runExclusive(lockKey, async () => {
         await model.remove(options);
+
+        this.sendSyncMessage(
+          {
+            type: 'removeField',
+            collectionName: model.get('collectionName'),
+            fieldName: model.get('name'),
+          },
+          {
+            transaction: options.transaction,
+          },
+        );
       });
     });
 

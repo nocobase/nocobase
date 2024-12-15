@@ -9,6 +9,7 @@
 
 import { createForm } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
+import { useUpdate } from 'ahooks';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollectionManager_deprecated } from '../collection-manager';
@@ -108,12 +109,14 @@ export const DetailsBlockProvider = withDynamicSchemaProps((props) => {
     detailFlag = __collection === collection;
   }
 
+  const refresh = useUpdate();
+
   if (!detailFlag || parseVariableLoading) {
     return null;
   }
 
   return (
-    <TemplateBlockProvider>
+    <TemplateBlockProvider onTemplateLoaded={refresh}>
       <BlockProvider name="details" {...props} params={params}>
         <InternalDetailsBlockProvider {...props} />
       </BlockProvider>

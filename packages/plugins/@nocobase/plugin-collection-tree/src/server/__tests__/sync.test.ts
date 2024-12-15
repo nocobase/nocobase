@@ -19,7 +19,7 @@ describe('tree collection sync', async () => {
   beforeEach(async () => {
     app = await createMockServer({
       version: '1.3.0-alpha',
-      plugins: ['data-source-main', 'data-source-manager', 'error-handler', 'collection-tree'],
+      plugins: ['field-sort', 'data-source-main', 'data-source-manager', 'error-handler', 'collection-tree'],
     });
     db = app.db;
   });
@@ -101,7 +101,7 @@ describe('collection tree migrate test', () => {
   beforeEach(async () => {
     app = await createMockServer({
       version: '1.3.0-alpha',
-      plugins: ['data-source-main', 'data-source-manager', 'error-handler', 'collection-tree'],
+      plugins: ['field-sort', 'data-source-main', 'data-source-manager', 'error-handler', 'collection-tree'],
     });
     db = app.db;
     repo = app.db.getRepository('applicationPlugins');

@@ -1,0 +1,23 @@
+{
+  "name": "@nocobase/plugin-field-sort",
+  "version": "1.6.0-alpha.5",
+  "license": "AGPL-3.0",
+  "displayName": "Collection field: Sort",
+  "displayName.zh-CN": "数据表字段：排序",
+  "description": "Used to sort the data in a collection.",
+  "description.zh-CN": "用于对数据表的数据进行排序。",
+  "main": "dist/server/index.js",
+  "peerDependencies": {
+    "@nocobase/actions": "1.x",
+    "@nocobase/client": "1.x",
+    "@nocobase/database": "1.x",
+    "@nocobase/lock-manager": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x",
+    "lodash": "4.17.21",
+    "sequelize": "^6.26.0"
+  },
+  "keywords": [
+    "Collection fields"
+  ]
+}

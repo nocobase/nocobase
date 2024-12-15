@@ -12,7 +12,7 @@ import parser from 'cron-parser';
 import type Plugin from '../../Plugin';
 import type { WorkflowModel } from '../../types';
 import { parseDateWithoutMs, SCHEDULE_MODE } from './utils';
-import { parseCollectionName, SequelizeCollectionManager } from '@nocobase/data-source-manager';
+import { parseCollectionName, SequelizeCollectionManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 
 export type ScheduleOnField = {
   field: string;
@@ -93,7 +93,7 @@ function getHookId(workflow, type: string) {
   return `${type}#${workflow.id}`;
 }
 
-export default class ScheduleTrigger {
+export default class DateFieldScheduleTrigger {
   events = new Map();
 
   private timer: NodeJS.Timeout | null = null;
@@ -378,8 +378,9 @@ export default class ScheduleTrigger {
     };
 
     this.events.set(name, listener);
-    // @ts-ignore
-    this.workflow.app.dataSourceManager.dataSources.get(dataSourceName).collectionManager.db.on(event, listener);
+    const dataSource = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName) as SequelizeDataSource;
+    const { db } = dataSource.collectionManager as SequelizeCollectionManager;
+    db.on(event, listener);
   }
 
   off(workflow: WorkflowModel) {
@@ -396,8 +397,8 @@ export default class ScheduleTrigger {
     const name = getHookId(workflow, event);
     const listener = this.events.get(name);
     if (listener) {
-      // @ts-ignore
-      const { db } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName).collectionManager;
+      const dataSource = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName) as SequelizeDataSource;
+      const { db } = dataSource.collectionManager as SequelizeCollectionManager;
       db.off(event, listener);
       this.events.delete(name);
     }

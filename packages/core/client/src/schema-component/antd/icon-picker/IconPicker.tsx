@@ -11,13 +11,12 @@ import { CloseOutlined, LoadingOutlined } from '@ant-design/icons';
 import { useFormLayout } from '@formily/antd-v5';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { isValid } from '@formily/shared';
-import { Button, Empty, Space, Input, theme } from 'antd';
+import { Button, Empty, Input, Space, theme } from 'antd';
+import { debounce } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon, hasIcon, icons } from '../../../icon';
 import { StablePopover } from '../popover';
-import { debounce } from 'lodash';
-import { createStyles } from 'antd-style';
 
 const { Search } = Input;
 
@@ -34,17 +33,6 @@ interface IconPickerReadPrettyProps {
   value?: string;
 }
 
-const useStyle = (isSearchable: IconPickerProps['searchable']) =>
-  createStyles(({ css }) => {
-    return {
-      popoverContent: css`
-        width: 26em;
-        ${!isSearchable && 'max-'}height: 20em;
-        overflow-y: auto;
-      `,
-    };
-  })();
-
 function IconField(props: IconPickerProps) {
   const { fontSizeXL } = theme.useToken().token;
   const availableIcons = [...icons.keys()];
@@ -53,7 +41,12 @@ function IconField(props: IconPickerProps) {
   const [visible, setVisible] = useState(false);
   const [filteredIcons, setFilteredIcons] = useState(availableIcons);
   const { t } = useTranslation();
-  const { styles } = useStyle(searchable);
+
+  const style: any = {
+    width: '26em',
+    [`${searchable ? 'height' : 'maxHeight'}`]: '20em',
+    overflowY: 'auto',
+  };
 
   const filterIcons = debounce((value) => {
     const searchValue = value?.trim() ?? '';
@@ -77,7 +70,7 @@ function IconField(props: IconPickerProps) {
             setVisible(val);
           }}
           content={
-            <div className={styles.popoverContent}>
+            <div style={style}>
               {filteredIcons.length === 0 ? (
                 <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
               ) : (

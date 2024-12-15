@@ -39,6 +39,10 @@ class SubAppPlugin extends Plugin {
     subApp.db.on('beforeDefineCollection', (options) => {
       const name = options.name;
 
+      if (name === 'roles') {
+        options.loadedFromCollectionManager = true;
+      }
+
       // 共享的Collection指向主应用的 系统schema
       if (sharedCollections.includes(name)) {
         options.schema = mainApp.db.options.schema || 'public';

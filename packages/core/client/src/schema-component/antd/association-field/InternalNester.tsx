@@ -9,11 +9,12 @@
 
 import { css, cx } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
+import { observer, useField, useFieldSchema } from '@formily/react';
 import { theme } from 'antd';
-import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect } from 'react';
 import { ACLCollectionProvider, useACLActionParamsContext } from '../../../acl';
 import { CollectionProvider_deprecated } from '../../../collection-manager';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { useAssociationFieldContext, useInsertSchema } from './hooks';
 import schema from './schema';
 
@@ -43,6 +44,7 @@ export const InternalNester = observer(
     const field = useField();
     const fieldSchema = useFieldSchema();
     const insertNester = useInsertSchema('Nester');
+    const insertSelector = useInsertSchema('Selector');
     const { options: collectionField } = useAssociationFieldContext();
     const showTitle = fieldSchema['x-decorator-props']?.showTitle ?? true;
     const { actionName } = useACLActionParamsContext();
@@ -53,9 +55,15 @@ export const InternalNester = observer(
       labelWidth = 120,
       labelWrap = true,
     } = fieldSchema?.['x-component-props'] || {};
+
     useEffect(() => {
       insertNester(schema.Nester);
     }, []);
+    useEffect(() => {
+      if (field.componentProps?.allowSelectExistingRecord) {
+        insertSelector(schema.Selector);
+      }
+    }, [field.componentProps?.allowSelectExistingRecord]);
     return (
       <CollectionProvider_deprecated name={collectionField.target}>
         <ACLCollectionProvider actionPath={`${collectionField.target}:${actionName || 'view'}`}>
@@ -84,7 +92,7 @@ export const InternalNester = observer(
                 `,
               )}
             >
-              <RecursionField
+              <NocoBaseRecursionField
                 onlyRenderProperties
                 basePath={field.address}
                 schema={fieldSchema}

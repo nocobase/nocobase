@@ -10,7 +10,6 @@
 import { Cache } from '@nocobase/cache';
 import { Model } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { resolve } from 'path';
 import { namespace, presetAuthType, presetAuthenticator } from '../preset';
 import authActions from './actions/auth';
 import authenticatorsActions from './actions/authenticators';
@@ -112,6 +111,95 @@ export class PluginAuthServer extends Plugin {
     this.app.on('cache:del:auth', async ({ userId }) => {
       await this.cache.del(`auth:${userId}`);
     });
+
+    this.app.auditManager.registerActions([
+      {
+        name: 'auth:signIn',
+        getMetaData: async (ctx: any) => {
+          let body = {};
+          if (ctx.status === 200) {
+            body = {
+              data: {
+                ...ctx.body.data,
+                token: undefined,
+              },
+            };
+          } else {
+            body = ctx.body;
+          }
+          return {
+            request: {
+              body: {
+                ...ctx.request?.body,
+                password: undefined,
+              },
+            },
+          };
+        },
+        getUserInfo: async (ctx: any) => {
+          if (!ctx.body?.data?.user) {
+            return null;
+          }
+          // 查询用户角色
+          const userId = ctx.body.data.user.id;
+          const user = await ctx.db.getRepository('users').findOne({
+            filterByTk: userId,
+          });
+          const roles = await user?.getRoles();
+          if (!roles) {
+            return {
+              userId,
+            };
+          } else {
+            if (roles.length === 1) {
+              return {
+                userId,
+                roleName: roles[0].name,
+              };
+            } else {
+              // 多角色的情况下暂时不返回角色名
+              return {
+                userId,
+              };
+            }
+          }
+        },
+      },
+      {
+        name: 'auth:signUp',
+        getMetaData: async (ctx: any) => {
+          return {
+            request: {
+              body: {
+                ...ctx.request?.body,
+                password: undefined,
+                confirm_password: undefined,
+              },
+            },
+          };
+        },
+      },
+      {
+        name: 'auth:changePassword',
+        getMetaData: async (ctx: any) => {
+          return {
+            request: {
+              body: {},
+            },
+            response: {
+              body: {},
+            },
+          };
+        },
+        getSourceAndTarget: async (ctx: any) => {
+          return {
+            targetCollection: 'users',
+            targetRecordUK: ctx.auth.user.id,
+          };
+        },
+      },
+      'auth:signOut',
+    ]);
   }
 
   async install(options?: InstallOptions) {

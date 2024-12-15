@@ -29,7 +29,7 @@ describe('query', () => {
     let db: Database;
     beforeAll(async () => {
       app = await createMockServer({
-        plugins: ['data-source-manager', 'users', 'acl'],
+        plugins: ['field-sort', 'data-source-manager', 'users', 'acl'],
       });
       db = app.db;
       db.options.underscored = true;

@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
+import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useState } from 'react';
 import { CollectionProvider_deprecated, useCollectionManager_deprecated } from '../../../../collection-manager';
+import { NocoBaseRecursionField } from '../../../../formily/NocoBaseRecursionField';
 import { CreateAction } from '../../../../schema-initializer/components';
 import { ActionContextProvider, useActionContext } from '../../action';
 import { useAssociationFieldContext, useInsertSchema } from '../hooks';
@@ -38,7 +39,7 @@ export const CreateRecordAction = observer(
         <CreateAction {...props} onClick={(arg) => addbuttonClick(arg)} />
         <ActionContextProvider value={{ ...ctx, visible: visibleAddNewer, setVisible: setVisibleAddNewer }}>
           <CollectionProvider_deprecated name={currentCollection} dataSource={currentDataSource}>
-            <RecursionField
+            <NocoBaseRecursionField
               onlyRenderProperties
               basePath={field.address}
               schema={fieldSchema}

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useField, useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema, Schema } from '@formily/react';
 import { Select } from 'antd';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -20,6 +20,7 @@ interface Options {
   openMode?: boolean;
   openSize?: boolean;
   modeOptions?: { label: string; value: string }[];
+  targetSchema?: Schema;
 }
 export const SchemaInitializerOpenModeSchemaItems: React.FC<Options> = (options) => {
   const { openMode = true, openSize = true } = options;
@@ -108,8 +109,9 @@ export const SchemaInitializerOpenModeSchemaItems: React.FC<Options> = (options)
 };
 
 export const SchemaSettingOpenModeSchemaItems: React.FC<Options> = (props) => {
-  const { openMode = true, openSize = true, modeOptions } = props;
-  const fieldSchema = useFieldSchema();
+  const { openMode = true, openSize = true, modeOptions, targetSchema } = props;
+  const currentFieldSchema = useFieldSchema();
+  const fieldSchema = targetSchema || currentFieldSchema;
   const field = useField();
   const { t } = useTranslation();
   const { dn } = useDesignable();

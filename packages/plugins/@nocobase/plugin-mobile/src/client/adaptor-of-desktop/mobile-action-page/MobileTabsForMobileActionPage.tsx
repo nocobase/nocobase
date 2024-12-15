@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { observer, useField, useFieldSchema } from '@formily/react';
 import {
   css,
   DndContext,
   Icon,
+  NocoBaseRecursionField,
   SchemaComponent,
   SortableItem,
   Tabs as TabsOfPC,
@@ -30,7 +31,6 @@ import { MobilePageHeader } from '../../pages/dynamic-page';
 import { MobilePageContentContainer } from '../../pages/dynamic-page/content/MobilePageContentContainer';
 import { useStyles } from '../../pages/dynamic-page/header/tabs';
 import { hideDivider } from '../hideDivider';
-import { useMobileTabsForMobileActionPageStyle } from './MobileTabsForMobileActionPage.style';
 
 export const MobileTabsForMobileActionPage: any = observer(
   (props) => {
@@ -38,8 +38,7 @@ export const MobileTabsForMobileActionPage: any = observer(
     const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
     const { activeKey: _activeKey, onChange: _onChange } = useTabsContext() || {};
     const [activeKey, setActiveKey] = useState(_activeKey);
-    const { styles } = useStyles();
-    const { styles: mobileTabsForMobileActionPageStyle } = useMobileTabsForMobileActionPageStyle();
+    const { componentCls, hashId } = useStyles();
     const { goBack } = useBackButton();
 
     const onChange = useCallback(
@@ -56,7 +55,9 @@ export const MobileTabsForMobileActionPage: any = observer(
 
     const items = useMemo(() => {
       const result = fieldSchema.mapProperties((schema, key) => {
-        return <Tabs.Tab title={<RecursionField name={key} schema={schema} onlyRenderSelf />} key={key}></Tabs.Tab>;
+        return (
+          <Tabs.Tab title={<NocoBaseRecursionField name={key} schema={schema} onlyRenderSelf />} key={key}></Tabs.Tab>
+        );
       });
 
       return result;
@@ -81,16 +82,16 @@ export const MobileTabsForMobileActionPage: any = observer(
     return (
       <>
         <MobilePageHeader>
-          <div className={styles.mobilePageTabs} data-testid="mobile-action-page-tabs">
-            <div className={mobileTabsForMobileActionPageStyle.backButton} onClick={goBack}>
+          <div className={`${componentCls} ${hashId}`} data-testid="mobile-action-page-tabs">
+            <div className="nb-mobile-page-tabs-back-button" onClick={goBack}>
               <LeftOutline />
             </div>
             <DndContext>
-              <Tabs activeKey={activeKey} onChange={onChange} className={styles.mobilePageTabsList}>
+              <Tabs activeKey={activeKey} onChange={onChange} className="nb-mobile-page-tabs-list">
                 {items}
               </Tabs>
             </DndContext>
-            <div className={mobileTabsForMobileActionPageStyle.container}>{render()}</div>
+            <div className="nb-mobile-page-tabs-button">{render()}</div>
           </div>
         </MobilePageHeader>
         <MobilePageContentContainer hideTabBar>{tabContent}</MobilePageContentContainer>
