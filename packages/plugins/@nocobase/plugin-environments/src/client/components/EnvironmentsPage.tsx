@@ -22,13 +22,32 @@ export function EnvironmentsPage() {
     },
     {
       onSuccess(data) {
-        if (!environmentKey) {
+        console.log('result', environmentKey, data);
+        if (environmentKey) {
+          const result = data?.data?.find((item) => item.name === environmentKey);
+          console.log('result', result);
+          if (!result) {
+            setEnvironmentKey(data?.data?.[0]?.name);
+          }
+        } else {
           setEnvironmentKey(data?.data?.[0]?.name);
         }
       },
     },
   );
-  if (!environmentKey) {
+  // if (!data?.['data'].length) {
+  //   return (
+  //     <Card>
+  //       <NewEnvironmentButton
+  //         onSuccess={async (data) => {
+  //           setEnvironmentKey(data.key);
+  //           refresh();
+  //         }}
+  //       />
+  //     </Card>
+  //   );
+  // }
+  if (!environmentKey && data?.['data'].length) {
     return null;
   }
   if (loading) {
@@ -36,13 +55,12 @@ export function EnvironmentsPage() {
   }
   return (
     <div>
-      {environmentKey}
       <Card style={{ minHeight: '80vh' }}>
         <Row gutter={24}>
           <Col flex="300px">
             <NewEnvironmentButton
               onSuccess={async (data) => {
-                setEnvironmentKey(data.key);
+                setEnvironmentKey(data.name);
                 refresh();
               }}
             />
@@ -54,13 +72,13 @@ export function EnvironmentsPage() {
                 setEnvironmentKey(info.key);
                 console.log(info.key);
               }}
-              onDelete={() => {
+              onDelete={(item) => {
                 refresh();
               }}
             />
           </Col>
           <Col flex={'auto'}>
-            <EnvironmentTabs environmentKey={environmentKey} />
+            <EnvironmentTabs items={data?.['data']} environmentKey={environmentKey} />
           </Col>
         </Row>
       </Card>

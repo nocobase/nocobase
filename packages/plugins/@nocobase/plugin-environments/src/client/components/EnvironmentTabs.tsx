@@ -25,6 +25,13 @@ const SchemaField = createSchemaField({
 const schema = {
   type: 'object',
   properties: {
+    // environmentKey: {
+    //   type: 'string',
+    //   title: 'Environment',
+    //   'x-decorator': 'FormItem',
+    //   'x-disabled': true,
+    //   'x-component': 'Input',
+    // },
     name: {
       type: 'string',
       title: 'Name',
@@ -108,108 +115,128 @@ export function EnvironmentSecrets({ environmentKey, request }) {
   );
 }
 
-export function EnvironmentTabs({ environmentKey }) {
+export function EnvironmentTabs({ items, environmentKey }) {
   const api = useAPIClient();
   const [activeKey, setActiveKey] = useState('variable');
-  const variablesRequest = useRequest<any>({
-    url: 'environmentVariables',
-    params: {
-      filter: {
-        environmentKey,
+  const variablesRequest = useRequest<any>(
+    {
+      url: 'environmentVariables',
+      params: {
+        filter: {
+          environmentKey,
+        },
       },
     },
-  });
-  const secretsRequest = useRequest<any>({
-    url: 'environmentSecrets',
-    params: {
-      filter: {
-        environmentKey,
+    {
+      refreshDeps: [environmentKey],
+    },
+  );
+  const secretsRequest = useRequest<any>(
+    {
+      url: 'environmentSecrets',
+      params: {
+        filter: {
+          environmentKey,
+        },
       },
     },
-  });
+    {
+      refreshDeps: [environmentKey],
+    },
+  );
   return (
-    <Tabs
-      destroyInactiveTabPane
-      tabBarExtraContent={
-        <Dropdown
-          menu={{
-            onClick(info) {
-              FormDrawer(
-                {
-                  variable: 'Add Variable',
-                  secret: 'Add secret',
-                }[info.key],
-                () => {
-                  return (
-                    <FormLayout layout={'vertical'}>
-                      <SchemaField schema={schema} />
-                      <FormDrawer.Footer>
-                        <FormButtonGroup align="right">
-                          <Reset>Cancel</Reset>
-                          <Submit
-                            onSubmit={async (data) => {
-                              await api.request({
-                                url: {
-                                  variable: 'environmentVariables:create',
-                                  secret: 'environmentSecrets:create',
-                                }[info.key],
-                                method: 'post',
-                                data: {
-                                  ...data,
-                                  environmentKey,
-                                },
-                              });
-                              if (info.key === 'variable') {
-                                variablesRequest.refresh();
-                              } else {
-                                secretsRequest.refresh();
-                              }
-                              setActiveKey(info.key);
-                            }}
-                          >
-                            Submit
-                          </Submit>
-                        </FormButtonGroup>
-                      </FormDrawer.Footer>
-                    </FormLayout>
-                  );
+    <>
+      <h3>{environmentKey}</h3>
+      <Tabs
+        destroyInactiveTabPane
+        tabBarExtraContent={
+          items?.length && (
+            <Dropdown
+              menu={{
+                onClick(info) {
+                  FormDrawer(
+                    {
+                      variable: 'Add Variable',
+                      secret: 'Add secret',
+                    }[info.key],
+                    () => {
+                      return (
+                        <FormLayout layout={'vertical'}>
+                          <SchemaField schema={schema} />
+                          <FormDrawer.Footer>
+                            <FormButtonGroup align="right">
+                              <Reset>Cancel</Reset>
+                              <Submit
+                                onSubmit={async (data) => {
+                                  await api.request({
+                                    url: {
+                                      variable: 'environmentVariables:create',
+                                      secret: 'environmentSecrets:create',
+                                    }[info.key],
+                                    method: 'post',
+                                    data: {
+                                      ...data,
+                                      environmentKey,
+                                    },
+                                  });
+                                  if (info.key === 'variable') {
+                                    variablesRequest.refresh();
+                                  } else {
+                                    secretsRequest.refresh();
+                                  }
+                                  setActiveKey(info.key);
+                                }}
+                              >
+                                Submit
+                              </Submit>
+                            </FormButtonGroup>
+                          </FormDrawer.Footer>
+                        </FormLayout>
+                      );
+                    },
+                  )
+                    .open({
+                      initialValues: {
+                        environmentKey,
+                      },
+                    })
+                    .then(console.log)
+                    .catch(console.log);
                 },
-              )
-                .open({})
-                .then(console.log)
-                .catch(console.log);
-            },
-            items: [
-              {
-                key: 'variable',
-                label: 'Add variable',
-              },
-              {
-                key: 'secret',
-                label: 'Add secret',
-              },
-            ],
-          }}
-        >
-          <Button type="primary" icon={<PlusOutlined />}>
-            Add new <DownOutlined />
-          </Button>
-        </Dropdown>
-      }
-      defaultActiveKey="variable"
-      activeKey={activeKey}
-      items={[
-        {
-          key: 'variable',
-          label: 'Variables',
-          children: <EnvironmentVariables environmentKey={environmentKey} request={variablesRequest} />,
-        },
-        {
-          key: 'secret',
-          label: 'Secrets',
-          children: <EnvironmentSecrets environmentKey={environmentKey} request={secretsRequest} />,
-        },
-      ]}
-    />
+                items: [
+                  {
+                    key: 'variable',
+                    label: 'Add variable',
+                  },
+                  {
+                    key: 'secret',
+                    label: 'Add secret',
+                  },
+                ],
+              }}
+            >
+              <Button type="primary" icon={<PlusOutlined />}>
+                Add new <DownOutlined />
+              </Button>
+            </Dropdown>
+          )
+        }
+        defaultActiveKey="variable"
+        activeKey={activeKey}
+        onTabClick={(activeKey) => setActiveKey(activeKey)}
+        items={[
+          {
+            key: 'variable',
+            label: 'Variables',
+            children: <EnvironmentVariables environmentKey={environmentKey} request={variablesRequest} />,
+          },
+          {
+            key: 'secret',
+            label: 'Secrets',
+            children: <EnvironmentSecrets environmentKey={environmentKey} request={secretsRequest} />,
+          },
+        ]}
+      />
+    </>
   );
 }

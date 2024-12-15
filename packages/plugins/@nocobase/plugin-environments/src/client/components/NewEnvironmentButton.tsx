@@ -46,7 +46,7 @@ export function NewEnvironmentButton({ onSuccess }) {
   return (
     <Button
       block
-      style={{ textAlign: 'left', marginTop: 10, marginBottom: 2 }}
+      style={{ textAlign: 'left' }}
       type="text"
       icon={<PlusOutlined />}
       onClick={() => {
