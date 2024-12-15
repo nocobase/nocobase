@@ -163,7 +163,7 @@ export const ConfigurationTable = () => {
         const schema = item.schema;
         return {
           label: schema ? `${schema}.${compile(item.name)}` : item.name,
-          value: schema ? `${schema}_${item.name}` : item.name,
+          value: schema ? `${schema}@${item.name}` : item.name,
         };
       });
     });
