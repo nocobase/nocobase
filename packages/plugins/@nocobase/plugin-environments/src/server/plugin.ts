@@ -9,7 +9,7 @@
 
 import { Plugin } from '@nocobase/server';
 
-export class PluginEnvironmentVariablesServer extends Plugin {
+export class PluginEnvironmentsServer extends Plugin {
   async afterAdd() {}
 
   async beforeLoad() {}
@@ -25,4 +25,4 @@ export class PluginEnvironmentVariablesServer extends Plugin {
   async remove() {}
 }
 
-export default PluginEnvironmentVariablesServer;
+export default PluginEnvironmentsServer;
