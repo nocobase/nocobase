@@ -386,13 +386,15 @@ export const userProfileEditFormSchema = {
       'x-decorator-props': {
         collection: 'users',
         dataSource: 'main',
+        action: 'get',
+        filterByTk: '{{ currentUserId }}',
       },
       // 'x-use-decorator-props': 'useEditFormBlockDecoratorProps',
       properties: {
         edit: {
           type: 'void',
           'x-component': 'FormV2',
-          'x-use-component-props': 'useProfileFormProps',
+          'x-use-component-props': 'useEditFormBlockProps',
           properties: {
             grid: {
               type: 'void',

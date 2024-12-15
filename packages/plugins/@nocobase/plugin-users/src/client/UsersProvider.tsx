@@ -15,6 +15,7 @@ import {
   SchemaComponent,
   useAPIClient,
   useActionContext,
+  useCollectValuesToSubmit,
   useCollectionManager,
   useCurrentUserContext,
   useCurrentUserSettingsMenu,
@@ -24,25 +25,7 @@ import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { MenuProps } from 'antd';
 import { useUsersTranslation } from './locale';
 import { uid } from '@formily/shared';
-import { createForm } from '@formily/core';
-import { useForm, useFieldSchema } from '@formily/react';
-
-const useProfileFormProps = () => {
-  const { data } = useCurrentUserContext();
-  const form = useMemo(
-    () =>
-      createForm({
-        initialValues: {
-          ...data.data,
-        },
-      }),
-    [data],
-  );
-
-  return {
-    form,
-  };
-};
+import { useForm, useFieldSchema, useField } from '@formily/react';
 
 const useUpdateProfileActionProps = () => {
   const ctx = useCurrentUserContext();
@@ -50,26 +33,39 @@ const useUpdateProfileActionProps = () => {
   const form = useForm();
   const api = useAPIClient();
   const actionSchema = useFieldSchema();
+  const actionField = useField();
+  const collectValues = useCollectValuesToSubmit();
 
   return {
     type: 'primary',
     htmlType: 'submit',
     async onClick() {
-      const { triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
-      const values = await form.submit<any>();
-      setVisible(false);
-      await api.resource('users').updateProfile({
-        values,
-        triggerWorkflows: triggerWorkflows?.length
-          ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
-          : undefined,
-      });
-      ctx.mutate({
-        data: {
-          ...ctx?.data?.data,
-          ...values,
-        },
-      });
+      const { triggerWorkflows, skipValidator } = actionSchema?.['x-action-settings'] ?? {};
+      if (!skipValidator) {
+        await form.submit();
+      }
+      const values = await collectValues();
+      actionField.data = actionField.data || {};
+      actionField.data.loading = true;
+      try {
+        await api.resource('users').updateProfile({
+          values,
+          triggerWorkflows: triggerWorkflows?.length
+            ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+            : undefined,
+        });
+        ctx.mutate({
+          data: {
+            ...ctx?.data?.data,
+            ...values,
+          },
+        });
+        await form.reset();
+        actionField.data.loading = false;
+        setVisible(false);
+      } catch (error) {
+        actionField.data.loading = false;
+      }
     },
   };
 };
@@ -77,19 +73,23 @@ const useUpdateProfileActionProps = () => {
 const ProfileEditForm = () => {
   const cm = useCollectionManager();
   const userCollection = cm.getCollection('users');
-  const collection = {
-    ...userCollection,
-    name: 'users',
-    fields: userCollection.fields.filter((field) => !['password', 'roles'].includes(field.name)),
-  };
+  const { data } = useCurrentUserContext();
+  const collection = useMemo(
+    () => ({
+      ...userCollection,
+      name: 'users',
+      fields: userCollection.fields.filter((field) => !['password', 'roles'].includes(field.name)),
+    }),
+    [userCollection],
+  );
   return (
     <ExtendCollectionsProvider collections={[collection]}>
       <RemoteSchemaComponent
         uid="nocobase-user-profile-edit-form"
         noForm={true}
         scope={{
-          useProfileFormProps,
           useUpdateProfileActionProps,
+          currentUserId: data.data?.id,
         }}
       />
     </ExtendCollectionsProvider>
