@@ -46,6 +46,23 @@ export const mobilePageSettings = new SchemaSettings({
             };
           },
         },
+        {
+          name: 'enableBackAction',
+          type: 'switch',
+          useComponentProps() {
+            const { t } = usePluginTranslation();
+            const { showBackButton, setShowBackButton } = useMobileApp();
+            const { refresh } = useDesignable();
+            return {
+              title: t('Display < back button'),
+              checked: showBackButton,
+              onChange(v) {
+                setShowBackButton(v);
+                refresh();
+              },
+            };
+          },
+        },
       ],
     },
     {
