@@ -175,7 +175,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
 
   const tableColumns = useMemo(() => {
     if (!exists) {
-      return columns.concat([]);
+      return columns;
     }
     const res = [
       ...columns,
@@ -621,6 +621,9 @@ const InternalNocoBaseTable = React.memo(
                   }
                   .ant-table-cell-fix-right {
                     padding: 8px 16px !important;
+                  }
+                  .ant-table-thead .ant-table-cell {
+                    padding: 8px 16px;
                   }
                 }
               }
