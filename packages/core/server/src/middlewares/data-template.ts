@@ -75,6 +75,7 @@ const traverseJSON = (data, options: TraverseOptions) => {
   if (!data) {
     return data;
   }
+
   const { collection, exclude = [], include = [], excludePk = true } = options;
   const map = parseInclude(include);
   const result = {};
@@ -94,9 +95,11 @@ const traverseJSON = (data, options: TraverseOptions) => {
       result[key] = data[key];
       continue;
     }
-    if (field.options.primaryKey && excludePk) {
+
+    if (field.options.primaryKey && excludePk && !collection.isMultiFilterTargetKey()) {
       continue;
     }
+
     if (field.options.isForeignKey) {
       continue;
     }
