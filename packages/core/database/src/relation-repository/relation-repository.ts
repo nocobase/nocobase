@@ -16,9 +16,10 @@ import { RelationField } from '../fields/relation-field';
 import FilterParser from '../filter-parser';
 import { Model } from '../model';
 import { OptionsParser } from '../options-parser';
-import { CreateOptions, Filter, FindOptions, TargetKey } from '../repository';
 import { updateAssociations } from '../update-associations';
 import { UpdateGuard } from '../update-guard';
+import { CreateOptions, Filter, FindOptions, TargetKey, UpdateOptions, FirstOrCreateOptions } from './types';
+import { valuesToFilter } from '../utils/filter-utils';
 
 export const transaction = transactionWrapperBuilder(function () {
   return this.sourceCollection.model.sequelize.transaction();
@@ -76,6 +77,8 @@ export abstract class RelationRepository {
   }
 
   abstract find(options?: FindOptions): Promise<any>;
+  abstract findOne(options?: FindOptions): Promise<any>;
+  abstract update(options: UpdateOptions): Promise<any>;
 
   async chunk(
     options: FindOptions & { chunkSize: number; callback: (rows: Model[], options: FindOptions) => Promise<void> },
@@ -136,6 +139,41 @@ export abstract class RelationRepository {
 
   targetKey() {
     return this.associationField.targetKey;
+  }
+
+  @transaction()
+  async firstOrCreate(options: FirstOrCreateOptions) {
+    const { filterKeys, values, transaction, hooks } = options;
+    const filter = valuesToFilter(values, filterKeys);
+
+    const instance = await this.findOne({ filter, transaction });
+
+    if (instance) {
+      return instance;
+    }
+
+    return this.create({ values, transaction, hooks });
+  }
+
+  @transaction()
+  async updateOrCreate(options: FirstOrCreateOptions) {
+    const { filterKeys, values, transaction, hooks } = options;
+    const filter = valuesToFilter(values, filterKeys);
+
+    const instance = await this.findOne({ filter, transaction });
+
+    if (instance) {
+      return await this.update({
+        filterByTk: instance.get(
+          this.targetCollection.filterTargetKey || this.targetCollection.model.primaryKeyAttribute,
+        ),
+        values,
+        transaction,
+        hooks,
+      });
+    }
+
+    return this.create({ values, transaction, hooks });
   }
 
   @transaction()
