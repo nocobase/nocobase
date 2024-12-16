@@ -69,7 +69,6 @@ export function ButtonEditor(props) {
               title: t('Button title'),
               default: fieldSchema.title,
               'x-component-props': {},
-              // description: `原字段标题：${collectionField?.uiSchema?.title}`,
             },
             icon: {
               'x-decorator': 'FormItem',
@@ -78,7 +77,6 @@ export function ButtonEditor(props) {
               default: fieldSchema?.['x-component-props']?.icon,
               'x-component-props': {},
               'x-visible': !isLink,
-              // description: `原字段标题：${collectionField?.uiSchema?.title}`,
             },
             iconColor: {
               title: t('Color'),
@@ -108,17 +106,29 @@ export function ButtonEditor(props) {
         } as ISchema
       }
       onSubmit={({ title, icon, type, iconColor }) => {
+        if (field.address.toString() === fieldSchema.name) {
+          field.title = title;
+          field.componentProps.iconColor = iconColor;
+          field.componentProps.icon = icon;
+          field.componentProps.danger = type === 'danger';
+          field.componentProps.type = type || field.componentProps.type;
+        } else {
+          field.form.query(new RegExp(`.${fieldSchema.name}$`)).forEach((fieldItem) => {
+            fieldItem.title = title;
+            fieldItem.componentProps.iconColor = iconColor;
+            fieldItem.componentProps.icon = icon;
+            fieldItem.componentProps.danger = type === 'danger';
+            fieldItem.componentProps.type = type || fieldItem.componentProps.type;
+          });
+        }
+
         fieldSchema.title = title;
-        field.title = title;
-        field.componentProps.iconColor = iconColor;
-        field.componentProps.icon = icon;
-        field.componentProps.danger = type === 'danger';
-        field.componentProps.type = type || field.componentProps.type;
         fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
         fieldSchema['x-component-props'].iconColor = iconColor;
         fieldSchema['x-component-props'].icon = icon;
         fieldSchema['x-component-props'].danger = type === 'danger';
         fieldSchema['x-component-props'].type = type || field.componentProps.type;
+
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
@@ -718,7 +728,7 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
             'duplicate',
             'customize:create',
           ].includes(fieldSchema['x-action'] || '');
-          return !isPopupAction;
+          return !isPopupAction && !fieldSchema?.['x-action-settings']?.disableSecondConFirm;
         },
       },
       {
@@ -945,11 +955,12 @@ export const ActionDesigner = (props) => {
     buttonEditorProps,
     linkageRulesProps,
     schemaSettings = 'ActionSettings',
+    enableDrag = true,
     ...restProps
   } = props;
   const app = useApp();
   const fieldSchema = useFieldSchema();
-  const isDraggable = fieldSchema?.parent['x-component'] !== 'CollectionField';
+  const isDraggable = fieldSchema?.parent['x-component'] !== 'CollectionField' && enableDrag;
   const settingsName = `ActionSettings:${fieldSchema['x-action']}`;
   const defaultActionSettings = schemaSettings || 'ActionSettings';
   const hasAction = app.schemaSettingsManager.has(settingsName);

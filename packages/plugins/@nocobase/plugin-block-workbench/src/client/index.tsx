@@ -8,7 +8,6 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import { QRCodeScanner } from './components/qrcode-scanner';
 import { WorkbenchAction } from './WorkbenchAction';
 import { WorkbenchBlock } from './WorkbenchBlock';
 import { workbenchBlockInitializerItem } from './workbenchBlockInitializerItem';
@@ -28,8 +27,10 @@ import {
   WorkbenchCustomRequestActionSchemaInitializerItem,
   workbenchActionSettingsCustomRequest,
 } from './WorkbenchCustomRequestActionSchemaInitializerItem';
+import { lazy } from '@nocobase/client';
 export class PluginBlockWorkbenchClient extends Plugin {
   async load() {
+    const { QRCodeScanner } = lazy(() => import('./components/qrcode-scanner'), 'QRCodeScanner');
     this.app.addComponents({ WorkbenchBlock, QRCodeScanner, WorkbenchAction });
 
     // 新增工作台区块的设置器

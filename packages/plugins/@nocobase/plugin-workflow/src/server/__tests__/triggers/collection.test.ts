@@ -7,20 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BelongsToRepository, MockDatabase, Op } from '@nocobase/database';
+import { BelongsToRepository, MockDatabase } from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { MockServer } from '@nocobase/test';
 
 import { EXECUTION_STATUS } from '../../constants';
+import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
+import PluginWorkflowServer from '../../Plugin';
 
 describe('workflow > triggers > collection', () => {
   let app: MockServer;
   let db: MockDatabase;
+  let plugin: PluginWorkflowServer;
   let CategoryRepo;
   let PostRepo;
   let CommentRepo;
   let TagRepo;
   let WorkflowModel;
+  let agent;
 
   beforeEach(async () => {
     app = await getApp({
@@ -28,11 +32,15 @@ describe('workflow > triggers > collection', () => {
     });
 
     db = app.db;
+    plugin = app.pm.get(PluginWorkflowServer) as PluginWorkflowServer;
     WorkflowModel = db.getCollection('workflows').model;
     CategoryRepo = db.getCollection('categories').repository;
     PostRepo = db.getCollection('posts').repository;
     CommentRepo = db.getCollection('comments').repository;
     TagRepo = db.getCollection('tags').repository;
+
+    const user = await app.db.getRepository('users').findOne();
+    agent = app.agent().login(user);
   });
 
   afterEach(() => app.destroy());
@@ -694,6 +702,40 @@ describe('workflow > triggers > collection', () => {
     });
   });
 
+  describe('execute', () => {
+    it('disabled could be executed', async () => {
+      const workflow = await WorkflowModel.create({
+        type: 'collection',
+        sync: true,
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+      const e1s = await workflow.getExecutions();
+      expect(e1s.length).toBe(0);
+
+      const {
+        status,
+        body: { data },
+      } = await agent.resource('workflows').execute({
+        filterByTk: workflow.id,
+        values: {
+          data: p1.toJSON(),
+        },
+      });
+
+      expect(status).toBe(200);
+
+      const e2s = await workflow.getExecutions();
+      expect(e2s.length).toBe(1);
+      expect(e2s[0].toJSON()).toMatchObject(data.execution);
+      expect(data.execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+  });
+
   describe('cycling trigger', () => {
     it('trigger should not be triggered more than once in same execution', async () => {
       const workflow = await WorkflowModel.create({
@@ -834,8 +876,7 @@ describe('workflow > triggers > collection', () => {
   describe('multiple data source', () => {
     let anotherDB: MockDatabase;
     beforeEach(async () => {
-      // @ts-ignore
-      anotherDB = app.dataSourceManager.dataSources.get('another').collectionManager.db;
+      anotherDB = (app.dataSourceManager.dataSources.get('another').collectionManager as SequelizeCollectionManager).db;
     });
 
     it('collection trigger on another', async () => {
@@ -890,9 +931,6 @@ describe('workflow > triggers > collection', () => {
       const e1s = await w1.getExecutions();
       expect(e1s.length).toBe(1);
 
-      const user = await app.db.getRepository('users').findOne();
-      const agent = app.agent().login(user);
-
       const { body } = await agent.resource('workflows').revision({
         filterByTk: w1.id,
         filter: {
@@ -921,6 +959,37 @@ describe('workflow > triggers > collection', () => {
         },
       });
       expect(e3s.length).toBe(1);
+    });
+
+    it.skip('sync event on another', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        sync: true,
+        config: {
+          mode: 1,
+          collection: 'another:posts',
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      const e1s = await workflow.getExecutions();
+      expect(e1s.length).toBe(0);
+
+      const AnotherPostRepo = anotherDB.getRepository('posts');
+      const anotherPost = await AnotherPostRepo.create({ values: { title: 't2' } });
+
+      const e2s = await workflow.getExecutions();
+      expect(e2s.length).toBe(1);
+      expect(e2s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e2s[0].context.data.title).toBe('t2');
+
+      const p1s = await PostRepo.find();
+      expect(p1s.length).toBe(1);
+
+      const p2s = await AnotherPostRepo.find();
+      expect(p2s.length).toBe(1);
     });
   });
 });

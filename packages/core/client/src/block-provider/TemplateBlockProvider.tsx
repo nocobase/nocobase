@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, FC, useCallback, useContext, useMemo, useState } from 'react';
 
 const TemplateBlockContext = createContext<{
   // 模板是否已经请求结束
@@ -23,13 +23,18 @@ export const useTemplateBlockContext = () => {
   return useContext(TemplateBlockContext);
 };
 
-const TemplateBlockProvider = (props) => {
+const TemplateBlockProvider: FC<{ onTemplateLoaded?: () => void }> = ({ onTemplateLoaded, children }) => {
   const [templateFinished, setTemplateFinished] = useState(false);
-  return (
-    <TemplateBlockContext.Provider value={{ templateFinished, onTemplateSuccess: () => setTemplateFinished(true) }}>
-      {props.children}
-    </TemplateBlockContext.Provider>
-  );
+  const onTemplateSuccess = useCallback(() => {
+    setTemplateFinished(true);
+
+    // Wait for the render to stabilize before invoking onTemplateLoaded, to ensure we can get the latest template schema
+    setTimeout(() => {
+      onTemplateLoaded?.();
+    });
+  }, [onTemplateLoaded]);
+  const value = useMemo(() => ({ templateFinished, onTemplateSuccess }), [onTemplateSuccess, templateFinished]);
+  return <TemplateBlockContext.Provider value={value}>{children}</TemplateBlockContext.Provider>;
 };
 
 export { TemplateBlockProvider };

@@ -34,15 +34,19 @@ import QueryInstruction from './instructions/QueryInstruction';
 import UpdateInstruction from './instructions/UpdateInstruction';
 
 import type { ExecutionModel, JobModel, WorkflowModel } from './types';
+import WorkflowRepository from './repositories/WorkflowRepository';
+import { Context } from '@nocobase/actions';
+import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 
 type ID = number | string;
 
 type Pending = [ExecutionModel, JobModel?];
 
-type EventOptions = {
+export type EventOptions = {
   eventKey?: string;
   context?: any;
   deferred?: boolean;
+  manually?: boolean;
   [key: string]: any;
 } & Transactionable;
 
@@ -64,25 +68,11 @@ export default class PluginWorkflowServer extends Plugin {
   private meter = null;
   private checker: NodeJS.Timeout = null;
 
-  private onBeforeSave = async (instance: WorkflowModel, options) => {
+  private onBeforeSave = async (instance: WorkflowModel, { transaction }) => {
     const Model = <typeof WorkflowModel>instance.constructor;
 
     if (instance.enabled) {
       instance.set('current', true);
-    } else if (!instance.current) {
-      const count = await Model.count({
-        where: {
-          key: instance.key,
-        },
-        transaction: options.transaction,
-      });
-      if (!count) {
-        instance.set('current', true);
-      }
-    }
-
-    if (!instance.changed('enabled') || !instance.enabled) {
-      return;
     }
 
     const previous = await Model.findOne({
@@ -93,43 +83,44 @@ export default class PluginWorkflowServer extends Plugin {
           [Op.ne]: instance.id,
         },
       },
-      transaction: options.transaction,
+      transaction,
     });
+    if (!previous) {
+      instance.set('current', true);
+    }
 
-    if (previous) {
+    if (instance.current && previous) {
       // NOTE: set to `null` but not `false` will not violate the unique index
       await previous.update(
         { enabled: false, current: null },
         {
-          transaction: options.transaction,
+          transaction,
           hooks: false,
         },
       );
 
-      this.toggle(previous, false);
+      this.toggle(previous, false, { transaction });
     }
   };
 
-  async onSync(message) {
+  async handleSyncMessage(message) {
     if (message.type === 'statusChange') {
-      const workflowId = Number.parseInt(message.workflowId, 10);
-      const enabled = Number.parseInt(message.enabled, 10);
-      if (enabled) {
-        let workflow = this.enabledCache.get(workflowId);
+      if (message.enabled) {
+        let workflow = this.enabledCache.get(message.workflowId);
         if (workflow) {
           await workflow.reload();
         } else {
           workflow = await this.db.getRepository('workflows').findOne({
-            filterByTk: workflowId,
+            filterByTk: message.workflowId,
           });
         }
         if (workflow) {
-          this.toggle(workflow, true, true);
+          this.toggle(workflow, true, { silent: true });
         }
       } else {
-        const workflow = this.enabledCache.get(workflowId);
+        const workflow = this.enabledCache.get(message.workflowId);
         if (workflow) {
-          this.toggle(workflow, false, true);
+          this.toggle(workflow, false, { silent: true });
         }
       }
     }
@@ -215,6 +206,12 @@ export default class PluginWorkflowServer extends Plugin {
     }
   }
 
+  async beforeLoad() {
+    this.db.registerRepositories({
+      WorkflowRepository,
+    });
+  }
+
   /**
    * @internal
    */
@@ -271,13 +268,17 @@ export default class PluginWorkflowServer extends Plugin {
     });
 
     db.on('workflows.beforeSave', this.onBeforeSave);
-    db.on('workflows.afterCreate', (model: WorkflowModel) => {
+    db.on('workflows.afterCreate', (model: WorkflowModel, { transaction }) => {
       if (model.enabled) {
-        this.toggle(model);
+        this.toggle(model, true, { transaction });
       }
     });
-    db.on('workflows.afterUpdate', (model: WorkflowModel) => this.toggle(model));
-    db.on('workflows.beforeDestroy', (model: WorkflowModel) => this.toggle(model, false));
+    db.on('workflows.afterUpdate', (model: WorkflowModel, { transaction }) =>
+      this.toggle(model, model.enabled, { transaction }),
+    );
+    db.on('workflows.afterDestroy', (model: WorkflowModel, { transaction }) =>
+      this.toggle(model, false, { transaction }),
+    );
 
     // [Life Cycle]:
     //   * load all workflows in db
@@ -293,7 +294,7 @@ export default class PluginWorkflowServer extends Plugin {
       });
 
       workflows.forEach((workflow: WorkflowModel) => {
-        this.toggle(workflow);
+        this.toggle(workflow, true, { silent: true });
       });
 
       this.checker = setInterval(() => {
@@ -306,7 +307,7 @@ export default class PluginWorkflowServer extends Plugin {
 
     this.app.on('beforeStop', async () => {
       for (const workflow of this.enabledCache.values()) {
-        this.toggle(workflow, false);
+        this.toggle(workflow, false, { silent: true });
       }
 
       this.ready = false;
@@ -323,7 +324,11 @@ export default class PluginWorkflowServer extends Plugin {
     });
   }
 
-  private toggle(workflow: WorkflowModel, enable?: boolean, silent = false) {
+  private toggle(
+    workflow: WorkflowModel,
+    enable?: boolean,
+    { silent, transaction }: { silent?: boolean } & Transactionable = {},
+  ) {
     const type = workflow.get('type');
     const trigger = this.triggers.get(type);
     if (!trigger) {
@@ -344,11 +349,14 @@ export default class PluginWorkflowServer extends Plugin {
       this.enabledCache.delete(workflow.id);
     }
     if (!silent) {
-      this.sync({
-        type: 'statusChange',
-        workflowId: `${workflow.id}`,
-        enabled: `${Number(next)}`,
-      });
+      this.sendSyncMessage(
+        {
+          type: 'statusChange',
+          workflowId: workflow.id,
+          enabled: next,
+        },
+        { transaction },
+      );
     }
   }
 
@@ -363,13 +371,17 @@ export default class PluginWorkflowServer extends Plugin {
       logger.debug(`ignored event data:`, context);
       return;
     }
+    if (!options.manually && !workflow.enabled) {
+      logger.warn(`workflow ${workflow.id} is not enabled, event will be ignored`);
+      return;
+    }
     // `null` means not to trigger
     if (context == null) {
       logger.warn(`workflow ${workflow.id} event data context is null, event will be ignored`);
       return;
     }
 
-    if (this.isWorkflowSync(workflow)) {
+    if (options.manually || this.isWorkflowSync(workflow)) {
       return this.triggerSync(workflow, context, options);
     }
 
@@ -441,11 +453,13 @@ export default class PluginWorkflowServer extends Plugin {
     context,
     options: EventOptions,
   ): Promise<ExecutionModel | null> {
-    const { transaction = await this.db.sequelize.transaction(), deferred } = options;
+    const { deferred } = options;
+    const transaction = await this.useDataSourceTransaction('main', options.transaction, true);
+    const sameTransaction = options.transaction === transaction;
     const trigger = this.triggers.get(workflow.type);
     const valid = await trigger.validateEvent(workflow, context, { ...options, transaction });
     if (!valid) {
-      if (!options.transaction) {
+      if (!sameTransaction) {
         await transaction.commit();
       }
       return null;
@@ -463,7 +477,7 @@ export default class PluginWorkflowServer extends Plugin {
         { transaction },
       );
     } catch (err) {
-      if (!options.transaction) {
+      if (!sameTransaction) {
         await transaction.rollback();
       }
       throw err;
@@ -489,7 +503,7 @@ export default class PluginWorkflowServer extends Plugin {
       },
     );
 
-    if (!options.transaction) {
+    if (!sameTransaction) {
       await transaction.commit();
     }
 
@@ -585,7 +599,8 @@ export default class PluginWorkflowServer extends Plugin {
 
   private async process(execution: ExecutionModel, job?: JobModel, options: Transactionable = {}): Promise<Processor> {
     if (execution.status === EXECUTION_STATUS.QUEUEING) {
-      await execution.update({ status: EXECUTION_STATUS.STARTED }, { transaction: options.transaction });
+      const transaction = await this.useDataSourceTransaction('main', options.transaction);
+      await execution.update({ status: EXECUTION_STATUS.STARTED }, { transaction });
     }
     const logger = this.getLogger(execution.workflowId);
     const processor = this.createProcessor(execution, options);
@@ -598,7 +613,7 @@ export default class PluginWorkflowServer extends Plugin {
       await (job ? processor.resume(job) : processor.start());
       logger.info(`execution (${execution.id}) finished with status: ${execution.status}`, { execution });
       if (execution.status && execution.workflow.options?.deleteExecutionOnStatus?.includes(execution.status)) {
-        await execution.destroy();
+        await execution.destroy({ transaction: processor.mainTransaction });
       }
     } catch (err) {
       logger.error(`execution (${execution.id}) error: ${err.message}`, err);
@@ -609,6 +624,17 @@ export default class PluginWorkflowServer extends Plugin {
     return processor;
   }
 
+  async execute(workflow: WorkflowModel, context: Context, options: EventOptions = {}) {
+    const trigger = this.triggers.get(workflow.type);
+    if (!trigger) {
+      throw new Error(`trigger type "${workflow.type}" of workflow ${workflow.id} is not registered`);
+    }
+    if (!trigger.execute) {
+      throw new Error(`"execute" method of trigger ${workflow.type} is not implemented`);
+    }
+    return trigger.execute(workflow, context, options);
+  }
+
   /**
    * @experimental
    * @param {string} dataSourceName
@@ -617,8 +643,8 @@ export default class PluginWorkflowServer extends Plugin {
    * @returns {Trasaction}
    */
   useDataSourceTransaction(dataSourceName = 'main', transaction, create = false) {
-    // @ts-ignore
-    const { db } = this.app.dataSourceManager.dataSources.get(dataSourceName).collectionManager;
+    const { db } = this.app.dataSourceManager.dataSources.get(dataSourceName)
+      .collectionManager as SequelizeCollectionManager;
     if (!db) {
       return;
     }

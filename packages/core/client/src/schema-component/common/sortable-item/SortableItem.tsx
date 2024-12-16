@@ -11,8 +11,10 @@ import { TinyColor } from '@ctrl/tinycolor';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { cx } from '@emotion/css';
 import { Schema, observer, useField, useFieldSchema } from '@formily/react';
+import _ from 'lodash';
 import React, { HTMLAttributes, createContext, useContext, useMemo } from 'react';
 import { useToken } from '../../antd/__builtins__';
+import { useDesignable } from '../../hooks';
 
 export const DraggableContext = createContext(null);
 DraggableContext.displayName = 'DraggableContext';
@@ -29,7 +31,12 @@ export const SortableProvider = (props) => {
     id,
     data,
   });
-  return <SortableContext.Provider value={{ draggable, droppable }}>{children}</SortableContext.Provider>;
+  const value = useMemo(() => ({ draggable, droppable }), [draggable, droppable]);
+  return <SortableContext.Provider value={value}>{children}</SortableContext.Provider>;
+};
+
+const getComputedColor = (color: string) => {
+  return new TinyColor(color).setAlpha(0.15).toHex8String();
 };
 
 export const Sortable = (props: any) => {
@@ -40,9 +47,7 @@ export const Sortable = (props: any) => {
   const droppableStyle = { ...style };
 
   if (isOver && draggable?.active?.id !== droppable?.over?.id) {
-    droppableStyle[component === 'a' ? 'color' : 'background'] = new TinyColor(token.colorSettings)
-      .setAlpha(0.15)
-      .toHex8String();
+    droppableStyle[component === 'a' ? 'color' : 'background'] = getComputedColor(token.colorSettings);
     Object.assign(droppableStyle, overStyle);
   }
 
@@ -73,17 +78,18 @@ const useSortableItemId = (props) => {
   if (props.id) {
     return props.id;
   }
-  return field.address.toString();
+  return field.address?.toString();
 };
 
 interface SortableItemProps extends HTMLAttributes<HTMLDivElement> {
   eid?: string;
   schema?: Schema;
   removeParentsIfNoChildren?: boolean;
+  component?: any;
 }
 
-export const SortableItem: React.FC<SortableItemProps> = observer(
-  (props) => {
+const InternalSortableItem = observer(
+  (props: SortableItemProps) => {
     const { schema, id, eid, removeParentsIfNoChildren, ...others } = useSortableItemProps(props);
 
     const data = useMemo(() => {
@@ -102,11 +108,33 @@ export const SortableItem: React.FC<SortableItemProps> = observer(
       </SortableProvider>
     );
   },
-  { displayName: 'SortableItem' },
+  { displayName: 'InternalSortableItem' },
 );
 
+export const SortableItem: React.FC<SortableItemProps> = React.memo((props) => {
+  const { component, ...others } = props;
+  const { designable } = useDesignable();
+
+  if (designable) {
+    return <InternalSortableItem {...props} />;
+  }
+
+  return React.createElement(
+    component || 'div',
+    _.omit(others, ['children', 'schema', 'overStyle', 'openMode', 'id', 'eid', 'removeParentsIfNoChildren']),
+    props.children,
+  );
+});
+
+SortableItem.displayName = 'SortableItem';
+
 export const DragHandler = (props) => {
-  const { draggable } = useContext(SortableContext);
+  const { draggable } = useContext(SortableContext) || {};
+
+  if (!draggable) {
+    return null;
+  }
+
   const { attributes, listeners, setNodeRef } = draggable;
 
   return (

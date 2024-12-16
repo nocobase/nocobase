@@ -13,7 +13,7 @@ import { uid } from '@formily/shared';
 import { SchemaComponent, useAPIClient } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Checkbox, message } from 'antd';
-import uniq from 'lodash/uniq';
+import { uniq } from 'lodash';
 import React, { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useACLTranslation } from '../locale';

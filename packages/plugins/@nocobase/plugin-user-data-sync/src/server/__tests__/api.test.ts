@@ -19,7 +19,7 @@ describe('api', async () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['user-data-sync'],
+      plugins: ['field-sort', 'user-data-sync'],
     });
     agent = app.agent();
     const plugin = app.pm.get('user-data-sync') as PluginUserDataSyncServer;
@@ -49,6 +49,25 @@ describe('api', async () => {
     expect(usersResource.data[0]).toMatchObject({
       uid: '1',
       nickname: 'test',
+    });
+  });
+
+  it('push data with unsupported type', async () => {
+    const res = await agent.resource('userData').push({
+      values: {
+        dataType: 'unsupported',
+        records: [
+          {
+            uid: '1',
+            nickname: 'test',
+          },
+        ],
+      },
+    });
+    expect(res.status).toBe(500);
+    expect(res.body.data).toMatchObject({
+      code: 500,
+      message: 'dataType unsupported is not supported',
     });
   });
 });

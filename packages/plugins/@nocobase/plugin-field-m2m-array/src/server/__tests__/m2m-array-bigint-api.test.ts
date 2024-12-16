@@ -17,7 +17,7 @@ describe('m2m array api, bigInt targetKey', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['field-m2m-array', 'data-source-manager', 'data-source-main', 'error-handler'],
+      plugins: ['field-m2m-array', 'data-source-manager', 'field-sort', 'data-source-main', 'error-handler'],
     });
     db = app.db;
     await db.getRepository('collections').create({
@@ -255,6 +255,18 @@ describe('m2m array api, bigInt targetKey', () => {
         expect(user2.tag_ids).toMatchObject(['1', '3']);
       } else {
         expect(user2.tag_ids).toMatchObject([1, 3]);
+      }
+      const user3 = await db.getRepository('users').create({
+        values: {
+          id: 5,
+          username: 'e',
+          tags: { id: 1 },
+        },
+      });
+      if (db.sequelize.getDialect() === 'postgres') {
+        expect(user3.tag_ids).toMatchObject(['1']);
+      } else {
+        expect(user3.tag_ids).toMatchObject([1]);
       }
     });
 

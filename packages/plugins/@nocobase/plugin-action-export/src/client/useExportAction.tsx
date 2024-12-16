@@ -15,6 +15,8 @@ import {
   useCollectionManager_deprecated,
   useCompile,
   useCurrentAppInfo,
+  useDataBlockRequest,
+  useDataBlockResource,
 } from '@nocobase/client';
 import lodash from 'lodash';
 import { saveAs } from 'file-saver';
@@ -24,6 +26,8 @@ import { useMemo } from 'react';
 
 export const useExportAction = () => {
   const { service, resource, props } = useBlockRequestContext();
+  const newResource = useDataBlockResource();
+
   const appInfo = useCurrentAppInfo();
   const defaultFilter = props?.params.filter;
   const actionSchema = useFieldSchema();
@@ -72,18 +76,17 @@ export const useExportAction = () => {
         es.defaultTitle = uiSchema?.title;
       });
 
-      const { data } = await resource.export(
+      const { data } = await (newResource as any).export(
         {
           title: compile(title),
           appends: service.params[0]?.appends?.join(),
           filter: mergeFilter([...Object.values(filters), defaultFilter]),
           sort: service.params[0]?.sort,
-        },
-        {
-          method: 'post',
-          data: {
+          values: {
             columns: compile(exportSettings),
           },
+        },
+        {
           responseType: 'blob',
         },
       );

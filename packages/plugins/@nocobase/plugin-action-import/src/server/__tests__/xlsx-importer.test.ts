@@ -184,6 +184,7 @@ describe('xlsx importer', () => {
         [
           ['test', 77383],
           ['test2', '2021-10-18'],
+          ['test3', 20241112],
         ],
         { origin: 'A2' },
       );
@@ -200,6 +201,7 @@ describe('xlsx importer', () => {
       const users = (await User.repository.find()).map((user) => user.toJSON());
       expect(users[0]['dateOnly']).toBe('2111-11-12');
       expect(users[1]['dateOnly']).toBe('2021-10-18');
+      expect(users[2]['dateOnly']).toBe('2024-11-12');
     });
 
     it.skipIf(process.env['DB_DIALECT'] === 'sqlite')('should import with datetimeNoTz', async () => {
@@ -269,7 +271,15 @@ describe('xlsx importer', () => {
 
       const worksheet = template.Sheets[template.SheetNames[0]];
 
-      XLSX.utils.sheet_add_aoa(worksheet, [['test', 77383]], { origin: 'A2' });
+      XLSX.utils.sheet_add_aoa(
+        worksheet,
+        [
+          ['test', 77383],
+          ['test2', 20241112],
+          ['test3', '2024-11-12'],
+        ],
+        { origin: 'A2' },
+      );
 
       const importer = new XlsxImporter({
         collectionManager: app.mainDataSource.collectionManager,
@@ -282,6 +292,8 @@ describe('xlsx importer', () => {
 
       const users = (await User.repository.find()).map((user) => user.toJSON());
       expect(moment(users[0]['unixTimestamp']).toISOString()).toEqual('2111-11-12T00:00:00.000Z');
+      expect(moment(users[1]['unixTimestamp'])).toBeDefined();
+      expect(moment(users[2]['unixTimestamp'])).toBeDefined();
     });
 
     it('should import with datetimeTz', async () => {

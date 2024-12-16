@@ -30,10 +30,10 @@ module.exports = (cli) => {
   cli
     .command('dev')
     .option('-p, --port [port]')
-    .option('--client')
-    .option('--server')
+    .option('-c, --client')
+    .option('-s, --server')
     .option('--db-sync')
-    .option('--inspect [port]')
+    .option('-i, --inspect [port]')
     .allowUnknownOption()
     .action(async (opts) => {
       let subprocess;
@@ -89,16 +89,13 @@ module.exports = (cli) => {
 
       watcher
         .on('ready', () => {
-          console.log('Initial scan complete.');
           isReady = true;
         })
         .on('addDir', async (pathname) => {
-          console.log('addDir....', isReady);
           if (!isReady) return;
           restartClient();
         })
         .on('unlinkDir', async (pathname) => {
-          console.log('unlinkDir....', isReady);
           if (!isReady) return;
           restartClient();
         });

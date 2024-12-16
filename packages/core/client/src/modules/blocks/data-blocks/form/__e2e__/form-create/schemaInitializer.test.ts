@@ -131,7 +131,7 @@ test.describe('configure actions', () => {
   test('subTable: should clear form value after submit', async ({ page, mockPage }) => {
     await mockPage(T3106).goto();
 
-    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.locator('.nb-sub-table-addNew').click();
     await expect(
       page.getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname').getByRole('textbox'),
     ).toHaveValue('test name');
@@ -141,9 +141,10 @@ test.describe('configure actions', () => {
     await expect(
       page.getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname').getByRole('textbox'),
     ).toBeHidden();
+    await page.mouse.move(600, 0);
 
     // 再次点击添加按钮，默认值应该正常显示出来
-    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.locator('.nb-sub-table-addNew').click();
     await expect(
       page.getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname').getByRole('textbox'),
     ).toHaveValue('test name');
@@ -160,7 +161,7 @@ test.describe('configure actions', () => {
       .fill('123456');
 
     // 2. 添加一行子表格数据，其中显示刚填入的值
-    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.locator('.nb-sub-table-addNew').click();
     await expect(
       page.getByLabel('block-item-CollectionField-roles-form-roles.name-Role UID').getByRole('textbox'),
     ).toHaveValue('123456');

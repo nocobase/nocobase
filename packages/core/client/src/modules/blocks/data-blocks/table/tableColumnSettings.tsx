@@ -9,7 +9,7 @@
 
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/json-schema';
-import { useField, useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema, useForm } from '@formily/react';
 import { Tooltip } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -19,13 +19,13 @@ import { useCollectionManager_deprecated } from '../../../../collection-manager'
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { useCollection } from '../../../../data-source';
 import { fieldComponentSettingsItem } from '../../../../data-source/commonsSettingsItem';
+import { useFlag } from '../../../../flag-provider/hooks/useFlag';
 import { useDesignable } from '../../../../schema-component';
 import { useAssociationFieldContext } from '../../../../schema-component/antd/association-field/hooks';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
 import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
 import { isPatternDisabled } from '../../../../schema-settings/isPatternDisabled';
-
 export const tableColumnSettings = new SchemaSettings({
   name: 'fieldSettings:TableColumn',
   items: [
@@ -90,7 +90,13 @@ export const tableColumnSettings = new SchemaSettings({
           },
           useVisible() {
             const { fieldSchema } = useColumnSchema();
+            const { isInSubTable } = useFlag();
             const field: any = useField();
+
+            if (!isInSubTable) {
+              return true;
+            }
+
             const path = field.path?.splice(field.path?.length - 1, 1);
             if (fieldSchema) {
               const isReadPretty = field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).get('readPretty');
@@ -423,6 +429,7 @@ export const tableColumnSettings = new SchemaSettings({
             };
           },
         },
+
         fieldComponentSettingsItem,
       ],
     },

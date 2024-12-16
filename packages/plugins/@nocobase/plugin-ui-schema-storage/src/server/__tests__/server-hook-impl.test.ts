@@ -24,7 +24,16 @@ describe('server hooks', () => {
   beforeEach(async () => {
     app = await createMockServer({
       registerActions: true,
-      plugins: ['ui-schema-storage', 'data-source-main', 'error-handler', 'users', 'acl', 'data-source-manager'],
+      plugins: [
+        'ui-schema-storage',
+        'field-sort',
+        'data-source-main',
+        'field-sort',
+        'error-handler',
+        'users',
+        'acl',
+        'data-source-manager',
+      ],
     });
     await app.runCommand('install', '-f');
     db = app.db;

@@ -1,51 +1,5 @@
-import {
-  getApp,
-  getAppComponent,
-  getAppComponentWithSchemaSettings,
-  getReadPrettyAppComponent,
-  withSchema,
-} from '@nocobase/test/web';
-import {
-  ACLMenuItemProvider,
-  AdminLayout,
-  BlockSchemaComponentPlugin,
-  CurrentUserProvider,
-  DocumentTitleProvider,
-  EditComponent,
-  EditDefaultValue,
-  EditOperator,
-  EditPattern,
-  EditTitle,
-  EditTitleField,
-  EditValidationRules,
-  FilterFormBlockProvider,
-  FixedBlock,
-  Form,
-  FormBlockProvider,
-  FormItem,
-  FormV2,
-  Grid,
-  IconPicker,
-  Input,
-  InternalAdminLayout,
-  NanoIDInput,
-  Page,
-  RouteSchemaComponent,
-  SchemaInitializerPlugin,
-  TableBlockProvider,
-  TableV2,
-  VariablesProvider,
-  fieldSettingsFormItem,
-  tableActionColumnInitializers,
-  tableActionInitializers,
-  tableColumnInitializers,
-  useTableBlockDecoratorProps,
-} from '@nocobase/client';
-import { observer } from '@formily/reactive-react';
-import React, { ComponentType } from 'react';
-import { useField, useFieldSchema } from '@formily/react';
-import axios from 'axios';
-import { pick } from 'lodash';
+import { BlockSchemaComponentPlugin, FormBlockProvider, VariablesProvider } from '@nocobase/client';
+import { getAppComponent, withSchema } from '@nocobase/test/web';
 
 const FormBlockProviderWithSchema = withSchema(FormBlockProvider);
 

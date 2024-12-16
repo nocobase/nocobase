@@ -72,7 +72,7 @@ export class PluginMobileClient extends Plugin {
     return `${this.router.getBasename()}m`; // `/m` or `/apps/aaa/m`（多应用）
   }
 
-  async updateOptions(value: { showTabBar?: boolean }) {
+  async updateOptions(value: { showTabBar?: boolean; showBackButton?: boolean }) {
     if (!this.options) {
       this.options = {};
     }

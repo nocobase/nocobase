@@ -17,7 +17,7 @@ describe('m2m array api, string targetKey', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['field-m2m-array', 'data-source-manager', 'data-source-main', 'error-handler'],
+      plugins: ['field-m2m-array', 'data-source-manager', 'field-sort', 'data-source-main', 'error-handler'],
     });
     db = app.db;
     await db.getRepository('collections').create({
@@ -227,6 +227,14 @@ describe('m2m array api, string targetKey', () => {
         },
       });
       expect(user2.tag_ids).toMatchObject(['a', 'c']);
+      const user3 = await db.getRepository('users').create({
+        values: {
+          id: 5,
+          username: 'e',
+          tags: { stringCode: 'a' },
+        },
+      });
+      expect(user3.tag_ids).toMatchObject(['a']);
     });
 
     it('should create target when creating belongsToArray', async () => {

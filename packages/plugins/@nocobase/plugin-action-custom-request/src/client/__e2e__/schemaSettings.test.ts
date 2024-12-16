@@ -48,4 +48,25 @@ test.describe('custom request action', () => {
     await expect(page.getByText('Button icon')).toBeVisible();
     await expect(page.getByText('Button background color')).toBeVisible();
   });
+
+  test('custom request buttons should appear immediately after being added to table header', async ({
+    page,
+    mockPage,
+  }) => {
+    await mockPage().goto();
+
+    // 1. 添加一个 Table 区块
+    await page.getByLabel('schema-initializer-Grid-page:').hover();
+    await page.getByRole('menuitem', { name: 'Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Users' }).click();
+
+    // 2. 添加三个 custom request 按钮，并应该立即显示出来
+    await page.getByLabel('schema-initializer-ActionBar-').hover();
+    await page.getByRole('menuitem', { name: 'Custom request' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-').hover();
+    await page.getByRole('menuitem', { name: 'Custom request' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-').hover();
+    await page.getByRole('menuitem', { name: 'Custom request' }).click();
+    await expect(page.getByLabel('action-CustomRequestAction-')).toHaveCount(3);
+  });
 });

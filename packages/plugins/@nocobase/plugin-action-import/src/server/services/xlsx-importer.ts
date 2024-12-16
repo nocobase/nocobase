@@ -29,6 +29,7 @@ export type ImporterOptions = {
   workbook: any;
   chunkSize?: number;
   explain?: string;
+  repository?: any;
 };
 
 export type RunOptions = {
@@ -37,7 +38,9 @@ export type RunOptions = {
 };
 
 export class XlsxImporter extends EventEmitter {
-  constructor(protected options: ImporterOptions) {
+  private repository;
+
+  constructor(private options: ImporterOptions) {
     super();
 
     if (typeof options.columns === 'string') {
@@ -47,6 +50,8 @@ export class XlsxImporter extends EventEmitter {
     if (options.columns.length == 0) {
       throw new Error(`columns is empty`);
     }
+
+    this.repository = options.repository ? options.repository : options.collection.repository;
   }
 
   async validate() {
@@ -232,7 +237,7 @@ export class XlsxImporter extends EventEmitter {
   async performInsert(insertOptions: { values: any; transaction: Transaction; context: any; hooks?: boolean }) {
     const { values, transaction, context } = insertOptions;
 
-    return this.options.collection.repository.create({
+    return this.repository.create({
       values,
       context,
       transaction,

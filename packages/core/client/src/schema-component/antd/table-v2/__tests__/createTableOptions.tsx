@@ -8,7 +8,6 @@
  */
 
 import {
-  FixedBlock,
   BlockSchemaComponentPlugin,
   SchemaInitializerPlugin,
   TableBlockProvider,
@@ -116,7 +115,6 @@ export const tableOptions = {
   appOptions: {
     components: {
       TableBlockProvider,
-      FixedBlock,
     },
     plugins: [BlockSchemaComponentPlugin, SchemaInitializerPlugin],
     schemaInitializers: [tableActionInitializers, tableColumnInitializers, tableActionColumnInitializers],

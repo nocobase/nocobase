@@ -11,7 +11,7 @@ import { ISchema, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useCallback, useContext } from 'react';
 import { useLocationNoUpdate, useNavigateNoUpdate } from '../../../application';
-import { useTableBlockContext } from '../../../block-provider/TableBlockProvider';
+import { useTableBlockContextBasicValue } from '../../../block-provider/TableBlockProvider';
 import {
   CollectionRecord,
   useAssociationName,
@@ -19,14 +19,15 @@ import {
   useCollectionManager,
   useCollectionParentRecord,
   useCollectionRecord,
-  useDataBlockRequest,
+  useDataBlockRequestData,
+  useDataBlockRequestGetter,
   useDataSourceKey,
 } from '../../../data-source';
 import { ActionContext } from '../action/context';
 import { PopupVisibleProviderContext, useCurrentPopupContext } from './PagePopups';
 import { usePopupSettings } from './PopupSettingsProvider';
+import { getPopupLayerState, removePopupLayerState, setPopupLayerState } from './popupState';
 import { PopupContext, usePopupContextInActionOrAssociationField } from './usePopupContextInActionOrAssociationField';
-
 export interface PopupParams {
   /** popup uid */
   popupuid: string;
@@ -50,7 +51,7 @@ export interface PopupContextStorage extends PopupContext {
   service?: any;
   sourceId?: string;
   /** Specifically prepared for the 'Table selected records' variable */
-  tableBlockContext?: { field: any; service: any; rowKey: any; collection: string };
+  tableBlockContext?: { field: any; blockData: any; rowKey: any; collection: string };
 }
 
 const popupsContextStorage: Record<string, PopupContextStorage> = {};
@@ -146,8 +147,8 @@ export const usePopupUtils = (
   const cm = useCollectionManager();
   const association = useAssociationName();
   const { visible, setVisible } = useContext(PopupVisibleProviderContext) || { visible: false, setVisible: _.noop };
-  const { params: popupParams } = useCurrentPopupContext();
-  const service = useDataBlockRequest();
+  const { params: popupParams, currentLevel = 0 } = useCurrentPopupContext();
+  const { getDataBlockRequest } = useDataBlockRequestGetter();
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { setVisible: _setVisibleFromAction } = useContext(ActionContext);
   const { updatePopupContext } = usePopupContextInActionOrAssociationField();
@@ -157,7 +158,8 @@ export const usePopupUtils = (
       (_parentRecordData || parentRecord?.data)?.[cm.getSourceKeyByAssociation(association)],
     [parentRecord, association],
   );
-  const tableBlockContext = useTableBlockContext();
+  const blockData = useDataBlockRequestData();
+  const tableBlockContextBasicValue = useTableBlockContextBasicValue() || ({} as any);
 
   const setVisibleFromAction = options.setVisible || _setVisibleFromAction;
 
@@ -224,7 +226,8 @@ export const usePopupUtils = (
         return setVisibleFromAction?.(true);
       }
 
-      const currentPopupUidWithoutOpened = customActionSchema?.['x-uid'] || fieldSchema?.['x-uid'];
+      const schema = customActionSchema || fieldSchema;
+      const currentPopupUidWithoutOpened = schema?.['x-uid'];
       const sourceId = getSourceId(parentRecordData);
 
       recordData = recordData || record?.data;
@@ -241,20 +244,33 @@ export const usePopupUtils = (
       }
 
       storePopupContext(currentPopupUidWithoutOpened, {
-        schema: customActionSchema || fieldSchema,
+        schema,
         record: new CollectionRecord({ isNew: false, data: recordData }),
         parentRecord: parentRecordData ? new CollectionRecord({ isNew: false, data: parentRecordData }) : parentRecord,
-        service,
+        service: getDataBlockRequest(),
         dataSource: dataSourceKey,
         collection: collection?.name,
         association,
         sourceId,
-        tableBlockContext,
+        tableBlockContext: { ...tableBlockContextBasicValue, collection: collection?.name, blockData },
       });
 
       updatePopupContext(getNewPopupContext(), customActionSchema);
 
-      navigate(withSearchParams(`${url}${pathname}`));
+      // Only open the popup when the popup schema exists
+      if (schema.properties) {
+        const nextLevel = currentLevel + 1;
+
+        if (getPopupLayerState(nextLevel)) {
+          return;
+        }
+        navigate(withSearchParams(`${url}${pathname}`));
+        setPopupLayerState(nextLevel, true);
+      } else {
+        console.error(
+          `[NocoBase] The popup schema is invalid, please check the schema: \n${JSON.stringify(schema, null, 2)}`,
+        );
+      }
     },
     [
       association,
@@ -266,12 +282,14 @@ export const usePopupUtils = (
       navigate,
       parentRecord,
       record,
-      service,
+      getDataBlockRequest,
       location,
       isPopupVisibleControlledByURL,
       getSourceId,
       getNewPopupContext,
-      tableBlockContext,
+      blockData,
+      tableBlockContextBasicValue,
+      currentLevel,
     ],
   );
 
@@ -281,7 +299,8 @@ export const usePopupUtils = (
     }
 
     navigate(withSearchParams(removeLastPopupPath(location.pathname)), { replace: true });
-  }, [isPopupVisibleControlledByURL, setVisibleFromAction, navigate, location?.pathname]);
+    removePopupLayerState(currentLevel);
+  }, [isPopupVisibleControlledByURL, setVisibleFromAction, navigate, location?.pathname, currentLevel]);
 
   const changeTab = useCallback(
     (key: string) => {

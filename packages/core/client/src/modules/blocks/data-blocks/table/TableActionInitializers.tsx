@@ -9,8 +9,9 @@
 
 import { useFieldSchema } from '@formily/react';
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
-import { useCollection } from '../../../../data-source';
+import { useCollection, useDataBlockProps } from '../../../../data-source';
 import { useActionAvailable } from '../../useActionAvailable';
+
 const commonOptions = {
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
@@ -41,6 +42,24 @@ const commonOptions = {
         },
       },
       useVisible: () => useActionAvailable('create'),
+    },
+    {
+      type: 'item',
+      title: '{{t("Associate")}}',
+      name: 'associate',
+      Component: 'AssociateActionInitializer',
+      useVisible() {
+        const props = useDataBlockProps();
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions, availableActions } = collection?.options || {};
+        if (availableActions) {
+          return !!props?.association && availableActions.includes?.('update');
+        }
+        if (unavailableActions) {
+          return !!props?.association && !unavailableActions?.includes?.('update');
+        }
+        return true;
+      },
     },
     {
       type: 'item',

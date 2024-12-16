@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RecursionField, useFieldSchema } from '@formily/react';
+import { useFieldSchema } from '@formily/react';
+import { NocoBaseRecursionField } from '@nocobase/client';
 import { Schema } from '@nocobase/utils';
 import React, { FC } from 'react';
 
@@ -19,5 +20,5 @@ export const GanttRecordViewer: FC = (props) => {
     return null;
   }
 
-  return <RecursionField schema={eventSchema} name={eventSchema.name} />;
+  return <NocoBaseRecursionField schema={eventSchema} name={eventSchema.name} />;
 };

@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { observer, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useActionContext } from '.';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { useOpenModeContext } from '../../../modules/popup/OpenModeProvider';
 import { ComposedActionDrawer } from './types';
 
@@ -37,7 +38,7 @@ ActionContainer.Footer = observer(
   () => {
     const field = useField();
     const schema = useFieldSchema();
-    return <RecursionField basePath={field.address} schema={schema} onlyRenderProperties />;
+    return <NocoBaseRecursionField basePath={field.address} schema={schema} onlyRenderProperties />;
   },
   { displayName: 'ActionContainer.Footer' },
 );
