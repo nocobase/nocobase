@@ -28,5 +28,14 @@
   "Incorrect email format": "邮箱格式不正确",
   "Illegal percentage format": "百分比格式有误",
   "Imported template does not match, please download again.": "导入模板不匹配，请检查导入文件标题行或重新下载导入模板",
-  "another import action is running, please try again later.": "另一导入任务正在运行，请稍后重试。"
+  "another import action is running, please try again later.": "另一导入任务正在运行，请稍后重试。",
+  "Custom column title": "自定义列标题",
+  "Field description": "字段说明",
+  "Field description placeholder": "请输入字段说明",
+  "Columns configuration is empty": "列配置为空",
+  "Field not found: {{field}}": "字段未找到：{{field}}",
+  "Headers not found. Expected headers: {{headers}}": "未找到表头。预期的表头：{{headers}}",
+  "Header mismatch at column {{column}}: expected \"{{expected}}\", but got \"{{actual}}\"": "第 {{column}} 列的表头不匹配：预期 \"{{expected}}\"，实际是 \"{{actual}}\"",
+  "No data to import": "没有数据可导入",
+  "Failed to import row {{row}}, {{message}}, row data: {{data}}": "导入第 {{row}} 行失败，{{message}}，行数据：{{data}}"
 }

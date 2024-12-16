@@ -27,5 +27,15 @@
   "Incorrect email format": "Incorrect email format",
   "Illegal percentage format": "Illegal percentage format",
   "Imported template does not match, please download again.": "Imported template does not match, please download again.",
-  "another import action is running, please try again later.": "another import action is running, please try again later."
+  "another import action is running, please try again later.": "another import action is running, please try again later.",
+  "Please select": "Please select",
+  "Custom column title": "Custom column title",
+  "Field description": "Field description",
+  "Field description placeholder": "Enter field description",
+  "Columns configuration is empty": "Columns configuration is empty",
+  "Field not found: {{field}}": "Field not found: {{field}}",
+  "Headers not found. Expected headers: {{headers}}": "Headers not found. Expected headers: {{headers}}",
+  "Header mismatch at column {{column}}: expected \"{{expected}}\", but got \"{{actual}}\"": "Header mismatch at column {{column}}: expected \"{{expected}}\", but got \"{{actual}}\"",
+  "No data to import": "No data to import",
+  "Failed to import row {{row}}, {{message}}, row data: {{data}}": "Failed to import row {{row}}, {{message}}, row data: {{data}}"
 }

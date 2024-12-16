@@ -10,7 +10,7 @@
 import { Plugin } from '@nocobase/server';
 import { downloadXlsxTemplate, importXlsx } from './actions';
 import { importMiddleware } from './middleware';
-
+import { ImportValidationError } from './errors';
 export class PluginActionImportServer extends Plugin {
   beforeLoad() {
     this.app.on('afterInstall', async () => {
@@ -55,6 +55,25 @@ export class PluginActionImportServer extends Plugin {
 
       dataSource.acl.allow('*', 'downloadXlsxTemplate', 'loggedIn');
     });
+
+    const errorHandlerPlugin = this.app.getPlugin<PluginErrorHandler>('error-handler');
+
+    errorHandlerPlugin.errorHandler.register(
+      (err) => err instanceof ImportValidationError,
+      (err: ImportValidationError, ctx) => {
+        ctx.status = 400;
+        ctx.body = {
+          errors: [
+            {
+              message: ctx.i18n.t(err.code, {
+                ...err.params,
+                ns: 'action-import',
+              }),
+            },
+          ],
+        };
+      },
+    );
   }
 }
 

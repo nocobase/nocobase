@@ -56,7 +56,7 @@ describe('download template', () => {
       ],
     });
 
-    const workbook = await templateCreator.run();
+    const workbook = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
     const sheet0 = workbook.Sheets[workbook.SheetNames[0]];
     const sheetData = XLSX.utils.sheet_to_json(sheet0, { header: 1, defval: null, raw: false });
 
@@ -99,7 +99,7 @@ describe('download template', () => {
       ],
     });
 
-    const workbook = await templateCreator.run();
+    const workbook = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
     const sheet0 = workbook.Sheets[workbook.SheetNames[0]];
     const sheetData = XLSX.utils.sheet_to_json(sheet0, { header: 1, defval: null, raw: false });
     const headerData = sheetData[0];

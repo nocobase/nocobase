@@ -7,23 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import XLSX, { WorkBook } from 'xlsx';
+import * as XLSX from 'xlsx';
 import lodash from 'lodash';
 import { ICollection, ICollectionManager, IRelationField } from '@nocobase/data-source-manager';
 import { Collection as DBCollection, Database } from '@nocobase/database';
 import { Transaction } from 'sequelize';
 import EventEmitter from 'events';
+import { ImportValidationError } from '../errors';
 
 export type ImportColumn = {
   dataIndex: Array<string>;
   defaultTitle: string;
+  title?: string;
+  description?: string;
 };
 
 export type ImporterOptions = {
   collectionManager: ICollectionManager;
   collection: ICollection;
   columns: Array<ImportColumn>;
-  workbook: WorkBook;
+  workbook: any;
   chunkSize?: number;
   explain?: string;
 };
@@ -47,46 +50,18 @@ export class XlsxImporter extends EventEmitter {
   }
 
   async validate() {
-    // Validate column configuration
     if (this.options.columns.length == 0) {
-      throw new Error(`columns is empty`);
+      throw new ImportValidationError('Columns configuration is empty');
     }
 
-    // Validate data
-    const firstSheet = this.firstSheet();
-    const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: null });
-
-    if (this.options.explain) {
-      rows.shift();
-    }
-
-    if (rows.length === 0) {
-      throw new Error(`Empty file`);
-    }
-
-    // At least need header row and one data row
-    if (rows.length === 1) {
-      throw new Error(`No data to import`);
-    }
-
-    const headers = rows[0];
-    const columns = this.options.columns;
-
-    // Validate headers
-    for (let i = 0; i < columns.length; i++) {
-      const column = columns[i];
-      if (column.defaultTitle !== headers[i]) {
-        throw new Error(`Invalid header: ${column.defaultTitle} !== ${headers[i]}`);
-      }
-    }
-
-    // Validate field existence
     for (const column of this.options.columns) {
       const field = this.options.collection.getField(column.dataIndex[0]);
       if (!field) {
-        throw new Error(`Field not found: ${column.dataIndex[0]}`);
+        throw new ImportValidationError('Field not found: {{field}}', { field: column.dataIndex[0] });
       }
     }
+
+    await this.getData();
   }
 
   async run(options: RunOptions = {}) {
@@ -171,8 +146,8 @@ export class XlsxImporter extends EventEmitter {
 
   async performImport(options?: RunOptions): Promise<any> {
     const transaction = options?.transaction;
-    const rows = this.getData();
-    const chunks = lodash.chunk(rows, this.options.chunkSize || 200);
+    const data = await this.getData();
+    const chunks = lodash.chunk(data.slice(1), this.options.chunkSize || 200);
 
     let handingRowIndex = 1;
 
@@ -193,7 +168,9 @@ export class XlsxImporter extends EventEmitter {
             const field = this.options.collection.getField(column.dataIndex[0]);
 
             if (!field) {
-              throw new Error(`Field not found: ${column.dataIndex[0]}`);
+              throw new ImportValidationError('Import validation.Field not found', {
+                field: column.dataIndex[0],
+              });
             }
 
             const str = row[index];
@@ -237,12 +214,11 @@ export class XlsxImporter extends EventEmitter {
 
           await new Promise((resolve) => setTimeout(resolve, 5));
         } catch (error) {
-          throw new Error(
-            `failed to import row ${handingRowIndex}, ${this.renderErrorMessage(error)}, rowData: ${JSON.stringify(
-              rowValues,
-            )}`,
-            { cause: error },
-          );
+          throw new ImportValidationError('Failed to import row {{row}}, {{message}}, row data: {{data}}', {
+            row: handingRowIndex,
+            message: this.renderErrorMessage(error),
+            data: JSON.stringify(rowValues),
+          });
         }
       }
 
@@ -280,21 +256,70 @@ export class XlsxImporter extends EventEmitter {
     return str;
   }
 
-  getData() {
-    const firstSheet = this.firstSheet();
-    const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: null });
-
-    if (this.options.explain) {
-      rows.shift();
-    }
-
-    // Remove header row
-    rows.shift();
-
-    return rows;
+  private getExpectedHeaders(): string[] {
+    return this.options.columns.map((col) => col.title || col.defaultTitle);
   }
 
-  firstSheet() {
-    return this.options.workbook.Sheets[this.options.workbook.SheetNames[0]];
+  async getData() {
+    const workbook = this.options.workbook;
+    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+
+    const data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null }) as string[][];
+
+    // Find and validate header row
+    const expectedHeaders = this.getExpectedHeaders();
+    const { headerRowIndex, headers } = this.findAndValidateHeaders(data);
+    if (headerRowIndex === -1) {
+      throw new ImportValidationError('Headers not found. Expected headers: {{headers}}', {
+        headers: expectedHeaders.join(', '),
+      });
+    }
+
+    // Extract data rows
+    const rows = data.slice(headerRowIndex + 1);
+
+    // if no data rows, throw error
+    if (rows.length === 0) {
+      throw new ImportValidationError('No data to import');
+    }
+
+    return [headers, ...rows];
+  }
+
+  private findAndValidateHeaders(data: string[][]): { headerRowIndex: number; headers: string[] } {
+    const expectedHeaders = this.getExpectedHeaders();
+
+    // Find header row and validate
+    for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
+      const row = data[rowIndex];
+      const actualHeaders = row.filter((cell) => cell !== null && cell !== '');
+
+      const allHeadersFound = expectedHeaders.every((header) => actualHeaders.includes(header));
+      const noExtraHeaders = actualHeaders.length === expectedHeaders.length;
+
+      if (allHeadersFound && noExtraHeaders) {
+        const mismatchIndex = expectedHeaders.findIndex((title, index) => actualHeaders[index] !== title);
+
+        if (mismatchIndex === -1) {
+          // All headers match
+          return { headerRowIndex: rowIndex, headers: actualHeaders };
+        } else {
+          // Found potential header row but with mismatch
+          throw new ImportValidationError(
+            'Header mismatch at column {{column}}: expected "{{expected}}", but got "{{actual}}"',
+            {
+              column: mismatchIndex + 1,
+              expected: expectedHeaders[mismatchIndex],
+              actual: actualHeaders[mismatchIndex] || 'empty',
+            },
+          );
+        }
+      }
+    }
+
+    // No row with matching headers found
+    throw new ImportValidationError('Headers not found. Expected headers: {{headers}}', {
+      headers: expectedHeaders.join(', '),
+    });
   }
 }
