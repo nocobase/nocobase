@@ -1859,6 +1859,9 @@ describe('xlsx importer', () => {
 
     const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
 
+    const headerRowIndex = templateCreator.getHeaderRowIndex();
+
+    console.log({ headerRowIndex });
     const worksheet = template.Sheets[template.SheetNames[0]];
 
     XLSX.utils.sheet_add_aoa(
@@ -1868,7 +1871,7 @@ describe('xlsx importer', () => {
         ['User2', 'test2@test.com'],
       ],
       {
-        origin: 'A5',
+        origin: `A${headerRowIndex + 1}`,
       },
     );
 

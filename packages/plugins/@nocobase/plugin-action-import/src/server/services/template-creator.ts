@@ -13,15 +13,26 @@ import { WorkbookConverter } from '../utils/workbook-converter';
 import * as XLSX from 'xlsx';
 import { Workbook as ExcelJSWorkbook } from 'exceljs';
 
-type TemplateCreatorOptions = {
+export type TemplateCreatorOptions = {
   collection?: ICollection;
   title?: string;
   explain?: string;
   columns: Array<ImportColumn>;
 };
 
+export type TemplateResult = {
+  workbook: XLSX.WorkBook | ExcelJSWorkbook;
+  headerRowIndex: number;
+};
+
 export class TemplateCreator {
+  private headerRowIndex: number;
+
   constructor(private options: TemplateCreatorOptions) {}
+
+  getHeaderRowIndex() {
+    return this.headerRowIndex;
+  }
 
   async run(options?: any): Promise<XLSX.WorkBook | ExcelJSWorkbook> {
     const workbook = new ExcelJSWorkbook();
@@ -127,6 +138,8 @@ export class TemplateCreator {
         });
       }
     });
+
+    this.headerRowIndex = currentRow;
 
     if (options?.returnXLSXWorkbook) {
       return await WorkbookConverter.excelJSToXLSX(workbook);
