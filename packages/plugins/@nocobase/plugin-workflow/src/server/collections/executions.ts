@@ -44,6 +44,10 @@ export default {
     },
     {
       type: 'json',
+      name: 'stack',
+    },
+    {
+      type: 'json',
       name: 'output',
     },
   ],

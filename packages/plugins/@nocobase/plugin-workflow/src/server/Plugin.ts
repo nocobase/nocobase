@@ -475,6 +475,7 @@ export default class PluginWorkflowServer extends Plugin {
           context,
           key: workflow.key,
           eventKey: options.eventKey ?? randomUUID(),
+          stack: options.stack,
           status: deferred ? EXECUTION_STATUS.STARTED : EXECUTION_STATUS.QUEUEING,
         },
         { transaction },
