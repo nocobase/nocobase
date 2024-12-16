@@ -433,7 +433,6 @@ export const userDataSyncSourcesSchema: ISchema = {
                   title: '{{ t("Sync") }}',
                   'x-component': 'Action.Link',
                   'x-use-component-props': 'useSyncActionProps',
-                  'x-display': '{{ $record.enabled ? "visible" : "hidden" }}',
                 },
                 tasks: {
                   type: 'void',
@@ -442,7 +441,6 @@ export const userDataSyncSourcesSchema: ISchema = {
                   'x-component-props': {
                     type: 'primary',
                   },
-                  'x-display': '{{ $record.enabled ? "visible" : "hidden" }}',
                 },
                 edit: {
                   type: 'void',
