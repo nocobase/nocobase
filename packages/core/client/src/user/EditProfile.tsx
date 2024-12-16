@@ -122,7 +122,7 @@ export const useEditProfile = () => {
                     [uid()]: {
                       'x-component': 'Action.Drawer',
                       'x-component-props': {
-                        zIndex: 998,
+                        zIndex: 2000,
                       },
                       type: 'void',
                       title: '{{t("Edit profile")}}',
