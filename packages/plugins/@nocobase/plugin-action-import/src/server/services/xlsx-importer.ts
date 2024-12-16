@@ -40,7 +40,7 @@ export type RunOptions = {
 export class XlsxImporter extends EventEmitter {
   private repository;
 
-  constructor(private options: ImporterOptions) {
+  constructor(protected options: ImporterOptions) {
     super();
 
     if (typeof options.columns === 'string') {
