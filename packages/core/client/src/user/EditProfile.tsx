@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema, useForm } from '@formily/react';
+import { ISchema, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { MenuProps } from 'antd';
 import React, { useContext, useMemo, useState } from 'react';
@@ -15,91 +15,83 @@ import { useTranslation } from 'react-i18next';
 import {
   ActionContextProvider,
   DropdownVisibleContext,
+  ExtendCollectionsProvider,
   RemoteSchemaComponent,
   SchemaComponent,
-  SchemaComponentContext,
   useActionContext,
+  useCollectValuesToSubmit,
+  useCollectionManager,
   useCurrentUserContext,
-  useRequest,
-  useSchemaComponentContext,
   useSystemSettings,
 } from '../';
 import { useAPIClient } from '../api-client';
 
-const useCloseAction = () => {
-  const { setVisible } = useActionContext();
-  const form = useForm();
-  return {
-    async run() {
-      setVisible(false);
-      form.submit((values) => {
-        console.log(values);
-      });
-    },
-  };
-};
-
-const useCurrentUserValues = (options) => {
-  const ctx = useCurrentUserContext();
-  return useRequest(() => Promise.resolve(ctx.data), options);
-};
-
-const useSaveCurrentUserValues = () => {
+const useUpdateProfileActionProps = () => {
   const ctx = useCurrentUserContext();
   const { setVisible } = useActionContext();
   const form = useForm();
   const api = useAPIClient();
+  const actionSchema = useFieldSchema();
+  const actionField = useField();
+  const collectValues = useCollectValuesToSubmit();
+
   return {
-    async run() {
-      const values = await form.submit<any>();
-      setVisible(false);
-      await api.resource('users').updateProfile({
-        values,
-      });
-      ctx.mutate({
-        data: {
-          ...ctx?.data?.data,
-          ...values,
-        },
-      });
+    type: 'primary',
+    htmlType: 'submit',
+    async onClick() {
+      const { triggerWorkflows, skipValidator } = actionSchema?.['x-action-settings'] ?? {};
+      if (!skipValidator) {
+        await form.submit();
+      }
+      const values = await collectValues();
+      actionField.data = actionField.data || {};
+      actionField.data.loading = true;
+      try {
+        await api.resource('users').updateProfile({
+          values,
+          triggerWorkflows: triggerWorkflows?.length
+            ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+            : undefined,
+        });
+        ctx.mutate({
+          data: {
+            ...ctx?.data?.data,
+            ...values,
+          },
+        });
+        await form.reset();
+        actionField.data.loading = false;
+        setVisible(false);
+      } catch (error) {
+        actionField.data.loading = false;
+      }
     },
   };
 };
 
-const schema: ISchema = {
-  type: 'object',
-  properties: {
-    [uid()]: {
-      'x-decorator': 'Form',
-      'x-decorator-props': {
-        useValues: '{{ useCurrentUserValues }}',
-      },
-      'x-component': 'Action.Drawer',
-      'x-component-props': {
-        zIndex: 10000,
-      },
-      type: 'void',
-      title: '{{t("Edit profile")}}',
-      properties: {
-        form: {
-          type: 'void',
-          'x-component': 'ProfileEditForm',
-        },
-      },
-    },
-  },
-};
-
 const ProfileEditForm = () => {
-  const scCtx = useSchemaComponentContext();
+  const cm = useCollectionManager();
+  const userCollection = cm.getCollection('users');
+  const { data } = useCurrentUserContext();
+  const collection = useMemo(
+    () => ({
+      ...userCollection,
+      name: 'users',
+      fields: userCollection.fields.filter((field) => !['password', 'roles'].includes(field.name)),
+    }),
+    [userCollection],
+  );
   return (
-    <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
+    <ExtendCollectionsProvider collections={[collection]}>
       <RemoteSchemaComponent
         uid="nocobase-user-profile-edit-form"
         noForm={true}
-        scope={{ useEditFormBlockDecoratorProps: () => ({}) }}
+        scope={{
+          useUpdateProfileActionProps,
+          currentUserId: data.data?.id,
+        }}
       />
-    </SchemaComponentContext.Provider>
+    </ExtendCollectionsProvider>
   );
 };
 
@@ -114,8 +106,8 @@ export const useEditProfile = () => {
       key: 'profile',
       eventKey: 'EditProfile',
       onClick: () => {
-        setVisible(true);
         ctx?.setVisible(false);
+        setVisible(true);
       },
       label: (
         <div>
@@ -124,8 +116,25 @@ export const useEditProfile = () => {
             <div onClick={(e) => e.stopPropagation()}>
               <SchemaComponent
                 components={{ ProfileEditForm }}
-                scope={{ useCurrentUserValues, useCloseAction, useSaveCurrentUserValues }}
-                schema={schema}
+                schema={{
+                  type: 'object',
+                  properties: {
+                    [uid()]: {
+                      'x-component': 'Action.Drawer',
+                      'x-component-props': {
+                        // zIndex: 10000,
+                      },
+                      type: 'void',
+                      title: '{{t("Edit profile")}}',
+                      properties: {
+                        form: {
+                          type: 'void',
+                          'x-component': 'ProfileEditForm',
+                        },
+                      },
+                    },
+                  },
+                }}
               />
             </div>
           </ActionContextProvider>

@@ -17,7 +17,6 @@ const { RoleUsersManager } = lazy(() => import('./RoleUsersManager'), 'RoleUsers
 
 class PluginUsersClient extends Plugin {
   async load() {
-    this.app.addProvider(UsersProvider);
     this.app.pluginSettingsManager.add('users-permissions', {
       title: tval('Users & Permissions', { ns: 'users' }),
       icon: 'TeamOutlined',

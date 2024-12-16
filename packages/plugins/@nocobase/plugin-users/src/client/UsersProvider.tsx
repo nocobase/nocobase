@@ -127,27 +127,64 @@ const EditProfile = ({ visible, setVisible }) => {
   );
 };
 
-const useEditProfile = ({ visible, setVisible }) => {
-  const { t } = useUsersTranslation();
+export const useEditProfile = () => {
   const ctx = useContext(DropdownVisibleContext);
-  const profileItem = useMemo<MenuProps['items'][0]>(() => {
+  const [visible, setVisible] = useState(false);
+  const { t } = useUsersTranslation();
+  const { data } = useSystemSettings() || {};
+  const { enableEditProfile } = data?.data || {};
+  const result = useMemo<MenuProps['items'][0]>(() => {
     return {
       key: 'profile',
       eventKey: 'EditProfile',
-      label: <>{t('Edit profile')}</>,
       onClick: () => {
         setVisible(true);
         ctx?.setVisible(false);
       },
+      label: (
+        <div>
+          {t('Edit profile')}
+          <ActionContextProvider value={{ visible, setVisible }}>
+            <div onClick={(e) => e.stopPropagation()}>
+              <SchemaComponent
+                components={{ ProfileEditForm }}
+                schema={{
+                  type: 'object',
+                  properties: {
+                    [uid()]: {
+                      'x-component': 'Action.Drawer',
+                      'x-component-props': {
+                        // zIndex: 10000,
+                      },
+                      type: 'void',
+                      title: '{{t("Edit profile")}}',
+                      properties: {
+                        form: {
+                          type: 'void',
+                          'x-component': 'ProfileEditForm',
+                        },
+                      },
+                    },
+                  },
+                }}
+              />
+            </div>
+          </ActionContextProvider>
+        </div>
+      ),
     };
   }, [visible]);
-  return profileItem;
+  if (enableEditProfile === false) {
+    return null;
+  }
+  return result;
 };
 
+// Adding a user settings menu here causes the drawer to fail to open.
+// This provider will not be used for now.
 export const UsersProvider: React.FC = (props) => {
   const { addMenuItem } = useCurrentUserSettingsMenu();
-  const [visible, setVisible] = useState(false);
-  const profileItem = useEditProfile({ visible, setVisible });
+  const profileItem = useEditProfile();
   const { data } = useSystemSettings();
   const { enableEditProfile } = data?.data || {};
 
@@ -157,10 +194,5 @@ export const UsersProvider: React.FC = (props) => {
     }
     addMenuItem(profileItem, { after: 'divider_1' });
   }, [addMenuItem, profileItem, enableEditProfile]);
-  return (
-    <>
-      {props.children}
-      <EditProfile visible={visible} setVisible={setVisible} />
-    </>
-  );
+  return <>{props.children}</>;
 };
