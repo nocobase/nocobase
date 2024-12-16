@@ -175,7 +175,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
 
   const tableColumns = useMemo(() => {
     if (!exists) {
-      return columns;
+      return columns.concat([]);
     }
     const res = [
       ...columns,
