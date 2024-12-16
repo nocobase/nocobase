@@ -96,62 +96,58 @@ const ProfileEditForm = () => {
   );
 };
 
-const EditProfile = () => {
-  const { t } = useUsersTranslation();
-  const [visible, setVisible] = useState(false);
-  const ctx = useContext(DropdownVisibleContext);
+const EditProfile = ({ visible, setVisible }) => {
   return (
-    <div
-      onClick={() => {
-        setVisible(true);
-        ctx?.setVisible(false);
-      }}
-    >
-      {t('Edit profile')}
-      <ActionContextProvider value={{ visible, setVisible }}>
-        <div onClick={(e) => e.stopPropagation()}>
-          <SchemaComponent
-            components={{ ProfileEditForm }}
-            schema={{
-              type: 'object',
-              properties: {
-                [uid()]: {
-                  'x-component': 'Action.Drawer',
-                  'x-component-props': {
-                    // zIndex: 10000,
-                  },
-                  type: 'void',
-                  title: '{{t("Edit profile")}}',
-                  properties: {
-                    form: {
-                      type: 'void',
-                      'x-component': 'ProfileEditForm',
-                    },
+    <ActionContextProvider value={{ visible, setVisible }}>
+      <div onClick={(e) => e.stopPropagation()}>
+        <SchemaComponent
+          components={{ ProfileEditForm }}
+          schema={{
+            type: 'object',
+            properties: {
+              [uid()]: {
+                'x-component': 'Action.Drawer',
+                'x-component-props': {
+                  // zIndex: 10000,
+                },
+                type: 'void',
+                title: '{{t("Edit profile")}}',
+                properties: {
+                  form: {
+                    type: 'void',
+                    'x-component': 'ProfileEditForm',
                   },
                 },
               },
-            }}
-          />
-        </div>
-      </ActionContextProvider>
-    </div>
+            },
+          }}
+        />
+      </div>
+    </ActionContextProvider>
   );
 };
 
-const useEditProfile = () => {
+const useEditProfile = ({ visible, setVisible }) => {
+  const { t } = useUsersTranslation();
+  const ctx = useContext(DropdownVisibleContext);
   const profileItem = useMemo<MenuProps['items'][0]>(() => {
     return {
       key: 'profile',
       eventKey: 'EditProfile',
-      label: <EditProfile />,
+      label: <>{t('Edit profile')}</>,
+      onClick: () => {
+        setVisible(true);
+        ctx?.setVisible(false);
+      },
     };
-  }, []);
+  }, [visible]);
   return profileItem;
 };
 
 export const UsersProvider: React.FC = (props) => {
   const { addMenuItem } = useCurrentUserSettingsMenu();
-  const profileItem = useEditProfile();
+  const [visible, setVisible] = useState(false);
+  const profileItem = useEditProfile({ visible, setVisible });
   const { data } = useSystemSettings();
   const { enableEditProfile } = data?.data || {};
 
@@ -161,5 +157,10 @@ export const UsersProvider: React.FC = (props) => {
     }
     addMenuItem(profileItem, { after: 'divider_1' });
   }, [addMenuItem, profileItem, enableEditProfile]);
-  return <>{props.children}</>;
+  return (
+    <>
+      {props.children}
+      <EditProfile visible={visible} setVisible={setVisible} />
+    </>
+  );
 };
