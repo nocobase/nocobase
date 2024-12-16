@@ -25,7 +25,7 @@ export const useCustomRequestVariableOptions = () => {
   const userFieldOptions = useCollectionFilterOptions('users', DEFAULT_DATA_SOURCE_KEY);
   const compile = useCompile();
   const recordData = useCollectionRecordData();
-  const { name: blockType } = useBlockContext();
+  const { name: blockType } = useBlockContext() || {};
 
   const [fields, userFields] = useMemo(() => {
     return [compile(fieldsOptions), compile(userFieldOptions)];
