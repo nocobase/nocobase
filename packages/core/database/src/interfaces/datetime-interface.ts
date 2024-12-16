@@ -66,6 +66,14 @@ export class DatetimeInterface extends BaseInterface {
       return null;
     }
 
+    if (typeof value === 'number') {
+      const valueStr = value.toString();
+      const dateOnlyMatch = /^(\d{4})[-/]?(\d{2})[-/]?(\d{2})$/.exec(valueStr);
+      if (dateOnlyMatch) {
+        value = valueStr;
+      }
+    }
+
     if (typeof value === 'string') {
       const dateInfo = this.parseDateString(value);
       if (dateInfo) {
