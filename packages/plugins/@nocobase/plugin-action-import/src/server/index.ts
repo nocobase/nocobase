@@ -56,7 +56,7 @@ export class PluginActionImportServer extends Plugin {
       dataSource.acl.allow('*', 'downloadXlsxTemplate', 'loggedIn');
     });
 
-    const errorHandlerPlugin = this.app.getPlugin<PluginErrorHandler>('error-handler');
+    const errorHandlerPlugin = this.app.getPlugin<any>('error-handler');
 
     errorHandlerPlugin.errorHandler.register(
       (err) => err instanceof ImportValidationError,
