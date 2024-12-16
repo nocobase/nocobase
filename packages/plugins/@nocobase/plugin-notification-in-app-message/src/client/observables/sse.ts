@@ -53,6 +53,7 @@ export const startMsgSSEStreamWithRetry: () => () => void = () => {
       responseType: 'stream',
       adapter: 'fetch',
     });
+    if (!res || !res.data) throw new Error('no data received');
     const stream = res.data;
     const reader = stream.pipeThrough(new TextDecoderStream()).getReader();
     retryTimes = 0;
@@ -72,7 +73,7 @@ export const startMsgSSEStreamWithRetry: () => () => void = () => {
     try {
       await createMsgSSEConnection(clientId);
     } catch (error) {
-      console.error('Error during stream:', error.message);
+      console.log('error during sse stream:', error.message);
       const nextDelay = retryTimes < 6 ? 1000 * Math.pow(2, retryTimes) : 60000;
       retryTimes++;
       setTimeout(() => {

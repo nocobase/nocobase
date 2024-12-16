@@ -153,7 +153,7 @@ export class APIClient extends APIClientSDK {
         return response;
       },
       async (error) => {
-        if (this.silence) {
+        if (this.silence && error.code !== 'ERR_CANCELED') {
           console.error(error);
           return;
           // throw error;
