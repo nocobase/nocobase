@@ -10,7 +10,7 @@
 import { ISchema, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { MenuProps } from 'antd';
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActionContextProvider,
@@ -70,6 +70,7 @@ const useUpdateProfileActionProps = () => {
 };
 
 const ProfileEditForm = () => {
+  const ctx = useContext(DropdownVisibleContext);
   const cm = useCollectionManager();
   const userCollection = cm.getCollection('users');
   const { data } = useCurrentUserContext();
@@ -81,6 +82,9 @@ const ProfileEditForm = () => {
     }),
     [userCollection],
   );
+  useEffect(() => {
+    ctx?.setVisible(false);
+  }, [ctx]);
   return (
     <ExtendCollectionsProvider collections={[collection]}>
       <RemoteSchemaComponent
