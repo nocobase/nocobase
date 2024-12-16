@@ -101,7 +101,14 @@ export const DuplicateAction = observer(
     const aclCtx = useACLActionParamsContext();
     const dataSource = useDataSourceKey();
     const headers = useDataSourceHeaders(dataSource);
-
+    const dataId = Array.isArray(collection.filterTargetKey)
+      ? Object.assign(
+          {},
+          ...collection.filterTargetKey.map((v) => {
+            return { [v]: record[v] };
+          }),
+        )
+      : record[collection.filterTargetKey] || id;
     const buttonStyle = useMemo(() => {
       return {
         opacity: designable && (field?.data?.hidden || !aclCtx) && 0.1,
@@ -109,7 +116,7 @@ export const DuplicateAction = observer(
     }, [designable, field?.data?.hidden]);
     const template = {
       key: 'duplicate',
-      dataId: record[collection.filterTargetKey] || id,
+      dataId,
       default: true,
       fields:
         duplicateFields?.filter((v) => {
