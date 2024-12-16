@@ -149,6 +149,7 @@ describe('has many repository', () => {
       fields: [
         { type: 'string', name: 'name' },
         { type: 'hasMany', name: 'posts' },
+        { type: 'string', name: 'status' },
       ],
     });
 
@@ -258,6 +259,118 @@ describe('has many repository', () => {
 
     const p1 = await UserPostRepository.findOne();
     expect(p1.title).toEqual('u1t1');
+  });
+
+  test('firstOrCreate', async () => {
+    const u1 = await User.repository.create({
+      values: { name: 'u1' },
+    });
+
+    const UserPostRepository = new HasManyRepository(User, 'posts', u1.id);
+
+    // 测试基本创建
+    const post1 = await UserPostRepository.firstOrCreate({
+      filterKeys: ['title'],
+      values: {
+        title: 't1',
+      },
+    });
+
+    expect(post1.title).toEqual('t1');
+    expect(post1.userId).toEqual(u1.id);
+
+    // 测试查找已存在记录
+    const post2 = await UserPostRepository.firstOrCreate({
+      filterKeys: ['title'],
+      values: {
+        title: 't1',
+      },
+    });
+
+    expect(post2.id).toEqual(post1.id);
+
+    // 测试带关联数据的创建
+    const post3 = await UserPostRepository.firstOrCreate({
+      filterKeys: ['title'],
+      values: {
+        title: 't2',
+        comments: [{ content: 'comment1' }],
+      },
+    });
+
+    expect(post3.title).toEqual('t2');
+    expect(await post3.countComments()).toEqual(1);
+
+    // 测试多个 filterKeys
+    const post4 = await UserPostRepository.firstOrCreate({
+      filterKeys: ['title', 'status'],
+      values: {
+        title: 't2',
+        status: 'draft',
+      },
+    });
+
+    expect(post4.id).not.toEqual(post3.id);
+  });
+
+  test('updateOrCreate', async () => {
+    const u1 = await User.repository.create({
+      values: { name: 'u1' },
+    });
+
+    const UserPostRepository = new HasManyRepository(User, 'posts', u1.id);
+
+    // 测试基本创建
+    const post1 = await UserPostRepository.updateOrCreate({
+      filterKeys: ['title'],
+      values: {
+        title: 't1',
+        status: 'draft',
+      },
+    });
+
+    expect(post1.title).toEqual('t1');
+    expect(post1.status).toEqual('draft');
+    expect(post1.userId).toEqual(u1.id);
+
+    // 测试更新已存在记录
+    const post2 = await UserPostRepository.updateOrCreate({
+      filterKeys: ['title'],
+      values: {
+        title: 't1',
+        status: 'published',
+      },
+    });
+
+    expect(post2.id).toEqual(post1.id);
+    expect(post2.status).toEqual('published');
+
+    // 测试带关联数据的更新
+    const post3 = await UserPostRepository.updateOrCreate({
+      filterKeys: ['title'],
+      values: {
+        title: 't1',
+        status: 'archived',
+        comments: [{ content: 'new comment' }],
+      },
+    });
+
+    expect(post3.id).toEqual(post1.id);
+    expect(post3.status).toEqual('archived');
+    expect(await post3.countComments()).toEqual(1);
+
+    // 测试多个 filterKeys 的创建
+    const post4 = await UserPostRepository.updateOrCreate({
+      filterKeys: ['title', 'status'],
+      values: {
+        title: 't1',
+        status: 'draft',
+        comments: [{ content: 'another comment' }],
+      },
+    });
+
+    expect(post4.id).not.toEqual(post1.id);
+    expect(await post4.countComments()).toEqual(1);
   });
 
   test('find with has many', async () => {
