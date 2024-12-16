@@ -77,12 +77,11 @@ export const moment2str = (value?: Dayjs | null, options: Moment2strOptions = {}
 const handleChangeOnFilter = (value, picker, showTime) => {
   const format = showTime ? 'YYYY-MM-DD HH:mm:ss' : getPickerFormat(picker);
   if (value) {
-    return value.format(format);
+    return dayjs(value).format(format);
   }
   return value;
 };
-
-const handleChangeOnForm = (value, dateOnly, utc, picker, showTime, gmt) => {
+export const handleDateChangeOnForm = (value, dateOnly, utc, picker, showTime, gmt) => {
   const format = showTime ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD';
   if (!value) {
     return value;
@@ -120,7 +119,7 @@ export const mapDatePicker = function () {
           if (underFilter) {
             onChange(handleChangeOnFilter(value, picker, showTime));
           } else {
-            onChange(handleChangeOnForm(value, dateOnly, utc, picker, showTime, gmt));
+            onChange(handleDateChangeOnForm(value, dateOnly, utc, picker, showTime, gmt));
           }
         }
       },

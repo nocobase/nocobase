@@ -173,6 +173,12 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
     showTime: props.showTime ? { defaultValue: dayjs('00:00:00', 'HH:mm:ss') } : false,
     format: targetFormat,
     picker: targetPicker,
+    onChange: (val) => {
+      props.onChange(undefined);
+      setTimeout(() => {
+        props.onChange(val);
+      });
+    },
   };
   const field: any = useField();
   const [stateProps, setStateProps] = useState(newProps);

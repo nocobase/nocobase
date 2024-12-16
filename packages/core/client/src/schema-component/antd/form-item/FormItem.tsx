@@ -80,10 +80,20 @@ export const FormItem: any = withDynamicSchemaProps(
         [formItemLabelCss]: showTitle === false,
       });
     }, [showTitle]);
-
     return (
       <CollectionFieldProvider allowNull={true}>
-        <BlockItem className={'nb-form-item'}>
+        <BlockItem
+          className={cx(
+            'nb-form-item',
+            css`
+              .ant-formily-item-layout-horizontal .ant-formily-item-control {
+                max-width: ${showTitle === false || schema['x-component'] !== 'CollectionField'
+                  ? '100% !important'
+                  : null};
+              }
+            `,
+          )}
+        >
           <ACLCollectionFieldProvider>
             <Item className={className} {...props} extra={extra} wrapperStyle={wrapperStyle} />
           </ACLCollectionFieldProvider>

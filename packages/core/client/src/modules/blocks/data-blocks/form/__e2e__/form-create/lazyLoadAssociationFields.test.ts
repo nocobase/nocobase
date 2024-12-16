@@ -106,13 +106,13 @@ test.describe('association fields', () => {
     await expect(page.getByLabel('Root')).toBeVisible();
 
     await page.getByTestId('select-object-multiple').click();
-    await page.getByRole('option', { name: 'Member' }).click();
+    await page.getByTitle('Member').locator('div').click();
     // 再次点击，关闭下拉框。
     await page.getByTestId('select-object-multiple').click();
 
-    await expect(page.getByLabel('Admin')).toBeVisible();
+    await expect(page.getByTestId('select-object-multiple').getByLabel('Admin')).toBeVisible();
     await expect(page.getByLabel('Member')).toBeHidden();
-    await expect(page.getByLabel('Root')).toBeVisible();
+    await expect(page.getByTestId('select-object-multiple').getByLabel('Root')).toBeVisible();
 
     await page.getByLabel('schema-initializer-Grid-form:configureFields-users').hover();
     await page.getByRole('menuitem', { name: 'Nickname' }).click();
@@ -120,8 +120,8 @@ test.describe('association fields', () => {
     await page.mouse.move(200, 0);
 
     await page.waitForTimeout(200);
-    await expect(page.getByLabel('Admin')).toBeVisible();
+    await expect(page.getByTestId('select-object-multiple').getByLabel('Admin')).toBeVisible();
     await expect(page.getByLabel('Member')).toBeHidden();
-    await expect(page.getByLabel('Root')).toBeVisible();
+    await expect(page.getByTestId('select-object-multiple').getByLabel('Root')).toBeVisible();
   });
 });

@@ -181,6 +181,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   private async getPluginBasePath() {
     if (!this.options.packageName) {
+      this.app.log.trace(`plugin '${this.name}' is missing packageName`);
       return;
     }
     return getPluginBasePath(this.options.packageName);
@@ -196,6 +197,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
     }
     const directory = resolve(basePath, 'server/collections');
     if (await fsExists(directory)) {
+      this.app.log.trace(`load plugin collections [${this.name}]`);
       await this.db.import({
         directory,
         from: this.options.packageName,

@@ -46,25 +46,40 @@ describe('actions', () => {
     });
 
     it('should return enabled authenticators with public options', async () => {
+      app.authManager.registerTypes('testType1', {
+        auth: {} as any,
+        getPublicOptions: (options) => {
+          return {
+            text: 'custom public options',
+          };
+        },
+      });
       await repo.destroy({
         truncate: true,
       });
       await repo.createMany({
         records: [
           { name: 'test', authType: 'testType', enabled: true, options: { public: { test: 1 }, private: { test: 2 } } },
+          { name: 'test1', authType: 'testType1', enabled: true },
           { name: 'test2', authType: 'testType' },
         ],
       });
       const res = await agent.resource('authenticators').publicList();
-      expect(res.body.data.length).toBe(1);
+      expect(res.body.data.length).toBe(2);
       expect(res.body.data[0].name).toBe('test');
+      expect(res.body.data[0].options).toMatchObject({ test: 1 });
+      expect(res.body.data[1].name).toBe('test1');
+      expect(res.body.data[1].options).toMatchObject({ text: 'custom public options' });
     });
 
     it('should keep at least one authenticator', async () => {
-      await repo.createMany({
-        records: [{ name: 'test', authType: 'testType', enabled: true }],
+      await repo.destroy({ truncate: true });
+      const authenticator = await repo.create({
+        values: { name: 'test', authType: 'testType', enabled: true },
       });
-      const res = await agent.resource('authenticators').destroy();
+      const res = await agent.resource('authenticators').destroy({
+        filterByTk: authenticator.id,
+      });
       expect(res.statusCode).toBe(400);
       expect(await repo.count()).toBe(1);
     });
@@ -261,10 +276,94 @@ describe('actions', () => {
 
     it('should check username when signing up', async () => {
       const res = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
-        username: '@@',
+        username: '',
       });
       expect(res.statusCode).toEqual(400);
       expect(res.error.text).toBe('Please enter a valid username');
+      const res1 = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
+        username: '@@',
+      });
+      expect(res1.statusCode).toEqual(400);
+      expect(res1.error.text).toBe('Please enter a valid username');
+
+      const repo = db.getRepository('authenticators');
+      await repo.update({
+        filter: {
+          name: 'basic',
+        },
+        values: {
+          options: {
+            public: {
+              allowSignUp: true,
+              signupForm: [{ field: 'nickname', show: true }],
+            },
+          },
+        },
+      });
+
+      const res2 = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
+        nickname: 'test',
+      });
+      expect(res2.statusCode).toEqual(400);
+      expect(res2.error.text).toBe('Please enter a valid username');
+    });
+
+    it('should check email when signing up', async () => {
+      const repo = db.getRepository('authenticators');
+      await repo.update({
+        filter: {
+          name: 'basic',
+        },
+        values: {
+          options: {
+            public: {
+              allowSignUp: true,
+              signupForm: [{ field: 'email', show: true, required: true }],
+            },
+          },
+        },
+      });
+      const res1 = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
+        email: '',
+      });
+      expect(res1.statusCode).toEqual(400);
+      expect(res1.error.text).toBe('Please enter a valid email address');
+      const res2 = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
+        email: 'abc',
+      });
+      expect(res2.statusCode).toEqual(400);
+      expect(res2.error.text).toBe('Please enter a valid email address');
+      const res3 = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
+        email: 'test1@nocobase.com',
+        password: '123',
+        confirm_password: '123',
+      });
+      expect(res3.statusCode).toEqual(200);
+    });
+
+    it('should check a required field when signing up', async () => {
+      const repo = db.getRepository('authenticators');
+      await repo.update({
+        filter: {
+          name: 'basic',
+        },
+        values: {
+          options: {
+            public: {
+              allowSignUp: true,
+              signupForm: [
+                { field: 'username', show: true, required: true },
+                { field: 'nickname', show: true, required: true },
+              ],
+            },
+          },
+        },
+      });
+      const res1 = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
+        username: 'test',
+      });
+      expect(res1.statusCode).toEqual(400);
+      expect(res1.error.text).toBe('Please enter nickname');
     });
 
     it('should check password when signing up', async () => {
@@ -273,6 +372,41 @@ describe('actions', () => {
       });
       expect(res.statusCode).toEqual(400);
       expect(res.error.text).toBe('Please enter a password');
+    });
+
+    it('should write correct user data when signing up', async () => {
+      const repo = db.getRepository('authenticators');
+      await repo.update({
+        filter: {
+          name: 'basic',
+        },
+        values: {
+          options: {
+            public: {
+              allowSignUp: true,
+              signupForm: [
+                { field: 'username', show: true, required: true },
+                { field: 'nickname', show: true, required: true },
+              ],
+            },
+          },
+        },
+      });
+      const res = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
+        username: 'test',
+        nickname: 'Test',
+        phone: '12345678901',
+        password: '123456',
+        confirm_password: '123456',
+      });
+      expect(res.statusCode).toEqual(200);
+      const user = await db.getRepository('users').findOne({
+        filter: {
+          username: 'test',
+        },
+      });
+      expect(user.nickname).toBe('Test');
+      expect(user.phone).toBeNull();
     });
 
     it('should sign user out when changing password', async () => {

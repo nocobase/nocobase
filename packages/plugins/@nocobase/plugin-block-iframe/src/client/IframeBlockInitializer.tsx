@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormOutlined } from '@ant-design/icons';
+import { PicRightOutlined } from '@ant-design/icons';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '@nocobase/client';
 import React from 'react';
 
@@ -17,7 +17,7 @@ export const IframeBlockInitializer = () => {
   return (
     <SchemaInitializerItem
       {...itemConfig}
-      icon={<FormOutlined />}
+      icon={<PicRightOutlined />}
       onClick={() => {
         insert({
           type: 'void',

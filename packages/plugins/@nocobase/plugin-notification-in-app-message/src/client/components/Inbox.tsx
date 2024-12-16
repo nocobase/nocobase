@@ -140,7 +140,7 @@ const InnerInbox = (props) => {
           <Button
             className={styles.button}
             title={t('Message')}
-            icon={<Icon type={'MailOutlined'} />}
+            icon={<Icon type={'BellOutlined'} />}
             onClick={onIconClick}
           />
         </Badge>

@@ -71,7 +71,6 @@ describe('formatter', () => {
     const ctx = {
       app,
       db,
-      timezone: '+05:30',
       action: {
         params: {
           values: {
@@ -85,6 +84,7 @@ describe('formatter', () => {
           },
         },
       },
+      get: () => '+05:30',
     } as any;
     const queryParser = createQueryParser(db);
     await compose([parseFieldAndAssociations, queryParser.parse(), queryData])(ctx, async () => {});
@@ -112,7 +112,7 @@ describe('formatter', () => {
     const ctx = {
       app,
       db,
-      timezone: '+05:30',
+      get: () => '+05:30',
       action: {
         params: {
           values: {
@@ -153,7 +153,7 @@ describe('formatter', () => {
     const ctx = {
       app,
       db,
-      timezone: '+05:30',
+      get: () => '+05:30',
       action: {
         params: {
           values: {
@@ -202,7 +202,7 @@ describe('formatter', () => {
     const ctx = {
       app,
       db,
-      timezone: '+05:30',
+      get: () => '+05:30',
       action: {
         params: {
           values: {
@@ -250,7 +250,7 @@ describe('formatter', () => {
     const ctx = {
       app,
       db,
-      timezone: '+05:30',
+      get: () => '+05:30',
       action: {
         params: {
           values: {

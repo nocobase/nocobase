@@ -156,7 +156,6 @@ export function useCollectValuesToSubmit() {
     const waitList = Object.keys(originalAssignedValues).map(async (key) => {
       const value = originalAssignedValues[key];
       const collectionField = getField(key);
-
       if (process.env.NODE_ENV !== 'production') {
         if (!collectionField) {
           throw new Error(`field "${key}" not found in collection "${name}"`);
@@ -165,7 +164,7 @@ export function useCollectValuesToSubmit() {
 
       if (isVariable(value)) {
         const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
-        if (parsedValue) {
+        if (parsedValue !== null && parsedValue !== undefined) {
           assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
         }
       } else if (value != null && value !== '') {
@@ -1712,12 +1711,13 @@ export function useLinkActionProps(componentProps?: any) {
   const { t } = useTranslation();
   const url = componentPropsValue?.['url'];
   const searchParams = componentPropsValue?.['params'] || [];
+  const type = componentPropsValue?.['type'] || 'default';
   const openInNewWindow = fieldSchema?.['x-component-props']?.['openInNewWindow'];
   const { parseURLAndParams } = useParseURLAndParams();
   const basenameOfCurrentRouter = useRouterBasename();
 
   return {
-    type: 'default',
+    type,
     async onClick() {
       if (!url) {
         message.warning(t('Please configure the URL'));

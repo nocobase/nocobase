@@ -52,12 +52,12 @@ const collection = {
     {
       type: 'boolean',
       name: 'sync',
-      interface: 'select',
+      interface: 'radioGroup',
       uiSchema: {
         title: `{{t("Mode", { ns: "${NAMESPACE}" })}}`,
         type: 'boolean',
         'x-decorator': 'FormItem',
-        'x-component': 'Select',
+        'x-component': 'Radio.Group',
         enum: [
           {
             label: `{{ t("Asynchronously", { ns: "${NAMESPACE}" }) }}`,

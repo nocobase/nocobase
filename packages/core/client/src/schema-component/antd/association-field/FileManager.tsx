@@ -20,7 +20,7 @@ import {
   SchemaComponentOptions,
   Uploader,
   useActionContext,
-  useSchemaOptionsContext,
+  useDesignable,
 } from '../..';
 import {
   TableSelectorParamsProvider,
@@ -157,6 +157,7 @@ const InternalFileManager = (props) => {
   const [selectedRows, setSelectedRows] = useState([]);
   const insertSelector = useInsertSchema('Selector');
   const fieldNames = useFieldNames(props);
+  const { designable } = useDesignable();
   const field: any = useField();
   const [options, setOptions] = useState([]);
   const { getField } = useCollection_deprecated();
@@ -167,11 +168,22 @@ const InternalFileManager = (props) => {
   const handleSelect = (ev) => {
     ev.stopPropagation();
     ev.preventDefault();
-    insertSelector(schema.Selector);
+    if (designable) {
+      insertSelector(schema.Selector);
+    } else {
+      const selectSchema = fieldSchema.reduceProperties((buf, s) => {
+        if (s['x-component'] === 'AssociationField.Selector') {
+          return s;
+        }
+        return buf;
+      }, null);
+      if (!selectSchema) {
+        fieldSchema.addProperty('selector', schema.Selector);
+      }
+    }
     setVisibleSelector(true);
     setSelectedRows([]);
   };
-
   useEffect(() => {
     if (value && Object.keys(value).length > 0) {
       const opts = (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean).map((option) => {
@@ -190,7 +202,7 @@ const InternalFileManager = (props) => {
   const pickerProps = {
     size: 'small',
     fieldNames,
-    multiple: ['o2m', 'm2m'].includes(collectionField?.interface) && multiple,
+    multiple: ['o2m', 'm2m', 'mbm'].includes(collectionField?.interface) && multiple,
     association: {
       target: collectionField?.target,
     },

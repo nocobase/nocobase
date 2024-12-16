@@ -13,7 +13,7 @@ import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
 import { toArr } from '@formily/shared';
 import { Cascader as AntdCascader, CascaderProps as AntdCascaderProps, Space } from 'antd';
 import { BaseOptionType } from 'antd/es/select';
-import { isBoolean, omit } from 'lodash';
+import { isBoolean, omit, isFunction } from 'lodash';
 import React from 'react';
 import { UseRequestResult, useRequest } from '../../../api-client';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
@@ -71,15 +71,17 @@ export const Cascader = withDynamicSchemaProps(
         ...others
       } = props;
       const fieldNames = { ...defaultFieldNames, ...props.fieldNames };
-      const loadData = useLoadData(props);
-      const { loading, run } = useDataSource(
-        {
-          onSuccess(data) {
-            field.dataSource = data?.data || [];
-          },
-        },
-        props,
-      );
+      const loadData = isFunction(useLoadData) ? useLoadData(props) : [];
+      const { loading, run } = isFunction(useLoadData)
+        ? useDataSource(
+            {
+              onSuccess(data) {
+                field.dataSource = data?.data || [];
+              },
+            },
+            props,
+          )
+        : ({} as any);
       // 兼容值为 object[] 的情况
       const toValue = () => {
         return toArr(value).map((item) => {
@@ -106,7 +108,7 @@ export const Cascader = withDynamicSchemaProps(
       };
       const handelDropDownVisible = (value) => {
         if (value && !field.dataSource?.length) {
-          run();
+          run?.();
         }
       };
 

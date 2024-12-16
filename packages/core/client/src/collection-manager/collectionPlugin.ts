@@ -13,12 +13,13 @@ import { InheritanceCollectionMixin } from './mixins/InheritanceCollectionMixin'
 import {
   CheckboxFieldInterface,
   CheckboxGroupFieldInterface,
-  ChinaRegionFieldInterface,
   CollectionSelectFieldInterface,
   ColorFieldInterface,
   CreatedAtFieldInterface,
   CreatedByFieldInterface,
+  DateFieldInterface,
   DatetimeFieldInterface,
+  DatetimeNoTzFieldInterface,
   EmailFieldInterface,
   IconFieldInterface,
   IdFieldInterface,
@@ -30,30 +31,28 @@ import {
   M2OFieldInterface,
   MarkdownFieldInterface,
   MultipleSelectFieldInterface,
+  NanoidFieldInterface,
   NumberFieldInterface,
   O2MFieldInterface,
   O2OFieldInterface,
-  OHOFieldInterface,
   OBOFieldInterface,
+  OHOFieldInterface,
   PasswordFieldInterface,
   PercentFieldInterface,
   PhoneFieldInterface,
   RadioGroupFieldInterface,
   RichTextFieldInterface,
   SelectFieldInterface,
+  SortFieldInterface,
   SubTableFieldInterface,
   TableoidFieldInterface,
   TextareaFieldInterface,
   TimeFieldInterface,
+  UnixTimestampFieldInterface,
   UpdatedAtFieldInterface,
   UpdatedByFieldInterface,
   UrlFieldInterface,
-  SortFieldInterface,
   UUIDFieldInterface,
-  NanoidFieldInterface,
-  UnixTimestampFieldInterface,
-  DateFieldInterface,
-  DatetimeNoTzFieldInterface,
 } from './interfaces';
 import {
   GeneralCollectionTemplate,
@@ -68,17 +67,11 @@ class MainDataSource extends DataSource {
   async getDataSource() {
     const service = await this.app.apiClient.request({
       resource: 'collections',
-      action: 'list',
-      params: {
-        paginate: false,
-        appends: ['fields', 'category'],
-        filter: {
-          // inherit: false,
-        },
-        sort: ['sort'],
-      },
+      action: 'listMeta',
     });
+
     const collections = service?.data?.data || [];
+
     return {
       collections,
     };
@@ -136,7 +129,6 @@ export class CollectionPlugin extends Plugin {
     this.dataSourceManager.addFieldInterfaces([
       CheckboxFieldInterface,
       CheckboxGroupFieldInterface,
-      ChinaRegionFieldInterface,
       CollectionSelectFieldInterface,
       ColorFieldInterface,
       CreatedAtFieldInterface,

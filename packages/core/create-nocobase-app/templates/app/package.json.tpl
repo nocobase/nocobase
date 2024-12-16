@@ -11,6 +11,7 @@
   "scripts": {
     "nocobase": "nocobase",
     "pm": "nocobase pm",
+    "pm2": "nocobase pm2",
     "dev": "nocobase dev",
     "start": "nocobase start",
     "clean": "nocobase clean",

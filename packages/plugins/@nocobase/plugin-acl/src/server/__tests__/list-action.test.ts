@@ -16,6 +16,8 @@ describe('list action with acl', () => {
 
   let Post;
 
+  let Comment;
+
   beforeEach(async () => {
     app = await prepareApp();
 
@@ -32,6 +34,21 @@ describe('list action with acl', () => {
           name: 'createdBy',
           target: 'users',
         },
+        {
+          type: 'hasMany',
+          name: 'comments',
+          target: 'comments',
+        },
+      ],
+    });
+
+    Comment = app.db.collection({
+      name: 'comments',
+      fields: [
+        {
+          type: 'string',
+          name: 'content',
+        },
       ],
     });
 
@@ -40,6 +57,52 @@ describe('list action with acl', () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should list associations with fields filter', async () => {
+    const userRole = app.acl.define({
+      role: 'user',
+    });
+
+    userRole.grantAction('posts:view', {
+      fields: ['title', 'comments'],
+    });
+
+    userRole.grantAction('comments:view', {
+      fields: ['content'],
+    });
+
+    await Post.repository.create({
+      values: [
+        {
+          title: 'p1',
+          comments: [{ content: 'c1' }, { content: 'c2' }],
+        },
+      ],
+    });
+
+    app.resourceManager.use(
+      (ctx, next) => {
+        ctx.state.currentRole = 'user';
+        return next();
+      },
+      {
+        before: 'acl',
+      },
+    );
+
+    const response = await (app as any)
+      .agent()
+      .set('X-With-ACL-Meta', true)
+      .resource('posts')
+      .list({
+        fields: ['title', 'comments'],
+      });
+
+    expect(response.status).toBe(200);
+    const { data } = response.body;
+    expect(data[0].title).toBeDefined();
+    expect(data[0].comments[0].content).toBeDefined();
   });
 
   it('should list with meta permission that has difference primary key', async () => {

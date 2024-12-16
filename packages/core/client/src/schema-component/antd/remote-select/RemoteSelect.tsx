@@ -15,13 +15,13 @@ import { uniqBy } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
-import { mergeFilter } from '../../../filter-provider/utils';
-import { useCompile } from '../../hooks';
-import { FieldNames, Select, SelectProps, defaultFieldNames } from '../select';
-import { ReadPretty } from './ReadPretty';
-import { useDataSourceHeaders } from '../../../data-source/utils';
 import { useDataSourceKey } from '../../../data-source/data-source/DataSourceProvider';
+import { useDataSourceHeaders } from '../../../data-source/utils';
+import { mergeFilter } from '../../../filter-provider/utils';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
+import { useCompile } from '../../hooks';
+import { defaultFieldNames, FieldNames, Select, SelectProps } from '../select';
+import { ReadPretty } from './ReadPretty';
 const EMPTY = 'N/A';
 
 export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
@@ -39,7 +39,9 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   /**
    * useRequest() `service` parameter
    */
-  service: ResourceActionOptions<P>;
+  service: ResourceActionOptions<P> & {
+    defaultParams?: any;
+  };
   target: string;
   mapOptions?: (data: any) => SelectProps['fieldNames'];
   dataSource?: string;
@@ -65,6 +67,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
         optionFilter,
         dataSource: propsDataSource,
         toOptionsItem = (value) => value,
+        popupMatchSelectWidth = false,
         ...others
       } = props;
       const dataSource = useDataSourceKey();
@@ -176,6 +179,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
         {
           manual,
           debounceWait: wait,
+          ...(service.defaultParams ? { defaultParams: [service.defaultParams] } : {}),
         },
       );
       const runDep = useMemo(
@@ -230,10 +234,15 @@ const InternalRemoteSelect = withDynamicSchemaProps(
           return v != null ? (Array.isArray(v) ? v : [v]) : [];
         }
         const valueOptions =
-          (v != null && (Array.isArray(v) ? v : [{ ...v, [fieldNames.value]: v[fieldNames.value] || v }])) || [];
+          (v != null &&
+            (Array.isArray(v)
+              ? v.map((item) => ({ ...item, [fieldNames.value]: item[fieldNames.value] || item }))
+              : [{ ...v, [fieldNames.value]: v[fieldNames.value] || v }])) ||
+          [];
         const filtered = typeof optionFilter === 'function' ? data.data.filter(optionFilter) : data.data;
         return uniqBy(filtered.concat(valueOptions ?? []), fieldNames.value);
       }, [value, defaultValue, data?.data, fieldNames.value, optionFilter]);
+
       const onDropdownVisibleChange = (visible) => {
         setOpen(visible);
         searchData.current = null;
@@ -242,10 +251,11 @@ const InternalRemoteSelect = withDynamicSchemaProps(
         }
         firstRun.current = true;
       };
+
       return (
         <Select
           open={open}
-          popupMatchSelectWidth={false}
+          popupMatchSelectWidth={popupMatchSelectWidth}
           autoClearSearchValue
           filterOption={false}
           filterSort={null}

@@ -104,7 +104,9 @@ const MessageList = observer(() => {
                     style={{
                       fontWeight: message.status === 'unread' ? 'bold' : 'normal',
                       cursor: 'pointer',
-                      width: '100%',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
                     }}
                   >
                     {message.title}
@@ -129,8 +131,8 @@ const MessageList = observer(() => {
               <Descriptions key={index} column={1}>
                 <Descriptions.Item label={t('Content')}>
                   {' '}
-                  <Tooltip title={message.content.length > 100 ? message.content : ''} mouseEnterDelay={0.5}>
-                    {message.content.slice(0, 100) + (message.content.length > 100 ? '...' : '')}{' '}
+                  <Tooltip title={message.content?.length > 100 ? message.content : ''} mouseEnterDelay={0.5}>
+                    {message.content?.slice(0, 100) + (message.content?.length > 100 ? '...' : '')}{' '}
                   </Tooltip>
                 </Descriptions.Item>
                 <Descriptions.Item label={t('Datetime')}>{dayjs(message.receiveTimestamp).fromNow()}</Descriptions.Item>

@@ -11,7 +11,7 @@ import { Tag } from 'antd';
 import React from 'react';
 
 export const TreeNode = (props) => {
-  const { tag, type } = props;
+  const { tag, type, displayType = true } = props;
   const text = {
     reference: 'Reference',
     duplicate: 'Duplicate',
@@ -25,7 +25,7 @@ export const TreeNode = (props) => {
   return (
     <div>
       <Tag color={colors[type]}>
-        <span>{tag}</span> ({text[type]})
+        <span>{tag}</span> {displayType ? `(${text[type]})` : ''}
       </Tag>
     </div>
   );

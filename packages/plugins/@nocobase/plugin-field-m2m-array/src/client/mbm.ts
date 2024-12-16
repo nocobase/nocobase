@@ -100,7 +100,7 @@ export class MBMFieldInterface extends CollectionFieldInterface {
                   type: 'string',
                   title: '{{t("Target collection")}}',
                   required: true,
-                  'x-reactions': ['{{useAsyncDataSource(loadCollections, ["file"])}}'],
+                  'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
                   'x-decorator': 'FormItem',
                   'x-component': 'Select',
                   'x-disabled': '{{ !createOnly }}',

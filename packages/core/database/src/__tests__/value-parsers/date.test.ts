@@ -68,6 +68,7 @@ describe('number value parser', () => {
 
   it('should be correct', () => {
     expectValue('20231223').toBe(dayjs('2023-12-23 00:00:00.000').toISOString());
+    expectValue('20231223 08:01:01', 'dateTime').toBe(dayjs('2023-12-23 08:01:01').toISOString());
     expectValue('2023/12/23').toBe(dayjs('2023-12-23 00:00:00.000').toISOString());
     expectValue('2023-12-23').toBe(dayjs('2023-12-23 00:00:00.000').toISOString());
     expectValue(42510).toBe('2016-05-20T00:00:00.000Z');

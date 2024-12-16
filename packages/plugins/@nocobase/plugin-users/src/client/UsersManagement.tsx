@@ -30,10 +30,12 @@ import { PasswordField } from './PasswordField';
 
 const useCancelActionProps = () => {
   const { setVisible } = useActionContext();
+  const form = useForm();
   return {
     type: 'default',
     onClick() {
       setVisible(false);
+      form.reset();
     },
   };
 };
@@ -43,7 +45,7 @@ const useSubmitActionProps = () => {
   const { message } = App.useApp();
   const form = useForm();
   const resource = useDataBlockResource();
-  const { runAsync } = useDataBlockRequest();
+  const { refresh } = useDataBlockRequest();
   const { t } = useUsersTranslation();
   const collection = useCollection();
 
@@ -60,9 +62,10 @@ const useSubmitActionProps = () => {
       } else {
         await resource.create({ values });
       }
-      await runAsync();
+      refresh();
       message.success(t('Saved successfully'));
       setVisible(false);
+      form.reset();
     },
   };
 };

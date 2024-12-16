@@ -32,7 +32,7 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
   Page: typeof MobileTabBarPage;
   Link: typeof MobileTabBarLink;
 } = ({ enableTabBar = true }) => {
-  const { styles } = useStyles();
+  const { styles } = useStyles() as any;
   const { designable } = useDesignable();
   const { routeList, activeTabBarItem, resource, refresh } = useMobileRoutes();
   const validRouteList = routeList.filter((item) => item.schemaUid || isInnerLink(item.options?.url));

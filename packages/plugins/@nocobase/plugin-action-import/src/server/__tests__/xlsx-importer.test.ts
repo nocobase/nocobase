@@ -105,6 +105,7 @@ describe('xlsx importer', () => {
         [
           ['test', 77383],
           ['test2', '2021-10-18'],
+          ['test3', 20241112],
         ],
         { origin: 'A2' },
       );
@@ -121,6 +122,7 @@ describe('xlsx importer', () => {
       const users = (await User.repository.find()).map((user) => user.toJSON());
       expect(users[0]['dateOnly']).toBe('2111-11-12');
       expect(users[1]['dateOnly']).toBe('2021-10-18');
+      expect(users[2]['dateOnly']).toBe('2024-11-12');
     });
 
     it.skipIf(process.env['DB_DIALECT'] === 'sqlite')('should import with datetimeNoTz', async () => {
@@ -148,7 +150,8 @@ describe('xlsx importer', () => {
         worksheet,
         [
           ['test', 77383],
-          ['test2', '2021-10-18'],
+          ['test2', '2021-10-18 12:31:20'],
+          ['test3', 41557.4377314815],
         ],
         { origin: 'A2' },
       );
@@ -164,7 +167,8 @@ describe('xlsx importer', () => {
 
       const users = (await User.repository.find()).map((user) => user.toJSON());
       expect(users[0]['datetimeNoTz']).toBe('2111-11-12 00:00:00');
-      expect(users[1]['datetimeNoTz']).toBe('2021-10-18 00:00:00');
+      expect(users[1]['datetimeNoTz']).toBe('2021-10-18 12:31:20');
+      expect(users[2]['datetimeNoTz']).toBe('2013-10-10 10:30:20');
     });
 
     it('should import with unixTimestamp', async () => {
@@ -188,7 +192,15 @@ describe('xlsx importer', () => {
 
       const worksheet = template.Sheets[template.SheetNames[0]];
 
-      XLSX.utils.sheet_add_aoa(worksheet, [['test', 77383]], { origin: 'A2' });
+      XLSX.utils.sheet_add_aoa(
+        worksheet,
+        [
+          ['test', 77383],
+          ['test2', 20241112],
+          ['test3', '2024-11-12'],
+        ],
+        { origin: 'A2' },
+      );
 
       const importer = new XlsxImporter({
         collectionManager: app.mainDataSource.collectionManager,
@@ -201,6 +213,8 @@ describe('xlsx importer', () => {
 
       const users = (await User.repository.find()).map((user) => user.toJSON());
       expect(moment(users[0]['unixTimestamp']).toISOString()).toEqual('2111-11-12T00:00:00.000Z');
+      expect(moment(users[1]['unixTimestamp'])).toBeDefined();
+      expect(moment(users[2]['unixTimestamp'])).toBeDefined();
     });
 
     it('should import with datetimeTz', async () => {
@@ -581,6 +595,8 @@ describe('xlsx importer', () => {
   describe('import with associations', () => {
     let User;
     let Post;
+    let Tag;
+
     beforeEach(async () => {
       User = app.db.collection({
         name: 'users',
@@ -612,10 +628,96 @@ describe('xlsx importer', () => {
             target: 'users',
             interface: 'm2o',
           },
+          {
+            type: 'belongsToMany',
+            name: 'tags',
+            target: 'tags',
+            interface: 'm2m',
+            through: 'postsTags',
+          },
+        ],
+      });
+
+      Tag = app.db.collection({
+        name: 'tags',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'belongsToMany',
+            name: 'posts',
+            target: 'posts',
+            interface: 'm2m',
+            through: 'postsTags',
+          },
         ],
       });
 
       await app.db.sync();
+    });
+
+    it('should import many to many with id', async () => {
+      await Tag.repository.create({
+        values: [
+          {
+            title: 't1',
+          },
+          {
+            title: 't2',
+          },
+        ],
+      });
+
+      const columns = [
+        {
+          dataIndex: ['title'],
+          defaultTitle: '名称',
+        },
+        {
+          dataIndex: ['tags', 'id'],
+          defaultTitle: 'IDS',
+        },
+      ];
+
+      const templateCreator = new TemplateCreator({
+        collection: Post,
+        columns,
+      });
+
+      const template = await templateCreator.run();
+
+      const worksheet = template.Sheets[template.SheetNames[0]];
+
+      XLSX.utils.sheet_add_aoa(
+        worksheet,
+        [
+          ['test', '1,2'],
+          ['test2', 1],
+        ],
+        {
+          origin: 'A2',
+        },
+      );
+
+      const importer = new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: Post,
+        columns,
+        workbook: template,
+      });
+
+      await importer.run();
+
+      const posts = await Post.repository.find({
+        appends: ['tags'],
+      });
+
+      expect(posts.length).toBe(2);
+
+      expect(posts[0]['tags'].map((item: any) => item.id)).toEqual([1, 2]);
+      expect(posts[1]['tags'].map((item: any) => item.id)).toEqual([1]);
     });
 
     it('should validate to many association', async () => {

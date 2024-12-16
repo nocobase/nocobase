@@ -8,9 +8,7 @@
  */
 
 import { BelongsTo } from 'sequelize';
-import { SingleRelationFindOption, SingleRelationRepository } from './single-relation-repository';
-
-type BelongsToFindOptions = SingleRelationFindOption;
+import { SingleRelationRepository } from './single-relation-repository';
 
 export class BelongsToRepository extends SingleRelationRepository {
   /**

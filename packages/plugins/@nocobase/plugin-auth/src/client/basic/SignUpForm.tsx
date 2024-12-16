@@ -9,7 +9,7 @@
 
 import { SchemaComponent } from '@nocobase/client';
 import { ISchema } from '@formily/react';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { uid } from '@formily/shared';
 import { useAuthTranslation } from '../locale';
 import { useAPIClient } from '@nocobase/client';
@@ -43,25 +43,19 @@ export const useSignUp = (props?: UseSignupProps) => {
   };
 };
 
-const signupPageSchema: ISchema = {
+const getSignupPageSchema = (fieldSchemas: any): ISchema => ({
   type: 'object',
   name: uid(),
   'x-component': 'FormV2',
   properties: {
-    username: {
-      type: 'string',
-      required: true,
-      'x-component': 'Input',
-      'x-validator': { username: true },
-      'x-decorator': 'FormItem',
-      'x-component-props': { placeholder: '{{t("Username")}}', style: {} },
-    },
+    ...fieldSchemas,
     password: {
       type: 'string',
       required: true,
+      title: '{{t("Password")}}',
       'x-component': 'Password',
       'x-decorator': 'FormItem',
-      'x-component-props': { placeholder: '{{t("Password")}}', checkStrength: true, style: {} },
+      'x-component-props': { checkStrength: true, style: {} },
       'x-reactions': [
         {
           dependencies: ['.confirm_password'],
@@ -78,7 +72,8 @@ const signupPageSchema: ISchema = {
       required: true,
       'x-component': 'Password',
       'x-decorator': 'FormItem',
-      'x-component-props': { placeholder: '{{t("Confirm password")}}', style: {} },
+      title: '{{t("Confirm password")}}',
+      'x-component-props': { style: {} },
       'x-reactions': [
         {
           dependencies: ['.password'],
@@ -121,7 +116,7 @@ const signupPageSchema: ISchema = {
       },
     },
   },
-};
+});
 
 export const SignUpForm = ({ authenticatorName: name }: { authenticatorName: string }) => {
   const { t } = useAuthTranslation();
@@ -130,8 +125,22 @@ export const SignUpForm = ({ authenticatorName: name }: { authenticatorName: str
   };
   const authenticator = useAuthenticator(name);
   const { options } = authenticator;
+  const { signupForm } = options;
+  const fieldSchemas = useMemo(() => {
+    return signupForm
+      .filter((field: { show: boolean }) => field.show)
+      .reduce((prev: any, item: { field: string; required: boolean; uiSchema: any }) => {
+        prev[item.field] = {
+          ...item.uiSchema,
+          required: item.required,
+          'x-decorator': 'FormItem',
+        };
+        return prev;
+      }, {});
+  }, [signupForm]);
   if (!options?.allowSignUp) {
     return <Navigate to="/not-found" replace={true} />;
   }
-  return <SchemaComponent schema={signupPageSchema} scope={{ useBasicSignUp, t }} />;
+  const schema = getSignupPageSchema(fieldSchemas);
+  return <SchemaComponent schema={schema} scope={{ useBasicSignUp, t }} />;
 };
