@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback } from 'react';
-import { ArrowUpOutlined } from '@ant-design/icons';
+import { ArrowUpOutlined, RollbackOutlined } from '@ant-design/icons';
 import { Card, Checkbox } from 'antd';
 import { FormLayout, FormItem } from '@formily/antd-v5';
 import { useForm } from '@formily/react';
@@ -28,7 +28,6 @@ import {
   Instruction,
   RadioWithTooltip,
   renderEngineReference,
-  RadioWithTooltipOption,
   CalculationConfig,
   useWorkflowVariableOptions,
   UseVariableOptions,
@@ -246,6 +245,7 @@ export default class extends Instruction {
   type = 'loop';
   group = 'control';
   description = `{{t("By using a loop node, you can perform the same operation on multiple sets of data. The source of these sets can be either multiple records from a query node or multiple associated records of a single record. Loop node can also be used for iterating a certain number of times or for looping through each character in a string. However, excessive looping may cause performance issues, so use with caution.", { ns: "${NAMESPACE}" })}}`;
+  icon = (<RollbackOutlined style={{}} />);
   fieldset = {
     target: {
       type: 'string',
@@ -381,7 +381,7 @@ export default class extends Instruction {
             className={cx(
               styles.branchBlockClass,
               css`
-                padding-left: 20em;
+                padding-left: 16em;
               `,
             )}
           >
@@ -389,7 +389,7 @@ export default class extends Instruction {
 
             <div className={styles.branchClass}>
               <div className="workflow-branch-lines" />
-              <div className={cx(styles.addButtonClass, styles.loopLineClass)}>
+              <div className={styles.loopLineClass}>
                 <ArrowUpOutlined />
               </div>
             </div>

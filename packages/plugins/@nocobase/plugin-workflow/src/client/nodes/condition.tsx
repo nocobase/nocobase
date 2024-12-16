@@ -19,6 +19,13 @@ import { lang, NAMESPACE } from '../locale';
 import useStyles from '../style';
 import { useWorkflowVariableOptions, WorkflowVariableTextArea } from '../variable';
 import { CalculationConfig } from '../components/Calculation';
+import { QuestionCircleOutlined } from '@ant-design/icons';
+
+const BRANCH_INDEX = {
+  DEFAULT: null,
+  ON_TRUE: 1,
+  ON_FALSE: 0,
+} as const;
 
 const BRANCH_INDEX = {
   DEFAULT: null,
@@ -31,6 +38,7 @@ export default class extends Instruction {
   type = 'condition';
   group = 'control';
   description = `{{t('Based on boolean result of the calculation to determine whether to "continue" or "exit" the process, or continue on different branches of "yes" and "no".', { ns: "${NAMESPACE}" })}}`;
+  icon = (<QuestionCircleOutlined style={{}} />);
   fieldset = {
     rejectOnFalse: {
       type: 'boolean',

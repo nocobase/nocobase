@@ -12,6 +12,7 @@ import { DEFAULT_DATA_SOURCE_KEY, css } from '@nocobase/client';
 import { Instruction, WorkflowVariableRawTextArea, defaultFieldNames } from '@nocobase/plugin-workflow/client';
 
 import React from 'react';
+import { ConsoleSqlOutlined } from '@ant-design/icons';
 import { Trans } from 'react-i18next';
 import { NAMESPACE } from '../locale';
 
@@ -20,6 +21,7 @@ export default class extends Instruction {
   type = 'sql';
   group = 'collection';
   description = `{{t("Execute a SQL statement in database.", { ns: "${NAMESPACE}" })}}`;
+  icon = (<ConsoleSqlOutlined style={{}} />);
   fieldset = {
     dataSource: {
       type: 'string',
