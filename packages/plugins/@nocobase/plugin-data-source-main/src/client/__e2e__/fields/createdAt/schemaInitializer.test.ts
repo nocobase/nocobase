@@ -62,6 +62,25 @@ test.describe('form item & edit form', () => {
   });
 });
 
+test.describe('form item & filter form', () => {
+  test('should be editable', async ({ page, mockPage, mockRecord }) => {
+    await mockPage().goto();
+
+    // 1. 添加一个 filter form 区块
+    await page.getByLabel('schema-initializer-Grid-page:').hover();
+    await page.getByRole('menuitem', { name: 'Form right' }).nth(1).hover();
+    await page.getByRole('menuitem', { name: 'Users' }).click();
+
+    // 2. 为 filter form 添加一个 createdAt 字段
+    await page.getByLabel('schema-initializer-Grid-filterForm:configureFields-users').hover();
+    await page.getByRole('menuitem', { name: 'Created at' }).first().click();
+    await page.mouse.move(300, 0);
+
+    // 3. createdAt 字段字段应该是可编辑的
+    await expect(page.getByPlaceholder('Select date')).toBeVisible();
+  });
+});
+
 test.describe('form item & view form', () => {
   test('configure fields', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields).waitForInit();
