@@ -697,6 +697,9 @@ function Decorator(props) {
       pageSize: 20,
       sort: ['-createdAt'],
       ...params,
+      filter: {
+        ...params.filter,
+      },
       appends: ['user', 'node', 'workflow', 'execution.status'],
       except: ['node.config', 'workflow.config', 'workflow.options'],
     },
@@ -758,7 +761,7 @@ function TaskBlock() {
         'x-decorator-props': {
           params: {
             filter: {
-              userId: user?.data?.data?.id,
+              userId: user?.data?.id,
             },
             appends: [
               'node.id',

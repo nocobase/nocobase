@@ -13,7 +13,14 @@ import { PageHeader } from '@ant-design/pro-layout';
 import { CheckCircleOutlined } from '@ant-design/icons';
 import classnames from 'classnames';
 
-import { css, PinnedPluginListProvider, SchemaComponentOptions, useCompile, usePlugin } from '@nocobase/client';
+import {
+  css,
+  PinnedPluginListProvider,
+  SchemaComponentContext,
+  SchemaComponentOptions,
+  useCompile,
+  usePlugin,
+} from '@nocobase/client';
 
 import PluginWorkflowClient from '.';
 
@@ -102,8 +109,10 @@ export function WorkflowTasks() {
           title={compile(title)}
         />
         <Layout.Content style={{ padding: '24px', minHeight: 280 }}>
-          {Component ? <Component /> : null}
-          <Outlet />
+          <SchemaComponentContext.Provider value={{ designable: false }}>
+            {Component ? <Component /> : null}
+            <Outlet />
+          </SchemaComponentContext.Provider>
         </Layout.Content>
       </Layout>
     </Layout>
