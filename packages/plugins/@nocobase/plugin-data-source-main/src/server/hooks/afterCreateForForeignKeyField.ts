@@ -105,6 +105,7 @@ export function afterCreateForForeignKeyField(db: Database) {
           ...values,
         },
         transaction,
+        context: {},
       });
       // SortField#setSortValue instance._previousDataValues[scopeKey] judgment cause create set sort:1 invalid, need update
       creatInstance.set('sort', 1);
