@@ -7,5 +7,12 @@
     "@nocobase/client": "1.x",
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x"
-  }
+  },
+  "displayName": "Environment variables",
+  "displayName.zh-CN": "环境变量",
+  "description": "Used to manage service provider configuration information across different environments and perform environment isolation or encryption for sensitive data.",
+  "description.zh-CN": "用于在不同环境中管理服务商配置信息，并对敏感数据进行环境隔离或加密处理",
+  "keywords": [
+    "System management"
+  ]
 }
