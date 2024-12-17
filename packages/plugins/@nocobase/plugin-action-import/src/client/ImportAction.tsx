@@ -1,9 +1,8 @@
 import { css } from '@emotion/css';
 import { ISchema } from '@formily/react';
 import { Action, ActionContextProvider, SchemaComponent } from '@nocobase/client';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { NAMESPACE } from './constants';
-import { useForm } from '@formily/react';
 
 const importFormSchema: ISchema = {
   type: 'void',
@@ -30,6 +29,29 @@ const importFormSchema: ISchema = {
         warning: {
           type: 'void',
           'x-component': 'ImportWarning',
+        },
+        download: {
+          type: 'void',
+          title: `{{ t("Step 1: Download template", {ns: "${NAMESPACE}" }) }}`,
+          'x-component': 'FormItem',
+          'x-acl-ignore': true,
+          properties: {
+            tip: {
+              type: 'void',
+              'x-component': 'DownloadTips',
+            },
+            downloadAction: {
+              type: 'void',
+              title: `{{ t("Download template", {ns: "${NAMESPACE}" }) }}`,
+              'x-component': 'Action',
+              'x-component-props': {
+                className: css`
+                  margin-top: 5px;
+                `,
+                useAction: '{{ useDownloadXlsxTemplateAction }}',
+              },
+            },
+          },
         },
         upload: {
           type: 'array',
@@ -64,14 +86,6 @@ const importFormSchema: ISchema = {
                 useAction: '{{ cm.useCancelAction }}',
               },
             },
-            downloadTemplate: {
-              type: 'void',
-              title: `{{ t("Download template", {ns: "${NAMESPACE}" }) }}`,
-              'x-component': 'Action',
-              'x-component-props': {
-                useAction: '{{ useDownloadXlsxTemplateAction }}',
-              },
-            },
             startImport: {
               type: 'void',
               title: `{{ t("Start import", {ns: "${NAMESPACE}" }) }}`,
@@ -93,17 +107,6 @@ const importFormSchema: ISchema = {
       },
     },
   },
-};
-
-const usePreviewAction = () => {
-  const form = useForm();
-  return {
-    async run() {
-      const values = form.values;
-      console.log('Preview values:', values);
-      // 这里添加预览逻辑
-    },
-  };
 };
 
 export const ImportAction = () => {
