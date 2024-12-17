@@ -29,6 +29,9 @@ import {
   useDesignable,
   useFormBlockContext,
   useRecord,
+  useCollection,
+  useDataSourceHeaders,
+  useDataSourceKey,
 } from '@nocobase/client';
 import { App, Button } from 'antd';
 import _ from 'lodash';
@@ -90,6 +93,7 @@ export const DuplicateAction = observer(
     const { duplicateFields, duplicateMode = 'quickDulicate', duplicateCollection } = fieldSchema['x-component-props'];
     const record = useRecord();
     const parentRecordData: any = useCollectionParentRecordData();
+    const collection = useCollection();
     const { id, __collection } = record;
     const ctx = useActionContext();
     const { name } = useCollection_deprecated();
@@ -98,6 +102,16 @@ export const DuplicateAction = observer(
     const collectionFields = getCollectionFields(__collection || name);
     const formctx = useFormBlockContext();
     const aclCtx = useACLActionParamsContext();
+    const dataSource = useDataSourceKey();
+    const headers = useDataSourceHeaders(dataSource);
+    const dataId = Array.isArray(collection.filterTargetKey)
+      ? Object.assign(
+          {},
+          ...collection.filterTargetKey.map((v) => {
+            return { [v]: record[v] };
+          }),
+        )
+      : record[collection.filterTargetKey] || id;
     const buttonStyle = useMemo(() => {
       return {
         opacity: designable && (field?.data?.hidden || !aclCtx) && 0.1,
@@ -105,7 +119,7 @@ export const DuplicateAction = observer(
     }, [designable, field?.data?.hidden]);
     const template = {
       key: 'duplicate',
-      dataId: id,
+      dataId,
       default: true,
       fields:
         duplicateFields?.filter((v) => {
@@ -117,7 +131,7 @@ export const DuplicateAction = observer(
     const handelQuickDuplicate = async () => {
       setLoading(true);
       try {
-        const data = await fetchTemplateData(api, template, t);
+        const data = await fetchTemplateData(api, template, headers);
         await resource['create']({
           values: {
             ...data,
