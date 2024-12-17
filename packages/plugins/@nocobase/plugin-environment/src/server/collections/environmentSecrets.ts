@@ -10,21 +10,12 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  name: 'environmentVariables',
-  indexes: [
-    {
-      type: 'UNIQUE',
-      fields: ['name', 'environmentKey'],
-    },
-  ],
+  name: 'environmentSecrets',
   fields: [
     {
-      type: 'uid',
-      name: 'name',
-    },
-    {
       type: 'string',
-      name: 'environmentKey',
+      name: 'name',
+      primaryKey: true,
     },
     {
       type: 'text',
