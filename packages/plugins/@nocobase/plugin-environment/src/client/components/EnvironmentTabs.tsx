@@ -22,6 +22,36 @@ const SchemaField = createSchemaField({
   },
 });
 
+const bulkSchema = {
+  type: 'object',
+  properties: {
+    variables: {
+      type: 'string',
+      title: 'Variables',
+      'x-decorator': 'FormItem',
+      'x-component': 'Input.TextArea',
+      'x-component-props': {
+        autoSize: { minRows: 10, maxRows: 20 },
+        placeholder: `FOO=aaa
+BAR=bbb
+        `,
+      },
+    },
+    secrets: {
+      type: 'string',
+      title: 'Secrets',
+      'x-decorator': 'FormItem',
+      'x-component': 'Input.TextArea',
+      'x-component-props': {
+        autoSize: { minRows: 10, maxRows: 20 },
+        placeholder: `FOO=aaa
+BAR=bbb
+        `,
+      },
+    },
+  },
+};
+
 const schema = {
   type: 'object',
   properties: {
@@ -132,11 +162,12 @@ export function EnvironmentTabs() {
                 {
                   variable: 'Add Variable',
                   secret: 'Add secret',
+                  bulk: 'Bulk import',
                 }[info.key],
                 () => {
                   return (
                     <FormLayout layout={'vertical'}>
-                      <SchemaField schema={schema} />
+                      <SchemaField schema={info.key === 'bulk' ? bulkSchema : schema} />
                       <FormDrawer.Footer>
                         <FormButtonGroup align="right">
                           <Reset>Cancel</Reset>
@@ -182,6 +213,13 @@ export function EnvironmentTabs() {
               {
                 key: 'secret',
                 label: 'Add secret',
+              },
+              {
+                type: 'divider',
+              },
+              {
+                key: 'bulk',
+                label: 'Bulk import ',
               },
             ],
           }}
