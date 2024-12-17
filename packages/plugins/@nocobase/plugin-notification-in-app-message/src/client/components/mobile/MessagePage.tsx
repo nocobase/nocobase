@@ -100,7 +100,9 @@ const MobileMessagePageInner = () => {
   return (
     <MobilePageProvider>
       <MobilePageHeader>
-        <NavBar onBack={() => navigate('/page/in-app-message')}>{title}</NavBar>
+        <NavBar className="nb-message-back-action" onBack={() => navigate('/page/in-app-message')}>
+          {title}
+        </NavBar>
       </MobilePageHeader>
       <MobilePageContentContainer>
         <div

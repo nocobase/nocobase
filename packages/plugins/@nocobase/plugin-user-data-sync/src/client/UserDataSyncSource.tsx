@@ -104,6 +104,7 @@ function useSyncActionProps(): ActionProps {
   const { getDataBlockRequest } = useDataBlockRequestGetter();
   const { t } = useUserDataSyncSourceTranslation();
   return {
+    hidden: !record?.enabled,
     async onClick() {
       await api.resource('userData').pull({ name: record['name'] });
       await getDataBlockRequest()?.runAsync();
@@ -223,9 +224,10 @@ const Message = () => {
 };
 
 const Tasks = () => {
+  const record = useCollectionRecordData();
   const { t } = useUserDataSyncSourceTranslation();
   const [visible, setVisible] = useState(false);
-  return (
+  return record.enabled ? (
     <ActionContextProvider value={{ visible, setVisible }}>
       <Button
         type={'link'}
@@ -243,7 +245,7 @@ const Tasks = () => {
         />
       </ExtendCollectionsProvider>
     </ActionContextProvider>
-  );
+  ) : null;
 };
 
 export const UserDataSyncSource: React.FC = () => {

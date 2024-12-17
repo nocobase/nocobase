@@ -30,10 +30,12 @@ import { usersSchema, usersSettingsSchema } from './schemas/users';
 
 const useCancelActionProps = () => {
   const { setVisible } = useActionContext();
+  const form = useForm();
   return {
     type: 'default',
     onClick() {
       setVisible(false);
+      form.reset();
     },
   };
 };
@@ -63,6 +65,7 @@ const useSubmitActionProps = () => {
       await getDataBlockRequest()?.runAsync();
       message.success(t('Saved successfully'));
       setVisible(false);
+      form.reset();
     },
   };
 };

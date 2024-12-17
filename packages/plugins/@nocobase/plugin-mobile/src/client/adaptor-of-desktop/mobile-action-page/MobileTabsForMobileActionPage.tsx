@@ -31,6 +31,7 @@ import { MobilePageHeader } from '../../pages/dynamic-page';
 import { MobilePageContentContainer } from '../../pages/dynamic-page/content/MobilePageContentContainer';
 import { useStyles } from '../../pages/dynamic-page/header/tabs';
 import { hideDivider } from '../hideDivider';
+import { useMobileApp } from '../../mobile';
 
 export const MobileTabsForMobileActionPage: any = observer(
   (props) => {
@@ -39,6 +40,7 @@ export const MobileTabsForMobileActionPage: any = observer(
     const { activeKey: _activeKey, onChange: _onChange } = useTabsContext() || {};
     const [activeKey, setActiveKey] = useState(_activeKey);
     const { componentCls, hashId } = useStyles();
+    const { showBackButton } = useMobileApp();
     const { goBack } = useBackButton();
 
     const onChange = useCallback(
@@ -83,9 +85,11 @@ export const MobileTabsForMobileActionPage: any = observer(
       <>
         <MobilePageHeader>
           <div className={`${componentCls} ${hashId}`} data-testid="mobile-action-page-tabs">
-            <div className="nb-mobile-page-tabs-back-button" onClick={goBack}>
-              <LeftOutline />
-            </div>
+            {showBackButton && (
+              <div className="nb-mobile-page-tabs-back-button" onClick={goBack}>
+                <LeftOutline />
+              </div>
+            )}
             <DndContext>
               <Tabs activeKey={activeKey} onChange={onChange} className="nb-mobile-page-tabs-list">
                 {items}
