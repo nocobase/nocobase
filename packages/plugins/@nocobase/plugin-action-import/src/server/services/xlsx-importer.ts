@@ -155,12 +155,14 @@ export class XlsxImporter extends EventEmitter {
     const chunks = lodash.chunk(data.slice(1), this.options.chunkSize || 200);
 
     let handingRowIndex = 1;
+    let imported = 0;
+
+    // Calculate total rows to be imported
+    const total = data.length - 1; // Subtract header row
 
     if (this.options.explain) {
       handingRowIndex += 1;
     }
-
-    let imported = 0;
 
     for (const chunkRows of chunks) {
       for (const row of chunkRows) {
@@ -217,6 +219,12 @@ export class XlsxImporter extends EventEmitter {
 
           imported += 1;
 
+          // Emit progress event
+          this.emit('progress', {
+            total,
+            current: imported,
+          });
+
           await new Promise((resolve) => setTimeout(resolve, 5));
         } catch (error) {
           throw new ImportValidationError('Failed to import row {{row}}, {{message}}, row data: {{data}}', {
@@ -227,7 +235,6 @@ export class XlsxImporter extends EventEmitter {
         }
       }
 
-      // await to prevent high cpu usage
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
 
