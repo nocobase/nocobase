@@ -49,6 +49,8 @@ export type EventOptions = {
   deferred?: boolean;
   manually?: boolean;
   force?: boolean;
+  stack?: Array<ID>;
+  validateCyclicCallback?: Function;
   [key: string]: any;
 } & Transactionable;
 
@@ -451,6 +453,31 @@ export default class PluginWorkflowServer extends Plugin {
     return new Processor(execution, { ...options, plugin: this });
   }
 
+  private async validateCyclicCall(workflow: WorkflowModel, context: any, options: EventOptions) {
+    const { stack } = options;
+    let valid = true;
+    if (stack?.length && stack.length > 0) {
+      const existed = await workflow.countExecutions({
+        where: {
+          id: stack,
+        },
+        transaction: options.transaction,
+      });
+
+      if (existed) {
+        this.getLogger(workflow.id).warn(
+          `workflow ${workflow.id} has already been triggered in stacks executions (${stack}), and newly triggering will be skipped.`,
+        );
+
+        try {
+          options.validateCyclicCallback?.(workflow, context, options);
+        } finally {
+          valid = false;
+        }
+      }
+    }
+    return valid;
+  }
   private async createExecution(
     workflow: WorkflowModel,
     context,
@@ -460,8 +487,9 @@ export default class PluginWorkflowServer extends Plugin {
     const transaction = await this.useDataSourceTransaction('main', options.transaction, true);
     const sameTransaction = options.transaction === transaction;
     const trigger = this.triggers.get(workflow.type);
+    const cycleCallValidate = await this.validateCyclicCall(workflow, context, { ...options, transaction });
     const valid = await trigger.validateEvent(workflow, context, { ...options, transaction });
-    if (!valid) {
+    if (!valid || !cycleCallValidate) {
       if (!sameTransaction) {
         await transaction.commit();
       }
