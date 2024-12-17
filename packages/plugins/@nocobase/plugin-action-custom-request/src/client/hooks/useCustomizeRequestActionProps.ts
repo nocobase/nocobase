@@ -27,7 +27,7 @@ export const useCustomizeRequestActionProps = () => {
   const actionSchema = useFieldSchema();
   const compile = useCompile();
   const form = useForm();
-  const { name: blockType } = useBlockContext();
+  const { name: blockType } = useBlockContext() || {};
   // const { getPrimaryKey } = useCollection_deprecated();
   const recordData = useCollectionRecordData();
   const fieldSchema = useFieldSchema();

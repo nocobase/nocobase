@@ -46,6 +46,7 @@ import { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
 import { BelongsToArrayRepository } from './relation-repository/belongs-to-array-repository';
+import { valuesToFilter } from './utils/filter-utils';
 
 const debug = require('debug')('noco-database');
 
@@ -234,7 +235,7 @@ export interface AggregateOptions {
   distinct?: boolean;
 }
 
-interface FirstOrCreateOptions extends Transactionable {
+export interface FirstOrCreateOptions extends Transactionable {
   filterKeys: string[];
   values?: Values;
   hooks?: boolean;
@@ -251,53 +252,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     this.model = collection.model;
   }
 
-  public static valuesToFilter(values: Values = {}, filterKeys: Array<string>) {
-    const removeArrayIndexInKey = (key) => {
-      const chunks = key.split('.');
-      return chunks
-        .filter((chunk) => {
-          return !chunk.match(/\d+/);
-        })
-        .join('.');
-    };
-
-    const filterAnd = [];
-    const flattedValues = flatten(values);
-    const flattedValuesObject = {};
-
-    for (const key in flattedValues) {
-      const keyWithoutArrayIndex = removeArrayIndexInKey(key);
-      if (flattedValuesObject[keyWithoutArrayIndex]) {
-        if (!Array.isArray(flattedValuesObject[keyWithoutArrayIndex])) {
-          flattedValuesObject[keyWithoutArrayIndex] = [flattedValuesObject[keyWithoutArrayIndex]];
-        }
-
-        flattedValuesObject[keyWithoutArrayIndex].push(flattedValues[key]);
-      } else {
-        flattedValuesObject[keyWithoutArrayIndex] = [flattedValues[key]];
-      }
-    }
-
-    for (const filterKey of filterKeys) {
-      const filterValue = flattedValuesObject[filterKey]
-        ? flattedValuesObject[filterKey]
-        : lodash.get(values, filterKey);
-
-      if (filterValue) {
-        filterAnd.push({
-          [filterKey]: filterValue,
-        });
-      } else {
-        filterAnd.push({
-          [filterKey]: null,
-        });
-      }
-    }
-
-    return {
-      $and: filterAnd,
-    };
-  }
+  public static valuesToFilter = valuesToFilter;
 
   /**
    * return count by filter
