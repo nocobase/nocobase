@@ -92,7 +92,7 @@ const schema: ISchema = {
           type: 'string',
           title: "{{t('System title')}}",
           'x-decorator': 'FormItem',
-          'x-component': 'Input.TextArea',
+          'x-component': 'TextAreaWithGlobalScope',
           required: true,
         },
         logo: {
