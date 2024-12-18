@@ -140,7 +140,7 @@ class Package {
           .on('finish', resolve)
           .on('error', reject);
       });
-      console.log(chalk.greenBright(`Download success: ${this.packageName}@${version}`));
+      console.log(chalk.greenBright(`Downloaded: ${this.packageName}@${version}`));
     } catch (error) {
       console.log(chalk.redBright(`Download failed: ${this.packageName}`));
     }
@@ -194,7 +194,23 @@ class PackageManager {
 
   async getPackages() {
     const pkgs = await this.getProPackages();
+
+    if (Array.isArray(pkgs)) {
+      return {
+        commercial_plugins: pkgs,
+        licensed_plugins: pkgs,
+      };
+    }
     return pkgs;
+  }
+
+  async removePackage(packageName) {
+    const dir = path.resolve(process.env.PLUGIN_STORAGE_PATH, packageName);
+    const r = await fs.exists(dir);
+    if (r) {
+      console.log(chalk.yellowBright(`Removed: ${packageName}`));
+      await fs.rm(dir, { force: true, recursive: true });
+    }
   }
 
   async download(options = {}) {
@@ -202,8 +218,13 @@ class PackageManager {
     if (!this.token) {
       return;
     }
-    const pkgs = await this.getPackages();
-    for (const pkg of pkgs) {
+    const { commercial_plugins, licensed_plugins } = await this.getPackages();
+    for (const pkg of commercial_plugins) {
+      if (!licensed_plugins.includes(pkg)) {
+        await this.removePackage(pkg);
+      }
+    }
+    for (const pkg of licensed_plugins) {
       await this.getPackage(pkg).download({ version });
     }
   }

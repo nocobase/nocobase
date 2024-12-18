@@ -164,6 +164,10 @@ exports.promptForTs = () => {
 };
 
 exports.downloadPro = async () => {
+  const { NOCOBASE_PKG_USERNAME, NOCOBASE_PKG_PASSWORD } = process.env;
+  if (!(NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD)) {
+    return;
+  }
   await exports.run('yarn', ['nocobase', 'pkg', 'download-pro']);
 };
 
