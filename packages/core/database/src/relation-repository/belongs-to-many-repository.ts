@@ -13,6 +13,7 @@ import { AggregateOptions, CreateOptions, DestroyOptions, TargetKey } from '../r
 import { updateAssociations, updateThroughTableValue } from '../update-associations';
 import { MultipleRelationRepository } from './multiple-relation-repository';
 import { transaction } from './relation-repository';
+
 import { AssociatedOptions, PrimaryKeyWithThroughValues } from './types';
 
 type CreateBelongsToManyOptions = CreateOptions;

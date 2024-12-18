@@ -22,6 +22,7 @@ import {
   useRequest,
   ACLCustomContext,
   VariablesProvider,
+  GlobalThemeProvider,
   AssociationField,
   Action,
   DatePicker,
@@ -274,5 +275,18 @@ function InternalPublicForm() {
 }
 
 export function PublicFormPage() {
-  return <InternalPublicForm />;
+  return (
+    <GlobalThemeProvider
+      theme={{
+        token: {
+          marginBlock: 18,
+          borderRadiusBlock: 0,
+          boxShadowTertiary: 'none',
+          fontSize: 14,
+        },
+      }}
+    >
+      <InternalPublicForm />
+    </GlobalThemeProvider>
+  );
 }
