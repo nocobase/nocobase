@@ -13,9 +13,8 @@ import WorkflowPlugin from '@nocobase/plugin-workflow/client';
 import Manual from './instruction';
 
 import { NAMESPACE } from '../locale';
-import { WorkflowManualProvider } from './WorkflowManualProvider';
+import { useCountRequest, WorkflowManualProvider } from './WorkflowManualProvider';
 import { WorkflowTodo } from './WorkflowTodo';
-import { WorkflowTodoBlockInitializer } from './WorkflowTodoBlockInitializer';
 import {
   addActionButton,
   addActionButton_deprecated,
@@ -33,9 +32,16 @@ export default class extends Plugin {
   async load() {
     this.addComponents();
 
-    // this.app.addProvider(Provider);
+    this.app.addProvider(WorkflowManualProvider);
+
     const workflow = this.app.pm.get('workflow') as WorkflowPlugin;
     workflow.registerInstruction('manual', Manual);
+
+    workflow.registerTaskType('manual', {
+      title: `{{t("My manual tasks", { ns: "${NAMESPACE}" })}}`,
+      useCountRequest,
+      component: WorkflowTodo.TaskBlock,
+    });
 
     this.app.schemaInitializerManager.add(addBlockButton_deprecated);
     this.app.schemaInitializerManager.add(addBlockButton);
@@ -47,23 +53,20 @@ export default class extends Plugin {
     const blockInitializers = this.app.schemaInitializerManager.get('page:addBlock');
     blockInitializers.add('otherBlocks.workflowTodos', {
       title: `{{t("Workflow todos", { ns: "${NAMESPACE}" })}}`,
-      Component: 'WorkflowTodoBlockInitializer',
+      Component: 'WorkflowTodo.Initializer',
       icon: 'CheckSquareOutlined',
     });
 
     this.app.schemaInitializerManager.addItem('mobile:addBlock', 'otherBlocks.workflowTodos', {
       title: `{{t("Workflow todos", { ns: "${NAMESPACE}" })}}`,
-      Component: 'WorkflowTodoBlockInitializer',
+      Component: 'WorkflowTodo.Initializer',
       icon: 'CheckSquareOutlined',
     });
-
-    this.app.addProvider(WorkflowManualProvider);
   }
 
   addComponents() {
     this.app.addComponents({
       WorkflowTodo,
-      WorkflowTodoBlockInitializer,
     });
   }
 }
