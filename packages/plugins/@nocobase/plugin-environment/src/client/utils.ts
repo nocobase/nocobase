@@ -23,7 +23,7 @@ export const useGetEnvironmentVariables = () => {
     action: 'list',
   });
 
-  if (!loading && !variablesLoading) {
+  if (!loading && !variablesLoading && (variables?.data?.length || secrets?.data?.length)) {
     return {
       name: '$environment',
       title: 'Environment',
