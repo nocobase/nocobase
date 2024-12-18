@@ -135,19 +135,31 @@ describe('sql collection', () => {
     expect(fields.length).toBe(2);
     const loadedFields = db.getCollection('sqlCollection').fields;
     expect(loadedFields.size).toBe(2);
-    await agent.resource('sqlCollection').update({
+    const updateRes = await agent.resource('sqlCollection').update({
       filterByTk: 'sqlCollection',
       values: {
+        key: collection.key,
         sql: 'select "testField1" from "fakeCollection"',
+        name: 'sqlCollection',
         fields: [
           {
             name: 'testField1',
             type: 'string',
             interface: 'input',
+            collectionName: 'sqlCollection',
+            key: fields.find((f) => f.name === 'testField1').key,
           },
         ],
+        sources: ['fakeCollection'],
       },
     });
+    expect(updateRes.status).toBe(200);
+
+    const listMetaRes = await agent.resource('collections').listMeta();
+    const metaData = listMetaRes.body.data;
+    const sqlCollectionData = metaData.find((item) => item.name === 'sqlCollection');
+    const metaFields = sqlCollectionData.fields;
+    expect(metaFields.length).toBe(1);
     const collection2 = await db.getRepository('collections').findOne({
       filter: {
         name: 'sqlCollection',
