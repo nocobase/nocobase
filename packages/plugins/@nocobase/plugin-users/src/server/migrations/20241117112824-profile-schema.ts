@@ -17,7 +17,7 @@ import {
 
 export default class extends Migration {
   on = 'afterLoad'; // 'beforeLoad' or 'afterLoad'
-  appVersion = '<1.5.0-alpha.5';
+  appVersion = '<1.6.0-alpha.6';
 
   async up() {
     const repo = this.db.getRepository<UiSchemaRepository>('uiSchemas');
