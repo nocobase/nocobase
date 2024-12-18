@@ -227,11 +227,7 @@ export class XlsxImporter extends EventEmitter {
 
           await new Promise((resolve) => setTimeout(resolve, 5));
         } catch (error) {
-          throw new ImportValidationError('Failed to import row {{row}}, {{message}}, row data: {{data}}', {
-            row: handingRowIndex,
-            message: this.renderErrorMessage(error),
-            data: JSON.stringify(rowValues),
-          });
+          throw error;
         }
       }
 
