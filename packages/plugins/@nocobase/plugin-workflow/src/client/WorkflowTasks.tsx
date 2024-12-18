@@ -8,7 +8,7 @@
  */
 import React, { useEffect, useMemo } from 'react';
 import { Link, Outlet, useNavigate, useParams } from 'react-router-dom';
-import { Button, Layout, Menu, Spin, Badge, theme } from 'antd';
+import { Button, Layout, Menu, Spin, Badge, theme, Tooltip } from 'antd';
 import { PageHeader } from '@ant-design/pro-layout';
 import { CheckCircleOutlined } from '@ant-design/icons';
 import classnames from 'classnames';
@@ -23,6 +23,7 @@ import {
 } from '@nocobase/client';
 
 import PluginWorkflowClient from '.';
+import { lang } from './locale';
 
 const sideClass = css`
   height: calc(100vh - 46px);
@@ -124,30 +125,32 @@ function WorkflowTasksLink() {
 
   const types = Array.from(workflowPlugin.taskTypes.getKeys());
   return types.length ? (
-    <Button
-      className={css`
-        padding: 0;
-        display: inline-flex;
-        vertical-align: middle;
-        a {
+    <Tooltip title={lang('Workflow todos')}>
+      <Button
+        className={css`
+          padding: 0;
           display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 100%;
-          height: 100%;
+          vertical-align: middle;
+          a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
 
-          .anticon {
-            display: inline-block;
-            vertical-align: middle;
-            line-height: 1em;
+            .anticon {
+              display: inline-block;
+              vertical-align: middle;
+              line-height: 1em;
+            }
           }
-        }
-      `}
-    >
-      <Link to="/admin/workflow/tasks">
-        <CheckCircleOutlined />
-      </Link>
-    </Button>
+        `}
+      >
+        <Link to="/admin/workflow/tasks">
+          <CheckCircleOutlined />
+        </Link>
+      </Button>
+    </Tooltip>
   ) : null;
 }
 
