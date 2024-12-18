@@ -12,12 +12,13 @@ import { useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
+import { useCollectionField } from '../../../../data-source';
 import { useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
 import { useTitleFieldOptions } from '../../../../schema-component/antd/form-item/FormItem.Settings';
-import { useColorFields } from '../../../../schema-component/antd/table-v2/Table.Column.Designer';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
-import { useCollectionField } from '../../../../data-source';
+import { useColorFields } from '../../../../schema-component/antd/table-v2/Table.Column.Designer';
+import { ellipsisSettingsItem } from '../Input/inputComponentSettings';
 
 const enableLink = {
   name: 'enableLink',
@@ -177,5 +178,6 @@ export const tagComponentFieldSettings = new SchemaSettings({
     },
     titleField,
     enableLink,
+    ellipsisSettingsItem,
   ],
 });
