@@ -101,7 +101,7 @@ const schema = {
         title: `{{t("Region", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
         'x-decorator': 'FormItem',
-        'x-component': 'Input',
+        'x-component': 'TextAreaWithGlobalScope',
         required: true,
       },
       accessKeyId: {
