@@ -63,14 +63,15 @@ export default class CollectionTrigger extends Trigger {
     if (workflow.sync) {
       await this.workflow.trigger(workflow, ctx, {
         transaction,
+        stack: ctx.stack,
       });
     } else {
       if (transaction) {
         transaction.afterCommit(() => {
-          this.workflow.trigger(workflow, ctx);
+          this.workflow.trigger(workflow, ctx, { stack: ctx.stack });
         });
       } else {
-        this.workflow.trigger(workflow, ctx);
+        this.workflow.trigger(workflow, ctx, { stack: ctx.stack });
       }
     }
   }
@@ -195,28 +196,28 @@ export default class CollectionTrigger extends Trigger {
     }
   }
 
-  async validateEvent(workflow: WorkflowModel, context: any, options: Transactionable): Promise<boolean> {
-    if (context.stack) {
-      const existed = await workflow.countExecutions({
-        where: {
-          id: context.stack,
-        },
-        transaction: options.transaction,
-      });
+  // async validateEvent(workflow: WorkflowModel, context: any, options: Transactionable): Promise<boolean> {
+  //   if (context.stack) {
+  //     const existed = await workflow.countExecutions({
+  //       where: {
+  //         id: context.stack,
+  //       },
+  //       transaction: options.transaction,
+  //     });
 
-      if (existed) {
-        this.workflow
-          .getLogger(workflow.id)
-          .warn(
-            `workflow ${workflow.id} has already been triggered in stack executions (${context.stack}), and newly triggering will be skipped.`,
-          );
+  //     if (existed) {
+  //       this.workflow
+  //         .getLogger(workflow.id)
+  //         .warn(
+  //           `workflow ${workflow.id} has already been triggered in stack executions (${context.stack}), and newly triggering will be skipped.`,
+  //         );
 
-        return false;
-      }
-    }
+  //       return false;
+  //     }
+  //   }
 
-    return true;
-  }
+  //   return true;
+  // }
 
   async execute(workflow: WorkflowModel, values, options: EventOptions) {
     const ctx = await this.prepare(workflow, values?.data, options);
@@ -224,10 +225,11 @@ export default class CollectionTrigger extends Trigger {
     const { transaction } = options;
     return this.workflow.trigger(
       workflow,
-      { ...ctx, stacks: values.stacks },
+      { ...ctx },
       {
         ...options,
         transaction: this.workflow.useDataSourceTransaction(dataSourceName, transaction),
+        stack: ctx.stack,
       },
     );
   }
