@@ -166,5 +166,9 @@ export const useEditProfile = () => {
     };
   }, [visible]);
 
+  if (enableEditProfile === false) {
+    return null;
+  }
+
   return result;
 };
