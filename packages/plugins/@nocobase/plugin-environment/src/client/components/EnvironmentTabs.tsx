@@ -10,8 +10,9 @@
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { Checkbox, FormButtonGroup, FormDrawer, FormItem, FormLayout, Input, Reset, Submit } from '@formily/antd-v5';
 import { createSchemaField } from '@formily/react';
-import { useAPIClient, useRequest } from '@nocobase/client';
-import { Button, Card, Dropdown, Space, Table } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { useAPIClient, useDataBlockResource, useRequest } from '@nocobase/client';
+import { Button, Card, Dropdown, Space, Table, App } from 'antd';
 import React, { useState } from 'react';
 
 const SchemaField = createSchemaField({
@@ -73,7 +74,26 @@ const schema = {
 };
 
 export function EnvironmentVariables({ request }) {
-  const { data, loading } = request;
+  const { modal } = App.useApp();
+  const { t } = useTranslation();
+  const api = useAPIClient();
+  const { data, loading, run } = request;
+
+  const resource = api.resource('environmentVariables');
+
+  const handleDelete = (data) => {
+    modal.confirm({
+      title: t('Delete Variables'),
+      content: t('Are you sure you want to delete it?'),
+      async onOk() {
+        await resource.destroy({
+          filter: { name: data.name },
+        });
+        run();
+      },
+    });
+  };
+
   return (
     <div>
       <Table
@@ -93,10 +113,10 @@ export function EnvironmentVariables({ request }) {
           {
             title: 'Actions',
             width: 200,
-            render: () => (
+            render: (record) => (
               <Space>
                 <a>Edit</a>
-                <a>Delete</a>
+                <a onClick={() => handleDelete(record)}>Delete</a>
               </Space>
             ),
           },
@@ -107,7 +127,24 @@ export function EnvironmentVariables({ request }) {
 }
 
 export function EnvironmentSecrets({ request }) {
-  const { data, loading } = request;
+  const { data, loading, run } = request;
+  const { modal } = App.useApp();
+  const { t } = useTranslation();
+  const api = useAPIClient();
+  const resource = api.resource('environmentSecrets');
+
+  const handleDelete = (data) => {
+    modal.confirm({
+      title: t('Delete Secret'),
+      content: t('Are you sure you want to delete it?'),
+      async onOk() {
+        await resource.destroy({
+          filter: { name: data.name },
+        });
+        run();
+      },
+    });
+  };
   return (
     <div>
       <Table
@@ -123,10 +160,10 @@ export function EnvironmentSecrets({ request }) {
           {
             title: 'Actions',
             width: 200,
-            render: () => (
+            render: (record) => (
               <Space>
-                <a>Edit</a>
-                <a>Delete</a>
+                <a>{t('Edit')}</a>
+                <a onClick={() => handleDelete(record)}>{t('Delete')}</a>
               </Space>
             ),
           },
