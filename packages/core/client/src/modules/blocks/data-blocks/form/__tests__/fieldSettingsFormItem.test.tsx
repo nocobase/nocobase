@@ -199,6 +199,10 @@ describe('FieldSettingsFormItem', () => {
               type: 'switch',
             },
             {
+              title: 'Ellipsis overflow content',
+              type: 'switch',
+            },
+            {
               title: 'Title field',
               type: 'select',
             },
@@ -302,6 +306,10 @@ describe('FieldSettingsFormItem', () => {
             },
             {
               title: 'Enable link',
+              type: 'switch',
+            },
+            {
+              title: 'Ellipsis overflow content',
               type: 'switch',
             },
             {

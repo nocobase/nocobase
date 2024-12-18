@@ -34,7 +34,7 @@ import { SchemaSettingsSortingRule } from '../../../../schema-settings/SchemaSet
 import { useIsShowMultipleSwitch } from '../../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useLocalVariables, useVariables } from '../../../../variables';
 import { useOpenModeContext } from '../../../popup/OpenModeProvider';
-import { enableLinkSettingsItem, openModeSettingsItem } from '../Input/inputComponentSettings';
+import { ellipsisSettingsItem, enableLinkSettingsItem, openModeSettingsItem } from '../Input/inputComponentSettings';
 
 const enableLink = {
   name: 'enableLink',
@@ -381,6 +381,7 @@ export const selectComponentFieldSettings = new SchemaSettings({
         return useIsAssociationField() && readPretty;
       },
     },
+    ellipsisSettingsItem,
     {
       ...enableLinkSettingsItem,
       useVisible() {
