@@ -19,14 +19,24 @@ const updateCollection = async (ctx: Context, transaction: any) => {
     },
     transaction,
   });
+
   const existFields = await collection.getFields({ transaction });
+
   const deletedFields = existFields.filter((field: any) => !values.fields?.find((f: any) => f.name === field.name));
+
   for (const field of deletedFields) {
     await field.destroy({ transaction });
   }
+
   const upRes = await repo.update({
     filterByTk,
-    values,
+    values: {
+      ...values,
+      fields: values.fields?.map((f: any) => {
+        delete f.key;
+        return f;
+      }),
+    },
     updateAssociationValues: ['fields'],
     transaction,
   });
