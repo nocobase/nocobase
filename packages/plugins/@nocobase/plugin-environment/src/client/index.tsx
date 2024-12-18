@@ -10,7 +10,7 @@
 import { lazy, Plugin } from '@nocobase/client';
 
 const EnvironmentPage = lazy(() => import('./components/EnvironmentPage'));
-
+import { useGetEnvironmentVariables } from './utils';
 export class PluginEnvironmentClient extends Plugin {
   async load() {
     this.app.pluginSettingsManager.add('environment', {
@@ -18,6 +18,7 @@ export class PluginEnvironmentClient extends Plugin {
       icon: 'TableOutlined',
       Component: EnvironmentPage,
     });
+    this.app.addGlobalVar('environment', useGetEnvironmentVariables);
   }
 }
 

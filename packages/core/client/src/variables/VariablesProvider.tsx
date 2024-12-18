@@ -24,6 +24,7 @@ import { getPath } from './utils/getPath';
 import { clearRequested, getRequested, hasRequested, stashRequested } from './utils/hasRequested';
 import { isVariable } from './utils/isVariable';
 import { uniq } from './utils/uniq';
+import { useApp } from '../';
 
 export const VariablesContext = createContext<VariablesContextType>(null);
 VariablesContext.displayName = 'VariablesContext';
@@ -56,10 +57,13 @@ const getFieldPath = (variablePath: string, variablesStore: Record<string, Varia
 const VariablesProvider = ({ children, filterVariables }: any) => {
   const ctxRef = useRef<Record<string, any>>({});
   const api = useAPIClient();
+  const app = useApp();
   const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated();
   const compile = useCompile();
   const { builtinVariables } = useBuiltInVariables();
-
+  const environmentVariables = app.getGlobalVar('environment');
+  const environmentCtx = environmentVariables?.() || [];
+  ctxRef.current['environment'] = environmentCtx;
   const setCtx = useCallback((ctx: Record<string, any> | ((prev: Record<string, any>) => Record<string, any>)) => {
     if (_.isFunction(ctx)) {
       ctxRef.current = ctx(ctxRef.current);

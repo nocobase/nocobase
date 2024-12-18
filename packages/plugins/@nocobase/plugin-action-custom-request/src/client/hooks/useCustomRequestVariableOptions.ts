@@ -14,8 +14,9 @@ import {
   useCollectionFilterOptions,
   useCollectionRecordData,
   useCompile,
+  VariablesContext,
 } from '@nocobase/client';
-import { useMemo } from 'react';
+import { useMemo, useContext } from 'react';
 import { useTranslation } from '../locale';
 
 export const useCustomRequestVariableOptions = () => {
@@ -26,13 +27,13 @@ export const useCustomRequestVariableOptions = () => {
   const compile = useCompile();
   const recordData = useCollectionRecordData();
   const { name: blockType } = useBlockContext() || {};
-
   const [fields, userFields] = useMemo(() => {
     return [compile(fieldsOptions), compile(userFieldOptions)];
   }, [fieldsOptions, userFieldOptions]);
-
+  const data = useContext(VariablesContext);
   return useMemo(() => {
     return [
+      data.ctxRef.current['environment'],
       recordData && {
         name: 'currentRecord',
         title: t('Current record', { ns: 'client' }),
