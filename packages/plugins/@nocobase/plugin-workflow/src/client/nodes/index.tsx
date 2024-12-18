@@ -384,7 +384,8 @@ function TestFormFieldset({ value, onChange }) {
           name={key}
           value={get(value, key)}
           onChange={(v) => {
-            onChange({ ...value, [key]: v });
+            set(value, key, v);
+            onChange(toJS(value));
           }}
         />
       ))}
