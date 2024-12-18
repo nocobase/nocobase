@@ -397,7 +397,6 @@ export function TextArea(props) {
     },
     [onChange, delimitersString],
   );
-
   const disabled = props.disabled || form.disabled;
   return wrapSSR(
     <Space.Compact

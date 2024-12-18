@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useRequest, useBaseVariable } from '@nocobase/client';
-import { useTranslation } from 'react-i18next';
+import { useRequest } from '@nocobase/client';
 
 export const useGetEnvironmentVariables = () => {
   const { data: secrets, loading } = useRequest<{
@@ -29,21 +28,21 @@ export const useGetEnvironmentVariables = () => {
       name: '$environment',
       title: 'Environment',
       children: [
-        {
+        variables?.data?.length && {
           title: 'Variables',
           name: 'variables',
           children: variables?.data.map((v) => {
             return { title: v.name, name: v.name };
           }),
         },
-        {
+        secrets?.data?.length && {
           title: 'Secrets',
           name: 'secrets',
           children: secrets?.data.map((v) => {
             return { title: v.name, name: v.name };
           }),
         },
-      ],
+      ].filter(Boolean),
     };
   }
 

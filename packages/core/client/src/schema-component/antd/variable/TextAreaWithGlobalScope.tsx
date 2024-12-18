@@ -14,7 +14,10 @@ import { TextArea } from './TextArea';
 export const useEnvironmentVariableOptions = () => {
   const data = useContext(VariablesContext);
   return useMemo(() => {
-    return [data.ctxRef.current['$environment']].filter(Boolean);
+    if (data.ctxRef.current['$environment']) {
+      return [data.ctxRef.current['$environment']].filter(Boolean);
+    }
+    return null;
   }, [data.ctxRef.current['$environment']]);
 };
 
