@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useAPIClient, useCompile, useLocationSearch } from '@nocobase/client';
+import { useAPIClient, useCompile, useLocationSearch, TextAreaWithGlobalScope } from '@nocobase/client';
 import { useBoolean } from 'ahooks';
 import { Button, Card, Form, Input, Tabs, message } from 'antd';
 import React, { useEffect, useMemo } from 'react';
@@ -73,10 +73,10 @@ const AMapConfiguration = () => {
   return (
     <BaseConfiguration type="amap">
       <Form.Item required name="accessKey" label={t('Access key')}>
-        <Input />
+        <TextAreaWithGlobalScope />
       </Form.Item>
       <Form.Item required name="securityJsCode" label={t('securityJsCode or serviceHost')}>
-        <Input />
+        <TextAreaWithGlobalScope />
       </Form.Item>
     </BaseConfiguration>
   );
@@ -87,7 +87,7 @@ const GoogleMapConfiguration = () => {
   return (
     <BaseConfiguration type="google">
       <Form.Item required name="accessKey" label={t('Api key')}>
-        <Input />
+        <TextAreaWithGlobalScope />
       </Form.Item>
     </BaseConfiguration>
   );

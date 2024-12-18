@@ -14,8 +14,8 @@ import { TextArea } from './TextArea';
 export const useEnvironmentVariableOptions = () => {
   const data = useContext(VariablesContext);
   return useMemo(() => {
-    return [data.ctxRef.current['environment']].filter(Boolean);
-  }, [data.ctxRef.current]);
+    return [data.ctxRef.current['$environment']].filter(Boolean);
+  }, [data.ctxRef.current['$environment']]);
 };
 
 export const TextAreaWithGlobalScope = (props) => {
