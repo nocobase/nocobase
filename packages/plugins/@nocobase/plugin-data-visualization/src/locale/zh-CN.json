@@ -23,6 +23,7 @@
   "Filter": "过滤",
   "Sort": "排序",
   "Limit": "结果数量",
+  "Offset": "跳过数量",
   "Enable cache": "启用缓存",
   "TTL (second)": "缓存时间 (秒)",
   "Field": "字段",
