@@ -189,7 +189,10 @@ class PackageManager {
       },
       responseType: 'json',
     });
-    return res.data.data;
+    return {
+      licensed_plugins: res.data?.data || [],
+      commercial_plugins: res.data?.meta?.commercial_plugins || [],
+    };
   }
 
   async getPackages() {
