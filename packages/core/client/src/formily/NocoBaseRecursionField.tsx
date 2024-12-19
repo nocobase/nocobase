@@ -152,12 +152,12 @@ const createMergedSchemaInstance = (schema: Schema, uiSchema: ISchema, onlyRende
     const firstPropertyKey = Object.keys(clonedSchema.properties)[0];
     const firstPropertyValue = Object.values(clonedSchema.properties)[0];
     // Some uiSchema's type value is "void", which can cause exceptions, so we need to ignore the type field
-    clonedSchema.properties[firstPropertyKey] = merge(_.omit(uiSchema, 'type'), firstPropertyValue);
+    clonedSchema.properties[firstPropertyKey] = merge(_.omit(uiSchema, 'type', 'x-read-pretty'), firstPropertyValue);
     return new Schema(clonedSchema);
   }
 
   // Some uiSchema's type value is "void", which can cause exceptions, so we need to ignore the type field
-  return new Schema(merge(_.omit(uiSchema, 'type'), clonedSchema));
+  return new Schema(merge(_.omit(uiSchema, 'type', 'x-read-pretty'), clonedSchema));
 };
 
 const propertiesToReactElement = ({
