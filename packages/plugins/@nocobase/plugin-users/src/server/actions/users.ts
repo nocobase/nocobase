@@ -11,15 +11,24 @@ import { Context, DEFAULT_PAGE, DEFAULT_PER_PAGE, Next } from '@nocobase/actions
 import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import _ from 'lodash';
 import { namespace } from '..';
+import { ValidationError, ValidationErrorItem } from 'sequelize';
 
 function parseProfileFormSchema(schema: any) {
   const properties = _.get(schema, 'properties.form.properties.edit.properties.grid.properties') || {};
-  const fields = Object.values(properties).map((row: any) => {
+  const fields = [];
+  const requiredFields = [];
+  Object.values(properties).forEach((row: any) => {
     const col = Object.values(row.properties)[0] as any;
     const [name, props] = Object.entries(col.properties)[0];
-    return !props['x-read-pretty'] && !props['x-disable'] ? name : null;
+    if (props['x-read-pretty'] || props['x-disable']) {
+      return;
+    }
+    if (props['required']) {
+      requiredFields.push(name);
+    }
+    fields.push(name);
   });
-  return fields.filter(Boolean).filter((field) => !['roles'].includes(field));
+  return { fields, requiredFields };
 }
 
 export async function updateProfile(ctx: Context, next: Next) {
@@ -37,9 +46,30 @@ export async function updateProfile(ctx: Context, next: Next) {
   }
   const schemaRepo = ctx.db.getRepository<UiSchemaRepository>('uiSchemas');
   const schema = await schemaRepo.getJsonSchema('nocobase-user-profile-edit-form');
-  const fields = parseProfileFormSchema(schema);
-  const UserRepo = ctx.db.getRepository('users');
-  const result = await UserRepo.update({
+  const { fields, requiredFields } = parseProfileFormSchema(schema);
+  const userRepo = ctx.db.getRepository('users');
+  const user = await userRepo.findOne({ filter: { id: currentUser.id } });
+  for (const field of requiredFields) {
+    if (!values[field]) {
+      // Throw a sequelize validation error and it will be caught by the error handler
+      // so that the field name in error message will be translated
+      throw new ValidationError(`${field} can not be null`, [
+        new ValidationErrorItem(
+          `${field} can not be null`,
+          // @ts-ignore
+          'notNull violation',
+          field,
+          null,
+          user,
+          'is_null',
+          null,
+          null,
+        ),
+      ]);
+    }
+  }
+
+  const result = await userRepo.update({
     filterByTk: currentUser.id,
     values: _.pick(values, fields),
   });
