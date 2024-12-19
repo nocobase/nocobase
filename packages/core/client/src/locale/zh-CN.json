@@ -854,7 +854,7 @@
   "Failed to load plugin": "插件加载失败",
   "Allow add new, update and delete actions": "允许增删改操作",
   "Date display format": "日期显示格式",
-  "Limit date range": "日期限定范围",
+  "Date range limit": "日期限定范围",
   "MinDate": "最小日期",
   "MaxDate": "最大日期",
   "Please select time or variable": "请选择时间或变量",

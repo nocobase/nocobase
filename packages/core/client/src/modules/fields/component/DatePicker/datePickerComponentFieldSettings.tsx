@@ -40,6 +40,12 @@ export const datePickerComponentFieldSettings = new SchemaSettings({
           fieldSchema,
         };
       },
+      useVisible() {
+        const { fieldSchema: columnSchema } = useColumnSchema();
+        const schema = useFieldSchema();
+        const fieldSchema = columnSchema || schema;
+        return !fieldSchema?.['x-read-pretty'];
+      },
     },
     enableLinkSettingsItem,
     openModeSettingsItem,
