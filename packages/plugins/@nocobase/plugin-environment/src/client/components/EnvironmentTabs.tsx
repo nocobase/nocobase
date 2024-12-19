@@ -172,6 +172,20 @@ export function EnvironmentSecrets({ request }) {
     </div>
   );
 }
+/**
+ * Converts a string of key-value pairs into an array of objects with `name` and `value` properties.
+ * @param {string} input - The input string containing key-value pairs, separated by `=` and line breaks.
+ * @returns {Array<{name: string, value: string}>} - The converted array of objects.
+ */
+function parseKeyValuePairs(input) {
+  return input
+    .trim() // 去掉首尾的空白字符
+    .split('\n') // 按行分割
+    .map((line) => {
+      const [name, ...valueParts] = line.split('='); // 按 `=` 分割
+      return { name: name.trim(), value: valueParts.join('=').trim() }; // 去除多余空格
+    });
+}
 
 export function EnvironmentTabs() {
   const api = useAPIClient();
@@ -182,6 +196,27 @@ export function EnvironmentTabs() {
   const secretsRequest = useRequest<any>({
     url: 'environmentSecrets',
   });
+  const handleBulkImport = async (importData) => {
+    // 转换数据为所需格式
+    const arr = Object.entries(importData).map(([type, dataString]) => ({
+      type,
+      data: parseKeyValuePairs(dataString),
+    }));
+
+    // 批量发送请求
+    await Promise.all(
+      arr.map((v) =>
+        api.request({
+          url: {
+            variables: 'environmentVariables:create',
+            secrets: 'environmentSecrets:create',
+          }[v.type],
+          method: 'post',
+          data: v.data,
+        }),
+      ),
+    );
+  };
   return (
     <Card
       tabProps={{
@@ -210,22 +245,32 @@ export function EnvironmentTabs() {
                           <Reset>Cancel</Reset>
                           <Submit
                             onSubmit={async (data) => {
-                              await api.request({
-                                url: {
-                                  variable: 'environmentVariables:create',
-                                  secret: 'environmentSecrets:create',
-                                }[info.key],
-                                method: 'post',
-                                data: {
-                                  ...data,
-                                },
-                              });
-                              if (info.key === 'variable') {
+                              if (info.key === 'bulk') {
+                                await handleBulkImport(data);
                                 variablesRequest.refresh();
-                              } else {
                                 secretsRequest.refresh();
+                                setActiveKey(activeKey || 'variable');
+                              } else {
+                                await api.request({
+                                  url: {
+                                    variable: 'environmentVariables:create',
+                                    secret: 'environmentSecrets:create',
+                                  }[info.key],
+                                  method: 'post',
+                                  data: {
+                                    ...data,
+                                  },
+                                });
+                                if (info.key === 'variable') {
+                                  variablesRequest.refresh();
+                                } else if (info.key === 'secret') {
+                                  secretsRequest.refresh();
+                                } else {
+                                  variablesRequest.refresh();
+                                  secretsRequest.refresh();
+                                }
+                                setActiveKey(info.key);
                               }
-                              setActiveKey(info.key);
                             }}
                           >
                             Submit
