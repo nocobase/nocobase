@@ -8,6 +8,7 @@
  */
 
 import moment from 'moment';
+
 export function filterMatch(model, where) {
   // Create an object that maps operator names to functions
   const operatorFunctions = {
@@ -43,6 +44,9 @@ export function filterMatch(model, where) {
     $in: (value, condition) => condition.includes(value),
     $or: (model, conditions) => Object.values(conditions).some((condition) => filterMatch(model, condition)),
     $and: (model, conditions) => Object.values(conditions).every((condition) => filterMatch(model, condition)),
+
+    // boolean
+    $isFalsy: (value) => !value,
   };
 
   for (const [key, value] of Object.entries(where)) {

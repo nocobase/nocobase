@@ -143,7 +143,7 @@ export default class PluginUsersServer extends Plugin {
       };
     });
 
-    const loggedInActions = ['updateProfile'];
+    const loggedInActions = ['updateProfile', 'updateLang'];
     loggedInActions.forEach((action) => this.app.acl.allow('users', action, 'loggedIn'));
 
     this.app.acl.registerSnippet({
@@ -154,16 +154,10 @@ export default class PluginUsersServer extends Plugin {
     const getMetaDataForUpdateProfileAction = async (ctx: any) => {
       return {
         request: {
-          params: ctx.request.params,
-          query: ctx.request.query,
           body: {
             ...ctx.request.body,
             password: '******',
           },
-          path: ctx.request.path,
-        },
-        response: {
-          body: ctx.body,
         },
       };
     };

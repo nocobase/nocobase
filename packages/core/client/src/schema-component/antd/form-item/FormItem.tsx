@@ -80,7 +80,6 @@ export const FormItem: any = withDynamicSchemaProps(
         [formItemLabelCss]: showTitle === false,
       });
     }, [showTitle]);
-
     return (
       <CollectionFieldProvider allowNull={true}>
         <BlockItem
@@ -88,7 +87,9 @@ export const FormItem: any = withDynamicSchemaProps(
             'nb-form-item',
             css`
               .ant-formily-item-layout-horizontal .ant-formily-item-control {
-                max-width: ${showTitle === false ? '100% !important' : null};
+                max-width: ${showTitle === false || schema['x-component'] !== 'CollectionField'
+                  ? '100% !important'
+                  : null};
               }
             `,
           )}

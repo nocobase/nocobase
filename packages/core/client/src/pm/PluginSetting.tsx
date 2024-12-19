@@ -10,6 +10,7 @@
 import { PageHeader } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
 import { Layout, Menu, Result } from 'antd';
+import _ from 'lodash';
 import React, { createContext, useCallback, useEffect, useMemo } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ADMIN_SETTINGS_PATH, PluginSettingsPageType, useApp } from '../application';
@@ -130,8 +131,12 @@ export const AdminSettingsLayout = () => {
   }, [currentSetting, settings]);
 
   useEffect(() => {
-    setDocumentTitle(currentTopLevelSetting?.title);
-  }, [currentTopLevelSetting?.title, setDocumentTitle]);
+    if (_.isString(currentTopLevelSetting?.title)) {
+      setDocumentTitle(currentTopLevelSetting?.title);
+    } else {
+      setDocumentTitle(currentTopLevelSetting?.topLevelName);
+    }
+  }, [currentTopLevelSetting?.title, currentTopLevelSetting?.topLevelName, setDocumentTitle]);
 
   const sidebarMenus = useMemo(() => {
     return getMenuItems(settings.filter((v) => v.isTopLevel !== false).map((item) => ({ ...item, children: null })));

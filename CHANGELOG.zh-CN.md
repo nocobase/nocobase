@@ -5,6 +5,85 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.4.13](https://github.com/nocobase/nocobase/compare/v1.4.12...v1.4.13) - 2024-12-19
+
+### 🚀 优化
+
+- **[数据表: SQL]** 禁止在 SQL 中使用危险关键字和函数。 ([#5913](https://github.com/nocobase/nocobase/pull/5913)) by @2013xile
+
+- **[主题编辑器]** 优化用户资料编辑和密码修改的 API 校验逻辑 ([#5912](https://github.com/nocobase/nocobase/pull/5912)) by @2013xile
+
+### 🐛 修复
+
+- **[数据源：主数据库]** 修复外键加载问题 ([#5903](https://github.com/nocobase/nocobase/pull/5903)) by @chareice
+
+- **[数据表: SQL]** 修复 SQL 数据表更新后字段消失的问题。 ([#5909](https://github.com/nocobase/nocobase/pull/5909)) by @chareice
+
+- **[备份管理器]** 修复 Windows 平台备份还原失败的问题 by @gchust
+
+## [v1.4.11](https://github.com/nocobase/nocobase/compare/v1.4.10...v1.4.11) - 2024-12-18
+
+### 🚀 优化
+
+- **[client]** 使更多的组件支持“省略超出长度的内容” 配置项 ([#5888](https://github.com/nocobase/nocobase/pull/5888)) by @zhangzhonghe
+
+- **[database]** 关系 repository 支持 firstOrCreate & updateOrCreate ([#5894](https://github.com/nocobase/nocobase/pull/5894)) by @chareice
+
+### 🐛 修复
+
+- **[client]**
+  - 修复 外部数据源区块的复制操作请求模版没有 x-data-source 参数 ([#5882](https://github.com/nocobase/nocobase/pull/5882)) by @katherinehhh
+
+  - 修复 插件中的表格出现横向滚动条 ([#5899](https://github.com/nocobase/nocobase/pull/5899)) by @katherinehhh
+
+  - 修复关系字段的下拉选项中，有时会出现多余的 “N/A” 选项的问题 ([#5878](https://github.com/nocobase/nocobase/pull/5878)) by @zhangzhonghe
+
+  - 修复 PG 视图创建错误，解决跨 schema 选择问题 ([#5881](https://github.com/nocobase/nocobase/pull/5881)) by @katherinehhh
+
+  - 修复：表单区块分组在水平布局下样式异常 ([#5884](https://github.com/nocobase/nocobase/pull/5884)) by @katherinehhh
+
+- **[用户]**
+  - 修复用户管理中添加或修改用户后表单没有被重置的问题 。 ([#5875](https://github.com/nocobase/nocobase/pull/5875)) by @2013xile
+
+  - 修复用户管理页面翻页或修改分页数量后，编辑用户资料并提交，分页设置会被重置的问题。 ([#5893](https://github.com/nocobase/nocobase/pull/5893)) by @2013xile
+
+- **[数据源管理]** 修复外部数据源 Collection 的筛选问题 ([#5890](https://github.com/nocobase/nocobase/pull/5890)) by @chareice
+
+- **[公开表单]** 修复全局切换主题导致公开表单预览页主题被影响的问题 ([#5883](https://github.com/nocobase/nocobase/pull/5883)) by @katherinehhh
+
+## [v1.4.10](https://github.com/nocobase/nocobase/compare/v1.4.9...v1.4.10) - 2024-12-12
+
+### 🎉 新特性
+
+- **[操作：自定义请求]** 支持在自定义请求按钮中使用“当前表单”变量 ([#5871](https://github.com/nocobase/nocobase/pull/5871)) by @zhangzhonghe
+
+### 🚀 优化
+
+- **[数据可视化]** 支持在图表的查询配置中使用外键 ([#5869](https://github.com/nocobase/nocobase/pull/5869)) by @2013xile
+
+### 🐛 修复
+
+- **[client]** 修复关联文件表，使用数据选择器时在配置模式下显示文件表区块，非配置模式下未显示的问题 ([#5874](https://github.com/nocobase/nocobase/pull/5874)) by @katherinehhh
+
+- **[权限控制]** 修复配置权限之后复制记录相关问题 ([#5839](https://github.com/nocobase/nocobase/pull/5839)) by @chareice
+
+- **[工作流]** 修复自动删除执行记录时事务超时的问题 ([#5870](https://github.com/nocobase/nocobase/pull/5870)) by @mytharcher
+
+## [v1.4.9](https://github.com/nocobase/nocobase/compare/v1.4.8...v1.4.9) - 2024-12-12
+
+### 🐛 修复
+
+- **[sdk]** 移除默认 locale ([#5867](https://github.com/nocobase/nocobase/pull/5867)) by @chenos
+
+- **[client]**
+  - 修复数据范围中，选择嵌套的关系字段变量，变量值为空的问题 ([#5866](https://github.com/nocobase/nocobase/pull/5866)) by @zhangzhonghe
+
+  - 修复 列数少时右固定列滚动条出现 ([#5864](https://github.com/nocobase/nocobase/pull/5864)) by @katherinehhh
+
+  - 修复筛选组件样式错位问题 ([#5851](https://github.com/nocobase/nocobase/pull/5851)) by @mytharcher
+
+- **[备份管理器]** 修复自定义域名的子应用下载备份文件失败的问题 by @gchust
+
 ## [v1.4.8](https://github.com/nocobase/nocobase/compare/v1.4.7...v1.4.8) - 2024-12-10
 
 ### 🐛 修复
