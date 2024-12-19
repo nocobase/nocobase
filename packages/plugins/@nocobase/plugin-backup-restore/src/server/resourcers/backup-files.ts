@@ -16,6 +16,7 @@ import path from 'path';
 import fsPromises from 'fs/promises';
 import { Restorer } from '../restorer';
 import { DEFAULT_PAGE, DEFAULT_PER_PAGE } from '@nocobase/actions';
+import { DUMPED_EXTENSION } from '../utils';
 
 export default {
   name: 'backupFiles',
@@ -137,7 +138,7 @@ export default {
 
       const fileState = await Dumper.getFileStatus(filePath);
 
-      if (fileState.status !== 'ok') {
+      if (!filterByTk.endsWith(`.${DUMPED_EXTENSION}`) || fileState.status !== 'ok') {
         throw new Error(`Backup file ${filterByTk} not found`);
       }
 

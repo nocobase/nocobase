@@ -19,6 +19,7 @@ import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { compatibleDataId } from '../../../schema-settings/DataTemplates/FormDataTemplates';
 import { useToken } from '../__builtins__';
 import { RemoteSelect } from '../remote-select';
+import { useDataSourceHeaders, useDataSourceKey } from '../../../data-source';
 
 export interface ITemplate {
   config?: {
@@ -101,11 +102,13 @@ export const Templates = React.memo(({ style = {}, form }: { style?: React.CSSPr
   const [targetTemplateData, setTemplateData] = useState(null);
   const api = useAPIClient();
   const { t } = useTranslation();
+  const dataSource = useDataSourceKey();
+  const headers = useDataSourceHeaders(dataSource);
   useEffect(() => {
     if (enabled && defaultTemplate && form) {
       form.__template = true;
       if (defaultTemplate.key === 'duplicate') {
-        handleTemplateDataChange(defaultTemplate.dataId, defaultTemplate);
+        handleTemplateDataChange(defaultTemplate.dataId, defaultTemplate, headers);
       }
     }
   }, []);
@@ -139,10 +142,10 @@ export const Templates = React.memo(({ style = {}, form }: { style?: React.CSSPr
     form?.reset();
   }, []);
 
-  const handleTemplateDataChange: any = useCallback(async (value, option) => {
+  const handleTemplateDataChange: any = useCallback(async (value, option, headers) => {
     const template = { ...option, dataId: value };
     setTemplateData(option);
-    fetchTemplateData(api, template, t)
+    fetchTemplateData(api, template, headers)
       .then((data) => {
         if (form && data) {
           // 切换之前先把之前的数据清空
@@ -194,7 +197,7 @@ export const Templates = React.memo(({ style = {}, form }: { style?: React.CSSPr
                 filter: template?.dataScope,
               },
             }}
-            onChange={(value) => handleTemplateDataChange(value?.id, { ...value, ...template })}
+            onChange={(value) => handleTemplateDataChange(value?.id, { ...value, ...template }, headers)}
             targetField={getCollectionJoinField(`${template?.collection}.${template.titleField}`)}
           />
         )}
@@ -213,12 +216,16 @@ function findDataTemplates(fieldSchema): ITemplate {
   return {} as ITemplate;
 }
 
-export async function fetchTemplateData(api, template: { collection: string; dataId: number; fields: string[] }, t) {
+export async function fetchTemplateData(
+  api,
+  template: { collection: string; dataId: number; fields: string[] },
+  headers?,
+) {
   if (template.fields.length === 0 || !template.dataId) {
     return;
   }
   return api
-    .resource(template.collection)
+    .resource(template.collection, undefined, headers)
     .get({
       filterByTk: template.dataId,
       fields: template.fields,
