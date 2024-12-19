@@ -173,14 +173,13 @@ export function EnvironmentSecrets({ request }) {
   );
 }
 /**
- * Converts a string of key-value pairs into an array of objects with `name` and `value` properties.
  * @param {string} input - The input string containing key-value pairs, separated by `=` and line breaks.
  * @returns {Array<{name: string, value: string}>} - The converted array of objects.
  */
 function parseKeyValuePairs(input) {
   return input
-    .trim() // 去掉首尾的空白字符
-    .split('\n') // 按行分割
+    .trim()
+    .split('\n')
     .map((line) => {
       const [name, ...valueParts] = line.split('='); // 按 `=` 分割
       return { name: name.trim(), value: valueParts.join('=').trim() }; // 去除多余空格
@@ -197,13 +196,11 @@ export function EnvironmentTabs() {
     url: 'environmentSecrets',
   });
   const handleBulkImport = async (importData) => {
-    // 转换数据为所需格式
     const arr = Object.entries(importData).map(([type, dataString]) => ({
       type,
       data: parseKeyValuePairs(dataString),
     }));
 
-    // 批量发送请求
     await Promise.all(
       arr.map((v) =>
         api.request({
