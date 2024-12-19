@@ -56,6 +56,7 @@ export * from './schema-settings';
 export * from './schema-templates';
 export * from './style';
 export * from './system-settings';
+export * from './security-settings';
 export * from './testUtils';
 export * from './user';
 export * from './variables';

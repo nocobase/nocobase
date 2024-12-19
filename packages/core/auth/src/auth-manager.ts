@@ -12,6 +12,8 @@ import { Registry } from '@nocobase/utils';
 import { Auth, AuthExtend } from './auth';
 import { JwtOptions, JwtService } from './base/jwt-service';
 import { ITokenBlacklistService } from './base/token-blacklist-service';
+import { ITokenControlService } from './base/token-manage-service';
+import { DataSource } from '@nocobase/data-source-manager';
 
 export interface Authenticator {
   authType: string;
@@ -135,6 +137,40 @@ export class AuthManager {
           ctx.auth.user = user;
         }
       }
+      await next();
+    };
+  }
+  authMiddleware() {
+    const self = this;
+
+    return async function AuthDataSourceMiddleware(ctx: Context & { auth: Auth; dataSource: DataSource }, next: Next) {
+      const { resourceName: rawResourceName, actionName } = ctx.action;
+
+      let resourceName = rawResourceName;
+      if (rawResourceName.includes('.')) {
+        resourceName = rawResourceName.split('.').pop();
+      }
+      const isPublicAction = ctx.dataSource.acl.isPublicAction(resourceName, actionName);
+      if (isPublicAction) {
+        return next();
+      }
+      const token = ctx.getBearerToken();
+      let tokenStatus: 'valid' | 'expired' | 'other_error' | null = null;
+      try {
+        await ctx.app.authManager.jwt.decode(token);
+        tokenStatus = 'valid';
+      } catch (error) {
+        if (error.name === 'TokenExpiredError') tokenStatus = 'expired';
+        else tokenStatus = 'other_error';
+      }
+
+      if (tokenStatus === 'valid') return next();
+      else if (tokenStatus === 'expired') {
+        /*
+        token如果过期，
+        */
+      }
+
       await next();
     };
   }

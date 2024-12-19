@@ -352,5 +352,6 @@ export class NocoBaseBuildInPlugin extends Plugin {
     await this.app.pm.add(RemoteDocumentTitlePlugin, { name: 'remote-document-title' });
     await this.app.pm.add(PMPlugin, { name: 'builtin-pm' });
     await this.app.pm.add(CollectionPlugin, { name: 'builtin-collection' });
+    // await this.app.pm.add(Plugin, { name: 'builtin-plugin' });
   }
 }

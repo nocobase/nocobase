@@ -8,7 +8,7 @@
  */
 
 import { Cache } from '@nocobase/cache';
-import { Model } from '@nocobase/database';
+import Database, { Model } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { namespace, presetAuthType, presetAuthenticator } from '../preset';
 import authActions from './actions/auth';
@@ -18,7 +18,8 @@ import { AuthModel } from './model/authenticator';
 import { Storer } from './storer';
 import { TokenBlacklistService } from './token-blacklist';
 import { tval } from '@nocobase/utils';
-
+import { createAccessCtrlConfigRecord, saveAccessCtrlConfigToCache } from './collections/access-control-config';
+import { secAccessCtrlConfigCollName } from '../constants';
 export class PluginAuthServer extends Plugin {
   cache: Cache;
 
@@ -200,6 +201,11 @@ export class PluginAuthServer extends Plugin {
       },
       'auth:signOut',
     ]);
+    this.app.acl.registerSnippet({
+      name: `pm.security-settings.access`,
+      actions: [`${secAccessCtrlConfigCollName}:*`],
+    });
+    saveAccessCtrlConfigToCache(this.app, this.db, this.app.cache);
   }
 
   async install(options?: InstallOptions) {
@@ -222,6 +228,7 @@ export class PluginAuthServer extends Plugin {
         },
       },
     });
+    createAccessCtrlConfigRecord(this.db);
   }
   async remove() {}
 }

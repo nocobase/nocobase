@@ -9,7 +9,8 @@
 
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { ITokenBlacklistService } from './token-blacklist-service';
-
+import { ITokenControlService } from './token-manage-service';
+import { randomUUID } from 'crypto';
 export interface JwtOptions {
   secret: string;
   expiresIn?: string;
@@ -31,6 +32,7 @@ export class JwtService {
   }
 
   public blacklist: ITokenBlacklistService;
+  public controller: ITokenControlService;
 
   private expiresIn() {
     return this.options.expiresIn;
@@ -42,7 +44,9 @@ export class JwtService {
 
   /* istanbul ignore next -- @preserve */
   sign(payload: SignPayload, options?: SignOptions) {
-    const opt = { expiresIn: this.expiresIn(), ...options };
+    const expiresIn = this.controller.config.tokenExpirationTime || this.expiresIn();
+    const jti = randomUUID();
+    const opt = { ...options, expiresIn, jti };
     if (opt.expiresIn === 'never') {
       opt.expiresIn = '1000y';
     }

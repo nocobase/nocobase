@@ -69,8 +69,9 @@ export class BaseAuth extends Auth {
       return null;
     }
     try {
-      const { userId, roleName, iat, temp } = await this.jwt.decode(token);
-
+      const { userId, roleName, iat, temp, jti } = await this.jwt.decode(token);
+      if (jti) this.ctx.tokenId = jti;
+      this.jwt.controller.setTokenActiveInfo(jti, { lastActiveTime: Date.now() });
       if (roleName) {
         this.ctx.headers['x-role'] = roleName;
       }
@@ -108,9 +109,11 @@ export class BaseAuth extends Auth {
     if (!user) {
       this.ctx.throw(401, 'Unauthorized');
     }
+    // const config = await this.ctx.cache.get<SecurityAccessConfig>(secAccessCtrlConfigCacheKey);
     const token = this.jwt.sign({
       userId: user.id,
       temp: true,
+      // expiresIn: config.tokenExpirationTime,
     });
     return {
       user,
