@@ -26,6 +26,13 @@ export default {
   //   await next();
   // },
   changePassword: async (ctx: Context, next: Next) => {
+    const systemSettings = ctx.db.getRepository('systemSettings');
+    const settings = await systemSettings.findOne();
+    const enableChangePassword = settings.get('enableChangePassword');
+    if (enableChangePassword === false) {
+      ctx.throw(403, ctx.t('Password is not allowed to be changed', { ns: namespace }));
+    }
+
     const {
       values: { oldPassword, newPassword, confirmPassword },
     } = ctx.action.params;

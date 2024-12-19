@@ -149,7 +149,7 @@ export default class PluginUsersServer extends Plugin {
       };
     });
 
-    const loggedInActions = ['updateProfile'];
+    const loggedInActions = ['updateProfile', 'updateLang'];
     loggedInActions.forEach((action) => this.app.acl.allow('users', action, 'loggedIn'));
 
     this.app.acl.registerSnippet({
