@@ -29,6 +29,7 @@
     "@nocobase/plugin-data-source-main": "1.6.0-alpha.6",
     "@nocobase/plugin-data-source-manager": "1.6.0-alpha.6",
     "@nocobase/plugin-data-visualization": "1.6.0-alpha.6",
+    "@nocobase/plugin-environment": "1.6.0-alpha.6",
     "@nocobase/plugin-error-handler": "1.6.0-alpha.6",
     "@nocobase/plugin-field-china-region": "1.6.0-alpha.6",
     "@nocobase/plugin-field-formula": "1.6.0-alpha.6",

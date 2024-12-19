@@ -87,7 +87,7 @@ export function AdminPublicFormPage() {
                     password: {
                       type: 'string',
                       'x-decorator': 'FormItem',
-                      'x-component': 'Input.Password',
+                      'x-component': 'TextAreaWithGlobalScope',
                     },
                   },
                 }}

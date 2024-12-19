@@ -27,14 +27,14 @@ export default {
           title: `{{t("Region", { ns: "${NAMESPACE}" })}}`,
           type: 'string',
           'x-decorator': 'FormItem',
-          'x-component': 'Input',
+          'x-component': 'TextAreaWithGlobalScope',
           required: true,
         },
         SecretId: {
           title: `{{t("SecretId", { ns: "${NAMESPACE}" })}}`,
           type: 'string',
           'x-decorator': 'FormItem',
-          'x-component': 'Input',
+          'x-component': 'TextAreaWithGlobalScope',
           required: true,
         },
         SecretKey: {
@@ -48,14 +48,14 @@ export default {
           title: `{{t("Bucket", { ns: "${NAMESPACE}" })}}`,
           type: 'string',
           'x-decorator': 'FormItem',
-          'x-component': 'Input',
+          'x-component': 'TextAreaWithGlobalScope',
           required: true,
         },
         thumbnailRule: {
           title: 'Thumbnail rule',
           type: 'string',
           'x-decorator': 'FormItem',
-          'x-component': 'Input',
+          'x-component': 'TextAreaWithGlobalScope',
           'x-component-props': {
             placeholder: '?imageMogr2/thumbnail/!50p',
           },

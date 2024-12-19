@@ -62,7 +62,7 @@ export const publicFormsCollection = {
       uiSchema: {
         type: 'string',
         title: "{{t('Password')}}",
-        'x-component': 'Password',
+        'x-component': 'TextAreaWithGlobalScope',
         'x-component-props': {
           autocomplete: 'new-password',
         },

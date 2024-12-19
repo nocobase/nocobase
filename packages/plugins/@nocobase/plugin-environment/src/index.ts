@@ -7,5 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './Variable';
-export { TextAreaWithGlobalScope } from './TextAreaWithGlobalScope';
+export * from './server';
+export { default } from './server';

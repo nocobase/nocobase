@@ -7,5 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './Variable';
-export { TextAreaWithGlobalScope } from './TextAreaWithGlobalScope';
+import React from 'react';
+import { EnvironmentTabs } from './EnvironmentTabs';
+
+export default function EnvironmentPage() {
+  return <EnvironmentTabs />;
+}

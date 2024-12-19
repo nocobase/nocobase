@@ -7,5 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './Variable';
-export { TextAreaWithGlobalScope } from './TextAreaWithGlobalScope';
+import { defineCollection } from '@nocobase/database';
+
+export default defineCollection({
+  name: 'environmentSecrets',
+  fields: [
+    {
+      type: 'string',
+      name: 'name',
+      primaryKey: true,
+      unique: true,
+    },
+    {
+      type: 'text',
+      name: 'value',
+    },
+  ],
+});
