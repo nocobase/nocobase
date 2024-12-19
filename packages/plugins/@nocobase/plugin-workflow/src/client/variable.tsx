@@ -242,7 +242,7 @@ export function useWorkflowVariableOptions(options: UseVariableOptions = {}) {
   const opts = Object.assign(options, { fieldNames });
   const ctx = useContext(VariablesContext);
   const result = [
-    ctx.ctxRef.current['$environment'],
+    ctx.ctxRef.current['$env'],
     useOptions(scopeOptions, opts),
     useOptions(nodesOptions, opts),
     useOptions(triggerOptions, opts),

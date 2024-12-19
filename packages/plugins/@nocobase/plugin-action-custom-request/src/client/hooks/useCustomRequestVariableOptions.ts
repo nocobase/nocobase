@@ -33,7 +33,7 @@ export const useCustomRequestVariableOptions = () => {
   const data = useContext(VariablesContext);
   return useMemo(() => {
     return [
-      data.ctxRef.current['$environment'],
+      data.ctxRef.current['$env'],
       recordData && {
         name: 'currentRecord',
         title: t('Current record', { ns: 'client' }),

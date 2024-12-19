@@ -25,15 +25,15 @@ export const useGetEnvironmentVariables = () => {
 
   if (!loading && !variablesLoading && (variables?.data?.length || secrets?.data?.length)) {
     return {
-      name: '$environment',
+      name: '$env',
       title: 'Environment',
-      value: '$environment',
+      value: '$env',
       label: 'Environment',
       children: [
         variables?.data?.length && {
           title: 'Variables',
-          name: 'variables',
-          value: 'variables',
+          name: 'vars',
+          value: 'vars',
           label: 'Variables',
           children: variables?.data.map((v) => {
             return { title: v.name, name: v.name, value: v.name, label: v.name };
@@ -42,6 +42,8 @@ export const useGetEnvironmentVariables = () => {
         secrets?.data?.length && {
           title: 'Secrets',
           name: 'secrets',
+          value: 'secrets',
+          label: 'Secrets',
           children: secrets?.data.map((v) => {
             return { title: v.name, name: v.name, value: v.name, label: v.name };
           }),

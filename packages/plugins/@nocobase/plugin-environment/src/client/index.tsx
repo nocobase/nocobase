@@ -18,7 +18,7 @@ export class PluginEnvironmentClient extends Plugin {
       icon: 'TableOutlined',
       Component: EnvironmentPage,
     });
-    this.app.addGlobalVar('$environment', useGetEnvironmentVariables);
+    this.app.addGlobalVar('$env', useGetEnvironmentVariables);
   }
 }
 
