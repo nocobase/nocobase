@@ -229,7 +229,7 @@ export default class CollectionTrigger extends Trigger {
       {
         ...options,
         transaction: this.workflow.useDataSourceTransaction(dataSourceName, transaction),
-        stack: ctx.stack,
+        stack: options.stack,
       },
     );
   }
