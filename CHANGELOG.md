@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.4.13](https://github.com/nocobase/nocobase/compare/v1.4.12...v1.4.13) - 2024-12-19
+
+### 🚀 Improvements
+
+- **[Collection: SQL]** Prohibit the use of dangerous keywords and functions in SQL. ([#5913](https://github.com/nocobase/nocobase/pull/5913)) by @2013xile
+
+- **[Theme editor]** Optimize API validation for user profile editing and password updates ([#5912](https://github.com/nocobase/nocobase/pull/5912)) by @2013xile
+
+### 🐛 Bug Fixes
+
+- **[Data source: Main]** Fixed foreign key loading issues ([#5903](https://github.com/nocobase/nocobase/pull/5903)) by @chareice
+
+- **[Collection: SQL]** Fix the issue where fields disappear after updating an SQL Collection. ([#5909](https://github.com/nocobase/nocobase/pull/5909)) by @chareice
+
+- **[Backup manager]** Fixed restore backup is not working on Windows by @gchust
+
 ## [v1.4.11](https://github.com/nocobase/nocobase/compare/v1.4.10...v1.4.11) - 2024-12-18
 
 ### 🚀 Improvements
