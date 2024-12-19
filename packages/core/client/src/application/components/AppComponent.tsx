@@ -32,7 +32,7 @@ export const AppComponent: FC<AppComponentProps> = observer(
     const AppError = app.getComponent('AppError');
     if (app.loading) return app.renderComponent('AppSpin', { app });
     if (!app.maintained && app.maintaining) return app.renderComponent('AppMaintaining', { app });
-    if (app.error?.code && app.error?.code !== 'APP_COMMANDING') {
+    if (app.error?.code && !(app.maintained && app.maintaining)) {
       return <AppError app={app} error={app.error} />;
     }
     return (
