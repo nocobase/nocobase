@@ -23,6 +23,7 @@
   "Filter": "フィルター",
   "Sort": "ソート",
   "Limit": "制限",
+  "Offset": "スキップする件数",
   "Enable cache": "キャッシュを有効化",
   "TTL (second)": "TTL（秒）",
   "Field": "フィールド",
