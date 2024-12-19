@@ -193,7 +193,10 @@ export function EnvironmentSecrets({ request }) {
               <Submit
                 onSubmit={async (data) => {
                   await api.request({
-                    url: `environmentSecrets:update?filter={name:${initialValues.name}}`,
+                    url: `environmentSecrets:update?filter=${JSON.stringify({
+                      id: initialValues.id,
+                      name: initialValues.name,
+                    })}`,
                     method: 'post',
                     data: {
                       ...data,
