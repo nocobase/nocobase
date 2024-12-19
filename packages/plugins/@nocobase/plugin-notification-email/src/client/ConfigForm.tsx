@@ -47,7 +47,7 @@ export const ChannelConfigForm = () => {
                         type: 'string',
                         title: '{{t("Host")}}',
                         description: '{{t("SMTP server host")}}',
-                        'x-component': 'Input',
+                        'x-component': 'TextAreaWithGlobalScope',
                         'x-component-props': {
                           placeholder: 'smtp.example.com',
                         },
@@ -114,7 +114,7 @@ export const ChannelConfigForm = () => {
                         'x-decorator': 'FormItem',
                         type: 'boolean',
                         title: '{{t("Account")}}',
-                        'x-component': 'Input',
+                        'x-component': 'TextAreaWithGlobalScope',
                         'x-component-props': {
                           placeholder: 'example@domain.com',
                         },
@@ -131,7 +131,7 @@ export const ChannelConfigForm = () => {
                         'x-decorator': 'FormItem',
                         type: 'boolean',
                         title: '{{t("Password")}}',
-                        'x-component': 'Password',
+                        'x-component': 'TextAreaWithGlobalScope',
                         required: true,
                       },
                     },
@@ -156,7 +156,7 @@ export const ChannelConfigForm = () => {
                         title: `{{t("From")}}`,
                         description: `{{t("The email address that will be used as the sender")}}`,
                         'x-decorator': 'FormItem',
-                        'x-component': 'Input',
+                        'x-component': 'TextAreaWithGlobalScope',
                         'x-component-props': {
                           // useTypedConstant: ['string'],
                           placeholder: `noreply <example@domain.com>`,
