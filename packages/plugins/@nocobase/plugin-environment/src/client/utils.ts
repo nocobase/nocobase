@@ -27,19 +27,23 @@ export const useGetEnvironmentVariables = () => {
     return {
       name: '$environment',
       title: 'Environment',
+      value: '$environment',
+      label: 'Environment',
       children: [
         variables?.data?.length && {
           title: 'Variables',
           name: 'variables',
+          value: 'variables',
+          label: 'Variables',
           children: variables?.data.map((v) => {
-            return { title: v.name, name: v.name };
+            return { title: v.name, name: v.name, value: v.name, label: v.name };
           }),
         },
         secrets?.data?.length && {
           title: 'Secrets',
           name: 'secrets',
           children: secrets?.data.map((v) => {
-            return { title: v.name, name: v.name };
+            return { title: v.name, name: v.name, value: v.name, label: v.name };
           }),
         },
       ].filter(Boolean),
