@@ -15,11 +15,11 @@ export class Environment {
     secrets: {},
   };
 
-  addVariable(key: string, value: string) {
+  setVariable(key: string, value: string) {
     this.data.vars[key] = value;
   }
 
-  addSecret(key: string, value: string) {
+  setSecret(key: string, value: string) {
     this.data.secrets[key] = value;
   }
 

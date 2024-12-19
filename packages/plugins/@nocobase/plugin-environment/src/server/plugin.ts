@@ -14,7 +14,44 @@ export class PluginEnvironmentsServer extends Plugin {
 
   async beforeLoad() {}
 
-  async load() {}
+  async load() {
+    this.onEnvironmentSaved();
+    await this.loadVariables();
+    await this.loadSecrets();
+  }
+
+  onEnvironmentSaved() {
+    this.db.on('environmentVariables.afterSave', async (model) => {
+      this.app.environment.setVariable(model.name, model.value);
+    });
+    this.db.on('environmentSecrets.afterSave', async (model) => {
+      this.app.environment.setSecret(model.name, model.value);
+    });
+  }
+
+  async loadVariables() {
+    const repository = this.db.getRepository('environmentVariables');
+    const r = await repository.collection.existsInDb();
+    if (!r) {
+      return;
+    }
+    const items = await repository.find();
+    for (const item of items) {
+      this.app.environment.setVariable(item.name, item.value);
+    }
+  }
+
+  async loadSecrets() {
+    const repository = this.db.getRepository('environmentSecrets');
+    const r = await repository.collection.existsInDb();
+    if (!r) {
+      return;
+    }
+    const items = await repository.find();
+    for (const item of items) {
+      this.app.environment.setSecret(item.name, item.value);
+    }
+  }
 
   async install() {}
 
