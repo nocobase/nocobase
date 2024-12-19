@@ -3,6 +3,7 @@
   "File size cannot exceed 10M": "文件大小不能超过10M",
   "Please upload the file of Excel": "请上传Excel的文件",
   "Import Data": "导入数据",
+  "Import": "导入",
   "Start import": "开始导入",
   "Import explain": "说明",
   "Download template": "下载模板",
@@ -37,5 +38,6 @@
   "Headers not found. Expected headers: {{headers}}": "未找到表头。预期的表头：{{headers}}",
   "Header mismatch at column {{column}}: expected \"{{expected}}\", but got \"{{actual}}\"": "第 {{column}} 列的表头不匹配：预期 \"{{expected}}\"，实际是 \"{{actual}}\"",
   "No data to import": "没有数据可导入",
-  "Failed to import row {{row}}, {{message}}, row data: {{data}}": "导入第 {{row}} 行失败，{{message}}，行数据：{{data}}"
+  "Failed to import row {{row}}, {{message}}, row data: {{data}}": "导入第 {{row}} 行失败，{{message}}，行数据：{{data}}",
+  "import-error": "导入第 {{rowIndex}} 行失败，行数据：{{rowData}}, 原因：{{causeMessage}}"
 }

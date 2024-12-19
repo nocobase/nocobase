@@ -10,7 +10,7 @@
 import { Plugin } from '@nocobase/server';
 import { downloadXlsxTemplate, importXlsx } from './actions';
 import { importMiddleware } from './middleware';
-import { ImportValidationError } from './errors';
+import { ImportError, ImportValidationError } from './errors';
 export class PluginActionImportServer extends Plugin {
   beforeLoad() {
     this.app.on('afterInstall', async () => {
@@ -68,6 +68,28 @@ export class PluginActionImportServer extends Plugin {
               message: ctx.i18n.t(err.code, {
                 ...err.params,
                 ns: 'action-import',
+              }),
+            },
+          ],
+        };
+      },
+    );
+
+    errorHandlerPlugin.errorHandler.register(
+      (err) => err instanceof ImportError,
+      (err: ImportError, ctx) => {
+        ctx.status = 400;
+        const causeError = err.cause;
+        errorHandlerPlugin.errorHandler.renderError(causeError, ctx);
+
+        ctx.body = {
+          errors: [
+            {
+              message: ctx.i18n.t('import-error', {
+                ns: 'action-import',
+                rowData: err.rowData,
+                rowIndex: err.rowIndex,
+                causeMessage: ctx.body.errors[0].message,
               }),
             },
           ],

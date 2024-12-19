@@ -37,5 +37,6 @@
   "Headers not found. Expected headers: {{headers}}": "Headers not found. Expected headers: {{headers}}",
   "Header mismatch at column {{column}}: expected \"{{expected}}\", but got \"{{actual}}\"": "Header mismatch at column {{column}}: expected \"{{expected}}\", but got \"{{actual}}\"",
   "No data to import": "No data to import",
-  "Failed to import row {{row}}, {{message}}, row data: {{data}}": "Failed to import row {{row}}, {{message}}, row data: {{data}}"
+  "Failed to import row {{row}}, {{message}}, row data: {{data}}": "Failed to import row {{row}}, {{message}}, row data: {{data}}",
+  "import-error": "Failed to import row {{rowIndex}}, row data: {{rowData}}, cause: {{causeMessage}}"
 }

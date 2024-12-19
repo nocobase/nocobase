@@ -13,7 +13,7 @@ import { ICollection, ICollectionManager, IRelationField } from '@nocobase/data-
 import { Collection as DBCollection, Database } from '@nocobase/database';
 import { Transaction } from 'sequelize';
 import EventEmitter from 'events';
-import { ImportValidationError } from '../errors';
+import { ImportValidationError, ImportError } from '../errors';
 
 export type ImportColumn = {
   dataIndex: Array<string>;
@@ -227,7 +227,13 @@ export class XlsxImporter extends EventEmitter {
 
           await new Promise((resolve) => setTimeout(resolve, 5));
         } catch (error) {
-          throw error;
+          throw new ImportError(`Import failed at row ${handingRowIndex}`, {
+            rowIndex: handingRowIndex,
+            rowData: Object.entries(rowValues)
+              .map(([key, value]) => `${key}: ${value}`)
+              .join(', '),
+            cause: error,
+          });
         }
       }
 
