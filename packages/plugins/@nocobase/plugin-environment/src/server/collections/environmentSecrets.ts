@@ -16,6 +16,7 @@ export default defineCollection({
       type: 'string',
       name: 'name',
       primaryKey: true,
+      unique: true,
     },
     {
       type: 'text',

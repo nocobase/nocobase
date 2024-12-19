@@ -87,13 +87,49 @@ export function EnvironmentVariables({ request }) {
       content: t('Are you sure you want to delete it?'),
       async onOk() {
         await resource.destroy({
-          filter: { name: data.name },
+          filter: { name: data.name, id: data.id },
         });
         run();
       },
     });
   };
 
+  const handleEdit = (initialValues) => {
+    FormDrawer(t('Edit'), () => {
+      return (
+        <FormLayout layout={'vertical'}>
+          <SchemaField schema={schema} />
+          <FormDrawer.Footer>
+            <FormButtonGroup align="right">
+              <Reset>{t('Cancel')}</Reset>
+              <Submit
+                onSubmit={async (data) => {
+                  await api.request({
+                    url: `environmentVariables:update?filter=${JSON.stringify({
+                      id: initialValues.id,
+                      name: initialValues.name,
+                    })}`,
+                    method: 'post',
+                    data: {
+                      ...data,
+                    },
+                  });
+                  request.refresh();
+                }}
+              >
+                {t('Submit')}
+              </Submit>
+            </FormButtonGroup>
+          </FormDrawer.Footer>
+        </FormLayout>
+      );
+    })
+      .open({
+        initialValues: { ...initialValues },
+      })
+      .then(console.log)
+      .catch(console.log);
+  };
   return (
     <div>
       <Table
@@ -115,8 +151,8 @@ export function EnvironmentVariables({ request }) {
             width: 200,
             render: (record) => (
               <Space>
-                <a>Edit</a>
-                <a onClick={() => handleDelete(record)}>Delete</a>
+                <a onClick={() => handleEdit(record)}>{t('Edit')}</a>
+                <a onClick={() => handleDelete(record)}>{t('Delete')}</a>
               </Space>
             ),
           },
@@ -139,11 +175,45 @@ export function EnvironmentSecrets({ request }) {
       content: t('Are you sure you want to delete it?'),
       async onOk() {
         await resource.destroy({
-          filter: { name: data.name },
+          filter: { name: data.name, id: data.id },
         });
         run();
       },
     });
+  };
+
+  const handleEdit = (initialValues) => {
+    FormDrawer(t('Edit'), () => {
+      return (
+        <FormLayout layout={'vertical'}>
+          <SchemaField schema={schema} />
+          <FormDrawer.Footer>
+            <FormButtonGroup align="right">
+              <Reset>{t('Cancel')}</Reset>
+              <Submit
+                onSubmit={async (data) => {
+                  await api.request({
+                    url: `environmentSecrets:update?filter={name:${initialValues.name}}`,
+                    method: 'post',
+                    data: {
+                      ...data,
+                    },
+                  });
+                  request.refresh();
+                }}
+              >
+                {t('Submit')}
+              </Submit>
+            </FormButtonGroup>
+          </FormDrawer.Footer>
+        </FormLayout>
+      );
+    })
+      .open({
+        initialValues: { ...initialValues },
+      })
+      .then(console.log)
+      .catch(console.log);
   };
   return (
     <div>
@@ -162,7 +232,7 @@ export function EnvironmentSecrets({ request }) {
             width: 200,
             render: (record) => (
               <Space>
-                <a>{t('Edit')}</a>
+                <a onClick={() => handleEdit(record)}>{t('Edit')}</a>
                 <a onClick={() => handleDelete(record)}>{t('Delete')}</a>
               </Space>
             ),
@@ -188,6 +258,7 @@ function parseKeyValuePairs(input) {
 
 export function EnvironmentTabs() {
   const api = useAPIClient();
+  const { t } = useTranslation();
   const [activeKey, setActiveKey] = useState('variable');
   const variablesRequest = useRequest<any>({
     url: 'environmentVariables',
@@ -304,7 +375,7 @@ export function EnvironmentTabs() {
           }}
         >
           <Button type="primary" icon={<PlusOutlined />}>
-            Add new <DownOutlined />
+            {t('Add new')} <DownOutlined />
           </Button>
         </Dropdown>
       }
