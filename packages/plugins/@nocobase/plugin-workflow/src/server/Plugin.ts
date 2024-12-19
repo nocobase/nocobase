@@ -9,6 +9,7 @@
 
 import path from 'path';
 import { randomUUID } from 'crypto';
+import { EventEmitter } from 'events';
 
 import LRUCache from 'lru-cache';
 
@@ -19,7 +20,7 @@ import { Registry } from '@nocobase/utils';
 import { Logger, LoggerOptions } from '@nocobase/logger';
 import Processor from './Processor';
 import initActions from './actions';
-import { EXECUTION_STATUS } from './constants';
+import { EXECUTION_EVENT, EXECUTION_STATUS } from './constants';
 import initFunctions, { CustomFunction } from './functions';
 import Trigger from './triggers';
 import CollectionTrigger from './triggers/CollectionTrigger';
@@ -47,6 +48,9 @@ export type EventOptions = {
   context?: any;
   deferred?: boolean;
   manually?: boolean;
+  force?: boolean;
+  stack?: Array<ID>;
+  validateCyclicCallback?: Function;
   [key: string]: any;
 } & Transactionable;
 
@@ -57,6 +61,7 @@ export default class PluginWorkflowServer extends Plugin {
   triggers: Registry<Trigger> = new Registry();
   functions: Registry<CustomFunction> = new Registry();
   enabledCache: Map<number, WorkflowModel> = new Map();
+  executionEvent = new EventEmitter();
 
   private ready = false;
   private executing: Promise<void> | null = null;
@@ -371,7 +376,7 @@ export default class PluginWorkflowServer extends Plugin {
       logger.debug(`ignored event data:`, context);
       return;
     }
-    if (!options.manually && !workflow.enabled) {
+    if (!options.force && !options.manually && !workflow.enabled) {
       logger.warn(`workflow ${workflow.id} is not enabled, event will be ignored`);
       return;
     }
@@ -448,6 +453,31 @@ export default class PluginWorkflowServer extends Plugin {
     return new Processor(execution, { ...options, plugin: this });
   }
 
+  private async validateCyclicCall(workflow: WorkflowModel, context: any, options: EventOptions) {
+    const { stack } = options;
+    let valid = true;
+    if (stack?.length && stack.length > 0) {
+      const existed = await workflow.countExecutions({
+        where: {
+          id: stack,
+        },
+        transaction: options.transaction,
+      });
+
+      if (existed) {
+        this.getLogger(workflow.id).warn(
+          `workflow ${workflow.id} has already been triggered in stacks executions (${stack}), and newly triggering will be skipped.`,
+        );
+
+        try {
+          options.validateCyclicCallback?.(workflow, context, options);
+        } finally {
+          valid = false;
+        }
+      }
+    }
+    return valid;
+  }
   private async createExecution(
     workflow: WorkflowModel,
     context,
@@ -457,8 +487,9 @@ export default class PluginWorkflowServer extends Plugin {
     const transaction = await this.useDataSourceTransaction('main', options.transaction, true);
     const sameTransaction = options.transaction === transaction;
     const trigger = this.triggers.get(workflow.type);
+    const cycleCallValidate = await this.validateCyclicCall(workflow, context, { ...options, transaction });
     const valid = await trigger.validateEvent(workflow, context, { ...options, transaction });
-    if (!valid) {
+    if (!valid || !cycleCallValidate) {
       if (!sameTransaction) {
         await transaction.commit();
       }
@@ -472,6 +503,7 @@ export default class PluginWorkflowServer extends Plugin {
           context,
           key: workflow.key,
           eventKey: options.eventKey ?? randomUUID(),
+          stack: options.stack,
           status: deferred ? EXECUTION_STATUS.STARTED : EXECUTION_STATUS.QUEUEING,
         },
         { transaction },
@@ -527,8 +559,10 @@ export default class PluginWorkflowServer extends Plugin {
     const logger = this.getLogger(event[0].id);
     logger.info(`preparing execution for event`);
 
+    const executionEvent = this.executionEvent;
     try {
       const execution = await this.createExecution(...event);
+      executionEvent.emit(EXECUTION_EVENT.AFTER_CREATE, execution);
       // NOTE: cache first execution for most cases
       if (execution?.status === EXECUTION_STATUS.QUEUEING && !this.executing && !this.pending.length) {
         this.pending.push([execution]);
@@ -624,7 +658,7 @@ export default class PluginWorkflowServer extends Plugin {
     return processor;
   }
 
-  async execute(workflow: WorkflowModel, context: Context, options: EventOptions = {}) {
+  async execute(workflow: WorkflowModel, values, options: EventOptions = {}) {
     const trigger = this.triggers.get(workflow.type);
     if (!trigger) {
       throw new Error(`trigger type "${workflow.type}" of workflow ${workflow.id} is not registered`);
@@ -632,7 +666,7 @@ export default class PluginWorkflowServer extends Plugin {
     if (!trigger.execute) {
       throw new Error(`"execute" method of trigger ${workflow.type} is not implemented`);
     }
-    return trigger.execute(workflow, context, options);
+    return trigger.execute(workflow, values, options);
   }
 
   /**
