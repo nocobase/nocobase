@@ -8,9 +8,10 @@
  */
 
 import { lazy, Plugin } from '@nocobase/client';
+import { EnvironmentVariablesAndSecretsProvider } from './EnvironmentVariablesAndSecretsProvider';
 const EnvironmentPage = lazy(() => import('./components/EnvironmentPage'));
-
 import { useGetEnvironmentVariables } from './utils';
+
 export class PluginEnvironmentClient extends Plugin {
   async load() {
     this.app.pluginSettingsManager.add('environment', {
@@ -19,6 +20,7 @@ export class PluginEnvironmentClient extends Plugin {
       Component: EnvironmentPage,
     });
     this.app.addGlobalVar('$env', useGetEnvironmentVariables);
+    this.app.use(EnvironmentVariablesAndSecretsProvider);
   }
 }
 

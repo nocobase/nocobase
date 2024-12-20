@@ -7,22 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useRequest } from '@nocobase/client';
+import { useContext } from 'react';
+import { EnvAndSecretsContext } from './EnvironmentVariablesAndSecretsProvider';
 
 export const useGetEnvironmentVariables = () => {
-  const { data: secrets, loading } = useRequest<{
-    data: any[];
-  }>({
-    resource: 'environmentSecrets',
-    action: 'list',
-  });
-  const { data: variables, loading: variablesLoading } = useRequest<{
-    data: any[];
-  }>({
-    resource: 'environmentVariables',
-    action: 'list',
-  });
-
+  const { variablesRequest, secretsRequest } = useContext(EnvAndSecretsContext);
+  const { data: secrets, loading } = secretsRequest;
+  const { data: variables, loading: variablesLoading } = variablesRequest;
   if (!loading && !variablesLoading && (variables?.data?.length || secrets?.data?.length)) {
     return {
       name: '$env',

@@ -13,7 +13,8 @@ import { createSchemaField } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useDataBlockResource, useRequest } from '@nocobase/client';
 import { Button, Card, Dropdown, Space, Table, App } from 'antd';
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
+import { EnvAndSecretsContext } from '../EnvironmentVariablesAndSecretsProvider';
 
 const SchemaField = createSchemaField({
   components: {
@@ -77,7 +78,7 @@ export function EnvironmentVariables({ request }) {
   const { modal } = App.useApp();
   const { t } = useTranslation();
   const api = useAPIClient();
-  const { data, loading, run } = request;
+  const { data, loading, refresh } = request;
 
   const resource = api.resource('environmentVariables');
 
@@ -89,7 +90,7 @@ export function EnvironmentVariables({ request }) {
         await resource.destroy({
           filter: { name: data.name, id: data.id },
         });
-        run();
+        refresh();
       },
     });
   };
@@ -163,7 +164,7 @@ export function EnvironmentVariables({ request }) {
 }
 
 export function EnvironmentSecrets({ request }) {
-  const { data, loading, run } = request;
+  const { data, loading, refresh } = request;
   const { modal } = App.useApp();
   const { t } = useTranslation();
   const api = useAPIClient();
@@ -177,7 +178,7 @@ export function EnvironmentSecrets({ request }) {
         await resource.destroy({
           filter: { name: data.name, id: data.id },
         });
-        run();
+        refresh();
       },
     });
   };
@@ -202,7 +203,7 @@ export function EnvironmentSecrets({ request }) {
                       ...data,
                     },
                   });
-                  request.refresh();
+                  refresh();
                 }}
               >
                 {t('Submit')}
@@ -263,12 +264,8 @@ export function EnvironmentTabs() {
   const api = useAPIClient();
   const { t } = useTranslation();
   const [activeKey, setActiveKey] = useState('variable');
-  const variablesRequest = useRequest<any>({
-    url: 'environmentVariables',
-  });
-  const secretsRequest = useRequest<any>({
-    url: 'environmentSecrets',
-  });
+  const { variablesRequest, secretsRequest } = useContext(EnvAndSecretsContext);
+
   const handleBulkImport = async (importData) => {
     const arr = Object.entries(importData).map(([type, dataString]) => ({
       type,
