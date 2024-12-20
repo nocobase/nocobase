@@ -49,6 +49,7 @@ describe('actions', () => {
       filterByTk: adminUser.id,
       values: {
         nickname: 'a',
+        username: 'A',
       },
     });
     expect(res1.status).toBe(401);
@@ -57,6 +58,7 @@ describe('actions', () => {
       filterByTk: adminUser.id,
       values: {
         nickname: 'a',
+        username: 'A',
       },
     });
     expect(res2.status).toBe(200);

@@ -13,10 +13,6 @@ export const adminProfileCreateFormSchema = {
   properties: {
     form: {
       type: 'void',
-      'x-toolbar': 'BlockSchemaToolbar',
-      'x-toolbar-props': {
-        draggable: false,
-      },
       'x-decorator': 'FormBlockProvider',
       'x-decorator-props': {
         collection: 'users',
@@ -206,10 +202,6 @@ export const adminProfileEditFormSchema = {
   properties: {
     form: {
       type: 'void',
-      'x-toolbar': 'BlockSchemaToolbar',
-      'x-toolbar-props': {
-        draggable: false,
-      },
       'x-decorator': 'FormBlockProvider',
       'x-decorator-props': {
         collection: 'users',
@@ -378,10 +370,6 @@ export const userProfileEditFormSchema = {
   properties: {
     form: {
       type: 'void',
-      'x-toolbar': 'BlockSchemaToolbar',
-      'x-toolbar-props': {
-        draggable: false,
-      },
       'x-decorator': 'FormBlockProvider',
       'x-decorator-props': {
         collection: 'users',
