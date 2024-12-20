@@ -12,8 +12,8 @@ import { EnvAndSecretsContext } from './EnvironmentVariablesAndSecretsProvider';
 
 export const useGetEnvironmentVariables = () => {
   const { variablesRequest, secretsRequest } = useContext(EnvAndSecretsContext);
-  const { data: secrets, loading } = secretsRequest;
-  const { data: variables, loading: variablesLoading } = variablesRequest;
+  const { data: secrets, loading } = secretsRequest || {};
+  const { data: variables, loading: variablesLoading } = variablesRequest || {};
   if (!loading && !variablesLoading && (variables?.data?.length || secrets?.data?.length)) {
     return {
       name: '$env',
