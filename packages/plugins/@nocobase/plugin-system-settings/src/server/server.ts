@@ -45,6 +45,30 @@ export class PluginSystemSettingsServer extends Plugin {
     });
   }
 
+  async getSettingsByTk(filterByTk: string) {
+    const systemSettings = this.db.getRepository('systemSettings');
+    const instance = await systemSettings.findOne({
+      filter: {
+        id: filterByTk,
+      },
+      appends: ['logo'],
+    });
+
+    return {
+      ...this.app.environment.renderJsonTemplate(instance.dataValues),
+    };
+  }
+
+  getSystemSettingWithParsed = async (ctx, next) => {
+    const { filterByTk } = ctx.action.params;
+    try {
+      ctx.body = await this.getSettingsByTk(filterByTk);
+    } catch (error) {
+      throw error;
+    }
+    await next();
+  };
+
   beforeLoad() {
     const cmd = this.app.findCommand('install');
     if (cmd) {
@@ -65,7 +89,9 @@ export class PluginSystemSettingsServer extends Plugin {
         'id.$ne': 1,
       };
     });
-
+    this.app.resourceManager.registerActionHandlers({
+      'systemSettings:getWithParsed': this.getSystemSettingWithParsed,
+    });
     this.app.acl.allow('systemSettings', 'get', 'public');
   }
 }

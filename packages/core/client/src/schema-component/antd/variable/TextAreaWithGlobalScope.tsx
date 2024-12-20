@@ -27,14 +27,14 @@ export const useEnvironmentVariableOptions = (scope) => {
 };
 
 export const TextAreaWithGlobalScope = (props) => {
-  const { supportsLineBreak, password, value } = props;
+  const { supportsLineBreak, password, ...others } = props;
   const scope = useEnvironmentVariableOptions(props.scope);
   if (supportsLineBreak) {
-    return <RawTextArea {...props} scope={scope} fieldNames={{ value: 'name', label: 'title' }} rows={3} />;
+    return <RawTextArea {...others} scope={scope} fieldNames={{ value: 'name', label: 'title' }} rows={3} />;
   }
-  if (password && value && !isVariable(value)) {
-    return <Password {...props} autoFocus />;
+  if (password && props.value && !isVariable(props.value)) {
+    return <Password {...others} autoFocus />;
   }
   console.log(scope);
-  return <TextArea {...props} scope={scope} fieldNames={{ value: 'name', label: 'title' }} />;
+  return <TextArea {...others} scope={scope} fieldNames={{ value: 'name', label: 'title' }} />;
 };
