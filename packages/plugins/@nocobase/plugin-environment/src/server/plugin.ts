@@ -20,7 +20,7 @@ export class PluginEnvironmentsServer extends Plugin {
     await this.loadSecrets();
     this.app.acl.registerSnippet({
       name: `pm.${this.name}`,
-      actions: ['environmentVariables.*', 'environmentSecrets.*'],
+      actions: ['environmentVariables:*', 'environmentSecrets:*'],
     });
   }
 
