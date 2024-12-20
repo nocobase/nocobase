@@ -18,6 +18,10 @@ export class PluginEnvironmentsServer extends Plugin {
     this.onEnvironmentSaved();
     await this.loadVariables();
     await this.loadSecrets();
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}`,
+      actions: ['environmentVariables:*', 'environmentSecrets:*'],
+    });
   }
 
   onEnvironmentSaved() {
@@ -26,6 +30,12 @@ export class PluginEnvironmentsServer extends Plugin {
     });
     this.db.on('environmentSecrets.afterSave', async (model) => {
       this.app.environment.setSecret(model.name, model.value);
+    });
+    this.db.on('environmentVariables.afterDestroy', (model) => {
+      this.app.environment.removeVariable(model.name);
+    });
+    this.db.on('environmentSecrets.afterDestroy', (model) => {
+      this.app.environment.removeSecret(model.name);
     });
   }
 
