@@ -20,14 +20,12 @@ interface BaseConfigurationProps {
 }
 const BaseConfiguration: React.FC<BaseConfigurationProps> = ({ type, children }) => {
   const { t } = useMapTranslation();
-  const [isDisabled, disableAction] = useBoolean(false);
   const apiClient = useAPIClient();
   const [form] = Form.useForm();
   const data = useMapConfiguration(type);
   useEffect(() => {
     if (data) {
       form.setFieldsValue(data);
-      disableAction.toggle();
     }
   }, [data]);
 
@@ -43,7 +41,6 @@ const BaseConfiguration: React.FC<BaseConfigurationProps> = ({ type, children })
       })
       .then((res) => {
         sessionStorage.removeItem(getSSKey(type));
-        disableAction.toggle();
         message.success(t('Saved successfully'));
       })
       .catch((err) => {
@@ -51,19 +48,13 @@ const BaseConfiguration: React.FC<BaseConfigurationProps> = ({ type, children })
       });
   };
   return (
-    <Form disabled={isDisabled} form={form} layout="vertical" onFinish={onSubmit}>
+    <Form form={form} layout="vertical" onFinish={onSubmit}>
       {children}
-      {isDisabled ? (
-        <Button disabled={false} onClick={disableAction.toggle}>
-          {t('Edit')}
+      <Form.Item>
+        <Button disabled={false} type="primary" htmlType="submit">
+          {t('Submit')}
         </Button>
-      ) : (
-        <Form.Item>
-          <Button disabled={false} type="primary" htmlType="submit">
-            {t('Save')}
-          </Button>
-        </Form.Item>
-      )}
+      </Form.Item>
     </Form>
   );
 };
