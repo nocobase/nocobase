@@ -14,11 +14,11 @@ import { TextArea } from './TextArea';
 export const useEnvironmentVariableOptions = () => {
   const data = useContext(VariablesContext);
   return useMemo(() => {
-    if (data.ctxRef.current['$environment']) {
-      return [data.ctxRef.current['$environment']].filter(Boolean);
+    if (data.ctxRef.current['$env']) {
+      return [data.ctxRef.current['$env']].filter(Boolean);
     }
     return null;
-  }, [data.ctxRef.current['$environment']]);
+  }, [data.ctxRef.current['$env']]);
 };
 
 export const TextAreaWithGlobalScope = (props) => {
