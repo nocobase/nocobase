@@ -88,6 +88,9 @@ export function AdminPublicFormPage() {
                       type: 'string',
                       'x-decorator': 'FormItem',
                       'x-component': 'TextAreaWithGlobalScope',
+                      'x-component-props': {
+                        password: true,
+                      },
                     },
                   },
                 }}

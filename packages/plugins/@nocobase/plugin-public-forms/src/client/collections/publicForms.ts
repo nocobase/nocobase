@@ -65,6 +65,7 @@ export const publicFormsCollection = {
         'x-component': 'TextAreaWithGlobalScope',
         'x-component-props': {
           autocomplete: 'new-password',
+          password: true,
         },
       },
     },
