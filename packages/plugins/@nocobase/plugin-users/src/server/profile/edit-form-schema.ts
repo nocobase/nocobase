@@ -163,29 +163,23 @@ export const adminProfileCreateFormSchema = {
                 },
               },
             },
-            actions: {
+            footer: {
               type: 'void',
-              'x-component': 'ActionBar',
-              'x-initializer': 'createForm:configureActions',
-              'x-component-props': {
-                layout: 'one-column',
-              },
+              'x-component': 'Action.Drawer.FootBar',
               properties: {
-                submit: {
-                  type: 'void',
-                  title: '{{ t("Submit") }}',
-                  'x-action': 'submit',
-                  'x-toolbar': 'ActionSchemaToolbar',
-                  'x-settings': 'actionSettings:createSubmit',
+                cancel: {
+                  title: '{{ t("Cancel") }}',
                   'x-component': 'Action',
-                  'x-action-settings': {
-                    triggerWorkflows: [],
-                  },
+                  'x-use-component-props': 'useCancelActionProps',
+                },
+                submit: {
+                  title: '{{ t("Submit") }}',
+                  'x-component': 'Action',
+                  'x-use-component-props': 'useCreateActionProps',
                   'x-component-props': {
                     type: 'primary',
                     htmlType: 'submit',
                   },
-                  'x-use-component-props': 'useCreateActionProps',
                 },
               },
             },
@@ -331,29 +325,23 @@ export const adminProfileEditFormSchema = {
                 },
               },
             },
-            actions: {
+            footer: {
               type: 'void',
-              'x-component': 'ActionBar',
-              'x-initializer': 'createForm:configureActions',
-              'x-component-props': {
-                layout: 'one-column',
-              },
+              'x-component': 'Action.Drawer.FootBar',
               properties: {
-                submit: {
-                  type: 'void',
-                  title: '{{ t("Submit") }}',
-                  'x-action': 'submit',
-                  'x-toolbar': 'ActionSchemaToolbar',
-                  'x-settings': 'actionSettings:updateSubmit',
+                cancel: {
+                  title: '{{ t("Cancel") }}',
                   'x-component': 'Action',
-                  'x-action-settings': {
-                    triggerWorkflows: [],
-                  },
+                  'x-use-component-props': 'useCancelActionProps',
+                },
+                submit: {
+                  title: '{{ t("Submit") }}',
+                  'x-component': 'Action',
+                  'x-use-component-props': 'useUpdateActionProps',
                   'x-component-props': {
                     type: 'primary',
                     htmlType: 'submit',
                   },
-                  'x-use-component-props': 'useUpdateActionProps',
                 },
               },
             },
@@ -375,9 +363,8 @@ export const userProfileEditFormSchema = {
         collection: 'users',
         dataSource: 'main',
         action: 'get',
-        filterByTk: '{{ currentUserId }}',
       },
-      // 'x-use-decorator-props': 'useEditFormBlockDecoratorProps',
+      'x-use-decorator-props': 'useEditFormBlockDecoratorProps',
       properties: {
         edit: {
           type: 'void',
@@ -478,29 +465,23 @@ export const userProfileEditFormSchema = {
                 },
               },
             },
-            actions: {
+            footer: {
               type: 'void',
-              'x-component': 'ActionBar',
-              'x-initializer': 'createForm:configureActions',
-              'x-component-props': {
-                layout: 'one-column',
-              },
+              'x-component': 'Action.Drawer.FootBar',
               properties: {
-                submit: {
-                  type: 'void',
-                  title: '{{ t("Submit") }}',
-                  'x-action': 'submit',
-                  'x-toolbar': 'ActionSchemaToolbar',
-                  'x-settings': 'actionSettings:updateSubmit',
+                cancel: {
+                  title: '{{ t("Cancel") }}',
                   'x-component': 'Action',
-                  'x-action-settings': {
-                    triggerWorkflows: [],
-                  },
+                  'x-use-component-props': 'useCancelActionProps',
+                },
+                submit: {
+                  title: '{{ t("Submit") }}',
+                  'x-component': 'Action',
+                  'x-use-component-props': 'useUpdateProfileActionProps',
                   'x-component-props': {
                     type: 'primary',
                     htmlType: 'submit',
                   },
-                  'x-use-component-props': 'useUpdateProfileActionProps',
                 },
               },
             },

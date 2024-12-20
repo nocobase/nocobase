@@ -53,6 +53,7 @@ const useSubmitActionProps = () => {
   const collection = useCollection();
 
   return {
+    htmlType: 'submit',
     type: 'primary',
     async onClick() {
       await form.submit();
@@ -108,7 +109,7 @@ const ProfileEditForm = () => {
   return (
     <SchemaComponentContext.Provider value={{ ...scCtx, designable: true }}>
       <ExtendCollectionsProvider collections={[collection]}>
-        <RemoteSchemaComponent uid="nocobase-admin-profile-edit-form" noForm={true} />
+        <RemoteSchemaComponent uid="nocobase-admin-profile-edit-form" noForm={true} scope={{ useCancelActionProps }} />
       </ExtendCollectionsProvider>
     </SchemaComponentContext.Provider>
   );

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema, useField, useFieldSchema, useForm } from '@formily/react';
+import { useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { MenuProps } from 'antd';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
@@ -69,11 +69,27 @@ const useUpdateProfileActionProps = () => {
   };
 };
 
+const useEditProfileFormBlockDecoratorProps = () => {
+  const { data } = useCurrentUserContext();
+  return {
+    filterByTk: data.data?.id,
+  };
+};
+
+const useCancelActionProps = () => {
+  const { setVisible } = useActionContext();
+  return {
+    type: 'default',
+    onClick() {
+      setVisible(false);
+    },
+  };
+};
+
 const ProfileEditForm = () => {
   const ctx = useContext(DropdownVisibleContext);
   const cm = useCollectionManager();
   const userCollection = cm.getCollection('users');
-  const { data } = useCurrentUserContext();
   const collection = useMemo(
     () => ({
       ...userCollection,
@@ -92,7 +108,8 @@ const ProfileEditForm = () => {
         noForm={true}
         scope={{
           useUpdateProfileActionProps,
-          currentUserId: data.data?.id,
+          useEditFormBlockDecoratorProps: useEditProfileFormBlockDecoratorProps,
+          useCancelActionProps,
         }}
       />
     </ExtendCollectionsProvider>
