@@ -227,5 +227,7 @@
   "Add node": "添加节点",
   "Move all downstream nodes to": "将所有下游节点移至",
   "After end of branches": "分支结束后",
-  "Inside of branch": "分支内"
+  "Inside of branch": "分支内",
+
+  "Workflow todos": "流程待办"
 }
