@@ -31,7 +31,7 @@ export const TextAreaWithGlobalScope = (props) => {
     return <RawTextArea {...props} scope={scope} fieldNames={{ value: 'name', label: 'title' }} rows={3} />;
   }
   if (password && value && !isVariable(value)) {
-    return <Password {...props} />;
+    return <Password {...props} autoFocus />;
   }
   return <TextArea {...props} scope={scope} fieldNames={{ value: 'name', label: 'title' }} />;
 };
