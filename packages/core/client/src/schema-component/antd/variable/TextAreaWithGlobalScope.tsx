@@ -7,31 +7,34 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo, useContext } from 'react';
-import { VariablesContext } from '@nocobase/client';
+import React, { useMemo } from 'react';
 import { TextArea } from './TextArea';
 import { RawTextArea } from './RawTextArea';
 import { Password } from '../password';
 import { isVariable } from '../../../variables/utils/isVariable';
+import { useApp } from '../../../';
 
-export const useEnvironmentVariableOptions = () => {
-  const data = useContext(VariablesContext);
+export const useEnvironmentVariableOptions = (scope) => {
+  const app = useApp();
+  const environmentVariables = app.getGlobalVar('$env');
+  const environmentCtx = environmentVariables?.();
   return useMemo(() => {
-    if (data.ctxRef.current['$env']) {
-      return [data.ctxRef.current['$env']].filter(Boolean);
+    if (environmentCtx) {
+      return [environmentCtx].filter(Boolean);
     }
-    return null;
-  }, [data.ctxRef.current['$env']]);
+    return scope;
+  }, [environmentCtx, scope]);
 };
 
 export const TextAreaWithGlobalScope = (props) => {
   const { supportsLineBreak, password, value } = props;
-  const scope = useEnvironmentVariableOptions();
+  const scope = useEnvironmentVariableOptions(props.scope);
   if (supportsLineBreak) {
     return <RawTextArea {...props} scope={scope} fieldNames={{ value: 'name', label: 'title' }} rows={3} />;
   }
   if (password && value && !isVariable(value)) {
     return <Password {...props} autoFocus />;
   }
+  console.log(scope);
   return <TextArea {...props} scope={scope} fieldNames={{ value: 'name', label: 'title' }} />;
 };
