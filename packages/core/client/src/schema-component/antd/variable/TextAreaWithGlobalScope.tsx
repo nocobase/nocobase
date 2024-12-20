@@ -10,6 +10,7 @@
 import React, { useMemo, useContext } from 'react';
 import { VariablesContext } from '@nocobase/client';
 import { TextArea } from './TextArea';
+import { RawTextArea } from './RawTextArea';
 
 export const useEnvironmentVariableOptions = () => {
   const data = useContext(VariablesContext);
@@ -22,6 +23,10 @@ export const useEnvironmentVariableOptions = () => {
 };
 
 export const TextAreaWithGlobalScope = (props) => {
+  const { supportsLineBreak } = props;
   const scope = useEnvironmentVariableOptions();
+  if (supportsLineBreak) {
+    return <RawTextArea {...props} scope={scope} fieldNames={{ value: 'name', label: 'title' }} rows={3} />;
+  }
   return <TextArea {...props} scope={scope} fieldNames={{ value: 'name', label: 'title' }} />;
 };

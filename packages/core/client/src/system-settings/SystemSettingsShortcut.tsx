@@ -93,6 +93,9 @@ const schema: ISchema = {
           title: "{{t('System title')}}",
           'x-decorator': 'FormItem',
           'x-component': 'TextAreaWithGlobalScope',
+          'x-component-props': {
+            supportsLineBreak: true,
+          },
           required: true,
         },
         logo: {
