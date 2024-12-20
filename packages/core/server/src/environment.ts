@@ -19,8 +19,16 @@ export class Environment {
     this.data.vars[key] = value;
   }
 
+  removeVariable(key: string) {
+    delete this.data.vars[key];
+  }
+
   setSecret(key: string, value: string) {
     this.data.secrets[key] = value;
+  }
+
+  removeSecret(key: string) {
+    delete this.data.secrets[key];
   }
 
   getVariablesAndSecrets() {
