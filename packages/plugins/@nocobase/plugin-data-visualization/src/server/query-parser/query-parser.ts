@@ -91,7 +91,7 @@ export class QueryParser {
 
   parse() {
     return async (ctx: Context, next: Next) => {
-      const { measures, dimensions, orders, include, where, limit } = ctx.action.params.values;
+      const { measures, dimensions, orders, include, where, limit, offset } = ctx.action.params.values;
       const { attributes: measureAttributes, fieldMap: measureFieldMap, hasAgg } = this.parseMeasures(ctx, measures);
       const {
         attributes: dimensionAttributes,
@@ -109,6 +109,7 @@ export class QueryParser {
           group,
           order,
           limit: limit || 2000,
+          offset: offset || 0,
           subQuery: false,
           raw: true,
         },
