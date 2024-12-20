@@ -10,7 +10,6 @@ type ExportColumn = {
 
 type XlsxExportOptions = Omit<ExportOptions, 'fields'> & {
   columns: Array<ExportColumn>;
-  limit?: number;
 };
 
 export class XlsxExporter extends BaseExporter<XlsxExportOptions & { fields: Array<Array<string>> }> {
@@ -25,7 +24,6 @@ export class XlsxExporter extends BaseExporter<XlsxExportOptions & { fields: Arr
    * 增加最大可导出的行数可能会导致系统资源占用率升高，导致其他请求处理延迟增加、无法处理、甚至
    * 服务端进程被操作系统回收等问题。
    */
-  limit = process.env['EXPORT_LIMIT'] ? parseInt(process.env['EXPORT_LIMIT']) : 2000;
 
   private workbook: XLSX.WorkBook;
   private worksheet: XLSX.WorkSheet;
@@ -34,7 +32,6 @@ export class XlsxExporter extends BaseExporter<XlsxExportOptions & { fields: Arr
   constructor(options: XlsxExportOptions) {
     const fields = options.columns.map((col) => col.dataIndex);
     super({ ...options, fields });
-    this.limit = options.limit;
   }
 
   async init(ctx?): Promise<void> {
