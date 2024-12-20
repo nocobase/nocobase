@@ -46,8 +46,7 @@ export default class ScheduleTrigger extends Trigger {
     }
   }
 
-  async execute(workflow, context: Context, options) {
-    const { values } = context.action.params;
+  async execute(workflow, values: any, options) {
     return this.workflow.trigger(workflow, { ...values, date: values?.date ?? new Date() }, options);
   }
 
