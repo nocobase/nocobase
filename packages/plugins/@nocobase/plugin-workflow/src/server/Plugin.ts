@@ -9,7 +9,6 @@
 
 import path from 'path';
 import { randomUUID } from 'crypto';
-import { EventEmitter } from 'events';
 
 import LRUCache from 'lru-cache';
 
@@ -20,7 +19,7 @@ import { Registry } from '@nocobase/utils';
 import { Logger, LoggerOptions } from '@nocobase/logger';
 import Processor from './Processor';
 import initActions from './actions';
-import { EXECUTION_EVENT, EXECUTION_STATUS } from './constants';
+import { EXECUTION_STATUS } from './constants';
 import initFunctions, { CustomFunction } from './functions';
 import Trigger from './triggers';
 import CollectionTrigger from './triggers/CollectionTrigger';
@@ -50,7 +49,7 @@ export type EventOptions = {
   manually?: boolean;
   force?: boolean;
   stack?: Array<ID>;
-  validateCyclicCallback?: Function;
+  onTriggerFail?: Function;
   [key: string]: any;
 } & Transactionable;
 
@@ -61,7 +60,6 @@ export default class PluginWorkflowServer extends Plugin {
   triggers: Registry<Trigger> = new Registry();
   functions: Registry<CustomFunction> = new Registry();
   enabledCache: Map<number, WorkflowModel> = new Map();
-  executionEvent = new EventEmitter();
 
   private ready = false;
   private executing: Promise<void> | null = null;
@@ -453,10 +451,16 @@ export default class PluginWorkflowServer extends Plugin {
     return new Processor(execution, { ...options, plugin: this });
   }
 
-  private async validateCyclicCall(workflow: WorkflowModel, context: any, options: EventOptions) {
+  private async validateEvent(workflow: WorkflowModel, context: any, options: EventOptions) {
+    const trigger = this.triggers.get(workflow.type);
+    const triggerValid = await trigger.validateEvent(workflow, context, options);
+    if (!triggerValid) {
+      return false;
+    }
+
     const { stack } = options;
     let valid = true;
-    if (stack?.length && stack.length > 0) {
+    if (stack?.length > 0) {
       const existed = await workflow.countExecutions({
         where: {
           id: stack,
@@ -469,11 +473,7 @@ export default class PluginWorkflowServer extends Plugin {
           `workflow ${workflow.id} has already been triggered in stacks executions (${stack}), and newly triggering will be skipped.`,
         );
 
-        try {
-          options.validateCyclicCallback?.(workflow, context, options);
-        } finally {
-          valid = false;
-        }
+        valid = false;
       }
     }
     return valid;
@@ -486,14 +486,13 @@ export default class PluginWorkflowServer extends Plugin {
     const { deferred } = options;
     const transaction = await this.useDataSourceTransaction('main', options.transaction, true);
     const sameTransaction = options.transaction === transaction;
-    const trigger = this.triggers.get(workflow.type);
-    const cycleCallValidate = await this.validateCyclicCall(workflow, context, { ...options, transaction });
-    const valid = await trigger.validateEvent(workflow, context, { ...options, transaction });
-    if (!valid || !cycleCallValidate) {
+    const valid = await this.validateEvent(workflow, context, { ...options, transaction });
+    if (!valid) {
       if (!sameTransaction) {
         await transaction.commit();
       }
-      return null;
+      options.onTriggerFail?.(workflow, context, options);
+      return Promise.reject(new Error('event is not valid'));
     }
 
     let execution;
@@ -559,16 +558,14 @@ export default class PluginWorkflowServer extends Plugin {
     const logger = this.getLogger(event[0].id);
     logger.info(`preparing execution for event`);
 
-    const executionEvent = this.executionEvent;
     try {
       const execution = await this.createExecution(...event);
-      executionEvent.emit(EXECUTION_EVENT.AFTER_CREATE, execution);
       // NOTE: cache first execution for most cases
       if (execution?.status === EXECUTION_STATUS.QUEUEING && !this.executing && !this.pending.length) {
         this.pending.push([execution]);
       }
-    } catch (err) {
-      logger.error(`failed to create execution: ${err.message}`, err);
+    } catch (error) {
+      logger.error(`failed to create execution:`, { error });
       // this.events.push(event); // NOTE: retry will cause infinite loop
     }
 
@@ -621,8 +618,11 @@ export default class PluginWorkflowServer extends Plugin {
         if (next) {
           await this.process(...next);
         }
+      } catch (err) {
+        console.error(err);
       } finally {
         this.executing = null;
+        this.getLogger('dispatcher').info(`execution dispatched finished`);
 
         if (next) {
           this.dispatch();
