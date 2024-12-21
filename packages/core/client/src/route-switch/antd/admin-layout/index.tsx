@@ -58,6 +58,7 @@ import { Plugin } from '../../../application/Plugin';
 import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
 import { Help } from '../../../user/Help';
 import { KeepAlive } from './KeepAlive';
+import { convertRoutesToSchema } from './convertRoutesToSchema';
 
 export { KeepAlive };
 
@@ -113,12 +114,12 @@ const MenuSchemaRequestProvider: FC = ({ children }) => {
     data: any;
   }>(
     {
-      url: `/uiSchemas:getJsonSchema/${adminSchemaUid}`,
+      url: `/desktopRoutes:list`,
     },
     {
       refreshDeps: [adminSchemaUid],
       onSuccess(data) {
-        const schema = filterByACL(data?.data, ctx);
+        const schema = filterByACL(convertRoutesToSchema(data?.data), ctx);
         // url 为 `/admin` 的情况
         if (isMatchAdmin) {
           const s = findMenuItem(schema);
@@ -157,7 +158,13 @@ const MenuSchemaRequestProvider: FC = ({ children }) => {
     },
   );
 
-  return <MenuSchemaRequestContext.Provider value={data?.data}>{children}</MenuSchemaRequestContext.Provider>;
+  const menuSchema = useMemo(() => {
+    if (data?.data) {
+      return convertRoutesToSchema(data?.data);
+    }
+  }, [data?.data]);
+
+  return <MenuSchemaRequestContext.Provider value={menuSchema}>{children}</MenuSchemaRequestContext.Provider>;
 };
 
 const MenuEditor = (props) => {
