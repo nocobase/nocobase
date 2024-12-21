@@ -7,24 +7,25 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useField, useFieldSchema, useForm } from '@formily/react';
-import { uid } from '@formily/shared';
-import { MenuProps } from 'antd';
-import React, { useContext, useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   ActionContextProvider,
   DropdownVisibleContext,
   ExtendCollectionsProvider,
   RemoteSchemaComponent,
   SchemaComponent,
+  useAPIClient,
   useActionContext,
   useCollectValuesToSubmit,
   useCollectionManager,
   useCurrentUserContext,
+  useCurrentUserSettingsMenu,
   useSystemSettings,
-} from '../';
-import { useAPIClient } from '../api-client';
+} from '@nocobase/client';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
+import { MenuProps } from 'antd';
+import { useUsersTranslation } from './locale';
+import { uid } from '@formily/shared';
+import { useForm, useFieldSchema, useField } from '@formily/react';
 
 const useUpdateProfileActionProps = () => {
   const ctx = useCurrentUserContext();
@@ -69,27 +70,10 @@ const useUpdateProfileActionProps = () => {
   };
 };
 
-const useEditProfileFormBlockDecoratorProps = () => {
-  const { data } = useCurrentUserContext();
-  return {
-    filterByTk: data.data?.id,
-  };
-};
-
-const useCancelActionProps = () => {
-  const { setVisible } = useActionContext();
-  return {
-    type: 'default',
-    onClick() {
-      setVisible(false);
-    },
-  };
-};
-
 const ProfileEditForm = () => {
-  const ctx = useContext(DropdownVisibleContext);
   const cm = useCollectionManager();
   const userCollection = cm.getCollection('users');
+  const { data } = useCurrentUserContext();
   const collection = useMemo(
     () => ({
       ...userCollection,
@@ -98,9 +82,6 @@ const ProfileEditForm = () => {
     }),
     [userCollection],
   );
-  useEffect(() => {
-    ctx?.setVisible(false);
-  }, [ctx]);
   return (
     <ExtendCollectionsProvider collections={[collection]}>
       <RemoteSchemaComponent
@@ -108,18 +89,48 @@ const ProfileEditForm = () => {
         noForm={true}
         scope={{
           useUpdateProfileActionProps,
-          useEditFormBlockDecoratorProps: useEditProfileFormBlockDecoratorProps,
-          useCancelActionProps,
+          currentUserId: data.data?.id,
         }}
       />
     </ExtendCollectionsProvider>
   );
 };
 
+const EditProfile = ({ visible, setVisible }) => {
+  return (
+    <ActionContextProvider value={{ visible, setVisible }}>
+      <div onClick={(e) => e.stopPropagation()}>
+        <SchemaComponent
+          components={{ ProfileEditForm }}
+          schema={{
+            type: 'object',
+            properties: {
+              [uid()]: {
+                'x-component': 'Action.Drawer',
+                'x-component-props': {
+                  // zIndex: 10000,
+                },
+                type: 'void',
+                title: '{{t("Edit profile")}}',
+                properties: {
+                  form: {
+                    type: 'void',
+                    'x-component': 'ProfileEditForm',
+                  },
+                },
+              },
+            },
+          }}
+        />
+      </div>
+    </ActionContextProvider>
+  );
+};
+
 export const useEditProfile = () => {
   const ctx = useContext(DropdownVisibleContext);
   const [visible, setVisible] = useState(false);
-  const { t } = useTranslation();
+  const { t } = useUsersTranslation();
   const { data } = useSystemSettings() || {};
   const { enableEditProfile } = data?.data || {};
   const result = useMemo<MenuProps['items'][0]>(() => {
@@ -127,8 +138,8 @@ export const useEditProfile = () => {
       key: 'profile',
       eventKey: 'EditProfile',
       onClick: () => {
-        ctx?.setVisible(false);
         setVisible(true);
+        ctx?.setVisible(false);
       },
       label: (
         <div>
@@ -143,7 +154,7 @@ export const useEditProfile = () => {
                     [uid()]: {
                       'x-component': 'Action.Drawer',
                       'x-component-props': {
-                        zIndex: 2000,
+                        // zIndex: 10000,
                       },
                       type: 'void',
                       title: '{{t("Edit profile")}}',
@@ -163,10 +174,25 @@ export const useEditProfile = () => {
       ),
     };
   }, [visible]);
-
   if (enableEditProfile === false) {
     return null;
   }
-
   return result;
+};
+
+// Adding a user settings menu here causes the drawer to fail to open.
+// This provider will not be used for now.
+export const UsersProvider: React.FC = (props) => {
+  const { addMenuItem } = useCurrentUserSettingsMenu();
+  const profileItem = useEditProfile();
+  const { data } = useSystemSettings();
+  const { enableEditProfile } = data?.data || {};
+
+  useEffect(() => {
+    if (enableEditProfile === false) {
+      return;
+    }
+    addMenuItem(profileItem, { after: 'divider_1' });
+  }, [addMenuItem, profileItem, enableEditProfile]);
+  return <>{props.children}</>;
 };
