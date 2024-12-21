@@ -7,15 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback } from 'react';
 import { uniqBy } from 'lodash';
+import React, { useCallback } from 'react';
 
 import { Variable, parseCollectionName, useApp, useCompile, usePlugin } from '@nocobase/client';
 
-import { useFlowContext } from './FlowContext';
-import { NAMESPACE, lang } from './locale';
-import { useAvailableUpstreams, useNodeContext, useUpstreamScopes } from './nodes';
 import WorkflowPlugin from '.';
+import { useFlowContext } from './FlowContext';
+import { NAMESPACE } from './locale';
+import { useAvailableUpstreams, useNodeContext, useUpstreamScopes } from './nodes';
 
 export type VariableOption = {
   key?: string;
@@ -241,14 +241,12 @@ export function useWorkflowVariableOptions(options: UseVariableOptions = {}) {
   const fieldNames = Object.assign({}, defaultFieldNames, options.fieldNames ?? {});
   const opts = Object.assign(options, { fieldNames });
   const app = useApp();
-  const environmentVariables = app.getGlobalVar('$env');
-  const environmentCtx = environmentVariables?.();
   const result = [
-    environmentCtx,
     useOptions(scopeOptions, opts),
     useOptions(nodesOptions, opts),
     useOptions(triggerOptions, opts),
     useOptions(systemOptions, opts),
+    app.getGlobalVar('$env')?.(),
   ].filter(Boolean);
   // const cache = useMemo(() => result, [result]);
   return result;
