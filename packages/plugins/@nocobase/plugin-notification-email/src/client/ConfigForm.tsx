@@ -9,7 +9,9 @@
 
 import { SchemaComponent } from '@nocobase/client';
 import React from 'react';
+
 import { useNotifyMailTranslation } from './hooks/useTranslation';
+
 export const ChannelConfigForm = () => {
   const { t } = useNotifyMailTranslation();
   return (
@@ -39,7 +41,7 @@ export const ChannelConfigForm = () => {
                     type: 'void',
                     'x-component': 'Grid.Col',
                     'x-component-props': {
-                      width: 50,
+                      width: 60,
                     },
                     properties: {
                       host: {
@@ -55,18 +57,24 @@ export const ChannelConfigForm = () => {
                       },
                     },
                   },
+                },
+              },
+              row1: {
+                type: 'void',
+                'x-component': 'Grid.Row',
+                properties: {
                   col2: {
                     type: 'void',
                     'x-component': 'Grid.Col',
                     'x-component-props': {
-                      width: 16,
+                      width: 56,
                     },
                     properties: {
                       port: {
                         'x-decorator': 'FormItem',
                         type: 'number',
                         title: '{{t("Port")}}',
-                        'x-component': 'InputNumber',
+                        'x-component': 'TextAreaWithGlobalScope',
                         'x-component-props': {
                           min: 1,
                           max: 65535,
@@ -81,7 +89,7 @@ export const ChannelConfigForm = () => {
                     type: 'void',
                     'x-component': 'Grid.Col',
                     'x-component-props': {
-                      width: 16,
+                      width: 36,
                     },
                     properties: {
                       secure: {
