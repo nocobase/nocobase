@@ -441,11 +441,13 @@ export default class PluginWorkflowServer extends Plugin {
     context,
     options: EventOptions,
   ): Promise<ExecutionModel | null> {
-    const { transaction = await this.db.sequelize.transaction(), deferred } = options;
+    const { deferred } = options;
+    const transaction = await this.useDataSourceTransaction('main', options.transaction, true);
+    const sameTransaction = options.transaction === transaction;
     const trigger = this.triggers.get(workflow.type);
     const valid = await trigger.validateEvent(workflow, context, { ...options, transaction });
     if (!valid) {
-      if (!options.transaction) {
+      if (!sameTransaction) {
         await transaction.commit();
       }
       return null;
@@ -463,7 +465,7 @@ export default class PluginWorkflowServer extends Plugin {
         { transaction },
       );
     } catch (err) {
-      if (!options.transaction) {
+      if (!sameTransaction) {
         await transaction.rollback();
       }
       throw err;
@@ -489,7 +491,7 @@ export default class PluginWorkflowServer extends Plugin {
       },
     );
 
-    if (!options.transaction) {
+    if (!sameTransaction) {
       await transaction.commit();
     }
 
