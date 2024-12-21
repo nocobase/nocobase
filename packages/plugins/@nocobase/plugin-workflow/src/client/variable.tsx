@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useContext } from 'react';
+import React, { useCallback } from 'react';
 import { uniqBy } from 'lodash';
 
-import { Variable, parseCollectionName, useApp, useCompile, usePlugin, VariablesContext } from '@nocobase/client';
+import { Variable, parseCollectionName, useApp, useCompile, usePlugin } from '@nocobase/client';
 
 import { useFlowContext } from './FlowContext';
 import { NAMESPACE, lang } from './locale';
@@ -240,9 +240,11 @@ function useOptions(scope, opts) {
 export function useWorkflowVariableOptions(options: UseVariableOptions = {}) {
   const fieldNames = Object.assign({}, defaultFieldNames, options.fieldNames ?? {});
   const opts = Object.assign(options, { fieldNames });
-  const ctx = useContext(VariablesContext);
+  const app = useApp();
+  const environmentVariables = app.getGlobalVar('$env');
+  const environmentCtx = environmentVariables?.();
   const result = [
-    ctx.ctxRef.current['$env'],
+    environmentCtx,
     useOptions(scopeOptions, opts),
     useOptions(nodesOptions, opts),
     useOptions(triggerOptions, opts),
