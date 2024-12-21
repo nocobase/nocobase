@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.4.14](https://github.com/nocobase/nocobase/compare/v1.4.13...v1.4.14) - 2024-12-21
+
+### 🐛 Bug Fixes
+
+- **[Data visualization]** Fix the error when filtering with nested many to many associations in chart query. ([#5917](https://github.com/nocobase/nocobase/pull/5917)) by @2013xile
+
+- **[Workflow: Aggregate node]** Fix incorrect aggregation result caused by transaction ([#5916](https://github.com/nocobase/nocobase/pull/5916)) by @mytharcher
+
 ## [v1.4.13](https://github.com/nocobase/nocobase/compare/v1.4.12...v1.4.13) - 2024-12-19
 
 ### 🚀 Improvements
