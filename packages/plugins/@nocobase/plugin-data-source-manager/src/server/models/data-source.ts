@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model, Transaction } from '@nocobase/database';
-import { Application } from '@nocobase/server';
-import { setCurrentRole } from '@nocobase/plugin-acl';
 import { ACL, AvailableActionOptions } from '@nocobase/acl';
-import { DataSourcesRolesModel } from './data-sources-roles-model';
+import { Model, Transaction } from '@nocobase/database';
+import { setCurrentRole } from '@nocobase/plugin-acl';
+import { Application } from '@nocobase/server';
 import PluginDataSourceManagerServer from '../plugin';
+import { DataSourcesRolesModel } from './data-sources-roles-model';
 
 const availableActions: {
   [key: string]: AvailableActionOptions;

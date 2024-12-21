@@ -9,7 +9,9 @@
 
 import { SchemaComponent } from '@nocobase/client';
 import React from 'react';
+
 import { useNotifyMailTranslation } from './hooks/useTranslation';
+
 export const ChannelConfigForm = () => {
   const { t } = useNotifyMailTranslation();
   return (
@@ -39,7 +41,7 @@ export const ChannelConfigForm = () => {
                     type: 'void',
                     'x-component': 'Grid.Col',
                     'x-component-props': {
-                      width: 50,
+                      width: 60,
                     },
                     properties: {
                       host: {
@@ -47,7 +49,7 @@ export const ChannelConfigForm = () => {
                         type: 'string',
                         title: '{{t("Host")}}',
                         description: '{{t("SMTP server host")}}',
-                        'x-component': 'Input',
+                        'x-component': 'TextAreaWithGlobalScope',
                         'x-component-props': {
                           placeholder: 'smtp.example.com',
                         },
@@ -55,18 +57,24 @@ export const ChannelConfigForm = () => {
                       },
                     },
                   },
+                },
+              },
+              row1: {
+                type: 'void',
+                'x-component': 'Grid.Row',
+                properties: {
                   col2: {
                     type: 'void',
                     'x-component': 'Grid.Col',
                     'x-component-props': {
-                      width: 16,
+                      width: 56,
                     },
                     properties: {
                       port: {
                         'x-decorator': 'FormItem',
                         type: 'number',
                         title: '{{t("Port")}}',
-                        'x-component': 'InputNumber',
+                        'x-component': 'TextAreaWithGlobalScope',
                         'x-component-props': {
                           min: 1,
                           max: 65535,
@@ -81,7 +89,7 @@ export const ChannelConfigForm = () => {
                     type: 'void',
                     'x-component': 'Grid.Col',
                     'x-component-props': {
-                      width: 16,
+                      width: 36,
                     },
                     properties: {
                       secure: {
@@ -114,7 +122,7 @@ export const ChannelConfigForm = () => {
                         'x-decorator': 'FormItem',
                         type: 'boolean',
                         title: '{{t("Account")}}',
-                        'x-component': 'Input',
+                        'x-component': 'TextAreaWithGlobalScope',
                         'x-component-props': {
                           placeholder: 'example@domain.com',
                         },
@@ -131,7 +139,7 @@ export const ChannelConfigForm = () => {
                         'x-decorator': 'FormItem',
                         type: 'boolean',
                         title: '{{t("Password")}}',
-                        'x-component': 'Password',
+                        'x-component': 'TextAreaWithGlobalScope',
                         required: true,
                       },
                     },
@@ -156,7 +164,7 @@ export const ChannelConfigForm = () => {
                         title: `{{t("From")}}`,
                         description: `{{t("The email address that will be used as the sender")}}`,
                         'x-decorator': 'FormItem',
-                        'x-component': 'Input',
+                        'x-component': 'TextAreaWithGlobalScope',
                         'x-component-props': {
                           // useTypedConstant: ['string'],
                           placeholder: `noreply <example@domain.com>`,

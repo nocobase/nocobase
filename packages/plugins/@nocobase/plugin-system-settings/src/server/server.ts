@@ -45,6 +45,18 @@ export class PluginSystemSettingsServer extends Plugin {
     });
   }
 
+  async getSystemSettingsInstance() {
+    const repository = this.db.getRepository('systemSettings');
+    const instance = await repository.findOne({
+      filterByTk: 1,
+      appends: ['logo'],
+    });
+    const json = instance.toJSON();
+    json.raw_title = json.title;
+    json.title = this.app.environment.renderJsonTemplate(instance.title);
+    return json;
+  }
+
   beforeLoad() {
     const cmd = this.app.findCommand('install');
     if (cmd) {
@@ -53,19 +65,42 @@ export class PluginSystemSettingsServer extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.system-settings`,
-      actions: ['systemSettings:update'],
+      actions: ['systemSettings:put'],
     });
   }
 
   async load() {
-    await this.importCollections(resolve(__dirname, 'collections'));
-
     this.app.acl.addFixedParams('systemSettings', 'destroy', () => {
       return {
         'id.$ne': 1,
       };
     });
-
+    this.app.resourceManager.define({
+      name: 'systemSettings',
+      actions: {
+        get: async (ctx, next) => {
+          try {
+            ctx.body = await this.getSystemSettingsInstance();
+          } catch (error) {
+            throw error;
+          }
+          await next();
+        },
+        put: async (ctx, next) => {
+          const repository = this.db.getRepository('systemSettings');
+          const values = ctx.action.params.values;
+          await repository.update({
+            filterByTk: 1,
+            values: {
+              ...values,
+              title: values.raw_title,
+            },
+          });
+          ctx.body = await this.getSystemSettingsInstance();
+          await next();
+        },
+      },
+    });
     this.app.acl.allow('systemSettings', 'get', 'public');
   }
 }
