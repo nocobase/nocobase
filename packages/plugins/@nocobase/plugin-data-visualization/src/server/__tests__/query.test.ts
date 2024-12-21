@@ -18,9 +18,7 @@ import {
   postProcess,
 } from '../actions/query';
 import { Database } from '@nocobase/database';
-import * as formatter from '../formatter';
 import { createQueryParser } from '../query-parser';
-import { QueryParser } from '../query-parser/query-parser';
 
 describe('query', () => {
   describe('parseBuilder', () => {
