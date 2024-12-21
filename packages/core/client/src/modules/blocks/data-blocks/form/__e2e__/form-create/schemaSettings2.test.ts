@@ -13,7 +13,7 @@ import {
   oneTableBlockWithAddNewAndViewAndEditAndBasicFields,
   test,
 } from '@nocobase/test/e2e';
-import { T2165, T3251, T3806, T3815, expressionTemplateInLinkageRules, T4891 } from './templatesOfBug';
+import { expressionTemplateInLinkageRules, T2165, T3251, T3806, T3815, T4891 } from './templatesOfBug';
 
 test.describe('linkage rules', () => {
   test('basic usage', async ({ page, mockPage }) => {
@@ -276,7 +276,6 @@ test.describe('linkage rules', () => {
     }
   });
 
-  // https://nocobase.height.app/T-T3815 &&T-3802
   test('fireImmediately in create form & edit form', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(T3815).waitForInit();
     await mockRecord('general', {

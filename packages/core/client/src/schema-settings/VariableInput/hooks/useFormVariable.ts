@@ -9,6 +9,7 @@
 
 import { Form } from '@formily/core';
 import { Schema } from '@formily/json-schema';
+import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
@@ -77,14 +78,21 @@ const useCurrentFormData = () => {
  */
 export const useCurrentFormContext = ({ form: _form }: Pick<Props, 'form'> = {}) => {
   const { form } = useFormBlockContext();
+  const formData = useCurrentFormData();
   const { isVariableParsedInOtherContext } = useFlag();
-  const ctx = form?.values;
+
+  const formInstance = _form || form;
+
+  // 修复用例：https://github.com/nocobase/nocobase/blob/070d961cc67d450917bc9f61d66076dd68fc266f/packages/core/client/src/modules/blocks/data-blocks/form/__e2e__/form-create/schemaSettings2.test.ts#L279-L297
+  if (formInstance?.values && _.isEmpty(formInstance.values) && formData) {
+    Object.assign(formInstance.values, formData);
+  }
 
   return {
     /** 变量值 */
-    currentFormCtx: ctx,
+    currentFormCtx: formInstance?.values || formData,
     /** 用来判断是否可以显示`当前表单`变量 */
-    shouldDisplayCurrentForm: form && !form.readPretty && !isVariableParsedInOtherContext,
+    shouldDisplayCurrentForm: formInstance && !formInstance.readPretty && !isVariableParsedInOtherContext,
   };
 };
 
