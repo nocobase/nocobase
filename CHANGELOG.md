@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.4.13](https://github.com/nocobase/nocobase/compare/v1.4.12...v1.4.13) - 2024-12-19
+
+### 🚀 Improvements
+
+- **[Collection: SQL]** Prohibit the use of dangerous keywords and functions in SQL. ([#5913](https://github.com/nocobase/nocobase/pull/5913)) by @2013xile
+
+- **[Theme editor]** Optimize API validation for user profile editing and password updates ([#5912](https://github.com/nocobase/nocobase/pull/5912)) by @2013xile
+
+### 🐛 Bug Fixes
+
+- **[Data source: Main]** Fixed foreign key loading issues ([#5903](https://github.com/nocobase/nocobase/pull/5903)) by @chareice
+
+- **[Collection: SQL]** Fix the issue where fields disappear after updating an SQL Collection. ([#5909](https://github.com/nocobase/nocobase/pull/5909)) by @chareice
+
+- **[Backup manager]** Fixed restore backup is not working on Windows by @gchust
+
+## [v1.4.11](https://github.com/nocobase/nocobase/compare/v1.4.10...v1.4.11) - 2024-12-18
+
+### 🚀 Improvements
+
+- **[client]** Make more components support the 'Ellipsis overflow content' configuration item ([#5888](https://github.com/nocobase/nocobase/pull/5888)) by @zhangzhonghe
+
+- **[database]** add firstOrCreate & updateOrCreate  to relation repository ([#5894](https://github.com/nocobase/nocobase/pull/5894)) by @chareice
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fix missing x-data-source parameter in duplicate request template for external data source block ([#5882](https://github.com/nocobase/nocobase/pull/5882)) by @katherinehhh
+
+  - Fix horizontal scrollbar issue in table within plugin ([#5899](https://github.com/nocobase/nocobase/pull/5899)) by @katherinehhh
+
+  - Fix the issue where extra 'N/A' options sometimes appear in association field dropdowns ([#5878](https://github.com/nocobase/nocobase/pull/5878)) by @zhangzhonghe
+
+  - Fix PG view creation issue, resolve error when selecting views across schemas ([#5881](https://github.com/nocobase/nocobase/pull/5881)) by @katherinehhh
+
+  - Fix issue with group styles in form blocks when layout is set to horizontal ([#5884](https://github.com/nocobase/nocobase/pull/5884)) by @katherinehhh
+
+- **[Users]**
+  - Fix the issue where the form is not reset after adding or editing a user in user management. ([#5875](https://github.com/nocobase/nocobase/pull/5875)) by @2013xile
+
+  - Fix the issues where pagination settings are reset after editing and submitting user profiles on the user management  following a page switch or a change of page size. ([#5893](https://github.com/nocobase/nocobase/pull/5893)) by @2013xile
+
+- **[Data source manager]** Fix the filtering issues with the external data source Collection ([#5890](https://github.com/nocobase/nocobase/pull/5890)) by @chareice
+
+- **[Public forms]** Fix issue where global theme switch affects public form preview page theme ([#5883](https://github.com/nocobase/nocobase/pull/5883)) by @katherinehhh
+
 ## [v1.4.10](https://github.com/nocobase/nocobase/compare/v1.4.9...v1.4.10) - 2024-12-12
 
 ### 🎉 New Features

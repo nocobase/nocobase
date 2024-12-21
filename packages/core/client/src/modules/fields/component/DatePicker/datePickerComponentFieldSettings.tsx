@@ -9,9 +9,9 @@
 
 import { useFieldSchema } from '@formily/react';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
-import { SchemaSettingsDateFormat } from '../../../../schema-settings/SchemaSettingsDateFormat';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
-import { enableLinkSettingsItem, openModeSettingsItem } from '../Input/inputComponentSettings';
+import { SchemaSettingsDateFormat } from '../../../../schema-settings/SchemaSettingsDateFormat';
+import { ellipsisSettingsItem, enableLinkSettingsItem, openModeSettingsItem } from '../Input/inputComponentSettings';
 
 export const datePickerComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:DatePicker',
@@ -28,6 +28,7 @@ export const datePickerComponentFieldSettings = new SchemaSettings({
         };
       },
     },
+    ellipsisSettingsItem,
     enableLinkSettingsItem,
     openModeSettingsItem,
   ],
@@ -48,5 +49,6 @@ export const rangePickerPickerComponentFieldSettings = new SchemaSettings({
         };
       },
     },
+    ellipsisSettingsItem,
   ],
 });
