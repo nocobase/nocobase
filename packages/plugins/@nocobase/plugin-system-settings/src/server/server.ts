@@ -45,29 +45,17 @@ export class PluginSystemSettingsServer extends Plugin {
     });
   }
 
-  async getSettingsByTk(filterByTk: string) {
-    const systemSettings = this.db.getRepository('systemSettings');
-    const instance = await systemSettings.findOne({
-      filter: {
-        id: filterByTk,
-      },
+  async getSystemSettingsInstance() {
+    const repository = this.db.getRepository('systemSettings');
+    const instance = await repository.findOne({
+      filterByTk: 1,
       appends: ['logo'],
     });
-
-    return {
-      ...this.app.environment.renderJsonTemplate(instance.dataValues),
-    };
+    const json = instance.toJSON();
+    json.raw_title = json.title;
+    json.title = this.app.environment.renderJsonTemplate(instance.title);
+    return json;
   }
-
-  getSystemSettingWithParsed = async (ctx, next) => {
-    const { filterByTk } = ctx.action.params;
-    try {
-      ctx.body = await this.getSettingsByTk(filterByTk);
-    } catch (error) {
-      throw error;
-    }
-    await next();
-  };
 
   beforeLoad() {
     const cmd = this.app.findCommand('install');
@@ -77,20 +65,41 @@ export class PluginSystemSettingsServer extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.system-settings`,
-      actions: ['systemSettings:update'],
+      actions: ['systemSettings:put'],
     });
   }
 
   async load() {
-    await this.importCollections(resolve(__dirname, 'collections'));
-
     this.app.acl.addFixedParams('systemSettings', 'destroy', () => {
       return {
         'id.$ne': 1,
       };
     });
-    this.app.resourceManager.registerActionHandlers({
-      'systemSettings:getWithParsed': this.getSystemSettingWithParsed,
+    this.app.resourceManager.define({
+      name: 'systemSettings',
+      actions: {
+        get: async (ctx, next) => {
+          try {
+            ctx.body = await this.getSystemSettingsInstance();
+          } catch (error) {
+            throw error;
+          }
+          await next();
+        },
+        put: async (ctx, next) => {
+          const repository = this.db.getRepository('systemSettings');
+          const values = ctx.action.params.values;
+          await repository.update({
+            filterByTk: 1,
+            values: {
+              ...values,
+              title: values.raw_title,
+            },
+          });
+          ctx.body = await this.getSystemSettingsInstance();
+          await next();
+        },
+      },
     });
     this.app.acl.allow('systemSettings', 'get', 'public');
   }

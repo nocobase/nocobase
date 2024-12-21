@@ -52,11 +52,7 @@ DocumentTitleProvider.displayName = 'DocumentTitleProvider';
 
 export const RemoteDocumentTitleProvider: React.FC = (props) => {
   const ctx = useSystemSettings();
-  return (
-    <DocumentTitleProvider addonAfter={ctx?.parseSystemSetting?.data?.data?.title}>
-      {props.children}
-    </DocumentTitleProvider>
-  );
+  return <DocumentTitleProvider addonAfter={ctx?.data?.data?.title}>{props.children}</DocumentTitleProvider>;
 };
 
 export const useDocumentTitle = () => {

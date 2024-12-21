@@ -20,14 +20,7 @@ export const useSystemSettings = () => {
 
 export const SystemSettingsProvider: React.FC<{ children?: ReactNode }> = (props) => {
   const result = useRequest({
-    url: 'systemSettings:get/1?appends=logo',
+    url: 'systemSettings:get',
   });
-  const parseSystemSetting = useRequest({
-    url: 'systemSettings:getWithParsed/1?appends=logo',
-  });
-  return (
-    <SystemSettingsContext.Provider value={{ ...result, parseSystemSetting }}>
-      {props.children}
-    </SystemSettingsContext.Provider>
-  );
+  return <SystemSettingsContext.Provider value={{ ...result }}>{props.children}</SystemSettingsContext.Provider>;
 };
