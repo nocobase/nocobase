@@ -216,6 +216,8 @@ ReadPretty.URL = (props: URLReadPrettyProps) => {
 ReadPretty.Preview = function Preview(props: any) {
   const fieldSchema = useFieldSchema();
   const size = fieldSchema['x-component-props']?.['size'] || 'small';
+  const objectFit = fieldSchema['x-component-props']?.['objectFit'] || 'cover';
+
   if (!props.value) {
     return props.value;
   }
@@ -223,15 +225,17 @@ ReadPretty.Preview = function Preview(props: any) {
     small: 24,
     middle: 48,
     large: 72,
+    oversized: 120,
   };
+
   return (
     <Image
       style={
-        ['small', 'middle', 'large'].includes(size)
+        ['small', 'middle', 'large', 'oversized'].includes(size)
           ? {
               width: sizes[size],
               height: sizes[size],
-              objectFit: 'cover',
+              objectFit,
             }
           : {}
       }
