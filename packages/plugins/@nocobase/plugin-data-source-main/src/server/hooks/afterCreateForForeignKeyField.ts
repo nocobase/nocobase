@@ -77,7 +77,7 @@ export function afterCreateForForeignKeyField(db: Database) {
     return data;
   }
 
-  async function createFieldIfNotExists({ values, transaction }) {
+  async function createFieldIfNotExists({ values, transaction, interfaceType = null }) {
     const { collectionName, name } = values;
     if (!collectionName || !name) {
       throw new Error(`field options invalid`);
@@ -99,13 +99,19 @@ export function afterCreateForForeignKeyField(db: Database) {
       instance.set('isForeignKey', true);
       await instance.save({ transaction });
     } else {
-      const creatInstance = await r.create({
+      const createOptions = {
         values: {
           isForeignKey: true,
           ...values,
         },
         transaction,
-      });
+      };
+
+      if (interfaceType === 'm2o') {
+        createOptions['context'] = {};
+      }
+
+      const creatInstance = await r.create(createOptions);
       // SortField#setSortValue instance._previousDataValues[scopeKey] judgment cause create set sort:1 invalid, need update
       creatInstance.set('sort', 1);
       await creatInstance.save({ transaction });
@@ -153,6 +159,7 @@ export function afterCreateForForeignKeyField(db: Database) {
           collectionName: target,
           ...values,
         },
+        interfaceType,
         transaction,
       });
     }
@@ -164,6 +171,7 @@ export function afterCreateForForeignKeyField(db: Database) {
       await createFieldIfNotExists({
         values: { collectionName, ...values },
         transaction,
+        interfaceType,
       });
     }
 

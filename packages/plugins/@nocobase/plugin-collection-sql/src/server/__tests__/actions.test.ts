@@ -42,6 +42,14 @@ describe('sql collection', () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.errors[0].message).toMatch('Only supports SELECT statements or WITH clauses');
+
+    res = await agent.resource('sqlCollection').execute({
+      values: {
+        sql: "select pg_read_file('/etc/passwd');",
+      },
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.errors[0].message).toMatch('SQL statements contain dangerous keywords');
   });
 
   it('sqlCollection:execute', async () => {
@@ -135,19 +143,31 @@ describe('sql collection', () => {
     expect(fields.length).toBe(2);
     const loadedFields = db.getCollection('sqlCollection').fields;
     expect(loadedFields.size).toBe(2);
-    await agent.resource('sqlCollection').update({
+    const updateRes = await agent.resource('sqlCollection').update({
       filterByTk: 'sqlCollection',
       values: {
+        key: collection.key,
         sql: 'select "testField1" from "fakeCollection"',
+        name: 'sqlCollection',
         fields: [
           {
             name: 'testField1',
             type: 'string',
             interface: 'input',
+            collectionName: 'sqlCollection',
+            key: fields.find((f) => f.name === 'testField1').key,
           },
         ],
+        sources: ['fakeCollection'],
       },
     });
+    expect(updateRes.status).toBe(200);
+
+    const listMetaRes = await agent.resource('collections').listMeta();
+    const metaData = listMetaRes.body.data;
+    const sqlCollectionData = metaData.find((item) => item.name === 'sqlCollection');
+    const metaFields = sqlCollectionData.fields;
+    expect(metaFields.length).toBe(1);
     const collection2 = await db.getRepository('collections').findOne({
       filter: {
         name: 'sqlCollection',
@@ -231,5 +251,17 @@ describe('sql collection', () => {
     expect(fields2.length).toBe(1);
     const loadedFields2 = db.getCollection('sqlCollection').fields;
     expect(loadedFields2.size).toBe(1);
+  });
+
+  it('should check sql when creating', async () => {
+    const res = await agent.resource('collections').create({
+      values: {
+        name: 'sqlCollection',
+        sql: "select pg_read_file('/etc/passwd');",
+        template: 'sql',
+      },
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.errors[0].message).toMatch('SQL statements contain dangerous keywords');
   });
 });
