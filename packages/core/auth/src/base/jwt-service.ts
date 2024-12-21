@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import jwt, { SignOptions } from 'jsonwebtoken';
+import jwt, { JwtPayload, SignOptions } from 'jsonwebtoken';
 import { ITokenBlacklistService } from './token-blacklist-service';
-
+import { IAccessControlService } from './access-control-service';
 export interface JwtOptions {
   secret: string;
   expiresIn?: string;
@@ -31,6 +31,7 @@ export class JwtService {
   }
 
   public blacklist: ITokenBlacklistService;
+  public controller: IAccessControlService;
 
   private expiresIn() {
     return this.options.expiresIn;
@@ -42,7 +43,8 @@ export class JwtService {
 
   /* istanbul ignore next -- @preserve */
   sign(payload: SignPayload, options?: SignOptions) {
-    const opt = { expiresIn: this.expiresIn(), ...options };
+    const expiresIn = this.controller.config.tokenExpirationTime || this.expiresIn();
+    const opt = { ...options, expiresIn };
     if (opt.expiresIn === 'never') {
       opt.expiresIn = '1000y';
     }
@@ -52,12 +54,28 @@ export class JwtService {
   /* istanbul ignore next -- @preserve */
   decode(token: string): Promise<any> {
     return new Promise((resolve, reject) => {
-      jwt.verify(token, this.secret(), (err: any, decoded: any) => {
+      jwt.verify(token, this.secret(), (err, decoded) => {
         if (err) {
           return reject(err);
         }
 
         resolve(decoded);
+      });
+    });
+  }
+
+  verify(
+    token: string,
+  ): Promise<{ status: 'valid' | 'expired'; payload: JwtPayload } | { status: 'other'; payload: null }> {
+    return new Promise((resolve, reject) => {
+      jwt.verify(token, this.secret(), (err, decoded) => {
+        if (err) {
+          if (err.name === 'TokenExpiredError') {
+            resolve({ status: 'expired', payload: jwt.decode(token) as JwtPayload });
+          } else resolve({ status: 'other', payload: null });
+        } else {
+          resolve({ status: 'valid', payload: decoded as JwtPayload });
+        }
       });
     });
   }

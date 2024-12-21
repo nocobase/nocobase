@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, lazy, useLazy } from '@nocobase/client';
+import { Plugin, lazy, useLazy, registerSecuritySettingsTab } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 import { ComponentType } from 'react';
 import { presetAuthType } from '../preset';
@@ -21,7 +21,7 @@ import { NAMESPACE } from './locale';
 const { AuthLayout, SignInPage, SignUpPage } = lazy(() => import('./pages'), 'AuthLayout', 'SignInPage', 'SignUpPage');
 // import { Authenticator } from './settings/Authenticator';
 const { Authenticator } = lazy(() => import('./settings/Authenticator'), 'Authenticator');
-
+const { AccessSettings } = lazy(() => import('./settings/access'), 'AccessSettings');
 // export { AuthenticatorsContextProvider, AuthLayout } from './pages/AuthLayout';
 const { AuthenticatorsContextProvider, AuthLayout: ExportAuthLayout } = lazy(
   () => import('./pages'),
@@ -80,6 +80,13 @@ export class PluginAuthClient extends Plugin {
         SignUpForm: SignUpForm,
         AdminSettingsForm: Options,
       },
+    });
+    registerSecuritySettingsTab({
+      app: this.app,
+      name: 'access',
+      title: `{{t("Access control", { ns: "${NAMESPACE}" })}}`,
+      sort: 0,
+      Component: AccessSettings,
     });
   }
 }

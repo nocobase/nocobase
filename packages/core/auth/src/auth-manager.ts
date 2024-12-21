@@ -12,6 +12,9 @@ import { Registry } from '@nocobase/utils';
 import { Auth, AuthExtend } from './auth';
 import { JwtOptions, JwtService } from './base/jwt-service';
 import { ITokenBlacklistService } from './base/token-blacklist-service';
+import { IAccessControlService } from './base/access-control-service';
+import { DataSource } from '@nocobase/data-source-manager';
+import { JwtPayload } from 'jsonwebtoken';
 
 export interface Authenticator {
   authType: string;
@@ -40,6 +43,8 @@ export class AuthManager {
    * @internal
    */
   jwt: JwtService;
+  accessController: IAccessControlService;
+
   protected options: AuthManagerOptions;
   protected authTypes: Registry<AuthConfig> = new Registry();
   // authenticators collection manager.
@@ -56,6 +61,10 @@ export class AuthManager {
 
   setTokenBlacklistService(service: ITokenBlacklistService) {
     this.jwt.blacklist = service;
+  }
+
+  setAccessControlService(service: IAccessControlService) {
+    this.accessController = service;
   }
 
   /**
@@ -110,6 +119,16 @@ export class AuthManager {
     const self = this;
 
     return async function AuthManagerMiddleware(ctx: Context & { auth: Auth }, next: Next) {
+      const { resourceName: rawResourceName, actionName } = ctx.action;
+
+      let resourceName = rawResourceName;
+      if (rawResourceName.includes('.')) {
+        resourceName = rawResourceName.split('.').pop();
+      }
+      const isPublicAction = ctx.dataSource.acl.isPublicAction(resourceName, actionName);
+      if (isPublicAction) {
+        return next();
+      }
       const token = ctx.getBearerToken();
       if (token && (await ctx.app.authManager.jwt.blacklist?.has(token))) {
         return ctx.throw(401, {
@@ -138,4 +157,50 @@ export class AuthManager {
       await next();
     };
   }
+  // authMiddleware() {
+  //   const self = this;
+
+  //   return async function AuthDataSourceMiddleware(ctx: Context & { auth: Auth; dataSource: DataSource }, next: Next) {
+  //     const { resourceName: rawResourceName, actionName } = ctx.action;
+
+  //     let resourceName = rawResourceName;
+  //     if (rawResourceName.includes('.')) {
+  //       resourceName = rawResourceName.split('.').pop();
+  //     }
+  //     const isPublicAction = ctx.dataSource.acl.isPublicAction(resourceName, actionName);
+  //     if (isPublicAction) {
+  //       return next();
+  //     }
+  //     const token = ctx.getBearerToken();
+  //     if (!token) {
+  //       ctx.throw(401, 'Unauthorized');
+  //       return;
+  //     }
+  //     let tokenStatus: 'valid' | 'expired' | 'other_error' | null = null;
+  //     try {
+  //       await ctx.app.authManager.jwt.decode(token);
+  //       tokenStatus = 'valid';
+  //     } catch (error) {
+  //       if (error.name === 'TokenExpiredError') tokenStatus = 'expired';
+  //       else tokenStatus = 'other_error';
+  //     }
+
+  //     if (tokenStatus === 'valid') return next();
+  //     else if (tokenStatus === 'expired') {
+  //       try {
+  //         const { jti } = self.jwt.getPayload(token) as JwtPayload;
+  //         if (jti) {
+  //           const newAccessId = self.accessController.renewAccessId(jti);
+  //         } else throw new Error('jti not found');
+  //       } catch (error) {
+  //         ctx.throw(401, 'Unauthorized');
+  //         return;
+  //       }
+  //     } else {
+  //       ctx.throw(401, 'Unauthorized');
+  //       return;
+  //     }
+  //     await next();
+  //   };
+  // }
 }

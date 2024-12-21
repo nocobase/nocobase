@@ -47,7 +47,10 @@ export class AllowManager {
     this.skipActions.set(resourceName, actionMap);
   }
 
-  getAllowedConditions(resourceName: string, actionName: string): Array<ConditionFunc | true> {
+  getAllowedConditions(
+    resourceName: string,
+    actionName: string,
+  ): Array<{ condition: ConditionFunc | true; rawCondition: ConditionFunc | string }> {
     const fetchActionSteps: string[] = ['*', resourceName];
 
     const results = [];
@@ -58,7 +61,10 @@ export class AllowManager {
         for (const fetchActionStep of ['*', actionName]) {
           const condition = resource.get(fetchActionStep);
           if (condition) {
-            results.push(typeof condition === 'string' ? this.registeredCondition.get(condition) : condition);
+            results.push({
+              condition: typeof condition === 'string' ? this.registeredCondition.get(condition) : condition,
+              rawCondition: condition,
+            });
           }
         }
       }
@@ -70,9 +76,13 @@ export class AllowManager {
   registerAllowCondition(name: string, condition: ConditionFunc) {
     this.registeredCondition.set(name, condition);
   }
-
+  isPublic(resourceName: string, actionName: string) {
+    const conditions = this.getAllowedConditions(resourceName, actionName);
+    if (conditions.some((item) => item.rawCondition === 'public')) return true;
+    else return false;
+  }
   async isAllowed(resourceName: string, actionName: string, ctx: any) {
-    const skippedConditions = this.getAllowedConditions(resourceName, actionName);
+    const skippedConditions = this.getAllowedConditions(resourceName, actionName).map((item) => item.condition);
 
     for (const skippedCondition of skippedConditions) {
       if (skippedCondition) {
