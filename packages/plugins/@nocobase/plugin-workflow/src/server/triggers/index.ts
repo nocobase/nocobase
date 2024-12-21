@@ -23,7 +23,7 @@ export abstract class Trigger {
   sync?: boolean;
   execute?(
     workflow: WorkflowModel,
-    context: any,
+    values: any,
     options: Transactionable,
   ): void | Processor | Promise<void | Processor>;
 }
