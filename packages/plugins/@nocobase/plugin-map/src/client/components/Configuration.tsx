@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useAPIClient, useCompile, useLocationSearch, TextAreaWithGlobalScope } from '@nocobase/client';
-import { useBoolean } from 'ahooks';
-import { Button, Card, Form, Input, Tabs, message } from 'antd';
+import { TextAreaWithGlobalScope, useAPIClient, useCompile, useLocationSearch } from '@nocobase/client';
+import { Button, Card, Form, Tabs, message } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { MapTypes } from '../constants';
 import { MapConfigurationResourceKey, getSSKey, useMapConfiguration } from '../hooks';
@@ -22,7 +21,7 @@ const BaseConfiguration: React.FC<BaseConfigurationProps> = ({ type, children })
   const { t } = useMapTranslation();
   const apiClient = useAPIClient();
   const [form] = Form.useForm();
-  const data = useMapConfiguration(type);
+  const data = useMapConfiguration(type, false);
   useEffect(() => {
     if (data) {
       form.setFieldsValue(data);
