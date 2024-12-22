@@ -310,8 +310,21 @@ export const MenuDesigner = () => {
       dn.emit('patch', {
         schema,
       });
+
+      // 更新菜单对应的路由
+      if (fieldSchema['__route__']?.id) {
+        resource.update({
+          filterByTk: fieldSchema['__route__'].id,
+          values: {
+            title,
+            icon,
+            href,
+            params,
+          },
+        });
+      }
     },
-    [fieldSchema, field, dn, refresh, onSelect],
+    [fieldSchema, field, dn, refresh, onSelect, resource],
   );
 
   const modalSchema = useMemo(() => {
