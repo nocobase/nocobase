@@ -7,12 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Model } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
+import * as process from 'node:process';
 import { resolve } from 'path';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
-import * as process from 'node:process';
 
 async function getLang(ctx) {
   const SystemSetting = ctx.db.getRepository('systemSettings');
@@ -120,6 +121,79 @@ export class PluginClientServer extends Plugin {
     });
 
     this.app.auditManager.registerActions(['app:restart', 'app:clearCache']);
+
+    this.registerActionHandlers();
+    this.bindNewMenuToRoles();
+    this.setACL();
+  }
+
+  setACL() {
+    this.app.acl.registerSnippet({
+      name: `ui.desktopRoutes`,
+      actions: ['desktopRoutes:create', 'desktopRoutes:update', 'desktopRoutes:move', 'desktopRoutes:destroy'],
+    });
+
+    this.app.acl.registerSnippet({
+      name: `pm.desktopRoutes`,
+      actions: ['desktopRoutes:list', 'roles.desktopRoutes:*'],
+    });
+
+    this.app.acl.allow('desktopRoutes', 'listAccessible', 'loggedIn');
+  }
+
+  /**
+   * used to implement: roles with permission (allowNewMenu is true) can directly access the newly created menu
+   */
+  bindNewMenuToRoles() {
+    this.app.db.on('roles.beforeCreate', async (instance: Model) => {
+      instance.set('allowNewMenu', ['admin', 'member'].includes(instance.name));
+    });
+    this.app.db.on('desktopRoutes.afterCreate', async (instance: Model, { transaction }) => {
+      const addNewMenuRoles = await this.app.db.getRepository('roles').find({
+        filter: {
+          allowNewMenu: true,
+        },
+        transaction,
+      });
+
+      // @ts-ignore
+      await this.app.db.getRepository('desktopRoutes.roles', instance.id).add({
+        tk: addNewMenuRoles.map((role) => role.name),
+        transaction,
+      });
+    });
+  }
+
+  registerActionHandlers() {
+    this.app.resourceManager.registerActionHandler('desktopRoutes:listAccessible', async (ctx, next) => {
+      const desktopRoutesRepository = ctx.db.getRepository('desktopRoutes');
+      const rolesRepository = ctx.db.getRepository('roles');
+
+      if (ctx.state.currentRole === 'root') {
+        ctx.body = await desktopRoutesRepository.find({
+          tree: true,
+          ...ctx.query,
+        });
+        return await next();
+      }
+
+      const role = await rolesRepository.findOne({
+        filterByTk: ctx.state.currentRole,
+        appends: ['desktopRoutes'],
+      });
+
+      const desktopRoutesId = role.get('desktopRoutes').map((item) => item.id);
+
+      ctx.body = await desktopRoutesRepository.find({
+        tree: true,
+        ...ctx.query,
+        filter: {
+          id: desktopRoutesId,
+        },
+      });
+
+      await next();
+    });
   }
 }
 

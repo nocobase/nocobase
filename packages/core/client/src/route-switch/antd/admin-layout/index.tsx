@@ -114,7 +114,7 @@ const MenuSchemaRequestProvider: FC = ({ children }) => {
     data: any;
   }>(
     {
-      url: `/desktopRoutes:list`,
+      url: `/desktopRoutes:listAccessible`,
       params: { tree: true, sort: 'sort' },
     },
     {
