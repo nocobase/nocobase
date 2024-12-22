@@ -10,14 +10,17 @@
 import { Storer as IStorer } from '@nocobase/auth';
 import { Cache } from '@nocobase/cache';
 import { Database, Model } from '@nocobase/database';
+import { Application } from '@nocobase/server';
 import { AuthModel } from './model/authenticator';
 
 export class Storer implements IStorer {
   db: Database;
   cache: Cache;
+  app: Application;
   key = 'authenticators';
 
-  constructor({ db, cache }: { db: Database; cache: Cache }) {
+  constructor({ app, db, cache }: { app?: Application; db: Database; cache: Cache }) {
+    this.app = app;
     this.db = db;
     this.cache = cache;
 
@@ -26,11 +29,16 @@ export class Storer implements IStorer {
         await this.cache.delValueInObject(this.key, model.name);
         return;
       }
-      await this.cache.setValueInObject(this.key, model.name, model);
+      await this.cache.setValueInObject(this.key, model.name, this.renderJsonTemplate(model));
     });
     this.db.on('authenticators.afterDestroy', async (model: AuthModel) => {
       await this.cache.delValueInObject(this.key, model.name);
     });
+  }
+
+  renderJsonTemplate(authenticator: any) {
+    const $env = this.app?.environment;
+    return $env ? $env.renderJsonTemplate(authenticator.toJSON()) : authenticator;
   }
 
   async getCache(): Promise<AuthModel[]> {
@@ -43,7 +51,7 @@ export class Storer implements IStorer {
 
   async setCache(authenticators: AuthModel[]) {
     const obj = authenticators.reduce((obj, authenticator) => {
-      obj[authenticator.name] = authenticator;
+      obj[authenticator.name] = this.renderJsonTemplate(authenticator);
       return obj;
     }, {});
     await this.cache.set(this.key, obj);
