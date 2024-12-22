@@ -12,7 +12,7 @@ import { Field, onFieldChange } from '@formily/core';
 import { ISchema, Schema, useField, useFieldSchema } from '@formily/react';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { findByUid } from '.';
+import { findByUid, useDesktopRoutes } from '.';
 import { createDesignable, useCompile } from '../..';
 import {
   GeneralSchemaDesigner,
@@ -214,6 +214,7 @@ const InsertMenuItems = (props) => {
 const components = { TreeSelect };
 
 export const MenuDesigner = () => {
+  const { resource } = useDesktopRoutes();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();
@@ -363,8 +364,15 @@ export const MenuDesigner = () => {
   const removeConfirmTitle = useMemo(() => {
     return {
       title: t('Delete menu item'),
+      onOk: () => {
+        // 删除对应菜单的路由
+        fieldSchema['__route__']?.id &&
+          resource.destroy({
+            filterByTk: fieldSchema['__route__'].id,
+          });
+      },
     };
-  }, [t]);
+  }, [fieldSchema, resource, t]);
   return (
     <GeneralSchemaDesigner>
       <SchemaSettingsModalItem
