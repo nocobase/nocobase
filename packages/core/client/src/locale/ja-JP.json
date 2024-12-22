@@ -1016,5 +1016,9 @@
   "Allow multiple selection": "複数選択を許可",
   "Parent object": "親オブジェクト",
   "Hide column": "列を非表示",
-  "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "設定モードでは、列全体が透明になります。非設定モードでは、列全体が非表示になります。列全体が非表示になっても、設定されたデフォルト値やその他の設定は依然として有効です。"
+  "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "設定モードでは、列全体が透明になります。非設定モードでは、列全体が非表示になります。列全体が非表示になっても、設定されたデフォルト値やその他の設定は依然として有効です。",
+  "Desktop routes": "デスクトップルート",
+  "Route permissions": "ルートの権限",
+  "New routes are allowed to be accessed by default": "新しいルートはデフォルトでアクセス可能",
+  "Route name": "ルート名"
 }

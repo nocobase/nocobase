@@ -205,10 +205,10 @@ export const MenuPermissions: React.FC<{
           },
           properties: {
             allowNewMobileMenu: {
-              title: t('Menu permissions'),
+              title: t('Route permissions'),
               'x-decorator': 'FormItem',
               'x-component': 'Checkbox',
-              'x-content': t('New menu items are allowed to be accessed by default.'),
+              'x-content': t('New routes are allowed to be accessed by default'),
             },
           },
         }}
@@ -224,7 +224,7 @@ export const MenuPermissions: React.FC<{
         columns={[
           {
             dataIndex: 'title',
-            title: t('Menu item title'),
+            title: t('Route name'),
           },
           {
             dataIndex: 'accessible',

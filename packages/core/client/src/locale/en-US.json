@@ -857,5 +857,9 @@
   "Notification": "Notification",
   "Ellipsis overflow content": "Ellipsis overflow content",
   "Hide column": "Hide column",
-  "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect."
+  "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.",
+  "Desktop routes": "Desktop routes",
+  "Route permissions": "Route permissions",
+  "New routes are allowed to be accessed by default": "New routes are allowed to be accessed by default",
+  "Route name": "Route name"
 }

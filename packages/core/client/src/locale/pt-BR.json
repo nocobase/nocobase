@@ -755,5 +755,9 @@
   "Parent object": "Objeto pai",
   "Ellipsis overflow content": "Conteúdo de transbordamento com reticências",
   "Hide column": "Ocultar coluna",
-  "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "Em modo de configuração, a coluna inteira se torna transparente. Em modo de não configuração, a coluna inteira será ocultada. Mesmo se a coluna inteira estiver oculta, seus valores padrão configurados e outras configurações ainda terão efeito."
+  "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "Em modo de configuração, a coluna inteira se torna transparente. Em modo de não configuração, a coluna inteira será ocultada. Mesmo se a coluna inteira estiver oculta, seus valores padrão configurados e outras configurações ainda terão efeito.",
+  "Desktop routes": "Rotas de desktop",
+  "Route permissions": "Permissões de rota",
+  "New routes are allowed to be accessed by default": "Novas rotas são permitidas acessar por padrão",
+  "Route name": "Nome da rota"
 }

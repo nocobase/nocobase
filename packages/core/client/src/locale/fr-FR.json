@@ -798,5 +798,9 @@
   "Parent object": "Objet parent",
   "Ellipsis overflow content": "Contenu de débordement avec ellipse",
   "Hide column": "Masquer la colonne",
-  "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "En mode de configuration, toute la colonne devient transparente. En mode de non-configuration, toute la colonne sera masquée. Même si toute la colonne est masquée, ses valeurs par défaut configurées et les autres paramètres resteront toujours en vigueur."
+  "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "En mode de configuration, toute la colonne devient transparente. En mode de non-configuration, toute la colonne sera masquée. Même si toute la colonne est masquée, ses valeurs par défaut configurées et les autres paramètres resteront toujours en vigueur.",
+  "Desktop routes": "Routes de bureau",
+  "Route permissions": "Permissions de route",
+  "New routes are allowed to be accessed by default": "Les nouvelles routes sont autorisées à être accessibles par défaut",
+  "Route name": "Nom de route"
 }

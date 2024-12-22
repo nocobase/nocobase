@@ -37,7 +37,7 @@ test('menu permission ', async ({ page, mockPage, mockRole, updateRole }) => {
     .locator('span')
     .nth(1)
     .click();
-  await page.getByRole('tab').getByText('Desktop menu').click();
+  await page.getByRole('tab').getByText('Desktop routes').click();
   await page.waitForTimeout(1000);
   await expect(page.getByRole('row', { name: 'page1' }).locator('.ant-checkbox-input').last()).toBeChecked({
     checked: true,
@@ -57,7 +57,7 @@ test('menu permission ', async ({ page, mockPage, mockRole, updateRole }) => {
     .locator('span')
     .nth(1)
     .click();
-  await page.getByRole('tab').getByText('Desktop menu').click();
+  await page.getByRole('tab').getByText('Desktop routes').click();
   await page.waitForTimeout(1000);
   await expect(page.getByRole('row', { name: 'page1' }).locator('.ant-checkbox-input').last()).toBeChecked({
     checked: false,

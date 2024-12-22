@@ -584,5 +584,9 @@
   "Parent object": "Родительский объект",
   "Ellipsis overflow content": "Содержимое с многоточием при переполнении",
   "Hide column": "Скрыть столбец",
-  "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "В режиме конфигурации вся колонка становится прозрачной. В режиме не конфигурации вся колонка будет скрыта. Даже если вся колонка будет скрыта, её настроенные значения по умолчанию и другие настройки все равно будут действовать."
+  "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "В режиме конфигурации вся колонка становится прозрачной. В режиме не конфигурации вся колонка будет скрыта. Даже если вся колонка будет скрыта, её настроенные значения по умолчанию и другие настройки все равно будут действовать.",
+  "Desktop routes": "Маршруты рабочего стола",
+  "Route permissions": "Разрешения маршрутов",
+  "New routes are allowed to be accessed by default": "Новые маршруты разрешены для доступа по умолчанию",
+  "Route name": "Название маршрута"
 }

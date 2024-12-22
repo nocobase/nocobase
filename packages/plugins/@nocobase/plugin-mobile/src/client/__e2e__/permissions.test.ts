@@ -73,7 +73,7 @@ test.describe('mobile permissions', () => {
     });
     await page.reload();
     await page.goto('/admin/settings/users-permissions/roles');
-    await page.getByRole('tab', { name: 'Mobile menu' }).click();
+    await page.getByRole('tab', { name: 'Mobile routes' }).click();
     await page.getByRole('row', { name: 'Collapse row admin' }).getByLabel('', { exact: true }).uncheck();
     // the children of the admin tabs should be unchecked
     await expect(page.getByRole('row', { name: 'tab123' }).getByLabel('', { exact: true })).toBeChecked({
@@ -101,7 +101,7 @@ test.describe('mobile permissions', () => {
 
     // go back to the configuration page, and check one child of the admin
     await page.goto('/admin/settings/users-permissions/roles');
-    await page.getByRole('tab', { name: 'Mobile menu' }).click();
+    await page.getByRole('tab', { name: 'Mobile routes' }).click();
     await page.getByRole('row', { name: 'tab123' }).getByLabel('', { exact: true }).check();
 
     // to the mobile, the admin page should be visible, and the tab123 should be visible, and the tab456 should be hidden
