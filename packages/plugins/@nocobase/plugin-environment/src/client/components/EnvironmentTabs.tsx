@@ -11,7 +11,7 @@ import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { Checkbox, FormButtonGroup, FormDrawer, FormItem, FormLayout, Input, Reset, Submit } from '@formily/antd-v5';
 import { createSchemaField } from '@formily/react';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient, useDataBlockResource, useRequest } from '@nocobase/client';
+import { SchemaComponentOptions, useAPIClient, useDataBlockResource, useRequest } from '@nocobase/client';
 import { Button, Card, Dropdown, Space, Table, App } from 'antd';
 import React, { useContext, useState } from 'react';
 import { EnvAndSecretsContext } from '../EnvironmentVariablesAndSecretsProvider';
@@ -63,6 +63,7 @@ const schema = {
       required: true,
       'x-decorator': 'FormItem',
       'x-component': 'Input',
+      'x-disabled': '{{ !createOnly }}',
     },
     value: {
       type: 'string',
@@ -99,7 +100,9 @@ export function EnvironmentVariables({ request }) {
     FormDrawer(t('Edit'), () => {
       return (
         <FormLayout layout={'vertical'}>
-          <SchemaField schema={schema} />
+          <SchemaComponentOptions scope={{ createOnly: false }}>
+            <SchemaField schema={schema} />
+          </SchemaComponentOptions>
           <FormDrawer.Footer>
             <FormButtonGroup align="right">
               <Reset>{t('Cancel')}</Reset>
@@ -187,7 +190,9 @@ export function EnvironmentSecrets({ request }) {
     FormDrawer(t('Edit'), () => {
       return (
         <FormLayout layout={'vertical'}>
-          <SchemaField schema={schema} />
+          <SchemaComponentOptions scope={{ createOnly: false }}>
+            <SchemaField schema={schema} />
+          </SchemaComponentOptions>
           <FormDrawer.Footer>
             <FormButtonGroup align="right">
               <Reset>{t('Cancel')}</Reset>
@@ -307,7 +312,9 @@ export function EnvironmentTabs() {
                 () => {
                   return (
                     <FormLayout layout={'vertical'}>
-                      <SchemaField schema={info.key === 'bulk' ? bulkSchema : schema} />
+                      <SchemaComponentOptions scope={{ createOnly: true }}>
+                        <SchemaField schema={info.key === 'bulk' ? bulkSchema : schema} />
+                      </SchemaComponentOptions>
                       <FormDrawer.Footer>
                         <FormButtonGroup align="right">
                           <Reset>Cancel</Reset>
