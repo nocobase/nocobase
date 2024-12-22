@@ -119,7 +119,6 @@ function convertRouteToSchema(route: NocoBaseDesktopRoute) {
     'x-app-version': '1.5.0-beta.12',
     'x-uid': route.schemaUid,
     'x-async': false,
-    'x-index': 1,
     __route__: route,
   };
 }
