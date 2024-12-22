@@ -78,6 +78,7 @@ const schema: ISchema = {
           required: true,
           'x-component': 'Password',
           'x-decorator': 'FormItem',
+          'x-validator': { password: true },
           'x-component-props': { checkStrength: true, style: {} },
           'x-reactions': [
             {
@@ -96,6 +97,7 @@ const schema: ISchema = {
           title: '{{t("Confirm password")}}',
           'x-component': 'Password',
           'x-decorator': 'FormItem',
+          'x-validator': { password: true },
           'x-component-props': { checkStrength: true, style: {} },
           'x-reactions': [
             {

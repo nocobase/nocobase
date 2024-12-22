@@ -8,3 +8,4 @@
  */
 
 export { AuthModel, BasicAuth, default } from './server';
+export { presetAuthType } from './preset';
