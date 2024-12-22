@@ -19,7 +19,7 @@ export class Storer implements IStorer {
   app: Application;
   key = 'authenticators';
 
-  constructor({ app, db, cache }: { app: Application; db: Database; cache: Cache }) {
+  constructor({ app, db, cache }: { app?: Application; db: Database; cache: Cache }) {
     this.app = app;
     this.db = db;
     this.cache = cache;
@@ -37,7 +37,8 @@ export class Storer implements IStorer {
   }
 
   renderJsonTemplate(authenticator: any) {
-    return this.app.environment.renderJsonTemplate(authenticator.toJSON());
+    const $env = this.app?.environment;
+    return $env ? $env.renderJsonTemplate(authenticator.toJSON()) : authenticator;
   }
 
   async getCache(): Promise<AuthModel[]> {
