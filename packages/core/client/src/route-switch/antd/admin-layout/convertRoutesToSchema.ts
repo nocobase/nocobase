@@ -96,6 +96,7 @@ function convertRouteToSchema(route: NocoBaseDesktopRoute) {
     'x-decorator': 'ACLMenuItemProvider',
     'x-component-props': {
       icon: route.icon,
+      hidden: route.hideInMenu,
     },
     properties: children
       ? _.fromPairs(

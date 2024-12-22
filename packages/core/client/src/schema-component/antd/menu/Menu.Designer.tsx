@@ -394,6 +394,16 @@ export const MenuDesigner = () => {
               'x-component-props': fieldSchema['x-component-props'],
             },
           });
+
+          // 更新菜单对应的路由
+          if (fieldSchema['__route__']?.id) {
+            resource.update({
+              filterByTk: fieldSchema['__route__'].id,
+              values: {
+                hideInMenu: !!v,
+              },
+            });
+          }
         }}
       />
       <SchemaSettingsModalItem
