@@ -167,7 +167,6 @@ export const XTemplate = observer((props) => {
   const apiClient = useMemo(() => {
     const apiClient = new APIClient(app.getOptions().apiClient as any);
     apiClient.app = app;
-    apiClient.oks = true;
     apiClient.axios.interceptors.request.use(async (config) => {
       if (config.url.includes('uiSchemas:remove')) {
         const uid = config.url.split('/').pop();
