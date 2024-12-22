@@ -9,11 +9,19 @@
 
 import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
+import { uid } from '@formily/shared';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializerItem, useSchemaInitializer } from '../../application';
 import { useGlobalTheme } from '../../global-theme';
-import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../schema-component';
+import { NocoBaseDesktopRoute, RouteType } from '../../route-switch/antd/admin-layout/convertRoutesToSchema';
+import {
+  FormDialog,
+  SchemaComponent,
+  SchemaComponentOptions,
+  useDesktopRoutes,
+  useParentRoute,
+} from '../../schema-component';
 import { useStyles } from '../../schema-component/antd/menu/MenuItemInitializers';
 
 export const GroupItem = () => {
@@ -22,6 +30,8 @@ export const GroupItem = () => {
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
   const { componentCls, hashId } = useStyles();
+  const parentRoute = useParentRoute();
+  const { resource } = useDesktopRoutes();
 
   const handleClick = useCallback(async () => {
     const values = await FormDialog(
@@ -56,6 +66,20 @@ export const GroupItem = () => {
       initialValues: {},
     });
     const { title, icon } = values;
+    const schemaUid = uid();
+
+    // 创建一个路由到 desktopRoutes 表中
+    resource.create({
+      values: {
+        type: RouteType.group,
+        title: values.title,
+        icon: values.icon,
+        parentId: parentRoute?.id,
+        schemaUid,
+      } as NocoBaseDesktopRoute,
+    });
+
+    // 同时插入一个对应的 Schema
     insert({
       type: 'void',
       title,
@@ -74,6 +98,7 @@ export const GroupItem = () => {
           method: 'extractTextToLocale',
         },
       ],
+      'x-uid': schemaUid,
     });
   }, [insert, options.components, options.scope, t, theme]);
   return <SchemaInitializerItem title={t('Group')} onClick={handleClick} className={`${componentCls} ${hashId}`} />;

@@ -14,7 +14,14 @@ import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializerItem, useSchemaInitializer } from '../../application';
 import { useGlobalTheme } from '../../global-theme';
-import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../schema-component';
+import { NocoBaseDesktopRoute, RouteType } from '../../route-switch/antd/admin-layout/convertRoutesToSchema';
+import {
+  FormDialog,
+  SchemaComponent,
+  SchemaComponentOptions,
+  useDesktopRoutes,
+  useParentRoute,
+} from '../../schema-component';
 import { useStyles } from '../../schema-component/antd/menu/MenuItemInitializers';
 
 export const PageMenuItem = () => {
@@ -23,6 +30,8 @@ export const PageMenuItem = () => {
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
   const { componentCls, hashId } = useStyles();
+  const parentRoute = useParentRoute();
+  const { resource } = useDesktopRoutes();
 
   const handleClick = useCallback(async () => {
     const values = await FormDialog(
@@ -57,6 +66,20 @@ export const PageMenuItem = () => {
       initialValues: {},
     });
     const { title, icon } = values;
+    const schemaUid = uid();
+
+    // 创建一个路由到 desktopRoutes 表中
+    resource.create({
+      values: {
+        type: RouteType.page,
+        title: values.title,
+        icon: values.icon,
+        parentId: parentRoute?.id,
+        schemaUid,
+      } as NocoBaseDesktopRoute,
+    });
+
+    // 同时插入一个对应的 Schema
     insert({
       type: 'void',
       title,
@@ -90,6 +113,7 @@ export const PageMenuItem = () => {
           },
         },
       },
+      'x-uid': schemaUid,
     });
   }, [insert, options.components, options.scope, t, theme]);
   return <SchemaInitializerItem title={t('Page')} onClick={handleClick} className={`${componentCls} ${hashId}`} />;

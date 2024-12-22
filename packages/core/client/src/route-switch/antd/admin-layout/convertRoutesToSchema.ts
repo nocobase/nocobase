@@ -20,7 +20,7 @@ export enum RouteType {
 /**
  * 尽量与移动端的结构保持一致
  */
-interface NocoBaseDesktopRoute {
+export interface NocoBaseDesktopRoute {
   id: number;
   parentId?: number;
   parent?: NocoBaseDesktopRoute;
@@ -109,5 +109,6 @@ function convertRouteToSchema(route: NocoBaseDesktopRoute) {
     'x-uid': route.schemaUid,
     'x-async': false,
     'x-index': 1,
+    __route__: route,
   };
 }

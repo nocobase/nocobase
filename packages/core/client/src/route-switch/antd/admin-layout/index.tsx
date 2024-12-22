@@ -115,6 +115,7 @@ const MenuSchemaRequestProvider: FC = ({ children }) => {
   }>(
     {
       url: `/desktopRoutes:list`,
+      params: { tree: true, sort: 'sort' },
     },
     {
       refreshDeps: [adminSchemaUid],
@@ -163,6 +164,8 @@ const MenuSchemaRequestProvider: FC = ({ children }) => {
       return convertRoutesToSchema(data?.data);
     }
   }, [data?.data]);
+
+  console.log('menuSchema', menuSchema);
 
   return <MenuSchemaRequestContext.Provider value={menuSchema}>{children}</MenuSchemaRequestContext.Provider>;
 };

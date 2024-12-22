@@ -38,6 +38,7 @@ import { findKeysByUid, findMenuItem } from './util';
 import { useUpdate } from 'ahooks';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useRefreshComponent, useRefreshFieldSchema } from '../../../formily/NocoBaseRecursionField';
+import { NocoBaseDesktopRoute } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 
 const subMenuDesignerCss = css`
   position: relative;
@@ -201,6 +202,19 @@ type ComposedMenu = React.FC<any> & {
   Designer?: React.FC<any>;
 };
 
+const ParentRouteContext = createContext<NocoBaseDesktopRoute>(null);
+ParentRouteContext.displayName = 'ParentRouteContext';
+
+export const useParentRoute = () => {
+  return useContext(ParentRouteContext);
+};
+
+export const useDesktopRoutes = () => {
+  const api = useAPIClient();
+  const resource = useMemo(() => api.resource('desktopRoutes'), [api]);
+  return { resource };
+};
+
 const HeaderMenu = React.memo<{
   schema: any;
   mode: any;
@@ -313,8 +327,6 @@ const HeaderMenu = React.memo<{
     );
   },
 );
-
-HeaderMenu.displayName = 'HeaderMenu';
 
 const SideMenu = React.memo<any>(
   ({
@@ -465,7 +477,7 @@ export const Menu: ComposedMenu = React.memo((props) => {
     return dOpenKeys;
   });
 
-  const sideMenuSchema = useMemo(() => {
+  const sideMenuSchema: any = useMemo(() => {
     let key;
 
     if (selectedUid) {
@@ -506,6 +518,8 @@ export const Menu: ComposedMenu = React.memo((props) => {
 
   const ctx = useContext(SchemaComponentContext);
 
+  console.log('sideMenuSchema', sideMenuSchema);
+
   return (
     <DndContext>
       <MenuItemDesignerContext.Provider value={Designer}>
@@ -528,19 +542,21 @@ export const Menu: ComposedMenu = React.memo((props) => {
           >
             {children}
           </HeaderMenu>
-          <SideMenu
-            mode={mode}
-            sideMenuSchema={sideMenuSchema}
-            sideMenuRef={sideMenuRef}
-            openKeys={defaultOpenKeys}
-            setOpenKeys={setDefaultOpenKeys}
-            selectedKeys={selectedKeys}
-            onSelect={onSelect}
-            render={render}
-            t={t}
-            api={api}
-            designable={ctx.designable}
-          />
+          <ParentRouteContext.Provider value={sideMenuSchema?.__route__}>
+            <SideMenu
+              mode={mode}
+              sideMenuSchema={sideMenuSchema}
+              sideMenuRef={sideMenuRef}
+              openKeys={defaultOpenKeys}
+              setOpenKeys={setDefaultOpenKeys}
+              selectedKeys={selectedKeys}
+              onSelect={onSelect}
+              render={render}
+              t={t}
+              api={api}
+              designable={ctx.designable}
+            />
+          </ParentRouteContext.Provider>
         </MenuModeContext.Provider>
       </MenuItemDesignerContext.Provider>
     </DndContext>
