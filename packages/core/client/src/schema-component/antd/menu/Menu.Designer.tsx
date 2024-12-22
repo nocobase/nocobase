@@ -10,6 +10,7 @@
 import { TreeSelect } from '@formily/antd-v5';
 import { Field, onFieldChange } from '@formily/core';
 import { ISchema, Schema, useField, useFieldSchema } from '@formily/react';
+import { uid } from '@formily/shared';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { findByUid, useDesktopRoutes } from '.';
@@ -25,6 +26,7 @@ import {
   useDesignable,
   useURLAndHTMLSchema,
 } from '../../../';
+import { RouteType } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 
 const toItems = (properties = {}) => {
   const items = [];
@@ -64,6 +66,8 @@ const InsertMenuItems = (props) => {
   const fieldSchema = useFieldSchema();
   const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
   const isSubMenu = fieldSchema['x-component'] === 'Menu.SubMenu';
+  const { resource } = useDesktopRoutes();
+
   if (!isSubMenu && insertPosition === 'beforeEnd') {
     return null;
   }
@@ -77,6 +81,7 @@ const InsertMenuItems = (props) => {
       method: 'extractTextToLocale',
     },
   ];
+
   return (
     <SchemaSettingsSubMenu eventKey={eventKey} title={title}>
       <SchemaSettingsModalItem
@@ -104,6 +109,29 @@ const InsertMenuItems = (props) => {
           } as ISchema
         }
         onSubmit={({ title, icon }) => {
+          const route = fieldSchema['__route__'];
+          const parentRoute = fieldSchema.parent?.['__route__'];
+          const schemaUid = uid();
+
+          // 1. 先创建一个路由
+          resource
+            .create({
+              values: {
+                type: RouteType.group,
+                title,
+                icon,
+                // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
+                parentId: insertPosition === 'beforeEnd' ? route?.id : parentRoute?.id,
+                schemaUid,
+              },
+            })
+            .then(({ data }) => {
+              // 2. 然后再把路由移动到对应的位置
+              console.log('data', data);
+            })
+            .catch(console.error);
+
+          // 3. 插入一个对应的 Schema
           dn.insertAdjacent(insertPosition, {
             type: 'void',
             title,
@@ -113,6 +141,7 @@ const InsertMenuItems = (props) => {
               icon,
             },
             'x-server-hooks': serverHooks,
+            'x-uid': schemaUid,
           });
         }}
       />
@@ -141,6 +170,29 @@ const InsertMenuItems = (props) => {
           } as ISchema
         }
         onSubmit={({ title, icon }) => {
+          const route = fieldSchema['__route__'];
+          const parentRoute = fieldSchema.parent?.['__route__'];
+          const schemaUid = uid();
+
+          // 1. 先创建一个路由
+          resource
+            .create({
+              values: {
+                type: RouteType.page,
+                title,
+                icon,
+                // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
+                parentId: insertPosition === 'beforeEnd' ? route?.id : parentRoute?.id,
+                schemaUid,
+              },
+            })
+            .then(({ data }) => {
+              // 2. 然后再把路由移动到对应的位置
+              console.log('data', data);
+            })
+            .catch(console.error);
+
+          // 3. 插入一个对应的 Schema
           dn.insertAdjacent(insertPosition, {
             type: 'void',
             title,
@@ -165,6 +217,7 @@ const InsertMenuItems = (props) => {
                 },
               },
             },
+            'x-uid': schemaUid,
           });
         }}
       />
@@ -193,6 +246,33 @@ const InsertMenuItems = (props) => {
           } as ISchema
         }
         onSubmit={({ title, icon, href, params }) => {
+          const route = fieldSchema['__route__'];
+          const parentRoute = fieldSchema.parent?.['__route__'];
+          const schemaUid = uid();
+
+          // 1. 先创建一个路由
+          resource
+            .create({
+              values: {
+                type: RouteType.link,
+                title,
+                icon,
+                // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
+                parentId: insertPosition === 'beforeEnd' ? route?.id : parentRoute?.id,
+                schemaUid,
+                options: {
+                  href,
+                  params,
+                },
+              },
+            })
+            .then(({ data }) => {
+              // 2. 然后再把路由移动到对应的位置
+              console.log('data', data);
+            })
+            .catch(console.error);
+
+          // 3. 插入一个对应的 Schema
           dn.insertAdjacent(insertPosition, {
             type: 'void',
             title,
@@ -204,6 +284,7 @@ const InsertMenuItems = (props) => {
               params,
             },
             'x-server-hooks': serverHooks,
+            'x-uid': schemaUid,
           });
         }}
       />

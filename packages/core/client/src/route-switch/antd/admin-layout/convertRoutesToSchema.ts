@@ -28,14 +28,6 @@ export interface NocoBaseDesktopRoute {
 
   title?: string;
   icon?: string;
-  /**
-   * Link 按钮专属
-   */
-  href?: string;
-  /**
-   * Link 按钮专属
-   */
-  params?: any;
   schemaUid?: string;
   type?: RouteType;
   options?: any;
@@ -104,8 +96,8 @@ function convertRouteToSchema(route: NocoBaseDesktopRoute) {
     'x-decorator': 'ACLMenuItemProvider',
     'x-component-props': {
       icon: route.icon,
-      href: route.href,
-      params: route.params,
+      href: route.options?.href,
+      params: route.options?.params,
       hidden: route.hideInMenu,
     },
     properties: children

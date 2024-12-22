@@ -85,6 +85,10 @@ export const LinkMenuItem = () => {
         icon: values.icon,
         parentId: parentRoute?.id,
         schemaUid,
+        options: {
+          href,
+          params,
+        },
       } as NocoBaseDesktopRoute,
     });
 
