@@ -13,6 +13,7 @@ import { RawTextArea } from './RawTextArea';
 import { Password } from '../password';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { useApp } from '../../../';
+import { InputNumber } from '../input-number';
 
 export const useEnvironmentVariableOptions = (scope) => {
   const app = useApp();
@@ -27,14 +28,16 @@ export const useEnvironmentVariableOptions = (scope) => {
 };
 
 export const TextAreaWithGlobalScope = (props) => {
-  const { supportsLineBreak, password, ...others } = props;
+  const { supportsLineBreak, password, number, ...others } = props;
   const scope = useEnvironmentVariableOptions(props.scope);
   if (supportsLineBreak) {
     return <RawTextArea {...others} scope={scope} fieldNames={{ value: 'name', label: 'title' }} rows={3} />;
   }
+  if (number && props.value && !isVariable(props.value)) {
+    return <InputNumber {...others} autoFocus />;
+  }
   if (password && props.value && !isVariable(props.value)) {
     return <Password {...others} autoFocus />;
   }
-  console.log(scope);
   return <TextArea {...others} scope={scope} fieldNames={{ value: 'name', label: 'title' }} />;
 };
