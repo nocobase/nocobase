@@ -339,7 +339,7 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
       path: outDir,
       filename: outputFileName,
       chunkFilename: '[chunkhash].js',
-      publicPath: `./`,
+      publicPath: `./static/plugins/${packageJson.name}/dist/client/`,
       clean: true,
       library: {
         name: packageJson.name,
