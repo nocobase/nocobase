@@ -46,7 +46,10 @@ export class BasicAuth extends BaseAuth {
     const field = this.userCollection.getField<PasswordField>('password');
     const valid = await field.verify(password, user.password);
     if (!valid) {
-      ctx.throw(401, ctx.t('The username/email or password is incorrect, please re-enter', { ns: namespace }));
+      ctx.throw(401, ctx.t('The username/email or password is incorrect, please re-enter', { ns: namespace }), {
+        errCode: 'INCORRECT_PASSWORD',
+        user,
+      });
     }
     return user;
   }

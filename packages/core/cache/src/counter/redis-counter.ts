@@ -17,7 +17,7 @@ local value = tonumber(ARGV[1]) or 1
 local ttl = tonumber(ARGV[2])
 local current = redis.call('INCRBY', key, value)
 if tonumber(current) == value and ttl then
-  redis.call('EXPIRE', key, ttl)
+  redis.call('PEXPIRE', key, ttl)
 end
 return current
 `;
