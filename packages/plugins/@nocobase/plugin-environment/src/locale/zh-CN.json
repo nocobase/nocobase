@@ -4,5 +4,7 @@
   "Secrets": "密钥",
   "Add variable": "添加变量",
   "Add secret": "添加密钥",
-  "Bulk import": "批量导入"
+  "Bulk import": "批量导入",
+  "Name": "名称",
+  "Value": "值"
 }

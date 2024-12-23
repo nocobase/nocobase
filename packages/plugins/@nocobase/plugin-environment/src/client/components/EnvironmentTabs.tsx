@@ -29,7 +29,7 @@ const bulkSchema = {
   properties: {
     variables: {
       type: 'string',
-      title: 'Variables',
+      title: `{{ t("Variables") }}`,
       'x-decorator': 'FormItem',
       'x-component': 'Input.TextArea',
       'x-component-props': {
@@ -41,7 +41,7 @@ BAR=bbb
     },
     secrets: {
       type: 'string',
-      title: 'Secrets',
+      title: `{{ t("Secrets") }}`,
       'x-decorator': 'FormItem',
       'x-component': 'Input.TextArea',
       'x-component-props': {
@@ -59,7 +59,7 @@ const schema = {
   properties: {
     name: {
       type: 'string',
-      title: 'Name',
+      title: `{{ t("Name") }}`,
       required: true,
       'x-decorator': 'FormItem',
       'x-component': 'Input',
@@ -67,7 +67,7 @@ const schema = {
     },
     value: {
       type: 'string',
-      title: 'Value',
+      title: `{{ t("Value") }}`,
       required: true,
       'x-decorator': 'FormItem',
       'x-component': 'Input.TextArea',
@@ -100,7 +100,7 @@ export function EnvironmentVariables({ request }) {
     FormDrawer(t('Edit'), () => {
       return (
         <FormLayout layout={'vertical'}>
-          <SchemaComponentOptions scope={{ createOnly: false }}>
+          <SchemaComponentOptions scope={{ createOnly: false, t }}>
             <SchemaField schema={schema} />
           </SchemaComponentOptions>
           <FormDrawer.Footer>
@@ -143,15 +143,15 @@ export function EnvironmentVariables({ request }) {
         pagination={false}
         columns={[
           {
-            title: 'Name',
+            title: t('Name'),
             dataIndex: 'name',
           },
           {
-            title: 'Value',
+            title: t('Value'),
             dataIndex: 'value',
           },
           {
-            title: 'Actions',
+            title: t('Actions'),
             width: 200,
             render: (record) => (
               <Space>
@@ -233,11 +233,11 @@ export function EnvironmentSecrets({ request }) {
         pagination={false}
         columns={[
           {
-            title: 'Name',
+            title: t('Name'),
             dataIndex: 'name',
           },
           {
-            title: 'Actions',
+            title: t('Actions'),
             width: 200,
             render: (record) => (
               <Space>
@@ -312,7 +312,7 @@ export function EnvironmentTabs() {
                 () => {
                   return (
                     <FormLayout layout={'vertical'}>
-                      <SchemaComponentOptions scope={{ createOnly: true }}>
+                      <SchemaComponentOptions scope={{ createOnly: true, t }}>
                         <SchemaField schema={info.key === 'bulk' ? bulkSchema : schema} />
                       </SchemaComponentOptions>
                       <FormDrawer.Footer>
