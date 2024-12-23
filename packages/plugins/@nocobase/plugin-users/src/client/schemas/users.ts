@@ -157,13 +157,7 @@ export const usersSchema: ISchema = {
           properties: {
             filter: {
               type: 'void',
-              title: '{{ t("Filter") }}',
-              'x-action': 'filter',
-              'x-component': 'Filter.Action',
-              'x-use-component-props': 'useFilterActionProps',
-              'x-component-props': {
-                icon: 'FilterOutlined',
-              },
+              'x-component': 'FilterAction',
               'x-align': 'left',
             },
             refresh: {

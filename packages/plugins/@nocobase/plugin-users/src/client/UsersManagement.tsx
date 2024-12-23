@@ -89,16 +89,10 @@ const useEditFormProps = () => {
 };
 
 const ProfileCreateForm = () => {
-  const scCtx = useSchemaComponentContext();
-  return (
-    <SchemaComponentContext.Provider value={{ ...scCtx, designable: true }}>
-      <RemoteSchemaComponent uid="nocobase-admin-profile-create-form" noForm={true} />
-    </SchemaComponentContext.Provider>
-  );
+  return <RemoteSchemaComponent uid="nocobase-admin-profile-create-form" noForm={true} />;
 };
 
 const ProfileEditForm = () => {
-  const scCtx = useSchemaComponentContext();
   const cm = useCollectionManager();
   const userCollection = cm.getCollection('users');
   const collection = {
@@ -107,25 +101,45 @@ const ProfileEditForm = () => {
     fields: userCollection.fields.filter((field) => field.name !== 'password'),
   };
   return (
-    <SchemaComponentContext.Provider value={{ ...scCtx, designable: true }}>
-      <ExtendCollectionsProvider collections={[collection]}>
-        <RemoteSchemaComponent uid="nocobase-admin-profile-edit-form" noForm={true} scope={{ useCancelActionProps }} />
-      </ExtendCollectionsProvider>
+    <ExtendCollectionsProvider collections={[collection]}>
+      <RemoteSchemaComponent uid="nocobase-admin-profile-edit-form" noForm={true} scope={{ useCancelActionProps }} />
+    </ExtendCollectionsProvider>
+  );
+};
+
+const FilterAction = () => {
+  const scCtx = useSchemaComponentContext();
+  return (
+    <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
+      <SchemaComponent
+        schema={{
+          type: 'void',
+          properties: {
+            filter: {
+              type: 'void',
+              title: '{{ t("Filter") }}',
+              'x-action': 'filter',
+              'x-component': 'Filter.Action',
+              'x-use-component-props': 'useFilterActionProps',
+              'x-component-props': {
+                icon: 'FilterOutlined',
+              },
+            },
+          },
+        }}
+      />
     </SchemaComponentContext.Provider>
   );
 };
 
 const UsersManagementTab: React.FC = () => {
   const { t } = useUsersTranslation();
-  const scCtx = useSchemaComponentContext();
   return (
-    <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
-      <SchemaComponent
-        schema={usersSchema}
-        scope={{ t, useCancelActionProps, useSubmitActionProps, useEditFormProps }}
-        components={{ PasswordField, ProfileEditForm, ProfileCreateForm }}
-      />
-    </SchemaComponentContext.Provider>
+    <SchemaComponent
+      schema={usersSchema}
+      scope={{ t, useCancelActionProps, useSubmitActionProps, useEditFormProps }}
+      components={{ PasswordField, ProfileEditForm, ProfileCreateForm, FilterAction }}
+    />
   );
 };
 const UsersSettingsContext = createContext<any>({});
