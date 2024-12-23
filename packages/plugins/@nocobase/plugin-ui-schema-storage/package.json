@@ -18,7 +18,6 @@
     "@nocobase/client": "1.x",
     "@nocobase/database": "1.x",
     "@nocobase/plugin-error-handler": "1.x",
-    "@nocobase/plugin-users": "1.x",
     "@nocobase/resourcer": "1.x",
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x",

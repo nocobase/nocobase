@@ -9,10 +9,9 @@
 
 import { Plugin } from '@nocobase/client';
 import { tval } from '@nocobase/utils/client';
-// import { UsersManagement } from './UsersManagement';
 import ACLPlugin from '@nocobase/plugin-acl/client';
-// import { RoleUsersManager } from './RoleUsersManager';
 import { lazy } from '@nocobase/client';
+const { UsersProvider } = lazy(() => import('./UsersProvider'), 'UsersProvider');
 const { UsersManagement } = lazy(() => import('./UsersManagement'), 'UsersManagement');
 const { RoleUsersManager } = lazy(() => import('./RoleUsersManager'), 'RoleUsersManager');
 
