@@ -110,7 +110,7 @@ describe('actions', () => {
       process.env.INIT_ROOT_PASSWORD = '123456';
       process.env.INIT_ROOT_NICKNAME = 'Test';
       app = await createMockServer({
-        plugins: ['auth', 'users'],
+        plugins: ['auth', 'users', 'system-settings'],
       });
       db = app.db;
       agent = app.agent();
@@ -262,6 +262,31 @@ describe('actions', () => {
         confirmPassword: '123456',
       });
       expect(res3.statusCode).toEqual(200);
+    });
+
+    it('should not allow to change password', async () => {
+      await db.getRepository('systemSettings').update({
+        filterByTk: 1,
+        values: {
+          enableChangePassword: false,
+        },
+      });
+      const userRepo = db.getRepository('users');
+      const user = await userRepo.create({
+        values: {
+          username: 'test',
+          password: '12345',
+        },
+      });
+      const userAgent = await agent.login(user);
+
+      const res = await userAgent.post('/auth:changePassword').set({ 'X-Authenticator': 'basic' }).send({
+        oldPassword: '12345',
+        newPassword: '123456',
+        confirmPassword: '123456',
+      });
+      expect(res.statusCode).toEqual(403);
+      expect(res.error.text).toBe('Password is not allowed to be changed');
     });
 
     it('should check confirm password when signing up', async () => {

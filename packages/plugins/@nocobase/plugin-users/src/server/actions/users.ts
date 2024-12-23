@@ -9,8 +9,16 @@
 
 import { Context, DEFAULT_PAGE, DEFAULT_PER_PAGE, Next } from '@nocobase/actions';
 import _ from 'lodash';
+import { namespace } from '..';
 
 export async function updateProfile(ctx: Context, next: Next) {
+  const systemSettings = ctx.db.getRepository('systemSettings');
+  const settings = await systemSettings.findOne();
+  const enableEditProfile = settings.get('enableEditProfile');
+  if (enableEditProfile === false) {
+    ctx.throw(403, ctx.t('User profile is not allowed to be edited', { ns: namespace }));
+  }
+
   const values = ctx.action.params.values || {};
   const { currentUser } = ctx.state;
   if (!currentUser) {
@@ -19,9 +27,25 @@ export async function updateProfile(ctx: Context, next: Next) {
   const UserRepo = ctx.db.getRepository('users');
   const result = await UserRepo.update({
     filterByTk: currentUser.id,
-    values: _.pick(values, ['nickname', 'username', 'email', 'phone', 'systemSettings', 'appLang']),
+    values: _.pick(values, ['nickname', 'username', 'email', 'phone']),
   });
   ctx.body = result;
+  await next();
+}
+
+export async function updateLang(ctx: Context, next: Next) {
+  const { appLang } = ctx.action.params.values || {};
+  const { currentUser } = ctx.state;
+  if (!currentUser) {
+    ctx.throw(401);
+  }
+  const userRepo = ctx.db.getRepository('users');
+  await userRepo.update({
+    filterByTk: currentUser.id,
+    values: {
+      appLang,
+    },
+  });
   await next();
 }
 
