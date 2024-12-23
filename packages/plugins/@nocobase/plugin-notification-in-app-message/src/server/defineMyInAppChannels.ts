@@ -73,7 +73,6 @@ export default function defineMyInAppChannels({ app }: { app: Application }) {
               SELECT  messages.${messagesFieldName.channelName}
               FROM ${messagesTableName} AS messages
               WHERE messages.${messagesFieldName.status} = '${status}'
-              AND messages.${messagesFieldName.userId} = ${userId}
           )`);
             return { name: { [Op.in]: sql } };
           };
