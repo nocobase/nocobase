@@ -6,7 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
+import { css } from '@emotion/css';
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { Checkbox, FormButtonGroup, FormDrawer, FormItem, FormLayout, Input, Reset, Submit } from '@formily/antd-v5';
 import { createSchemaField } from '@formily/react';
@@ -292,6 +292,11 @@ export function EnvironmentTabs() {
   };
   return (
     <Card
+      className={css`
+        .ant-card-head {
+          border-bottom: none;
+        }
+      `}
       tabProps={{
         size: 'middle',
         destroyInactiveTabPane: true,
@@ -398,6 +403,6 @@ export function EnvironmentTabs() {
           children: <EnvironmentSecrets request={secretsRequest} />,
         },
       ]}
-    ></Card>
+    />
   );
 }
