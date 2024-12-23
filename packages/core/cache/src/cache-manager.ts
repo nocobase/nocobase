@@ -15,6 +15,8 @@ import deepmerge from 'deepmerge';
 import { MemoryBloomFilter } from './bloom-filter/memory-bloom-filter';
 import { BloomFilter } from './bloom-filter';
 import { RedisBloomFilter } from './bloom-filter/redis-bloom-filter';
+import { Counter, MemoryCounter, RedisCounter, LockCounter } from './counter';
+import { LockManager } from '@nocobase/lock-manager';
 
 type StoreOptions = {
   store?: 'memory' | FactoryStore<Store, any>;
@@ -159,6 +161,35 @@ export class CacheManager {
         return new RedisBloomFilter(cache);
       default:
         throw new Error(`BloomFilter store [${store}] is not supported`);
+    }
+  }
+
+  /**
+   * @experimental
+   */
+  async createCounter(
+    options: { name: string; prefix?: string; store?: string },
+    lockManager?: LockManager,
+  ): Promise<Counter> {
+    const { store = this.defaultStore, name, prefix } = options || {};
+    let cache: Cache;
+    if (store !== 'memory') {
+      try {
+        cache = this.getCache(name);
+      } catch (error) {
+        cache = await this.createCache({ name, store, prefix });
+      }
+    }
+    switch (store) {
+      case 'memory':
+        return new MemoryCounter();
+      case 'redis':
+        return new RedisCounter(cache);
+      default:
+        if (!lockManager) {
+          throw new Error(`Counter store [${store}] is not supported`);
+        }
+        return new LockCounter(cache, lockManager);
     }
   }
 }
