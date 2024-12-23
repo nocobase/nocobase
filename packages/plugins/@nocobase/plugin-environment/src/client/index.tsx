@@ -15,7 +15,7 @@ import { useGetEnvironmentVariables } from './utils';
 export class PluginEnvironmentClient extends Plugin {
   async load() {
     this.app.pluginSettingsManager.add('environment', {
-      title: this.t('Environment'),
+      title: this.t('Environment variable management'),
       icon: 'TableOutlined',
       Component: EnvironmentPage,
     });

@@ -11,10 +11,11 @@ import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { Checkbox, FormButtonGroup, FormDrawer, FormItem, FormLayout, Input, Reset, Submit } from '@formily/antd-v5';
 import { createSchemaField } from '@formily/react';
 import { useTranslation } from 'react-i18next';
-import { SchemaComponentOptions, useAPIClient, useDataBlockResource, useRequest } from '@nocobase/client';
+import { SchemaComponentOptions, useAPIClient } from '@nocobase/client';
 import { Button, Card, Dropdown, Space, Table, App } from 'antd';
 import React, { useContext, useState } from 'react';
 import { EnvAndSecretsContext } from '../EnvironmentVariablesAndSecretsProvider';
+import { useT } from '../locale';
 
 const SchemaField = createSchemaField({
   components: {
@@ -77,7 +78,7 @@ const schema = {
 
 export function EnvironmentVariables({ request }) {
   const { modal } = App.useApp();
-  const { t } = useTranslation();
+  const t = useT();
   const api = useAPIClient();
   const { data, loading, refresh } = request;
 
@@ -305,9 +306,9 @@ export function EnvironmentTabs() {
             onClick(info) {
               FormDrawer(
                 {
-                  variable: 'Add Variable',
-                  secret: 'Add secret',
-                  bulk: 'Bulk import',
+                  variable: t('Add variable'),
+                  secret: t('Add secret'),
+                  bulk: t('Bulk import'),
                 }[info.key],
                 () => {
                   return (
@@ -317,7 +318,7 @@ export function EnvironmentTabs() {
                       </SchemaComponentOptions>
                       <FormDrawer.Footer>
                         <FormButtonGroup align="right">
-                          <Reset>Cancel</Reset>
+                          <Reset>{t('Cancel')}</Reset>
                           <Submit
                             onSubmit={async (data) => {
                               if (info.key === 'bulk') {
@@ -348,7 +349,7 @@ export function EnvironmentTabs() {
                               }
                             }}
                           >
-                            Submit
+                            {t('Submit')}
                           </Submit>
                         </FormButtonGroup>
                       </FormDrawer.Footer>
@@ -365,18 +366,18 @@ export function EnvironmentTabs() {
             items: [
               {
                 key: 'variable',
-                label: 'Add variable',
+                label: t('Add variable'),
               },
               {
                 key: 'secret',
-                label: 'Add secret',
+                label: t('Add secret'),
               },
               {
                 type: 'divider',
               },
               {
                 key: 'bulk',
-                label: 'Bulk import ',
+                label: t('Bulk import'),
               },
             ],
           }}
@@ -389,12 +390,12 @@ export function EnvironmentTabs() {
       tabList={[
         {
           key: 'variable',
-          label: 'Variables',
+          label: t('Variables'),
           children: <EnvironmentVariables request={variablesRequest} />,
         },
         {
           key: 'secret',
-          label: 'Secrets',
+          label: t('Secrets'),
           children: <EnvironmentSecrets request={secretsRequest} />,
         },
       ]}
