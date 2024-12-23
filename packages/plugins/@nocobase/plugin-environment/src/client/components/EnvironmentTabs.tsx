@@ -85,7 +85,7 @@ export function EnvironmentVariables({ request }) {
 
   const handleDelete = (data) => {
     modal.confirm({
-      title: t('Delete Variables'),
+      title: t('Delete Variable'),
       content: t('Are you sure you want to delete it?'),
       async onOk() {
         await resource.destroy({

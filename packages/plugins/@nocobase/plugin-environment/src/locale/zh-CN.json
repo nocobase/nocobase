@@ -6,5 +6,7 @@
   "Add secret": "添加密钥",
   "Bulk import": "批量导入",
   "Name": "名称",
-  "Value": "值"
+  "Value": "值",
+  "Delete Secret":"删除密钥",
+  "Delete Variable":"删除变量"
 }
