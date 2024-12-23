@@ -10,7 +10,6 @@
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { Checkbox, FormButtonGroup, FormDrawer, FormItem, FormLayout, Input, Reset, Submit } from '@formily/antd-v5';
 import { createSchemaField } from '@formily/react';
-import { useTranslation } from 'react-i18next';
 import { SchemaComponentOptions, useAPIClient } from '@nocobase/client';
 import { Button, Card, Dropdown, Space, Table, App } from 'antd';
 import React, { useContext, useState } from 'react';
@@ -170,7 +169,7 @@ export function EnvironmentVariables({ request }) {
 export function EnvironmentSecrets({ request }) {
   const { data, loading, refresh } = request;
   const { modal } = App.useApp();
-  const { t } = useTranslation();
+  const t = useT();
   const api = useAPIClient();
   const resource = api.resource('environmentSecrets');
 
@@ -268,7 +267,7 @@ function parseKeyValuePairs(input) {
 
 export function EnvironmentTabs() {
   const api = useAPIClient();
-  const { t } = useTranslation();
+  const t = useT();
   const [activeKey, setActiveKey] = useState('variable');
   const { variablesRequest, secretsRequest } = useContext(EnvAndSecretsContext);
 

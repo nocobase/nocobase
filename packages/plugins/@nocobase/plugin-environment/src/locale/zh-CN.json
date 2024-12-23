@@ -1,7 +1,8 @@
 {
   "Environment variable management": "环境变量管理",
   "Variables": "变量",
-  "Add variable":"添加变量",
-  "Add secret":"添加密钥",
-  "Bulk import":"批量导入"
+  "Secrets": "密钥",
+  "Add variable": "添加变量",
+  "Add secret": "添加密钥",
+  "Bulk import": "批量导入"
 }
