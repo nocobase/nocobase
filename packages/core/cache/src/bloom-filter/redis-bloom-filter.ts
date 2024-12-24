@@ -26,7 +26,14 @@ export class RedisBloomFilter implements BloomFilter {
   }
 
   async reserve(key: string, errorRate: number, capacity: number) {
-    await this.store.client.bf.reserve(key, errorRate, capacity);
+    try {
+      await this.store.client.bf.reserve(key, errorRate, capacity);
+    } catch (error) {
+      if (error.message.includes('ERR item exists')) {
+        return;
+      }
+      throw error;
+    }
   }
 
   async add(key: string, value: string) {
