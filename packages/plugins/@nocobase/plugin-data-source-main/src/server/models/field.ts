@@ -8,6 +8,7 @@
  */
 
 import Database, { Collection, MagicAttributeModel, SyncOptions, Transactionable } from '@nocobase/database';
+import _ from 'lodash';
 
 interface LoadOptions extends Transactionable {
   // TODO
@@ -201,5 +202,13 @@ export class FieldModel extends MagicAttributeModel {
     }
 
     return this.db.getCollection(collectionName);
+  }
+
+  toJSON() {
+    const json = super.toJSON();
+    if (json.interface === 'unixTimestamp' && json.accuracy) {
+      _.set(json, 'uiSchema.x-component-props.accuracy', json.accuracy);
+    }
+    return json;
   }
 }

@@ -9,6 +9,7 @@
 
 import { MagicAttributeModel } from '@nocobase/database';
 import { Application } from '@nocobase/server';
+import _ from 'lodash';
 import { mergeOptions } from '../utils';
 
 type LoadOptions = {
@@ -57,5 +58,13 @@ export class DataSourcesFieldModel extends MagicAttributeModel {
     }
 
     collection.removeField(name);
+  }
+
+  toJSON() {
+    const json = super.toJSON();
+    if (json.interface === 'unixTimestamp' && json.accuracy) {
+      _.set(json, 'uiSchema.x-component-props.accuracy', json.accuracy);
+    }
+    return json;
   }
 }

@@ -37,7 +37,7 @@ export class UnixTimestampField extends DateField {
       rationalNumber = 1;
     }
 
-    return Math.floor(new Date(val).getTime() / rationalNumber);
+    return typeof val === 'number' ? val : Math.floor(new Date(val).getTime() / rationalNumber);
   }
 
   additionalSequelizeOptions() {
@@ -72,7 +72,10 @@ export class UnixTimestampField extends DateField {
           this.setDataValue(name, value);
         } else {
           // date to unix timestamp
-          this.setDataValue(name, Math.floor(new Date(value).getTime() / rationalNumber));
+          this.setDataValue(
+            name,
+            typeof value === 'number' ? value : Math.floor(new Date(value).getTime() / rationalNumber),
+          );
         }
       },
     };
