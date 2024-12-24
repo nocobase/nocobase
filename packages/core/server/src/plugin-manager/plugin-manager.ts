@@ -141,15 +141,12 @@ export class PluginManager {
    * @internal
    */
   static async getPackageName(name: string) {
-    const prefixes = this.getPluginPkgPrefix();
-    for (const prefix of prefixes) {
-      const pkg = resolve(process.env.NODE_MODULES_PATH, `${prefix}${name}`, 'package.json');
-      const exists = await fs.exists(pkg);
-      if (exists) {
-        return `${prefix}${name}`;
-      }
+    const { packageName } = await this.parseName(name);
+    const packageFile = resolve(process.env.NODE_MODULES_PATH, packageName, 'package.json');
+    if (!(await fs.exists(packageFile))) {
+      return null;
     }
-    throw new Error(`${name} plugin does not exist`);
+    return packageName;
   }
 
   /**
@@ -329,7 +326,9 @@ export class PluginManager {
     try {
       if (typeof plugin === 'string' && options.name && !options.packageName) {
         const packageName = await PluginManager.getPackageName(options.name);
-        options['packageName'] = packageName;
+        if (packageName) {
+          options['packageName'] = packageName;
+        }
       }
 
       if (options.packageName) {
