@@ -58,7 +58,7 @@ export const createTableBlockUISchema = (options: {
       [uid()]: {
         type: 'array',
         'x-initializer': 'table:configureColumns',
-        'x-component': 'TableV2',
+        'x-component': 'TableV3',
         'x-use-component-props': 'useTableBlockProps',
         'x-component-props': {
           rowKey: 'id',
@@ -71,8 +71,8 @@ export const createTableBlockUISchema = (options: {
             type: 'void',
             title: '{{ t("Actions") }}',
             'x-action-column': 'actions',
-            'x-decorator': 'TableV2.Column.ActionBar',
-            'x-component': 'TableV2.Column',
+            'x-decorator': 'TableV3.Column.ActionBar',
+            'x-component': 'TableV3.Column',
             'x-toolbar': 'TableColumnSchemaToolbar',
             'x-initializer': 'table:configureItemActions',
             'x-settings': 'fieldSettings:TableColumn',
