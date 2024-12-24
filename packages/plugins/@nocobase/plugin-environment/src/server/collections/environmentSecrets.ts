@@ -21,6 +21,7 @@ export default defineCollection({
     {
       type: 'text',
       name: 'value',
+      hidden: true,
     },
   ],
 });
