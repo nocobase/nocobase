@@ -128,6 +128,9 @@ const getFullSchema = (schema, templateschemacache) => {
     for (const key in schema.properties) {
       const property = schema.properties[key];
       schema.properties[key] = getFullSchema(property, templateschemacache);
+      if (schema.properties[key]['x-component'] === undefined) {
+        delete schema.properties[key]; // 说明已经从模板中删除了
+      }
     }
     return schema;
   } else {
@@ -177,9 +180,6 @@ const mergeSchema = (target, source, rootId, templateschemacache) => {
           properties[key] = mergeSchema(objectValue?.[key] || {}, sourceValue?.[key], rootId, templateschemacache);
           if (properties[key]['x-template-root-uid']) {
             properties[key] = getFullSchema(properties[key], templateschemacache);
-          }
-          if (properties[key]['x-component'] === undefined) {
-            delete properties[key]; // 说明已经从模板中删除了
           }
         }
         const parentIndexs = [];
