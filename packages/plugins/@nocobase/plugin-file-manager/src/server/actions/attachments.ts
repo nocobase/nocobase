@@ -126,8 +126,11 @@ export async function createMiddleware(ctx: Context, next: Next) {
   const storage = await StorageRepo.findOne({ filter: storageName ? { name: storageName } : { default: true } });
 
   ctx.storage = storage;
-
-  await multipart(ctx, next);
+  if (ctx?.request.is('multipart/*')) {
+    await multipart(ctx, next);
+  } else {
+    await next();
+  }
 }
 
 export async function destroyMiddleware(ctx: Context, next: Next) {

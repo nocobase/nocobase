@@ -107,7 +107,7 @@ export class FileCollectionTemplate extends CollectionTemplate {
         uiSchema: {
           type: 'string',
           title: `{{t("URL")}}`,
-          'x-component': 'Input.URL',
+          'x-component': 'FileUploadPreviewUrl',
           'x-read-pretty': true,
         },
       },
@@ -121,7 +121,7 @@ export class FileCollectionTemplate extends CollectionTemplate {
         uiSchema: {
           type: 'string',
           title: `{{t("Preview", { ns: "${NAMESPACE}" })}}`,
-          'x-component': 'Preview',
+          'x-component': 'FileUploadPreview',
           'x-read-pretty': true,
         },
       },

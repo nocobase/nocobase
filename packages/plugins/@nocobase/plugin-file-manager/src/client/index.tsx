@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, useCollection } from '@nocobase/client';
+import { Plugin, useCollection, Preview } from '@nocobase/client';
 import { FileManagerProvider } from './FileManagerProvider';
 import { FileStoragePane } from './FileStorage';
 import { NAMESPACE } from './locale';
@@ -16,6 +16,7 @@ import { AttachmentFieldInterface } from './interfaces/attachment';
 import { FileCollectionTemplate } from './templates';
 import { useAttachmentFieldProps, useFileCollectionStorageRules } from './hooks';
 import { FileSizeField } from './FileSizeField';
+import { FileUpload, FileUploadDragger, FileUploadPreview, FileUploadPreviewUrl } from './FileUpload';
 
 export class PluginFileManagerClient extends Plugin {
   storageTypes = new Map();
@@ -59,11 +60,19 @@ export class PluginFileManagerClient extends Plugin {
 
     this.app.addComponents({
       FileSizeField,
+      FileUpload,
+      FileUploadDragger,
+      FileUploadPreview,
+      FileUploadPreviewUrl,
     });
   }
 
   registerStorageType(name: string, options) {
     this.storageTypes.set(name, options);
+  }
+
+  getStorageType(name: string) {
+    return this.storageTypes.get(name);
   }
 }
 

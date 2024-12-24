@@ -147,7 +147,6 @@ export function useUploadProps<T extends IUploadProps = UploadProps>(props: T) {
   const api = useAPIClient();
 
   return {
-    ...props,
     // in customRequest method can't modify form's status(e.g: form.disabled=true )
     // that will be trigger Upload component（actual Underlying is AjaxUploader component ）'s  componentWillUnmount method
     // which will cause multiple files upload fail
@@ -180,6 +179,7 @@ export function useUploadProps<T extends IUploadProps = UploadProps>(props: T) {
         },
       };
     },
+    ...props,
   };
 }
 
