@@ -18,6 +18,7 @@ import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
 import { getCardItemSchema } from '../../../block-provider';
 import { useTemplateBlockContext } from '../../../block-provider/TemplateBlockProvider';
+import { useDataBlockRequest } from '../../../data-source/data-block/DataBlockRequestProvider';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { bindLinkageRulesToFiled } from '../../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
@@ -134,6 +135,7 @@ const WithForm = (props: WithFormProps) => {
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
   const { templateFinished } = useTemplateBlockContext();
+  const { loading } = useDataBlockRequest() || {};
   const linkageRules: any[] =
     (getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'])?.filter((k) => !k.disabled) || [];
 
@@ -156,29 +158,36 @@ const WithForm = (props: WithFormProps) => {
   }, [form, props.disabled, setFormValueChanged]);
 
   useEffect(() => {
+    if (loading) {
+      return;
+    }
+
     const id = uid();
     const disposes = [];
 
-    form.addEffects(id, () => {
-      forEachLinkageRule(linkageRules, (action, rule) => {
-        if (action.targetFields?.length) {
-          const fields = action.targetFields.join(',');
+    // 如果不延迟执行，那么一开始获取到的 form.values 的值是旧的，会导致详情区块的联动规则出现一些问题
+    setTimeout(() => {
+      form.addEffects(id, () => {
+        forEachLinkageRule(linkageRules, (action, rule) => {
+          if (action.targetFields?.length) {
+            const fields = action.targetFields.join(',');
 
-          // 之前使用的 `onFieldReact` 有问题，没有办法被取消监听，所以这里用 `onFieldInit` 和 `reaction` 代替
-          onFieldInit(`*(${fields})`, (field: any, form) => {
-            disposes.push(
-              bindLinkageRulesToFiled({
-                field,
-                linkageRules,
-                formValues: form.values,
-                localVariables,
-                action,
-                rule,
-                variables,
-              }),
-            );
-          });
-        }
+            // 之前使用的 `onFieldReact` 有问题，没有办法被取消监听，所以这里用 `onFieldInit` 和 `reaction` 代替
+            onFieldInit(`*(${fields})`, (field: any, form) => {
+              disposes.push(
+                bindLinkageRulesToFiled({
+                  field,
+                  linkageRules,
+                  formValues: form.values,
+                  localVariables,
+                  action,
+                  rule,
+                  variables,
+                }),
+              );
+            });
+          }
+        });
       });
     });
 
@@ -188,7 +197,7 @@ const WithForm = (props: WithFormProps) => {
         dispose();
       });
     };
-  }, [linkageRules, templateFinished]);
+  }, [linkageRules, templateFinished, loading]);
 
   return fieldSchema['x-decorator'] === 'FormV2' ? <FormDecorator {...props} /> : <FormComponent {...props} />;
 };
