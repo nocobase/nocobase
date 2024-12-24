@@ -140,6 +140,7 @@ export const ChannelConfigForm = () => {
                         type: 'boolean',
                         title: '{{t("Password")}}',
                         'x-component': 'TextAreaWithGlobalScope',
+                        'x-component-props': { password: true },
                         required: true,
                       },
                     },

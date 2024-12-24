@@ -25,6 +25,7 @@ export default {
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'TextAreaWithGlobalScope',
+      'x-component-props': { password: true },
     },
     region: {
       title: `{{t("Region", { ns: "${NAMESPACE}" })}}`,

@@ -25,6 +25,7 @@ export default {
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'TextAreaWithGlobalScope',
+      'x-component-props': { password: true },
     },
     endpoint: {
       title: `{{t("Endpoint", { ns: "${NAMESPACE}" })}}`,

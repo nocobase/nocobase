@@ -44,6 +44,7 @@ export default {
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'TextAreaWithGlobalScope',
+          'x-component-props': { password: true },
           required: true,
         },
         bucket: {

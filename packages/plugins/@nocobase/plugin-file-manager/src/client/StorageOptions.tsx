@@ -46,6 +46,7 @@ const schema = {
         type: 'string',
         'x-decorator': 'FormItem',
         'x-component': 'TextAreaWithGlobalScope',
+        'x-component-props': { password: true },
         required: true,
       },
       bucket: {
@@ -116,6 +117,7 @@ const schema = {
         type: 'string',
         'x-decorator': 'FormItem',
         'x-component': 'TextAreaWithGlobalScope',
+        'x-component-props': { password: true },
         required: true,
       },
       bucket: {
