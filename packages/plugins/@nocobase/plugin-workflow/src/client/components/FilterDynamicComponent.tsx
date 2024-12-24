@@ -10,15 +10,14 @@
 import React from 'react';
 
 import { Variable } from '@nocobase/client';
+import { WorkflowVariableInput } from '..';
 
 import { useWorkflowVariableOptions } from '../variable';
 
 export function FilterDynamicComponent({ value, onChange, renderSchemaComponent }) {
-  const scope = useWorkflowVariableOptions();
-
   return (
-    <Variable.Input value={value} onChange={onChange} scope={scope}>
+    <WorkflowVariableInput value={value} onChange={onChange} variableOptions={{ dateRange: true }}>
       {renderSchemaComponent()}
-    </Variable.Input>
+    </WorkflowVariableInput>
   );
 }

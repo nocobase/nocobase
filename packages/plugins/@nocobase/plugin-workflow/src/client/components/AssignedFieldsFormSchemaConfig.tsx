@@ -57,7 +57,7 @@ export function AssignedFieldsFormSchemaConfig(props) {
   const { workflow } = useFlowContext();
   const { setFormValueChanged } = useActionContext();
   const api = useAPIClient();
-  const scope = useWorkflowVariableOptions();
+  const scope = useWorkflowVariableOptions({ dateRange: true });
   const { values, setValuesIn, disabled } = useForm();
   const params = toJS(values.params);
   const [dataSourceName, collectionName] = parseCollectionName(values.collection);
