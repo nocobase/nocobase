@@ -7,8 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-/* eslint-disable */
-
 import { APIClient, Plugin } from '@nocobase/client';
 import { tStr } from './locale';
 import { convertTplBlock, TemplateBlockInitializer } from './initializers/TemplateBlockInitializer';
@@ -122,7 +120,24 @@ function convertToCreateSchema(schema) {
   return tmpSchema.toJSON();
 }
 
-const mergeSchema = (target, source, rootId) => {
+const getFullSchema = (schema, templateschemacache) => {
+  const rootId = schema['x-uid'];
+  const templateRootId = schema['x-template-root-uid'];
+
+  if (!templateRootId) {
+    for (const key in schema.properties) {
+      const property = schema.properties[key];
+      schema.properties[key] = getFullSchema(property, templateschemacache);
+    }
+    return schema;
+  } else {
+    const target = _.cloneDeep(templateschemacache[templateRootId]);
+    const result = mergeSchema(target, schema, rootId, templateschemacache);
+    return result;
+  }
+};
+
+const mergeSchema = (target, source, rootId, templateschemacache) => {
   return _.mergeWith(target, source, (objectValue, sourceValue, keyName, object, source) => {
     if (sourceValue == null) {
       return objectValue;
@@ -145,8 +160,6 @@ const mergeSchema = (target, source, rootId) => {
           const newSchemas = [];
           for (const key of newKeys) {
             const newSchema = convertTplBlock(newProperties[key], true, false, rootId);
-            // newSchema['x-virtual'] = true;
-            //TODO: x-virtual for all children
             newSchema['name'] = key;
             newSchemas.push(newSchema);
             source['properties'][key] = newSchema;
@@ -161,7 +174,10 @@ const mergeSchema = (target, source, rootId) => {
           if (_.get(objectValue, [key, 'properties'])) {
             sourceProperty['properties'] = sourceProperty['properties'] || {};
           }
-          properties[key] = mergeSchema(objectValue?.[key], sourceValue?.[key], rootId);
+          properties[key] = mergeSchema(objectValue?.[key] || {}, sourceValue?.[key], rootId, templateschemacache);
+          if (properties[key]['x-template-root-uid']) {
+            properties[key] = getFullSchema(properties[key], templateschemacache);
+          }
           if (properties[key]['x-component'] === undefined) {
             delete properties[key]; // 说明已经从模板中删除了
           }
@@ -180,14 +196,31 @@ const mergeSchema = (target, source, rootId) => {
         return properties;
       }
 
-      return mergeSchema(objectValue || {}, sourceValue, rootId);
+      return mergeSchema(objectValue || {}, sourceValue, rootId, templateschemacache);
     }
     return sourceValue;
   });
 };
 
+function collectAllTemplateUids(schema, uids = new Set()) {
+  if (!schema) return uids;
+
+  if (schema['x-template-root-uid']) {
+    uids.add(schema['x-template-root-uid']);
+  }
+
+  if (schema.properties) {
+    for (const key in schema.properties) {
+      collectAllTemplateUids(schema.properties[key], uids);
+    }
+  }
+
+  return uids;
+}
+
 export class PluginBlocksTemplateClient extends Plugin {
   #api = new APIClient();
+  #loadingPromises = new Map();
   templateschemacache = {};
   // #schemas = {};
   templateBlocks = {};
@@ -201,28 +234,23 @@ export class PluginBlocksTemplateClient extends Plugin {
   async load() {
     registerPatches((s: ISchema) => {
       if (s['x-template-root-uid'] && s['version']) {
-        const tplSchemaUid = s['x-template-root-uid'];
-        if (!this.templateschemacache[tplSchemaUid]) {
-          // eslint-disable-next-line promise/catch-or-return
-          this.templateschemacache[tplSchemaUid] = new Promise((resolve) => {
-            this.#api
-              .request({
-                url: `/api/uiSchemas:getJsonSchema/${tplSchemaUid}`,
-              })
-              .then((res) => {
-                this.templateschemacache[tplSchemaUid] = res?.data?.data;
-                resolve(this.templateschemacache[tplSchemaUid]);
-              });
-          });
-          throw this.templateschemacache[tplSchemaUid];
-        } else if (this.templateschemacache[tplSchemaUid].then) {
-          throw this.templateschemacache[tplSchemaUid];
-        } else {
-          const sc = mergeSchema(_.cloneDeep(this.templateschemacache[tplSchemaUid]), s, s['x-uid']);
-          // console.log('s', s);
-          this.templateBlocks[sc['x-uid']] = sc;
-          return sc;
+        const templateUids = collectAllTemplateUids(s);
+        let pendingPromise = this.#loadingPromises.get(s['x-uid']);
+        if (!pendingPromise) {
+          pendingPromise = this.#fetchAllTemplates(templateUids, s);
+          if (pendingPromise) {
+            this.#loadingPromises.set(s['x-uid'], pendingPromise);
+          }
         }
+
+        if (pendingPromise) {
+          throw pendingPromise;
+        }
+
+        // const sc = mergeSchema(_.cloneDeep(this.templateschemacache[s['x-template-root-uid']]), s, s['x-uid']);
+        const sc = getFullSchema(s, this.templateschemacache);
+        this.templateBlocks[sc['x-uid']] = sc;
+        return sc;
       }
       return s;
     });
@@ -281,12 +309,23 @@ export class PluginBlocksTemplateClient extends Plugin {
       sort: -1,
       wrap: (t) => t,
     });
+
+    this.app.schemaInitializerManager.addItem('popup:common:addBlock', 'templates', {
+      name: BlockNameLowercase,
+      Component: 'TemplateBlockInitializer',
+      title: tStr('Templates'),
+      icon: 'TableOutlined',
+      sort: -1,
+      wrap: (t) => t,
+    });
+
     this.app.schemaInitializerManager;
 
     this.app.schemaInitializerManager.add(addBlockInitializers);
 
     const schameSettings = this.app.schemaSettingsManager.getAll();
     for (const key in schameSettings) {
+      // @ts-ignore
       this.app.schemaSettingsManager.addItem(key, '关联记录', associationRecordSettingItem);
     }
 
@@ -304,6 +343,47 @@ export class PluginBlocksTemplateClient extends Plugin {
     });
 
     // TODO: add blocks in 'mobile:addBlock' and 'popup:common:addBlock'
+  }
+
+  #fetchAllTemplates(templateUids, schema) {
+    const promises = [];
+
+    for (const uid of templateUids) {
+      if (!this.templateschemacache[uid]) {
+        this.templateschemacache[uid] = this.#api
+          .request({
+            url: `/api/uiSchemas:getJsonSchema/${uid}`,
+          })
+          .then((res) => {
+            this.templateschemacache[uid] = res?.data?.data;
+            return this.templateschemacache[uid];
+          })
+          .catch((error) => {
+            console.error(`Failed to fetch template schema for uid ${uid}:`, error);
+            delete this.templateschemacache[uid];
+            return null;
+          });
+        promises.push(this.templateschemacache[uid]);
+      } else if (this.templateschemacache[uid].then) {
+        promises.push(this.templateschemacache[uid]);
+      }
+    }
+
+    if (promises.length > 0) {
+      return new Promise((resolve) => {
+        Promise.all(promises)
+          .then(() => {
+            this.#loadingPromises.delete(schema['x-uid']);
+            resolve(null);
+          })
+          .catch((error) => {
+            console.error('Failed to fetch template schemas:', error);
+            this.#loadingPromises.delete(schema['x-uid']);
+            resolve(null);
+          });
+      });
+    }
+    return null;
   }
 }
 
