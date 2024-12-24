@@ -16,16 +16,16 @@ const EnvAndSecretsContext = createContext<any>({});
 const EnvironmentVariablesAndSecretsProvider = observer(
   (props) => {
     const isAdminPage = location.pathname.startsWith('/admin');
-    if (!isAdminPage) {
-      return <>{props.children}</>;
-    }
+
     const variablesRequest = useRequest<any>({
       url: 'environmentVariables',
     });
     const secretsRequest = useRequest<any>({
       url: 'environmentSecrets',
     });
-
+    if (!isAdminPage) {
+      return <>{props.children}</>;
+    }
     return (
       <EnvAndSecretsContext.Provider value={{ variablesRequest, secretsRequest }}>
         {props.children}
