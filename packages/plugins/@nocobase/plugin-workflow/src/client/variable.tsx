@@ -50,6 +50,7 @@ export type UseVariableOptions = {
   };
   appends?: string[] | null;
   depth?: number;
+  dateRange?: boolean;
 };
 
 export const defaultFieldNames = { label: 'label', value: 'value', children: 'children' } as const;
@@ -116,7 +117,12 @@ export const systemOptions = {
   useOptions(options: UseVariableOptions) {
     const { systemVariables } = usePlugin(WorkflowPlugin);
     const compile = useCompile();
-    return compile(Array.from(systemVariables.getValues()));
+    const { dateRange = false } = options;
+    let variable = Array.from(systemVariables.getValues());
+    if (!dateRange) {
+      variable = variable.filter((value) => value.key !== 'dateRange');
+    }
+    return compile(variable);
   },
 };
 
