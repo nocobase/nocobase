@@ -68,7 +68,30 @@ describe('unix timestamp field', () => {
     expect(date).toBe('2021-01-01 00:00:00');
   });
 
-  describe('timezone', () => {
+  it('number as second input should be kept as same', async () => {
+    const c1 = db.collection({
+      name: 'test13',
+      fields: [
+        {
+          name: 'date1',
+          type: 'unixTimestamp',
+          accuracy: 'second',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const d = new Date();
+    const second = Math.floor(d.getTime() / 1000);
+
+    const instance = await c1.repository.create({ values: { date1: second } });
+    const date1 = instance.get('date1');
+    expect(date1 instanceof Date).toBe(true);
+    expect(date1.getTime()).toBe(second * 1000);
+  });
+
+  describe.only('timezone', () => {
     test('custom', async () => {
       db.collection({
         name: 'tests',
