@@ -291,118 +291,120 @@ export function EnvironmentTabs() {
     );
   };
   return (
-    <Card
-      className={css`
-        .ant-card-head {
-          border-bottom: none;
-        }
-      `}
-      tabProps={{
-        size: 'middle',
-        destroyInactiveTabPane: true,
-        defaultActiveKey: 'variable',
-        activeKey: activeKey,
-        onTabClick: (activeKey) => setActiveKey(activeKey),
-      }}
-      tabBarExtraContent={
-        <Dropdown
-          menu={{
-            onClick(info) {
-              FormDrawer(
-                {
-                  variable: t('Add variable'),
-                  secret: t('Add secret'),
-                  bulk: t('Bulk import'),
-                }[info.key],
-                () => {
-                  return (
-                    <FormLayout layout={'vertical'}>
-                      <SchemaComponentOptions scope={{ createOnly: true, t }}>
-                        <SchemaField schema={info.key === 'bulk' ? bulkSchema : schema} />
-                      </SchemaComponentOptions>
-                      <FormDrawer.Footer>
-                        <FormButtonGroup align="right">
-                          <Reset>{t('Cancel')}</Reset>
-                          <Submit
-                            onSubmit={async (data) => {
-                              if (info.key === 'bulk') {
-                                await handleBulkImport(data);
-                                variablesRequest.refresh();
-                                secretsRequest.refresh();
-                                setActiveKey(activeKey || 'variable');
-                              } else {
-                                await api.request({
-                                  url: {
-                                    variable: 'environmentVariables:create',
-                                    secret: 'environmentSecrets:create',
-                                  }[info.key],
-                                  method: 'post',
-                                  data: {
-                                    ...data,
-                                  },
-                                });
-                                if (info.key === 'variable') {
+    <div>
+      <Card
+        className={css`
+          .ant-card-head {
+            border-bottom: none;
+          }
+        `}
+        tabProps={{
+          size: 'middle',
+          destroyInactiveTabPane: true,
+          defaultActiveKey: 'variable',
+          activeKey: activeKey,
+          onTabClick: (activeKey) => setActiveKey(activeKey),
+        }}
+        tabBarExtraContent={
+          <Dropdown
+            menu={{
+              onClick(info) {
+                FormDrawer(
+                  {
+                    variable: t('Add variable'),
+                    secret: t('Add secret'),
+                    bulk: t('Bulk import'),
+                  }[info.key],
+                  () => {
+                    return (
+                      <FormLayout layout={'vertical'}>
+                        <SchemaComponentOptions scope={{ createOnly: true, t }}>
+                          <SchemaField schema={info.key === 'bulk' ? bulkSchema : schema} />
+                        </SchemaComponentOptions>
+                        <FormDrawer.Footer>
+                          <FormButtonGroup align="right">
+                            <Reset>{t('Cancel')}</Reset>
+                            <Submit
+                              onSubmit={async (data) => {
+                                if (info.key === 'bulk') {
+                                  await handleBulkImport(data);
                                   variablesRequest.refresh();
-                                } else if (info.key === 'secret') {
                                   secretsRequest.refresh();
+                                  setActiveKey(activeKey || 'variable');
                                 } else {
-                                  variablesRequest.refresh();
-                                  secretsRequest.refresh();
+                                  await api.request({
+                                    url: {
+                                      variable: 'environmentVariables:create',
+                                      secret: 'environmentSecrets:create',
+                                    }[info.key],
+                                    method: 'post',
+                                    data: {
+                                      ...data,
+                                    },
+                                  });
+                                  if (info.key === 'variable') {
+                                    variablesRequest.refresh();
+                                  } else if (info.key === 'secret') {
+                                    secretsRequest.refresh();
+                                  } else {
+                                    variablesRequest.refresh();
+                                    secretsRequest.refresh();
+                                  }
+                                  setActiveKey(info.key);
                                 }
-                                setActiveKey(info.key);
-                              }
-                            }}
-                          >
-                            {t('Submit')}
-                          </Submit>
-                        </FormButtonGroup>
-                      </FormDrawer.Footer>
-                    </FormLayout>
-                  );
+                              }}
+                            >
+                              {t('Submit')}
+                            </Submit>
+                          </FormButtonGroup>
+                        </FormDrawer.Footer>
+                      </FormLayout>
+                    );
+                  },
+                )
+                  .open({
+                    initialValues: {},
+                  })
+                  .then(console.log)
+                  .catch(console.log);
+              },
+              items: [
+                {
+                  key: 'variable',
+                  label: t('Add variable'),
                 },
-              )
-                .open({
-                  initialValues: {},
-                })
-                .then(console.log)
-                .catch(console.log);
-            },
-            items: [
-              {
-                key: 'variable',
-                label: t('Add variable'),
-              },
-              {
-                key: 'secret',
-                label: t('Add secret'),
-              },
-              {
-                type: 'divider',
-              },
-              {
-                key: 'bulk',
-                label: t('Bulk import'),
-              },
-            ],
-          }}
-        >
-          <Button type="primary" icon={<PlusOutlined />}>
-            {t('Add new')} <DownOutlined />
-          </Button>
-        </Dropdown>
-      }
-      tabList={[
-        {
-          key: 'variable',
-          label: t('Variables'),
-          children: <EnvironmentVariables request={variablesRequest} />,
-        },
-        {
-          key: 'secret',
-          label: t('Secrets'),
-          children: <EnvironmentSecrets request={secretsRequest} />,
-        },
-      ]}
-    />
+                {
+                  key: 'secret',
+                  label: t('Add secret'),
+                },
+                {
+                  type: 'divider',
+                },
+                {
+                  key: 'bulk',
+                  label: t('Bulk import'),
+                },
+              ],
+            }}
+          >
+            <Button type="primary" icon={<PlusOutlined />}>
+              {t('Add new')} <DownOutlined />
+            </Button>
+          </Dropdown>
+        }
+        tabList={[
+          {
+            key: 'variable',
+            label: t('Variables'),
+            children: <EnvironmentVariables request={variablesRequest} />,
+          },
+          {
+            key: 'secret',
+            label: t('Secrets'),
+            children: <EnvironmentSecrets request={secretsRequest} />,
+          },
+        ]}
+      />
+    </div>
   );
 }
