@@ -145,10 +145,12 @@ export function EnvironmentVariables({ request }) {
           {
             title: t('Name'),
             dataIndex: 'name',
+            ellipsis: true,
           },
           {
             title: t('Value'),
             dataIndex: 'value',
+            ellipsis: true,
           },
           {
             title: t('Actions'),
@@ -235,6 +237,7 @@ export function EnvironmentSecrets({ request }) {
           {
             title: t('Name'),
             dataIndex: 'name',
+            ellipsis: true,
           },
           {
             title: t('Actions'),
