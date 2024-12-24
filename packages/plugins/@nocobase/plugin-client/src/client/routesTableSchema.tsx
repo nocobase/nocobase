@@ -130,6 +130,10 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
             },
             'x-component-props': {
               icon: 'EyeInvisibleOutlined',
+              confirm: {
+                title: "{{t('Hide in menu')}}",
+                content: "{{t('Are you sure you want to hide these routes in menu?')}}",
+              },
             },
           },
           show: {
@@ -158,6 +162,10 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
             },
             'x-component-props': {
               icon: 'EyeOutlined',
+              confirm: {
+                title: "{{t('Show in menu')}}",
+                content: "{{t('Are you sure you want to show these routes in menu?')}}",
+              },
             },
           },
           create: {
