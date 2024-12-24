@@ -37,7 +37,6 @@ import {
   RemoteSchemaTemplateManagerPlugin,
   RemoteSchemaTemplateManagerProvider,
   SchemaComponent,
-  useACLRoleContext,
   useAdminSchemaUid,
   useDocumentTitle,
   useRequest,
@@ -58,34 +57,9 @@ import { Plugin } from '../../../application/Plugin';
 import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
 import { Help } from '../../../user/Help';
 import { KeepAlive } from './KeepAlive';
-import { convertRoutesToSchema } from './convertRoutesToSchema';
+import { convertRoutesToSchema, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 
-export { KeepAlive };
-
-const filterByACL = (schema, options) => {
-  const { allowAll, allowMenuItemIds = [] } = options;
-  if (allowAll) {
-    return schema;
-  }
-  const filterSchema = (s) => {
-    if (!s) {
-      return;
-    }
-    for (const key in s.properties) {
-      if (Object.prototype.hasOwnProperty.call(s.properties, key)) {
-        const element = s.properties[key];
-        if (element['x-uid'] && !allowMenuItemIds.includes(element['x-uid'])) {
-          delete s.properties[key];
-        }
-        if (element['x-uid']) {
-          filterSchema(element);
-        }
-      }
-    }
-  };
-  filterSchema(schema);
-  return schema;
-};
+export { KeepAlive, NocoBaseDesktopRouteType };
 
 const useMenuProps = () => {
   const currentPageUid = useCurrentPageUid();
@@ -107,7 +81,6 @@ const MenuSchemaRequestProvider: FC = ({ children }) => {
   const isMatchAdminName = useMatchAdminName();
   const currentPageUid = useCurrentPageUid();
   const isDynamicPage = !!currentPageUid;
-  const ctx = useACLRoleContext();
   const adminSchemaUid = useAdminSchemaUid();
 
   const { data } = useRequest<{
@@ -120,7 +93,7 @@ const MenuSchemaRequestProvider: FC = ({ children }) => {
     {
       refreshDeps: [adminSchemaUid],
       onSuccess(data) {
-        const schema = filterByACL(convertRoutesToSchema(data?.data), ctx);
+        const schema = convertRoutesToSchema(data?.data);
         // url 为 `/admin` 的情况
         if (isMatchAdmin) {
           const s = findMenuItem(schema);
@@ -180,7 +153,6 @@ const MenuEditor = (props) => {
   const isMatchAdminName = useMatchAdminName();
   const currentPageUid = useCurrentPageUid();
   const { sideMenuRef } = props;
-  const ctx = useACLRoleContext();
   const [current, setCurrent] = useState(null);
   const menuSchema = useContext(MenuSchemaRequestContext);
 
@@ -213,7 +185,7 @@ const MenuEditor = (props) => {
   }, [current?.root?.properties, currentPageUid, menuSchema?.properties, isInSettingsPage, sideMenuRef]);
 
   const schema = useMemo(() => {
-    const s = filterByACL(menuSchema, ctx);
+    const s = menuSchema;
     if (s?.['x-component-props']) {
       s['x-component-props']['useProps'] = useMenuProps;
     }

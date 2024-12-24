@@ -63,7 +63,7 @@ export * from './variables';
 export { withDynamicSchemaProps } from './hoc/withDynamicSchemaProps';
 export { withSkeletonComponent } from './hoc/withSkeletonComponent';
 export { SchemaSettingsActionLinkItem } from './modules/actions/link/customizeLinkActionSettings';
-export { useURLAndHTMLSchema } from './modules/actions/link/useURLAndHTMLSchema';
+export { getVariableComponentWithScope, useURLAndHTMLSchema } from './modules/actions/link/useURLAndHTMLSchema';
 export * from './modules/blocks/BlockSchemaToolbar';
 export * from './modules/blocks/data-blocks/form';
 export * from './modules/blocks/data-blocks/table';
