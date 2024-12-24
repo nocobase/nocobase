@@ -141,15 +141,8 @@ export class PluginManager {
    * @internal
    */
   static async getPackageName(name: string) {
-    const prefixes = this.getPluginPkgPrefix();
-    for (const prefix of prefixes) {
-      const pkg = resolve(process.env.NODE_MODULES_PATH, `${prefix}${name}`, 'package.json');
-      const exists = await fs.exists(pkg);
-      if (exists) {
-        return `${prefix}${name}`;
-      }
-    }
-    throw new Error(`${name} plugin does not exist`);
+    const { packageName } = await this.parseName(name);
+    return packageName;
   }
 
   /**
