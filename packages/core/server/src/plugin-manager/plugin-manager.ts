@@ -142,6 +142,10 @@ export class PluginManager {
    */
   static async getPackageName(name: string) {
     const { packageName } = await this.parseName(name);
+    const packageFile = resolve(process.env.NODE_MODULES_PATH, packageName, 'package.json');
+    if (!(await fs.exists(packageFile))) {
+      return null;
+    }
     return packageName;
   }
 
@@ -322,7 +326,9 @@ export class PluginManager {
     try {
       if (typeof plugin === 'string' && options.name && !options.packageName) {
         const packageName = await PluginManager.getPackageName(options.name);
-        options['packageName'] = packageName;
+        if (packageName) {
+          options['packageName'] = packageName;
+        }
       }
 
       if (options.packageName) {
