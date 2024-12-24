@@ -69,7 +69,8 @@ export function CustomRequestSettingsItem() {
               'x-uid': fieldSchema['x-uid'],
             },
           });
-          message.success(t('Saved successfully'));
+          refresh();
+          dn.refresh();
         }}
       />
     </>
