@@ -8,9 +8,30 @@
  */
 
 import { Plugin } from '@nocobase/client';
+import { DesktopRoutesManager } from './DesktopRoutesManager';
+import { lang as t } from './locale';
+import { MobileRoutesManager } from './MobileRoutesManager';
 
 class PluginClient extends Plugin {
-  async load() {}
+  async load() {
+    this.app.pluginSettingsManager.add('routes', {
+      title: t('Routes'),
+      icon: 'ApartmentOutlined',
+      aclSnippet: 'pm.notification',
+    });
+    this.app.pluginSettingsManager.add(`routes.desktop`, {
+      title: t('Desktop routes'),
+      Component: DesktopRoutesManager,
+      aclSnippet: 'pm.notification.channels',
+      sort: 1,
+    });
+    this.app.pluginSettingsManager.add(`routes.mobile`, {
+      title: t('Mobile routes'),
+      Component: MobileRoutesManager,
+      aclSnippet: 'pm.notification.logs',
+      sort: 2,
+    });
+  }
 }
 
 export default PluginClient;

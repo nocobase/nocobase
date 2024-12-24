@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { ISchema } from '@formily/json-schema';
 import { uid } from '@formily/shared';
 import _ from 'lodash';
 
-export enum RouteType {
+export enum NocoBaseDesktopRouteType {
   group = 'group',
   page = 'page',
   link = 'link',
@@ -29,7 +30,7 @@ export interface NocoBaseDesktopRoute {
   title?: string;
   icon?: string;
   schemaUid?: string;
-  type?: RouteType;
+  type?: NocoBaseDesktopRouteType;
   options?: any;
   sort?: number;
   hideInMenu?: boolean;
@@ -70,18 +71,18 @@ export function convertRoutesToSchema(routes: NocoBaseDesktopRoute[]) {
     name: 'wecmvuxtid7',
     'x-uid': 'nocobase-admin-menu',
     'x-async': false,
-  };
+  } as ISchema;
 }
 
 const routeTypeToComponent = {
-  [RouteType.page]: 'Menu.Item',
-  [RouteType.group]: 'Menu.SubMenu',
-  [RouteType.link]: 'Menu.URL',
+  [NocoBaseDesktopRouteType.page]: 'Menu.Item',
+  [NocoBaseDesktopRouteType.group]: 'Menu.SubMenu',
+  [NocoBaseDesktopRouteType.link]: 'Menu.URL',
 };
 
 function convertRouteToSchema(route: NocoBaseDesktopRoute) {
   // tabs 需要在页面 Schema 中处理
-  if (route.type === RouteType.tabs) {
+  if (route.type === NocoBaseDesktopRouteType.tabs) {
     return null;
   }
 

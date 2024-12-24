@@ -16,7 +16,10 @@ import { useTranslation } from 'react-i18next';
 import { Router } from 'react-router-dom';
 import { SchemaInitializerItem, useSchemaInitializer } from '../../application';
 import { useGlobalTheme } from '../../global-theme';
-import { NocoBaseDesktopRoute, RouteType } from '../../route-switch/antd/admin-layout/convertRoutesToSchema';
+import {
+  NocoBaseDesktopRoute,
+  NocoBaseDesktopRouteType,
+} from '../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import {
   FormDialog,
   SchemaComponent,
@@ -80,7 +83,7 @@ export const LinkMenuItem = () => {
     // 创建一个路由到 desktopRoutes 表中
     resource.create({
       values: {
-        type: RouteType.link,
+        type: NocoBaseDesktopRouteType.link,
         title: values.title,
         icon: values.icon,
         parentId: parentRoute?.id,
@@ -103,16 +106,6 @@ export const LinkMenuItem = () => {
         href,
         params,
       },
-      'x-server-hooks': [
-        {
-          type: 'onSelfCreate',
-          method: 'bindMenuToRole',
-        },
-        {
-          type: 'onSelfSave',
-          method: 'extractTextToLocale',
-        },
-      ],
       'x-uid': schemaUid,
     });
   }, [insert, options.components, options.scope, t, theme]);

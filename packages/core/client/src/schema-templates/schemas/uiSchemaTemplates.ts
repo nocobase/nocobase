@@ -9,11 +9,11 @@
 
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { useBlockRequestContext } from '../../block-provider';
 import { useBulkDestroyActionProps, useDestroyActionProps, useUpdateActionProps } from '../../block-provider/hooks';
 import { uiSchemaTemplatesCollection } from '../collections/uiSchemaTemplates';
-import { CollectionTitle } from './CollectionTitle';
-import { useBlockRequestContext } from '../../block-provider';
 import { useSchemaTemplateManager } from '../SchemaTemplateManagerProvider';
+import { CollectionTitle } from './CollectionTitle';
 
 const useUpdateSchemaTemplateActionProps = () => {
   const props = useUpdateActionProps();

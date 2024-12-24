@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { convertRoutesToSchema, RouteType } from '../convertRoutesToSchema';
+import { convertRoutesToSchema, NocoBaseDesktopRouteType } from '../convertRoutesToSchema';
 
 describe('convertRoutesToSchema', () => {
   it('should convert empty routes array to basic menu schema', () => {
@@ -27,7 +27,7 @@ describe('convertRoutesToSchema', () => {
       {
         id: 1,
         title: 'Test Page',
-        type: RouteType.page,
+        type: NocoBaseDesktopRouteType.page,
         icon: 'HomeOutlined',
         schemaUid: 'test-uid',
         createdAt: '2023-01-01',
@@ -54,14 +54,14 @@ describe('convertRoutesToSchema', () => {
       {
         id: 1,
         title: 'Group',
-        type: RouteType.group,
+        type: NocoBaseDesktopRouteType.group,
         icon: 'GroupOutlined',
         schemaUid: 'group-uid',
         children: [
           {
             id: 2,
             title: 'Child Page',
-            type: RouteType.page,
+            type: NocoBaseDesktopRouteType.page,
             icon: 'FileOutlined',
             schemaUid: 'child-uid',
             createdAt: '2023-01-01',
@@ -103,7 +103,7 @@ describe('convertRoutesToSchema', () => {
       {
         id: 1,
         title: 'Tabs',
-        type: RouteType.tabs,
+        type: NocoBaseDesktopRouteType.tabs,
         schemaUid: 'tabs-uid',
         createdAt: '2023-01-01',
         updatedAt: '2023-01-01',
@@ -119,7 +119,7 @@ describe('convertRoutesToSchema', () => {
       {
         id: 1,
         title: 'External Link',
-        type: RouteType.link,
+        type: NocoBaseDesktopRouteType.link,
         icon: 'LinkOutlined',
         schemaUid: 'link-uid',
         createdAt: '2023-01-01',

@@ -26,7 +26,7 @@ import {
   useDesignable,
   useURLAndHTMLSchema,
 } from '../../../';
-import { RouteType } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
+import { NocoBaseDesktopRouteType } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 
 const toItems = (properties = {}) => {
   const items = [];
@@ -117,7 +117,7 @@ const InsertMenuItems = (props) => {
           resource
             .create({
               values: {
-                type: RouteType.group,
+                type: NocoBaseDesktopRouteType.group,
                 title,
                 icon,
                 // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
@@ -178,7 +178,7 @@ const InsertMenuItems = (props) => {
           resource
             .create({
               values: {
-                type: RouteType.page,
+                type: NocoBaseDesktopRouteType.page,
                 title,
                 icon,
                 // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
@@ -254,7 +254,7 @@ const InsertMenuItems = (props) => {
           resource
             .create({
               values: {
-                type: RouteType.link,
+                type: NocoBaseDesktopRouteType.link,
                 title,
                 icon,
                 // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
