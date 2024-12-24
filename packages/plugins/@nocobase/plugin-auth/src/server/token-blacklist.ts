@@ -40,6 +40,9 @@ export class TokenBlacklistService implements ITokenBlacklistService {
           raw: true,
         });
         const tokens = data.map((item: any) => item.token);
+        if (!tokens.length) {
+          return;
+        }
         await this.bloomFilter.mAdd(this.cacheKey, tokens);
       } catch (error) {
         plugin.app.logger.warn('token-blacklist: create bloom filter failed', error);
