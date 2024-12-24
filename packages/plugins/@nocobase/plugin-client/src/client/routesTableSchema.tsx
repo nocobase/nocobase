@@ -341,13 +341,19 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                   field.data = field.data || {};
                                   field.data.loading = true;
                                   const schemaUid = await createRouteSchema(form.values);
+                                  let options;
+
+                                  if (form.values.href || !_.isEmpty(form.values.params)) {
+                                    options = {
+                                      href: form.values.href,
+                                      params: form.values.params,
+                                    };
+                                  }
+
                                   const res = await createRoute({
                                     ..._.omit(form.values, ['href', 'params']),
                                     schemaUid,
-                                    options: {
-                                      href: form.values.href,
-                                      params: form.values.params,
-                                    },
+                                    options,
                                   });
                                   ctx.setVisible(false);
                                   actionCallback?.(res?.data?.data);
@@ -725,10 +731,10 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                               useAction: (actionCallback?: (values: any) => void) => {
                                 const form = useForm();
                                 const field = useField();
+                                const recordData = useCollectionRecordData();
                                 const ctx = useActionContext();
                                 const { getDataBlockRequest } = useDataBlockRequestGetter();
-                                const { createRoute } = useCreateRoute(collectionName);
-                                const { createRouteSchema } = useCreateRouteSchema();
+                                const { updateRoute } = useUpdateRoute(collectionName);
 
                                 return {
                                   async run() {
@@ -736,13 +742,20 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                       await form.submit();
                                       field.data = field.data || {};
                                       field.data.loading = true;
-                                      const schemaUid = await createRouteSchema(form.values);
-                                      const res = await createRoute({
-                                        ..._.omit(form.values, ['href', 'params']),
-                                        schemaUid,
-                                        options: {
+                                      let options;
+
+                                      if (form.values.href || !_.isEmpty(form.values.params)) {
+                                        options = {
                                           href: form.values.href,
                                           params: form.values.params,
+                                        };
+                                      }
+
+                                      const res = await updateRoute({
+                                        filterByTk: recordData.id,
+                                        values: {
+                                          ..._.omit(form.values, ['href', 'params']),
+                                          options,
                                         },
                                       });
                                       ctx.setVisible(false);
@@ -835,6 +848,20 @@ function useCreateRoute(collectionName: string) {
   );
 
   return { createRoute };
+}
+
+function useUpdateRoute(collectionName: string) {
+  const api = useAPIClient();
+  const resource = useMemo(() => api.resource(collectionName), [api, collectionName]);
+
+  const updateRoute = useCallback(
+    ({ filterByTk, values }) => {
+      return resource.update({ filterByTk, values });
+    },
+    [resource],
+  );
+
+  return { updateRoute };
 }
 
 function useCreateRouteSchema(collectionName = 'uiSchemas') {
