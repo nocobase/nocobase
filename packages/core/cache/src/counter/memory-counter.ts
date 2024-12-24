@@ -16,14 +16,16 @@ class Cache {
   data = new Map();
   timers = new Map();
 
-  set(k: string, v: any, ttl: number) {
-    if (this.timers.has(k)) {
-      clearTimeout(this.timers.get(k));
+  set(k: string, v: any, ttl?: number) {
+    if (ttl) {
+      if (this.timers.has(k)) {
+        clearTimeout(this.timers.get(k));
+      }
+      this.timers.set(
+        k,
+        setTimeout(() => this.del(k), ttl),
+      );
     }
-    this.timers.set(
-      k,
-      setTimeout(() => this.del(k), ttl),
-    );
     this.data.set(k, v);
   }
 
@@ -58,7 +60,11 @@ export class MemoryCounter implements ICounter {
     const v = this.cache.get(key);
     const n = v || 0;
     const newValue = n + value;
-    this.cache.set(key, newValue, ttl);
+    if (!v) {
+      this.cache.set(key, newValue, ttl);
+    } else {
+      this.cache.set(key, newValue);
+    }
     return newValue;
   }
 
