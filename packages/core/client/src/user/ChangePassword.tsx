@@ -60,7 +60,7 @@ const schema: ISchema = {
       'x-decorator': 'Form',
       'x-component': 'Action.Drawer',
       'x-component-props': {
-        zIndex: 10000,
+        zIndex: 2000,
       },
       type: 'void',
       title: '{{t("Change password")}}',
