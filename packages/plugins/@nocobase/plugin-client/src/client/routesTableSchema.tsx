@@ -8,6 +8,7 @@
  */
 
 /* eslint-disable react-hooks/rules-of-hooks */
+import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { useField, useForm } from '@formily/react';
 import {
   css,
@@ -458,10 +459,10 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                 'x-component': (props) => {
                   const { token } = useToken();
                   const { t } = useTranslation();
-                  return (
-                    <Tag color={props.value ? token.colorWarning : token.colorSuccess}>
-                      {props.value ? t('No') : t('Yes')}
-                    </Tag>
+                  return props.value ? (
+                    <CloseOutlined style={{ color: '#ff4d4f' }} />
+                  ) : (
+                    <CheckOutlined style={{ color: '#52c41a' }} />
                   );
                 },
                 'x-read-pretty': true,
@@ -502,7 +503,11 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                     // 在点击 Access 按钮时，会用到
                     recordData._path = path;
 
-                    return <Typography.Paragraph copyable> {path} </Typography.Paragraph>;
+                    return (
+                      <Typography.Paragraph copyable style={{ marginBottom: 0 }}>
+                        {path}
+                      </Typography.Paragraph>
+                    );
                   }
 
                   if (recordData.type === NocoBaseDesktopRouteType.tabs && data?.data) {
@@ -529,19 +534,244 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                 type: 'void',
                 title: '{{t("Add child")}}',
                 'x-component': 'Action.Link',
-                'x-component-props': {
-                  openMode: 'drawer',
+                'x-use-component-props': () => {
+                  const recordData = useCollectionRecordData();
+                  return {
+                    disabled:
+                      recordData.type !== NocoBaseDesktopRouteType.group &&
+                      recordData.type !== NocoBaseDesktopRouteType.page,
+                    openMode: 'drawer',
+                  };
                 },
-                'x-use-component-props': 'useAddChildActionProps',
                 'x-decorator': 'Space',
                 properties: {
                   drawer: {
                     type: 'void',
-                    title: '{{t("Add child")}}',
                     'x-component': 'Action.Drawer',
-                    'x-decorator': 'FormV2',
-                    'x-use-decorator-props': 'useAddChildFormProps',
-                    properties: {},
+                    'x-decorator': 'Form',
+                    'x-decorator-props': {
+                      useValues(options) {
+                        return {};
+                      },
+                    },
+                    title: '{{t("Add child")}}',
+                    properties: {
+                      formSchema: {
+                        type: 'void',
+                        properties: {
+                          type: {
+                            type: 'string',
+                            title: '{{t("Type")}}',
+                            'x-decorator': 'FormItem',
+                            'x-component': (props) => {
+                              const { t } = useTranslation();
+                              const recordData = useCollectionRecordData();
+                              const isPage = recordData.type === NocoBaseDesktopRouteType.page;
+                              const isGroup = recordData.type === NocoBaseDesktopRouteType.group;
+                              const defaultValue = useMemo(() => {
+                                if (isPage) {
+                                  props.onChange(NocoBaseDesktopRouteType.tabs);
+                                  return NocoBaseDesktopRouteType.tabs;
+                                }
+                                return NocoBaseDesktopRouteType.page;
+                              }, [isPage, props]);
+
+                              return (
+                                <Radio.Group {...props} defaultValue={defaultValue}>
+                                  <Radio value={NocoBaseDesktopRouteType.group} disabled={!isGroup}>
+                                    {t('Group')}
+                                  </Radio>
+                                  <Radio value={NocoBaseDesktopRouteType.page} disabled={!isGroup}>
+                                    {t('Page')}
+                                  </Radio>
+                                  <Radio value={NocoBaseDesktopRouteType.link} disabled={!isGroup}>
+                                    {t('Link')}
+                                  </Radio>
+                                  <Radio value={NocoBaseDesktopRouteType.tabs} disabled={!isPage}>
+                                    {t('Tab')}
+                                  </Radio>
+                                </Radio.Group>
+                              );
+                            },
+                            required: true,
+                            default: NocoBaseDesktopRouteType.page,
+                          },
+                          title: {
+                            type: 'string',
+                            title: '{{t("Title")}}',
+                            'x-decorator': 'FormItem',
+                            'x-component': 'Input',
+                            required: true,
+                          },
+                          icon: {
+                            type: 'string',
+                            title: '{{t("Icon")}}',
+                            'x-decorator': 'FormItem',
+                            'x-component': 'IconPicker',
+                          },
+                          href: {
+                            title: '{{t("URL")}}',
+                            type: 'string',
+                            'x-decorator': 'FormItem',
+                            'x-component': VariableTextArea,
+                            description: '{{t("Do not concatenate search params in the URL")}}',
+                            'x-reactions': {
+                              dependencies: ['type'],
+                              fulfill: {
+                                state: {
+                                  hidden: '{{$deps[0] !== "link"}}',
+                                },
+                              },
+                            },
+                          },
+                          params: {
+                            type: 'array',
+                            'x-component': 'ArrayItems',
+                            'x-decorator': 'FormItem',
+                            title: `{{t("Search parameters")}}`,
+                            items: {
+                              type: 'object',
+                              properties: {
+                                space: {
+                                  type: 'void',
+                                  'x-component': 'Space',
+                                  'x-component-props': {
+                                    style: {
+                                      flexWrap: 'nowrap',
+                                      maxWidth: '100%',
+                                    },
+                                    className: css`
+                                      & > .ant-space-item:first-child,
+                                      & > .ant-space-item:last-child {
+                                        flex-shrink: 0;
+                                      }
+                                    `,
+                                  },
+                                  properties: {
+                                    name: {
+                                      type: 'string',
+                                      'x-decorator': 'FormItem',
+                                      'x-component': 'Input',
+                                      'x-component-props': {
+                                        placeholder: `{{t("Name")}}`,
+                                      },
+                                    },
+                                    value: {
+                                      type: 'string',
+                                      'x-decorator': 'FormItem',
+                                      'x-component': VariableTextArea,
+                                      'x-component-props': {
+                                        placeholder: `{{t("Value")}}`,
+                                        useTypedConstant: true,
+                                        changeOnSelect: true,
+                                      },
+                                    },
+                                    remove: {
+                                      type: 'void',
+                                      'x-decorator': 'FormItem',
+                                      'x-component': 'ArrayItems.Remove',
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                            'x-reactions': {
+                              dependencies: ['type'],
+                              fulfill: {
+                                state: {
+                                  hidden: '{{$deps[0] !== "link"}}',
+                                },
+                              },
+                            },
+                            properties: {
+                              add: {
+                                type: 'void',
+                                title: `{{t("Add parameter")}}`,
+                                'x-component': 'ArrayItems.Addition',
+                              },
+                            },
+                          },
+                          hideInMenu: {
+                            type: 'boolean',
+                            title: '{{t("Show in menu")}}',
+                            'x-decorator': 'FormItem',
+                            'x-component': (props) => {
+                              const [checked, setChecked] = useState(!props.value);
+                              const onChange = () => {
+                                setChecked(!checked);
+                                props.onChange?.(checked);
+                              };
+                              return <Checkbox checked={checked} onChange={onChange} />;
+                            },
+                            default: false,
+                          },
+                        },
+                      },
+                      footer: {
+                        type: 'void',
+                        'x-component': 'Action.Drawer.Footer',
+                        properties: {
+                          cancel: {
+                            title: '{{t("Cancel")}}',
+                            'x-component': 'Action',
+                            'x-component-props': {
+                              useAction: '{{ cm.useCancelAction }}',
+                            },
+                          },
+                          submit: {
+                            title: '{{t("Submit")}}',
+                            'x-component': 'Action',
+                            'x-component-props': {
+                              type: 'primary',
+                              useAction: (actionCallback?: (values: any) => void) => {
+                                const form = useForm();
+                                const field = useField();
+                                const ctx = useActionContext();
+                                const { getDataBlockRequest } = useDataBlockRequestGetter();
+                                const { createRoute } = useCreateRoute(collectionName);
+                                const { createRouteSchema } = useCreateRouteSchema();
+                                const recordData = useCollectionRecordData();
+                                return {
+                                  async run() {
+                                    try {
+                                      await form.submit();
+                                      field.data = field.data || {};
+                                      field.data.loading = true;
+                                      const schemaUid = await createRouteSchema(form.values);
+                                      let options;
+
+                                      if (form.values.href || !_.isEmpty(form.values.params)) {
+                                        options = {
+                                          href: form.values.href,
+                                          params: form.values.params,
+                                        };
+                                      }
+
+                                      const res = await createRoute({
+                                        parentId: recordData.id,
+                                        ..._.omit(form.values, ['href', 'params']),
+                                        schemaUid,
+                                        options,
+                                      });
+                                      ctx.setVisible(false);
+                                      actionCallback?.(res?.data?.data);
+                                      await form.reset();
+                                      field.data.loading = false;
+                                      getDataBlockRequest()?.refresh();
+                                    } catch (error) {
+                                      if (field.data) {
+                                        field.data.loading = false;
+                                      }
+                                      throw error;
+                                    }
+                                  },
+                                };
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
                   },
                 },
               },
