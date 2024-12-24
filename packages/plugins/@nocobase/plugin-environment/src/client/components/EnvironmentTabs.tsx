@@ -79,7 +79,7 @@ export function EnvironmentVariables({ request }) {
   const { modal } = App.useApp();
   const t = useT();
   const api = useAPIClient();
-  const { data, loading, refresh } = request;
+  const { data, loading, refresh } = request || {};
 
   const resource = api.resource('environmentVariables');
 
@@ -167,7 +167,7 @@ export function EnvironmentVariables({ request }) {
 }
 
 export function EnvironmentSecrets({ request }) {
-  const { data, loading, refresh } = request;
+  const { data, loading, refresh } = request || {};
   const { modal } = App.useApp();
   const t = useT();
   const api = useAPIClient();
