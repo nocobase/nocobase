@@ -96,8 +96,8 @@ export function EnvironmentVariables({ request }) {
     });
   };
 
-  const handleEdit = (initialValues) => {
-    FormDrawer(t('Edit'), () => {
+  const handleEdit = async (initialValues) => {
+    const drawer = FormDrawer({ title: t('Edit') }, () => {
       return (
         <FormLayout layout={'vertical'}>
           <SchemaComponentOptions scope={{ createOnly: false, t }}>
@@ -105,7 +105,13 @@ export function EnvironmentVariables({ request }) {
           </SchemaComponentOptions>
           <FormDrawer.Footer>
             <FormButtonGroup align="right">
-              <Reset>{t('Cancel')}</Reset>
+              <Reset
+                onClick={() => {
+                  drawer.close();
+                }}
+              >
+                {t('Cancel')}
+              </Reset>
               <Submit
                 onSubmit={async (data) => {
                   await api.request({
@@ -127,12 +133,10 @@ export function EnvironmentVariables({ request }) {
           </FormDrawer.Footer>
         </FormLayout>
       );
-    })
-      .open({
-        initialValues: { ...initialValues },
-      })
-      .then(console.log)
-      .catch(console.log);
+    });
+    drawer.open({
+      initialValues: { ...initialValues },
+    });
   };
   return (
     <div>
