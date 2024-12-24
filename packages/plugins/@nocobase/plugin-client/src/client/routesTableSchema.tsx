@@ -77,21 +77,25 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
             'x-use-component-props': () => {
               const tableBlockContextBasicValue = useTableBlockContextBasicValue();
               const { resource, service } = useBlockRequestContext();
+              const { deleteRouteSchema } = useDeleteRouteSchema();
+              const data = useDataBlockRequestData();
+
               return {
                 async onClick() {
                   const filterByTk = tableBlockContextBasicValue.field?.data?.selectedRowKeys;
                   if (!filterByTk?.length) {
                     return;
                   }
+
+                  for (const id of filterByTk) {
+                    const schemaUid = getSchemaUidByRouteId(id, data?.data);
+                    await deleteRouteSchema(schemaUid);
+                  }
+
                   await resource.destroy({
                     filterByTk,
                   });
-                  tableBlockContextBasicValue.field.data.selectedRowKeys = [];
-                  const currentPage = service.params[0]?.page;
-                  const totalPage = service.data?.meta?.totalPage;
-                  if (currentPage === totalPage && service.params[0] && currentPage !== 1) {
-                    service.params[0].page = currentPage - 1;
-                  }
+                  tableBlockContextBasicValue.field.data.clearSelectedRowKeys?.();
                   service?.refresh?.();
                 },
               };
@@ -790,7 +794,6 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                 'x-component-props': {
                   openMode: 'drawer',
                 },
-                'x-use-component-props': 'useEditActionProps',
                 'x-decorator': 'Space',
                 properties: {
                   drawer: {
@@ -1043,9 +1046,11 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                   const api = useAPIClient();
                   const resource = useMemo(() => api.resource(collectionName), [api]);
                   const { getDataBlockRequest } = useDataBlockRequestGetter();
+                  const { deleteRouteSchema } = useDeleteRouteSchema();
 
                   return {
-                    onClick: () => {
+                    onClick: async () => {
+                      await deleteRouteSchema(recordData.schemaUid);
                       resource
                         .destroy({
                           filterByTk: recordData.id,
@@ -1184,4 +1189,18 @@ function useCreateRouteSchema(collectionName = 'uiSchemas') {
   );
 
   return { createRouteSchema };
+}
+
+function useDeleteRouteSchema(collectionName = 'uiSchemas') {
+  const api = useAPIClient();
+  const resource = useMemo(() => api.resource(collectionName), [api, collectionName]);
+
+  const deleteRouteSchema = useCallback(
+    (schemaUid: string) => {
+      return resource[`remove/${schemaUid}`]();
+    },
+    [resource],
+  );
+
+  return { deleteRouteSchema };
 }
