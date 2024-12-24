@@ -6,12 +6,12 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { css } from '@emotion/css';
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { Checkbox, FormButtonGroup, FormDrawer, FormItem, FormLayout, Input, Reset, Submit } from '@formily/antd-v5';
 import { createSchemaField } from '@formily/react';
 import { SchemaComponentOptions, useAPIClient } from '@nocobase/client';
-import { Button, Card, Dropdown, Space, Table, App } from 'antd';
+import { App, Button, Card, Dropdown, Space, Table } from 'antd';
 import React, { useContext, useState } from 'react';
 import { EnvAndSecretsContext } from '../EnvironmentVariablesAndSecretsProvider';
 import { useT } from '../locale';
@@ -190,7 +190,7 @@ export function EnvironmentSecrets({ request }) {
     FormDrawer(t('Edit'), () => {
       return (
         <FormLayout layout={'vertical'}>
-          <SchemaComponentOptions scope={{ createOnly: false }}>
+          <SchemaComponentOptions scope={{ createOnly: false, t }}>
             <SchemaField schema={schema} />
           </SchemaComponentOptions>
           <FormDrawer.Footer>
