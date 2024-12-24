@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { lazy, Plugin } from '@nocobase/client';
+import { Plugin } from '@nocobase/client';
 import { EnvironmentVariablesAndSecretsProvider } from './EnvironmentVariablesAndSecretsProvider';
-const EnvironmentPage = lazy(() => import('./components/EnvironmentPage'));
+import EnvironmentPage from './components/EnvironmentPage';
 import { useGetEnvironmentVariables } from './utils';
 
 export class PluginEnvironmentClient extends Plugin {

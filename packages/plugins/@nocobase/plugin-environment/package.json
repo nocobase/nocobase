@@ -8,8 +8,8 @@
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x"
   },
-  "displayName": "Environment variables and secrets",
-  "displayName.zh-CN": "环境变量和密钥",
+  "displayName": "Environment",
+  "displayName.zh-CN": "环境",
   "description": "Used to manage configuration information across different environments and to secure sensitive data through isolation or encryption.",
   "description.zh-CN": "用于在不同环境中管理配置信息，并对敏感数据进行环境隔离或加密处理",
   "keywords": [
