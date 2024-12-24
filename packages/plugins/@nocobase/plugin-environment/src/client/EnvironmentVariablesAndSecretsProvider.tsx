@@ -7,23 +7,40 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext } from 'react';
+import React, { createContext, useEffect } from 'react';
 import { useRequest } from '@nocobase/client';
 import { observer } from '@formily/react';
+import { useLocation } from 'react-router-dom';
 
 const EnvAndSecretsContext = createContext<any>({});
 
 const EnvironmentVariablesAndSecretsProvider = observer(
   (props) => {
+    const location = useLocation();
     const isAdminPage = location.pathname.startsWith('/admin');
+    const isSignPage = location.pathname.startsWith('/sign');
 
-    const variablesRequest = useRequest<any>({
-      url: 'environmentVariables',
-    });
-    const secretsRequest = useRequest<any>({
-      url: 'environmentSecrets',
-    });
-    if (!isAdminPage) {
+    const variablesRequest = useRequest<any>(
+      {
+        url: 'environmentVariables',
+      },
+      { manual: true },
+    );
+    const secretsRequest = useRequest<any>(
+      {
+        url: 'environmentSecrets',
+      },
+      { manual: true },
+    );
+
+    useEffect(() => {
+      const tokenFromStorage = localStorage.getItem('NOCOBASE_TOKEN');
+      if (tokenFromStorage && !variablesRequest.data && !secretsRequest.data) {
+        variablesRequest.run();
+        secretsRequest.run();
+      }
+    }, [location.pathname]);
+    if (!isAdminPage || isSignPage) {
       return <>{props.children}</>;
     }
     return (

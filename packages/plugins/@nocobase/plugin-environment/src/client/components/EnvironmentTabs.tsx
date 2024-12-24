@@ -76,6 +76,7 @@ const schema = {
 };
 
 export function EnvironmentVariables({ request }) {
+  console.log(request);
   const { modal } = App.useApp();
   const t = useT();
   const api = useAPIClient();
