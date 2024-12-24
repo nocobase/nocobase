@@ -20,7 +20,7 @@ export class DataSourcesFieldModel extends MagicAttributeModel {
   load(loadOptions: LoadOptions) {
     const { app } = loadOptions;
 
-    const options = this.get();
+    const options = this.toJSON();
     const { collectionName, name, dataSourceKey, field } = options;
     const dataSource = app.dataSourceManager.dataSources.get(dataSourceKey);
     const collection = dataSource.collectionManager.getCollection(collectionName);
@@ -46,7 +46,7 @@ export class DataSourcesFieldModel extends MagicAttributeModel {
 
   unload(loadOptions: LoadOptions) {
     const { app } = loadOptions;
-    const options = this.get();
+    const options = this.toJSON();
     const { collectionName, name, dataSourceKey } = options;
     const dataSource = app.dataSourceManager.dataSources.get(dataSourceKey);
     if (!dataSource) {

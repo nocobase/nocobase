@@ -43,7 +43,7 @@ export class FieldModel extends MagicAttributeModel {
       return collection.getField(name);
     }
 
-    const options = this.get();
+    const options = this.toJSON();
 
     const field = await (async () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
