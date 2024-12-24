@@ -10,6 +10,7 @@
 import { MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
+import dayjs from 'dayjs';
 
 async function sleepToEvenSecond() {
   const now = new Date();
@@ -120,6 +121,40 @@ describe('workflow > triggers > schedule > date field mode', () => {
       await sleep(3000);
       const executions = await workflow.getExecutions();
       expect(executions.length).toBe(0);
+    });
+
+    it('starts on date field without timezone', async () => {
+      const postsCollection = db.getCollection('posts');
+      postsCollection.addField('date', {
+        type: 'datetimeNoTz',
+      });
+      await db.sync();
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'schedule',
+        config: {
+          mode: 1,
+          collection: 'posts',
+          startsOn: {
+            field: 'date',
+          },
+        },
+      });
+
+      await sleepToEvenSecond();
+      const startTime = new Date();
+      startTime.setMilliseconds(0);
+
+      const post = await PostRepo.create({
+        values: { title: 't1', date: dayjs(startTime).format('YYYY-MM-DD HH:mm:ss') },
+      });
+
+      await sleep(2000);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      const d0 = Date.parse(executions[0].context.date);
+      expect(d0).toBe(startTime.getTime());
     });
 
     it('starts on post.createdAt and repeat by cron', async () => {
