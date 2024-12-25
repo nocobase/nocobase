@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { BasicAuth } from './basic-auth';
-export { AuthModel } from './model/authenticator';
-
-export { default } from './plugin';
-export * from '../constants';
+export const secAccessCtrlConfigKey = 'access-control-config';
+export const secAccessCtrlConfigCacheKey = 'auth:' + secAccessCtrlConfigKey;
+export const secAccessCtrlConfigCollName = 'securityAccessControlConfig';
+export const ipBlackListCollName = 'ipBlackLists';

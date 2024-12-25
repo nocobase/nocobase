@@ -10,6 +10,7 @@
 import { Collection, Model } from '@nocobase/database';
 import { Auth, AuthConfig } from '../auth';
 import { JwtService } from './jwt-service';
+import { IAccessControlService } from './access-control-service';
 import { Cache } from '@nocobase/cache';
 
 /**
@@ -40,6 +41,10 @@ export class BaseAuth extends Auth {
     return this.ctx.app.authManager.jwt;
   }
 
+  get accessController(): IAccessControlService {
+    return this.ctx.app.authManager.accessController;
+  }
+
   set user(user: Model) {
     this.ctx.state.currentUser = user;
   }
@@ -66,15 +71,19 @@ export class BaseAuth extends Auth {
   async check() {
     const token = this.ctx.getBearerToken();
     if (!token) {
-      return null;
+      throw new Error('Empty token');
     }
     try {
-      const { userId, roleName, iat, temp } = await this.jwt.decode(token);
-
+      const { status, payload } = await this.jwt.verify(token);
+      const { userId, roleName, iat, temp, jti } = payload;
       if (roleName) {
-        this.ctx.headers['x-role'] = roleName;
+        this.ctx.res.setHeader('X-role', roleName);
       }
-
+      const checkAccessResult = await this.accessController.canAccess(jti);
+      if (checkAccessResult.allow === false) {
+        this.ctx.res.setHeader('X-Authorized-Failed-Type', checkAccessResult.reason);
+        throw new Error(checkAccessResult.reason);
+      }
       const cache = this.ctx.cache as Cache;
       const user = await cache.wrap(this.getCacheKey(userId), () =>
         this.userRepository.findOne({
@@ -85,12 +94,27 @@ export class BaseAuth extends Auth {
         }),
       );
       if (temp && user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
-        throw new Error('Token is invalid');
+        throw new Error('Password expired');
       }
-      return user;
+
+      if (status === 'expired') {
+        const result = await this.accessController.refreshAccess(jti);
+        if (result.status === 'failed') {
+          this.ctx.res.setHeader('X-Authorized-Failed-Type', result.reason);
+        } else {
+          const newToken = this.jwt.sign({ userId, temp, roleName }, { jwtid: result.id });
+          this.ctx.res.setHeader('x-new-token', newToken);
+        }
+        throw new Error('Unauthorized');
+      } else if (status === 'valid') {
+        this.accessController.updateAccess(jti, { lastAccessTime: Date.now() });
+        return user;
+      } else {
+        throw new Error('Unauthorized');
+      }
     } catch (err) {
       this.ctx.logger.error(err, { method: 'check' });
-      return null;
+      throw new Error('Unauthorized');
     }
   }
 

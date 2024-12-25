@@ -849,5 +849,9 @@
   "Notification": "Notification",
   "Ellipsis overflow content": "Ellipsis overflow content",
   "Hide column": "Hide column",
-  "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect."
+  "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.",
+  "Security settings": "Security settings",
+  "Access control": "Access control",
+  "Session timeout": "Session timeout",
+  "Your session has timed out due to inactivity. Please sign in again to continue.": "Your session has timed out due to inactivity. Please sign in again to continue."
 }

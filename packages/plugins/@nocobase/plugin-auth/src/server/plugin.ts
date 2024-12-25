@@ -8,7 +8,7 @@
  */
 
 import { Cache } from '@nocobase/cache';
-import { Model } from '@nocobase/database';
+import Database, { Model } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { namespace, presetAuthType, presetAuthenticator } from '../preset';
 import authActions from './actions/auth';
@@ -17,8 +17,14 @@ import { BasicAuth } from './basic-auth';
 import { AuthModel } from './model/authenticator';
 import { Storer } from './storer';
 import { TokenBlacklistService } from './token-blacklist';
+import { AccessController } from './access-controller';
 import { tval } from '@nocobase/utils';
-
+import {
+  createAccessCtrlConfigRecord,
+  getAccessCtrlConfig,
+  saveAccessCtrlConfigToCache,
+} from './collections/access-control-config';
+import { secAccessCtrlConfigCollName } from '../constants';
 export class PluginAuthServer extends Plugin {
   cache: Cache;
 
@@ -45,6 +51,23 @@ export class PluginAuthServer extends Plugin {
       // If blacklist service is not set, should configure default blacklist service
       this.app.authManager.setTokenBlacklistService(new TokenBlacklistService(this));
     }
+
+    if (!this.app.authManager.accessController) {
+      const cache = await this.app.cacheManager.createCache({
+        name: 'auth-access-controller',
+        prefix: 'auth-access-controller',
+        store: 'memory',
+      });
+      const accessController = new AccessController({ cache });
+      const config = await getAccessCtrlConfig(this.db);
+      if (config) accessController.setConfig(config);
+
+      this.app.authManager.setAccessControlService(accessController);
+    }
+
+    this.app.db.on(`${secAccessCtrlConfigCollName}.afterSave`, async (model: Model) => {
+      this.app.authManager.accessController.setConfig(model.dataValues.config);
+    });
 
     this.app.authManager.registerTypes(presetAuthType, {
       auth: BasicAuth,
@@ -200,6 +223,11 @@ export class PluginAuthServer extends Plugin {
       },
       'auth:signOut',
     ]);
+    this.app.acl.registerSnippet({
+      name: `pm.security-settings.access`,
+      actions: [`${secAccessCtrlConfigCollName}:*`],
+    });
+    saveAccessCtrlConfigToCache(this.app, this.db, this.app.cache);
   }
 
   async install(options?: InstallOptions) {
@@ -222,6 +250,7 @@ export class PluginAuthServer extends Plugin {
         },
       },
     });
+    createAccessCtrlConfigRecord(this.db);
   }
   async remove() {}
 }

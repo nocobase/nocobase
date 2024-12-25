@@ -10,15 +10,18 @@
 import { get, set } from 'lodash';
 import React, { ComponentType } from 'react';
 import {
-  BrowserRouter,
+  RouterProvider,
   BrowserRouterProps,
-  HashRouter,
   HashRouterProps,
-  MemoryRouter,
   MemoryRouterProps,
   RouteObject,
-  useRoutes,
+  createBrowserRouter,
+  createHashRouter,
+  createMemoryRouter,
+  Outlet,
 } from 'react-router-dom';
+import { Router } from '@remix-run/router';
+import type { BrowserHistory, MemoryHistory, HashHistory } from 'history';
 import { Application } from './Application';
 import { CustomRouterContextProvider } from './CustomRouterContextProvider';
 import { BlankComponent, RouterContextCleaner } from './components';
@@ -46,6 +49,14 @@ export class RouterManager {
   protected routes: Record<string, RouteType> = {};
   protected options: RouterOptions;
   public app: Application;
+  public history: BrowserHistory | MemoryHistory | HashHistory;
+  private router: Router;
+  get state() {
+    return this.router.state;
+  }
+  get navigate() {
+    return this.router.navigate;
+  }
 
   constructor(options: RouterOptions = {}, app: Application) {
     this.options = options;
@@ -126,31 +137,28 @@ export class RouterManager {
    */
   getRouterComponent(children?: React.ReactNode) {
     const { type = 'browser', ...opts } = this.options;
-    const Routers = {
-      hash: HashRouter,
-      browser: BrowserRouter,
-      memory: MemoryRouter,
+
+    const routerCreators = {
+      hash: createHashRouter,
+      browser: createBrowserRouter,
+      memory: createMemoryRouter,
     };
 
-    const ReactRouter = Routers[type];
     const routes = this.getRoutesTree();
 
-    const RenderRoutes = () => {
-      const element = useRoutes(routes);
-      return element;
-    };
-
     const RenderRouter: React.FC<{ BaseLayout?: ComponentType }> = ({ BaseLayout = BlankComponent }) => {
+      const Provider = () => (
+        <CustomRouterContextProvider>
+          <BaseLayout>
+            <Outlet />
+          </BaseLayout>
+        </CustomRouterContextProvider>
+      );
+      const router = routerCreators[type]([{ element: <Provider />, children: routes }], opts);
+      this.router = router;
       return (
         <RouterContextCleaner>
-          <ReactRouter {...opts}>
-            <CustomRouterContextProvider>
-              <BaseLayout>
-                <RenderRoutes />
-                {children}
-              </BaseLayout>
-            </CustomRouterContextProvider>
-          </ReactRouter>
+          <RouterProvider router={router} />
         </RouterContextCleaner>
       );
     };

@@ -12,6 +12,7 @@ import { Registry } from '@nocobase/utils';
 import { Auth, AuthExtend } from './auth';
 import { JwtOptions, JwtService } from './base/jwt-service';
 import { ITokenBlacklistService } from './base/token-blacklist-service';
+import { IAccessControlService } from './base/access-control-service';
 
 export interface Authenticator {
   authType: string;
@@ -40,6 +41,8 @@ export class AuthManager {
    * @internal
    */
   jwt: JwtService;
+  accessController: IAccessControlService;
+
   protected options: AuthManagerOptions;
   protected authTypes: Registry<AuthConfig> = new Registry();
   // authenticators collection manager.
@@ -56,6 +59,11 @@ export class AuthManager {
 
   setTokenBlacklistService(service: ITokenBlacklistService) {
     this.jwt.blacklist = service;
+  }
+
+  setAccessControlService(service: IAccessControlService) {
+    this.accessController = service;
+    this.jwt.accessController = service;
   }
 
   /**
@@ -110,6 +118,13 @@ export class AuthManager {
     const self = this;
 
     return async function AuthManagerMiddleware(ctx: Context & { auth: Auth }, next: Next) {
+      const { resourceName: rawResourceName, actionName } = ctx.action;
+
+      let resourceName = rawResourceName;
+      if (rawResourceName.includes('.')) {
+        resourceName = rawResourceName.split('.').pop();
+      }
+      const isPublicAction = ctx.dataSource.acl.isPublicAction(resourceName, actionName);
       const token = ctx.getBearerToken();
       if (token && (await ctx.app.authManager.jwt.blacklist?.has(token))) {
         return ctx.throw(401, {
@@ -130,9 +145,16 @@ export class AuthManager {
         return next();
       }
       if (authenticator) {
-        const user = await ctx.auth.check();
-        if (user) {
-          ctx.auth.user = user;
+        try {
+          if (!isPublicAction || ['auth:check'].includes(`${resourceName}:${actionName}`)) {
+            const user = await ctx.auth.check();
+            if (user) {
+              ctx.auth.user = user;
+            }
+          }
+          return next();
+        } catch (error) {
+          ctx.throw(401, error.message);
         }
       }
       await next();

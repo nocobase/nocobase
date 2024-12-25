@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import jwt, { SignOptions } from 'jsonwebtoken';
+import jwt, { JwtPayload, SignOptions } from 'jsonwebtoken';
 import { ITokenBlacklistService } from './token-blacklist-service';
-
+import { IAccessControlService } from './access-control-service';
 export interface JwtOptions {
   secret: string;
   expiresIn?: string;
@@ -31,6 +31,7 @@ export class JwtService {
   }
 
   public blacklist: ITokenBlacklistService;
+  public accessController: IAccessControlService;
 
   private expiresIn() {
     return this.options.expiresIn;
@@ -42,7 +43,8 @@ export class JwtService {
 
   /* istanbul ignore next -- @preserve */
   sign(payload: SignPayload, options?: SignOptions) {
-    const opt = { expiresIn: this.expiresIn(), ...options };
+    const expiresIn = this.accessController.config.tokenExpirationTime || this.expiresIn();
+    const opt = { ...options, expiresIn, jwtid: options?.jwtid || this.accessController.addAccess() };
     if (opt.expiresIn === 'never') {
       opt.expiresIn = '1000y';
     }
@@ -52,12 +54,31 @@ export class JwtService {
   /* istanbul ignore next -- @preserve */
   decode(token: string): Promise<any> {
     return new Promise((resolve, reject) => {
-      jwt.verify(token, this.secret(), (err: any, decoded: any) => {
+      jwt.verify(token, this.secret(), (err, decoded) => {
         if (err) {
           return reject(err);
         }
 
         resolve(decoded);
+      });
+    });
+  }
+
+  verify(
+    token: string,
+  ): Promise<{ status: 'valid' | 'expired' | 'blocked'; payload: JwtPayload } | { status: 'other'; payload: null }> {
+    return new Promise((resolve, reject) => {
+      jwt.verify(token, this.secret(), async (err, decoded: JwtPayload) => {
+        if (err) {
+          if (err.name === 'TokenExpiredError') {
+            resolve({ status: 'expired', payload: jwt.decode(token) as JwtPayload });
+          } else resolve({ status: 'other', payload: null });
+        } else {
+          const checks = await Promise.all([this.blacklist.has(decoded.jti), this.blacklist.has(token)]);
+          if (checks.some(Boolean)) {
+            resolve({ status: 'blocked', payload: decoded as JwtPayload });
+          } else resolve({ status: 'valid', payload: decoded as JwtPayload });
+        }
       });
     });
   }
@@ -70,9 +91,9 @@ export class JwtService {
       return null;
     }
     try {
-      const { exp } = await this.decode(token);
+      const { exp, jti } = await this.decode(token);
       return this.blacklist.add({
-        token,
+        token: jti ?? token,
         expiration: new Date(exp * 1000).toString(),
       });
     } catch {

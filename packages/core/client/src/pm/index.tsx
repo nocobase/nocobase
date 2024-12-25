@@ -9,10 +9,12 @@
 
 import React from 'react';
 import { ACLPane } from '../acl/ACLShortcut';
+import { lazy } from '../lazy-helper';
 import { ADMIN_SETTINGS_PATH } from '../application';
 import { Plugin } from '../application/Plugin';
 import { BlockTemplatesPane } from '../schema-templates';
 import { SystemSettingsPane } from '../system-settings';
+import { addSecuritySettingsPlugin } from '../security-settings';
 import { PluginManager } from './PluginManager';
 import { PluginManagerLink, SettingsCenterDropdown } from './PluginManagerLink';
 import { AdminSettingsLayout } from './PluginSetting';
@@ -21,6 +23,7 @@ export * from './PluginManager';
 export * from './PluginManagerLink';
 export * from './PluginSetting';
 
+// const { SystemSettingsPane } = lazy(() => import('../system-settings'), 'SystemSettingsPane');
 export class PMPlugin extends Plugin {
   async load() {
     this.addComponents();
@@ -47,6 +50,7 @@ export class PMPlugin extends Plugin {
       Component: SystemSettingsPane,
       aclSnippet: 'pm.system-settings.system-settings',
     });
+    addSecuritySettingsPlugin(this.app);
   }
 
   addComponents() {
