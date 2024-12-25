@@ -9,8 +9,9 @@
 
 import { APIClient as APIClientSDK } from '@nocobase/sdk';
 import { Result } from 'ahooks/es/useRequest/src/types';
-import { notification } from 'antd';
+import { notification, Modal } from 'antd';
 import React from 'react';
+import debounce from 'lodash/debounce';
 import { Application } from '../application';
 
 function notify(type, messages, instance) {
@@ -98,6 +99,56 @@ export class APIClient extends APIClientSDK {
       return config;
     });
     super.interceptors();
+    const debouncedRedirect = debounce(
+      (redirectFunc) => {
+        redirectFunc();
+      },
+      3000,
+      { leading: true, trailing: false },
+    );
+    this.axios.interceptors.response.use(
+      (response) => {
+        return response;
+      },
+      (error) => {
+        const headers = error?.response?.headers;
+        if (error.status === 401) {
+          error.silence = true;
+          const state = this.app.router.state;
+          const { pathname, search } = state.location;
+          if (pathname !== '/signin') {
+            if (headers && headers['x-new-token']) {
+              this.auth.setToken(headers['x-new-token']);
+              return this.axios.request(error.config);
+            } else if (headers && headers['x-authorized-failed-type'] === 'access_id_resigned') {
+              return this.axios.request(error.config);
+            } else if (headers && headers['x-authorized-failed-type'] === 'action_timeout') {
+              debouncedRedirect(() => {
+                this.auth.setToken(null);
+                Modal.confirm({
+                  title: this.app.i18n.t('Session timeout'),
+                  content: this.app.i18n.t(
+                    'Your session has timed out due to inactivity. Please sign in again to continue.',
+                  ),
+                  onOk: () => {
+                    this.app.router.navigate(`/signin?redirect=${pathname}${search}`);
+                  },
+                  cancelButtonProps: { style: { display: 'none' } },
+                });
+              });
+            } else {
+              debouncedRedirect(() => {
+                this.auth.setToken(null);
+                error.silence = false;
+                this.app.router.navigate(`/signin?redirect=${pathname}${search}`);
+              });
+            }
+          }
+        }
+
+        throw error;
+      },
+    );
     this.useNotificationMiddleware();
     this.axios.interceptors.response.use(
       (response) => {
@@ -153,7 +204,7 @@ export class APIClient extends APIClientSDK {
         return response;
       },
       async (error) => {
-        if (this.silence) {
+        if (this.silence || error.silence) {
           console.error(error);
           return;
           // throw error;

@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { BasicAuth } from './basic-auth';
-export { AuthModel } from './model/authenticator';
+import { defineCollection } from '@nocobase/database';
+import ipBlacklistCollectionOptions from '../../collection-options/ip-black-list';
 
-export { default } from './plugin';
-export * from '../constants';
+export default defineCollection(ipBlacklistCollectionOptions);
