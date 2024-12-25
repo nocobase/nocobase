@@ -330,7 +330,7 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
   const items = useMemo(() => {
     return fieldSchema
       .mapProperties((schema) => {
-        const tabRoute = currentRoute?.children.find((route) => route.schemaUid === schema['x-uid']);
+        const tabRoute = currentRoute?.children?.find((route) => route.schemaUid === schema['x-uid']);
         if (!tabRoute || tabRoute.hideInMenu) {
           return null;
         }
