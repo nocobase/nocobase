@@ -8,6 +8,7 @@
  */
 
 import { SchemaInitializerItemType, parseCollectionName, useCollectionDataSource, useCompile } from '@nocobase/client';
+import { WorkflowVariableWrapper } from '@nocobase/plugin-workflow/client';
 
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
 import { NAMESPACE, lang } from '../../locale';
@@ -89,6 +90,7 @@ export default class extends Trigger {
     ScheduleConfig,
     TriggerScheduleConfig,
     TriggerCollectionRecordSelect,
+    WorkflowVariableWrapper,
   };
   useVariables = useVariables;
   useInitializers(config): SchemaInitializerItemType | null {

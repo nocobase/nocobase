@@ -9,7 +9,8 @@
 
 import React from 'react';
 
-import { parseCollectionName, RemoteSelect, useApp } from '@nocobase/client';
+import { parseCollectionName, RemoteSelect, useApp, Variable } from '@nocobase/client';
+import { WorkflowVariableWrapper } from '@nocobase/plugin-workflow/client';
 
 import { useFlowContext } from '../FlowContext';
 
@@ -22,18 +23,20 @@ export function TriggerCollectionRecordSelect(props) {
   const collection = collectionManager.getCollection(collectionName);
 
   return (
-    <RemoteSelect
-      objectValue
-      dataSource={dataSourceName}
-      fieldNames={{
-        label: collection.titleField,
-        value: 'id',
-      }}
-      service={{
-        resource: collectionName,
-      }}
-      manual={false}
-      {...props}
-    />
+    <WorkflowVariableWrapper value={props.value} onChange={props.onChange} nullable={false}>
+      <RemoteSelect
+        objectValue
+        dataSource={dataSourceName}
+        fieldNames={{
+          label: collection.titleField,
+          value: 'id',
+        }}
+        service={{
+          resource: collectionName,
+        }}
+        manual={false}
+        {...props}
+      />
+    </WorkflowVariableWrapper>
   );
 }

@@ -9,7 +9,13 @@
 
 import { useForm } from '@formily/react';
 
-import { SchemaInitializerItemType, parseCollectionName, useCollectionDataSource, useCompile } from '@nocobase/client';
+import {
+  SchemaInitializerItemType,
+  parseCollectionName,
+  useCollectionDataSource,
+  useCompile,
+  RemoteSelect,
+} from '@nocobase/client';
 import {
   Trigger,
   CollectionBlockInitializer,
@@ -19,8 +25,10 @@ import {
   RadioWithTooltip,
   useGetCollectionFields,
   TriggerCollectionRecordSelect,
+  WorkflowVariableWrapper,
 } from '@nocobase/plugin-workflow/client';
 import { NAMESPACE, useLang } from '../locale';
+import React from 'react';
 
 const COLLECTION_TRIGGER_ACTION = {
   CREATE: 'create',
@@ -209,17 +217,28 @@ export default class extends Trigger {
       type: 'number',
       title: `{{t("User submitted action", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-component': 'RemoteSelect',
+      'x-component': 'WorkflowVariableWrapper',
       'x-component-props': {
-        fieldNames: {
-          label: 'nickname',
-          value: 'id',
-        },
-        service: {
-          resource: 'users',
-        },
-        manual: false,
+        nullable: false,
       },
+      'x-content': (
+        <RemoteSelect fieldNames={{ label: 'nickname', value: 'id' }} service={{ resource: 'users' }} manual={false} />
+      ),
+      // properties: {
+      //   remoteSelect: {
+      //     'x-component': 'RemoteSelect',
+      //     'x-component-props': {
+      //       fieldNames: {
+      //         label: 'nickname',
+      //         value: 'id',
+      //       },
+      //       service: {
+      //         resource: 'users',
+      //       },
+      //       manual: false,
+      //     },
+      //   },
+      // },
       default: null,
       required: true,
     },
@@ -227,17 +246,23 @@ export default class extends Trigger {
       type: 'string',
       title: `{{t("Role of user submitted action", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-component': 'RemoteSelect',
+      'x-component': 'WorkflowVariableWrapper',
       'x-component-props': {
-        fieldNames: {
-          label: 'title',
-          value: 'name',
-        },
-        service: {
-          resource: 'roles',
-        },
-        manual: false,
+        nullable: false,
       },
+      'x-content': (
+        <RemoteSelect fieldNames={{ label: 'title', value: 'name' }} service={{ resource: 'roles' }} manual={false} />
+      ),
+      // 'x-component-props': {
+      //   fieldNames: {
+      //     label: 'title',
+      //     value: 'name',
+      //   },
+      //   service: {
+      //     resource: 'roles',
+      //   },
+      //   manual: false,
+      // },
       default: null,
     },
   };
@@ -252,6 +277,7 @@ export default class extends Trigger {
     RadioWithTooltip,
     CheckboxGroupWithTooltip,
     TriggerCollectionRecordSelect,
+    WorkflowVariableWrapper,
   };
   isActionTriggerable = (config, context) => {
     return !config.global && ['submit', 'customize:save', 'customize:update'].includes(context.buttonAction);

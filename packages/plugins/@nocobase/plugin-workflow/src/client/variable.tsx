@@ -11,7 +11,7 @@ import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { uniqBy } from 'lodash';
 
-import { Variable, parseCollectionName, useApp, useCompile, usePlugin } from '@nocobase/client';
+import { Variable, parseCollectionName, useApp, useCompile, usePlugin, useVariableScope } from '@nocobase/client';
 
 import { useFlowContext } from './FlowContext';
 import { NAMESPACE, lang } from './locale';
@@ -401,4 +401,18 @@ export function WorkflowVariableRawTextArea({ variableOptions, ...props }): JSX.
 export function WorkflowVariableJSON({ variableOptions, ...props }): JSX.Element {
   const scope = useWorkflowVariableOptions(variableOptions);
   return <Variable.JSON scope={scope} {...props} />;
+}
+
+export function WorkflowVariableWrapper({ children, ...props }): JSX.Element {
+  const scope = useVariableScope();
+
+  if (scope && Array.isArray(scope) && scope.length > 0) {
+    return (
+      <Variable.Input scope={scope} {...props}>
+        {children}
+      </Variable.Input>
+    );
+  }
+
+  return children;
 }

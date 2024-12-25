@@ -7,7 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { NAMESPACE } from '../../locale';
+import React from 'react';
+import { DatePicker } from 'antd';
+import { NAMESPACE, lang } from '../../locale';
 import { appends, collection } from '../../schemas/collection';
 import { SCHEDULE_MODE } from './constants';
 
@@ -73,11 +75,13 @@ export const ScheduleModes = {
         type: 'string',
         title: `{{t('Execute on', { ns: "${NAMESPACE}" })}}`,
         'x-decorator': 'FormItem',
-        'x-component': 'DatePicker',
+        'x-component': 'WorkflowVariableWrapper',
         'x-component-props': {
-          showTime: true,
-          placeholder: `{{t('Current time', { ns: "${NAMESPACE}" })}}`,
+          // showTime: true,
+          // placeholder: `{{t('Current time', { ns: "${NAMESPACE}" })}}`,
+          nullable: false,
         },
+        'x-content': <DatePicker showTime placeholder={lang('Current time')} />,
       },
     },
   },
