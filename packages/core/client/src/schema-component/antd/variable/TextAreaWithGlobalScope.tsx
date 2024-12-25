@@ -8,14 +8,11 @@
  */
 
 import React, { useMemo } from 'react';
-import { connect, mapReadPretty } from '@formily/react';
 import { TextArea } from './TextArea';
 import { RawTextArea } from './RawTextArea';
 import { Password } from '../password';
-import { isVariable } from '../../../variables/utils/isVariable';
 import { useApp } from '../../../';
-import { Variable } from './Variable';
-import { Input } from '../input';
+import { InputNumber } from '../input-number';
 
 export const useEnvironmentVariableOptions = (scope) => {
   const app = useApp();
@@ -29,20 +26,23 @@ export const useEnvironmentVariableOptions = (scope) => {
   }, [environmentCtx, scope]);
 };
 
-export const TextAreaWithGlobalScope = connect((props) => {
-  const { supportsLineBreak, password, number, boolean, ...others } = props;
+const isVariable = (value) => {
+  const regex = /{{.*?}}/;
+  return regex.test(value);
+};
+
+export const TextAreaWithGlobalScope = (props) => {
+  const { supportsLineBreak, password, number, ...others } = props;
   const scope = useEnvironmentVariableOptions(props.scope);
+
   if (supportsLineBreak) {
     return <RawTextArea {...others} scope={scope} fieldNames={{ value: 'name', label: 'title' }} rows={3} />;
   }
-  if (number) {
-    return <Variable.Input {...props} scope={scope} fieldNames={{ value: 'name', label: 'title' }} />;
+  if (number && props.value && !isVariable(props.value)) {
+    return <InputNumber {...others} autoFocus />;
   }
   if (password && props.value && !isVariable(props.value)) {
     return <Password {...others} autoFocus />;
   }
-  if (boolean) {
-    return <Variable.Input {...props} scope={scope} fieldNames={{ value: 'name', label: 'title' }} />;
-  }
   return <TextArea {...others} scope={scope} fieldNames={{ value: 'name', label: 'title' }} />;
-}, mapReadPretty(Input.ReadPretty));
+};
