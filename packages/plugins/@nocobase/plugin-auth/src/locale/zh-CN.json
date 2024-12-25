@@ -34,5 +34,9 @@
   "Token validity period": "Token 有效期",
   "Login validity period": "登录有效期",
   "Operation timeout period": "操作超时时间",
-  "Enable operation timeout control": "启用操作超时控制"
+  "Enable operation timeout control": "启用操作超时控制",
+  "Seconds": "秒",
+  "Minutes": "分钟",
+  "Hours": "小时",
+  "Days": "天"
 }

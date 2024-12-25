@@ -11,6 +11,7 @@ import React from 'react';
 import { ISchema, SchemaComponent, ExtendCollectionsProvider } from '@nocobase/client';
 import { Card } from 'antd';
 import { uid } from '@formily/shared';
+import { useAuthTranslation } from '../../locale';
 import { hooksNameMap, hooksMap } from './hooks';
 import { componentsMap, componentsNameMap } from './components';
 import { SecurityAccessConfig } from '../../../types';
@@ -68,9 +69,10 @@ const schema: ISchema & { properties: Properties } = {
 };
 
 export const AccessSettings = () => {
+  const { t } = useAuthTranslation();
   return (
     <Card bordered={false}>
-      <SchemaComponent schema={schema} scope={hooksMap} components={componentsMap}></SchemaComponent>
+      <SchemaComponent schema={schema} scope={{ t, ...hooksMap }} components={componentsMap}></SchemaComponent>
     </Card>
   );
 };

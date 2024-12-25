@@ -34,5 +34,9 @@
   "Token validity period": "Token validity period",
   "Login validity period": "Login validity period",
   "Operation timeout period": "Operation timeout period",
-  "Enable operation timeout control": "Enable operation timeout control"
+  "Enable operation timeout control": "Enable operation timeout control",
+  "Seconds": "Seconds",
+  "Minutes": "Minutes",
+  "Hours": "Hours",
+  "Days": "Days"
 }
