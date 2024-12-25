@@ -57,9 +57,22 @@ import { Plugin } from '../../../application/Plugin';
 import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
 import { Help } from '../../../user/Help';
 import { KeepAlive } from './KeepAlive';
-import { convertRoutesToSchema, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
+import { convertRoutesToSchema, NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 
 export { KeepAlive, NocoBaseDesktopRouteType };
+
+const RouteContext = createContext<NocoBaseDesktopRoute | null>(null);
+RouteContext.displayName = 'RouteContext';
+
+const CurrentRouteProvider: FC<{ uid: string }> = ({ children, uid }) => {
+  const { allAccessRoutes } = useAllAccessDesktopRoutes();
+  const routeNode = useMemo(() => getRouteNodeBySchemaUid(uid, allAccessRoutes), [uid, allAccessRoutes]);
+  return <RouteContext.Provider value={routeNode}>{children}</RouteContext.Provider>;
+};
+
+export const useCurrentRoute = () => {
+  return useContext(RouteContext);
+};
 
 const useMenuProps = () => {
   const currentPageUid = useCurrentPageUid();
@@ -72,6 +85,20 @@ const useMenuProps = () => {
 const MenuSchemaRequestContext = createContext(null);
 MenuSchemaRequestContext.displayName = 'MenuSchemaRequestContext';
 
+const emptyArray = [];
+const AllAccessDesktopRoutesContext = createContext<{
+  allAccessRoutes: NocoBaseDesktopRoute[];
+  refresh: () => void;
+}>({
+  allAccessRoutes: emptyArray,
+  refresh: () => {},
+});
+AllAccessDesktopRoutesContext.displayName = 'AllAccessDesktopRoutesContext';
+
+export const useAllAccessDesktopRoutes = () => {
+  return useContext(AllAccessDesktopRoutesContext);
+};
+
 const MenuSchemaRequestProvider: FC = ({ children }) => {
   const { t } = useMenuTranslation();
   const { setTitle: _setTitle } = useDocumentTitle();
@@ -83,7 +110,7 @@ const MenuSchemaRequestProvider: FC = ({ children }) => {
   const isDynamicPage = !!currentPageUid;
   const adminSchemaUid = useAdminSchemaUid();
 
-  const { data } = useRequest<{
+  const { data, refresh } = useRequest<{
     data: any;
   }>(
     {
@@ -138,9 +165,18 @@ const MenuSchemaRequestProvider: FC = ({ children }) => {
     }
   }, [data?.data]);
 
-  console.log('menuSchema', menuSchema);
+  const allAccessRoutesValue = useMemo(() => {
+    return {
+      allAccessRoutes: data?.data || emptyArray,
+      refresh,
+    };
+  }, [data?.data, refresh]);
 
-  return <MenuSchemaRequestContext.Provider value={menuSchema}>{children}</MenuSchemaRequestContext.Provider>;
+  return (
+    <AllAccessDesktopRoutesContext.Provider value={allAccessRoutesValue}>
+      <MenuSchemaRequestContext.Provider value={menuSchema}>{children}</MenuSchemaRequestContext.Provider>
+    </AllAccessDesktopRoutesContext.Provider>
+  );
 };
 
 const MenuEditor = (props) => {
@@ -426,6 +462,7 @@ const NocoBaseLogo = () => {
 export const InternalAdminLayout = () => {
   const { token } = useToken();
   const sideMenuRef = useRef<HTMLDivElement>();
+  const currentPageUid = useCurrentPageUid();
 
   const layoutHeaderCss = useMemo(() => {
     return css`
@@ -494,7 +531,9 @@ export const InternalAdminLayout = () => {
         </div>
       </Layout.Header>
       <AdminSideBar sideMenuRef={sideMenuRef} />
-      <LayoutContent />
+      <CurrentRouteProvider uid={currentPageUid}>
+        <LayoutContent />
+      </CurrentRouteProvider>
     </Layout>
   );
 };
@@ -536,4 +575,20 @@ export class AdminLayoutPlugin extends Plugin {
   async load() {
     this.app.addComponents({ AdminLayout, AdminDynamicPage });
   }
+}
+
+function getRouteNodeBySchemaUid(schemaUid: string, treeArray: any[]) {
+  for (const node of treeArray) {
+    if (node.schemaUid === schemaUid) {
+      return node;
+    }
+
+    if (node.children?.length) {
+      const result = getRouteNodeBySchemaUid(schemaUid, node.children);
+      if (result) {
+        return result;
+      }
+    }
+  }
+  return null;
 }

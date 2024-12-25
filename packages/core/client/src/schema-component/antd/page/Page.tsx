@@ -12,13 +12,14 @@ import { PageHeader as AntdPageHeader } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
 import { Schema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
+import { uid } from '@formily/shared';
 import { Button, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { NavigateFunction, Outlet, useOutletContext } from 'react-router-dom';
-import { FormDialog } from '..';
+import { FormDialog, useDesktopRoutes } from '..';
 import { antTableCell } from '../../../acl/style';
 import { useRequest } from '../../../api-client';
 import {
@@ -31,6 +32,7 @@ import {
 import { useDocumentTitle } from '../../../document-title';
 import { useGlobalTheme } from '../../../global-theme';
 import { Icon } from '../../../icon';
+import { NocoBaseDesktopRouteType, useCurrentRoute } from '../../../route-switch/antd/admin-layout';
 import { KeepAliveProvider, useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
 import { DndContext } from '../../common';
@@ -241,6 +243,8 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
   const { getAriaLabel } = useGetAriaLabelOfSchemaInitializer();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
+  const currentRoute = useCurrentRoute();
+  const { createRoute } = useDesktopRoutes();
 
   const tabBarExtraContent = useMemo(() => {
     return (
@@ -283,6 +287,8 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
               initialValues: {},
             });
             const { title, icon } = values;
+            const schemaUid = uid();
+
             dn.insertBeforeEnd({
               type: 'void',
               title,
@@ -290,6 +296,15 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
               'x-component': 'Grid',
               'x-initializer': 'page:addBlock',
               properties: {},
+              'x-uid': schemaUid,
+            });
+
+            createRoute({
+              type: NocoBaseDesktopRouteType.tabs,
+              schemaUid,
+              title,
+              icon,
+              parentId: currentRoute.id,
             });
           }}
         >
@@ -313,23 +328,35 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
   );
 
   const items = useMemo(() => {
-    return fieldSchema.mapProperties((schema) => {
-      return {
-        label: (
-          <SortableItem
-            id={schema.name as string}
-            schema={schema}
-            className={classNames('nb-action-link', 'designerCss', className)}
-          >
-            {schema['x-icon'] && <Icon style={{ marginRight: 8 }} type={schema['x-icon']} />}
-            <span>{schema.title || t('Unnamed')}</span>
-            <PageTabDesigner schema={schema} />
-          </SortableItem>
-        ),
-        key: schema.name as string,
-      };
-    });
-  }, [fieldSchema, className, t, fieldSchema.mapProperties((schema) => schema.title || t('Unnamed')).join()]);
+    return fieldSchema
+      .mapProperties((schema) => {
+        const tabRoute = currentRoute?.children.find((route) => route.schemaUid === schema['x-uid']);
+        if (!tabRoute || tabRoute.hideInMenu) {
+          return null;
+        }
+
+        // 将 tabRoute 挂载到 schema 上，以方便获取
+        (schema as any).__route__ = tabRoute;
+
+        return {
+          label: (
+            <SortableItem id={schema.name as string} className={classNames('nb-action-link', 'designerCss', className)}>
+              {schema['x-icon'] && <Icon style={{ marginRight: 8 }} type={schema['x-icon']} />}
+              <span>{schema.title || t('Unnamed')}</span>
+              <PageTabDesigner schema={schema} />
+            </SortableItem>
+          ),
+          key: schema.name as string,
+        };
+      })
+      .filter(Boolean);
+  }, [
+    fieldSchema,
+    className,
+    t,
+    fieldSchema.mapProperties((schema) => schema.title || t('Unnamed')).join(),
+    currentRoute,
+  ]);
 
   return enablePageTabs ? (
     <DndContext>

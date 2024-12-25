@@ -25,6 +25,7 @@ import { createDesignable, DndContext, SchemaComponentContext, SortableItem, use
 import {
   Icon,
   NocoBaseRecursionField,
+  useAllAccessDesktopRoutes,
   useAPIClient,
   useParseURLAndParams,
   useSchemaInitializerRender,
@@ -212,7 +213,43 @@ export const useParentRoute = () => {
 export const useDesktopRoutes = () => {
   const api = useAPIClient();
   const resource = useMemo(() => api.resource('desktopRoutes'), [api]);
-  return { resource };
+  const { refresh: refreshRoutes } = useAllAccessDesktopRoutes();
+
+  const createRoute = useCallback(
+    async (values: NocoBaseDesktopRoute) => {
+      const res = await resource.create({
+        values,
+      });
+      refreshRoutes();
+      return res;
+    },
+    [resource, refreshRoutes],
+  );
+
+  const updateRoute = useCallback(
+    async (filterByTk: any, values: NocoBaseDesktopRoute) => {
+      const res = await resource.update({
+        filterByTk,
+        values,
+      });
+      refreshRoutes();
+      return res;
+    },
+    [resource, refreshRoutes],
+  );
+
+  const deleteRoute = useCallback(
+    async (filterByTk: any) => {
+      const res = await resource.destroy({
+        filterByTk,
+      });
+      refreshRoutes();
+      return res;
+    },
+    [refreshRoutes, resource],
+  );
+
+  return { createRoute, updateRoute, deleteRoute };
 };
 
 const HeaderMenu = React.memo<{

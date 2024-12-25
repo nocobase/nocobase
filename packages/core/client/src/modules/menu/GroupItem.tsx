@@ -14,10 +14,7 @@ import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializerItem, useSchemaInitializer } from '../../application';
 import { useGlobalTheme } from '../../global-theme';
-import {
-  NocoBaseDesktopRoute,
-  NocoBaseDesktopRouteType,
-} from '../../route-switch/antd/admin-layout/convertRoutesToSchema';
+import { NocoBaseDesktopRouteType } from '../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import {
   FormDialog,
   SchemaComponent,
@@ -34,7 +31,7 @@ export const GroupItem = () => {
   const { theme } = useGlobalTheme();
   const { componentCls, hashId } = useStyles();
   const parentRoute = useParentRoute();
-  const { resource } = useDesktopRoutes();
+  const { createRoute } = useDesktopRoutes();
 
   const handleClick = useCallback(async () => {
     const values = await FormDialog(
@@ -72,14 +69,12 @@ export const GroupItem = () => {
     const schemaUid = uid();
 
     // 创建一个路由到 desktopRoutes 表中
-    resource.create({
-      values: {
-        type: NocoBaseDesktopRouteType.group,
-        title: values.title,
-        icon: values.icon,
-        parentId: parentRoute?.id,
-        schemaUid,
-      } as NocoBaseDesktopRoute,
+    createRoute({
+      type: NocoBaseDesktopRouteType.group,
+      title: values.title,
+      icon: values.icon,
+      parentId: parentRoute?.id,
+      schemaUid,
     });
 
     // 同时插入一个对应的 Schema

@@ -7,12 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { ISchema } from '@formily/json-schema';
 import { App } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { ISchema } from '@formily/json-schema';
-import { useDesignable } from '../../hooks';
-import { useSchemaToolbar } from '../../../application/schema-toolbar';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
+import { useSchemaToolbar } from '../../../application/schema-toolbar';
+import { useDesignable } from '../../hooks';
+import { useDesktopRoutes } from '../menu/Menu';
 
 /**
  * @deprecated
@@ -27,6 +28,8 @@ export const pageTabSettings = new SchemaSettings({
         const { t } = useTranslation();
         const { schema } = useSchemaToolbar<{ schema: ISchema }>();
         const { dn } = useDesignable();
+        const { updateRoute } = useDesktopRoutes();
+
         return {
           title: t('Edit'),
           schema: {
@@ -59,7 +62,12 @@ export const pageTabSettings = new SchemaSettings({
                 'x-icon': icon,
               },
             });
-            dn.refresh();
+
+            // 更新路由
+            updateRoute(schema['__route__'].id, {
+              title,
+              icon,
+            });
           },
         };
       },

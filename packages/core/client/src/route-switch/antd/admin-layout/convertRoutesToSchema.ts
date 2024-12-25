@@ -22,7 +22,7 @@ export enum NocoBaseDesktopRouteType {
  * 尽量与移动端的结构保持一致
  */
 export interface NocoBaseDesktopRoute {
-  id: number;
+  id?: number;
   parentId?: number;
   parent?: NocoBaseDesktopRoute;
   children?: NocoBaseDesktopRoute[];
@@ -42,8 +42,8 @@ export interface NocoBaseDesktopRoute {
   }>;
 
   // 系统字段
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
   createdBy?: any;
   updatedBy?: any;
 }
