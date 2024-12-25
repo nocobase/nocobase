@@ -10,10 +10,12 @@
 import React, { useEffect } from 'react';
 import { InputNumber, Select } from 'antd';
 import { connect, mapProps } from '@formily/react';
+import { useAuthTranslation } from '../../locale';
 const { Option } = Select;
 
 const InputTime = connect(
   (props) => {
+    const { t } = useAuthTranslation();
     const { value, onChange, ...restProps } = props;
     const regex = /^(\d+)([a-zA-Z]+)$/;
     const match = value ? value.match(regex) : null;
@@ -23,10 +25,10 @@ const InputTime = connect(
     const [time, unit] = match ? [parseInt(match[1]), match[2]] : [0, 'm'];
     const TimeUnits = (
       <Select value={unit} onChange={(unit) => onChange(`${time}${unit}`)} style={{ width: 120 }}>
-        <Option value="s">Seconds</Option>
-        <Option value="m">Minutes</Option>
-        <Option value="h">Hours</Option>
-        <Option value="d">Days</Option>
+        <Option value="s">{t('Seconds')}</Option>
+        <Option value="m">{t('Minutes')}</Option>
+        <Option value="h">{t('Hours')}</Option>
+        <Option value="d">{t('Days')}</Option>
       </Select>
     );
 
