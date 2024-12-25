@@ -10,14 +10,19 @@
 import React from 'react';
 
 import { Variable } from '@nocobase/client';
-import { WorkflowVariableInput } from '..';
+import type { DefaultOptionType } from 'antd/lib/cascader';
 
 import { useWorkflowVariableOptions } from '../variable';
+import { dateRangeSystemVariables } from '../constants';
 
 export function FilterDynamicComponent({ value, onChange, renderSchemaComponent }) {
+  const scope: Partial<DefaultOptionType>[] | (() => Partial<DefaultOptionType>[]) = useWorkflowVariableOptions();
+  const index = scope.findIndex((v) => v.key === '$system');
+
+  scope[index].children.push(dateRangeSystemVariables);
   return (
-    <WorkflowVariableInput value={value} onChange={onChange} variableOptions={{ dateRange: true }}>
+    <Variable.Input value={value} onChange={onChange} scope={scope}>
       {renderSchemaComponent()}
-    </WorkflowVariableInput>
+    </Variable.Input>
   );
 }

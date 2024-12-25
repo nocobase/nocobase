@@ -33,7 +33,9 @@ import {
 
 import { useFlowContext } from '../FlowContext';
 import { useWorkflowVariableOptions } from '../variable';
+import { dateRangeSystemVariables } from '../constants';
 import { Card } from 'antd';
+import { DefaultOptionType } from 'antd/lib/cascader';
 
 function reduceSchema(s, fn) {
   fn(s);
@@ -57,7 +59,11 @@ export function AssignedFieldsFormSchemaConfig(props) {
   const { workflow } = useFlowContext();
   const { setFormValueChanged } = useActionContext();
   const api = useAPIClient();
-  const scope = useWorkflowVariableOptions({ dateRange: true });
+  const scope: Partial<DefaultOptionType>[] | (() => Partial<DefaultOptionType>[]) = useWorkflowVariableOptions();
+  const index = scope.findIndex((v) => v.key === '$system');
+
+  scope[index].children.push(dateRangeSystemVariables);
+
   const { values, setValuesIn, disabled } = useForm();
   const params = toJS(values.params);
   const [dataSourceName, collectionName] = parseCollectionName(values.collection);
