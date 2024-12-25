@@ -13,7 +13,7 @@ import { Variable } from '@nocobase/client';
 import type { DefaultOptionType } from 'antd/lib/cascader';
 
 import { useWorkflowVariableOptions } from '../variable';
-import { dateRangeSystemVariables } from '../constants';
+import dateRangeSystemVariables from '../dateRangeSystemVariables';
 
 export function FilterDynamicComponent({ value, onChange, renderSchemaComponent }) {
   const scope: Partial<DefaultOptionType>[] | (() => Partial<DefaultOptionType>[]) = useWorkflowVariableOptions();
