@@ -17,7 +17,7 @@ import {
   useActionContext,
   useCollection,
   useCollectionRecordData,
-  useDataBlockRequestGetter,
+  useDataBlockRequest,
   useDataBlockResource,
   useRequest,
   useSchemaComponentContext,
@@ -45,7 +45,7 @@ const useSubmitActionProps = () => {
   const { message } = App.useApp();
   const form = useForm();
   const resource = useDataBlockResource();
-  const { getDataBlockRequest } = useDataBlockRequestGetter();
+  const { refresh } = useDataBlockRequest();
   const { t } = useUsersTranslation();
   const collection = useCollection();
 
@@ -62,7 +62,7 @@ const useSubmitActionProps = () => {
       } else {
         await resource.create({ values });
       }
-      await getDataBlockRequest()?.runAsync();
+      refresh();
       message.success(t('Saved successfully'));
       setVisible(false);
       form.reset();

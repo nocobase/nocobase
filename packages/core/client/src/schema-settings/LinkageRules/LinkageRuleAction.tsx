@@ -82,6 +82,7 @@ export const FormFieldLinkageRuleAction = observer(
                 setDataIndex(value);
               }}
               placeholder={t('Select field')}
+              treeNodeFilterProp="title"
             />
             <Select
               // @ts-ignore

@@ -23,7 +23,7 @@ describe('actions', () => {
     process.env.INIT_ROOT_PASSWORD = '123456';
     process.env.INIT_ROOT_NICKNAME = 'Test';
     app = await createMockServer({
-      plugins: ['field-sort', 'auth', 'users', 'acl', 'data-source-manager'],
+      plugins: ['field-sort', 'auth', 'users', 'acl', 'data-source-manager', 'system-settings'],
     });
     db = app.db;
 
@@ -40,6 +40,7 @@ describe('actions', () => {
   });
 
   afterEach(async () => {
+    await app.db.clean({ drop: true });
     await app.destroy();
   });
 
@@ -61,6 +62,23 @@ describe('actions', () => {
     expect(res2.status).toBe(200);
   });
 
+  it('update profile not allowed', async () => {
+    await db.getRepository('systemSettings').update({
+      filterByTk: 1,
+      values: {
+        enableEditProfile: false,
+      },
+    });
+    const res = await agent.resource('users').updateProfile({
+      filterByTk: adminUser.id,
+      values: {
+        nickname: 'a',
+      },
+    });
+    expect(res.status).toBe(403);
+    expect(res.error.text).toBe('User profile is not allowed to be edited');
+  });
+
   it('update profile, but not roles', async () => {
     expect(adminUser.roles.length).not.toBe(0);
     const res2 = await adminAgent.resource('users').updateProfile({
@@ -70,11 +88,6 @@ describe('actions', () => {
         username: 'a',
         email: 'test@nocobase.com',
         phone: '12345678901',
-        systemSettings: {
-          ...adminUser.systemSettings,
-          themeId: 1,
-        },
-        appLang: 'zh-CN',
         roles: [],
       },
     });
@@ -87,8 +100,19 @@ describe('actions', () => {
     expect(user.username).toBe('a');
     expect(user.email).toBe('test@nocobase.com');
     expect(user.phone).toBe('12345678901');
-    expect(user.systemSettings.themeId).toBe(1);
-    expect(user.appLang).toBe('zh-CN');
     expect(user.roles.length).not.toBe(0);
+  });
+
+  it('update lang', async () => {
+    const res = await adminAgent.resource('users').updateLang({
+      values: {
+        appLang: 'zh-CN',
+      },
+    });
+    expect(res.status).toBe(200);
+    const user = await db.getRepository('users').findOne({
+      filterByTk: adminUser.id,
+    });
+    expect(user.appLang).toBe('zh-CN');
   });
 });

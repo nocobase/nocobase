@@ -21,12 +21,9 @@ export function useUpdateThemeSettings() {
         return;
       }
       try {
-        await api.resource('users').updateProfile({
+        await api.resource('users').updateTheme({
           values: {
-            systemSettings: {
-              ...(currentUser.data.data.systemSettings || {}),
-              themeId,
-            },
+            themeId,
           },
         });
         currentUser.mutate({

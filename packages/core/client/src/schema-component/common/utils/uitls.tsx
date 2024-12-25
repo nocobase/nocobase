@@ -95,7 +95,6 @@ export const conditionAnalyses = async ({
   const conditions = ruleGroup[type];
 
   let results = conditions.map(async (condition) => {
-    // fix https://nocobase.height.app/T-3152
     if ('$and' in condition || '$or' in condition) {
       return await conditionAnalyses({ ruleGroup: condition, variables, localVariables });
     }
@@ -155,7 +154,7 @@ export const conditionAnalyses = async ({
  * @param targetField
  * @returns
  */
-export function targetFieldToVariableString(targetField: string[], variableName = '$nForm') {
+function targetFieldToVariableString(targetField: string[], variableName = '$nForm') {
   // Action 中的联动规则虽然没有 form 上下文但是在这里也使用的是 `$nForm` 变量，这样实现更简单
   return `{{ ${variableName}.${targetField.join('.')} }}`;
 }

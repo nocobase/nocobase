@@ -38,6 +38,7 @@ export type QueryParams = Partial<{
   orders: OrderProps[];
   filter: any;
   limit: number;
+  offset: number;
   sql: {
     fields?: string;
     clauses?: string;

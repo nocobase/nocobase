@@ -77,16 +77,13 @@ const useCurrentFormData = () => {
  */
 export const useCurrentFormContext = ({ form: _form }: Pick<Props, 'form'> = {}) => {
   const { form } = useFormBlockContext();
-  const formData = useCurrentFormData();
   const { isVariableParsedInOtherContext } = useFlag();
+
   const formInstance = _form || form;
 
   return {
     /** 变量值 */
-    currentFormCtx:
-      formInstance?.readPretty === false && formInstance?.values && Object.keys(formInstance?.values)?.length
-        ? formInstance?.values
-        : formData || formInstance?.values,
+    currentFormCtx: formInstance?.values,
     /** 用来判断是否可以显示`当前表单`变量 */
     shouldDisplayCurrentForm: formInstance && !formInstance.readPretty && !isVariableParsedInOtherContext,
   };

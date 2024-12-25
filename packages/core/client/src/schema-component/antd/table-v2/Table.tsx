@@ -33,7 +33,7 @@ import React, {
   useState,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DndContext, isBulkEditAction, useCompile, useDesignable, usePopupSettings, useTableSize } from '../..';
+import { DndContext, isBulkEditAction, useDesignable, usePopupSettings, useTableSize } from '../..';
 import {
   BlockRequestLoadingContext,
   RecordIndexProvider,
@@ -64,7 +64,6 @@ import { GetStyleRules } from '../../../schema-settings/LinkageRules/useActionVa
 import { HighPerformanceSpin } from '../../common/high-performance-spin/HighPerformanceSpin';
 import { useToken } from '../__builtins__';
 import { useAssociationFieldContext } from '../association-field/hooks';
-import { RenderTextInCell } from './RenderTextInCell';
 import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 
@@ -93,9 +92,6 @@ const useArrayField = (props) => {
   return (props.field || field) as ArrayField;
 };
 
-function getSchemaArrJSON(schemaArr: Schema[]) {
-  return schemaArr.map((item) => (item.name === 'actions' ? omit(item.toJSON(), 'properties') : item.toJSON()));
-}
 function adjustColumnOrder(columns) {
   const leftFixedColumns = [];
   const normalColumns = [];
@@ -163,10 +159,7 @@ const useRefreshTableColumns = () => {
   return { refresh };
 };
 
-const useTableColumns = (
-  props: { showDel?: any; isSubTable?: boolean; optimizeTextCellRender: boolean },
-  paginationProps,
-) => {
+const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginationProps) => {
   const { token } = useToken();
   const field = useArrayField(props);
   const schema = useFieldSchema();
@@ -184,7 +177,6 @@ const useTableColumns = (
   const { current, pageSize } = paginationProps;
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { refresh } = useRefreshTableColumns();
-  const compile = useCompile();
 
   const filterProperties = useCallback(
     (schema) =>
@@ -237,21 +229,6 @@ const useTableColumns = (
           ...columnSchema['x-component-props'],
           width: columnHidden && !designable ? 0 : columnSchema['x-component-props']?.width || 100,
           render: (value, record, index) => {
-            const { enableLink } = Object.values(columnSchema.properties)[0]['x-component-props'] || {};
-
-            if (
-              !enableLink &&
-              props.optimizeTextCellRender &&
-              ['sequence', 'input', 'textarea', 'phone', 'email'].includes(_interface)
-            ) {
-              return (
-                <RenderTextInCell
-                  value={compile(value || _.get(record, Object.keys(columnSchema.properties)[0]))}
-                  ellipsis={Object.values(columnSchema.properties)[0]?.['x-component-props']?.ellipsis}
-                />
-              );
-            }
-
             return (
               <RefreshComponentProvider refresh={refresh}>
                 <TableCellRender
@@ -282,16 +259,7 @@ const useTableColumns = (
         } as TableColumnProps<any>;
       }),
 
-    [
-      columnsSchemas,
-      collection,
-      refresh,
-      designable,
-      filterProperties,
-      schemaToolbarBigger,
-      field,
-      props.optimizeTextCellRender,
-    ],
+    [columnsSchemas, collection, refresh, designable, filterProperties, schemaToolbarBigger, field],
   );
 
   const tableColumns = useMemo(() => {
@@ -693,12 +661,6 @@ interface TableProps {
   onExpand?: (flag: boolean, record: any) => void;
   isSubTable?: boolean;
   value?: any[];
-  /**
-   * If set to true, it will bypass the CollectionField component and render text directly,
-   * which provides better rendering performance.
-   * @default false
-   */
-  optimizeTextCellRender?: boolean;
 }
 
 export const TableElementRefContext = createContext<MutableRefObject<HTMLDivElement | null> | null>(null);

@@ -149,20 +149,26 @@ export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
     collection,
   });
   const { where, include: filterInclude } = filterParser.toSequelizeParams();
-  const parsedFilterInclude = filterInclude?.map((item) => {
-    if (fields.get(item.association)?.type === 'belongsToMany') {
-      item.through = { attributes: [] };
+  if (filterInclude) {
+    // Remove attributes from through table
+    const stack = [...filterInclude];
+    while (stack.length) {
+      const item = stack.pop();
+      if (fields.get(item.association)?.type === 'belongsToMany') {
+        item.through = { attributes: [] };
+      }
+      if (item.include) {
+        stack.push(...item.include);
+      }
     }
-    return item;
-  });
-
+  }
   ctx.action.params.values = {
     ...ctx.action.params.values,
     where,
     measures: parsedMeasures,
     dimensions: parsedDimensions,
     orders: parsedOrders,
-    include: [...include, ...(parsedFilterInclude || [])],
+    include: [...include, ...(filterInclude || [])],
   };
   await next();
 };

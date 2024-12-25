@@ -83,11 +83,7 @@ const schema: ISchema = {
           title: "{{t('Nickname')}}",
           'x-decorator': 'FormItem',
           'x-component': 'Input',
-          'x-reactions': (field) => {
-            if (field.initialValue) {
-              field.disabled = true;
-            }
-          },
+          'x-disabled': '{{ enableEditProfile === false }}',
         },
         username: {
           type: 'string',
@@ -96,11 +92,7 @@ const schema: ISchema = {
           'x-component': 'Input',
           'x-validator': { username: true },
           required: true,
-          'x-reactions': (field) => {
-            if (field.initialValue) {
-              field.disabled = true;
-            }
-          },
+          'x-disabled': '{{ enableEditProfile === false }}',
         },
         email: {
           type: 'string',
@@ -108,22 +100,14 @@ const schema: ISchema = {
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-validator': 'email',
-          'x-reactions': (field) => {
-            if (field.initialValue) {
-              field.disabled = true;
-            }
-          },
+          'x-disabled': '{{ enableEditProfile === false }}',
         },
         phone: {
           type: 'string',
           title: '{{t("Phone")}}',
           'x-decorator': 'FormItem',
           'x-component': 'Input',
-          'x-reactions': (field) => {
-            if (field.initialValue) {
-              field.disabled = true;
-            }
-          },
+          'x-disabled': '{{ enableEditProfile === false }}',
         },
         footer: {
           'x-component': 'Action.Drawer.Footer',
@@ -139,6 +123,7 @@ const schema: ISchema = {
             submit: {
               title: 'Submit',
               'x-component': 'Action',
+              'x-disabled': '{{ enableEditProfile === false }}',
               'x-component-props': {
                 type: 'primary',
                 useAction: '{{ useSaveCurrentUserValues }}',
@@ -171,7 +156,7 @@ export const useEditProfile = () => {
           <ActionContextProvider value={{ visible, setVisible }}>
             <div onClick={(e) => e.stopPropagation()}>
               <SchemaComponent
-                scope={{ useCurrentUserValues, useCloseAction, useSaveCurrentUserValues }}
+                scope={{ useCurrentUserValues, useCloseAction, useSaveCurrentUserValues, enableEditProfile }}
                 schema={schema}
               />
             </div>
@@ -180,8 +165,10 @@ export const useEditProfile = () => {
       ),
     };
   }, [visible]);
+
   if (enableEditProfile === false) {
     return null;
   }
+
   return result;
 };

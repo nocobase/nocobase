@@ -42,6 +42,14 @@ describe('sql collection', () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.errors[0].message).toMatch('Only supports SELECT statements or WITH clauses');
+
+    res = await agent.resource('sqlCollection').execute({
+      values: {
+        sql: "select pg_read_file('/etc/passwd');",
+      },
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.errors[0].message).toMatch('SQL statements contain dangerous keywords');
   });
 
   it('sqlCollection:execute', async () => {
@@ -243,5 +251,17 @@ describe('sql collection', () => {
     expect(fields2.length).toBe(1);
     const loadedFields2 = db.getCollection('sqlCollection').fields;
     expect(loadedFields2.size).toBe(1);
+  });
+
+  it('should check sql when creating', async () => {
+    const res = await agent.resource('collections').create({
+      values: {
+        name: 'sqlCollection',
+        sql: "select pg_read_file('/etc/passwd');",
+        template: 'sql',
+      },
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.errors[0].message).toMatch('SQL statements contain dangerous keywords');
   });
 });

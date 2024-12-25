@@ -1,22 +1,21 @@
-
-
+import { ISchema } from '@formily/react';
 import {
   FormBlockProvider,
+  Plugin,
+  SchemaComponent,
   TableBlockProvider,
   UseDataBlockProps,
   useActionContext,
   useCollectionRecord,
   useDataBlockRequest,
   useDataBlockResource,
+  useFormBlockContext,
   useFormBlockProps,
   useTableBlockProps,
-  SchemaComponent,
-  Plugin,
 } from '@nocobase/client';
-import { App as AntdApp } from 'antd';
-import { ISchema, useForm } from '@formily/react';
-import React from 'react';
 import { mockApp } from '@nocobase/client/demo-utils';
+import { App as AntdApp } from 'antd';
+import React from 'react';
 
 const useCloseActionProps = () => {
   const { setVisible } = useActionContext();
@@ -31,15 +30,16 @@ const useCloseActionProps = () => {
 const useSubmitActionProps = () => {
   const { setVisible } = useActionContext();
   const { message } = AntdApp.useApp();
-  const form = useForm();
-
   const resource = useDataBlockResource();
   const { run } = useDataBlockRequest();
+  const { form } = useFormBlockContext();
+
   return {
     type: 'primary',
     async onClick() {
       await form.submit();
-      const values = form.values;
+      const values = { ...form.values };
+      console.log('values', values);
 
       const { data } = await resource.update(values);
       if (data.data.result === 'ok') {
@@ -192,15 +192,12 @@ const schema: ISchema = {
                           type: 'void',
                           title: 'Edit record',
                           'x-component': 'Action.Drawer',
-                          'x-component-props': {
-                            className: 'nb-action-popup',
-                          },
+                          'x-decorator': 'FormBlockProvider',
+                          'x-use-decorator-props': 'useFormBlockProviderProps',
                           properties: {
                             formContext: {
                               type: 'void',
-                              'x-decorator': 'FormBlockProvider',
-                              'x-use-decorator-props': 'useFormBlockProviderProps',
-                              'x-component': 'CardItem',
+                              'x-component': 'div',
                               properties: {
                                 form: {
                                   type: 'void',
@@ -259,12 +256,14 @@ const schema: ISchema = {
 };
 
 const Demo = () => {
-  return <SchemaComponent schema={schema} scope={{ useSubmitActionProps, useFormBlockProviderProps, useCloseActionProps }} />
+  return (
+    <SchemaComponent schema={schema} scope={{ useSubmitActionProps, useFormBlockProviderProps, useCloseActionProps }} />
+  );
 };
 
 class DemoPlugin extends Plugin {
   async load() {
-    this.app.router.add('root', { path: '/', Component: Demo })
+    this.app.router.add('root', { path: '/', Component: Demo });
   }
 }
 

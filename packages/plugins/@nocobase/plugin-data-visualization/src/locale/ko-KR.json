@@ -23,6 +23,7 @@
   "Filter": "필터",
   "Sort": "정렬",
   "Limit": "결과 제한",
+  "Offset": "건너뛸 개수",
   "Enable cache": "캐시 활성화",
   "TTL (second)": "TTL (초)",
   "Field": "필드",

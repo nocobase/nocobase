@@ -59,14 +59,10 @@ const NocoBaseReactiveInternal: React.FC<IReactiveFieldProps> = (props) => {
 
   const renderComponent = () => {
     if (!field.componentType) return content;
-    const disabled = true;
-    const readOnly = true;
 
     return React.createElement(
       getComponent(field.componentType),
       {
-        disabled,
-        readOnly,
         ...field.componentProps,
         value: field.value,
       },

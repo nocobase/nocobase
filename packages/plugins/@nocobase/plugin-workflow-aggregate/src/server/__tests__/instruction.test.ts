@@ -333,5 +333,38 @@ describe('workflow > instructions > aggregate', () => {
       const [job] = await execution.getJobs();
       expect(job.result).toBe(1);
     });
+
+    it('transaction in sync workflow', async () => {
+      PostRepo = app.dataSourceManager.dataSources.get('another').collectionManager.getRepository('posts');
+
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        sync: true,
+        config: {
+          mode: 1,
+          collection: 'another:posts',
+        },
+      });
+
+      const n1 = await w1.createNode({
+        type: 'aggregate',
+        config: {
+          collection: 'another:posts',
+          aggregator: 'count',
+          params: {
+            field: 'id',
+          },
+        },
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      const e1s = await w1.getExecutions();
+      expect(e1s.length).toBe(1);
+      expect(e1s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      const [job] = await e1s[0].getJobs();
+      expect(job.result).toBe(1);
+    });
   });
 });

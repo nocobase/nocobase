@@ -11,6 +11,7 @@ import { Plugin } from '@nocobase/server';
 import { Collection } from '@nocobase/database';
 import { SQLCollection } from './sql-collection';
 import sqlResourcer from './resources/sql';
+import { checkSQL } from './utils';
 
 export class PluginCollectionSQLServer extends Plugin {
   async beforeLoad() {
@@ -33,6 +34,21 @@ export class PluginCollectionSQLServer extends Plugin {
     this.app.acl.registerSnippet({
       name: `pm.data-source-manager.collection-sql `,
       actions: ['sqlCollection:*'],
+    });
+
+    this.app.resourceManager.use(async (ctx, next) => {
+      const { resourceName, actionName } = ctx.action;
+      if (resourceName === 'collections' && actionName === 'create') {
+        const { sql } = ctx.action.params.values || {};
+        if (sql) {
+          try {
+            checkSQL(sql);
+          } catch (e) {
+            ctx.throw(400, ctx.t(e.message));
+          }
+        }
+      }
+      return next();
     });
   }
 }

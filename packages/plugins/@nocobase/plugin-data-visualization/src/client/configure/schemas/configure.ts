@@ -461,6 +461,19 @@ export const querySchema: ISchema = {
                 },
               },
             },
+            offset: {
+              title: '{{t("Offset")}}',
+              type: 'number',
+              'x-decorator': 'FormItem',
+              'x-component': 'InputNumber',
+              'x-component-props': {
+                defaultValue: 0,
+                min: 0,
+                style: {
+                  width: '100px',
+                },
+              },
+            },
           },
         },
         // sql: {
