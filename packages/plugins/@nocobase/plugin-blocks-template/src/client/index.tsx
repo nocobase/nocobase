@@ -20,6 +20,7 @@ import { registerPatches } from '@formily/json-schema/esm/patches';
 import { ISchema, Schema } from '@formily/json-schema';
 import * as _ from 'lodash';
 import { associationRecordSettingItem } from './settings/associationRecordSetting';
+import { resetSettingItem } from './settings/resetSetting';
 
 function findSchemaCache(cache, uid) {
   const isChild = (schema, uid) => {
@@ -169,17 +170,18 @@ const mergeSchema = (target, source, rootId, templateschemacache) => {
           }
         }
         const properties = {};
-        for (const key of keys) {
-          if (removedKeys.includes(key)) {
+        for (let i = 0; i < keys.length; i++) {
+          const k = keys[i];
+          if (removedKeys.includes(k)) {
             continue;
           }
-          const sourceProperty = sourceValue?.[key] || {};
-          if (_.get(objectValue, [key, 'properties'])) {
+          const sourceProperty = sourceValue?.[k] || {};
+          if (_.get(objectValue, [k, 'properties'])) {
             sourceProperty['properties'] = sourceProperty['properties'] || {};
           }
-          properties[key] = mergeSchema(objectValue?.[key] || {}, sourceValue?.[key], rootId, templateschemacache);
-          if (properties[key]['x-template-root-uid']) {
-            properties[key] = getFullSchema(properties[key], templateschemacache);
+          properties[k] = mergeSchema(objectValue?.[k] || {}, sourceValue?.[k], rootId, templateschemacache);
+          if (properties[k]['x-template-root-uid']) {
+            properties[k] = getFullSchema(properties[k], templateschemacache);
           }
         }
         const parentIndexs = [];
@@ -257,10 +259,13 @@ export class PluginBlocksTemplateClient extends Plugin {
 
     this.app.apiClient.axios.interceptors.request.use(async (config) => {
       if (config.url.includes('uiSchemas:remove')) {
-        const uid = config.url.split('/').pop();
+        const uidWithQuery = config.url.split('/').pop();
+        const uid = uidWithQuery.split('?')[0];
+        const query = uidWithQuery.split('?')[1];
+        const skipRemovePatch = query.includes('resettemplate=true');
         const currentSchema = findSchemaCache(this.templateBlocks, uid);
         const ret = findParentSchemaByUid(currentSchema, uid);
-        if (ret && ret.parent) {
+        if (ret && ret.parent && !skipRemovePatch) {
           const { schema, parent } = ret;
           if (!parent['x-removed-properties']) {
             parent['x-removed-properties'] = [];
@@ -327,6 +332,8 @@ export class PluginBlocksTemplateClient extends Plugin {
     for (const key in schameSettings) {
       // @ts-ignore
       this.app.schemaSettingsManager.addItem(key, '关联记录', associationRecordSettingItem);
+      // @ts-ignore
+      this.app.schemaSettingsManager.addItem(key, '重置', resetSettingItem);
     }
 
     this.app.pluginSettingsManager.add('blocks-templates', {
