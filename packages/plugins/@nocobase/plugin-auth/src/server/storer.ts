@@ -41,7 +41,11 @@ export class Storer implements IStorer {
       return authenticator;
     }
     const $env = this.app?.environment;
-    return $env ? $env.renderJsonTemplate(authenticator.toJSON()) : authenticator;
+    if (!$env) {
+      return authenticator;
+    }
+    authenticator.dataValues = $env.renderJsonTemplate(authenticator.dataValues);
+    return authenticator;
   }
 
   async getCache(): Promise<AuthModel[]> {
