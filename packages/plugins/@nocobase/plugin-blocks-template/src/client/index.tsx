@@ -262,7 +262,7 @@ export class PluginBlocksTemplateClient extends Plugin {
         const uidWithQuery = config.url.split('/').pop();
         const uid = uidWithQuery.split('?')[0];
         const query = uidWithQuery.split('?')[1];
-        const skipRemovePatch = query.includes('resettemplate=true');
+        const skipRemovePatch = query?.includes('resettemplate=true');
         const currentSchema = findSchemaCache(this.templateBlocks, uid);
         const ret = findParentSchemaByUid(currentSchema, uid);
         if (ret && ret.parent && !skipRemovePatch) {
