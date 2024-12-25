@@ -7,6 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React from 'react';
+import { StopOutlined } from '@ant-design/icons';
+
 import { Instruction } from '.';
 import { NAMESPACE } from '../locale';
 import { JOB_STATUS } from '../constants';
@@ -16,6 +19,7 @@ export default class extends Instruction {
   type = 'end';
   group = 'control';
   description = `{{t("End the process immediately, with set status.", { ns: "${NAMESPACE}" })}}`;
+  icon = (<StopOutlined style={{}} />);
   fieldset = {
     endStatus: {
       type: 'number',

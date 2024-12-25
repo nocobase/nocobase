@@ -10,6 +10,7 @@
 import { useForm } from '@formily/react';
 import { Cascader } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
+import { BarChartOutlined } from '@ant-design/icons';
 
 import {
   SchemaComponentContext,
@@ -169,6 +170,7 @@ export default class extends Instruction {
   type = 'aggregate';
   group = 'collection';
   description = `{{t("Counting, summing, finding maximum, minimum, and average values for multiple records of a collection or associated data of a record.", { ns: "${NAMESPACE}" })}}`;
+  icon = (<BarChartOutlined style={{}} />);
   fieldset = {
     aggregator: {
       type: 'string',

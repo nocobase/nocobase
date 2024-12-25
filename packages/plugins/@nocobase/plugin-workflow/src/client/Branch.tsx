@@ -43,8 +43,8 @@ export function Branch({
     <div className={cx('workflow-branch', styles.branchClass, className)}>
       <div className="workflow-branch-lines" />
       {controller}
-      <AddButton aria-label={getAriaLabel()} upstream={from} branchIndex={branchIndex} />
       <div className="workflow-node-list">
+        <AddButton aria-label={getAriaLabel()} upstream={from} branchIndex={branchIndex} />
         {list.map((item) => (
           <Node data={item} key={item.id} />
         ))}

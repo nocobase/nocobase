@@ -7,6 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React from 'react';
+import { FileAddOutlined } from '@ant-design/icons';
+
 import { SchemaInitializerItemType, parseCollectionName, useCollectionDataSource, useCompile } from '@nocobase/client';
 
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
@@ -52,6 +55,7 @@ export default class extends Instruction {
   type = 'create';
   group = 'collection';
   description = `{{t("Add new record to a collection. You can use variables from upstream nodes to assign values to fields.", { ns: "${NAMESPACE}" })}}`;
+  icon = (<FileAddOutlined style={{}} />);
   fieldset = {
     collection: {
       ...collection,
