@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { screen, checkSettings, renderSettings } from '@nocobase/test/client';
+import { checkSettings, renderSettings, screen } from '@nocobase/test/client';
 import { Page } from '../Page';
 import { pageTabSettings } from '../PageTab.Settings';
 

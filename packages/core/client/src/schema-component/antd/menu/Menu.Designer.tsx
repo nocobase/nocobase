@@ -66,7 +66,7 @@ const InsertMenuItems = (props) => {
   const fieldSchema = useFieldSchema();
   const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
   const isSubMenu = fieldSchema['x-component'] === 'Menu.SubMenu';
-  const { resource } = useDesktopRoutes();
+  const { createRoute } = useDesktopRoutes();
 
   if (!isSubMenu && insertPosition === 'beforeEnd') {
     return null;
@@ -114,17 +114,14 @@ const InsertMenuItems = (props) => {
           const schemaUid = uid();
 
           // 1. 先创建一个路由
-          resource
-            .create({
-              values: {
-                type: NocoBaseDesktopRouteType.group,
-                title,
-                icon,
-                // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
-                parentId: insertPosition === 'beforeEnd' ? route?.id : parentRoute?.id,
-                schemaUid,
-              },
-            })
+          createRoute({
+            type: NocoBaseDesktopRouteType.group,
+            title,
+            icon,
+            // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
+            parentId: insertPosition === 'beforeEnd' ? route?.id : parentRoute?.id,
+            schemaUid,
+          })
             .then(({ data }) => {
               // 2. 然后再把路由移动到对应的位置
               console.log('data', data);
@@ -175,17 +172,14 @@ const InsertMenuItems = (props) => {
           const schemaUid = uid();
 
           // 1. 先创建一个路由
-          resource
-            .create({
-              values: {
-                type: NocoBaseDesktopRouteType.page,
-                title,
-                icon,
-                // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
-                parentId: insertPosition === 'beforeEnd' ? route?.id : parentRoute?.id,
-                schemaUid,
-              },
-            })
+          createRoute({
+            type: NocoBaseDesktopRouteType.page,
+            title,
+            icon,
+            // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
+            parentId: insertPosition === 'beforeEnd' ? route?.id : parentRoute?.id,
+            schemaUid,
+          })
             .then(({ data }) => {
               // 2. 然后再把路由移动到对应的位置
               console.log('data', data);
@@ -251,21 +245,18 @@ const InsertMenuItems = (props) => {
           const schemaUid = uid();
 
           // 1. 先创建一个路由
-          resource
-            .create({
-              values: {
-                type: NocoBaseDesktopRouteType.link,
-                title,
-                icon,
-                // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
-                parentId: insertPosition === 'beforeEnd' ? route?.id : parentRoute?.id,
-                schemaUid,
-                options: {
-                  href,
-                  params,
-                },
-              },
-            })
+          createRoute({
+            type: NocoBaseDesktopRouteType.link,
+            title,
+            icon,
+            // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
+            parentId: insertPosition === 'beforeEnd' ? route?.id : parentRoute?.id,
+            schemaUid,
+            options: {
+              href,
+              params,
+            },
+          })
             .then(({ data }) => {
               // 2. 然后再把路由移动到对应的位置
               console.log('data', data);
@@ -295,7 +286,7 @@ const InsertMenuItems = (props) => {
 const components = { TreeSelect };
 
 export const MenuDesigner = () => {
-  const { resource } = useDesktopRoutes();
+  const { updateRoute, deleteRoute } = useDesktopRoutes();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();
@@ -394,18 +385,17 @@ export const MenuDesigner = () => {
 
       // 更新菜单对应的路由
       if (fieldSchema['__route__']?.id) {
-        resource.update({
-          filterByTk: fieldSchema['__route__'].id,
-          values: {
-            title,
-            icon,
+        updateRoute(fieldSchema['__route__'].id, {
+          title,
+          icon,
+          options: {
             href,
             params,
           },
         });
       }
     },
-    [fieldSchema, field, dn, refresh, onSelect, resource],
+    [fieldSchema, field, dn, refresh, onSelect],
   );
 
   const modalSchema = useMemo(() => {
@@ -460,13 +450,10 @@ export const MenuDesigner = () => {
       title: t('Delete menu item'),
       onOk: () => {
         // 删除对应菜单的路由
-        fieldSchema['__route__']?.id &&
-          resource.destroy({
-            filterByTk: fieldSchema['__route__'].id,
-          });
+        fieldSchema['__route__']?.id && deleteRoute(fieldSchema['__route__'].id);
       },
     };
-  }, [fieldSchema, resource, t]);
+  }, [fieldSchema, deleteRoute, t]);
   return (
     <GeneralSchemaDesigner>
       <SchemaSettingsModalItem
@@ -491,11 +478,8 @@ export const MenuDesigner = () => {
 
           // 更新菜单对应的路由
           if (fieldSchema['__route__']?.id) {
-            resource.update({
-              filterByTk: fieldSchema['__route__'].id,
-              values: {
-                hideInMenu: !!v,
-              },
+            updateRoute(fieldSchema['__route__'].id, {
+              hideInMenu: !!v,
             });
           }
         }}
