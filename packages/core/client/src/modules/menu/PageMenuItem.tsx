@@ -69,16 +69,27 @@ export const PageMenuItem = () => {
       initialValues: {},
     });
     const { title, icon } = values;
-    const schemaUid = uid();
+    const pageSchemaUid = uid();
+    const tabSchemaUid = uid();
 
     // 创建一个路由到 desktopRoutes 表中
-    resource.create({
+    const {
+      data: { data: route },
+    } = await resource.create({
       values: {
         type: NocoBaseDesktopRouteType.page,
         title: values.title,
         icon: values.icon,
         parentId: parentRoute?.id,
-        schemaUid,
+        schemaUid: pageSchemaUid,
+      } as NocoBaseDesktopRoute,
+    });
+
+    resource.create({
+      values: {
+        type: NocoBaseDesktopRouteType.tabs,
+        parentId: route.id,
+        schemaUid: tabSchemaUid,
       } as NocoBaseDesktopRoute,
     });
 
@@ -102,11 +113,12 @@ export const PageMenuItem = () => {
               'x-component': 'Grid',
               'x-initializer': 'page:addBlock',
               properties: {},
+              'x-uid': tabSchemaUid,
             },
           },
         },
       },
-      'x-uid': schemaUid,
+      'x-uid': pageSchemaUid,
     });
   }, [insert, options.components, options.scope, t, theme]);
   return <SchemaInitializerItem title={t('Page')} onClick={handleClick} className={`${componentCls} ${hashId}`} />;
