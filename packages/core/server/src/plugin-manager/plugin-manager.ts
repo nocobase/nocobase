@@ -338,13 +338,15 @@ export class PluginManager {
         options['version'] = packageJson.version;
       }
     } catch (error) {
+      this.app.log.error(error);
       console.error(error);
       // empty
     }
-    this.app.log.trace(`add plugin [${options.name}]`, {
+    this.app.log.trace(`adding plugin [${options.name}]`, {
       method: 'add',
       submodule: 'plugin-manager',
       name: options.name,
+      options,
     });
     let P: any;
     try {
@@ -364,6 +366,12 @@ export class PluginManager {
       this.pluginAliases.set(options.packageName, instance);
     }
     await instance.afterAdd();
+    this.app.log.trace(`added plugin [${options.name}]`, {
+      method: 'add',
+      submodule: 'plugin-manager',
+      name: instance.name,
+      options: instance.options,
+    });
   }
 
   /**
