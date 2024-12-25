@@ -64,7 +64,7 @@ export class PluginAuthServer extends Plugin {
 
       this.app.authManager.setAccessControlService(accessController);
     }
-
+    // update access controller config
     this.app.db.on(`${secAccessCtrlConfigCollName}.afterSave`, async (model: Model) => {
       this.app.authManager.accessController.setConfig(model.dataValues.config);
     });
