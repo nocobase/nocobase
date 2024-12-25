@@ -8,13 +8,14 @@
  */
 
 import React, { useMemo } from 'react';
+import { connect, mapReadPretty } from '@formily/react';
 import { TextArea } from './TextArea';
 import { RawTextArea } from './RawTextArea';
 import { Password } from '../password';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { useApp } from '../../../';
-import { InputNumber } from '../input-number';
 import { Variable } from './Variable';
+import { Input } from '../input';
 
 export const useEnvironmentVariableOptions = (scope) => {
   const app = useApp();
@@ -28,7 +29,7 @@ export const useEnvironmentVariableOptions = (scope) => {
   }, [environmentCtx, scope]);
 };
 
-export const TextAreaWithGlobalScope = (props) => {
+export const TextAreaWithGlobalScope = connect((props) => {
   const { supportsLineBreak, password, number, boolean, ...others } = props;
   const scope = useEnvironmentVariableOptions(props.scope);
   if (supportsLineBreak) {
@@ -44,4 +45,4 @@ export const TextAreaWithGlobalScope = (props) => {
     return <Variable.Input {...props} scope={scope} fieldNames={{ value: 'name', label: 'title' }} />;
   }
   return <TextArea {...others} scope={scope} fieldNames={{ value: 'name', label: 'title' }} />;
-};
+}, mapReadPretty(Input.ReadPretty));
