@@ -15,6 +15,7 @@ import { useNotifyMailTranslation } from './hooks/useTranslation';
 export const ChannelConfigForm = () => {
   const { t } = useNotifyMailTranslation();
   return (
+    // @ts-ignore
     <SchemaComponent
       scope={{ t }}
       schema={{
@@ -41,7 +42,7 @@ export const ChannelConfigForm = () => {
                     type: 'void',
                     'x-component': 'Grid.Col',
                     'x-component-props': {
-                      width: 60,
+                      width: 50,
                     },
                     properties: {
                       host: {
@@ -57,17 +58,11 @@ export const ChannelConfigForm = () => {
                       },
                     },
                   },
-                },
-              },
-              row1: {
-                type: 'void',
-                'x-component': 'Grid.Row',
-                properties: {
                   col2: {
                     type: 'void',
                     'x-component': 'Grid.Col',
                     'x-component-props': {
-                      width: 56,
+                      width: 25,
                     },
                     properties: {
                       port: {
@@ -76,9 +71,17 @@ export const ChannelConfigForm = () => {
                         title: '{{t("Port")}}',
                         'x-component': 'TextAreaWithGlobalScope',
                         'x-component-props': {
-                          min: 1,
-                          max: 65535,
-                          step: 1,
+                          number: true,
+                          useTypedConstant: [
+                            [
+                              'number',
+                              {
+                                min: 1,
+                                max: 65535,
+                                step: 1,
+                              },
+                            ],
+                          ],
                         },
                         default: 465,
                         required: true,
@@ -89,14 +92,18 @@ export const ChannelConfigForm = () => {
                     type: 'void',
                     'x-component': 'Grid.Col',
                     'x-component-props': {
-                      width: 36,
+                      width: 25,
                     },
                     properties: {
                       secure: {
-                        'x-decorator': 'FormItem',
                         type: 'boolean',
                         title: '{{t("Secure")}}',
-                        'x-component': 'Checkbox',
+                        'x-decorator': 'FormItem',
+                        'x-component': 'TextAreaWithGlobalScope',
+                        'x-component-props': {
+                          boolean: true,
+                          useTypedConstant: [['boolean', { style: { width: '100%' } }]],
+                        },
                         default: true,
                       },
                     },
@@ -155,8 +162,8 @@ export const ChannelConfigForm = () => {
                     type: 'void',
                     'x-component': 'Grid.Col',
                     'x-component-props': {
-                      width: 50,
-                      flex: 'none',
+                      // width: 50,
+                      // flex: 'none',
                     },
                     properties: {
                       from: {
@@ -171,14 +178,6 @@ export const ChannelConfigForm = () => {
                           placeholder: `noreply <example@domain.com>`,
                         },
                       },
-                    },
-                  },
-                  col2: {
-                    type: 'void',
-                    'x-component': 'Grid.Col',
-                    'x-component-props': {
-                      width: 50,
-                      flex: 'none',
                     },
                   },
                 },
