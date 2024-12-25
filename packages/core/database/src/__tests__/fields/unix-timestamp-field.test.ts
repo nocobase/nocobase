@@ -91,7 +91,7 @@ describe('unix timestamp field', () => {
     expect(date1.getTime()).toBe(second * 1000);
   });
 
-  describe.only('timezone', () => {
+  describe('timezone', () => {
     test('custom', async () => {
       db.collection({
         name: 'tests',
