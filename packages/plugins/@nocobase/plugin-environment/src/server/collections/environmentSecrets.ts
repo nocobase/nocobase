@@ -11,12 +11,12 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'environmentSecrets',
+  autoGenId: false,
   fields: [
     {
       type: 'string',
       name: 'name',
       primaryKey: true,
-      unique: true,
     },
     {
       type: 'text',

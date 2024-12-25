@@ -37,6 +37,9 @@ export class Storer implements IStorer {
   }
 
   renderJsonTemplate(authenticator: any) {
+    if (!authenticator) {
+      return authenticator;
+    }
     const $env = this.app?.environment;
     return $env ? $env.renderJsonTemplate(authenticator.toJSON()) : authenticator;
   }
@@ -63,6 +66,7 @@ export class Storer implements IStorer {
       const repo = this.db.getRepository('authenticators');
       authenticators = await repo.find({ filter: { enabled: true } });
       await this.setCache(authenticators);
+      authenticators = await this.getCache();
     }
     const authenticator = authenticators.find((authenticator: Model) => authenticator.name === name);
     return authenticator || authenticators[0];
