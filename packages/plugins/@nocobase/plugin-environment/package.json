@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-environment",
-  "version": "1.6.0-alpha.6",
+  "version": "1.6.0-alpha.7",
   "main": "dist/server/index.js",
   "dependencies": {},
   "peerDependencies": {
