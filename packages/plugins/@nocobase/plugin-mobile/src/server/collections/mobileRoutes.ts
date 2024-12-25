@@ -304,6 +304,12 @@ export default defineCollection({
     {
       type: 'boolean',
       name: 'hideInMenu',
+      interface: 'checkbox',
+      uiSchema: {
+        type: 'boolean',
+        'x-component': 'Checkbox',
+        title: '{{t("Hide in menu")}}',
+      },
     },
   ],
   category: [],
