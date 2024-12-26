@@ -24,5 +24,9 @@
   "Monthly": "每月",
   "Yearly": "每年",
   "Operations": "操作",
-  "Customize": "自定义"
+  "Customize": "自定义",
+  "Random number": "随机数字",
+  "Random string": "随机字符串",
+  "Length": "长度",
+  "Will generate random string with specified length, containing uppercase letters, lowercase letters and numbers.": "将生成指定长度的随机字符串，包含大写字母、小写字母和数字。"
 }
