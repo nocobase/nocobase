@@ -13,7 +13,7 @@ export class PluginBlocksTemplateServer extends Plugin {
   async afterAdd() {}
 
   async beforeLoad() {
-    this.app.acl.allow('blockTemplates', '*');
+    this.app.acl.allow('blocksTemplates', '*', 'loggedIn');
     // this.app.
   }
 
