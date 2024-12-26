@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.4.16](https://github.com/nocobase/nocobase/compare/v1.4.15...v1.4.16) - 2024-12-26
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix UnixTimestamp field precision conversion issue ([#5931](https://github.com/nocobase/nocobase/pull/5931)) by @chenos
+
+- **[Action: Duplicate record]** Fix o2o association field not  displaying configured target collection field in detail and form blocks ([#5921](https://github.com/nocobase/nocobase/pull/5921)) by @katherinehhh
+
+- **[Backup manager]** Fixed backup error when the mysqldump version is below 8 by @gchust
+
+## [v1.4.15](https://github.com/nocobase/nocobase/compare/v1.4.14...v1.4.15) - 2024-12-24
+
+### 🐛 Bug Fixes
+
+- **[server]** Collections were not automatically created when enabling the plugin ([#5939](https://github.com/nocobase/nocobase/pull/5939)) by @chenos
+
+- **[client]** Fix property field search in linkage rules not matching correct data ([#5925](https://github.com/nocobase/nocobase/pull/5925)) by @katherinehhh
+
+- **[Workflow]**
+  - Fix schedule trigger on date field without timezone ([#5938](https://github.com/nocobase/nocobase/pull/5938)) by @mytharcher
+
+  - Fix date scope variable translation ([#5919](https://github.com/nocobase/nocobase/pull/5919)) by @mytharcher
+
 ## [v1.4.14](https://github.com/nocobase/nocobase/compare/v1.4.13...v1.4.14) - 2024-12-21
 
 ### 🐛 Bug Fixes

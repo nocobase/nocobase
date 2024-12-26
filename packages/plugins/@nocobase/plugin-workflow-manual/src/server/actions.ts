@@ -112,3 +112,27 @@ export async function submit(context: Context, next) {
 
   plugin.resume(userJob.job);
 }
+
+export async function countMine(context: Context, next) {
+  const repository = utils.getRepositoryFromParams(context);
+  const { currentUser } = context.state;
+
+  const count = await repository.count({
+    filter: {
+      $and: [
+        {
+          'workflow.enabled': true,
+        },
+        context.action.params.filter ?? {},
+        {
+          userId: currentUser.id,
+        },
+      ],
+    },
+    context,
+  });
+
+  context.body = count;
+
+  await next();
+}

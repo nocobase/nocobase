@@ -57,7 +57,7 @@ function getDataOptionTime(record, on, dir = 1) {
       if (!field || !record.get(field)) {
         return null;
       }
-      const second = new Date(record.get(field).getTime());
+      const second = new Date(record.get(field));
       second.setMilliseconds(0);
       return second.getTime() + offset * unit * dir;
     }
