@@ -7,19 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext } from 'react';
-import { useRequest } from '@nocobase/client';
 import { observer } from '@formily/react';
-import { useLocation } from 'react-router-dom';
+import { useIsAdminPage, useRequest } from '@nocobase/client';
+import React, { createContext } from 'react';
 
 const EnvAndSecretsContext = createContext<any>({});
 
 const InternalProvider = (props) => {
   const variablesRequest = useRequest<any>({
-    url: 'environmentVariables',
+    url: 'environmentVariables?paginate=false',
   });
   const secretsRequest = useRequest<any>({
-    url: 'environmentSecrets',
+    url: 'environmentSecrets?paginate=false',
   });
   return (
     <EnvAndSecretsContext.Provider value={{ variablesRequest, secretsRequest }}>
@@ -30,11 +29,8 @@ const InternalProvider = (props) => {
 
 const EnvironmentVariablesAndSecretsProvider = observer(
   (props) => {
-    const location = useLocation();
-    const isAdminPage = location.pathname.startsWith('/admin');
-    const isSignPage = location.pathname.startsWith('/sign');
-
-    if (!isAdminPage || isSignPage) {
+    const isAdminPage = useIsAdminPage();
+    if (!isAdminPage) {
       return <>{props.children}</>;
     }
     return <InternalProvider {...props} />;
@@ -44,4 +40,4 @@ const EnvironmentVariablesAndSecretsProvider = observer(
   },
 );
 
-export { EnvironmentVariablesAndSecretsProvider, EnvAndSecretsContext };
+export { EnvAndSecretsContext, EnvironmentVariablesAndSecretsProvider };

@@ -22,6 +22,8 @@ export class PluginEnvironmentsServer extends Plugin {
       name: `pm.${this.name}`,
       actions: ['environmentVariables:*', 'environmentSecrets:*'],
     });
+    this.app.acl.allow('environmentVariables', 'list', 'loggedIn');
+    this.app.acl.allow('environmentSecrets', 'list', 'loggedIn');
   }
 
   onEnvironmentSaved() {
