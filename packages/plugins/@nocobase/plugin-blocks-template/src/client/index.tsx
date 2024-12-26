@@ -221,7 +221,6 @@ function collectAllTemplateUids(schema, uids = new Set()) {
 }
 
 export class PluginBlocksTemplateClient extends Plugin {
-  #api = new APIClient();
   #loadingPromises = new Map();
   templateschemacache = {};
   // #schemas = {};
@@ -357,9 +356,9 @@ export class PluginBlocksTemplateClient extends Plugin {
 
     for (const uid of templateUids) {
       if (!this.templateschemacache[uid]) {
-        this.templateschemacache[uid] = this.#api
+        this.templateschemacache[uid] = this.app.apiClient
           .request({
-            url: `/api/uiSchemas:getJsonSchema/${uid}`,
+            url: `/uiSchemas:getJsonSchema/${uid}`,
           })
           .then((res) => {
             this.templateschemacache[uid] = res?.data?.data;
