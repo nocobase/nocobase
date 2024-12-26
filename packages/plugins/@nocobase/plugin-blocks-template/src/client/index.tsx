@@ -245,7 +245,7 @@ export class PluginBlocksTemplateClient extends Plugin {
           }
         }
 
-        if (pendingPromise) {
+        if (pendingPromise && !pendingPromise['__done']) {
           throw pendingPromise;
         }
 
@@ -380,7 +380,8 @@ export class PluginBlocksTemplateClient extends Plugin {
       return new Promise((resolve) => {
         Promise.all(promises)
           .then(() => {
-            this.#loadingPromises.delete(schema['x-uid']);
+            // this.#loadingPromises.delete(schema['x-uid']);
+            this.#loadingPromises.get(schema['x-uid'])['__done'] = true;
             resolve(null);
           })
           .catch((error) => {
