@@ -7,17 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaSettingsItemType, useSchemaSettings } from '@nocobase/client';
+import { useT } from '../locale';
+import { useFieldSchema } from '@formily/react';
+import _ from 'lodash';
+import { ResetSetting } from '../components/ResetSetting';
 
-export const resetSettingItem = () => ({
-  type: 'item',
-  title: '重置',
-  Component: () => null,
+export const resetSettingItem = {
+  name: 'template-reset',
+  title: 'Reset to template',
+  Component: ResetSetting,
   useVisible() {
-    const ctx = useSchemaSettings();
-    return !!ctx?.fieldSchema?.['x-template-root-uid'];
+    const fieldSchema = useFieldSchema();
+    const templateBlock = _.get(fieldSchema, 'x-template-uid');
+    if (!templateBlock) {
+      return false;
+    }
+    return true;
   },
-  useComponentProps() {
-    return {};
-  },
-});
+};
