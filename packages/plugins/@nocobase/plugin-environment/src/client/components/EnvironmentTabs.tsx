@@ -11,7 +11,7 @@ import { css } from '@emotion/css';
 import { Checkbox, FormButtonGroup, FormDrawer, FormItem, FormLayout, Input, Reset, Submit } from '@formily/antd-v5';
 import { createSchemaField } from '@formily/react';
 import { SchemaComponentOptions, useAPIClient } from '@nocobase/client';
-import { App, Button, Card, Dropdown, Space, Table } from 'antd';
+import { Alert, App, Button, Card, Dropdown, Space, Table } from 'antd';
 import React, { useContext, useState } from 'react';
 import { EnvAndSecretsContext } from '../EnvironmentVariablesAndSecretsProvider';
 import { useT } from '../locale';
@@ -306,6 +306,17 @@ export function EnvironmentTabs() {
   };
   return (
     <div>
+      <Alert
+        description={
+          <div>
+            Environment variables and secrets can be used for sensitive data storage, configuration data reuse,
+            multi-environment isolation, etc. Secrets are encrypted and are used for sensitive data.{' '}
+            <a>Learn more about encrypted secrets</a>. Variables are shown as plain text and are used for non-sensitive
+            data. <a>Learn more about variables</a>.
+          </div>
+        }
+        style={{ marginBottom: '1.5em' }}
+      />
       <Card
         className={css`
           .ant-card-head {

@@ -1,5 +1,6 @@
 {
   "Environment": "环境",
+  "Environment variables and secrets": "环境变量和密钥",
   "Variables": "变量",
   "Secrets": "密钥",
   "Add variable": "添加变量",
