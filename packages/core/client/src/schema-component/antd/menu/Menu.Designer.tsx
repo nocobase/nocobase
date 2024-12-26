@@ -388,10 +388,13 @@ export const MenuDesigner = () => {
         updateRoute(fieldSchema['__route__'].id, {
           title,
           icon,
-          options: {
-            href,
-            params,
-          },
+          options:
+            href || params
+              ? {
+                  href,
+                  params,
+                }
+              : undefined,
         });
       }
     },
