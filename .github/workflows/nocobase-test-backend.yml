@@ -80,6 +80,11 @@ jobs:
             underscored: true
             schema: public
             collection_schema: public
+            cache_redis: ''
+          - node_version: 20
+            underscored: true
+            schema: public
+            collection_schema: public
             cache_redis: redis://redis:6379/0
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
