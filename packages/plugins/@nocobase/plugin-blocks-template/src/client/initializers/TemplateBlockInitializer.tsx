@@ -7,12 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaInitializerItem, useRequest, useAPIClient, useDesignable } from '@nocobase/client';
+import { SchemaInitializerItem, useRequest, useAPIClient, useDesignable, usePlugin } from '@nocobase/client';
 import React from 'react';
 import { CopyOutlined, LoadingOutlined } from '@ant-design/icons';
 // import { cloneDeep } from 'lodash';
 import * as _ from 'lodash';
 import { uid } from '@nocobase/utils/client';
+import PluginBlocksTemplateClient from '..';
 
 export function convertTplBlock(tpl, virtual = false, isRoot = true, newRootId?: string) {
   if (!newRootId) {
@@ -104,7 +105,7 @@ function correctIdReferences(schemas) {
   }
 }
 
-function convertTemplateToBlock({ data }) {
+function convertTemplateToBlock(data) {
   // debugger;
   let tpls = data?.properties; // Grid开始的区块
   tpls = _.get(Object.values(tpls), '0.properties'); // Grid.Row开始的区块
@@ -121,19 +122,53 @@ function convertTemplateToBlock({ data }) {
   return schemas;
 }
 
+function saveSchemasToCache(schemas, template, templateschemacache) {
+  const findTemplateSchema = (uid, tpl) => {
+    if (tpl['x-uid'] === uid) {
+      return tpl;
+    }
+    if (tpl.properties) {
+      for (const key in tpl.properties) {
+        const t = findTemplateSchema(uid, tpl.properties[key]);
+        if (t) {
+          return t;
+        }
+      }
+    }
+  };
+  const saveSchemaToCache = (schema) => {
+    if (schema['x-template-root-uid']) {
+      templateschemacache[schema['x-template-root-uid']] = findTemplateSchema(schema['x-template-root-uid'], template);
+    } else {
+      if (schema.properties) {
+        for (const key in schema.properties) {
+          saveSchemaToCache(schema.properties[key]);
+        }
+      }
+    }
+  };
+  for (const schema of schemas) {
+    saveSchemaToCache(schema);
+  }
+}
+
 export const TemplateBlockInitializer = () => {
   const api = useAPIClient();
   // const { options } = useSchemaInitializer();
   const { insertAdjacent } = useDesignable();
+  const plugin = usePlugin(PluginBlocksTemplateClient);
   const handleClick = async ({ item }) => {
     const { value: uid } = item;
     const { data } = await api.request({
       url: `uiSchemas:getProperties/${uid}`,
     });
 
-    const schemas = convertTemplateToBlock(data);
+    const template = data?.data;
+    const schemas = convertTemplateToBlock(template);
+    // save the schemas to the cache
+    saveSchemasToCache(schemas, template, plugin.templateschemacache);
+
     correctIdReferences(schemas);
-    // insert(convertTemplateToBlock(data));
     for (const schema of schemas) {
       await new Promise((resolve) => {
         insertAdjacent('beforeEnd', schema, {

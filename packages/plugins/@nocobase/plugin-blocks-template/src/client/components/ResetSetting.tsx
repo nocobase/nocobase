@@ -74,7 +74,6 @@ export const ResetSetting = () => {
   return (
     <SchemaSettingsItem
       title="Reset"
-      eventKey="reset"
       onClick={() => {
         modal.confirm({
           title: t('Reset'),
@@ -82,32 +81,16 @@ export const ResetSetting = () => {
           ...confirm,
           async onOk() {
             const templateSchemaId = _.get(fieldSchema, 'x-template-uid');
-            console.log('templateSchemaId', templateSchemaId);
             const res = await api.request({
               url: `/uiSchemas:getJsonSchema/${templateSchemaId}`,
             });
-            console.log('res', res);
             const templateSchema = res.data?.data;
             const rootSchema = findParentRootTemplateSchema(fieldSchema);
             const isRoot = rootSchema === fieldSchema;
             const newSchema = convertTplBlock(templateSchema, false, isRoot, rootSchema['x-uid']);
-            console.log('newSchema', newSchema);
-
-            // patch the schema
-            // dn.emit('patch', {
-            //   schema: newSchema,
-            // });
-            // dn.current = templateSchema;
-
-            // await api.request({
-            //   url: `/templateBlock:reset`,
-            //   method: 'post',
-            //   data: cleanSchema(newSchema),
-            // });
 
             // 删除老的schema
             const position = findInsertPosition(fieldSchema.parent, fieldSchema['x-uid']);
-            console.log('position', position);
 
             await api.request({
               url: `/uiSchemas:remove/${newSchema['x-uid']}?resettemplate=true`,
@@ -123,8 +106,8 @@ export const ResetSetting = () => {
                 schema,
               },
             });
-            // dn.refresh({ refreshParentSchema: true });
-            // dn.reset();
+
+            // this is a hack to make the schema component refresh to the new schema
             fieldSchema.toJSON = () => {
               if (schema['x-template-root-uid'] || fieldSchema.parent?.['x-template-root-uid']) {
                 return schema.toJSON();
@@ -134,7 +117,6 @@ export const ResetSetting = () => {
               }
             };
             refresh({ refreshParentSchema: true });
-            // reset();
           },
         });
       }}
