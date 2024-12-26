@@ -203,9 +203,11 @@ DatePicker.RangePicker = function RangePicker(props: any) {
     utc,
     presets,
     ...props,
-    format: targetFormat,
+    format: props.showTime ? targetFormat + ` ${props.timeFormat}` : targetFormat,
     picker: targetPicker,
-    showTime: props.showTime ? { defaultValue: [dayjs('00:00:00', 'HH:mm:ss'), dayjs('00:00:00', 'HH:mm:ss')] } : false,
+    showTime: props.showTime
+      ? { defaultValue: [dayjs('00:00:00', 'HH:mm:ss'), dayjs('00:00:00', 'HH:mm:ss')], format: props.timeFormat }
+      : false,
   };
   const [stateProps, setStateProps] = useState(newProps);
 
