@@ -144,6 +144,7 @@ export function EnvironmentVariables({ request }) {
       <Table
         loading={loading}
         size="middle"
+        rowKey={'name'}
         dataSource={data?.data}
         pagination={false}
         columns={[
@@ -242,6 +243,7 @@ export function EnvironmentSecrets({ request }) {
         loading={loading}
         dataSource={data?.data}
         pagination={false}
+        rowKey={'name'}
         columns={[
           {
             title: t('Name'),
