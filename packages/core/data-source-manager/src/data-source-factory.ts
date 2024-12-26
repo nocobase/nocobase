@@ -36,8 +36,9 @@ export class DataSourceFactory {
     if (environment) {
       Object.assign(opts, environment.renderJsonTemplate(others));
     }
-
     // @ts-ignore
-    return new klass(opts);
+    const dataSource = new klass(opts) as DataSource;
+    dataSource.setDataSourceManager(this.dataSourceManager);
+    return dataSource;
   }
 }

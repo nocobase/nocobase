@@ -8,13 +8,14 @@
  */
 
 import { ACL } from '@nocobase/acl';
+import { Logger } from '@nocobase/logger';
 import { getNameByParams, parseRequest, ResourceManager } from '@nocobase/resourcer';
+import { wrapMiddlewareWithLogging } from '@nocobase/utils';
 import EventEmitter from 'events';
 import compose from 'koa-compose';
+import { DataSourceManager } from './data-source-manager';
 import { loadDefaultActions } from './load-default-actions';
 import { ICollectionManager } from './types';
-import { Logger } from '@nocobase/logger';
-import { wrapMiddlewareWithLogging } from '@nocobase/utils';
 
 export type DataSourceOptions = any;
 
@@ -27,6 +28,7 @@ export abstract class DataSource extends EventEmitter {
   public collectionManager: ICollectionManager;
   public resourceManager: ResourceManager;
   public acl: ACL;
+  public dataSourceManager: DataSourceManager;
 
   logger: Logger;
 
@@ -47,6 +49,10 @@ export abstract class DataSource extends EventEmitter {
 
   static testConnection(options?: any): Promise<boolean> {
     return Promise.resolve(true);
+  }
+
+  setDataSourceManager(dataSourceManager: DataSourceManager) {
+    this.dataSourceManager = dataSourceManager;
   }
 
   setLogger(logger: Logger) {
