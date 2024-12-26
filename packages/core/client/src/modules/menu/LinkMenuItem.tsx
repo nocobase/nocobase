@@ -91,19 +91,23 @@ export const LinkMenuItem = () => {
     });
 
     // 同时插入一个对应的 Schema
-    insert({
-      type: 'void',
-      title,
-      'x-component': 'Menu.URL',
-      'x-decorator': 'ACLMenuItemProvider',
-      'x-component-props': {
-        icon,
-        href,
-        params,
-      },
-      'x-uid': schemaUid,
-    });
+    insert(getLinkMenuSchema({ title, icon, schemaUid, href, params }));
   }, [insert, options.components, options.scope, t, theme]);
 
   return <SchemaInitializerItem title={t('Link')} onClick={handleClick} className={`${componentCls} ${hashId}`} />;
 };
+
+export function getLinkMenuSchema({ title, icon, schemaUid, href, params }) {
+  return {
+    type: 'void',
+    title,
+    'x-component': 'Menu.URL',
+    'x-decorator': 'ACLMenuItemProvider',
+    'x-component-props': {
+      icon,
+      href,
+      params,
+    },
+    'x-uid': schemaUid,
+  };
+}

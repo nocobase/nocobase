@@ -30,6 +30,10 @@ export interface NocoBaseDesktopRoute {
   title?: string;
   icon?: string;
   schemaUid?: string;
+  /**
+   * schemaUid 是用于存储菜单的 schema uid，pageSchemaUid 是用于存储菜单中的页面的 schema uid
+   */
+  pageSchemaUid?: string;
   type?: NocoBaseDesktopRouteType;
   options?: any;
   sort?: number;

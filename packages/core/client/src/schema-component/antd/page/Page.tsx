@@ -289,20 +289,12 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
             const { title, icon } = values;
             const schemaUid = uid();
 
-            dn.insertBeforeEnd({
-              type: 'void',
-              title,
-              'x-icon': icon,
-              'x-component': 'Grid',
-              'x-initializer': 'page:addBlock',
-              properties: {},
-              'x-uid': schemaUid,
-            });
+            dn.insertBeforeEnd(getTabSchema({ title, icon, schemaUid }));
 
             createRoute({
               type: NocoBaseDesktopRouteType.tabs,
               schemaUid,
-              title,
+              title: title || '{{t("Tab")}}',
               icon,
               parentId: currentRoute.id,
             });
@@ -342,7 +334,7 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
           label: (
             <SortableItem id={schema.name as string} className={classNames('nb-action-link', 'designerCss', className)}>
               {schema['x-icon'] && <Icon style={{ marginRight: 8 }} type={schema['x-icon']} />}
-              <span>{schema.title || t('Unnamed')}</span>
+              <span>{schema.title || t('Tab')}</span>
               <PageTabDesigner schema={schema} />
             </SortableItem>
           ),
@@ -457,4 +449,16 @@ export function isTabPage(pathname: string) {
 
   const list = pathname.split('/');
   return list[list.length - 2] === 'tabs';
+}
+
+export function getTabSchema({ title, icon, schemaUid }: { title: string; icon: string; schemaUid: string }) {
+  return {
+    type: 'void',
+    title,
+    'x-icon': icon,
+    'x-component': 'Grid',
+    'x-initializer': 'page:addBlock',
+    properties: {},
+    'x-uid': schemaUid,
+  };
 }
