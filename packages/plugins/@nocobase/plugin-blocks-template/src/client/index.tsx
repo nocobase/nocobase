@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { APIClient, Plugin } from '@nocobase/client';
+import { Plugin } from '@nocobase/client';
 import { tStr } from './locale';
 import { convertTplBlock, TemplateBlockInitializer } from './initializers/TemplateBlockInitializer';
 import XTemplate from './components/XTemplate';
@@ -16,7 +16,6 @@ import { BlocksTemplateList } from './components/BlocksTemplateList';
 import { BlocksTemplatePage } from './components/BlocksTemplatePage';
 import { addBlockInitializers } from './initializers/addBlockInitializers';
 // import { registerPatches } from '@formily/';
-import { registerPatches } from '@formily/json-schema/esm/patches';
 import { ISchema, Schema } from '@formily/json-schema';
 import * as _ from 'lodash';
 import { associationRecordSettingItem } from './settings/associationRecordSetting';
@@ -233,7 +232,7 @@ export class PluginBlocksTemplateClient extends Plugin {
   async beforeLoad() {}
 
   async load() {
-    registerPatches((s: ISchema) => {
+    Schema.registerPatches((s: ISchema) => {
       if (s['x-template-root-uid'] && s['version']) {
         const templateUids = collectAllTemplateUids(s);
         let pendingPromise = this.#loadingPromises.get(s['x-uid']);
