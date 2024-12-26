@@ -15,11 +15,13 @@ import {
   getVariableComponentWithScope,
   NocoBaseDesktopRouteType,
   useActionContext,
+  useAllAccessDesktopRoutes,
   useAPIClient,
   useBlockRequestContext,
   useCollectionRecordData,
   useDataBlockRequestData,
   useDataBlockRequestGetter,
+  useDesktopRoutes,
   useRequest,
   useRouterBasename,
   useTableBlockContextBasicValue,
@@ -114,21 +116,21 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
             'x-component': 'Action',
             'x-use-component-props': () => {
               const tableBlockContextBasicValue = useTableBlockContextBasicValue();
-              const { resource, service } = useBlockRequestContext();
+              const { service } = useBlockRequestContext();
+              const { refresh: refreshMenu } = useAllAccessDesktopRoutes();
+              const { updateRoute } = useDesktopRoutes();
               return {
                 async onClick() {
                   const filterByTk = tableBlockContextBasicValue.field?.data?.selectedRowKeys;
                   if (!filterByTk?.length) {
                     return;
                   }
-                  await resource.update({
-                    filterByTk,
-                    values: {
-                      hideInMenu: true,
-                    },
+                  await updateRoute(filterByTk, {
+                    hideInMenu: true,
                   });
                   tableBlockContextBasicValue.field.data.clearSelectedRowKeys?.();
                   service?.refresh?.();
+                  refreshMenu();
                 },
               };
             },
@@ -146,18 +148,16 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
             'x-component': 'Action',
             'x-use-component-props': () => {
               const tableBlockContextBasicValue = useTableBlockContextBasicValue();
-              const { resource, service } = useBlockRequestContext();
+              const { service } = useBlockRequestContext();
+              const { updateRoute } = useDesktopRoutes();
               return {
                 async onClick() {
                   const filterByTk = tableBlockContextBasicValue.field?.data?.selectedRowKeys;
                   if (!filterByTk?.length) {
                     return;
                   }
-                  await resource.update({
-                    filterByTk,
-                    values: {
-                      hideInMenu: false,
-                    },
+                  await updateRoute(filterByTk, {
+                    hideInMenu: false,
                   });
                   tableBlockContextBasicValue.field.data.clearSelectedRowKeys?.();
                   service?.refresh?.();
@@ -1082,12 +1082,15 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
 function useCreateRoute(collectionName: string) {
   const api = useAPIClient();
   const resource = useMemo(() => api.resource(collectionName), [api, collectionName]);
+  const { refresh: refreshMenu } = useAllAccessDesktopRoutes();
 
   const createRoute = useCallback(
-    (values: any) => {
-      return resource.create({ values });
+    async (values: any) => {
+      const res = await resource.create({ values });
+      refreshMenu();
+      return res;
     },
-    [resource],
+    [resource, refreshMenu],
   );
 
   return { createRoute };
@@ -1096,12 +1099,15 @@ function useCreateRoute(collectionName: string) {
 function useUpdateRoute(collectionName: string) {
   const api = useAPIClient();
   const resource = useMemo(() => api.resource(collectionName), [api, collectionName]);
+  const { refresh: refreshMenu } = useAllAccessDesktopRoutes();
 
   const updateRoute = useCallback(
-    ({ filterByTk, values }) => {
-      return resource.update({ filterByTk, values });
+    async ({ filterByTk, values }) => {
+      const res = await resource.update({ filterByTk, values });
+      refreshMenu();
+      return res;
     },
-    [resource],
+    [resource, refreshMenu],
   );
 
   return { updateRoute };
@@ -1194,12 +1200,15 @@ function useCreateRouteSchema(collectionName = 'uiSchemas') {
 function useDeleteRouteSchema(collectionName = 'uiSchemas') {
   const api = useAPIClient();
   const resource = useMemo(() => api.resource(collectionName), [api, collectionName]);
+  const { refresh: refreshMenu } = useAllAccessDesktopRoutes();
 
   const deleteRouteSchema = useCallback(
-    (schemaUid: string) => {
-      return resource[`remove/${schemaUid}`]();
+    async (schemaUid: string) => {
+      const res = await resource[`remove/${schemaUid}`]();
+      refreshMenu();
+      return res;
     },
-    [resource],
+    [resource, refreshMenu],
   );
 
   return { deleteRouteSchema };
