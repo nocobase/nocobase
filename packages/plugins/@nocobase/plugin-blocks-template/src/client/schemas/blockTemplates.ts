@@ -133,7 +133,7 @@ export const blocksTemplatesSchema: ISchema = {
                   type: 'void',
                   title: 'Duplicate',
                   'x-component': 'Action.Link',
-                  'x-use-component-props': 'useDeleteActionProps',
+                  'x-use-component-props': 'useDuplicateActionProps',
                 },
                 configure: {
                   type: 'void',

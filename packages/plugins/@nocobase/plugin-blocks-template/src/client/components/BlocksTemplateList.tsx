@@ -19,6 +19,7 @@ import { blocksTemplatesSchema } from '../schemas/blockTemplates';
 import { useSubmitActionProps } from '../../hooks/useSubmitActionProps';
 import { useEditFormProps } from '../../hooks/useEditFormProps';
 import { useDeleteActionProps } from '../../hooks/useDeleteActionProps';
+import { useDuplicateActionProps } from '../../hooks/useDuplicateActionProps';
 
 export const BlocksTemplateList = () => {
   const scCtx = useSchemaComponentContext();
@@ -27,7 +28,7 @@ export const BlocksTemplateList = () => {
       <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
         <SchemaComponent
           schema={blocksTemplatesSchema}
-          scope={{ useSubmitActionProps, useEditFormProps, useDeleteActionProps }}
+          scope={{ useSubmitActionProps, useEditFormProps, useDeleteActionProps, useDuplicateActionProps }}
         />
       </SchemaComponentContext.Provider>
     </ExtendCollectionsProvider>
