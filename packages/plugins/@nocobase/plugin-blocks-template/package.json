@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-blocks-template",
-  "version": "1.6.0-alpha.2",
+  "version": "1.6.0-alpha.6",
   "main": "dist/server/index.js",
   "dependencies": {},
   "peerDependencies": {
