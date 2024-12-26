@@ -149,9 +149,12 @@ export const TableBlockProvider = withDynamicSchemaProps((props) => {
   const collection = getCollection(props.collection, props.dataSource);
   const { treeTable, pagingMode } = fieldSchema?.['x-decorator-props'] || {};
   const { params, parseVariableLoading } = useTableBlockParamsCompat(props);
-  let childrenColumnName = 'children';
+  // Prevent tables with 'children' field from automatically converting to tree-structured tables
+  let childrenColumnName = '__nochildren__';
 
   if (treeTable) {
+    childrenColumnName = 'children';
+
     if (resourceName?.includes('.')) {
       const f = getCollectionField(resourceName);
       if (f?.treeChildren) {
@@ -165,6 +168,8 @@ export const TableBlockProvider = withDynamicSchemaProps((props) => {
       }
       params['tree'] = true;
     }
+  } else {
+    childrenColumnName = '__nochildren__';
   }
   const form = useMemo(() => createForm(), [treeTable]);
 
