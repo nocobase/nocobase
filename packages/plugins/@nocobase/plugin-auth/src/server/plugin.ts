@@ -59,7 +59,7 @@ export class PluginAuthServer extends Plugin {
         store: 'memory',
       });
       const accessController = new AccessController({ cache });
-      const config = await getAccessCtrlConfig(this.db);
+      const config = await getAccessCtrlConfig(this.app.db);
       if (config) accessController.setConfig(config);
 
       this.app.authManager.setAccessControlService(accessController);
