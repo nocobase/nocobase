@@ -235,6 +235,22 @@ export default {
         title: 'schemaUid',
       },
     },
+    // schemaUid 是用于存储菜单的 schema uid，pageSchemaUid 是用于存储菜单中的页面的 schema uid
+    {
+      key: '6bbyhv00bp5',
+      name: 'pageSchemaUid',
+      type: 'string',
+      interface: 'input',
+      description: null,
+      collectionName: 'desktopRoutes',
+      parentKey: null,
+      reverseKey: null,
+      uiSchema: {
+        type: 'string',
+        'x-component': 'Input',
+        title: 'pageSchemaUid',
+      },
+    },
     {
       key: 'm0k5qbaktab',
       name: 'type',

@@ -71,23 +71,27 @@ export const GroupItem = () => {
     // 创建一个路由到 desktopRoutes 表中
     createRoute({
       type: NocoBaseDesktopRouteType.group,
-      title: values.title,
-      icon: values.icon,
+      title,
+      icon,
       parentId: parentRoute?.id,
       schemaUid,
     });
 
     // 同时插入一个对应的 Schema
-    insert({
-      type: 'void',
-      title,
-      'x-component': 'Menu.SubMenu',
-      'x-decorator': 'ACLMenuItemProvider',
-      'x-component-props': {
-        icon,
-      },
-      'x-uid': schemaUid,
-    });
+    insert(getGroupMenuSchema({ title, icon, schemaUid }));
   }, [insert, options.components, options.scope, t, theme]);
   return <SchemaInitializerItem title={t('Group')} onClick={handleClick} className={`${componentCls} ${hashId}`} />;
 };
+
+export function getGroupMenuSchema({ title, icon, schemaUid }) {
+  return {
+    type: 'void',
+    title,
+    'x-component': 'Menu.SubMenu',
+    'x-decorator': 'ACLMenuItemProvider',
+    'x-component-props': {
+      icon,
+    },
+    'x-uid': schemaUid,
+  };
+}

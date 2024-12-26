@@ -12,6 +12,10 @@ import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { useField, useForm } from '@formily/react';
 import {
   css,
+  getGroupMenuSchema,
+  getLinkMenuSchema,
+  getPageMenuSchema,
+  getTabSchema,
   getVariableComponentWithScope,
   NocoBaseDesktopRouteType,
   useActionContext,
@@ -81,6 +85,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
               const { resource, service } = useBlockRequestContext();
               const { deleteRouteSchema } = useDeleteRouteSchema();
               const data = useDataBlockRequestData();
+              const { refresh: refreshMenu } = useAllAccessDesktopRoutes();
 
               return {
                 async onClick() {
@@ -99,6 +104,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                   });
                   tableBlockContextBasicValue.field.data.clearSelectedRowKeys?.();
                   service?.refresh?.();
+                  collectionName === 'desktopRoutes' && refreshMenu();
                 },
               };
             },
@@ -353,7 +359,9 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                   await form.submit();
                                   field.data = field.data || {};
                                   field.data.loading = true;
-                                  const schemaUid = await createRouteSchema(form.values);
+                                  const { pageSchemaUid, tabSchemaUid, menuSchemaUid } = await createRouteSchema(
+                                    form.values,
+                                  );
                                   let options;
 
                                   if (form.values.href || !_.isEmpty(form.values.params)) {
@@ -365,9 +373,21 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
 
                                   const res = await createRoute({
                                     ..._.omit(form.values, ['href', 'params']),
-                                    schemaUid,
+                                    schemaUid: menuSchemaUid,
+                                    pageSchemaUid:
+                                      NocoBaseDesktopRouteType.page === form.values.type ? pageSchemaUid : undefined,
                                     options,
                                   });
+
+                                  if (tabSchemaUid) {
+                                    await createRoute({
+                                      schemaUid: tabSchemaUid,
+                                      parentId: res?.data?.data?.id,
+                                      type: NocoBaseDesktopRouteType.tabs,
+                                      title: '{{t("Tab")}}',
+                                    });
+                                  }
+
                                   ctx.setVisible(false);
                                   actionCallback?.(res?.data?.data);
                                   await form.reset();
@@ -735,13 +755,13 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                             'x-component': 'Action',
                             'x-component-props': {
                               type: 'primary',
-                              useAction: (actionCallback?: (values: any) => void) => {
+                              useAction: () => {
                                 const form = useForm();
                                 const field = useField();
                                 const ctx = useActionContext();
                                 const { getDataBlockRequest } = useDataBlockRequestGetter();
                                 const { createRoute } = useCreateRoute(collectionName);
-                                const { createRouteSchema } = useCreateRouteSchema();
+                                const { createRouteSchema, createTabRouteSchema } = useCreateRouteSchema();
                                 const recordData = useCollectionRecordData();
                                 return {
                                   async run() {
@@ -749,24 +769,54 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                       await form.submit();
                                       field.data = field.data || {};
                                       field.data.loading = true;
-                                      const schemaUid = await createRouteSchema(form.values);
-                                      let options;
 
-                                      if (form.values.href || !_.isEmpty(form.values.params)) {
-                                        options = {
-                                          href: form.values.href,
-                                          params: form.values.params,
-                                        };
+                                      if (form.values.type === NocoBaseDesktopRouteType.tabs) {
+                                        const { tabSchemaUid } = await createTabRouteSchema({
+                                          ...form.values,
+                                          parentSchemaUid: recordData.pageSchemaUid,
+                                        });
+
+                                        await createRoute({
+                                          parentId: recordData.id,
+                                          type: NocoBaseDesktopRouteType.tabs,
+                                          schemaUid: tabSchemaUid,
+                                          ...form.values,
+                                        });
+                                      } else {
+                                        let options;
+                                        const { pageSchemaUid, tabSchemaUid, menuSchemaUid } = await createRouteSchema(
+                                          form.values,
+                                        );
+
+                                        if (form.values.href || !_.isEmpty(form.values.params)) {
+                                          options = {
+                                            href: form.values.href,
+                                            params: form.values.params,
+                                          };
+                                        }
+
+                                        const res = await createRoute({
+                                          parentId: recordData.id,
+                                          ..._.omit(form.values, ['href', 'params']),
+                                          schemaUid: menuSchemaUid,
+                                          pageSchemaUid:
+                                            NocoBaseDesktopRouteType.page === form.values.type
+                                              ? pageSchemaUid
+                                              : undefined,
+                                          options,
+                                        });
+
+                                        if (tabSchemaUid) {
+                                          await createRoute({
+                                            parentId: res?.data?.data?.id,
+                                            type: NocoBaseDesktopRouteType.tabs,
+                                            title: '{{t("Tab")}}',
+                                            schemaUid: tabSchemaUid,
+                                          });
+                                        }
                                       }
 
-                                      const res = await createRoute({
-                                        parentId: recordData.id,
-                                        ..._.omit(form.values, ['href', 'params']),
-                                        schemaUid,
-                                        options,
-                                      });
                                       ctx.setVisible(false);
-                                      actionCallback?.(res?.data?.data);
                                       await form.reset();
                                       field.data.loading = false;
                                       getDataBlockRequest()?.refresh();
@@ -1131,55 +1181,14 @@ function useCreateRouteSchema(collectionName = 'uiSchemas') {
       href?: string;
       params?: Record<string, any>;
     }) => {
-      const schemaUid = uid();
+      const menuSchemaUid = uid();
+      const pageSchemaUid = uid();
+      const tabSchemaUid = type === NocoBaseDesktopRouteType.page ? uid() : undefined;
+
       const typeToSchema = {
-        [NocoBaseDesktopRouteType.page]: {
-          type: 'void',
-          title,
-          'x-component': 'Menu.Item',
-          'x-decorator': 'ACLMenuItemProvider',
-          'x-component-props': {
-            icon,
-          },
-          properties: {
-            page: {
-              type: 'void',
-              'x-component': 'Page',
-              'x-async': true,
-              properties: {
-                [uid()]: {
-                  type: 'void',
-                  'x-component': 'Grid',
-                  'x-initializer': 'page:addBlock',
-                  properties: {},
-                },
-              },
-            },
-          },
-          'x-uid': schemaUid,
-        },
-        [NocoBaseDesktopRouteType.group]: {
-          type: 'void',
-          title,
-          'x-component': 'Menu.SubMenu',
-          'x-decorator': 'ACLMenuItemProvider',
-          'x-component-props': {
-            icon,
-          },
-          'x-uid': schemaUid,
-        },
-        [NocoBaseDesktopRouteType.link]: {
-          type: 'void',
-          title,
-          'x-component': 'Menu.URL',
-          'x-decorator': 'ACLMenuItemProvider',
-          'x-component-props': {
-            icon,
-            href,
-            params,
-          },
-          'x-uid': schemaUid,
-        },
+        [NocoBaseDesktopRouteType.page]: getPageMenuSchema({ title, icon, pageSchemaUid, tabSchemaUid, menuSchemaUid }),
+        [NocoBaseDesktopRouteType.group]: getGroupMenuSchema({ title, icon, schemaUid: menuSchemaUid }),
+        [NocoBaseDesktopRouteType.link]: getLinkMenuSchema({ title, icon, schemaUid: menuSchemaUid, href, params }),
       };
 
       await resource['insertAdjacent/nocobase-admin-menu']({
@@ -1189,12 +1198,31 @@ function useCreateRouteSchema(collectionName = 'uiSchemas') {
         },
       });
 
-      return schemaUid;
+      return { menuSchemaUid, pageSchemaUid, tabSchemaUid };
     },
     [resource],
   );
 
-  return { createRouteSchema };
+  /**
+   * 创建 Tab 的接口和其它的不太一样，所以单独实现一个方法
+   */
+  const createTabRouteSchema = useCallback(
+    async ({ title, icon, parentSchemaUid }: { title: string; icon: string; parentSchemaUid: string }) => {
+      const tabSchemaUid = uid();
+
+      await resource[`insertAdjacent/${parentSchemaUid}`]({
+        position: 'beforeEnd',
+        values: {
+          schema: getTabSchema({ title, icon, schemaUid: tabSchemaUid }),
+        },
+      });
+
+      return { tabSchemaUid };
+    },
+    [resource],
+  );
+
+  return { createRouteSchema, createTabRouteSchema };
 }
 
 function useDeleteRouteSchema(collectionName = 'uiSchemas') {

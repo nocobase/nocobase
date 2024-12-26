@@ -66,6 +66,7 @@ export const PageMenuItem = () => {
       initialValues: {},
     });
     const { title, icon } = values;
+    const menuSchemaUid = uid();
     const pageSchemaUid = uid();
     const tabSchemaUid = uid();
 
@@ -77,42 +78,49 @@ export const PageMenuItem = () => {
       title: values.title,
       icon: values.icon,
       parentId: parentRoute?.id,
-      schemaUid: pageSchemaUid,
+      schemaUid: menuSchemaUid,
+      pageSchemaUid,
     });
 
     createRoute({
       type: NocoBaseDesktopRouteType.tabs,
+      title: '{{t("Tab")}}',
       parentId: route.id,
       schemaUid: tabSchemaUid,
     });
 
     // 同时插入一个对应的 Schema
-    insert({
-      type: 'void',
-      title,
-      'x-component': 'Menu.Item',
-      'x-decorator': 'ACLMenuItemProvider',
-      'x-component-props': {
-        icon,
-      },
-      properties: {
-        page: {
-          type: 'void',
-          'x-component': 'Page',
-          'x-async': true,
-          properties: {
-            [uid()]: {
-              type: 'void',
-              'x-component': 'Grid',
-              'x-initializer': 'page:addBlock',
-              properties: {},
-              'x-uid': tabSchemaUid,
-            },
-          },
-        },
-      },
-      'x-uid': pageSchemaUid,
-    });
+    insert(getPageMenuSchema({ title, icon, pageSchemaUid, tabSchemaUid, menuSchemaUid }));
   }, [insert, options.components, options.scope, t, theme]);
   return <SchemaInitializerItem title={t('Page')} onClick={handleClick} className={`${componentCls} ${hashId}`} />;
 };
+
+export function getPageMenuSchema({ title, icon, pageSchemaUid, tabSchemaUid, menuSchemaUid }) {
+  return {
+    type: 'void',
+    title,
+    'x-component': 'Menu.Item',
+    'x-decorator': 'ACLMenuItemProvider',
+    'x-component-props': {
+      icon,
+    },
+    properties: {
+      page: {
+        type: 'void',
+        'x-component': 'Page',
+        'x-async': true,
+        properties: {
+          tab1: {
+            type: 'void',
+            'x-component': 'Grid',
+            'x-initializer': 'page:addBlock',
+            properties: {},
+            'x-uid': tabSchemaUid,
+          },
+        },
+        'x-uid': pageSchemaUid,
+      },
+    },
+    'x-uid': menuSchemaUid,
+  };
+}
