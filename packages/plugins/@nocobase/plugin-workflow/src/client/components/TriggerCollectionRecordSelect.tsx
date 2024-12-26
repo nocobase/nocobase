@@ -23,7 +23,7 @@ export function TriggerCollectionRecordSelect(props) {
   const collection = collectionManager.getCollection(collectionName);
 
   return (
-    <WorkflowVariableWrapper value={props.value} onChange={props.onChange} nullable={false}>
+    <WorkflowVariableWrapper value={props.value} onChange={props.onChange} nullable={false} changeOnSelect>
       <RemoteSelect
         objectValue
         dataSource={dataSourceName}

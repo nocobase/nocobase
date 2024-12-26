@@ -80,6 +80,7 @@ export const ScheduleModes = {
           // showTime: true,
           // placeholder: `{{t('Current time', { ns: "${NAMESPACE}" })}}`,
           nullable: false,
+          changeOnSelect: true,
         },
         'x-content': <DatePicker showTime placeholder={lang('Current time')} />,
       },

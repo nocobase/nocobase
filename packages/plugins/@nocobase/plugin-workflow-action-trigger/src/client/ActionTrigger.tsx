@@ -220,6 +220,7 @@ export default class extends Trigger {
       'x-component': 'WorkflowVariableWrapper',
       'x-component-props': {
         nullable: false,
+        changeOnSelect: true,
       },
       'x-content': (
         <RemoteSelect fieldNames={{ label: 'nickname', value: 'id' }} service={{ resource: 'users' }} manual={false} />
@@ -249,6 +250,7 @@ export default class extends Trigger {
       'x-component': 'WorkflowVariableWrapper',
       'x-component-props': {
         nullable: false,
+        changeOnSelect: true,
       },
       'x-content': (
         <RemoteSelect fieldNames={{ label: 'title', value: 'name' }} service={{ resource: 'roles' }} manual={false} />
