@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database, { defineCollection } from '@nocobase/database';
-import { Cache } from '@nocobase/cache';
-import { secAccessCtrlConfigCollName, secAccessCtrlConfigKey, secAccessCtrlConfigCacheKey } from '../../constants';
-import { SecurityAccessConfig } from '../../types';
-import Application from '@nocobase/server';
+import { defineCollection } from '@nocobase/database';
+
+import { secAccessCtrlConfigCollName } from '../../constants';
+
 export default defineCollection({
   name: secAccessCtrlConfigCollName,
   autoGenId: false,
@@ -35,44 +34,3 @@ export default defineCollection({
     },
   ],
 });
-
-export const createAccessCtrlConfigRecord = async (db: Database) => {
-  const repository = db.getRepository(secAccessCtrlConfigCollName);
-  const exist = await repository.findOne({ filterByTk: secAccessCtrlConfigKey });
-  if (exist) {
-    return;
-  }
-  const config: SecurityAccessConfig = {
-    tokenExpirationTime: '1h',
-    maxTokenLifetime: '7d',
-    maxInactiveInterval: '1h',
-    opTimeoutControlEnabled: true,
-  };
-  await repository.create({
-    values: {
-      key: secAccessCtrlConfigKey,
-      config,
-    },
-  });
-};
-
-export const getAccessCtrlConfig = async (db: Database) => {
-  const repository = db.getRepository(secAccessCtrlConfigCollName);
-
-  const res = await repository.findOne({ filterByTk: secAccessCtrlConfigKey });
-  return res?.config;
-};
-
-export const saveAccessCtrlConfigToCache = async (app: Application, db: Database, cache: Cache) => {
-  try {
-    const config = await getAccessCtrlConfig(db);
-    if (config) {
-      cache.set(secAccessCtrlConfigCacheKey, config);
-    }
-    db.on(`${secAccessCtrlConfigCollName}.afterUpdate`, async (model) => {
-      cache.set(secAccessCtrlConfigCacheKey, model.config);
-    });
-  } catch (error) {
-    app.logger.error('saveAccessCtrlConfigToCache error', error);
-  }
-};

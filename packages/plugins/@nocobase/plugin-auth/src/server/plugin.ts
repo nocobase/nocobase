@@ -17,14 +17,10 @@ import { BasicAuth } from './basic-auth';
 import { AuthModel } from './model/authenticator';
 import { Storer } from './storer';
 import { TokenBlacklistService } from './token-blacklist';
-import { AccessController } from './access-controller';
+import { AccessController, createAccessCtrlConfigRecord, getAccessCtrlConfig } from './access-controller';
 import { tval } from '@nocobase/utils';
-import {
-  createAccessCtrlConfigRecord,
-  getAccessCtrlConfig,
-  saveAccessCtrlConfigToCache,
-} from './collections/access-control-config';
-import { secAccessCtrlConfigCollName } from '../constants';
+
+import { secAccessCtrlConfigCollName, secAccessCtrlConfigKey, secAccessCtrlConfigCacheKey } from '../constants';
 export class PluginAuthServer extends Plugin {
   cache: Cache;
 
@@ -51,23 +47,6 @@ export class PluginAuthServer extends Plugin {
       // If blacklist service is not set, should configure default blacklist service
       this.app.authManager.setTokenBlacklistService(new TokenBlacklistService(this));
     }
-
-    if (!this.app.authManager.accessController) {
-      const cache = await this.app.cacheManager.createCache({
-        name: 'auth-access-controller',
-        prefix: 'auth-access-controller',
-        store: 'memory',
-      });
-      const accessController = new AccessController({ cache });
-      const config = await getAccessCtrlConfig(this.app.db);
-      if (config) accessController.setConfig(config);
-
-      this.app.authManager.setAccessControlService(accessController);
-    }
-    // update access controller config
-    this.app.db.on(`${secAccessCtrlConfigCollName}.afterSave`, async (model: Model) => {
-      this.app.authManager.accessController.setConfig(model.dataValues.config);
-    });
 
     this.app.authManager.registerTypes(presetAuthType, {
       auth: BasicAuth,
@@ -227,30 +206,66 @@ export class PluginAuthServer extends Plugin {
       name: `pm.security-settings.access`,
       actions: [`${secAccessCtrlConfigCollName}:*`],
     });
-    saveAccessCtrlConfigToCache(this.app, this.db, this.app.cache);
+
+    if (!this.app.authManager.accessController) {
+      const cache = await this.app.cacheManager.createCache({
+        name: 'auth-access-controller',
+        prefix: 'auth-access-controller',
+        store: 'memory',
+      });
+      const accessController = new AccessController({ cache });
+      accessController.setConfig({
+        tokenExpirationTime: '1h',
+        maxTokenLifetime: '7d',
+        maxInactiveInterval: '1h',
+        opTimeoutControlEnabled: true,
+      });
+      this.app.db.on(`${secAccessCtrlConfigCollName}.afterSave`, async (model) => {
+        accessController.setConfig(model.config);
+      });
+
+      this.app.authManager.setAccessControlService(accessController);
+    }
   }
 
   async install(options?: InstallOptions) {
-    const repository = this.db.getRepository('authenticators');
-    const exist = await repository.findOne({ filter: { name: presetAuthenticator } });
-    if (exist) {
-      return;
-    }
-
-    await repository.create({
-      values: {
-        name: presetAuthenticator,
-        authType: presetAuthType,
-        description: 'Sign in with username/email.',
-        enabled: true,
-        options: {
-          public: {
-            allowSignUp: true,
+    const authRepository = this.db.getRepository('authenticators');
+    const exist = await authRepository.findOne({ filter: { name: presetAuthenticator } });
+    if (!exist) {
+      await authRepository.create({
+        values: {
+          name: presetAuthenticator,
+          authType: presetAuthType,
+          description: 'Sign in with username/email.',
+          enabled: true,
+          options: {
+            public: {
+              allowSignUp: true,
+            },
           },
         },
-      },
-    });
-    createAccessCtrlConfigRecord(this.db);
+      });
+    }
+
+    const accessConfigRepository = this.app.db.getRepository(secAccessCtrlConfigCollName);
+    const res = await accessConfigRepository.findOne({ filterByTk: secAccessCtrlConfigKey });
+    if (res) {
+      this.app.authManager.accessController.setConfig(res.config);
+    } else {
+      const config = {
+        tokenExpirationTime: '1h',
+        maxTokenLifetime: '7d',
+        maxInactiveInterval: '1h',
+        opTimeoutControlEnabled: true,
+      };
+      await accessConfigRepository.create({
+        values: {
+          key: secAccessCtrlConfigKey,
+          config,
+        },
+      });
+      this.app.authManager.accessController.setConfig(config);
+    }
   }
   async remove() {}
 }
