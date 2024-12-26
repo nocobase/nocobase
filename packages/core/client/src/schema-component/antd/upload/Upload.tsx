@@ -226,7 +226,7 @@ function DefaultThumbnailPreviewer({ file, objectFit }) {
       alt={file.title}
       className={`${prefixCls}-list-item-image object-fit-${objectFit ?? 'cover'}`}
     />
-  ); // 终于找到你
+  );
 }
 
 function AttachmentListItem(props) {
