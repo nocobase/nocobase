@@ -57,10 +57,17 @@ const InternalPage = React.memo((props: PageProps) => {
   const enablePageTabs = fieldSchema['x-component-props']?.enablePageTabs;
   const searchParams = useCurrentSearchParams();
   const loading = false;
+  const currentRoute = useCurrentRoute();
+
+  const defaultActiveKey = useMemo(
+    () => getDefaultActiveKey(currentRoute?.children?.[0]?.schemaUid, fieldSchema),
+    [currentRoute?.children, fieldSchema],
+  );
+
   const activeKey = useMemo(
     // 处理 searchParams 是为了兼容旧版的 tab 参数
-    () => currentTabUid || searchParams.get('tab') || Object.keys(fieldSchema.properties || {}).shift(),
-    [fieldSchema.properties, searchParams, currentTabUid],
+    () => currentTabUid || searchParams.get('tab') || defaultActiveKey,
+    [currentTabUid, searchParams, defaultActiveKey],
   );
 
   const outletContext = useMemo(
@@ -461,4 +468,14 @@ export function getTabSchema({ title, icon, schemaUid }: { title: string; icon: 
     properties: {},
     'x-uid': schemaUid,
   };
+}
+
+function getDefaultActiveKey(defaultTabSchemaUid: string, fieldSchema: Schema) {
+  const tabSchemaList = Object.values(fieldSchema.properties);
+
+  for (const tabSchema of tabSchemaList) {
+    if (tabSchema['x-uid'] === defaultTabSchemaUid) {
+      return tabSchema.name as string;
+    }
+  }
 }
