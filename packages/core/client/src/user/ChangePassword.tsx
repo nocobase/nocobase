@@ -28,9 +28,7 @@ const useCloseAction = () => {
   return {
     async run() {
       setVisible(false);
-      form.submit((values) => {
-        console.log(values);
-      });
+      await form.reset();
     },
   };
 };
@@ -97,7 +95,6 @@ const schema: ISchema = {
           title: '{{t("Confirm password")}}',
           'x-component': 'Password',
           'x-decorator': 'FormItem',
-          'x-validator': { password: true },
           'x-component-props': { checkStrength: true, style: {} },
           'x-reactions': [
             {
