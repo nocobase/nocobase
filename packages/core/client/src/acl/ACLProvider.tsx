@@ -87,6 +87,9 @@ export const ACLRolesCheckProvider = (props) => {
   if (result.loading) {
     return render();
   }
+  if (result.error) {
+    return <>{props.children}</>;
+  }
   return <ACLContext.Provider value={result}>{props.children}</ACLContext.Provider>;
 };
 

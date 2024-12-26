@@ -19,6 +19,7 @@ import {
   createHashRouter,
   createMemoryRouter,
   Outlet,
+  useRouteError,
 } from 'react-router-dom';
 import { Router } from '@remix-run/router';
 import type { BrowserHistory, MemoryHistory, HashHistory } from 'history';
@@ -151,10 +152,25 @@ export class RouterManager {
         <CustomRouterContextProvider>
           <BaseLayout>
             <Outlet />
+            {children}
           </BaseLayout>
         </CustomRouterContextProvider>
       );
-      const router = routerCreators[type]([{ element: <Provider />, children: routes }], opts);
+      // bubble up error to application error boundary
+      const ErrorElement = () => {
+        const error = useRouteError();
+        throw error;
+      };
+      const router = routerCreators[type](
+        [
+          {
+            element: <Provider />,
+            errorElement: <ErrorElement />,
+            children: routes,
+          },
+        ],
+        opts,
+      );
       this.router = router;
       return (
         <RouterContextCleaner>
