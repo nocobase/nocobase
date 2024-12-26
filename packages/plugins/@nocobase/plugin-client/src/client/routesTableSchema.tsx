@@ -529,9 +529,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                   }
 
                   if (recordData.type === NocoBaseDesktopRouteType.page) {
-                    const path = `${basenameOfCurrentRouter === '/' ? '' : basenameOfCurrentRouter}${basename}/${
-                      recordData.schemaUid
-                    }`;
+                    const path = `${basenameOfCurrentRouter.slice(0, -1)}${basename}/${recordData.schemaUid}`;
                     // 在点击 Access 按钮时，会用到
                     recordData._path = path;
 
@@ -543,12 +541,13 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                   }
 
                   if (recordData.type === NocoBaseDesktopRouteType.tabs && data?.data) {
-                    const path = `${
-                      basenameOfCurrentRouter === '/' ? '' : basenameOfCurrentRouter
-                    }${basename}/${getSchemaUidByRouteId(recordData.parentId, data.data)}/tabs/${recordData.schemaUid}`;
+                    const path = `${basenameOfCurrentRouter.slice(0, -1)}${basename}/${getSchemaUidByRouteId(
+                      recordData.parentId,
+                      data.data,
+                    )}/tabs/${recordData.schemaUid}`;
                     recordData._path = path;
 
-                    return <Typography.Paragraph copyable> {path} </Typography.Paragraph>;
+                    return <Typography.Paragraph copyable>{path}</Typography.Paragraph>;
                   }
 
                   return <Tag>{t('Unknown')} </Tag>;
