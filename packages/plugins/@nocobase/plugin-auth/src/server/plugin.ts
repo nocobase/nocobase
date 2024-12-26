@@ -220,12 +220,21 @@ export class PluginAuthServer extends Plugin {
         maxInactiveInterval: '1h',
         opTimeoutControlEnabled: true,
       });
-      this.app.db.on(`${secAccessCtrlConfigCollName}.afterSave`, async (model) => {
-        accessController.setConfig(model.config);
-      });
 
       this.app.authManager.setAccessControlService(accessController);
+      const accessConfigRepository = this.app.db.getRepository(secAccessCtrlConfigCollName);
+      try {
+        const res = await accessConfigRepository.findOne({ filterByTk: secAccessCtrlConfigKey });
+        if (res) {
+          this.app.authManager.accessController.setConfig(res.config);
+        }
+      } catch (error) {
+        this.app.logger.warn('access control config not exist, use default value');
+      }
     }
+    this.app.db.on(`${secAccessCtrlConfigCollName}.afterSave`, async (model) => {
+      this.app.authManager.accessController.setConfig(model.config);
+    });
   }
 
   async install(options?: InstallOptions) {
