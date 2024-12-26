@@ -46,7 +46,7 @@ jobs:
     container: node:${{ matrix.node_version }}
     services:
       redis:
-        image: redis:latest
+        image: redis/redis-stack-server:latest
         ports:
           - 6379:6379
     steps:
@@ -93,7 +93,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
       redis:
-        image: redis:latest
+        image: redis/redis-stack-server:latest
         ports:
           - 6379:6379
     steps:
@@ -142,7 +142,7 @@ jobs:
           MYSQL_DATABASE: nocobase
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
       redis:
-        image: redis:latest
+        image: redis/redis-stack-server:latest
         ports:
           - 6379:6379
     steps:
@@ -188,7 +188,7 @@ jobs:
           MARIADB_DATABASE: nocobase
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
       redis:
-        image: redis:latest
+        image: redis/redis-stack-server:latest
         ports:
           - 6379:6379
     steps:
