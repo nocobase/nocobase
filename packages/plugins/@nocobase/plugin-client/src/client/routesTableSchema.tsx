@@ -521,11 +521,11 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                   const { t } = useTranslation();
 
                   if (recordData.type === NocoBaseDesktopRouteType.group) {
-                    return <Tag>{t('None')} </Tag>;
+                    return null;
                   }
 
                   if (recordData.type === NocoBaseDesktopRouteType.link) {
-                    return <Tag>{t('None')} </Tag>;
+                    return null;
                   }
 
                   if (recordData.type === NocoBaseDesktopRouteType.page) {
