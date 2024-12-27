@@ -106,6 +106,8 @@ export type MergeOptions = {
 export interface ICollectionManager {
   dataSource: DataSource;
 
+  setDataSource(dataSource: DataSource): void;
+
   registerFieldTypes(types: Record<string, any>): void;
 
   registerFieldInterfaces(interfaces: Record<string, new (options: any) => IFieldInterface>): void;

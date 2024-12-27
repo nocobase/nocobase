@@ -35,6 +35,10 @@ export class CollectionManager implements ICollectionManager {
     });
   }
 
+  setDataSource(dataSource: DataSource) {
+    this.dataSource = dataSource;
+  }
+
   /* istanbul ignore next -- @preserve */
   getRegisteredFieldType(type) {}
 
