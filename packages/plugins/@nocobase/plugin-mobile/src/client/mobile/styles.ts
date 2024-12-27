@@ -88,7 +88,7 @@ export const useStyles = genStyleHook('nb-mobile', (token) => {
         display: 'none',
       },
       '.ant-pagination .ant-pagination-item-active': {
-        display: 'block',
+        display: 'inline-block',
       },
       '.ant-card-body .nb-action-bar .ant-btn': {
         justifyContent: 'space-between',
