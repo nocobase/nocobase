@@ -147,7 +147,8 @@ const mergeSchema = (target, source, rootId, templateschemacache) => {
     }
     if (_.isObject(sourceValue)) {
       if (_.isArray(sourceValue)) {
-        return _.union(objectValue || [], sourceValue);
+        // return _.union(objectValue || [], sourceValue);
+        return sourceValue || objectValue;
       }
 
       // properties 存在 x-index 冲突的情况
