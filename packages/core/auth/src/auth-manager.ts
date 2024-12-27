@@ -117,21 +117,7 @@ export class AuthManager {
     const self = this;
 
     return async function (ctx: Context & { auth: Auth }, next: Next) {
-      const { resourceName: rawResourceName, actionName } = ctx.action;
-
-      let resourceName = rawResourceName;
-      if (rawResourceName.includes('.')) {
-        resourceName = rawResourceName.split('.').pop();
-      }
-      const isPublicAction = ctx.dataSource.acl.isPublicAction(resourceName, actionName);
       const token = ctx.getBearerToken();
-      if (token && (await ctx.app.authManager.jwt.blacklist?.has(token))) {
-        return ctx.throw(401, {
-          code: 'TOKEN_INVALID',
-          message: ctx.t('Token is invalid'),
-        });
-      }
-
       const name = ctx.get(self.options.authKey) || self.options.default;
 
       let authenticator: Auth;
@@ -144,16 +130,9 @@ export class AuthManager {
         return next();
       }
       if (authenticator) {
-        try {
-          if (!isPublicAction || ['auth:check'].includes(`${resourceName}:${actionName}`)) {
-            const user = await ctx.auth.check();
-            if (user) {
-              ctx.auth.user = user;
-            }
-          }
-          return next();
-        } catch (error) {
-          ctx.throw(401, error.message);
+        const user = await ctx.auth.check();
+        if (user) {
+          ctx.auth.user = user;
         }
       }
       await next();
@@ -167,6 +146,13 @@ export class AuthManager {
     const self = this;
     return async function (ctx: Context & { auth: Auth }, next: Next) {
       try {
+        const token = ctx.getBearerToken();
+        if (token && (await ctx.app.authManager.jwt.blacklist?.has(token))) {
+          return ctx.throw(401, {
+            code: 'TOKEN_INVALID',
+            message: ctx.t('Token is invalid'),
+          });
+        }
         const { resourceName, actionName } = ctx.action;
         const isPublicAction = ctx.dataSource.acl.isPublicAction(resourceName, actionName);
         const name = ctx.get(self.options.authKey) || self.options.default;

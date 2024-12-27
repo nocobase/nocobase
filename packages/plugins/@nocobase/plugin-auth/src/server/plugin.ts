@@ -17,7 +17,7 @@ import { BasicAuth } from './basic-auth';
 import { AuthModel } from './model/authenticator';
 import { Storer } from './storer';
 import { TokenBlacklistService } from './token-blacklist';
-import { AccessController, createAccessCtrlConfigRecord, getAccessCtrlConfig } from './access-controller';
+import { AccessController } from './access-controller';
 import { tval } from '@nocobase/utils';
 
 import { secAccessCtrlConfigCollName, secAccessCtrlConfigKey, secAccessCtrlConfigCacheKey } from '../constants';

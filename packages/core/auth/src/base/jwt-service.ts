@@ -9,7 +9,6 @@
 
 import jwt, { JwtPayload, SignOptions } from 'jsonwebtoken';
 import { ITokenBlacklistService } from './token-blacklist-service';
-import { IAccessControlService } from './access-control-service';
 export interface JwtOptions {
   secret: string;
   expiresIn?: string;
