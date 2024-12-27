@@ -6,5 +6,6 @@
   "Random password": "随机密码",
   "Users manager": "用户管理",
   "Allow edit profile": "允许修改个人资料",
-  "Allow change password": "允许修改密码"
+  "Allow change password": "允许修改密码",
+  "User profile is not allowed to be edited": "用户资料不允许修改"
 }

@@ -10,8 +10,9 @@
 import { useFieldSchema } from '@formily/react';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { SchemaSettingsDateFormat } from '../../../../schema-settings/SchemaSettingsDateFormat';
+import { SchemaSettingsDateRange } from '../../../../schema-settings/SchemaSettingsDateRange';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
-import { enableLinkSettingsItem, openModeSettingsItem } from '../Input/inputComponentSettings';
+import { ellipsisSettingsItem, enableLinkSettingsItem, openModeSettingsItem } from '../Input/inputComponentSettings';
 
 export const datePickerComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:DatePicker',
@@ -28,6 +29,25 @@ export const datePickerComponentFieldSettings = new SchemaSettings({
         };
       },
     },
+    {
+      name: 'dateScopeSelect',
+      Component: SchemaSettingsDateRange as any,
+      useComponentProps() {
+        const schema = useFieldSchema();
+        const { fieldSchema: tableColumnSchema } = useColumnSchema();
+        const fieldSchema = tableColumnSchema || schema;
+        return {
+          fieldSchema,
+        };
+      },
+      useVisible() {
+        const { fieldSchema: columnSchema } = useColumnSchema();
+        const schema = useFieldSchema();
+        const fieldSchema = columnSchema || schema;
+        return !fieldSchema?.['x-read-pretty'];
+      },
+    },
+    ellipsisSettingsItem,
     enableLinkSettingsItem,
     openModeSettingsItem,
   ],
@@ -48,5 +68,6 @@ export const rangePickerPickerComponentFieldSettings = new SchemaSettings({
         };
       },
     },
+    ellipsisSettingsItem,
   ],
 });

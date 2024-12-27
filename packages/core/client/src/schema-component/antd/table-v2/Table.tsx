@@ -23,7 +23,7 @@ import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
 import React, { createContext, FC, MutableRefObject, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DndContext, isBulkEditAction, useCompile, useDesignable, usePopupSettings, useTableSize } from '../..';
+import { DndContext, isBulkEditAction, useDesignable, usePopupSettings, useTableSize } from '../..';
 import {
   BlockRequestLoadingContext,
   RecordIndexProvider,
@@ -54,7 +54,6 @@ import { GetStyleRules } from '../../../schema-settings/LinkageRules/useActionVa
 import { HighPerformanceSpin } from '../../common/high-performance-spin/HighPerformanceSpin';
 import { useToken } from '../__builtins__';
 import { useAssociationFieldContext } from '../association-field/hooks';
-import { RenderTextInCell } from './RenderTextInCell';
 import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 
@@ -83,9 +82,6 @@ const useArrayField = (props) => {
   return (props.field || field) as ArrayField;
 };
 
-function getSchemaArrJSON(schemaArr: Schema[]) {
-  return schemaArr.map((item) => (item.name === 'actions' ? omit(item.toJSON(), 'properties') : item.toJSON()));
-}
 function adjustColumnOrder(columns) {
   const leftFixedColumns = [];
   const normalColumns = [];
@@ -171,7 +167,6 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
   const { current, pageSize } = paginationProps;
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { refresh } = useRefreshTableColumns();
-  const compile = useCompile();
 
   const filterProperties = useCallback(
     (schema) =>
@@ -224,17 +219,6 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
           ...columnSchema['x-component-props'],
           width: columnHidden && !designable ? 0 : columnSchema['x-component-props']?.width || 100,
           render: (value, record, index) => {
-            const { enableLink } = Object.values(columnSchema.properties)[0]['x-component-props'] || {};
-
-            if (!enableLink && ['sequence', 'input', 'textarea', 'phone', 'email'].includes(_interface)) {
-              return (
-                <RenderTextInCell
-                  value={compile(value || _.get(record, Object.keys(columnSchema.properties)[0]))}
-                  ellipsis={Object.values(columnSchema.properties)[0]?.['x-component-props']?.ellipsis}
-                />
-              );
-            }
-
             return (
               <RefreshComponentProvider refresh={refresh}>
                 <TableCellRender
@@ -761,6 +745,9 @@ const InternalNocoBaseTable = React.memo(
                   }
                   .ant-table-cell-fix-right {
                     padding: 8px 16px !important;
+                  }
+                  .ant-table-thead .ant-table-cell {
+                    padding: 8px 16px;
                   }
                 }
               }

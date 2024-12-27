@@ -8,12 +8,18 @@
  */
 
 import { Collection, Model, Op } from '@nocobase/database';
-import { Plugin } from '@nocobase/server';
+import { InstallOptions, Plugin } from '@nocobase/server';
 import { parse } from '@nocobase/utils';
 import * as actions from './actions/users';
 import { UserModel } from './models/UserModel';
 import PluginUserDataSyncServer from '@nocobase/plugin-user-data-sync';
 import { UserDataSyncResource } from './user-data-sync-resource';
+import {
+  adminProfileCreateFormSchema,
+  adminProfileEditFormSchema,
+  userProfileEditFormSchema,
+} from './profile/edit-form-schema';
+import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 
 export default class PluginUsersServer extends Plugin {
   async beforeLoad() {
@@ -143,7 +149,7 @@ export default class PluginUsersServer extends Plugin {
       };
     });
 
-    const loggedInActions = ['updateProfile'];
+    const loggedInActions = ['updateProfile', 'updateLang'];
     loggedInActions.forEach((action) => this.app.acl.allow('users', action, 'loggedIn'));
 
     this.app.acl.registerSnippet({
@@ -200,6 +206,15 @@ export default class PluginUsersServer extends Plugin {
       }
     });
 
+    this.app.resourceManager.use(async (ctx, next) => {
+      const { resourceName, actionName } = ctx.action;
+      if (resourceName === 'users' && actionName === 'updateProfile') {
+        // for triggering workflows
+        ctx.action.actionName = 'update';
+      }
+      await next();
+    });
+
     const userDataSyncPlugin = this.app.pm.get('user-data-sync') as PluginUserDataSyncServer;
     if (userDataSyncPlugin && userDataSyncPlugin.enabled) {
       userDataSyncPlugin.resourceManager.registerResource(new UserDataSyncResource(this.db, this.app.logger));
@@ -231,7 +246,7 @@ export default class PluginUsersServer extends Plugin {
     };
   }
 
-  async install(options) {
+  async initUserCollection(options: InstallOptions) {
     const { rootNickname, rootPassword, rootEmail, rootUsername } = this.getInstallingData(options);
     const User = this.db.getCollection('users');
 
@@ -253,5 +268,20 @@ export default class PluginUsersServer extends Plugin {
     if (repo) {
       await repo.db2cm('users');
     }
+  }
+
+  async initProfileSchema() {
+    const uiSchemas = this.db.getRepository<UiSchemaRepository>('uiSchemas');
+    if (!uiSchemas) {
+      return;
+    }
+    await uiSchemas.insert(adminProfileCreateFormSchema);
+    await uiSchemas.insert(adminProfileEditFormSchema);
+    await uiSchemas.insert(userProfileEditFormSchema);
+  }
+
+  async install(options: InstallOptions) {
+    await this.initUserCollection(options);
+    await this.initProfileSchema();
   }
 }

@@ -18,6 +18,7 @@ import { isSubMode } from '../../../../schema-component/antd/association-field/u
 import { useTitleFieldOptions } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { useColorFields } from '../../../../schema-component/antd/table-v2/Table.Column.Designer';
+import { ellipsisSettingsItem } from '../Input/inputComponentSettings';
 
 const enableLink = {
   name: 'enableLink',
@@ -176,5 +177,6 @@ export const tagComponentFieldSettings = new SchemaSettings({
     },
     titleField,
     enableLink,
+    ellipsisSettingsItem,
   ],
 });
