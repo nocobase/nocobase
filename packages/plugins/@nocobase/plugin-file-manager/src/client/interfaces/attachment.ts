@@ -25,7 +25,7 @@ export class AttachmentFieldInterface extends CollectionFieldInterface {
     uiSchema: {
       type: 'array',
       // title,
-      'x-component': 'FileUpload',
+      'x-component': 'Upload.Attachment',
       'x-use-component-props': 'useAttachmentFieldProps',
     },
   };

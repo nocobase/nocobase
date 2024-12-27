@@ -7,6 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * 废弃文件，暂时保留
+ */
+
 import {
   Input,
   Upload,
@@ -55,29 +59,9 @@ function useStorageCfg() {
 
 function AttachmentFileUpload(props) {
   const { storage, storageType } = useStorageCfg();
-
   if (storageType?.attachmentUpload) {
     const Uploader = storageType?.attachmentUpload;
     return <Uploader {...props} storage={storage}></Uploader>;
-    // return (
-    //   // 上传后没有回显
-    //   <SchemaComponent
-    //     // components={{ Upload }}
-    //     schema={{
-    //       type: 'object',
-    //       properties: {
-    //         uploader: {
-    //           ...cfg?.uiSchema,
-    //           'x-component-props': {
-    //             ...props,
-    //             fileList: JSON.parse(JSON.stringify(props.fileList || [])),
-    //             storage,
-    //           },
-    //         },
-    //       },
-    //     }}
-    //   />
-    // );
   }
   return <Upload.Attachment {...props} />;
 }

@@ -10,6 +10,7 @@
 import { useEffect } from 'react';
 import { useField } from '@formily/react';
 import { useAPIClient, useCollectionField, useCollectionManager, useRequest } from '@nocobase/client';
+import { useStorageUploadProps } from './useStorageUploadProps';
 
 export function useStorageRules(storage) {
   const name = storage ?? '';
@@ -37,11 +38,11 @@ export function useStorageRules(storage) {
 export function useAttachmentFieldProps() {
   const field = useCollectionField();
   const rules = useStorageRules(field?.storage);
-
-  return {
-    rules,
-    action: `${field.target}:create${field.storage ? `?attachmentField=${field.collectionName}.${field.name}` : ''}`,
-  };
+  const action = `${field.target}:create${
+    field.storage ? `?attachmentField=${field.collectionName}.${field.name}` : ''
+  }`;
+  const storageUploadProps = useStorageUploadProps({ rules, action });
+  return { rules, action, ...storageUploadProps };
 }
 
 export function useFileCollectionStorageRules() {

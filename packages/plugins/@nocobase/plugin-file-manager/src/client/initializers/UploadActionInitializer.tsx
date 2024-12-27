@@ -32,7 +32,7 @@ export const UploadActionInitializer = (props) => {
           upload: {
             type: 'void',
             title: '{{ t("Upload files") }}',
-            'x-component': 'FileUploadDragger',
+            'x-component': 'Upload.DraggerV2',
             'x-use-component-props': 'useUploadFiles',
             'x-component-props': {
               height: '50vh',

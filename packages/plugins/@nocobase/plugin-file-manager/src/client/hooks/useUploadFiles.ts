@@ -17,6 +17,7 @@ import {
 } from '@nocobase/client';
 import { useContext, useMemo } from 'react';
 import { useStorageRules } from './useStorageRules';
+import { useStorageUploadProps } from './useStorageUploadProps';
 
 export const useUploadFiles = () => {
   const { getDataBlockRequest } = useDataBlockRequestGetter();
@@ -38,7 +39,7 @@ export const useUploadFiles = () => {
 
   let pendingNumber = 0;
 
-  return {
+  const uploadProps = {
     action,
     onChange(fileList) {
       fileList.forEach((file) => {
@@ -63,5 +64,11 @@ export const useUploadFiles = () => {
       }
     },
     rules,
+  };
+
+  const storageUploadProps = useStorageUploadProps(uploadProps);
+  return {
+    ...uploadProps,
+    ...storageUploadProps,
   };
 };
