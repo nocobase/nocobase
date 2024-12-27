@@ -234,6 +234,7 @@ export const SubTable: any = observer(
                             onClick={() => {
                               field.value = field.value || [];
                               field.value.push(markRecordAsNew({}));
+                              field.setInitialValue(field.value);
                               // 计算总页数，并跳转到最后一页
                               const totalPages = Math.ceil(field.value.length / (field.componentProps?.pageSize || 10));
                               setCurrentPage(totalPages);
