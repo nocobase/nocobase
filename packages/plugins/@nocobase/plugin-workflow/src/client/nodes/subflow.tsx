@@ -39,7 +39,7 @@ export default class extends Instruction {
         data: {
           type: 'object',
           title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
-          description: `{{t("Choose a record of the collection to trigger.", { ns: "${NAMESPACE}" })}}`,
+          description: `{{t("Choose a record or an ID reference of the collection to trigger.", { ns: "${NAMESPACE}" })}}`,
           'x-decorator': 'FormItem',
           'x-component': 'TriggerCollectionRecordSelect',
           default: null,
