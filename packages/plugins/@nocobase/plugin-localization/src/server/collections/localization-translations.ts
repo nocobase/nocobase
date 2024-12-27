@@ -14,6 +14,7 @@ export default defineCollection({
   dumpRules: {
     group: 'required',
   },
+  migrationRules: ['upsert', 'skip'],
   name: 'localizationTranslations',
   model: 'LocalizationTranslationModel',
   createdBy: true,
