@@ -9,10 +9,12 @@
 
 import {
   APIClient,
+  CollectionFieldOptions,
   createDesignable,
   SchemaSettingsItemType,
   useAPIClient,
   useCollection,
+  useCollectionManager,
   useCurrentPopupRecord,
   useDesignable,
   useLocalVariables,
@@ -44,13 +46,13 @@ async function schemaPatch(
       schema['x-decorator-props'] = {
         action: 'get',
         collection: collectionName,
+        association: null,
         dataSource: currentSchema['x-decorator-props'].dataSource,
       };
       schema['x-acl-action'] = currentSchema['x-acl-action'].replace(':list', ':get');
       schema['x-settings'] = 'blockSettings:details';
       schema['x-use-decorator-props'] = 'useDetailsDecoratorProps';
-    }
-    if (option === 'none') {
+    } else {
       if (!_.get(currentSchema, `properties.${comKey}.properties.pagination`)) {
         await api.request({
           url: `/uiSchemas:insertAdjacent/${currentSchema.properties[comKey]['x-uid']}?position=beforeEnd`,
@@ -71,11 +73,16 @@ async function schemaPatch(
       schema['x-decorator-props'] = {
         action: 'list',
         collection: collectionName,
+        association: null,
         dataSource: currentSchema['x-decorator-props'].dataSource,
       };
       schema['x-acl-action'] = currentSchema['x-acl-action'].replace(':get', ':list');
       schema['x-settings'] = 'blockSettings:detailsWithPagination';
       schema['x-use-decorator-props'] = 'useDetailsWithPaginationDecoratorProps';
+      if (option !== 'none') {
+        schema['x-decorator-props']['collection'] = null;
+        schema['x-decorator-props']['association'] = option;
+      }
     }
 
     _.merge(schema, {
@@ -98,12 +105,23 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
     const currentCollection = useCollection();
     const variables = useLocalVariables();
     const nRecord = variables.find((v) => v.name === '$nRecord');
+    const currentPopupRecord = useCurrentPopupRecord();
     const decorator = fieldSchema['x-decorator'];
     const decoratorProps = fieldSchema['x-decorator-props'];
     const options = ['none'];
     const currentCollectionName = decoratorProps?.collection || decoratorProps?.association;
-    if (decorator === 'DetailsBlockProvider' && nRecord.collectionName === currentCollectionName) {
+    if (decorator === 'DetailsBlockProvider' && currentPopupRecord?.collection?.name === currentCollectionName) {
       options.push('current');
+    }
+
+    const currentPopupRecordFields = currentPopupRecord?.collection?.getAllFields?.();
+    const associationFields = currentPopupRecordFields
+      ?.filter((field) => ['linkTo', 'subTable', 'o2m', 'm2m', 'obo', 'oho', 'o2o', 'm2o'].includes(field.interface))
+      .filter((field) => field.target === currentCollectionName);
+
+    if (associationFields.length) {
+      const associationOptions = associationFields.map((field) => `${field.collectionName}.${field.name}`);
+      options.push(...associationOptions);
     }
     const templateBlock = _.get(fieldSchema, 'x-template-uid');
     if (!templateBlock || !currentCollection || options.length === 1) {
@@ -121,6 +139,7 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
     const { dn, refresh } = useDesignable();
     const currentCollection = useCollection();
     const currentPopupRecord = useCurrentPopupRecord();
+    const cm = useCollectionManager();
     let currentOption = 'none';
     const options = ['none'];
     // const parentPopupRecord = useParentPopupRecord();
@@ -130,10 +149,23 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
     const decorator = fieldSchema['x-decorator'];
     const decoratorProps = fieldSchema['x-decorator-props'];
     const currentCollectionName = decoratorProps?.collection || decoratorProps?.association;
-    if (decorator === 'DetailsBlockProvider' && nRecord.collectionName === currentCollectionName) {
+    if (decorator === 'DetailsBlockProvider' && currentPopupRecord?.collection?.name === currentCollectionName) {
       options.push('current');
       if (decoratorProps.action === 'get') {
         currentOption = 'current';
+      }
+    }
+
+    const currentPopupRecordFields = currentPopupRecord?.collection?.getAllFields?.();
+    const associationFields = currentPopupRecordFields
+      ?.filter((field) => ['linkTo', 'subTable', 'o2m', 'm2m', 'obo', 'oho', 'o2o', 'm2o'].includes(field.interface))
+      .filter((field) => field.target === currentCollectionName);
+
+    if (associationFields.length) {
+      const associationOptions = associationFields.map((field) => `${field.collectionName}.${field.name}`);
+      options.push(...associationOptions);
+      if (decoratorProps.association) {
+        currentOption = decoratorProps.association;
       }
     }
 
@@ -149,23 +181,12 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
           dataSource: decoratorProps.dataSource,
           option,
         });
-
-        const sdn = createDesignable({
-          current: fieldSchema.root,
-        });
-        sdn.loadAPIClientEvents();
-        // fieldSchema['x-decorator-props'] = schema['x-decorator-props'];
         _.merge(fieldSchema, schema);
-        // field.decoratorProps.params = { ...fieldSchema['x-decorator-props'].params, page: 1 };
         field.decoratorProps = {
           ...fieldSchema['x-decorator-props'],
           ...schema['x-decorator-props'],
           key: uid(),
         };
-
-        // await dn.emit('patch', {
-        //   schema,
-        // });
         const schemaJSON = fieldSchema.toJSON();
         fieldSchema.toJSON = () => {
           const ret = _.merge(schemaJSON, schema);
@@ -182,7 +203,6 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
         refresh({
           refreshParentSchema: true,
         });
-        // sdn.refresh();
       },
     };
   },
