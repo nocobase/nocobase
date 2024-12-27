@@ -111,13 +111,13 @@ export class AuthManager {
   }
 
   /**
-   * middleware
-   * @description Auth middleware, used to check the authentication status.
+   * checkMiddleware
+   * @description Auth middleware, used to check the user status.
    */
-  middleware() {
+  checkMiddleware() {
     const self = this;
 
-    return async function AuthManagerMiddleware(ctx: Context & { auth: Auth }, next: Next) {
+    return async function (ctx: Context & { auth: Auth }, next: Next) {
       const { resourceName: rawResourceName, actionName } = ctx.action;
 
       let resourceName = rawResourceName;
@@ -158,6 +158,25 @@ export class AuthManager {
         }
       }
       await next();
+    };
+  }
+  /**
+   * checkMiddleware
+   * @description Auth middleware, used to authenication the user status.
+   */
+  authMiddleware() {
+    const self = this;
+    return async function (ctx: Context & { auth: Auth }, next: Next) {
+      try {
+        const { resourceName, actionName } = ctx.action;
+        const isPublicAction = ctx.dataSource.acl.isPublicAction(resourceName, actionName);
+        if (!isPublicAction) {
+          await ctx.auth.authenticate();
+        }
+        return next();
+      } catch (error) {
+        ctx.throw(401, error.message);
+      }
     };
   }
 }

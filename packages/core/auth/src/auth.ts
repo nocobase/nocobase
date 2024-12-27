@@ -25,6 +25,7 @@ interface IAuth {
   user: Model;
   // Check the authenticaiton status and return the current user.
   check(): Promise<Model>;
+  authenticate(): Promise<any>;
   signIn(): Promise<any>;
   signUp(): Promise<any>;
   signOut(): Promise<any>;
@@ -48,6 +49,7 @@ export abstract class Auth implements IAuth {
   // The abstract methods are required to be implemented by all authentications.
   abstract check(): Promise<Model>;
   // The following methods are mainly designed for user authentications.
+  async authenticate(): Promise<any> {}
   async signIn(): Promise<any> {}
   async signUp(): Promise<any> {}
   async signOut(): Promise<any> {}

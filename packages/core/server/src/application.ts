@@ -1230,8 +1230,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         }
       }
     });
-
-    this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth' });
+    this._dataSourceManager.use(this._authManager.authMiddleware(), { tag: 'auth' });
+    this._dataSourceManager.use(this._authManager.checkMiddleware(), { tag: 'auth' });
     this._dataSourceManager.use(validateFilterParams, { tag: 'validate-filter-params', before: ['auth'] });
 
     this._dataSourceManager.use(parseVariables, {
