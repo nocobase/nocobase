@@ -211,15 +211,8 @@ export class PluginAuthServer extends Plugin {
       const cache = await this.app.cacheManager.createCache({
         name: 'auth-access-controller',
         prefix: 'auth-access-controller',
-        store: 'memory',
       });
-      const accessController = new AccessController({ cache });
-      accessController.setConfig({
-        tokenExpirationTime: '1h',
-        maxTokenLifetime: '7d',
-        maxInactiveInterval: '1h',
-        opTimeoutControlEnabled: true,
-      });
+      const accessController = new AccessController({ cache, app: this.app });
 
       this.app.authManager.setAccessControlService(accessController);
       const accessConfigRepository = this.app.db.getRepository(secAccessCtrlConfigCollName);
@@ -262,10 +255,10 @@ export class PluginAuthServer extends Plugin {
       this.app.authManager.accessController.setConfig(res.config);
     } else {
       const config = {
-        tokenExpirationTime: '1h',
-        maxTokenLifetime: '7d',
-        maxInactiveInterval: '1h',
-        opTimeoutControlEnabled: true,
+        tokenExpirationTime: process.env.JWT_EXPIRES_IN ?? '30m',
+        maxTokenLifetime: '1d',
+        maxInactiveInterval: '15m',
+        opTimeoutControlEnabled: false,
       };
       await accessConfigRepository.create({
         values: {

@@ -15,9 +15,8 @@ export interface IAccessControlConfig {
 }
 
 export interface IAccessControlService<AccessInfo = any> {
-  config: IAccessControlConfig;
-  getConfig(): IAccessControlConfig;
-  setConfig(config: IAccessControlConfig): void;
+  getConfig(): Promise<IAccessControlConfig>;
+  setConfig(config: IAccessControlConfig): Promise<any>;
   refreshAccess(
     accessId: string,
   ): Promise<
@@ -25,10 +24,11 @@ export interface IAccessControlService<AccessInfo = any> {
   >;
   addAccess(): string;
   updateAccess(id: string, value: Partial<AccessInfo>): void;
-  canAccess(accessId: string):
+  canAccess(accessId: string): Promise<
     | { allow: true }
     | {
         allow: false;
         reason: 'access_id_not_exist' | 'access_id_resigned' | 'action_timeout' | 'ip_baned' | 'access_expired';
-      };
+      }
+  >;
 }

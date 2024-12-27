@@ -139,7 +139,6 @@ export class APIClient extends APIClientSDK {
             } else {
               debouncedRedirect(() => {
                 this.auth.setToken(null);
-                error.silence = false;
                 this.app.router.navigate(`/signin?redirect=${pathname}${search}`);
               });
             }

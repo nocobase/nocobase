@@ -169,8 +169,12 @@ export class AuthManager {
       try {
         const { resourceName, actionName } = ctx.action;
         const isPublicAction = ctx.dataSource.acl.isPublicAction(resourceName, actionName);
+        const name = ctx.get(self.options.authKey) || self.options.default;
+
         if (!isPublicAction) {
-          await ctx.auth.authenticate();
+          const authenticator = await ctx.app.authManager.get(name, ctx);
+          if (!authenticator) throw new Error('authenticator not found');
+          await authenticator.authenticate();
         }
         return next();
       } catch (error) {

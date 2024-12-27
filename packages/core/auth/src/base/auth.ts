@@ -123,7 +123,7 @@ export class BaseAuth extends Auth {
         if (result.status === 'failed') {
           this.ctx.res.setHeader('X-Authorized-Failed-Type', result.reason);
         } else {
-          const expiresIn = this.accessController.config.tokenExpirationTime;
+          const expiresIn = (await this.accessController.getConfig()).tokenExpirationTime;
           const newToken = this.jwt.sign({ userId, temp, roleName }, { jwtid: result.id, expiresIn });
           this.ctx.res.setHeader('x-new-token', newToken);
         }
@@ -152,7 +152,7 @@ export class BaseAuth extends Auth {
       this.ctx.throw(401, 'Unauthorized');
     }
     const accessId = this.accessController.addAccess();
-    const expiresIn = this.accessController.config.tokenExpirationTime;
+    const expiresIn = (await this.accessController.getConfig()).tokenExpirationTime;
     const token = this.jwt.sign(
       {
         userId: user.id,

@@ -27,23 +27,19 @@ type AccessInfo = {
 type AccessService = IAccessControlService<AccessInfo>;
 export class AccessController implements AccessService {
   cache: Cache;
-  public config: IAccessControlConfig;
+  app: Application;
+  private lockMap: Map<string, Mutex> = new Map();
   private accessMap: Map<string, AccessInfo> = new Map();
-  constructor({ cache, config }: { cache: Cache; config?: IAccessControlConfig }) {
+  constructor({ cache, app }: { cache: Cache; app: Application }) {
     this.cache = cache;
-    this.config = config ?? {
-      tokenExpirationTime: '1h',
-      maxTokenLifetime: '7d',
-      maxInactiveInterval: '1h',
-      opTimeoutControlEnabled: true,
-    };
+    this.app = app;
   }
 
   getConfig() {
-    return this.config;
+    return this.cache.get<IAccessControlConfig>('config');
   }
-  setConfig(config: Partial<IAccessControlConfig>): void {
-    this.config = { ...this.config, ...config };
+  setConfig(config: Partial<IAccessControlConfig>) {
+    return this.cache.set('config', config);
   }
   addAccess() {
     const id = randomUUID();
@@ -63,16 +59,13 @@ export class AccessController implements AccessService {
   }
 
   refreshAccess: AccessService['refreshAccess'] = async (id) => {
-    const mutex = mutexMap.get(id) ?? mutexMap.set(id, new Mutex()).get(id);
-    if (mutex && mutex.isLocked()) {
-      await mutex.waitForUnlock();
-    }
+    const lockKey = `plugin-auth:access-controller:refreshAccess:${id}`;
+    const release = await this.app.lockManager.acquire(lockKey, 1000);
     try {
       const access = this.accessMap.get(id);
       if (!access) return { status: 'failed', reason: 'access_id_not_exist' };
       if (access.resigned) return { status: 'failed', reason: 'access_id_resigned' };
       const preAccessInfo = this.accessMap.get(id);
-      mutex.acquire();
       const newId = randomUUID();
       this.updateAccess(id, { resigned: true });
       const accessInfo = {
@@ -84,19 +77,19 @@ export class AccessController implements AccessService {
       this.accessMap.set(newId, accessInfo);
       return { status: 'success', id: newId };
     } finally {
-      mutex.release();
+      release();
     }
   };
-  canAccess: AccessService['canAccess'] = (id) => {
+  canAccess: AccessService['canAccess'] = async (id) => {
     const accessInfo = this.accessMap.get(id);
     const signInTime = accessInfo.signInTime;
-
+    const config = await this.getConfig();
     if (!accessInfo) return { allow: false, reason: 'access_id_not_exist' };
     const currTS = Date.now();
-    if (currTS - accessInfo.lastAccessTime > ms(this.config.maxInactiveInterval)) {
+    if (currTS - accessInfo.lastAccessTime > ms(config.maxInactiveInterval)) {
       return { allow: false, reason: 'action_timeout' };
     }
-    if (Date.now() - signInTime > ms(this.config.maxTokenLifetime)) {
+    if (Date.now() - signInTime > ms(config.maxTokenLifetime)) {
       return { allow: false, reason: 'access_expired' };
     }
     return { allow: true };
