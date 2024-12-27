@@ -9,12 +9,13 @@
 
 import { SchemaSettingsItem, useAPIClient, useDesignable } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
-import { useFieldSchema } from '@formily/react';
+import { useFieldSchema, useField } from '@formily/react';
 import { App } from 'antd';
 import React from 'react';
 import _ from 'lodash';
 import { convertTplBlock } from '../initializers/TemplateBlockInitializer';
 import { Schema } from '@formily/json-schema';
+import { uid } from '@nocobase/utils/client';
 
 const cleanSchema = (schema) => {
   const s = { ...schema, 'x-component-props': {}, 'x-decorator-props': {} };
@@ -65,9 +66,9 @@ export const ResetSetting = () => {
   const { dn, reset, refresh } = useDesignable();
   const { t } = useTranslation();
   const api = useAPIClient();
-  // const field = useField<Field>();
   // const compile = useCompile();
   const fieldSchema = useFieldSchema();
+  const field = useField();
   // const form = useForm();
   const { modal, message } = App.useApp();
 
@@ -115,6 +116,14 @@ export const ResetSetting = () => {
                 const mergedSchema = _.merge(templateSchema, schema.toJSON());
                 return mergedSchema;
               }
+            };
+            field.decoratorProps = {
+              ...field.decoratorProps,
+              key: uid(),
+            };
+            field.componentProps = {
+              ...field.componentProps,
+              key: uid(),
             };
             refresh({ refreshParentSchema: true });
             message.success(t('Reset successfully'), 0.2);

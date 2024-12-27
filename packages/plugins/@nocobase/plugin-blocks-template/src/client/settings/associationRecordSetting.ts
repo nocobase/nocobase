@@ -8,7 +8,10 @@
  */
 
 import {
+  APIClient,
+  createDesignable,
   SchemaSettingsItemType,
+  useAPIClient,
   useCollection,
   useCurrentPopupRecord,
   useDesignable,
@@ -17,6 +20,75 @@ import {
 import { useT } from '../locale';
 import { useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
+import { uid } from '@nocobase/utils/client';
+import { Schema } from '@nocobase/utils';
+
+async function schemaPatch(
+  currentSchema: Schema,
+  options: {
+    decoratorName: string;
+    api: APIClient;
+    collectionName: string;
+    dataSource: string;
+    option: string;
+  },
+) {
+  const { decoratorName, collectionName, dataSource, option, api } = options;
+  const schema = {
+    ['x-uid']: currentSchema['x-uid'],
+  };
+
+  if (decoratorName === 'DetailsBlockProvider') {
+    const comKey = Object.keys(currentSchema.properties)[0];
+    if (option === 'current') {
+      schema['x-decorator-props'] = {
+        action: 'get',
+        collection: collectionName,
+        dataSource: currentSchema['x-decorator-props'].dataSource,
+      };
+      schema['x-acl-action'] = currentSchema['x-acl-action'].replace(':list', ':get');
+      schema['x-settings'] = 'blockSettings:details';
+      schema['x-use-decorator-props'] = 'useDetailsDecoratorProps';
+    }
+    if (option === 'none') {
+      if (!_.get(currentSchema, `properties.${comKey}.properties.pagination`)) {
+        await api.request({
+          url: `/uiSchemas:insertAdjacent/${currentSchema.properties[comKey]['x-uid']}?position=beforeEnd`,
+          method: 'post',
+          data: {
+            schema: {
+              type: 'void',
+              name: 'pagination',
+              'x-uid': uid(),
+              'x-index': 2,
+              version: currentSchema['version'],
+              'x-app-version': currentSchema['x-app-version'],
+              'x-component': 'Pagination',
+            },
+          },
+        });
+      }
+      schema['x-decorator-props'] = {
+        action: 'list',
+        collection: collectionName,
+        dataSource: currentSchema['x-decorator-props'].dataSource,
+      };
+      schema['x-acl-action'] = currentSchema['x-acl-action'].replace(':get', ':list');
+      schema['x-settings'] = 'blockSettings:detailsWithPagination';
+      schema['x-use-decorator-props'] = 'useDetailsWithPaginationDecoratorProps';
+    }
+
+    _.merge(schema, {
+      properties: {
+        [comKey]: {
+          'x-uid': currentSchema.properties[comKey]['x-uid'],
+          'x-use-component-props': 'useDetailsProps',
+        },
+      },
+    });
+  }
+  return schema;
+}
 
 export const associationRecordSettingItem: SchemaSettingsItemType = {
   name: 'template-association-record',
@@ -53,6 +125,7 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
     const options = ['none'];
     // const parentPopupRecord = useParentPopupRecord();
     const variables = useLocalVariables();
+    const api = useAPIClient();
     const nRecord = variables.find((v) => v.name === '$nRecord');
     const decorator = fieldSchema['x-decorator'];
     const decoratorProps = fieldSchema['x-decorator-props'];
@@ -69,40 +142,47 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
       value: currentOption,
       options: options.map((v) => ({ value: v })),
       onChange: async (option) => {
-        let schema = {};
-        if (option === 'current') {
-          schema = {
-            ['x-uid']: fieldSchema['x-uid'],
-            'x-decorator-props': {
-              action: 'get',
-              collection: currentCollection.name,
-              dataSource: fieldSchema['x-decorator-props'].dataSource,
-            },
-          };
-        }
+        const schema = await schemaPatch(fieldSchema, {
+          decoratorName: decorator,
+          api,
+          collectionName: currentCollectionName,
+          dataSource: decoratorProps.dataSource,
+          option,
+        });
 
-        if (option === 'none') {
-          schema = {
-            ['x-uid']: fieldSchema['x-uid'],
-            'x-decorator-props': {
-              action: 'list',
-              collection: currentCollection.name,
-              dataSource: fieldSchema['x-decorator-props'].dataSource,
-            },
-          };
-        }
-        fieldSchema['x-decorator-props'] = schema['x-decorator-props'];
+        const sdn = createDesignable({
+          current: fieldSchema.root,
+        });
+        sdn.loadAPIClientEvents();
+        // fieldSchema['x-decorator-props'] = schema['x-decorator-props'];
+        _.merge(fieldSchema, schema);
         // field.decoratorProps.params = { ...fieldSchema['x-decorator-props'].params, page: 1 };
         field.decoratorProps = {
           ...fieldSchema['x-decorator-props'],
           ...schema['x-decorator-props'],
+          key: uid(),
         };
-        await dn.emit('patch', {
-          schema,
+
+        // await dn.emit('patch', {
+        //   schema,
+        // });
+        const schemaJSON = fieldSchema.toJSON();
+        fieldSchema.toJSON = () => {
+          const ret = _.merge(schemaJSON, schema);
+          return ret;
+        };
+        await api.request({
+          url: `/uiSchemas:patch`,
+          method: 'post',
+          data: {
+            ...schema,
+          },
         });
+
         refresh({
           refreshParentSchema: true,
         });
+        // sdn.refresh();
       },
     };
   },
