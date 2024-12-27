@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, lazy, useLazy, registerSecuritySettingsTab } from '@nocobase/client';
+import { Plugin, lazy, useLazy } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 import { ComponentType } from 'react';
 import { presetAuthType } from '../preset';
@@ -81,12 +81,11 @@ export class PluginAuthClient extends Plugin {
         AdminSettingsForm: Options,
       },
     });
-    registerSecuritySettingsTab({
-      app: this.app,
-      name: 'access',
+    this.app.pluginSettingsManager.add(`security.access`, {
       title: `{{t("Access control", { ns: "${NAMESPACE}" })}}`,
-      sort: 0,
       Component: AccessSettings,
+      aclSnippet: `pm.security.access`,
+      sort: 1,
     });
   }
 }

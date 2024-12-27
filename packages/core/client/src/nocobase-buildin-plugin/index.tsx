@@ -33,6 +33,7 @@ import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
 import { SystemSettingsPlugin } from '../system-settings';
 import { CurrentUserProvider, CurrentUserSettingsMenuProvider } from '../user';
 import { LocalePlugin } from './plugins/LocalePlugin';
+import { tval } from '@nocobase/utils/client';
 
 const AppSpin = () => {
   return (
@@ -285,6 +286,11 @@ export class NocoBaseBuildInPlugin extends Plugin {
 
     this.app.use(CurrentUserProvider);
     this.app.use(CurrentUserSettingsMenuProvider);
+
+    this.app.pluginSettingsManager.add('security', {
+      title: tval('Security'),
+      icon: 'SafetyOutlined',
+    });
   }
 
   addRoutes() {
