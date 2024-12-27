@@ -72,7 +72,9 @@ export abstract class DataSource extends EventEmitter {
     });
 
     this.collectionManager = this.createCollectionManager(options);
-    this.collectionManager.setDataSource(this);
+    if (this.collectionManager) {
+      this.collectionManager.setDataSource(this);
+    }
     this.resourceManager.registerActionHandlers(loadDefaultActions());
 
     if (options.acl !== false) {
