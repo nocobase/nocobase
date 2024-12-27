@@ -93,6 +93,26 @@ async function schemaPatch(
         },
       },
     });
+  } else {
+    if (option === 'current') {
+      schema['x-decorator-props'] = {
+        action: 'get',
+        collection: collectionName,
+        association: null,
+        dataSource: currentSchema['x-decorator-props'].dataSource,
+      };
+    } else {
+      schema['x-decorator-props'] = {
+        action: 'list',
+        collection: collectionName,
+        association: null,
+        dataSource: currentSchema['x-decorator-props'].dataSource,
+      };
+      if (option !== 'none') {
+        schema['x-decorator-props']['collection'] = null;
+        schema['x-decorator-props']['association'] = option;
+      }
+    }
   }
   return schema;
 }
