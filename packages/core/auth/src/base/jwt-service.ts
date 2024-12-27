@@ -31,7 +31,6 @@ export class JwtService {
   }
 
   public blacklist: ITokenBlacklistService;
-  public accessController: IAccessControlService;
 
   private expiresIn() {
     return this.options.expiresIn;
@@ -43,8 +42,7 @@ export class JwtService {
 
   /* istanbul ignore next -- @preserve */
   sign(payload: SignPayload, options?: SignOptions) {
-    const expiresIn = this.accessController.config.tokenExpirationTime || this.expiresIn();
-    const opt = { ...options, expiresIn, jwtid: options?.jwtid || this.accessController.addAccess() };
+    const opt = { expiresIn: this.expiresIn(), ...options };
     if (opt.expiresIn === 'never') {
       opt.expiresIn = '1000y';
     }

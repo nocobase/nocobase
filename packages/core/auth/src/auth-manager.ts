@@ -63,7 +63,6 @@ export class AuthManager {
 
   setAccessControlService(service: IAccessControlService) {
     this.accessController = service;
-    this.jwt.accessController = service;
   }
 
   /**
