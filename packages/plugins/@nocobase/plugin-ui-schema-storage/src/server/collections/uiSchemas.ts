@@ -12,6 +12,7 @@ import { CollectionOptions } from '@nocobase/database';
 export default {
   dumpRules: 'required',
   name: 'uiSchemas',
+  migrationRules: ['upsert', 'skip'],
   autoGenId: false,
   timestamps: false,
   repository: 'UiSchemaRepository',

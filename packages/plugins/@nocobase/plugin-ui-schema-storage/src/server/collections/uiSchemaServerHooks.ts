@@ -11,6 +11,7 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default {
   dumpRules: 'required',
+  migrationRules: ['upsert', 'skip'],
   name: 'uiSchemaServerHooks',
   model: 'ServerHookModel',
   // autoGenId: false,

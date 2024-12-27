@@ -14,6 +14,7 @@ export default defineCollection({
   dumpRules: {
     group: 'third-party',
   },
+  migrationRules: ['upsert', 'skip'],
   name: MapConfigurationCollectionName,
   shared: true,
   fields: [

@@ -13,6 +13,7 @@ export default defineCollection({
   dumpRules: {
     group: 'third-party',
   },
+  migrationRules: ['skip', 'upsert'],
   name: 'applications',
   model: 'ApplicationModel',
   autoGenId: false,

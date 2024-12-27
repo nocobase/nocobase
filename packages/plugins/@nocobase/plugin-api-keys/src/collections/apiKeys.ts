@@ -14,6 +14,7 @@ export default {
   dumpRules: {
     group: 'user',
   },
+  migrationRules: ['skip'],
   shared: true,
   name: 'apiKeys',
   sortable: 'sort',

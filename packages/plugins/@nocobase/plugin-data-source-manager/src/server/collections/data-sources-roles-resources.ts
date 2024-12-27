@@ -11,6 +11,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   dumpRules: 'required',
+  migrationRules: ['upsert', 'skip'],
   name: 'dataSourcesRolesResources',
   model: 'DataSourcesRolesResourcesModel',
   fields: [

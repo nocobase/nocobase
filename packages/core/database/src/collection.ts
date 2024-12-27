@@ -88,10 +88,13 @@ export type DumpRules =
   | ({ skipped: true } & BaseDumpRules)
   | ({ group: BuiltInGroup | string } & BaseDumpRules);
 
+type MigrationRule = 'overwrite' | 'skip' | 'upsert' | 'schema-only' | 'insert-ignore';
+
 export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> {
   name: string;
   title?: string;
   namespace?: string;
+  migrationRules?: MigrationRule[];
   dumpRules?: DumpRules;
   tableName?: string;
   inherits?: string[] | string;

@@ -12,6 +12,7 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   dumpRules: 'required',
   name: 'rolesResources',
+  migrationRules: ['upsert', 'skip'],
   model: 'RoleResourceModel',
   indexes: [
     {

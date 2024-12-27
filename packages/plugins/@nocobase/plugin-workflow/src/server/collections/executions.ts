@@ -13,6 +13,7 @@ export default {
   dumpRules: {
     group: 'log',
   },
+  migrationRules: ['skip'],
   name: 'executions',
   shared: true,
   fields: [
