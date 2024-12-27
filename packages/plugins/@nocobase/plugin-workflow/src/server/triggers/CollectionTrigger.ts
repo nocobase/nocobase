@@ -76,7 +76,7 @@ export default class CollectionTrigger extends Trigger {
     }
   }
 
-  async prepare(workflow: WorkflowModel, data: Model | Record<string, any>, options) {
+  async prepare(workflow: WorkflowModel, data: Model | Record<string, any> | string | number, options) {
     const { condition, changed, mode, appends } = workflow.config;
     const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
     const { collectionManager } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName);
@@ -84,9 +84,15 @@ export default class CollectionTrigger extends Trigger {
     const { transaction, context } = options;
     const { repository, filterTargetKey } = collection;
 
+    let dataModel = data;
+    if (typeof dataModel === 'string' || typeof dataModel === 'number') {
+      dataModel = await repository.findOne({
+        filterByTk: data,
+      });
+    }
     // NOTE: if no configured fields changed, do not trigger
     if (
-      data instanceof Model &&
+      dataModel instanceof Model &&
       changed &&
       changed.length &&
       changed
@@ -94,14 +100,14 @@ export default class CollectionTrigger extends Trigger {
           const field = collection.getField(name);
           return field && !['linkTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.options.type);
         })
-        .every((name) => !data.changedWithAssociations(getFieldRawName(collection, name)))
+        .every((name) => !dataModel.changedWithAssociations(getFieldRawName(collection, name)))
     ) {
       return null;
     }
 
     const filterByTk = Array.isArray(filterTargetKey)
-      ? pick(data, filterTargetKey)
-      : { [filterTargetKey]: data[filterTargetKey] };
+      ? pick(dataModel, filterTargetKey)
+      : { [filterTargetKey]: dataModel[filterTargetKey] };
     // NOTE: if no configured condition, or not match, do not trigger
     if (isValidFilter(condition) && !(mode & MODE_BITMAP.DESTROY)) {
       // TODO: change to map filter format to calculation format
@@ -118,7 +124,7 @@ export default class CollectionTrigger extends Trigger {
       }
     }
 
-    let result = data;
+    let result = dataModel;
 
     if (appends?.length && !(mode & MODE_BITMAP.DESTROY)) {
       const includeFields = appends.reduce((set, field) => {

@@ -403,16 +403,16 @@ export function WorkflowVariableJSON({ variableOptions, ...props }): JSX.Element
   return <Variable.JSON scope={scope} {...props} />;
 }
 
-export function WorkflowVariableWrapper({ children, ...props }): JSX.Element {
+export function WorkflowVariableWrapper({ renderComponent, ...props }): JSX.Element {
   const scope = useVariableScope();
 
   if (scope && Array.isArray(scope) && scope.length > 0) {
     return (
       <Variable.Input scope={scope} {...props}>
-        {children}
+        {renderComponent()}
       </Variable.Input>
     );
   }
 
-  return children;
+  return renderComponent(props);
 }

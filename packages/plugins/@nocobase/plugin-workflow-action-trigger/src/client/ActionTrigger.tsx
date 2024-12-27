@@ -221,10 +221,15 @@ export default class extends Trigger {
       'x-component-props': {
         nullable: false,
         changeOnSelect: true,
+        renderComponent: (props) => (
+          <RemoteSelect
+            fieldNames={{ label: 'nickname', value: 'id' }}
+            service={{ resource: 'users' }}
+            manual={false}
+            {...props}
+          />
+        ),
       },
-      'x-content': (
-        <RemoteSelect fieldNames={{ label: 'nickname', value: 'id' }} service={{ resource: 'users' }} manual={false} />
-      ),
       // properties: {
       //   remoteSelect: {
       //     'x-component': 'RemoteSelect',
@@ -251,10 +256,10 @@ export default class extends Trigger {
       'x-component-props': {
         nullable: false,
         changeOnSelect: true,
+        renderComponent: () => (
+          <RemoteSelect fieldNames={{ label: 'title', value: 'name' }} service={{ resource: 'roles' }} manual={false} />
+        ),
       },
-      'x-content': (
-        <RemoteSelect fieldNames={{ label: 'title', value: 'name' }} service={{ resource: 'roles' }} manual={false} />
-      ),
       // 'x-component-props': {
       //   fieldNames: {
       //     label: 'title',

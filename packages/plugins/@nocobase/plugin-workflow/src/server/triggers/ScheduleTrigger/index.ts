@@ -8,6 +8,7 @@
  */
 
 import { Context } from '@nocobase/actions';
+import { parseCollectionName } from '@nocobase/data-source-manager';
 import Trigger from '..';
 import type Plugin from '../../Plugin';
 import DateFieldScheduleTrigger from './DateFieldScheduleTrigger';
@@ -47,7 +48,16 @@ export default class ScheduleTrigger extends Trigger {
   }
 
   async execute(workflow, values: any, options) {
-    return this.workflow.trigger(workflow, { ...values, date: values?.date ?? new Date() }, options);
+    let dataModel = values.data;
+    if (typeof dataModel === 'string' || typeof dataModel === 'number') {
+      const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
+      const { collectionManager } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName);
+      const { filterTargetKey, repository } = collectionManager.getCollection(collectionName);
+      dataModel = await repository.findOne({
+        filterByTk: values.data,
+      });
+    }
+    return this.workflow.trigger(workflow, { ...values, data: dataModel, date: values?.date ?? new Date() }, options);
   }
 
   // async validateEvent(workflow: WorkflowModel, context: any, options: Transactionable): Promise<boolean> {

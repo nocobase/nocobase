@@ -190,12 +190,20 @@ export default class extends Trigger {
     const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
     const { collectionManager } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName);
     const { filterTargetKey, repository } = collectionManager.getCollection(collectionName);
+
+    let dataModel = values.data;
+    if (typeof dataModel === 'string' || typeof dataModel === 'number') {
+      dataModel = await repository.findOne({
+        filterByTk: values.data,
+      });
+    }
+
     const filterByTk = Array.isArray(filterTargetKey)
       ? pick(
-          values.data,
+          dataModel,
           filterTargetKey.sort((a, b) => a.localeCompare(b)),
         )
-      : values.data[filterTargetKey];
+      : dataModel[filterTargetKey];
     const UserRepo = this.workflow.app.db.getRepository('users');
     const actor = await UserRepo.findOne({
       filterByTk: values.userId,
@@ -207,9 +215,9 @@ export default class extends Trigger {
     const { roles, ...user } = actor.desensitize().get();
     const roleName = values.roleName || roles?.[0]?.name;
 
-    let { data } = values;
+    // let { data } = values;
     if (workflow.config.appends?.length) {
-      data = await repository.findOne({
+      dataModel = await repository.findOne({
         filterByTk,
         appends: workflow.config.appends,
       });
@@ -217,7 +225,7 @@ export default class extends Trigger {
     return this.workflow.trigger(
       workflow,
       {
-        data,
+        data: dataModel,
         user,
         roleName,
       },
