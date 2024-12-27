@@ -7,21 +7,34 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaSettingsItemType, useCollection, useDesignable } from '@nocobase/client';
+import {
+  SchemaSettingsItemType,
+  useCollection,
+  useCurrentPopupRecord,
+  useDesignable,
+  useLocalVariables,
+} from '@nocobase/client';
 import { useT } from '../locale';
 import { useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
-import { AssociationRecordSetting } from '../components/AssociationRecordSetting';
 
 export const associationRecordSettingItem: SchemaSettingsItemType = {
   name: 'template-association-record',
-  // type: 'actionModal',
   type: 'select',
-  // Component: AssociationRecordSetting,
   useVisible() {
     const fieldSchema = useFieldSchema();
+    const currentCollection = useCollection();
+    const variables = useLocalVariables();
+    const nRecord = variables.find((v) => v.name === '$nRecord');
+    const decorator = fieldSchema['x-decorator'];
+    const decoratorProps = fieldSchema['x-decorator-props'];
+    const options = ['none'];
+    const currentCollectionName = decoratorProps?.collection || decoratorProps?.association;
+    if (decorator === 'DetailsBlockProvider' && nRecord.collectionName === currentCollectionName) {
+      options.push('current');
+    }
     const templateBlock = _.get(fieldSchema, 'x-template-uid');
-    if (!templateBlock) {
+    if (!templateBlock || !currentCollection || options.length === 1) {
       return false;
     }
     if (_.get(fieldSchema, 'x-decorator-props.collection') || _.get(fieldSchema, 'x-decorator-props.association')) {
@@ -33,31 +46,57 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
     const t = useT();
     const fieldSchema = useFieldSchema();
     const field = useField();
-    const { dn } = useDesignable();
+    const { dn, refresh } = useDesignable();
     const currentCollection = useCollection();
+    const currentPopupRecord = useCurrentPopupRecord();
+    let currentOption = 'none';
+    const options = ['none'];
+    // const parentPopupRecord = useParentPopupRecord();
+    const variables = useLocalVariables();
+    const nRecord = variables.find((v) => v.name === '$nRecord');
+    const decorator = fieldSchema['x-decorator'];
+    const decoratorProps = fieldSchema['x-decorator-props'];
+    const currentCollectionName = decoratorProps?.collection || decoratorProps?.association;
+    if (decorator === 'DetailsBlockProvider' && nRecord.collectionName === currentCollectionName) {
+      options.push('current');
+      if (decoratorProps.action === 'get') {
+        currentOption = 'current';
+      }
+    }
 
     return {
       title: t('Associate Record'),
-      value: 'none',
-      options: ['none', 'current', 'association'].map((v) => ({ value: v })),
+      value: currentOption,
+      options: options.map((v) => ({ value: v })),
       onChange: (option) => {
-        // _.set(fieldSchema, 'x-decorator-props.params.pageSize', pageSize);
+        let schema = {};
+        if (option === 'current') {
+          schema = {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-decorator-props': {
+              action: 'get',
+              collection: currentCollection.name,
+              dataSource: fieldSchema['x-decorator-props'].dataSource,
+            },
+          };
+        }
+
+        if (option === 'none') {
+          schema = {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-decorator-props': {
+              action: 'list',
+              collection: currentCollection.name,
+              dataSource: fieldSchema['x-decorator-props'].dataSource,
+            },
+          };
+        }
+
         field.decoratorProps.params = { ...fieldSchema['x-decorator-props'].params, page: 1 };
         dn.emit('patch', {
-          schema: {
-            ['x-uid']: fieldSchema['x-uid'],
-            'x-decorator-props': fieldSchema['x-decorator-props'],
-          },
+          schema,
         });
       },
     };
   },
-  // useComponentProps() {
-  //   const { deepMerge } = useDesignable();
-  //   const t = useT();
-
-  //   return {
-  //     title: t('Associate Record'),
-  //   };
-  // },
 };
