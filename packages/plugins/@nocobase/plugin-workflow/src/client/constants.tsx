@@ -18,7 +18,8 @@ import {
   LoadingOutlined,
   RedoOutlined,
 } from '@ant-design/icons';
-import { NAMESPACE } from './locale';
+import { i18n } from '@nocobase/client';
+import { NAMESPACE, lang } from './locale';
 
 export const EXECUTION_STATUS = {
   QUEUEING: null,
