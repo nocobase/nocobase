@@ -68,7 +68,7 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
       title: t('Associate Record'),
       value: currentOption,
       options: options.map((v) => ({ value: v })),
-      onChange: (option) => {
+      onChange: async (option) => {
         let schema = {};
         if (option === 'current') {
           schema = {
@@ -91,10 +91,17 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
             },
           };
         }
-
-        field.decoratorProps.params = { ...fieldSchema['x-decorator-props'].params, page: 1 };
-        dn.emit('patch', {
+        fieldSchema['x-decorator-props'] = schema['x-decorator-props'];
+        // field.decoratorProps.params = { ...fieldSchema['x-decorator-props'].params, page: 1 };
+        field.decoratorProps = {
+          ...fieldSchema['x-decorator-props'],
+          ...schema['x-decorator-props'],
+        };
+        await dn.emit('patch', {
           schema,
+        });
+        refresh({
+          refreshParentSchema: true,
         });
       },
     };

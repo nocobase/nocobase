@@ -69,7 +69,7 @@ export const ResetSetting = () => {
   // const compile = useCompile();
   const fieldSchema = useFieldSchema();
   // const form = useForm();
-  const { modal } = App.useApp();
+  const { modal, message } = App.useApp();
 
   return (
     <SchemaSettingsItem
@@ -117,6 +117,7 @@ export const ResetSetting = () => {
               }
             };
             refresh({ refreshParentSchema: true });
+            message.success(t('Reset successfully'), 0.2);
           },
         });
       }}
