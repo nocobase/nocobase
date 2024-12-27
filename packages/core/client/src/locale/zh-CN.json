@@ -1041,6 +1041,6 @@
   "No data":"暂无数据",
   "Fields can only be used correctly if they are defined with an interface.": "只有字段设置了interface字段才能正常使用",
   "Security settings": "安全设置",
-  "Session timeout": "会话超时",
-  "Your session has timed out due to inactivity. Please sign in again to continue.": "由于长时间未操作，你的会话已超时，请重新登录。"
+  "Inactivity warning": "未操作警告",
+  "You have been inactive for a while and will be signed out. Please sign in again to continue.": "您已因长时间未操作而被登出，请重新登录。"
 }

@@ -126,7 +126,7 @@ export class APIClient extends APIClientSDK {
               debouncedRedirect(() => {
                 this.auth.setToken(null);
                 Modal.confirm({
-                  title: this.app.i18n.t('Session timeout'),
+                  title: this.app.i18n.t('Inactivity warning'),
                   content: this.app.i18n.t(
                     'Your session has timed out due to inactivity. Please sign in again to continue.',
                   ),
