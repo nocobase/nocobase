@@ -12,6 +12,8 @@ import { Cache } from '@nocobase/cache';
 import { randomUUID } from 'crypto';
 import ms from 'ms';
 import Application from '@nocobase/server';
+import Database, { Repository, Model } from '@nocobase/database';
+import { secAccessInfoListCollName } from '../constants';
 
 type AccessInfo = {
   id: string;
@@ -23,10 +25,39 @@ type AccessService = IAccessControlService<AccessInfo>;
 export class AccessController implements AccessService {
   cache: Cache;
   app: Application;
-  private accessMap: Map<string, AccessInfo> = new Map();
+  db: Database;
+  private accessMap: {
+    get(id: string): Promise<AccessInfo | null>;
+    set(id: string, value: AccessInfo): Promise<void>;
+  };
   constructor({ cache, app }: { cache: Cache; app: Application }) {
     this.cache = cache;
     this.app = app;
+    this.accessMap = {
+      get: (id) => {
+        // return this.cache.get<AccessInfo>(`access:${id}`);
+        return this.cache.wrap(`access:${id}`, async () => {
+          const repo = this.app.db.getRepository<Repository<AccessInfo>>(secAccessInfoListCollName);
+          const accessInfo = await repo.findOne({ filterByTk: id });
+          if (!accessInfo) return null;
+          else return accessInfo.dataValues as AccessInfo;
+        });
+      },
+      set: async (id, value) => {
+        // return this.cache.set(`access:${id}`, value);
+        const createOrUpdate = async (id: string, value: AccessInfo) => {
+          const repo = this.app.db.getRepository<Repository<AccessInfo>>(secAccessInfoListCollName);
+          const exist = await repo.findOne({ filterByTk: id });
+          if (exist) {
+            await repo.update({ filterByTk: id, values: value });
+          } else {
+            await repo.create({ values: value });
+          }
+        };
+        await Promise.all([this.cache.set(`access:${id}`, value), createOrUpdate(id, value)]);
+        return;
+      },
+    };
   }
 
   getConfig() {
@@ -35,10 +66,10 @@ export class AccessController implements AccessService {
   setConfig(config: Partial<IAccessControlConfig>) {
     return this.cache.set('config', config);
   }
-  addAccess() {
+  async addAccess() {
     const id = randomUUID();
     const currTS = Date.now();
-    this.accessMap.set(id, {
+    await this.accessMap.set(id, {
       id,
       lastAccessTime: currTS,
       signInTime: currTS,
@@ -46,20 +77,20 @@ export class AccessController implements AccessService {
     });
     return id;
   }
-  updateAccess(id: string, value: Partial<AccessInfo>) {
-    const accessInfo = this.accessMap.get(id);
+  async updateAccess(id: string, value: Partial<AccessInfo>) {
+    const accessInfo = await this.accessMap.get(id);
     if (!accessInfo) throw new Error('Access not found');
-    this.accessMap.set(id, { ...accessInfo, ...value });
+    return this.accessMap.set(id, { ...accessInfo, ...value });
   }
 
   refreshAccess: AccessService['refreshAccess'] = async (id) => {
     const lockKey = `plugin-auth:access-controller:refreshAccess:${id}`;
     const release = await this.app.lockManager.acquire(lockKey, 1000);
     try {
-      const access = this.accessMap.get(id);
+      const access = await this.accessMap.get(id);
       if (!access) return { status: 'failed', reason: 'access_id_not_exist' };
       if (access.resigned) return { status: 'failed', reason: 'access_id_resigned' };
-      const preAccessInfo = this.accessMap.get(id);
+      const preAccessInfo = await this.accessMap.get(id);
       const newId = randomUUID();
       this.updateAccess(id, { resigned: true });
       const accessInfo = {
@@ -75,7 +106,7 @@ export class AccessController implements AccessService {
     }
   };
   canAccess: AccessService['canAccess'] = async (id) => {
-    const accessInfo = this.accessMap.get(id);
+    const accessInfo = await this.accessMap.get(id);
     const signInTime = accessInfo.signInTime;
     const config = await this.getConfig();
     if (!accessInfo) return { allow: false, reason: 'access_id_not_exist' };

@@ -22,8 +22,8 @@ export interface IAccessControlService<AccessInfo = any> {
   ): Promise<
     { status: 'success'; id: string } | { status: 'failed'; reason: 'access_id_not_exist' | 'access_id_resigned' }
   >;
-  addAccess(): string;
-  updateAccess(id: string, value: Partial<AccessInfo>): void;
+  addAccess(): Promise<string>;
+  updateAccess(id: string, value: Partial<AccessInfo>): Promise<void>;
   canAccess(accessId: string): Promise<
     | { allow: true }
     | {

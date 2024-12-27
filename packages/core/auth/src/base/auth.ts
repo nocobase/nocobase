@@ -114,7 +114,7 @@ export class BaseAuth extends Auth {
         throw new Error(checkAccessResult.reason);
       }
       if (status === 'valid') {
-        this.accessController.updateAccess(jti, { lastAccessTime: Date.now() });
+        await this.accessController.updateAccess(jti, { lastAccessTime: Date.now() });
       } else if (!temp) {
         // api token, do not refresh
         throw new Error('Unauthorized');
@@ -151,7 +151,7 @@ export class BaseAuth extends Auth {
     if (!user) {
       this.ctx.throw(401, 'Unauthorized');
     }
-    const accessId = this.accessController.addAccess();
+    const accessId = await this.accessController.addAccess();
     const expiresIn = (await this.accessController.getConfig()).tokenExpirationTime;
     const token = this.jwt.sign(
       {

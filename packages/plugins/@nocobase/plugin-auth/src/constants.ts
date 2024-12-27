@@ -10,4 +10,5 @@
 export const secAccessCtrlConfigKey = 'access-control-config';
 export const secAccessCtrlConfigCacheKey = 'auth:' + secAccessCtrlConfigKey;
 export const secAccessCtrlConfigCollName = 'securityAccessControlConfig';
+export const secAccessInfoListCollName = 'securityAccessInfoList';
 export const ipBlackListCollName = 'ipBlackLists';
