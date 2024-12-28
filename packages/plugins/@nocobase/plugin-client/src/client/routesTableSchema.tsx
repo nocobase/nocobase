@@ -118,7 +118,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
           },
           hide: {
             type: 'void',
-            title: '{{t("在菜单中隐藏")}}',
+            title: '{{t("Hide in menu")}}',
             'x-component': 'Action',
             'x-use-component-props': () => {
               const tableBlockContextBasicValue = useTableBlockContextBasicValue();
@@ -150,7 +150,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
           },
           show: {
             type: 'void',
-            title: '{{t("在菜单中显示")}}',
+            title: '{{t("Show in menu")}}',
             'x-component': 'Action',
             'x-use-component-props': () => {
               const tableBlockContextBasicValue = useTableBlockContextBasicValue();
@@ -463,13 +463,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
               type: {
                 type: 'string',
                 'x-component': (props) => {
-                  const colorMap = {
-                    [NocoBaseDesktopRouteType.group]: 'blue',
-                    [NocoBaseDesktopRouteType.page]: 'green',
-                    [NocoBaseDesktopRouteType.link]: 'red',
-                    [NocoBaseDesktopRouteType.tabs]: 'orange',
-                  };
-                  return <Tag color={colorMap[props.value]}> {props.value} </Tag>;
+                  return <TypeTag value={props.value} />;
                 },
                 'x-read-pretty': true,
                 'x-component-props': {
@@ -547,7 +541,11 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                     )}/tabs/${recordData.schemaUid}`;
                     recordData._path = path;
 
-                    return <Typography.Paragraph copyable>{path}</Typography.Paragraph>;
+                    return (
+                      <Typography.Paragraph copyable style={{ marginBottom: 0 }}>
+                        {path}
+                      </Typography.Paragraph>
+                    );
                   }
 
                   return <Tag>{t('Unknown')} </Tag>;
@@ -876,20 +874,9 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                             title: '{{t("Type")}}',
                             'x-decorator': 'FormItem',
                             'x-component': (props) => {
-                              const { t } = useTranslation();
-                              return (
-                                <Radio.Group {...props}>
-                                  <Radio value={NocoBaseDesktopRouteType.group}>{t('Group')}</Radio>
-                                  <Radio value={NocoBaseDesktopRouteType.page}>{t('Page')}</Radio>
-                                  <Radio value={NocoBaseDesktopRouteType.link}>{t('Link')}</Radio>
-                                  <Radio value={NocoBaseDesktopRouteType.tabs}>{t('Tab')}</Radio>
-                                </Radio.Group>
-                              );
+                              return <TypeTag value={props.value} />;
                             },
                             default: NocoBaseDesktopRouteType.page,
-                            required: true,
-                            // 在编辑时，隐藏 type 字段，不允许用户编辑
-                            'x-hidden': true,
                           },
                           title: {
                             type: 'string',
@@ -1239,4 +1226,22 @@ function useDeleteRouteSchema(collectionName = 'uiSchemas') {
   );
 
   return { deleteRouteSchema };
+}
+
+function TypeTag(props) {
+  const { t } = useTranslation();
+  const colorMap = {
+    [NocoBaseDesktopRouteType.group]: 'blue',
+    [NocoBaseDesktopRouteType.page]: 'green',
+    [NocoBaseDesktopRouteType.link]: 'red',
+    [NocoBaseDesktopRouteType.tabs]: 'orange',
+  };
+  const valueMap = {
+    [NocoBaseDesktopRouteType.group]: t('Group'),
+    [NocoBaseDesktopRouteType.page]: t('Page'),
+    [NocoBaseDesktopRouteType.link]: t('Link'),
+    [NocoBaseDesktopRouteType.tabs]: t('Tab'),
+  };
+
+  return <Tag color={colorMap[props.value]}>{valueMap[props.value]}</Tag>;
 }

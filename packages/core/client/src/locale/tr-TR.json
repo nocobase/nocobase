@@ -41,6 +41,7 @@
   "Logo": "Logo",
   "Add menu item": "Menüye öğe ekle",
   "Page": "Sayfa",
+  "Tab": "Sekme",
   "Name": "Adı",
   "Icon": "İkon",
   "Group": "Grup",
@@ -586,5 +587,11 @@
   "Desktop routes": "Masaüstü rotalar",
   "Route permissions": "Rota izinleri",
   "New routes are allowed to be accessed by default": "Yeni rotalar varsayılan olarak erişilebilir",
-  "Route name": "Rota adı"
+  "Route name": "Rota adı",
+  "Mobile routes": "Mobil rotalar",
+  "Show in menu": "Menüde göster",
+  "Hide in menu": "Menüde gizle",
+  "Path": "Yol",
+  "Type": "Tip",
+  "Access": "Erişim"
 }

@@ -169,7 +169,9 @@ const InsertMenuItems = (props) => {
         onSubmit={({ title, icon }) => {
           const route = fieldSchema['__route__'];
           const parentRoute = fieldSchema.parent?.['__route__'];
-          const schemaUid = uid();
+          const menuSchemaUid = uid();
+          const pageSchemaUid = uid();
+          const tabSchemaUid = uid();
 
           // 1. 先创建一个路由
           createRoute({
@@ -178,41 +180,52 @@ const InsertMenuItems = (props) => {
             icon,
             // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
             parentId: insertPosition === 'beforeEnd' ? route?.id : parentRoute?.id,
-            schemaUid,
+            schemaUid: menuSchemaUid,
+            pageSchemaUid,
           })
-            .then(({ data }) => {
-              // 2. 然后再把路由移动到对应的位置
-              console.log('data', data);
-            })
-            .catch(console.error);
+            .then(async ({ data }) => {
+              // 2. 创建一个 Tab
+              await createRoute({
+                type: NocoBaseDesktopRouteType.tabs,
+                title: '{{t("Tab")}}',
+                parentId: data?.data?.id,
+                schemaUid: tabSchemaUid,
+              });
 
-          // 3. 插入一个对应的 Schema
-          dn.insertAdjacent(insertPosition, {
-            type: 'void',
-            title,
-            'x-component': 'Menu.Item',
-            'x-decorator': 'ACLMenuItemProvider',
-            'x-component-props': {
-              icon,
-            },
-            'x-server-hooks': serverHooks,
-            properties: {
-              page: {
+              // 3. 然后再把路由移动到对应的位置
+              console.log('data', data);
+
+              // 4. 插入一个对应的 Schema
+              dn.insertAdjacent(insertPosition, {
                 type: 'void',
-                'x-component': 'Page',
-                'x-async': true,
+                title,
+                'x-component': 'Menu.Item',
+                'x-decorator': 'ACLMenuItemProvider',
+                'x-component-props': {
+                  icon,
+                },
+                'x-server-hooks': serverHooks,
                 properties: {
-                  grid: {
+                  page: {
                     type: 'void',
-                    'x-component': 'Grid',
-                    'x-initializer': 'page:addBlock',
-                    properties: {},
+                    'x-component': 'Page',
+                    'x-async': true,
+                    properties: {
+                      tab1: {
+                        type: 'void',
+                        'x-component': 'Grid',
+                        'x-initializer': 'page:addBlock',
+                        properties: {},
+                        'x-uid': tabSchemaUid,
+                      },
+                    },
+                    'x-uid': pageSchemaUid,
                   },
                 },
-              },
-            },
-            'x-uid': schemaUid,
-          });
+                'x-uid': menuSchemaUid,
+              });
+            })
+            .catch(console.error);
         }}
       />
       <SchemaSettingsModalItem
