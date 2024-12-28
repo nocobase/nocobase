@@ -25,7 +25,6 @@ const InputTime = connect(
     const [time, unit] = match ? [parseInt(match[1]), match[2]] : [0, 'm'];
     const TimeUnits = (
       <Select value={unit} onChange={(unit) => onChange(`${time}${unit}`)} style={{ width: 120 }}>
-        <Option value="s">{t('Seconds')}</Option>
         <Option value="m">{t('Minutes')}</Option>
         <Option value="h">{t('Hours')}</Option>
         <Option value="d">{t('Days')}</Option>
