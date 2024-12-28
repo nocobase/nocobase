@@ -25,16 +25,16 @@ const schema: ISchema & { properties: Properties } = {
   'x-use-component-props': hooksNameMap.useEditForm,
   type: 'object',
   properties: {
-    tokenExpirationTime: {
+    maxTokenLifetime: {
       type: 'string',
-      title: "{{t('Token validity period')}}",
+      title: "{{t('Login validity period')}}",
       'x-decorator': 'FormItem',
       'x-component': componentsNameMap.InputTime,
       required: true,
     },
-    maxTokenLifetime: {
+    tokenExpirationTime: {
       type: 'string',
-      title: "{{t('Login validity period')}}",
+      title: "{{t('Token validity period')}}",
       'x-decorator': 'FormItem',
       'x-component': componentsNameMap.InputTime,
       required: true,
