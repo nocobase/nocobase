@@ -11,7 +11,7 @@ import React from 'react';
 import { useFieldSchema } from '@formily/react';
 import { isValid } from '@formily/shared';
 
-import { Plugin, useCompile, WorkflowConfig } from '@nocobase/client';
+import { PagePopups, Plugin, useCompile, WorkflowConfig } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 
 // import { ExecutionPage } from './ExecutionPage';
@@ -37,11 +37,14 @@ import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './utils';
 import { lang, NAMESPACE } from './locale';
 import { customizeSubmitToWorkflowActionSettings } from './settings/customizeSubmitToWorkflowActionSettings';
 import { VariableOption } from './variable';
+import { WorkflowTasks, TasksProvider, TaskTypeOptions } from './WorkflowTasks';
 
 export default class PluginWorkflowClient extends Plugin {
   triggers = new Registry<Trigger>();
   instructions = new Registry<Instruction>();
   systemVariables = new Registry<VariableOption>();
+
+  taskTypes = new Registry<TaskTypeOptions>();
 
   useTriggersOptions = () => {
     const compile = useCompile();
@@ -83,15 +86,29 @@ export default class PluginWorkflowClient extends Plugin {
     this.systemVariables.register(option.key, option);
   }
 
+  registerTaskType(key: string, option: TaskTypeOptions) {
+    this.taskTypes.register(key, option);
+  }
+
   async load() {
-    this.app.router.add('admin.workflow.workflows.id', {
+    this.router.add('admin.workflow.workflows.id', {
       path: getWorkflowDetailPath(':id'),
-      element: <WorkflowPage />,
+      Component: WorkflowPage,
     });
 
-    this.app.router.add('admin.workflow.executions.id', {
+    this.router.add('admin.workflow.executions.id', {
       path: getWorkflowExecutionsPath(':id'),
-      element: <ExecutionPage />,
+      Component: ExecutionPage,
+    });
+
+    this.router.add('admin.workflow.tasks', {
+      path: '/admin/workflow/tasks/:taskType?',
+      Component: WorkflowTasks,
+    });
+
+    this.router.add('admin.workflow.tasks.popup', {
+      path: '/admin/workflow/tasks/:taskType/popups/*',
+      Component: PagePopups,
     });
 
     this.app.pluginSettingsManager.add(NAMESPACE, {
@@ -100,6 +117,8 @@ export default class PluginWorkflowClient extends Plugin {
       Component: WorkflowPane,
       aclSnippet: 'pm.workflow.workflows',
     });
+
+    this.app.use(TasksProvider);
 
     this.app.schemaSettingsManager.add(customizeSubmitToWorkflowActionSettings);
 
@@ -127,118 +146,6 @@ export default class PluginWorkflowClient extends Plugin {
       key: 'now',
       label: `{{t("System time", { ns: "${NAMESPACE}" })}}`,
       value: 'now',
-    });
-    this.registerSystemVariable({
-      key: 'dateRange',
-      label: `{{t("Date range", { ns: "${NAMESPACE}" })}}`,
-      value: 'dateRange',
-      children: [
-        {
-          key: 'yesterday',
-          value: 'yesterday',
-          label: `{{t("Yesterday")}}`,
-        },
-        {
-          key: 'today',
-          value: 'today',
-          label: `{{t("Today")}}`,
-        },
-        {
-          key: 'tomorrow',
-          value: 'tomorrow',
-          label: `{{t("Tomorrow")}}`,
-        },
-        {
-          key: 'lastWeek',
-          value: 'lastWeek',
-          label: `{{t("Last week")}}`,
-        },
-        {
-          key: 'thisWeek',
-          value: 'thisWeek',
-          label: `{{t("This week")}}`,
-        },
-        {
-          key: 'nextWeek',
-          value: 'nextWeek',
-          label: `{{t("Next week")}}`,
-        },
-        {
-          key: 'lastMonth',
-          value: 'lastMonth',
-          label: `{{t("Last month")}}`,
-        },
-        {
-          key: 'thisMonth',
-          value: 'thisMonth',
-          label: `{{t("This month")}}`,
-        },
-        {
-          key: 'nextMonth',
-          value: 'nextMonth',
-          label: `{{t("Next month")}}`,
-        },
-        {
-          key: 'lastQuarter',
-          value: 'lastQuarter',
-          label: `{{t("Last quarter")}}`,
-        },
-        {
-          key: 'thisQuarter',
-          value: 'thisQuarter',
-          label: `{{t("This quarter")}}`,
-        },
-        {
-          key: 'nextQuarter',
-          value: 'nextQuarter',
-          label: `{{t("Next quarter")}}`,
-        },
-        {
-          key: 'lastYear',
-          value: 'lastYear',
-          label: `{{t("Last year")}}`,
-        },
-        {
-          key: 'thisYear',
-          value: 'thisYear',
-          label: `{{t("This year")}}`,
-        },
-        {
-          key: 'nextYear',
-          value: 'nextYear',
-          label: `{{t("Next year")}}`,
-        },
-        {
-          key: 'last7Days',
-          value: 'last7Days',
-          label: `{{t("Last 7 days")}}`,
-        },
-        {
-          key: 'next7Days',
-          value: 'next7Days',
-          label: `{{t("Next 7 days")}}`,
-        },
-        {
-          key: 'last30Days',
-          value: 'last30Days',
-          label: `{{t("Last 30 days")}}`,
-        },
-        {
-          key: 'next30Days',
-          value: 'next30Days',
-          label: `{{t("Next 30 days")}}`,
-        },
-        {
-          key: 'last90Days',
-          value: 'last90Days',
-          label: `{{t("Last 90 days")}}`,
-        },
-        {
-          key: 'next90Days',
-          value: 'next90Days',
-          label: `{{t("Next 90 days")}}`,
-        },
-      ],
     });
   }
 }
