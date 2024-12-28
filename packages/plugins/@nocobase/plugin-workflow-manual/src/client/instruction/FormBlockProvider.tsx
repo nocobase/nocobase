@@ -10,6 +10,7 @@
 import { createForm } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import {
+  BlockProvider,
   BlockRequestContext_deprecated,
   CollectionManagerProvider,
   CollectionProvider_deprecated,
@@ -82,20 +83,20 @@ export function FormBlockProvider(props) {
   return !userJob?.status || values ? (
     <CollectionManagerProvider dataSource={dataSource}>
       <CollectionProvider_deprecated collection={props.collection}>
-        <RecordProvider record={values} parent={null}>
-          <RerenderDataBlockProvider>
-            <FormActiveFieldsProvider name="form">
-              <BlockRequestContext_deprecated.Provider
-                value={{ block: 'form', props, field, service, resource, __parent }}
-              >
-                <FormBlockContext.Provider value={formBlockValue}>
+        <BlockProvider name={props.name || 'form'} {...props} block={'form'} parentRecord={null}>
+          <FormActiveFieldsProvider name="form">
+            <BlockRequestContext_deprecated.Provider
+              value={{ block: 'form', props, field, service, resource, __parent }}
+            >
+              <FormBlockContext.Provider value={formBlockValue}>
+                <RecordProvider record={values} parent={null}>
                   <FormV2.Templates style={{ marginBottom: token.margin }} form={form} />
                   <div ref={formBlockRef}>{props.children}</div>
-                </FormBlockContext.Provider>
-              </BlockRequestContext_deprecated.Provider>
-            </FormActiveFieldsProvider>
-          </RerenderDataBlockProvider>
-        </RecordProvider>
+                </RecordProvider>
+              </FormBlockContext.Provider>
+            </BlockRequestContext_deprecated.Provider>
+          </FormActiveFieldsProvider>
+        </BlockProvider>
       </CollectionProvider_deprecated>
     </CollectionManagerProvider>
   ) : null;

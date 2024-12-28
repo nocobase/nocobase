@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.4.16](https://github.com/nocobase/nocobase/compare/v1.4.15...v1.4.16) - 2024-12-26
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix UnixTimestamp field precision conversion issue ([#5931](https://github.com/nocobase/nocobase/pull/5931)) by @chenos
+
+- **[Action: Duplicate record]** Fix o2o association field not  displaying configured target collection field in detail and form blocks ([#5921](https://github.com/nocobase/nocobase/pull/5921)) by @katherinehhh
+
+- **[Backup manager]** Fixed backup error when the mysqldump version is below 8 by @gchust
+
 ## [v1.4.15](https://github.com/nocobase/nocobase/compare/v1.4.14...v1.4.15) - 2024-12-24
 
 ### 🐛 Bug Fixes
