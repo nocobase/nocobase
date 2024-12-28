@@ -22,30 +22,33 @@ import { tval } from '@nocobase/utils';
 export class PluginAuthServer extends Plugin {
   cache: Cache;
 
-  afterAdd() {}
+  afterAdd() {
+    this.app.on('afterLoad', async () => {
+      this.cache = await this.app.cacheManager.createCache({
+        name: 'auth',
+        prefix: 'auth',
+        store: 'memory',
+      });
+
+      // Set up auth manager
+      const storer = new Storer({
+        db: this.db,
+        cache: this.cache,
+      });
+      this.app.authManager.setStorer(storer);
+    });
+  }
+
   async beforeLoad() {
     this.app.db.registerModels({ AuthModel });
   }
 
   async load() {
-    this.cache = await this.app.cacheManager.createCache({
-      name: 'auth',
-      prefix: 'auth',
-      store: 'memory',
-    });
-
-    // Set up auth manager and register preset auth type
-    const storer = new Storer({
-      db: this.db,
-      cache: this.cache,
-    });
-    this.app.authManager.setStorer(storer);
-
     if (!this.app.authManager.jwt.blacklist) {
       // If blacklist service is not set, should configure default blacklist service
       this.app.authManager.setTokenBlacklistService(new TokenBlacklistService(this));
     }
-
+    // register preset auth type
     this.app.authManager.registerTypes(presetAuthType, {
       auth: BasicAuth,
       title: tval('Password', { ns: namespace }),

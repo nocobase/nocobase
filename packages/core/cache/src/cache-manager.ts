@@ -30,10 +30,12 @@ export type CacheManagerOptions = Partial<{
   stores: {
     [storeType: string]: StoreOptions;
   };
+  prefix: string;
 }>;
 
 export class CacheManager {
   defaultStore: string;
+  prefix?: string;
   private stores = new Map<
     string,
     {
@@ -71,8 +73,9 @@ export class CacheManager {
       },
     };
     const cacheOptions = deepmerge(defaultOptions, options || {});
-    const { defaultStore = 'memory', stores } = cacheOptions;
+    const { defaultStore = 'memory', stores, prefix } = cacheOptions;
     this.defaultStore = defaultStore;
+    this.prefix = prefix;
     for (const [name, store] of Object.entries(stores)) {
       const { store: s, ...globalConfig } = store;
       this.registerStore({ name, store: s, ...globalConfig });
@@ -104,7 +107,9 @@ export class CacheManager {
   }
 
   async createCache(options: { name: string; prefix?: string; store?: string; [key: string]: any }) {
-    const { name, prefix, store = this.defaultStore, ...config } = options;
+    const { name, store = this.defaultStore, ...config } = options;
+    let { prefix } = options;
+    prefix = this.prefix ? (prefix ? `${this.prefix}:${prefix}` : this.prefix) : prefix;
     if (!lodash.isEmpty(config) || store === 'memory') {
       const newStore = await this.createStore({ name, storeType: store, ...config });
       return this.newCache({ name, prefix, store: newStore });

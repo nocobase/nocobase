@@ -134,6 +134,10 @@ const defaultAppOptionsFactory = (appName: string, mainApp: Application) => {
     resourcer: {
       prefix: process.env.API_BASE_PATH,
     },
+    cacheManager: {
+      ...mainApp.options.cacheManager,
+      prefix: appName,
+    },
   };
 };
 

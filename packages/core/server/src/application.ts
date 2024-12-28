@@ -581,7 +581,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async createCacheManager() {
-    this._cacheManager = await createCacheManager(this, this.options.cacheManager);
+    this._cacheManager = await createCacheManager(this, {
+      prefix: this.name,
+      ...this.options.cacheManager,
+    });
     return this._cacheManager;
   }
 
