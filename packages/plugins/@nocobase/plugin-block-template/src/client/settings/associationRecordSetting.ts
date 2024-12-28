@@ -9,8 +9,6 @@
 
 import {
   APIClient,
-  CollectionFieldOptions,
-  createDesignable,
   SchemaSettingsItemType,
   useAPIClient,
   useCollection,

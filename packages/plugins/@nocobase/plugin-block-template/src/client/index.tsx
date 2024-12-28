@@ -9,17 +9,12 @@
 
 import { Plugin } from '@nocobase/client';
 import { tStr } from './locale';
-import { convertTplBlock, TemplateBlockInitializer } from './initializers/TemplateBlockInitializer';
+import { convertTplBlock, TemplateBlockInitializer, addBlockInitializers } from './initializers';
 import { BlockNameLowercase, NAMESPACE } from './constants';
-import { BlockTemplateList } from './components/BlockTemplateList';
-import { BlockTemplatePage } from './components/BlockTemplatePage';
-import { addBlockInitializers } from './initializers/addBlockInitializers';
-// import { registerPatches } from '@formily/';
+import { BlockTemplateList, BlockTemplatePage } from './components';
 import { ISchema, Schema } from '@formily/json-schema';
 import * as _ from 'lodash';
-import { associationRecordSettingItem } from './settings/associationRecordSetting';
-import { resetSettingItem } from './settings/resetSetting';
-import { formSettingItem } from './settings/formSetting';
+import { associationRecordSettingItem, resetSettingItem, formSettingItem } from './settings';
 
 function findSchemaCache(cache, uid) {
   const isChild = (schema, uid) => {

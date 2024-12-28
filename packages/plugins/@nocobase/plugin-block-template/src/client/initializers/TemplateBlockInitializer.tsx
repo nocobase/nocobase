@@ -10,7 +10,6 @@
 import { SchemaInitializerItem, useRequest, useAPIClient, useDesignable, usePlugin } from '@nocobase/client';
 import React from 'react';
 import { CopyOutlined, LoadingOutlined } from '@ant-design/icons';
-// import { cloneDeep } from 'lodash';
 import * as _ from 'lodash';
 import { uid } from '@nocobase/utils/client';
 import PluginBlockTemplateClient from '..';

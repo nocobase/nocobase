@@ -39,18 +39,6 @@ export const useSubmitActionProps = () => {
         });
       } else {
         const key = uid();
-        // const keys = values.collection.split(':');
-        // const collection = keys.pop();
-        // const dataSource = keys.pop() || 'main';
-        // const schema = initialSchema(
-        //   values,
-        //   uiSchemaCallback({
-        //     collection,
-        //     dataSource,
-        //   }),
-        // );
-        // schema['x-uid'] = key;
-
         const schemaUid = uid();
         const schema = {
           type: 'void',

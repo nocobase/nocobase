@@ -7,13 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  gridRowColWrap,
-  SchemaInitializer,
-  useActionAvailable,
-  useCollection,
-  useCreateEditFormBlock,
-} from '@nocobase/client';
+import { gridRowColWrap, SchemaInitializer } from '@nocobase/client';
 
 export const addBlockInitializers = new SchemaInitializer({
   name: 'template:addBlock',

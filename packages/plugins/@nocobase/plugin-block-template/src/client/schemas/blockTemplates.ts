@@ -14,7 +14,6 @@ import { createActionSchema } from './createActionSchema';
 import { ConfigureLink } from '../components/ConfigureLink';
 import { editActionSchema } from './editActionSchema';
 import { NAMESPACE } from '../constants';
-import { useDuplicateAction } from '../../hooks/useDuplicateAction';
 
 export const blockTemplatesSchema: ISchema = {
   type: 'void',
@@ -136,12 +135,6 @@ export const blockTemplatesSchema: ISchema = {
                   'x-component': ConfigureLink,
                 },
                 editActionSchema,
-                // duplicate: {
-                //   type: 'void',
-                //   title: 'Duplicate',
-                //   'x-component': 'Action.Link',
-                //   'x-use-component-props': 'useDuplicateActionProps',
-                // },
                 duplicate: {
                   type: 'void',
                   title: `{{t("Duplicate", { ns: "${NAMESPACE}" })}}`,

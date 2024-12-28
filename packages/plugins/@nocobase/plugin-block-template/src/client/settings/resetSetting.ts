@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useT } from '../locale';
 import { useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { ResetSetting } from '../components/ResetSetting';
