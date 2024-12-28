@@ -13,7 +13,7 @@ import { ISchema, Schema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { findByUid, useDesktopRoutes } from '.';
+import { findByUid, useNocoBaseRoutes } from '.';
 import { createDesignable, useCompile } from '../..';
 import {
   GeneralSchemaDesigner,
@@ -66,7 +66,7 @@ const InsertMenuItems = (props) => {
   const fieldSchema = useFieldSchema();
   const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
   const isSubMenu = fieldSchema['x-component'] === 'Menu.SubMenu';
-  const { createRoute } = useDesktopRoutes();
+  const { createRoute } = useNocoBaseRoutes();
 
   if (!isSubMenu && insertPosition === 'beforeEnd') {
     return null;
@@ -311,7 +311,7 @@ const InsertMenuItems = (props) => {
 const components = { TreeSelect };
 
 export const MenuDesigner = () => {
-  const { updateRoute, deleteRoute } = useDesktopRoutes();
+  const { updateRoute, deleteRoute } = useNocoBaseRoutes();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();

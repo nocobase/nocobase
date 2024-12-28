@@ -19,7 +19,7 @@ import {
   FormDialog,
   SchemaComponent,
   SchemaComponentOptions,
-  useDesktopRoutes,
+  useNocoBaseRoutes,
   useParentRoute,
 } from '../../schema-component';
 import { useStyles } from '../../schema-component/antd/menu/MenuItemInitializers';
@@ -31,7 +31,7 @@ export const GroupItem = () => {
   const { theme } = useGlobalTheme();
   const { componentCls, hashId } = useStyles();
   const parentRoute = useParentRoute();
-  const { createRoute } = useDesktopRoutes();
+  const { createRoute } = useNocoBaseRoutes();
 
   const handleClick = useCallback(async () => {
     const values = await FormDialog(

@@ -21,7 +21,7 @@ import {
   FormDialog,
   SchemaComponent,
   SchemaComponentOptions,
-  useDesktopRoutes,
+  useNocoBaseRoutes,
   useParentRoute,
 } from '../../schema-component';
 import { useStyles } from '../../schema-component/antd/menu/MenuItemInitializers';
@@ -35,7 +35,7 @@ export const LinkMenuItem = () => {
   const { componentCls, hashId } = useStyles();
   const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
   const parentRoute = useParentRoute();
-  const { createRoute } = useDesktopRoutes();
+  const { createRoute } = useNocoBaseRoutes();
 
   const handleClick = useCallback(async () => {
     const values = await FormDialog(

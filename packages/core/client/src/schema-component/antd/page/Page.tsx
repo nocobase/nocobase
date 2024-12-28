@@ -19,7 +19,7 @@ import React, { FC, memo, useCallback, useContext, useEffect, useMemo, useRef, u
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { NavigateFunction, Outlet, useOutletContext } from 'react-router-dom';
-import { FormDialog, useDesktopRoutes } from '..';
+import { FormDialog, useNocoBaseRoutes } from '..';
 import { antTableCell } from '../../../acl/style';
 import { useRequest } from '../../../api-client';
 import {
@@ -251,7 +251,7 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
   const currentRoute = useCurrentRoute();
-  const { createRoute } = useDesktopRoutes();
+  const { createRoute } = useNocoBaseRoutes();
 
   const tabBarExtraContent = useMemo(() => {
     return (
