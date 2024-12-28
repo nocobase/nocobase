@@ -125,7 +125,7 @@ export class MockServer extends Application {
       .auth(
         jwt.sign(
           {
-            userId: 999,
+            userId: null,
           },
           process.env.APP_KEY,
           {
