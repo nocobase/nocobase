@@ -121,8 +121,21 @@ export class MockServer extends Application {
   agent(callback?): ExtendedAgent {
     const agent = supertest.agent(callback || this.callback());
     const prefix = this.resourcer.options.prefix;
-
-    const proxy = new Proxy(agent, {
+    const loginedAgent = agent
+      .auth(
+        jwt.sign(
+          {
+            userId: 999,
+          },
+          process.env.APP_KEY,
+          {
+            expiresIn: '1d',
+          },
+        ),
+        { type: 'bearer' },
+      )
+      .set('X-Authenticator', 'basic');
+    const proxy = new Proxy(loginedAgent, {
       get(target, method: string, receiver) {
         if (['login', 'loginUsingId'].includes(method)) {
           return (userOrId: any, roleName?: string) => {
