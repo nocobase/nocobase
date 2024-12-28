@@ -16,7 +16,7 @@ describe('sub app', async () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['multi-app-manager', 'client', 'ui-schema-storage', 'system-settings'],
+      plugins: ['multi-app-manager', 'client', 'ui-schema-storage', 'system-settings', 'field-sort'],
     });
     await app.db.getRepository('applications').create({
       values: {
