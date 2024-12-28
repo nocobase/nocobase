@@ -11,7 +11,6 @@ export interface IAccessControlConfig {
   tokenExpirationTime: string;
   maxTokenLifetime: string;
   maxInactiveInterval: string;
-  opTimeoutControlEnabled: boolean;
 }
 
 export interface IAccessControlService<AccessInfo = any> {

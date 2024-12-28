@@ -258,7 +258,6 @@ export class PluginAuthServer extends Plugin {
         tokenExpirationTime: process.env.JWT_EXPIRES_IN ?? '30m',
         maxTokenLifetime: '1d',
         maxInactiveInterval: '15m',
-        opTimeoutControlEnabled: false,
       };
       await accessConfigRepository.create({
         values: {

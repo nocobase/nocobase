@@ -41,15 +41,9 @@ const schema: ISchema & { properties: Properties } = {
     },
     maxInactiveInterval: {
       type: 'string',
-      title: "{{t('Operation timeout period')}}",
+      title: "{{t('Page inactivity timeout')}}",
       'x-decorator': 'FormItem',
       'x-component': componentsNameMap.InputTime,
-    },
-    opTimeoutControlEnabled: {
-      type: 'boolean',
-      'x-content': '{{t("Enable operation timeout control")}}',
-      'x-decorator': 'FormItem',
-      'x-component': 'Checkbox',
     },
     footer: {
       type: 'void',

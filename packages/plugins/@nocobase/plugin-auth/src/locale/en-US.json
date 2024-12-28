@@ -33,7 +33,7 @@
   "Access control": "Access control",
   "Token validity period": "Token validity period",
   "Login validity period": "Login validity period",
-  "Operation timeout period": "Operation timeout period",
+  "Page inactivity timeout": "Page inactivity timeout",
   "Enable operation timeout control": "Enable operation timeout control",
   "Seconds": "Seconds",
   "Minutes": "Minutes",
