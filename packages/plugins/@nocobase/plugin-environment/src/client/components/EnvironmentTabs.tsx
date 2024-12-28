@@ -275,7 +275,7 @@ function parseKeyValuePairs(input) {
     .split('\n')
     .map((line) => {
       const [name, ...valueParts] = line.split('='); // 按 `=` 分割
-      return { name: name.trim(), value: valueParts.join('=').trim() }; // 去除多余空格
+      return name && { name: name.trim(), value: valueParts.join('=').trim() }; // 去除多余空格
     });
 }
 
@@ -288,7 +288,7 @@ export function EnvironmentTabs() {
   const handleBulkImport = async (importData) => {
     const arr = Object.entries(importData).map(([type, dataString]) => ({
       type,
-      data: parseKeyValuePairs(dataString),
+      data: parseKeyValuePairs(dataString).filter(Boolean),
     }));
 
     await Promise.all(
