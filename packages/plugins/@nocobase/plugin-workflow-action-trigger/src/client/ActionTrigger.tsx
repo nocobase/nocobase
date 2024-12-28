@@ -44,8 +44,8 @@ function useVariables(config, options) {
   const getMainCollectionFields = useGetCollectionFields();
 
   const langTriggerData = useLang('Trigger data');
-  const langUserSubmittedForm = useLang('User submitted action');
-  const langRoleSubmittedForm = useLang('Role of user submitted action');
+  const langUserSubmittedForm = useLang('User acted');
+  const langRoleSubmittedForm = useLang('Role of user acted');
   const result = [
     ...getCollectionFieldOptions({
       // depth,
@@ -252,7 +252,7 @@ export default class extends Trigger {
     },
     roleName: {
       type: 'string',
-      title: `{{t("Role of user submitted action", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Role of user acted", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'WorkflowVariableWrapper',
       'x-component-props': {

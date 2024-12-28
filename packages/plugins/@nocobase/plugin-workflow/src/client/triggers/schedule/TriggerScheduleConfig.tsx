@@ -9,14 +9,15 @@
 
 import React from 'react';
 
-import { SchemaComponent } from '@nocobase/client';
-import { useFlowContext } from '../../FlowContext';
-import { useTrigger } from '..';
+import { SchemaComponent, usePlugin } from '@nocobase/client';
+import WorkflowPlugin from '../..';
+import { useCurrentWorkflowContext } from '../../FlowContext';
 import { ScheduleModes } from './ScheduleModes';
 
 export function TriggerScheduleConfig() {
-  const { workflow } = useFlowContext();
-  const trigger = useTrigger();
+  const workflow = useCurrentWorkflowContext();
+  const workflowPlugin = usePlugin(WorkflowPlugin);
+  const trigger = workflowPlugin.triggers.get(workflow.type);
 
   return (
     <SchemaComponent

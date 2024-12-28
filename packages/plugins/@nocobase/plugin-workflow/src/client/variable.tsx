@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback } from 'react';
+import React, { createContext, useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { uniqBy } from 'lodash';
 
@@ -403,16 +403,27 @@ export function WorkflowVariableJSON({ variableOptions, ...props }): JSX.Element
   return <Variable.JSON scope={scope} {...props} />;
 }
 
-export function WorkflowVariableWrapper({ render, ...props }): JSX.Element {
-  const scope = useVariableScope();
+/**
+ * @experimental
+ */
+export function WorkflowVariableWrapper(props): JSX.Element {
+  const { render, variableOptions, changeOnSelect, nullable, ...others } = props;
+  const hideVariable = useHideVariable();
+  const scope = useWorkflowVariableOptions(variableOptions);
 
-  if (scope?.length > 0) {
+  if (!hideVariable && scope?.length > 0) {
     return (
-      <Variable.Input scope={scope} {...props}>
-        {render()}
+      <Variable.Input scope={scope} changeOnSelect={changeOnSelect} nullable={nullable} {...others}>
+        {render?.()}
       </Variable.Input>
     );
   }
 
-  return render(props);
+  return render?.(others);
+}
+
+export const HideVariableContext = createContext(false);
+
+export function useHideVariable() {
+  return useContext(HideVariableContext);
 }

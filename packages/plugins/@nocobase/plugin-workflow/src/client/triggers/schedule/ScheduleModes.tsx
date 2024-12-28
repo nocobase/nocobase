@@ -81,9 +81,14 @@ export const ScheduleModes = {
           // placeholder: `{{t('Current time', { ns: "${NAMESPACE}" })}}`,
           nullable: false,
           changeOnSelect: true,
+          render(props) {
+            return <DatePicker showTime placeholder={lang('Current time')} {...props} />;
+          },
         },
-        'x-content': <DatePicker showTime placeholder={lang('Current time')} />,
       },
+    },
+    validate(config) {
+      return Boolean(config.startsOn);
     },
   },
   [SCHEDULE_MODE.DATE_FIELD]: {
