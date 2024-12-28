@@ -25,7 +25,7 @@ import {
   useCollectionRecordData,
   useDataBlockRequestData,
   useDataBlockRequestGetter,
-  useDesktopRoutes,
+  useNocoBaseRoutes,
   useRequest,
   useRouterBasename,
   useTableBlockContextBasicValue,
@@ -124,7 +124,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
               const tableBlockContextBasicValue = useTableBlockContextBasicValue();
               const { service } = useBlockRequestContext();
               const { refresh: refreshMenu } = useAllAccessDesktopRoutes();
-              const { updateRoute } = useDesktopRoutes();
+              const { updateRoute } = useNocoBaseRoutes(collectionName);
               return {
                 async onClick() {
                   const filterByTk = tableBlockContextBasicValue.field?.data?.selectedRowKeys;
@@ -155,7 +155,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
             'x-use-component-props': () => {
               const tableBlockContextBasicValue = useTableBlockContextBasicValue();
               const { service } = useBlockRequestContext();
-              const { updateRoute } = useDesktopRoutes();
+              const { updateRoute } = useNocoBaseRoutes(collectionName);
               return {
                 async onClick() {
                   const filterByTk = tableBlockContextBasicValue.field?.data?.selectedRowKeys;
@@ -350,7 +350,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                             const field = useField();
                             const ctx = useActionContext();
                             const { getDataBlockRequest } = useDataBlockRequestGetter();
-                            const { createRoute } = useCreateRoute(collectionName);
+                            const { createRoute } = useNocoBaseRoutes(collectionName);
                             const { createRouteSchema } = useCreateRouteSchema();
 
                             return {
@@ -757,7 +757,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                 const field = useField();
                                 const ctx = useActionContext();
                                 const { getDataBlockRequest } = useDataBlockRequestGetter();
-                                const { createRoute } = useCreateRoute(collectionName);
+                                const { createRoute } = useNocoBaseRoutes(collectionName);
                                 const { createRouteSchema, createTabRouteSchema } = useCreateRouteSchema();
                                 const recordData = useCollectionRecordData();
                                 return {
@@ -1011,7 +1011,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                 const recordData = useCollectionRecordData();
                                 const ctx = useActionContext();
                                 const { getDataBlockRequest } = useDataBlockRequestGetter();
-                                const { updateRoute } = useUpdateRoute(collectionName);
+                                const { updateRoute } = useNocoBaseRoutes(collectionName);
 
                                 return {
                                   async run() {
@@ -1028,12 +1028,9 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                         };
                                       }
 
-                                      const res = await updateRoute({
-                                        filterByTk: recordData.id,
-                                        values: {
-                                          ..._.omit(form.values, ['href', 'params']),
-                                          options,
-                                        },
+                                      const res = await updateRoute(recordData.id, {
+                                        ..._.omit(form.values, ['href', 'params']),
+                                        options,
                                       });
                                       ctx.setVisible(false);
                                       actionCallback?.(res?.data?.data);
@@ -1114,40 +1111,6 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
     },
   };
 };
-
-function useCreateRoute(collectionName: string) {
-  const api = useAPIClient();
-  const resource = useMemo(() => api.resource(collectionName), [api, collectionName]);
-  const { refresh: refreshMenu } = useAllAccessDesktopRoutes();
-
-  const createRoute = useCallback(
-    async (values: any) => {
-      const res = await resource.create({ values });
-      refreshMenu();
-      return res;
-    },
-    [resource, refreshMenu],
-  );
-
-  return { createRoute };
-}
-
-function useUpdateRoute(collectionName: string) {
-  const api = useAPIClient();
-  const resource = useMemo(() => api.resource(collectionName), [api, collectionName]);
-  const { refresh: refreshMenu } = useAllAccessDesktopRoutes();
-
-  const updateRoute = useCallback(
-    async ({ filterByTk, values }) => {
-      const res = await resource.update({ filterByTk, values });
-      refreshMenu();
-      return res;
-    },
-    [resource, refreshMenu],
-  );
-
-  return { updateRoute };
-}
 
 function useCreateRouteSchema(collectionName = 'uiSchemas') {
   const api = useAPIClient();

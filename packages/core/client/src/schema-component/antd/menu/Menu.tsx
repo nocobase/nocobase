@@ -210,9 +210,9 @@ export const useParentRoute = () => {
   return useContext(ParentRouteContext);
 };
 
-export const useDesktopRoutes = () => {
+export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
   const api = useAPIClient();
-  const resource = useMemo(() => api.resource('desktopRoutes'), [api]);
+  const resource = useMemo(() => api.resource(collectionName), [api, collectionName]);
   const { refresh: refreshRoutes } = useAllAccessDesktopRoutes();
 
   const createRoute = useCallback(

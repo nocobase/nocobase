@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { useSchemaToolbar } from '../../../application/schema-toolbar';
 import { useDesignable } from '../../hooks';
-import { useDesktopRoutes } from '../menu/Menu';
+import { useNocoBaseRoutes } from '../menu/Menu';
 
 /**
  * @deprecated
@@ -28,7 +28,7 @@ export const pageTabSettings = new SchemaSettings({
         const { t } = useTranslation();
         const { schema } = useSchemaToolbar<{ schema: ISchema }>();
         const { dn } = useDesignable();
-        const { updateRoute } = useDesktopRoutes();
+        const { updateRoute } = useNocoBaseRoutes();
 
         return {
           title: t('Edit'),
