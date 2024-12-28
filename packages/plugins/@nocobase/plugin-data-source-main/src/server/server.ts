@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Filter, InheritedCollection, UniqueConstraintError } from '@nocobase/database';
+import { Filter, InheritedCollection, snakeCase, UniqueConstraintError } from '@nocobase/database';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import { Plugin } from '@nocobase/server';
 import { Mutex } from 'async-mutex';
@@ -70,6 +70,12 @@ export class PluginDataSourceMainServer extends Plugin {
     });
 
     this.app.db.on('collections.beforeCreate', beforeCreateForViewCollection(this.db));
+
+    this.app.db.on('collections.beforeCreate', async (model: CollectionModel, options) => {
+      if (this.app.db.getCollection(model.get('name'))) {
+        throw new Error(`Collection named ${model.get('name')} already exists`);
+      }
+    });
 
     this.app.db.on(
       'collections.afterSaveWithAssociations',
