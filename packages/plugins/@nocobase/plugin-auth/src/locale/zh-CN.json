@@ -39,5 +39,8 @@
   "Minutes": "分钟",
   "Hours": "小时",
   "Days": "天",
-  "Saved successfully!": "保存成功！"
+  "Saved successfully!": "保存成功！",
+  "Keep the login session active. If the session times out and the user attempts to access system features, the system will return a 401 error and redirect to the login page.": "保持登录会话活动状态。如果会话超时，用户尝试访问系统功能，系统将返回 401 错误并重定向到登录页面。",
+  "During the active login session, the system issues tokens with a defined validity period. If a token expires, a new one will be issued. For security reasons, it is recommended to set the validity period within a range of 15 to 30 minutes based on actual requirements.": "在活动登录会话期间，系统会发放具有定义有效期的令牌。如果令牌过期，将发放新的令牌。出于安全原因，建议根据实际需求将有效期设置在 15 到 30 分钟之间。",
+  "After logging into the system, if the page remains inactive for a period exceeding this duration, the system will display a timeout prompt. Upon confirmation, the user will be redirected to the login page and will need to log in again to continue operations.": "登录系统后，如果页面保持不活动状态的时间超过此持续时间，系统将显示超时提示。确认后，用户将被重定向到登录页面，并需要重新登录以继续操作。"
 }

@@ -132,7 +132,7 @@ export class APIClient extends APIClientSDK {
                 Modal.confirm({
                   title: this.app.i18n.t('Inactivity warning'),
                   content: this.app.i18n.t(
-                    'Your session has timed out due to inactivity. Please sign in again to continue.',
+                    'You have been inactive for a while and will be signed out. Please sign in again to continue.',
                   ),
                   onOk: () => {
                     this.app.router.navigate(`/signin?redirect=/${redirectPath}${search}`);

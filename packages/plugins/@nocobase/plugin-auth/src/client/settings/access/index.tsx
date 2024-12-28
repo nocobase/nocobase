@@ -11,6 +11,7 @@ import React from 'react';
 import { ISchema, SchemaComponent, ExtendCollectionsProvider } from '@nocobase/client';
 import { Card } from 'antd';
 import { uid } from '@formily/shared';
+import { tval } from '@nocobase/utils/client';
 import { useAuthTranslation } from '../../locale';
 import { hooksNameMap, hooksMap } from './hooks';
 import { componentsMap, componentsNameMap } from './components';
@@ -31,6 +32,9 @@ const schema: ISchema & { properties: Properties } = {
       'x-decorator': 'FormItem',
       'x-component': componentsNameMap.InputTime,
       required: true,
+      description: tval(
+        'Keep the login session active. If the session times out and the user attempts to access system features, the system will return a 401 error and redirect to the login page.',
+      ),
     },
     tokenExpirationTime: {
       type: 'string',
@@ -38,12 +42,19 @@ const schema: ISchema & { properties: Properties } = {
       'x-decorator': 'FormItem',
       'x-component': componentsNameMap.InputTime,
       required: true,
+      description: tval(
+        'During the active login session, the system issues tokens with a defined validity period. If a token expires, a new one will be issued. For security reasons, it is recommended to set the validity period within a range of 15 to 30 minutes based on actual requirements.',
+      ),
     },
     maxInactiveInterval: {
       type: 'string',
       title: "{{t('Page inactivity timeout')}}",
       'x-decorator': 'FormItem',
       'x-component': componentsNameMap.InputTime,
+      required: true,
+      description: tval(
+        'After logging into the system, if the page remains inactive for a period exceeding this duration, the system will display a timeout prompt. Upon confirmation, the user will be redirected to the login page and will need to log in again to continue operations.',
+      ),
     },
     footer: {
       type: 'void',
