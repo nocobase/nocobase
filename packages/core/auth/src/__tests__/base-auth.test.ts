@@ -127,6 +127,14 @@ describe('base-auth', () => {
           jwt: {
             sign: () => 'token',
           },
+          accessController: {
+            addAccess: () => 'access',
+            getConfig: () => ({
+              tokenExpirationTime: '30m',
+              maxTokenLifetime: '1d',
+              maxInactiveInterval: '15m',
+            }),
+          },
         },
       },
     };

@@ -158,9 +158,16 @@ export class AuthManager {
         const name = ctx.get(self.options.authKey) || self.options.default;
 
         if (!isPublicAction) {
-          const authenticator = await ctx.app.authManager.get(name, ctx);
-          if (!authenticator) throw new Error('authenticator not found');
-          await authenticator.authenticate();
+          let authenticator: Auth;
+          try {
+            authenticator = await ctx.app.authManager.get(name, ctx);
+            ctx.auth = authenticator;
+          } catch (err) {
+            ctx.auth = {} as Auth;
+            ctx.logger.warn(err.message, { method: 'check', authenticator: name });
+            return next();
+          }
+          if (authenticator) await authenticator.authenticate();
         }
         return next();
       } catch (error) {

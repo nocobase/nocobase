@@ -126,12 +126,15 @@ export class MockServer extends Application {
       get(target, method: string, receiver) {
         if (['login', 'loginUsingId'].includes(method)) {
           return (userOrId: any, roleName?: string) => {
+            const jti = self.authManager.accessController.addAccess();
             return proxy
               .auth(
                 jwt.sign(
                   {
                     userId: typeof userOrId === 'number' ? userOrId : userOrId?.id,
+                    temp: true,
                     roleName,
+                    jti,
                   },
                   process.env.APP_KEY,
                   {
