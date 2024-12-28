@@ -116,7 +116,11 @@ export class APIClient extends APIClientSDK {
           error.silence = true;
           const state = this.app.router.state;
           const { pathname, search } = state.location;
+          const basename = this.app.router.basename;
           if (pathname !== '/signin') {
+            const redirectPath = pathname.startsWith(this.app.router.basename)
+              ? pathname.slice(basename.length) || '/'
+              : pathname;
             if (headers && headers['x-new-token']) {
               this.auth.setToken(headers['x-new-token']);
               return this.axios.request(error.config);
@@ -131,7 +135,7 @@ export class APIClient extends APIClientSDK {
                     'Your session has timed out due to inactivity. Please sign in again to continue.',
                   ),
                   onOk: () => {
-                    this.app.router.navigate(`/signin?redirect=${pathname}${search}`);
+                    this.app.router.navigate(`/signin?redirect=/${redirectPath}${search}`);
                   },
                   cancelButtonProps: { style: { display: 'none' } },
                 });
@@ -139,7 +143,7 @@ export class APIClient extends APIClientSDK {
             } else {
               debouncedRedirect(() => {
                 this.auth.setToken(null);
-                this.app.router.navigate(`/signin?redirect=${pathname}${search}`);
+                this.app.router.navigate(`/signin?redirect=/${redirectPath}${search}`);
               });
             }
           }

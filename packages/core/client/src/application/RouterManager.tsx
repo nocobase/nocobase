@@ -52,6 +52,9 @@ export class RouterManager {
   public app: Application;
   public history: BrowserHistory | MemoryHistory | HashHistory;
   private router: Router;
+  get basename() {
+    return this.router.basename;
+  }
   get state() {
     return this.router.state;
   }
