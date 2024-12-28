@@ -71,8 +71,8 @@ export class JwtService {
             resolve({ status: 'expired', payload: jwt.decode(token) as JwtPayload });
           } else resolve({ status: 'other', payload: null });
         } else {
-          const checks = await Promise.all([this.blacklist.has(decoded.jti), this.blacklist.has(token)]);
-          if (checks.some(Boolean)) {
+          const blocked = await this.blacklist.has(decoded.jti ?? token);
+          if (blocked) {
             resolve({ status: 'blocked', payload: decoded as JwtPayload });
           } else resolve({ status: 'valid', payload: decoded as JwtPayload });
         }
