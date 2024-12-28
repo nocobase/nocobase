@@ -128,6 +128,7 @@
     "@nocobase/plugin-workflow-request",
     "@nocobase/plugin-workflow-sql",
     "@nocobase/plugin-workflow-notification",
+    "@nocobase/plugin-theme-editor",
     "@nocobase/plugin-block-template"
   ],
   "repository": {
