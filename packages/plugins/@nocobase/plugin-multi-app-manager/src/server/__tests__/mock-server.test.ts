@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { createMockServer, MockServer } from '@nocobase/test';
 import { AppSupervisor } from '@nocobase/server';
-import { MockServer, createMockServer } from '@nocobase/test';
 
 describe('sub app', async () => {
   let app: MockServer;
@@ -40,8 +40,10 @@ describe('sub app', async () => {
   test('sub agent', async () => {
     const res = await agent.get('/app:getInfo');
     expect(res.body.data.name).toBe('main');
-    const subAgent = agent.set('X-App', 'test_sub');
-    const res1 = await subAgent.get('/app:getInfo');
+
+    const subApp = await AppSupervisor.getInstance().getApp('test_sub');
+
+    const res1 = await app.agent(subApp.callback()).get('/api/app:getInfo');
     expect(res1.body.data.name).toBe('test_sub');
   });
 });
