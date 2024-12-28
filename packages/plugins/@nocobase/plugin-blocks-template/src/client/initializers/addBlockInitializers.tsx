@@ -35,40 +35,7 @@ export const addBlockInitializers = new SchemaInitializer({
           name: 'form',
           title: '{{t("Form")}}',
           Component: 'FormBlockInitializer',
-          useComponentProps: () => {
-            const filterCollections = ({ collection }) => {
-              const { unavailableActions, availableActions } = collection?.options || {};
-              if (availableActions) {
-                return availableActions.includes?.('create');
-              }
-              if (unavailableActions) {
-                return !unavailableActions?.includes?.('create');
-              }
-              return true;
-            };
-            return { filterCollections };
-          },
         },
-        // {
-        //   name: 'editForm',
-        //   title: '{{t("Form (Edit)")}}',
-        //   Component: 'FormBlockInitializer',
-        //   useComponentProps() {
-        //     return {
-        //       filterCollections({ collection }) {
-        //         const { unavailableActions, availableActions } = collection?.options || {};
-        //         if (availableActions) {
-        //           return availableActions.includes?.('update');
-        //         }
-        //         if (unavailableActions) {
-        //           return !unavailableActions?.includes?.('update');
-        //         }
-        //         return true;
-        //       },
-        //     };
-        //   },
-        //   useVisible: () => useActionAvailable('update'),
-        // },
         {
           name: 'details',
           title: '{{t("Details")}}',
@@ -83,6 +50,26 @@ export const addBlockInitializers = new SchemaInitializer({
           name: 'gridCard',
           title: '{{t("Grid Card")}}',
           Component: 'GridCardBlockInitializer',
+        },
+        {
+          title: "{{t('Calendar', { ns: 'calendar' })}}",
+          Component: 'CalendarBlockInitializer',
+          name: 'calendar',
+        },
+        {
+          title: 'Charts',
+          Component: 'ChartV2BlockInitializer',
+          name: 'chartV2',
+        },
+        {
+          title: "{{t('Gantt')}}",
+          Component: 'GanttBlockInitializer',
+          name: 'gantt',
+        },
+        {
+          title: '{{t("Kanban")}}',
+          Component: 'KanbanBlockInitializer',
+          name: 'kanban',
         },
       ],
     },
@@ -113,7 +100,25 @@ export const addBlockInitializers = new SchemaInitializer({
           title: '{{t("Markdown")}}',
           Component: 'MarkdownBlockInitializer',
         },
+        {
+          title: '{{t("Iframe")}}',
+          Component: 'IframeBlockInitializer',
+          name: 'iframe',
+        },
+        {
+          title: '{{t("Workflow todos", { ns: "workflow-manual" })}}',
+          Component: 'WorkflowTodo.Initializer',
+          icon: 'CheckSquareOutlined',
+          name: 'workflowTodos',
+        },
       ],
+    },
+    {
+      name: 'templates',
+      Component: 'TemplateBlockInitializer',
+      title: "{{t(\"Templates\", { ns: ['@nocobase/plugin-blocks-template', 'client'], nsMode: 'fallback' })}}",
+      icon: 'TableOutlined',
+      sort: -1,
     },
   ],
 });
