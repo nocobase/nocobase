@@ -69,6 +69,7 @@ export const PageMenuItem = () => {
     const menuSchemaUid = uid();
     const pageSchemaUid = uid();
     const tabSchemaUid = uid();
+    const tabSchemaName = uid();
 
     // 创建一个路由到 desktopRoutes 表中
     const {
@@ -91,17 +92,18 @@ export const PageMenuItem = () => {
         title: '{{t("Tab")}}',
         parentId: route.id,
         schemaUid: tabSchemaUid,
+        tabSchemaName,
       },
       false,
     );
 
     // 同时插入一个对应的 Schema
-    insert(getPageMenuSchema({ title, icon, pageSchemaUid, tabSchemaUid, menuSchemaUid }));
-  }, [insert, options.components, options.scope, t, theme]);
+    insert(getPageMenuSchema({ title, icon, pageSchemaUid, tabSchemaUid, menuSchemaUid, tabSchemaName }));
+  }, [createRoute, insert, options?.components, options?.scope, parentRoute?.id, t, theme]);
   return <SchemaInitializerItem title={t('Page')} onClick={handleClick} className={`${componentCls} ${hashId}`} />;
 };
 
-export function getPageMenuSchema({ title, icon, pageSchemaUid, tabSchemaUid, menuSchemaUid }) {
+export function getPageMenuSchema({ title, icon, pageSchemaUid, tabSchemaUid, menuSchemaUid, tabSchemaName }) {
   return {
     type: 'void',
     title,
@@ -116,7 +118,7 @@ export function getPageMenuSchema({ title, icon, pageSchemaUid, tabSchemaUid, me
         'x-component': 'Page',
         'x-async': true,
         properties: {
-          tab1: {
+          [tabSchemaName]: {
             type: 'void',
             'x-component': 'Grid',
             'x-initializer': 'page:addBlock',
