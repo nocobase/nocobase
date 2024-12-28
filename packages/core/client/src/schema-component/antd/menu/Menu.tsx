@@ -555,8 +555,6 @@ export const Menu: ComposedMenu = React.memo((props) => {
 
   const ctx = useContext(SchemaComponentContext);
 
-  console.log('sideMenuSchema', sideMenuSchema);
-
   return (
     <DndContext>
       <MenuItemDesignerContext.Provider value={Designer}>

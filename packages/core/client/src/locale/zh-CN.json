@@ -49,6 +49,7 @@
   "Logo": "Logo",
   "Add menu item": "添加菜单项",
   "Page": "页面",
+  "Tab": "标签",
   "Name": "名称",
   "Icon": "图标",
   "Group": "分组",
@@ -1048,8 +1049,14 @@
   "Please add or select record":"请添加或选择数据",
   "No data":"暂无数据",
   "Fields can only be used correctly if they are defined with an interface.": "只有字段设置了interface字段才能正常使用",
-  "Desktop routes": "桌面路由",
+  "Desktop routes": "桌面端路由",
   "Route permissions": "路由权限",
   "New routes are allowed to be accessed by default": "新路由默认允许访问",
-  "Route name": "路由名称"
+  "Route name": "路由名称",
+  "Mobile routes": "移动端路由",
+  "Show in menu": "在菜单中显示",
+  "Hide in menu": "在菜单中隐藏",
+  "Path": "路径",
+  "Type": "类型",
+  "Access": "访问"
 }

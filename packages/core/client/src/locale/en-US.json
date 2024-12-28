@@ -46,6 +46,7 @@
   "Icon": "Icon",
   "Group": "Group",
   "Link": "Link",
+  "Tab": "Tab",
   "Save conditions": "Save conditions",
   "Edit menu item": "Edit menu item",
   "Move to": "Move to",
@@ -861,5 +862,11 @@
   "Desktop routes": "Desktop routes",
   "Route permissions": "Route permissions",
   "New routes are allowed to be accessed by default": "New routes are allowed to be accessed by default",
-  "Route name": "Route name"
+  "Route name": "Route name",
+  "Mobile routes": "Mobile routes",
+  "Show in menu": "Show in menu",
+  "Hide in menu": "Hide in menu",
+  "Path": "Path",
+  "Type": "Type",
+  "Access": "Access"
 }

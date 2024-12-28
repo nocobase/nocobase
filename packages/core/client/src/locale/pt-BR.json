@@ -21,6 +21,7 @@
   "Logo": "Logo",
   "Add menu item": "Adicionar item de menu",
   "Page": "Página",
+  "Tab": "Aba",
   "Name": "Nome",
   "Icon": "Ícone",
   "Group": "Grupo",
@@ -759,5 +760,11 @@
   "Desktop routes": "Rotas de desktop",
   "Route permissions": "Permissões de rota",
   "New routes are allowed to be accessed by default": "Novas rotas são permitidas acessar por padrão",
-  "Route name": "Nome da rota"
+  "Route name": "Nome da rota",
+  "Mobile routes": "Rotas móveis",
+  "Show in menu": "Mostrar no menu",
+  "Hide in menu": "Ocultar no menu",
+  "Path": "Caminho",
+  "Type": "Tipo",
+  "Access": "Acesso"
 }

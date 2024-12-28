@@ -41,6 +41,7 @@
   "Logo": "Logo",
   "Add menu item": "Ajouter un élément de menu",
   "Page": "Page",
+  "Tab": "Onglet",
   "Name": "Nom",
   "Icon": "Icône",
   "Group": "Groupe",
@@ -802,5 +803,10 @@
   "Desktop routes": "Routes de bureau",
   "Route permissions": "Permissions de route",
   "New routes are allowed to be accessed by default": "Les nouvelles routes sont autorisées à être accessibles par défaut",
-  "Route name": "Nom de route"
+  "Route name": "Nom de route",
+  "Mobile routes": "Routes mobiles",
+  "Show in menu": "Afficher dans le menu",
+  "Hide in menu": "Masquer dans le menu",
+  "Path": "Chemin",
+  "Type": "Type"
 }

@@ -41,6 +41,7 @@
   "Logo": "ロゴ",
   "Add menu item": "メニュー項目を追加",
   "Page": "ページ",
+  "Tab": "タブ",
   "Name": "名称",
   "Icon": "アイコン",
   "Group": "グループ",
@@ -1020,5 +1021,11 @@
   "Desktop routes": "デスクトップルート",
   "Route permissions": "ルートの権限",
   "New routes are allowed to be accessed by default": "新しいルートはデフォルトでアクセス可能",
-  "Route name": "ルート名"
+  "Route name": "ルート名",
+  "Mobile routes": "モバイルルート",
+  "Show in menu": "メニューに表示",
+  "Hide in menu": "メニューに非表示",
+  "Path": "パス",
+  "Type": "タイプ",
+  "Access": "アクセス"
 }

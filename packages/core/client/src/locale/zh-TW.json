@@ -49,6 +49,7 @@
   "Logo": "Logo",
   "Add menu item": "新增選單項目",
   "Page": "頁面",
+  "Tab": "標籤",
   "Name": "名稱",
   "Icon": "圖示",
   "Group": "群組",
@@ -889,8 +890,14 @@
   "Ellipsis overflow content": "省略超出長度的內容",
   "Hide column": "隱藏列",
   "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "在配置模式下，整個列會變為透明色。在非配置模式下，整個列將被隱藏。即使整個列被隱藏了，其配置的默認值和其他設置仍然有效。",
-  "Desktop routes": "桌面路由",
+  "Desktop routes": "桌面端路由",
   "Route permissions": "路由權限",
   "New routes are allowed to be accessed by default": "新路由默認允許訪問",
-  "Route name": "路由名稱"
+  "Route name": "路由名稱",
+  "Mobile routes": "移動端路由",
+  "Show in menu": "在菜單中顯示",
+  "Hide in menu": "在菜單中隱藏",
+  "Path": "路徑",
+  "Type": "類型",
+  "Access": "訪問"
 }

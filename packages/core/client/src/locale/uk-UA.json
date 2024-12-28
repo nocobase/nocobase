@@ -41,6 +41,7 @@
   "Logo": "Логотип",
   "Add menu item": "Додати елемент меню",
   "Page": "Сторінка",
+  "Tab": "Таб",
   "Name": "Ім'я",
   "Icon": "Іконка",
   "Group": "Група",
@@ -802,5 +803,11 @@
   "Desktop routes": "Маршрути робочого столу",
   "Route permissions": "Права доступу до маршрутів",
   "New routes are allowed to be accessed by default": "Нові маршрути дозволені доступатися за замовчуванням",
-  "Route name": "Ім'я маршруту"
+  "Route name": "Ім'я маршруту",
+  "Mobile routes": "Мобільні маршрути",
+  "Show in menu": "Показати в меню",
+  "Hide in menu": "Сховати в меню",
+  "Path": "Шлях",
+  "Type": "Тип",
+  "Access": "Доступ"
 }
