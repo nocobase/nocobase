@@ -7,10 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { ExclamationCircleFilled } from '@ant-design/icons';
 import { TreeSelect } from '@formily/antd-v5';
 import { Field, onFieldChange } from '@formily/core';
 import { ISchema, Schema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { Modal } from 'antd';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { findByUid, useNocoBaseRoutes } from '.';
@@ -473,25 +475,29 @@ export const MenuDesigner = () => {
         title={t('Hidden')}
         checked={fieldSchema['x-component-props']?.hidden}
         onChange={(v) => {
-          fieldSchema['x-component-props'].hidden = !!v;
-          field.componentProps.hidden = !!v;
-          dn.emit('patch', {
-            schema: {
-              'x-uid': fieldSchema['x-uid'],
-              'x-component-props': fieldSchema['x-component-props'],
+          Modal.confirm({
+            title: '确定要隐藏该菜单吗？',
+            icon: <ExclamationCircleFilled />,
+            content: '隐藏后，该菜单将不再显示在菜单栏中。如需再次显示，需要去路由管理页面设置。',
+            async onOk() {
+              fieldSchema['x-component-props'].hidden = !!v;
+              field.componentProps.hidden = !!v;
+
+              // 更新菜单对应的路由
+              if (fieldSchema['__route__']?.id) {
+                await updateRoute(fieldSchema['__route__'].id, {
+                  hideInMenu: !!v,
+                });
+              }
+
+              dn.emit('patch', {
+                schema: {
+                  'x-uid': fieldSchema['x-uid'],
+                  'x-component-props': fieldSchema['x-component-props'],
+                },
+              });
             },
           });
-
-          // 更新菜单对应的路由
-          if (fieldSchema['__route__']?.id) {
-            updateRoute(
-              fieldSchema['__route__'].id,
-              {
-                hideInMenu: !!v,
-              },
-              false,
-            );
-          }
         }}
       />
       <SchemaSettingsModalItem
