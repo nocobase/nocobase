@@ -74,11 +74,11 @@ export const ResetSetting = () => {
 
   return (
     <SchemaSettingsItem
-      title="Reset"
+      title="Revert to template"
       onClick={() => {
         modal.confirm({
-          title: t('Reset'),
-          content: t('Are you sure you want to reset all changes from the template?'),
+          title: t('Revert to template'),
+          content: t('Are you sure you want to revert all changes from the template?'),
           ...confirm,
           async onOk() {
             const templateSchemaId = _.get(fieldSchema, 'x-template-uid');
@@ -131,7 +131,7 @@ export const ResetSetting = () => {
         });
       }}
     >
-      {t('Reset')}
+      {t('Revert to template')}
     </SchemaSettingsItem>
   );
 };

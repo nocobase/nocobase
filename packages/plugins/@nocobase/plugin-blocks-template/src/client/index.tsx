@@ -314,6 +314,10 @@ export class PluginBlocksTemplateClient extends Plugin {
       icon: 'TableOutlined',
       sort: -1,
       wrap: (t) => t,
+      useVisible: () => {
+        // check if url contains admin/settings/blocks-templates
+        return !window.location.pathname.includes('admin/settings/blocks-templates');
+      },
     });
 
     this.app.schemaInitializerManager.addItem('popup:common:addBlock', 'templates', {
@@ -323,6 +327,10 @@ export class PluginBlocksTemplateClient extends Plugin {
       icon: 'TableOutlined',
       sort: -1,
       wrap: (t) => t,
+      useVisible: () => {
+        // check if url contains admin/settings/blocks-templates
+        return !window.location.pathname.includes('admin/settings/blocks-templates');
+      },
     });
 
     this.app.schemaInitializerManager;
@@ -332,11 +340,11 @@ export class PluginBlocksTemplateClient extends Plugin {
     const schameSettings = this.app.schemaSettingsManager.getAll();
     for (const key in schameSettings) {
       // @ts-ignore
-      this.app.schemaSettingsManager.addItem(key, 'templateBlock', associationRecordSettingItem);
+      this.app.schemaSettingsManager.addItem(key, 'template-associationRecordSetting', associationRecordSettingItem);
       // @ts-ignore
-      this.app.schemaSettingsManager.addItem(key, 'templateBlock', resetSettingItem);
+      this.app.schemaSettingsManager.addItem(key, 'template-resetSettingItem', resetSettingItem);
       // @ts-ignore
-      this.app.schemaSettingsManager.addItem(key, 'templateBlock', formSettingItem);
+      this.app.schemaSettingsManager.addItem(key, 'template-formSettingItem', formSettingItem);
       // this.app.schemaSettingsManager.addItem(key, '测试', templateBlockSettings);
     }
 
