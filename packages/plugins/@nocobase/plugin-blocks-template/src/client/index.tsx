@@ -20,6 +20,8 @@ import { ISchema, Schema } from '@formily/json-schema';
 import * as _ from 'lodash';
 import { associationRecordSettingItem } from './settings/associationRecordSetting';
 import { resetSettingItem } from './settings/resetSetting';
+import { formSettingItem } from './settings/formSetting';
+import { templateBlockSettings } from './settings/templateBlockSettings';
 
 function findSchemaCache(cache, uid) {
   const isChild = (schema, uid) => {
@@ -330,9 +332,12 @@ export class PluginBlocksTemplateClient extends Plugin {
     const schameSettings = this.app.schemaSettingsManager.getAll();
     for (const key in schameSettings) {
       // @ts-ignore
-      this.app.schemaSettingsManager.addItem(key, '关联记录', associationRecordSettingItem);
+      this.app.schemaSettingsManager.addItem(key, 'templateBlock', associationRecordSettingItem);
       // @ts-ignore
-      this.app.schemaSettingsManager.addItem(key, '重置', resetSettingItem);
+      this.app.schemaSettingsManager.addItem(key, 'templateBlock', resetSettingItem);
+      // @ts-ignore
+      this.app.schemaSettingsManager.addItem(key, 'templateBlock', formSettingItem);
+      // this.app.schemaSettingsManager.addItem(key, '测试', templateBlockSettings);
     }
 
     this.app.pluginSettingsManager.add('blocks-templates', {

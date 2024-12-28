@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { gridRowColWrap, SchemaInitializer } from '@nocobase/client';
+import {
+  gridRowColWrap,
+  SchemaInitializer,
+  useActionAvailable,
+  useCollection,
+  useCreateEditFormBlock,
+} from '@nocobase/client';
 
 export const addBlockInitializers = new SchemaInitializer({
   name: 'template:addBlock',
@@ -43,6 +49,26 @@ export const addBlockInitializers = new SchemaInitializer({
             return { filterCollections };
           },
         },
+        // {
+        //   name: 'editForm',
+        //   title: '{{t("Form (Edit)")}}',
+        //   Component: 'FormBlockInitializer',
+        //   useComponentProps() {
+        //     return {
+        //       filterCollections({ collection }) {
+        //         const { unavailableActions, availableActions } = collection?.options || {};
+        //         if (availableActions) {
+        //           return availableActions.includes?.('update');
+        //         }
+        //         if (unavailableActions) {
+        //           return !unavailableActions?.includes?.('update');
+        //         }
+        //         return true;
+        //       },
+        //     };
+        //   },
+        //   useVisible: () => useActionAvailable('update'),
+        // },
         {
           name: 'details',
           title: '{{t("Details")}}',
