@@ -114,14 +114,17 @@ const InsertMenuItems = (props) => {
           const schemaUid = uid();
 
           // 1. 先创建一个路由
-          createRoute({
-            type: NocoBaseDesktopRouteType.group,
-            title,
-            icon,
-            // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
-            parentId: insertPosition === 'beforeEnd' ? route?.id : parentRoute?.id,
-            schemaUid,
-          })
+          createRoute(
+            {
+              type: NocoBaseDesktopRouteType.group,
+              title,
+              icon,
+              // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
+              parentId: insertPosition === 'beforeEnd' ? route?.id : parentRoute?.id,
+              schemaUid,
+            },
+            false,
+          )
             .then(({ data }) => {
               // 2. 然后再把路由移动到对应的位置
               console.log('data', data);
@@ -174,23 +177,29 @@ const InsertMenuItems = (props) => {
           const tabSchemaUid = uid();
 
           // 1. 先创建一个路由
-          createRoute({
-            type: NocoBaseDesktopRouteType.page,
-            title,
-            icon,
-            // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
-            parentId: insertPosition === 'beforeEnd' ? route?.id : parentRoute?.id,
-            schemaUid: menuSchemaUid,
-            pageSchemaUid,
-          })
+          createRoute(
+            {
+              type: NocoBaseDesktopRouteType.page,
+              title,
+              icon,
+              // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
+              parentId: insertPosition === 'beforeEnd' ? route?.id : parentRoute?.id,
+              schemaUid: menuSchemaUid,
+              pageSchemaUid,
+            },
+            false,
+          )
             .then(async ({ data }) => {
               // 2. 创建一个 Tab
-              await createRoute({
-                type: NocoBaseDesktopRouteType.tabs,
-                title: '{{t("Tab")}}',
-                parentId: data?.data?.id,
-                schemaUid: tabSchemaUid,
-              });
+              await createRoute(
+                {
+                  type: NocoBaseDesktopRouteType.tabs,
+                  title: '{{t("Tab")}}',
+                  parentId: data?.data?.id,
+                  schemaUid: tabSchemaUid,
+                },
+                false,
+              );
 
               // 3. 然后再把路由移动到对应的位置
               console.log('data', data);
@@ -258,18 +267,21 @@ const InsertMenuItems = (props) => {
           const schemaUid = uid();
 
           // 1. 先创建一个路由
-          createRoute({
-            type: NocoBaseDesktopRouteType.link,
-            title,
-            icon,
-            // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
-            parentId: insertPosition === 'beforeEnd' ? route?.id : parentRoute?.id,
-            schemaUid,
-            options: {
-              href,
-              params,
+          createRoute(
+            {
+              type: NocoBaseDesktopRouteType.link,
+              title,
+              icon,
+              // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
+              parentId: insertPosition === 'beforeEnd' ? route?.id : parentRoute?.id,
+              schemaUid,
+              options: {
+                href,
+                params,
+              },
             },
-          })
+            false,
+          )
             .then(({ data }) => {
               // 2. 然后再把路由移动到对应的位置
               console.log('data', data);
@@ -398,17 +410,21 @@ export const MenuDesigner = () => {
 
       // 更新菜单对应的路由
       if (fieldSchema['__route__']?.id) {
-        updateRoute(fieldSchema['__route__'].id, {
-          title,
-          icon,
-          options:
-            href || params
-              ? {
-                  href,
-                  params,
-                }
-              : undefined,
-        });
+        updateRoute(
+          fieldSchema['__route__'].id,
+          {
+            title,
+            icon,
+            options:
+              href || params
+                ? {
+                    href,
+                    params,
+                  }
+                : undefined,
+          },
+          false,
+        );
       }
     },
     [fieldSchema, field, dn, refresh, onSelect],
@@ -494,9 +510,13 @@ export const MenuDesigner = () => {
 
           // 更新菜单对应的路由
           if (fieldSchema['__route__']?.id) {
-            updateRoute(fieldSchema['__route__'].id, {
-              hideInMenu: !!v,
-            });
+            updateRoute(
+              fieldSchema['__route__'].id,
+              {
+                hideInMenu: !!v,
+              },
+              false,
+            );
           }
         }}
       />

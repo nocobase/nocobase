@@ -69,13 +69,16 @@ export const GroupItem = () => {
     const schemaUid = uid();
 
     // 创建一个路由到 desktopRoutes 表中
-    createRoute({
-      type: NocoBaseDesktopRouteType.group,
-      title,
-      icon,
-      parentId: parentRoute?.id,
-      schemaUid,
-    });
+    await createRoute(
+      {
+        type: NocoBaseDesktopRouteType.group,
+        title,
+        icon,
+        parentId: parentRoute?.id,
+        schemaUid,
+      },
+      false,
+    );
 
     // 同时插入一个对应的 Schema
     insert(getGroupMenuSchema({ title, icon, schemaUid }));

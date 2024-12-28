@@ -216,34 +216,34 @@ export const useDesktopRoutes = () => {
   const { refresh: refreshRoutes } = useAllAccessDesktopRoutes();
 
   const createRoute = useCallback(
-    async (values: NocoBaseDesktopRoute) => {
+    async (values: NocoBaseDesktopRoute, refreshAfterCreate = true) => {
       const res = await resource.create({
         values,
       });
-      refreshRoutes();
+      refreshAfterCreate && refreshRoutes();
       return res;
     },
     [resource, refreshRoutes],
   );
 
   const updateRoute = useCallback(
-    async (filterByTk: any, values: NocoBaseDesktopRoute) => {
+    async (filterByTk: any, values: NocoBaseDesktopRoute, refreshAfterUpdate = true) => {
       const res = await resource.update({
         filterByTk,
         values,
       });
-      refreshRoutes();
+      refreshAfterUpdate && refreshRoutes();
       return res;
     },
     [resource, refreshRoutes],
   );
 
   const deleteRoute = useCallback(
-    async (filterByTk: any) => {
+    async (filterByTk: any, refreshAfterDelete = true) => {
       const res = await resource.destroy({
         filterByTk,
       });
-      refreshRoutes();
+      refreshAfterDelete && refreshRoutes();
       return res;
     },
     [refreshRoutes, resource],

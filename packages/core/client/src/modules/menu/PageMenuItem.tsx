@@ -73,21 +73,27 @@ export const PageMenuItem = () => {
     // 创建一个路由到 desktopRoutes 表中
     const {
       data: { data: route },
-    } = await createRoute({
-      type: NocoBaseDesktopRouteType.page,
-      title: values.title,
-      icon: values.icon,
-      parentId: parentRoute?.id,
-      schemaUid: menuSchemaUid,
-      pageSchemaUid,
-    });
+    } = await createRoute(
+      {
+        type: NocoBaseDesktopRouteType.page,
+        title: values.title,
+        icon: values.icon,
+        parentId: parentRoute?.id,
+        schemaUid: menuSchemaUid,
+        pageSchemaUid,
+      },
+      false,
+    );
 
-    createRoute({
-      type: NocoBaseDesktopRouteType.tabs,
-      title: '{{t("Tab")}}',
-      parentId: route.id,
-      schemaUid: tabSchemaUid,
-    });
+    await createRoute(
+      {
+        type: NocoBaseDesktopRouteType.tabs,
+        title: '{{t("Tab")}}',
+        parentId: route.id,
+        schemaUid: tabSchemaUid,
+      },
+      false,
+    );
 
     // 同时插入一个对应的 Schema
     insert(getPageMenuSchema({ title, icon, pageSchemaUid, tabSchemaUid, menuSchemaUid }));
