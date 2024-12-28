@@ -21,7 +21,7 @@ export function TriggerCollectionRecordSelect(props) {
   const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
   const { collectionManager } = app.dataSourceManager.getDataSource(dataSourceName);
   const collection = collectionManager.getCollection(collectionName);
-  const renderComponent = (props) => (
+  const render = (props) => (
     <RemoteSelect
       objectValue
       dataSource={dataSourceName}
@@ -42,7 +42,7 @@ export function TriggerCollectionRecordSelect(props) {
       onChange={props.onChange}
       nullable={false}
       changeOnSelect
-      renderComponent={renderComponent}
+      render={render}
     />
   );
 }
