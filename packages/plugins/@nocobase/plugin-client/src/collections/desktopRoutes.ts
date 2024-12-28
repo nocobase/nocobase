@@ -252,6 +252,21 @@ export default {
       },
     },
     {
+      key: '6bbyhv00bp6',
+      name: 'tabSchemaName',
+      type: 'string',
+      interface: 'input',
+      description: null,
+      collectionName: 'desktopRoutes',
+      parentKey: null,
+      reverseKey: null,
+      uiSchema: {
+        type: 'string',
+        'x-component': 'Input',
+        title: 'tabSchemaName',
+      },
+    },
+    {
       key: 'm0k5qbaktab',
       name: 'type',
       type: 'string',

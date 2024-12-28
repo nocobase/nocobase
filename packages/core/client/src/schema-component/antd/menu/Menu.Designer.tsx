@@ -17,6 +17,7 @@ import { findByUid, useNocoBaseRoutes } from '.';
 import { createDesignable, useCompile } from '../..';
 import {
   GeneralSchemaDesigner,
+  getPageMenuSchema,
   SchemaSettingsDivider,
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
@@ -71,16 +72,6 @@ const InsertMenuItems = (props) => {
   if (!isSubMenu && insertPosition === 'beforeEnd') {
     return null;
   }
-  const serverHooks = [
-    {
-      type: 'onSelfCreate',
-      method: 'bindMenuToRole',
-    },
-    {
-      type: 'onSelfSave',
-      method: 'extractTextToLocale',
-    },
-  ];
 
   return (
     <SchemaSettingsSubMenu eventKey={eventKey} title={title}>
@@ -140,7 +131,6 @@ const InsertMenuItems = (props) => {
             'x-component-props': {
               icon,
             },
-            'x-server-hooks': serverHooks,
             'x-uid': schemaUid,
           });
         }}
@@ -175,6 +165,7 @@ const InsertMenuItems = (props) => {
           const menuSchemaUid = uid();
           const pageSchemaUid = uid();
           const tabSchemaUid = uid();
+          const tabSchemaName = uid();
 
           // 1. 先创建一个路由
           createRoute(
@@ -197,6 +188,7 @@ const InsertMenuItems = (props) => {
                   title: '{{t("Tab")}}',
                   parentId: data?.data?.id,
                   schemaUid: tabSchemaUid,
+                  tabSchemaName,
                 },
                 false,
               );
@@ -205,34 +197,17 @@ const InsertMenuItems = (props) => {
               console.log('data', data);
 
               // 4. 插入一个对应的 Schema
-              dn.insertAdjacent(insertPosition, {
-                type: 'void',
-                title,
-                'x-component': 'Menu.Item',
-                'x-decorator': 'ACLMenuItemProvider',
-                'x-component-props': {
+              dn.insertAdjacent(
+                insertPosition,
+                getPageMenuSchema({
+                  title,
                   icon,
-                },
-                'x-server-hooks': serverHooks,
-                properties: {
-                  page: {
-                    type: 'void',
-                    'x-component': 'Page',
-                    'x-async': true,
-                    properties: {
-                      tab1: {
-                        type: 'void',
-                        'x-component': 'Grid',
-                        'x-initializer': 'page:addBlock',
-                        properties: {},
-                        'x-uid': tabSchemaUid,
-                      },
-                    },
-                    'x-uid': pageSchemaUid,
-                  },
-                },
-                'x-uid': menuSchemaUid,
-              });
+                  pageSchemaUid,
+                  menuSchemaUid,
+                  tabSchemaUid,
+                  tabSchemaName,
+                }),
+              );
             })
             .catch(console.error);
         }}
@@ -299,7 +274,6 @@ const InsertMenuItems = (props) => {
               href,
               params,
             },
-            'x-server-hooks': serverHooks,
             'x-uid': schemaUid,
           });
         }}

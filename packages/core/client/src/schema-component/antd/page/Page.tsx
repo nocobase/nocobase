@@ -295,16 +295,18 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
             });
             const { title, icon } = values;
             const schemaUid = uid();
+            const tabSchemaName = uid();
 
-            dn.insertBeforeEnd(getTabSchema({ title, icon, schemaUid }));
-
-            createRoute({
+            await createRoute({
               type: NocoBaseDesktopRouteType.tabs,
               schemaUid,
               title: title || '{{t("Tab")}}',
               icon,
               parentId: currentRoute.id,
+              tabSchemaName,
             });
+
+            dn.insertBeforeEnd(getTabSchema({ title, icon, schemaUid, tabSchemaName }));
           }}
         >
           {t('Add tab')}
@@ -458,9 +460,20 @@ export function isTabPage(pathname: string) {
   return list[list.length - 2] === 'tabs';
 }
 
-export function getTabSchema({ title, icon, schemaUid }: { title: string; icon: string; schemaUid: string }) {
+export function getTabSchema({
+  title,
+  icon,
+  schemaUid,
+  tabSchemaName,
+}: {
+  title: string;
+  icon: string;
+  schemaUid: string;
+  tabSchemaName: string;
+}) {
   return {
     type: 'void',
+    name: tabSchemaName,
     title,
     'x-icon': icon,
     'x-component': 'Grid',
