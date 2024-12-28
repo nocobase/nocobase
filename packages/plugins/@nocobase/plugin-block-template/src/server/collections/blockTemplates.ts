@@ -11,7 +11,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   dumpRules: 'required',
-  name: 'blocksTemplates',
+  name: 'blockTemplates',
   autoGenId: false,
   fields: [
     {

@@ -15,5 +15,5 @@ export function ConfigureLink() {
   const value = useFilterByTk();
   const t = useT();
 
-  return <Link to={`/admin/settings/blocks-templates/${value}`}>{t('Configure')}</Link>;
+  return <Link to={`/admin/settings/block-templates/${value}`}>{t('Configure')}</Link>;
 }

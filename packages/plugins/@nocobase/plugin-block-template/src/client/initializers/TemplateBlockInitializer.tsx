@@ -13,7 +13,7 @@ import { CopyOutlined, LoadingOutlined } from '@ant-design/icons';
 // import { cloneDeep } from 'lodash';
 import * as _ from 'lodash';
 import { uid } from '@nocobase/utils/client';
-import PluginBlocksTemplateClient from '..';
+import PluginBlockTemplateClient from '..';
 
 export function convertTplBlock(tpl, virtual = false, isRoot = true, newRootId?: string) {
   if (!newRootId) {
@@ -156,7 +156,7 @@ export const TemplateBlockInitializer = () => {
   const api = useAPIClient();
   // const { options } = useSchemaInitializer();
   const { insertAdjacent } = useDesignable();
-  const plugin = usePlugin(PluginBlocksTemplateClient);
+  const plugin = usePlugin(PluginBlockTemplateClient);
   const handleClick = async ({ item }) => {
     const { value: uid } = item;
     const { data } = await api.request({
@@ -185,11 +185,11 @@ export const TemplateBlockInitializer = () => {
     }[];
   }>(
     {
-      url: 'blocksTemplates:list',
+      url: 'blockTemplates:list',
       method: 'get',
     },
     {
-      uid: 'blocksTemplates',
+      uid: 'blockTemplates',
     },
   );
 

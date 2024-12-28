@@ -10,10 +10,9 @@
 import { Plugin } from '@nocobase/client';
 import { tStr } from './locale';
 import { convertTplBlock, TemplateBlockInitializer } from './initializers/TemplateBlockInitializer';
-import XTemplate from './components/XTemplate';
 import { BlockNameLowercase, NAMESPACE } from './constants';
-import { BlocksTemplateList } from './components/BlocksTemplateList';
-import { BlocksTemplatePage } from './components/BlocksTemplatePage';
+import { BlockTemplateList } from './components/BlockTemplateList';
+import { BlockTemplatePage } from './components/BlockTemplatePage';
 import { addBlockInitializers } from './initializers/addBlockInitializers';
 // import { registerPatches } from '@formily/';
 import { ISchema, Schema } from '@formily/json-schema';
@@ -21,7 +20,6 @@ import * as _ from 'lodash';
 import { associationRecordSettingItem } from './settings/associationRecordSetting';
 import { resetSettingItem } from './settings/resetSetting';
 import { formSettingItem } from './settings/formSetting';
-import { templateBlockSettings } from './settings/templateBlockSettings';
 
 function findSchemaCache(cache, uid) {
   const isChild = (schema, uid) => {
@@ -222,7 +220,7 @@ function collectAllTemplateUids(schema, uids = new Set()) {
   return uids;
 }
 
-export class PluginBlocksTemplateClient extends Plugin {
+export class PluginBlockTemplateClient extends Plugin {
   #loadingPromises = new Map();
   templateschemacache = {};
   // #schemas = {};
@@ -305,7 +303,7 @@ export class PluginBlocksTemplateClient extends Plugin {
     });
 
     // TODO: why any here?
-    this.app.addComponents({ XTemplate, TemplateBlockInitializer: TemplateBlockInitializer as any });
+    this.app.addComponents({ TemplateBlockInitializer: TemplateBlockInitializer as any });
 
     this.app.schemaInitializerManager.addItem('page:addBlock', 'templates', {
       name: BlockNameLowercase,
@@ -315,8 +313,8 @@ export class PluginBlocksTemplateClient extends Plugin {
       sort: -1,
       wrap: (t) => t,
       useVisible: () => {
-        // check if url contains admin/settings/blocks-templates
-        return !window.location.pathname.includes('admin/settings/blocks-templates');
+        // check if url contains admin/settings/block-templates
+        return !window.location.pathname.includes('admin/settings/block-templates');
       },
     });
 
@@ -328,8 +326,8 @@ export class PluginBlocksTemplateClient extends Plugin {
       sort: -1,
       wrap: (t) => t,
       useVisible: () => {
-        // check if url contains admin/settings/blocks-templates
-        return !window.location.pathname.includes('admin/settings/blocks-templates');
+        // check if url contains admin/settings/block-templates
+        return !window.location.pathname.includes('admin/settings/block-templates');
       },
     });
 
@@ -348,17 +346,17 @@ export class PluginBlocksTemplateClient extends Plugin {
       // this.app.schemaSettingsManager.addItem(key, '测试', templateBlockSettings);
     }
 
-    this.app.pluginSettingsManager.add('blocks-templates', {
-      title: `{{t("Blocks templates", { ns: "${NAMESPACE}" })}}`,
+    this.app.pluginSettingsManager.add('block-templates', {
+      title: `{{t("Block templates", { ns: "${NAMESPACE}" })}}`,
       icon: 'TableOutlined',
-      Component: BlocksTemplateList,
+      Component: BlockTemplateList,
     });
 
-    this.app.pluginSettingsManager.add(`blocks-templates/:key`, {
+    this.app.pluginSettingsManager.add(`block-templates/:key`, {
       title: false,
-      pluginKey: 'blocks-templates',
+      pluginKey: 'block-templates',
       isTopLevel: false,
-      Component: BlocksTemplatePage,
+      Component: BlockTemplatePage,
     });
 
     // TODO: add blocks in 'mobile:addBlock' and 'popup:common:addBlock'
@@ -407,4 +405,4 @@ export class PluginBlocksTemplateClient extends Plugin {
   }
 }
 
-export default PluginBlocksTemplateClient;
+export default PluginBlockTemplateClient;

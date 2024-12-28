@@ -8,7 +8,7 @@
  */
 
 // @ts-ignore
-import pkg from './../../package.json';
+import pkg from '../../package.json';
 import { useApp } from '@nocobase/client';
 
 export function useT() {

@@ -9,11 +9,11 @@
 
 import { Plugin } from '@nocobase/server';
 
-export class PluginBlocksTemplateServer extends Plugin {
+export class PluginBlockTemplateServer extends Plugin {
   async afterAdd() {}
 
   async beforeLoad() {
-    this.app.acl.allow('blocksTemplates', '*', 'loggedIn');
+    this.app.acl.allow('blockTemplates', '*', 'loggedIn');
     // this.app.
   }
 
@@ -28,4 +28,4 @@ export class PluginBlocksTemplateServer extends Plugin {
   async remove() {}
 }
 
-export default PluginBlocksTemplateServer;
+export default PluginBlockTemplateServer;

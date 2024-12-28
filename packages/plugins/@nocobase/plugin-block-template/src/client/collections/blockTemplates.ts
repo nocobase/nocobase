@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const blocksTemplatesCollection = {
-  name: 'blocksTemplates',
+export const blockTemplatesCollection = {
+  name: 'blockTemplates',
   filterTargetKey: 'key',
   fields: [
     {

@@ -14,21 +14,26 @@ import {
   useSchemaComponentContext,
 } from '@nocobase/client';
 import React from 'react';
-import { blocksTemplatesCollection } from '../collections/blocksTemplates';
-import { blocksTemplatesSchema } from '../schemas/blockTemplates';
+import { blockTemplatesCollection } from '../collections/blockTemplates';
+import { blockTemplatesSchema } from '../schemas/blockTemplates';
 import { useSubmitActionProps } from '../../hooks/useSubmitActionProps';
 import { useEditFormProps } from '../../hooks/useEditFormProps';
 import { useDeleteActionProps } from '../../hooks/useDeleteActionProps';
-import { useDuplicateActionProps } from '../../hooks/useDuplicateActionProps';
+import * as useDuplicateAction from '../../hooks/useDuplicateAction';
 
-export const BlocksTemplateList = () => {
+export const BlockTemplateList = () => {
   const scCtx = useSchemaComponentContext();
   return (
-    <ExtendCollectionsProvider collections={[blocksTemplatesCollection]}>
+    <ExtendCollectionsProvider collections={[blockTemplatesCollection]}>
       <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
         <SchemaComponent
-          schema={blocksTemplatesSchema}
-          scope={{ useSubmitActionProps, useEditFormProps, useDeleteActionProps, useDuplicateActionProps }}
+          schema={blockTemplatesSchema}
+          scope={{
+            useSubmitActionProps,
+            useEditFormProps,
+            useDeleteActionProps,
+            useDuplicateAction: useDuplicateAction.useDuplicateAction,
+          }}
         />
       </SchemaComponentContext.Provider>
     </ExtendCollectionsProvider>

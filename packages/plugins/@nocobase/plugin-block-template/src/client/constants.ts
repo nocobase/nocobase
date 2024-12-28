@@ -9,4 +9,4 @@
 
 export const BlockName = 'Template';
 export const BlockNameLowercase = BlockName.toLowerCase();
-export const NAMESPACE = 'blocksTemplate';
+export const NAMESPACE = 'blockTemplate';

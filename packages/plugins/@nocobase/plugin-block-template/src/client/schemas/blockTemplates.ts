@@ -9,19 +9,20 @@
 
 import { ISchema } from '@nocobase/client';
 import { uid } from '@nocobase/utils/client';
-import { blocksTemplatesCollection } from '../collections/blocksTemplates';
-import { NAMESPACE } from '../constants';
+import { blockTemplatesCollection } from '../collections/blockTemplates';
 import { createActionSchema } from './createActionSchema';
 import { ConfigureLink } from '../components/ConfigureLink';
 import { editActionSchema } from './editActionSchema';
+import { NAMESPACE } from '../constants';
+import { useDuplicateAction } from '../../hooks/useDuplicateAction';
 
-export const blocksTemplatesSchema: ISchema = {
+export const blockTemplatesSchema: ISchema = {
   type: 'void',
   name: uid(),
   'x-component': 'CardItem',
   'x-decorator': 'TableBlockProvider',
   'x-decorator-props': {
-    collection: blocksTemplatesCollection.name,
+    collection: blockTemplatesCollection.name,
     action: 'list',
     params: {
       sort: '-createdAt',
@@ -84,7 +85,7 @@ export const blocksTemplatesSchema: ISchema = {
       'x-component': 'TableV2',
       'x-use-component-props': 'useTableBlockProps',
       'x-component-props': {
-        rowKey: blocksTemplatesCollection.filterTargetKey,
+        rowKey: blockTemplatesCollection.filterTargetKey,
         rowSelection: {
           type: 'checkbox',
         },
@@ -129,18 +130,67 @@ export const blocksTemplatesSchema: ISchema = {
                 split: '|',
               },
               properties: {
-                duplicate: {
-                  type: 'void',
-                  title: 'Duplicate',
-                  'x-component': 'Action.Link',
-                  'x-use-component-props': 'useDuplicateActionProps',
-                },
                 configure: {
                   type: 'void',
                   title: 'Configure',
                   'x-component': ConfigureLink,
                 },
                 editActionSchema,
+                // duplicate: {
+                //   type: 'void',
+                //   title: 'Duplicate',
+                //   'x-component': 'Action.Link',
+                //   'x-use-component-props': 'useDuplicateActionProps',
+                // },
+                duplicate: {
+                  type: 'void',
+                  title: `{{t("Duplicate", { ns: "${NAMESPACE}" })}}`,
+                  'x-component': 'Action.Link',
+                  'x-component-props': {
+                    openSize: 'small',
+                  },
+                  properties: {
+                    modal: {
+                      type: 'void',
+                      title: `{{t("Duplicate to new template", { ns: "${NAMESPACE}" })}}`,
+                      'x-decorator': 'FormV2',
+                      'x-component': 'Action.Modal',
+                      properties: {
+                        title: {
+                          type: 'string',
+                          title: '{{t("Title")}}',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Input',
+                          required: true,
+                        },
+                        footer: {
+                          type: 'void',
+                          'x-component': 'Action.Modal.Footer',
+                          properties: {
+                            submit: {
+                              type: 'void',
+                              title: '{{t("Submit")}}',
+                              'x-component': 'Action',
+                              'x-component-props': {
+                                type: 'primary',
+                                useAction: '{{ useDuplicateAction }}',
+                              },
+                            },
+                            cancel: {
+                              type: 'void',
+                              title: '{{t("Cancel")}}',
+                              'x-component': 'Action',
+                              'x-component-props': {
+                                useAction: '{{ cm.useCancelAction }}',
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+
                 delete: {
                   type: 'void',
                   title: 'Delete',

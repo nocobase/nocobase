@@ -14,10 +14,13 @@ import {
   useBlockRequestContext,
   useDataBlockResource,
   useAPIClient,
+  useActionContext,
 } from '@nocobase/client';
-import { uid } from '@nocobase/utils/client';
+import { useForm } from '@formily/react';
 import { App as AntdApp } from 'antd';
 import _ from 'lodash';
+import { useState } from 'react';
+import { uid } from '@nocobase/utils/client';
 
 const duplicateSchema = (schema) => {
   if (!schema) {
@@ -33,15 +36,25 @@ const duplicateSchema = (schema) => {
   return schema;
 };
 
-export function useDuplicateActionProps(): ActionProps {
+export function useDuplicateAction() {
   const { message } = AntdApp.useApp();
   const api = useAPIClient();
   const record = useCollectionRecordData();
   const resource = useDataBlockResource();
   const { service } = useBlockRequestContext();
   const collection = useCollection();
+  const form = useForm();
+  const { setVisible } = useActionContext();
+  const [loading, setLoading] = useState(false);
   return {
-    async onClick() {
+    async run() {
+      if (loading) {
+        return;
+      }
+
+      await form.submit();
+      setLoading(true);
+      const values = form.values;
       if (!collection) {
         throw new Error('collection does not exist');
       }
@@ -65,14 +78,17 @@ export function useDuplicateActionProps(): ActionProps {
       });
       await resource.create({
         values: {
-          title: `${record.title}_copy`,
+          title: `${values.title}`,
           description: record.description,
           key: newKey,
           uid: newSchemaUid,
         },
       });
       await service.refresh();
-      message.success('Duplicated!'); // TODO: translate
+      setVisible(false);
+      setLoading(false);
+      await form.reset();
+      message.success('Duplicated!');
     },
   };
 }

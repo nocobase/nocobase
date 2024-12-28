@@ -1,0 +1,21 @@
+{
+  "name": "@nocobase/plugin-block-template",
+  "version": "1.6.0-alpha.7",
+  "displayName": "Block: template",
+  "displayName.zh-CN": "区块：模板",
+  "description": "Create and manage templates containing one or more blocks for reuse on pages.",
+  "description.zh-CN": "创建和管理包含一个或多个区块的模板，用于在页面中重复使用。",
+  "homepage": "https://docs.nocobase.com/handbook/block-template",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/block-template",
+  "main": "dist/server/index.js",
+  "dependencies": {},
+  "peerDependencies": {
+    "@nocobase/client": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
+  },
+  "keywords": [
+    "Blocks",
+    "Template"
+  ]
+}

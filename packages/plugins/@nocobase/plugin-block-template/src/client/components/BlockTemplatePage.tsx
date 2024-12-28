@@ -13,14 +13,14 @@ import { useT } from '../locale';
 import { useParams } from 'react-router';
 import { Link } from 'react-router-dom';
 import { Breadcrumb, Spin } from 'antd';
-import PluginBlocksTemplateClient from '..';
+import PluginBlockTemplateClient from '..';
 
-export const BlocksTemplatePage = () => {
+export const BlockTemplatePage = () => {
   const params = useParams();
   const t = useT();
-  const plugin = usePlugin(PluginBlocksTemplateClient);
+  const plugin = usePlugin(PluginBlockTemplateClient);
   const { data, loading, refresh } = useRequest<any>({
-    url: `blocksTemplates:get/${params.key}`,
+    url: `blockTemplates:get/${params.key}`,
   });
   const { title } = data?.data || {};
 
@@ -64,7 +64,7 @@ export const BlocksTemplatePage = () => {
         <Breadcrumb
           items={[
             {
-              title: <Link to={`/admin/settings/blocks-templates`}>{t('Blocks template')}</Link>,
+              title: <Link to={`/admin/settings/block-templates`}>{t('Block template')}</Link>,
             },
             {
               title: title,

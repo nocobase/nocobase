@@ -113,12 +113,5 @@ export const addBlockInitializers = new SchemaInitializer({
         },
       ],
     },
-    {
-      name: 'templates',
-      Component: 'TemplateBlockInitializer',
-      title: "{{t(\"Templates\", { ns: ['@nocobase/plugin-blocks-template', 'client'], nsMode: 'fallback' })}}",
-      icon: 'TableOutlined',
-      sort: -1,
-    },
   ],
 });
