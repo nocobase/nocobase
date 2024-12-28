@@ -240,7 +240,12 @@ export class PluginBlockTemplateClient extends Plugin {
         }
 
         if (pendingPromise && !pendingPromise['__done']) {
-          throw pendingPromise;
+          // This is React Suspense's internal mechanism for data fetching
+          // When a promise is thrown, React will catch it and render the nearest <Suspense> fallback
+          // Once the promise resolves, React will re-render the component with the data
+          // See: https://github.com/facebook/react/issues/13206
+          // See also: https://react.dev/reference/react/Suspense#usage
+          throw pendingPromise; // will be handled by react suspense, this is not a real error
         }
 
         // const sc = mergeSchema(_.cloneDeep(this.templateschemacache[s['x-template-root-uid']]), s, s['x-uid']);
