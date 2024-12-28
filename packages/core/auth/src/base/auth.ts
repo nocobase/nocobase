@@ -132,7 +132,7 @@ export class BaseAuth extends Auth {
         throw new Error('Unauthorized');
       }
     } catch (err) {
-      this.ctx.logger.error(err, { method: 'authenticate' });
+      this.ctx.app.logger.error(err, { method: 'authenticate' });
       throw new Error('Unauthorized');
     }
   }

@@ -92,14 +92,14 @@ export class AccessController implements AccessService {
       if (access.resigned) return { status: 'failed', reason: 'access_id_resigned' };
       const preAccessInfo = await this.accessMap.get(id);
       const newId = randomUUID();
-      this.updateAccess(id, { resigned: true });
+      await this.updateAccess(id, { resigned: true });
       const accessInfo = {
         id: newId,
         lastAccessTime: Date.now(),
         resigned: false,
         signInTime: preAccessInfo.signInTime,
       };
-      this.accessMap.set(newId, accessInfo);
+      await this.accessMap.set(newId, accessInfo);
       return { status: 'success', id: newId };
     } finally {
       release();
@@ -107,9 +107,9 @@ export class AccessController implements AccessService {
   };
   canAccess: AccessService['canAccess'] = async (id) => {
     const accessInfo = await this.accessMap.get(id);
+    if (!accessInfo) return { allow: false, reason: 'access_id_not_exist' };
     const signInTime = accessInfo.signInTime;
     const config = await this.getConfig();
-    if (!accessInfo) return { allow: false, reason: 'access_id_not_exist' };
     const currTS = Date.now();
     if (currTS - accessInfo.lastAccessTime > ms(config.maxInactiveInterval)) {
       return { allow: false, reason: 'action_timeout' };
