@@ -48,16 +48,11 @@ export default class ScheduleTrigger extends Trigger {
   }
 
   async execute(workflow, values: any, options) {
-    let dataModel = values.data;
-    if (typeof dataModel === 'string' || typeof dataModel === 'number') {
-      const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
-      const { collectionManager } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName);
-      const { filterTargetKey, repository } = collectionManager.getCollection(collectionName);
-      dataModel = await repository.findOne({
-        filterByTk: values.data,
-      });
+    const mode = workflow.config.mode;
+    const trigger = this.getTrigger(mode);
+    if (trigger) {
+      return trigger.execute(workflow, values, options);
     }
-    return this.workflow.trigger(workflow, { ...values, data: dataModel, date: values?.date ?? new Date() }, options);
   }
 
   // async validateEvent(workflow: WorkflowModel, context: any, options: Transactionable): Promise<boolean> {

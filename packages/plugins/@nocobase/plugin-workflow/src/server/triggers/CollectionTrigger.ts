@@ -59,19 +59,19 @@ export default class CollectionTrigger extends Trigger {
     if (!ctx) {
       return;
     }
-
+    const { stack } = options.context ?? {};
     if (workflow.sync) {
       await this.workflow.trigger(workflow, ctx, {
         transaction,
-        stack: ctx.stack,
+        stack,
       });
     } else {
       if (transaction) {
         transaction.afterCommit(() => {
-          this.workflow.trigger(workflow, ctx, { stack: ctx.stack });
+          this.workflow.trigger(workflow, ctx, { stack });
         });
       } else {
-        this.workflow.trigger(workflow, ctx, { stack: ctx.stack });
+        this.workflow.trigger(workflow, ctx, { stack });
       }
     }
   }
@@ -84,15 +84,23 @@ export default class CollectionTrigger extends Trigger {
     const { transaction, context } = options;
     const { repository, filterTargetKey } = collection;
 
-    let dataModel = data;
-    if (typeof dataModel === 'string' || typeof dataModel === 'number') {
-      dataModel = await repository.findOne({
-        filterByTk: data,
-      });
+    let target = data;
+    let filterByTk;
+    let loadNeeded = false;
+    if (target && typeof target === 'object') {
+      filterByTk = Array.isArray(filterTargetKey)
+        ? pick(
+            target,
+            filterTargetKey.sort((a, b) => a.localeCompare(b)),
+          )
+        : target[filterTargetKey];
+    } else {
+      filterByTk = target;
+      loadNeeded = true;
     }
     // NOTE: if no configured fields changed, do not trigger
     if (
-      dataModel instanceof Model &&
+      target instanceof Model &&
       changed &&
       changed.length &&
       changed
@@ -100,14 +108,11 @@ export default class CollectionTrigger extends Trigger {
           const field = collection.getField(name);
           return field && !['linkTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.options.type);
         })
-        .every((name) => !dataModel.changedWithAssociations(getFieldRawName(collection, name)))
+        .every((name) => !(<Model>target).changedWithAssociations(getFieldRawName(collection, name)))
     ) {
       return null;
     }
 
-    const filterByTk = Array.isArray(filterTargetKey)
-      ? pick(dataModel, filterTargetKey)
-      : { [filterTargetKey]: dataModel[filterTargetKey] };
     // NOTE: if no configured condition, or not match, do not trigger
     if (isValidFilter(condition) && !(mode & MODE_BITMAP.DESTROY)) {
       // TODO: change to map filter format to calculation format
@@ -124,17 +129,14 @@ export default class CollectionTrigger extends Trigger {
       }
     }
 
-    let result = dataModel;
-
-    if (appends?.length && !(mode & MODE_BITMAP.DESTROY)) {
+    if (loadNeeded || (appends?.length && !(mode & MODE_BITMAP.DESTROY))) {
       const includeFields = appends.reduce((set, field) => {
         set.add(field.split('.')[0]);
         set.add(field);
         return set;
       }, new Set());
 
-      // @ts-ignore
-      result = await repository.findOne({
+      target = await repository.findOne({
         filterByTk,
         appends: Array.from(includeFields),
         transaction,
@@ -142,8 +144,7 @@ export default class CollectionTrigger extends Trigger {
     }
 
     return {
-      data: toJSON(result),
-      stack: context?.stack,
+      data: toJSON(target),
     };
   }
 
@@ -229,14 +230,9 @@ export default class CollectionTrigger extends Trigger {
     const ctx = await this.prepare(workflow, values?.data, options);
     const [dataSourceName] = parseCollectionName(workflow.config.collection);
     const { transaction } = options;
-    return this.workflow.trigger(
-      workflow,
-      { ...ctx },
-      {
-        ...options,
-        transaction: this.workflow.useDataSourceTransaction(dataSourceName, transaction),
-        stack: options.stack,
-      },
-    );
+    return this.workflow.trigger(workflow, ctx, {
+      ...options,
+      transaction: this.workflow.useDataSourceTransaction(dataSourceName, transaction),
+    });
   }
 }
