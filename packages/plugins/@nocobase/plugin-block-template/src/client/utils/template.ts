@@ -109,7 +109,7 @@ export function findFirstVirtualSchema(
       insertPosition: 'afterBegin',
     };
   }
-  // 将properties转换成数组，且按x-index排序
+  // Convert properties to array and sort by x-index
   const properties = Object.values(schema.properties || {}).sort((a: any, b: any) => {
     return a['x-index'] - b['x-index'];
   });
@@ -212,13 +212,13 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
           return sourceValue || objectValue;
         }
 
-        // properties 存在 x-index 冲突的情况
+        // Handle x-index conflicts in properties
         if (keyName === 'properties') {
           const targetKeys = Object.keys(objectValue || {});
           const sourceKeys = Object.keys(sourceValue);
           const keys = _.union(targetKeys, sourceKeys);
           const removedKeys = source['x-removed-properties'] || [];
-          // 找出存在于targetKeys但不能存在于sourceKeys的key， 说明是新增的字段
+          // Find keys that exist in targetKeys but not in sourceKeys, indicating new fields
           const newKeys = _.difference(targetKeys, sourceKeys);
           if (newKeys.length > 0) {
             const newProperties = _.cloneDeep(_.pick(objectValue, newKeys));
@@ -246,7 +246,7 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
             }
           }
           const parentIndexs = [];
-          // x-index 冲突则取最大值+1
+          // If x-index conflicts, use max value + 1
           for (const key in properties) {
             if (properties[key]['x-index']) {
               const xIndex = properties[key]['x-index'];

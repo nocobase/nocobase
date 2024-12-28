@@ -14,6 +14,7 @@ import { createActionSchema } from './createActionSchema';
 import { ConfigureLink } from '../components/ConfigureLink';
 import { editActionSchema } from './editActionSchema';
 import { NAMESPACE } from '../constants';
+import { tStr } from '../locale';
 
 export const blockTemplatesSchema: ISchema = {
   type: 'void',
@@ -131,7 +132,7 @@ export const blockTemplatesSchema: ISchema = {
               properties: {
                 configure: {
                   type: 'void',
-                  title: 'Configure',
+                  title: tStr('Configure'),
                   'x-component': ConfigureLink,
                 },
                 editActionSchema,
@@ -186,7 +187,7 @@ export const blockTemplatesSchema: ISchema = {
 
                 delete: {
                   type: 'void',
-                  title: 'Delete',
+                  title: tStr('Delete'),
                   'x-component': 'Action.Link',
                   'x-use-component-props': 'useDeleteActionProps',
                 },

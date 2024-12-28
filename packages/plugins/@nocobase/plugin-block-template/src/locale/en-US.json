@@ -1,1 +1,27 @@
-{}
+{
+  "Associate record": "Associate record",
+  "Form type": "Form type",
+  "Add new": "Add new",
+  "Edit": "Edit",
+  "Title": "Title",
+  "Description": "Description",
+  "Configure": "Configure",
+  "Revert to template": "Revert to template",
+  "Are you sure you want to revert all changes from the template?": "Are you sure you want to revert all changes from the template?",
+  "Templates": "Templates",
+  "Block templates": "Block templates",
+  "Submit": "Submit",
+  "Cancel": "Cancel",
+  "Duplicate": "Duplicate",
+  "Duplicate to new template": "Duplicate to new template",
+  "Saved successfully!": "Saved successfully!",
+  "Reset to template": "Reset to template",
+  "Block template": "Block template",
+  "Reset successfully": "Reset successfully",
+  "Template block settings": "Template block settings",
+  "Filter": "Filter",
+  "Refresh": "Refresh",
+  "Delete record": "Delete record",
+  "Are you sure you want to delete it?": "Are you sure you want to delete it?",
+  "Delete": "Delete"
+}

@@ -1,1 +1,27 @@
-{}
+{
+  "Associate record": "关联记录",
+  "Form type": "表单类型",
+  "Add new": "新增",
+  "Edit": "编辑",
+  "Title": "标题",
+  "Description": "描述",
+  "Configure": "配置",
+  "Revert to template": "恢复到模板",
+  "Are you sure you want to revert all changes from the template?": "您确定要恢复所有对模板的更改吗？",
+  "Templates": "模板",
+  "Block templates": "区块模板",
+  "Submit": "提交",
+  "Cancel": "取消",
+  "Duplicate": "复制",
+  "Duplicate to new template": "复制到新模板",
+  "Saved successfully!": "保存成功！",
+  "Reset to template": "重置为模板",
+  "Block template": "区块模板",
+  "Reset successfully": "重置成功",
+  "Template block settings": "模板区块设置",
+  "Filter": "筛选",
+  "Refresh": "刷新",
+  "Delete record": "删除记录",
+  "Are you sure you want to delete it?": "您确定要删除吗？",
+  "Delete": "删除"
+}

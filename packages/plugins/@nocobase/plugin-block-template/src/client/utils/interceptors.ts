@@ -60,8 +60,7 @@ export function registerTemplateBlockInterceptors(apiClient: any, templateBlocks
       }
     }
 
-    // TODO: insertAdjacent  -> 有可能拖拽后失去模板同步性，需要仅将必须的属性同步到data中
-
+    // TODO: After drag and drop, template synchronization may be lost. Only necessary properties should be synced to data
     return config;
   });
 }

@@ -10,10 +10,11 @@
 import { useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { ResetSetting } from '../components/ResetSetting';
+import { tStr } from '../locale';
 
 export const resetSettingItem = {
   name: 'template-reset',
-  title: 'Reset to template',
+  title: tStr('Reset to template'),
   Component: ResetSetting,
   useVisible() {
     const fieldSchema = useFieldSchema();

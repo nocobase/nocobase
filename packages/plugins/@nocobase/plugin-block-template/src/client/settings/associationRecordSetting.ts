@@ -188,7 +188,7 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
     }
 
     return {
-      title: t('Associate Record'),
+      title: t('Associate record'),
       value: currentOption,
       options: options.map((v) => ({ value: v })),
       onChange: async (option) => {

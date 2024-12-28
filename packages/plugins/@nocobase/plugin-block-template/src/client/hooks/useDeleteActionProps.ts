@@ -15,6 +15,7 @@ import {
   useDataBlockResource,
 } from '@nocobase/client';
 import { App as AntdApp } from 'antd';
+import { useT } from '../locale';
 
 export function useDeleteActionProps(): ActionProps {
   const { message } = AntdApp.useApp();
@@ -22,10 +23,11 @@ export function useDeleteActionProps(): ActionProps {
   const resource = useDataBlockResource();
   const { service } = useBlockRequestContext();
   const collection = useCollection();
+  const t = useT();
   return {
     confirm: {
-      title: 'Delete',
-      content: 'Are you sure you want to delete it?', // TODO: translate
+      title: t('Delete'),
+      content: t('Are you sure you want to delete it?'),
     },
     async onClick() {
       if (!collection) {
