@@ -11,7 +11,7 @@ import { Migration } from '@nocobase/server';
 
 export default class UpdatePasswordValidatorMigration extends Migration {
   on = 'afterLoad'; // 'beforeLoad' or 'afterLoad'
-  appVersion = '<1.6.0-alpha.7';
+  // appVersion = '<1.6.0-alpha.7';
 
   async up() {
     const Field = this.context.db.getRepository('fields');
