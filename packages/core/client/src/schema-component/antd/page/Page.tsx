@@ -341,7 +341,11 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
 
         return {
           label: (
-            <SortableItem id={schema.name as string} className={classNames('nb-action-link', 'designerCss', className)}>
+            <SortableItem
+              id={schema.name as string}
+              schema={schema}
+              className={classNames('nb-action-link', 'designerCss', className)}
+            >
               {schema['x-icon'] && <Icon style={{ marginRight: 8 }} type={schema['x-icon']} />}
               <span>{schema.title || t('Tab')}</span>
               <PageTabDesigner schema={schema} />

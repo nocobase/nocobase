@@ -90,14 +90,15 @@ interface SortableItemProps extends HTMLAttributes<HTMLDivElement> {
 
 const InternalSortableItem = observer(
   (props: SortableItemProps) => {
-    const { id, eid, removeParentsIfNoChildren, ...others } = useSortableItemProps(props);
+    const { schema, id, eid, removeParentsIfNoChildren, ...others } = useSortableItemProps(props);
 
     const data = useMemo(() => {
       return {
         insertAdjacent: 'afterEnd',
+        schema,
         removeParentsIfNoChildren: removeParentsIfNoChildren ?? true,
       };
-    }, [removeParentsIfNoChildren]);
+    }, [schema, removeParentsIfNoChildren]);
 
     return (
       <SortableProvider id={id} data={data}>
