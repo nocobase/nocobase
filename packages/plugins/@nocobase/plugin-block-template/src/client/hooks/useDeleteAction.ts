@@ -8,36 +8,51 @@
  */
 
 import {
-  ActionProps,
   useCollection,
   useCollectionRecordData,
   useBlockRequestContext,
   useDataBlockResource,
+  useAPIClient,
+  usePlugin,
 } from '@nocobase/client';
 import { App as AntdApp } from 'antd';
+import { useForm } from '@formily/react';
 import { useT } from '../locale';
+import PluginBlockTemplateClient from '..';
 
-export function useDeleteActionProps(): ActionProps {
+export function useDeleteAction() {
   const { message } = AntdApp.useApp();
   const record = useCollectionRecordData();
   const resource = useDataBlockResource();
   const { service } = useBlockRequestContext();
   const collection = useCollection();
   const t = useT();
+  const form = useForm();
+  const apiClient = useAPIClient();
+  const plugin = usePlugin(PluginBlockTemplateClient);
+
   return {
-    confirm: {
-      title: t('Delete'),
-      content: t('Are you sure you want to delete it?'),
-    },
-    async onClick() {
+    async run() {
       if (!collection) {
         throw new Error('collection does not exist');
       }
+      await form.submit();
+      const keepBlocks = form.values.keepBlocks;
       await resource.destroy({
         filterByTk: record[collection.filterTargetKey],
       });
+      if (!keepBlocks) {
+        await apiClient.request({
+          method: 'POST',
+          url: `/uiSchemas:remove/${record['uid']}`,
+        });
+        // clear the cache
+        for (const key in plugin.templateschemacache) {
+          delete plugin.templateschemacache[key];
+        }
+      }
       await service.refresh();
-      message.success('Deleted!'); // TODO: translate
+      message.success(t('Deleted successfully'), 0.2);
     },
   };
 }

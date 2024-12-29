@@ -16,7 +16,7 @@ import {
 import React from 'react';
 import { blockTemplatesCollection } from '../collections/blockTemplates';
 import { blockTemplatesSchema } from '../schemas/blockTemplates';
-import { useDuplicateAction, useSubmitActionProps, useEditFormProps, useDeleteActionProps } from '../hooks';
+import { useDuplicateAction, useSubmitActionProps, useEditFormProps, useDeleteAction } from '../hooks';
 
 export const BlockTemplateList = () => {
   const scCtx = useSchemaComponentContext();
@@ -28,7 +28,7 @@ export const BlockTemplateList = () => {
           scope={{
             useSubmitActionProps,
             useEditFormProps,
-            useDeleteActionProps,
+            useDeleteAction,
             useDuplicateAction,
           }}
         />

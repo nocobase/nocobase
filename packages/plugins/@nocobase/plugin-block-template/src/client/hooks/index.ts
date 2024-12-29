@@ -9,5 +9,5 @@
 
 export * from './useDuplicateAction';
 export * from './useSubmitActionProps';
-export * from './useDeleteActionProps';
+export * from './useDeleteAction';
 export * from './useEditFormProps';

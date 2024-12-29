@@ -184,12 +184,56 @@ export const blockTemplatesSchema: ISchema = {
                     },
                   },
                 },
-
                 delete: {
                   type: 'void',
                   title: tStr('Delete'),
                   'x-component': 'Action.Link',
-                  'x-use-component-props': 'useDeleteActionProps',
+                  'x-component-props': {
+                    openSize: 'small',
+                  },
+                  properties: {
+                    modal: {
+                      type: 'void',
+                      title: `{{t("Delete", { ns: "${NAMESPACE}" })}}`,
+                      'x-decorator': 'FormV2',
+                      'x-component': 'Action.Modal',
+                      'x-component-props': {
+                        openSize: 'small',
+                      },
+                      properties: {
+                        keepBlocks: {
+                          type: 'boolean',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Checkbox',
+                          default: true,
+                          'x-content': tStr('Keep the created blocks?'),
+                        },
+                        footer: {
+                          type: 'void',
+                          'x-component': 'Action.Modal.Footer',
+                          properties: {
+                            submit: {
+                              type: 'void',
+                              title: '{{t("Submit")}}',
+                              'x-component': 'Action',
+                              'x-component-props': {
+                                type: 'primary',
+                                useAction: '{{ useDeleteAction }}',
+                              },
+                            },
+                            cancel: {
+                              type: 'void',
+                              title: '{{t("Cancel")}}',
+                              'x-component': 'Action',
+                              'x-component-props': {
+                                useAction: '{{ cm.useCancelAction }}',
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
                 },
               },
             },

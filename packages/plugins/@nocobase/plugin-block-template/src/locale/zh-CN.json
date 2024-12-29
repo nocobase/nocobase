@@ -18,10 +18,12 @@
   "Reset to template": "重置为模板",
   "Block template": "区块模板",
   "Reset successfully": "重置成功",
+  "Delete successfully": "删除成功",
   "Template block settings": "模板区块设置",
   "Filter": "筛选",
   "Refresh": "刷新",
   "Delete record": "删除记录",
   "Are you sure you want to delete it?": "您确定要删除吗？",
-  "Delete": "删除"
+  "Delete": "删除",
+  "Keep the created blocks?": "保留创建的区块？"
 }
