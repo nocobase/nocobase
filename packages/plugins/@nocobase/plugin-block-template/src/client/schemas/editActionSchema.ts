@@ -7,9 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { tStr } from '../locale';
+
 export const editActionSchema = {
   type: 'void',
-  title: 'Edit',
+  title: tStr('Edit'),
   'x-component': 'Action.Link',
   'x-component-props': {
     openMode: 'drawer',
@@ -18,7 +20,7 @@ export const editActionSchema = {
   properties: {
     drawer: {
       type: 'void',
-      title: 'Edit',
+      title: tStr('Edit'),
       'x-component': 'Action.Drawer',
       'x-decorator': 'FormV2',
       'x-use-decorator-props': 'useEditFormProps',
@@ -43,7 +45,7 @@ export const editActionSchema = {
           'x-component': 'Action.Drawer.Footer',
           properties: {
             submit: {
-              title: 'Submit',
+              title: tStr('Submit'),
               'x-component': 'Action',
               'x-use-component-props': 'useSubmitActionProps',
             },

@@ -12,7 +12,7 @@ import { NAMESPACE } from '../constants';
 export const createActionSchema = {
   type: 'void',
   'x-component': 'Action',
-  title: `{{t("Add New", { ns: "${NAMESPACE}" })}}`,
+  title: `{{t("Add new", { ns: "${NAMESPACE}" })}}`,
   'x-align': 'right',
   'x-component-props': {
     type: 'primary',
@@ -22,7 +22,7 @@ export const createActionSchema = {
     drawer: {
       type: 'void',
       'x-component': 'Action.Drawer',
-      title: "{{t('Add New')}}",
+      title: `{{t("Add new", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'Form',
       properties: {
         form: {
