@@ -107,7 +107,9 @@ export class BaseAuth extends Auth {
     try {
       const { status, payload } = await this.jwt.verify(token);
       const { userId, roleName, iat, temp, jti } = payload;
-      if (!temp) return;
+      if (!temp && status === 'valid') return;
+      else if (!temp) throw new Error('Unauthorized');
+      if (!jti) throw new Error('Unauthorized');
       const checkAccessResult = await this.accessController.canAccess(jti);
       if (checkAccessResult.allow === false) {
         this.ctx.res.setHeader('X-Authorized-Failed-Type', checkAccessResult.reason);
