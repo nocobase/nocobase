@@ -7,8 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Router } from '@remix-run/router';
-import type { BrowserHistory, HashHistory, MemoryHistory } from 'history';
 import { get, set } from 'lodash';
 import React, { ComponentType, createContext, useContext } from 'react';
 import {
@@ -50,8 +48,7 @@ export class RouterManager {
   protected routes: Record<string, RouteType> = {};
   protected options: RouterOptions;
   public app: Application;
-  public history: BrowserHistory | MemoryHistory | HashHistory;
-  private router: Router;
+  private router: ReturnType<typeof createBrowserRouter | typeof createHashRouter | typeof createMemoryRouter>;
   get basename() {
     return this.router.basename;
   }
