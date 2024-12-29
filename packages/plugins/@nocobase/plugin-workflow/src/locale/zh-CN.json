@@ -73,7 +73,7 @@
   "Preload associations": "预加载关联数据",
   "Please select the associated fields that need to be accessed in subsequent nodes. With more than two levels of to-many associations may cause performance issue, please use with caution.":
     "请选中需要在后续节点中被访问的关系字段。超过两层的对多关联可能会导致性能问题，请谨慎使用。",
-  "Choose a record or an ID reference of the collection to trigger.": "选择数据表中的一行记录或者ID引用来触发。",
+  "Choose a record or primary key of a record in the collection to trigger.": "选择数据表中的一行记录或者记录的主键来触发。",
 
   "Schedule event": "定时任务",
   "Triggered according to preset time conditions. Suitable for one-time or periodic tasks, such as sending notifications and cleaning data on a schedule.": "按预设的时间条件定时触发。适用于一次性或周期性的任务，如定时发送通知、清理数据等。",

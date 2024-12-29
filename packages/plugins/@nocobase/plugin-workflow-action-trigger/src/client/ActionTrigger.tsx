@@ -206,8 +206,8 @@ export default class extends Trigger {
   triggerFieldset = {
     data: {
       type: 'object',
-      title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
-      description: `{{t("Choose a record or an ID reference of the collection to trigger.", { ns: "workflow" })}}`,
+      title: `{{t("Trigger data", { ns: "workflow" })}}`,
+      description: `{{t("Choose a record or primary key of a record in the collection to trigger.", { ns: "workflow" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'TriggerCollectionRecordSelect',
       default: null,
@@ -215,12 +215,22 @@ export default class extends Trigger {
     },
     userId: {
       type: 'number',
-      title: `{{t("User submitted action", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("User acted", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'WorkflowVariableWrapper',
       'x-component-props': {
         nullable: false,
         changeOnSelect: true,
+        variableOptions: {
+          types: [
+            (field) => {
+              if (field.isForeignKey || field.type === 'context') {
+                return field.target === 'users';
+              }
+              return field.collectionName === 'users' && field.name === 'id';
+            },
+          ],
+        },
         render(props) {
           return (
             <RemoteSelect
@@ -258,6 +268,16 @@ export default class extends Trigger {
       'x-component-props': {
         nullable: false,
         changeOnSelect: true,
+        variableOptions: {
+          types: [
+            (field) => {
+              if (field.isForeignKey) {
+                return field.target === 'roles';
+              }
+              return field.collectionName === 'roles' && field.name === 'name';
+            },
+          ],
+        },
         render(props) {
           return (
             <RemoteSelect

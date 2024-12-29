@@ -120,6 +120,9 @@ export const systemOptions = {
   },
 };
 
+/**
+ * @deprecated
+ */
 export const BaseTypeSets = {
   boolean: new Set(['checkbox']),
   number: new Set(['integer', 'number', 'percent']),
@@ -422,8 +425,14 @@ export function WorkflowVariableWrapper(props): JSX.Element {
   return render?.(others);
 }
 
+/**
+ * @experimental
+ */
 export const HideVariableContext = createContext(false);
 
+/**
+ * @experimental
+ */
 export function useHideVariable() {
   return useContext(HideVariableContext);
 }
