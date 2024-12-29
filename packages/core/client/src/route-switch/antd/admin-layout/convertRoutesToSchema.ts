@@ -24,7 +24,6 @@ export enum NocoBaseDesktopRouteType {
 export interface NocoBaseDesktopRoute {
   id?: number;
   parentId?: number;
-  parent?: NocoBaseDesktopRoute;
   children?: NocoBaseDesktopRoute[];
 
   title?: string;
