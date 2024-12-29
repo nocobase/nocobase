@@ -32,12 +32,12 @@ export const useActionContext = () => {
               async onOk() {
                 ctx.setFormValueChanged(false);
                 ctx.setVisible?.(false);
-                form?.reset?.();
               },
             });
           } else {
             ctx.setVisible?.(false);
           }
+          form?.reset?.();
         } else {
           ctx.setVisible?.(visible);
         }

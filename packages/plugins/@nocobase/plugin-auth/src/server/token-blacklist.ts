@@ -30,11 +30,22 @@ export class TokenBlacklistService implements ITokenBlacklistService {
         // 0.1% error rate requires 14.4 bits per item
         // 14.4*1000000/8/1024/1024 = 1.72MB
         await this.bloomFilter.reserve(this.cacheKey, 0.001, 1000000);
-        const data = await this.repo.find({ fields: ['token'], raw: true });
+        const data = await this.repo.find({
+          fields: ['token'],
+          filter: {
+            expiration: {
+              $dateAfter: new Date(),
+            },
+          },
+          raw: true,
+        });
         const tokens = data.map((item: any) => item.token);
+        if (!tokens.length) {
+          return;
+        }
         await this.bloomFilter.mAdd(this.cacheKey, tokens);
       } catch (error) {
-        plugin.app.logger.error('token-blacklist: create bloom filter failed', error);
+        plugin.app.logger.warn('token-blacklist: create bloom filter failed', error);
         this.bloomFilter = null;
       }
     });
