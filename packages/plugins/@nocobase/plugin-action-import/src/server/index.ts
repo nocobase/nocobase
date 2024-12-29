@@ -76,7 +76,7 @@ export class PluginActionImportServer extends Plugin {
     );
 
     errorHandlerPlugin.errorHandler.register(
-      (err) => err instanceof ImportError,
+      (err) => err.name === 'ImportError',
       (err: ImportError, ctx) => {
         ctx.status = 400;
         const causeError = err.cause;
