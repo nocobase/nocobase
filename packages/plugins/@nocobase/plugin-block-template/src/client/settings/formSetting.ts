@@ -11,11 +11,8 @@ import {
   APIClient,
   SchemaSettingsItemType,
   useAPIClient,
-  useCollection,
-  useCollectionManager,
   useCurrentPopupRecord,
   useDesignable,
-  useLocalVariables,
 } from '@nocobase/client';
 import { useT } from '../locale';
 import { useField, useFieldSchema } from '@formily/react';
@@ -30,9 +27,10 @@ async function schemaPatch(
     // collectionName: string;
     // dataSource: string;
     option: string;
+    t: (key: string) => string;
   },
 ) {
-  const { option, api } = options;
+  const { option, t } = options;
   const schema = {
     ['x-uid']: currentSchema['x-uid'],
   };
@@ -43,7 +41,7 @@ async function schemaPatch(
   });
   const newActionBarSchemas = {};
 
-  if (option === 'Edit') {
+  if (option === t('Edit')) {
     schema['x-decorator-props'] = {
       action: 'get',
       ...currentSchema['x-decorator-props'],
@@ -134,10 +132,7 @@ export const formSettingItem: SchemaSettingsItemType = {
     const fieldSchema = useFieldSchema();
     const field = useField();
     const api = useAPIClient();
-    const { dn, refresh } = useDesignable();
-    const currentCollection = useCollection();
-    const currentPopupRecord = useCurrentPopupRecord();
-    const cm = useCollectionManager();
+    const { refresh } = useDesignable();
     const currentOption =
       fieldSchema['x-use-decorator-props'] === 'useEditFormBlockDecoratorProps' ? t('Edit') : t('Add new');
     const options = [t('Add new'), t('Edit')];
@@ -152,6 +147,7 @@ export const formSettingItem: SchemaSettingsItemType = {
           // collectionName: currentCollectionName,
           // dataSource: decoratorProps.dataSource,
           option,
+          t,
         });
         _.merge(fieldSchema, schema);
         field.decoratorProps = {
