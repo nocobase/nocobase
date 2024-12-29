@@ -20,9 +20,9 @@ export default class extends Migration {
       this.app.authManager.accessController.setConfig(res.config);
     } else {
       const config = {
-        tokenExpirationTime: process.env.JWT_EXPIRES_IN ?? '30m',
+        tokenExpirationTime: process.env.JWT_EXPIRES_IN ?? '6h',
         maxTokenLifetime: '1d',
-        maxInactiveInterval: '15m',
+        maxInactiveInterval: '3h',
       };
       await accessConfigRepository.create({
         values: {
