@@ -120,7 +120,11 @@ export const formSettingItem: SchemaSettingsItemType = {
     if (!templateBlock) {
       return false;
     }
-    if (decorator === 'FormBlockProvider' && currentPopupRecord?.collection?.name === currentCollectionName) {
+    if (
+      decorator === 'FormBlockProvider' &&
+      currentPopupRecord?.value &&
+      currentPopupRecord?.collection?.name === currentCollectionName
+    ) {
       return true;
     }
     return false;
