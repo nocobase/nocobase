@@ -249,7 +249,35 @@ export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
     [refreshRoutes, resource],
   );
 
-  return { createRoute, updateRoute, deleteRoute };
+  const moveRoute = useCallback(
+    async ({
+      sourceId,
+      targetId,
+      targetScope,
+      sortField,
+      sticky,
+      method,
+      refreshAfterMove = true,
+    }: {
+      sourceId: string;
+      targetId?: string;
+      targetScope?: any;
+      sortField?: string;
+      sticky?: boolean;
+      /**
+       * Insertion type - specifies whether to insert before or after the target element
+       */
+      method?: 'insertAfter' | 'prepend';
+      refreshAfterMove?: boolean;
+    }) => {
+      const res = await resource.move({ sourceId, targetId, targetScope, sortField, sticky, method });
+      refreshAfterMove && refreshRoutes();
+      return res;
+    },
+    [refreshRoutes, resource],
+  );
+
+  return { createRoute, updateRoute, deleteRoute, moveRoute };
 };
 
 const HeaderMenu = React.memo<{

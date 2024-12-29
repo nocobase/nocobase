@@ -31,6 +31,11 @@ import {
 } from '../../../';
 import { NocoBaseDesktopRouteType } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 
+const insertPositionToMethod = {
+  beforeBegin: 'prepend',
+  afterEnd: 'insertAfter',
+};
+
 const toItems = (properties = {}) => {
   const items = [];
   for (const key in properties) {
@@ -69,7 +74,7 @@ const InsertMenuItems = (props) => {
   const fieldSchema = useFieldSchema();
   const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
   const isSubMenu = fieldSchema['x-component'] === 'Menu.SubMenu';
-  const { createRoute } = useNocoBaseRoutes();
+  const { createRoute, moveRoute } = useNocoBaseRoutes();
 
   if (!isSubMenu && insertPosition === 'beforeEnd') {
     return null;
@@ -101,13 +106,13 @@ const InsertMenuItems = (props) => {
             },
           } as ISchema
         }
-        onSubmit={({ title, icon }) => {
+        onSubmit={async ({ title, icon }) => {
           const route = fieldSchema['__route__'];
           const parentRoute = fieldSchema.parent?.['__route__'];
           const schemaUid = uid();
 
           // 1. 先创建一个路由
-          createRoute(
+          const { data } = await createRoute(
             {
               type: NocoBaseDesktopRouteType.group,
               title,
@@ -117,12 +122,18 @@ const InsertMenuItems = (props) => {
               schemaUid,
             },
             false,
-          )
-            .then(({ data }) => {
-              // 2. 然后再把路由移动到对应的位置
-              console.log('data', data);
-            })
-            .catch(console.error);
+          );
+
+          if (insertPositionToMethod[insertPosition]) {
+            // 2. 然后再把路由移动到对应的位置
+            await moveRoute({
+              sourceId: data?.data?.id,
+              targetId: route?.id,
+              sortField: 'sort',
+              method: insertPositionToMethod[insertPosition],
+              refreshAfterMove: false,
+            });
+          }
 
           // 3. 插入一个对应的 Schema
           dn.insertAdjacent(insertPosition, {
@@ -161,7 +172,7 @@ const InsertMenuItems = (props) => {
             },
           } as ISchema
         }
-        onSubmit={({ title, icon }) => {
+        onSubmit={async ({ title, icon }) => {
           const route = fieldSchema['__route__'];
           const parentRoute = fieldSchema.parent?.['__route__'];
           const menuSchemaUid = uid();
@@ -170,7 +181,7 @@ const InsertMenuItems = (props) => {
           const tabSchemaName = uid();
 
           // 1. 先创建一个路由
-          createRoute(
+          const { data } = await createRoute(
             {
               type: NocoBaseDesktopRouteType.page,
               title,
@@ -181,37 +192,41 @@ const InsertMenuItems = (props) => {
               pageSchemaUid,
             },
             false,
-          )
-            .then(async ({ data }) => {
-              // 2. 创建一个 Tab
-              await createRoute(
-                {
-                  type: NocoBaseDesktopRouteType.tabs,
-                  title: '{{t("Tab")}}',
-                  parentId: data?.data?.id,
-                  schemaUid: tabSchemaUid,
-                  tabSchemaName,
-                },
-                false,
-              );
+          );
 
-              // 3. 然后再把路由移动到对应的位置
-              console.log('data', data);
+          // 2. 然后再把路由移动到对应的位置
+          await moveRoute({
+            sourceId: data?.data?.id,
+            targetId: route?.id,
+            sortField: 'sort',
+            method: insertPositionToMethod[insertPosition],
+            refreshAfterMove: false,
+          });
 
-              // 4. 插入一个对应的 Schema
-              dn.insertAdjacent(
-                insertPosition,
-                getPageMenuSchema({
-                  title,
-                  icon,
-                  pageSchemaUid,
-                  menuSchemaUid,
-                  tabSchemaUid,
-                  tabSchemaName,
-                }),
-              );
-            })
-            .catch(console.error);
+          // 3. 创建一个 Tab
+          await createRoute(
+            {
+              type: NocoBaseDesktopRouteType.tabs,
+              title: '{{t("Tab")}}',
+              parentId: data?.data?.id,
+              schemaUid: tabSchemaUid,
+              tabSchemaName,
+            },
+            false,
+          );
+
+          // 4. 插入一个对应的 Schema
+          dn.insertAdjacent(
+            insertPosition,
+            getPageMenuSchema({
+              title,
+              icon,
+              pageSchemaUid,
+              menuSchemaUid,
+              tabSchemaUid,
+              tabSchemaName,
+            }),
+          );
         }}
       />
       <SchemaSettingsModalItem
@@ -238,13 +253,13 @@ const InsertMenuItems = (props) => {
             },
           } as ISchema
         }
-        onSubmit={({ title, icon, href, params }) => {
+        onSubmit={async ({ title, icon, href, params }) => {
           const route = fieldSchema['__route__'];
           const parentRoute = fieldSchema.parent?.['__route__'];
           const schemaUid = uid();
 
           // 1. 先创建一个路由
-          createRoute(
+          const { data } = await createRoute(
             {
               type: NocoBaseDesktopRouteType.link,
               title,
@@ -258,12 +273,16 @@ const InsertMenuItems = (props) => {
               },
             },
             false,
-          )
-            .then(({ data }) => {
-              // 2. 然后再把路由移动到对应的位置
-              console.log('data', data);
-            })
-            .catch(console.error);
+          );
+
+          // 2. 然后再把路由移动到对应的位置
+          await moveRoute({
+            sourceId: data?.data?.id,
+            targetId: route?.id,
+            sortField: 'sort',
+            method: insertPositionToMethod[insertPosition],
+            refreshAfterMove: false,
+          });
 
           // 3. 插入一个对应的 Schema
           dn.insertAdjacent(insertPosition, {
