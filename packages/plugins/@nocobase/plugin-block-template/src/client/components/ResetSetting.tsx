@@ -88,7 +88,13 @@ export const ResetSetting = () => {
             const templateSchema = res.data?.data;
             const rootSchema = findParentRootTemplateSchema(fieldSchema);
             const isRoot = rootSchema === fieldSchema;
-            const newSchema = convertTplBlock(templateSchema, false, isRoot, rootSchema['x-uid']);
+            const newSchema = convertTplBlock(
+              templateSchema,
+              false,
+              isRoot,
+              rootSchema['x-uid'],
+              rootSchema['x-template-title'],
+            );
 
             // 删除老的schema
             const position = findInsertPosition(fieldSchema.parent, fieldSchema['x-uid']);
