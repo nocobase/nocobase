@@ -68,7 +68,7 @@ export async function schemaToRoutes(schema: any, uiSchemas: any) {
     }
 
     // Link
-    if (item['x-component'] === 'Menu.Link') {
+    if (item['x-component'] === 'Menu.URL') {
       return {
         type: 'link',
         title: item.title,
