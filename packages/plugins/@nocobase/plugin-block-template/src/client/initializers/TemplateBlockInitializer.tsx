@@ -14,7 +14,7 @@ import * as _ from 'lodash';
 import { uid } from '@nocobase/utils/client';
 import PluginBlockTemplateClient from '..';
 
-export function convertTplBlock(tpl, virtual = false, isRoot = true, newRootId?: string) {
+export function convertTplBlock(tpl, virtual = false, isRoot = true, newRootId?: string, templateTitle?: string) {
   if (!newRootId) {
     newRootId = uid();
   }
@@ -32,7 +32,7 @@ export function convertTplBlock(tpl, virtual = false, isRoot = true, newRootId?:
       delete newTpl['x-initializer'];
     }
     for (const key in tpl.properties) {
-      const t = convertTplBlock(tpl.properties[key], virtual, isRoot, newRootId);
+      const t = convertTplBlock(tpl.properties[key], virtual, isRoot, newRootId, templateTitle);
       if (isRoot) {
         newRootId = uid(); // 多个Grid.Row的时候，每个Grid.Row都要生成一个新的uid
       }
@@ -58,12 +58,15 @@ export function convertTplBlock(tpl, virtual = false, isRoot = true, newRootId?:
       newSchema['x-template-root-uid'] = tpl['x-uid'];
       newSchema['x-uid'] = newRootId;
     }
+    if (templateTitle) {
+      newSchema['x-template-title'] = templateTitle;
+    }
     // filter should be in tpl
     if (_.get(tpl, 'x-filter-targets')) {
       newSchema['x-filter-targets'] = tpl['x-filter-targets'];
     }
     for (const key in tpl.properties) {
-      newSchema.properties[key] = convertTplBlock(tpl.properties[key], virtual, false, newRootId);
+      newSchema.properties[key] = convertTplBlock(tpl.properties[key], virtual, false, newRootId, templateTitle);
     }
     return newSchema;
   }
@@ -104,7 +107,7 @@ function correctIdReferences(schemas) {
   }
 }
 
-function convertTemplateToBlock(data) {
+function convertTemplateToBlock(data, templateTitle?: string) {
   // debugger;
   let tpls = data?.properties; // Grid开始的区块
   tpls = _.get(Object.values(tpls), '0.properties'); // Grid.Row开始的区块
@@ -112,7 +115,7 @@ function convertTemplateToBlock(data) {
   // 遍历 tpl的所有属性，每一个属性其实是一个区块
   for (const key in tpls) {
     const tpl = tpls[key];
-    const schema = convertTplBlock(tpl);
+    const schema = convertTplBlock(tpl, false, true, undefined, templateTitle);
     if (schema) {
       schemas.push(schema);
     }
@@ -163,7 +166,7 @@ export const TemplateBlockInitializer = () => {
     });
 
     const template = data?.data;
-    const schemas = convertTemplateToBlock(template);
+    const schemas = convertTemplateToBlock(template, item.label);
     // save the schemas to the cache
     saveSchemasToCache(schemas, template, plugin.templateschemacache);
 

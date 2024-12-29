@@ -224,7 +224,13 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
             const newProperties = _.cloneDeep(_.pick(objectValue, newKeys));
             const newSchemas = [];
             for (const key of newKeys) {
-              const newSchema = convertTplBlock(newProperties[key], true, false, rootId);
+              const newSchema = convertTplBlock(
+                newProperties[key],
+                true,
+                false,
+                rootId,
+                _.get(source, 'x-template-title'),
+              );
               newSchema['name'] = key;
               newSchemas.push(newSchema);
               source['properties'][key] = newSchema;

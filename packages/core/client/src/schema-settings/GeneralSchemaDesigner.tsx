@@ -237,8 +237,13 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = React.memo((props) => {
   const titleArr = useMemo(() => {
     if (!title) return undefined;
     if (typeof title === 'string') return [compile(title)];
-    if (Array.isArray(title)) return compile(title);
-  }, [title]);
+    if (Array.isArray(title)) {
+      if (title.length === 1 && fieldSchema['x-template-title']) {
+        return compile([title[0], fieldSchema['x-template-title']]);
+      }
+      return compile(title);
+    }
+  }, [title, fieldSchema]);
 
   const { render: schemaSettingsRender, exists: schemaSettingsExists } = useSchemaSettingsRender(
     settings || fieldSchema?.['x-settings'],
