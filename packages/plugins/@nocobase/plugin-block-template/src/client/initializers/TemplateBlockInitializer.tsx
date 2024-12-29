@@ -211,7 +211,7 @@ export const TemplateBlockInitializer = () => {
   return (
     <SchemaInitializerItem
       closeInitializerMenuWhenClick={true}
-      title={'Templates'}
+      title={'{{t("Templates")}}'}
       icon={<CopyOutlined />}
       items={menuItems}
       name={'templates'}

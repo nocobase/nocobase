@@ -8,7 +8,6 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import { tStr } from './locale';
 import { TemplateBlockInitializer, addBlockInitializers } from './initializers';
 import { BlockNameLowercase, NAMESPACE } from './constants';
 import { BlockTemplateList, BlockTemplatePage } from './components';
@@ -67,7 +66,7 @@ export class PluginBlockTemplateClient extends Plugin {
     this.app.schemaInitializerManager.addItem('page:addBlock', 'templates', {
       name: BlockNameLowercase,
       Component: 'TemplateBlockInitializer',
-      title: tStr('Templates'),
+      title: '{{t("Templates")}}',
       icon: 'TableOutlined',
       sort: -1,
       wrap: (t) => t,
@@ -80,7 +79,20 @@ export class PluginBlockTemplateClient extends Plugin {
     this.app.schemaInitializerManager.addItem('popup:common:addBlock', 'templates', {
       name: BlockNameLowercase,
       Component: 'TemplateBlockInitializer',
-      title: tStr('Templates'),
+      title: '{{t("Templates")}}',
+      icon: 'TableOutlined',
+      sort: -1,
+      wrap: (t) => t,
+      useVisible: () => {
+        // check if url contains admin/settings/block-templates
+        return !window.location.pathname.includes('admin/settings/block-templates');
+      },
+    });
+
+    this.app.schemaInitializerManager.addItem('popup:addNew:addBlock', 'templates', {
+      name: BlockNameLowercase,
+      Component: 'TemplateBlockInitializer',
+      title: '{{t("Templates")}}',
       icon: 'TableOutlined',
       sort: -1,
       wrap: (t) => t,
@@ -117,8 +129,6 @@ export class PluginBlockTemplateClient extends Plugin {
       isTopLevel: false,
       Component: BlockTemplatePage,
     });
-
-    // TODO: add blocks in 'mobile:addBlock' and 'popup:common:addBlock'
   }
 
   #fetchAllTemplates(templateUids, schema) {
