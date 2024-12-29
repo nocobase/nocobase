@@ -120,9 +120,6 @@ export class Application {
 
   setWsAuthorized(authorized: boolean) {
     this.wsAuthorized = authorized;
-    if (authorized) {
-      this.eventBus.dispatchEvent(new CustomEvent('ws:message:authorized'));
-    }
   }
 
   constructor(protected options: ApplicationOptions = {}) {
