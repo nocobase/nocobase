@@ -72,7 +72,7 @@ export const BlockTemplatePage = () => {
           ]}
         />
       </div>
-      <div style={{ margin: '100px auto' }}>
+      <div style={{ margin: '48px auto' }}>
         <RemoteSchemaComponent onSuccess={refreshTemplateSchemaCache} onlyRenderProperties={true} uid={schemaUid} />
       </div>
     </div>
