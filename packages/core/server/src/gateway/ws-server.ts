@@ -214,8 +214,19 @@ export class WSServer extends EventEmitter {
   }
 
   sendToConnectionsByTag(tagName: string, tagValue: string, sendMessage: object) {
+    this.sendToConnectionsByTags([{ tagName, tagValue }], sendMessage);
+  }
+
+  /**
+   * Send message to clients that match all the given tag conditions
+   * @param tags Array of tag conditions, each condition is an object with tagName and tagValue
+   * @param sendMessage Message to be sent
+   */
+  sendToConnectionsByTags(tags: Array<{ tagName: string; tagValue: string }>, sendMessage: object) {
     this.loopThroughConnections((client: WebSocketClient) => {
-      if (client.tags.has(`${tagName}#${tagValue}`)) {
+      const allTagsMatch = tags.every(({ tagName, tagValue }) => client.tags.has(`${tagName}#${tagValue}`));
+
+      if (allTagsMatch) {
         this.sendMessageToConnection(client, sendMessage);
       }
     });

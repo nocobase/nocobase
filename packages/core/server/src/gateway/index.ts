@@ -442,11 +442,27 @@ export class Gateway extends EventEmitter {
         });
 
         app.on('ws:sendToTag', ({ tagKey, tagValue, message }) => {
-          this.wsServer.sendToConnectionsByTag(tagKey, tagValue, message);
+          this.wsServer.sendToConnectionsByTags(
+            [
+              { tagName: tagKey, tagValue },
+              { tagName: 'app', tagValue: app.name },
+            ],
+            message,
+          );
+        });
+
+        app.on('ws:sendToTags', ({ tags, message }) => {
+          this.wsServer.sendToConnectionsByTags(tags, message);
         });
 
         app.on('ws:authorized', ({ clientId, userId }) => {
-          this.wsServer.sendToConnectionsByTag('userId', userId, { type: 'authorized' });
+          this.wsServer.sendToConnectionsByTags(
+            [
+              { tagName: 'userId', tagValue: userId },
+              { tagName: 'app', tagValue: app.name },
+            ],
+            { type: 'authorized' },
+          );
         });
       }
 
