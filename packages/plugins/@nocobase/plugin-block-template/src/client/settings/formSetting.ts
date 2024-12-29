@@ -114,10 +114,13 @@ export const formSettingItem: SchemaSettingsItemType = {
     const fieldSchema = useFieldSchema();
     const decorator = fieldSchema['x-decorator'];
     const templateBlock = _.get(fieldSchema, 'x-template-uid');
+    const currentPopupRecord = useCurrentPopupRecord();
+    const currentCollectionName =
+      fieldSchema['x-decorator-props']?.collection || fieldSchema['x-decorator-props']?.association;
     if (!templateBlock) {
       return false;
     }
-    if (decorator === 'FormBlockProvider') {
+    if (decorator === 'FormBlockProvider' && currentPopupRecord?.collection?.name === currentCollectionName) {
       return true;
     }
     return false;

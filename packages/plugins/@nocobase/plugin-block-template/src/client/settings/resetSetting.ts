@@ -14,7 +14,7 @@ import { tStr } from '../locale';
 
 export const resetSettingItem = {
   name: 'template-reset',
-  title: tStr('Reset to template'),
+  title: tStr('Revert to template'),
   Component: ResetSetting,
   useVisible() {
     const fieldSchema = useFieldSchema();

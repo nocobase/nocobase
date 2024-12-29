@@ -8,7 +8,6 @@
  */
 
 import { SchemaSettingsItem, useAPIClient, useDesignable } from '@nocobase/client';
-import { useTranslation } from 'react-i18next';
 import { useFieldSchema, useField } from '@formily/react';
 import { App } from 'antd';
 import React from 'react';
@@ -16,6 +15,7 @@ import _ from 'lodash';
 import { convertTplBlock } from '../initializers/TemplateBlockInitializer';
 import { Schema } from '@formily/json-schema';
 import { uid } from '@nocobase/utils/client';
+import { useT } from '../locale';
 
 const cleanSchema = (schema) => {
   const s = { ...schema, 'x-component-props': {}, 'x-decorator-props': {} };
@@ -64,7 +64,7 @@ const findParentRootTemplateSchema = (fieldSchema) => {
 export const ResetSetting = () => {
   // const { dn, template } = useSchemaSettings();
   const { dn, reset, refresh } = useDesignable();
-  const { t } = useTranslation();
+  const t = useT();
   const api = useAPIClient();
   // const compile = useCompile();
   const fieldSchema = useFieldSchema();
@@ -74,7 +74,7 @@ export const ResetSetting = () => {
 
   return (
     <SchemaSettingsItem
-      title="Revert to template"
+      title={t('Revert to template')}
       onClick={() => {
         modal.confirm({
           title: t('Revert to template'),
