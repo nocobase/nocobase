@@ -503,6 +503,35 @@ const useSideMenuRef = () => {
 const MenuItemDesignerContext = createContext(null);
 MenuItemDesignerContext.displayName = 'MenuItemDesignerContext';
 
+const useMenuDragEnd = () => {
+  const { moveRoute } = useNocoBaseRoutes();
+
+  const onDragEnd = useCallback(
+    (event) => {
+      const { active, over } = event;
+      const activeSchema = active?.data?.current?.schema;
+      const overSchema = over?.data?.current?.schema;
+
+      if (!activeSchema || !overSchema) {
+        return;
+      }
+
+      const fromIndex = activeSchema.__route__.sort;
+      const toIndex = overSchema.__route__.sort;
+
+      moveRoute({
+        sourceId: activeSchema.__route__.id,
+        targetId: overSchema.__route__.id,
+        sortField: 'sort',
+        method: fromIndex > toIndex ? 'prepend' : 'insertAfter',
+      });
+    },
+    [moveRoute],
+  );
+
+  return { onDragEnd };
+};
+
 export const Menu: ComposedMenu = React.memo((props) => {
   const {
     onSelect,
@@ -582,9 +611,10 @@ export const Menu: ComposedMenu = React.memo((props) => {
   }, [defaultSelectedKeys]);
 
   const ctx = useContext(SchemaComponentContext);
+  const { onDragEnd } = useMenuDragEnd();
 
   return (
-    <DndContext>
+    <DndContext onDragEnd={onDragEnd}>
       <MenuItemDesignerContext.Provider value={Designer}>
         <MenuModeContext.Provider value={mode}>
           <HeaderMenu
