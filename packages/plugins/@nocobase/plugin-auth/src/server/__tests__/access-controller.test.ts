@@ -10,7 +10,6 @@
 import { BaseAuth } from '@nocobase/auth';
 import { Database, Model } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
-import res from 'packages/plugins/@nocobase/plugin-theme-editor/src/client/antd-token-previewer/icons/Arrow';
 function sleep(ms) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);

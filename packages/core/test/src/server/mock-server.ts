@@ -72,6 +72,7 @@ interface Resource {
 
 interface ExtendedAgent extends SuperAgentTest {
   login: (user: any, roleName?: string) => ExtendedAgent;
+  signIn: (options: { userId: string; expiresIn?: string }) => ExtendedAgent;
   loginUsingId: (userId: number, roleName?: string) => ExtendedAgent;
   resource: (name: string, resourceOf?: any) => Resource;
 }
@@ -119,6 +120,7 @@ export class MockServer extends Application {
   }
 
   agent(callback?): ExtendedAgent {
+    const self = this;
     const agent = supertest.agent(callback || this.callback());
     const prefix = this.resourcer.options.prefix;
     const loginedAgent = agent
@@ -138,7 +140,7 @@ export class MockServer extends Application {
     const proxy = new Proxy(loginedAgent, {
       get(target, method: string, receiver) {
         if (['login', 'loginUsingId'].includes(method)) {
-          return (userOrId: any, roleName?: string) => {
+          return (userOrId: any, roleName?: string, jwtOptions?: { temp: boolean }) => {
             return proxy
               .auth(
                 jwt.sign(
@@ -149,6 +151,29 @@ export class MockServer extends Application {
                   process.env.APP_KEY,
                   {
                     expiresIn: '1d',
+                  },
+                ),
+                { type: 'bearer' },
+              )
+              .set('X-Authenticator', 'basic');
+          };
+        }
+        if (method === 'signIn') {
+          return async (options: { userId: string; expiresIn?: string }) => {
+            const accessId = await self.authManager.accessController.addAccess();
+            const expiresIn =
+              options.expiresIn || (await self.authManager.accessController.getConfig()).tokenExpirationTime;
+            return proxy
+              .auth(
+                jwt.sign(
+                  {
+                    userId: options.userId,
+                    temp: true,
+                  },
+                  process.env.APP_KEY,
+                  {
+                    expiresIn,
+                    jwtid: accessId,
                   },
                 ),
                 { type: 'bearer' },
