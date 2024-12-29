@@ -733,8 +733,74 @@ const createPage = async (options?: CreatePageOptions) => {
   };
   const state = await api.storageState();
   const headers = getHeaders(state);
-  const pageUid = pageUidFromOptions || uid();
-  const gridName = uid();
+  const menuSchemaUid = pageUidFromOptions || uid();
+  const pageSchemaUid = uid();
+  const tabSchemaUid = uid();
+  const tabSchemaName = uid();
+  const title = name || menuSchemaUid;
+
+  if (type === 'group') {
+    const result = await api.post('/api/desktopRoutes:create', {
+      headers,
+      data: {
+        type: 'group',
+        title,
+        schemaUid: menuSchemaUid,
+        hideInMenu: false,
+      },
+    });
+
+    if (!result.ok()) {
+      throw new Error(await result.text());
+    }
+  }
+
+  if (type === 'page') {
+    const result = await api.post('/api/desktopRoutes:create', {
+      headers,
+      data: {
+        type: 'page',
+        title,
+        schemaUid: menuSchemaUid,
+        pageSchemaUid: pageSchema['x-uid'] || pageSchemaUid,
+        hideInMenu: false,
+        children: pageSchema
+          ? schemaToRoutes(pageSchema)
+          : [
+              {
+                type: 'tabs',
+                title: '{{t("Unnamed")}}',
+                schemaUid: tabSchemaUid,
+                tabSchemaName,
+                hideInMenu: false,
+              },
+            ],
+      },
+    });
+
+    if (!result.ok()) {
+      throw new Error(await result.text());
+    }
+  }
+
+  if (type === 'link') {
+    const result = await api.post('/api/desktopRoutes:create', {
+      headers,
+      data: {
+        type: 'link',
+        title,
+        schemaUid: menuSchemaUid,
+        hideInMenu: false,
+        options: {
+          href: url,
+        },
+      },
+    });
+
+    if (!result.ok()) {
+      throw new Error(await result.text());
+    }
+  }
 
   const result = await api.post(`/api/uiSchemas:insertAdjacent/nocobase-admin-menu?position=beforeEnd`, {
     headers,
@@ -743,13 +809,9 @@ const createPage = async (options?: CreatePageOptions) => {
         _isJSONSchemaObject: true,
         version: '2.0',
         type: 'void',
-        title: name || pageUid,
+        title,
         ...typeToSchema[type],
         'x-decorator': 'ACLMenuItemProvider',
-        'x-server-hooks': [
-          { type: 'onSelfCreate', method: 'bindMenuToRole' },
-          { type: 'onSelfSave', method: 'extractTextToLocale' },
-        ],
         properties: {
           page: (keepUid ? pageSchema : updateUidOfPageSchema(pageSchema)) || {
             _isJSONSchemaObject: true,
@@ -758,22 +820,22 @@ const createPage = async (options?: CreatePageOptions) => {
             'x-component': 'Page',
             'x-async': true,
             properties: {
-              [gridName]: {
+              [tabSchemaName]: {
                 _isJSONSchemaObject: true,
                 version: '2.0',
                 type: 'void',
                 'x-component': 'Grid',
                 'x-initializer': 'page:addBlock',
-                'x-uid': uid(),
-                name: gridName,
+                'x-uid': tabSchemaUid,
+                name: tabSchemaName,
               },
             },
-            'x-uid': uid(),
+            'x-uid': pageSchemaUid,
             name: 'page',
           },
         },
         name: uid(),
-        'x-uid': pageUid,
+        'x-uid': menuSchemaUid,
       },
       wrap: null,
     },
@@ -783,7 +845,7 @@ const createPage = async (options?: CreatePageOptions) => {
     throw new Error(await result.text());
   }
 
-  return pageUid;
+  return menuSchemaUid;
 };
 
 /**
@@ -1407,4 +1469,28 @@ export async function expectSupportedVariables(page: Page, variables: string[]) 
   for (const name of variables) {
     await expect(page.getByRole('menuitemcheckbox', { name })).toBeVisible();
   }
+}
+
+function schemaToRoutes(schema: any) {
+  const schemaKeys = Object.keys(schema.properties || {});
+
+  if (schemaKeys.length === 0) {
+    return [];
+  }
+
+  const result = schemaKeys.map((key: string) => {
+    const item = schema.properties[key];
+
+    // Tab
+    return {
+      type: 'tabs',
+      title: item.title || '{{t("Unnamed")}}',
+      icon: item['x-component-props']?.icon,
+      schemaUid: item['x-uid'],
+      tabSchemaName: key,
+      hideInMenu: false,
+    };
+  });
+
+  return result;
 }
