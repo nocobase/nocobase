@@ -139,8 +139,8 @@ export const formSettingItem: SchemaSettingsItemType = {
     const currentPopupRecord = useCurrentPopupRecord();
     const cm = useCollectionManager();
     const currentOption =
-      fieldSchema['x-use-decorator-props'] === 'useEditFormBlockDecoratorProps' ? 'Edit' : 'Add new';
-    const options = ['Add new', 'Edit'];
+      fieldSchema['x-use-decorator-props'] === 'useEditFormBlockDecoratorProps' ? t('Edit') : t('Add new');
+    const options = [t('Add new'), t('Edit')];
 
     return {
       title: t('Form type'),

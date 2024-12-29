@@ -6,6 +6,8 @@
   "Title": "Title",
   "Description": "Description",
   "Configure": "Configure",
+  "None": "None",
+  "Current": "Current record",
   "Revert to template": "Revert to template",
   "Are you sure you want to revert all changes from the template?": "Are you sure you want to revert all changes from the template?",
   "Templates": "Templates",

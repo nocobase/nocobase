@@ -31,16 +31,17 @@ async function schemaPatch(
     collectionName: string;
     dataSource: string;
     option: string;
+    t: (key: string) => string;
   },
 ) {
-  const { decoratorName, collectionName, dataSource, option, api } = options;
+  const { decoratorName, collectionName, dataSource, option, api, t } = options;
   const schema = {
     ['x-uid']: currentSchema['x-uid'],
   };
 
   if (decoratorName === 'DetailsBlockProvider') {
     const comKey = Object.keys(currentSchema.properties)[0];
-    if (option === 'current') {
+    if (option === t('Current')) {
       schema['x-decorator-props'] = {
         action: 'get',
         collection: collectionName,
@@ -77,7 +78,7 @@ async function schemaPatch(
       schema['x-acl-action'] = currentSchema['x-acl-action'].replace(':get', ':list');
       schema['x-settings'] = 'blockSettings:detailsWithPagination';
       schema['x-use-decorator-props'] = 'useDetailsWithPaginationDecoratorProps';
-      if (option !== 'none') {
+      if (option !== t('None')) {
         schema['x-decorator-props']['collection'] = null;
         schema['x-decorator-props']['association'] = option;
       }
@@ -92,7 +93,7 @@ async function schemaPatch(
       },
     });
   } else {
-    if (option === 'current') {
+    if (option === t('Current')) {
       schema['x-decorator-props'] = {
         action: 'get',
         collection: collectionName,
@@ -106,7 +107,7 @@ async function schemaPatch(
         association: null,
         dataSource: currentSchema['x-decorator-props'].dataSource,
       };
-      if (option !== 'none') {
+      if (option !== t('None')) {
         schema['x-decorator-props']['collection'] = null;
         schema['x-decorator-props']['association'] = option;
       }
@@ -122,14 +123,15 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
     const fieldSchema = useFieldSchema();
     const currentCollection = useCollection();
     const variables = useLocalVariables();
+    const t = useT();
     const nRecord = variables.find((v) => v.name === '$nRecord');
     const currentPopupRecord = useCurrentPopupRecord();
     const decorator = fieldSchema['x-decorator'];
     const decoratorProps = fieldSchema['x-decorator-props'];
-    const options = ['none'];
+    const options = [t('None')];
     const currentCollectionName = decoratorProps?.collection || decoratorProps?.association;
     if (decorator === 'DetailsBlockProvider' && currentPopupRecord?.collection?.name === currentCollectionName) {
-      options.push('current');
+      options.push(t('Current'));
     }
 
     const currentPopupRecordFields = currentPopupRecord?.collection?.getAllFields?.();
@@ -158,8 +160,8 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
     const currentCollection = useCollection();
     const currentPopupRecord = useCurrentPopupRecord();
     const cm = useCollectionManager();
-    let currentOption = 'none';
-    const options = ['none'];
+    let currentOption = t('None');
+    const options = [t('None')];
     // const parentPopupRecord = useParentPopupRecord();
     const variables = useLocalVariables();
     const api = useAPIClient();
@@ -168,9 +170,9 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
     const decoratorProps = fieldSchema['x-decorator-props'];
     const currentCollectionName = decoratorProps?.collection || decoratorProps?.association;
     if (decorator === 'DetailsBlockProvider' && currentPopupRecord?.collection?.name === currentCollectionName) {
-      options.push('current');
+      options.push(t('Current'));
       if (decoratorProps.action === 'get') {
-        currentOption = 'current';
+        currentOption = t('Current');
       }
     }
 
@@ -198,6 +200,7 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
           collectionName: currentCollectionName,
           dataSource: decoratorProps.dataSource,
           option,
+          t,
         });
         _.merge(fieldSchema, schema);
         field.decoratorProps = {
