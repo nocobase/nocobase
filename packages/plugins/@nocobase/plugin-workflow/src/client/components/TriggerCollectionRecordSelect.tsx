@@ -9,10 +9,10 @@
 
 import React from 'react';
 
-import { parseCollectionName, RemoteSelect, useApp, Variable } from '@nocobase/client';
-import { WorkflowVariableWrapper } from '@nocobase/plugin-workflow/client';
+import { parseCollectionName, RemoteSelect, useApp } from '@nocobase/client';
 
 import { useFlowContext } from '../FlowContext';
+import { WorkflowVariableWrapper } from '../variable';
 
 export function TriggerCollectionRecordSelect(props) {
   const { workflow } = useFlowContext();
