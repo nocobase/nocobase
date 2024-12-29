@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback } from 'react';
+import React, { createContext, useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { uniqBy } from 'lodash';
 
-import { Variable, parseCollectionName, useApp, useCompile, usePlugin } from '@nocobase/client';
+import { Variable, parseCollectionName, useApp, useCompile, usePlugin, useVariableScope } from '@nocobase/client';
 
 import { useFlowContext } from './FlowContext';
 import { NAMESPACE, lang } from './locale';
@@ -120,6 +120,9 @@ export const systemOptions = {
   },
 };
 
+/**
+ * @deprecated
+ */
 export const BaseTypeSets = {
   boolean: new Set(['checkbox']),
   number: new Set(['integer', 'number', 'percent']),
@@ -401,4 +404,35 @@ export function WorkflowVariableRawTextArea({ variableOptions, ...props }): JSX.
 export function WorkflowVariableJSON({ variableOptions, ...props }): JSX.Element {
   const scope = useWorkflowVariableOptions(variableOptions);
   return <Variable.JSON scope={scope} {...props} />;
+}
+
+/**
+ * @experimental
+ */
+export function WorkflowVariableWrapper(props): JSX.Element {
+  const { render, variableOptions, changeOnSelect, nullable, ...others } = props;
+  const hideVariable = useHideVariable();
+  const scope = useWorkflowVariableOptions(variableOptions);
+
+  if (!hideVariable && scope?.length > 0) {
+    return (
+      <Variable.Input scope={scope} changeOnSelect={changeOnSelect} nullable={nullable} {...others}>
+        {render?.()}
+      </Variable.Input>
+    );
+  }
+
+  return render?.(others);
+}
+
+/**
+ * @experimental
+ */
+export const HideVariableContext = createContext(false);
+
+/**
+ * @experimental
+ */
+export function useHideVariable() {
+  return useContext(HideVariableContext);
 }
