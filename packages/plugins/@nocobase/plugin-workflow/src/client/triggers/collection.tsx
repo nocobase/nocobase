@@ -197,7 +197,7 @@ export default class extends Trigger {
     data: {
       type: 'object',
       title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
-      description: `{{t("Choose a record of the collection to trigger.", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("Choose a record or primary key of a record in the collection to trigger.", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'TriggerCollectionRecordSelect',
       default: null,
