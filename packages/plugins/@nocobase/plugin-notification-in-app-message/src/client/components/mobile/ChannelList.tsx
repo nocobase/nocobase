@@ -15,7 +15,11 @@ import { useNavigate } from 'react-router-dom';
 import { dayjs } from '@nocobase/utils/client';
 import InfiniteScrollContent from './InfiniteScrollContent';
 import { channelListObs, channelStatusFilterObs, showChannelLoadingMoreObs, fetchChannels } from '../../observables';
+import { Schema } from '@formily/react';
+import { useApp } from '@nocobase/client';
+
 const InternalChannelList = () => {
+  const app = useApp();
   const navigate = useNavigate();
   const channels = channelListObs.value;
   const listRef = useRef<ListRef>(null);
@@ -57,6 +61,7 @@ const InternalChannelList = () => {
         }}
       >
         {channelListObs.value.map((item) => {
+          const channelTitle = Schema.compile(item.title, { t: app.i18n.t });
           return (
             <List.Item
               key={item.name}
@@ -84,7 +89,7 @@ const InternalChannelList = () => {
                   alignItems: 'center',
                 }}
               >
-                <div> {item.title}</div>
+                <div> {channelTitle}</div>
                 <div style={{ color: 'var(--adm-color-weak)', fontSize: 'var(--adm-font-size-main)' }}>
                   {dayjs(item.latestMsgReceiveTimestamp).fromNow(true)}
                 </div>

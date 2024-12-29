@@ -25,6 +25,7 @@ export class PluginAuthServer extends Plugin {
   cache: Cache;
 
   afterAdd() {}
+
   async beforeLoad() {
     this.app.db.registerModels({ AuthModel });
   }
@@ -35,8 +36,7 @@ export class PluginAuthServer extends Plugin {
       prefix: 'auth',
       store: 'memory',
     });
-
-    // Set up auth manager and register preset auth type
+    // Set up auth manager
     const storer = new Storer({
       db: this.db,
       cache: this.cache,
@@ -47,7 +47,7 @@ export class PluginAuthServer extends Plugin {
       // If blacklist service is not set, should configure default blacklist service
       this.app.authManager.setTokenBlacklistService(new TokenBlacklistService(this));
     }
-
+    // register preset auth type
     this.app.authManager.registerTypes(presetAuthType, {
       auth: BasicAuth,
       title: tval('Password', { ns: namespace }),

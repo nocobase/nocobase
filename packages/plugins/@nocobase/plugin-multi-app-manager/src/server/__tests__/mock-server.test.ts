@@ -34,6 +34,10 @@ describe('sub app', async () => {
   });
 
   afterEach(async () => {
+    const subApp = await AppSupervisor.getInstance().getApp('test_sub');
+    await subApp.db.clean({ drop: true });
+    await subApp.destroy();
+    await app.db.clean({ drop: true });
     await app.destroy();
   });
 
