@@ -8,7 +8,6 @@
  */
 
 import { SchemaInitializerItemType, parseCollectionName, useCollectionDataSource, useCompile } from '@nocobase/client';
-import { WorkflowVariableWrapper } from '@nocobase/plugin-workflow/client';
 
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
 import { NAMESPACE, lang } from '../../locale';
@@ -18,6 +17,7 @@ import { ScheduleConfig } from './ScheduleConfig';
 import { SCHEDULE_MODE } from './constants';
 import { TriggerScheduleConfig } from './TriggerScheduleConfig';
 import { ScheduleModes } from './ScheduleModes';
+import { WorkflowVariableWrapper } from '../../variable';
 import { TriggerCollectionRecordSelect } from '../../components/TriggerCollectionRecordSelect';
 
 function useVariables(config, opts) {

@@ -11,11 +11,11 @@ import React from 'react';
 
 import { parseCollectionName, RemoteSelect, useApp } from '@nocobase/client';
 
-import { useFlowContext } from '../FlowContext';
+import { useCurrentWorkflowContext } from '../FlowContext';
 import { WorkflowVariableWrapper } from '../variable';
 
 export function TriggerCollectionRecordSelect(props) {
-  const { workflow } = useFlowContext();
+  const workflow = useCurrentWorkflowContext();
   const app = useApp();
 
   const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
