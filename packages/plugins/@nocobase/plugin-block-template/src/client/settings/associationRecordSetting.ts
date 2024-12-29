@@ -139,7 +139,7 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
       ?.filter((field) => ['linkTo', 'subTable', 'o2m', 'm2m', 'obo', 'oho', 'o2o', 'm2o'].includes(field.interface))
       .filter((field) => field.target === currentCollectionName);
 
-    if (associationFields?.length) {
+    if (associationFields?.length && currentPopupRecord?.value) {
       const associationOptions = associationFields.map((field) => `${field.collectionName}.${field.name}`);
       options.push(...associationOptions);
     }
