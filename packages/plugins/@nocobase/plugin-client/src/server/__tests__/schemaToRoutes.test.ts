@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { schemaToRoutes } from '../migrations/20241229122004-transform-menu-schema-to-routes';
+import { schemaToRoutes } from '../migrations/20241229122006-transform-menu-schema-to-routes';
 
 describe('schemaToRoutes', () => {
   it('should return empty array for empty schema', async () => {
