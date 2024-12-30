@@ -9,7 +9,7 @@
 
 import { createForm, Form, onFormValuesChange } from '@formily/core';
 import { uid } from '@formily/shared';
-import { css, SchemaComponent, useAPIClient, useRequest } from '@nocobase/client';
+import { css, SchemaComponent, useAPIClient, useCompile, useRequest } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Checkbox, message, Table } from 'antd';
 import _, { uniq } from 'lodash';
@@ -101,14 +101,14 @@ const style = css`
   }
 `;
 
-const translateTitle = (menus: any[], t) => {
+const translateTitle = (menus: any[], t, compile) => {
   return menus.map((menu) => {
-    const title = t(menu.title);
+    const title = menu.title.match(/^\s*\{\{\s*.+?\s*\}\}\s*$/) ? compile(menu.title) : t(menu.title);
     if (menu.children) {
       return {
         ...menu,
         title,
-        children: translateTitle(menu.children, t),
+        children: translateTitle(menu.children, t, compile),
       };
     }
     return {
@@ -264,6 +264,9 @@ export const MenuPermissions: React.FC<{
       },
     });
   }, [role, update]);
+
+  const compile = useCompile();
+
   return (
     <>
       <SchemaComponent
@@ -326,7 +329,7 @@ export const MenuPermissions: React.FC<{
             },
           },
         ]}
-        dataSource={translateTitle(items, t)}
+        dataSource={translateTitle(items, t, compile)}
       />
     </>
   );
