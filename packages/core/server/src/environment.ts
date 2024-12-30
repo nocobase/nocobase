@@ -10,31 +10,27 @@
 import { parse } from '@nocobase/utils';
 
 export class Environment {
-  private data = {};
+  private vars = {};
 
   setVariable(key: string, value: string) {
-    this.data[key] = value;
+    this.vars[key] = value;
   }
 
   removeVariable(key: string) {
-    delete this.data[key];
+    delete this.vars[key];
   }
 
-  // setSecret(key: string, value: string) {
-  //   this.data.secrets[key] = value;
-  // }
-
-  // removeSecret(key: string) {
-  //   delete this.data.secrets[key];
-  // }
-
   getVariablesAndSecrets() {
-    return this.data;
+    return this.vars;
+  }
+
+  getVariables() {
+    return this.vars;
   }
 
   renderJsonTemplate(template: any) {
     return parse(template)({
-      $env: this.data,
+      $env: this.vars,
     });
   }
 }

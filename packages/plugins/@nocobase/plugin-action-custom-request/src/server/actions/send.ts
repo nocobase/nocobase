@@ -154,7 +154,7 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
     currentTime: new Date().toISOString(),
     $nToken: ctx.getBearerToken(),
     $nForm,
-    $env: ctx.app.environment.getVariablesAndSecrets(),
+    $env: ctx.app.environment.getVariables(),
   };
 
   const axiosRequestConfig = {
