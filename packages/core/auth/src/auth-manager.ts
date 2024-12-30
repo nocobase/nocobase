@@ -9,6 +9,7 @@
 
 import { Context, Next } from '@nocobase/actions';
 import { Registry } from '@nocobase/utils';
+import { ACL } from '@nocobase/acl';
 import { Auth, AuthExtend } from './auth';
 import { JwtOptions, JwtService } from './base/jwt-service';
 import { ITokenBlacklistService } from './base/token-blacklist-service';
@@ -154,7 +155,8 @@ export class AuthManager {
           });
         }
         const { resourceName, actionName } = ctx.action;
-        const isPublicAction = ctx.dataSource.acl.isPublicAction(resourceName, actionName);
+        const acl = ctx.dataSource.acl as ACL;
+        const isPublicAction = await acl.allowManager.isPublic(resourceName, actionName, ctx);
         const name = ctx.get(self.options.authKey) || self.options.default;
 
         if (!isPublicAction) {

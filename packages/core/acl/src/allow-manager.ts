@@ -47,24 +47,18 @@ export class AllowManager {
     this.skipActions.set(resourceName, actionMap);
   }
 
-  getAllowedConditions(
-    resourceName: string,
-    actionName: string,
-  ): Array<{ condition: ConditionFunc | true; rawCondition: ConditionFunc | string | boolean }> {
-    const fetchResourceSteps: string[] = ['*', resourceName];
+  getAllowedConditions(resourceName: string, actionName: string): Array<ConditionFunc | true> {
+    const fetchActionSteps: string[] = ['*', resourceName];
 
     const results = [];
 
-    for (const fetchResourceStep of fetchResourceSteps) {
-      const resource = this.skipActions.get(fetchResourceStep);
+    for (const fetchActionStep of fetchActionSteps) {
+      const resource = this.skipActions.get(fetchActionStep);
       if (resource) {
         for (const fetchActionStep of ['*', actionName]) {
           const condition = resource.get(fetchActionStep);
           if (condition) {
-            results.push({
-              condition: typeof condition === 'string' ? this.registeredCondition.get(condition) : condition,
-              rawCondition: condition,
-            });
+            results.push(typeof condition === 'string' ? this.registeredCondition.get(condition) : condition);
           }
         }
       }
@@ -76,13 +70,12 @@ export class AllowManager {
   registerAllowCondition(name: string, condition: ConditionFunc) {
     this.registeredCondition.set(name, condition);
   }
-  isPublic(resourceName: string, actionName: string) {
-    const conditions = this.getAllowedConditions(resourceName, actionName);
-    if (conditions.some((item) => item.rawCondition === true || item.rawCondition === 'public')) return true;
-    else return false;
+  async isPublic(resourceName: string, actionName: string, ctx: any) {
+    return this.isAllowed(resourceName, actionName, { ...(ctx ?? {}), state: { currentUser: null } });
   }
+
   async isAllowed(resourceName: string, actionName: string, ctx: any) {
-    const skippedConditions = this.getAllowedConditions(resourceName, actionName).map((item) => item.condition);
+    const skippedConditions = this.getAllowedConditions(resourceName, actionName);
 
     for (const skippedCondition of skippedConditions) {
       if (skippedCondition) {
