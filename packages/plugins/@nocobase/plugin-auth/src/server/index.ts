@@ -9,5 +9,6 @@
 
 export { BasicAuth } from './basic-auth';
 export { AuthModel } from './model/authenticator';
+export { presetAuthType } from '../preset';
 
 export { default } from './plugin';

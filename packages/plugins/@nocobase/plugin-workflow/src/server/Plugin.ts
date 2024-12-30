@@ -47,6 +47,9 @@ export type EventOptions = {
   context?: any;
   deferred?: boolean;
   manually?: boolean;
+  force?: boolean;
+  stack?: Array<ID>;
+  onTriggerFail?: Function;
   [key: string]: any;
 } & Transactionable;
 
@@ -371,7 +374,7 @@ export default class PluginWorkflowServer extends Plugin {
       logger.debug(`ignored event data:`, context);
       return;
     }
-    if (!options.manually && !workflow.enabled) {
+    if (!options.force && !options.manually && !workflow.enabled) {
       logger.warn(`workflow ${workflow.id} is not enabled, event will be ignored`);
       return;
     }
@@ -448,6 +451,33 @@ export default class PluginWorkflowServer extends Plugin {
     return new Processor(execution, { ...options, plugin: this });
   }
 
+  private async validateEvent(workflow: WorkflowModel, context: any, options: EventOptions) {
+    const trigger = this.triggers.get(workflow.type);
+    const triggerValid = await trigger.validateEvent(workflow, context, options);
+    if (!triggerValid) {
+      return false;
+    }
+
+    const { stack } = options;
+    let valid = true;
+    if (stack?.length > 0) {
+      const existed = await workflow.countExecutions({
+        where: {
+          id: stack,
+        },
+        transaction: options.transaction,
+      });
+
+      if (existed) {
+        this.getLogger(workflow.id).warn(
+          `workflow ${workflow.id} has already been triggered in stacks executions (${stack}), and newly triggering will be skipped.`,
+        );
+
+        valid = false;
+      }
+    }
+    return valid;
+  }
   private async createExecution(
     workflow: WorkflowModel,
     context,
@@ -456,13 +486,13 @@ export default class PluginWorkflowServer extends Plugin {
     const { deferred } = options;
     const transaction = await this.useDataSourceTransaction('main', options.transaction, true);
     const sameTransaction = options.transaction === transaction;
-    const trigger = this.triggers.get(workflow.type);
-    const valid = await trigger.validateEvent(workflow, context, { ...options, transaction });
+    const valid = await this.validateEvent(workflow, context, { ...options, transaction });
     if (!valid) {
       if (!sameTransaction) {
         await transaction.commit();
       }
-      return null;
+      options.onTriggerFail?.(workflow, context, options);
+      return Promise.reject(new Error('event is not valid'));
     }
 
     let execution;
@@ -472,6 +502,7 @@ export default class PluginWorkflowServer extends Plugin {
           context,
           key: workflow.key,
           eventKey: options.eventKey ?? randomUUID(),
+          stack: options.stack,
           status: deferred ? EXECUTION_STATUS.STARTED : EXECUTION_STATUS.QUEUEING,
         },
         { transaction },
@@ -533,8 +564,8 @@ export default class PluginWorkflowServer extends Plugin {
       if (execution?.status === EXECUTION_STATUS.QUEUEING && !this.executing && !this.pending.length) {
         this.pending.push([execution]);
       }
-    } catch (err) {
-      logger.error(`failed to create execution: ${err.message}`, err);
+    } catch (error) {
+      logger.error(`failed to create execution:`, { error });
       // this.events.push(event); // NOTE: retry will cause infinite loop
     }
 
@@ -587,8 +618,11 @@ export default class PluginWorkflowServer extends Plugin {
         if (next) {
           await this.process(...next);
         }
+      } catch (err) {
+        console.error(err);
       } finally {
         this.executing = null;
+        this.getLogger('dispatcher').info(`execution dispatched finished`);
 
         if (next) {
           this.dispatch();
@@ -624,7 +658,7 @@ export default class PluginWorkflowServer extends Plugin {
     return processor;
   }
 
-  async execute(workflow: WorkflowModel, context: Context, options: EventOptions = {}) {
+  async execute(workflow: WorkflowModel, values, options: EventOptions = {}) {
     const trigger = this.triggers.get(workflow.type);
     if (!trigger) {
       throw new Error(`trigger type "${workflow.type}" of workflow ${workflow.id} is not registered`);
@@ -632,7 +666,7 @@ export default class PluginWorkflowServer extends Plugin {
     if (!trigger.execute) {
       throw new Error(`"execute" method of trigger ${workflow.type} is not implemented`);
     }
-    return trigger.execute(workflow, context, options);
+    return trigger.execute(workflow, values, options);
   }
 
   /**

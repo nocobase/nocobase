@@ -327,6 +327,12 @@ export const usersSchema: ISchema = {
                           'x-use-decorator-props': 'useEditFormProps',
                           title: '{{t("Change password")}}',
                           properties: {
+                            username: {
+                              'x-component': 'CollectionField',
+                              'x-component-props': {
+                                hidden: true,
+                              },
+                            },
                             password: {
                               'x-component': 'CollectionField',
                               'x-component-props': {

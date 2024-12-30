@@ -17,6 +17,7 @@ import { ScheduleConfig } from './ScheduleConfig';
 import { SCHEDULE_MODE } from './constants';
 import { TriggerScheduleConfig } from './TriggerScheduleConfig';
 import { ScheduleModes } from './ScheduleModes';
+import { WorkflowVariableWrapper } from '../../variable';
 import { TriggerCollectionRecordSelect } from '../../components/TriggerCollectionRecordSelect';
 
 function useVariables(config, opts) {
@@ -89,6 +90,7 @@ export default class extends Trigger {
     ScheduleConfig,
     TriggerScheduleConfig,
     TriggerCollectionRecordSelect,
+    WorkflowVariableWrapper,
   };
   useVariables = useVariables;
   useInitializers(config): SchemaInitializerItemType | null {

@@ -127,7 +127,8 @@
     "@nocobase/plugin-workflow-parallel",
     "@nocobase/plugin-workflow-request",
     "@nocobase/plugin-workflow-sql",
-    "@nocobase/plugin-workflow-notification"
+    "@nocobase/plugin-workflow-notification",
+    "@nocobase/plugin-theme-editor"
   ],
   "repository": {
     "type": "git",

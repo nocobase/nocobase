@@ -6,6 +6,7 @@
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
+    "@nocobase/lock-manager": "1.6.0-alpha.6",
     "bloom-filters": "^3.0.1",
     "cache-manager": "^5.2.4",
     "cache-manager-redis-yet": "^4.1.2"

@@ -90,6 +90,7 @@ export default defineCollection({
         type: 'string',
         title: '{{t("Password")}}',
         'x-component': 'Password',
+        'x-validator': { password: true },
       },
     },
     {
