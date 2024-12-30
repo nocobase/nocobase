@@ -12,6 +12,8 @@
 import { Migration } from '@nocobase/server';
 
 export default class extends Migration {
+  on = 'beforeLoad';
+
   async up() {
     const Field = this.context.db.getRepository('fields');
     const fields = await Field.find({
