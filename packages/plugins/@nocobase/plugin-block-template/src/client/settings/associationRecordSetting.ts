@@ -34,7 +34,7 @@ async function schemaPatch(
     t: (key: string) => string;
   },
 ) {
-  const { decoratorName, collectionName, dataSource, option, api, t } = options;
+  const { decoratorName, collectionName, option, api, t } = options;
   const schema = {
     ['x-uid']: currentSchema['x-uid'],
   };
@@ -124,7 +124,6 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
     const currentCollection = useCollection();
     const variables = useLocalVariables();
     const t = useT();
-    const nRecord = variables.find((v) => v.name === '$nRecord');
     const currentPopupRecord = useCurrentPopupRecord();
     const decorator = fieldSchema['x-decorator'];
     const decoratorProps = fieldSchema['x-decorator-props'];
@@ -139,7 +138,7 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
       ?.filter((field) => ['linkTo', 'subTable', 'o2m', 'm2m', 'obo', 'oho', 'o2o', 'm2o'].includes(field.interface))
       .filter((field) => field.target === currentCollectionName);
 
-    if (associationFields?.length && currentPopupRecord?.value) {
+    if (associationFields?.length && currentPopupRecord?.value && decorator !== 'FormBlockProvider') {
       const associationOptions = associationFields.map((field) => `${field.collectionName}.${field.name}`);
       options.push(...associationOptions);
     }
@@ -156,16 +155,12 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
     const t = useT();
     const fieldSchema = useFieldSchema();
     const field = useField();
-    const { dn, refresh } = useDesignable();
-    const currentCollection = useCollection();
+    const { refresh } = useDesignable();
     const currentPopupRecord = useCurrentPopupRecord();
-    const cm = useCollectionManager();
     let currentOption = t('None');
     const options = [t('None')];
-    // const parentPopupRecord = useParentPopupRecord();
     const variables = useLocalVariables();
     const api = useAPIClient();
-    const nRecord = variables.find((v) => v.name === '$nRecord');
     const decorator = fieldSchema['x-decorator'];
     const decoratorProps = fieldSchema['x-decorator-props'];
     const currentCollectionName = decoratorProps?.collection || decoratorProps?.association;
