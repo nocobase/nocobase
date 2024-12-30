@@ -214,8 +214,45 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
 
         // Handle x-index conflicts in properties
         if (keyName === 'properties') {
-          const targetKeys = Object.keys(objectValue || {});
           const sourceKeys = Object.keys(sourceValue);
+          const targetKeys = Object.keys(objectValue || {});
+          // remove duplicate configureActions keys and configureFields keys
+          if (/:configure.*Actions/.test(object['x-initializer'])) {
+            // 有哪些actions只能有一个？
+            // "x-settings": "actionSettings:bulkDelete"
+            // "x-settings": "actionSettings:filter"
+            // "x-settings": "actionSettings:refresh"
+            // "x-settings": "actionSettings:delete"
+            // "x-settings": "actionSettings:print"
+            // filterForm:configureActions && x-use-component-props: useFilterBlockActionProps
+            // filterForm:configureActions && x-use-component-props: useResetBlockActionProps
+            // actionSettings:stepsFormNext
+            // actionSettings:stepsFormPrevious
+            for (const skey of sourceKeys) {
+              if (sourceValue[skey]?.['x-settings']?.includes('actionSettings')) {
+                const actionName = sourceValue[skey]['x-settings'].split(':')[1];
+                const targetActionName = [
+                  'bulkDelete',
+                  'filter',
+                  'refresh',
+                  'delete',
+                  'print',
+                  'stepsFormNext',
+                  'stepsFormPrevious',
+                ].find((name) => name === actionName);
+                if (targetActionName) {
+                  const removedTargetKeys = _.remove(
+                    targetKeys,
+                    (key) => objectValue[key]?.['x-settings'] === `actionSettings:${targetActionName}`,
+                  );
+                  if (removedTargetKeys.length > 0) {
+                    sourceValue[skey]['x-removed-target-key'] = removedTargetKeys[0];
+                  }
+                }
+              }
+            }
+          }
+
           const keys = _.union(targetKeys, sourceKeys);
           const removedKeys = source['x-removed-properties'] || [];
           // Find keys that exist in targetKeys but not in sourceKeys, indicating new fields

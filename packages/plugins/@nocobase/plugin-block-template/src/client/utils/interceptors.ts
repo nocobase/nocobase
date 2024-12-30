@@ -31,7 +31,7 @@ export function registerTemplateBlockInterceptors(apiClient: any, templateBlocks
         if (!parent['x-removed-properties']) {
           parent['x-removed-properties'] = [];
         }
-        parent['x-removed-properties'].push(ret.key);
+        parent['x-removed-properties'].push(ret.schema?.['x-removed-target-key'] || ret.key);
         await apiClient.request({
           url: `/uiSchemas:patch`,
           method: 'post',
