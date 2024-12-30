@@ -1058,5 +1058,11 @@
   "Hide in menu": "在菜单中隐藏",
   "Path": "路径",
   "Type": "类型",
-  "Access": "访问"
+  "Access": "访问",
+  "Routes": "路由",
+  "Add child route": "添加子路由",
+  "Delete routes": "删除路由",
+  "Delete route": "删除路由",
+  "Are you sure you want to hide these routes in menu?": "你确定要在菜单中隐藏这些路由吗？",
+  "Are you sure you want to show these routes in menu?": "你确定要在菜单中显示这些路由吗？"
 }

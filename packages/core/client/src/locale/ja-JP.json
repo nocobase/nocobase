@@ -1027,5 +1027,11 @@
   "Hide in menu": "メニューに非表示",
   "Path": "パス",
   "Type": "タイプ",
-  "Access": "アクセス"
+  "Access": "アクセス",
+  "Routes": "ルート",
+  "Add child route": "子ルートを追加",
+  "Delete routes": "ルートを削除",
+  "Delete route": "ルートを削除",
+  "Are you sure you want to hide these routes in menu?": "これらのルートをメニューに非表示にしますか？",
+  "Are you sure you want to show these routes in menu?": "これらのルートをメニューに表示しますか？"
 }

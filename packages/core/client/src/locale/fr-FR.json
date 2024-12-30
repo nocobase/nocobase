@@ -808,5 +808,12 @@
   "Show in menu": "Afficher dans le menu",
   "Hide in menu": "Masquer dans le menu",
   "Path": "Chemin",
-  "Type": "Type"
+  "Type": "Genre",
+  "Access": "Accès",
+  "Routes": "Routes",
+  "Add child route": "Ajouter une route enfant",
+  "Delete routes": "Supprimer les routes",
+  "Delete route": "Supprimer la route",
+  "Are you sure you want to hide these routes in menu?": "Êtes-vous sûr de vouloir masquer ces routes dans le menu ?",
+  "Are you sure you want to show these routes in menu?": "Êtes-vous sûr de vouloir afficher ces routes dans le menu ?"
 }

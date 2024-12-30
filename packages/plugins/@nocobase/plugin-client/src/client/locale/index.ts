@@ -10,7 +10,7 @@
 import { i18n } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 
-export const NAMESPACE = '@nocobase/plugin-client';
+export const NAMESPACE = 'client';
 
 export function lang(key: string) {
   return i18n.t(key, { ns: NAMESPACE });
@@ -21,7 +21,7 @@ export function generateNTemplate(key: string) {
 }
 
 export function useRoutesTranslation() {
-  return useTranslation([NAMESPACE, 'client'], {
+  return useTranslation(NAMESPACE, {
     nsMode: 'fallback',
   });
 }

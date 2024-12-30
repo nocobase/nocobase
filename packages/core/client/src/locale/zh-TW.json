@@ -899,5 +899,11 @@
   "Hide in menu": "在菜單中隱藏",
   "Path": "路徑",
   "Type": "類型",
-  "Access": "訪問"
+  "Access": "訪問",
+  "Routes": "路由",
+  "Add child route": "添加子路由",
+  "Delete routes": "刪除路由",
+  "Delete route": "刪除路由",
+  "Are you sure you want to hide these routes in menu?": "你確定要在菜單中隱藏這些路由嗎？",
+  "Are you sure you want to show these routes in menu?": "你確定要在菜單中顯示這些路由嗎？"
 }

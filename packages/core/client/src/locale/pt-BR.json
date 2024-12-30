@@ -766,5 +766,11 @@
   "Hide in menu": "Ocultar no menu",
   "Path": "Caminho",
   "Type": "Tipo",
-  "Access": "Acesso"
+  "Access": "Acesso",
+  "Routes": "Rotas",
+  "Add child route": "Adicionar rota filha",
+  "Delete routes": "Excluir rotas",
+  "Delete route": "Excluir rota",
+  "Are you sure you want to hide these routes in menu?": "Tem certeza de que deseja ocultar estas rotas no menu?",
+  "Are you sure you want to show these routes in menu?": "Tem certeza de que deseja mostrar estas rotas no menu?"
 }

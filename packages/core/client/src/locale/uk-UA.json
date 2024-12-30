@@ -809,5 +809,11 @@
   "Hide in menu": "Сховати в меню",
   "Path": "Шлях",
   "Type": "Тип",
-  "Access": "Доступ"
+  "Access": "Доступ",
+  "Routes": "Маршрути",
+  "Add child route": "Додати дочірній маршрут",
+  "Delete routes": "Видалити маршрути",
+  "Delete route": "Видалити маршрут",
+  "Are you sure you want to hide these routes in menu?": "Ви впевнені, що хочете приховати ці маршрути в меню?",
+  "Are you sure you want to show these routes in menu?": "Ви впевнені, що хочете показати ці маршрути в меню?"
 }

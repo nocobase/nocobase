@@ -868,5 +868,11 @@
   "Hide in menu": "Hide in menu",
   "Path": "Path",
   "Type": "Type",
-  "Access": "Access"
+  "Access": "Access",
+  "Routes": "Routes",
+  "Add child route": "Add child",
+  "Delete routes": "Delete routes",
+  "Delete route": "Delete route",
+  "Are you sure you want to hide these routes in menu?": "Are you sure you want to hide these routes in menu?",
+  "Are you sure you want to show these routes in menu?": "Are you sure you want to show these routes in menu?"
 }

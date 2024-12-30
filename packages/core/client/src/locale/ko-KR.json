@@ -900,5 +900,11 @@
   "Hide in menu": "메뉴에 숨기기",
   "Path": "경로",
   "Type": "유형",
-  "Access": "액세스"
+  "Access": "액세스",
+  "Routes": "라우트",
+  "Add child route": "하위 라우트 추가",
+  "Delete routes": "라우트 삭제",
+  "Delete route": "라우트 삭제",
+  "Are you sure you want to hide these routes in menu?": "이 라우트를 메뉴에 숨기시겠습니까?",
+  "Are you sure you want to show these routes in menu?": "이 라우트를 메뉴에 표시하시겠습니까?"
 }

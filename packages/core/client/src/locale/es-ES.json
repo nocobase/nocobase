@@ -789,5 +789,11 @@
   "Hide in menu": "Ocultar en menú",
   "Path": "Ruta",
   "Type": "Tipo",
-  "Access": "Acceso"
+  "Access": "Acceso",
+  "Routes": "Rutas",
+  "Add child route": "Agregar ruta secundaria",
+  "Delete routes": "Eliminar rutas",
+  "Delete route": "Eliminar ruta",
+  "Are you sure you want to hide these routes in menu?": "¿Estás seguro de que quieres ocultar estas rutas en el menú?",
+  "Are you sure you want to show these routes in menu?": "¿Estás seguro de que quieres mostrar estas rutas en el menú?"
 }
