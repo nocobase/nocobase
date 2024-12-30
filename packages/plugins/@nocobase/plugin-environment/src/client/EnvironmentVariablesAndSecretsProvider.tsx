@@ -17,14 +17,7 @@ const InternalProvider = (props) => {
   const variablesRequest = useRequest<any>({
     url: 'environmentVariables?paginate=false',
   });
-  const secretsRequest = useRequest<any>({
-    url: 'environmentSecrets?paginate=false',
-  });
-  return (
-    <EnvAndSecretsContext.Provider value={{ variablesRequest, secretsRequest }}>
-      {props.children}
-    </EnvAndSecretsContext.Provider>
-  );
+  return <EnvAndSecretsContext.Provider value={{ variablesRequest }}>{props.children}</EnvAndSecretsContext.Provider>;
 };
 
 const EnvironmentVariablesAndSecretsProvider = observer(

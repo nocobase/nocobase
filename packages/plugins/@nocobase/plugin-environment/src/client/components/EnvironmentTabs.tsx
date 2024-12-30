@@ -59,7 +59,7 @@ BAR=bbb
         `,
       },
     },
-    secrets: {
+    secret: {
       type: 'string',
       title: `{{ t("Secrets") }}`,
       'x-decorator': 'FormItem',
@@ -117,7 +117,6 @@ const schema = {
 };
 
 export function EnvironmentVariables({ request }) {
-  console.log(request);
   const { modal } = App.useApp();
   const t = useT();
   const api = useAPIClient();
@@ -219,136 +218,40 @@ export function EnvironmentVariables({ request }) {
     </div>
   );
 }
-
-export function EnvironmentSecrets({ request }) {
-  const { data, loading, refresh } = request || {};
-  const { modal } = App.useApp();
-  const t = useT();
-  const api = useAPIClient();
-  const resource = api.resource('environmentSecrets');
-
-  const handleDelete = (data) => {
-    modal.confirm({
-      title: t('Delete Secret'),
-      content: t('Are you sure you want to delete it?'),
-      async onOk() {
-        await resource.destroy({
-          filter: { name: data.name, id: data.id },
-        });
-        refresh();
-      },
-    });
-  };
-
-  const handleEdit = (initialValues) => {
-    const drawer = FormDrawer(t('Edit'), () => {
-      return (
-        <FormLayout layout={'vertical'}>
-          <SchemaComponentOptions scope={{ createOnly: false, t }}>
-            <SchemaField schema={schema} />
-          </SchemaComponentOptions>
-          <FormDrawer.Footer>
-            <FormButtonGroup align="right">
-              <Reset
-                onClick={() => {
-                  drawer.close();
-                }}
-              >
-                {t('Cancel')}
-              </Reset>
-              <Submit
-                onSubmit={async (data) => {
-                  await api.request({
-                    url: `environmentSecrets:update?filter=${JSON.stringify({
-                      id: initialValues.id,
-                      name: initialValues.name,
-                    })}`,
-                    method: 'post',
-                    data: {
-                      ...data,
-                    },
-                  });
-                  refresh();
-                }}
-              >
-                {t('Submit')}
-              </Submit>
-            </FormButtonGroup>
-          </FormDrawer.Footer>
-        </FormLayout>
-      );
-    });
-    drawer.open({
-      initialValues: { ...initialValues },
-    });
-  };
-  return (
-    <div>
-      <Table
-        size="middle"
-        loading={loading}
-        dataSource={data?.data}
-        pagination={false}
-        rowKey={'name'}
-        columns={[
-          {
-            title: t('Name'),
-            dataIndex: 'name',
-            ellipsis: true,
-          },
-          {
-            title: t('Actions'),
-            width: 200,
-            render: (record) => (
-              <Space>
-                <a onClick={() => handleEdit(record)}>{t('Edit')}</a>
-                <a onClick={() => handleDelete(record)}>{t('Delete')}</a>
-              </Space>
-            ),
-          },
-        ]}
-      />
-    </div>
-  );
-}
 /**
  * @param {string} input - The input string containing key-value pairs, separated by `=` and line breaks.
  * @returns {Array<{name: string, value: string}>} - The converted array of objects.
  */
-function parseKeyValuePairs(input) {
+function parseKeyValuePairs(input, type) {
   return input
     .trim()
     .split('\n')
     .map((line) => {
       const [name, ...valueParts] = line.split('='); // 按 `=` 分割
-      return name && { name: name.trim(), value: valueParts.join('=').trim() }; // 去除多余空格
+      return (
+        name && {
+          name: name.trim(),
+          value: valueParts.join('=').trim(),
+          type: type === 'secret' ? 'secret' : 'default',
+        }
+      ); // 去除多余空格
     });
 }
 
 export function EnvironmentTabs() {
   const api = useAPIClient();
   const t = useT();
-  const [activeKey, setActiveKey] = useState('variable');
-  const { variablesRequest, secretsRequest } = useContext(EnvAndSecretsContext);
+  const { variablesRequest } = useContext(EnvAndSecretsContext);
 
   const handleBulkImport = async (importData) => {
-    const arr = Object.entries(importData).map(([type, dataString]) => ({
-      type,
-      data: parseKeyValuePairs(dataString).filter(Boolean),
-    }));
-
-    await Promise.all(
-      arr.map((v) =>
-        api.request({
-          url: {
-            variables: 'environmentVariables:create',
-            secrets: 'environmentSecrets:create',
-          }[v.type],
-          method: 'post',
-          data: v.data,
-        }),
-      ),
-    );
+    const arr = Object.entries(importData).map(([type, dataString]) => {
+      return parseKeyValuePairs(dataString, type).filter(Boolean);
+    });
+    await api.request({
+      url: 'environmentVariables:create',
+      method: 'post',
+      data: arr.flat(),
+    });
   };
   return (
     <div>
@@ -376,28 +279,15 @@ export function EnvironmentTabs() {
                                 if (info.key === 'bulk') {
                                   await handleBulkImport(data);
                                   variablesRequest.refresh();
-                                  secretsRequest.refresh();
-                                  setActiveKey(activeKey || 'variable');
                                 } else {
                                   await api.request({
-                                    url: {
-                                      variable: 'environmentVariables:create',
-                                      secret: 'environmentSecrets:create',
-                                    }[info.key],
+                                    url: 'environmentVariables:create',
                                     method: 'post',
                                     data: {
                                       ...data,
                                     },
                                   });
-                                  if (info.key === 'variable') {
-                                    variablesRequest.refresh();
-                                  } else if (info.key === 'secret') {
-                                    secretsRequest.refresh();
-                                  } else {
-                                    variablesRequest.refresh();
-                                    secretsRequest.refresh();
-                                  }
-                                  setActiveKey(info.key);
+                                  variablesRequest.refresh();
                                 }
                               }}
                             >
