@@ -210,6 +210,11 @@ export const useParentRoute = () => {
   return useContext(ParentRouteContext);
 };
 
+/**
+ * Note: The routes here are different from React Router routes - these refer specifically to menu routing/navigation items
+ * @param collectionName
+ * @returns
+ */
 export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
   const api = useAPIClient();
   const resource = useMemo(() => api.resource(collectionName), [api, collectionName]);
