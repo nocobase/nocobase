@@ -80,17 +80,29 @@ export const useTableBlockProps = () => {
 function getAllSelectedRowKeys(selectedRowKeys: number[], selectedRecord: any, selected: boolean, treeArray: any[]) {
   let result = [...selectedRowKeys];
 
+  if (result.length === 0) {
+    return result;
+  }
+
   if (selected) {
     result.push(...getAllChildrenId(selectedRecord?.children));
-    // 把所有父节点都加上
-    result.push(...getAllParentId(selectedRecord?.parentId, treeArray));
+
+    // 当父节点的所有子节点都被选中时，把该父节点也选中
+    const parent = getRouteNodeByRouteId(selectedRecord?.parentId, treeArray);
+    if (parent) {
+      const allChildrenId = getAllChildrenId(parent.children);
+      const shouldSelectParent = allChildrenId.every((id) => result.includes(id));
+      if (shouldSelectParent) {
+        result.push(parent.id);
+      }
+    }
   } else {
     // 过滤掉子节点为空的父节点
     const parent = getRouteNodeByRouteId(selectedRecord?.parentId, treeArray);
     if (parent) {
       const allChildrenId = getAllChildrenId(parent.children);
-      const isChildrenEmpty = result.every((id) => !allChildrenId.includes(id));
-      if (isChildrenEmpty) {
+      const shouldSelectParent = allChildrenId.every((id) => result.includes(id));
+      if (!shouldSelectParent) {
         result = result.filter((id) => id !== parent.id);
       }
     }
