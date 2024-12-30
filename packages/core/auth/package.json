@@ -5,7 +5,7 @@
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
-    "dependencies": {
+  "dependencies": {
     "@nocobase/actions": "1.6.0-alpha.7",
     "@nocobase/cache": "1.6.0-alpha.7",
     "@nocobase/database": "1.6.0-alpha.7",
