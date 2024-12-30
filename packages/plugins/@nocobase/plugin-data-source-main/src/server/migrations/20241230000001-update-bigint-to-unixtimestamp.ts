@@ -12,7 +12,7 @@
 import { Migration } from '@nocobase/server';
 
 export default class extends Migration {
-  on = 'beforeLoad';
+  on = 'afterLoad';
 
   async up() {
     const Field = this.context.db.getRepository('fields');
@@ -31,8 +31,8 @@ export default class extends Migration {
         picker: 'date',
         dateFormat: 'YYYY-MM-DD',
         timeFormat: 'HH:mm:ss',
-        showTime: uiSchema['x-component-props']?.showTime,
-        accuracy: uiSchema['x-component-props']?.accuracy,
+        showTime: uiSchema['x-component-props']?.showTime || true,
+        accuracy: uiSchema['x-component-props']?.accuracy || 'second',
       };
 
       field.set('type', 'unixTimestamp');
