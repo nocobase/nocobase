@@ -12,6 +12,7 @@ import {
   Upload,
   useCollection,
   useCollectionField,
+  useCollectionManager,
   useCollectionRecordData,
   usePlugin,
   useRequest,
@@ -43,9 +44,13 @@ export function useStorage(storage) {
 
 export function useStorageCfg() {
   const field = useCollectionField();
+  const cm = useCollectionManager();
+  const targetCollection = cm.getCollection(field.target);
   const collection = useCollection();
   const plugin = usePlugin(FileManagerPlugin);
-  const storage = useStorage(field?.storage || collection?.getOption('storage'));
+  const storage = useStorage(
+    field?.storage || collection?.getOption('storage') || targetCollection?.getOption('storage'),
+  );
   const storageType = plugin.getStorageType(storage?.type);
   return {
     storage,
