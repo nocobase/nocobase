@@ -112,17 +112,14 @@ const InsertMenuItems = (props) => {
           const schemaUid = uid();
 
           // 1. 先创建一个路由
-          const { data } = await createRoute(
-            {
-              type: NocoBaseDesktopRouteType.group,
-              title,
-              icon,
-              // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
-              parentId: insertPosition === 'beforeEnd' ? route?.id : parentRoute?.id,
-              schemaUid,
-            },
-            false,
-          );
+          const { data } = await createRoute({
+            type: NocoBaseDesktopRouteType.group,
+            title,
+            icon,
+            // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
+            parentId: insertPosition === 'beforeEnd' ? route?.id : parentRoute?.id,
+            schemaUid,
+          });
 
           if (insertPositionToMethod[insertPosition]) {
             // 2. 然后再把路由移动到对应的位置
@@ -181,18 +178,23 @@ const InsertMenuItems = (props) => {
           const tabSchemaName = uid();
 
           // 1. 先创建一个路由
-          const { data } = await createRoute(
-            {
-              type: NocoBaseDesktopRouteType.page,
-              title,
-              icon,
-              // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
-              parentId: insertPosition === 'beforeEnd' ? route?.id : parentRoute?.id,
-              schemaUid: menuSchemaUid,
-              pageSchemaUid,
-            },
-            false,
-          );
+          const { data } = await createRoute({
+            type: NocoBaseDesktopRouteType.page,
+            title,
+            icon,
+            // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
+            parentId: insertPosition === 'beforeEnd' ? route?.id : parentRoute?.id,
+            schemaUid: menuSchemaUid,
+            pageSchemaUid,
+            children: [
+              {
+                type: NocoBaseDesktopRouteType.tabs,
+                title: '{{t("Tab")}}',
+                schemaUid: tabSchemaUid,
+                tabSchemaName,
+              },
+            ],
+          });
 
           // 2. 然后再把路由移动到对应的位置
           await moveRoute({
@@ -203,19 +205,7 @@ const InsertMenuItems = (props) => {
             refreshAfterMove: false,
           });
 
-          // 3. 创建一个 Tab
-          await createRoute(
-            {
-              type: NocoBaseDesktopRouteType.tabs,
-              title: '{{t("Tab")}}',
-              parentId: data?.data?.id,
-              schemaUid: tabSchemaUid,
-              tabSchemaName,
-            },
-            false,
-          );
-
-          // 4. 插入一个对应的 Schema
+          // 3. 插入一个对应的 Schema
           dn.insertAdjacent(
             insertPosition,
             getPageMenuSchema({
@@ -405,21 +395,17 @@ export const MenuDesigner = () => {
 
       // 更新菜单对应的路由
       if (fieldSchema['__route__']?.id) {
-        updateRoute(
-          fieldSchema['__route__'].id,
-          {
-            title,
-            icon,
-            options:
-              href || params
-                ? {
-                    href,
-                    params,
-                  }
-                : undefined,
-          },
-          false,
-        );
+        updateRoute(fieldSchema['__route__'].id, {
+          title,
+          icon,
+          options:
+            href || params
+              ? {
+                  href,
+                  params,
+                }
+              : undefined,
+        });
       }
     },
     [fieldSchema, field, dn, refresh, onSelect],
