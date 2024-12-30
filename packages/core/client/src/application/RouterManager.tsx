@@ -7,22 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Router } from '@remix-run/router';
+import type { BrowserHistory, HashHistory, MemoryHistory } from 'history';
 import { get, set } from 'lodash';
-import React, { ComponentType } from 'react';
+import React, { ComponentType, createContext, useContext } from 'react';
 import {
-  RouterProvider,
   BrowserRouterProps,
-  HashRouterProps,
-  MemoryRouterProps,
-  RouteObject,
   createBrowserRouter,
   createHashRouter,
   createMemoryRouter,
+  HashRouterProps,
+  MemoryRouterProps,
   Outlet,
+  RouteObject,
+  RouterProvider,
   useRouteError,
 } from 'react-router-dom';
-import { Router } from '@remix-run/router';
-import type { BrowserHistory, MemoryHistory, HashHistory } from 'history';
 import { Application } from './Application';
 import { CustomRouterContextProvider } from './CustomRouterContextProvider';
 import { BlankComponent, RouterContextCleaner } from './components';
@@ -150,8 +150,11 @@ export class RouterManager {
 
     const routes = this.getRoutesTree();
 
-    const RenderRouter: React.FC<{ BaseLayout?: ComponentType }> = ({ BaseLayout = BlankComponent }) => {
-      const Provider = () => (
+    const BaseLayoutContext = createContext<ComponentType>(null);
+
+    const Provider = () => {
+      const BaseLayout = useContext(BaseLayoutContext);
+      return (
         <CustomRouterContextProvider>
           <BaseLayout>
             <Outlet />
@@ -159,26 +162,32 @@ export class RouterManager {
           </BaseLayout>
         </CustomRouterContextProvider>
       );
-      // bubble up error to application error boundary
-      const ErrorElement = () => {
-        const error = useRouteError();
-        throw error;
-      };
-      const router = routerCreators[type](
-        [
-          {
-            element: <Provider />,
-            errorElement: <ErrorElement />,
-            children: routes,
-          },
-        ],
-        opts,
-      );
-      this.router = router;
+    };
+
+    // bubble up error to application error boundary
+    const ErrorElement = () => {
+      const error = useRouteError();
+      throw error;
+    };
+
+    this.router = routerCreators[type](
+      [
+        {
+          element: <Provider />,
+          errorElement: <ErrorElement />,
+          children: routes,
+        },
+      ],
+      opts,
+    );
+
+    const RenderRouter: React.FC<{ BaseLayout?: ComponentType }> = ({ BaseLayout = BlankComponent }) => {
       return (
-        <RouterContextCleaner>
-          <RouterProvider router={router} />
-        </RouterContextCleaner>
+        <BaseLayoutContext.Provider value={BaseLayout}>
+          <RouterContextCleaner>
+            <RouterProvider router={this.router} />
+          </RouterContextCleaner>
+        </BaseLayoutContext.Provider>
       );
     };
 
