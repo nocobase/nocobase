@@ -10,13 +10,12 @@
 import { Migration } from '@nocobase/server';
 
 export default class extends Migration {
-  appVersion = '<=1.5.0-beta.18';
+  appVersion = '<=1.5.0-beta.19';
   async up() {
     const uiSchemas: any = this.db.getRepository('uiSchemas');
     const desktopRoutes: any = this.db.getRepository('desktopRoutes');
     await this.db.sequelize.transaction(async (transaction) => {
       const menuSchema = await uiSchemas.getJsonSchema('nocobase-admin-menu');
-
       const routes = await schemaToRoutes(menuSchema, uiSchemas);
 
       if (routes.length === 0) {
