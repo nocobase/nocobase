@@ -417,7 +417,7 @@ export function WorkflowVariableWrapper(props): JSX.Element {
   if (!hideVariable && scope?.length > 0) {
     return (
       <Variable.Input scope={scope} changeOnSelect={changeOnSelect} nullable={nullable} {...others}>
-        {render?.()}
+        {render?.(others)}
       </Variable.Input>
     );
   }
