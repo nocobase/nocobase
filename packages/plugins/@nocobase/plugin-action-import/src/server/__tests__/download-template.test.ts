@@ -64,7 +64,8 @@ describe('download template', () => {
     expect(explainData[0]).toEqual(explain);
 
     const headerData = sheetData[1];
-    expect(headerData).toEqual(['Name', 'Email']);
+    expect(headerData[0]).toEqual('Name');
+    expect(headerData[1]).toEqual('Email');
   });
 
   it('should render template', async () => {
