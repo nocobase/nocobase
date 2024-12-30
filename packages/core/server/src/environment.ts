@@ -10,26 +10,23 @@
 import { parse } from '@nocobase/utils';
 
 export class Environment {
-  private data = {
-    vars: {},
-    secrets: {},
-  };
+  private data = {};
 
   setVariable(key: string, value: string) {
-    this.data.vars[key] = value;
+    this.data[key] = value;
   }
 
   removeVariable(key: string) {
-    delete this.data.vars[key];
+    delete this.data[key];
   }
 
-  setSecret(key: string, value: string) {
-    this.data.secrets[key] = value;
-  }
+  // setSecret(key: string, value: string) {
+  //   this.data.secrets[key] = value;
+  // }
 
-  removeSecret(key: string) {
-    delete this.data.secrets[key];
-  }
+  // removeSecret(key: string) {
+  //   delete this.data.secrets[key];
+  // }
 
   getVariablesAndSecrets() {
     return this.data;

@@ -17,28 +17,29 @@ export class PluginEnvironmentsServer extends Plugin {
   async load() {
     this.onEnvironmentSaved();
     await this.loadVariables();
-    await this.loadSecrets();
+    // await this.loadSecrets();
     this.app.acl.registerSnippet({
       name: `pm.${this.name}`,
-      actions: ['environmentVariables:*', 'environmentSecrets:*'],
+      actions: ['environmentVariables:*'],
     });
     this.app.acl.allow('environmentVariables', 'list', 'loggedIn');
-    this.app.acl.allow('environmentSecrets', 'list', 'loggedIn');
+    // this.app.acl.allow('environmentSecrets', 'list', 'loggedIn');
   }
 
   onEnvironmentSaved() {
     this.db.on('environmentVariables.afterSave', async (model) => {
+      console.log(11111111, model);
       this.app.environment.setVariable(model.name, model.value);
     });
-    this.db.on('environmentSecrets.afterSave', async (model) => {
-      this.app.environment.setSecret(model.name, model.value);
-    });
+    // this.db.on('environmentSecrets.afterSave', async (model) => {
+    //   this.app.environment.setSecret(model.name, model.value);
+    // });
     this.db.on('environmentVariables.afterDestroy', (model) => {
       this.app.environment.removeVariable(model.name);
     });
-    this.db.on('environmentSecrets.afterDestroy', (model) => {
-      this.app.environment.removeSecret(model.name);
-    });
+    // this.db.on('environmentSecrets.afterDestroy', (model) => {
+    //   this.app.environment.removeSecret(model.name);
+    // });
   }
 
   async loadVariables() {
@@ -49,21 +50,22 @@ export class PluginEnvironmentsServer extends Plugin {
     }
     const items = await repository.find();
     for (const item of items) {
+      console.log(22222, item);
       this.app.environment.setVariable(item.name, item.value);
     }
   }
 
-  async loadSecrets() {
-    const repository = this.db.getRepository('environmentSecrets');
-    const r = await repository.collection.existsInDb();
-    if (!r) {
-      return;
-    }
-    const items = await repository.find();
-    for (const item of items) {
-      this.app.environment.setSecret(item.name, item.value);
-    }
-  }
+  // async loadSecrets() {
+  //   const repository = this.db.getRepository('environmentSecrets');
+  //   const r = await repository.collection.existsInDb();
+  //   if (!r) {
+  //     return;
+  //   }
+  //   const items = await repository.find();
+  //   for (const item of items) {
+  //     this.app.environment.setSecret(item.name, item.value);
+  //   }
+  // }
 
   async install() {}
 
