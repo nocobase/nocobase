@@ -62,8 +62,7 @@
     "react-intersection-observer": "9.13.0",
     "react-js-cron": "^3.1.0",
     "react-quill": "^2.0.0",
-    "react-router-dom": "^6.28.1",
-    "history": "^5.2.0",
+    "react-router-dom": "^6.11.2",
     "react-to-print": "^2.14.7",
     "sanitize-html": "2.13.0",
     "use-deep-compare-effect": "^1.8.1"
