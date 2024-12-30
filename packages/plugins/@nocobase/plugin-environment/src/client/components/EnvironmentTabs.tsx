@@ -22,16 +22,15 @@ import { registerValidateRules } from '@formily/core';
 import { createSchemaField } from '@formily/react';
 import { SchemaComponentOptions, useAPIClient } from '@nocobase/client';
 import { App, Button, Card, Dropdown, Flex, Space, Table, Tag } from 'antd';
-import React, { useContext, useState } from 'react';
+import React, { useContext } from 'react';
+import { VAR_NAME_RE } from '../../re';
 import { EnvAndSecretsContext } from '../EnvironmentVariablesAndSecretsProvider';
 import { useT } from '../locale';
 
 registerValidateRules({
   env_name_rule(value) {
     if (!value) return '';
-    return /^[A-Z][A-Z0-9_]*$/.test(value)
-      ? ''
-      : 'Only uppercase letters, numbers, and underscores are allowed, and it must start with a letter.';
+    return VAR_NAME_RE.test(value) ? '' : 'The field value is invalid.';
   },
 });
 
@@ -98,18 +97,18 @@ const schema = {
       enum: [
         {
           value: 'default',
-          label: 'Default',
+          label: '{{t("Plain text")}}',
         },
         {
           value: 'secret',
-          label: 'Secret',
+          label: '{{t("Encrypted")}}',
         },
       ],
     },
     value: {
       type: 'string',
       title: `{{ t("Value") }}`,
-      required: true,
+      required: '{{ !!createOnly }}',
       'x-decorator': 'FormItem',
       'x-component': 'Input.TextArea',
     },
@@ -122,6 +121,17 @@ export function EnvironmentVariables({ request }) {
   const api = useAPIClient();
   const { data, loading, refresh } = request || {};
 
+  const typEnum = {
+    default: {
+      label: t('Plain text'),
+      color: 'green',
+    },
+    secret: {
+      label: t('Encrypted'),
+      color: 'red',
+    },
+  };
+
   const resource = api.resource('environmentVariables');
 
   const handleDelete = (data) => {
@@ -130,7 +140,7 @@ export function EnvironmentVariables({ request }) {
       content: t('Are you sure you want to delete it?'),
       async onOk() {
         await resource.destroy({
-          filter: { name: data.name, id: data.id },
+          filterByTk: data.name,
         });
         refresh();
       },
@@ -156,10 +166,7 @@ export function EnvironmentVariables({ request }) {
               <Submit
                 onSubmit={async (data) => {
                   await api.request({
-                    url: `environmentVariables:update?filter=${JSON.stringify({
-                      id: initialValues.id,
-                      name: initialValues.name,
-                    })}`,
+                    url: `environmentVariables:update?filterByTk=${initialValues.name}`,
                     method: 'post',
                     data: {
                       ...data,
@@ -196,7 +203,7 @@ export function EnvironmentVariables({ request }) {
           {
             title: t('Type'),
             dataIndex: 'type',
-            render: (value) => <Tag>{value}</Tag>,
+            render: (value) => <Tag color={typEnum[value].color}>{typEnum[value].label}</Tag>,
           },
           {
             title: t('Value'),

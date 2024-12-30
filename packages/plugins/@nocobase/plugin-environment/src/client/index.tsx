@@ -12,7 +12,7 @@ import { EnvironmentVariablesAndSecretsProvider } from './EnvironmentVariablesAn
 import EnvironmentPage from './components/EnvironmentPage';
 import { useGetEnvironmentVariables } from './utils';
 
-export class PluginEnvironmentClient extends Plugin {
+export class PluginEnvironmentVariablesClient extends Plugin {
   async load() {
     this.app.pluginSettingsManager.add('environment', {
       title: this.t('Environment variables'),
@@ -24,4 +24,4 @@ export class PluginEnvironmentClient extends Plugin {
   }
 }
 
-export default PluginEnvironmentClient;
+export default PluginEnvironmentVariablesClient;

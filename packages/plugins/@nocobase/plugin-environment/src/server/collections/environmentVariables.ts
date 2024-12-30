@@ -8,6 +8,7 @@
  */
 
 import { defineCollection } from '@nocobase/database';
+import { VAR_NAME_RE } from '../../re';
 
 export default defineCollection({
   name: 'environmentVariables',
@@ -18,7 +19,7 @@ export default defineCollection({
       name: 'name',
       primaryKey: true,
       validate: {
-        is: /^[A-Z][A-Z0-9_]*$/,
+        is: VAR_NAME_RE,
       },
     },
     {

@@ -8,38 +8,73 @@
  */
 
 import { Plugin } from '@nocobase/server';
+import _ from 'lodash';
+import path from 'path';
+import AesEncryptor from './AesEncryptor';
 
-export class PluginEnvironmentsServer extends Plugin {
-  async afterAdd() {}
-
-  async beforeLoad() {}
-
+export class PluginEnvironmentVariablesServer extends Plugin {
+  aesEncryptor: AesEncryptor;
   async load() {
+    this.createAesEncryptor();
+    this.registerACL();
     this.onEnvironmentSaved();
     await this.loadVariables();
-    // await this.loadSecrets();
+  }
+
+  async createAesEncryptor() {
+    const key = await AesEncryptor.getOrGenerateKey(
+      path.resolve(process.cwd(), 'storage', '.data', this.name, 'aes_key.dat'),
+    );
+    this.aesEncryptor = new AesEncryptor(key);
+  }
+
+  registerACL() {
+    this.app.acl.allow('environmentVariables', 'list', 'loggedIn');
     this.app.acl.registerSnippet({
       name: `pm.${this.name}`,
       actions: ['environmentVariables:*'],
     });
-    this.app.acl.allow('environmentVariables', 'list', 'loggedIn');
-    // this.app.acl.allow('environmentSecrets', 'list', 'loggedIn');
   }
 
   onEnvironmentSaved() {
+    this.db.on('environmentVariables.afterFind', async (instances) => {
+      const models = _.castArray(instances);
+      for (const model of models) {
+        if (model.type === 'secret') {
+          try {
+            const decrypted = await this.aesEncryptor.decrypt(model.value);
+            model.set('value', decrypted);
+          } catch (error) {
+            //
+          }
+        }
+      }
+    });
+    this.db.on('environmentVariables.beforeSave', async (model) => {
+      if (model.type === 'secret' && model.changed('value')) {
+        const encrypted = await this.aesEncryptor.encrypt(model.value);
+        model.set('value', encrypted);
+      }
+    });
+    this.app.resourceManager.registerActionHandler('environmentVariables:list', async (ctx, next) => {
+      const repository = this.db.getRepository('environmentVariables');
+      const items = await repository.find({
+        sort: 'name',
+      });
+      for (const model of items) {
+        if (model.type === 'secret') {
+          model.set('value', undefined);
+        }
+      }
+      ctx.body = items;
+      await next();
+    });
     this.db.on('environmentVariables.afterSave', async (model) => {
-      console.log(11111111, model);
       this.app.environment.setVariable(model.name, model.value);
     });
-    // this.db.on('environmentSecrets.afterSave', async (model) => {
-    //   this.app.environment.setSecret(model.name, model.value);
-    // });
     this.db.on('environmentVariables.afterDestroy', (model) => {
       this.app.environment.removeVariable(model.name);
     });
-    // this.db.on('environmentSecrets.afterDestroy', (model) => {
-    //   this.app.environment.removeSecret(model.name);
-    // });
   }
 
   async loadVariables() {
@@ -50,30 +85,9 @@ export class PluginEnvironmentsServer extends Plugin {
     }
     const items = await repository.find();
     for (const item of items) {
-      console.log(22222, item);
       this.app.environment.setVariable(item.name, item.value);
     }
   }
-
-  // async loadSecrets() {
-  //   const repository = this.db.getRepository('environmentSecrets');
-  //   const r = await repository.collection.existsInDb();
-  //   if (!r) {
-  //     return;
-  //   }
-  //   const items = await repository.find();
-  //   for (const item of items) {
-  //     this.app.environment.setSecret(item.name, item.value);
-  //   }
-  // }
-
-  async install() {}
-
-  async afterEnable() {}
-
-  async afterDisable() {}
-
-  async remove() {}
 }
 
-export default PluginEnvironmentsServer;
+export default PluginEnvironmentVariablesServer;
