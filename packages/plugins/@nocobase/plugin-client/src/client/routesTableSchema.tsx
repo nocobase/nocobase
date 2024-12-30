@@ -29,7 +29,6 @@ import {
   useRequest,
   useRouterBasename,
   useTableBlockContextBasicValue,
-  useToken,
   Variable,
 } from '@nocobase/client';
 import { uid } from '@nocobase/utils/client';
@@ -483,8 +482,6 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
               hideInMenu: {
                 type: 'boolean',
                 'x-component': (props) => {
-                  const { token } = useToken();
-                  const { t } = useTranslation();
                   return props.value ? (
                     <CloseOutlined style={{ color: '#ff4d4f' }} />
                   ) : (
@@ -561,7 +558,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
             properties: {
               addChild: {
                 type: 'void',
-                title: '{{t("Add child")}}',
+                title: '{{t("Add child route")}}',
                 'x-component': 'Action.Link',
                 'x-use-component-props': () => {
                   const recordData = useCollectionRecordData();
@@ -583,7 +580,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                         return {};
                       },
                     },
-                    title: '{{t("Add child")}}',
+                    title: '{{t("Add child route")}}',
                     properties: {
                       formSchema: {
                         type: 'void',

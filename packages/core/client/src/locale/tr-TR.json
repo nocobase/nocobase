@@ -593,5 +593,11 @@
   "Hide in menu": "Menüde gizle",
   "Path": "Yol",
   "Type": "Tip",
-  "Access": "Erişim"
+  "Access": "Erişim",
+  "Routes": "Rotalar",
+  "Add child route": "Alt rota ekle",
+  "Delete routes": "Rotaları sil",
+  "Delete route": "Rota sil",
+  "Are you sure you want to hide these routes in menu?": "Bu rotaları menüde gizlemek istediğinizden emin misiniz?",
+  "Are you sure you want to show these routes in menu?": "Bu rotaları menüde göstermek istediğinizden emin misiniz?"
 }

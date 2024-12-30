@@ -595,5 +595,11 @@
   "Hide in menu": "Скрыть в меню",
   "Path": "Путь",
   "Type": "Тип",
-  "Access": "Доступ"
+  "Access": "Доступ",
+  "Routes": "Маршруты",
+  "Add child route": "Добавить дочерний маршрут",
+  "Delete routes": "Удалить маршруты",
+  "Delete route": "Удалить маршрут",
+  "Are you sure you want to hide these routes in menu?": "Вы уверены, что хотите скрыть эти маршруты в меню?",
+  "Are you sure you want to show these routes in menu?": "Вы уверены, что хотите показать эти маршруты в меню?"
 }
