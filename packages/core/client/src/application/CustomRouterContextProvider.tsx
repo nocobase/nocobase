@@ -9,6 +9,7 @@
 
 import React, { FC, useEffect } from 'react';
 import { Location, NavigateFunction, NavigateOptions, useLocation, useNavigate } from 'react-router-dom';
+import { VariablesProvider } from '..';
 
 const NavigateNoUpdateContext = React.createContext<NavigateFunction>(null);
 const LocationNoUpdateContext = React.createContext<Location>(null);
@@ -82,7 +83,9 @@ export const CustomRouterContextProvider: FC = ({ children }) => {
   return (
     <NavigateNoUpdateProvider>
       <LocationNoUpdateProvider>
-        <LocationSearchProvider>{children}</LocationSearchProvider>
+        <LocationSearchProvider>
+          <VariablesProvider>{children}</VariablesProvider>
+        </LocationSearchProvider>
       </LocationNoUpdateProvider>
     </NavigateNoUpdateProvider>
   );
