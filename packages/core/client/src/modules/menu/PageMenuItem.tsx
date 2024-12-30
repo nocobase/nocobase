@@ -98,12 +98,20 @@ export const PageMenuItem = () => {
     );
 
     // 同时插入一个对应的 Schema
-    insert(getPageMenuSchema({ title, icon, pageSchemaUid, tabSchemaUid, menuSchemaUid, tabSchemaName }));
+    insert(getPageMenuSchema({ title, icon, pageSchemaUid, tabSchemaUid, menuSchemaUid, tabSchemaName, route }));
   }, [createRoute, insert, options?.components, options?.scope, parentRoute?.id, t, theme]);
   return <SchemaInitializerItem title={t('Page')} onClick={handleClick} className={`${componentCls} ${hashId}`} />;
 };
 
-export function getPageMenuSchema({ title, icon, pageSchemaUid, tabSchemaUid, menuSchemaUid, tabSchemaName }) {
+export function getPageMenuSchema({
+  title,
+  icon,
+  pageSchemaUid,
+  tabSchemaUid,
+  menuSchemaUid,
+  tabSchemaName,
+  route = null,
+}) {
   return {
     type: 'void',
     title,
@@ -130,5 +138,6 @@ export function getPageMenuSchema({ title, icon, pageSchemaUid, tabSchemaUid, me
       },
     },
     'x-uid': menuSchemaUid,
+    __route__: route,
   };
 }
