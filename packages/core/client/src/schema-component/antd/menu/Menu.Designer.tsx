@@ -439,8 +439,10 @@ export const MenuDesigner = () => {
     } as ISchema;
   }, [items, t]);
 
+  const { moveRoute } = useNocoBaseRoutes();
+
   const onMoveToSubmit: (values: any) => void = useCallback(
-    ({ target, position }) => {
+    async ({ target, position }) => {
       const [uid] = target?.split?.('||') || [];
       if (!uid) {
         return;
@@ -452,10 +454,23 @@ export const MenuDesigner = () => {
         refresh,
         current,
       });
+
+      const positionToMethod = {
+        beforeBegin: 'prepend',
+        afterEnd: 'insertAfter',
+      };
+
+      await moveRoute({
+        sourceId: (fieldSchema as any).__route__.id,
+        targetId: current.__route__.id,
+        sortField: 'sort',
+        method: positionToMethod[position],
+      });
+
       dn.loadAPIClientEvents();
       dn.insertAdjacent(position, fieldSchema);
     },
-    [fieldSchema, menuSchema, t, api, refresh],
+    [menuSchema, t, api, refresh, moveRoute, fieldSchema],
   );
 
   const removeConfirmTitle = useMemo(() => {
