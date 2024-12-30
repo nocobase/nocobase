@@ -78,7 +78,7 @@ export const LinkMenuItem = () => {
     const schemaUid = uid();
 
     // 创建一个路由到 desktopRoutes 表中
-    await createRoute(
+    const { data } = await createRoute(
       {
         type: NocoBaseDesktopRouteType.link,
         title: values.title,
@@ -94,13 +94,13 @@ export const LinkMenuItem = () => {
     );
 
     // 同时插入一个对应的 Schema
-    insert(getLinkMenuSchema({ title, icon, schemaUid, href, params }));
+    insert(getLinkMenuSchema({ title, icon, schemaUid, href, params, route: data?.data }));
   }, [insert, options.components, options.scope, t, theme]);
 
   return <SchemaInitializerItem title={t('Link')} onClick={handleClick} className={`${componentCls} ${hashId}`} />;
 };
 
-export function getLinkMenuSchema({ title, icon, schemaUid, href, params }) {
+export function getLinkMenuSchema({ title, icon, schemaUid, href, params, route = null }) {
   return {
     type: 'void',
     title,
@@ -112,5 +112,6 @@ export function getLinkMenuSchema({ title, icon, schemaUid, href, params }) {
       params,
     },
     'x-uid': schemaUid,
+    __route__: route,
   };
 }
