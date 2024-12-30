@@ -17,6 +17,13 @@ export default defineCollection({
       type: 'string',
       name: 'name',
       primaryKey: true,
+      validate: {
+        is: /^[A-Z][A-Z0-9_]*$/,
+      },
+    },
+    {
+      type: 'string',
+      name: 'type',
     },
     {
       type: 'text',

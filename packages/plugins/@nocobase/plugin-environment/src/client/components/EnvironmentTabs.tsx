@@ -7,20 +7,40 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
-import { Checkbox, FormButtonGroup, FormDrawer, FormItem, FormLayout, Input, Reset, Submit } from '@formily/antd-v5';
+import {
+  Checkbox,
+  FormButtonGroup,
+  FormDrawer,
+  FormItem,
+  FormLayout,
+  Input,
+  Radio,
+  Reset,
+  Submit,
+} from '@formily/antd-v5';
+import { registerValidateRules } from '@formily/core';
 import { createSchemaField } from '@formily/react';
 import { SchemaComponentOptions, useAPIClient } from '@nocobase/client';
-import { Alert, App, Button, Card, Dropdown, Space, Table } from 'antd';
+import { App, Button, Card, Dropdown, Flex, Space, Table, Tag } from 'antd';
 import React, { useContext, useState } from 'react';
 import { EnvAndSecretsContext } from '../EnvironmentVariablesAndSecretsProvider';
 import { useT } from '../locale';
+
+registerValidateRules({
+  env_name_rule(value) {
+    if (!value) return '';
+    return /^[A-Z][A-Z0-9_]*$/.test(value)
+      ? ''
+      : 'Only uppercase letters, numbers, and underscores are allowed, and it must start with a letter.';
+  },
+});
 
 const SchemaField = createSchemaField({
   components: {
     FormItem,
     Input,
     Checkbox,
+    Radio,
   },
 });
 
@@ -61,9 +81,30 @@ const schema = {
       type: 'string',
       title: `{{ t("Name") }}`,
       required: true,
+      'x-validator': {
+        env_name_rule: true,
+      },
       'x-decorator': 'FormItem',
       'x-component': 'Input',
       'x-disabled': '{{ !createOnly }}',
+    },
+    type: {
+      type: 'string',
+      title: `{{ t("Type") }}`,
+      required: true,
+      'x-decorator': 'FormItem',
+      'x-component': 'Radio.Group',
+      default: 'default',
+      enum: [
+        {
+          value: 'default',
+          label: 'Default',
+        },
+        {
+          value: 'secret',
+          label: 'Secret',
+        },
+      ],
     },
     value: {
       type: 'string',
@@ -154,9 +195,14 @@ export function EnvironmentVariables({ request }) {
             ellipsis: true,
           },
           {
+            title: t('Type'),
+            dataIndex: 'type',
+            render: (value) => <Tag>{value}</Tag>,
+          },
+          {
             title: t('Value'),
-            dataIndex: 'value',
             ellipsis: true,
+            render: (record) => <div>{record.type === 'default' ? record.value : '******'}</div>,
           },
           {
             title: t('Actions'),
@@ -306,38 +352,14 @@ export function EnvironmentTabs() {
   };
   return (
     <div>
-      <Alert
-        description={
-          <div>
-            Environment variables and secrets can be used for sensitive data storage, configuration data reuse,
-            multi-environment isolation, etc. Secrets are encrypted and are used for sensitive data.{' '}
-            <a>Learn more about encrypted secrets</a>. Variables are shown as plain text and are used for non-sensitive
-            data. <a>Learn more about variables</a>.
-          </div>
-        }
-        style={{ marginBottom: '1.5em' }}
-      />
-      <Card
-        className={css`
-          .ant-card-head {
-            border-bottom: none;
-          }
-        `}
-        tabProps={{
-          size: 'middle',
-          destroyInactiveTabPane: true,
-          defaultActiveKey: 'variable',
-          activeKey: activeKey,
-          onTabClick: (activeKey) => setActiveKey(activeKey),
-        }}
-        tabBarExtraContent={
+      <Card>
+        <Flex justify="end" style={{ marginBottom: 16 }}>
           <Dropdown
             menu={{
               onClick(info) {
                 FormDrawer(
                   {
                     variable: t('Add variable'),
-                    secret: t('Add secret'),
                     bulk: t('Bulk import'),
                   }[info.key],
                   () => {
@@ -399,10 +421,6 @@ export function EnvironmentTabs() {
                   label: t('Add variable'),
                 },
                 {
-                  key: 'secret',
-                  label: t('Add secret'),
-                },
-                {
                   type: 'divider',
                 },
                 {
@@ -416,20 +434,9 @@ export function EnvironmentTabs() {
               {t('Add new')} <DownOutlined />
             </Button>
           </Dropdown>
-        }
-        tabList={[
-          {
-            key: 'variable',
-            label: t('Variables'),
-            children: <EnvironmentVariables request={variablesRequest} />,
-          },
-          {
-            key: 'secret',
-            label: t('Secrets'),
-            children: <EnvironmentSecrets request={secretsRequest} />,
-          },
-        ]}
-      />
+        </Flex>
+        <EnvironmentVariables request={variablesRequest} />
+      </Card>
     </div>
   );
 }
