@@ -79,7 +79,7 @@
     "eslint-plugin-testing-library": "^5.11.0",
     "ghooks": "^2.0.4",
     "lint-staged": "^13.2.3",
-    "pretty-format": "^24.0.0",
+    "pretty-format": "^29.7.0",
     "pretty-quick": "^3.1.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
