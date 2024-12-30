@@ -30,7 +30,9 @@ import { useT } from '../locale';
 registerValidateRules({
   env_name_rule(value) {
     if (!value) return '';
-    return VAR_NAME_RE.test(value) ? '' : 'The field value is invalid.';
+    return VAR_NAME_RE.test(value)
+      ? ''
+      : 'Only letters, numbers and underscores are allowed, and it must start with a letter.';
   },
 });
 

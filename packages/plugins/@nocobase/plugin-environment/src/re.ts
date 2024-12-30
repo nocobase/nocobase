@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const VAR_NAME_RE = /^[^\s]+$/;
+export const VAR_NAME_RE = /^[A-Za-z][A-Za-z0-9_]*$/;

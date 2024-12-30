@@ -8,7 +8,6 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import _ from 'lodash';
 import path from 'path';
 import AesEncryptor from './AesEncryptor';
 
@@ -23,7 +22,7 @@ export class PluginEnvironmentVariablesServer extends Plugin {
 
   async createAesEncryptor() {
     const key = await AesEncryptor.getOrGenerateKey(
-      path.resolve(process.cwd(), 'storage', '.data', this.name, 'aes_key.dat'),
+      path.resolve(process.cwd(), 'storage', '.data', this.app.name, this.name, 'aes_key.dat'),
     );
     this.aesEncryptor = new AesEncryptor(key);
   }
@@ -37,19 +36,6 @@ export class PluginEnvironmentVariablesServer extends Plugin {
   }
 
   onEnvironmentSaved() {
-    this.db.on('environmentVariables.afterFind', async (instances) => {
-      const models = _.castArray(instances);
-      for (const model of models) {
-        if (model.type === 'secret') {
-          try {
-            const decrypted = await this.aesEncryptor.decrypt(model.value);
-            model.set('value', decrypted);
-          } catch (error) {
-            //
-          }
-        }
-      }
-    });
     this.db.on('environmentVariables.beforeSave', async (model) => {
       if (model.type === 'secret' && model.changed('value')) {
         const encrypted = await this.aesEncryptor.encrypt(model.value);
@@ -70,6 +56,14 @@ export class PluginEnvironmentVariablesServer extends Plugin {
       await next();
     });
     this.db.on('environmentVariables.afterSave', async (model) => {
+      if (model.type === 'secret') {
+        try {
+          const decrypted = await this.aesEncryptor.decrypt(model.value);
+          model.set('value', decrypted);
+        } catch (error) {
+          this.app.log.error(error);
+        }
+      }
       this.app.environment.setVariable(model.name, model.value);
     });
     this.db.on('environmentVariables.afterDestroy', (model) => {
@@ -84,8 +78,16 @@ export class PluginEnvironmentVariablesServer extends Plugin {
       return;
     }
     const items = await repository.find();
-    for (const item of items) {
-      this.app.environment.setVariable(item.name, item.value);
+    for (const model of items) {
+      if (model.type === 'secret') {
+        try {
+          const decrypted = await this.aesEncryptor.decrypt(model.value);
+          model.set('value', decrypted);
+        } catch (error) {
+          this.app.log.error(error);
+        }
+      }
+      this.app.environment.setVariable(model.name, model.value);
     }
   }
 }
