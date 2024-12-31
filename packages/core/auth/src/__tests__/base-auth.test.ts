@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import accessControlConfig from 'packages/plugins/@nocobase/plugin-auth/src/server/collections/access-control-config';
 import { BaseAuth } from '../base/auth';
 import { vi } from 'vitest';
 
@@ -29,7 +30,7 @@ describe('base-auth', () => {
     expect(auth.validateUsername('01234567890123456789012345678901234567890123456789a')).toBe(false);
   });
 
-  it('check: should return null when no token', async () => {
+  it('check: should return user null when no token', async () => {
     const auth = new BaseAuth({
       userCollection: {},
       ctx: {
@@ -37,7 +38,7 @@ describe('base-auth', () => {
       },
     } as any);
 
-    expect(await auth.check()).toBe(null);
+    expect((await auth.check()).user).toBeFalsy();
   });
 
   it('check: should set roleName to headers', async () => {
@@ -50,9 +51,15 @@ describe('base-auth', () => {
       app: {
         authManager: {
           jwt: {
-            decode: () => ({ userId: 1, roleName: 'admin' }),
+            verify: () => ({ status: 'valid', payload: { userId: 1, roleName: 'admin' } }),
+          },
+          accessController: {
+            check: () => ({ status: 'valid' }),
           },
         },
+      },
+      cache: {
+        wrap: async (key, fn) => fn(),
       },
     };
     const auth = new BaseAuth({
@@ -78,7 +85,10 @@ describe('base-auth', () => {
       app: {
         authManager: {
           jwt: {
-            decode: () => ({ userId: 1, roleName: 'admin' }),
+            verify: () => ({ status: 'valid', payload: { userId: 1, roleName: 'admin' } }),
+          },
+          accessController: {
+            check: () => ({ status: 'valid' }),
           },
         },
       },
@@ -94,7 +104,7 @@ describe('base-auth', () => {
         },
       },
     } as any);
-    expect(await auth.check()).toEqual({ id: 1 });
+    expect((await auth.check()).user.id).toEqual(1);
   });
 
   it('signIn: should throw 401', async () => {
@@ -128,7 +138,7 @@ describe('base-auth', () => {
             sign: () => 'token',
           },
           accessController: {
-            addAccess: () => 'access',
+            add: () => 'access',
             getConfig: () => ({
               tokenExpirationTime: '30m',
               maxTokenLifetime: '1d',

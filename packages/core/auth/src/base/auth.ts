@@ -73,11 +73,15 @@ export class BaseAuth extends Auth {
       const result = {} as Awaited<ReturnType<Auth['check']>>;
       const token = this.ctx.getBearerToken();
       if (!token) {
-        return { token: { status: 'empty' } };
+        return { token: { status: 'empty' }, user: null };
       }
 
       const { status, payload } = await this.jwt.verify(token);
       const { userId, roleName, iat, temp, jti } = payload ?? {};
+
+      if (roleName) {
+        this.ctx.headers['x-role'] = roleName;
+      }
 
       const cache = this.ctx.cache as Cache;
       const user = await cache.wrap(this.getCacheKey(userId), () =>
