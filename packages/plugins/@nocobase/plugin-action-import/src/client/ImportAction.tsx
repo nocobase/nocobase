@@ -4,6 +4,7 @@ import { Action, ActionContextProvider, SchemaComponent } from '@nocobase/client
 import React, { useState } from 'react';
 import { NAMESPACE } from './constants';
 import { useTranslation } from 'react-i18next';
+import { UploadOutlined } from '@ant-design/icons';
 
 const importFormSchema: ISchema = {
   type: 'void',
@@ -110,14 +111,19 @@ const importFormSchema: ISchema = {
   },
 };
 
-export const ImportAction = () => {
+export const ImportAction = (props) => {
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation(NAMESPACE);
   const fieldSchema = useFieldSchema();
 
   return (
     <ActionContextProvider value={{ visible, setVisible, fieldSchema }}>
-      <Action icon="UploadOutlined" title={t('Import', { ns: 'action-import' })} onClick={() => setVisible(true)} />
+      <Action
+        icon={props.icon || <UploadOutlined />}
+        title={fieldSchema?.title || t('Import', { ns: 'action-import' })}
+        {...props}
+        onClick={() => setVisible(true)}
+      />
       <SchemaComponent schema={importFormSchema} />
     </ActionContextProvider>
   );
