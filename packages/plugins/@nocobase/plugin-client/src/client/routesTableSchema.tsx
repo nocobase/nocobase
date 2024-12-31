@@ -42,6 +42,8 @@ import { getSchemaUidByRouteId } from './utils';
 const VariableTextArea = getVariableComponentWithScope(Variable.TextArea);
 
 export const createRoutesTableSchema = (collectionName: string, basename: string) => {
+  const isMobile = collectionName === 'mobileRoutes';
+
   return {
     type: 'void',
     name: uid(),
@@ -208,7 +210,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                           const { t } = useTranslation();
                           return (
                             <Radio.Group {...props}>
-                              <Radio value={NocoBaseDesktopRouteType.group}>{t('Group')}</Radio>
+                              {!isMobile && <Radio value={NocoBaseDesktopRouteType.group}>{t('Group')}</Radio>}
                               <Radio value={NocoBaseDesktopRouteType.page}>{t('Page')}</Radio>
                               <Radio value={NocoBaseDesktopRouteType.link}>{t('Link')}</Radio>
                             </Radio.Group>
@@ -229,8 +231,19 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                         title: '{{t("Icon")}}',
                         'x-decorator': 'FormItem',
                         'x-component': 'IconPicker',
+                        'x-reactions': isMobile
+                          ? {
+                              dependencies: ['type'],
+                              fulfill: {
+                                state: {
+                                  required: '{{$deps[0] !== "tabs"}}',
+                                },
+                              },
+                            }
+                          : undefined,
                       },
-                      href: {
+                      // 由于历史原因，桌面端使用的是 'href' 作为 key，移动端使用的是 'url' 作为 key
+                      [isMobile ? 'url' : 'href']: {
                         title: '{{t("URL")}}',
                         type: 'string',
                         'x-decorator': 'FormItem',
@@ -364,13 +377,16 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
 
                                   if (form.values.href || !_.isEmpty(form.values.params)) {
                                     options = {
-                                      href: form.values.href,
                                       params: form.values.params,
+                                      // 由于历史原因，桌面端使用的是 'href' 作为 key
+                                      href: isMobile ? undefined : form.values.href,
+                                      // 由于历史原因，移动端使用的是 'url' 作为 key
+                                      url: isMobile ? form.values.url : undefined,
                                     };
                                   }
 
                                   const res = await createRoute({
-                                    ..._.omit(form.values, ['href', 'params']),
+                                    ..._.omit(form.values, ['href', 'params', 'url']),
                                     schemaUid: menuSchemaUid,
                                     pageSchemaUid:
                                       NocoBaseDesktopRouteType.page === form.values.type ? pageSchemaUid : undefined,
@@ -604,9 +620,11 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
 
                               return (
                                 <Radio.Group {...props} defaultValue={defaultValue}>
-                                  <Radio value={NocoBaseDesktopRouteType.group} disabled={!isGroup}>
-                                    {t('Group')}
-                                  </Radio>
+                                  {!isMobile && (
+                                    <Radio value={NocoBaseDesktopRouteType.group} disabled={!isGroup}>
+                                      {t('Group')}
+                                    </Radio>
+                                  )}
                                   <Radio value={NocoBaseDesktopRouteType.page} disabled={!isGroup}>
                                     {t('Page')}
                                   </Radio>
@@ -634,8 +652,19 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                             title: '{{t("Icon")}}',
                             'x-decorator': 'FormItem',
                             'x-component': 'IconPicker',
+                            'x-reactions': isMobile
+                              ? {
+                                  dependencies: ['type'],
+                                  fulfill: {
+                                    state: {
+                                      required: '{{$deps[0] !== "tabs"}}',
+                                    },
+                                  },
+                                }
+                              : undefined,
                           },
-                          href: {
+                          // 由于历史原因，桌面端使用的是 'href' 作为 key，移动端使用的是 'url' 作为 key
+                          [isMobile ? 'url' : 'href']: {
                             title: '{{t("URL")}}',
                             type: 'string',
                             'x-decorator': 'FormItem',
@@ -856,6 +885,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                 ...recordData,
                                 href: recordData.options?.href,
                                 params: recordData.options?.params,
+                                url: recordData.options?.url,
                               },
                             }),
                           { ...options, refreshDeps: [ctx.visible] },
@@ -888,8 +918,19 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                             title: '{{t("Icon")}}',
                             'x-decorator': 'FormItem',
                             'x-component': 'IconPicker',
+                            'x-reactions': isMobile
+                              ? {
+                                  dependencies: ['type'],
+                                  fulfill: {
+                                    state: {
+                                      required: '{{$deps[0] !== "tabs"}}',
+                                    },
+                                  },
+                                }
+                              : undefined,
                           },
-                          href: {
+                          // 由于历史原因，桌面端使用的是 'href' 作为 key，移动端使用的是 'url' 作为 key
+                          [isMobile ? 'url' : 'href']: {
                             title: '{{t("URL")}}',
                             type: 'string',
                             'x-decorator': 'FormItem',
