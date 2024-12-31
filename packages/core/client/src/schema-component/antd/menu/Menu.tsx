@@ -674,7 +674,6 @@ const menuItemTitleStyle = {
 Menu.Item = observer(
   (props) => {
     const { t } = useMenuTranslation();
-    const { designable } = useDesignable();
     const { pushMenuItem } = useCollectMenuItems();
     const { icon, children, hidden, ...others } = props;
     const schema = useFieldSchema();
@@ -683,7 +682,7 @@ Menu.Item = observer(
     const item = useMemo(() => {
       return {
         ...others,
-        hidden: designable ? false : hidden,
+        hidden: hidden,
         className: menuItemClass,
         key: schema.name,
         eventKey: schema.name,
