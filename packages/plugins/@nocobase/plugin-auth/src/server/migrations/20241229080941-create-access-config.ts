@@ -11,7 +11,7 @@ import { Migration } from '@nocobase/server';
 import { tokenControlConfigCollectionName, tokenControlConfigKey } from '../../constants';
 export default class extends Migration {
   on = 'afterLoad'; // 'beforeLoad' or 'afterLoad'
-  appVersion = '<1.6.1-alpha.7';
+  appVersion = '<1.6.1';
 
   async up() {
     const accessConfigRepository = this.app.db.getRepository(tokenControlConfigCollectionName);

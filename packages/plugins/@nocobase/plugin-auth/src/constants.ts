@@ -9,5 +9,5 @@
 
 export const tokenControlConfigKey = 'token-control-config';
 export const tokenControlConfigCacheKey = 'auth:' + tokenControlConfigKey;
-export const tokenControlConfigCollectionName = 'securityAccessControlConfig';
-export const tokenInfoListCollName = 'securityAccessInfoList';
+export const tokenControlConfigCollectionName = 'tokenControlConfig';
+export const tokenInfoListCollName = 'tokenInfoList';

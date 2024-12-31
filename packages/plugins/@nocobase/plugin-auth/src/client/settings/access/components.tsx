@@ -32,7 +32,13 @@ const InputTime = connect(
     );
 
     return (
-      <InputNumber value={time} addonAfter={TimeUnits} onChange={(time) => onChange(`${time}${unit}`)} {...restProps} />
+      <InputNumber
+        value={time}
+        addonAfter={TimeUnits}
+        min={1}
+        onChange={(time) => onChange(`${time}${unit}`)}
+        {...restProps}
+      />
     );
   },
   mapProps({
