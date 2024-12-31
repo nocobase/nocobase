@@ -123,21 +123,8 @@ export class MockServer extends Application {
     const self = this;
     const agent = supertest.agent(callback || this.callback());
     const prefix = this.resourcer.options.prefix;
-    const loginedAgent = agent
-      .auth(
-        jwt.sign(
-          {
-            userId: null,
-          },
-          process.env.APP_KEY,
-          {
-            expiresIn: '1d',
-          },
-        ),
-        { type: 'bearer' },
-      )
-      .set('X-Authenticator', 'basic');
-    const proxy = new Proxy(loginedAgent, {
+
+    const proxy = new Proxy(agent, {
       get(target, method: string, receiver) {
         if (['login', 'loginUsingId'].includes(method)) {
           return (userOrId: any, roleName?: string, jwtOptions?: { temp: boolean }) => {
@@ -151,29 +138,6 @@ export class MockServer extends Application {
                   process.env.APP_KEY,
                   {
                     expiresIn: '1d',
-                  },
-                ),
-                { type: 'bearer' },
-              )
-              .set('X-Authenticator', 'basic');
-          };
-        }
-        if (method === 'signIn') {
-          return async (options: { userId: string; expiresIn?: string }) => {
-            const accessId = await self.authManager.accessController.add();
-            const expiresIn =
-              options.expiresIn || (await self.authManager.accessController.getConfig()).tokenExpirationTime;
-            return proxy
-              .auth(
-                jwt.sign(
-                  {
-                    userId: options.userId,
-                    temp: true,
-                  },
-                  process.env.APP_KEY,
-                  {
-                    expiresIn,
-                    jwtid: accessId,
                   },
                 ),
                 { type: 'bearer' },
@@ -311,6 +275,7 @@ export type MockServerOptions = ApplicationOptions & {
   beforeInstall?: BeforeInstallFn;
   skipInstall?: boolean;
   skipStart?: boolean;
+  skipAuthCheck?: boolean;
 };
 
 export type MockClusterOptions = MockServerOptions & {
@@ -366,7 +331,7 @@ export async function createMockCluster({
 }
 
 export async function createMockServer(options: MockServerOptions = {}): Promise<MockServer> {
-  const { version, beforeInstall, skipInstall, skipStart, ...others } = options;
+  const { version, beforeInstall, skipInstall, skipStart, skipAuthCheck = true, ...others } = options;
   const app: MockServer = mockServer(others);
   if (!skipInstall) {
     if (beforeInstall) {
@@ -379,6 +344,18 @@ export async function createMockServer(options: MockServerOptions = {}): Promise
   }
   if (!skipStart) {
     await app.runCommandThrowError('start');
+  }
+  if (skipAuthCheck) {
+    app.use(
+      async (ctx, next) => {
+        try {
+          await next();
+        } catch (error) {
+          if (error.status === 401) return next();
+        }
+      },
+      { tag: 'skip-auth', before: ['auth'] },
+    );
   }
   return app;
 }
