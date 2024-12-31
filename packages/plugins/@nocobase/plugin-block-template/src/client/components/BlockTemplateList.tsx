@@ -16,7 +16,13 @@ import {
 import React from 'react';
 import { blockTemplatesCollection } from '../collections/blockTemplates';
 import { blockTemplatesSchema } from '../schemas/blockTemplates';
-import { useDuplicateAction, useSubmitActionProps, useEditFormProps, useDeleteAction } from '../hooks';
+import {
+  useDuplicateAction,
+  useSubmitActionProps,
+  useEditFormProps,
+  useDeleteAction,
+  useBulkDestroyAction,
+} from '../hooks';
 
 export const BlockTemplateList = () => {
   const scCtx = useSchemaComponentContext();
@@ -30,6 +36,7 @@ export const BlockTemplateList = () => {
             useEditFormProps,
             useDeleteAction,
             useDuplicateAction,
+            useBulkDestroyAction,
           }}
         />
       </SchemaComponentContext.Provider>

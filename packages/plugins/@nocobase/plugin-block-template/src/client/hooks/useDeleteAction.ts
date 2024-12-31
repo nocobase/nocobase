@@ -40,16 +40,10 @@ export function useDeleteAction() {
       const keepBlocks = form.values.keepBlocks;
       await resource.destroy({
         filterByTk: record[collection.filterTargetKey],
+        removeSchema: !keepBlocks,
       });
-      if (!keepBlocks) {
-        await apiClient.request({
-          method: 'POST',
-          url: `/uiSchemas:remove/${record['uid']}`,
-        });
-        // clear the cache
-        for (const key in plugin.templateschemacache) {
-          delete plugin.templateschemacache[key];
-        }
+      for (const key in plugin.templateschemacache) {
+        delete plugin.templateschemacache[key];
       }
       await service.refresh();
       message.success(t('Deleted successfully'), 0.2);

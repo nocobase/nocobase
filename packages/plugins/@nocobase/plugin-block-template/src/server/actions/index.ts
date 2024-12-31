@@ -7,8 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './useDuplicateAction';
-export * from './useSubmitActionProps';
-export * from './useDeleteAction';
-export * from './useEditFormProps';
-export * from './useBulkDestroyAction';
+export * from './destroy';
