@@ -11,7 +11,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   dumpRules: 'skipped',
-  migrationRules: ['skip'],
+  migrationRules: ['schema-only', 'overwrite', 'skip'],
   name: 'chinaRegions',
   autoGenId: false,
   fields: [

@@ -14,6 +14,6 @@ export default defineCollection({
   dumpRules: {
     group: 'user',
   },
-  migrationRules: ['skip', 'overwrite'],
+  migrationRules: ['schema-only', 'overwrite', 'skip'],
   fields: [{ type: 'boolean', name: 'default' }],
 });

@@ -11,7 +11,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   dumpRules: 'required',
-  migrationRules: ['upsert', 'skip'],
+  migrationRules: ['overwrite', 'skip'],
   name: 'storages',
   shared: true,
   fields: [

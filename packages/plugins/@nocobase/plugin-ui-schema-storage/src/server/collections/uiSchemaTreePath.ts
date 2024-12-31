@@ -11,7 +11,7 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default {
   dumpRules: 'required',
-  migrationRules: ['upsert', 'skip'],
+  migrationRules: ['overwrite', 'skip'],
   name: 'uiSchemaTreePath',
   autoGenId: false,
   timestamps: false,

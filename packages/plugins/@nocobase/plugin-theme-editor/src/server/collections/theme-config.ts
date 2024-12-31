@@ -12,7 +12,7 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   name: 'themeConfig',
   dumpRules: 'required',
-  migrationRules: ['upsert', 'skip'],
+  migrationRules: ['overwrite', 'skip'],
   fields: [
     // 主题配置内容，一个 JSON 字符串
     {

@@ -12,7 +12,7 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   name: 'publicForms',
   filterTargetKey: 'key',
-  migrationRules: ['upsert', 'skip'],
+  migrationRules: ['overwrite', 'skip'],
   createdBy: true,
   updatedBy: true,
   fields: [

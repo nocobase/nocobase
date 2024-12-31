@@ -11,7 +11,7 @@ import { COLLECTION_NAME } from '../constant';
 
 export default {
   name: COLLECTION_NAME.channels,
-  migrationRules: ['upsert'],
+  migrationRules: ['overwrite', 'skip'],
   filterTargetKey: 'name',
   autoGenId: false,
   createdAt: true,

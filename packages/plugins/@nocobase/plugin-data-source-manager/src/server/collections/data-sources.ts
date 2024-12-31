@@ -15,7 +15,7 @@ export default defineCollection({
   autoGenId: false,
   shared: true,
   dumpRules: 'required',
-  migrationRules: ['upsert', 'skip'],
+  migrationRules: ['overwrite', 'skip'],
   fields: [
     {
       type: 'string',

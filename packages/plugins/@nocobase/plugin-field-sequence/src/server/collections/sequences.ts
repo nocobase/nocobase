@@ -65,7 +65,7 @@ export default defineCollection({
       });
     },
   },
-  migrationRules: ['upsert', 'skip'],
+  migrationRules: ['overwrite', 'skip'],
   name: 'sequences',
   shared: true,
   fields: [
