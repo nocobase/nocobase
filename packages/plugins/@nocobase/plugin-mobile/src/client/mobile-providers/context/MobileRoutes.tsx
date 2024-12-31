@@ -25,6 +25,7 @@ export interface MobileRouteItem {
   icon?: string;
   parentId?: number;
   children?: MobileRouteItem[];
+  hideInMenu?: boolean;
 }
 
 export const MobileRoutesContext = createContext<MobileRoutesContextValue>(null);
