@@ -41,8 +41,8 @@ export class BaseAuth extends Auth {
     return this.ctx.app.authManager.jwt;
   }
 
-  get accessController(): ITokenControlService {
-    return this.ctx.app.authManager.accessController;
+  get tokenController(): ITokenControlService {
+    return this.ctx.app.authManager.tokenController;
   }
 
   set user(user: Model) {
@@ -96,15 +96,15 @@ export class BaseAuth extends Auth {
 
       result.token = { status, type: temp ? 'user' : 'API' };
 
-      result.jti = await this.accessController.check(jti);
+      result.jti = await this.tokenController.check(jti);
 
       if (temp) {
         if (user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
           result.token.status = 'invalid';
         } else if (result.token.status === 'expired' && result.jti.status === 'valid') {
-          const refreshedData = await this.accessController.renew(jti);
+          const refreshedData = await this.tokenController.renew(jti);
           if (refreshedData.status === 'renewed') {
-            const expiresIn = (await this.accessController.getConfig()).tokenExpirationTime;
+            const expiresIn = (await this.tokenController.getConfig()).tokenExpirationTime;
             const newToken = this.jwt.sign({ userId, roleName, temp }, { jwtid: refreshedData.id, expiresIn });
             result.token.newToken = newToken;
           }
@@ -135,8 +135,8 @@ export class BaseAuth extends Auth {
     if (!user) {
       this.ctx.throw(401, 'Unauthorized');
     }
-    const accessId = await this.accessController.add();
-    const expiresIn = (await this.accessController.getConfig()).tokenExpirationTime;
+    const accessId = await this.tokenController.add();
+    const expiresIn = (await this.tokenController.getConfig()).tokenExpirationTime;
     const token = this.jwt.sign(
       {
         userId: user.id,

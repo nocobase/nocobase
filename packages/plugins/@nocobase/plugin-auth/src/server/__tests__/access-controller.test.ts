@@ -68,7 +68,7 @@ describe('auth', () => {
       userCollection: db.getCollection('users'),
       ctx,
     } as any);
-    await auth.accessController.setConfig({
+    await auth.tokenController.setConfig({
       tokenExpirationTime: '1d',
       maxTokenLifetime: '1d',
       maxInactiveInterval: '1d',
@@ -92,7 +92,7 @@ describe('auth', () => {
     expect(ctx.res.getHeader('X-Authorized-Failed-Type')).toBe('access_id_not_exist');
   });
   it('api token do not check accsss', async () => {
-    await auth.accessController.setConfig({
+    await auth.tokenController.setConfig({
       tokenExpirationTime: '1s',
       maxTokenLifetime: '1s',
       maxInactiveInterval: '1s',
@@ -102,7 +102,7 @@ describe('auth', () => {
     await expect(auth.check()).resolves.not.toThrow();
   });
   it('when token expired and login valid, it generate a new token', async () => {
-    await auth.accessController.setConfig({
+    await auth.tokenController.setConfig({
       tokenExpirationTime: '1s',
       maxTokenLifetime: '1d',
       maxInactiveInterval: '1d',
@@ -115,7 +115,7 @@ describe('auth', () => {
   });
 
   it('when exceed logintime, throw Unauthorized', async () => {
-    await auth.accessController.setConfig({
+    await auth.tokenController.setConfig({
       tokenExpirationTime: '1d',
       maxTokenLifetime: '1s',
       maxInactiveInterval: '1d',
@@ -127,7 +127,7 @@ describe('auth', () => {
   });
 
   it('when exceed inactiveInterval, throw Unauthorized', async () => {
-    await auth.accessController.setConfig({
+    await auth.tokenController.setConfig({
       tokenExpirationTime: '1d',
       maxTokenLifetime: '1d',
       maxInactiveInterval: '1s',
@@ -139,7 +139,7 @@ describe('auth', () => {
   });
 
   it('when token expired, throw Unauthorized', async () => {
-    await auth.accessController.setConfig({
+    await auth.tokenController.setConfig({
       tokenExpirationTime: '1s',
       maxTokenLifetime: '1d',
       maxInactiveInterval: '1d',
@@ -151,12 +151,12 @@ describe('auth', () => {
   });
 
   it('when call refreshAccess with same jti multiple times, only one refreshed', async () => {
-    const jti = await auth.accessController.add();
+    const jti = await auth.tokenController.add();
     const allSettled = await Promise.allSettled([
-      auth.accessController.renew(jti),
-      auth.accessController.renew(jti),
-      auth.accessController.renew(jti),
-      auth.accessController.renew(jti),
+      auth.tokenController.renew(jti),
+      auth.tokenController.renew(jti),
+      auth.tokenController.renew(jti),
+      auth.tokenController.renew(jti),
     ]);
     const result = allSettled.filter((result) => result.status === 'fulfilled' && result.value.status === 'renewed');
     expect(result).toHaveLength(1);

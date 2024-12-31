@@ -17,7 +17,7 @@ export default class extends Migration {
     const accessConfigRepository = this.app.db.getRepository(tokenControlConfigCollectionName);
     const res = await accessConfigRepository.findOne({ filterByTk: tokenControlConfigKey });
     if (res) {
-      this.app.authManager.accessController.setConfig(res.config);
+      this.app.authManager.tokenController.setConfig(res.config);
     } else {
       const config = {
         tokenExpirationTime: process.env.JWT_EXPIRES_IN ?? '6h',
@@ -30,7 +30,7 @@ export default class extends Migration {
           config,
         },
       });
-      this.app.authManager.accessController.setConfig(config);
+      this.app.authManager.tokenController.setConfig(config);
     }
   }
 }

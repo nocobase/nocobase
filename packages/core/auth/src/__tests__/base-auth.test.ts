@@ -53,7 +53,7 @@ describe('base-auth', () => {
           jwt: {
             verify: () => ({ status: 'valid', payload: { userId: 1, roleName: 'admin' } }),
           },
-          accessController: {
+          tokenController: {
             check: () => ({ status: 'valid' }),
           },
         },
@@ -87,7 +87,7 @@ describe('base-auth', () => {
           jwt: {
             verify: () => ({ status: 'valid', payload: { userId: 1, roleName: 'admin' } }),
           },
-          accessController: {
+          tokenController: {
             check: () => ({ status: 'valid' }),
           },
         },
@@ -137,7 +137,7 @@ describe('base-auth', () => {
           jwt: {
             sign: () => 'token',
           },
-          accessController: {
+          tokenController: {
             add: () => 'access',
             getConfig: () => ({
               tokenExpirationTime: '30m',

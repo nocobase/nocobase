@@ -44,7 +44,7 @@ export class AuthManager {
    * @internal
    */
   jwt: JwtService;
-  accessController: ITokenControlService;
+  tokenController: ITokenControlService;
   protected skipAuthError: boolean;
 
   protected options: AuthManagerOptions;
@@ -67,7 +67,7 @@ export class AuthManager {
   }
 
   setAccessControlService(service: ITokenControlService) {
-    this.accessController = service;
+    this.tokenController = service;
   }
 
   /**
