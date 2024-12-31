@@ -31,6 +31,7 @@ import {
   useTableBlockContextBasicValue,
   Variable,
 } from '@nocobase/client';
+import { getMobilePageSchema, getPageContentTabSchema } from '@nocobase/plugin-mobile/client';
 import { uid } from '@nocobase/utils/client';
 import { Checkbox, Radio, Tag, Typography } from 'antd';
 import _ from 'lodash';
@@ -363,7 +364,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                             const ctx = useActionContext();
                             const { getDataBlockRequest } = useDataBlockRequestGetter();
                             const { createRoute } = useNocoBaseRoutes(collectionName);
-                            const { createRouteSchema } = useCreateRouteSchema();
+                            const { createRouteSchema } = useCreateRouteSchema(isMobile);
 
                             return {
                               async run() {
@@ -784,7 +785,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                 const ctx = useActionContext();
                                 const { getDataBlockRequest } = useDataBlockRequestGetter();
                                 const { createRoute } = useNocoBaseRoutes(collectionName);
-                                const { createRouteSchema, createTabRouteSchema } = useCreateRouteSchema();
+                                const { createRouteSchema, createTabRouteSchema } = useCreateRouteSchema(isMobile);
                                 const recordData = useCollectionRecordData();
                                 return {
                                   async run() {
@@ -1151,7 +1152,8 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
   };
 };
 
-function useCreateRouteSchema(collectionName = 'uiSchemas') {
+function useCreateRouteSchema(isMobile: boolean) {
+  const collectionName = 'uiSchemas';
   const api = useAPIClient();
   const resource = useMemo(() => api.resource(collectionName), [api, collectionName]);
 
@@ -1175,14 +1177,16 @@ function useCreateRouteSchema(collectionName = 'uiSchemas') {
       const tabSchemaUid = type === NocoBaseDesktopRouteType.page ? uid() : undefined;
 
       const typeToSchema = {
-        [NocoBaseDesktopRouteType.page]: getPageMenuSchema({
-          title,
-          icon,
-          pageSchemaUid,
-          tabSchemaUid,
-          menuSchemaUid,
-          tabSchemaName,
-        }),
+        [NocoBaseDesktopRouteType.page]: isMobile
+          ? getMobilePageSchema(menuSchemaUid, tabSchemaUid).schema
+          : getPageMenuSchema({
+              title,
+              icon,
+              pageSchemaUid,
+              tabSchemaUid,
+              menuSchemaUid,
+              tabSchemaName,
+            }),
         [NocoBaseDesktopRouteType.group]: getGroupMenuSchema({ title, icon, schemaUid: menuSchemaUid }),
         [NocoBaseDesktopRouteType.link]: getLinkMenuSchema({ title, icon, schemaUid: menuSchemaUid, href, params }),
       };
@@ -1196,7 +1200,7 @@ function useCreateRouteSchema(collectionName = 'uiSchemas') {
 
       return { menuSchemaUid, pageSchemaUid, tabSchemaUid, tabSchemaName };
     },
-    [resource],
+    [isMobile, resource],
   );
 
   /**
@@ -1210,13 +1214,15 @@ function useCreateRouteSchema(collectionName = 'uiSchemas') {
       await resource[`insertAdjacent/${parentSchemaUid}`]({
         position: 'beforeEnd',
         values: {
-          schema: getTabSchema({ title, icon, schemaUid: tabSchemaUid, tabSchemaName }),
+          schema: isMobile
+            ? getPageContentTabSchema(tabSchemaUid)
+            : getTabSchema({ title, icon, schemaUid: tabSchemaUid, tabSchemaName }),
         },
       });
 
       return { tabSchemaUid, tabSchemaName };
     },
-    [resource],
+    [isMobile, resource],
   );
 
   return { createRouteSchema, createTabRouteSchema };
