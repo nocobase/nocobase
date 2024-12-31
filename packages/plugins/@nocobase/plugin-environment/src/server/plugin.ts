@@ -41,26 +41,46 @@ export class PluginEnvironmentVariablesServer extends Plugin {
       sort: 'name',
     });
 
-    return items.map(({ key, type }) => ({ key, type }));
+    return items.map(({ name, type }) => ({ name, type }));
   }
 
   async setEnvironmentVariablesByText(texts: Array<{ text: string; secret: boolean }>) {
     /*
-    text:
-    KEY1=VALUE1\n
-    KEY2=VALUE2\n
-    KEY3=VALUE3\n
+    text format:
+    KEY1=VALUE1
+    KEY2=VALUE2
+    # This is a comment
+    KEY3=VALUE3
     */
     const repository = this.db.getRepository('environmentVariables');
 
     for (const { text, secret } of texts) {
-      const lines = text.split('\n');
+      // Split by newline and process each line
+      const lines = text
+        .split('\n')
+        .map((line) => line.trim()) // Remove leading/trailing spaces
+        .filter((line) => line && !line.startsWith('#')); // Remove empty lines and comments
+
       for (const line of lines) {
-        const [key, value] = line.split('=');
+        // Find first '=' to support values containing '='
+        const equalIndex = line.indexOf('=');
+        if (equalIndex === -1) {
+          this.app.log.warn(`Invalid environment variable format: ${line}`);
+          continue;
+        }
+
+        const key = line.slice(0, equalIndex).trim();
+        const value = line.slice(equalIndex + 1).trim();
+
+        if (!key || !value) {
+          this.app.log.warn(`Empty key or value found: ${line}`);
+          continue;
+        }
+
         await repository.create({
           values: {
             name: key,
-            type: secret ? 'secret' : 'plain',
+            type: secret ? 'secret' : 'default',
             value,
           },
         });
