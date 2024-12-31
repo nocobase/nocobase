@@ -108,7 +108,10 @@ export async function trigger(context: Context, next) {
 
 export async function execute(context: Context, next) {
   const plugin = context.app.pm.get(Plugin) as Plugin;
-  const { filterByTk, autoRevision } = context.action.params;
+  const { filterByTk, values, autoRevision } = context.action.params;
+  if (!values) {
+    return context.throw(400, 'values is required');
+  }
   if (!filterByTk) {
     return context.throw(400, 'filterByTk is required');
   }
@@ -124,7 +127,7 @@ export async function execute(context: Context, next) {
   const { executed } = workflow;
   let processor;
   try {
-    processor = (await plugin.execute(workflow, context, { manually: true })) as Processor;
+    processor = (await plugin.execute(workflow, values, { manually: true })) as Processor;
     if (!processor) {
       return context.throw(400, 'workflow not triggered');
     }

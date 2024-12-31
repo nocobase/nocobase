@@ -55,6 +55,7 @@ const getSignupPageSchema = (fieldSchemas: any): ISchema => ({
       title: '{{t("Password")}}',
       'x-component': 'Password',
       'x-decorator': 'FormItem',
+      'x-validator': { password: true },
       'x-component-props': { checkStrength: true, style: {} },
       'x-reactions': [
         {
@@ -73,6 +74,7 @@ const getSignupPageSchema = (fieldSchemas: any): ISchema => ({
       'x-component': 'Password',
       'x-decorator': 'FormItem',
       title: '{{t("Confirm password")}}',
+      'x-validator': { password: true },
       'x-component-props': { style: {} },
       'x-reactions': [
         {

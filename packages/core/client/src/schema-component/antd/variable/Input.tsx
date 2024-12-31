@@ -434,7 +434,7 @@ export function Input(props: VariableInputProps) {
             style={{ overflow: 'hidden' }}
             className={cx('ant-input', { 'ant-input-disabled': disabled }, hashId)}
           >
-            <Tag contentEditable={false} color="blue">
+            <Tag color="blue">
               {variableText.map((item, index) => {
                 return (
                   <React.Fragment key={item}>
