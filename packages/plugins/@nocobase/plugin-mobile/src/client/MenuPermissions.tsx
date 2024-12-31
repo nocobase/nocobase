@@ -220,7 +220,7 @@ export const MenuPermissions: React.FC<{
         rowKey={'id'}
         pagination={false}
         expandable={{
-          defaultExpandAllRows: true,
+          defaultExpandAllRows: false,
         }}
         columns={[
           {
