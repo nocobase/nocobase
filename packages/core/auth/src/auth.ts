@@ -10,7 +10,7 @@
 import { Context } from '@nocobase/actions';
 import { Model } from '@nocobase/database';
 import { Authenticator } from './auth-manager';
-
+import { JTIStatus } from './base/access-control-service';
 export type AuthConfig = {
   authenticator: Authenticator;
   options: {
@@ -20,8 +20,8 @@ export type AuthConfig = {
 };
 
 type CheckResult = {
-  token: { status: 'valid' | 'expired' | 'invalid' | 'empty'; type?: 'API' | 'user' };
-  jti?: { status: 'valid' | 'idle' | 'revoked' | 'missing' | 'expired' | 'refreshed' | 'blocked' };
+  token: { status: 'valid' | 'expired' | 'invalid' | 'empty'; type?: 'API' | 'user'; newToken?: string };
+  jti?: { status: JTIStatus };
   user?: any;
   message?: string;
 };

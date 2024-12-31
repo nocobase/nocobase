@@ -88,7 +88,7 @@ describe('auth', () => {
       { jwtid: not_exist_jwtid, expiresIn: '1d' },
     );
     ctx.setToken(token);
-    await expect(auth.authenticate()).rejects.toThrowError('Unauthorized');
+    await expect(auth.check()).rejects.toThrowError('Unauthorized');
     expect(ctx.res.getHeader('X-Authorized-Failed-Type')).toBe('access_id_not_exist');
   });
   it('api token do not check accsss', async () => {
@@ -99,7 +99,7 @@ describe('auth', () => {
     });
     const token = app.authManager.jwt.sign({ userId: user.id }, { expiresIn: '1d' });
     ctx.setToken(token);
-    await expect(auth.authenticate()).resolves.not.toThrow();
+    await expect(auth.check()).resolves.not.toThrow();
   });
   it('when token expired and login valid, it generate a new token', async () => {
     await auth.accessController.setConfig({
@@ -110,7 +110,7 @@ describe('auth', () => {
     const { token } = await auth.signIn();
     ctx.setToken(token);
     await sleep(3000);
-    await expect(auth.authenticate()).rejects.toThrowError('Unauthorized');
+    await expect(auth.check()).rejects.toThrowError('Unauthorized');
     expect(typeof ctx.res.getHeader('x-new-token')).toBe('string');
   });
 
@@ -123,7 +123,7 @@ describe('auth', () => {
     const { token } = await auth.signIn();
     ctx.setToken(token);
     await sleep(3000);
-    await expect(auth.authenticate()).rejects.toThrowError('Unauthorized');
+    await expect(auth.check()).rejects.toThrowError('Unauthorized');
   });
 
   it('when exceed inactiveInterval, throw Unauthorized', async () => {
@@ -135,7 +135,7 @@ describe('auth', () => {
     const { token } = await auth.signIn();
     ctx.setToken(token);
     await sleep(3000);
-    await expect(auth.authenticate()).rejects.toThrowError('Unauthorized');
+    await expect(auth.check()).rejects.toThrowError('Unauthorized');
   });
 
   it('when token expired, throw Unauthorized', async () => {
@@ -147,18 +147,18 @@ describe('auth', () => {
     const { token } = await auth.signIn();
     ctx.setToken(token);
     await sleep(3000);
-    await expect(auth.authenticate()).rejects.toThrowError('Unauthorized');
+    await expect(auth.check()).rejects.toThrowError('Unauthorized');
   });
 
   it('when call refreshAccess with same jti multiple times, only one refreshed', async () => {
     const jti = await auth.accessController.addAccess();
     const allSettled = await Promise.allSettled([
-      auth.accessController.refreshAccess(jti),
-      auth.accessController.refreshAccess(jti),
-      auth.accessController.refreshAccess(jti),
-      auth.accessController.refreshAccess(jti),
+      auth.accessController.renew(jti),
+      auth.accessController.renew(jti),
+      auth.accessController.renew(jti),
+      auth.accessController.renew(jti),
     ]);
-    const result = allSettled.filter((result) => result.status === 'fulfilled' && result.value.status === 'success');
+    const result = allSettled.filter((result) => result.status === 'fulfilled' && result.value.status === 'renewed');
     expect(result).toHaveLength(1);
   });
 });

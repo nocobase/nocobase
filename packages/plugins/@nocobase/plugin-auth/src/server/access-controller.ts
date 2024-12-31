@@ -83,13 +83,13 @@ export class AccessController implements AccessService {
     return this.accessMap.set(id, { ...accessInfo, ...value });
   }
 
-  refreshAccess: AccessService['refreshAccess'] = async (id) => {
-    const lockKey = `plugin-auth:access-controller:refreshAccess:${id}`;
+  renew: AccessService['renew'] = async (id) => {
+    const lockKey = `plugin-auth:access-controller:renew:${id}`;
     const release = await this.app.lockManager.acquire(lockKey, 1000);
     try {
       const access = await this.accessMap.get(id);
-      if (!access) return { status: 'failed', reason: 'access_id_not_exist' };
-      if (access.resigned) return { status: 'failed', reason: 'access_id_resigned' };
+      if (!access) return { status: 'missing' };
+      if (access.resigned) return { status: 'unrenewable' };
       const preAccessInfo = await this.accessMap.get(id);
       const newId = randomUUID();
       await this.updateAccess(id, { resigned: true });
@@ -100,7 +100,7 @@ export class AccessController implements AccessService {
         signInTime: preAccessInfo.signInTime,
       };
       await this.accessMap.set(newId, accessInfo);
-      return { status: 'success', id: newId };
+      return { status: 'renewed', id: newId };
     } finally {
       release();
     }
@@ -109,7 +109,7 @@ export class AccessController implements AccessService {
     const tokenInfo = await this.accessMap.get(id);
     if (!tokenInfo) return { status: 'missing' };
 
-    if (tokenInfo.resigned) return { status: 'refreshed' };
+    if (tokenInfo.resigned) return { status: 'unrenewable' };
 
     const signInTime = tokenInfo.signInTime;
     const config = await this.getConfig();

@@ -17,6 +17,7 @@ import type { Authenticator as AuthenticatorType } from './authenticator';
 // import { Options, SignInForm, SignUpForm } from './basic';
 const { Options, SignInForm, SignUpForm } = lazy(() => import('./basic'), 'Options', 'SignInForm', 'SignUpForm');
 import { NAMESPACE } from './locale';
+import { authCheckMiddleware } from './interceptors';
 // import { AuthLayout, SignInPage, SignUpPage } from './pages';
 const { AuthLayout, SignInPage, SignUpPage } = lazy(() => import('./pages'), 'AuthLayout', 'SignInPage', 'SignUpPage');
 // import { Authenticator } from './settings/Authenticator';
@@ -87,6 +88,7 @@ export class PluginAuthClient extends Plugin {
       aclSnippet: `pm.security.access`,
       sort: 1,
     });
+    this.app.apiClient.axios.interceptors.response.use(...authCheckMiddleware({ app: this.app }));
   }
 }
 

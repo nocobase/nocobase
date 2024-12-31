@@ -13,15 +13,12 @@ export interface IAccessControlConfig {
   maxInactiveInterval: string;
 }
 
+export type JTIStatus = 'valid' | 'idle' | 'revoked' | 'missing' | 'renewed' | 'unrenewable' | 'renewed';
 export interface IAccessControlService<AccessInfo = any> {
   getConfig(): Promise<IAccessControlConfig>;
   setConfig(config: IAccessControlConfig): Promise<any>;
-  refreshAccess(
-    accessId: string,
-  ): Promise<
-    { status: 'success'; id: string } | { status: 'failed'; reason: 'access_id_not_exist' | 'access_id_resigned' }
-  >;
+  renew(accessId: string): Promise<{ status: 'renewed'; id: string } | { status: 'missing' | 'unrenewable' }>;
   addAccess(): Promise<string>;
   updateAccess(id: string, value: Partial<AccessInfo>): Promise<void>;
-  check(accessId: string): Promise<{ status: 'valid' | 'idle' | 'revoked' | 'missing' | 'refreshed' }>;
+  check(accessId: string): Promise<{ status: JTIStatus }>;
 }

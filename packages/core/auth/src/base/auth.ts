@@ -92,12 +92,22 @@ export class BaseAuth extends Auth {
 
       result.token = { status, type: temp ? 'user' : 'API' };
 
-      if (temp && user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
-        result.token.status = 'invalid';
-      }
+      result.jti = await this.accessController.check(jti);
+
       if (temp) {
-        result.jti = await this.accessController.check(jti);
+        if (user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
+          result.token.status = 'invalid';
+        } else if (result.token.status === 'expired' && result.jti.status === 'valid') {
+          const refreshedData = await this.accessController.renew(jti);
+          if (refreshedData.status === 'renewed') {
+            const expiresIn = (await this.accessController.getConfig()).tokenExpirationTime;
+            const newToken = this.jwt.sign({ userId, roleName, temp }, { jwtid: refreshedData.id, expiresIn });
+            result.token.newToken = newToken;
+          }
+          result.jti.status = refreshedData.status;
+        }
       }
+
       return result;
     } catch (err) {
       this.ctx.logger.error(err, { method: 'check' });
