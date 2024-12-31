@@ -2,7 +2,6 @@ import { expect, test as setup } from '@playwright/test';
 
 // 保存登录状态，避免每次都要登录
 setup('admin', async ({ page }) => {
-  setup.setTimeout(120000);
   await page.goto('/');
   await page.getByPlaceholder('Username/Email').click();
   await page.getByPlaceholder('Username/Email').fill('admin@nocobase.com');

@@ -120,7 +120,8 @@ export class AuthManager {
     const isPublicMiddleware = async (ctx: Context & { auth: Auth }, next: Next) => {
       const { resourceName, actionName } = ctx.action;
       const acl = ctx.dataSource.acl as ACL;
-      const isPublicAction = await acl.allowManager.isPublic(resourceName, actionName, ctx);
+      if (ctx?.state) ctx.state.currentUser = null;
+      const isPublicAction = await acl.allowManager.isAllowed(resourceName, actionName, ctx);
       ctx.isPublicAction = isPublicAction;
       return next();
     };

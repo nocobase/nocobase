@@ -293,10 +293,6 @@ export class ACL extends EventEmitter {
     return this.skip(resourceName, actionNames, condition);
   }
 
-  isPublicAction(resourceName: string, actionName: string) {
-    return this.allowManager.isPublic(resourceName, actionName);
-  }
-
   /**
    * @deprecated
    */

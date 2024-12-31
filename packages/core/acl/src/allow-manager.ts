@@ -70,9 +70,6 @@ export class AllowManager {
   registerAllowCondition(name: string, condition: ConditionFunc) {
     this.registeredCondition.set(name, condition);
   }
-  async isPublic(resourceName: string, actionName: string, ctx: any) {
-    return this.isAllowed(resourceName, actionName, { ...(ctx ?? {}), state: { currentUser: null } });
-  }
 
   async isAllowed(resourceName: string, actionName: string, ctx: any) {
     const skippedConditions = this.getAllowedConditions(resourceName, actionName);
