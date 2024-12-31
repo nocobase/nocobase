@@ -714,6 +714,21 @@ describe('repository.destroy', () => {
     await db.close();
   });
 
+  it('should destroy with filterByTk and empty filter', async () => {
+    const user = await User.repository.create({ values: { name: 'user1' } });
+
+    await User.repository.destroy({
+      filterByTk: user.id,
+      filter: {},
+    });
+
+    const user1 = await User.repository.findOne({
+      filterByTk: user.id,
+    });
+
+    expect(user1).toBeNull();
+  });
+
   it('destroy1', async () => {
     const user = await User.model.create<any>();
     await User.repository.destroy(user.id);
