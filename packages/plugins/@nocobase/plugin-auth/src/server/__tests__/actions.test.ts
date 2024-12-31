@@ -15,7 +15,7 @@ describe('actions', () => {
     let app: MockServer;
     let db: Database;
     let repo: Repository;
-    let agent: ReturnType<MockServer['agent']>;
+    let agent;
 
     beforeAll(async () => {
       app = await createMockServer({
@@ -102,7 +102,7 @@ describe('actions', () => {
   describe('auth', () => {
     let app: MockServer;
     let db: Database;
-    let agent: ReturnType<MockServer['agent']>;
+    let agent;
 
     beforeEach(async () => {
       process.env.INIT_ROOT_EMAIL = 'test@nocobase.com';
@@ -124,7 +124,7 @@ describe('actions', () => {
     it('should check parameters when signing in', async () => {
       const res = await agent.post('/auth:signIn').set({ 'X-Authenticator': 'basic' }).send({});
       expect(res.statusCode).toEqual(400);
-      expect(res.error && res.error.text).toBe('Please enter your username or email');
+      expect(res.error.text).toBe('Please enter your username or email');
     });
 
     it('should check user when signing in', async () => {
@@ -132,7 +132,7 @@ describe('actions', () => {
         email: 'no-exists@nocobase.com',
       });
       expect(res.statusCode).toEqual(401);
-      expect(res.error && res.error.text).toBe('The username/email or password is incorrect, please re-enter');
+      expect(res.error.text).toBe('The username/email or password is incorrect, please re-enter');
     });
 
     it('should check password when signing in', async () => {
@@ -141,7 +141,7 @@ describe('actions', () => {
         password: 'incorrect',
       });
       expect(res.statusCode).toEqual(401);
-      expect(res.error && res.error.text).toBe('The username/email or password is incorrect, please re-enter');
+      expect(res.error.text).toBe('The username/email or password is incorrect, please re-enter');
     });
 
     it('should sign in with password', async () => {
@@ -231,7 +231,7 @@ describe('actions', () => {
         confirmPassword: '1234567',
       });
       expect(res.statusCode).toEqual(400);
-      expect(res.error && res.error.text).toBe('The password is inconsistent, please re-enter');
+      expect(res.error.text).toBe('The password is inconsistent, please re-enter');
 
       // Should check old password
       const res1 = await userAgent.post('/auth:changePassword').set({ 'X-Authenticator': 'basic' }).send({
@@ -240,7 +240,7 @@ describe('actions', () => {
         confirmPassword: '123456',
       });
       expect(res1.statusCode).toEqual(401);
-      expect(res1.error && res1.error.text).toBe('The password is incorrect, please re-enter');
+      expect(res1.error.text).toBe('The password is incorrect, please re-enter');
 
       const res2 = await userAgent.post('/auth:changePassword').set({ 'X-Authenticator': 'basic' }).send({
         oldPassword: '12345',
@@ -286,7 +286,7 @@ describe('actions', () => {
         confirmPassword: '123456',
       });
       expect(res.statusCode).toEqual(403);
-      expect(res.error && res.error.text).toBe('Password is not allowed to be changed');
+      expect(res.error.text).toBe('Password is not allowed to be changed');
     });
 
     it('should check confirm password when signing up', async () => {
@@ -296,7 +296,7 @@ describe('actions', () => {
         confirm_password: 'new1',
       });
       expect(res.statusCode).toEqual(400);
-      expect(res.error && res.error.text).toBe('The password is inconsistent, please re-enter');
+      expect(res.error.text).toBe('The password is inconsistent, please re-enter');
     });
 
     it('should check username when signing up', async () => {
@@ -304,12 +304,12 @@ describe('actions', () => {
         username: '',
       });
       expect(res.statusCode).toEqual(400);
-      expect(res.error && res.error.text).toBe('Please enter a valid username');
+      expect(res.error.text).toBe('Please enter a valid username');
       const res1 = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
         username: '@@',
       });
       expect(res1.statusCode).toEqual(400);
-      expect(res1.error && res1.error.text).toBe('Please enter a valid username');
+      expect(res1.error.text).toBe('Please enter a valid username');
 
       const repo = db.getRepository('authenticators');
       await repo.update({
@@ -330,7 +330,7 @@ describe('actions', () => {
         nickname: 'test',
       });
       expect(res2.statusCode).toEqual(400);
-      expect(res2.error && res2.error.text).toBe('Please enter a valid username');
+      expect(res2.error.text).toBe('Please enter a valid username');
     });
 
     it('should check email when signing up', async () => {
@@ -352,12 +352,12 @@ describe('actions', () => {
         email: '',
       });
       expect(res1.statusCode).toEqual(400);
-      expect(res1.error && res1.error.text).toBe('Please enter a valid email address');
+      expect(res1.error.text).toBe('Please enter a valid email address');
       const res2 = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
         email: 'abc',
       });
       expect(res2.statusCode).toEqual(400);
-      expect(res2.error && res2.error.text).toBe('Please enter a valid email address');
+      expect(res2.error.text).toBe('Please enter a valid email address');
       const res3 = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
         email: 'test1@nocobase.com',
         password: '123',
@@ -388,7 +388,7 @@ describe('actions', () => {
         username: 'test',
       });
       expect(res1.statusCode).toEqual(400);
-      expect(res1.error && res1.error.text).toBe('Please enter nickname');
+      expect(res1.error.text).toBe('Please enter nickname');
     });
 
     it('should check password when signing up', async () => {
@@ -396,7 +396,7 @@ describe('actions', () => {
         username: 'new',
       });
       expect(res.statusCode).toEqual(400);
-      expect(res.error && res.error.text).toBe('Please enter a password');
+      expect(res.error.text).toBe('Please enter a password');
     });
 
     it('should write correct user data when signing up', async () => {
@@ -442,7 +442,7 @@ describe('actions', () => {
           password: '12345',
         },
       });
-      const userAgent = await agent.signIn({ userId: user.id });
+      const userAgent = await agent.login(user);
       const res = await userAgent.post('/auth:check').set({ 'X-Authenticator': 'basic' }).send();
       expect(res.statusCode).toEqual(200);
       expect(res.body.data.id).toBeDefined();

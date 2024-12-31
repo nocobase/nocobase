@@ -72,7 +72,6 @@ interface Resource {
 
 interface ExtendedAgent extends SuperAgentTest {
   login: (user: any, roleName?: string) => ExtendedAgent;
-  signIn: (options: { userId: string; expiresIn?: string }) => ExtendedAgent;
   loginUsingId: (userId: number, roleName?: string) => ExtendedAgent;
   resource: (name: string, resourceOf?: any) => Resource;
 }
