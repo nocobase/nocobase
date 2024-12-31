@@ -87,15 +87,15 @@ function getAllSelectedRowKeys(selectedRowKeys: number[], selectedRecord: any, s
   if (selected) {
     result.push(...getAllChildrenId(selectedRecord?.children));
 
-    // 当父节点的所有子节点都被选中时，把该父节点也选中
-    const parent = getRouteNodeByRouteId(selectedRecord?.parentId, treeArray);
-    if (parent) {
-      const allChildrenId = getAllChildrenId(parent.children);
-      const shouldSelectParent = allChildrenId.every((id) => result.includes(id));
-      if (shouldSelectParent) {
-        result.push(parent.id);
-      }
-    }
+    // // 当父节点的所有子节点都被选中时，把该父节点也选中
+    // const parent = getRouteNodeByRouteId(selectedRecord?.parentId, treeArray);
+    // if (parent) {
+    //   const allChildrenId = getAllChildrenId(parent.children);
+    //   const shouldSelectParent = allChildrenId.every((id) => result.includes(id));
+    //   if (shouldSelectParent) {
+    //     result.push(parent.id);
+    //   }
+    // }
   } else {
     // 过滤掉子节点为空的父节点
     const parent = getRouteNodeByRouteId(selectedRecord?.parentId, treeArray);
