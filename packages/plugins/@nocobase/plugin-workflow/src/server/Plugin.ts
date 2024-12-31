@@ -304,6 +304,11 @@ export default class PluginWorkflowServer extends Plugin {
         this.dispatch();
       }, 300_000);
 
+      this.app.on('workflow:dispatch', () => {
+        this.app.logger.info('workflow:dispatch');
+        this.dispatch();
+      });
+
       // check for not started executions
       this.dispatch();
     });
