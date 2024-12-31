@@ -73,6 +73,7 @@ import { createPubSubManager, PubSubManager, PubSubManagerOptions } from './pub-
 import { SyncMessageManager } from './sync-message-manager';
 
 import packageJson from '../package.json';
+import { ServiceContainer } from './service-container';
 import { availableActions } from './acl/available-action';
 import { AuditManager } from './audit-manager';
 
@@ -245,6 +246,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   private _maintainingStatusBeforeCommand: MaintainingCommandStatus | null;
   private _actionCommand: Command;
 
+  public container = new ServiceContainer();
   public lockManager: LockManager;
 
   constructor(public options: ApplicationOptions) {
@@ -774,9 +776,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     try {
       const commandName = options?.from === 'user' ? argv[0] : argv[2];
+
       if (!this.cli.hasCommand(commandName)) {
         await this.pm.loadCommands();
       }
+
       const command = await this.cli.parseAsync(argv, options);
 
       this.setMaintaining({

@@ -166,6 +166,10 @@ export class Auth {
    */
   setToken(token: string) {
     this.setOption('token', token);
+
+    if (this.api['app']) {
+      this.api['app'].eventBus.dispatchEvent(new CustomEvent('auth:tokenChanged', { detail: token }));
+    }
   }
 
   /**
