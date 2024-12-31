@@ -12,11 +12,12 @@ import React from 'react';
 import { useT } from '../locale';
 import { useParams } from 'react-router';
 import { Link } from 'react-router-dom';
-import { Breadcrumb, Spin } from 'antd';
+import { Breadcrumb, Spin, theme } from 'antd';
 import PluginBlockTemplateClient from '..';
 
 export const BlockTemplatePage = () => {
   const params = useParams();
+  const { token } = theme.useToken();
   const t = useT();
   const plugin = usePlugin(PluginBlockTemplateClient);
   const { data, loading, refresh } = useRequest<any>({
@@ -53,9 +54,9 @@ export const BlockTemplatePage = () => {
     <div>
       <div
         style={{
-          margin: '-24px',
-          padding: '10px',
-          background: '#fff',
+          margin: -token.margin,
+          padding: token.paddingSM,
+          background: token.colorBgContainer,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -72,7 +73,7 @@ export const BlockTemplatePage = () => {
           ]}
         />
       </div>
-      <div style={{ margin: '48px auto' }}>
+      <div style={{ marginTop: token.marginXL }}>
         <RemoteSchemaComponent onSuccess={refreshTemplateSchemaCache} onlyRenderProperties={true} uid={schemaUid} />
       </div>
     </div>
