@@ -726,7 +726,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       }
     }
 
-    if (filterByTk && !options.filter) {
+    if (filterByTk && !isValidFilter(options.filter)) {
       const where = [];
 
       for (const tk of filterByTk) {
