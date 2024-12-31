@@ -25,12 +25,17 @@ class PluginClient extends Plugin {
       aclSnippet: 'pm.notification.channels',
       sort: 1,
     });
-    this.app.pluginSettingsManager.add(`routes.mobile`, {
-      title: t('Mobile routes'),
-      Component: MobileRoutesManager,
-      aclSnippet: 'pm.notification.logs',
-      sort: 2,
-    });
+
+    const mobilePlugin: any = this.app.pluginManager.get('@nocobase/plugin-mobile');
+
+    if (mobilePlugin?.options?.enabled) {
+      this.app.pluginSettingsManager.add(`routes.mobile`, {
+        title: t('Mobile routes'),
+        Component: MobileRoutesManager,
+        aclSnippet: 'pm.notification.logs',
+        sort: 2,
+      });
+    }
   }
 }
 
