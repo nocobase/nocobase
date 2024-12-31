@@ -58,7 +58,7 @@ export function authCheckMiddleware({ app }: { app: Application }) {
                 { ns: 'auth' },
               ),
               onOk: () => {
-                app.router.navigate(`/signin?redirect=/${redirectPath}${search}`);
+                app.router.navigate(`/signin?redirect=/${redirectPath}${search}`, { replace: true });
               },
               cancelButtonProps: { style: { display: 'none' } },
             });
@@ -66,7 +66,7 @@ export function authCheckMiddleware({ app }: { app: Application }) {
         } else {
           debouncedRedirect(() => {
             app.apiClient.auth.setToken(null);
-            app.router.navigate(`/signin?redirect=/${redirectPath}${search}`);
+            app.router.navigate(`/signin?redirect=/${redirectPath}${search}`, { replace: true });
           });
         }
       }
