@@ -601,5 +601,7 @@
   "Delete routes": "Удалить маршруты",
   "Delete route": "Удалить маршрут",
   "Are you sure you want to hide these routes in menu?": "Вы уверены, что хотите скрыть эти маршруты в меню?",
-  "Are you sure you want to show these routes in menu?": "Вы уверены, что хотите показать эти маршруты в меню?"
+  "Are you sure you want to show these routes in menu?": "Вы уверены, что хотите показать эти маршруты в меню?",
+  "Are you sure you want to hide this menu?": "Вы уверены, что хотите скрыть это меню?",
+  "After hiding, this menu will no longer appear in the menu bar. To show it again, you need to go to the route management page to configure it.": "После скрытия этого меню он больше не будет отображаться в меню. Чтобы снова отобразить его, вам нужно будет перейти на страницу управления маршрутами и настроить его."
 }

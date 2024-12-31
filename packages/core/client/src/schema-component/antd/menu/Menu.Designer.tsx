@@ -496,9 +496,11 @@ export const MenuDesigner = () => {
         checked={fieldSchema['x-component-props']?.hidden}
         onChange={(v) => {
           Modal.confirm({
-            title: '确定要隐藏该菜单吗？',
+            title: t('Are you sure you want to hide this menu?'),
             icon: <ExclamationCircleFilled />,
-            content: '隐藏后，该菜单将不再显示在菜单栏中。如需再次显示，需要去路由管理页面设置。',
+            content: t(
+              'After hiding, this menu will no longer appear in the menu bar. To show it again, you need to go to the route management page to configure it.',
+            ),
             async onOk() {
               fieldSchema['x-component-props'].hidden = !!v;
               field.componentProps.hidden = !!v;

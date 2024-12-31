@@ -92,10 +92,6 @@ function convertRouteToSchema(route: NocoBaseDesktopRoute) {
     return null;
   }
 
-  if (route.hideInMenu) {
-    return null;
-  }
-
   const children = route.children?.map((child) => convertRouteToSchema(child)).filter(Boolean);
 
   return {
