@@ -105,18 +105,24 @@ export class AccessController implements AccessService {
       release();
     }
   };
-  canAccess: AccessService['canAccess'] = async (id) => {
-    const accessInfo = await this.accessMap.get(id);
-    if (!accessInfo) return { allow: false, reason: 'access_id_not_exist' };
-    const signInTime = accessInfo.signInTime;
+  check: AccessService['check'] = async (id) => {
+    const tokenInfo = await this.accessMap.get(id);
+    if (!tokenInfo) return { status: 'missing' };
+
+    if (tokenInfo.resigned) return { status: 'refreshed' };
+
+    const signInTime = tokenInfo.signInTime;
     const config = await this.getConfig();
     const currTS = Date.now();
-    if (currTS - accessInfo.lastAccessTime > ms(config.maxInactiveInterval)) {
-      return { allow: false, reason: 'action_timeout' };
+
+    if (currTS - tokenInfo.lastAccessTime > ms(config.maxInactiveInterval)) {
+      return { status: 'idle' };
     }
+
     if (Date.now() - signInTime > ms(config.maxTokenLifetime)) {
-      return { allow: false, reason: 'access_expired' };
+      return { status: 'revoked' };
     }
-    return { allow: true };
+
+    return { status: 'valid' };
   };
 }

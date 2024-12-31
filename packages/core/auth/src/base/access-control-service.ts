@@ -23,11 +23,5 @@ export interface IAccessControlService<AccessInfo = any> {
   >;
   addAccess(): Promise<string>;
   updateAccess(id: string, value: Partial<AccessInfo>): Promise<void>;
-  canAccess(accessId: string): Promise<
-    | { allow: true }
-    | {
-        allow: false;
-        reason: 'access_id_not_exist' | 'access_id_resigned' | 'action_timeout' | 'ip_baned' | 'access_expired';
-      }
-  >;
+  check(accessId: string): Promise<{ status: 'valid' | 'idle' | 'revoked' | 'missing' | 'refreshed' }>;
 }

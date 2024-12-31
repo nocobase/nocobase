@@ -19,13 +19,19 @@ export type AuthConfig = {
   ctx: Context;
 };
 
+type CheckResult = {
+  token: { status: 'valid' | 'expired' | 'invalid' | 'empty'; type?: 'API' | 'user' };
+  jti?: { status: 'valid' | 'idle' | 'revoked' | 'missing' | 'expired' | 'refreshed' | 'blocked' };
+  user?: any;
+  message?: string;
+};
+
 export type AuthExtend<T extends Auth> = new (config: AuthConfig) => T;
 
 interface IAuth {
   user: Model;
   // Check the authenticaiton status and return the current user.
-  check(): Promise<Model>;
-  authenticate(): Promise<any>;
+  check(): Promise<CheckResult>;
   signIn(): Promise<any>;
   signUp(): Promise<any>;
   signOut(): Promise<any>;
@@ -47,9 +53,9 @@ export abstract class Auth implements IAuth {
   }
 
   // The abstract methods are required to be implemented by all authentications.
-  abstract check(): Promise<Model>;
+  abstract check(): Promise<CheckResult>;
   // The following methods are mainly designed for user authentications.
-  async authenticate(): Promise<any> {}
+
   async signIn(): Promise<any> {}
   async signUp(): Promise<any> {}
   async signOut(): Promise<any> {}

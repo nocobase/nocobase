@@ -68,17 +68,16 @@ export class BaseAuth extends Auth {
     return /^[^@.<>"'/]{1,50}$/.test(username);
   }
 
-  async check() {
-    const token = this.ctx.getBearerToken();
-    if (!token) {
-      return null;
-    }
+  async check(): ReturnType<Auth['check']> {
     try {
-      const { userId, roleName, iat, temp } = await this.jwt.decode(token);
-
-      if (roleName) {
-        this.ctx.headers['x-role'] = roleName;
+      const result = {} as Awaited<ReturnType<Auth['check']>>;
+      const token = this.ctx.getBearerToken();
+      if (!token) {
+        return { token: { status: 'empty' } };
       }
+
+      const { status, payload } = await this.jwt.verify(token);
+      const { userId, roleName, iat, temp, jti } = payload ?? {};
 
       const cache = this.ctx.cache as Cache;
       const user = await cache.wrap(this.getCacheKey(userId), () =>
@@ -89,53 +88,20 @@ export class BaseAuth extends Auth {
           raw: true,
         }),
       );
+      result.user = user;
+
+      result.token = { status, type: temp ? 'user' : 'API' };
+
       if (temp && user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
-        throw new Error('Your password has been changed. Please sign in again.');
+        result.token.status = 'invalid';
       }
-      return user;
+      if (temp) {
+        result.jti = await this.accessController.check(jti);
+      }
+      return result;
     } catch (err) {
       this.ctx.logger.error(err, { method: 'check' });
-      return null;
-    }
-  }
-
-  async authenticate() {
-    const token = this.ctx.getBearerToken();
-    if (!token) {
-      throw new Error('Empty token');
-    }
-    try {
-      const { status, payload } = await this.jwt.verify(token);
-      const { userId, roleName, iat, temp, jti } = payload;
-      if (!temp && status === 'valid') return;
-      else if (!temp) throw new Error('Unauthorized');
-      if (!jti) throw new Error('Unauthorized');
-      const checkAccessResult = await this.accessController.canAccess(jti);
-      if (checkAccessResult.allow === false) {
-        this.ctx.res.setHeader('X-Authorized-Failed-Type', checkAccessResult.reason);
-        throw new Error(checkAccessResult.reason);
-      }
-      if (status === 'valid') {
-        await this.accessController.updateAccess(jti, { lastAccessTime: Date.now() });
-      } else if (!temp) {
-        // api token, do not refresh
-        throw new Error('Unauthorized');
-      } else if (status === 'expired') {
-        const result = await this.accessController.refreshAccess(jti);
-        if (result.status === 'failed') {
-          this.ctx.res.setHeader('X-Authorized-Failed-Type', result.reason);
-        } else {
-          const expiresIn = (await this.accessController.getConfig()).tokenExpirationTime;
-          const newToken = this.jwt.sign({ userId, temp, roleName }, { jwtid: result.id, expiresIn });
-          this.ctx.res.setHeader('x-new-token', newToken);
-        }
-        throw new Error('Unauthorized');
-      } else {
-        throw new Error('Unauthorized');
-      }
-    } catch (err) {
-      this.ctx.app.logger.error(err, { method: 'authenticate' });
-      throw new Error('Unauthorized');
+      return { token: { status: 'invalid' }, user: null, message: err.message };
     }
   }
 

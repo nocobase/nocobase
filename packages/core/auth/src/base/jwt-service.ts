@@ -63,18 +63,15 @@ export class JwtService {
 
   verify(
     token: string,
-  ): Promise<{ status: 'valid' | 'expired' | 'blocked'; payload: JwtPayload } | { status: 'other'; payload: null }> {
+  ): Promise<{ status: 'valid' | 'expired'; payload: JwtPayload } | { status: 'invalid'; payload: null }> {
     return new Promise((resolve, reject) => {
       jwt.verify(token, this.secret(), async (err, decoded: JwtPayload) => {
         if (err) {
           if (err.name === 'TokenExpiredError') {
             resolve({ status: 'expired', payload: jwt.decode(token) as JwtPayload });
-          } else resolve({ status: 'other', payload: null });
+          } else resolve({ status: 'invalid', payload: null });
         } else {
-          const blocked = await this.blacklist.has(decoded.jti ?? token);
-          if (blocked) {
-            resolve({ status: 'blocked', payload: decoded as JwtPayload });
-          } else resolve({ status: 'valid', payload: decoded as JwtPayload });
+          resolve({ status: 'valid', payload: decoded as JwtPayload });
         }
       });
     });

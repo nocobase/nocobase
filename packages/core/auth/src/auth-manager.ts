@@ -10,6 +10,7 @@
 import { Context, Next } from '@nocobase/actions';
 import { Registry } from '@nocobase/utils';
 import { ACL } from '@nocobase/acl';
+import compose from 'koa-compose';
 import { Auth, AuthExtend } from './auth';
 import { JwtOptions, JwtService } from './base/jwt-service';
 import { ITokenBlacklistService } from './base/token-blacklist-service';
@@ -111,14 +112,20 @@ export class AuthManager {
   }
 
   /**
-   * checkMiddleware
+   * middleware
    * @description Auth middleware, used to check the user status.
    */
-  checkMiddleware() {
+  middleware() {
     const self = this;
+    const isPublicMiddleware = async (ctx: Context & { auth: Auth }, next: Next) => {
+      const { resourceName, actionName } = ctx.action;
+      const acl = ctx.dataSource.acl as ACL;
+      const isPublicAction = await acl.allowManager.isPublic(resourceName, actionName, ctx);
+      ctx.isPublicAction = isPublicAction;
+      return next();
+    };
 
-    return async function (ctx: Context & { auth: Auth }, next: Next) {
-      const token = ctx.getBearerToken();
+    const checkMiddle = async (ctx: Context & { auth: Auth }, next: Next) => {
       const name = ctx.get(self.options.authKey) || self.options.default;
 
       let authenticator: Auth;
@@ -130,51 +137,27 @@ export class AuthManager {
         ctx.logger.warn(err.message, { method: 'check', authenticator: name });
         return next();
       }
+      const result = await ctx.auth.check();
+
       if (authenticator) {
-        const user = await ctx.auth.check();
-        if (user) {
-          ctx.auth.user = user;
+        if (result.user) {
+          ctx.auth.user = result.user;
         }
       }
-      await next();
-    };
-  }
-  /**
-   * checkMiddleware
-   * @description Auth middleware, used to authenication the user status.
-   */
-  authMiddleware() {
-    const self = this;
-    return async function (ctx: Context & { auth: Auth }, next: Next) {
-      try {
-        const token = ctx.getBearerToken();
-        if (token && (await ctx.app.authManager.jwt.blacklist?.has(token))) {
-          return ctx.throw(401, {
-            code: 'TOKEN_INVALID',
-            message: ctx.t('Token is invalid'),
+
+      if (ctx.isPublicAction) {
+        return next();
+      } else {
+        if (result.token.status === 'valid' && (result.token.type === 'API' || result.jti.status === 'valid')) {
+          return next();
+        } else {
+          ctx.throw(401, ctx.t('Unauthorized'), {
+            code: 'UNAUTHORIZED',
+            data: result,
           });
         }
-        const { resourceName, actionName } = ctx.action;
-        const acl = ctx.dataSource.acl as ACL;
-        const isPublicAction = await acl.allowManager.isPublic(resourceName, actionName, ctx);
-        const name = ctx.get(self.options.authKey) || self.options.default;
-
-        if (!isPublicAction) {
-          let authenticator: Auth;
-          try {
-            authenticator = await ctx.app.authManager.get(name, ctx);
-            ctx.auth = authenticator;
-          } catch (err) {
-            ctx.auth = {} as Auth;
-            ctx.logger.warn(err.message, { method: 'check', authenticator: name });
-            return next();
-          }
-          if (authenticator) await authenticator.authenticate();
-        }
-        return next();
-      } catch (error) {
-        ctx.throw(401, error.message);
       }
     };
+    return compose([isPublicMiddleware, checkMiddle]);
   }
 }
