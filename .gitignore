@@ -36,6 +36,7 @@ storage/app.watch.ts
 storage/.upgrading
 storage/logs-e2e
 storage/uploads-e2e
+storage/migrationFiles
 storage/.pm2-*
 tsconfig.paths.json
 /playwright

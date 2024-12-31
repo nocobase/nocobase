@@ -35,6 +35,39 @@ export class PluginEnvironmentVariablesServer extends Plugin {
     });
   }
 
+  async listEnvironmentVariables() {
+    const repository = this.db.getRepository('environmentVariables');
+    const items = await repository.find({
+      sort: 'name',
+    });
+
+    return items.map(({ key, type }) => ({ key, type }));
+  }
+
+  async setEnvironmentVariablesByText(texts: Array<{ text: string; secret: boolean }>) {
+    /*
+    text:
+    KEY1=VALUE1\n
+    KEY2=VALUE2\n
+    KEY3=VALUE3\n
+    */
+    const repository = this.db.getRepository('environmentVariables');
+
+    for (const { text, secret } of texts) {
+      const lines = text.split('\n');
+      for (const line of lines) {
+        const [key, value] = line.split('=');
+        await repository.create({
+          values: {
+            name: key,
+            type: secret ? 'secret' : 'plain',
+            value,
+          },
+        });
+      }
+    }
+  }
+
   onEnvironmentSaved() {
     this.db.on('environmentVariables.beforeSave', async (model) => {
       if (model.type === 'secret' && model.changed('value')) {
