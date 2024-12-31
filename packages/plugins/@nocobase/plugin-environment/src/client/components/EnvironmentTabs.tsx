@@ -50,7 +50,7 @@ const bulkSchema = {
   properties: {
     variables: {
       type: 'string',
-      title: `{{ t("Variables") }}`,
+      title: `{{ t("Plain text") }}`,
       'x-decorator': 'FormItem',
       'x-component': 'Input.TextArea',
       'x-component-props': {
@@ -62,7 +62,7 @@ BAR=bbb
     },
     secret: {
       type: 'string',
-      title: `{{ t("Secrets") }}`,
+      title: `{{ t("Encrypted") }}`,
       'x-decorator': 'FormItem',
       'x-component': 'Input.TextArea',
       'x-component-props': {
@@ -110,7 +110,7 @@ const schema = {
     value: {
       type: 'string',
       title: `{{ t("Value") }}`,
-      required: '{{ !!createOnly }}',
+      required: true,
       'x-decorator': 'FormItem',
       'x-component': 'Input.TextArea',
     },
