@@ -364,6 +364,28 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
               parentIndexs.push(properties[key]['x-index']);
             }
           }
+          for (const key in properties) {
+            const property = properties[key];
+            if (property['x-component'] === undefined) {
+              delete properties[key]; // 说明已经从模板中删除了
+            }
+            // 如果x-component是Grid.Row，且内部无任何内容，则删除
+            if (properties[key]?.['x-component'] === 'Grid.Row') {
+              let hasProperties = false;
+              const cols = Object.values(properties[key]?.['properties'] || {});
+              for (const col of cols) {
+                if (col['x-component'] === 'Grid.Col') {
+                  if (!_.isEmpty(col['properties'])) {
+                    hasProperties = true;
+                  }
+                }
+              }
+              if (!hasProperties) {
+                delete properties[key];
+              }
+            }
+          }
+
           return properties;
         }
 
