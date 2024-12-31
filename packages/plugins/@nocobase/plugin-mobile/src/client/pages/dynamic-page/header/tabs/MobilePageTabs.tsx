@@ -55,25 +55,28 @@ export const MobilePageTabs: FC = () => {
     <div className={`${componentCls} ${hashId}`} data-testid="mobile-page-tabs">
       <DndContext onDragEnd={handleDragEnd}>
         <Tabs activeKey={activeKey} onChange={handleChange} className="nb-mobile-page-tabs-list">
-          {activeTabBarItem.children?.map((item) => (
-            <Tabs.Tab
-              data-testid={`mobile-page-tabs-${item.title}`}
-              title={
-                <SortableItem id={item.id as any}>
-                  <MobilePageTabsSettings tab={item} />
-                  {item.icon ? (
-                    <Space>
-                      <Icon type={item.icon} />
-                      {item.title}
-                    </Space>
-                  ) : (
-                    item.title
-                  )}
-                </SortableItem>
-              }
-              key={String(item.schemaUid)}
-            ></Tabs.Tab>
-          ))}
+          {activeTabBarItem.children?.map((item) => {
+            if (item.hideInMenu) return null;
+            return (
+              <Tabs.Tab
+                data-testid={`mobile-page-tabs-${item.title}`}
+                title={
+                  <SortableItem id={item.id as any}>
+                    <MobilePageTabsSettings tab={item} />
+                    {item.icon ? (
+                      <Space>
+                        <Icon type={item.icon} />
+                        {item.title}
+                      </Space>
+                    ) : (
+                      item.title
+                    )}
+                  </SortableItem>
+                }
+                key={String(item.schemaUid)}
+              ></Tabs.Tab>
+            );
+          })}
         </Tabs>
       </DndContext>
       <div>
