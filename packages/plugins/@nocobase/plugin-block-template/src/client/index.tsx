@@ -102,8 +102,6 @@ export class PluginBlockTemplateClient extends Plugin {
       },
     });
 
-    this.app.schemaInitializerManager;
-
     this.app.schemaInitializerManager.add(addBlockInitializers);
 
     const schameSettings = this.app.schemaSettingsManager.getAll();

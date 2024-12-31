@@ -212,13 +212,11 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
           return sourceValue || objectValue;
         }
 
-        // Handle x-index conflicts in properties
         if (keyName === 'properties') {
           const sourceKeys = Object.keys(sourceValue);
           const targetKeys = Object.keys(objectValue || {});
           // remove duplicate configureActions keys and configureFields keys
           if (/:configure.*Actions/.test(object['x-initializer'])) {
-            // 有哪些actions只能有一个？
             // "x-settings": "actionSettings:bulkDelete"
             // "x-settings": "actionSettings:filter"
             // "x-settings": "actionSettings:refresh"
@@ -229,6 +227,22 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
             // actionSettings:stepsFormNext
             // actionSettings:stepsFormPrevious
             for (const skey of sourceKeys) {
+              if (object['x-initializer'] === 'filterForm:configureActions') {
+                const sourceUseComponentProps = sourceValue[skey]?.['x-use-component-props'];
+                if (
+                  sourceUseComponentProps &&
+                  ['useFilterBlockActionProps', 'useResetBlockActionProps'].includes(sourceUseComponentProps)
+                ) {
+                  const removedTargetKeys = _.remove(targetKeys, (key) => {
+                    const targetUseComponentProps = objectValue[key]?.['x-use-component-props'];
+                    return sourceUseComponentProps === targetUseComponentProps;
+                  });
+                  if (removedTargetKeys.length > 0) {
+                    sourceValue[skey]['x-removed-target-key'] = removedTargetKeys[0];
+                  }
+                }
+              }
+
               if (sourceValue[skey]?.['x-settings']?.includes('actionSettings')) {
                 const actionName = sourceValue[skey]['x-settings'].split(':')[1];
                 const targetActionName = [
@@ -249,6 +263,55 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
                     sourceValue[skey]['x-removed-target-key'] = removedTargetKeys[0];
                   }
                 }
+              }
+            }
+          }
+
+          // 可重复的fields情况有以下几种
+          // table:configureColumns
+          for (const skey of sourceKeys) {
+            if (object['x-initializer'] === 'table:configureColumns') {
+              if (sourceValue[skey]['x-settings'] === 'fieldSettings:TableColumn') {
+                const xColField = _.get(
+                  Object.values(sourceValue[skey]?.['properties'] || {})[0],
+                  'x-collection-field',
+                );
+                if (xColField) {
+                  const removedTargetKeys = _.remove(targetKeys, (key) => {
+                    const targetColField = _.get(
+                      Object.values(objectValue[key]?.['properties'] || {})[0],
+                      'x-collection-field',
+                    );
+                    return xColField === targetColField;
+                  });
+                  if (removedTargetKeys.length > 0) {
+                    sourceValue[skey]['x-removed-target-key'] = removedTargetKeys[0];
+                  }
+                }
+              }
+              // find the x-initializer: "table:configureItemActions"
+              if (sourceValue[skey]['x-initializer'] === 'table:configureItemActions') {
+                const removedTargetKeys = _.remove(targetKeys, (key) => {
+                  return objectValue[key]?.['x-initializer'] === 'table:configureItemActions';
+                });
+                if (removedTargetKeys.length > 0) {
+                  sourceValue[skey]['x-removed-target-key'] = removedTargetKeys[0];
+                }
+              }
+            }
+          }
+
+          // 还有些fields情况
+          // *:configureFields
+          for (const skey of sourceKeys) {
+            if (/:configureFields/.test(source['x-initializer'])) {
+              const xColFields = collectCollectionFields(sourceValue[skey]?.['properties'] || {});
+              const removedTargetKeys = _.remove(targetKeys, (key) => {
+                const targetXColFields = collectCollectionFields(objectValue[key]?.['properties'] || {});
+                return !!_.find(xColFields, (field) => targetXColFields.includes(field));
+              });
+              if (removedTargetKeys.length > 0) {
+                sourceValue[skey]['x-removed-target-key'] = removedTargetKeys[0];
               }
             }
           }
@@ -288,6 +351,8 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
               properties[k] = getFullSchema(properties[k], templateschemacache);
             }
           }
+
+          // Handle x-index conflicts in properties
           const parentIndexs = [];
           // If x-index conflicts, use max value + 1
           for (const key in properties) {
@@ -306,5 +371,26 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
       }
       return sourceValue;
     },
+  );
+}
+
+/**
+ * Collects all collection fields from a property and its nested properties
+ * @param properties The properties object to collect fields from
+ * @returns Array of collection field names
+ */
+function collectCollectionFields(properties: Record<string, any>): string[] {
+  return _.reduce(
+    Object.values(properties || {}),
+    (result: string[], property) => {
+      const xColField = _.get(property, 'x-collection-field');
+      if (xColField) {
+        result.push(xColField);
+      } else if (property['properties']) {
+        result.push(...collectCollectionFields(property['properties']));
+      }
+      return result;
+    },
+    [],
   );
 }
