@@ -14,7 +14,7 @@ import compose from 'koa-compose';
 import { Auth, AuthExtend } from './auth';
 import { JwtOptions, JwtService } from './base/jwt-service';
 import { ITokenBlacklistService } from './base/token-blacklist-service';
-import { IAccessControlService } from './base/access-control-service';
+import { ITokenControlService } from './base/token-control-service';
 
 export interface Authenticator {
   authType: string;
@@ -43,7 +43,7 @@ export class AuthManager {
    * @internal
    */
   jwt: JwtService;
-  accessController: IAccessControlService;
+  accessController: ITokenControlService;
 
   protected options: AuthManagerOptions;
   protected authTypes: Registry<AuthConfig> = new Registry();
@@ -63,7 +63,7 @@ export class AuthManager {
     this.jwt.blacklist = service;
   }
 
-  setAccessControlService(service: IAccessControlService) {
+  setAccessControlService(service: ITokenControlService) {
     this.accessController = service;
   }
 

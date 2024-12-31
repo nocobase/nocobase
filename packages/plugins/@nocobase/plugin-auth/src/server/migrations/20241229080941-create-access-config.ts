@@ -8,14 +8,14 @@
  */
 
 import { Migration } from '@nocobase/server';
-import { secAccessCtrlConfigCollName, secAccessCtrlConfigKey } from '../../constants';
+import { tokenControlConfigCollectionName, tokenControlConfigKey } from '../../constants';
 export default class extends Migration {
   on = 'afterLoad'; // 'beforeLoad' or 'afterLoad'
   appVersion = '<1.6.1-alpha.7';
 
   async up() {
-    const accessConfigRepository = this.app.db.getRepository(secAccessCtrlConfigCollName);
-    const res = await accessConfigRepository.findOne({ filterByTk: secAccessCtrlConfigKey });
+    const accessConfigRepository = this.app.db.getRepository(tokenControlConfigCollectionName);
+    const res = await accessConfigRepository.findOne({ filterByTk: tokenControlConfigKey });
     if (res) {
       this.app.authManager.accessController.setConfig(res.config);
     } else {
@@ -26,7 +26,7 @@ export default class extends Migration {
       };
       await accessConfigRepository.create({
         values: {
-          key: secAccessCtrlConfigKey,
+          key: tokenControlConfigKey,
           config,
         },
       });

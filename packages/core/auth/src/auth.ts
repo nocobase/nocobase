@@ -10,7 +10,7 @@
 import { Context } from '@nocobase/actions';
 import { Model } from '@nocobase/database';
 import { Authenticator } from './auth-manager';
-import { JTIStatus } from './base/access-control-service';
+import { JTIStatus } from './base/token-control-service';
 export type AuthConfig = {
   authenticator: Authenticator;
   options: {

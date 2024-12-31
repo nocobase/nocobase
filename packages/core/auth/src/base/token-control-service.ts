@@ -7,18 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export interface IAccessControlConfig {
+export interface ITokenControlConfig {
   tokenExpirationTime: string;
   maxTokenLifetime: string;
   maxInactiveInterval: string;
 }
 
 export type JTIStatus = 'valid' | 'idle' | 'revoked' | 'missing' | 'renewed' | 'unrenewable' | 'renewed';
-export interface IAccessControlService<AccessInfo = any> {
-  getConfig(): Promise<IAccessControlConfig>;
-  setConfig(config: IAccessControlConfig): Promise<any>;
+export interface ITokenControlService<TokenInfo = any> {
+  getConfig(): Promise<ITokenControlConfig>;
+  setConfig(config: ITokenControlConfig): Promise<any>;
   renew(accessId: string): Promise<{ status: 'renewed'; id: string } | { status: 'missing' | 'unrenewable' }>;
   add(): Promise<string>;
-  set(id: string, value: Partial<AccessInfo>): Promise<void>;
+  set(id: string, value: Partial<TokenInfo>): Promise<void>;
   check(accessId: string): Promise<{ status: JTIStatus }>;
 }

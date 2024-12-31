@@ -10,7 +10,7 @@
 import { Collection, Model } from '@nocobase/database';
 import { Auth, AuthConfig } from '../auth';
 import { JwtService } from './jwt-service';
-import { IAccessControlService } from './access-control-service';
+import { ITokenControlService } from './token-control-service';
 import { Cache } from '@nocobase/cache';
 
 /**
@@ -41,7 +41,7 @@ export class BaseAuth extends Auth {
     return this.ctx.app.authManager.jwt;
   }
 
-  get accessController(): IAccessControlService {
+  get accessController(): ITokenControlService {
     return this.ctx.app.authManager.accessController;
   }
 

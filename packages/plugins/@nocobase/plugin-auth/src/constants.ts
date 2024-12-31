@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const secAccessCtrlConfigKey = 'access-control-config';
-export const secAccessCtrlConfigCacheKey = 'auth:' + secAccessCtrlConfigKey;
-export const secAccessCtrlConfigCollName = 'securityAccessControlConfig';
-export const secAccessInfoListCollName = 'securityAccessInfoList';
+export const tokenControlConfigKey = 'token-control-config';
+export const tokenControlConfigCacheKey = 'auth:' + tokenControlConfigKey;
+export const tokenControlConfigCollectionName = 'securityAccessControlConfig';
+export const tokenInfoListCollName = 'securityAccessInfoList';

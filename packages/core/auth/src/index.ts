@@ -12,4 +12,4 @@ export * from './auth';
 export * from './auth-manager';
 export * from './base/auth';
 export * from './base/token-blacklist-service';
-export * from './base/access-control-service';
+export * from './base/token-control-service';

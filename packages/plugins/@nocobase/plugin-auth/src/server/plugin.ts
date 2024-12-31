@@ -17,10 +17,10 @@ import { BasicAuth } from './basic-auth';
 import { AuthModel } from './model/authenticator';
 import { Storer } from './storer';
 import { TokenBlacklistService } from './token-blacklist';
-import { AccessController } from './access-controller';
+import { TokenController } from './token-controller';
 import { tval } from '@nocobase/utils';
 
-import { secAccessCtrlConfigCollName, secAccessCtrlConfigKey, secAccessCtrlConfigCacheKey } from '../constants';
+import { tokenControlConfigCollectionName, tokenControlConfigKey, tokenControlConfigCacheKey } from '../constants';
 export class PluginAuthServer extends Plugin {
   cache: Cache;
 
@@ -86,8 +86,8 @@ export class PluginAuthServer extends Plugin {
       },
     });
     // Register actions
-    Object.entries(authActions).forEach(
-      ([action, handler]) => this.app.resourceManager.getResource('auth')?.addAction(action, handler),
+    Object.entries(authActions).forEach(([action, handler]) =>
+      this.app.resourceManager.getResource('auth')?.addAction(action, handler),
     );
     Object.entries(authenticatorsActions).forEach(([action, handler]) =>
       this.app.resourceManager.registerActionHandler(`authenticators:${action}`, handler),
@@ -204,7 +204,7 @@ export class PluginAuthServer extends Plugin {
     ]);
     this.app.acl.registerSnippet({
       name: `pm.security-settings.access`,
-      actions: [`${secAccessCtrlConfigCollName}:*`],
+      actions: [`${tokenControlConfigCollectionName}:*`],
     });
 
     if (!this.app.authManager.accessController) {
@@ -212,12 +212,12 @@ export class PluginAuthServer extends Plugin {
         name: 'auth-access-controller',
         prefix: 'auth-access-controller',
       });
-      const accessController = new AccessController({ cache, app: this.app });
+      const accessController = new TokenController({ cache, app: this.app });
 
       this.app.authManager.setAccessControlService(accessController);
-      const accessConfigRepository = this.app.db.getRepository(secAccessCtrlConfigCollName);
+      const accessConfigRepository = this.app.db.getRepository(tokenControlConfigCollectionName);
       try {
-        const res = await accessConfigRepository.findOne({ filterByTk: secAccessCtrlConfigKey });
+        const res = await accessConfigRepository.findOne({ filterByTk: tokenControlConfigKey });
         if (res) {
           this.app.authManager.accessController.setConfig(res.config);
         }
@@ -225,7 +225,7 @@ export class PluginAuthServer extends Plugin {
         this.app.logger.warn('access control config not exist, use default value');
       }
     }
-    this.app.db.on(`${secAccessCtrlConfigCollName}.afterSave`, async (model) => {
+    this.app.db.on(`${tokenControlConfigCollectionName}.afterSave`, async (model) => {
       this.app.authManager.accessController.setConfig(model.config);
     });
   }
@@ -249,8 +249,8 @@ export class PluginAuthServer extends Plugin {
       });
     }
 
-    const accessConfigRepository = this.app.db.getRepository(secAccessCtrlConfigCollName);
-    const res = await accessConfigRepository.findOne({ filterByTk: secAccessCtrlConfigKey });
+    const accessConfigRepository = this.app.db.getRepository(tokenControlConfigCollectionName);
+    const res = await accessConfigRepository.findOne({ filterByTk: tokenControlConfigKey });
     if (res) {
       this.app.authManager.accessController.setConfig(res.config);
     } else {
@@ -261,7 +261,7 @@ export class PluginAuthServer extends Plugin {
       };
       await accessConfigRepository.create({
         values: {
-          key: secAccessCtrlConfigKey,
+          key: tokenControlConfigKey,
           config,
         },
       });

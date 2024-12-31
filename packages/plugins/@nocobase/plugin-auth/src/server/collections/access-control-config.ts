@@ -9,10 +9,10 @@
 
 import { defineCollection } from '@nocobase/database';
 
-import { secAccessCtrlConfigCollName } from '../../constants';
+import { tokenControlConfigCollectionName } from '../../constants';
 
 export default defineCollection({
-  name: secAccessCtrlConfigCollName,
+  name: tokenControlConfigCollectionName,
   autoGenId: false,
   createdAt: true,
   createdBy: true,
