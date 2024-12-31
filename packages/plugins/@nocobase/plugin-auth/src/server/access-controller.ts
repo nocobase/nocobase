@@ -77,7 +77,7 @@ export class AccessController implements AccessService {
     });
     return id;
   }
-  async updateAccess(id: string, value: Partial<AccessInfo>) {
+  async set(id: string, value: Partial<AccessInfo>) {
     const accessInfo = await this.accessMap.get(id);
     if (!accessInfo) throw new Error('Access not found');
     return this.accessMap.set(id, { ...accessInfo, ...value });
@@ -92,7 +92,7 @@ export class AccessController implements AccessService {
       if (access.resigned) return { status: 'unrenewable' };
       const preAccessInfo = await this.accessMap.get(id);
       const newId = randomUUID();
-      await this.updateAccess(id, { resigned: true });
+      await this.set(id, { resigned: true });
       const accessInfo = {
         id: newId,
         lastAccessTime: Date.now(),

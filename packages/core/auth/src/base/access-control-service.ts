@@ -19,6 +19,6 @@ export interface IAccessControlService<AccessInfo = any> {
   setConfig(config: IAccessControlConfig): Promise<any>;
   renew(accessId: string): Promise<{ status: 'renewed'; id: string } | { status: 'missing' | 'unrenewable' }>;
   add(): Promise<string>;
-  updateAccess(id: string, value: Partial<AccessInfo>): Promise<void>;
+  set(id: string, value: Partial<AccessInfo>): Promise<void>;
   check(accessId: string): Promise<{ status: JTIStatus }>;
 }
