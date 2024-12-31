@@ -12,42 +12,10 @@ import { uid } from '@formily/shared';
 import { css, SchemaComponent, useAPIClient, useCompile, useRequest } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Checkbox, message, Table } from 'antd';
-import _, { uniq } from 'lodash';
+import { uniq } from 'lodash';
 import React, { createContext, FC, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RolesManagerContext } from '../RolesManagerProvider';
-
-const findUids = (items) => {
-  if (!Array.isArray(items)) {
-    return [];
-  }
-  const uids = [];
-  for (const item of items) {
-    uids.push(item.uid);
-    uids.push(...findUids(item.children));
-  }
-  return uids;
-};
-const getParentUids = (tree, func, path = []) => {
-  if (!tree) return [];
-  for (const data of tree) {
-    path.push(data.uid);
-    if (func(data)) return path;
-    if (data.children) {
-      const findChildren = getParentUids(data.children, func, path);
-      if (findChildren.length) return findChildren;
-    }
-    path.pop();
-  }
-  return [];
-};
-const getChildrenUids = (data = [], arr = []) => {
-  for (const item of data) {
-    arr.push(item.uid);
-    if (item.children && item.children.length) getChildrenUids(item.children, arr);
-  }
-  return arr;
-};
 
 interface MenuItem {
   title: string;
@@ -63,7 +31,7 @@ const toItems = (items, parent?: MenuItem): MenuItem[] => {
 
   return items.map((item) => {
     const children = toItems(item.children, item);
-    const hideChildren = children.length <= 1;
+    const hideChildren = children.length === 0;
 
     return {
       title: item.title,
@@ -76,17 +44,14 @@ const toItems = (items, parent?: MenuItem): MenuItem[] => {
   });
 };
 
-const findIDList = (items) => {
+const getAllChildrenId = (items) => {
   if (!Array.isArray(items)) {
     return [];
   }
   const IDList = [];
   for (const item of items) {
     IDList.push(item.id);
-    if (item.hideChildren && !_.isNil(item.firstTabId)) {
-      IDList.push(item.firstTabId);
-    }
-    IDList.push(...findIDList(item.children));
+    IDList.push(...getAllChildrenId(item.children));
   }
   return IDList;
 };
@@ -167,7 +132,7 @@ export const MenuPermissions: React.FC<{
   const { role, setRole } = useContext(RolesManagerContext);
   const api = useAPIClient();
   const { t } = useTranslation();
-  const allIDList = findIDList(items);
+  const allIDList = getAllChildrenId(items);
   const [IDList, setIDList] = useState([]);
   const { loading, refresh } = useRequest(
     {
@@ -203,13 +168,8 @@ export const MenuPermissions: React.FC<{
       }
 
       if (menuItem.children) {
-        newIDList = newIDList.filter((id) => !menuItem.children.map((item) => item.id).includes(id));
+        newIDList = newIDList.filter((id) => !getAllChildrenId(menuItem.children).includes(id));
         shouldRemove.push(...menuItem.children.map((item) => item.id));
-      }
-
-      if (menuItem.hideChildren && !_.isNil(menuItem.firstTabId)) {
-        shouldRemove.push(menuItem.firstTabId);
-        newIDList = newIDList.filter((id) => id !== menuItem.firstTabId);
       }
 
       setIDList(newIDList);
@@ -228,14 +188,9 @@ export const MenuPermissions: React.FC<{
       }
 
       if (menuItem.children) {
-        const childrenIDList = menuItem.children.map((item) => item.id);
+        const childrenIDList = getAllChildrenId(menuItem.children);
         newIDList.push(...childrenIDList);
         shouldAdd.push(...childrenIDList);
-      }
-
-      if (menuItem.hideChildren && !_.isNil(menuItem.firstTabId)) {
-        shouldAdd.push(menuItem.firstTabId);
-        newIDList.push(menuItem.firstTabId);
       }
 
       setIDList(uniq(newIDList));
@@ -293,7 +248,7 @@ export const MenuPermissions: React.FC<{
         rowKey={'id'}
         pagination={false}
         expandable={{
-          defaultExpandAllRows: true,
+          defaultExpandAllRows: false,
         }}
         columns={[
           {
