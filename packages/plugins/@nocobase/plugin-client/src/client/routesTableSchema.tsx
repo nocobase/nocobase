@@ -535,7 +535,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                     const path = `${basenameOfCurrentRouter.slice(0, -1)}${basename}/${getSchemaUidByRouteId(
                       recordData.parentId,
                       data.data,
-                    )}/tabs/${recordData.tabSchemaName}`;
+                    )}/tabs/${recordData.tabSchemaName || recordData.schemaUid}`;
                     recordData._path = path;
 
                     return (
