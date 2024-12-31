@@ -100,7 +100,7 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
   inherits?: string[] | string;
   viewName?: string;
   writableView?: boolean;
-
+  isThrough?: boolean;
   filterTargetKey?: string | string[];
   fields?: FieldOptions[];
   model?: string | ModelStatic<Model>;
