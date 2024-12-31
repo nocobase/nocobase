@@ -39,6 +39,7 @@ export class PluginAuthServer extends Plugin {
       app: this.app,
       db: this.db,
       cache: this.cache,
+      authManager: this.app.authManager,
     });
     this.app.authManager.setStorer(storer);
 

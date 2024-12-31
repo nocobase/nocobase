@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Storer as IStorer } from '@nocobase/auth';
+import { AuthManager, Storer as IStorer } from '@nocobase/auth';
 import { Cache } from '@nocobase/cache';
 import { Database, Model } from '@nocobase/database';
 import { Application } from '@nocobase/server';
@@ -17,12 +17,24 @@ export class Storer implements IStorer {
   db: Database;
   cache: Cache;
   app: Application;
+  authManager: AuthManager;
   key = 'authenticators';
 
-  constructor({ app, db, cache }: { app?: Application; db: Database; cache: Cache }) {
+  constructor({
+    app,
+    db,
+    cache,
+    authManager,
+  }: {
+    app?: Application;
+    db: Database;
+    cache: Cache;
+    authManager: AuthManager;
+  }) {
     this.app = app;
     this.db = db;
     this.cache = cache;
+    this.authManager = authManager;
 
     this.db.on('authenticators.afterSave', async (model: AuthModel) => {
       if (!model.enabled) {
@@ -44,7 +56,10 @@ export class Storer implements IStorer {
     if (!$env) {
       return authenticator;
     }
-    authenticator.dataValues = $env.renderJsonTemplate(authenticator.dataValues);
+    const config = this.authManager.getAuthConfig(authenticator.authType);
+    authenticator.dataValues.options = $env.renderJsonTemplate(authenticator.dataValues.options, {
+      omit: config.auth['optionsKeysNotAllowedInEnv'],
+    });
     return authenticator;
   }
 

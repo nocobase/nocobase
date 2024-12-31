@@ -8,6 +8,7 @@
  */
 
 import { parse } from '@nocobase/utils';
+import _ from 'lodash';
 
 export class Environment {
   private vars = {};
@@ -28,7 +29,17 @@ export class Environment {
     return this.vars;
   }
 
-  renderJsonTemplate(template: any) {
+  renderJsonTemplate(template: any, options?: { omit?: string[] }) {
+    if (options?.omit) {
+      const omitTemplate = _.omit(template, options.omit);
+      const parsed = parse(omitTemplate)({
+        $env: this.vars,
+      });
+      for (const key of options.omit) {
+        _.set(parsed, key, _.get(template, key));
+      }
+      return parsed;
+    }
     return parse(template)({
       $env: this.vars,
     });
