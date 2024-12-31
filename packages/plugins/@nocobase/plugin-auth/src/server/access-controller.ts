@@ -66,7 +66,7 @@ export class AccessController implements AccessService {
   setConfig(config: Partial<IAccessControlConfig>) {
     return this.cache.set('config', config);
   }
-  async addAccess() {
+  async add() {
     const id = randomUUID();
     const currTS = Date.now();
     await this.accessMap.set(id, {

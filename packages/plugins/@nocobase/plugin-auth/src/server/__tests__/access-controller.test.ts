@@ -151,7 +151,7 @@ describe('auth', () => {
   });
 
   it('when call refreshAccess with same jti multiple times, only one refreshed', async () => {
-    const jti = await auth.accessController.addAccess();
+    const jti = await auth.accessController.add();
     const allSettled = await Promise.allSettled([
       auth.accessController.renew(jti),
       auth.accessController.renew(jti),

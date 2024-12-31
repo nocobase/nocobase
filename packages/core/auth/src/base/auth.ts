@@ -131,7 +131,7 @@ export class BaseAuth extends Auth {
     if (!user) {
       this.ctx.throw(401, 'Unauthorized');
     }
-    const accessId = await this.accessController.addAccess();
+    const accessId = await this.accessController.add();
     const expiresIn = (await this.accessController.getConfig()).tokenExpirationTime;
     const token = this.jwt.sign(
       {

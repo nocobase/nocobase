@@ -52,9 +52,10 @@ export function authCheckMiddleware({ app }: { app: Application }) {
           debouncedRedirect(() => {
             app.apiClient.auth.setToken(null);
             Modal.confirm({
-              title: app.i18n.t('Inactivity warning'),
+              title: app.i18n.t('Inactivity warning', { ns: 'auth' }),
               content: app.i18n.t(
                 'You have been inactive for a while and will be signed out. Please sign in again to continue.',
+                { ns: 'auth' },
               ),
               onOk: () => {
                 app.router.navigate(`/signin?redirect=/${redirectPath}${search}`);

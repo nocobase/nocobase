@@ -160,7 +160,7 @@ export class MockServer extends Application {
         }
         if (method === 'signIn') {
           return async (options: { userId: string; expiresIn?: string }) => {
-            const accessId = await self.authManager.accessController.addAccess();
+            const accessId = await self.authManager.accessController.add();
             const expiresIn =
               options.expiresIn || (await self.authManager.accessController.getConfig()).tokenExpirationTime;
             return proxy
