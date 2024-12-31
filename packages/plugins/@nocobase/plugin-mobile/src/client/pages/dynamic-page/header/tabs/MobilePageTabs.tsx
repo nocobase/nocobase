@@ -11,7 +11,7 @@ import { Space, Tabs, TabsProps } from 'antd-mobile';
 import React, { FC, useCallback } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
-import { DndContext, DndContextProps, Icon, SortableItem } from '@nocobase/client';
+import { DndContext, DndContextProps, Icon, SortableItem, useCompile } from '@nocobase/client';
 import { useMobileRoutes } from '../../../../mobile-providers';
 import { useMobilePage } from '../../context';
 import { MobilePageTabInitializer } from './initializer';
@@ -21,6 +21,7 @@ import { useStyles } from './styles';
 export const MobilePageTabs: FC = () => {
   const { activeTabBarItem, resource, refresh } = useMobileRoutes();
   const { displayTabs = false } = useMobilePage();
+  const compile = useCompile();
 
   const navigate = useNavigate();
   const { componentCls, hashId } = useStyles();
@@ -66,10 +67,10 @@ export const MobilePageTabs: FC = () => {
                     {item.icon ? (
                       <Space>
                         <Icon type={item.icon} />
-                        {item.title}
+                        {compile(item.title)}
                       </Space>
                     ) : (
-                      item.title
+                      compile(item.title)
                     )}
                   </SortableItem>
                 }
