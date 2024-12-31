@@ -119,6 +119,7 @@ export interface ApplicationOptions {
   i18n?: i18n | InitOptions;
   plugins?: PluginConfiguration[];
   acl?: boolean;
+  auth?: boolean;
   logger?: AppLoggerOptions;
   /**
    * @internal
@@ -1216,6 +1217,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._authManager = new AuthManager({
       authKey: 'X-Authenticator',
       default: 'basic',
+      skipAuthError: this.options.auth === false,
       ...(this.options.authManager || {}),
     });
 

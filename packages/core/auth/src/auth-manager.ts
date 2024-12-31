@@ -30,6 +30,7 @@ export type AuthManagerOptions = {
   authKey: string;
   default?: string;
   jwt?: JwtOptions;
+  skipAuthError?: boolean;
 };
 
 type AuthConfig = {
@@ -44,6 +45,7 @@ export class AuthManager {
    */
   jwt: JwtService;
   accessController: ITokenControlService;
+  protected skipAuthError: boolean;
 
   protected options: AuthManagerOptions;
   protected authTypes: Registry<AuthConfig> = new Registry();
@@ -52,6 +54,7 @@ export class AuthManager {
 
   constructor(options: AuthManagerOptions) {
     this.options = options;
+    this.skipAuthError = options.skipAuthError || false;
     this.jwt = new JwtService(options.jwt);
   }
 
@@ -147,7 +150,9 @@ export class AuthManager {
             ctx.auth.user = user;
           }
         }
-        if (result.token.status === 'valid' && (result.token.type === 'API' || result.jti.status === 'valid')) {
+        if (this.skipAuthError) {
+          return next();
+        } else if (result.token.status === 'valid' && (result.token.type === 'API' || result.jti.status === 'valid')) {
           return next();
         } else {
           ctx.throw(401, ctx.t('Unauthorized'), {

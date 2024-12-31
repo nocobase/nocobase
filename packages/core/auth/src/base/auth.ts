@@ -111,7 +111,7 @@ export class BaseAuth extends Auth {
       return result;
     } catch (err) {
       this.ctx.logger.error(err, { method: 'check' });
-      return { token: { status: 'invalid' }, user: null, message: err.message };
+      return { token: { status: 'invalid' }, message: err.message };
     }
   }
 

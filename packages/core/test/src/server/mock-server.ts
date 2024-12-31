@@ -330,8 +330,8 @@ export async function createMockCluster({
 }
 
 export async function createMockServer(options: MockServerOptions = {}): Promise<MockServer> {
-  const { version, beforeInstall, skipInstall, skipStart, skipAuthCheck = true, ...others } = options;
-  const app: MockServer = mockServer(others);
+  const { version, beforeInstall, skipInstall, skipStart, ...others } = options;
+  const app: MockServer = mockServer({ auth: false, ...others });
   if (!skipInstall) {
     if (beforeInstall) {
       await beforeInstall(app);
@@ -343,18 +343,6 @@ export async function createMockServer(options: MockServerOptions = {}): Promise
   }
   if (!skipStart) {
     await app.runCommandThrowError('start');
-  }
-  if (skipAuthCheck) {
-    app.use(
-      async (ctx, next) => {
-        try {
-          await next();
-        } catch (error) {
-          if (error.status === 401) return next();
-        }
-      },
-      { tag: 'skip-auth', before: ['auth'] },
-    );
   }
   return app;
 }
