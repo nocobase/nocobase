@@ -308,14 +308,7 @@ export const ReadPrettyInternalViewer: React.FC<ReadPrettyInternalViewerProps> =
     // The recordData here is only provided when the popup is opened, not the current row record
     <VariablePopupRecordProvider>
       <WithoutTableFieldResource.Provider value={true}>
-        <NocoBaseRecursionField
-          schema={fieldSchema}
-          onlyRenderProperties
-          basePath={field.address}
-          filterProperties={(s) => {
-            return s['x-component'] === 'AssociationField.Viewer';
-          }}
-        />
+        <NocoBaseRecursionField schema={fieldSchema} onlyRenderProperties basePath={field.address} />
       </WithoutTableFieldResource.Provider>
     </VariablePopupRecordProvider>
   );
