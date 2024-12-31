@@ -137,17 +137,15 @@ export class AuthManager {
         ctx.logger.warn(err.message, { method: 'check', authenticator: name });
         return next();
       }
-      const result = await ctx.auth.check();
-
-      if (authenticator) {
-        if (result.user) {
-          ctx.auth.user = result.user;
-        }
-      }
-
       if (ctx.isPublicAction) {
         return next();
       } else {
+        const { user, ...result } = await ctx.auth.check();
+        if (authenticator) {
+          if (user) {
+            ctx.auth.user = user;
+          }
+        }
         if (result.token.status === 'valid' && (result.token.type === 'API' || result.jti.status === 'valid')) {
           return next();
         } else {
