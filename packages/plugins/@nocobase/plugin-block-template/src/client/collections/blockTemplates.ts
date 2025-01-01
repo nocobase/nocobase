@@ -24,6 +24,17 @@ export const blockTemplatesCollection = {
     },
     {
       type: 'string',
+      name: 'key',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        title: "{{t('Name')}}",
+        required: true,
+        'x-component': 'Input',
+      },
+    },
+    {
+      type: 'string',
       name: 'description',
       interface: 'textarea',
       uiSchema: {

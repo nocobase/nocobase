@@ -47,7 +47,7 @@ export const editActionSchema = {
             submit: {
               title: tStr('Submit'),
               'x-component': 'Action',
-              'x-use-component-props': 'useSubmitActionProps',
+              'x-use-component-props': 'useEditActionProps',
             },
           },
         },

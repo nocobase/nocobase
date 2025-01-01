@@ -7,7 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { uid } from '@nocobase/utils/client';
 import { NAMESPACE } from '../constants';
+import { createForm } from '@formily/core';
 
 export const createActionSchema = {
   type: 'void',
@@ -17,13 +19,22 @@ export const createActionSchema = {
   'x-component-props': {
     type: 'primary',
     icon: 'PlusOutlined',
+    openMode: 'drawer',
   },
   properties: {
     drawer: {
       type: 'void',
       'x-component': 'Action.Drawer',
       title: `{{t("Add new", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'Form',
+      'x-decorator': 'FormV2',
+      'x-use-decorator-props': () => {
+        const form = createForm({
+          initialValues: {
+            key: `t_${uid()}`,
+          },
+        });
+        return { form };
+      },
       properties: {
         form: {
           type: 'void',
@@ -32,6 +43,13 @@ export const createActionSchema = {
               type: 'string',
               'x-decorator': 'FormItem',
               'x-component': 'CollectionField',
+            },
+            key: {
+              type: 'string',
+              'x-decorator': 'FormItem',
+              'x-component': 'CollectionField',
+              description:
+                "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
             },
             description: {
               type: 'string',
@@ -47,7 +65,7 @@ export const createActionSchema = {
             submit: {
               title: 'Submit',
               'x-component': 'Action',
-              'x-use-component-props': 'useSubmitActionProps',
+              'x-use-component-props': 'useCreateActionProps',
             },
           },
         },

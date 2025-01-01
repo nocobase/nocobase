@@ -105,6 +105,21 @@ export const blockTemplatesSchema: ISchema = {
             },
           },
         },
+        key: {
+          type: 'void',
+          title: '{{ t("Name") }}',
+          'x-component': 'TableV2.Column',
+          'x-component-props': {
+            width: 170,
+          },
+          properties: {
+            key: {
+              type: 'string',
+              'x-component': 'CollectionField',
+              'x-pattern': 'readPretty',
+            },
+          },
+        },
         description: {
           type: 'void',
           title: '{{ t("Description") }}',

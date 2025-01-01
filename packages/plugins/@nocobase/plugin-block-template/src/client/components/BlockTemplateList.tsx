@@ -18,7 +18,8 @@ import { blockTemplatesCollection } from '../collections/blockTemplates';
 import { blockTemplatesSchema } from '../schemas/blockTemplates';
 import {
   useDuplicateAction,
-  useSubmitActionProps,
+  useCreateActionProps,
+  useEditActionProps,
   useEditFormProps,
   useDeleteAction,
   useBulkDestroyAction,
@@ -32,7 +33,8 @@ export const BlockTemplateList = () => {
         <SchemaComponent
           schema={blockTemplatesSchema}
           scope={{
-            useSubmitActionProps,
+            useCreateActionProps,
+            useEditActionProps,
             useEditFormProps,
             useDeleteAction,
             useDuplicateAction,

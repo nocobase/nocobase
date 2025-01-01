@@ -8,7 +8,8 @@
  */
 
 export * from './useDuplicateAction';
-export * from './useSubmitActionProps';
+export * from './useCreateActionProps';
+export * from './useEditActionProps';
 export * from './useDeleteAction';
 export * from './useEditFormProps';
 export * from './useBulkDestroyAction';
