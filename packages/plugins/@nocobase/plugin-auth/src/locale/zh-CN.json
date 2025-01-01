@@ -30,7 +30,7 @@
   "Sign up form": "注册表单",
   "At least one of the username or email fields is required": "至少需要设置用户名或邮箱中的一个字段为必填字段",
   "Password is not allowed to be changed": "密码不允许修改",
-  "Access control": "访问控制",
+  "Token policy": "Token 策略",
   "Token validity period": "Token 有效周期",
   "Login validity period": "登录有效时间",
   "Page inactivity timeout": "页面停留超时时间",

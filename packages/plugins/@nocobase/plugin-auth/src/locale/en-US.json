@@ -30,7 +30,7 @@
   "Sign up form": "Sign up form",
   "At least one of the username or email fields is required": "At least one of the username or email fields is required",
   "Password is not allowed to be changed": "Password is not allowed to be changed",
-  "Access control": "Access control",
+  "Token policy": "Token policy",
   "Token validity period": "Token validity period",
   "Login validity period": "Login validity period",
   "Page inactivity timeout": "Page inactivity timeout",
