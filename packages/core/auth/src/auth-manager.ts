@@ -147,6 +147,7 @@ export class AuthManager {
             if (user) {
               ctx.auth.user = user;
             }
+            return next();
           }
         } catch (error) {
           if (error instanceof AuthError) {

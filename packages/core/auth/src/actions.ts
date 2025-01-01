@@ -24,7 +24,12 @@ export const actions = {
     await next();
   },
   check: async (ctx, next) => {
-    ctx.body = ctx?.auth?.user || {};
-    await next();
+    try {
+      ctx.body = await ctx.auth.check();
+      await next();
+    } catch (error) {
+      ctx.body = {};
+      await next();
+    }
   },
 } as Handlers;
