@@ -26,12 +26,37 @@ type CheckResult = {
   message?: string;
 };
 
+type AuthErrorType =
+  | 'empty-token'
+  | 'expired-token'
+  | 'invalid-token'
+  | 'renewed-token'
+  | 'missing-jti'
+  | 'inactive-jti'
+  | 'renewed-jti'
+  | 'unrenewable-jti'
+  | 'blocked-jti'
+  | 'login-timeout-jti';
+
+type AhthErrorData = {
+  newToken?: string;
+};
+export class AuthError extends Error {
+  type: AuthErrorType;
+  data: AhthErrorData;
+  constructor(message: string, type: AuthErrorType, data: AhthErrorData = {}) {
+    super(message);
+    this.name = 'AuthError';
+    this.type = type;
+    this.data = data;
+  }
+}
 export type AuthExtend<T extends Auth> = new (config: AuthConfig) => T;
 
 interface IAuth {
   user: Model;
   // Check the authenticaiton status and return the current user.
-  check(): Promise<CheckResult>;
+  check(): Promise<Model>;
   signIn(): Promise<any>;
   signUp(): Promise<any>;
   signOut(): Promise<any>;
@@ -53,7 +78,7 @@ export abstract class Auth implements IAuth {
   }
 
   // The abstract methods are required to be implemented by all authentications.
-  abstract check(): Promise<CheckResult>;
+  abstract check(): Promise<Model>;
   // The following methods are mainly designed for user authentications.
 
   async signIn(): Promise<any> {}

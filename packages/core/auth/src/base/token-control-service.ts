@@ -13,7 +13,7 @@ export interface ITokenControlConfig {
   maxInactiveInterval: string;
 }
 
-export type JTIStatus = 'valid' | 'idle' | 'revoked' | 'missing' | 'renewed' | 'unrenewable' | 'renewed';
+export type JTIStatus = 'valid' | 'inactive' | 'blocked' | 'missing' | 'renewed' | 'login-timeout';
 export interface ITokenControlService<TokenInfo = any> {
   getConfig(): Promise<ITokenControlConfig>;
   setConfig(config: ITokenControlConfig): Promise<any>;

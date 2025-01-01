@@ -104,18 +104,18 @@ export class TokenController implements TokenControlService {
     const tokenInfo = await this.getTokenInfo(id);
     if (!tokenInfo) return { status: 'missing' };
 
-    if (tokenInfo.resigned) return { status: 'unrenewable' };
+    if (tokenInfo.resigned) return { status: 'renewed' };
 
     const signInTime = tokenInfo.signInTime;
     const config = await this.getConfig();
     const currTS = Date.now();
 
     if (currTS - tokenInfo.lastAccessTime > ms(config.maxInactiveInterval)) {
-      return { status: 'idle' };
+      return { status: 'inactive' };
     }
 
     if (Date.now() - signInTime > ms(config.maxTokenLifetime)) {
-      return { status: 'revoked' };
+      return { status: 'login-timeout' };
     }
 
     return { status: 'valid' };

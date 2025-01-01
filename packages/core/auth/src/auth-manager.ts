@@ -15,7 +15,7 @@ import { Auth, AuthExtend } from './auth';
 import { JwtOptions, JwtService } from './base/jwt-service';
 import { ITokenBlacklistService } from './base/token-blacklist-service';
 import { ITokenControlService } from './base/token-control-service';
-
+import { AuthError } from './auth';
 export interface Authenticator {
   authType: string;
   options: Record<string, any>;
@@ -120,16 +120,12 @@ export class AuthManager {
    */
   middleware() {
     const self = this;
-    const isPublicMiddleware = async (ctx: Context & { auth: Auth }, next: Next) => {
+
+    const checkMiddleware = async (ctx: Context & { auth: Auth }, next: Next) => {
       const { resourceName, actionName } = ctx.action;
       const acl = ctx.dataSource.acl as ACL;
-      if (ctx?.state) ctx.state.currentUser = null;
       const isPublicAction = await acl.allowManager.isAllowed(resourceName, actionName, ctx);
-      ctx.isPublicAction = isPublicAction;
-      return next();
-    };
 
-    const checkMiddle = async (ctx: Context & { auth: Auth }, next: Next) => {
       const name = ctx.get(self.options.authKey) || self.options.default;
 
       let authenticator: Auth;
@@ -141,27 +137,35 @@ export class AuthManager {
         ctx.logger.warn(err.message, { method: 'check', authenticator: name });
         return next();
       }
-      if (ctx.isPublicAction) {
+
+      if (isPublicAction) {
         return next();
       } else {
-        const { user, ...result } = await ctx.auth.check();
-        if (authenticator) {
-          if (user) {
-            ctx.auth.user = user;
+        try {
+          const user = await ctx.auth.check();
+          if (authenticator) {
+            if (user) {
+              ctx.auth.user = user;
+            }
           }
-        }
-        if (this.skipAuthError) {
-          return next();
-        } else if (result.token.status === 'valid' && (result.token.type === 'API' || result.jti.status === 'valid')) {
-          return next();
-        } else {
-          ctx.throw(401, ctx.t('Unauthorized'), {
-            code: 'UNAUTHORIZED',
-            data: result,
-          });
+        } catch (error) {
+          if (error instanceof AuthError) {
+            ctx.throw(
+              401,
+              {
+                message: error.message,
+                code: error.type,
+              },
+              {
+                data: error.data,
+              },
+            );
+          } else {
+            ctx.throw(401, error.message);
+          }
         }
       }
     };
-    return compose([isPublicMiddleware, checkMiddle]);
+    return checkMiddleware;
   }
 }

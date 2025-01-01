@@ -8,10 +8,10 @@
  */
 
 import { Collection, Model } from '@nocobase/database';
-import { Auth, AuthConfig } from '../auth';
+import { Cache } from '@nocobase/cache';
+import { Auth, AuthConfig, AuthError } from '../auth';
 import { JwtService } from './jwt-service';
 import { ITokenControlService } from './token-control-service';
-import { Cache } from '@nocobase/cache';
 
 /**
  * BaseAuth
@@ -69,53 +69,61 @@ export class BaseAuth extends Auth {
   }
 
   async check(): ReturnType<Auth['check']> {
-    try {
-      const result = {} as Awaited<ReturnType<Auth['check']>>;
-      const token = this.ctx.getBearerToken();
-      if (!token) {
-        return { token: { status: 'empty' }, user: null };
-      }
+    const token = this.ctx.getBearerToken();
 
-      const { status, payload } = await this.jwt.verify(token);
-      const { userId, roleName, iat, temp, jti } = payload ?? {};
+    if (!token) {
+      throw new AuthError('Empty token', 'empty-token');
+    }
 
-      if (roleName) {
-        this.ctx.headers['x-role'] = roleName;
-      }
+    const { status: tokenStatus, payload } = await this.jwt.verify(token);
+    const { userId, roleName, iat, temp, jti } = payload ?? {};
 
-      const cache = this.ctx.cache as Cache;
-      const user = await cache.wrap(this.getCacheKey(userId), () =>
-        this.userRepository.findOne({
-          filter: {
-            id: userId,
-          },
-          raw: true,
-        }),
-      );
-      result.user = user;
+    if (roleName) {
+      this.ctx.headers['x-role'] = roleName;
+    }
 
-      result.token = { status, type: temp ? 'user' : 'API' };
+    const cache = this.ctx.cache as Cache;
+    const user = await cache.wrap(this.getCacheKey(userId), () =>
+      this.userRepository.findOne({
+        filter: {
+          id: userId,
+        },
+        raw: true,
+      }),
+    );
 
-      result.jti = await this.tokenController.check(jti);
-
-      if (temp) {
+    if (temp) {
+      if (tokenStatus === 'valid') {
         if (user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
-          result.token.status = 'invalid';
-        } else if (result.token.status === 'expired' && result.jti.status === 'valid') {
-          const refreshedData = await this.tokenController.renew(jti);
-          if (refreshedData.status === 'renewed') {
-            const expiresIn = (await this.tokenController.getConfig()).tokenExpirationTime;
-            const newToken = this.jwt.sign({ userId, roleName, temp }, { jwtid: refreshedData.id, expiresIn });
-            result.token.newToken = newToken;
+          throw new AuthError('User password changed', 'invalid-token');
+        } else {
+          const { status: JtiStatus } = await this.tokenController.check(jti);
+          if (JtiStatus === 'valid') {
+            return user;
+          } else {
+            throw new AuthError(`${JtiStatus} JTI`, `${JtiStatus}-jti`);
           }
-          result.jti.status = refreshedData.status;
         }
+      } else if (tokenStatus === 'expired') {
+        const { status: JtiStatus } = await this.tokenController.check(jti);
+        if (JtiStatus === 'valid') {
+          const renewedJti = await this.tokenController.renew(jti);
+          if (renewedJti.status === 'renewed') {
+            const expiresIn = (await this.tokenController.getConfig()).tokenExpirationTime;
+            const newToken = this.jwt.sign({ userId, roleName, temp }, { jwtid: renewedJti.id, expiresIn });
+            throw new AuthError('Token renewed', 'renewed-token', { newToken });
+          } else {
+            throw new AuthError(`${renewedJti.status} JTI`, `${renewedJti.status}-jti`);
+          }
+        } else {
+          throw new AuthError(`${JtiStatus} JTI`, `${JtiStatus}-jti`);
+        }
+      } else {
+        throw new AuthError(`${tokenStatus} token`, `${tokenStatus}-token`);
       }
-
-      return result;
-    } catch (err) {
-      this.ctx.logger.error(err, { method: 'check' });
-      return { token: { status: 'invalid' }, message: err.message };
+    } else {
+      if (tokenStatus === 'valid') return user;
+      else throw new AuthError(`${tokenStatus} token`, `${tokenStatus}-token`);
     }
   }
 
@@ -135,7 +143,7 @@ export class BaseAuth extends Auth {
     if (!user) {
       this.ctx.throw(401, 'Unauthorized');
     }
-    const accessId = await this.tokenController.add();
+    const jti = await this.tokenController.add();
     const expiresIn = (await this.tokenController.getConfig()).tokenExpirationTime;
     const token = this.jwt.sign(
       {
@@ -143,7 +151,7 @@ export class BaseAuth extends Auth {
         temp: true,
       },
       {
-        jwtid: accessId,
+        jwtid: jti,
         expiresIn,
       },
     );
