@@ -97,15 +97,24 @@ function getAllSelectedRowKeys(selectedRowKeys: number[], selectedRecord: any, s
     //   }
     // }
   } else {
-    // 过滤掉子节点为空的父节点
-    const parent = getRouteNodeByRouteId(selectedRecord?.parentId, treeArray);
-    if (parent) {
-      const allChildrenId = getAllChildrenId(parent.children);
-      const shouldSelectParent = allChildrenId.every((id) => result.includes(id));
-      if (!shouldSelectParent) {
-        result = result.filter((id) => id !== parent.id);
+    // 取消选中时，把所有父节点都取消选中
+    const allParentId = [];
+    let selected = selectedRecord;
+    while (selected?.parentId) {
+      allParentId.push(selected.parentId);
+      selected = getRouteNodeByRouteId(selected.parentId, treeArray);
+    }
+    for (const parentId of allParentId) {
+      const parent = getRouteNodeByRouteId(parentId, treeArray);
+      if (parent) {
+        const allChildrenId = getAllChildrenId(parent.children);
+        const shouldSelectParent = allChildrenId.every((id) => result.includes(id));
+        if (!shouldSelectParent) {
+          result = result.filter((id) => id !== parent.id);
+        }
       }
     }
+
     // 过滤掉父节点中的所有子节点
     const allChildrenId = getAllChildrenId(selectedRecord?.children);
     result = result.filter((id) => !allChildrenId.includes(id));
