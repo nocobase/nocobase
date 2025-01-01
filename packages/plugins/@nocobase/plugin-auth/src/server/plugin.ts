@@ -86,8 +86,8 @@ export class PluginAuthServer extends Plugin {
       },
     });
     // Register actions
-    Object.entries(authActions).forEach(([action, handler]) =>
-      this.app.resourceManager.getResource('auth')?.addAction(action, handler),
+    Object.entries(authActions).forEach(
+      ([action, handler]) => this.app.resourceManager.getResource('auth')?.addAction(action, handler),
     );
     Object.entries(authenticatorsActions).forEach(([action, handler]) =>
       this.app.resourceManager.registerActionHandler(`authenticators:${action}`, handler),
@@ -123,10 +123,11 @@ export class PluginAuthServer extends Plugin {
         logger: this.app.logger,
       } as any);
 
-      const user = await auth.check();
-
-      if (!user) {
-        this.app.logger.error(`Invalid token: ${payload.token}`);
+      let user: Model;
+      try {
+        user = await auth.check();
+      } catch (error) {
+        this.app.logger.error(error);
         return;
       }
 

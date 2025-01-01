@@ -26,7 +26,7 @@ export type AuthErrorType =
   | 'missing'
   | 'inactive'
   | 'renewed'
-  | 'unrenewable'
+  | 'renewed'
   | 'blocked'
   | 'login-timeout';
 

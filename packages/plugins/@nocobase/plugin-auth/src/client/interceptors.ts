@@ -10,6 +10,7 @@
 import { Modal } from 'antd';
 import debounce from 'lodash/debounce';
 import { Application } from '@nocobase/client';
+import type { AxiosResponse } from 'axios';
 
 export type AuthErrorType =
   | 'empty'
@@ -19,7 +20,6 @@ export type AuthErrorType =
   | 'missing'
   | 'inactive'
   | 'renewed'
-  | 'unrenewable'
   | 'blocked'
   | 'login-timeout';
 
@@ -37,13 +37,18 @@ const debouncedRedirect = debounce(
 );
 export function authCheckMiddleware({ app }: { app: Application }) {
   const axios = app.apiClient.axios;
-  const resHandler = (res) => res;
+  const resHandler = (res: AxiosResponse) => {
+    const newToken = res.headers['x-new-token'];
+    if (newToken) app.apiClient.auth.setToken(newToken);
+    return res;
+  };
   const errHandler = (error) => {
     if (error.status === 401) {
       const errors = error?.response?.data?.errors;
+      const firstError = Array.isArray(errors) ? errors[0] : null;
+      if (!firstError) throw error;
       const authError = errors.find((error) => error.code === AUTHERRORNAME);
-      const errorData: AhthErrorData = authError?.data;
-      const errorType: AuthErrorType = authError?.type;
+      const errorType: AuthErrorType = firstError?.code;
       const state = app.router.state;
       const { pathname, search } = state.location;
       const basename = app.router.basename;
@@ -51,12 +56,7 @@ export function authCheckMiddleware({ app }: { app: Application }) {
         const redirectPath = pathname.startsWith(app.router.basename)
           ? pathname.slice(basename.length) || '/'
           : pathname;
-        if (errorData?.newToken) {
-          app.apiClient.auth.setToken(errorData?.newToken);
-          return axios.request(error.config);
-        } else if (errorType === 'renewed') {
-          return axios.request(error.config);
-        } else if (errorType === 'inactive') {
+        if (errorType === 'inactive') {
           debouncedRedirect(() => {
             app.apiClient.auth.setToken(null);
             Modal.confirm({

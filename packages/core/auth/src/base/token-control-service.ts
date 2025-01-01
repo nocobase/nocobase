@@ -17,7 +17,7 @@ export type JTIStatus = 'valid' | 'inactive' | 'blocked' | 'missing' | 'renewed'
 export interface ITokenControlService<TokenInfo = any> {
   getConfig(): Promise<ITokenControlConfig>;
   setConfig(config: ITokenControlConfig): Promise<any>;
-  renew(jti: string): Promise<{ status: 'renewed'; id: string } | { status: 'missing' | 'unrenewable' }>;
+  renew(jti: string): Promise<{ status: 'renewing'; id: string } | { status: 'missing' | 'renewed' }>;
   add(): Promise<string>;
   set(id: string, value: Partial<TokenInfo>): Promise<void>;
   check(jti: string): Promise<{ status: JTIStatus }>;

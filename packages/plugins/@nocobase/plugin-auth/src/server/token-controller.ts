@@ -86,7 +86,7 @@ export class TokenController implements TokenControlService {
     try {
       const tokenInfo = await this.get(id);
       if (!tokenInfo) return { status: 'missing' };
-      if (tokenInfo.resigned) return { status: 'unrenewable' };
+      if (tokenInfo.resigned) return { status: 'renewed' };
       const preTokenInfo = await this.get(id);
       const newId = randomUUID();
       await this.set(id, { resigned: true });
@@ -97,7 +97,7 @@ export class TokenController implements TokenControlService {
         signInTime: preTokenInfo.signInTime,
       };
       await this.setTokenInfo(newId, newTokenInfo);
-      return { status: 'renewed', id: newId };
+      return { status: 'renewing', id: newId };
     } finally {
       release();
     }

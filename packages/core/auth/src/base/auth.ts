@@ -113,10 +113,10 @@ export class BaseAuth extends Auth {
         const { status: JtiStatus } = await this.tokenController.check(jti);
         if (JtiStatus === 'valid') {
           const renewedJti = await this.tokenController.renew(jti);
-          if (renewedJti.status === 'renewed') {
+          if (renewedJti.status === 'renewing') {
             const expiresIn = (await this.tokenController.getConfig()).tokenExpirationTime;
             const newToken = this.jwt.sign({ userId, roleName, temp }, { jwtid: renewedJti.id, expiresIn });
-            this.ctx.body = merge(this.ctx.body ?? {}, { meta: { newToken } });
+            this.ctx.res.setHeader('x-new-token', newToken);
             return user;
           } else {
             this.ctx.throw(401, { message: `${JtiStatus} token`, code: JtiStatus });
