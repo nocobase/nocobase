@@ -122,19 +122,19 @@ export class MockServer extends Application {
   }
 
   agent(callback?): ExtendedAgent {
-    const self = this;
     const agent = supertest.agent(callback || this.callback());
     const prefix = this.resourcer.options.prefix;
 
     const proxy = new Proxy(agent, {
       get(target, method: string, receiver) {
         if (['login', 'loginUsingId'].includes(method)) {
-          return (userOrId: any, roleName?: string, jwtOptions?: { temp: boolean }) => {
+          return (userOrId: any, roleName?: string) => {
             return proxy
               .auth(
                 jwt.sign(
                   {
                     userId: typeof userOrId === 'number' ? userOrId : userOrId?.id,
+                    temp: true,
                     roleName,
                   },
                   process.env.APP_KEY,
@@ -277,7 +277,6 @@ export type MockServerOptions = ApplicationOptions & {
   beforeInstall?: BeforeInstallFn;
   skipInstall?: boolean;
   skipStart?: boolean;
-  skipAuthCheck?: boolean;
 };
 
 export type MockClusterOptions = MockServerOptions & {
@@ -342,7 +341,7 @@ export async function createMockServer(options: MockServerOptions = {}): Promise
     // ignore errors
   }
   const { version, beforeInstall, skipInstall, skipStart, ...others } = options;
-  const app: MockServer = mockServer({ auth: false, ...others });
+  const app: MockServer = mockServer(others);
   if (!skipInstall) {
     if (beforeInstall) {
       await beforeInstall(app);

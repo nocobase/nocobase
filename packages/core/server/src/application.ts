@@ -1221,7 +1221,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._authManager = new AuthManager({
       authKey: 'X-Authenticator',
       default: 'basic',
-      skipAuthError: this.options.auth === false,
       ...(this.options.authManager || {}),
     });
 
@@ -1239,6 +1238,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         }
       }
     });
+
     this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth' });
     this._dataSourceManager.use(validateFilterParams, { tag: 'validate-filter-params', before: ['auth'] });
 
