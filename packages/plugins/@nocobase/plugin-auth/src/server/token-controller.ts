@@ -13,7 +13,7 @@ import { randomUUID } from 'crypto';
 import ms from 'ms';
 import Application from '@nocobase/server';
 import Database, { Repository, Model } from '@nocobase/database';
-import { tokenInfoListCollName } from '../constants';
+import { issuedTokensCollectionName } from '../constants';
 
 type TokenInfo = {
   id: string;
@@ -33,7 +33,7 @@ export class TokenController implements TokenControlService {
   }
   getTokenInfo(id: string): Promise<TokenInfo | null> {
     return this.cache.wrap(`access:${id}`, async () => {
-      const repo = this.app.db.getRepository<Repository<TokenInfo>>(tokenInfoListCollName);
+      const repo = this.app.db.getRepository<Repository<TokenInfo>>(issuedTokensCollectionName);
       const tokenInfo = await repo.findOne({ filterByTk: id });
       if (!tokenInfo) return null;
       else return tokenInfo.dataValues as TokenInfo;
@@ -42,7 +42,7 @@ export class TokenController implements TokenControlService {
 
   async setTokenInfo(id: string, value: TokenInfo): Promise<void> {
     const createOrUpdate = async (id: string, value: TokenInfo) => {
-      const repo = this.app.db.getRepository<Repository<TokenInfo>>(tokenInfoListCollName);
+      const repo = this.app.db.getRepository<Repository<TokenInfo>>(issuedTokensCollectionName);
       const exist = await repo.findOne({ filterByTk: id });
       if (exist) {
         await repo.update({ filterByTk: id, values: value });

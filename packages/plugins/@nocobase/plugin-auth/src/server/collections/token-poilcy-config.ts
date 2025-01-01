@@ -9,10 +9,10 @@
 
 import { defineCollection } from '@nocobase/database';
 
-import { tokenInfoListCollName } from '../../constants';
+import { tokenPolicyCollectionName } from '../../constants';
 
 export default defineCollection({
-  name: tokenInfoListCollName,
+  name: tokenPolicyCollectionName,
   autoGenId: false,
   createdAt: true,
   createdBy: true,
@@ -20,26 +20,17 @@ export default defineCollection({
   updatedBy: true,
   fields: [
     {
-      name: 'id',
+      name: 'key',
       type: 'string',
       primaryKey: true,
       allowNull: false,
       interface: 'input',
     },
     {
-      type: 'bigInt',
-      name: 'lastAccessTime',
+      type: 'json',
+      name: 'config',
       allowNull: false,
-    },
-    {
-      type: 'bigInt',
-      name: 'signInTime',
-      allowNull: false,
-    },
-    {
-      type: 'boolean',
-      name: 'resigned',
-      allowNull: false,
+      defaultValue: {},
     },
   ],
 });

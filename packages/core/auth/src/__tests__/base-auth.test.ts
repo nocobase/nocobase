@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import accessControlConfig from 'packages/plugins/@nocobase/plugin-auth/src/server/collections/access-control-config';
 import { BaseAuth } from '../base/auth';
 import { vi } from 'vitest';
 

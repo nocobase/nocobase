@@ -8,25 +8,25 @@
  */
 
 import { Migration } from '@nocobase/server';
-import { tokenControlConfigCollectionName, tokenControlConfigKey } from '../../constants';
+import { tokenPolicyCollectionName, tokenPolicyRecordKey } from '../../constants';
 export default class extends Migration {
   on = 'afterLoad'; // 'beforeLoad' or 'afterLoad'
   appVersion = '<1.6.1';
 
   async up() {
-    const accessConfigRepository = this.app.db.getRepository(tokenControlConfigCollectionName);
-    const res = await accessConfigRepository.findOne({ filterByTk: tokenControlConfigKey });
-    if (res) {
-      this.app.authManager.tokenController.setConfig(res.config);
+    const tokenPolicyRepo = this.app.db.getRepository(tokenPolicyCollectionName);
+    const tokenPolicy = await tokenPolicyRepo.findOne({ filterByTk: tokenPolicyRecordKey });
+    if (tokenPolicy) {
+      this.app.authManager.tokenController.setConfig(tokenPolicy.config);
     } else {
       const config = {
         tokenExpirationTime: process.env.JWT_EXPIRES_IN ?? '6h',
         maxTokenLifetime: '1d',
         maxInactiveInterval: '3h',
       };
-      await accessConfigRepository.create({
+      await tokenPolicyRepo.create({
         values: {
-          key: tokenControlConfigKey,
+          key: tokenPolicyRecordKey,
           config,
         },
       });

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const tokenControlConfigKey = 'token-control-config';
-export const tokenControlConfigCacheKey = 'auth:' + tokenControlConfigKey;
-export const tokenControlConfigCollectionName = 'tokenControlConfig';
-export const tokenInfoListCollName = 'tokenInfoList';
+export const tokenPolicyRecordKey = 'token-policy-config';
+export const tokenPolicyCacheKey = 'auth:' + tokenPolicyRecordKey;
+export const tokenPolicyCollectionName = 'tokenControlConfig';
+export const issuedTokensCollectionName = 'issuedTokens';

@@ -12,7 +12,7 @@ import { App as AntdApp, Table as AntdTable, Typography, Button } from 'antd';
 import { useForm } from '@formily/react';
 import { createForm } from '@formily/core';
 import { useAPIClient } from '@nocobase/client';
-import { tokenControlConfigCollectionName, tokenControlConfigKey } from '../../../constants';
+import { tokenPolicyCollectionName, tokenPolicyRecordKey } from '../../../constants';
 import { useAuthTranslation } from '../../locale';
 
 const useEditForm = () => {
@@ -22,9 +22,7 @@ const useEditForm = () => {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const { data } = await apiClient
-          .resource(tokenControlConfigCollectionName)
-          .get({ filterByTk: tokenControlConfigKey });
+        const { data } = await apiClient.resource(tokenPolicyCollectionName).get({ filterByTk: tokenPolicyRecordKey });
         if (data?.data?.config) form.setValues(data.data.config);
       } catch (error) {
         console.error(error);
@@ -44,9 +42,9 @@ export const useSubmitActionProps = () => {
     type: 'primary',
     async onClick() {
       await form.submit();
-      const res = await apiClient.resource(tokenControlConfigCollectionName).update({
+      const res = await apiClient.resource(tokenPolicyCollectionName).update({
         values: { config: form.values },
-        filterByTk: tokenControlConfigKey,
+        filterByTk: tokenPolicyRecordKey,
       });
       if (res && res.status === 200) message.success(t('Saved successfully!'));
     },
