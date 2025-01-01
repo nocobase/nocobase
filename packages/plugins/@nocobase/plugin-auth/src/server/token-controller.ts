@@ -32,7 +32,7 @@ export class TokenController implements TokenControlService {
     this.app = app;
   }
   getTokenInfo(id: string): Promise<TokenInfo | null> {
-    return this.cache.wrap(`access:${id}`, async () => {
+    return this.cache.wrap(`token-jti:${id}`, async () => {
       const repo = this.app.db.getRepository<Repository<TokenInfo>>(issuedTokensCollectionName);
       const tokenInfo = await repo.findOne({ filterByTk: id });
       if (!tokenInfo) return null;

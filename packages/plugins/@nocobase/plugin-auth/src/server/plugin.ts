@@ -203,21 +203,21 @@ export class PluginAuthServer extends Plugin {
       'auth:signOut',
     ]);
     this.app.acl.registerSnippet({
-      name: `pm.security-settings.access`,
+      name: `pm.security.token-policy`,
       actions: [`${tokenPolicyCollectionName}:*`],
     });
 
     if (!this.app.authManager.tokenController) {
       const cache = await this.app.cacheManager.createCache({
-        name: 'auth-access-controller',
-        prefix: 'auth-access-controller',
+        name: 'auth-token-controller',
+        prefix: 'auth-token-controller',
       });
       const tokenController = new TokenController({ cache, app: this.app });
 
       this.app.authManager.setTokenControlService(tokenController);
-      const accessConfigRepository = this.app.db.getRepository(tokenPolicyCollectionName);
+      const tokenPolicyRepo = this.app.db.getRepository(tokenPolicyCollectionName);
       try {
-        const res = await accessConfigRepository.findOne({ filterByTk: tokenPolicyRecordKey });
+        const res = await tokenPolicyRepo.findOne({ filterByTk: tokenPolicyRecordKey });
         if (res) {
           this.app.authManager.tokenController.setConfig(res.config);
         }
@@ -249,8 +249,8 @@ export class PluginAuthServer extends Plugin {
       });
     }
 
-    const accessConfigRepository = this.app.db.getRepository(tokenPolicyCollectionName);
-    const res = await accessConfigRepository.findOne({ filterByTk: tokenPolicyRecordKey });
+    const tokenPolicyRepo = this.app.db.getRepository(tokenPolicyCollectionName);
+    const res = await tokenPolicyRepo.findOne({ filterByTk: tokenPolicyRecordKey });
     if (res) {
       this.app.authManager.tokenController.setConfig(res.config);
     } else {
@@ -259,7 +259,7 @@ export class PluginAuthServer extends Plugin {
         maxTokenLifetime: '1d',
         maxInactiveInterval: '3h',
       };
-      await accessConfigRepository.create({
+      await tokenPolicyRepo.create({
         values: {
           key: tokenPolicyRecordKey,
           config,

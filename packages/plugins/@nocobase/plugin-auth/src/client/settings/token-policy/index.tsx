@@ -15,10 +15,10 @@ import { tval } from '@nocobase/utils/client';
 import { useAuthTranslation } from '../../locale';
 import { hooksNameMap, hooksMap } from './hooks';
 import { componentsMap, componentsNameMap } from './components';
-import { SecurityAccessConfig } from '../../../types';
+import { TokenPolicyConfig } from '../../../types';
 
 type Properties = {
-  [K in keyof SecurityAccessConfig | 'footer']: any;
+  [K in keyof TokenPolicyConfig | 'footer']: any;
 };
 const schema: ISchema & { properties: Properties } = {
   name: uid(),
@@ -73,7 +73,7 @@ const schema: ISchema & { properties: Properties } = {
   },
 };
 
-export const AccessSettings = () => {
+export const TokenPolicySettings = () => {
   const { t } = useAuthTranslation();
   return (
     <Card bordered={false}>

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export type SecurityAccessConfig = {
+export type TokenPolicyConfig = {
   tokenExpirationTime: string;
   maxTokenLifetime: string;
   maxInactiveInterval: string;

@@ -22,7 +22,7 @@ import { authCheckMiddleware } from './interceptors';
 const { AuthLayout, SignInPage, SignUpPage } = lazy(() => import('./pages'), 'AuthLayout', 'SignInPage', 'SignUpPage');
 // import { Authenticator } from './settings/Authenticator';
 const { Authenticator } = lazy(() => import('./settings/Authenticator'), 'Authenticator');
-const { AccessSettings } = lazy(() => import('./settings/access'), 'AccessSettings');
+const { TokenPolicySettings } = lazy(() => import('./settings/token-policy'), 'TokenPolicySettings');
 
 const { AuthenticatorsContextProvider, AuthLayout: ExportAuthLayout } = lazy(
   () => import('./pages'),
@@ -82,10 +82,10 @@ export class PluginAuthClient extends Plugin {
         AdminSettingsForm: Options,
       },
     });
-    this.app.pluginSettingsManager.add(`security.access`, {
-      title: `{{t("Access control", { ns: "${NAMESPACE}" })}}`,
-      Component: AccessSettings,
-      aclSnippet: `pm.security.access`,
+    this.app.pluginSettingsManager.add(`security.token-policy`, {
+      title: `{{t("Token policy", { ns: "${NAMESPACE}" })}}`,
+      Component: TokenPolicySettings,
+      aclSnippet: `pm.security.token-policy`,
       sort: 1,
     });
     this.app.apiClient.axios.interceptors.response.use(...authCheckMiddleware({ app: this.app }));
