@@ -113,7 +113,15 @@ export class PluginAuthServer extends Plugin {
     });
 
     this.app.on('ws:message:auth:token', async ({ clientId, payload }) => {
-      const auth = await this.app.authManager.get('basic', {
+      if (!payload || !payload.token || !payload.authenticator) {
+        this.app.emit(`ws:removeTag`, {
+          clientId,
+          tagKey: 'userId',
+        });
+        return;
+      }
+
+      const auth = await this.app.authManager.get(payload.authenticator, {
         getBearerToken: () => payload.token,
         app: this.app,
         db: this.app.db,
