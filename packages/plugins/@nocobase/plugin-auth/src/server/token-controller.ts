@@ -22,6 +22,8 @@ type TokenInfo = {
   resigned: boolean;
 };
 type TokenControlService = ITokenControlService<TokenInfo>;
+
+const JTICACHEKEY = 'token-jti';
 export class TokenController implements TokenControlService {
   cache: Cache;
   app: Application;
@@ -31,8 +33,8 @@ export class TokenController implements TokenControlService {
     this.cache = cache;
     this.app = app;
   }
-  getTokenInfo(id: string): Promise<TokenInfo | null> {
-    return this.cache.wrap(`token-jti:${id}`, async () => {
+  get(id: string): Promise<TokenInfo | null> {
+    return this.cache.wrap(`${JTICACHEKEY}:${id}`, async () => {
       const repo = this.app.db.getRepository<Repository<TokenInfo>>(issuedTokensCollectionName);
       const tokenInfo = await repo.findOne({ filterByTk: id });
       if (!tokenInfo) return null;
@@ -43,7 +45,7 @@ export class TokenController implements TokenControlService {
   async setTokenInfo(id: string, value: TokenInfo): Promise<void> {
     const createOrUpdate = async (id: string, value: TokenInfo) => {
       const repo = this.app.db.getRepository<Repository<TokenInfo>>(issuedTokensCollectionName);
-      const exist = await repo.findOne({ filterByTk: id });
+      const exist = await this.cache.get(`${JTICACHEKEY}:${id}`);
       if (exist) {
         await repo.update({ filterByTk: id, values: value });
       } else {
@@ -51,7 +53,7 @@ export class TokenController implements TokenControlService {
       }
     };
     await createOrUpdate(id, value);
-    await this.cache.set(`access:${id}`, value);
+    await this.cache.set(`${JTICACHEKEY}:${id}`, value);
     return;
   }
 
@@ -73,7 +75,7 @@ export class TokenController implements TokenControlService {
     return id;
   }
   async set(id: string, value: Partial<TokenInfo>) {
-    const tokenInfo = await this.getTokenInfo(id);
+    const tokenInfo = await this.get(id);
     if (!tokenInfo) throw new Error('jti not found');
     return this.setTokenInfo(id, { ...tokenInfo, ...value });
   }
@@ -82,10 +84,10 @@ export class TokenController implements TokenControlService {
     const lockKey = `plugin-auth:token-controller:renew:${id}`;
     const release = await this.app.lockManager.acquire(lockKey, 1000);
     try {
-      const tokenInfo = await this.getTokenInfo(id);
+      const tokenInfo = await this.get(id);
       if (!tokenInfo) return { status: 'missing' };
       if (tokenInfo.resigned) return { status: 'unrenewable' };
-      const preTokenInfo = await this.getTokenInfo(id);
+      const preTokenInfo = await this.get(id);
       const newId = randomUUID();
       await this.set(id, { resigned: true });
       const newTokenInfo = {
@@ -101,7 +103,7 @@ export class TokenController implements TokenControlService {
     }
   };
   check: TokenControlService['check'] = async (id) => {
-    const tokenInfo = await this.getTokenInfo(id);
+    const tokenInfo = await this.get(id);
     if (!tokenInfo) return { status: 'missing' };
 
     if (tokenInfo.resigned) return { status: 'renewed' };
