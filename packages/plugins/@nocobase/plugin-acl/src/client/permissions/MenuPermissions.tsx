@@ -155,6 +155,7 @@ export const MenuPermissions: React.FC<{
   const allChecked = allIDList.length === IDList.length;
 
   const handleChange = async (checked, menuItem) => {
+    // 处理取消选中
     if (checked) {
       let newIDList = IDList.filter((id) => id !== menuItem.id);
       const shouldRemove = [menuItem.id];
@@ -169,13 +170,15 @@ export const MenuPermissions: React.FC<{
 
       if (menuItem.children) {
         newIDList = newIDList.filter((id) => !getAllChildrenId(menuItem.children).includes(id));
-        shouldRemove.push(...menuItem.children.map((item) => item.id));
+        shouldRemove.push(...getAllChildrenId(menuItem.children));
       }
 
       setIDList(newIDList);
       await resource.remove({
         values: shouldRemove,
       });
+
+      // 处理选中
     } else {
       const newIDList = [...IDList, menuItem.id];
       const shouldAdd = [menuItem.id];
