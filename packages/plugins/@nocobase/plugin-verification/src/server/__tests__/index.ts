@@ -8,7 +8,6 @@
  */
 
 import { MockServer, createMockServer } from '@nocobase/test';
-import path from 'path';
 
 import { ApplicationOptions } from '@nocobase/server';
 
@@ -26,10 +25,6 @@ export async function getApp(options: MockAppOptions = {}): Promise<MockServer> 
   const app = await createMockServer({
     ...options,
     plugins: ['verification'],
-  });
-
-  await app.db.import({
-    directory: path.resolve(__dirname, './collections'),
   });
 
   try {

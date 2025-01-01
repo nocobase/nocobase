@@ -12,6 +12,7 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   origin: '@nocobase/plugin-acl',
   dumpRules: 'required',
+  description: 'Role data',
   migrationRules: ['overwrite', 'skip'],
   name: 'roles',
   title: '{{t("Roles")}}',

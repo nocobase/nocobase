@@ -10,7 +10,7 @@
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
-import { basename, resolve } from 'path';
+import { basename } from 'path';
 
 import { Transactionable } from '@nocobase/database';
 import fs from 'fs';
@@ -191,10 +191,6 @@ export default class PluginFileManagerServer extends Plugin {
     this.storageTypes.register(STORAGE_TYPE_S3, new StorageTypeS3());
     this.storageTypes.register(STORAGE_TYPE_TX_COS, new StorageTypeTxCos());
 
-    await this.db.import({
-      directory: resolve(__dirname, './collections'),
-    });
-
     const Storage = this.db.getModel('storages');
     Storage.afterSave((m, { transaction }) => {
       this.storagesCache.set(m.id, m.toJSON());
@@ -220,14 +216,6 @@ export default class PluginFileManagerServer extends Plugin {
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.storages`,
       actions: ['storages:*'],
-    });
-
-    this.db.addMigrations({
-      namespace: 'file-manager',
-      directory: resolve(__dirname, 'migrations'),
-      context: {
-        plugin: this,
-      },
     });
 
     initActions(this);
