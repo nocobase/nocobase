@@ -7,26 +7,32 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useBlockRequestContext, useAPIClient, usePlugin } from '@nocobase/client';
+import { useAPIClient, usePlugin, useDataBlockRequest } from '@nocobase/client';
+import { useField } from '@formily/react';
 import { App } from 'antd';
 import { useT } from '../locale';
 import { useForm } from '@formily/react';
 import PluginBlockTemplateClient from '..';
+import { useTableBlockProps } from '@nocobase/client';
 
 export const useBulkDestroyAction = () => {
   const apiClient = useAPIClient();
-  const { field } = useBlockRequestContext();
-  const { service } = useBlockRequestContext();
+  const { data, refresh, run } = useDataBlockRequest();
+  const field = useField();
   const t = useT();
   const form = useForm();
   const { message } = App.useApp();
   const plugin = usePlugin(PluginBlockTemplateClient);
+  const { onRowSelectionChange } = useTableBlockProps();
+
   return {
     async run() {
       const selectedRowKeys = field.data?.selectedRowKeys;
       if (!selectedRowKeys?.length) {
-        return message.error(t('Please select the records you want to delete'));
+        message.error(t('Please select the records you want to delete'));
+        return;
       }
+
       await apiClient.request({
         method: 'POST',
         url: '/blockTemplates:destroy',
@@ -35,12 +41,30 @@ export const useBulkDestroyAction = () => {
         },
       });
 
+      // Clear template cache
       for (const key in plugin.templateschemacache) {
         delete plugin.templateschemacache[key];
       }
-      field.data.selectedRowKeys = [];
+
+      // Reset selection
+      onRowSelectionChange([], []);
       form.reset();
-      service.refresh();
+
+      // Calculate pagination after deletion
+      const currentPage = data?.['meta']?.page || 1;
+      const pageSize = data?.['meta']?.pageSize || 20;
+      const totalCount = data?.['meta']?.count || 0;
+      const remainingItems = totalCount - selectedRowKeys.length;
+      const lastPage = Math.max(Math.ceil(remainingItems / pageSize), 1);
+
+      // Update data with appropriate page
+      if (currentPage > lastPage) {
+        run({ page: lastPage, pageSize });
+      } else {
+        refresh();
+      }
+
+      message.success(t('Deleted successfully'));
     },
   };
 };

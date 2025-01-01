@@ -10,10 +10,9 @@
 import {
   useCollection,
   useCollectionRecordData,
-  useBlockRequestContext,
   useDataBlockResource,
-  useAPIClient,
   usePlugin,
+  useDataBlockRequest,
 } from '@nocobase/client';
 import { App as AntdApp } from 'antd';
 import { useForm } from '@formily/react';
@@ -24,11 +23,10 @@ export function useDeleteAction() {
   const { message } = AntdApp.useApp();
   const record = useCollectionRecordData();
   const resource = useDataBlockResource();
-  const { service } = useBlockRequestContext();
+  const { data, refresh, run } = useDataBlockRequest();
   const collection = useCollection();
   const t = useT();
   const form = useForm();
-  const apiClient = useAPIClient();
   const plugin = usePlugin(PluginBlockTemplateClient);
 
   return {
@@ -45,8 +43,22 @@ export function useDeleteAction() {
       for (const key in plugin.templateschemacache) {
         delete plugin.templateschemacache[key];
       }
-      await service.refresh();
-      message.success(t('Deleted successfully'), 0.2);
+
+      // Calculate pagination after deletion
+      const currentPage = data?.['meta']?.page || 1;
+      const pageSize = data?.['meta']?.pageSize || 20;
+      const totalCount = data?.['meta']?.count || 0;
+      const remainingItems = totalCount - 1;
+      const lastPage = Math.max(Math.ceil(remainingItems / pageSize), 1);
+
+      // Update data with appropriate page
+      if (currentPage > lastPage) {
+        run({ page: lastPage, pageSize });
+      } else {
+        refresh();
+      }
+
+      message.success(t('Deleted successfully'));
     },
   };
 }

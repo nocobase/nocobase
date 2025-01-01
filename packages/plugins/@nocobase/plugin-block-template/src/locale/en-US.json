@@ -16,7 +16,7 @@
   "Cancel": "Cancel",
   "Duplicate": "Duplicate",
   "Duplicate to new template": "Duplicate to new template",
-  "Saved successfully!": "Saved successfully!",
+  "Saved successfully": "Saved successfully",
   "Block template": "Block template",
   "Reset successfully": "Reset successfully",
   "Delete successfully": "Delete successfully",
@@ -26,5 +26,6 @@
   "Delete record": "Delete record",
   "Are you sure you want to delete it?": "Are you sure you want to delete it?",
   "Delete": "Delete",
+  "Deleted successfully": "Deleted successfully",
   "Keep the created blocks?": "Keep the created blocks?"
 }

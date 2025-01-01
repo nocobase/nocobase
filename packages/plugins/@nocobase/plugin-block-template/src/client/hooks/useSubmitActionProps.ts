@@ -17,6 +17,7 @@ import {
 } from '@nocobase/client';
 import { uid } from '@nocobase/utils/client';
 import { App as AntdApp } from 'antd';
+import { useT } from '../locale';
 
 export const useSubmitActionProps = () => {
   const { setVisible } = useActionContext();
@@ -26,6 +27,7 @@ export const useSubmitActionProps = () => {
   const collection = useCollection();
   const api = useAPIClient();
   const { service } = useBlockRequestContext();
+  const t = useT();
 
   return {
     type: 'primary',
@@ -81,7 +83,7 @@ export const useSubmitActionProps = () => {
       }
       form.reset();
       await service.refresh();
-      message.success('Saved successfully!');
+      message.success(t('Saved successfully'));
       setVisible(false);
     },
   };
