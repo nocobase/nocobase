@@ -114,6 +114,33 @@ export class PluginAuthServer extends Plugin {
       await this.cache.del(`auth:${userId}`);
     });
 
+    this.app.on('ws:message:auth:token', async ({ clientId, payload }) => {
+      const auth = await this.app.authManager.get('basic', {
+        getBearerToken: () => payload.token,
+        app: this.app,
+        db: this.app.db,
+        cache: this.app.cache,
+        logger: this.app.logger,
+      } as any);
+
+      const user = await auth.check();
+
+      if (!user) {
+        this.app.logger.error(`Invalid token: ${payload.token}`);
+        return;
+      }
+
+      this.app.emit(`ws:setTag`, {
+        clientId,
+        tagKey: 'userId',
+        tagValue: user.id,
+      });
+
+      this.app.emit(`ws:authorized`, {
+        clientId,
+        userId: user.id,
+      });
+    });
     this.app.auditManager.registerActions([
       {
         name: 'auth:signIn',

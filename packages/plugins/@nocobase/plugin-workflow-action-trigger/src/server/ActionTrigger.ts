@@ -177,7 +177,7 @@ export default class extends Trigger {
     }
 
     for (const event of syncGroup) {
-      await this.workflow.trigger(event[0], event[1], { httpContext: context });
+      await this.workflow.trigger(event[0], event[1]);
     }
 
     for (const event of asyncGroup) {
@@ -185,18 +185,27 @@ export default class extends Trigger {
     }
   }
 
-  async execute(workflow: WorkflowModel, context: Context, options: EventOptions) {
-    const { values } = context.action.params;
+  async execute(workflow: WorkflowModel, values, options: EventOptions) {
+    // const { values } = context.action.params;
     const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
     const { collectionManager } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName);
     const { filterTargetKey, repository } = collectionManager.getCollection(collectionName);
-    const filterByTk = Array.isArray(filterTargetKey)
-      ? pick(
-          values.data,
-          filterTargetKey.sort((a, b) => a.localeCompare(b)),
-        )
-      : values.data[filterTargetKey];
-    const UserRepo = context.app.db.getRepository('users');
+
+    let { data } = values;
+    let filterByTk;
+    let loadNeeded = false;
+    if (data && typeof data === 'object') {
+      filterByTk = Array.isArray(filterTargetKey)
+        ? pick(
+            data,
+            filterTargetKey.sort((a, b) => a.localeCompare(b)),
+          )
+        : data[filterTargetKey];
+    } else {
+      filterByTk = data;
+      loadNeeded = true;
+    }
+    const UserRepo = this.workflow.app.db.getRepository('users');
     const actor = await UserRepo.findOne({
       filterByTk: values.userId,
       appends: ['roles'],
@@ -207,8 +216,7 @@ export default class extends Trigger {
     const { roles, ...user } = actor.desensitize().get();
     const roleName = values.roleName || roles?.[0]?.name;
 
-    let { data } = values;
-    if (workflow.config.appends?.length) {
+    if (loadNeeded || workflow.config.appends?.length) {
       data = await repository.findOne({
         filterByTk,
         appends: workflow.config.appends,
@@ -221,10 +229,7 @@ export default class extends Trigger {
         user,
         roleName,
       },
-      {
-        ...options,
-        httpContext: context,
-      },
+      options,
     );
   }
 }
