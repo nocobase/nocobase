@@ -11,20 +11,20 @@ import { Modal } from 'antd';
 import debounce from 'lodash/debounce';
 import { Application } from '@nocobase/client';
 
-type AuthErrorType =
-  | 'empty-token'
-  | 'expired-token'
-  | 'invalid-token'
-  | 'renewed-token'
-  | 'missing-jti'
-  | 'inactive-jti'
-  | 'renewed-jti'
-  | 'unrenewable-jti'
-  | 'blocked-jti'
-  | 'login-timeout-jti';
+export type AuthErrorType =
+  | 'empty'
+  | 'expired'
+  | 'invalid'
+  | 'renewed'
+  | 'missing'
+  | 'inactive'
+  | 'renewed'
+  | 'unrenewable'
+  | 'blocked'
+  | 'login-timeout';
 
-const AUTHERRORNAME = 'AuthError';
-type AhthErrorData = {
+export const AUTHERRORNAME = 'AuthError';
+export type AhthErrorData = {
   newToken?: string;
 };
 
@@ -54,9 +54,9 @@ export function authCheckMiddleware({ app }: { app: Application }) {
         if (errorData?.newToken) {
           app.apiClient.auth.setToken(errorData?.newToken);
           return axios.request(error.config);
-        } else if (errorType === 'renewed-token') {
+        } else if (errorType === 'renewed') {
           return axios.request(error.config);
-        } else if (errorType === 'inactive-jti') {
+        } else if (errorType === 'inactive') {
           debouncedRedirect(() => {
             app.apiClient.auth.setToken(null);
             Modal.confirm({
