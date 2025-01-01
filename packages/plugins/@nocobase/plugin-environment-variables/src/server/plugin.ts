@@ -13,6 +13,7 @@ import AesEncryptor from './AesEncryptor';
 
 export class PluginEnvironmentVariablesServer extends Plugin {
   aesEncryptor: AesEncryptor;
+  updated = false;
   async load() {
     this.createAesEncryptor();
     this.registerACL();
@@ -22,7 +23,7 @@ export class PluginEnvironmentVariablesServer extends Plugin {
 
   async createAesEncryptor() {
     const key = await AesEncryptor.getOrGenerateKey(
-      path.resolve(process.cwd(), 'storage', '.data', this.app.name, this.name, 'aes_key.dat'),
+      path.resolve(process.cwd(), 'storage', this.name, this.app.name, 'aes_key.dat'),
     );
     this.aesEncryptor = new AesEncryptor(key);
   }
@@ -89,6 +90,9 @@ export class PluginEnvironmentVariablesServer extends Plugin {
   }
 
   onEnvironmentSaved() {
+    this.db.on('environmentVariables.afterUpdate', async (model) => {
+      this.updated = true;
+    });
     this.db.on('environmentVariables.beforeSave', async (model) => {
       if (model.type === 'secret' && model.changed('value')) {
         const encrypted = await this.aesEncryptor.encrypt(model.value);
@@ -105,7 +109,13 @@ export class PluginEnvironmentVariablesServer extends Plugin {
           model.set('value', undefined);
         }
       }
-      ctx.body = items;
+      ctx.withoutDataWrapping = true;
+      ctx.body = {
+        data: items,
+        meta: {
+          updated: this.updated,
+        },
+      };
       await next();
     });
     this.db.on('environmentVariables.afterSave', async (model) => {
@@ -121,6 +131,7 @@ export class PluginEnvironmentVariablesServer extends Plugin {
     });
     this.db.on('environmentVariables.afterDestroy', (model) => {
       this.app.environment.removeVariable(model.name);
+      this.updated = true;
     });
   }
 

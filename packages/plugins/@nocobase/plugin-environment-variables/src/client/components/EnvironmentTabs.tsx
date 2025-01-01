@@ -21,7 +21,7 @@ import {
 import { registerValidateRules } from '@formily/core';
 import { createSchemaField } from '@formily/react';
 import { SchemaComponentOptions, useAPIClient } from '@nocobase/client';
-import { App, Button, Card, Dropdown, Flex, Space, Table, Tag } from 'antd';
+import { Alert, App, Button, Card, Dropdown, Flex, Space, Table, Tag } from 'antd';
 import React, { useContext } from 'react';
 import { VAR_NAME_RE } from '../../re';
 import { EnvAndSecretsContext } from '../EnvironmentVariablesAndSecretsProvider';
@@ -138,7 +138,7 @@ export function EnvironmentVariables({ request }) {
 
   const handleDelete = (data) => {
     modal.confirm({
-      title: t('Delete Variable'),
+      title: t('Delete variable'),
       content: t('Are you sure you want to delete it?'),
       async onOk() {
         await resource.destroy({
@@ -264,6 +264,28 @@ export function EnvironmentTabs() {
   };
   return (
     <div>
+      {variablesRequest.data.meta.updated && (
+        <Alert
+          type="warning"
+          style={{ marginBottom: '1.2em', alignItems: 'center' }}
+          description={
+            <div>
+              {t('Environment variables have been updated. A restart is required for the changes to take effect.')}{' '}
+            </div>
+          }
+          action={
+            <Button
+              size="middle"
+              type="primary"
+              onClick={async () => {
+                await api.resource('app').refresh();
+              }}
+            >
+              {t('Restart now')}
+            </Button>
+          }
+        />
+      )}
       <Card>
         <Flex justify="end" style={{ marginBottom: 16 }}>
           <Dropdown

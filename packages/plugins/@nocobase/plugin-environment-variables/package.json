@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/plugin-environment",
+  "name": "@nocobase/plugin-environment-variables",
   "version": "1.6.0-alpha.7",
   "main": "dist/server/index.js",
   "dependencies": {},
