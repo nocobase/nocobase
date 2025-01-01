@@ -9,6 +9,7 @@
 
 import { Collection, Model } from '@nocobase/database';
 import { Cache } from '@nocobase/cache';
+import { merge } from '@nocobase/utils';
 import { Auth, AuthConfig, AuthError } from '../auth';
 import { JwtService } from './jwt-service';
 import { ITokenControlService } from './token-control-service';
@@ -99,13 +100,13 @@ export class BaseAuth extends Auth {
     if (temp) {
       if (tokenStatus === 'valid') {
         if (user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
-          throw new AuthError('User password changed', 'invalid');
+          this.ctx.throw(401, { message: 'User password changed', code: 'invalid' });
         } else {
           const { status: JtiStatus } = await this.tokenController.check(jti);
           if (JtiStatus === 'valid') {
             return user;
           } else {
-            throw new AuthError(`${JtiStatus} token`, `${JtiStatus}`);
+            this.ctx.throw(401, { message: `${JtiStatus} token`, code: JtiStatus });
           }
         }
       } else if (tokenStatus === 'expired') {
@@ -115,15 +116,16 @@ export class BaseAuth extends Auth {
           if (renewedJti.status === 'renewed') {
             const expiresIn = (await this.tokenController.getConfig()).tokenExpirationTime;
             const newToken = this.jwt.sign({ userId, roleName, temp }, { jwtid: renewedJti.id, expiresIn });
-            throw new AuthError('Token renewed', 'renewed', { newToken });
+            this.ctx.body = merge(this.ctx.body ?? {}, { meta: { newToken } });
+            return user;
           } else {
-            throw new AuthError(`${renewedJti.status} JTI`, `${renewedJti.status}`);
+            this.ctx.throw(401, { message: `${JtiStatus} token`, code: JtiStatus });
           }
         } else {
-          throw new AuthError(`${JtiStatus} JTI`, `${JtiStatus}`);
+          this.ctx.throw(401, { message: `${JtiStatus} token`, code: JtiStatus });
         }
       } else {
-        throw new AuthError(`${tokenStatus} token`, `${tokenStatus}`);
+        this.ctx.throw(401, { message: `${tokenStatus} token`, code: tokenStatus });
       }
     } else {
       if (tokenStatus === 'valid') return user;

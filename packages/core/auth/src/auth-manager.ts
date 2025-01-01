@@ -121,7 +121,7 @@ export class AuthManager {
   middleware() {
     const self = this;
 
-    const checkMiddleware = async (ctx: Context & { auth: Auth }, next: Next) => {
+    return async function AuthManagerMiddleware(ctx: Context & { auth: Auth }, next: Next) {
       const { resourceName, actionName } = ctx.action;
       const acl = ctx.dataSource.acl as ACL;
       const isPublicAction = await acl.allowManager.isAllowed(resourceName, actionName, ctx);
@@ -141,33 +141,14 @@ export class AuthManager {
       if (isPublicAction) {
         return next();
       } else {
-        try {
+        if (authenticator) {
           const user = await ctx.auth.check();
-          if (authenticator) {
-            if (user) {
-              ctx.auth.user = user;
-            }
-            return next();
-          }
-        } catch (error) {
-          if (error instanceof AuthError) {
-            ctx.throw(
-              401,
-              {
-                message: error.message,
-                code: error.name,
-                data: error.data,
-              },
-              {
-                data: error.data,
-              },
-            );
-          } else {
-            ctx.throw(401, error.message);
+          if (user) {
+            ctx.auth.user = user;
           }
         }
+        await next();
       }
     };
-    return checkMiddleware;
   }
 }
