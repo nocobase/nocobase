@@ -32,7 +32,7 @@ export class PluginEnvironmentVariablesServer extends Plugin {
     this.app.acl.allow('environmentVariables', 'list', 'loggedIn');
     this.app.acl.registerSnippet({
       name: `pm.${this.name}`,
-      actions: ['environmentVariables:*'],
+      actions: ['environmentVariables:*', 'app:refresh'],
     });
   }
 
