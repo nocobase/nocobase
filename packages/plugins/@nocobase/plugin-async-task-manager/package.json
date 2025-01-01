@@ -6,11 +6,10 @@
   "description.zh-CN": "管理和监控数据导入导出等异步任务。支持任务进度跟踪和通知。",
   "version": "1.6.0-alpha.7",
   "main": "dist/server/index.js",
-  "dependencies": {},
   "peerDependencies": {
     "@nocobase/client": "1.x",
+    "@nocobase/plugin-error-handler": "1.x",
     "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x",
-    "@nocobase/plugin-error-handler": "1.x"
+    "@nocobase/test": "1.x"
   }
 }

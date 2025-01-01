@@ -115,7 +115,15 @@ export class PluginAuthServer extends Plugin {
     });
 
     this.app.on('ws:message:auth:token', async ({ clientId, payload }) => {
-      const auth = await this.app.authManager.get('basic', {
+      if (!payload || !payload.token || !payload.authenticator) {
+        this.app.emit(`ws:removeTag`, {
+          clientId,
+          tagKey: 'userId',
+        });
+        return;
+      }
+
+      const auth = await this.app.authManager.get(payload.authenticator, {
         getBearerToken: () => payload.token,
         app: this.app,
         db: this.app.db,
@@ -127,8 +135,14 @@ export class PluginAuthServer extends Plugin {
       try {
         user = await auth.check();
       } catch (error) {
-        this.app.logger.error(error);
-        return;
+        if (!user) {
+          this.app.logger.error(error);
+          this.app.emit(`ws:removeTag`, {
+            clientId,
+            tagKey: 'userId',
+          });
+          return;
+        }
       }
 
       this.app.emit(`ws:setTag`, {
