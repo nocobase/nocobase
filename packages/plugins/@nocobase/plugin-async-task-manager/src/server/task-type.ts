@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
 import EventEmitter from 'events';
-import { AbortController } from 'abort-controller';
 import { Logger } from '@nocobase/logger';
 import { TaskOptions, TaskStatus, CancelError } from './interfaces/async-task-manager';
 import { ITask } from './interfaces/task';
