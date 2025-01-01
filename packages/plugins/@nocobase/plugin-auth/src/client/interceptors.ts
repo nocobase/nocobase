@@ -11,12 +11,21 @@ import { Modal } from 'antd';
 import debounce from 'lodash/debounce';
 import { Application } from '@nocobase/client';
 
-type JTIStatus = 'valid' | 'idle' | 'revoked' | 'missing' | 'renewed' | 'unrenewable' | 'renewed';
-type CheckResult = {
-  token: { status: 'valid' | 'expired' | 'invalid' | 'empty'; type?: 'API' | 'user'; newToken?: string };
-  jti?: { status: JTIStatus };
-  user?: any;
-  message?: string;
+type AuthErrorType =
+  | 'empty-token'
+  | 'expired-token'
+  | 'invalid-token'
+  | 'renewed-token'
+  | 'missing-jti'
+  | 'inactive-jti'
+  | 'renewed-jti'
+  | 'unrenewable-jti'
+  | 'blocked-jti'
+  | 'login-timeout-jti';
+
+const AUTHERRORNAME = 'AuthError';
+type AhthErrorData = {
+  newToken?: string;
 };
 
 const debouncedRedirect = debounce(
@@ -30,12 +39,11 @@ export function authCheckMiddleware({ app }: { app: Application }) {
   const axios = app.apiClient.axios;
   const resHandler = (res) => res;
   const errHandler = (error) => {
-    const headers = error?.response?.headers;
     if (error.status === 401) {
       const errors = error?.response?.data?.errors;
-      const unauthorizedError = errors.find((error) => error.code === 'UNAUTHORIZED');
-      const errorData: CheckResult = unauthorizedError?.data ?? {};
-      error.silence = true;
+      const authError = errors.find((error) => error.code === AUTHERRORNAME);
+      const errorData: AhthErrorData = authError?.data;
+      const errorType: AuthErrorType = authError?.type;
       const state = app.router.state;
       const { pathname, search } = state.location;
       const basename = app.router.basename;
@@ -43,12 +51,12 @@ export function authCheckMiddleware({ app }: { app: Application }) {
         const redirectPath = pathname.startsWith(app.router.basename)
           ? pathname.slice(basename.length) || '/'
           : pathname;
-        if (errorData?.token?.newToken) {
-          app.apiClient.auth.setToken(errorData?.token?.newToken);
+        if (errorData?.newToken) {
+          app.apiClient.auth.setToken(errorData?.newToken);
           return axios.request(error.config);
-        } else if (errorData?.jti?.status === 'unrenewable') {
+        } else if (errorType === 'renewed-token') {
           return axios.request(error.config);
-        } else if (errorData?.jti?.status === 'idle') {
+        } else if (errorType === 'inactive-jti') {
           debouncedRedirect(() => {
             app.apiClient.auth.setToken(null);
             Modal.confirm({

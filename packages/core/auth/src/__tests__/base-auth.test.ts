@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BaseAuth } from '../base/auth';
 import { vi } from 'vitest';
+import { BaseAuth } from '../base/auth';
+import { AuthErrorType } from '../auth';
 
 describe('base-auth', () => {
   it('should validate username', () => {
@@ -36,8 +37,11 @@ describe('base-auth', () => {
         getBearerToken: () => null,
       },
     } as any);
-
-    expect((await auth.check()).user).toBeFalsy();
+    try {
+      await auth.check();
+    } catch (error) {
+      expect(error.type).toBe<AuthErrorType>('empty-token');
+    }
   });
 
   it('check: should set roleName to headers', async () => {
@@ -103,7 +107,7 @@ describe('base-auth', () => {
         },
       },
     } as any);
-    expect((await auth.check()).user.id).toEqual(1);
+    expect(await auth.check()).toEqual({ id: 1 });
   });
 
   it('signIn: should throw 401', async () => {

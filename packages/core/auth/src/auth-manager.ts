@@ -155,7 +155,7 @@ export class AuthManager {
               401,
               {
                 message: error.message,
-                code: error.type,
+                code: error.name,
                 data: error.data,
               },
               {

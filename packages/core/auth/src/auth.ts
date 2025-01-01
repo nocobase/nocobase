@@ -10,7 +10,6 @@
 import { Context } from '@nocobase/actions';
 import { Model } from '@nocobase/database';
 import { Authenticator } from './auth-manager';
-import { JTIStatus } from './base/token-control-service';
 export type AuthConfig = {
   authenticator: Authenticator;
   options: {
@@ -19,14 +18,7 @@ export type AuthConfig = {
   ctx: Context;
 };
 
-type CheckResult = {
-  token: { status: 'valid' | 'expired' | 'invalid' | 'empty'; type?: 'API' | 'user'; newToken?: string };
-  jti?: { status: JTIStatus };
-  user?: any;
-  message?: string;
-};
-
-type AuthErrorType =
+export type AuthErrorType =
   | 'empty-token'
   | 'expired-token'
   | 'invalid-token'
@@ -38,7 +30,8 @@ type AuthErrorType =
   | 'blocked-jti'
   | 'login-timeout-jti';
 
-type AhthErrorData = {
+export const AUTHERRORNAME = 'AuthError';
+export type AhthErrorData = {
   newToken?: string;
 };
 export class AuthError extends Error {
@@ -46,7 +39,7 @@ export class AuthError extends Error {
   data: AhthErrorData;
   constructor(message: string, type: AuthErrorType, data: AhthErrorData = {}) {
     super(message);
-    this.name = 'AuthError';
+    this.name = AUTHERRORNAME;
     this.type = type;
     this.data = data;
   }
