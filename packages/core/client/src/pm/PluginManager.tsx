@@ -204,6 +204,7 @@ const LocalPlugins = () => {
     'Authentication',
     'Notification',
     'System management',
+    'Security',
     'Logging and monitoring',
     'Others',
   ];
