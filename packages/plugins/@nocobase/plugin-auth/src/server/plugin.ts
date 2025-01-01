@@ -125,6 +125,10 @@ export class PluginAuthServer extends Plugin {
 
       if (!user) {
         this.app.logger.error(`Invalid token: ${payload.token}`);
+        this.app.emit(`ws:removeTag`, {
+          clientId,
+          tagKey: 'userId',
+        });
         return;
       }
 

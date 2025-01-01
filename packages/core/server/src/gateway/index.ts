@@ -444,6 +444,10 @@ export class Gateway extends EventEmitter {
           this.wsServer.setClientTag(clientId, tagKey, tagValue);
         });
 
+        app.on('ws:removeTag', ({ clientId, tagKey }) => {
+          this.wsServer.removeClientTag(clientId, tagKey);
+        });
+
         app.on('ws:sendToTag', ({ tagKey, tagValue, message }) => {
           this.wsServer.sendToConnectionsByTags(
             [
