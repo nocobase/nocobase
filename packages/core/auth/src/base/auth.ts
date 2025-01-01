@@ -9,7 +9,6 @@
 
 import { Collection, Model } from '@nocobase/database';
 import { Cache } from '@nocobase/cache';
-import { merge } from '@nocobase/utils';
 import { Auth, AuthConfig, AuthError } from '../auth';
 import { JwtService } from './jwt-service';
 import { ITokenControlService } from './token-control-service';

@@ -157,7 +157,7 @@ export class Application {
 
   private initListeners() {
     this.eventBus.addEventListener('auth:tokenChanged', (event: CustomEvent) => {
-      this.setTokenInWebSocket(event.detail);
+      this.setTokenInWebSocket(event.detail.token);
     });
 
     this.eventBus.addEventListener('maintaining:end', () => {
