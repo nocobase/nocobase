@@ -428,13 +428,16 @@ export class Gateway extends EventEmitter {
 
     this.wsServer.on('message', async ({ client, message }) => {
       const app = await AppSupervisor.getInstance().getApp(client.app);
+
+      if (!app) {
+        return;
+      }
+
       const parsedMessage = JSON.parse(message.toString());
 
       if (!parsedMessage.type) {
         return;
       }
-
-      // check app has event listener
 
       if (!app.listenerCount(`ws:setTag`)) {
         app.on('ws:setTag', ({ clientId, tagKey, tagValue }) => {
