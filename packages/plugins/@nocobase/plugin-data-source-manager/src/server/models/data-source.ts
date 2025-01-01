@@ -77,8 +77,13 @@ export class DataSourceModel extends Model {
     }
   }
 
-  async loadIntoApplication(options: { app: Application; transaction?: Transaction; loadAtAfterStart?: boolean }) {
-    const { app, loadAtAfterStart } = options;
+  async loadIntoApplication(options: {
+    app: Application;
+    transaction?: Transaction;
+    loadAtAfterStart?: boolean;
+    refresh?: boolean;
+  }) {
+    const { app, loadAtAfterStart, refresh } = options;
 
     const dataSourceKey = this.get('key');
 
@@ -129,6 +134,7 @@ export class DataSourceModel extends Model {
 
       await app.dataSourceManager.add(dataSource, {
         localData: await this.loadLocalData(),
+        refresh,
       });
     } catch (e) {
       app.logger.error(`load data source failed`, { cause: e });
