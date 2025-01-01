@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import { ISchema, useFieldSchema } from '@formily/react';
-import { Action, ActionContextProvider, SchemaComponent } from '@nocobase/client';
+import { Action, ActionContextProvider, SchemaComponent, useCompile } from '@nocobase/client';
 import React, { useState } from 'react';
 import { NAMESPACE } from './constants';
 import { useTranslation } from 'react-i18next';
@@ -114,13 +114,15 @@ const importFormSchema: ISchema = {
 export const ImportAction = (props) => {
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation(NAMESPACE);
+  const compile = useCompile();
+
   const fieldSchema = useFieldSchema();
 
   return (
     <ActionContextProvider value={{ visible, setVisible, fieldSchema }}>
       <Action
         icon={props.icon || <UploadOutlined />}
-        title={fieldSchema?.title || t('Import', { ns: 'action-import' })}
+        title={compile(fieldSchema?.title || "t('Import')")}
         {...props}
         onClick={() => setVisible(true)}
       />
