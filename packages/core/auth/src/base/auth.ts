@@ -72,7 +72,7 @@ export class BaseAuth extends Auth {
     const token = this.ctx.getBearerToken();
 
     if (!token) {
-      throw new AuthError('Empty token', 'empty-token');
+      throw new AuthError('Empty token', 'empty');
     }
 
     const { status: tokenStatus, payload } = await this.jwt.verify(token);
@@ -91,17 +91,21 @@ export class BaseAuth extends Auth {
         raw: true,
       }),
     );
+    const bolcked = await this.jwt.blacklist.has(jti ?? token);
+    if (bolcked) {
+      throw new AuthError('Token blocked', 'blocked');
+    }
 
     if (temp) {
       if (tokenStatus === 'valid') {
         if (user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
-          throw new AuthError('User password changed', 'invalid-token');
+          throw new AuthError('User password changed', 'invalid');
         } else {
           const { status: JtiStatus } = await this.tokenController.check(jti);
           if (JtiStatus === 'valid') {
             return user;
           } else {
-            throw new AuthError(`${JtiStatus} JTI`, `${JtiStatus}-jti`);
+            throw new AuthError(`${JtiStatus} token`, `${JtiStatus}`);
           }
         }
       } else if (tokenStatus === 'expired') {
@@ -111,19 +115,19 @@ export class BaseAuth extends Auth {
           if (renewedJti.status === 'renewed') {
             const expiresIn = (await this.tokenController.getConfig()).tokenExpirationTime;
             const newToken = this.jwt.sign({ userId, roleName, temp }, { jwtid: renewedJti.id, expiresIn });
-            throw new AuthError('Token renewed', 'renewed-token', { newToken });
+            throw new AuthError('Token renewed', 'renewed', { newToken });
           } else {
-            throw new AuthError(`${renewedJti.status} JTI`, `${renewedJti.status}-jti`);
+            throw new AuthError(`${renewedJti.status} JTI`, `${renewedJti.status}`);
           }
         } else {
-          throw new AuthError(`${JtiStatus} JTI`, `${JtiStatus}-jti`);
+          throw new AuthError(`${JtiStatus} JTI`, `${JtiStatus}`);
         }
       } else {
-        throw new AuthError(`${tokenStatus} token`, `${tokenStatus}-token`);
+        throw new AuthError(`${tokenStatus} token`, `${tokenStatus}`);
       }
     } else {
       if (tokenStatus === 'valid') return user;
-      else throw new AuthError(`${tokenStatus} token`, `${tokenStatus}-token`);
+      else throw new AuthError(`${tokenStatus} token`, `${tokenStatus}`);
     }
   }
 

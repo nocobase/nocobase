@@ -19,16 +19,16 @@ export type AuthConfig = {
 };
 
 export type AuthErrorType =
-  | 'empty-token'
-  | 'expired-token'
-  | 'invalid-token'
-  | 'renewed-token'
-  | 'missing-jti'
-  | 'inactive-jti'
-  | 'renewed-jti'
-  | 'unrenewable-jti'
-  | 'blocked-jti'
-  | 'login-timeout-jti';
+  | 'empty'
+  | 'expired'
+  | 'invalid'
+  | 'renewed'
+  | 'missing'
+  | 'inactive'
+  | 'renewed'
+  | 'unrenewable'
+  | 'blocked'
+  | 'login-timeout';
 
 export const AUTHERRORNAME = 'AuthError';
 export type AhthErrorData = {
