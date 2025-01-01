@@ -74,27 +74,27 @@ export class TokenController implements TokenControlService {
   }
   async set(id: string, value: Partial<TokenInfo>) {
     const tokenInfo = await this.getTokenInfo(id);
-    if (!tokenInfo) throw new Error('Access not found');
+    if (!tokenInfo) throw new Error('jti not found');
     return this.setTokenInfo(id, { ...tokenInfo, ...value });
   }
 
   renew: TokenControlService['renew'] = async (id) => {
-    const lockKey = `plugin-auth:access-controller:renew:${id}`;
+    const lockKey = `plugin-auth:token-controller:renew:${id}`;
     const release = await this.app.lockManager.acquire(lockKey, 1000);
     try {
-      const access = await this.getTokenInfo(id);
-      if (!access) return { status: 'missing' };
-      if (access.resigned) return { status: 'unrenewable' };
+      const tokenInfo = await this.getTokenInfo(id);
+      if (!tokenInfo) return { status: 'missing' };
+      if (tokenInfo.resigned) return { status: 'unrenewable' };
       const preTokenInfo = await this.getTokenInfo(id);
       const newId = randomUUID();
       await this.set(id, { resigned: true });
-      const accessInfo = {
+      const newTokenInfo = {
         id: newId,
         lastAccessTime: Date.now(),
         resigned: false,
         signInTime: preTokenInfo.signInTime,
       };
-      await this.setTokenInfo(newId, accessInfo);
+      await this.setTokenInfo(newId, newTokenInfo);
       return { status: 'renewed', id: newId };
     } finally {
       release();

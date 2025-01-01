@@ -214,7 +214,7 @@ export class PluginAuthServer extends Plugin {
       });
       const tokenController = new TokenController({ cache, app: this.app });
 
-      this.app.authManager.setAccessControlService(tokenController);
+      this.app.authManager.setTokenControlService(tokenController);
       const accessConfigRepository = this.app.db.getRepository(tokenPolicyCollectionName);
       try {
         const res = await accessConfigRepository.findOne({ filterByTk: tokenPolicyRecordKey });

@@ -66,7 +66,7 @@ export class AuthManager {
     this.jwt.blacklist = service;
   }
 
-  setAccessControlService(service: ITokenControlService) {
+  setTokenControlService(service: ITokenControlService) {
     this.tokenController = service;
   }
 
@@ -155,6 +155,7 @@ export class AuthManager {
               {
                 message: error.message,
                 code: error.type,
+                data: error.data,
               },
               {
                 data: error.data,

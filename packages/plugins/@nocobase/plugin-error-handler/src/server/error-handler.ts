@@ -31,7 +31,6 @@ export class ErrorHandler {
         {
           message,
           code: err.code,
-          data: err.data,
         },
       ],
     };
