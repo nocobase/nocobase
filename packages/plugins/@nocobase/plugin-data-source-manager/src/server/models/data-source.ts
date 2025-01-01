@@ -11,6 +11,7 @@ import { ACL, AvailableActionOptions } from '@nocobase/acl';
 import { Model, Transaction } from '@nocobase/database';
 import { setCurrentRole } from '@nocobase/plugin-acl';
 import { Application } from '@nocobase/server';
+import path from 'path';
 import PluginDataSourceManagerServer from '../plugin';
 import { DataSourcesRolesModel } from './data-sources-roles-model';
 
@@ -98,6 +99,8 @@ export class DataSourceModel extends Model {
         name: dataSourceKey,
         logger: app.logger.child({ dataSourceKey }),
         sqlLogger: app.sqlLogger.child({ dataSourceKey }),
+        cache: app.cache,
+        storagePath: path.join(process.cwd(), 'storage', 'cache', 'apps', app.name),
       });
 
       dataSource.on('loadingProgress', (progress) => {
