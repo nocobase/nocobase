@@ -157,17 +157,21 @@ export class Application {
 
   private initListeners() {
     this.eventBus.addEventListener('auth:tokenChanged', (event: CustomEvent) => {
-      this.setTokenInWebSocket(event.detail.token);
+      this.setTokenInWebSocket(event.detail);
     });
 
     this.eventBus.addEventListener('maintaining:end', () => {
       if (this.apiClient.auth.token) {
-        this.setTokenInWebSocket(this.apiClient.auth.token);
+        this.setTokenInWebSocket({
+          token: this.apiClient.auth.token,
+          authenticator: this.apiClient.auth.getAuthenticator(),
+        });
       }
     });
   }
 
-  protected setTokenInWebSocket(token: string) {
+  protected setTokenInWebSocket(options: { token: string; authenticator: string }) {
+    const { token, authenticator } = options;
     if (this.maintaining) {
       return;
     }
@@ -177,6 +181,7 @@ export class Application {
         type: 'auth:token',
         payload: {
           token,
+          authenticator,
         },
       }),
     );
@@ -370,7 +375,7 @@ export class Application {
       const token = this.apiClient.auth.token;
 
       if (token) {
-        this.setTokenInWebSocket(token);
+        this.setTokenInWebSocket({ token, authenticator: this.apiClient.auth.getAuthenticator() });
       }
     });
 

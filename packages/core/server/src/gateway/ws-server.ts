@@ -159,6 +159,16 @@ export class WSServer extends EventEmitter {
     console.log(`client tags: ${Array.from(client.tags)}`);
   }
 
+  removeClientTag(clientId: string, tagKey: string) {
+    const client = this.webSocketClients.get(clientId);
+    // remove all tags with the given tagKey
+    client.tags.forEach((tag) => {
+      if (tag.startsWith(tagKey)) {
+        client.tags.delete(tag);
+      }
+    });
+  }
+
   async setClientApp(client: WebSocketClient) {
     const req: IncomingRequest = {
       url: client.url,

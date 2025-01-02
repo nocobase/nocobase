@@ -15,6 +15,9 @@ import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
 import { MemoryPubSubAdapter } from './memory-pub-sub-adapter';
 import { MockDataSource } from './mock-data-source';
+import path from 'path';
+import process from 'node:process';
+import { promises as fs } from 'fs';
 
 interface ActionParams {
   filterByTk?: any;
@@ -329,6 +332,14 @@ export async function createMockCluster({
 }
 
 export async function createMockServer(options: MockServerOptions = {}): Promise<MockServer> {
+  // clean cache directory
+  const cachePath = path.join(process.cwd(), 'storage', 'cache');
+  try {
+    await fs.rm(cachePath, { recursive: true, force: true });
+    await fs.mkdir(cachePath, { recursive: true });
+  } catch (e) {
+    // ignore errors
+  }
   const { version, beforeInstall, skipInstall, skipStart, ...others } = options;
   const app: MockServer = mockServer(others);
   if (!skipInstall) {
