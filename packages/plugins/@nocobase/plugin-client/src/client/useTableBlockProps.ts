@@ -74,6 +74,23 @@ export const useTableBlockProps = () => {
       },
       [service?.data?.data, tableBlockContextBasicValue],
     ),
+    onChange: useCallback(
+      ({ current, pageSize }, filters, sorter) => {
+        const globalSort = fieldSchema.parent?.['x-decorator-props']?.['params']?.['sort'];
+        const sort = sorter.order
+          ? sorter.order === `ascend`
+            ? [sorter.field]
+            : [`-${sorter.field}`]
+          : globalSort || tableBlockContextBasicValue.dragSortBy;
+        const currentPageSize = pageSize || fieldSchema.parent?.['x-decorator-props']?.['params']?.pageSize;
+        const args = { ...ctxRef.current?.service?.params?.[0], page: current || 1, pageSize: currentPageSize };
+        if (sort) {
+          args['sort'] = sort;
+        }
+        ctxRef.current?.service.run(args);
+      },
+      [fieldSchema.parent],
+    ),
   };
 };
 
