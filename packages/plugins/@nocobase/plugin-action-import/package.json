@@ -19,6 +19,7 @@
     "@types/node-xlsx": "^0.15.1",
     "antd": "5.x",
     "async-mutex": "^0.5.0",
+    "exceljs": "^4.4.0",
     "file-saver": "^2.0.5",
     "mathjs": "^10.6.0",
     "node-xlsx": "^0.16.1",

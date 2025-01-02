@@ -12,6 +12,8 @@ import { Trans, useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { Alert, App, Breadcrumb, Button, Dropdown, Result, Spin, Switch, Tag, Tooltip } from 'antd';
 import { DownOutlined, EllipsisOutlined, RightOutlined } from '@ant-design/icons';
+import { NoticeType } from 'antd/es/message/interface';
+import { useField, useForm } from '@formily/react';
 import {
   ActionContextProvider,
   ResourceActionProvider,
@@ -30,10 +32,11 @@ import {
 } from '@nocobase/client';
 import { dayjs } from '@nocobase/utils/client';
 
+import PluginWorkflowClient from '.';
 import { CanvasContent } from './CanvasContent';
 import { ExecutionStatusColumn } from './components/ExecutionStatus';
 import { ExecutionLink } from './ExecutionLink';
-import { FlowContext, useFlowContext } from './FlowContext';
+import { CurrentWorkflowContext, FlowContext, useFlowContext } from './FlowContext';
 import { lang, NAMESPACE } from './locale';
 import { executionSchema } from './schemas/executions';
 import useStyles from './style';
@@ -41,10 +44,8 @@ import { linkNodes, getWorkflowDetailPath } from './utils';
 import { Fieldset } from './components/Fieldset';
 import { useRefreshActionProps } from './hooks/useRefreshActionProps';
 import { useTrigger } from './triggers';
-import { useField, useForm } from '@formily/react';
 import { ExecutionStatusOptionsMap } from './constants';
-import PluginWorkflowClient from '.';
-import { NoticeType } from 'antd/es/message/interface';
+import { HideVariableContext } from './variable';
 
 function ExecutionResourceProvider({ request, filter = {}, ...others }) {
   const { workflow } = useFlowContext();
@@ -144,99 +145,103 @@ function ExecuteActionButton() {
   const trigger = useTrigger();
 
   return (
-    <SchemaComponent
-      components={{
-        Alert,
-        Fieldset,
-        ActionDisabledProvider,
-        ...trigger.components,
-      }}
-      scope={{
-        useCancelAction,
-        useExecuteConfirmAction,
-      }}
-      schema={{
-        name: `trigger-modal-${workflow.type}-${workflow.id}`,
-        type: 'void',
-        'x-decorator': 'ActionDisabledProvider',
-        'x-component': 'Action',
-        'x-component-props': {
-          openSize: 'small',
-        },
-        title: `{{t('Execute manually', { ns: "${NAMESPACE}" })}}`,
-        properties: {
-          drawer: {
+    <CurrentWorkflowContext.Provider value={workflow}>
+      <HideVariableContext.Provider value={true}>
+        <SchemaComponent
+          components={{
+            Alert,
+            Fieldset,
+            ActionDisabledProvider,
+            ...trigger.components,
+          }}
+          scope={{
+            useCancelAction,
+            useExecuteConfirmAction,
+          }}
+          schema={{
+            name: `trigger-modal-${workflow.type}-${workflow.id}`,
             type: 'void',
-            'x-decorator': 'FormV2',
-            'x-component': 'Action.Modal',
+            'x-decorator': 'ActionDisabledProvider',
+            'x-component': 'Action',
+            'x-component-props': {
+              openSize: 'small',
+            },
             title: `{{t('Execute manually', { ns: "${NAMESPACE}" })}}`,
             properties: {
-              ...(Object.keys(trigger.triggerFieldset ?? {}).length
-                ? {
-                    alert: {
-                      type: 'void',
-                      'x-component': 'Alert',
-                      'x-component-props': {
-                        message: `{{t('Trigger variables need to be filled for executing.', { ns: "${NAMESPACE}" })}}`,
-                        className: css`
-                          margin-bottom: 1em;
-                        `,
-                      },
-                    },
-                  }
-                : {
-                    description: {
-                      type: 'void',
-                      'x-component': 'p',
-                      'x-content': `{{t('This will perform all the actions configured in the workflow. Are you sure you want to continue?', { ns: "${NAMESPACE}" })}}`,
-                    },
-                  }),
-              fieldset: {
+              drawer: {
                 type: 'void',
-                'x-decorator': 'FormItem',
-                'x-component': 'Fieldset',
-                title: `{{t('Trigger variables', { ns: "${NAMESPACE}" })}}`,
-                properties: trigger.triggerFieldset,
-              },
-              ...(workflow.executed
-                ? {}
-                : {
-                    autoRevision: {
-                      type: 'boolean',
-                      'x-decorator': 'FormItem',
-                      'x-component': 'Checkbox',
-                      'x-content': `{{t('Automatically create a new version after execution', { ns: "${NAMESPACE}" })}}`,
-                      default: true,
-                    },
-                  }),
-              footer: {
-                type: 'void',
-                'x-component': 'Action.Modal.Footer',
+                'x-decorator': 'FormV2',
+                'x-component': 'Action.Modal',
+                title: `{{t('Execute manually', { ns: "${NAMESPACE}" })}}`,
                 properties: {
-                  cancel: {
+                  ...(Object.keys(trigger.triggerFieldset ?? {}).length
+                    ? {
+                        alert: {
+                          type: 'void',
+                          'x-component': 'Alert',
+                          'x-component-props': {
+                            message: `{{t('Trigger variables need to be filled for executing.', { ns: "${NAMESPACE}" })}}`,
+                            className: css`
+                              margin-bottom: 1em;
+                            `,
+                          },
+                        },
+                      }
+                    : {
+                        description: {
+                          type: 'void',
+                          'x-component': 'p',
+                          'x-content': `{{t('This will perform all the actions configured in the workflow. Are you sure you want to continue?', { ns: "${NAMESPACE}" })}}`,
+                        },
+                      }),
+                  fieldset: {
                     type: 'void',
-                    title: `{{t('Cancel')}}`,
-                    'x-component': 'Action',
-                    'x-component-props': {
-                      useAction: '{{useCancelAction}}',
-                    },
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Fieldset',
+                    title: `{{t('Trigger variables', { ns: "${NAMESPACE}" })}}`,
+                    properties: trigger.triggerFieldset,
                   },
-                  submit: {
+                  ...(workflow.executed
+                    ? {}
+                    : {
+                        autoRevision: {
+                          type: 'boolean',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Checkbox',
+                          'x-content': `{{t('Automatically create a new version after execution', { ns: "${NAMESPACE}" })}}`,
+                          default: true,
+                        },
+                      }),
+                  footer: {
                     type: 'void',
-                    title: `{{t('Confirm')}}`,
-                    'x-component': 'Action',
-                    'x-component-props': {
-                      type: 'primary',
-                      useAction: '{{useExecuteConfirmAction}}',
+                    'x-component': 'Action.Modal.Footer',
+                    properties: {
+                      cancel: {
+                        type: 'void',
+                        title: `{{t('Cancel')}}`,
+                        'x-component': 'Action',
+                        'x-component-props': {
+                          useAction: '{{useCancelAction}}',
+                        },
+                      },
+                      submit: {
+                        type: 'void',
+                        title: `{{t('Confirm')}}`,
+                        'x-component': 'Action',
+                        'x-component-props': {
+                          type: 'primary',
+                          useAction: '{{useExecuteConfirmAction}}',
+                        },
+                      },
                     },
                   },
                 },
               },
             },
-          },
-        },
-      }}
-    />
+          }}
+        />
+      </HideVariableContext.Provider>
+    </CurrentWorkflowContext.Provider>
   );
 }
 

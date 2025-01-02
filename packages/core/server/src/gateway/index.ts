@@ -29,6 +29,8 @@ import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
 import { WSServer } from './ws-server';
+import { isMainThread, workerData } from 'node:worker_threads';
+import process from 'node:process';
 
 const compress = promisify(compression());
 
@@ -346,11 +348,14 @@ export class Gateway extends EventEmitter {
 
     const mainApp = AppSupervisor.getInstance().bootMainApp(options.mainAppOptions);
 
+    let runArgs: any = [process.argv, { throwError: true, from: 'node' }];
+
+    if (!isMainThread) {
+      runArgs = [workerData.argv, { throwError: true, from: 'user' }];
+    }
+
     mainApp
-      .runAsCLI(process.argv, {
-        throwError: true,
-        from: 'node',
-      })
+      .runAsCLI(...runArgs)
       .then(async () => {
         if (!isStart && !(await mainApp.isStarted())) {
           await mainApp.stop({ logging: false });
@@ -358,8 +363,13 @@ export class Gateway extends EventEmitter {
       })
       .catch(async (e) => {
         if (e.code !== 'commander.helpDisplayed') {
+          if (!isMainThread) {
+            throw e;
+          }
+
           mainApp.log.error(e);
         }
+
         if (!isStart && !(await mainApp.isStarted())) {
           await mainApp.stop({ logging: false });
         }
@@ -415,6 +425,62 @@ export class Gateway extends EventEmitter {
     this.server = http.createServer(this.getCallback());
 
     this.wsServer = new WSServer();
+
+    this.wsServer.on('message', async ({ client, message }) => {
+      const app = await AppSupervisor.getInstance().getApp(client.app);
+
+      if (!app) {
+        return;
+      }
+
+      const parsedMessage = JSON.parse(message.toString());
+
+      if (!parsedMessage.type) {
+        return;
+      }
+
+      if (!app.listenerCount(`ws:setTag`)) {
+        app.on('ws:setTag', ({ clientId, tagKey, tagValue }) => {
+          this.wsServer.setClientTag(clientId, tagKey, tagValue);
+        });
+
+        app.on('ws:removeTag', ({ clientId, tagKey }) => {
+          this.wsServer.removeClientTag(clientId, tagKey);
+        });
+
+        app.on('ws:sendToTag', ({ tagKey, tagValue, message }) => {
+          this.wsServer.sendToConnectionsByTags(
+            [
+              { tagName: tagKey, tagValue },
+              { tagName: 'app', tagValue: app.name },
+            ],
+            message,
+          );
+        });
+
+        app.on('ws:sendToTags', ({ tags, message }) => {
+          this.wsServer.sendToConnectionsByTags(tags, message);
+        });
+
+        app.on('ws:authorized', ({ clientId, userId }) => {
+          this.wsServer.sendToConnectionsByTags(
+            [
+              { tagName: 'userId', tagValue: userId },
+              { tagName: 'app', tagValue: app.name },
+            ],
+            { type: 'authorized' },
+          );
+        });
+      }
+
+      const eventName = `ws:message:${parsedMessage.type}`;
+
+      app.emit(eventName, {
+        clientId: client.id,
+        tags: [...client.tags],
+        payload: parsedMessage.payload,
+      });
+    });
 
     this.server.on('upgrade', (request, socket, head) => {
       const { pathname } = parse(request.url);

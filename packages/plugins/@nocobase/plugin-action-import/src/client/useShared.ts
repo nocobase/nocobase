@@ -73,6 +73,22 @@ export const useShared = () => {
                       changeOnSelect: false,
                     },
                   },
+                  title: {
+                    type: 'string',
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Input',
+                    'x-component-props': {
+                      placeholder: '{{ t("Custom column title") }}',
+                    },
+                  },
+                  description: {
+                    type: 'string',
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Input',
+                    'x-component-props': {
+                      placeholder: `{{ t("Field description placeholder", {ns: "${NAMESPACE}"}) }}`,
+                    },
+                  },
                   remove: {
                     type: 'void',
                     'x-decorator': 'FormItem',

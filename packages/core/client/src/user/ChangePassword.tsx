@@ -28,9 +28,7 @@ const useCloseAction = () => {
   return {
     async run() {
       setVisible(false);
-      form.submit((values) => {
-        console.log(values);
-      });
+      await form.reset();
     },
   };
 };
@@ -60,7 +58,7 @@ const schema: ISchema = {
       'x-decorator': 'Form',
       'x-component': 'Action.Drawer',
       'x-component-props': {
-        zIndex: 10000,
+        zIndex: 2000,
       },
       type: 'void',
       title: '{{t("Change password")}}',
@@ -78,6 +76,7 @@ const schema: ISchema = {
           required: true,
           'x-component': 'Password',
           'x-decorator': 'FormItem',
+          'x-validator': { password: true },
           'x-component-props': { checkStrength: true, style: {} },
           'x-reactions': [
             {

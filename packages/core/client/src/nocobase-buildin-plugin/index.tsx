@@ -15,7 +15,6 @@ import { Button, Modal, Result, Spin } from 'antd';
 import React, { FC } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ACLPlugin } from '../acl';
-import { useAPIClient } from '../api-client';
 import { Application } from '../application';
 import { Plugin } from '../application/Plugin';
 import { BlockSchemaComponentPlugin } from '../block-provider';
@@ -33,6 +32,7 @@ import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
 import { SystemSettingsPlugin } from '../system-settings';
 import { CurrentUserProvider, CurrentUserSettingsMenuProvider } from '../user';
 import { LocalePlugin } from './plugins/LocalePlugin';
+import { tval } from '@nocobase/utils/client';
 
 const AppSpin = () => {
   return (
@@ -285,6 +285,11 @@ export class NocoBaseBuildInPlugin extends Plugin {
 
     this.app.use(CurrentUserProvider);
     this.app.use(CurrentUserSettingsMenuProvider);
+
+    this.app.pluginSettingsManager.add('security', {
+      title: tval('Security'),
+      icon: 'SafetyOutlined',
+    });
   }
 
   addRoutes() {

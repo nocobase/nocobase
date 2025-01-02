@@ -13,6 +13,7 @@ import { setCurrentRole } from '@nocobase/plugin-acl';
 import { ACL, AvailableActionOptions } from '@nocobase/acl';
 import { DataSourcesRolesModel } from './data-sources-roles-model';
 import PluginDataSourceManagerServer from '../plugin';
+import * as path from 'path';
 
 const availableActions: {
   [key: string]: AvailableActionOptions;
@@ -76,8 +77,13 @@ export class DataSourceModel extends Model {
     }
   }
 
-  async loadIntoApplication(options: { app: Application; transaction?: Transaction; loadAtAfterStart?: boolean }) {
-    const { app, loadAtAfterStart } = options;
+  async loadIntoApplication(options: {
+    app: Application;
+    transaction?: Transaction;
+    loadAtAfterStart?: boolean;
+    refresh?: boolean;
+  }) {
+    const { app, loadAtAfterStart, refresh } = options;
 
     const dataSourceKey = this.get('key');
 
@@ -98,6 +104,8 @@ export class DataSourceModel extends Model {
         name: dataSourceKey,
         logger: app.logger.child({ dataSourceKey }),
         sqlLogger: app.sqlLogger.child({ dataSourceKey }),
+        cache: app.cache,
+        storagePath: path.join(process.cwd(), 'storage', 'cache', 'apps', app.name),
       });
 
       dataSource.on('loadingProgress', (progress) => {
@@ -126,6 +134,7 @@ export class DataSourceModel extends Model {
 
       await app.dataSourceManager.add(dataSource, {
         localData: await this.loadLocalData(),
+        refresh,
       });
     } catch (e) {
       app.logger.error(`load data source failed`, { cause: e });

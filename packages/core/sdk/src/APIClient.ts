@@ -166,6 +166,12 @@ export class Auth {
    */
   setToken(token: string) {
     this.setOption('token', token);
+
+    if (this.api['app']) {
+      this.api['app'].eventBus.dispatchEvent(
+        new CustomEvent('auth:tokenChanged', { detail: { token, authenticator: this.authenticator } }),
+      );
+    }
   }
 
   /**
@@ -210,8 +216,8 @@ export class Auth {
       },
     });
     const data = response?.data?.data;
-    this.setToken(data?.token);
     this.setAuthenticator(authenticator);
+    this.setToken(data?.token);
     return response;
   }
 

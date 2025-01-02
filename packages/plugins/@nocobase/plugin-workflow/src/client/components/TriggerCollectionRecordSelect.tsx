@@ -11,17 +11,17 @@ import React from 'react';
 
 import { parseCollectionName, RemoteSelect, useApp } from '@nocobase/client';
 
-import { useFlowContext } from '../FlowContext';
+import { useCurrentWorkflowContext } from '../FlowContext';
+import { WorkflowVariableWrapper } from '../variable';
 
 export function TriggerCollectionRecordSelect(props) {
-  const { workflow } = useFlowContext();
+  const workflow = useCurrentWorkflowContext();
   const app = useApp();
 
   const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
   const { collectionManager } = app.dataSourceManager.getDataSource(dataSourceName);
   const collection = collectionManager.getCollection(collectionName);
-
-  return (
+  const render = (props) => (
     <RemoteSelect
       objectValue
       dataSource={dataSourceName}
@@ -34,6 +34,15 @@ export function TriggerCollectionRecordSelect(props) {
       }}
       manual={false}
       {...props}
+    />
+  );
+  return (
+    <WorkflowVariableWrapper
+      value={props.value}
+      onChange={props.onChange}
+      nullable={false}
+      changeOnSelect
+      render={render}
     />
   );
 }

@@ -427,6 +427,7 @@ export class PluginDataSourceManagerServer extends Plugin {
         ) {
           dataSourceModel.loadIntoApplication({
             app: ctx.app,
+            refresh: true,
           });
 
           ctx.app.syncMessageManager.publish(self.name, {
