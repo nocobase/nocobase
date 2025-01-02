@@ -57,7 +57,7 @@ export abstract class Auth implements IAuth {
   }
 
   async skipCheck() {
-    if (!this.ctx.app.opptions.acl) {
+    if (!this.ctx.app.options.acl) {
       return true;
     }
     const { resourceName, actionName } = this.ctx.action;
