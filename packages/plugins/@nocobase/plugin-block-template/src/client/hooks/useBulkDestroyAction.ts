@@ -47,6 +47,7 @@ export const useBulkDestroyAction = () => {
       for (const key in plugin.templateschemacache) {
         delete plugin.templateschemacache[key];
       }
+      plugin.loadingPromises.clear();
 
       // Reset selection
       onRowSelectionChange([], []);

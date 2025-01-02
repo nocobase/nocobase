@@ -18,7 +18,7 @@ import { collectAllTemplateUids, getFullSchema } from './utils/template';
 import { registerTemplateBlockInterceptors } from './utils/interceptors';
 
 export class PluginBlockTemplateClient extends Plugin {
-  #loadingPromises = new Map();
+  loadingPromises = new Map();
   templateschemacache = {};
   // #schemas = {};
   templateBlocks = {};
@@ -33,11 +33,11 @@ export class PluginBlockTemplateClient extends Plugin {
     Schema.registerPatches((s: ISchema) => {
       if (s['x-template-root-uid'] && s['version']) {
         const templateUids = collectAllTemplateUids(s);
-        let pendingPromise = this.#loadingPromises.get(s['x-uid']);
+        let pendingPromise = this.loadingPromises.get(s['x-uid']);
         if (!pendingPromise) {
           pendingPromise = this.#fetchAllTemplates(templateUids, s);
           if (pendingPromise) {
-            this.#loadingPromises.set(s['x-uid'], pendingPromise);
+            this.loadingPromises.set(s['x-uid'], pendingPromise);
           }
         }
 
@@ -157,13 +157,13 @@ export class PluginBlockTemplateClient extends Plugin {
       return new Promise((resolve) => {
         Promise.all(promises)
           .then(() => {
-            // this.#loadingPromises.delete(schema['x-uid']);
-            this.#loadingPromises.get(schema['x-uid'])['__done'] = true;
+            // this.loadingPromises.delete(schema['x-uid']);
+            this.loadingPromises.get(schema['x-uid'])['__done'] = true;
             resolve(null);
           })
           .catch((error) => {
             console.error('Failed to fetch template schemas:', error);
-            this.#loadingPromises.delete(schema['x-uid']);
+            this.loadingPromises.delete(schema['x-uid']);
             resolve(null);
           });
       });

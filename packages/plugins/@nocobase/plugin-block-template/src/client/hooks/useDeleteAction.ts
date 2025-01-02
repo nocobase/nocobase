@@ -43,6 +43,7 @@ export function useDeleteAction() {
       for (const key in plugin.templateschemacache) {
         delete plugin.templateschemacache[key];
       }
+      plugin.loadingPromises.clear();
 
       // Calculate pagination after deletion
       const currentPage = data?.['meta']?.page || 1;
