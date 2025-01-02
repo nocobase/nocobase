@@ -92,8 +92,8 @@ export class BaseAuth extends Auth {
 
     const { userId, roleName, iat, temp, jti } = payload ?? {};
 
-    const bolcked = await this.jwt.blacklist.has(jti ?? token);
-    if (bolcked) {
+    const blocked = await this.jwt.blacklist.has(jti ?? token);
+    if (blocked) {
       this.ctx.throw(401, { message: 'token blocked', code: 'BLOCKED_TOKEN' satisfies AuthErrorType });
     }
 

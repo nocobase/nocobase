@@ -9,7 +9,6 @@
 
 import React from 'react';
 import { ACLPane } from '../acl/ACLShortcut';
-import { lazy } from '../lazy-helper';
 import { ADMIN_SETTINGS_PATH } from '../application';
 import { Plugin } from '../application/Plugin';
 import { BlockTemplatesPane } from '../schema-templates';
@@ -22,7 +21,6 @@ export * from './PluginManager';
 export * from './PluginManagerLink';
 export * from './PluginSetting';
 
-// const { SystemSettingsPane } = lazy(() => import('../system-settings'), 'SystemSettingsPane');
 export class PMPlugin extends Plugin {
   async load() {
     this.addComponents();
