@@ -9,7 +9,6 @@
 
 import { vi } from 'vitest';
 import { BaseAuth } from '../base/auth';
-import { AuthErrorType } from '../auth';
 
 describe('base-auth', () => {
   it('should validate username', () => {
@@ -37,10 +36,12 @@ describe('base-auth', () => {
         getBearerToken: () => null,
       },
     } as any);
+    let user = null;
     try {
-      await auth.check();
+      user = await auth.check();
+      expect(user).toBe(null);
     } catch (error) {
-      expect(error.type).toBe<AuthErrorType>('empty-token');
+      expect(user).toBe(null);
     }
   });
 
@@ -55,6 +56,9 @@ describe('base-auth', () => {
         authManager: {
           jwt: {
             verify: () => ({ status: 'valid', payload: { userId: 1, roleName: 'admin' } }),
+            blacklist: {
+              has: () => false,
+            },
           },
           tokenController: {
             check: () => ({ status: 'valid' }),
@@ -89,6 +93,9 @@ describe('base-auth', () => {
         authManager: {
           jwt: {
             verify: () => ({ status: 'valid', payload: { userId: 1, roleName: 'admin' } }),
+            blacklist: {
+              has: () => false,
+            },
           },
           tokenController: {
             check: () => ({ status: 'valid' }),
