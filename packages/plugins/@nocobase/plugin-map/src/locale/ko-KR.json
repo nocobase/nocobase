@@ -19,7 +19,7 @@
   "Enter keywords to search": "검색할 키워드 입력 (시/도를 반드시 포함해야 함)",
   "The AccessKey is incorrect, please check it": "액세스 키가 올바르지 않습니다. 확인해 주세요",
   "Please configure the AMap securityCode or serviceHost correctly": "AMap securityCode 또는 serviceHost를 올바르게 구성해 주세요",
-  "Map Manager": "지도 관리자",
+  "Map manager": "지도 관리자",
   "Configuration": "구성",
   "Saved successfully": "성공적으로 저장되었습니다",
   "Saved failed": "저장 실패",
