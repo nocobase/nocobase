@@ -31,7 +31,6 @@ import {
   useTableBlockContextBasicValue,
   Variable,
 } from '@nocobase/client';
-import { getMobilePageSchema, getPageContentTabSchema } from '@nocobase/plugin-mobile/client';
 import { uid } from '@nocobase/utils/client';
 import { Checkbox, Radio, Tag, Typography } from 'antd';
 import _ from 'lodash';
@@ -1261,4 +1260,114 @@ function TypeTag(props) {
   };
 
   return <Tag color={colorMap[props.value]}>{valueMap[props.value]}</Tag>;
+}
+
+// copy from @nocobase/plugin-mobile/client
+// TODO: 需要把相关代码移动到 @nocobase/plugin-mobile
+const spaceClassName = css(`
+  &:first-child {
+    .ant-space-item {
+      width: 30px;
+      height: 30px;
+      transform: rotate(45deg);
+      span {
+        position: relative;
+        bottom: -15px;
+        right: -8px;
+        transform: rotate(-45deg);
+        font-size: 10px;
+      }
+    }
+  }
+  `);
+
+// copy from @nocobase/plugin-mobile/client
+// TODO: 需要把相关代码移动到 @nocobase/plugin-mobile
+const mobilePageHeaderSchema = {
+  type: 'void',
+  'x-component': 'MobilePageHeader',
+  properties: {
+    pageNavigationBar: {
+      type: 'void',
+      'x-component': 'MobilePageNavigationBar',
+      properties: {
+        actionBar: {
+          type: 'void',
+          'x-component': 'MobileNavigationActionBar',
+          'x-initializer': 'mobile:navigation-bar:actions',
+          'x-component-props': {
+            spaceProps: {
+              style: {
+                flexWrap: 'nowrap',
+              },
+            },
+          },
+          properties: {},
+        },
+      },
+    },
+    pageTabs: {
+      type: 'void',
+      'x-component': 'MobilePageTabs',
+    },
+  },
+};
+
+// copy from @nocobase/plugin-mobile/client
+// TODO: 需要把相关代码移动到 @nocobase/plugin-mobile
+function getMobilePageSchema(pageSchemaUid: string, firstTabUid: string) {
+  const pageSchema = {
+    type: 'void',
+    name: pageSchemaUid,
+    'x-uid': pageSchemaUid,
+    'x-component': 'MobilePageProvider',
+    'x-settings': 'mobile:page',
+    'x-decorator': 'BlockItem',
+    'x-decorator-props': {
+      style: {
+        height: '100%',
+      },
+    },
+    'x-toolbar-props': {
+      draggable: false,
+      spaceWrapperStyle: { right: -15, top: -15 },
+      spaceClassName,
+      toolbarStyle: {
+        overflowX: 'hidden',
+      },
+    },
+    properties: {
+      header: mobilePageHeaderSchema,
+      content: getMobilePageContentSchema(firstTabUid),
+    },
+  };
+
+  return { schema: pageSchema };
+}
+
+// copy from @nocobase/plugin-mobile/client
+// TODO: 需要把相关代码移动到 @nocobase/plugin-mobile
+function getMobilePageContentSchema(firstTabUid: string) {
+  return {
+    type: 'void',
+    'x-component': 'MobilePageContent',
+    properties: {
+      [firstTabUid]: getPageContentTabSchema(firstTabUid),
+    },
+  };
+}
+
+// copy from @nocobase/plugin-mobile/client
+// TODO: 需要把相关代码移动到 @nocobase/plugin-mobile
+function getPageContentTabSchema(pageSchemaUid: string) {
+  return {
+    type: 'void',
+    'x-uid': pageSchemaUid,
+    'x-async': true,
+    'x-component': 'Grid',
+    'x-component-props': {
+      showDivider: false,
+    },
+    'x-initializer': 'mobile:addBlock',
+  };
 }

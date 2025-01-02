@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { css } from '@nocobase/client';
 import { getMobilePageContentSchema } from './content';
 import { mobilePageHeaderSchema } from './header';
 import { mobilePageSettings } from './settings';
-import { css } from '@nocobase/client';
 
 const spaceClassName = css(`
 &:first-child {
