@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useAPIClient, usePlugin, useDataBlockRequest } from '@nocobase/client';
+import { useAPIClient, usePlugin, useDataBlockRequest, useActionContext } from '@nocobase/client';
 import { useField } from '@formily/react';
 import { App } from 'antd';
 import { useT } from '../locale';
@@ -17,6 +17,7 @@ import { useTableBlockProps } from '@nocobase/client';
 
 export const useBulkDestroyAction = () => {
   const apiClient = useAPIClient();
+  const { setVisible } = useActionContext();
   const { data, refresh, run } = useDataBlockRequest();
   const field = useField();
   const t = useT();
@@ -38,6 +39,7 @@ export const useBulkDestroyAction = () => {
         url: '/blockTemplates:destroy',
         params: {
           filterByTk: selectedRowKeys,
+          removeSchema: !form.values.keepBlocks,
         },
       });
 
@@ -64,6 +66,7 @@ export const useBulkDestroyAction = () => {
         refresh();
       }
 
+      setVisible(false);
       message.success(t('Deleted successfully'));
     },
   };

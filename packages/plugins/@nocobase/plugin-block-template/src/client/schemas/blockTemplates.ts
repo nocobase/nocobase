@@ -15,6 +15,7 @@ import { ConfigureLink } from '../components/ConfigureLink';
 import { editActionSchema } from './editActionSchema';
 import { NAMESPACE } from '../constants';
 import { tStr } from '../locale';
+import { bulkDestroySchema } from './bulkDestroySchema';
 
 export const blockTemplatesSchema: ISchema = {
   type: 'void',
@@ -64,18 +65,7 @@ export const blockTemplatesSchema: ISchema = {
             icon: 'ReloadOutlined',
           },
         },
-        destroy: {
-          title: '{{ t("Delete") }}',
-          'x-component': 'Action',
-          'x-component-props': {
-            icon: 'DeleteOutlined',
-            useAction: '{{ useBulkDestroyAction }}',
-            confirm: {
-              title: "{{t('Delete record')}}",
-              content: "{{t('Are you sure you want to delete it?')}}",
-            },
-          },
-        },
+        bulkDestroySchema,
         createActionSchema,
       },
     },

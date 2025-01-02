@@ -10,3 +10,4 @@
 export * from './blockTemplates';
 export * from './createActionSchema';
 export * from './editActionSchema';
+export * from './bulkDestroySchema';
