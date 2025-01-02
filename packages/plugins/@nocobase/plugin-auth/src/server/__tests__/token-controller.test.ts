@@ -92,8 +92,8 @@ describe('auth', () => {
     await app.cache.reset();
     await app.destroy();
   });
-  const not_exist_jwtid = 'access_id_not_exist';
-  it('should throw error when accessId not exist', async () => {
+  const not_exist_jwtid = 'jti_not_exist';
+  it('should throw error when jti not exist', async () => {
     const token = app.authManager.jwt.sign(
       { userId: user.id, temp: true },
       { jwtid: not_exist_jwtid, expiresIn: '1d' },

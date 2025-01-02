@@ -41,5 +41,10 @@ export default defineCollection({
       name: 'resigned',
       allowNull: false,
     },
+    {
+      type: 'bigInt',
+      name: 'userId',
+      allowNull: false,
+    },
   ],
 });
