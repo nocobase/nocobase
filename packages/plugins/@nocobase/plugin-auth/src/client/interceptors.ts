@@ -23,11 +23,6 @@ export type AuthErrorType =
   | 'blocked'
   | 'login-timeout';
 
-export const AUTHERRORNAME = 'AuthError';
-export type AhthErrorData = {
-  newToken?: string;
-};
-
 const debouncedRedirect = debounce(
   (redirectFunc) => {
     redirectFunc();
@@ -47,7 +42,6 @@ export function authCheckMiddleware({ app }: { app: Application }) {
       const errors = error?.response?.data?.errors;
       const firstError = Array.isArray(errors) ? errors[0] : null;
       if (!firstError) throw error;
-      const authError = errors.find((error) => error.code === AUTHERRORNAME);
       const errorType: AuthErrorType = firstError?.code;
       const state = app.router.state;
       const { pathname, search } = state.location;

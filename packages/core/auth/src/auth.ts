@@ -21,29 +21,15 @@ export type AuthConfig = {
 export type AuthErrorType =
   | 'empty'
   | 'expired'
-  | 'invalid'
+  | 'invalid' //INVALID_TOKEN
   | 'renewed'
-  | 'missing'
-  | 'inactive'
+  | 'missing' //MISSING_SESSION  //MISSING_JTI
+  | 'inactive' //INACTIVE_SESSION   //INACTIVE_JTI
   | 'renewed'
   | 'renewed'
   | 'blocked'
   | 'login-timeout';
 
-export const AUTHERRORNAME = 'AuthError';
-export type AhthErrorData = {
-  newToken?: string;
-};
-export class AuthError extends Error {
-  type: AuthErrorType;
-  data: AhthErrorData;
-  constructor(message: string, type: AuthErrorType, data: AhthErrorData = {}) {
-    super(message);
-    this.name = AUTHERRORNAME;
-    this.type = type;
-    this.data = data;
-  }
-}
 export type AuthExtend<T extends Auth> = new (config: AuthConfig) => T;
 
 interface IAuth {

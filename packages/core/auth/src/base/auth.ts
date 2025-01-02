@@ -9,7 +9,7 @@
 
 import { Collection, Model } from '@nocobase/database';
 import { Cache } from '@nocobase/cache';
-import { Auth, AuthConfig } from '../auth';
+import { Auth, AuthConfig, AuthErrorType } from '../auth';
 import { JwtService } from './jwt-service';
 import { ITokenControlService } from './token-control-service';
 
@@ -72,7 +72,7 @@ export class BaseAuth extends Auth {
     const token = this.ctx.getBearerToken();
 
     if (!token) {
-      this.ctx.throw(401, { message: 'empty token', code: 'empty' });
+      this.ctx.throw(401, { message: 'empty token', code: 'empty' satisfies AuthErrorType });
     }
 
     const { status: tokenStatus, payload } = await this.jwt.verify(token);
@@ -80,7 +80,7 @@ export class BaseAuth extends Auth {
 
     const bolcked = await this.jwt.blacklist.has(jti ?? token);
     if (bolcked) {
-      this.ctx.throw(401, { message: 'token blocked', code: 'blocked' });
+      this.ctx.throw(401, { message: 'token blocked', code: 'blocked' satisfies AuthErrorType });
     }
 
     if (roleName) {
@@ -99,23 +99,23 @@ export class BaseAuth extends Auth {
 
     if (!temp) {
       if (tokenStatus === 'valid') return user;
-      this.ctx.throw(401, { message: `${tokenStatus} token`, code: tokenStatus });
+      this.ctx.throw(401, { message: `${tokenStatus} token`, code: tokenStatus satisfies AuthErrorType });
     }
 
     if (tokenStatus === 'valid') {
       if (user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
-        this.ctx.throw(401, { message: 'User password changed', code: 'invalid' });
+        this.ctx.throw(401, { message: 'User password changed', code: 'invalid' satisfies AuthErrorType });
       } else {
-        const { status: JtiStatus } = await this.tokenController.check(jti);
-        if (JtiStatus === 'valid') {
+        const { status: jtiStatus } = await this.tokenController.check(jti);
+        if (jtiStatus === 'valid') {
           return user;
         } else {
-          this.ctx.throw(401, { message: `${JtiStatus} token`, code: JtiStatus });
+          this.ctx.throw(401, { message: `${jtiStatus} token`, code: jtiStatus satisfies AuthErrorType });
         }
       }
     } else if (tokenStatus === 'expired') {
-      const { status: JtiStatus } = await this.tokenController.check(jti);
-      if (JtiStatus === 'valid') {
+      const { status: jtiStatus } = await this.tokenController.check(jti);
+      if (jtiStatus === 'valid') {
         const renewedJti = await this.tokenController.renew(jti);
         if (renewedJti.status === 'renewing') {
           const expiresIn = (await this.tokenController.getConfig()).tokenExpirationTime;
@@ -123,13 +123,13 @@ export class BaseAuth extends Auth {
           this.ctx.res.setHeader('x-new-token', newToken);
           return user;
         } else {
-          this.ctx.throw(401, { message: `${JtiStatus} token`, code: JtiStatus });
+          this.ctx.throw(401, { message: `${jtiStatus} token`, code: renewedJti.status satisfies AuthErrorType });
         }
       } else {
-        this.ctx.throw(401, { message: `${JtiStatus} token`, code: JtiStatus });
+        this.ctx.throw(401, { message: `${jtiStatus} token`, code: jtiStatus satisfies AuthErrorType });
       }
     } else {
-      this.ctx.throw(401, { message: `${tokenStatus} token`, code: tokenStatus });
+      this.ctx.throw(401, { message: `${tokenStatus} token`, code: tokenStatus satisfies AuthErrorType });
     }
   }
 
