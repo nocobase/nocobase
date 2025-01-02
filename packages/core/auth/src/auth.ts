@@ -27,7 +27,8 @@ export type AuthErrorType =
   | 'INACTIVE_SESSION'
   | 'BLOCKED_TOKEN'
   | 'BLOCKED_SESSION'
-  | 'EXPIRED_SESSION';
+  | 'EXPIRED_SESSION'
+  | 'NOT_EXIST_USER';
 
 export type AuthExtend<T extends Auth> = new (config: AuthConfig) => T;
 

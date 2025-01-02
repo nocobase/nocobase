@@ -21,7 +21,8 @@ type AuthErrorType =
   | 'INACTIVE_SESSION'
   | 'BLOCKED_TOKEN'
   | 'BLOCKED_SESSION'
-  | 'EXPIRED_SESSION';
+  | 'EXPIRED_SESSION'
+  | 'NOT_EXIST_USER';
 
 const debouncedRedirect = debounce(
   (redirectFunc) => {

@@ -178,7 +178,7 @@ export class BaseAuth extends Auth {
       });
     }
     if (!user) {
-      this.ctx.throw(401, 'Unauthorized');
+      this.ctx.throw(401, { message: 'user not exist', code: 'NOT_EXIST_USER' satisfies AuthErrorType });
     }
     const jti = await this.tokenController.add({ userId: user.id });
     const expiresIn = (await this.tokenController.getConfig()).tokenExpirationTime;
