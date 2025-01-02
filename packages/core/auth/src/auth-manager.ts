@@ -131,14 +131,14 @@ export class AuthManager {
         return next();
       }
 
-      if (await ctx.auth.skipCheck()) {
+      if (!authenticator) {
+        return next();
+      } else if (await ctx.auth.skipCheck()) {
         return next();
       } else {
-        if (authenticator) {
-          const user = await ctx.auth.check();
-          if (user) {
-            ctx.auth.user = user;
-          }
+        const user = await ctx.auth.check();
+        if (user) {
+          ctx.auth.user = user;
         }
         await next();
       }
