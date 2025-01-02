@@ -202,7 +202,7 @@ export default {
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
-        title: 'title',
+        title: '{{t("Title")}}',
       },
     },
     {
@@ -217,7 +217,7 @@ export default {
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
-        title: 'icon',
+        title: '{{t("Icon")}}',
       },
     },
     {
@@ -232,7 +232,7 @@ export default {
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
-        title: 'schemaUid',
+        title: '{{t("Schema UID")}}',
       },
     },
     // schemaUid 是用于存储菜单的 schema uid，pageSchemaUid 是用于存储菜单中的页面的 schema uid
@@ -248,7 +248,7 @@ export default {
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
-        title: 'pageSchemaUid',
+        title: '{{t("Page Schema UID")}}',
       },
     },
     {
@@ -263,7 +263,7 @@ export default {
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
-        title: 'tabSchemaName',
+        title: '{{t("Tab Schema Name")}}',
       },
     },
     {
@@ -278,7 +278,7 @@ export default {
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
-        title: 'type',
+        title: '{{t("Type")}}',
       },
     },
     {
@@ -300,7 +300,7 @@ export default {
           },
         },
         default: null,
-        title: 'options',
+        title: '{{t("Options")}}',
       },
     },
     {
@@ -320,7 +320,7 @@ export default {
           step: '1',
         },
         'x-validator': 'integer',
-        title: 'sort',
+        title: '{{t("Sort")}}',
       },
     },
     {

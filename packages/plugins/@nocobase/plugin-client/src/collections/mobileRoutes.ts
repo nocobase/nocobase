@@ -204,7 +204,7 @@ export default {
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
-        title: 'title',
+        title: '{{t("Title")}}',
       },
     },
     {
@@ -219,7 +219,7 @@ export default {
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
-        title: 'icon',
+        title: '{{t("Icon")}}',
       },
     },
     {
@@ -234,7 +234,7 @@ export default {
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
-        title: 'schemaUid',
+        title: '{{t("Schema UID")}}',
       },
     },
     {
@@ -249,7 +249,7 @@ export default {
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
-        title: 'type',
+        title: '{{t("Type")}}',
       },
     },
     {
@@ -271,7 +271,7 @@ export default {
           },
         },
         default: null,
-        title: 'options',
+        title: '{{t("Options")}}',
       },
     },
     {
@@ -291,7 +291,7 @@ export default {
           step: '1',
         },
         'x-validator': 'integer',
-        title: 'sort',
+        title: '{{t("Sort")}}',
       },
     },
     {
