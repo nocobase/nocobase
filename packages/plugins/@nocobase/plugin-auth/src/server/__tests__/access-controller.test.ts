@@ -10,6 +10,7 @@
 import { BaseAuth } from '@nocobase/auth';
 import { Database, Model } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
+import { AuthErrorType } from '@nocobase/auth';
 function sleep(ms) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
@@ -37,6 +38,12 @@ class MockContext {
   getBearerToken() {
     return this.token;
   }
+  throw(status, errData) {
+    throw new Error(errData.code);
+  }
+  cache = {
+    wrap: async (key, fn) => fn(),
+  };
 }
 
 describe('auth', () => {
@@ -51,6 +58,10 @@ describe('auth', () => {
       plugins: ['field-sort', 'users', 'auth'],
     });
     db = app.db;
+    app.authManager.setTokenBlacklistService({
+      has: async () => false,
+      add: async () => true,
+    });
 
     user = await db.getRepository('users').create({
       values: {
@@ -88,17 +99,17 @@ describe('auth', () => {
       { jwtid: not_exist_jwtid, expiresIn: '1d' },
     );
     ctx.setToken(token);
-    await expect(auth.check()).rejects.toThrowError('Unauthorized');
-    expect(ctx.res.getHeader('X-Authorized-Failed-Type')).toBe('access_id_not_exist');
+    await expect(auth.check()).rejects.toThrowError('missing');
   });
   it('api token do not check accsss', async () => {
     await auth.tokenController.setConfig({
-      tokenExpirationTime: '1s',
-      maxTokenLifetime: '1s',
-      maxInactiveInterval: '1s',
+      tokenExpirationTime: '0s',
+      maxTokenLifetime: '0s',
+      maxInactiveInterval: '0s',
     });
     const token = app.authManager.jwt.sign({ userId: user.id }, { expiresIn: '1d' });
     ctx.setToken(token);
+    await sleep(2000);
     await expect(auth.check()).resolves.not.toThrow();
   });
   it('when token expired and login valid, it generate a new token', async () => {
@@ -110,7 +121,7 @@ describe('auth', () => {
     const { token } = await auth.signIn();
     ctx.setToken(token);
     await sleep(3000);
-    await expect(auth.check()).rejects.toThrowError('Unauthorized');
+    await auth.check();
     expect(typeof ctx.res.getHeader('x-new-token')).toBe('string');
   });
 
@@ -123,7 +134,7 @@ describe('auth', () => {
     const { token } = await auth.signIn();
     ctx.setToken(token);
     await sleep(3000);
-    await expect(auth.check()).rejects.toThrowError('Unauthorized');
+    await expect(auth.check()).rejects.toThrowError('login-timeout');
   });
 
   it('when exceed inactiveInterval, throw Unauthorized', async () => {
@@ -135,10 +146,10 @@ describe('auth', () => {
     const { token } = await auth.signIn();
     ctx.setToken(token);
     await sleep(3000);
-    await expect(auth.check()).rejects.toThrowError('Unauthorized');
+    await expect(auth.check()).rejects.toThrowError('inactive');
   });
 
-  it('when token expired, throw Unauthorized', async () => {
+  it('when token expired but not refresh,  not throw error', async () => {
     await auth.tokenController.setConfig({
       tokenExpirationTime: '1s',
       maxTokenLifetime: '1d',
@@ -147,7 +158,8 @@ describe('auth', () => {
     const { token } = await auth.signIn();
     ctx.setToken(token);
     await sleep(3000);
-    await expect(auth.check()).rejects.toThrowError('Unauthorized');
+    const checkedUser = await auth.check();
+    expect(checkedUser.id).toEqual(user.id);
   });
 
   it('when call refreshAccess with same jti multiple times, only one refreshed', async () => {
@@ -158,7 +170,7 @@ describe('auth', () => {
       auth.tokenController.renew(jti),
       auth.tokenController.renew(jti),
     ]);
-    const result = allSettled.filter((result) => result.status === 'fulfilled' && result.value.status === 'renewed');
+    const result = allSettled.filter((result) => result.status === 'fulfilled' && result.value.status === 'renewing');
     expect(result).toHaveLength(1);
   });
 });
