@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaSettingsItem, useAPIClient, useDesignable } from '@nocobase/client';
+import { SchemaSettingsItem, useAPIClient, useDesignable, usePlugin } from '@nocobase/client';
 import { useFieldSchema, useField } from '@formily/react';
 import { App } from 'antd';
 import React from 'react';
@@ -16,6 +16,7 @@ import { convertTplBlock } from '../initializers/TemplateBlockInitializer';
 import { Schema } from '@formily/json-schema';
 import { uid } from '@nocobase/utils/client';
 import { useT } from '../locale';
+import PluginBlockTemplateClient from '..';
 
 const cleanSchema = (schema) => {
   const s = { ...schema, 'x-component-props': {}, 'x-decorator-props': {} };
@@ -64,6 +65,7 @@ const findParentRootTemplateSchema = (fieldSchema) => {
 export const ResetSetting = () => {
   // const { dn, template } = useSchemaSettings();
   const { dn, reset, refresh } = useDesignable();
+  const plugin = usePlugin(PluginBlockTemplateClient);
   const t = useT();
   const api = useAPIClient();
   // const compile = useCompile();
@@ -88,6 +90,9 @@ export const ResetSetting = () => {
             const templateSchema = res.data?.data;
             const rootSchema = findParentRootTemplateSchema(fieldSchema);
             const isRoot = rootSchema === fieldSchema;
+            if (isRoot) {
+              plugin.templateschemacache[templateSchema['x-uid']] = templateSchema;
+            }
             const newSchema = convertTplBlock(
               templateSchema,
               false,
