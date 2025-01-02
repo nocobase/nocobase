@@ -74,7 +74,7 @@ interface Resource {
 }
 
 interface ExtendedAgent extends SuperAgentTest {
-  login: (user: any, roleName?: string) => ExtendedAgent;
+  login: (user: any, roleName?: string, options?: { real: true }) => ExtendedAgent | Promise<ExtendedAgent>;
   loginUsingId: (userId: number, roleName?: string) => ExtendedAgent;
   resource: (name: string, resourceOf?: any) => Resource;
 }
@@ -124,11 +124,37 @@ export class MockServer extends Application {
   agent(callback?): ExtendedAgent {
     const agent = supertest.agent(callback || this.callback());
     const prefix = this.resourcer.options.prefix;
-
+    const authManager = this.authManager;
     const proxy = new Proxy(agent, {
       get(target, method: string, receiver) {
         if (['login', 'loginUsingId'].includes(method)) {
-          return (userOrId: any, roleName?: string) => {
+          return (userOrId: any, roleName?: string, options?: { loginWithJti: boolean }) => {
+            const userId = typeof userOrId === 'number' ? userOrId : userOrId?.id;
+            if (options?.loginWithJti) {
+              const loginWithJti = async () => {
+                const jti = await authManager.tokenController.add({ userId });
+                const expiresIn = (await authManager.tokenController.getConfig()).tokenExpirationTime;
+                return proxy
+                  .auth(
+                    jwt.sign(
+                      {
+                        userId,
+                        temp: true,
+                        roleName,
+                      },
+                      process.env.APP_KEY,
+                      {
+                        jwtid: jti,
+                        expiresIn,
+                      },
+                    ),
+                    { type: 'bearer' },
+                  )
+                  .set('X-Authenticator', 'basic');
+              };
+              return loginWithJti();
+            }
+
             return proxy
               .auth(
                 jwt.sign(

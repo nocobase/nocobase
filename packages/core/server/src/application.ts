@@ -120,7 +120,7 @@ export interface ApplicationOptions {
   i18n?: i18n | InitOptions;
   plugins?: PluginConfiguration[];
   acl?: boolean;
-  auth?: boolean;
+  skipAuth?: boolean;
   logger?: AppLoggerOptions;
   /**
    * @internal
@@ -1239,7 +1239,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       }
     });
 
-    this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth' });
+    if (!(this.options.skipAuth === true)) {
+      this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth' });
+    }
+
     this._dataSourceManager.use(validateFilterParams, { tag: 'validate-filter-params', before: ['auth'] });
 
     this._dataSourceManager.use(parseVariables, {
