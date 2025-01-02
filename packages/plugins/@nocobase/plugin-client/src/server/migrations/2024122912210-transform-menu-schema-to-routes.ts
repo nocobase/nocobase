@@ -14,18 +14,49 @@ export default class extends Migration {
   async up() {
     const uiSchemas: any = this.db.getRepository('uiSchemas');
     const desktopRoutes: any = this.db.getRepository('desktopRoutes');
-    await this.db.sequelize.transaction(async (transaction) => {
-      const menuSchema = await uiSchemas.getJsonSchema('nocobase-admin-menu');
-      const routes = await schemaToRoutes(menuSchema, uiSchemas);
+    const rolesRepository = this.db.getRepository('roles');
+    const menuSchema = await uiSchemas.getJsonSchema('nocobase-admin-menu');
+    const routes = await schemaToRoutes(menuSchema, uiSchemas);
 
-      if (routes.length === 0) {
-        return;
-      }
+    if (routes.length === 0) {
+      return;
+    }
 
-      await desktopRoutes.createMany({
-        records: routes,
+    try {
+      await this.db.sequelize.transaction(async (transaction) => {
+        // 1. 将旧版菜单数据转换为新版菜单数据
+        await desktopRoutes.createMany({
+          records: routes,
+          transaction,
+        });
+
+        // 2. 将旧版的权限配置，转换为新版的权限配置
+
+        const roles = await rolesRepository.find({
+          appends: ['desktopRoutes', 'menuUiSchemas'],
+          transaction,
+        });
+
+        for (const role of roles) {
+          const menuUiSchemas = role.menuUiSchemas || [];
+          const desktopRoutes = role.desktopRoutes || [];
+          const needRemoveIds = getNeedRemoveIds(desktopRoutes, menuUiSchemas);
+
+          if (needRemoveIds.length === 0) {
+            return;
+          }
+
+          // @ts-ignore
+          await this.db.getRepository('roles.desktopRoutes', role.name).remove({
+            tk: needRemoveIds,
+            transaction,
+          });
+        }
       });
-    });
+    } catch (error) {
+      console.error('Migration failed:', error);
+      throw error;
+    }
   }
 }
 
@@ -93,4 +124,21 @@ export async function schemaToRoutes(schema: any, uiSchemas: any) {
   });
 
   return Promise.all(result);
+}
+
+function getNeedRemoveIds(desktopRoutes: any[], menuUiSchemas: any[]) {
+  const uidList = menuUiSchemas.map((item) => item['x-uid']);
+  return desktopRoutes
+    .filter((item) => {
+      // 之前是不支持配置 tab 的权限的，所以所有的 tab 都不会存在于旧版的 menuUiSchemas 中
+      if (item.type === 'tabs') {
+        // tab 的父节点就是一个 page
+        const page = desktopRoutes.find((route) => route.id === item.parentId);
+        // tab 要不要过滤掉，和它的父节点（page）有关
+        return !uidList.includes(page.schemaUid);
+      }
+
+      return !uidList.includes(item.schemaUid);
+    })
+    .map((item) => item.id);
 }
