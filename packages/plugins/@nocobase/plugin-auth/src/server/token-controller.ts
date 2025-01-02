@@ -61,6 +61,19 @@ export class TokenController implements TokenControlService {
   setConfig(config: Partial<ITokenControlConfig>) {
     return this.cache.set('config', config);
   }
+  async removeLoginExpiredTokens(userId: number) {
+    const config = await this.getConfig();
+    const issuedTokenRepo = this.app.db.getRepository(issuedTokensCollectionName);
+    const currTS = Date.now();
+    issuedTokenRepo.destroy({
+      filter: {
+        userId: userId,
+        signInTime: {
+          $lt: currTS - ms(config.maxTokenLifetime),
+        },
+      },
+    });
+  }
   async add({ userId }: { userId: number }) {
     const id = randomUUID();
     const currTS = Date.now();

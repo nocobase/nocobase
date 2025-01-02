@@ -192,6 +192,7 @@ export class BaseAuth extends Auth {
         expiresIn,
       },
     );
+    this.tokenController.removeLoginExpiredTokens(user.id);
     return {
       user,
       token,

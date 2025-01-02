@@ -21,4 +21,5 @@ export interface ITokenControlService<TokenInfo = any> {
   add({ userId }: { userId: number }): Promise<string>;
   set(id: string, value: Partial<TokenInfo>): Promise<void>;
   check(jti: string): Promise<{ status: JTIStatus }>;
+  removeLoginExpiredTokens(userId: number): Promise<void>;
 }
