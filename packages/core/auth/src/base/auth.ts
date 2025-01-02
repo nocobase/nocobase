@@ -82,6 +82,14 @@ export class BaseAuth extends Auth {
     }
 
     const { status: tokenStatus, payload } = await this.jwt.verify(token);
+
+    if (tokenStatus === 'invalid') {
+      this.ctx.throw(401, {
+        message: `${tokenStatus} token`,
+        code: getAuthErrorTypeFromStatus(tokenStatus, 'TOKEN') satisfies AuthErrorType,
+      });
+    }
+
     const { userId, roleName, iat, temp, jti } = payload ?? {};
 
     const bolcked = await this.jwt.blacklist.has(jti ?? token);
@@ -94,6 +102,7 @@ export class BaseAuth extends Auth {
     }
 
     const cache = this.ctx.cache as Cache;
+
     const user = await cache.wrap(this.getCacheKey(userId), () =>
       this.userRepository.findOne({
         filter: {
@@ -105,10 +114,6 @@ export class BaseAuth extends Auth {
 
     if (!temp) {
       if (tokenStatus === 'valid') return user;
-      // type B = `${}`
-      const upperTokenStatus = `${tokenStatus}_token` as `${Uppercase<typeof tokenStatus>}_TOKEN`;
-      // tokenStatus.toUpperCase() as Uppercase<
-      // typeof tokenStatus;
 
       this.ctx.throw(401, {
         message: `${tokenStatus} token`,
