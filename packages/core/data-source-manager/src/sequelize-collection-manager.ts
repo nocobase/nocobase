@@ -10,6 +10,7 @@
 /* istanbul ignore file -- @preserve */
 
 import { Database } from '@nocobase/database';
+import { DataSource } from './data-source';
 import {
   CollectionOptions,
   ICollection,
@@ -22,10 +23,15 @@ import {
 export class SequelizeCollectionManager implements ICollectionManager {
   db: Database;
   options: any;
+  dataSource: DataSource;
 
   constructor(options) {
     this.db = this.createDB(options);
     this.options = options;
+  }
+
+  setDataSource(dataSource: DataSource) {
+    this.dataSource = dataSource;
   }
 
   collectionsFilter() {

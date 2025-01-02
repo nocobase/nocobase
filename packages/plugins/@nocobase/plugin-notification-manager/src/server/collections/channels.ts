@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineCollection } from '@nocobase/database';
+import { CollectionOptions, defineCollection } from '@nocobase/database';
 import collectionOption from '../../collections/channel';
 
-export default defineCollection(collectionOption);
+export default defineCollection(collectionOption as CollectionOptions);

@@ -12,6 +12,7 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   name: 'applicationPlugins',
   dumpRules: 'required',
+  migrationRules: ['overwrite', 'skip'],
   repository: 'PluginManagerRepository',
   origin: '@nocobase/server',
   fields: [

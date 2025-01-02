@@ -65,6 +65,7 @@ export default defineCollection({
       });
     },
   },
+  migrationRules: ['overwrite', 'skip'],
   name: 'sequences',
   shared: true,
   fields: [

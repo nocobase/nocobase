@@ -11,6 +11,7 @@ import { extendCollection } from '@nocobase/database';
 
 export default extendCollection({
   name: 'users',
+  migrationRules: ['schema-only', 'overwrite', 'skip'],
   fields: [
     {
       interface: 'm2m',

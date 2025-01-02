@@ -13,6 +13,7 @@ export default defineCollection({
   dumpRules: {
     group: 'required',
   },
+  migrationRules: ['overwrite', 'skip'],
   name: 'localizationTexts',
   model: 'LocalizationTextModel',
   createdBy: true,

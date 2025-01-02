@@ -10,10 +10,13 @@
 import Plugin from '../Plugin';
 
 export class Provider {
+  protected options: any;
   constructor(
     protected plugin: Plugin,
-    protected options,
-  ) {}
+    options: any,
+  ) {
+    this.options = plugin.app.environment.renderJsonTemplate(options);
+  }
 
   async send(receiver: string, data: { [key: string]: any }): Promise<any> {}
 }

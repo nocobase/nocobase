@@ -19,7 +19,7 @@
   "Enter keywords to search": "キーワードを入力して検索してください（省/市名を含める必要があります）",
   "The AccessKey is incorrect, please check it": "AccessKeyが正しくありません、確認してください",
   "Please configure the AMap securityCode or serviceHost correctly": "AMapのsecurityCodeまたはserviceHostを正しく設定してください",
-  "Map Manager": "マップ管理",
+  "Map manager": "マップ管理",
   "Configuration": "設定",
   "Saved successfully": "正常に保存されました",
   "Saved failed": "保存に失敗しました",

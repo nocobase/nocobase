@@ -8,15 +8,14 @@
  */
 
 import React, { createContext, useCallback, useContext } from 'react';
-import { useTranslation } from 'react-i18next';
 import { uniqBy } from 'lodash';
 
 import { Variable, parseCollectionName, useApp, useCompile, usePlugin, useVariableScope } from '@nocobase/client';
 
-import { useFlowContext } from './FlowContext';
-import { NAMESPACE, lang } from './locale';
-import { useAvailableUpstreams, useNodeContext, useUpstreamScopes } from './nodes';
 import WorkflowPlugin from '.';
+import { useFlowContext } from './FlowContext';
+import { NAMESPACE } from './locale';
+import { useAvailableUpstreams, useNodeContext, useUpstreamScopes } from './nodes';
 
 export type VariableOption = {
   key?: string;
@@ -244,14 +243,15 @@ function useOptions(scope, opts) {
 export function useWorkflowVariableOptions(options: UseVariableOptions = {}) {
   const fieldNames = Object.assign({}, defaultFieldNames, options.fieldNames ?? {});
   const opts = Object.assign(options, { fieldNames });
+  const app = useApp();
   const result = [
     useOptions(scopeOptions, opts),
     useOptions(nodesOptions, opts),
     useOptions(triggerOptions, opts),
     useOptions(systemOptions, opts),
-  ];
+    app.getGlobalVar('$env')?.(),
+  ].filter(Boolean);
   // const cache = useMemo(() => result, [result]);
-
   return result;
 }
 

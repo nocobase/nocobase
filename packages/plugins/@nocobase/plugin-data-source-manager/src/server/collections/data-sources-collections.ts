@@ -13,6 +13,7 @@ export default defineCollection({
   name: 'dataSourcesCollections',
   model: 'DataSourcesCollectionModel',
   dumpRules: 'required',
+  migrationRules: ['overwrite', 'skip'],
   shared: true,
   autoGenId: false,
   timestamps: false,

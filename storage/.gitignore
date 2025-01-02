@@ -1,10 +1,4 @@
-.pm2
-tmp
-app.watch.ts
-/e2e
-nocobase.conf
-app-upgrading
-/verdaccio/storage
-libs
-scripts
-.cache
+*
+!./db/.gitignore
+!./logs/.gitignore
+!./uploads/.gitignore

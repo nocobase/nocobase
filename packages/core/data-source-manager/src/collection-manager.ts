@@ -8,6 +8,8 @@
  */
 
 import { Collection } from './collection';
+import { DataSource } from './data-source';
+import { Repository } from './repository';
 import {
   CollectionOptions,
   ICollection,
@@ -16,8 +18,6 @@ import {
   IRepository,
   MergeOptions,
 } from './types';
-import { DataSource } from './data-source';
-import { Repository } from './repository';
 
 export class CollectionManager implements ICollectionManager {
   public dataSource: DataSource;
@@ -33,6 +33,10 @@ export class CollectionManager implements ICollectionManager {
     this.registerRepositories({
       Repository: Repository,
     });
+  }
+
+  setDataSource(dataSource: DataSource) {
+    this.dataSource = dataSource;
   }
 
   /* istanbul ignore next -- @preserve */

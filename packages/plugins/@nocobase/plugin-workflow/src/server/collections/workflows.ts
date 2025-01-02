@@ -12,6 +12,7 @@ import { CollectionOptions } from '@nocobase/database';
 export default function () {
   return {
     dumpRules: 'required',
+    migrationRules: ['overwrite', 'skip'],
     name: 'workflows',
     shared: true,
     repository: 'WorkflowRepository',

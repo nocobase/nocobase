@@ -99,6 +99,7 @@ export class Application {
   public schemaSettingsManager: SchemaSettingsManager;
   public dataSourceManager: DataSourceManager;
   public name: string;
+  public globalVars: Record<string, any> = {};
 
   loading = true;
   maintained = false;
@@ -457,5 +458,13 @@ export class Application {
       fieldName,
       componentOption,
     );
+  }
+
+  addGlobalVar(key: string, value: any) {
+    set(this.globalVars, key, value);
+  }
+
+  getGlobalVar(key) {
+    return get(this.globalVars, key);
   }
 }

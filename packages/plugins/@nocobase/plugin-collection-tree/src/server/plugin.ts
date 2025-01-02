@@ -36,9 +36,13 @@ class PluginCollectionTreeServer extends Plugin {
 
           //always define tree path collection
           const options = {};
+
+          options['mainCollection'] = collection.name;
+
           if (collection.options.schema) {
             options['schema'] = collection.options.schema;
           }
+
           this.defineTreePathCollection(name, options);
 
           //afterSync

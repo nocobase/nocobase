@@ -13,6 +13,7 @@ export default defineCollection({
   dumpRules: {
     group: 'third-party',
   },
+  migrationRules: ['schema-only', 'overwrite', 'skip'],
   shared: true,
   name: 'userDataSyncRecords',
   createdAt: true,

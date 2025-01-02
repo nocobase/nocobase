@@ -20,7 +20,7 @@ import {
   useRequest,
 } from '@nocobase/client';
 import { App } from 'antd';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { listByCurrentRoleUrl } from '../constants';
 import { useCustomRequestVariableOptions, useGetCustomRequest } from '../hooks';
 import { useCustomRequestsResource } from '../hooks/useCustomRequestsResource';
@@ -33,9 +33,15 @@ export function CustomRequestSettingsItem() {
   const dataSourceKey = useDataSourceKey();
   const fieldSchema = useFieldSchema();
   const customRequestsResource = useCustomRequestsResource();
-  const { message } = App.useApp();
   const { data, refresh } = useGetCustomRequest();
   const { dn } = useDesignable();
+  const initialValues = useMemo(() => {
+    const values = { ...data?.data?.options };
+    if (values.data && typeof values.data !== 'string') {
+      values.data = JSON.stringify(values.data, null, 2);
+    }
+    return values;
+  }, [data?.data?.options]);
   return (
     <>
       <SchemaSettingsActionModalItem
@@ -46,9 +52,7 @@ export function CustomRequestSettingsItem() {
         beforeOpen={() => !data && refresh()}
         scope={{ useCustomRequestVariableOptions }}
         schema={CustomRequestConfigurationFieldsSchema}
-        initialValues={{
-          ...data?.data?.options,
-        }}
+        initialValues={initialValues}
         onSubmit={async (config) => {
           const { ...requestSettings } = config;
           fieldSchema['x-response-type'] = requestSettings.responseType;
@@ -69,7 +73,8 @@ export function CustomRequestSettingsItem() {
               'x-uid': fieldSchema['x-uid'],
             },
           });
-          message.success(t('Saved successfully'));
+          refresh();
+          dn.refresh();
         }}
       />
     </>

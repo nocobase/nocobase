@@ -59,7 +59,6 @@ const VariablesProvider = ({ children, filterVariables }: any) => {
   const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated();
   const compile = useCompile();
   const { builtinVariables } = useBuiltInVariables();
-
   const setCtx = useCallback((ctx: Record<string, any> | ((prev: Record<string, any>) => Record<string, any>)) => {
     if (_.isFunction(ctx)) {
       ctxRef.current = ctx(ctxRef.current);

@@ -18,6 +18,7 @@ export default defineCollection({
     group: 'user',
   },
   shared: true,
+  migrationRules: ['schema-only', 'overwrite', 'skip'],
   name: 'usersAuthenticators',
   model: 'UserAuthModel',
   createdBy: true,

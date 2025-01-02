@@ -14,6 +14,7 @@ export default defineCollection({
     group: 'third-party',
   },
   shared: true,
+  migrationRules: ['overwrite', 'skip'],
   name: 'userDataSyncSources',
   title: '{{t("Sync Sources")}}',
   sortable: true,

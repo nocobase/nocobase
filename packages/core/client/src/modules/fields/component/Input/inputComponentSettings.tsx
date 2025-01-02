@@ -72,7 +72,7 @@ export const enableLinkSettingsItem: SchemaSettingsItemType = {
     const { fieldSchema: columnSchema } = useColumnSchema();
     const schema = useFieldSchema();
     const fieldSchema = columnSchema || schema;
-    const { name } = useBlockContext();
+    const { name } = useBlockContext() || {};
     return name !== 'kanban' && (fieldSchema?.['x-read-pretty'] || field.readPretty);
   },
   useComponentProps() {

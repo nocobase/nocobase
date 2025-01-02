@@ -76,6 +76,7 @@ import packageJson from '../package.json';
 import { ServiceContainer } from './service-container';
 import { availableActions } from './acl/available-action';
 import { AuditManager } from './audit-manager';
+import { Environment } from './environment';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -307,6 +308,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
    */
   get maintainingMessage() {
     return this._maintainingMessage;
+  }
+
+  private _env: Environment;
+
+  get environment() {
+    return this._env;
   }
 
   protected _cronJobManager: CronJobManager;
@@ -1183,6 +1190,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.createMainDataSource(options);
 
     this._cronJobManager = new CronJobManager(this);
+    this._env = new Environment();
 
     this._cli = this.createCLI();
     this._i18n = createI18n(options);

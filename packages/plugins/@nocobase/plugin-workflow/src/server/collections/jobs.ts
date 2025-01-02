@@ -13,6 +13,7 @@ export default {
   dumpRules: {
     group: 'log',
   },
+  migrationRules: ['schema-only', 'skip'],
   name: 'jobs',
   shared: true,
   fields: [

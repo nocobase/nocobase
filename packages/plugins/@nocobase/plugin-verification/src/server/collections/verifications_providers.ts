@@ -14,6 +14,7 @@ export default defineCollection({
     group: 'third-party',
   },
   name: 'verifications_providers',
+  migrationRules: ['overwrite', 'skip'],
   shared: true,
   fields: [
     {
