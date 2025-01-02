@@ -10,12 +10,10 @@
 import { Context, Next } from '@nocobase/actions';
 import { Registry } from '@nocobase/utils';
 import { ACL } from '@nocobase/acl';
-import compose from 'koa-compose';
 import { Auth, AuthExtend } from './auth';
 import { JwtOptions, JwtService } from './base/jwt-service';
 import { ITokenBlacklistService } from './base/token-blacklist-service';
 import { ITokenControlService } from './base/token-control-service';
-import { AuthError } from './auth';
 export interface Authenticator {
   authType: string;
   options: Record<string, any>;
@@ -122,12 +120,7 @@ export class AuthManager {
     const self = this;
 
     return async function AuthManagerMiddleware(ctx: Context & { auth: Auth }, next: Next) {
-      const { resourceName, actionName } = ctx.action;
-      const acl = ctx.dataSource.acl as ACL;
-      const isPublicAction = await acl.allowManager.isAllowed(resourceName, actionName, ctx);
-
       const name = ctx.get(self.options.authKey) || self.options.default;
-
       let authenticator: Auth;
       try {
         authenticator = await ctx.app.authManager.get(name, ctx);
@@ -138,7 +131,7 @@ export class AuthManager {
         return next();
       }
 
-      if (isPublicAction) {
+      if (await ctx.auth.skipCheck()) {
         return next();
       } else {
         if (authenticator) {

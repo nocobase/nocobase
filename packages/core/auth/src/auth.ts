@@ -70,6 +70,16 @@ export abstract class Auth implements IAuth {
     this.ctx = ctx;
   }
 
+  async skipCheck() {
+    if (!this.ctx.app.acl) {
+      return true;
+    }
+    const { resourceName, actionName } = this.ctx.action;
+    const acl = this.ctx.dataSource.acl;
+    const isPublic = await acl.allowManager.isAllowed(resourceName, actionName, this.ctx);
+    return isPublic;
+  }
+
   // The abstract methods are required to be implemented by all authentications.
   abstract check(): Promise<Model>;
   // The following methods are mainly designed for user authentications.
