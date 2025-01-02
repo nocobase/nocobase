@@ -264,7 +264,7 @@ export function EnvironmentTabs() {
   };
   return (
     <div>
-      {variablesRequest.data.meta.updated && (
+      {variablesRequest?.data?.meta?.updated && (
         <Alert
           type="warning"
           style={{ marginBottom: '1.2em', alignItems: 'center' }}
