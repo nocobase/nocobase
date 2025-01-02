@@ -41,7 +41,10 @@ export default {
           title: `{{t("SecretKey", { ns: "${NAMESPACE}" })}}`,
           type: 'string',
           'x-decorator': 'FormItem',
-          'x-component': 'Password',
+          'x-component': 'TextAreaWithGlobalScope',
+          'x-component-props': {
+            password: true,
+          },
           required: true,
         },
         Bucket: {
