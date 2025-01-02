@@ -78,6 +78,11 @@ export class BaseAuth extends Auth {
     const { status: tokenStatus, payload } = await this.jwt.verify(token);
     const { userId, roleName, iat, temp, jti } = payload ?? {};
 
+    const bolcked = await this.jwt.blacklist.has(jti ?? token);
+    if (bolcked) {
+      this.ctx.throw(401, { message: 'token blocked', code: 'blocked' });
+    }
+
     if (roleName) {
       this.ctx.headers['x-role'] = roleName;
     }
@@ -91,43 +96,39 @@ export class BaseAuth extends Auth {
         raw: true,
       }),
     );
-    const bolcked = await this.jwt.blacklist.has(jti ?? token);
-    if (bolcked) {
-      this.ctx.throw(401, { message: 'token blocked', code: 'blocked' });
+
+    if (!temp) {
+      if (tokenStatus === 'valid') return user;
+      this.ctx.throw(401, { message: `${tokenStatus} token`, code: tokenStatus });
     }
 
-    if (temp) {
-      if (tokenStatus === 'valid') {
-        if (user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
-          this.ctx.throw(401, { message: 'User password changed', code: 'invalid' });
-        } else {
-          const { status: JtiStatus } = await this.tokenController.check(jti);
-          if (JtiStatus === 'valid') {
-            return user;
-          } else {
-            this.ctx.throw(401, { message: `${JtiStatus} token`, code: JtiStatus });
-          }
-        }
-      } else if (tokenStatus === 'expired') {
+    if (tokenStatus === 'valid') {
+      if (user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
+        this.ctx.throw(401, { message: 'User password changed', code: 'invalid' });
+      } else {
         const { status: JtiStatus } = await this.tokenController.check(jti);
         if (JtiStatus === 'valid') {
-          const renewedJti = await this.tokenController.renew(jti);
-          if (renewedJti.status === 'renewing') {
-            const expiresIn = (await this.tokenController.getConfig()).tokenExpirationTime;
-            const newToken = this.jwt.sign({ userId, roleName, temp }, { jwtid: renewedJti.id, expiresIn });
-            this.ctx.res.setHeader('x-new-token', newToken);
-            return user;
-          } else {
-            this.ctx.throw(401, { message: `${JtiStatus} token`, code: JtiStatus });
-          }
+          return user;
+        } else {
+          this.ctx.throw(401, { message: `${JtiStatus} token`, code: JtiStatus });
+        }
+      }
+    } else if (tokenStatus === 'expired') {
+      const { status: JtiStatus } = await this.tokenController.check(jti);
+      if (JtiStatus === 'valid') {
+        const renewedJti = await this.tokenController.renew(jti);
+        if (renewedJti.status === 'renewing') {
+          const expiresIn = (await this.tokenController.getConfig()).tokenExpirationTime;
+          const newToken = this.jwt.sign({ userId, roleName, temp }, { jwtid: renewedJti.id, expiresIn });
+          this.ctx.res.setHeader('x-new-token', newToken);
+          return user;
         } else {
           this.ctx.throw(401, { message: `${JtiStatus} token`, code: JtiStatus });
         }
       } else {
-        this.ctx.throw(401, { message: `${tokenStatus} token`, code: tokenStatus });
+        this.ctx.throw(401, { message: `${JtiStatus} token`, code: JtiStatus });
       }
     } else {
-      if (tokenStatus === 'valid') return user;
       this.ctx.throw(401, { message: `${tokenStatus} token`, code: tokenStatus });
     }
   }
