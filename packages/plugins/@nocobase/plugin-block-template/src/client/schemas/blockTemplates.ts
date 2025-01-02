@@ -91,7 +91,10 @@ export const blockTemplatesSchema: ISchema = {
             title: {
               type: 'string',
               'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
+              'x-read-pretty': true,
+              'x-component-props': {
+                ellipsis: true,
+              },
             },
           },
         },
@@ -100,13 +103,16 @@ export const blockTemplatesSchema: ISchema = {
           title: '{{ t("Name") }}',
           'x-component': 'TableV2.Column',
           'x-component-props': {
-            width: 170,
+            width: 100,
           },
           properties: {
             key: {
               type: 'string',
               'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
+              'x-read-pretty': true,
+              'x-component-props': {
+                ellipsis: true,
+              },
             },
           },
         },
@@ -118,7 +124,10 @@ export const blockTemplatesSchema: ISchema = {
             description: {
               type: 'string',
               'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
+              'x-read-pretty': true,
+              'x-component-props': {
+                ellipsis: true,
+              },
             },
           },
         },
