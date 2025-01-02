@@ -304,7 +304,8 @@ export class UiSchemaRepository extends Repository {
     await this.clearXUidPathCache(rootUid, transaction);
     if (!newSchema['properties']) {
       const s = await this.model.findByPk(rootUid, { transaction });
-      s.set('schema', { ...s.toJSON(), ...newSchema });
+      const sc = { ...s.toJSON(), ...newSchema };
+      s.set('schema', sc);
       // console.log(s.toJSON());
       await s.save({ transaction, hooks: false });
       if (newSchema['x-server-hooks']) {
