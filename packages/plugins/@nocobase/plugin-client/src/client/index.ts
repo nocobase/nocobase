@@ -17,12 +17,12 @@ class PluginClient extends Plugin {
     this.app.pluginSettingsManager.add('routes', {
       title: t('Routes'),
       icon: 'ApartmentOutlined',
-      aclSnippet: 'pm.notification',
+      aclSnippet: 'pm.routes',
     });
     this.app.pluginSettingsManager.add(`routes.desktop`, {
       title: t('Desktop routes'),
       Component: DesktopRoutesManager,
-      aclSnippet: 'pm.notification.channels',
+      aclSnippet: 'pm.routes.desktop',
       sort: 1,
     });
 
@@ -32,7 +32,7 @@ class PluginClient extends Plugin {
       this.app.pluginSettingsManager.add(`routes.mobile`, {
         title: t('Mobile routes'),
         Component: MobileRoutesManager,
-        aclSnippet: 'pm.notification.logs',
+        aclSnippet: 'pm.routes.mobile',
         sort: 2,
       });
     }
