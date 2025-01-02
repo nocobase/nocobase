@@ -9,7 +9,7 @@
 
 import { Collection, Model } from '@nocobase/database';
 import { Cache } from '@nocobase/cache';
-import { Auth, AuthConfig, AuthError } from '../auth';
+import { Auth, AuthConfig } from '../auth';
 import { JwtService } from './jwt-service';
 import { ITokenControlService } from './token-control-service';
 
@@ -72,7 +72,7 @@ export class BaseAuth extends Auth {
     const token = this.ctx.getBearerToken();
 
     if (!token) {
-      throw new AuthError('Empty token', 'empty');
+      this.ctx.throw(401, { message: 'empty token', code: 'empty' });
     }
 
     const { status: tokenStatus, payload } = await this.jwt.verify(token);
@@ -93,7 +93,7 @@ export class BaseAuth extends Auth {
     );
     const bolcked = await this.jwt.blacklist.has(jti ?? token);
     if (bolcked) {
-      throw new AuthError('Token blocked', 'blocked');
+      this.ctx.throw(401, { message: 'token blocked', code: 'blocked' });
     }
 
     if (temp) {
@@ -128,7 +128,7 @@ export class BaseAuth extends Auth {
       }
     } else {
       if (tokenStatus === 'valid') return user;
-      else throw new AuthError(`${tokenStatus} token`, `${tokenStatus}`);
+      this.ctx.throw(401, { message: `${tokenStatus} token`, code: tokenStatus });
     }
   }
 
