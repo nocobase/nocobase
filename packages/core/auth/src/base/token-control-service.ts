@@ -18,7 +18,7 @@ export interface ITokenControlService<TokenInfo = any> {
   getConfig(): Promise<ITokenControlConfig>;
   setConfig(config: ITokenControlConfig): Promise<any>;
   renew(jti: string): Promise<{ status: 'renewing'; id: string } | { status: 'missing' | 'renewed' }>;
-  add(): Promise<string>;
+  add({ userId }: { userId: number }): Promise<string>;
   set(id: string, value: Partial<TokenInfo>): Promise<void>;
   check(jti: string): Promise<{ status: JTIStatus }>;
 }

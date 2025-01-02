@@ -17,6 +17,7 @@ import { issuedTokensCollectionName, tokenPolicyCollectionName, tokenPolicyRecor
 
 type TokenInfo = {
   id: string;
+  userId: number;
   lastAccessTime: EpochTimeStamp;
   signInTime: EpochTimeStamp;
   resigned: boolean;
@@ -60,7 +61,7 @@ export class TokenController implements TokenControlService {
   setConfig(config: Partial<ITokenControlConfig>) {
     return this.cache.set('config', config);
   }
-  async add() {
+  async add({ userId }: { userId: number }) {
     const id = randomUUID();
     const currTS = Date.now();
     await this.setTokenInfo(id, {
@@ -68,6 +69,7 @@ export class TokenController implements TokenControlService {
       lastAccessTime: currTS,
       signInTime: currTS,
       resigned: false,
+      userId,
     });
     return id;
   }
@@ -92,6 +94,7 @@ export class TokenController implements TokenControlService {
         lastAccessTime: Date.now(),
         resigned: false,
         signInTime: preTokenInfo.signInTime,
+        userId: preTokenInfo.userId,
       };
       await this.setTokenInfo(newId, newTokenInfo);
       return { status: 'renewing', id: newId };
