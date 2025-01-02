@@ -56,7 +56,7 @@ describe('download template', () => {
       ],
     });
 
-    const workbook = await templateCreator.run();
+    const workbook = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
     const sheet0 = workbook.Sheets[workbook.SheetNames[0]];
     const sheetData = XLSX.utils.sheet_to_json(sheet0, { header: 1, defval: null, raw: false });
 
@@ -64,7 +64,8 @@ describe('download template', () => {
     expect(explainData[0]).toEqual(explain);
 
     const headerData = sheetData[1];
-    expect(headerData).toEqual(['Name', 'Email']);
+    expect(headerData[0]).toEqual('Name');
+    expect(headerData[1]).toEqual('Email');
   });
 
   it('should render template', async () => {
@@ -99,7 +100,7 @@ describe('download template', () => {
       ],
     });
 
-    const workbook = await templateCreator.run();
+    const workbook = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
     const sheet0 = workbook.Sheets[workbook.SheetNames[0]];
     const sheetData = XLSX.utils.sheet_to_json(sheet0, { header: 1, defval: null, raw: false });
     const headerData = sheetData[0];

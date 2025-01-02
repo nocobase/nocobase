@@ -18,8 +18,8 @@ import { Model } from '../model';
 import { OptionsParser } from '../options-parser';
 import { updateAssociations } from '../update-associations';
 import { UpdateGuard } from '../update-guard';
-import { CreateOptions, Filter, FindOptions, TargetKey, UpdateOptions, FirstOrCreateOptions } from './types';
 import { valuesToFilter } from '../utils/filter-utils';
+import { CreateOptions, Filter, FindOptions, FirstOrCreateOptions, TargetKey, UpdateOptions } from './types';
 
 export const transaction = transactionWrapperBuilder(function () {
   return this.sourceCollection.model.sequelize.transaction();
@@ -143,24 +143,24 @@ export abstract class RelationRepository {
 
   @transaction()
   async firstOrCreate(options: FirstOrCreateOptions) {
-    const { filterKeys, values, transaction, hooks } = options;
+    const { filterKeys, values, transaction, hooks, context } = options;
     const filter = valuesToFilter(values, filterKeys);
 
-    const instance = await this.findOne({ filter, transaction });
+    const instance = await this.findOne({ filter, transaction, context });
 
     if (instance) {
       return instance;
     }
 
-    return this.create({ values, transaction, hooks });
+    return this.create({ values, transaction, hooks, context });
   }
 
   @transaction()
   async updateOrCreate(options: FirstOrCreateOptions) {
-    const { filterKeys, values, transaction, hooks } = options;
+    const { filterKeys, values, transaction, hooks, context } = options;
     const filter = valuesToFilter(values, filterKeys);
 
-    const instance = await this.findOne({ filter, transaction });
+    const instance = await this.findOne({ filter, transaction, context });
 
     if (instance) {
       return await this.update({
@@ -170,10 +170,11 @@ export abstract class RelationRepository {
         values,
         transaction,
         hooks,
+        context,
       });
     }
 
-    return this.create({ values, transaction, hooks });
+    return this.create({ values, transaction, hooks, context });
   }
 
   @transaction()

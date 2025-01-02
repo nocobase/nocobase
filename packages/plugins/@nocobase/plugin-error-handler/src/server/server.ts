@@ -45,7 +45,9 @@ export class PluginErrorHandlerServer extends Plugin {
     };
 
     this.errorHandler.register(
-      (err) => err?.errors?.length && err instanceof BaseError,
+      (err) =>
+        err?.errors?.length &&
+        (err.name === 'SequelizeValidationError' || err.name === 'SequelizeUniqueConstraintError'),
       (err, ctx) => {
         ctx.body = {
           errors: err.errors.map((err) => {

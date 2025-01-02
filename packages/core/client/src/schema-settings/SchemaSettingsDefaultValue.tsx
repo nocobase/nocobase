@@ -85,6 +85,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
   const tableCtx = useTableBlockContext();
   const isAllowContextVariable =
     collectionField?.interface === 'm2m' ||
+    collectionField?.interface === 'mbm' ||
     (parentCollectionField?.type === 'hasMany' && collectionField?.interface === 'm2o');
 
   const returnScope = useCallback(

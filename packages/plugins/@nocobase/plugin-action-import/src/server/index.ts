@@ -10,7 +10,7 @@
 import { Plugin } from '@nocobase/server';
 import { downloadXlsxTemplate, importXlsx } from './actions';
 import { importMiddleware } from './middleware';
-
+import { ImportError, ImportValidationError } from './errors';
 export class PluginActionImportServer extends Plugin {
   beforeLoad() {
     this.app.on('afterInstall', async () => {
@@ -55,7 +55,50 @@ export class PluginActionImportServer extends Plugin {
 
       dataSource.acl.allow('*', 'downloadXlsxTemplate', 'loggedIn');
     });
+
+    const errorHandlerPlugin = this.app.getPlugin<any>('error-handler');
+
+    errorHandlerPlugin.errorHandler.register(
+      (err) => err instanceof ImportValidationError,
+      (err: ImportValidationError, ctx) => {
+        ctx.status = 400;
+        ctx.body = {
+          errors: [
+            {
+              message: ctx.i18n.t(err.code, {
+                ...err.params,
+                ns: 'action-import',
+              }),
+            },
+          ],
+        };
+      },
+    );
+
+    errorHandlerPlugin.errorHandler.register(
+      (err) => err.name === 'ImportError',
+      (err: ImportError, ctx) => {
+        ctx.status = 400;
+        const causeError = err.cause;
+        errorHandlerPlugin.errorHandler.renderError(causeError, ctx);
+
+        ctx.body = {
+          errors: [
+            {
+              message: ctx.i18n.t('import-error', {
+                ns: 'action-import',
+                rowData: err.rowData,
+                rowIndex: err.rowIndex,
+                causeMessage: ctx.body.errors[0].message,
+              }),
+            },
+          ],
+        };
+      },
+    );
   }
 }
 
 export default PluginActionImportServer;
+export * from './services/xlsx-importer';
+export * from './services/template-creator';

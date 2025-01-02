@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { AssociationKeysToBeUpdate, BlackList, Values, WhiteList } from '@nocobase/database';
 import { Transaction } from 'sequelize';
 import {
   CreateOptions as SequelizeCreateOptions,
   UpdateOptions as SequelizeUpdateOptions,
 } from 'sequelize/types/model';
-import { AssociationKeysToBeUpdate, BlackList, Values, WhiteList } from '@nocobase/database';
 
 export type TargetKey = string | number | { [key: string]: any };
 
@@ -80,6 +80,7 @@ export interface FirstOrCreateOptions extends CommonOptions {
   filterKeys: string[];
   values: any;
   hooks?: boolean;
+  context?: any;
 }
 
 export interface ThroughValues {

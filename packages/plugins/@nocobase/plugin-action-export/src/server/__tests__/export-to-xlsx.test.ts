@@ -9,7 +9,7 @@
 
 import { createMockServer, MockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
-import XlsxExporter from '../xlsx-exporter';
+import { XlsxExporter } from '../services/xlsx-exporter';
 import XLSX from 'xlsx';
 import fs from 'fs';
 import path from 'path';
@@ -510,6 +510,7 @@ describe('export to xlsx', () => {
 
   afterEach(async () => {
     await app.destroy();
+    vi.unstubAllEnvs();
   });
 
   it('should throw error when export field not exists', async () => {
@@ -1373,5 +1374,128 @@ describe('export to xlsx', () => {
     } finally {
       fs.unlinkSync(xlsxFilePath);
     }
+  });
+
+  it('should respect the EXPORT_LIMIT env variable', async () => {
+    vi.stubEnv('EXPORT_LIMIT', '30'); // Set a small limit
+
+    const User = app.db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'integer', name: 'age' },
+      ],
+    });
+
+    await app.db.sync();
+
+    const values = Array.from({ length: 100 }).map((_, index) => {
+      return {
+        name: `user${index}`,
+        age: index % 100,
+      };
+    });
+
+    await User.model.bulkCreate(values);
+
+    const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: User,
+      chunkSize: 10,
+      columns: [
+        { dataIndex: ['name'], defaultTitle: 'Name' },
+        { dataIndex: ['age'], defaultTitle: 'Age' },
+      ],
+    });
+
+    const wb = await exporter.run();
+    const firstSheet = wb.Sheets[wb.SheetNames[0]];
+    const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+    expect(sheetData.length).toBe(31); // 30 users + 1 header
+    expect(sheetData[0]).toEqual(['Name', 'Age']); // header
+    expect(sheetData[1]).toEqual(['user0', 0]); // first user
+    expect(sheetData[30]).toEqual(['user29', 29]); // last user
+  });
+
+  it('should use default EXPORT_LIMIT (2000) when env not set', async () => {
+    const User = app.db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'integer', name: 'age' },
+      ],
+    });
+
+    await app.db.sync();
+
+    const values = Array.from({ length: 2500 }).map((_, index) => {
+      return {
+        name: `user${index}`,
+        age: index % 100,
+      };
+    });
+
+    await User.model.bulkCreate(values);
+
+    const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: User,
+      chunkSize: 10,
+      columns: [
+        { dataIndex: ['name'], defaultTitle: 'Name' },
+        { dataIndex: ['age'], defaultTitle: 'Age' },
+      ],
+    });
+
+    const wb = await exporter.run();
+    const firstSheet = wb.Sheets[wb.SheetNames[0]];
+    const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+    expect(sheetData.length).toBe(2001); // 2000 users + 1 header
+    expect(sheetData[0]).toEqual(['Name', 'Age']); // header
+    expect(sheetData[1]).toEqual(['user0', 0]); // first user
+    expect(sheetData[2000]).toEqual(['user1999', 99]); // last user
+  });
+
+  it('should respect the limit option when exporting data', async () => {
+    const User = app.db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'integer', name: 'age' },
+      ],
+    });
+
+    await app.db.sync();
+
+    const values = Array.from({ length: 100 }).map((_, index) => {
+      return {
+        name: `user${index}`,
+        age: index % 100,
+      };
+    });
+
+    await User.model.bulkCreate(values);
+
+    const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: User,
+      chunkSize: 10,
+      limit: 10,
+      columns: [
+        { dataIndex: ['name'], defaultTitle: 'Name' },
+        { dataIndex: ['age'], defaultTitle: 'Age' },
+      ],
+    });
+
+    const wb = await exporter.run();
+    const firstSheet = wb.Sheets[wb.SheetNames[0]];
+    const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+    expect(sheetData.length).toBe(11); // 10 users + 1 header
+    expect(sheetData[0]).toEqual(['Name', 'Age']); // header
+    expect(sheetData[1]).toEqual(['user0', 0]); // first user
+    expect(sheetData[10]).toEqual(['user9', 9]); // last user
   });
 });

@@ -101,7 +101,9 @@ export const useContextAssociationFields = ({
         const children =
           getChildren(
             getFilterOptions(collectionName).filter((v) => {
-              const isAssociationField = ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(v.type);
+              const isAssociationField = ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'].includes(
+                v.type,
+              );
               return isAssociationField;
             }),
             {
