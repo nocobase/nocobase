@@ -12,16 +12,16 @@ import debounce from 'lodash/debounce';
 import { Application } from '@nocobase/client';
 import type { AxiosResponse } from 'axios';
 
-export type AuthErrorType =
-  | 'empty'
-  | 'expired'
-  | 'invalid'
-  | 'renewed'
-  | 'missing'
-  | 'inactive'
-  | 'renewed'
-  | 'blocked'
-  | 'login-timeout';
+type AuthErrorType =
+  | 'EMPTY_TOKEN'
+  | 'EXPIRED_TOKEN'
+  | 'INVALID_TOKEN'
+  | 'RENEWED_SESSION'
+  | 'MISSING_SESSION'
+  | 'INACTIVE_SESSION'
+  | 'BLOCKED_TOKEN'
+  | 'BLOCKED_SESSION'
+  | 'EXPIRED_SESSION';
 
 const debouncedRedirect = debounce(
   (redirectFunc) => {
@@ -50,7 +50,7 @@ export function authCheckMiddleware({ app }: { app: Application }) {
         const redirectPath = pathname.startsWith(app.router.basename)
           ? pathname.slice(basename.length) || '/'
           : pathname;
-        if (errorType === 'inactive') {
+        if (errorType === 'INACTIVE_SESSION') {
           debouncedRedirect(() => {
             app.apiClient.auth.setToken(null);
             Modal.confirm({
@@ -65,6 +65,8 @@ export function authCheckMiddleware({ app }: { app: Application }) {
               cancelButtonProps: { style: { display: 'none' } },
             });
           });
+        } else if (errorType === 'RENEWED_SESSION') {
+          return axios.request(error.config);
         } else {
           debouncedRedirect(() => {
             app.apiClient.auth.setToken(null);

@@ -117,7 +117,7 @@ export class TokenController implements TokenControlService {
     }
 
     if (Date.now() - signInTime > ms(config.maxTokenLifetime)) {
-      return { status: 'login-timeout' };
+      return { status: 'expired' };
     }
 
     return { status: 'valid' };

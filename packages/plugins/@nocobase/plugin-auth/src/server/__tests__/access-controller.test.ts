@@ -134,7 +134,7 @@ describe('auth', () => {
     const { token } = await auth.signIn();
     ctx.setToken(token);
     await sleep(3000);
-    await expect(auth.check()).rejects.toThrowError('login-timeout');
+    await expect(auth.check()).rejects.toThrowError('expired_session');
   });
 
   it('when exceed inactiveInterval, throw Unauthorized', async () => {

@@ -19,16 +19,15 @@ export type AuthConfig = {
 };
 
 export type AuthErrorType =
-  | 'empty'
-  | 'expired'
-  | 'invalid' //INVALID_TOKEN
-  | 'renewed'
-  | 'missing' //MISSING_SESSION  //MISSING_JTI
-  | 'inactive' //INACTIVE_SESSION   //INACTIVE_JTI
-  | 'renewed'
-  | 'renewed'
-  | 'blocked'
-  | 'login-timeout';
+  | 'EMPTY_TOKEN'
+  | 'EXPIRED_TOKEN'
+  | 'INVALID_TOKEN'
+  | 'RENEWED_SESSION'
+  | 'MISSING_SESSION'
+  | 'INACTIVE_SESSION'
+  | 'BLOCKED_TOKEN'
+  | 'BLOCKED_SESSION'
+  | 'EXPIRED_SESSION';
 
 export type AuthExtend<T extends Auth> = new (config: AuthConfig) => T;
 

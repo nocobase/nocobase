@@ -13,6 +13,12 @@ import { Auth, AuthConfig, AuthErrorType } from '../auth';
 import { JwtService } from './jwt-service';
 import { ITokenControlService } from './token-control-service';
 
+function getAuthErrorTypeFromStatus<Status extends string, Suffix extends string>(
+  status: Status,
+  suffix: Suffix,
+): `${Uppercase<Status>}_${Suffix}` {
+  return `${status.toUpperCase() as Uppercase<Status>}_${suffix}`;
+}
 /**
  * BaseAuth
  * @description A base class with jwt provide some common methods.
@@ -72,7 +78,7 @@ export class BaseAuth extends Auth {
     const token = this.ctx.getBearerToken();
 
     if (!token) {
-      this.ctx.throw(401, { message: 'empty token', code: 'empty' satisfies AuthErrorType });
+      this.ctx.throw(401, { message: 'empty token', code: 'EMPTY_TOKEN' satisfies AuthErrorType });
     }
 
     const { status: tokenStatus, payload } = await this.jwt.verify(token);
@@ -80,7 +86,7 @@ export class BaseAuth extends Auth {
 
     const bolcked = await this.jwt.blacklist.has(jti ?? token);
     if (bolcked) {
-      this.ctx.throw(401, { message: 'token blocked', code: 'blocked' satisfies AuthErrorType });
+      this.ctx.throw(401, { message: 'token blocked', code: 'BLOCKED_TOKEN' satisfies AuthErrorType });
     }
 
     if (roleName) {
@@ -99,18 +105,29 @@ export class BaseAuth extends Auth {
 
     if (!temp) {
       if (tokenStatus === 'valid') return user;
-      this.ctx.throw(401, { message: `${tokenStatus} token`, code: tokenStatus satisfies AuthErrorType });
+      // type B = `${}`
+      const upperTokenStatus = `${tokenStatus}_token` as `${Uppercase<typeof tokenStatus>}_TOKEN`;
+      // tokenStatus.toUpperCase() as Uppercase<
+      // typeof tokenStatus;
+
+      this.ctx.throw(401, {
+        message: `${tokenStatus} token`,
+        code: getAuthErrorTypeFromStatus(tokenStatus, 'TOKEN') satisfies AuthErrorType,
+      });
     }
 
     if (tokenStatus === 'valid') {
       if (user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
-        this.ctx.throw(401, { message: 'User password changed', code: 'invalid' satisfies AuthErrorType });
+        this.ctx.throw(401, { message: 'User password changed', code: 'INVALID_TOKEN' satisfies AuthErrorType });
       } else {
         const { status: jtiStatus } = await this.tokenController.check(jti);
         if (jtiStatus === 'valid') {
           return user;
         } else {
-          this.ctx.throw(401, { message: `${jtiStatus} token`, code: jtiStatus satisfies AuthErrorType });
+          this.ctx.throw(401, {
+            message: `${jtiStatus} session`,
+            code: getAuthErrorTypeFromStatus(jtiStatus, 'SESSION') satisfies AuthErrorType,
+          });
         }
       }
     } else if (tokenStatus === 'expired') {
@@ -123,13 +140,22 @@ export class BaseAuth extends Auth {
           this.ctx.res.setHeader('x-new-token', newToken);
           return user;
         } else {
-          this.ctx.throw(401, { message: `${jtiStatus} token`, code: renewedJti.status satisfies AuthErrorType });
+          this.ctx.throw(401, {
+            message: `${jtiStatus} session`,
+            code: getAuthErrorTypeFromStatus(renewedJti.status, 'SESSION') satisfies AuthErrorType,
+          });
         }
       } else {
-        this.ctx.throw(401, { message: `${jtiStatus} token`, code: jtiStatus satisfies AuthErrorType });
+        this.ctx.throw(401, {
+          message: `${jtiStatus} session`,
+          code: getAuthErrorTypeFromStatus(jtiStatus, 'SESSION') satisfies AuthErrorType,
+        });
       }
     } else {
-      this.ctx.throw(401, { message: `${tokenStatus} token`, code: tokenStatus satisfies AuthErrorType });
+      this.ctx.throw(401, {
+        message: `${tokenStatus} token`,
+        code: getAuthErrorTypeFromStatus(tokenStatus, 'TOKEN') satisfies AuthErrorType,
+      });
     }
   }
 
