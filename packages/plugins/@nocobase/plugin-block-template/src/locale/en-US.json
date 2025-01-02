@@ -27,5 +27,6 @@
   "Are you sure you want to delete it?": "Are you sure you want to delete it?",
   "Delete": "Delete",
   "Deleted successfully": "Deleted successfully",
-  "Keep the created blocks?": "Keep the created blocks?"
+  "Keep the created blocks?": "Keep the created blocks?",
+  "Please select the records you want to delete": "Please select the records you want to delete"
 }
