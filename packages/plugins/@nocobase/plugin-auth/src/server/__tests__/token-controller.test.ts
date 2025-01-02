@@ -99,7 +99,7 @@ describe('auth', () => {
       { jwtid: not_exist_jwtid, expiresIn: '1d' },
     );
     ctx.setToken(token);
-    await expect(auth.check()).rejects.toThrowError('missing');
+    await expect(auth.check()).rejects.toThrowError('MISSING_SESSION' satisfies AuthErrorType);
   });
   it('api token do not check accsss', async () => {
     await auth.tokenController.setConfig({
@@ -134,7 +134,7 @@ describe('auth', () => {
     const { token } = await auth.signIn();
     ctx.setToken(token);
     await sleep(3000);
-    await expect(auth.check()).rejects.toThrowError('expired_session');
+    await expect(auth.check()).rejects.toThrowError('EXPIRED_SESSION' satisfies AuthErrorType);
   });
 
   it('when exceed inactiveInterval, throw Unauthorized', async () => {
@@ -146,7 +146,7 @@ describe('auth', () => {
     const { token } = await auth.signIn();
     ctx.setToken(token);
     await sleep(3000);
-    await expect(auth.check()).rejects.toThrowError('inactive');
+    await expect(auth.check()).rejects.toThrowError('INACTIVE_SESSION' satisfies AuthErrorType);
   });
 
   it('when token expired but not refresh,  not throw error', async () => {
@@ -163,7 +163,7 @@ describe('auth', () => {
   });
 
   it('when call refreshAccess with same jti multiple times, only one refreshed', async () => {
-    const jti = await auth.tokenController.add();
+    const jti = await auth.tokenController.add({ userId: 1 });
     const allSettled = await Promise.allSettled([
       auth.tokenController.renew(jti),
       auth.tokenController.renew(jti),

@@ -28,7 +28,6 @@ export type AuthManagerOptions = {
   authKey: string;
   default?: string;
   jwt?: JwtOptions;
-  skipAuthError?: boolean;
 };
 
 type AuthConfig = {
@@ -43,7 +42,6 @@ export class AuthManager {
    */
   jwt: JwtService;
   tokenController: ITokenControlService;
-  protected skipAuthError: boolean;
 
   protected options: AuthManagerOptions;
   protected authTypes: Registry<AuthConfig> = new Registry();
@@ -52,7 +50,6 @@ export class AuthManager {
 
   constructor(options: AuthManagerOptions) {
     this.options = options;
-    this.skipAuthError = options.skipAuthError || false;
     this.jwt = new JwtService(options.jwt);
   }
 
