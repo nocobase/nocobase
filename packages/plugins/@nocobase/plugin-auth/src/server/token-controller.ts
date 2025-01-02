@@ -13,7 +13,7 @@ import { randomUUID } from 'crypto';
 import ms from 'ms';
 import Application from '@nocobase/server';
 import Database, { Repository, Model } from '@nocobase/database';
-import { issuedTokensCollectionName } from '../constants';
+import { issuedTokensCollectionName, tokenPolicyCollectionName, tokenPolicyRecordKey } from '../constants';
 
 type TokenInfo = {
   id: string;
@@ -58,7 +58,12 @@ export class TokenController implements TokenControlService {
   }
 
   getConfig() {
-    return this.cache.get<ITokenControlConfig>('config');
+    return this.cache.wrap<ITokenControlConfig>('config', async () => {
+      const repo = this.app.db.getRepository(tokenPolicyCollectionName);
+      const configRecord = await repo.findOne({ filterByTk: tokenPolicyRecordKey });
+      if (!configRecord) return null;
+      else return configRecord.config;
+    });
   }
   setConfig(config: Partial<ITokenControlConfig>) {
     return this.cache.set('config', config);
