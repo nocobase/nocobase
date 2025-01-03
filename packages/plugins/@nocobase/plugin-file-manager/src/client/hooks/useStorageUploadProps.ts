@@ -59,5 +59,9 @@ export function useStorageCfg() {
 export function useStorageUploadProps(props) {
   const { storage, storageType } = useStorageCfg();
   const useStorageTypeUploadProps = storageType?.useUploadProps;
-  return useStorageTypeUploadProps?.({ storage, ...props }) || {};
+  const storageTypeUploadProps = useStorageTypeUploadProps?.({ storage, rules: storage.rules, ...props }) || {};
+  return {
+    rules: storage?.rules,
+    ...storageTypeUploadProps,
+  };
 }
