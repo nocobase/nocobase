@@ -15,8 +15,8 @@ import { uid } from '@formily/shared';
 import { Modal } from 'antd';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { findByUid, useNocoBaseRoutes } from '.';
-import { createDesignable, useCompile } from '../..';
+import { findByUid } from '.';
+import { createDesignable, useCompile, useNocoBaseRoutes } from '../..';
 import {
   GeneralSchemaDesigner,
   getPageMenuSchema,
