@@ -7,8 +7,12 @@ ARG PLUGINS_DIRS
 
 ENV PLUGINS_DIRS=${PLUGINS_DIRS}
 
+ENV NPM_USER=test
+ENV NPM_PASSWORD=test
+ENV NPM_EMAIL=test@nocobase.com
+ENV NPM_REGISTRY=${VERDACCIO_URL}
 
-RUN npx npm-cli-adduser --username test --password test -e test@nocobase.com -r $VERDACCIO_URL
+RUN npm adduser --registry=${VERDACCIO_URL}
 
 RUN apt-get update && apt-get install -y jq
 WORKDIR /tmp
