@@ -31,6 +31,7 @@ packages/core/app/client/src/.plugins
 storage/plugins
 storage/tar
 storage/tmp
+storage/cache
 storage/print-templates
 storage/cache
 storage/app.watch.ts
