@@ -7,6 +7,8 @@ ARG PLUGINS_DIRS
 
 ENV PLUGINS_DIRS=${PLUGINS_DIRS}
 
+RUN apt-get update && apt-get install -y jq expect
+
 RUN expect <<EOD
 spawn npm adduser --registry $VERDACCIO_URL
 expect {
@@ -16,7 +18,6 @@ expect {
 }
 EOD
 
-RUN apt-get update && apt-get install -y jq
 WORKDIR /tmp
 COPY . /tmp
 RUN  yarn install && yarn build --no-dts
