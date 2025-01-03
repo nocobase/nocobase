@@ -14,10 +14,10 @@ import { Image } from 'antd';
 import cls from 'classnames';
 import _ from 'lodash';
 import React, { useMemo } from 'react';
+import { withPopupWrapper } from '../../common/withPopupWrapper';
 import { useCompile } from '../../hooks';
 import { EllipsisWithTooltip } from './EllipsisWithTooltip';
 import { HTMLEncode } from './shared';
-import { withPopupWrapper } from '../../common/withPopupWrapper';
 
 export type InputReadPrettyComposed = {
   Input: React.FC<InputReadPrettyProps>;
@@ -222,22 +222,26 @@ const sizes = {
   small: 24,
   middle: 48,
   large: 72,
+  oversized: 120,
 };
 
 ReadPretty.Preview = function Preview(props: any) {
   const fieldSchema = useFieldSchema();
   const size = fieldSchema['x-component-props']?.['size'] || 'small';
+  const objectFit = fieldSchema['x-component-props']?.['objectFit'] || 'cover';
+
   if (!props.value) {
     return props.value;
   }
+
   return (
     <Image
       style={
-        ['small', 'middle', 'large'].includes(size)
+        ['small', 'middle', 'large', 'oversized'].includes(size)
           ? {
               width: sizes[size],
               height: sizes[size],
-              objectFit: 'cover',
+              objectFit,
             }
           : {}
       }
