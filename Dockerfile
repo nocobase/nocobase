@@ -7,7 +7,7 @@ ARG PLUGINS_DIRS
 
 ENV PLUGINS_DIRS=${PLUGINS_DIRS}
 
-RUN /usr/bin/expect <<EOD
+RUN expect <<EOD
 spawn npm adduser --registry $VERDACCIO_URL
 expect {
   "Username:" {send "test\r"; exp_continue}
