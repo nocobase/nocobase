@@ -77,7 +77,7 @@ export class PluginClientServer extends Plugin {
         async getInfo(ctx, next) {
           const SystemSetting = ctx.db.getRepository('systemSettings');
           const systemSetting = await SystemSetting.findOne();
-          const enabledLanguages: string[] = systemSetting.get('enabledLanguages') || [];
+          const enabledLanguages: string[] = systemSetting?.get('enabledLanguages') || [];
           const currentUser = ctx.state.currentUser;
           let lang = enabledLanguages?.[0] || process.env.APP_LANG || 'en-US';
           if (enabledLanguages.includes(currentUser?.appLang)) {

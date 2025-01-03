@@ -82,7 +82,7 @@ describe('schemaToRoutes', () => {
     const schema = {
       properties: {
         key1: {
-          'x-component': 'Menu.Link',
+          'x-component': 'Menu.URL',
           title: 'Link 1',
           'x-component-props': {
             icon: 'LinkIcon',
