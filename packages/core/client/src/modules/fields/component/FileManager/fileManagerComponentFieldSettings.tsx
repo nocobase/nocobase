@@ -68,127 +68,170 @@ const fieldComponent: any = {
   },
 };
 
+const quickUpload: any = {
+  name: 'quickUpload',
+  type: 'switch',
+  useComponentProps() {
+    const { t } = useTranslation();
+    const field = useField<Field>();
+    const { fieldSchema: tableColumnSchema } = useColumnSchema();
+    const schema = useFieldSchema();
+    const fieldSchema = tableColumnSchema || schema;
+    const { dn, refresh } = useDesignable();
+    return {
+      title: t('Quick upload'),
+      checked: fieldSchema['x-component-props']?.quickUpload !== (false as boolean),
+      onChange(value) {
+        const schema = {
+          ['x-uid']: fieldSchema['x-uid'],
+        };
+        field.componentProps.quickUpload = value;
+        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props'].quickUpload = value;
+        schema['x-component-props'] = fieldSchema['x-component-props'];
+        dn.emit('patch', {
+          schema,
+        });
+        refresh();
+      },
+    };
+  },
+  useVisible() {
+    const { fieldSchema: tableColumnSchema } = useColumnSchema();
+    const field = useField();
+    const form = useForm();
+    const isReadPretty = tableColumnSchema?.['x-read-pretty'] || field.readPretty || form.readPretty;
+    return !isReadPretty;
+  },
+};
+
+const selectFile: any = {
+  name: 'selectFile',
+  type: 'switch',
+  useComponentProps() {
+    const { t } = useTranslation();
+    const field = useField<Field>();
+    const { fieldSchema: tableColumnSchema } = useColumnSchema();
+    const schema = useFieldSchema();
+    const fieldSchema = tableColumnSchema || schema;
+    const { dn, refresh } = useDesignable();
+    return {
+      title: t('Select file'),
+      checked: fieldSchema['x-component-props']?.selectFile !== (false as boolean),
+      onChange(value) {
+        const schema = {
+          ['x-uid']: fieldSchema['x-uid'],
+        };
+        field.componentProps.selectFile = value;
+        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props'].selectFile = value;
+        schema['x-component-props'] = fieldSchema['x-component-props'];
+        dn.emit('patch', {
+          schema,
+        });
+        refresh();
+      },
+    };
+  },
+  useVisible() {
+    const { fieldSchema: tableColumnSchema } = useColumnSchema();
+    const field = useField();
+    const form = useForm();
+    const isReadPretty = tableColumnSchema?.['x-read-pretty'] || field.readPretty || form.readPretty;
+    return !isReadPretty;
+  },
+};
+
+const size: any = {
+  name: 'size',
+  type: 'select',
+  useVisible() {
+    const readPretty = useIsFieldReadPretty();
+    const { fieldSchema: tableColumnSchema } = useColumnSchema();
+    return readPretty && !tableColumnSchema;
+  },
+  useComponentProps() {
+    const { t } = useTranslation();
+    const field = useField<Field>();
+    const fieldSchema = useFieldSchema();
+    const { dn } = useDesignable();
+    return {
+      title: t('Size'),
+      options: [
+        { label: t('Large'), value: 'large' },
+        { label: t('Default'), value: 'default' },
+        { label: t('Small'), value: 'small' },
+      ],
+      value: field?.componentProps?.size || 'default',
+      onChange(size) {
+        const schema = {
+          ['x-uid']: fieldSchema['x-uid'],
+        };
+        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props']['size'] = size;
+        schema['x-component-props'] = fieldSchema['x-component-props'];
+        field.componentProps = field.componentProps || {};
+        field.componentProps.size = size;
+        dn.emit('patch', {
+          schema,
+        });
+        dn.refresh();
+      },
+    };
+  },
+};
+
+const objectFit: any = {
+  name: 'objectFit',
+  type: 'select',
+  useVisible() {
+    const readPretty = useIsFieldReadPretty();
+    const { fieldSchema: tableColumnSchema } = useColumnSchema();
+    return readPretty && !tableColumnSchema;
+  },
+  useComponentProps() {
+    const { t } = useTranslation();
+    const field = useField<Field>();
+    const fieldSchema = useFieldSchema();
+    const { dn } = useDesignable();
+    return {
+      title: t('Object Fit'),
+      options: [
+        { value: 'cover', label: t('Cover') },
+        { value: 'fill', label: t('Fill') },
+        { value: 'contain', label: t('Contain') },
+        { value: 'scale-down', label: t('Scale Down') },
+        { value: 'none', label: t('None') },
+      ],
+      value: field?.componentProps?.objectFit || 'cover',
+      onChange(objectFit) {
+        const schema = {
+          ['x-uid']: fieldSchema['x-uid'],
+        };
+        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props']['objectFit'] = objectFit;
+        schema['x-component-props'] = fieldSchema['x-component-props'];
+        field.componentProps = field.componentProps || {};
+        field.componentProps.objectFit = objectFit;
+        dn.emit('patch', {
+          schema,
+        });
+        dn.refresh();
+      },
+    };
+  },
+};
+
+const allowMultiple: any = {
+  ...getAllowMultiple(),
+  useVisible() {
+    const isAssociationField = useIsAssociationField();
+    const IsShowMultipleSwitch = useIsShowMultipleSwitch();
+    return isAssociationField && IsShowMultipleSwitch();
+  },
+};
+
 export const fileManagerComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:FileManager',
-  items: [
-    fieldComponent,
-    {
-      name: 'quickUpload',
-      type: 'switch',
-      useComponentProps() {
-        const { t } = useTranslation();
-        const field = useField<Field>();
-        const { fieldSchema: tableColumnSchema } = useColumnSchema();
-        const schema = useFieldSchema();
-        const fieldSchema = tableColumnSchema || schema;
-        const { dn, refresh } = useDesignable();
-        return {
-          title: t('Quick upload'),
-          checked: fieldSchema['x-component-props']?.quickUpload !== (false as boolean),
-          onChange(value) {
-            const schema = {
-              ['x-uid']: fieldSchema['x-uid'],
-            };
-            field.componentProps.quickUpload = value;
-            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-            fieldSchema['x-component-props'].quickUpload = value;
-            schema['x-component-props'] = fieldSchema['x-component-props'];
-            dn.emit('patch', {
-              schema,
-            });
-            refresh();
-          },
-        };
-      },
-      useVisible() {
-        const { fieldSchema: tableColumnSchema } = useColumnSchema();
-        const field = useField();
-        const form = useForm();
-        const isReadPretty = tableColumnSchema?.['x-read-pretty'] || field.readPretty || form.readPretty;
-        return !isReadPretty;
-      },
-    },
-    {
-      name: 'selectFile',
-      type: 'switch',
-      useComponentProps() {
-        const { t } = useTranslation();
-        const field = useField<Field>();
-        const { fieldSchema: tableColumnSchema } = useColumnSchema();
-        const schema = useFieldSchema();
-        const fieldSchema = tableColumnSchema || schema;
-        const { dn, refresh } = useDesignable();
-        return {
-          title: t('Select file'),
-          checked: fieldSchema['x-component-props']?.selectFile !== (false as boolean),
-          onChange(value) {
-            const schema = {
-              ['x-uid']: fieldSchema['x-uid'],
-            };
-            field.componentProps.selectFile = value;
-            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-            fieldSchema['x-component-props'].selectFile = value;
-            schema['x-component-props'] = fieldSchema['x-component-props'];
-            dn.emit('patch', {
-              schema,
-            });
-            refresh();
-          },
-        };
-      },
-      useVisible() {
-        const { fieldSchema: tableColumnSchema } = useColumnSchema();
-        const field = useField();
-        const form = useForm();
-        const isReadPretty = tableColumnSchema?.['x-read-pretty'] || field.readPretty || form.readPretty;
-        return !isReadPretty;
-      },
-    },
-    {
-      name: 'size',
-      type: 'select',
-      useVisible() {
-        const readPretty = useIsFieldReadPretty();
-        const { fieldSchema: tableColumnSchema } = useColumnSchema();
-        return readPretty && !tableColumnSchema;
-      },
-      useComponentProps() {
-        const { t } = useTranslation();
-        const field = useField<Field>();
-        const fieldSchema = useFieldSchema();
-        const { dn } = useDesignable();
-        return {
-          title: t('Size'),
-          options: [
-            { label: t('Large'), value: 'large' },
-            { label: t('Default'), value: 'default' },
-            { label: t('Small'), value: 'small' },
-          ],
-          value: field?.componentProps?.size || 'default',
-          onChange(size) {
-            const schema = {
-              ['x-uid']: fieldSchema['x-uid'],
-            };
-            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-            fieldSchema['x-component-props']['size'] = size;
-            schema['x-component-props'] = fieldSchema['x-component-props'];
-            field.componentProps = field.componentProps || {};
-            field.componentProps.size = size;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-    {
-      ...getAllowMultiple(),
-      useVisible() {
-        const isAssociationField = useIsAssociationField();
-        const IsShowMultipleSwitch = useIsShowMultipleSwitch();
-        return isAssociationField && IsShowMultipleSwitch();
-      },
-    },
-  ],
+  items: [fieldComponent, quickUpload, selectFile, size, objectFit, allowMultiple],
 });

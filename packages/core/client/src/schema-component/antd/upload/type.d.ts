@@ -20,6 +20,7 @@ export type UploadProps = Omit<AntdUploadProps, 'onChange'> & {
   size?: string;
   rules?: PropsRules;
   toValueItem?: function;
+  objectFit?: string;
 };
 
 export type DraggerProps = Omit<AntdDraggerProps, 'onChange'> & {
