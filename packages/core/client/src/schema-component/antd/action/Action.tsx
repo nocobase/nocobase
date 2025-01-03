@@ -556,7 +556,7 @@ const RenderButtonInner = observer(
     } = props;
 
     if (!designable && (field?.data?.hidden || !aclCtx)) {
-      return null;
+      return <div style={{ visibility: 'hidden' }}>&nbsp;</div>;
     }
 
     return (
