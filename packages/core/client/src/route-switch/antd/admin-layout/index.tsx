@@ -38,7 +38,6 @@ import { Plugin } from '../../../application/Plugin';
 import { useAppSpin } from '../../../application/hooks/useAppSpin';
 import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
 import { Help } from '../../../user/Help';
-import { VariablesProvider } from '../../../variables';
 
 const filterByACL = (schema, options) => {
   const { allowAll, allowMenuItemIds = [] } = options;
@@ -508,9 +507,7 @@ export const AdminProvider = (props) => {
       <NavigateIfNotSignIn>
         <RemoteSchemaTemplateManagerProvider>
           <RemoteCollectionManagerProvider>
-            <VariablesProvider>
-              <ACLRolesCheckProvider>{props.children}</ACLRolesCheckProvider>
-            </VariablesProvider>
+            <ACLRolesCheckProvider>{props.children}</ACLRolesCheckProvider>
           </RemoteCollectionManagerProvider>
         </RemoteSchemaTemplateManagerProvider>
       </NavigateIfNotSignIn>
