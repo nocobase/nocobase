@@ -76,18 +76,19 @@ export const useBulkDestroyAction = () => {
   const { t } = useTranslation();
   const form = useForm();
   const { cascade } = form?.values || {};
+  const selectedRowKeys = Object.values(state).flat();
   return {
     async run(flag?) {
-      if (!state?.selectedRowKeys?.length) {
+      if (!selectedRowKeys?.length) {
         return message.error(t('Please select the records you want to delete'));
       }
       await resource.destroy({
-        filterByTk: state?.selectedRowKeys || [],
+        filterByTk: selectedRowKeys || [],
         cascade,
       });
       form.reset();
       !flag && ctx?.setVisible?.(false);
-      setState?.({ selectedRowKeys: [] });
+      setState?.({});
       refresh();
     },
   };
