@@ -9,7 +9,7 @@
 
 import { Schema } from '@formily/react';
 
-export function findByUid(schema: Schema, uid: string) {
+export function findByUid(schema: any, uid: string) {
   if (!Schema.isSchemaInstance(schema)) {
     schema = new Schema(schema);
   }
@@ -25,7 +25,7 @@ export function findByUid(schema: Schema, uid: string) {
   }, null);
 }
 
-export function findMenuItem(schema: Schema) {
+export function findMenuItem(schema: any) {
   if (!Schema.isSchemaInstance(schema)) {
     schema = new Schema(schema);
   }

@@ -21,7 +21,17 @@ import { useDeepCompareEffect, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
-import React, { createContext, FC, MutableRefObject, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import React, {
+  createContext,
+  FC,
+  MutableRefObject,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, isBulkEditAction, useDesignable, usePopupSettings, useTableSize } from '../..';
 import {
@@ -40,7 +50,7 @@ import {
   useTableSelectorContext,
 } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
-import { useTableBlockContext } from '../../../block-provider/TableBlockProvider';
+import { useTableBlockContext, useTableBlockContextBasicValue } from '../../../block-provider/TableBlockProvider';
 import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
 import {
   NocoBaseRecursionField,
@@ -840,6 +850,20 @@ export const Table: any = withDynamicSchemaProps(
           }
         `;
       }, [token.controlItemBgActive, token.controlItemBgActiveHover]);
+      const tableBlockContextBasicValue = useTableBlockContextBasicValue();
+
+      useEffect(() => {
+        if (tableBlockContextBasicValue?.field) {
+          tableBlockContextBasicValue.field.data = tableBlockContextBasicValue.field?.data || {};
+
+          tableBlockContextBasicValue.field.data.clearSelectedRowKeys = () => {
+            tableBlockContextBasicValue.field.data.selectedRowKeys = [];
+            setSelectedRowKeys([]);
+          };
+
+          tableBlockContextBasicValue.field.data.setSelectedRowKeys = setSelectedRowKeys;
+        }
+      }, [tableBlockContextBasicValue?.field]);
 
       const highlightRow = useMemo(() => (onClickRow ? highlightRowCss : ''), [highlightRowCss, onClickRow]);
 
@@ -981,7 +1005,12 @@ export const Table: any = withDynamicSchemaProps(
                   field.data.selectedRowKeys = selectedRowKeys;
                   field.data.selectedRowData = selectedRows;
                   setSelectedRowKeys(selectedRowKeys);
-                  onRowSelectionChange?.(selectedRowKeys, selectedRows);
+                  onRowSelectionChange?.(selectedRowKeys, selectedRows, setSelectedRowKeys);
+                },
+                onSelect: (record, selected: boolean, selectedRows, nativeEvent) => {
+                  tableBlockContextBasicValue.field.data = tableBlockContextBasicValue.field?.data || {};
+                  tableBlockContextBasicValue.field.data.selectedRecord = record;
+                  tableBlockContextBasicValue.field.data.selected = selected;
                 },
                 getCheckboxProps(record) {
                   return {
@@ -1044,6 +1073,7 @@ export const Table: any = withDynamicSchemaProps(
           isRowSelect,
           memoizedRowSelection,
           paginationProps,
+          tableBlockContextBasicValue,
         ],
       );
 
@@ -1092,6 +1122,7 @@ export const Table: any = withDynamicSchemaProps(
           expandedRowKeys: expandedKeys,
         };
       }, [expandedKeys, onExpandValue]);
+
       return (
         // If spinning is set to undefined, it will cause the subtable to always display loading, so we need to convert it here.
         // We use Spin here instead of Table's loading prop because using Spin here reduces unnecessary re-renders.

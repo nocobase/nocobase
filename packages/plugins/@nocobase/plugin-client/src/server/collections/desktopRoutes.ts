@@ -7,5 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './MenuItemInitializers';
-export * from './util';
+import { defineCollection } from '@nocobase/database';
+import desktopRoutes from '../../collections/desktopRoutes';
+
+export default defineCollection(desktopRoutes as any);

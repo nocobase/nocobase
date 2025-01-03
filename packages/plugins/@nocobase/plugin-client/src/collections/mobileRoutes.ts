@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineCollection } from '@nocobase/database';
-
-export default defineCollection({
+// copy 自移动端插件
+// TODO： 需要在移动端插件中动态注册到这里
+export default {
   name: 'mobileRoutes',
   dumpRules: 'required',
   title: 'mobileRoutes',
@@ -324,4 +324,4 @@ export default defineCollection({
   view: false,
   tree: 'adjacencyList',
   filterTargetKey: 'id',
-});
+} as any;

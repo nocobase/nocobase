@@ -7,5 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './MenuItemInitializers';
-export * from './util';
+import { extendCollection } from '@nocobase/database';
+
+export default extendCollection({
+  name: 'roles',
+  fields: [
+    {
+      type: 'belongsToMany',
+      name: 'desktopRoutes',
+      target: 'desktopRoutes',
+      through: 'rolesDesktopRoutes',
+      onDelete: 'CASCADE',
+    },
+  ],
+});

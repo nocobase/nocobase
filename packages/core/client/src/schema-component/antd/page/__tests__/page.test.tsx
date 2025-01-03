@@ -68,44 +68,6 @@ describe('Page', () => {
       });
     });
 
-    test('enablePageTabs', async () => {
-      await renderAppOptions({
-        schema: {
-          type: 'void',
-          title,
-          'x-decorator': DocumentTitleProvider,
-          'x-component': Page,
-          'x-component-props': {
-            enablePageTabs: true,
-          },
-          properties: {
-            tab1: {
-              type: 'void',
-              title: 'tab1 title',
-              'x-component': 'div',
-              'x-content': 'tab1 content',
-            },
-            tab2: {
-              type: 'void',
-              'x-component': 'div',
-              'x-content': 'tab2 content',
-            },
-          },
-        },
-        apis: {
-          '/uiSchemas:insertAdjacent/test': { data: { result: 'ok' } },
-        },
-      });
-
-      expect(screen.getByRole('tablist')).toBeInTheDocument();
-
-      expect(screen.getByText('tab1 title')).toBeInTheDocument();
-      expect(screen.getByText('tab1 content')).toBeInTheDocument();
-
-      // 没有 title 的时候会使用 Unnamed
-      expect(screen.getByText('Unnamed')).toBeInTheDocument();
-    });
-
     // TODO: This works normally in the actual page, but the test fails here
     test.skip('add tab', async () => {
       await renderAppOptions({

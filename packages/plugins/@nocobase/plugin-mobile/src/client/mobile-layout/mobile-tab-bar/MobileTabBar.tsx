@@ -71,6 +71,7 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
             }}
           >
             {routeList.map((item) => {
+              if (item.hideInMenu) return null;
               return <SchemaComponent key={item.id} schema={getMobileTabBarItemSchema(item)} />;
             })}
           </div>

@@ -15,7 +15,7 @@ describe('nocobase-admin-menu', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['client', 'ui-schema-storage', 'system-settings'],
+      plugins: ['client', 'ui-schema-storage', 'system-settings', 'field-sort'],
     });
     await app.version.update('0.17.0-alpha.7');
   });
