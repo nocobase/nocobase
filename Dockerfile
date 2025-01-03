@@ -13,6 +13,7 @@ ENV NPM_EMAIL=test@nocobase.com
 ENV NPM_REGISTRY=${VERDACCIO_URL}
 
 RUN npm adduser --registry=${VERDACCIO_URL}
+RUN npm login --registry=${VERDACCIO_URL}
 
 RUN apt-get update && apt-get install -y jq
 WORKDIR /tmp
