@@ -19,6 +19,7 @@ import {
   RouteObject,
   useRoutes,
 } from 'react-router-dom';
+import VariablesProvider from '../variables/VariablesProvider';
 import { Application } from './Application';
 import { CustomRouterContextProvider } from './CustomRouterContextProvider';
 import { BlankComponent, RouterContextCleaner } from './components';
@@ -146,8 +147,10 @@ export class RouterManager {
           <ReactRouter {...opts}>
             <CustomRouterContextProvider>
               <BaseLayout>
-                <RenderRoutes />
-                {children}
+                <VariablesProvider>
+                  <RenderRoutes />
+                  {children}
+                </VariablesProvider>
               </BaseLayout>
             </CustomRouterContextProvider>
           </ReactRouter>
