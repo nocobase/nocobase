@@ -480,30 +480,30 @@ describe('action', () => {
   describe('storage actions', () => {
     describe('get', () => {
       it('get default storage', async () => {
-        const { body, status } = await agent.resource('storages').get();
+        const { body, status } = await agent.resource('storages').getBasicInfo();
         expect(status).toBe(200);
         expect(body.data).toEqual({ size: FILE_SIZE_LIMIT_DEFAULT });
       });
 
       it('get storage by id', async () => {
-        const { body, status } = await agent.resource('storages').get({ filterByTk: 1 });
+        const { body, status } = await agent.resource('storages').getBasicInfo({ filterByTk: 1 });
         expect(status).toBe(200);
         expect(body.data).toMatchObject({ id: 1 });
       });
 
       it('get storage by unexisted id as 404', async () => {
-        const { body, status } = await agent.resource('storages').get({ filterByTk: -1 });
+        const { body, status } = await agent.resource('storages').getBasicInfo({ filterByTk: -1 });
         expect(status).toBe(404);
       });
 
       it('get by storage local id', async () => {
-        const { body, status } = await agent.resource('storages').get({ filterByTk: local1.id });
+        const { body, status } = await agent.resource('storages').getBasicInfo({ filterByTk: local1.id });
         expect(status).toBe(200);
         expect(body.data).toMatchObject({ id: 1 });
       });
 
       it('get storage by name', async () => {
-        const { body, status } = await agent.resource('storages').get({ filterByTk: local1.name });
+        const { body, status } = await agent.resource('storages').getBasicInfo({ filterByTk: local1.name });
         expect(status).toBe(200);
         expect(body.data).toMatchObject({ id: 1 });
       });

@@ -8,9 +8,8 @@
  */
 
 import Plugin from '..';
-import cloneDeep from 'lodash/cloneDeep';
 
-export async function get(context, next) {
+export async function getBasicInfo(context, next) {
   const { storagesCache } = context.app.pm.get(Plugin) as Plugin;
   let result;
   const { filterByTk } = context.action.params;

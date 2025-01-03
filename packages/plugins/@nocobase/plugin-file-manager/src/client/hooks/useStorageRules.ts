@@ -18,7 +18,7 @@ export function useStorageRules(storage) {
   const field = useField<any>();
   const { loading, data, run } = useRequest<any>(
     {
-      url: `storages:get/${name}`,
+      url: `storages:getBasicInfo/${name}`,
     },
     {
       manual: true,

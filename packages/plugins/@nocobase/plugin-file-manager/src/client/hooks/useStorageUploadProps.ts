@@ -24,7 +24,7 @@ import FileManagerPlugin from '../';
 
 export function useStorage(storage) {
   const name = storage ?? '';
-  const url = `storages:get/${name}`;
+  const url = `storages:getBasicInfo/${name}`;
   const { loading, data, run } = useRequest<any>(
     {
       url,
