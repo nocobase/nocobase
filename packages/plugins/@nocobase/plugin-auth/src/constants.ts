@@ -7,9 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { BasicAuth } from './basic-auth';
-export { AuthModel } from './model/authenticator';
-export { presetAuthType } from '../preset';
-
-export { default } from './plugin';
-export * from '../constants';
+export const tokenPolicyRecordKey = 'token-policy-config';
+export const tokenPolicyCacheKey = 'auth:' + tokenPolicyRecordKey;
+export const tokenPolicyCollectionName = 'tokenControlConfig';
+export const issuedTokensCollectionName = 'issuedTokens';

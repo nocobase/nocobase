@@ -10,7 +10,6 @@
 import { Context } from '@nocobase/actions';
 import { Model } from '@nocobase/database';
 import { Authenticator } from './auth-manager';
-
 export type AuthConfig = {
   authenticator: Authenticator;
   options: {
@@ -18,6 +17,18 @@ export type AuthConfig = {
   };
   ctx: Context;
 };
+
+export type AuthErrorType =
+  | 'EMPTY_TOKEN'
+  | 'EXPIRED_TOKEN'
+  | 'INVALID_TOKEN'
+  | 'RENEWED_SESSION'
+  | 'MISSING_SESSION'
+  | 'INACTIVE_SESSION'
+  | 'BLOCKED_TOKEN'
+  | 'BLOCKED_SESSION'
+  | 'EXPIRED_SESSION'
+  | 'NOT_EXIST_USER';
 
 export type AuthExtend<T extends Auth> = new (config: AuthConfig) => T;
 
@@ -45,9 +56,21 @@ export abstract class Auth implements IAuth {
     this.ctx = ctx;
   }
 
+  async skipCheck() {
+    const token = this.ctx.getBearerToken();
+    if (!token && this.ctx.app.options.acl === false) {
+      return true;
+    }
+    const { resourceName, actionName } = this.ctx.action;
+    const acl = this.ctx.dataSource.acl;
+    const isPublic = await acl.allowManager.isAllowed(resourceName, actionName, this.ctx);
+    return isPublic;
+  }
+
   // The abstract methods are required to be implemented by all authentications.
   abstract check(): Promise<Model>;
   // The following methods are mainly designed for user authentications.
+
   async signIn(): Promise<any> {}
   async signUp(): Promise<any> {}
   async signOut(): Promise<any> {}

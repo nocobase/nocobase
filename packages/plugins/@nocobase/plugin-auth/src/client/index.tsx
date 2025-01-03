@@ -17,12 +17,13 @@ import type { Authenticator as AuthenticatorType } from './authenticator';
 // import { Options, SignInForm, SignUpForm } from './basic';
 const { Options, SignInForm, SignUpForm } = lazy(() => import('./basic'), 'Options', 'SignInForm', 'SignUpForm');
 import { NAMESPACE } from './locale';
+import { authCheckMiddleware } from './interceptors';
 // import { AuthLayout, SignInPage, SignUpPage } from './pages';
 const { AuthLayout, SignInPage, SignUpPage } = lazy(() => import('./pages'), 'AuthLayout', 'SignInPage', 'SignUpPage');
 // import { Authenticator } from './settings/Authenticator';
 const { Authenticator } = lazy(() => import('./settings/Authenticator'), 'Authenticator');
+const { TokenPolicySettings } = lazy(() => import('./settings/token-policy'), 'TokenPolicySettings');
 
-// export { AuthenticatorsContextProvider, AuthLayout } from './pages/AuthLayout';
 const { AuthenticatorsContextProvider, AuthLayout: ExportAuthLayout } = lazy(
   () => import('./pages'),
   'AuthenticatorsContextProvider',
@@ -81,6 +82,14 @@ export class PluginAuthClient extends Plugin {
         AdminSettingsForm: Options,
       },
     });
+    this.app.pluginSettingsManager.add(`security.token-policy`, {
+      title: `{{t("Token policy", { ns: "${NAMESPACE}" })}}`,
+      Component: TokenPolicySettings,
+      aclSnippet: `pm.security.token-policy`,
+      icon: 'ApiOutlined',
+      sort: 0,
+    });
+    this.app.apiClient.axios.interceptors.response.use(...authCheckMiddleware({ app: this.app }));
   }
 }
 

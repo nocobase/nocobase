@@ -222,7 +222,7 @@ describe('actions', () => {
           password: '12345',
         },
       });
-      const userAgent = await agent.login(user);
+      const userAgent = await agent.login(user, null, { loginWithJti: true });
 
       // Should check password consistency
       const res = await userAgent.post('/auth:changePassword').set({ 'X-Authenticator': 'basic' }).send({
@@ -442,7 +442,7 @@ describe('actions', () => {
           password: '12345',
         },
       });
-      const userAgent = await agent.login(user);
+      const userAgent = await agent.login(user, null, { loginWithJti: true });
       const res = await userAgent.post('/auth:check').set({ 'X-Authenticator': 'basic' }).send();
       expect(res.statusCode).toEqual(200);
       expect(res.body.data.id).toBeDefined();

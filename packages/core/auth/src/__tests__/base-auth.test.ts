@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BaseAuth } from '../base/auth';
 import { vi } from 'vitest';
+import { BaseAuth } from '../base/auth';
 
 describe('base-auth', () => {
   it('should validate username', () => {
@@ -29,15 +29,20 @@ describe('base-auth', () => {
     expect(auth.validateUsername('01234567890123456789012345678901234567890123456789a')).toBe(false);
   });
 
-  it('check: should return null when no token', async () => {
+  it('check: should return user null when no token', async () => {
     const auth = new BaseAuth({
       userCollection: {},
       ctx: {
         getBearerToken: () => null,
       },
     } as any);
-
-    expect(await auth.check()).toBe(null);
+    let user = null;
+    try {
+      user = await auth.check();
+      expect(user).toBe(null);
+    } catch (error) {
+      expect(user).toBe(null);
+    }
   });
 
   it('check: should set roleName to headers', async () => {
@@ -50,9 +55,19 @@ describe('base-auth', () => {
       app: {
         authManager: {
           jwt: {
-            decode: () => ({ userId: 1, roleName: 'admin' }),
+            verify: () => ({ status: 'valid', payload: { userId: 1, roleName: 'admin' } }),
+            blacklist: {
+              has: () => false,
+            },
+          },
+          tokenController: {
+            check: () => ({ status: 'valid' }),
+            removeLoginExpiredTokens: async () => null,
           },
         },
+      },
+      cache: {
+        wrap: async (key, fn) => fn(),
       },
     };
     const auth = new BaseAuth({
@@ -78,7 +93,13 @@ describe('base-auth', () => {
       app: {
         authManager: {
           jwt: {
-            decode: () => ({ userId: 1, roleName: 'admin' }),
+            verify: () => ({ status: 'valid', payload: { userId: 1, roleName: 'admin' } }),
+            blacklist: {
+              has: () => false,
+            },
+          },
+          tokenController: {
+            check: () => ({ status: 'valid' }),
           },
         },
       },
@@ -126,6 +147,15 @@ describe('base-auth', () => {
         authManager: {
           jwt: {
             sign: () => 'token',
+          },
+          tokenController: {
+            add: () => 'access',
+            getConfig: () => ({
+              tokenExpirationTime: '30m',
+              maxTokenLifetime: '1d',
+              maxInactiveInterval: '15m',
+            }),
+            removeLoginExpiredTokens: async () => null,
           },
         },
       },

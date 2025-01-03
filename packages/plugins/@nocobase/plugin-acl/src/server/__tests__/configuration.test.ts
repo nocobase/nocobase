@@ -68,8 +68,8 @@ describe('configuration', () => {
   });
 
   it('should not create/list collections', async () => {
-    expect((await guestAgent.resource('collections').create()).statusCode).toEqual(403);
-    expect((await guestAgent.resource('collections').list()).statusCode).toEqual(403);
+    expect((await guestAgent.resource('collections').create()).statusCode).toEqual(401);
+    expect((await guestAgent.resource('collections').list()).statusCode).toEqual(401);
   });
 
   it('should allow when role has allowConfigure with true value', async () => {

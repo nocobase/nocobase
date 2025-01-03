@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import jwt, { SignOptions } from 'jsonwebtoken';
+import jwt, { JwtPayload, SignOptions } from 'jsonwebtoken';
 import { ITokenBlacklistService } from './token-blacklist-service';
-
 export interface JwtOptions {
   secret: string;
   expiresIn?: string;
@@ -52,12 +51,28 @@ export class JwtService {
   /* istanbul ignore next -- @preserve */
   decode(token: string): Promise<any> {
     return new Promise((resolve, reject) => {
-      jwt.verify(token, this.secret(), (err: any, decoded: any) => {
+      jwt.verify(token, this.secret(), (err, decoded) => {
         if (err) {
           return reject(err);
         }
 
         resolve(decoded);
+      });
+    });
+  }
+
+  verify(
+    token: string,
+  ): Promise<{ status: 'valid' | 'expired'; payload: JwtPayload } | { status: 'invalid'; payload: null }> {
+    return new Promise((resolve, reject) => {
+      jwt.verify(token, this.secret(), async (err, decoded: JwtPayload) => {
+        if (err) {
+          if (err.name === 'TokenExpiredError') {
+            resolve({ status: 'expired', payload: jwt.decode(token) as JwtPayload });
+          } else resolve({ status: 'invalid', payload: null });
+        } else {
+          resolve({ status: 'valid', payload: decoded as JwtPayload });
+        }
       });
     });
   }
@@ -70,9 +85,9 @@ export class JwtService {
       return null;
     }
     try {
-      const { exp } = await this.decode(token);
+      const { exp, jti } = await this.decode(token);
       return this.blacklist.add({
-        token,
+        token: jti ?? token,
         expiration: new Date(exp * 1000).toString(),
       });
     } catch {

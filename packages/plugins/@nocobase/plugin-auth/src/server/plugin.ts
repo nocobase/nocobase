@@ -8,7 +8,7 @@
  */
 
 import { Cache } from '@nocobase/cache';
-import { Model } from '@nocobase/database';
+import Database, { Model } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { namespace, presetAuthType, presetAuthenticator } from '../preset';
 import authActions from './actions/auth';
@@ -17,8 +17,10 @@ import { BasicAuth } from './basic-auth';
 import { AuthModel } from './model/authenticator';
 import { Storer } from './storer';
 import { TokenBlacklistService } from './token-blacklist';
+import { TokenController } from './token-controller';
 import { tval } from '@nocobase/utils';
 
+import { tokenPolicyCollectionName, tokenPolicyRecordKey, tokenPolicyCacheKey } from '../constants';
 export class PluginAuthServer extends Plugin {
   cache: Cache;
 
@@ -129,15 +131,18 @@ export class PluginAuthServer extends Plugin {
         logger: this.app.logger,
       } as any);
 
-      const user = await auth.check();
-
-      if (!user) {
-        this.app.logger.error(`Invalid token: ${payload.token}`);
-        this.app.emit(`ws:removeTag`, {
-          clientId,
-          tagKey: 'userId',
-        });
-        return;
+      let user: Model;
+      try {
+        user = await auth.check();
+      } catch (error) {
+        if (!user) {
+          this.app.logger.error(error);
+          this.app.emit(`ws:removeTag`, {
+            clientId,
+            tagKey: 'userId',
+          });
+          return;
+        }
       }
 
       this.app.emit(`ws:setTag`, {
@@ -239,28 +244,71 @@ export class PluginAuthServer extends Plugin {
       },
       'auth:signOut',
     ]);
+    this.app.acl.registerSnippet({
+      name: `pm.security.token-policy`,
+      actions: [`${tokenPolicyCollectionName}:*`],
+    });
+
+    if (!this.app.authManager.tokenController) {
+      const cache = await this.app.cacheManager.createCache({
+        name: 'auth-token-controller',
+        prefix: 'auth-token-controller',
+      });
+      const tokenController = new TokenController({ cache, app: this.app });
+
+      this.app.authManager.setTokenControlService(tokenController);
+      const tokenPolicyRepo = this.app.db.getRepository(tokenPolicyCollectionName);
+      try {
+        const res = await tokenPolicyRepo.findOne({ filterByTk: tokenPolicyRecordKey });
+        if (res) {
+          this.app.authManager.tokenController.setConfig(res.config);
+        }
+      } catch (error) {
+        this.app.logger.warn('access control config not exist, use default value');
+      }
+    }
+    this.app.db.on(`${tokenPolicyCollectionName}.afterSave`, async (model) => {
+      this.app.authManager.tokenController.setConfig(model.config);
+    });
   }
 
   async install(options?: InstallOptions) {
-    const repository = this.db.getRepository('authenticators');
-    const exist = await repository.findOne({ filter: { name: presetAuthenticator } });
-    if (exist) {
-      return;
-    }
-
-    await repository.create({
-      values: {
-        name: presetAuthenticator,
-        authType: presetAuthType,
-        description: 'Sign in with username/email.',
-        enabled: true,
-        options: {
-          public: {
-            allowSignUp: true,
+    const authRepository = this.db.getRepository('authenticators');
+    const exist = await authRepository.findOne({ filter: { name: presetAuthenticator } });
+    if (!exist) {
+      await authRepository.create({
+        values: {
+          name: presetAuthenticator,
+          authType: presetAuthType,
+          description: 'Sign in with username/email.',
+          enabled: true,
+          options: {
+            public: {
+              allowSignUp: true,
+            },
           },
         },
-      },
-    });
+      });
+    }
+
+    const tokenPolicyRepo = this.app.db.getRepository(tokenPolicyCollectionName);
+    const res = await tokenPolicyRepo.findOne({ filterByTk: tokenPolicyRecordKey });
+    if (res) {
+      this.app.authManager.tokenController.setConfig(res.config);
+    } else {
+      const config = {
+        tokenExpirationTime: process.env.JWT_EXPIRES_IN ?? '6h',
+        maxTokenLifetime: '1d',
+        maxInactiveInterval: '3h',
+      };
+      await tokenPolicyRepo.create({
+        values: {
+          key: tokenPolicyRecordKey,
+          config,
+        },
+      });
+      this.app.authManager.tokenController.setConfig(config);
+    }
   }
   async remove() {}
 }

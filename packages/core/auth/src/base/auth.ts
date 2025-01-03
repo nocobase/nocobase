@@ -8,10 +8,17 @@
  */
 
 import { Collection, Model } from '@nocobase/database';
-import { Auth, AuthConfig } from '../auth';
-import { JwtService } from './jwt-service';
 import { Cache } from '@nocobase/cache';
+import { Auth, AuthConfig, AuthErrorType } from '../auth';
+import { JwtService } from './jwt-service';
+import { ITokenControlService } from './token-control-service';
 
+function getAuthErrorTypeFromStatus<Status extends string, Suffix extends string>(
+  status: Status,
+  suffix: Suffix,
+): `${Uppercase<Status>}_${Suffix}` {
+  return `${status.toUpperCase() as Uppercase<Status>}_${suffix}`;
+}
 /**
  * BaseAuth
  * @description A base class with jwt provide some common methods.
@@ -40,6 +47,10 @@ export class BaseAuth extends Auth {
     return this.ctx.app.authManager.jwt;
   }
 
+  get tokenController(): ITokenControlService {
+    return this.ctx.app.authManager.tokenController;
+  }
+
   set user(user: Model) {
     this.ctx.state.currentUser = user;
   }
@@ -63,34 +74,93 @@ export class BaseAuth extends Auth {
     return /^[^@.<>"'/]{1,50}$/.test(username);
   }
 
-  async check() {
+  async check(): ReturnType<Auth['check']> {
     const token = this.ctx.getBearerToken();
+
     if (!token) {
-      return null;
+      this.ctx.throw(401, { message: 'empty token', code: 'EMPTY_TOKEN' satisfies AuthErrorType });
     }
-    try {
-      const { userId, roleName, iat, temp } = await this.jwt.decode(token);
 
-      if (roleName) {
-        this.ctx.headers['x-role'] = roleName;
-      }
+    const { status: tokenStatus, payload } = await this.jwt.verify(token);
 
-      const cache = this.ctx.cache as Cache;
-      const user = await cache.wrap(this.getCacheKey(userId), () =>
-        this.userRepository.findOne({
-          filter: {
-            id: userId,
-          },
-          raw: true,
-        }),
-      );
-      if (temp && user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
-        throw new Error('Token is invalid');
+    if (tokenStatus === 'invalid') {
+      this.ctx.throw(401, {
+        message: `${tokenStatus} token`,
+        code: getAuthErrorTypeFromStatus(tokenStatus, 'TOKEN') satisfies AuthErrorType,
+      });
+    }
+
+    const { userId, roleName, iat, temp, jti } = payload ?? {};
+
+    const blocked = await this.jwt.blacklist.has(jti ?? token);
+    if (blocked) {
+      this.ctx.throw(401, { message: 'token blocked', code: 'BLOCKED_TOKEN' satisfies AuthErrorType });
+    }
+
+    if (roleName) {
+      this.ctx.headers['x-role'] = roleName;
+    }
+
+    const cache = this.ctx.cache as Cache;
+
+    const user = await cache.wrap(this.getCacheKey(userId), () =>
+      this.userRepository.findOne({
+        filter: {
+          id: userId,
+        },
+        raw: true,
+      }),
+    );
+
+    if (!temp) {
+      if (tokenStatus === 'valid') return user;
+
+      this.ctx.throw(401, {
+        message: `${tokenStatus} token`,
+        code: getAuthErrorTypeFromStatus(tokenStatus, 'TOKEN') satisfies AuthErrorType,
+      });
+    }
+
+    if (tokenStatus === 'valid') {
+      if (user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
+        this.ctx.throw(401, { message: 'User password changed', code: 'INVALID_TOKEN' satisfies AuthErrorType });
+      } else {
+        const { status: jtiStatus } = await this.tokenController.check(jti);
+        if (jtiStatus === 'valid') {
+          return user;
+        } else {
+          this.ctx.throw(401, {
+            message: `${jtiStatus} session`,
+            code: getAuthErrorTypeFromStatus(jtiStatus, 'SESSION') satisfies AuthErrorType,
+          });
+        }
       }
-      return user;
-    } catch (err) {
-      this.ctx.logger.error(err, { method: 'check' });
-      return null;
+    } else if (tokenStatus === 'expired') {
+      const { status: jtiStatus } = await this.tokenController.check(jti);
+      if (jtiStatus === 'valid') {
+        const renewedJti = await this.tokenController.renew(jti);
+        if (renewedJti.status === 'renewing') {
+          const expiresIn = (await this.tokenController.getConfig()).tokenExpirationTime;
+          const newToken = this.jwt.sign({ userId, roleName, temp }, { jwtid: renewedJti.id, expiresIn });
+          this.ctx.res.setHeader('x-new-token', newToken);
+          return user;
+        } else {
+          this.ctx.throw(401, {
+            message: `${jtiStatus} session`,
+            code: getAuthErrorTypeFromStatus(renewedJti.status, 'SESSION') satisfies AuthErrorType,
+          });
+        }
+      } else {
+        this.ctx.throw(401, {
+          message: `${jtiStatus} session`,
+          code: getAuthErrorTypeFromStatus(jtiStatus, 'SESSION') satisfies AuthErrorType,
+        });
+      }
+    } else {
+      this.ctx.throw(401, {
+        message: `${tokenStatus} token`,
+        code: getAuthErrorTypeFromStatus(tokenStatus, 'TOKEN') satisfies AuthErrorType,
+      });
     }
   }
 
@@ -108,12 +178,21 @@ export class BaseAuth extends Auth {
       });
     }
     if (!user) {
-      this.ctx.throw(401, 'Unauthorized');
+      this.ctx.throw(401, { message: 'user not exist', code: 'NOT_EXIST_USER' satisfies AuthErrorType });
     }
-    const token = this.jwt.sign({
-      userId: user.id,
-      temp: true,
-    });
+    const jti = await this.tokenController.add({ userId: user.id });
+    const expiresIn = (await this.tokenController.getConfig()).tokenExpirationTime;
+    const token = this.jwt.sign(
+      {
+        userId: user.id,
+        temp: true,
+      },
+      {
+        jwtid: jti,
+        expiresIn,
+      },
+    );
+    this.tokenController.removeLoginExpiredTokens(user.id);
     return {
       user,
       token,

@@ -29,6 +29,7 @@ describe('workflow > instructions > manual', () => {
   beforeEach(async () => {
     app = await getApp({
       plugins: ['users', 'auth', 'workflow-manual'],
+      acl: true,
     });
     // await app.getPlugin('auth').install();
     agent = app.agent();

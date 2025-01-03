@@ -68,9 +68,9 @@ describe('middleware', () => {
 
     it('should throw 401 when token in blacklist', async () => {
       hasFn.mockImplementation(() => true);
-      const res = await agent.resource('auth').check();
+      const res = await agent.resource('roles').check();
       expect(res.status).toBe(401);
-      expect(res.text).toContain('Token is invalid');
+      expect(res.text).toContain('token blocked');
     });
   });
 });
