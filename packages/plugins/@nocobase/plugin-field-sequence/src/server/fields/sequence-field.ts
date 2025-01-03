@@ -295,6 +295,63 @@ sequencePatterns.register('date', {
   },
 });
 
+sequencePatterns.register('random', {
+  validate(options) {
+    if (!options?.digits || options.digits < 1) {
+      return 'options.digits should be configured as a positive integer';
+    }
+    return null;
+  },
+  generate(instance, options) {
+    const { digits = 6 } = options;
+    const min = 0;
+    const max = Math.pow(10, digits) - 1;
+    return Math.floor(Math.random() * (max - min + 1) + min)
+      .toString()
+      .padStart(digits, '0');
+  },
+  batchGenerate(instances, values, options) {
+    instances.forEach((instance, i) => {
+      values[i] = sequencePatterns.get('random').generate.call(this, instance, options);
+    });
+  },
+  getLength(options) {
+    return options.digits;
+  },
+  getMatcher(options) {
+    return `\\d{${options.digits}}`;
+  },
+});
+
+sequencePatterns.register('randomString', {
+  validate(options) {
+    if (!options?.length || options.length < 1) {
+      return 'options.length should be configured as a positive integer';
+    }
+    return null;
+  },
+  generate(instance, options) {
+    const { length = 6 } = options;
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  },
+  batchGenerate(instances, values, options) {
+    instances.forEach((instance, i) => {
+      values[i] = sequencePatterns.get('randomString').generate.call(this, instance, options);
+    });
+  },
+  getLength(options) {
+    return options.length;
+  },
+  getMatcher(options) {
+    return `[A-Za-z0-9]{${options.length}}`;
+  },
+});
+
 interface PatternConfig {
   type: string;
   title?: string;

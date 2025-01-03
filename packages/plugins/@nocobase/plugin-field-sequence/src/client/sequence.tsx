@@ -109,6 +109,57 @@ const RuleTypes = {
       },
     },
   },
+  random: {
+    title: `{{t("Random number", { ns: "${NAMESPACE}" })}}`,
+    optionRenders: {
+      digits: function Digits({ value }) {
+        return <code>{value}</code>;
+      },
+    },
+    fieldset: {
+      digits: {
+        type: 'number',
+        title: `{{t("Digits", { ns: "${NAMESPACE}" })}}`,
+        'x-decorator': 'FormItem',
+        'x-component': 'InputNumber',
+        'x-component-props': {
+          min: 1,
+          max: 10,
+        },
+        required: true,
+        default: 6,
+      },
+    },
+    defaults: {
+      digits: 6,
+    },
+  },
+  randomString: {
+    title: `{{t("Random string", { ns: "${NAMESPACE}" })}}`,
+    optionRenders: {
+      length: function Length({ value }) {
+        return <code>{value}</code>;
+      },
+    },
+    fieldset: {
+      length: {
+        type: 'number',
+        title: `{{t("Length", { ns: "${NAMESPACE}" })}}`,
+        description: `{{t("Will generate random string with specified length, containing uppercase letters, lowercase letters and numbers.", { ns: "${NAMESPACE}" })}}`,
+        'x-decorator': 'FormItem',
+        'x-component': 'InputNumber',
+        'x-component-props': {
+          min: 1,
+          max: 32,
+        },
+        required: true,
+        default: 6,
+      },
+    },
+    defaults: {
+      length: 6,
+    },
+  },
   integer: {
     title: `{{t("Autoincrement", { ns: "${NAMESPACE}" })}}`,
     optionRenders: {
