@@ -188,22 +188,22 @@ export function isFromDatabase(value: Record<string, any>) {
  * 3. 如果子表格中没有设置默认值，就会再把子表格重置为空。
  * @param param0
  */
-export const useSubTableSpecialCase = ({ field, fieldSchema }) => {
+export const useSubTableSpecialCase = ({ rootField, rootSchema }) => {
   const { hasUsedVariable } = useHasUsedVariable();
 
   useEffect(() => {
-    if (_.isEmpty(field.value) && hasUsedVariable('$context', fieldSchema)) {
-      const emptyValue = field.value;
+    if (_.isEmpty(rootField.value) && hasUsedVariable('$context', rootSchema)) {
+      const emptyValue = rootField.value;
       const newValue = [markRecordAsNew({})];
-      field.value = newValue;
+      rootField.value = newValue;
       // 因为默认值的解析是异步的，所以下面的代码会优先于默认值的设置，这样就防止了设置完默认值后又被清空的问题
       setTimeout(() => {
-        if (JSON.stringify(field.value) === JSON.stringify(newValue)) {
-          field.value = emptyValue;
+        if (JSON.stringify(rootField.value) === JSON.stringify(newValue)) {
+          rootField.value = emptyValue;
         }
       });
     }
-  }, [field, fieldSchema, hasUsedVariable]);
+  }, [rootField, rootSchema, hasUsedVariable]);
 };
 
 /**

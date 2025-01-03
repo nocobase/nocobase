@@ -98,7 +98,9 @@ export const SubTable: any = observer(
     const recordV2 = useCollectionRecord();
     const collection = useCollection();
     const { allowSelectExistingRecord, allowAddnew, allowDisassociation } = field.componentProps;
-    useSubTableSpecialCase({ field, fieldSchema: schema });
+
+    useSubTableSpecialCase({ rootField: field, rootSchema: schema });
+
     const move = (fromIndex: number, toIndex: number) => {
       if (toIndex === undefined) return;
       if (!isArr(field.value)) return;
