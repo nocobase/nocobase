@@ -111,9 +111,10 @@ export class MockServer extends Application {
     await AppSupervisor.getInstance().destroy();
   }
 
-  agent(): ExtendedAgent {
-    const agent = supertest.agent(this.callback());
+  agent(callback?): ExtendedAgent {
+    const agent = supertest.agent(callback || this.callback());
     const prefix = this.resourcer.options.prefix;
+
     const proxy = new Proxy(agent, {
       get(target, method: string, receiver) {
         if (['login', 'loginUsingId'].includes(method)) {

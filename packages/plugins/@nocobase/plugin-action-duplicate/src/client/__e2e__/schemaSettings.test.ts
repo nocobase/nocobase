@@ -50,8 +50,8 @@ test.describe('direct duplicate & copy into the form and continue to fill in', (
     await page.mouse.move(300, 0);
     await page.getByLabel('schema-initializer-Grid-form:configureFields-general').hover();
     await page.getByRole('menuitem', { name: 'singleLineText' }).click();
-    await page.getByRole('menuitem', { name: 'oneToOneBelongsTo' }).click();
-    await page.getByRole('menuitem', { name: 'oneToOneHasOne' }).click();
+    await page.getByRole('menuitem', { name: 'oneToOneBelongsTo' }).first().click();
+    await page.getByRole('menuitem', { name: 'oneToOneHasOne' }).first().click();
     await page.getByRole('menuitem', { name: 'oneToMany' }).click();
     await page.getByRole('menuitem', { name: 'manyToOne', exact: true }).click();
     await page.getByRole('menuitem', { name: 'manyToMany' }).click();

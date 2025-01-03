@@ -230,7 +230,14 @@ export class Gateway extends EventEmitter {
       });
     }
 
-    const handleApp = await this.getRequestHandleAppName(req as IncomingRequest);
+    let handleApp = 'main';
+    try {
+      handleApp = await this.getRequestHandleAppName(req as IncomingRequest);
+    } catch (error) {
+      console.log(error);
+      this.responseErrorWithCode('APP_INITIALIZING', res, { appName: handleApp });
+      return;
+    }
     const hasApp = AppSupervisor.getInstance().hasApp(handleApp);
 
     if (!hasApp) {
