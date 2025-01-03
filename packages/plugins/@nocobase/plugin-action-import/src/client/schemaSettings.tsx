@@ -9,10 +9,14 @@
 
 import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import { ButtonEditor, SchemaSettings, useDesignable, useSchemaToolbar } from '@nocobase/client';
+import { ButtonEditor, SchemaSettings, type, useDesignable, useSchemaToolbar } from '@nocobase/client';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShared } from './useShared';
+import { Button, Space } from 'antd';
+import { Action } from '@nocobase/client';
+import React from 'react';
+import { useDownloadXlsxTemplateAction } from './useImportAction';
 
 export const importActionSchemaSettings = new SchemaSettings({
   name: 'actionSettings:import',
@@ -42,7 +46,9 @@ export const importActionSchemaSettings = new SchemaSettings({
 
         return {
           title: t('Importable fields'),
-          schema: schema,
+          schema: {
+            ...schema,
+          },
           initialValues: { ...(fieldSchema?.['x-action-settings']?.importSettings ?? {}) },
           components: { ArrayItems },
           onSubmit: ({ importColumns, explain }: any) => {
@@ -51,6 +57,7 @@ export const importActionSchemaSettings = new SchemaSettings({
               .map((item) => ({
                 dataIndex: item.dataIndex.map((di) => di.name ?? di),
                 title: item.title,
+                description: item.description,
               }));
             fieldSchema['x-action-settings']['importSettings'] = { importColumns: columns, explain };
 

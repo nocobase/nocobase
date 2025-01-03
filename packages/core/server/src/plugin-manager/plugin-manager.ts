@@ -141,15 +141,12 @@ export class PluginManager {
    * @internal
    */
   static async getPackageName(name: string) {
-    const prefixes = this.getPluginPkgPrefix();
-    for (const prefix of prefixes) {
-      const pkg = resolve(process.env.NODE_MODULES_PATH, `${prefix}${name}`, 'package.json');
-      const exists = await fs.exists(pkg);
-      if (exists) {
-        return `${prefix}${name}`;
-      }
+    const { packageName } = await this.parseName(name);
+    const packageFile = resolve(process.env.NODE_MODULES_PATH, packageName, 'package.json');
+    if (!(await fs.exists(packageFile))) {
+      return null;
     }
-    throw new Error(`${name} plugin does not exist`);
+    return packageName;
   }
 
   /**
@@ -329,7 +326,9 @@ export class PluginManager {
     try {
       if (typeof plugin === 'string' && options.name && !options.packageName) {
         const packageName = await PluginManager.getPackageName(options.name);
-        options['packageName'] = packageName;
+        if (packageName) {
+          options['packageName'] = packageName;
+        }
       }
 
       if (options.packageName) {
@@ -338,13 +337,15 @@ export class PluginManager {
         options['version'] = packageJson.version;
       }
     } catch (error) {
+      this.app.log.error(error);
       console.error(error);
       // empty
     }
-    this.app.log.trace(`add plugin [${options.name}]`, {
+    this.app.log.trace(`adding plugin [${options.name}]`, {
       method: 'add',
       submodule: 'plugin-manager',
       name: options.name,
+      options,
     });
     let P: any;
     try {
@@ -364,6 +365,12 @@ export class PluginManager {
       this.pluginAliases.set(options.packageName, instance);
     }
     await instance.afterAdd();
+    this.app.log.trace(`added plugin [${options.name}]`, {
+      method: 'add',
+      submodule: 'plugin-manager',
+      name: instance.name,
+      options: instance.options,
+    });
   }
 
   /**
@@ -388,7 +395,7 @@ export class PluginManager {
     const source = [];
     for (const packageName of packageNames) {
       const dirname = await getPluginBasePath(packageName);
-      const directory = join(dirname, 'server/commands/*.' + (basename(dirname) === 'src' ? 'ts' : 'js'));
+      const directory = join(dirname, 'server/commands/*.' + (basename(dirname) === 'src' ? '{ts,js}' : 'js'));
 
       source.push(directory.replaceAll(sep, '/'));
     }
@@ -396,7 +403,7 @@ export class PluginManager {
       if (typeof plugin === 'string') {
         const { packageName } = await PluginManager.parseName(plugin);
         const dirname = await getPluginBasePath(packageName);
-        const directory = join(dirname, 'server/commands/*.' + (basename(dirname) === 'src' ? 'ts' : 'js'));
+        const directory = join(dirname, 'server/commands/*.' + (basename(dirname) === 'src' ? '{ts,js}' : 'js'));
         source.push(directory.replaceAll(sep, '/'));
       }
     }
@@ -404,6 +411,7 @@ export class PluginManager {
       ignore: ['**/*.d.ts'],
       cwd: process.env.NODE_MODULES_PATH,
     });
+
     for (const file of files) {
       const callback = await importModule(file);
       callback(this.app);

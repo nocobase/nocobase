@@ -13,6 +13,7 @@ import type Plugin from '../../Plugin';
 import type { WorkflowModel } from '../../types';
 import { parseDateWithoutMs, SCHEDULE_MODE } from './utils';
 import { parseCollectionName, SequelizeCollectionManager, SequelizeDataSource } from '@nocobase/data-source-manager';
+import { pick } from 'lodash';
 
 export type ScheduleOnField = {
   field: string;
@@ -57,7 +58,7 @@ function getDataOptionTime(record, on, dir = 1) {
       if (!field || !record.get(field)) {
         return null;
       }
-      const second = new Date(record.get(field).getTime());
+      const second = new Date(record.get(field));
       second.setMilliseconds(0);
       return second.getTime() + offset * unit * dir;
     }
@@ -402,5 +403,34 @@ export default class DateFieldScheduleTrigger {
       db.off(event, listener);
       this.events.delete(name);
     }
+  }
+
+  async execute(workflow, values, options) {
+    const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
+    const { collectionManager } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName);
+    const { filterTargetKey, repository } = collectionManager.getCollection(collectionName);
+
+    let { data } = values;
+    let filterByTk;
+    let loadNeeded = false;
+    if (data && typeof data === 'object') {
+      filterByTk = Array.isArray(filterTargetKey)
+        ? pick(
+            data,
+            filterTargetKey.sort((a, b) => a.localeCompare(b)),
+          )
+        : data[filterTargetKey];
+    } else {
+      filterByTk = data;
+      loadNeeded = true;
+    }
+    if (loadNeeded || workflow.config.appends?.length) {
+      data = await repository.findOne({
+        filterByTk,
+        appends: workflow.config.appends,
+      });
+    }
+
+    return this.workflow.trigger(workflow, { ...values, data, date: values?.date ?? new Date() }, options);
   }
 }

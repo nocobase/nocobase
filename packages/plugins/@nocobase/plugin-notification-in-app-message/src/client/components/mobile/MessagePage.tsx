@@ -11,7 +11,7 @@ import React, { useEffect, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { List, Badge, InfiniteScroll, NavBar, DotLoading } from 'antd-mobile';
 import { observer } from '@formily/reactive-react';
-import { useCurrentUserContext, css } from '@nocobase/client';
+import { useCurrentUserContext, css, useApp } from '@nocobase/client';
 import { useSearchParams } from 'react-router-dom';
 import { dayjs } from '@nocobase/utils/client';
 
@@ -33,7 +33,10 @@ import {
 } from '../../observables';
 import { useLocalTranslation } from '../../../locale';
 import InfiniteScrollContent from './InfiniteScrollContent';
+import { Schema } from '@formily/react';
+
 const MobileMessagePageInner = () => {
+  const app = useApp();
   const { t } = useLocalTranslation();
   const navigate = useNavigate();
   const ctx = useCurrentUserContext();
@@ -95,7 +98,7 @@ const MobileMessagePageInner = () => {
       setFecthMsgStatus('failure');
     }
   }, [messages]);
-  const title = selectedChannelObs.value?.title || t('Message');
+  const title = Schema.compile(selectedChannelObs.value?.title, { t: app.i18n.t }) || t('Message');
 
   return (
     <MobilePageProvider>

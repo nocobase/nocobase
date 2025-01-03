@@ -9,17 +9,28 @@
 
 import React from 'react';
 import { BlockRefreshButton } from '../initializers/BlockRefreshAction';
-import { SchemaComponentOptions } from '@nocobase/client';
+import { SchemaComponentOptions, useCurrentPopupContext, useLocalVariables } from '@nocobase/client';
 import { GlobalAutoRefreshProvider } from './GlobalAutoRefreshProvider';
+import _ from 'lodash';
 
 export const ChartBlockProvider: React.FC = (props) => {
+  const currentPopupContext = useCurrentPopupContext();
+  const localVariables = useLocalVariables();
+  const popUpCtxReady =
+    _.isEmpty(currentPopupContext) ||
+    localVariables?.some((variable) => variable.name === '$nPopupRecord' && variable.ctx);
+
+  if (!popUpCtxReady) {
+    return null;
+  }
+
   return (
     <SchemaComponentOptions
       components={{
         BlockRefreshButton,
       }}
     >
-      <GlobalAutoRefreshProvider> {props.children}</GlobalAutoRefreshProvider>
+      <GlobalAutoRefreshProvider>{props.children}</GlobalAutoRefreshProvider>
     </SchemaComponentOptions>
   );
 };

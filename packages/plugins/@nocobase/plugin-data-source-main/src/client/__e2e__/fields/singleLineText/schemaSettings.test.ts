@@ -54,14 +54,10 @@ test.describe('form item & sub form', () => {
       unsupportedVariables: ['Parent popup record'],
       variableValue: ['Current user', 'Nickname'],
       expectVariableValue: async () => {
-        await page
-          .getByLabel('block-item-CollectionField-subform-form-subform.manyToMany-manyToMany')
-          .getByRole('img', { name: 'plus' })
-          .first()
-          .click();
+        await page.locator('.nb-sub-form-addNew').first().click();
 
-        // 在第一条数据下面增加一条数据
-        await expect(page.getByLabel('block-item-CollectionField-').nth(2).getByRole('textbox')).toHaveValue(
+        // 在最下面增加一条数据
+        await expect(page.getByLabel('block-item-CollectionField-').last().getByRole('textbox')).toHaveValue(
           'Super Admin',
         );
       },
