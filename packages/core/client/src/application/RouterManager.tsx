@@ -146,12 +146,12 @@ export class RouterManager {
         <RouterContextCleaner>
           <ReactRouter {...opts}>
             <CustomRouterContextProvider>
-              <VariablesProvider>
-                <BaseLayout>
+              <BaseLayout>
+                <VariablesProvider>
                   <RenderRoutes />
                   {children}
-                </BaseLayout>
-              </VariablesProvider>
+                </VariablesProvider>
+              </BaseLayout>
             </CustomRouterContextProvider>
           </ReactRouter>
         </RouterContextCleaner>
