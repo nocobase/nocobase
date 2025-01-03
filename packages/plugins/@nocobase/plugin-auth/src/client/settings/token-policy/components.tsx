@@ -17,12 +17,12 @@ const InputTime = connect(
   (props) => {
     const { t } = useAuthTranslation();
     const { value, onChange, ...restProps } = props;
-    const regex = /^(\d+)([a-zA-Z]+)$/;
+    const regex = /^(\d*)([a-zA-Z]*)$/;
     const match = value ? value.match(regex) : null;
     useEffect(() => {
-      if (!match) onChange('1m');
+      if (!match) onChange('10m');
     }, [match, onChange]);
-    const [time, unit] = match ? [parseInt(match[1]), match[2]] : [0, 'm'];
+    const [time, unit] = match ? [parseInt(match[1]), match[2]] : [10, 'm'];
     const TimeUnits = (
       <Select value={unit} onChange={(unit) => onChange(`${time}${unit}`)} style={{ width: 120 }}>
         <Option value="m">{t('Minutes')}</Option>
@@ -36,7 +36,7 @@ const InputTime = connect(
         value={time}
         addonAfter={TimeUnits}
         min={1}
-        onChange={(time) => onChange(`${time}${unit}`)}
+        onChange={(time) => onChange(`${time ?? 1}${unit}`)}
         {...restProps}
       />
     );

@@ -62,6 +62,7 @@ describe('base-auth', () => {
           },
           tokenController: {
             check: () => ({ status: 'valid' }),
+            removeLoginExpiredTokens: async () => null,
           },
         },
       },
@@ -154,6 +155,7 @@ describe('base-auth', () => {
               maxTokenLifetime: '1d',
               maxInactiveInterval: '15m',
             }),
+            removeLoginExpiredTokens: async () => null,
           },
         },
       },

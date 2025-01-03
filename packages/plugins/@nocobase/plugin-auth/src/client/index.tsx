@@ -86,7 +86,8 @@ export class PluginAuthClient extends Plugin {
       title: `{{t("Token policy", { ns: "${NAMESPACE}" })}}`,
       Component: TokenPolicySettings,
       aclSnippet: `pm.security.token-policy`,
-      sort: 1,
+      icon: 'ApiOutlined',
+      sort: 0,
     });
     this.app.apiClient.axios.interceptors.response.use(...authCheckMiddleware({ app: this.app }));
   }
