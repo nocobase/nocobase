@@ -19,7 +19,7 @@ import React, { FC, memo, useCallback, useContext, useEffect, useMemo, useRef, u
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { NavigateFunction, Outlet, useOutletContext } from 'react-router-dom';
-import { FormDialog, useNocoBaseRoutes } from '..';
+import { FormDialog } from '..';
 import { antTableCell } from '../../../acl/style';
 import { useRequest } from '../../../api-client';
 import {
@@ -41,6 +41,7 @@ import { SchemaComponent, SchemaComponentOptions } from '../../core';
 import { useDesignable } from '../../hooks';
 import { useToken } from '../__builtins__';
 import { ErrorFallback } from '../error-fallback';
+import { useNocoBaseRoutes } from '../menu/Menu';
 import { useStyles } from './Page.style';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 import { PopupRouteContextResetter } from './PopupRouteContextResetter';
@@ -488,6 +489,10 @@ export function getTabSchema({
 }
 
 function getDefaultActiveKey(defaultTabSchemaUid: string, fieldSchema: Schema) {
+  if (!fieldSchema.properties) {
+    return '';
+  }
+
   const tabSchemaList = Object.values(fieldSchema.properties);
 
   for (const tabSchema of tabSchemaList) {
