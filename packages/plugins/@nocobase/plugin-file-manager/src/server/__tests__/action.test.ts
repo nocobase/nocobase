@@ -478,34 +478,34 @@ describe('action', () => {
   });
 
   describe('storage actions', () => {
-    describe('getRules', () => {
-      it('get rules without key as default storage', async () => {
-        const { body, status } = await agent.resource('storages').getRules();
+    describe('get', () => {
+      it('get default storage', async () => {
+        const { body, status } = await agent.resource('storages').get();
         expect(status).toBe(200);
         expect(body.data).toEqual({ size: FILE_SIZE_LIMIT_DEFAULT });
       });
 
-      it('get rules by storage id as default rules', async () => {
-        const { body, status } = await agent.resource('storages').getRules({ filterByTk: 1 });
+      it('get storage by id', async () => {
+        const { body, status } = await agent.resource('storages').get({ filterByTk: 1 });
         expect(status).toBe(200);
-        expect(body.data).toEqual({ size: FILE_SIZE_LIMIT_DEFAULT });
+        expect(body.data).toMatchObject({ id: 1 });
       });
 
-      it('get rules by unexisted id as 404', async () => {
-        const { body, status } = await agent.resource('storages').getRules({ filterByTk: -1 });
+      it('get storage by unexisted id as 404', async () => {
+        const { body, status } = await agent.resource('storages').get({ filterByTk: -1 });
         expect(status).toBe(404);
       });
 
-      it('get rules by storage id', async () => {
-        const { body, status } = await agent.resource('storages').getRules({ filterByTk: local1.id });
+      it('get by storage local id', async () => {
+        const { body, status } = await agent.resource('storages').get({ filterByTk: local1.id });
         expect(status).toBe(200);
-        expect(body.data).toMatchObject({ size: 1024 });
+        expect(body.data).toMatchObject({ id: 1 });
       });
 
-      it('get rules by storage name', async () => {
-        const { body, status } = await agent.resource('storages').getRules({ filterByTk: local1.name });
+      it('get storage by name', async () => {
+        const { body, status } = await agent.resource('storages').get({ filterByTk: local1.name });
         expect(status).toBe(200);
-        expect(body.data).toMatchObject({ size: 1024 });
+        expect(body.data).toMatchObject({ id: 1 });
       });
     });
   });

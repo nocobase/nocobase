@@ -18,7 +18,7 @@ export function useStorageRules(storage) {
   const field = useField<any>();
   const { loading, data, run } = useRequest<any>(
     {
-      url: `storages:getRules/${name}`,
+      url: `storages:get/${name}`,
     },
     {
       manual: true,
@@ -32,7 +32,7 @@ export function useStorageRules(storage) {
     }
     run();
   }, [field.pattern, run]);
-  return (!loading && data?.data) || null;
+  return (!loading && data?.data?.rules) || null;
 }
 
 export function useAttachmentFieldProps() {

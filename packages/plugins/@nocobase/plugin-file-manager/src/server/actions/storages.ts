@@ -10,7 +10,7 @@
 import Plugin from '..';
 import cloneDeep from 'lodash/cloneDeep';
 
-export async function getRules(context, next) {
+export async function get(context, next) {
   const { storagesCache } = context.app.pm.get(Plugin) as Plugin;
   let result;
   const { filterByTk } = context.action.params;
@@ -25,29 +25,13 @@ export async function getRules(context, next) {
   if (!result) {
     return context.throw(404);
   }
-  context.body = result.rules;
+  context.body = {
+    id: result.id,
+    title: result.title,
+    name: result.name,
+    type: result.type,
+    rules: result.rules,
+  };
 
-  next();
-}
-
-export async function getDesensitized(context, next) {
-  const { storagesCache } = context.app.pm.get(Plugin) as Plugin;
-  let result;
-  const { filterByTk } = context.action.params;
-  if (!filterByTk) {
-    result = Array.from(storagesCache.values()).find((item) => item.default);
-  } else {
-    const isNumber = /^[1-9]\d*$/.test(filterByTk);
-    result = isNumber
-      ? storagesCache.get(Number.parseInt(filterByTk, 10))
-      : Array.from(storagesCache.values()).find((item) => item.name === filterByTk);
-  }
-  if (!result) {
-    return context.throw(404);
-  }
-  result = cloneDeep(result);
-  delete result.options.accessKeyId;
-  delete result.options.secretAccessKey;
-  context.body = result;
   next();
 }

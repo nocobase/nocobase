@@ -24,8 +24,7 @@ import FileManagerPlugin from '../';
 
 export function useStorage(storage) {
   const name = storage ?? '';
-  const field = useField<any>();
-  const url = `storages:getDesensitized/${name}`;
+  const url = `storages:get/${name}`;
   const { loading, data, run } = useRequest<any>(
     {
       url,
