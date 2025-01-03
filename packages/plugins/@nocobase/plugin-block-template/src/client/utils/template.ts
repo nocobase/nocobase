@@ -397,6 +397,21 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
 }
 
 /**
+ * Set x-virtual to true for all virtual schemas
+ * @param schema The schema to set
+ */
+export function setToTrueSchema(schema: any) {
+  if (schema['x-virtual']) {
+    schema['x-virtual'] = false;
+  }
+  if (schema.properties) {
+    for (const key in schema.properties) {
+      setToTrueSchema(schema.properties[key]);
+    }
+  }
+}
+
+/**
  * Collects all collection fields from a property and its nested properties
  * @param properties The properties object to collect fields from
  * @returns Array of collection field names

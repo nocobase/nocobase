@@ -8,7 +8,13 @@
  */
 
 import { AxiosRequestConfig } from 'axios';
-import { findSchemaCache, findParentSchemaByUid, findFirstVirtualSchema, convertToCreateSchema } from './template';
+import {
+  findSchemaCache,
+  findParentSchemaByUid,
+  findFirstVirtualSchema,
+  convertToCreateSchema,
+  setToTrueSchema,
+} from './template';
 
 /**
  * Register template block related interceptors for axios
@@ -55,6 +61,24 @@ export function registerTemplateBlockInterceptors(apiClient: any, templateBlocks
           method: 'post',
           data: {
             schema: newSchema,
+          },
+        });
+      }
+    }
+
+    if (config.url?.includes('uiSchemas:insertAdjacent')) {
+      const uidWithQuery = config.url.split('/').pop();
+      const uid = uidWithQuery?.split('?')[0];
+      const currentSchema = findSchemaCache(templateBlocks, uid);
+      const virtualSchema = findFirstVirtualSchema(currentSchema, uid);
+      if (virtualSchema) {
+        // set x-virtual to true for all virtual schemas
+        setToTrueSchema(virtualSchema.schema);
+        await apiClient.request({
+          url: `/uiSchemas:insertAdjacent/${virtualSchema.insertTarget}?position=${virtualSchema.insertPosition}`,
+          method: 'post',
+          data: {
+            schema: convertToCreateSchema(virtualSchema.schema),
           },
         });
       }
