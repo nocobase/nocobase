@@ -25,10 +25,10 @@ import FileManagerPlugin from '../';
 export function useStorage(storage) {
   const name = storage ?? '';
   const field = useField<any>();
-  const url = `storages:getStorage/${name}`;
+  const url = `storages:getDesensitizedStorage/${name}`;
   const { loading, data, run } = useRequest<any>(
     {
-      url: `storages:getStorage/${name}`,
+      url,
     },
     {
       manual: true,
@@ -38,14 +38,14 @@ export function useStorage(storage) {
   );
   useEffect(() => {
     run();
-  }, [field.pattern, run]);
+  }, [run]);
   return (!loading && data?.data) || null;
 }
 
 export function useStorageCfg() {
   const field = useCollectionField();
   const cm = useCollectionManager();
-  const targetCollection = cm.getCollection(field.target);
+  const targetCollection = cm.getCollection(field?.target);
   const collection = useCollection();
   const plugin = usePlugin(FileManagerPlugin);
   const storage = useStorage(

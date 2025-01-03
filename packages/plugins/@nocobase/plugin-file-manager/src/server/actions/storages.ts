@@ -30,7 +30,7 @@ export async function getRules(context, next) {
   next();
 }
 
-export async function getStorage(context, next) {
+export async function getDesensitizedStorage(context, next) {
   const { storagesCache } = context.app.pm.get(Plugin) as Plugin;
   let result;
   const { filterByTk } = context.action.params;
