@@ -1,4 +1,4 @@
-FROM node:20.13-bullseye as builder
+FROM node:20-bookworm as builder
 ARG VERDACCIO_URL=http://host.docker.internal:10104/
 ARG COMMIT_HASH
 ARG APPEND_PRESET_LOCAL_PLUGINS
@@ -47,12 +47,12 @@ RUN cd /app \
   && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
 
 
-FROM node:20.13-bullseye-slim
+FROM node:20-bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg \
   && rm -rf /var/lib/apt/lists/*
 
-RUN sh -c 'echo "deb http://mirrors.ustc.edu.cn/postgresql/repos/apt bullseye-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+RUN sh -c 'echo "deb http://mirrors.ustc.edu.cn/postgresql/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
 RUN wget --quiet -O - http://mirrors.ustc.edu.cn/postgresql/repos/apt/ACCC4CF8.asc | apt-key add -
 
 RUN apt-get update && apt-get -y --no-install-recommends install nginx libaio1 postgresql-client-16 postgresql-client-17 \
