@@ -35,6 +35,7 @@ describe('action', () => {
     local1 = await StorageRepo.create({
       values: {
         name: 'local1',
+        title: 'local1',
         type: STORAGE_TYPE_LOCAL,
         baseUrl: DEFAULT_LOCAL_BASE_URL,
         rules: {
@@ -478,15 +479,9 @@ describe('action', () => {
   });
 
   describe('storage actions', () => {
-    describe('get', () => {
+    describe('getBasicInfo', () => {
       it('get default storage', async () => {
         const { body, status } = await agent.resource('storages').getBasicInfo();
-        expect(status).toBe(200);
-        expect(body.data).toEqual({ size: FILE_SIZE_LIMIT_DEFAULT });
-      });
-
-      it('get storage by id', async () => {
-        const { body, status } = await agent.resource('storages').getBasicInfo({ filterByTk: 1 });
         expect(status).toBe(200);
         expect(body.data).toMatchObject({ id: 1 });
       });
@@ -499,13 +494,25 @@ describe('action', () => {
       it('get by storage local id', async () => {
         const { body, status } = await agent.resource('storages').getBasicInfo({ filterByTk: local1.id });
         expect(status).toBe(200);
-        expect(body.data).toMatchObject({ id: 1 });
+        expect(body.data).toMatchObject({
+          id: local1.id,
+          title: local1.title,
+          name: local1.name,
+          type: local1.type,
+          rules: local1.rules,
+        });
       });
 
       it('get storage by name', async () => {
         const { body, status } = await agent.resource('storages').getBasicInfo({ filterByTk: local1.name });
         expect(status).toBe(200);
-        expect(body.data).toMatchObject({ id: 1 });
+        expect(body.data).toMatchObject({
+          id: local1.id,
+          title: local1.title,
+          name: local1.name,
+          type: local1.type,
+          rules: local1.rules,
+        });
       });
     });
   });
