@@ -21,6 +21,7 @@ import {
   useGetAriaLabelOfDesigner,
   useOpenModeContext,
   useSchemaInitializerRender,
+  ParentCollectionFields,
 } from '@nocobase/client';
 import { Space } from 'antd';
 import React from 'react';
@@ -116,6 +117,10 @@ const commonOptions = {
       title: '{{t("Display fields")}}',
       name: 'displayFields',
       useChildren: useFormItemInitializerFields,
+    },
+    {
+      name: 'parentCollectionFields',
+      Component: ParentCollectionFields,
     },
     {
       type: 'itemGroup',
