@@ -8,8 +8,7 @@
  */
 
 import { Cache } from '@nocobase/cache';
-import Database, { Model } from '@nocobase/database';
-import type { Logger } from '@nocobase/logger';
+import { Model } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { namespace, presetAuthType, presetAuthenticator } from '../preset';
 import authActions from './actions/auth';
@@ -20,17 +19,32 @@ import { Storer } from './storer';
 import { TokenBlacklistService } from './token-blacklist';
 import { TokenController } from './token-controller';
 import { tval } from '@nocobase/utils';
+import { tokenPolicyCollectionName, tokenPolicyRecordKey } from '../constants';
 
-import { tokenPolicyCollectionName, tokenPolicyRecordKey, tokenPolicyCacheKey } from '../constants';
 export class PluginAuthServer extends Plugin {
   cache: Cache;
-  authLogger: Logger;
 
   afterAdd() {
-    this.authLogger = this.createLogger({
-      dirname: 'plugin-auth',
-      filename: '%DATE%.log',
-      transports: ['dailyRotateFile'],
+    this.app.on('afterLoad', async () => {
+      if (this.app.authManager.tokenController) {
+        return;
+      }
+      const cache = await this.app.cacheManager.createCache({
+        name: 'auth-token-controller',
+        prefix: 'auth-token-controller',
+      });
+      const tokenController = new TokenController({ cache, app: this.app, logger: this.log });
+
+      this.app.authManager.setTokenControlService(tokenController);
+      const tokenPolicyRepo = this.app.db.getRepository(tokenPolicyCollectionName);
+      try {
+        const res = await tokenPolicyRepo.findOne({ filterByTk: tokenPolicyRecordKey });
+        if (res) {
+          this.app.authManager.tokenController.setConfig(res.config);
+        }
+      } catch (error) {
+        this.app.logger.warn('access control config not exist, use default value');
+      }
     });
   }
 
@@ -257,26 +271,8 @@ export class PluginAuthServer extends Plugin {
       actions: [`${tokenPolicyCollectionName}:*`],
     });
 
-    if (!this.app.authManager.tokenController) {
-      const cache = await this.app.cacheManager.createCache({
-        name: 'auth-token-controller',
-        prefix: 'auth-token-controller',
-      });
-      const tokenController = new TokenController({ cache, app: this.app, logger: this.authLogger });
-
-      this.app.authManager.setTokenControlService(tokenController);
-      const tokenPolicyRepo = this.app.db.getRepository(tokenPolicyCollectionName);
-      try {
-        const res = await tokenPolicyRepo.findOne({ filterByTk: tokenPolicyRecordKey });
-        if (res) {
-          this.app.authManager.tokenController.setConfig(res.config);
-        }
-      } catch (error) {
-        this.app.logger.warn('access control config not exist, use default value');
-      }
-    }
     this.app.db.on(`${tokenPolicyCollectionName}.afterSave`, async (model) => {
-      this.app.authManager.tokenController.setConfig(model.config);
+      this.app.authManager.tokenController?.setConfig(model.config);
     });
   }
 
@@ -302,22 +298,21 @@ export class PluginAuthServer extends Plugin {
     const tokenPolicyRepo = this.app.db.getRepository(tokenPolicyCollectionName);
     const res = await tokenPolicyRepo.findOne({ filterByTk: tokenPolicyRecordKey });
     if (res) {
-      this.app.authManager.tokenController.setConfig(res.config);
-    } else {
-      const config = {
-        tokenExpirationTime: process.env.JWT_EXPIRES_IN ?? '6h',
-        sessionExpirationTime: '1d',
-        expiredTokenRenewLimit: '3h',
-      };
-      await tokenPolicyRepo.create({
-        values: {
-          key: tokenPolicyRecordKey,
-          config,
-        },
-      });
-      this.app.authManager.tokenController.setConfig(config);
+      return;
     }
+    const config = {
+      tokenExpirationTime: process.env.JWT_EXPIRES_IN ?? '6h',
+      sessionExpirationTime: '1d',
+      expiredTokenRenewLimit: '3h',
+    };
+    await tokenPolicyRepo.create({
+      values: {
+        key: tokenPolicyRecordKey,
+        config,
+      },
+    });
   }
+
   async remove() {}
 }
 

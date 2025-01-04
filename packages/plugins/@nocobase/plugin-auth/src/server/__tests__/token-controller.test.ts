@@ -54,9 +54,23 @@ describe('auth', () => {
   let ctx: MockContext;
 
   beforeEach(async () => {
-    app = await createMockServer({
-      plugins: ['field-sort', 'users', 'auth'],
-    });
+    if (process.env.CACHE_REDIS_URL) {
+      app = await createMockServer({
+        cacheManager: {
+          defaultStore: 'redis',
+          stores: {
+            redis: {
+              url: process.env.CACHE_REDIS_URL,
+            },
+          },
+        },
+        plugins: ['field-sort', 'users', 'auth'],
+      });
+    } else {
+      app = await createMockServer({
+        plugins: ['field-sort', 'users', 'auth'],
+      });
+    }
     db = app.db;
     app.authManager.setTokenBlacklistService({
       has: async () => false,
