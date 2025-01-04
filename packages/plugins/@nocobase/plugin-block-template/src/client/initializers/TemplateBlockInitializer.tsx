@@ -8,11 +8,13 @@
  */
 
 import { SchemaInitializerItem, useRequest, useAPIClient, useDesignable, usePlugin } from '@nocobase/client';
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { CopyOutlined, LoadingOutlined } from '@ant-design/icons';
+import { Input, Divider, Empty } from 'antd';
 import * as _ from 'lodash';
 import { uid } from '@nocobase/utils/client';
 import PluginBlockTemplateClient from '..';
+import { useT } from '../locale';
 
 export function convertTplBlock(tpl, virtual = false, isRoot = true, newRootId?: string, templateTitle?: string) {
   if (!newRootId) {
@@ -154,11 +156,82 @@ function saveSchemasToCache(schemas, template, templateschemacache) {
   }
 }
 
+const SearchInput = ({ value: outValue, onChange }) => {
+  const [value, setValue] = useState<string>(outValue);
+  const inputRef = useRef<any>('');
+  const compositionRef = useRef<boolean>(false);
+  const t = useT();
+
+  useEffect(() => {
+    setValue(outValue);
+  }, [outValue]);
+
+  useEffect(() => {
+    const focusInput = () => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((v) => v.isIntersecting)) {
+        focusInput();
+      }
+    });
+    if (inputRef.current?.input) {
+      observer.observe(inputRef.current.input);
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!compositionRef.current) {
+      onChange(e.target.value);
+      setValue(e.target.value);
+    }
+  };
+
+  const handleComposition = (e: React.CompositionEvent<HTMLInputElement> | any) => {
+    if (e.type === 'compositionend') {
+      compositionRef.current = false;
+      handleChange(e);
+    } else {
+      compositionRef.current = true;
+    }
+  };
+
+  return (
+    <div onClick={(e) => e.stopPropagation()}>
+      <Input
+        ref={inputRef}
+        allowClear
+        style={{ padding: '4px 8px', boxShadow: 'none', borderRadius: 0 }}
+        bordered={false}
+        placeholder={t('Search and select template')}
+        value={value}
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+        onChange={handleChange}
+        onCompositionStart={handleComposition}
+        onCompositionEnd={handleComposition}
+        onCompositionUpdate={handleComposition}
+      />
+      <Divider style={{ margin: 0 }} />
+    </div>
+  );
+};
+
 export const TemplateBlockInitializer = () => {
   const api = useAPIClient();
-  // const { options } = useSchemaInitializer();
   const { insertAdjacent } = useDesignable();
   const plugin = usePlugin(PluginBlockTemplateClient);
+  const [searchValue, setSearchValue] = useState('');
+  const t = useT();
+
   const handleClick = async ({ item }) => {
     const { value: uid } = item;
     const { data } = await api.request({
@@ -167,9 +240,7 @@ export const TemplateBlockInitializer = () => {
 
     const template = data?.data;
     const schemas = convertTemplateToBlock(template, item.label);
-    // save the schemas to the cache
     saveSchemasToCache(schemas, template, plugin.templateschemacache);
-
     correctIdReferences(schemas);
     for (const schema of schemas) {
       await new Promise((resolve) => {
@@ -179,6 +250,7 @@ export const TemplateBlockInitializer = () => {
       });
     }
   };
+
   const { data, loading } = useRequest<{
     data: {
       title: string;
@@ -198,16 +270,51 @@ export const TemplateBlockInitializer = () => {
   if (loading) {
     return (
       <div>
-        <LoadingOutlined /> Templates
+        <LoadingOutlined /> {t('Templates')}
       </div>
     );
   }
-  const menuItems = data?.data.map((item) => {
-    return {
-      label: item.title,
-      value: item.uid,
-    };
-  });
+
+  const filteredData = data?.data?.filter(
+    (item) => !searchValue || item.title.toLowerCase().includes(searchValue.toLowerCase()),
+  );
+
+  const menuItems = [
+    {
+      key: 'search',
+      label: (
+        <SearchInput
+          value={searchValue}
+          onChange={(val: string) => {
+            setSearchValue(val);
+          }}
+        />
+      ),
+      onClick: (e) => {
+        e.domEvent.stopPropagation();
+      },
+    },
+    ...(filteredData?.length
+      ? filteredData.map((item) => ({
+          key: item.uid,
+          label: item.title,
+          value: item.uid,
+        }))
+      : [
+          {
+            key: 'empty',
+            style: {
+              height: 150,
+            },
+            label: (
+              <div onClick={(e) => e.stopPropagation()}>
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No data')} />
+              </div>
+            ),
+          },
+        ]),
+  ];
+
   return (
     <SchemaInitializerItem
       closeInitializerMenuWhenClick={true}
