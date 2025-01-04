@@ -19,6 +19,7 @@ type AuthErrorType =
   | 'RENEWED_TOKEN'
   | 'MISSING_SESSION'
   | 'INACTIVE_SESSION'
+  | 'TOKEN_RENEW_FAILED'
   | 'BLOCKED_TOKEN'
   | 'BLOCKED_SESSION'
   | 'EXPIRED_SESSION'
@@ -53,22 +54,7 @@ export function authCheckMiddleware({ app }: { app: Application }) {
         const redirectPath = pathname.startsWith(app.router.basename)
           ? pathname.slice(basename.length) || '/'
           : pathname;
-        if (errorType === 'INACTIVE_SESSION') {
-          debouncedRedirect(() => {
-            app.apiClient.auth.setToken(null);
-            Modal.confirm({
-              title: app.i18n.t('Inactivity warning', { ns: 'auth' }),
-              content: app.i18n.t(
-                'You have been inactive for a while and will be signed out. Please sign in again to continue.',
-                { ns: 'auth' },
-              ),
-              onOk: () => {
-                app.router.navigate(`/signin?redirect=/${redirectPath}${search}`, { replace: true });
-              },
-              cancelButtonProps: { style: { display: 'none' } },
-            });
-          });
-        } else if (errorType === 'RENEWED_TOKEN') {
+        if (errorType === ('TOKEN_RENEW_FAILED' satisfies AuthErrorType)) {
           return axios.request(error.config);
         } else {
           debouncedRedirect(() => {

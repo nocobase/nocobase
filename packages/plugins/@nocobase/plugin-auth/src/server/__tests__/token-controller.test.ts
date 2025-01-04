@@ -82,7 +82,7 @@ describe('auth', () => {
     await auth.tokenController.setConfig({
       tokenExpirationTime: '1d',
       sessionExpirationTime: '1d',
-      expiredTokenRefreshLimit: '1d',
+      expiredTokenRenewLimit: '1d',
     });
 
     await app.cache.reset();
@@ -106,7 +106,7 @@ describe('auth', () => {
   //   await auth.tokenController.setConfig({
   //     tokenExpirationTime: '0s',
   //     sessionExpirationTime: '0s',
-  //     expiredTokenRefreshLimit: '0s',
+  //     expiredTokenRenewLimit: '0s',
   //   });
   //   const token = app.authManager.jwt.sign({ userId: user.id }, { expiresIn: '1d' });
   //   ctx.setToken(token);
@@ -118,7 +118,7 @@ describe('auth', () => {
     await auth.tokenController.setConfig({
       tokenExpirationTime: '1s',
       sessionExpirationTime: '1d',
-      expiredTokenRefreshLimit: '1d',
+      expiredTokenRenewLimit: '1d',
     });
     const { token } = await auth.signIn();
     ctx.setToken(token);
@@ -131,7 +131,7 @@ describe('auth', () => {
     await auth.tokenController.setConfig({
       tokenExpirationTime: '1s',
       sessionExpirationTime: '2s',
-      expiredTokenRefreshLimit: '1d',
+      expiredTokenRenewLimit: '1d',
     });
     const { token } = await auth.signIn();
     ctx.setToken(token);
@@ -143,7 +143,7 @@ describe('auth', () => {
     await auth.tokenController.setConfig({
       tokenExpirationTime: '1s',
       sessionExpirationTime: '1d',
-      expiredTokenRefreshLimit: '1s',
+      expiredTokenRenewLimit: '1s',
     });
     const { token } = await auth.signIn();
     ctx.setToken(token);
@@ -155,7 +155,7 @@ describe('auth', () => {
     await auth.tokenController.setConfig({
       tokenExpirationTime: '1s',
       sessionExpirationTime: '1d',
-      expiredTokenRefreshLimit: '1d',
+      expiredTokenRenewLimit: '1d',
     });
     const { token } = await auth.signIn();
     ctx.setToken(token);

@@ -153,7 +153,7 @@ describe('base-auth', () => {
             getConfig: () => ({
               tokenExpirationTime: '30m',
               sessionExpirationTime: '1d',
-              expiredTokenRefreshLimit: '15m',
+              expiredTokenRenewLimit: '15m',
             }),
             removeLoginExpiredTokens: async () => null,
           },

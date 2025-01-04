@@ -57,7 +57,7 @@ export class TokenController implements TokenControlService {
   setConfig(config: Partial<ITokenControlConfig>) {
     return this.cache.set('config', config);
   }
-  async removeLoginExpiredTokens(userId: number) {
+  async removeSessionExpiredTokens(userId: number) {
     const config = await this.getConfig();
     const issuedTokenRepo = this.app.db.getRepository(issuedTokensCollectionName);
     const currTS = Date.now();
@@ -89,20 +89,21 @@ export class TokenController implements TokenControlService {
     return this.setTokenInfo(id, { ...tokenInfo, ...value });
   }
   renew: TokenControlService['renew'] = async (jti) => {
-    const repo = this.app.db.getRepository<Repository<TokenInfo>>(issuedTokensCollectionName);
+    const model = this.app.db.getModel(issuedTokensCollectionName);
     const newId = randomUUID();
     const issuedTime = Date.now();
-    const exists = await repo.findOne({ filter: { jti, renewed: false } });
 
-    if (!exists) new AuthError({ message: 'renew failed', type: 'RENEWED_TOKEN' });
+    const [count] = await model.update(
+      { jti: newId, issuedTime },
 
-    const updated = await repo.update({ filter: { jti, renewed: false }, values: { jti: newId, issuedTime } });
+      { where: { jti } },
+    );
 
-    if (updated && updated.length === 1) {
+    if (count === 1) {
       this.logger.info(`jti renewed`, { jti, newJti: newId });
-      return updated[0].dataValues as TokenInfo;
+      return { jti: newId, issuedTime };
     } else {
-      throw new AuthError({ message: 'renew failed', type: 'RENEWED_TOKEN' });
+      throw new AuthError({ message: 'renew failed', type: 'TOKEN_RENEW_FAILED' });
     }
   };
 }

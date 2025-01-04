@@ -28,7 +28,7 @@ const schema: ISchema & { properties: Properties } = {
   properties: {
     sessionExpirationTime: {
       type: 'string',
-      title: "{{t('Login validity period')}}",
+      title: "{{t('Session validity period')}}",
       'x-decorator': 'FormItem',
       'x-component': componentsNameMap.InputTime,
       required: true,
@@ -46,14 +46,14 @@ const schema: ISchema & { properties: Properties } = {
         'During the active login session, the system issues tokens with a defined validity period. If a token expires, a new one will be issued. For security reasons, it is recommended to set the validity period within a range of 15 to 30 minutes based on actual requirements.',
       ),
     },
-    expiredTokenRefreshLimit: {
+    expiredTokenRenewLimit: {
       type: 'string',
-      title: "{{t('Rexpired token refresh limit')}}",
+      title: "{{t('Expired token refresh limit')}}",
       'x-decorator': 'FormItem',
       'x-component': componentsNameMap.InputTime,
       required: true,
       description: tval(
-        'After logging into the system, if the page remains inactive for a period exceeding this duration, the system will display a timeout prompt. Upon confirmation, the user will be redirected to the login page and will need to log in again to continue operations.',
+        'The maximum time after a token expires during which it can still be refreshed. Beyond this limit, the token cannot be renewed, and reauthentication is required.',
       ),
     },
     footer: {

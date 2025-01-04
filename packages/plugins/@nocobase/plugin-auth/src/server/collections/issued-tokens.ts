@@ -43,11 +43,6 @@ export default defineCollection({
       allowNull: false,
     },
     {
-      type: 'boolean',
-      name: 'renewed',
-      allowNull: false,
-    },
-    {
       type: 'bigInt',
       name: 'userId',
       allowNull: false,

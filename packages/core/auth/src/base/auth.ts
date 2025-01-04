@@ -141,7 +141,7 @@ export class BaseAuth extends Auth {
       }
 
       // 检查是否超过token刷新时限
-      if (Date.now() - exp * 1000 > ms((await this.tokenController.getConfig()).expiredTokenRefreshLimit)) {
+      if (Date.now() - exp * 1000 > ms((await this.tokenController.getConfig()).expiredTokenRenewLimit)) {
         this.ctx.throw(401, { message: 'Session expired', code: 'EXPIRED_SESSION' satisfies AuthErrorType });
       }
       try {
@@ -199,7 +199,7 @@ export class BaseAuth extends Auth {
         expiresIn,
       },
     );
-    this.tokenController.removeLoginExpiredTokens(user.id);
+    this.tokenController.removeSessionExpiredTokens(user.id);
     return {
       user,
       token,
