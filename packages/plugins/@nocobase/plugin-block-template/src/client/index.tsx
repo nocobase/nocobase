@@ -104,17 +104,7 @@ export class PluginBlockTemplateClient extends Plugin {
 
     this.app.schemaInitializerManager.add(addBlockInitializers);
 
-    const schameSettings = this.app.schemaSettingsManager.getAll();
-    for (const key in schameSettings) {
-      // @ts-ignore
-      this.app.schemaSettingsManager.addItem(key, 'template-associationRecordSetting', associationRecordSettingItem);
-      // @ts-ignore
-      this.app.schemaSettingsManager.addItem(key, 'template-resetSettingItem', resetSettingItem);
-      // @ts-ignore
-      this.app.schemaSettingsManager.addItem(key, 'template-formSettingItem', formSettingItem);
-      // this.app.schemaSettingsManager.addItem(key, '测试', templateBlockSettings);
-    }
-
+    this.#loadSchemaSettings();
     this.app.pluginSettingsManager.add('block-templates', {
       title: `{{t("Block templates", { ns: "${NAMESPACE}" })}}`,
       icon: 'TableOutlined',
@@ -169,6 +159,27 @@ export class PluginBlockTemplateClient extends Plugin {
       });
     }
     return null;
+  }
+
+  #loadSchemaSettings() {
+    // Check if this.app.loading is true every 1s
+    // If true, wait 1s and check again
+    // If false, stop checking and add template settings
+    const interval = setInterval(() => {
+      if (!this.app.loading) {
+        clearInterval(interval);
+        const schemaSettings = this.app.schemaSettingsManager.getAll();
+        for (const key in schemaSettings) {
+          this.app.schemaSettingsManager.addItem(
+            key,
+            'template-associationRecordSetting',
+            associationRecordSettingItem,
+          );
+          this.app.schemaSettingsManager.addItem(key, 'template-resetSettingItem', resetSettingItem);
+          this.app.schemaSettingsManager.addItem(key, 'template-formSettingItem', formSettingItem);
+        }
+      }
+    }, 1000);
   }
 }
 
