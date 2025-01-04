@@ -24,7 +24,7 @@ export const actions = {
     await next();
   },
   check: async (ctx, next) => {
-    ctx.body = await ctx.auth.check();
+    ctx.body = ctx.auth.user || {};
     await next();
   },
 } as Handlers;

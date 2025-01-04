@@ -101,8 +101,8 @@ export class PluginAuthServer extends Plugin {
       this.app.resourceManager.registerActionHandler(`authenticators:${action}`, handler),
     );
     // Set up ACL
-    ['check', 'signIn', 'signUp'].forEach((action) => this.app.acl.allow('auth', action));
-    ['signOut', 'changePassword'].forEach((action) => this.app.acl.allow('auth', action, 'loggedIn'));
+    ['signIn', 'signUp'].forEach((action) => this.app.acl.allow('auth', action));
+    ['check', 'signOut', 'changePassword'].forEach((action) => this.app.acl.allow('auth', action, 'loggedIn'));
     this.app.acl.allow('authenticators', 'publicList');
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.authenticators`,
