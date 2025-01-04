@@ -16,7 +16,7 @@ import {
   useSourceId,
 } from '@nocobase/client';
 import { useContext, useMemo } from 'react';
-import { useStorageRules } from './useStorageRules';
+import { useStorageUploadProps } from './useStorageUploadProps';
 
 export const useUploadFiles = () => {
   const { getDataBlockRequest } = useDataBlockRequestGetter();
@@ -24,7 +24,6 @@ export const useUploadFiles = () => {
   const { setVisible } = useActionContext();
   const collection = useCollection();
   const sourceId = useSourceId();
-  const rules = useStorageRules(collection?.getOption('storage'));
   const action = useMemo(() => {
     let action = `${collection.name}:create`;
     if (association) {
@@ -38,7 +37,7 @@ export const useUploadFiles = () => {
 
   let pendingNumber = 0;
 
-  return {
+  const uploadProps = {
     action,
     onChange(fileList) {
       fileList.forEach((file) => {
@@ -62,6 +61,11 @@ export const useUploadFiles = () => {
         setVisible(false);
       }
     },
-    rules,
+  };
+
+  const storageUploadProps = useStorageUploadProps(uploadProps);
+  return {
+    ...uploadProps,
+    ...storageUploadProps,
   };
 };
