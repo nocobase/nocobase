@@ -128,10 +128,8 @@ const useParseDefaultValue = () => {
         });
 
         if (value == null || value === '') {
-          // fix https://nocobase.height.app/T-4350/description
           // 如果 field.mounted 为 false，说明 field 已经被卸载了，不需要再设置默认值
           if (field.mounted) {
-            // fix https://nocobase.height.app/T-2805
             field.setInitialValue(null);
             await field.reset({ forceClear: true });
           }

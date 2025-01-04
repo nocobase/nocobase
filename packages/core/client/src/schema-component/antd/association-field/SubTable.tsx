@@ -87,7 +87,7 @@ const tableClassName = css`
 export const SubTable: any = observer(
   (props: any) => {
     const { openSize } = props;
-    const { field, options: collectionField } = useAssociationFieldContext<ArrayField>();
+    const { field, options: collectionField, fieldSchema: schema } = useAssociationFieldContext<ArrayField>();
     const { t } = useTranslation();
     const [visibleSelector, setVisibleSelector] = useState(false);
     const [selectedRows, setSelectedRows] = useState([]);
@@ -98,7 +98,9 @@ export const SubTable: any = observer(
     const recordV2 = useCollectionRecord();
     const collection = useCollection();
     const { allowSelectExistingRecord, allowAddnew, allowDisassociation } = field.componentProps;
-    useSubTableSpecialCase({ field });
+
+    useSubTableSpecialCase({ rootField: field, rootSchema: schema });
+
     const move = (fromIndex: number, toIndex: number) => {
       if (toIndex === undefined) return;
       if (!isArr(field.value)) return;
