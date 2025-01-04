@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/client';
+import { Plugin, SchemaSettingsFormItemTemplate, SchemaSettingsTemplate } from '@nocobase/client';
 import { TemplateBlockInitializer, addBlockInitializers } from './initializers';
 import { BlockNameLowercase, NAMESPACE } from './constants';
 import { BlockTemplateList, BlockTemplatePage } from './components';
@@ -170,13 +170,30 @@ export class PluginBlockTemplateClient extends Plugin {
         clearInterval(interval);
         const schemaSettings = this.app.schemaSettingsManager.getAll();
         for (const key in schemaSettings) {
-          this.app.schemaSettingsManager.addItem(
-            key,
-            'template-associationRecordSetting',
-            associationRecordSettingItem,
-          );
-          this.app.schemaSettingsManager.addItem(key, 'template-resetSettingItem', resetSettingItem);
-          this.app.schemaSettingsManager.addItem(key, 'template-formSettingItem', formSettingItem);
+          const schemaSetting = this.app.schemaSettingsManager.get(key);
+          if (schemaSetting) {
+            schemaSetting.add('template-associationRecordSetting', associationRecordSettingItem);
+            schemaSetting.add('template-resetSettingItem', resetSettingItem);
+            schemaSetting.add('template-formSettingItem', formSettingItem);
+            for (let i = 0; i < schemaSetting.items.length; i++) {
+              if (
+                schemaSetting.items[i]['Component'] === SchemaSettingsTemplate ||
+                schemaSetting.items[i]['Component'] === SchemaSettingsFormItemTemplate
+              ) {
+                const visible = schemaSetting.items[i]['useVisible'] || (() => true);
+                schemaSetting.items[i]['useVisible'] = () => {
+                  const notInBlockTemplate = !window.location.pathname.includes('admin/settings/block-templates');
+                  return notInBlockTemplate && visible();
+                };
+                if (schemaSetting.items[i + 1]?.['type'] === 'divider') {
+                  schemaSetting.items[i + 1]['useVisible'] = () => {
+                    const notInBlockTemplate = !window.location.pathname.includes('admin/settings/block-templates');
+                    return notInBlockTemplate;
+                  };
+                }
+              }
+            }
+          }
         }
       }
     }, 1000);
