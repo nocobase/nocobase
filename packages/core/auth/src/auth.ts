@@ -22,7 +22,7 @@ export type AuthErrorType =
   | 'EMPTY_TOKEN'
   | 'EXPIRED_TOKEN'
   | 'INVALID_TOKEN'
-  | 'RENEWED_SESSION'
+  | 'RENEWED_TOKEN'
   | 'MISSING_SESSION'
   | 'INACTIVE_SESSION'
   | 'BLOCKED_TOKEN'
@@ -30,6 +30,13 @@ export type AuthErrorType =
   | 'EXPIRED_SESSION'
   | 'NOT_EXIST_USER';
 
+export class AuthError extends Error {
+  type: AuthErrorType;
+  constructor(options: { type: AuthErrorType; message: string }) {
+    super(options.message);
+    this.type = options.type;
+  }
+}
 export type AuthExtend<T extends Auth> = new (config: AuthConfig) => T;
 
 interface IAuth {

@@ -9,26 +9,24 @@
 
 export interface ITokenControlConfig {
   tokenExpirationTime: string;
-  maxTokenLifetime: string;
-  maxInactiveInterval: string;
+  sessionExpirationTime: string;
   expiredTokenRefreshLimit: string;
 }
 
 export type TokenInfo = {
-  id: string;
+  jti: string;
   userId: number;
   issuedTime: EpochTimeStamp;
   signInTime: EpochTimeStamp;
-  resigned: boolean;
+  renewed: boolean;
 };
 
 export type JTIStatus = 'valid' | 'inactive' | 'blocked' | 'missing' | 'renewed' | 'expired';
 export interface ITokenControlService {
   getConfig(): Promise<ITokenControlConfig>;
   setConfig(config: ITokenControlConfig): Promise<any>;
-  renew(jti: string): Promise<{ status: 'renewing'; data: TokenInfo }>;
+  renew(jti: string): Promise<TokenInfo>;
   add({ userId }: { userId: number }): Promise<TokenInfo>;
   set(id: string, value: Partial<TokenInfo>): Promise<void>;
-  check(jti: string): Promise<{ status: JTIStatus }>;
   removeLoginExpiredTokens(userId: number): Promise<void>;
 }

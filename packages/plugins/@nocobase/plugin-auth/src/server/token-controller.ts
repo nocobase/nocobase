@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ITokenControlService, ITokenControlConfig } from '@nocobase/auth';
+import { ITokenControlService, ITokenControlConfig, AuthError, TokenInfo } from '@nocobase/auth';
 import { Cache } from '@nocobase/cache';
 import { randomUUID } from 'crypto';
 import ms from 'ms';
@@ -15,13 +15,6 @@ import Application from '@nocobase/server';
 import Database, { Repository, Model } from '@nocobase/database';
 import { issuedTokensCollectionName, tokenPolicyCollectionName, tokenPolicyRecordKey } from '../constants';
 
-type TokenInfo = {
-  id: string;
-  userId: number;
-  issuedTime: EpochTimeStamp;
-  signInTime: EpochTimeStamp;
-  renewed: boolean;
-};
 type TokenControlService = ITokenControlService;
 
 const JTICACHEKEY = 'token-jti';
@@ -69,22 +62,22 @@ export class TokenController implements TokenControlService {
       filter: {
         userId: userId,
         signInTime: {
-          $lt: currTS - ms(config.maxTokenLifetime),
+          $lt: currTS - ms(config.sessionExpirationTime),
         },
       },
     });
   }
   async add({ userId }: { userId: number }) {
-    const id = randomUUID();
+    const jti = randomUUID();
     const currTS = Date.now();
     const data = {
-      id,
+      jti,
       issuedTime: currTS,
       signInTime: currTS,
-      resigned: false,
+      renewed: false,
       userId,
     };
-    await this.setTokenInfo(id, data);
+    await this.setTokenInfo(jti, data);
     return data;
   }
   async set(id: string, value: Partial<TokenInfo>) {
@@ -92,51 +85,16 @@ export class TokenController implements TokenControlService {
     if (!tokenInfo) throw new Error('jti not found');
     return this.setTokenInfo(id, { ...tokenInfo, ...value });
   }
+  renew: TokenControlService['renew'] = async (jti) => {
+    const repo = this.app.db.getRepository<Repository<TokenInfo>>(issuedTokensCollectionName);
+    const newId = randomUUID();
+    const issuedTime = Date.now();
+    const updated = await repo.update({ filter: { jti, renewed: false }, values: { jti: newId, issuedTime } });
 
-  renew: TokenControlService['renew'] = async (id) => {
-    const lockKey = `plugin-auth:token-controller:renew:${id}`;
-    const release = await this.app.lockManager.acquire(lockKey, 1000);
-    try {
-      const tokenInfo = await this.get(id);
-
-      if (!tokenInfo) throw new Error('Token id not exists');
-
-      if (tokenInfo.renewed) throw new Error('Token already renewed');
-
-      const preTokenInfo = await this.get(id);
-      const newId = randomUUID();
-      await this.set(id, { renewed: true });
-      const newTokenInfo = {
-        id: newId,
-        lastAccessTime: Date.now(),
-        resigned: false,
-        signInTime: preTokenInfo.signInTime,
-        userId: preTokenInfo.userId,
-      };
-      await this.setTokenInfo(newId, newTokenInfo);
-      return { status: 'renewing', id: newId };
-    } finally {
-      release();
+    if (updated && updated.length === 1) {
+      return updated[0].dataValues as TokenInfo;
+    } else {
+      throw new AuthError({ message: 'renew failed', type: 'RENEWED_TOKEN' });
     }
-  };
-  check: TokenControlService['check'] = async (id) => {
-    const tokenInfo = await this.get(id);
-    if (!tokenInfo) return { status: 'missing' };
-
-    if (tokenInfo.renewed) return { status: 'renewed' };
-
-    const signInTime = tokenInfo.signInTime;
-    const config = await this.getConfig();
-    const currTS = Date.now();
-
-    if (currTS - tokenInfo.lastAccessTime > ms(config.maxInactiveInterval)) {
-      return { status: 'inactive' };
-    }
-
-    if (Date.now() - signInTime > ms(config.maxTokenLifetime)) {
-      return { status: 'expired' };
-    }
-
-    return { status: 'valid' };
   };
 }

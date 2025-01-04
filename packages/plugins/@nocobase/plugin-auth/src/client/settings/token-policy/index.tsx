@@ -26,7 +26,7 @@ const schema: ISchema & { properties: Properties } = {
   'x-use-component-props': hooksNameMap.useEditForm,
   type: 'object',
   properties: {
-    maxTokenLifetime: {
+    sessionExpirationTime: {
       type: 'string',
       title: "{{t('Login validity period')}}",
       'x-decorator': 'FormItem',
@@ -46,9 +46,9 @@ const schema: ISchema & { properties: Properties } = {
         'During the active login session, the system issues tokens with a defined validity period. If a token expires, a new one will be issued. For security reasons, it is recommended to set the validity period within a range of 15 to 30 minutes based on actual requirements.',
       ),
     },
-    maxInactiveInterval: {
+    expiredTokenRefreshLimit: {
       type: 'string',
-      title: "{{t('Page inactivity timeout')}}",
+      title: "{{t('Rexpired token refresh limit')}}",
       'x-decorator': 'FormItem',
       'x-component': componentsNameMap.InputTime,
       required: true,

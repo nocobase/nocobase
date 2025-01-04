@@ -152,8 +152,8 @@ describe('base-auth', () => {
             add: () => 'access',
             getConfig: () => ({
               tokenExpirationTime: '30m',
-              maxTokenLifetime: '1d',
-              maxInactiveInterval: '15m',
+              sessionExpirationTime: '1d',
+              expiredTokenRefreshLimit: '15m',
             }),
             removeLoginExpiredTokens: async () => null,
           },

@@ -81,8 +81,8 @@ describe('auth', () => {
     } as any);
     await auth.tokenController.setConfig({
       tokenExpirationTime: '1d',
-      maxTokenLifetime: '1d',
-      maxInactiveInterval: '1d',
+      sessionExpirationTime: '1d',
+      expiredTokenRefreshLimit: '1d',
     });
 
     await app.cache.reset();
@@ -104,8 +104,8 @@ describe('auth', () => {
   it('api token do not check accsss', async () => {
     await auth.tokenController.setConfig({
       tokenExpirationTime: '0s',
-      maxTokenLifetime: '0s',
-      maxInactiveInterval: '0s',
+      sessionExpirationTime: '0s',
+      expiredTokenRefreshLimit: '0s',
     });
     const token = app.authManager.jwt.sign({ userId: user.id }, { expiresIn: '1d' });
     ctx.setToken(token);
@@ -115,8 +115,8 @@ describe('auth', () => {
   it('when token expired and login valid, it generate a new token', async () => {
     await auth.tokenController.setConfig({
       tokenExpirationTime: '1s',
-      maxTokenLifetime: '1d',
-      maxInactiveInterval: '1d',
+      sessionExpirationTime: '1d',
+      expiredTokenRefreshLimit: '1d',
     });
     const { token } = await auth.signIn();
     ctx.setToken(token);
@@ -128,8 +128,8 @@ describe('auth', () => {
   it('when exceed logintime, throw Unauthorized', async () => {
     await auth.tokenController.setConfig({
       tokenExpirationTime: '1d',
-      maxTokenLifetime: '1s',
-      maxInactiveInterval: '1d',
+      sessionExpirationTime: '1s',
+      expiredTokenRefreshLimit: '1d',
     });
     const { token } = await auth.signIn();
     ctx.setToken(token);
@@ -140,8 +140,8 @@ describe('auth', () => {
   it('when exceed inactiveInterval, throw Unauthorized', async () => {
     await auth.tokenController.setConfig({
       tokenExpirationTime: '1d',
-      maxTokenLifetime: '1d',
-      maxInactiveInterval: '1s',
+      sessionExpirationTime: '1d',
+      expiredTokenRefreshLimit: '1s',
     });
     const { token } = await auth.signIn();
     ctx.setToken(token);
@@ -152,8 +152,8 @@ describe('auth', () => {
   it('when token expired but not refresh,  not throw error', async () => {
     await auth.tokenController.setConfig({
       tokenExpirationTime: '1s',
-      maxTokenLifetime: '1d',
-      maxInactiveInterval: '1d',
+      sessionExpirationTime: '1d',
+      expiredTokenRefreshLimit: '1d',
     });
     const { token } = await auth.signIn();
     ctx.setToken(token);

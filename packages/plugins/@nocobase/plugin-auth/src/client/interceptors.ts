@@ -16,7 +16,7 @@ type AuthErrorType =
   | 'EMPTY_TOKEN'
   | 'EXPIRED_TOKEN'
   | 'INVALID_TOKEN'
-  | 'RENEWED_SESSION'
+  | 'RENEWED_TOKEN'
   | 'MISSING_SESSION'
   | 'INACTIVE_SESSION'
   | 'BLOCKED_TOKEN'
@@ -66,7 +66,7 @@ export function authCheckMiddleware({ app }: { app: Application }) {
               cancelButtonProps: { style: { display: 'none' } },
             });
           });
-        } else if (errorType === 'RENEWED_SESSION') {
+        } else if (errorType === 'RENEWED_TOKEN') {
           return axios.request(error.config);
         } else {
           debouncedRedirect(() => {

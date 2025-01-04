@@ -21,8 +21,8 @@ export default class extends Migration {
     } else {
       const config = {
         tokenExpirationTime: process.env.JWT_EXPIRES_IN ?? '6h',
-        maxTokenLifetime: '1d',
-        maxInactiveInterval: '3h',
+        sessionExpirationTime: '1d',
+        expiredTokenRefreshLimit: '3h',
       };
       await tokenPolicyRepo.create({
         values: {

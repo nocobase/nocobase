@@ -21,7 +21,7 @@ export default defineCollection({
   fields: [
     {
       name: 'id',
-      type: 'string',
+      type: 'uuid',
       primaryKey: true,
       allowNull: false,
       interface: 'input',
@@ -32,13 +32,19 @@ export default defineCollection({
       allowNull: false,
     },
     {
+      name: 'jti',
+      type: 'uuid',
+      allowNull: false,
+      index: true,
+    },
+    {
       type: 'bigInt',
       name: 'issuedTime',
       allowNull: false,
     },
     {
       type: 'boolean',
-      name: 'resigned',
+      name: 'renewed',
       allowNull: false,
     },
     {
