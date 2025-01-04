@@ -8,6 +8,7 @@
  */
 
 import { ITokenControlService, ITokenControlConfig, AuthError, TokenInfo } from '@nocobase/auth';
+import type { Logger } from '@nocobase/logger';
 import { Cache } from '@nocobase/cache';
 import { randomUUID } from 'crypto';
 import ms from 'ms';
@@ -22,10 +23,12 @@ export class TokenController implements TokenControlService {
   cache: Cache;
   app: Application;
   db: Database;
+  logger: Logger;
 
-  constructor({ cache, app }: { cache: Cache; app: Application }) {
+  constructor({ cache, app, logger }: { cache: Cache; app: Application; logger: Logger }) {
     this.cache = cache;
     this.app = app;
+    this.logger = logger;
   }
   get(id: string): Promise<TokenInfo | null> {
     return this.cache.wrap(`${JTICACHEKEY}:${id}`, async () => {
@@ -89,9 +92,14 @@ export class TokenController implements TokenControlService {
     const repo = this.app.db.getRepository<Repository<TokenInfo>>(issuedTokensCollectionName);
     const newId = randomUUID();
     const issuedTime = Date.now();
+    const exists = await repo.findOne({ filter: { jti, renewed: false } });
+
+    if (!exists) new AuthError({ message: 'renew failed', type: 'RENEWED_TOKEN' });
+
     const updated = await repo.update({ filter: { jti, renewed: false }, values: { jti: newId, issuedTime } });
 
     if (updated && updated.length === 1) {
+      this.logger.info(`jti renewed`, { jti, newJti: newId });
       return updated[0].dataValues as TokenInfo;
     } else {
       throw new AuthError({ message: 'renew failed', type: 'RENEWED_TOKEN' });

@@ -9,6 +9,7 @@
 
 import { Cache } from '@nocobase/cache';
 import Database, { Model } from '@nocobase/database';
+import type { Logger } from '@nocobase/logger';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { namespace, presetAuthType, presetAuthenticator } from '../preset';
 import authActions from './actions/auth';
@@ -23,8 +24,15 @@ import { tval } from '@nocobase/utils';
 import { tokenPolicyCollectionName, tokenPolicyRecordKey, tokenPolicyCacheKey } from '../constants';
 export class PluginAuthServer extends Plugin {
   cache: Cache;
+  authLogger: Logger;
 
-  afterAdd() {}
+  afterAdd() {
+    this.authLogger = this.createLogger({
+      dirname: 'plugin-auth',
+      filename: '%DATE%.log',
+      transports: ['dailyRotateFile'],
+    });
+  }
 
   async beforeLoad() {
     this.app.db.registerModels({ AuthModel });
@@ -254,7 +262,7 @@ export class PluginAuthServer extends Plugin {
         name: 'auth-token-controller',
         prefix: 'auth-token-controller',
       });
-      const tokenController = new TokenController({ cache, app: this.app });
+      const tokenController = new TokenController({ cache, app: this.app, logger: this.authLogger });
 
       this.app.authManager.setTokenControlService(tokenController);
       const tokenPolicyRepo = this.app.db.getRepository(tokenPolicyCollectionName);

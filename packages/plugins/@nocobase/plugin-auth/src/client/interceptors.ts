@@ -39,6 +39,8 @@ export function authCheckMiddleware({ app }: { app: Application }) {
     return res;
   };
   const errHandler = (error) => {
+    const newToken = error.response.headers['x-new-token'];
+    if (newToken) app.apiClient.auth.setToken(newToken);
     if (error.status === 401) {
       const errors = error?.response?.data?.errors;
       const firstError = Array.isArray(errors) ? errors[0] : null;
