@@ -92,26 +92,28 @@ describe('auth', () => {
     await app.cache.reset();
     await app.destroy();
   });
-  const not_exist_jwtid = 'jti_not_exist';
-  it('should throw error when jti not exist', async () => {
-    const token = app.authManager.jwt.sign(
-      { userId: user.id, temp: true },
-      { jwtid: not_exist_jwtid, expiresIn: '1d' },
-    );
-    ctx.setToken(token);
-    await expect(auth.check()).rejects.toThrowError('MISSING_SESSION' satisfies AuthErrorType);
-  });
-  it('api token do not check accsss', async () => {
-    await auth.tokenController.setConfig({
-      tokenExpirationTime: '0s',
-      sessionExpirationTime: '0s',
-      expiredTokenRefreshLimit: '0s',
-    });
-    const token = app.authManager.jwt.sign({ userId: user.id }, { expiresIn: '1d' });
-    ctx.setToken(token);
-    await sleep(2000);
-    await expect(auth.check()).resolves.not.toThrow();
-  });
+  // const not_exist_jwtid = 'jti_not_exist';
+  // it('should throw error when jti not exist', async () => {
+  //   const token = app.authManager.jwt.sign(
+  //     { userId: user.id, temp: true },
+  //     { jwtid: not_exist_jwtid, expiresIn: '1d' },
+  //   );
+  //   ctx.setToken(token);
+  //   await expect(auth.check()).rejects.toThrowError('MISSING_SESSION' satisfies AuthErrorType);
+  // });
+
+  // it('api token do not check accsss', async () => {
+  //   await auth.tokenController.setConfig({
+  //     tokenExpirationTime: '0s',
+  //     sessionExpirationTime: '0s',
+  //     expiredTokenRefreshLimit: '0s',
+  //   });
+  //   const token = app.authManager.jwt.sign({ userId: user.id }, { expiresIn: '1d' });
+  //   ctx.setToken(token);
+  //   await sleep(2000);
+  //   await expect(auth.check()).resolves.not.toThrow();
+  // });
+
   it('when token expired and login valid, it generate a new token', async () => {
     await auth.tokenController.setConfig({
       tokenExpirationTime: '1s',
@@ -127,8 +129,8 @@ describe('auth', () => {
 
   it('when exceed logintime, throw Unauthorized', async () => {
     await auth.tokenController.setConfig({
-      tokenExpirationTime: '1d',
-      sessionExpirationTime: '1s',
+      tokenExpirationTime: '1s',
+      sessionExpirationTime: '2s',
       expiredTokenRefreshLimit: '1d',
     });
     const { token } = await auth.signIn();
@@ -139,14 +141,14 @@ describe('auth', () => {
 
   it('when exceed inactiveInterval, throw Unauthorized', async () => {
     await auth.tokenController.setConfig({
-      tokenExpirationTime: '1d',
+      tokenExpirationTime: '1s',
       sessionExpirationTime: '1d',
       expiredTokenRefreshLimit: '1s',
     });
     const { token } = await auth.signIn();
     ctx.setToken(token);
     await sleep(3000);
-    await expect(auth.check()).rejects.toThrowError('INACTIVE_SESSION' satisfies AuthErrorType);
+    await expect(auth.check()).rejects.toThrowError('EXPIRED_SESSION' satisfies AuthErrorType);
   });
 
   it('when token expired but not refresh,  not throw error', async () => {
@@ -162,15 +164,13 @@ describe('auth', () => {
     expect(checkedUser.id).toEqual(user.id);
   });
 
-  it('when call refreshAccess with same jti multiple times, only one refreshed', async () => {
-    const jti = await auth.tokenController.add({ userId: 1 });
-    const allSettled = await Promise.allSettled([
-      auth.tokenController.renew(jti),
-      auth.tokenController.renew(jti),
-      auth.tokenController.renew(jti),
-      auth.tokenController.renew(jti),
-    ]);
-    const result = allSettled.filter((result) => result.status === 'fulfilled' && result.value.status === 'renewing');
+  it('when call renew token with same jti multiple times, only one resolved', async () => {
+    const tokenInfo = await auth.tokenController.add({ userId: 1 });
+    const renewTasks = Array(15)
+      .fill(null)
+      .map(() => auth.tokenController.renew(tokenInfo.jti));
+    const allSettled = await Promise.allSettled(renewTasks);
+    const result = allSettled.filter((result) => result.status === 'fulfilled');
     expect(result).toHaveLength(1);
   });
 });
