@@ -7,10 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-// @ts-ignore
-import { name } from '../../package.json';
-export { default } from './Plugin';
-export * from './constants';
-export { OTPProvider } from './otp-verification/Provider';
+export class OTPProvider {
+  constructor(protected options: any) {}
 
-export const namespace = name;
+  async send(receiver: string, data: { [key: string]: any }): Promise<any> {}
+}

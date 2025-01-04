@@ -7,45 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaComponent } from '@nocobase/client';
+import { SchemaComponent, usePlugin } from '@nocobase/client';
 import { ISchema } from '@formily/react';
 import React from 'react';
-import VerificationCode from './VerificationCode';
 import { Authenticator, useSignIn } from '@nocobase/plugin-auth/client';
+import PluginVerificationClient, { SMS_OTP_VERIFICATION_TYPE } from '@nocobase/plugin-verification/client';
 
 const phoneForm: ISchema = {
   type: 'object',
   name: 'phoneForm',
   'x-component': 'Form',
   properties: {
-    phone: {
-      type: 'string',
-      required: true,
-      'x-component': 'Input',
-      'x-validator': 'phone',
-      'x-decorator': 'FormItem',
-      'x-component-props': { placeholder: '{{t("Phone")}}', style: {} },
-    },
-    code: {
-      type: 'string',
-      required: true,
-      'x-component': 'VerificationCode',
-      'x-component-props': {
-        actionType: 'auth:signIn',
-        targetFieldName: 'phone',
-      },
-      'x-decorator': 'FormItem',
-    },
-    actions: {
-      title: '{{t("Sign in")}}',
+    form: {
       type: 'void',
-      'x-component': 'Action',
+      'x-component': 'VerificationForm',
       'x-component-props': {
-        htmlType: 'submit',
-        block: true,
-        type: 'primary',
-        useAction: '{{ useSMSSignIn }}',
-        style: { width: '100%' },
+        submitButtonProps: {
+          title: '{{t("Sign in")}}',
+          useAction: '{{ useSMSSignIn }}',
+        },
+        verificationCodeProps: {
+          actionType: 'auth:signIn',
+        },
       },
     },
     tip: {
@@ -65,5 +48,9 @@ export const SigninPage = (props: { authenticator: Authenticator }) => {
   const useSMSSignIn = () => {
     return useSignIn(name);
   };
-  return <SchemaComponent schema={phoneForm} scope={{ useSMSSignIn, autoSignup }} components={{ VerificationCode }} />;
+  const verficationPlugin = usePlugin('verification') as PluginVerificationClient;
+  const smsVerification = verficationPlugin.verifications.get(SMS_OTP_VERIFICATION_TYPE);
+  const VerificationForm = smsVerification?.components.VerificationForm;
+
+  return <SchemaComponent schema={phoneForm} scope={{ useSMSSignIn, autoSignup }} components={{ VerificationForm }} />;
 };

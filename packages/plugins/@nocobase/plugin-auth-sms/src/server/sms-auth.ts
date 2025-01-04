@@ -29,7 +29,12 @@ export class SMSAuth extends BaseAuth {
       throw new Error('auth-sms: @nocobase/plugin-verification is required');
     }
     let user: Model;
-    await verificationPlugin.intercept(ctx, async () => {
+    ctx.action.mergeParams({
+      values: {
+        verificationType: 'sms-otp',
+      },
+    });
+    await verificationPlugin.verificationManager.verify(ctx, async () => {
       const {
         values: { phone },
       } = ctx.action.params;

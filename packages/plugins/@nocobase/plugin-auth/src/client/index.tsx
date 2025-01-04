@@ -50,8 +50,14 @@ export class PluginAuthClient extends Plugin {
     this.app.pluginSettingsManager.add(NAMESPACE, {
       icon: 'LoginOutlined',
       title: `{{t("Authentication", { ns: "${NAMESPACE}" })}}`,
+      aclSnippet: 'pm.auth',
+    });
+    this.app.pluginSettingsManager.add('auth.authenticators', {
+      icon: 'LoginOutlined',
+      title: `{{t("Authenticators", { ns: "${NAMESPACE}" })}}`,
       Component: Authenticator,
       aclSnippet: 'pm.auth.authenticators',
+      sort: 1,
     });
 
     this.router.add('auth', {

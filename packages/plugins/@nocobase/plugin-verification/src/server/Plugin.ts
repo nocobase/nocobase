@@ -7,86 +7,36 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import path from 'path';
-
-import { Context } from '@nocobase/actions';
-import { Op } from '@nocobase/database';
-import { HandlerType } from '@nocobase/resourcer';
 import { Plugin } from '@nocobase/server';
-import { Registry } from '@nocobase/utils';
-
-import { Provider, namespace } from '.';
+import { tval } from '@nocobase/utils';
+import { namespace } from '.';
 import initActions from './actions';
-import { CODE_STATUS_UNUSED, CODE_STATUS_USED, PROVIDER_TYPE_SMS_ALIYUN } from './constants';
-import initProviders from './providers';
-
-export interface Interceptor {
-  manual?: boolean;
-  expiresIn?: number;
-
-  getReceiver(ctx): string;
-
-  getCode?(ctx): string;
-
-  validate?(ctx: Context, receiver: string): boolean | Promise<boolean>;
-}
+import { PROVIDER_TYPE_SMS_ALIYUN } from './constants';
+import { VerificationManager } from './verification-manager';
+import { SMSOTPVerification } from './otp-verification/sms';
+import { SMS_OTP_VERIFICATION_TYPE } from '../constants';
 
 export default class PluginVerficationServer extends Plugin {
-  providers: Registry<typeof Provider> = new Registry();
-  interceptors: Registry<Interceptor> = new Registry();
+  verificationManager = new VerificationManager();
 
-  intercept: HandlerType = async (context, next) => {
-    const { resourceName, actionName, values } = context.action.params;
-    const key = `${resourceName}:${actionName}`;
-    const interceptor = this.interceptors.get(key);
+  async load() {
+    initActions(this);
 
-    if (!interceptor) {
-      return context.throw(400);
-    }
+    // add middleware to action
+    this.app.resourceManager.use(this.verificationManager.middleware());
 
-    const receiver = interceptor.getReceiver(context);
-    const content = interceptor.getCode ? interceptor.getCode(context) : values.code;
-    if (!receiver || !content) {
-      return context.throw(400);
-    }
-
-    // check if code match, then call next
-    // find the code based on action params
-    const VerificationRepo = this.db.getRepository('verifications');
-    const item = await VerificationRepo.findOne({
-      filter: {
-        receiver,
-        type: key,
-        content,
-        expiresAt: {
-          [Op.gt]: new Date(),
-        },
-        status: CODE_STATUS_UNUSED,
-      },
+    this.app.acl.allow('verifications', 'create', 'public');
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.providers`,
+      actions: ['verifications_providers:*'],
     });
 
-    if (!item) {
-      return context.throw(400, {
-        code: 'InvalidVerificationCode',
-        message: context.t('Verification code is invalid', { ns: namespace }),
-      });
-    }
-
-    // TODO: code should be removed if exists in values
-    // context.action.mergeParams({
-    //   values: {
-
-    //   }
-    // });
-    try {
-      await next();
-    } finally {
-      // or delete
-      await item.update({
-        status: CODE_STATUS_USED,
-      });
-    }
-  };
+    this.verificationManager.registerVerificationType(SMS_OTP_VERIFICATION_TYPE, {
+      title: tval('SMS verification code', { ns: namespace }),
+      scenes: ['auth-sms'],
+      verification: SMSOTPVerification,
+    });
+  }
 
   async install() {
     const {
@@ -128,42 +78,5 @@ export default class PluginVerficationServer extends Plugin {
         },
       });
     }
-  }
-
-  async load() {
-    const { app, db, options } = this;
-
-    await this.importCollections(path.resolve(__dirname, 'collections'));
-
-    await initProviders(this);
-    initActions(this);
-
-    const self = this;
-    // add middleware to action
-    app.resourceManager.use(async function verificationIntercept(context, next) {
-      const { resourceName, actionName, values } = context.action.params;
-      const key = `${resourceName}:${actionName}`;
-      const interceptor = self.interceptors.get(key);
-      if (!interceptor || interceptor.manual) {
-        return next();
-      }
-
-      return self.intercept(context, next);
-    });
-
-    app.acl.allow('verifications', 'create', 'public');
-    this.app.acl.registerSnippet({
-      name: `pm.${this.name}.providers`,
-      actions: ['verifications_providers:*'],
-    });
-  }
-
-  async getDefault() {
-    const providerRepo = this.db.getRepository('verifications_providers');
-    return providerRepo.findOne({
-      filter: {
-        default: true,
-      },
-    });
   }
 }

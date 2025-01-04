@@ -7,13 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Plugin from '../Plugin';
-
-export class Provider {
-  constructor(
-    protected plugin: Plugin,
-    protected options,
-  ) {}
-
-  async send(receiver: string, data: { [key: string]: any }): Promise<any> {}
-}
+export const SMS_OTP_VERIFICATION_TYPE = 'sms-otp';
