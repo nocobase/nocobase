@@ -7,8 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export type TokenPolicyConfig = {
-  tokenExpirationTime: string;
-  maxTokenLifetime: string;
-  maxInactiveInterval: string;
-};
+export type { ITokenControlConfig as TokenPolicyConfig } from '@nocobase/auth';

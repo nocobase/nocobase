@@ -28,12 +28,12 @@ export default defineCollection({
     },
     {
       type: 'bigInt',
-      name: 'lastAccessTime',
+      name: 'signInTime',
       allowNull: false,
     },
     {
       type: 'bigInt',
-      name: 'signInTime',
+      name: 'issuedTime',
       allowNull: false,
     },
     {

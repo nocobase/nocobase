@@ -9,6 +9,7 @@
 
 import { Collection, Model } from '@nocobase/database';
 import { Cache } from '@nocobase/cache';
+import ms from 'ms';
 import { Auth, AuthConfig, AuthErrorType } from '../auth';
 import { JwtService } from './jwt-service';
 import { ITokenControlService } from './token-control-service';
@@ -90,7 +91,7 @@ export class BaseAuth extends Auth {
       });
     }
 
-    const { userId, roleName, iat, temp, jti } = payload ?? {};
+    const { userId, roleName, iat, temp, jti, exp, signInAt } = payload ?? {};
 
     const blocked = await this.jwt.blacklist.has(jti ?? token);
     if (blocked) {
@@ -124,44 +125,45 @@ export class BaseAuth extends Auth {
     if (tokenStatus === 'valid') {
       if (user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
         this.ctx.throw(401, { message: 'User password changed', code: 'INVALID_TOKEN' satisfies AuthErrorType });
-      } else {
-        const { status: jtiStatus } = await this.tokenController.check(jti);
-        if (jtiStatus === 'valid') {
-          return user;
-        } else {
-          this.ctx.throw(401, {
-            message: `${jtiStatus} session`,
-            code: getAuthErrorTypeFromStatus(jtiStatus, 'SESSION') satisfies AuthErrorType,
-          });
-        }
       }
-    } else if (tokenStatus === 'expired') {
-      const { status: jtiStatus } = await this.tokenController.check(jti);
-      if (jtiStatus === 'valid') {
-        const renewedJti = await this.tokenController.renew(jti);
-        if (renewedJti.status === 'renewing') {
-          const expiresIn = (await this.tokenController.getConfig()).tokenExpirationTime;
-          const newToken = this.jwt.sign({ userId, roleName, temp }, { jwtid: renewedJti.id, expiresIn });
-          this.ctx.res.setHeader('x-new-token', newToken);
-          return user;
-        } else {
-          this.ctx.throw(401, {
-            message: `${jtiStatus} session`,
-            code: getAuthErrorTypeFromStatus(renewedJti.status, 'SESSION') satisfies AuthErrorType,
-          });
-        }
-      } else {
+
+      return user;
+    }
+
+    if (tokenStatus === 'expired') {
+      // 检查登录有效期
+      if (!signInAt) {
+        this.ctx.throw(401, { message: 'Token expired', code: 'EXPIRED_TOKEN' satisfies AuthErrorType });
+      }
+
+      if (Date.now() - signInAt > ms((await this.tokenController.getConfig()).maxTokenLifetime)) {
+        this.ctx.throw(401, { message: 'Session expired', code: 'EXPIRED_SESSION' satisfies AuthErrorType });
+      }
+
+      // 检查是否超过token刷新时限
+      if (Date.now() - exp * 1000 > ms((await this.tokenController.getConfig()).expiredTokenRefreshLimit)) {
+        this.ctx.throw(401, { message: 'Session expired', code: 'EXPIRED_SESSION' satisfies AuthErrorType });
+      }
+
+      const renewedResult = await this.tokenController.renew(jti);
+
+      if (renewedResult.status !== 'renewing') {
         this.ctx.throw(401, {
-          message: `${jtiStatus} session`,
-          code: getAuthErrorTypeFromStatus(jtiStatus, 'SESSION') satisfies AuthErrorType,
+          message: `${renewedResult.status} session`,
+          code: getAuthErrorTypeFromStatus(renewedResult.status, 'SESSION') satisfies AuthErrorType,
         });
       }
-    } else {
-      this.ctx.throw(401, {
-        message: `${tokenStatus} token`,
-        code: getAuthErrorTypeFromStatus(tokenStatus, 'TOKEN') satisfies AuthErrorType,
-      });
+
+      const expiresIn = (await this.tokenController.getConfig()).tokenExpirationTime;
+      const newToken = this.jwt.sign({ userId, roleName, temp, signInAt }, { jwtid: renewedResult.id, expiresIn });
+      this.ctx.res.setHeader('x-new-token', newToken);
+      return user;
     }
+
+    this.ctx.throw(401, {
+      message: `${tokenStatus} token`,
+      code: getAuthErrorTypeFromStatus(tokenStatus, 'TOKEN') satisfies AuthErrorType,
+    });
   }
 
   async validate(): Promise<Model> {
@@ -180,15 +182,18 @@ export class BaseAuth extends Auth {
     if (!user) {
       this.ctx.throw(401, { message: 'user not exist', code: 'NOT_EXIST_USER' satisfies AuthErrorType });
     }
-    const jti = await this.tokenController.add({ userId: user.id });
+    const tokenInfo = await this.tokenController.add({ userId: user.id });
     const expiresIn = (await this.tokenController.getConfig()).tokenExpirationTime;
+
     const token = this.jwt.sign(
       {
         userId: user.id,
         temp: true,
+        iat: Math.floor(tokenInfo.issuedTime / 1000),
+        signInTime: tokenInfo.signInTime,
       },
       {
-        jwtid: jti,
+        jwtid: tokenInfo.id,
         expiresIn,
       },
     );

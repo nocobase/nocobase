@@ -18,11 +18,11 @@ import { issuedTokensCollectionName, tokenPolicyCollectionName, tokenPolicyRecor
 type TokenInfo = {
   id: string;
   userId: number;
-  lastAccessTime: EpochTimeStamp;
+  issuedTime: EpochTimeStamp;
   signInTime: EpochTimeStamp;
-  resigned: boolean;
+  renewed: boolean;
 };
-type TokenControlService = ITokenControlService<TokenInfo>;
+type TokenControlService = ITokenControlService;
 
 const JTICACHEKEY = 'token-jti';
 export class TokenController implements TokenControlService {
@@ -77,14 +77,15 @@ export class TokenController implements TokenControlService {
   async add({ userId }: { userId: number }) {
     const id = randomUUID();
     const currTS = Date.now();
-    await this.setTokenInfo(id, {
+    const data = {
       id,
-      lastAccessTime: currTS,
+      issuedTime: currTS,
       signInTime: currTS,
       resigned: false,
       userId,
-    });
-    return id;
+    };
+    await this.setTokenInfo(id, data);
+    return data;
   }
   async set(id: string, value: Partial<TokenInfo>) {
     const tokenInfo = await this.get(id);
@@ -97,11 +98,14 @@ export class TokenController implements TokenControlService {
     const release = await this.app.lockManager.acquire(lockKey, 1000);
     try {
       const tokenInfo = await this.get(id);
-      if (!tokenInfo) return { status: 'missing' };
-      if (tokenInfo.resigned) return { status: 'renewed' };
+
+      if (!tokenInfo) throw new Error('Token id not exists');
+
+      if (tokenInfo.renewed) throw new Error('Token already renewed');
+
       const preTokenInfo = await this.get(id);
       const newId = randomUUID();
-      await this.set(id, { resigned: true });
+      await this.set(id, { renewed: true });
       const newTokenInfo = {
         id: newId,
         lastAccessTime: Date.now(),
@@ -119,7 +123,7 @@ export class TokenController implements TokenControlService {
     const tokenInfo = await this.get(id);
     if (!tokenInfo) return { status: 'missing' };
 
-    if (tokenInfo.resigned) return { status: 'renewed' };
+    if (tokenInfo.renewed) return { status: 'renewed' };
 
     const signInTime = tokenInfo.signInTime;
     const config = await this.getConfig();
