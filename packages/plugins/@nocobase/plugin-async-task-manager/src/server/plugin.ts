@@ -3,8 +3,11 @@ import { BaseTaskManager } from './base-task-manager';
 import { AsyncTasksManager } from './interfaces/async-task-manager';
 import { CommandTaskType } from './command-task-type';
 import asyncTasksResource from './resourcers/async-tasks';
+import { throttle } from 'lodash';
 
 export class PluginAsyncExportServer extends Plugin {
+  private progressThrottles: Map<string, Function> = new Map();
+
   async afterAdd() {}
 
   async beforeLoad() {
@@ -17,13 +20,37 @@ export class PluginAsyncExportServer extends Plugin {
     });
 
     this.app.container.get<AsyncTasksManager>('AsyncTaskManager').registerTaskType(CommandTaskType);
-
     this.app.acl.allow('asyncTasks', ['get', 'fetchFile'], 'loggedIn');
+  }
+
+  getThrottledProgressEmitter(taskId: string, userId: string) {
+    if (!this.progressThrottles.has(taskId)) {
+      this.progressThrottles.set(
+        taskId,
+        throttle(
+          (progress: any) => {
+            this.app.emit('ws:sendToTag', {
+              tagKey: 'userId',
+              tagValue: userId,
+              message: {
+                type: 'async-tasks:progress',
+                payload: {
+                  taskId,
+                  progress,
+                },
+              },
+            });
+          },
+          500,
+          { leading: true, trailing: true },
+        ),
+      );
+    }
+    return this.progressThrottles.get(taskId);
   }
 
   async load() {
     this.app.resourceManager.define(asyncTasksResource);
-
     const asyncTaskManager = this.app.container.get<AsyncTasksManager>('AsyncTaskManager');
 
     this.app.on(`ws:message:request:async-tasks:list`, async (message) => {
@@ -71,38 +98,36 @@ export class PluginAsyncExportServer extends Plugin {
     asyncTaskManager.on('taskProgress', ({ task, progress }) => {
       const userId = task.tags['userId'];
       if (userId) {
-        this.app.emit('ws:sendToTag', {
-          tagKey: 'userId',
-          tagValue: userId,
-          message: {
-            type: 'async-tasks:progress',
-            payload: {
-              taskId: task.taskId,
-              progress,
-            },
-          },
-        });
+        const throttledEmit = this.getThrottledProgressEmitter(task.taskId, userId);
+        throttledEmit(progress);
       }
     });
 
     asyncTaskManager.on('taskStatusChange', ({ task, status }) => {
       const userId = task.tags['userId'];
-      if (userId) {
-        this.app.emit('ws:sendToTag', {
-          tagKey: 'userId',
-          tagValue: userId,
-          message: {
-            type: 'async-tasks:status',
-            payload: {
-              taskId: task.taskId,
-              status: task.toJSON().status,
-            },
-          },
-        });
-      }
-    });
+      if (!userId) return;
 
-    asyncTaskManager.on('taskStatusChange', ({ status }) => {
+      this.app.emit('ws:sendToTag', {
+        tagKey: 'userId',
+        tagValue: userId,
+        message: {
+          type: 'async-tasks:status',
+          payload: {
+            taskId: task.taskId,
+            status: task.toJSON().status,
+          },
+        },
+      });
+
+      if (status.type !== 'running' && status.type !== 'pending') {
+        const throttled = this.progressThrottles.get(task.taskId);
+        if (throttled) {
+          // @ts-ignore
+          throttled.cancel();
+          this.progressThrottles.delete(task.taskId);
+        }
+      }
+
       if (status.type === 'success') {
         this.app.emit('workflow:dispatch');
       }
