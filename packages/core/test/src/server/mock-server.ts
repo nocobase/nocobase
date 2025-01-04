@@ -132,7 +132,7 @@ export class MockServer extends Application {
             const userId = typeof userOrId === 'number' ? userOrId : userOrId?.id;
             if (options?.loginWithJti) {
               const loginWithJti = async () => {
-                const jti = await authManager.tokenController.add({ userId });
+                const tokenInfo = await authManager.tokenController.add({ userId });
                 const expiresIn = (await authManager.tokenController.getConfig()).tokenExpirationTime;
                 return proxy
                   .auth(
@@ -144,7 +144,7 @@ export class MockServer extends Application {
                       },
                       process.env.APP_KEY,
                       {
-                        jwtid: jti,
+                        jwtid: tokenInfo.jti,
                         expiresIn,
                       },
                     ),
