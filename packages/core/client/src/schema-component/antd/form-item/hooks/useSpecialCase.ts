@@ -10,7 +10,6 @@
 import { Field } from '@formily/core';
 import { Schema, useFieldSchema, useForm } from '@formily/react';
 import _ from 'lodash';
-import { useCallback, useEffect, useMemo } from 'react';
 import {
   CollectionFieldOptions_deprecated,
   useCollectionManager_deprecated,
@@ -19,6 +18,8 @@ import {
 import { markRecordAsNew } from '../../../../data-source/collection-record/isNewRecord';
 import { isVariable } from '../../../../variables/utils/isVariable';
 import { isSubMode } from '../../association-field/util';
+
+import { useCallback, useEffect, useMemo } from 'react';
 
 /**
  * #### 处理 `子表单` 和 `子表格` 中的特殊情况

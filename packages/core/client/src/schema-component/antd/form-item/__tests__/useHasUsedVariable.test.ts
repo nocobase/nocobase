@@ -8,6 +8,7 @@
  */
 
 import { Schema } from '@formily/json-schema';
+import { renderHook } from '@nocobase/test/client';
 import { describe, expect, it } from 'vitest';
 import { useHasUsedVariable } from '../hooks/useSpecialCase';
 
@@ -24,7 +25,8 @@ describe('useHasUsedVariable', () => {
       },
     });
 
-    const { hasUsedVariable } = useHasUsedVariable();
+    const { result } = renderHook(() => useHasUsedVariable());
+    const { hasUsedVariable } = result.current;
     expect(hasUsedVariable('$context', schema)).toBe(true);
   });
 
@@ -40,7 +42,8 @@ describe('useHasUsedVariable', () => {
       },
     });
 
-    const { hasUsedVariable } = useHasUsedVariable();
+    const { result } = renderHook(() => useHasUsedVariable());
+    const { hasUsedVariable } = result.current;
     expect(hasUsedVariable('$context', schema)).toBe(false);
   });
 
@@ -61,7 +64,8 @@ describe('useHasUsedVariable', () => {
       },
     });
 
-    const { hasUsedVariable } = useHasUsedVariable();
+    const { result } = renderHook(() => useHasUsedVariable());
+    const { hasUsedVariable } = result.current;
     expect(hasUsedVariable('$context', schema)).toBe(true);
   });
 
@@ -76,7 +80,8 @@ describe('useHasUsedVariable', () => {
       },
     });
 
-    const { hasUsedVariable } = useHasUsedVariable();
+    const { result } = renderHook(() => useHasUsedVariable());
+    const { hasUsedVariable } = result.current;
     expect(hasUsedVariable('$context', schema)).toBe(false);
   });
 
@@ -92,7 +97,8 @@ describe('useHasUsedVariable', () => {
       },
     });
 
-    const { hasUsedVariable } = useHasUsedVariable();
+    const { result } = renderHook(() => useHasUsedVariable());
+    const { hasUsedVariable } = result.current;
     expect(hasUsedVariable('$context', schema)).toBe(false);
   });
 
@@ -108,7 +114,8 @@ describe('useHasUsedVariable', () => {
       },
     });
 
-    const { hasUsedVariable } = useHasUsedVariable();
+    const { result } = renderHook(() => useHasUsedVariable());
+    const { hasUsedVariable } = result.current;
     expect(hasUsedVariable('$context', schema)).toBe(false);
   });
 });
