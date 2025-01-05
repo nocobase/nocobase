@@ -324,7 +324,7 @@ const APP_BASE_URL = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
 export class NocoPage {
   protected url: string;
   protected uid: string | undefined;
-  protected routeId: number | undefined;
+  protected desktopRouteId: number | undefined;
   protected collectionsName: string[] | undefined;
   protected _waitForInit: Promise<void>;
 
@@ -359,7 +359,7 @@ export class NocoPage {
     const { schemaUid, routeId } = result[result.length - 1] || {};
 
     this.uid = schemaUid;
-    this.routeId = routeId;
+    this.desktopRouteId = routeId;
     this.url = `${this.options?.basePath || '/admin/'}${this.uid}`;
   }
 
@@ -390,9 +390,9 @@ export class NocoPage {
   async destroy() {
     const waitList: any[] = [];
     if (this.uid) {
-      waitList.push(deletePage(this.uid, this.routeId));
+      waitList.push(deletePage(this.uid, this.desktopRouteId));
       this.uid = undefined;
-      this.routeId = undefined;
+      this.desktopRouteId = undefined;
     }
     if (this.collectionsName?.length) {
       waitList.push(deleteCollections(this.collectionsName));
@@ -403,7 +403,7 @@ export class NocoPage {
 }
 
 export class NocoMobilePage extends NocoPage {
-  protected routeId: number;
+  protected mobileRouteId: number;
   protected title: string;
   constructor(
     protected options?: MobilePageConfig,
@@ -431,7 +431,7 @@ export class NocoMobilePage extends NocoPage {
 
     const { url, pageSchemaUid, routeId, title } = result[result.length - 1];
     this.title = title;
-    this.routeId = routeId;
+    this.mobileRouteId = routeId;
     this.uid = pageSchemaUid;
     if (this.options?.type == 'link') {
       // 内部 URL 和外部 URL
@@ -447,7 +447,7 @@ export class NocoMobilePage extends NocoPage {
 
   async mobileDestroy() {
     // 移除 mobile routes
-    await deleteMobileRoutes(this.routeId);
+    await deleteMobileRoutes(this.mobileRouteId);
     // 移除 schema
     await this.destroy();
   }
