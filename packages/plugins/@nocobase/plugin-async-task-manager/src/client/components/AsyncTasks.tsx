@@ -7,6 +7,7 @@ import 'dayjs/locale/zh-cn';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useT } from '../locale';
 import { useAsyncTask } from '../AsyncTaskManagerProvider';
+import { useCurrentAppInfo } from '@nocobase/client';
 
 // Configure dayjs
 dayjs.extend(relativeTime);
@@ -45,6 +46,7 @@ export const AsyncTasks = () => {
 
   const plugin = usePlugin<any>('async-task-manager');
   const app = useApp();
+  const appInfo = useCurrentAppInfo();
   const t = useT();
 
   useEffect(() => {
@@ -298,7 +300,7 @@ export const AsyncTasks = () => {
                 onClick={() => {
                   const token = app.apiClient.auth.token;
                   const url = app.getApiUrl(
-                    `asyncTasks:fetchFile/${record.taskId}?token=${token}&__appName=${app.name}`,
+                    `asyncTasks:fetchFile/${record.taskId}?token=${token}&__appName=${appInfo?.data?.name || app.name}`,
                   );
                   window.open(url);
                 }}

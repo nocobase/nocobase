@@ -9,10 +9,20 @@
 
 export default {
   name: 'replies',
+  createdBy: true,
+  updatedBy: true,
   fields: [
     {
       type: 'string',
       name: 'content',
+    },
+    {
+      type: 'date',
+      name: 'createdAt',
+    },
+    {
+      type: 'date',
+      name: 'updatedAt',
     },
   ],
 };
