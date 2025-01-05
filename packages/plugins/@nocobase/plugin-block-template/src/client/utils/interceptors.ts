@@ -55,6 +55,7 @@ export function registerTemplateBlockInterceptors(apiClient: any, templateBlocks
       const currentSchema = findSchemaCache(templateBlocks, xUid);
       const virtualSchema = findFirstVirtualSchema(currentSchema, xUid);
       if (virtualSchema) {
+        setToTrueSchema(virtualSchema.schema);
         const newSchema = convertToCreateSchema(virtualSchema.schema);
         await apiClient.request({
           url: `/uiSchemas:insertAdjacent/${virtualSchema.insertTarget}?position=${virtualSchema.insertPosition}`,
@@ -66,13 +67,31 @@ export function registerTemplateBlockInterceptors(apiClient: any, templateBlocks
       }
     }
 
+    // Handle schema batch patch
+    if (config.url?.includes('uiSchemas:batchPatch')) {
+      const schemas = config.data;
+      for (const schema of schemas) {
+        const currentSchema = findSchemaCache(templateBlocks, schema['x-uid']);
+        const virtualSchema = findFirstVirtualSchema(currentSchema, schema['x-uid']);
+        if (virtualSchema) {
+          setToTrueSchema(virtualSchema.schema);
+          await apiClient.request({
+            url: `/uiSchemas:insertAdjacent/${virtualSchema.insertTarget}?position=${virtualSchema.insertPosition}`,
+            method: 'post',
+            data: {
+              schema: convertToCreateSchema(virtualSchema.schema),
+            },
+          });
+        }
+      }
+    }
+
     if (config.url?.includes('uiSchemas:insertAdjacent')) {
       const uidWithQuery = config.url.split('/').pop();
       const uid = uidWithQuery?.split('?')[0];
       const currentSchema = findSchemaCache(templateBlocks, uid);
       const virtualSchema = findFirstVirtualSchema(currentSchema, uid);
       if (virtualSchema) {
-        // set x-virtual to true for all virtual schemas
         setToTrueSchema(virtualSchema.schema);
         await apiClient.request({
           url: `/uiSchemas:insertAdjacent/${virtualSchema.insertTarget}?position=${virtualSchema.insertPosition}`,

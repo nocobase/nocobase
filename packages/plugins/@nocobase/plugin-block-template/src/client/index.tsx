@@ -60,7 +60,6 @@ export class PluginBlockTemplateClient extends Plugin {
     // Register axios interceptors for template block operations
     registerTemplateBlockInterceptors(this.app.apiClient, this.templateBlocks);
 
-    // TODO: why any here?
     this.app.addComponents({ TemplateBlockInitializer: TemplateBlockInitializer as any });
 
     this.app.schemaInitializerManager.addItem('page:addBlock', 'templates', {
