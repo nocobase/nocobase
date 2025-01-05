@@ -97,7 +97,7 @@ export const LinkMenuItem = () => {
   return <SchemaInitializerItem title={t('Link')} onClick={handleClick} className={`${componentCls} ${hashId}`} />;
 };
 
-export function getLinkMenuSchema({ title, icon, schemaUid, href, params, route = null }) {
+export function getLinkMenuSchema({ title, icon, schemaUid, href, params, route = undefined }) {
   return {
     type: 'void',
     title,

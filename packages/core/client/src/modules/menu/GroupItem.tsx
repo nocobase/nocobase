@@ -83,7 +83,7 @@ export const GroupItem = () => {
   return <SchemaInitializerItem title={t('Group')} onClick={handleClick} className={`${componentCls} ${hashId}`} />;
 };
 
-export function getGroupMenuSchema({ title, icon, schemaUid, route = null }) {
+export function getGroupMenuSchema({ title, icon, schemaUid, route = undefined }) {
   return {
     type: 'void',
     title,

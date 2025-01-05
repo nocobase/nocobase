@@ -324,6 +324,7 @@ const APP_BASE_URL = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
 export class NocoPage {
   protected url: string;
   protected uid: string | undefined;
+  protected routeId: number | undefined;
   protected collectionsName: string[] | undefined;
   protected _waitForInit: Promise<void>;
 
@@ -355,8 +356,10 @@ export class NocoPage {
     );
 
     const result = await Promise.all(waitList);
+    const { schemaUid, routeId } = result[result.length - 1] || {};
 
-    this.uid = result[result.length - 1];
+    this.uid = schemaUid;
+    this.routeId = routeId;
     this.url = `${this.options?.basePath || '/admin/'}${this.uid}`;
   }
 
@@ -387,8 +390,9 @@ export class NocoPage {
   async destroy() {
     const waitList: any[] = [];
     if (this.uid) {
-      waitList.push(deletePage(this.uid));
+      waitList.push(deletePage(this.uid, this.routeId));
       this.uid = undefined;
+      this.routeId = undefined;
     }
     if (this.collectionsName?.length) {
       waitList.push(deleteCollections(this.collectionsName));
@@ -738,6 +742,7 @@ const createPage = async (options?: CreatePageOptions) => {
   const tabSchemaUid = uid();
   const tabSchemaName = uid();
   const title = name || menuSchemaUid;
+  let routeId;
 
   if (type === 'group') {
     const result = await api.post('/api/desktopRoutes:create', {
@@ -753,6 +758,9 @@ const createPage = async (options?: CreatePageOptions) => {
     if (!result.ok()) {
       throw new Error(await result.text());
     }
+
+    const data = await result.json();
+    routeId = data.data?.id;
   }
 
   if (type === 'page') {
@@ -762,7 +770,7 @@ const createPage = async (options?: CreatePageOptions) => {
         type: 'page',
         title,
         schemaUid: menuSchemaUid,
-        pageSchemaUid: pageSchema['x-uid'] || pageSchemaUid,
+        pageSchemaUid: pageSchema?.['x-uid'] || pageSchemaUid,
         hideInMenu: false,
         children: pageSchema
           ? schemaToRoutes(pageSchema)
@@ -781,6 +789,9 @@ const createPage = async (options?: CreatePageOptions) => {
     if (!result.ok()) {
       throw new Error(await result.text());
     }
+
+    const data = await result.json();
+    routeId = data.data?.id;
   }
 
   if (type === 'link') {
@@ -800,6 +811,9 @@ const createPage = async (options?: CreatePageOptions) => {
     if (!result.ok()) {
       throw new Error(await result.text());
     }
+
+    const data = await result.json();
+    routeId = data.data?.id;
   }
 
   const result = await api.post(`/api/uiSchemas:insertAdjacent/nocobase-admin-menu?position=beforeEnd`, {
@@ -845,7 +859,7 @@ const createPage = async (options?: CreatePageOptions) => {
     throw new Error(await result.text());
   }
 
-  return menuSchemaUid;
+  return { schemaUid: menuSchemaUid, routeId };
 };
 
 /**
@@ -1041,13 +1055,21 @@ const deleteMobileRoutes = async (mobileRouteId: number) => {
 /**
  * 根据页面 uid 删除一个 NocoBase 的页面
  */
-const deletePage = async (pageUid: string) => {
+const deletePage = async (pageUid: string, routeId: number) => {
   const api = await request.newContext({
     storageState: process.env.PLAYWRIGHT_AUTH_FILE,
   });
 
   const state = await api.storageState();
   const headers = getHeaders(state);
+
+  const routeResult = await api.post(`/api/desktopRoutes:destroy?filterByTk=${routeId}`, {
+    headers,
+  });
+
+  if (!routeResult.ok()) {
+    throw new Error(await routeResult.text());
+  }
 
   const result = await api.post(`/api/uiSchemas:remove/${pageUid}`, {
     headers,

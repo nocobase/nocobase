@@ -128,7 +128,6 @@ const InsertMenuItems = (props) => {
               targetId: route?.id,
               sortField: 'sort',
               method: insertPositionToMethod[insertPosition],
-              refreshAfterMove: false,
             });
           }
 
@@ -202,7 +201,6 @@ const InsertMenuItems = (props) => {
             targetId: route?.id,
             sortField: 'sort',
             method: insertPositionToMethod[insertPosition],
-            refreshAfterMove: false,
           });
 
           // 3. 插入一个对应的 Schema
@@ -271,7 +269,6 @@ const InsertMenuItems = (props) => {
             targetId: route?.id,
             sortField: 'sort',
             method: insertPositionToMethod[insertPosition],
-            refreshAfterMove: false,
           });
 
           // 3. 插入一个对应的 Schema

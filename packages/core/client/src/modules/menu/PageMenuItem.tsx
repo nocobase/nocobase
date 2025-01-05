@@ -104,7 +104,7 @@ export function getPageMenuSchema({
   tabSchemaUid,
   menuSchemaUid,
   tabSchemaName,
-  route = null,
+  route = undefined,
 }) {
   return {
     type: 'void',
