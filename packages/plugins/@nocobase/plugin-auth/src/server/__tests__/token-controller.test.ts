@@ -32,6 +32,7 @@ class MockContext {
       return this.header.get(key);
     },
   };
+  t = (s) => s;
   setToken(token: string) {
     this.token = token;
   }
