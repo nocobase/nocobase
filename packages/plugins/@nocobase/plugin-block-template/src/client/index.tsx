@@ -101,6 +101,19 @@ export class PluginBlockTemplateClient extends Plugin {
       },
     });
 
+    this.app.schemaInitializerManager.addItem('mobile:addBlock', 'templates', {
+      name: BlockNameLowercase,
+      Component: 'TemplateBlockInitializer',
+      title: '{{t("Templates")}}',
+      icon: 'TableOutlined',
+      sort: -1,
+      wrap: (t) => t,
+      useVisible: () => {
+        // check if url contains admin/settings/block-templates
+        return !window.location.pathname.includes('admin/settings/block-templates');
+      },
+    });
+
     this.app.schemaInitializerManager.add(addBlockInitializers);
 
     this.#loadSchemaSettings();
