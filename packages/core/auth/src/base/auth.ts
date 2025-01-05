@@ -10,6 +10,7 @@
 import { Collection, Model } from '@nocobase/database';
 import { Cache } from '@nocobase/cache';
 import ms from 'ms';
+import jwt from 'jsonwebtoken';
 import { Auth, AuthConfig, AuthErrorType, AuthError } from '../auth';
 import { JwtService } from './jwt-service';
 import { ITokenControlService } from './token-control-service';
@@ -79,23 +80,37 @@ export class BaseAuth extends Auth {
     const token = this.ctx.getBearerToken();
 
     if (!token) {
-      this.ctx.throw(401, { message: 'empty token', code: 'EMPTY_TOKEN' satisfies AuthErrorType });
+      this.ctx.throw(401, {
+        message: this.ctx.t('Unauthenticated. Please log in to continue.'),
+        code: 'EMPTY_TOKEN' satisfies AuthErrorType,
+      });
     }
 
-    const { status: tokenStatus, payload } = await this.jwt.verify(token);
-
-    if (tokenStatus === 'invalid') {
-      this.ctx.throw(401, {
-        message: `${tokenStatus} token`,
-        code: getAuthErrorTypeFromStatus(tokenStatus, 'TOKEN') satisfies AuthErrorType,
-      });
+    let tokenStatus: 'valid' | 'expired' | 'invalid';
+    let payload;
+    try {
+      payload = await this.jwt.decode(token);
+      tokenStatus = 'valid';
+    } catch (err) {
+      if (err.name === 'TokenExpiredError') {
+        tokenStatus = 'expired';
+        payload = jwt.decode(token);
+      } else {
+        this.ctx.throw(401, {
+          message: this.ctx.t('Your session has expired. Please log in again.'),
+          code: 'INVALID_TOKEN' satisfies AuthErrorType,
+        });
+      }
     }
 
     const { userId, roleName, iat, temp, jti, exp, signInTime } = payload ?? {};
 
     const blocked = await this.jwt.blacklist.has(jti ?? token);
     if (blocked) {
-      this.ctx.throw(401, { message: 'token blocked', code: 'BLOCKED_TOKEN' satisfies AuthErrorType });
+      this.ctx.throw(401, {
+        message: this.ctx.t('Your session has expired. Please log in again.'),
+        code: 'BLOCKED_TOKEN' satisfies AuthErrorType,
+      });
     }
 
     if (roleName) {
@@ -113,40 +128,39 @@ export class BaseAuth extends Auth {
       }),
     );
 
-    if (!temp) {
-      if (tokenStatus === 'valid') return user;
-
+    if (!temp && tokenStatus !== 'valid') {
       this.ctx.throw(401, {
-        message: `${tokenStatus} token`,
-        code: getAuthErrorTypeFromStatus(tokenStatus, 'TOKEN') satisfies AuthErrorType,
+        message: this.ctx.t('Your session has expired. Please log in again.'),
+        code: 'INVALID_TOKEN' satisfies AuthErrorType,
       });
     }
 
-    if (tokenStatus === 'valid') {
-      if (user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
-        this.ctx.throw(401, { message: 'User password changed', code: 'INVALID_TOKEN' satisfies AuthErrorType });
-      }
-
-      return user;
+    if (tokenStatus === 'valid' && user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
+      this.ctx.throw(401, {
+        message: 'User password changed, please signin again',
+        code: 'INVALID_TOKEN' satisfies AuthErrorType,
+      });
     }
 
     if (tokenStatus === 'expired') {
-      // 检查登录有效期
-      if (!signInTime) {
-        this.ctx.throw(401, { message: 'Token expired', code: 'EXPIRED_TOKEN' satisfies AuthErrorType });
+      const tokenPolicy = await this.tokenController.getConfig();
+      if (!signInTime || Date.now() - signInTime > tokenPolicy.sessionExpirationTime) {
+        this.ctx.throw(401, {
+          message: this.ctx.t('Your session has expired. Please log in again.'),
+          code: 'EXPIRED_SESSION' satisfies AuthErrorType,
+        });
       }
 
-      if (Date.now() - signInTime > ms((await this.tokenController.getConfig()).sessionExpirationTime)) {
-        this.ctx.throw(401, { message: 'Session expired', code: 'EXPIRED_SESSION' satisfies AuthErrorType });
+      if (Date.now() - exp * 1000 > tokenPolicy.expiredTokenRenewLimit) {
+        this.ctx.throw(401, {
+          message: this.ctx.t('Your session has expired. Please log in again.'),
+          code: 'EXPIRED_SESSION' satisfies AuthErrorType,
+        });
       }
 
-      // 检查是否超过token刷新时限
-      if (Date.now() - exp * 1000 > ms((await this.tokenController.getConfig()).expiredTokenRenewLimit)) {
-        this.ctx.throw(401, { message: 'Session expired', code: 'EXPIRED_SESSION' satisfies AuthErrorType });
-      }
       try {
         const renewedResult = await this.tokenController.renew(jti);
-        const expiresIn = (await this.tokenController.getConfig()).tokenExpirationTime;
+        const expiresIn = Math.floor(tokenPolicy.tokenExpirationTime / 1000);
         const newToken = this.jwt.sign({ userId, roleName, temp, signInTime }, { jwtid: renewedResult.jti, expiresIn });
         this.ctx.res.setHeader('x-new-token', newToken);
         return user;
@@ -155,6 +169,7 @@ export class BaseAuth extends Auth {
           err instanceof AuthError
             ? { type: err.type, message: err.message }
             : { message: err.message, type: 'INVALID_TOKEN' as const };
+
         this.ctx.throw(401, {
           message: options.message,
           code: options.type satisfies AuthErrorType,
@@ -162,10 +177,7 @@ export class BaseAuth extends Auth {
       }
     }
 
-    this.ctx.throw(401, {
-      message: `${tokenStatus} token`,
-      code: getAuthErrorTypeFromStatus(tokenStatus, 'TOKEN') satisfies AuthErrorType,
-    });
+    return user;
   }
 
   async validate(): Promise<Model> {
@@ -182,10 +194,13 @@ export class BaseAuth extends Auth {
       });
     }
     if (!user) {
-      this.ctx.throw(401, { message: 'user not exist', code: 'NOT_EXIST_USER' satisfies AuthErrorType });
+      this.ctx.throw(401, {
+        message: this.ctx.t('User not found. Please log in again to continue.'),
+        code: 'NOT_EXIST_USER' satisfies AuthErrorType,
+      });
     }
     const tokenInfo = await this.tokenController.add({ userId: user.id });
-    const expiresIn = (await this.tokenController.getConfig()).tokenExpirationTime;
+    const expiresIn = Math.floor((await this.tokenController.getConfig()).tokenExpirationTime / 1000);
 
     const token = this.jwt.sign(
       {
@@ -199,7 +214,7 @@ export class BaseAuth extends Auth {
         expiresIn,
       },
     );
-    this.tokenController.removeSessionExpiredTokens(user.id);
+    this.tokenController.removeSessionExpiredTokens?.(user.id);
     return {
       user,
       token,

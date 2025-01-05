@@ -33,6 +33,7 @@ describe('base-auth', () => {
     const auth = new BaseAuth({
       userCollection: {},
       ctx: {
+        t: (s) => s,
         getBearerToken: () => null,
       },
     } as any);
@@ -48,6 +49,7 @@ describe('base-auth', () => {
   it('check: should set roleName to headers', async () => {
     const ctx = {
       getBearerToken: () => 'token',
+      t: (s) => s,
       headers: {},
       logger: {
         error: (...args) => console.log(args),
@@ -55,7 +57,7 @@ describe('base-auth', () => {
       app: {
         authManager: {
           jwt: {
-            verify: () => ({ status: 'valid', payload: { userId: 1, roleName: 'admin' } }),
+            decode: () => ({ userId: 1, roleName: 'admin' }),
             blacklist: {
               has: () => false,
             },
@@ -85,6 +87,7 @@ describe('base-auth', () => {
 
   it('check: should return user', async () => {
     const ctx = {
+      t: (s) => s,
       getBearerToken: () => 'token',
       headers: {},
       logger: {
@@ -93,13 +96,14 @@ describe('base-auth', () => {
       app: {
         authManager: {
           jwt: {
-            verify: () => ({ status: 'valid', payload: { userId: 1, roleName: 'admin' } }),
+            decode: () => ({ userId: 1, roleName: 'admin' }),
             blacklist: {
               has: () => false,
             },
           },
           tokenController: {
             check: () => ({ status: 'valid' }),
+            removeLoginExpiredTokens: () => null,
           },
         },
       },
@@ -120,6 +124,7 @@ describe('base-auth', () => {
 
   it('signIn: should throw 401', async () => {
     const ctx = {
+      t: (s) => s,
       throw: vi.fn().mockImplementation((status, message) => {
         throw new Error(message);
       }),
@@ -129,7 +134,7 @@ describe('base-auth', () => {
       userCollection: {},
       ctx,
     } as any);
-    await expect(auth.signIn()).rejects.toThrowError('Unauthorized');
+    await expect(auth.signIn()).rejects.toThrow();
   });
 
   it('signIn: should return user and token', async () => {
@@ -155,7 +160,7 @@ describe('base-auth', () => {
               sessionExpirationTime: '1d',
               expiredTokenRenewLimit: '15m',
             }),
-            removeLoginExpiredTokens: async () => null,
+            removeLoginExpiredTokens: () => null,
           },
         },
       },

@@ -45,5 +45,7 @@
   "The maximum time after a token expires during which it can still be refreshed. Beyond this limit, the token cannot be renewed, and reauthentication is required.": "The maximum time after a token expires during which it can still be refreshed. Beyond this limit, the token cannot be renewed, and reauthentication is required.",
   "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.",
   "Inactivity warning": "Inactivity warning",
-  "You have been inactive for a while and will be signed out. Please sign in again to continue.": "You have been inactive for a while and will be signed out. Please sign in again to continue."
+  "You have been inactive for a while and will be signed out. Please sign in again to continue.": "You have been inactive for a while and will be signed out. Please sign in again to continue.",
+  "Unauthenticated. Please log in to continue.": "Unauthenticated. Please log in to continue.",
+  "User not found. Please log in again to continue.": "User not found. Please log in again to continue."
 }

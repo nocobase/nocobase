@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ITokenControlService, ITokenControlConfig, AuthError, TokenInfo } from '@nocobase/auth';
+import {
+  ITokenControlService,
+  TokenPolicyConfig,
+  NumericTokenPolicyConfig,
+  AuthError,
+  TokenInfo,
+} from '@nocobase/auth';
 import type { Logger } from '@nocobase/logger';
 import { Cache } from '@nocobase/cache';
 import { randomUUID } from 'crypto';
@@ -47,15 +53,24 @@ export class TokenController implements TokenControlService {
   }
 
   getConfig() {
-    return this.cache.wrap<ITokenControlConfig>('config', async () => {
+    return this.cache.wrap<NumericTokenPolicyConfig>('config', async () => {
       const repo = this.app.db.getRepository(tokenPolicyCollectionName);
       const configRecord = await repo.findOne({ filterByTk: tokenPolicyRecordKey });
       if (!configRecord) return null;
-      else return configRecord.config;
+      const config = configRecord.config as TokenPolicyConfig;
+      return {
+        tokenExpirationTime: ms(config.tokenExpirationTime),
+        sessionExpirationTime: ms(config.sessionExpirationTime),
+        expiredTokenRenewLimit: ms(config.expiredTokenRenewLimit),
+      };
     });
   }
-  setConfig(config: Partial<ITokenControlConfig>) {
-    return this.cache.set('config', config);
+  setConfig(config: TokenPolicyConfig) {
+    return this.cache.set('config', {
+      tokenExpirationTime: ms(config.tokenExpirationTime),
+      sessionExpirationTime: ms(config.sessionExpirationTime),
+      expiredTokenRenewLimit: ms(config.expiredTokenRenewLimit),
+    });
   }
   async removeSessionExpiredTokens(userId: number) {
     const config = await this.getConfig();
@@ -65,7 +80,7 @@ export class TokenController implements TokenControlService {
       filter: {
         userId: userId,
         signInTime: {
-          $lt: currTS - ms(config.sessionExpirationTime),
+          $lt: currTS - config.sessionExpirationTime,
         },
       },
     });
@@ -89,7 +104,12 @@ export class TokenController implements TokenControlService {
     return this.setTokenInfo(id, { ...tokenInfo, ...value });
   }
   renew: TokenControlService['renew'] = async (jti) => {
+    const repo = this.app.db.getRepository(issuedTokensCollectionName);
     const model = this.app.db.getModel(issuedTokensCollectionName);
+    const exists = await repo.findOne({ filter: { jti } });
+    if (!exists) {
+      throw new AuthError({ message: 'jti not found', type: 'TOKEN_RENEW_FAILED' });
+    }
     const newId = randomUUID();
     const issuedTime = Date.now();
 
@@ -100,7 +120,6 @@ export class TokenController implements TokenControlService {
     );
 
     if (count === 1) {
-      this.logger.info(`jti renewed`, { jti, newJti: newId });
       return { jti: newId, issuedTime };
     } else {
       throw new AuthError({ message: 'renew failed', type: 'TOKEN_RENEW_FAILED' });

@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export type { ITokenControlConfig as TokenPolicyConfig } from '@nocobase/auth';
+export type { TokenPolicyConfig as TokenPolicyConfig } from '@nocobase/auth';

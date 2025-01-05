@@ -74,7 +74,7 @@ interface Resource {
 }
 
 interface ExtendedAgent extends SuperAgentTest {
-  login: (user: any, roleName?: string, options?: { real: true }) => ExtendedAgent | Promise<ExtendedAgent>;
+  login: (user: any, roleName?: string) => ExtendedAgent;
   loginUsingId: (userId: number, roleName?: string) => ExtendedAgent;
   resource: (name: string, resourceOf?: any) => Resource;
 }
@@ -128,43 +128,44 @@ export class MockServer extends Application {
     const proxy = new Proxy(agent, {
       get(target, method: string, receiver) {
         if (['login', 'loginUsingId'].includes(method)) {
-          return (userOrId: any, roleName?: string, options?: { loginWithJti: boolean }) => {
-            const userId = typeof userOrId === 'number' ? userOrId : userOrId?.id;
-            if (options?.loginWithJti) {
-              const loginWithJti = async () => {
-                const tokenInfo = await authManager.tokenController.add({ userId });
-                const expiresIn = (await authManager.tokenController.getConfig()).tokenExpirationTime;
-                return proxy
-                  .auth(
-                    jwt.sign(
-                      {
-                        userId,
-                        temp: true,
-                        roleName,
-                      },
-                      process.env.APP_KEY,
-                      {
-                        jwtid: tokenInfo.jti,
-                        expiresIn,
-                      },
-                    ),
-                    { type: 'bearer' },
-                  )
-                  .set('X-Authenticator', 'basic');
-              };
-              return loginWithJti();
-            }
-
+          return (userOrId: any, roleName?: string) => {
             return proxy
               .auth(
                 jwt.sign(
                   {
                     userId: typeof userOrId === 'number' ? userOrId : userOrId?.id,
+                    temp: true,
                     roleName,
                   },
                   process.env.APP_KEY,
                   {
                     expiresIn: '1d',
+                  },
+                ),
+                { type: 'bearer' },
+              )
+              .set('X-Authenticator', 'basic');
+          };
+        }
+        if (method === 'loginWithJti') {
+          return async (userOrId: any, roleName?: string) => {
+            const userId = typeof userOrId === 'number' ? userOrId : userOrId?.id;
+            const tokenInfo = await authManager.tokenController.add({ userId });
+            const expiresIn = (await authManager.tokenController.getConfig()).tokenExpirationTime;
+
+            return proxy
+              .auth(
+                jwt.sign(
+                  {
+                    userId,
+                    temp: true,
+                    roleName,
+                    signInTime: Date.now(),
+                  },
+                  process.env.APP_KEY,
+                  {
+                    jwtid: tokenInfo.jti,
+                    expiresIn,
                   },
                 ),
                 { type: 'bearer' },

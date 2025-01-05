@@ -7,11 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export interface ITokenControlConfig {
+export interface TokenPolicyConfig {
   tokenExpirationTime: string;
   sessionExpirationTime: string;
   expiredTokenRenewLimit: string;
 }
+
+type millisecond = number;
+export type NumericTokenPolicyConfig = {
+  [K in keyof TokenPolicyConfig]: millisecond;
+};
 
 export type TokenInfo = {
   jti: string;
@@ -23,8 +28,8 @@ export type TokenInfo = {
 
 export type JTIStatus = 'valid' | 'inactive' | 'blocked' | 'missing' | 'renewed' | 'expired';
 export interface ITokenControlService {
-  getConfig(): Promise<ITokenControlConfig>;
-  setConfig(config: ITokenControlConfig): Promise<any>;
+  getConfig(): Promise<NumericTokenPolicyConfig>;
+  setConfig(config: TokenPolicyConfig): Promise<any>;
   renew(jti: string): Promise<{ jti: string; issuedTime: EpochTimeStamp }>;
   add({ userId }: { userId: number }): Promise<TokenInfo>;
   set(id: string, value: Partial<TokenInfo>): Promise<void>;

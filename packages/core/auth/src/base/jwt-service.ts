@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import jwt, { JwtPayload, SignOptions } from 'jsonwebtoken';
+import jwt, { JwtPayload, SignOptions, VerifyErrors } from 'jsonwebtoken';
 import { ITokenBlacklistService } from './token-blacklist-service';
 export interface JwtOptions {
   secret: string;
@@ -49,30 +49,14 @@ export class JwtService {
   }
 
   /* istanbul ignore next -- @preserve */
-  decode(token: string): Promise<any> {
+  decode(token: string): Promise<JwtPayload> {
     return new Promise((resolve, reject) => {
-      jwt.verify(token, this.secret(), (err, decoded) => {
+      jwt.verify(token, this.secret(), (err, decoded: JwtPayload) => {
         if (err) {
           return reject(err);
         }
 
         resolve(decoded);
-      });
-    });
-  }
-
-  verify(
-    token: string,
-  ): Promise<{ status: 'valid' | 'expired'; payload: JwtPayload } | { status: 'invalid'; payload: null }> {
-    return new Promise((resolve, reject) => {
-      jwt.verify(token, this.secret(), async (err, decoded: JwtPayload) => {
-        if (err) {
-          if (err.name === 'TokenExpiredError') {
-            resolve({ status: 'expired', payload: jwt.decode(token) as JwtPayload });
-          } else resolve({ status: 'invalid', payload: null });
-        } else {
-          resolve({ status: 'valid', payload: decoded as JwtPayload });
-        }
       });
     });
   }
