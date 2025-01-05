@@ -12,13 +12,17 @@ import { useEventListener } from 'ahooks';
 import { theme } from 'antd';
 import { debounce } from 'lodash';
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useDesignable } from '..';
-import { useCollection, useDataBlockRequestData } from '../../';
+import { useCollection } from '../../';
 import { getPageSchema, useBlockHeightProps } from '../../block-provider/hooks';
 import { useTableBlockContext } from '../../block-provider/TableBlockProvider';
 import { HeightMode } from '../../schema-settings/SchemaSettingsBlockHeightItem';
 
-const getPageHeaderHeight = (disablePageHeader, enablePageTabs, hidePageTitle, token) => {
+const getPageHeaderHeight = (disablePageHeader, enablePageTabs, hidePageTitle, token, pathname) => {
+  if (pathname.includes('/popups/')) {
+    return 2 * token.paddingContentVertical + 22 + token.paddingPageVertical;
+  }
   if (disablePageHeader) {
     return token.paddingContentHorizontalLG;
   } else {
@@ -50,12 +54,19 @@ const usePageFullScreenHeight = (props?) => {
   const { token } = theme.useToken();
   const { designable } = useDesignable();
   const { heightProps } = useBlockHeightProps();
+  const location = useLocation();
   const { disablePageHeader, enablePageTabs, hidePageTitle } = props || heightProps || {};
   const navHeight = token.sizeXXL - 2;
   const addBlockBtnHeight = designable
     ? token.controlHeight + 2 * token.paddingContentHorizontalLG
     : 1 * token.paddingContentHorizontalLG;
-  const pageHeaderHeight = getPageHeaderHeight(disablePageHeader, enablePageTabs, hidePageTitle, token);
+  const pageHeaderHeight = getPageHeaderHeight(
+    disablePageHeader,
+    enablePageTabs,
+    hidePageTitle,
+    token,
+    location.pathname,
+  );
   return navHeight + pageHeaderHeight + addBlockBtnHeight;
 };
 
@@ -92,16 +103,13 @@ const useTableHeight = () => {
   const schema = useFieldSchema();
   const heightProps = tableHeightProps || blockHeightProps;
   const pageFullScreenHeight = useFullScreenHeight(heightProps);
-  const data = useDataBlockRequestData();
   const { name } = useCollection();
-  const { count, pageSize } = (data as any)?.meta || ({} as any);
-  const hasPagination = count > pageSize;
   const { heightMode, height, title } = heightProps;
   if (!heightProps?.heightMode || heightMode === HeightMode.DEFAULT) {
     return;
   }
   const hasTableActions = Object.keys(schema.parent.properties.actions?.properties || {}).length > 0;
-  const paginationHeight = hasPagination ? token.controlHeight + token.padding + token.marginLG : token.marginLG;
+  const paginationHeight = token.controlHeight + token.padding + token.marginLG;
   const actionBarHeight = hasTableActions || designable ? token.controlHeight + 2 * token.marginLG : token.marginLG;
   const tableHeaderHeight =
     (designable && !InternalWorkflowCollection.includes(name) ? token.controlHeight : 22) + 2 * token.padding + 1;
@@ -189,6 +197,7 @@ export const useTableSize = () => {
   );
 
   useEventListener('resize', calcTableSize);
+
   return { height: targetHeight, width, tableSizeRefCallback };
 };
 
@@ -196,7 +205,7 @@ const hasActionContainerInParentChain = (schema) => {
   if (!schema) return null;
 
   if (schema['x-component'] === 'Action.Container') {
-    return true;
+    return schema?.parent['x-component-props']?.['openMode'] !== 'page';
   }
   return hasActionContainerInParentChain(schema.parent);
 };
