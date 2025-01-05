@@ -81,7 +81,7 @@ export class BaseAuth extends Auth {
 
     if (!token) {
       this.ctx.throw(401, {
-        message: this.ctx.t('Unauthenticated. Please log in to continue.'),
+        message: this.ctx.t('Unauthenticated. Please sign in to continue.'),
         code: 'EMPTY_TOKEN' satisfies AuthErrorType,
       });
     }
@@ -97,7 +97,7 @@ export class BaseAuth extends Auth {
         payload = jwt.decode(token);
       } else {
         this.ctx.throw(401, {
-          message: this.ctx.t('Your session has expired. Please log in again.'),
+          message: this.ctx.t('Your session has expired. Please sign in again.'),
           code: 'INVALID_TOKEN' satisfies AuthErrorType,
         });
       }
@@ -108,7 +108,7 @@ export class BaseAuth extends Auth {
     const blocked = await this.jwt.blacklist.has(jti ?? token);
     if (blocked) {
       this.ctx.throw(401, {
-        message: this.ctx.t('Your session has expired. Please log in again.'),
+        message: this.ctx.t('Your session has expired. Please sign in again.'),
         code: 'BLOCKED_TOKEN' satisfies AuthErrorType,
       });
     }
@@ -130,7 +130,7 @@ export class BaseAuth extends Auth {
 
     if (!temp && tokenStatus !== 'valid') {
       this.ctx.throw(401, {
-        message: this.ctx.t('Your session has expired. Please log in again.'),
+        message: this.ctx.t('Your session has expired. Please sign in again.'),
         code: 'INVALID_TOKEN' satisfies AuthErrorType,
       });
     }
@@ -146,14 +146,14 @@ export class BaseAuth extends Auth {
       const tokenPolicy = await this.tokenController.getConfig();
       if (!signInTime || Date.now() - signInTime > tokenPolicy.sessionExpirationTime) {
         this.ctx.throw(401, {
-          message: this.ctx.t('Your session has expired. Please log in again.'),
+          message: this.ctx.t('Your session has expired. Please sign in again.'),
           code: 'EXPIRED_SESSION' satisfies AuthErrorType,
         });
       }
 
       if (Date.now() - exp * 1000 > tokenPolicy.expiredTokenRenewLimit) {
         this.ctx.throw(401, {
-          message: this.ctx.t('Your session has expired. Please log in again.'),
+          message: this.ctx.t('Your session has expired. Please sign in again.'),
           code: 'EXPIRED_SESSION' satisfies AuthErrorType,
         });
       }
@@ -195,7 +195,7 @@ export class BaseAuth extends Auth {
     }
     if (!user) {
       this.ctx.throw(401, {
-        message: this.ctx.t('User not found. Please log in again to continue.'),
+        message: this.ctx.t('User not found. Please sign in again to continue.'),
         code: 'NOT_EXIST_USER' satisfies AuthErrorType,
       });
     }
