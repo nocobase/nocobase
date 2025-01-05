@@ -422,6 +422,7 @@ export function EnvironmentTabs() {
               enum: filterOptions,
               'x-use-component-props': useFilterActionProps,
             }}
+            scope={{ t }}
           />
         </div>
         <Flex justify="end" style={{ marginBottom: 16 }}>
