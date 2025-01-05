@@ -19,7 +19,7 @@ import {
   useInheritsFormItemInitializerFields,
 } from '../../../../schema-initializer/utils';
 
-const ParentCollectionFields = () => {
+export const ParentCollectionFields = () => {
   const inheritFields = useInheritsFormItemInitializerFields();
   const { t } = useTranslation();
   const compile = useCompile();
