@@ -6,7 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { DownOutlined, PlusOutlined } from '@ant-design/icons';
+import { DownOutlined, PlusOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
 import {
   Checkbox,
   FormButtonGroup,
@@ -18,11 +18,18 @@ import {
   Reset,
   Submit,
 } from '@formily/antd-v5';
+import { useField } from '@formily/react';
 import { registerValidateRules } from '@formily/core';
 import { createSchemaField } from '@formily/react';
-import { SchemaComponentOptions, useAPIClient } from '@nocobase/client';
+import {
+  SchemaComponentOptions,
+  useAPIClient,
+  SchemaComponent,
+  useFilterFieldProps,
+  useFilterFieldOptions,
+} from '@nocobase/client';
 import { Alert, App, Button, Card, Dropdown, Flex, Space, Table, Tag } from 'antd';
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { VAR_NAME_RE } from '../../re';
 import { EnvAndSecretsContext } from '../EnvironmentVariablesAndSecretsProvider';
 import { useT } from '../locale';
@@ -117,7 +124,7 @@ const schema = {
   },
 };
 
-export function EnvironmentVariables({ request }) {
+export function EnvironmentVariables({ request, setSelectRowKeys }) {
   const { modal } = App.useApp();
   const t = useT();
   const api = useAPIClient();
@@ -188,6 +195,7 @@ export function EnvironmentVariables({ request }) {
       initialValues: { ...initialValues },
     });
   };
+
   return (
     <div>
       <Table
@@ -223,6 +231,12 @@ export function EnvironmentVariables({ request }) {
             ),
           },
         ]}
+        rowSelection={{
+          type: 'checkbox',
+          onChange: (rowKeys, selectedRows) => {
+            setSelectRowKeys(rowKeys);
+          },
+        }}
       />
     </div>
   );
@@ -250,7 +264,10 @@ function parseKeyValuePairs(input, type) {
 export function EnvironmentTabs() {
   const api = useAPIClient();
   const t = useT();
+  const { modal } = App.useApp();
   const { variablesRequest } = useContext(EnvAndSecretsContext);
+  const [selectRowKeys, setSelectRowKeys] = useState([]);
+  const resource = api.resource('environmentVariables');
 
   const handleBulkImport = async (importData) => {
     const arr = Object.entries(importData).map(([type, dataString]) => {
@@ -261,6 +278,110 @@ export function EnvironmentTabs() {
       method: 'post',
       data: arr.flat(),
     });
+  };
+  const handelBulkDelete = () => {
+    if (selectRowKeys.length > 0) {
+      modal.confirm({
+        title: t('Delete variable'),
+        content: t('Are you sure you want to delete it?'),
+        async onOk() {
+          await resource.destroy({
+            filterByTk: selectRowKeys,
+          });
+          variablesRequest?.refresh?.();
+        },
+      });
+    }
+  };
+  const handelRefresh = () => {
+    variablesRequest?.refresh?.();
+  };
+
+  const filterOptions = [
+    {
+      name: 'name',
+      title: t('Name'),
+      operators: [
+        { label: '{{t("contains")}}', value: '$includes', selected: true },
+        { label: '{{t("does not contain")}}', value: '$notIncludes' },
+        { label: '{{t("is")}}', value: '$eq' },
+        { label: '{{t("is not")}}', value: '$ne' },
+      ],
+      schema: {
+        type: 'string',
+        title: t('Name'),
+        'x-component': 'Input',
+      },
+    },
+    {
+      name: 'type',
+      title: t('Type'),
+      operators: [
+        {
+          label: '{{t("is")}}',
+          value: '$match',
+          selected: true,
+          schema: {
+            'x-component': 'Select',
+            'x-component-props': { mode: 'tags' },
+          },
+        },
+        {
+          label: '{{t("is not")}}',
+          value: '$notMatch',
+          schema: {
+            'x-component': 'Select',
+            'x-component-props': { mode: 'tags' },
+          },
+        },
+      ],
+      schema: {
+        type: 'string',
+        title: t('Type'),
+        'x-component': 'Select',
+        enum: [
+          {
+            value: 'default',
+            label: '{{t("Plain text")}}',
+          },
+          {
+            value: 'secret',
+            label: '{{t("Encrypted")}}',
+          },
+        ],
+      },
+    },
+    {
+      name: 'value',
+      title: t('Value'),
+      operators: [
+        { label: '{{t("contains")}}', value: '$includes', selected: true },
+        { label: '{{t("does not contain")}}', value: '$notIncludes' },
+        { label: '{{t("is")}}', value: '$eq' },
+        { label: '{{t("is not")}}', value: '$ne' },
+      ],
+      schema: {
+        type: 'string',
+        title: t('Value'),
+        'x-component': 'Input',
+      },
+    },
+  ];
+  const useFilterActionProps = () => {
+    const field = useField<any>();
+    const { run } = variablesRequest;
+
+    return {
+      options: filterOptions,
+      onSubmit: async (values) => {
+        run(values);
+
+        field.setValue(values);
+      },
+      onReset: (values) => {
+        field.setValue(values);
+      },
+    };
   };
   return (
     <div>
@@ -287,76 +408,101 @@ export function EnvironmentTabs() {
         />
       )}
       <Card>
-        <Flex justify="end" style={{ marginBottom: 16 }}>
-          <Dropdown
-            menu={{
-              onClick(info) {
-                FormDrawer(
-                  {
-                    variable: t('Add variable'),
-                    bulk: t('Bulk import'),
-                  }[info.key],
-                  () => {
-                    return (
-                      <FormLayout layout={'vertical'}>
-                        <SchemaComponentOptions scope={{ createOnly: true, t }}>
-                          <SchemaField schema={info.key === 'bulk' ? bulkSchema : schema} />
-                        </SchemaComponentOptions>
-                        <FormDrawer.Footer>
-                          <FormButtonGroup align="right">
-                            <Reset>{t('Cancel')}</Reset>
-                            <Submit
-                              onSubmit={async (data) => {
-                                if (info.key === 'bulk') {
-                                  await handleBulkImport(data);
-                                  variablesRequest.refresh();
-                                } else {
-                                  await api.request({
-                                    url: 'environmentVariables:create',
-                                    method: 'post',
-                                    data: {
-                                      ...data,
-                                    },
-                                  });
-                                  variablesRequest.refresh();
-                                }
-                              }}
-                            >
-                              {t('Submit')}
-                            </Submit>
-                          </FormButtonGroup>
-                        </FormDrawer.Footer>
-                      </FormLayout>
-                    );
-                  },
-                )
-                  .open({
-                    initialValues: {},
-                  })
-                  .then(console.log)
-                  .catch(console.log);
+        <div style={{ float: 'left' }}>
+          <SchemaComponent
+            schema={{
+              name: 'filter',
+              type: 'object',
+              title: '{{ t("Filter") }}',
+              default: {
+                $and: [{ name: { $includes: '' } }],
               },
-              items: [
-                {
-                  key: 'variable',
-                  label: t('Add variable'),
-                },
-                {
-                  type: 'divider',
-                },
-                {
-                  key: 'bulk',
-                  label: t('Bulk import'),
-                },
-              ],
+              'x-component': 'Filter.Action',
+
+              enum: filterOptions,
+              'x-use-component-props': useFilterActionProps,
             }}
-          >
-            <Button type="primary" icon={<PlusOutlined />}>
-              {t('Add new')} <DownOutlined />
+          />
+        </div>
+        <Flex justify="end" style={{ marginBottom: 16 }}>
+          <Space>
+            <Button icon={<ReloadOutlined />} onClick={handelRefresh}>
+              {t('Refresh')}
             </Button>
-          </Dropdown>
+
+            <Button icon={<DeleteOutlined />} onClick={handelBulkDelete}>
+              {t('Delete')}
+            </Button>
+            <Dropdown
+              menu={{
+                onClick(info) {
+                  FormDrawer(
+                    {
+                      variable: t('Add variable'),
+                      bulk: t('Bulk import'),
+                    }[info.key],
+                    () => {
+                      return (
+                        <FormLayout layout={'vertical'}>
+                          <SchemaComponentOptions scope={{ createOnly: true, t }}>
+                            <SchemaField schema={info.key === 'bulk' ? bulkSchema : schema} />
+                          </SchemaComponentOptions>
+                          <FormDrawer.Footer>
+                            <FormButtonGroup align="right">
+                              <Reset>{t('Cancel')}</Reset>
+                              <Submit
+                                onSubmit={async (data) => {
+                                  if (info.key === 'bulk') {
+                                    await handleBulkImport(data);
+                                    variablesRequest.refresh();
+                                  } else {
+                                    await api.request({
+                                      url: 'environmentVariables:create',
+                                      method: 'post',
+                                      data: {
+                                        ...data,
+                                      },
+                                    });
+                                    variablesRequest.refresh();
+                                  }
+                                }}
+                              >
+                                {t('Submit')}
+                              </Submit>
+                            </FormButtonGroup>
+                          </FormDrawer.Footer>
+                        </FormLayout>
+                      );
+                    },
+                  )
+                    .open({
+                      initialValues: {},
+                    })
+                    .then(console.log)
+                    .catch(console.log);
+                },
+                items: [
+                  {
+                    key: 'variable',
+                    label: t('Add variable'),
+                  },
+                  {
+                    type: 'divider',
+                  },
+                  {
+                    key: 'bulk',
+                    label: t('Bulk import'),
+                  },
+                ],
+              }}
+            >
+              <Button type="primary" icon={<PlusOutlined />}>
+                {t('Add new')} <DownOutlined />
+              </Button>
+            </Dropdown>
+          </Space>
         </Flex>
-        <EnvironmentVariables request={variablesRequest} />
+        <EnvironmentVariables request={variablesRequest} setSelectRowKeys={setSelectRowKeys} />
       </Card>
     </div>
   );
