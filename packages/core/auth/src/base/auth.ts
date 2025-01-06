@@ -201,7 +201,6 @@ export class BaseAuth extends Auth {
     }
     const tokenInfo = await this.tokenController.add({ userId: user.id });
     const expiresIn = Math.floor((await this.tokenController.getConfig()).tokenExpirationTime / 1000);
-
     const token = this.jwt.sign(
       {
         userId: user.id,
@@ -214,7 +213,6 @@ export class BaseAuth extends Auth {
         expiresIn,
       },
     );
-    this.tokenController.removeSessionExpiredTokens?.(user.id);
     return {
       user,
       token,

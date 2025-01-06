@@ -72,11 +72,12 @@ export class TokenController implements TokenControlService {
       expiredTokenRenewLimit: ms(config.expiredTokenRenewLimit),
     });
   }
+
   async removeSessionExpiredTokens(userId: number) {
     const config = await this.getConfig();
     const issuedTokenRepo = this.app.db.getRepository(issuedTokensCollectionName);
     const currTS = Date.now();
-    issuedTokenRepo.destroy({
+    return issuedTokenRepo.destroy({
       filter: {
         userId: userId,
         signInTime: {
@@ -85,6 +86,7 @@ export class TokenController implements TokenControlService {
       },
     });
   }
+
   async add({ userId }: { userId: number }) {
     const jti = randomUUID();
     const currTS = Date.now();
@@ -96,13 +98,21 @@ export class TokenController implements TokenControlService {
       userId,
     };
     await this.setTokenInfo(jti, data);
+
+    try {
+      if (process.env.DB_DIALECT === 'sqlite') {
+        // SQLITE does not support concurrent operations
+        await this.removeSessionExpiredTokens(userId);
+      } else {
+        this.removeSessionExpiredTokens(userId);
+      }
+    } catch (err) {
+      this.logger.error(err, { module: 'auth', submodule: 'token-controller', method: 'removeSessionExpiredTokens' });
+    }
+
     return data;
   }
-  async set(id: string, value: Partial<TokenInfo>) {
-    const tokenInfo = await this.get(id);
-    if (!tokenInfo) throw new Error('jti not found');
-    return this.setTokenInfo(id, { ...tokenInfo, ...value });
-  }
+
   renew: TokenControlService['renew'] = async (jti) => {
     const repo = this.app.db.getRepository(issuedTokensCollectionName);
     const model = this.app.db.getModel(issuedTokensCollectionName);
