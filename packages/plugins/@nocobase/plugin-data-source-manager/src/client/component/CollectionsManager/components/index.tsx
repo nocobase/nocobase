@@ -14,7 +14,7 @@ import { useParams } from 'react-router-dom';
 import { useRecord, useCompile, useAPIClient, useCollectionManager_deprecated } from '@nocobase/client';
 import { useRemoteCollectionContext } from '../CollectionFields';
 
-const supportTypes = ['string', 'bigInt', 'integer', 'uuid', 'uid'];
+const supportTypes = ['string', 'bigInt', 'integer', 'uuid', 'uid', 'nanoid'];
 
 export const SourceKey = observer(
   (props: any) => {

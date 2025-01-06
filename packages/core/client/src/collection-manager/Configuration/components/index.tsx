@@ -15,7 +15,7 @@ import { useRecord } from '../../../record-provider';
 import { useCompile } from '../../../schema-component';
 import { useCollectionManager_deprecated } from '../../hooks';
 
-const supportTypes = ['string', 'bigInt', 'integer', 'uuid', 'uid'];
+const supportTypes = ['string', 'bigInt', 'integer', 'uuid', 'uid', 'nanoid'];
 export const SourceForeignKey = observer(
   () => {
     const record = useRecord();
