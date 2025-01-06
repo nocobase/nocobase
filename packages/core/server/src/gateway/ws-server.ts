@@ -105,7 +105,6 @@ export class WSServer extends EventEmitter {
     });
 
     AppSupervisor.getInstance().on('appMaintainingMessageChanged', async ({ appName, message, command, status }) => {
-      console.log('appMaintainingMessageChanged', appName, message, command, status);
       const app = await AppSupervisor.getInstance().getApp(appName, {
         withOutBootStrap: true,
       });

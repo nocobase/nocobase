@@ -104,6 +104,7 @@ export class Application {
   maintained = false;
   maintaining = false;
   error = null;
+  hasLoadError = false;
 
   private wsAuthorized = false;
 
@@ -189,14 +190,14 @@ export class Application {
 
   setMaintaining(maintaining: boolean) {
     // if maintaining is the same, do nothing
-    // if (this.maintaining === maintaining) {
-    //   return;
-    // }
+    if (this.maintaining === maintaining) {
+      return;
+    }
 
     this.maintaining = maintaining;
-    // if (!maintaining) {
-    //   this.eventBus.dispatchEvent(new Event('maintaining:end'));
-    // }
+    if (!maintaining) {
+      this.eventBus.dispatchEvent(new Event('maintaining:end'));
+    }
   }
 
   private initRequireJs() {
@@ -302,6 +303,7 @@ export class Application {
       await this.loadWebSocket();
       await this.pm.load();
     } catch (error) {
+      this.hasLoadError = true;
       if (this.ws.enabled) {
         await new Promise((resolve) => {
           setTimeout(() => resolve(null), 1000);
@@ -353,6 +355,10 @@ export class Application {
         this.setMaintaining(true);
         this.error = data.payload;
       } else {
+        if (this.hasLoadError) {
+          window.location.reload();
+        }
+
         this.setMaintaining(false);
         this.maintained = true;
         this.error = null;
@@ -362,8 +368,8 @@ export class Application {
           return;
         }
 
-        // const eventName = `ws:message:${type}`;
-        // this.eventBus.dispatchEvent(new CustomEvent(eventName, { detail: data.payload }));
+        const eventName = `ws:message:${type}`;
+        this.eventBus.dispatchEvent(new CustomEvent(eventName, { detail: data.payload }));
       }
     });
 
