@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { ISchema, SchemaComponent, ExtendCollectionsProvider } from '@nocobase/client';
+import { ISchema, SchemaComponent } from '@nocobase/client';
 import { Card } from 'antd';
 import { uid } from '@formily/shared';
 import { tval } from '@nocobase/utils/client';
@@ -28,12 +28,12 @@ const schema: ISchema & { properties: Properties } = {
   properties: {
     sessionExpirationTime: {
       type: 'string',
-      title: "{{t('Session validity period')}}",
+      title: "{{t('Session validity')}}",
       'x-decorator': 'FormItem',
       'x-component': componentsNameMap.InputTime,
       required: true,
       description: tval(
-        'Keep the login session active. If the session times out and the user attempts to access system features, the system will return a 401 error and redirect to the login page.',
+        'The maximum valid time for each user login. During the session validity, the Token will be automatically updated. After the timeout, the user is required to log in again.',
       ),
     },
     tokenExpirationTime: {
@@ -43,7 +43,7 @@ const schema: ISchema & { properties: Properties } = {
       'x-component': componentsNameMap.InputTime,
       required: true,
       description: tval(
-        'During the active login session, the system issues tokens with a defined validity period. If a token expires, a new one will be issued. For security reasons, it is recommended to set the validity period within a range of 15 to 30 minutes based on actual requirements.',
+        'The validity period of each issued API Token. After the Token expires, if it is within the session validity period and has not exceeded the refresh limit, the server will automatically issue a new Token to maintain the user session, otherwise the user is required to log in again. (Each Token can only be refreshed once)',
       ),
     },
     expiredTokenRenewLimit: {
@@ -51,9 +51,12 @@ const schema: ISchema & { properties: Properties } = {
       title: "{{t('Expired token refresh limit')}}",
       'x-decorator': 'FormItem',
       'x-component': componentsNameMap.InputTime,
+      'x-component-props': {
+        minNum: 0,
+      },
       required: true,
       description: tval(
-        'The maximum time after a token expires during which it can still be refreshed. Beyond this limit, the token cannot be renewed, and reauthentication is required.',
+        'The maximum time limit allowed for refreshing a Token after it expires. After this time limit, the token cannot be automatically renewed, and the user needs to log in again.',
       ),
     },
     footer: {

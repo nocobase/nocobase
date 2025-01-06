@@ -19,7 +19,7 @@ import { Cache } from '@nocobase/cache';
 import { randomUUID } from 'crypto';
 import ms from 'ms';
 import Application from '@nocobase/server';
-import Database, { Repository, Model } from '@nocobase/database';
+import Database, { Repository } from '@nocobase/database';
 import { issuedTokensCollectionName, tokenPolicyCollectionName, tokenPolicyRecordKey } from '../constants';
 
 type TokenControlService = ITokenControlService;
@@ -35,14 +35,6 @@ export class TokenController implements TokenControlService {
     this.cache = cache;
     this.app = app;
     this.logger = logger;
-  }
-  get(id: string): Promise<TokenInfo | null> {
-    return this.cache.wrap(`${JTICACHEKEY}:${id}`, async () => {
-      const repo = this.app.db.getRepository<Repository<TokenInfo>>(issuedTokensCollectionName);
-      const tokenInfo = await repo.findOne({ filterByTk: id });
-      if (!tokenInfo) return null;
-      else return tokenInfo.dataValues as TokenInfo;
-    });
   }
 
   async setTokenInfo(id: string, value: TokenInfo): Promise<void> {

@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Modal } from 'antd';
 import debounce from 'lodash/debounce';
 import { Application } from '@nocobase/client';
 import type { AxiosResponse } from 'axios';
@@ -18,10 +17,8 @@ type AuthErrorType =
   | 'INVALID_TOKEN'
   | 'RENEWED_TOKEN'
   | 'MISSING_SESSION'
-  | 'INACTIVE_SESSION'
   | 'TOKEN_RENEW_FAILED'
   | 'BLOCKED_TOKEN'
-  | 'BLOCKED_SESSION'
   | 'EXPIRED_SESSION'
   | 'NOT_EXIST_USER';
 

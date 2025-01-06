@@ -301,9 +301,9 @@ export class PluginAuthServer extends Plugin {
       return;
     }
     const config = {
-      tokenExpirationTime: process.env.JWT_EXPIRES_IN ?? '6h',
-      sessionExpirationTime: '1d',
-      expiredTokenRenewLimit: '3h',
+      tokenExpirationTime: '1d',
+      sessionExpirationTime: '7d',
+      expiredTokenRenewLimit: '1d',
     };
     await tokenPolicyRepo.create({
       values: {

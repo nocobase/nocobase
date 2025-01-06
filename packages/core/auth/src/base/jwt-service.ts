@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import jwt, { JwtPayload, SignOptions, VerifyErrors } from 'jsonwebtoken';
+import jwt, { JwtPayload, SignOptions } from 'jsonwebtoken';
 import { ITokenBlacklistService } from './token-blacklist-service';
 export interface JwtOptions {
   secret: string;

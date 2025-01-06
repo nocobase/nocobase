@@ -21,7 +21,6 @@ describe('middleware', () => {
   let admin;
   let member;
   let adminAgent;
-  let memberAgent;
 
   beforeEach(async () => {
     app = await prepareApp();

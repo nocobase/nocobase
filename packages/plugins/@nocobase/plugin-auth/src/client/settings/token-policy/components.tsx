@@ -16,7 +16,7 @@ const { Option } = Select;
 const InputTime = connect(
   (props) => {
     const { t } = useAuthTranslation();
-    const { value, onChange, ...restProps } = props;
+    const { value, onChange, minNum = 1, ...restProps } = props;
     const regex = /^(\d*)([a-zA-Z]*)$/;
     const match = value ? value.match(regex) : null;
     useEffect(() => {
@@ -35,7 +35,7 @@ const InputTime = connect(
       <InputNumber
         value={time}
         addonAfter={TimeUnits}
-        min={1}
+        min={minNum}
         onChange={(time) => onChange(`${time ?? 1}${unit}`)}
         {...restProps}
       />

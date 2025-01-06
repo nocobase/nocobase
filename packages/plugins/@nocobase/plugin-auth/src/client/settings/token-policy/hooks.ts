@@ -8,7 +8,7 @@
  */
 
 import { useMemo, useEffect } from 'react';
-import { App as AntdApp, Table as AntdTable, Typography, Button } from 'antd';
+import { App as AntdApp } from 'antd';
 import { useForm } from '@formily/react';
 import { createForm } from '@formily/core';
 import { useAPIClient } from '@nocobase/client';

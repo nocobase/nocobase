@@ -9,18 +9,12 @@
 
 import { Collection, Model } from '@nocobase/database';
 import { Cache } from '@nocobase/cache';
-import ms from 'ms';
 import jwt from 'jsonwebtoken';
 import { Auth, AuthConfig, AuthErrorType, AuthError } from '../auth';
 import { JwtService } from './jwt-service';
 import { ITokenControlService } from './token-control-service';
 
-function getAuthErrorTypeFromStatus<Status extends string, Suffix extends string>(
-  status: Status,
-  suffix: Suffix,
-): `${Uppercase<Status>}_${Suffix}` {
-  return `${status.toUpperCase() as Uppercase<Status>}_${suffix}`;
-}
+const localeNamespace = 'auth';
 /**
  * BaseAuth
  * @description A base class with jwt provide some common methods.
@@ -81,7 +75,7 @@ export class BaseAuth extends Auth {
 
     if (!token) {
       this.ctx.throw(401, {
-        message: this.ctx.t('Unauthenticated. Please sign in to continue.'),
+        message: this.ctx.t('Unauthenticated. Please sign in to continue.', { ns: localeNamespace }),
         code: 'EMPTY_TOKEN' satisfies AuthErrorType,
       });
     }
@@ -96,8 +90,9 @@ export class BaseAuth extends Auth {
         tokenStatus = 'expired';
         payload = jwt.decode(token);
       } else {
+        this.ctx.logger.error(err, { method: 'jwt.decode' });
         this.ctx.throw(401, {
-          message: this.ctx.t('Your session has expired. Please sign in again.'),
+          message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
           code: 'INVALID_TOKEN' satisfies AuthErrorType,
         });
       }
@@ -108,7 +103,7 @@ export class BaseAuth extends Auth {
     const blocked = await this.jwt.blacklist.has(jti ?? token);
     if (blocked) {
       this.ctx.throw(401, {
-        message: this.ctx.t('Your session has expired. Please sign in again.'),
+        message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
         code: 'BLOCKED_TOKEN' satisfies AuthErrorType,
       });
     }
@@ -130,14 +125,14 @@ export class BaseAuth extends Auth {
 
     if (!temp && tokenStatus !== 'valid') {
       this.ctx.throw(401, {
-        message: this.ctx.t('Your session has expired. Please sign in again.'),
+        message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
         code: 'INVALID_TOKEN' satisfies AuthErrorType,
       });
     }
 
     if (tokenStatus === 'valid' && user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
       this.ctx.throw(401, {
-        message: 'User password changed, please signin again',
+        message: this.ctx.t('User password changed, please signin again.', { ns: localeNamespace }),
         code: 'INVALID_TOKEN' satisfies AuthErrorType,
       });
     }
@@ -146,14 +141,14 @@ export class BaseAuth extends Auth {
       const tokenPolicy = await this.tokenController.getConfig();
       if (!signInTime || Date.now() - signInTime > tokenPolicy.sessionExpirationTime) {
         this.ctx.throw(401, {
-          message: this.ctx.t('Your session has expired. Please sign in again.'),
+          message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
           code: 'EXPIRED_SESSION' satisfies AuthErrorType,
         });
       }
 
-      if (Date.now() - exp * 1000 > tokenPolicy.expiredTokenRenewLimit) {
+      if (tokenPolicy.expiredTokenRenewLimit > 0 && Date.now() - exp * 1000 > tokenPolicy.expiredTokenRenewLimit) {
         this.ctx.throw(401, {
-          message: this.ctx.t('Your session has expired. Please sign in again.'),
+          message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
           code: 'EXPIRED_SESSION' satisfies AuthErrorType,
         });
       }
@@ -195,7 +190,7 @@ export class BaseAuth extends Auth {
     }
     if (!user) {
       this.ctx.throw(401, {
-        message: this.ctx.t('User not found. Please sign in again to continue.'),
+        message: this.ctx.t('User not found. Please sign in again to continue.', { ns: localeNamespace }),
         code: 'NOT_EXIST_USER' satisfies AuthErrorType,
       });
     }
