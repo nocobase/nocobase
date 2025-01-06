@@ -161,10 +161,10 @@ export const TargetKey = observer(
         setOptions(
           getCollection(target, dataSourceKey)
             .fields?.filter((v) => {
-              if (type !== 'hasMany') {
-                return v.primaryKey || v.unique;
+              if (v.primaryKey || v.unique) {
+                return true;
               }
-              return supportTypes.includes(v.type);
+              return type === 'hasMany' && supportTypes.includes(v.type);
             })
             .map((k) => {
               return {
@@ -196,10 +196,10 @@ export const TargetKey = observer(
               setOptions(
                 data.data
                   ?.filter((v) => {
-                    if (type !== 'hasMany') {
-                      return v.primaryKey || v.unique;
+                    if (v.primaryKey || v.unique) {
+                      return true;
                     }
-                    return supportTypes.includes(v.type);
+                    return type === 'hasMany' && supportTypes.includes(v.type);
                   })
                   .map((k) => {
                     return {
