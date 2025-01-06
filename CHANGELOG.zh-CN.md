@@ -5,6 +5,12 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.4.19](https://github.com/nocobase/nocobase/compare/v1.4.18...v1.4.19) - 2025-01-06
+
+### 🐛 修复
+
+- **[client]** 修 复 筛选表单/筛选操作中日期范围选择器设置 showTime=true 时未显示时间 ([#5994](https://github.com/nocobase/nocobase/pull/5994)) by @katherinehhh
+
 ## [v1.4.18](https://github.com/nocobase/nocobase/compare/v1.4.17...v1.4.18) - 2025-01-06
 
 ### 🚀 优化
