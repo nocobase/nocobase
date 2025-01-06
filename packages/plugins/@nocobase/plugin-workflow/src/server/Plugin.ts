@@ -285,7 +285,7 @@ export default class PluginWorkflowServer extends Plugin {
     //   * add all hooks for enabled workflows
     //   * add hooks for create/update[enabled]/delete workflow to add/remove specific hooks
     this.app.on('afterStart', async () => {
-      // this.app.setMaintainingMessage('check for not started executions');
+      this.app.setMaintainingMessage('check for not started executions');
       this.ready = true;
 
       const collection = db.getCollection('workflows');

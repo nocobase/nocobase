@@ -146,10 +146,10 @@ export class PluginAuthServer extends Plugin {
         tagValue: user.id,
       });
 
-      // this.app.emit(`ws:authorized`, {
-      //   clientId,
-      //   userId: user.id,
-      // });
+      this.app.emit(`ws:authorized`, {
+        clientId,
+        userId: user.id,
+      });
     });
     this.app.auditManager.registerActions([
       {
