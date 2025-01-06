@@ -33,9 +33,7 @@ export function registerIcons(components) {
 }
 
 Object.keys(antIcons).forEach((name) => {
-  if (name.endsWith('Outlined')) {
-    registerIcon(name, antIcons[name]);
-  }
+  registerIcon(name, antIcons[name]);
 });
 
 interface IconProps {
@@ -51,7 +49,10 @@ export const Icon = (props: IconProps) => {
   }
   if (type && icons.has(type.toLowerCase())) {
     const IconComponent = icons.get(type.toLowerCase());
-    return <IconComponent {...restProps} />;
+    if (typeof IconComponent === 'object') {
+      return <IconComponent {...restProps} />;
+    }
+    return null;
   }
   if (type && IconFont) {
     return <IconFont type={type} />;
