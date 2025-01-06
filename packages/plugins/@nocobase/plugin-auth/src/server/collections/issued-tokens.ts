@@ -15,9 +15,7 @@ export default defineCollection({
   name: issuedTokensCollectionName,
   autoGenId: false,
   createdAt: true,
-  createdBy: true,
   updatedAt: true,
-  updatedBy: true,
   fields: [
     {
       name: 'id',
