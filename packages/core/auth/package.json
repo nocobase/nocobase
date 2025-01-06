@@ -12,8 +12,7 @@
     "@nocobase/resourcer": "1.6.0-alpha.8",
     "@nocobase/utils": "1.6.0-alpha.8",
     "@types/jsonwebtoken": "^8.5.8",
-    "jsonwebtoken": "^8.5.1",
-    "koa-compose": "^4.1.0"
+    "jsonwebtoken": "^8.5.1"
   },
   "repository": {
     "type": "git",
