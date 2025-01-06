@@ -187,31 +187,31 @@ export class WSServer extends EventEmitter {
       AppSupervisor.getInstance().bootStrapApp(handleAppName);
     }
 
-    const appStatus = AppSupervisor.getInstance().getAppStatus(handleAppName, 'initializing');
+    // const appStatus = AppSupervisor.getInstance().getAppStatus(handleAppName, 'initializing');
 
-    if (appStatus === 'not_found') {
-      this.sendMessageToConnection(client, {
-        type: 'maintaining',
-        payload: getPayloadByErrorCode('APP_NOT_FOUND', { appName: handleAppName }),
-      });
-      return;
-    }
+    // if (appStatus === 'not_found') {
+    //   this.sendMessageToConnection(client, {
+    //     type: 'maintaining',
+    //     payload: getPayloadByErrorCode('APP_NOT_FOUND', { appName: handleAppName }),
+    //   });
+    //   return;
+    // }
 
-    if (appStatus === 'initializing') {
-      this.sendMessageToConnection(client, {
-        type: 'maintaining',
-        payload: getPayloadByErrorCode('APP_INITIALIZING', { appName: handleAppName }),
-      });
+    // if (appStatus === 'initializing') {
+    //   this.sendMessageToConnection(client, {
+    //     type: 'maintaining',
+    //     payload: getPayloadByErrorCode('APP_INITIALIZING', { appName: handleAppName }),
+    //   });
 
-      return;
-    }
+    //   return;
+    // }
 
-    const app = await AppSupervisor.getInstance().getApp(handleAppName);
-
-    this.sendMessageToConnection(client, {
-      type: 'maintaining',
-      payload: getPayloadByErrorCode(appStatus, { app }),
-    });
+    // const app = await AppSupervisor.getInstance().getApp(handleAppName);
+    //
+    // this.sendMessageToConnection(client, {
+    //   type: 'maintaining',
+    //   payload: getPayloadByErrorCode(appStatus, { app }),
+    // });
   }
 
   removeConnection(id: string) {
