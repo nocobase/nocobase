@@ -8,7 +8,7 @@
  */
 
 import { Field } from '@formily/core';
-import { useField, useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema, useForm } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useColumnSchema } from '../../../../schema-component/antd/table/Table.Column.Decorator';
@@ -53,6 +53,43 @@ export const previewComponentFieldSettings = new SchemaSettings({
             dn.refresh();
           },
         };
+      },
+    },
+    {
+      name: 'showFileName',
+      type: 'switch',
+      useComponentProps() {
+        const { t } = useTranslation();
+        const field = useField<Field>();
+        const { fieldSchema: tableColumnSchema } = useColumnSchema();
+        const schema = useFieldSchema();
+        const fieldSchema = tableColumnSchema || schema;
+        const { dn, refresh } = useDesignable();
+        return {
+          title: t('Show file name'),
+          checked: fieldSchema['x-component-props']?.showFileName !== (false as boolean),
+          onChange(value) {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            field.componentProps.showFileName = value;
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props'].showFileName = value;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            dn.emit('patch', {
+              schema,
+            });
+            refresh();
+          },
+        };
+      },
+      useVisible() {
+        const { fieldSchema: tableColumnSchema } = useColumnSchema();
+        const field = useField();
+        const form = useForm();
+        const isReadPretty = tableColumnSchema?.['x-read-pretty'] || field.readPretty || form.readPretty;
+        console.log(isReadPretty);
+        return isReadPretty;
       },
     },
   ],

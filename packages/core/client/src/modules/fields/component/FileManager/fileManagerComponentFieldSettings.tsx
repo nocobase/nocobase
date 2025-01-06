@@ -183,6 +183,43 @@ export const fileManagerComponentFieldSettings = new SchemaSettings({
       },
     },
     {
+      name: 'showFileName',
+      type: 'switch',
+      useComponentProps() {
+        const { t } = useTranslation();
+        const field = useField<Field>();
+        const { fieldSchema: tableColumnSchema } = useColumnSchema();
+        const schema = useFieldSchema();
+        const fieldSchema = tableColumnSchema || schema;
+        const { dn, refresh } = useDesignable();
+        return {
+          title: t('Show file name'),
+          checked: fieldSchema['x-component-props']?.showFileName !== (false as boolean),
+          onChange(value) {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            field.componentProps.showFileName = value;
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props'].showFileName = value;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            dn.emit('patch', {
+              schema,
+            });
+            refresh();
+          },
+        };
+      },
+      useVisible() {
+        const { fieldSchema: tableColumnSchema } = useColumnSchema();
+        const field = useField();
+        const form = useForm();
+        const isReadPretty = tableColumnSchema?.['x-read-pretty'] || field.readPretty || form.readPretty;
+        console.log(isReadPretty);
+        return isReadPretty;
+      },
+    },
+    {
       ...getAllowMultiple(),
       useVisible() {
         const isAssociationField = useIsAssociationField();
