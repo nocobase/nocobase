@@ -792,6 +792,66 @@
   dependencies:
     styled-components "^5.3.3"
 
+"@ast-grep/napi-darwin-arm64@0.32.3":
+  version "0.32.3"
+  resolved "https://registry.npmmirror.com/@ast-grep/napi-darwin-arm64/-/napi-darwin-arm64-0.32.3.tgz#6165c6605af2f793ad9b174fdd03fcac2e3e95c0"
+  integrity sha512-Ifh25Ra38+5TGvO48NVcJsRarBSqJ2ppN6J+Qc8Z19rKALYb61tsWj6oh0W1CTbsYQ/HJbIff//WkUDkY0wMMg==
+
+"@ast-grep/napi-darwin-x64@0.32.3":
+  version "0.32.3"
+  resolved "https://registry.npmmirror.com/@ast-grep/napi-darwin-x64/-/napi-darwin-x64-0.32.3.tgz#e41b3ff2978cd807b83dd6b7acd14de5f3918cf7"
+  integrity sha512-jkuXgdvBTK7aTV7IojqMCUbHE4bzJzJ/adR0segW+BpU/uh/pxNuCZAal7E7KmWgSWVSS56UCOjS0OyibZKb7Q==
+
+"@ast-grep/napi-linux-arm64-gnu@0.32.3":
+  version "0.32.3"
+  resolved "https://registry.npmmirror.com/@ast-grep/napi-linux-arm64-gnu/-/napi-linux-arm64-gnu-0.32.3.tgz#a2f330ec4dc2149d13a46151e788dcde816fc88a"
+  integrity sha512-Kso32W1K/+guK1Jkk33MpvVHhulaGF7lf6HW9Bc4VxRHWyZBXuhwwPOtf7+89qa2nEb0YyUxgQTnMUXbCKyYAQ==
+
+"@ast-grep/napi-linux-arm64-musl@0.32.3":
+  version "0.32.3"
+  resolved "https://registry.npmmirror.com/@ast-grep/napi-linux-arm64-musl/-/napi-linux-arm64-musl-0.32.3.tgz#96da7d076572640d5d7a676c3698c5d68616f6b2"
+  integrity sha512-7+u7F5rzaV0/N5WdP2q+kGl3v+l8iGFRx4p7NUcbNumYqGDS2mkfRkaesRDSd7BH94ZulGtJnpmu3imX7spolQ==
+
+"@ast-grep/napi-linux-x64-gnu@0.32.3":
+  version "0.32.3"
+  resolved "https://registry.npmmirror.com/@ast-grep/napi-linux-x64-gnu/-/napi-linux-x64-gnu-0.32.3.tgz#52d9a7223aed0834ab7860774107e5861ce7c9e7"
+  integrity sha512-XwUjw+W1QWDAPjx+Hsa8ZwONN3MDPINdRkRM6Q1vV3pl0p9YrMpwL72xrWQA1G7r7ej9BI1fLiXWB4YEOeYzJw==
+
+"@ast-grep/napi-linux-x64-musl@0.32.3":
+  version "0.32.3"
+  resolved "https://registry.npmmirror.com/@ast-grep/napi-linux-x64-musl/-/napi-linux-x64-musl-0.32.3.tgz#0e33990e99ac094ec7549917617c952b90a8f37b"
+  integrity sha512-894fQNqBDUfCP/qYbrPcK6+tMTEskc+vV2IKOKqgCfDryeptaiJJTJL9+Vbj38rO1LWhY8MIZ8W5ZyjxuhDRBA==
+
+"@ast-grep/napi-win32-arm64-msvc@0.32.3":
+  version "0.32.3"
+  resolved "https://registry.npmmirror.com/@ast-grep/napi-win32-arm64-msvc/-/napi-win32-arm64-msvc-0.32.3.tgz#4aba139b22cb36aae81ac3134f015b4071fd279d"
+  integrity sha512-T8nrZm3E+h2VgHuQ3THQLvqhou4MkSbNcyIOgLZ0l2NatHIckeHuly5fmnkd6KQsGP/AqAEGxZBoOVYvoDl7DA==
+
+"@ast-grep/napi-win32-ia32-msvc@0.32.3":
+  version "0.32.3"
+  resolved "https://registry.npmmirror.com/@ast-grep/napi-win32-ia32-msvc/-/napi-win32-ia32-msvc-0.32.3.tgz#8ebee6283aa243db05b562cbc4091c3ab6166c20"
+  integrity sha512-40RdPWWgVLCx6gRSXfVXt3TuV6dZQE8K74whq56+nliJqA4TA1QCrNtbX9keFvb1JDc/iOUKc4PKA3A7TGHANQ==
+
+"@ast-grep/napi-win32-x64-msvc@0.32.3":
+  version "0.32.3"
+  resolved "https://registry.npmmirror.com/@ast-grep/napi-win32-x64-msvc/-/napi-win32-x64-msvc-0.32.3.tgz#e52e6faf29ec770d55c0b04315098488189e5b55"
+  integrity sha512-4VKmBFhT0M8s1LbAXemPDnHyAjEi5owkqkz85akvic9u6vRI0evRk8j2sHmgEBXwyySLUHf0NfI0XqwZ0mAl7g==
+
+"@ast-grep/napi@^0.32.2":
+  version "0.32.3"
+  resolved "https://registry.npmmirror.com/@ast-grep/napi/-/napi-0.32.3.tgz#dcc7270aabce2b5a0cec1a331d31f2f80787b248"
+  integrity sha512-EdgX3gnDGkKMeofSYQlmPccjnxmGGQoEKL7pVQUmenLrsUBXXcjY//6J0LJApfIzNCknjQkfWpj1IbWDkl66Iw==
+  optionalDependencies:
+    "@ast-grep/napi-darwin-arm64" "0.32.3"
+    "@ast-grep/napi-darwin-x64" "0.32.3"
+    "@ast-grep/napi-linux-arm64-gnu" "0.32.3"
+    "@ast-grep/napi-linux-arm64-musl" "0.32.3"
+    "@ast-grep/napi-linux-x64-gnu" "0.32.3"
+    "@ast-grep/napi-linux-x64-musl" "0.32.3"
+    "@ast-grep/napi-win32-arm64-msvc" "0.32.3"
+    "@ast-grep/napi-win32-ia32-msvc" "0.32.3"
+    "@ast-grep/napi-win32-x64-msvc" "0.32.3"
+
 "@aws-crypto/crc32@3.0.0":
   version "3.0.0"
   resolved "https://registry.npmmirror.com/@aws-crypto/crc32/-/crc32-3.0.0.tgz#07300eca214409c33e3ff769cd5697b57fdd38fa"
@@ -5395,10 +5455,15 @@
     "@jridgewell/gen-mapping" "^0.3.0"
     "@jridgewell/trace-mapping" "^0.3.9"
 
-"@jridgewell/sourcemap-codec@^1.4.10", "@jridgewell/sourcemap-codec@^1.4.14", "@jridgewell/sourcemap-codec@^1.4.15":
+"@jridgewell/sourcemap-codec@^1.4.10", "@jridgewell/sourcemap-codec@^1.4.14":
   version "1.4.15"
   resolved "https://registry.npmmirror.com/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.4.15.tgz#d7c6e6755c78567a951e04ab52ef0fd26de59f32"
   integrity sha512-eF2rxCRulEKXHTRiDrDy6erMYWqNw4LPdQ8UQA4huuxaQsVeRPFl2oM8oDGxMFhJUWZf9McpLtJasDDZb/Bpeg==
+
+"@jridgewell/sourcemap-codec@^1.5.0":
+  version "1.5.0"
+  resolved "https://registry.npmmirror.com/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.5.0.tgz#3188bcb273a414b0d215fd22a58540b989b9409a"
+  integrity sha512-gv3ZRaISU3fjPAgNsriBRqGWQL6quFx04YMPW/zD8XMLsU32mhCCbfbO6KZFLjvYpCZ8zyDEgqsgf+PwPaM7GQ==
 
 "@jridgewell/trace-mapping@0.3.9":
   version "0.3.9"
@@ -19911,12 +19976,12 @@ lz-string@^1.4.4, lz-string@^1.5.0:
   resolved "https://registry.npmmirror.com/lz-string/-/lz-string-1.5.0.tgz#c1ab50f77887b712621201ba9fd4e3a6ed099941"
   integrity sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ==
 
-magic-string@^0.30.0, magic-string@^0.30.5:
-  version "0.30.5"
-  resolved "https://registry.npmmirror.com/magic-string/-/magic-string-0.30.5.tgz#1994d980bd1c8835dc6e78db7cbd4ae4f24746f9"
-  integrity sha512-7xlpfBaQaP/T6Vh8MO/EqXSW5En6INHEvEXQiuff7Gku0PWjU3uf6w/j9o7O+SpB5fOAkrI5HeoNgwjEO0pFsA==
+magic-string@^0.30.17, magic-string@^0.30.5:
+  version "0.30.17"
+  resolved "https://registry.npmmirror.com/magic-string/-/magic-string-0.30.17.tgz#450a449673d2460e5bbcfba9a61916a1714c7453"
+  integrity sha512-sNPKHvyjVf7gyjwS4xGTaW/mCnF8wnjtifKBEhxfZ7E/S8tQ0rssrwGNn6q8JH/ohItJfSQp9mBtQYuTlH5QnA==
   dependencies:
-    "@jridgewell/sourcemap-codec" "^1.4.15"
+    "@jridgewell/sourcemap-codec" "^1.5.0"
 
 magicast@^0.3.3:
   version "0.3.3"
@@ -22881,12 +22946,7 @@ pgpass@1.x:
   dependencies:
     split2 "^4.1.0"
 
-picocolors@^1.0.0, picocolors@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.npmmirror.com/picocolors/-/picocolors-1.0.1.tgz#a8ad579b571952f0e5d25892de5445bcfe25aaa1"
-  integrity sha512-anP1Z8qwhkbmu7MFP5iTt+wQKXgwzf7zTyGlcdzabySa9vd0Xt392U0rVmz9poOaBj0uHJKyyo9/upk0HrEQew==
-
-picocolors@^1.1.0, picocolors@^1.1.1:
+picocolors@^1.0.0, picocolors@^1.0.1, picocolors@^1.1.0, picocolors@^1.1.1:
   version "1.1.1"
   resolved "https://registry.npmmirror.com/picocolors/-/picocolors-1.1.1.tgz#3d321af3eab939b083c8f929a1d12cda81c26b6b"
   integrity sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==
@@ -29142,13 +29202,14 @@ vite-plugin-css-injected-by-js@^3.2.1:
   resolved "https://registry.npmmirror.com/vite-plugin-css-injected-by-js/-/vite-plugin-css-injected-by-js-3.5.2.tgz#1f75d16ad5c05b6b49bf18018099a189ec2e46ad"
   integrity sha512-2MpU/Y+SCZyWUB6ua3HbJCrgnF0KACAsmzOQt1UvRVJCGF6S8xdA3ZUhWcWdM9ivG4I5az8PnQmwwrkC2CAQrQ==
 
-vite-plugin-lib-inject-css@1.2.0:
-  version "1.2.0"
-  resolved "https://registry.npmmirror.com/vite-plugin-lib-inject-css/-/vite-plugin-lib-inject-css-1.2.0.tgz#40ffdd51f6e96e47a72b2df66e1cea6a23f495b2"
-  integrity sha512-mELCOWG0f0auFkDGQHAL7Ks9oQ6RhB0xHlZ6GA0mTLMkkQcHCrZ8mkJFoH+ryZTNqxNLlYTLqbrnPClOO0Fq/Q==
+vite-plugin-lib-inject-css@2.2.1:
+  version "2.2.1"
+  resolved "https://registry.npmmirror.com/vite-plugin-lib-inject-css/-/vite-plugin-lib-inject-css-2.2.1.tgz#3466b26f692c182f7bf1210d0a80b57560bec6db"
+  integrity sha512-PW3n/zRacr7bwNagHOnJfaVLoZyGDCPuFMJTyTFqjk4Xi0HKd1cK5+WlBidBBeWK8QE3SV0i+FsWmN+frBLCVQ==
   dependencies:
-    magic-string "^0.30.0"
-    picocolors "^1.0.0"
+    "@ast-grep/napi" "^0.32.2"
+    magic-string "^0.30.17"
+    picocolors "^1.1.1"
 
 vite@4.3.1:
   version "4.3.1"
