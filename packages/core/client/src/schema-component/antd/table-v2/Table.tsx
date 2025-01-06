@@ -1026,9 +1026,11 @@ export const Table: any = withDynamicSchemaProps(
                   onRowSelectionChange?.(selectedRowKeys, selectedRows, setSelectedRowKeys);
                 },
                 onSelect: (record, selected: boolean, selectedRows, nativeEvent) => {
-                  tableBlockContextBasicValue.field.data = tableBlockContextBasicValue.field?.data || {};
-                  tableBlockContextBasicValue.field.data.selectedRecord = record;
-                  tableBlockContextBasicValue.field.data.selected = selected;
+                  if (tableBlockContextBasicValue) {
+                    tableBlockContextBasicValue.field.data = tableBlockContextBasicValue.field?.data || {};
+                    tableBlockContextBasicValue.field.data.selectedRecord = record;
+                    tableBlockContextBasicValue.field.data.selected = selected;
+                  }
                 },
                 getCheckboxProps(record) {
                   return {

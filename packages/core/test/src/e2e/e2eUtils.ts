@@ -129,7 +129,7 @@ interface AclRoleSetting {
   default?: boolean;
   key?: string;
   //菜单权限配置
-  menuUiSchemas?: string[];
+  desktopRoutes?: number[];
   dataSourceKey?: string;
 }
 
@@ -375,6 +375,10 @@ export class NocoPage {
   async getUid() {
     await this._waitForInit;
     return this.uid;
+  }
+  async getDesktopRouteId() {
+    await this._waitForInit;
+    return this.desktopRouteId;
   }
   /**
    * If you are using mockRecords, then you need to use this method.
@@ -742,6 +746,7 @@ const createPage = async (options?: CreatePageOptions) => {
   const tabSchemaUid = uid();
   const tabSchemaName = uid();
   const title = name || menuSchemaUid;
+  const newPageSchema = keepUid ? pageSchema : updateUidOfPageSchema(pageSchema);
   let routeId;
 
   if (type === 'group') {
@@ -770,10 +775,10 @@ const createPage = async (options?: CreatePageOptions) => {
         type: 'page',
         title,
         schemaUid: menuSchemaUid,
-        pageSchemaUid: pageSchema?.['x-uid'] || pageSchemaUid,
+        pageSchemaUid: newPageSchema?.['x-uid'] || pageSchemaUid,
         hideInMenu: false,
-        children: pageSchema
-          ? schemaToRoutes(pageSchema)
+        children: newPageSchema
+          ? schemaToRoutes(newPageSchema)
           : [
               {
                 type: 'tabs',
@@ -827,7 +832,7 @@ const createPage = async (options?: CreatePageOptions) => {
         ...typeToSchema[type],
         'x-decorator': 'ACLMenuItemProvider',
         properties: {
-          page: (keepUid ? pageSchema : updateUidOfPageSchema(pageSchema)) || {
+          page: newPageSchema || {
             _isJSONSchemaObject: true,
             version: '2.0',
             type: 'void',
@@ -1063,12 +1068,14 @@ const deletePage = async (pageUid: string, routeId: number) => {
   const state = await api.storageState();
   const headers = getHeaders(state);
 
-  const routeResult = await api.post(`/api/desktopRoutes:destroy?filterByTk=${routeId}`, {
-    headers,
-  });
+  if (routeId !== undefined) {
+    const routeResult = await api.post(`/api/desktopRoutes:destroy?filterByTk=${routeId}`, {
+      headers,
+    });
 
-  if (!routeResult.ok()) {
-    throw new Error(await routeResult.text());
+    if (!routeResult.ok()) {
+      throw new Error(await routeResult.text());
+    }
   }
 
   const result = await api.post(`/api/uiSchemas:remove/${pageUid}`, {

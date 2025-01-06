@@ -146,7 +146,10 @@ export class PluginClientServer extends Plugin {
    */
   bindNewMenuToRoles() {
     this.app.db.on('roles.beforeCreate', async (instance: Model) => {
-      instance.set('allowNewMenu', ['admin', 'member'].includes(instance.name));
+      instance.set(
+        'allowNewMenu',
+        instance.allowNewMenu === undefined ? ['admin', 'member'].includes(instance.name) : !!instance.allowNewMenu,
+      );
     });
     this.app.db.on('desktopRoutes.afterCreate', async (instance: Model, { transaction }) => {
       const addNewMenuRoles = await this.app.db.getRepository('roles').find({
