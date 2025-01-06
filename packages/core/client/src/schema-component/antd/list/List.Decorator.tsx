@@ -50,9 +50,6 @@ const InternalListBlockProvider = (props) => {
         <FormLayout layout={'vertical'}>
           <div
             className={cx(css`
-              .ant-description-input {
-                line-height: 34px;
-              }
               .ant-formily-item-feedback-layout-loose {
                 margin-bottom: 12px;
               }
