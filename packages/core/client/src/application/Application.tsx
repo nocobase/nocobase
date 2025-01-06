@@ -189,14 +189,14 @@ export class Application {
 
   setMaintaining(maintaining: boolean) {
     // if maintaining is the same, do nothing
-    if (this.maintaining === maintaining) {
-      return;
-    }
+    // if (this.maintaining === maintaining) {
+    //   return;
+    // }
 
     this.maintaining = maintaining;
-    if (!maintaining) {
-      this.eventBus.dispatchEvent(new Event('maintaining:end'));
-    }
+    // if (!maintaining) {
+    //   this.eventBus.dispatchEvent(new Event('maintaining:end'));
+    // }
   }
 
   private initRequireJs() {
@@ -342,12 +342,13 @@ export class Application {
         window.location.reload();
         return;
       }
+
       if (data.type === 'notification') {
         this.notification[data.payload?.type || 'info']({ message: data.payload?.message });
         return;
       }
-      const maintaining = data.type === 'maintaining' && data.payload.code !== 'APP_RUNNING';
 
+      const maintaining = data.type === 'maintaining' && data.payload.code !== 'APP_RUNNING';
       if (maintaining) {
         this.setMaintaining(true);
         this.error = data.payload;
@@ -361,8 +362,8 @@ export class Application {
           return;
         }
 
-        const eventName = `ws:message:${type}`;
-        this.eventBus.dispatchEvent(new CustomEvent(eventName, { detail: data.payload }));
+        // const eventName = `ws:message:${type}`;
+        // this.eventBus.dispatchEvent(new CustomEvent(eventName, { detail: data.payload }));
       }
     });
 
