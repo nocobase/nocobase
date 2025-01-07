@@ -208,7 +208,6 @@ DatePicker.RangePicker = function RangePicker(props: any) {
     showTime: showTime ? { defaultValue: [dayjs('00:00:00', 'HH:mm:ss'), dayjs('00:00:00', 'HH:mm:ss')] } : false,
   };
   const [stateProps, setStateProps] = useState(newProps);
-
   if (isFilterAction) {
     return (
       <Space.Compact>
