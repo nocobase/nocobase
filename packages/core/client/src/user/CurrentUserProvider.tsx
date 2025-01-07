@@ -10,9 +10,10 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useACLRoleContext } from '../acl';
-import { ReturnTypeOfUseRequest, useRequest } from '../api-client';
+import { ReturnTypeOfUseRequest, useAPIClient, useRequest } from '../api-client';
 import { useLocationNoUpdate } from '../application';
 import { useCompile } from '../schema-component';
+import { useHistoryCollectionsByNames } from '../collection-manager';
 
 export const CurrentUserContext = createContext<ReturnTypeOfUseRequest>(null);
 CurrentUserContext.displayName = 'CurrentUserContext';
@@ -39,9 +40,14 @@ export const useCurrentRoles = () => {
 };
 
 export const CurrentUserProvider = (props) => {
-  const result = useRequest<any>({
-    url: 'auth:check',
-  });
+  const api = useAPIClient();
+  const result = useRequest<any>(() =>
+    api
+      .silent()
+      .resource('auth')
+      .check()
+      .then((res) => res?.data),
+  );
 
   return <CurrentUserContext.Provider value={result}>{props.children}</CurrentUserContext.Provider>;
 };
@@ -54,6 +60,10 @@ export const NavigateToSigninWithRedirect = () => {
 
 export const NavigateIfNotSignIn = ({ children }) => {
   const result = useCurrentUserContext();
+
+  if (result.loading) {
+    return null;
+  }
 
   if (result.loading === false && !result.data?.data?.id) {
     return <NavigateToSigninWithRedirect />;

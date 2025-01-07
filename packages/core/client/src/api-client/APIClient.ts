@@ -154,9 +154,9 @@ export class APIClient extends APIClientSDK {
       },
       async (error) => {
         if (this.silence) {
-          console.error(error);
-          return;
-          // throw error;
+          // console.error(error);
+          // return;
+          throw error;
         }
         const redirectTo = error?.response?.data?.redirectTo;
         if (redirectTo) {
