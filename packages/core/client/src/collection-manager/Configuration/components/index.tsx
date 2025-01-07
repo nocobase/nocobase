@@ -15,7 +15,7 @@ import { useRecord } from '../../../record-provider';
 import { useCompile } from '../../../schema-component';
 import { useCollectionManager_deprecated } from '../../hooks';
 
-const supportTypes = ['string', 'bigInt', 'integer', 'uuid', 'uid'];
+const supportTypes = ['string', 'bigInt', 'integer', 'uuid', 'uid', 'nanoid'];
 export const SourceForeignKey = observer(
   () => {
     const record = useRecord();
@@ -171,10 +171,10 @@ export const TargetKey = observer(
         setOptions(
           getCollection(target)
             .fields?.filter((v) => {
-              if (type !== 'hasMany') {
-                return v.primaryKey || v.unique;
+              if (v.primaryKey || v.unique) {
+                return true;
               }
-              return supportTypes.includes(v.type);
+              return type === 'hasMany' && supportTypes.includes(v.type);
             })
             .map((k) => {
               return {
@@ -196,10 +196,10 @@ export const TargetKey = observer(
               setOptions(
                 getCollection(target)
                   .fields?.filter((v) => {
-                    if (type !== 'hasMany') {
-                      return v.primaryKey || v.unique;
+                    if (v.primaryKey || v.unique) {
+                      return true;
                     }
-                    return supportTypes.includes(v.type);
+                    return type === 'hasMany' && supportTypes.includes(v.type);
                   })
                   .map((k) => {
                     return {
