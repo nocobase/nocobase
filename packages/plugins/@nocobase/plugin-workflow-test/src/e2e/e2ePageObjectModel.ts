@@ -171,7 +171,7 @@ export class ApprovalPassthroughModeNode {
     this.nodeConfigure = page
       .getByLabel(`Approval-${nodeName}`, { exact: true })
       .getByRole('button', { name: 'Configure' });
-    this.addAssigneesButton = page.getByRole('button', { name: 'plus Add assignee' });
+    this.addAssigneesButton = page.getByRole('button', { name: 'plus Add' });
     this.addSelectAssigneesMenu = page.getByRole('button', { name: 'Select assignees' });
     this.addQueryAssigneesMenu = page.getByRole('button', { name: 'Query assignees' });
     this.assigneesDropDown = page.getByTestId('select-single');
@@ -244,7 +244,7 @@ export class ApprovalBranchModeNode {
     this.nodeConfigure = page
       .getByLabel(`Approval-${nodeName}`, { exact: true })
       .getByRole('button', { name: 'Configure' });
-    this.addAssigneesButton = page.getByRole('button', { name: 'plus Add assignee' });
+    this.addAssigneesButton = page.getByRole('button', { name: 'plus Add' });
     this.addSelectAssigneesMenu = page.getByRole('button', { name: 'Select assignees' });
     this.addQueryAssigneesMenu = page.getByRole('button', { name: 'Query assignees' });
     this.assigneesDropDown = page.getByTestId('select-single');
