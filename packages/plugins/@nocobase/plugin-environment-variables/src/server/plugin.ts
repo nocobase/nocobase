@@ -103,6 +103,7 @@ export class PluginEnvironmentVariablesServer extends Plugin {
       const repository = this.db.getRepository('environmentVariables');
       const items = await repository.find({
         sort: 'name',
+        filter: ctx.action.params.filter,
       });
       for (const model of items) {
         if (model.type === 'secret') {
