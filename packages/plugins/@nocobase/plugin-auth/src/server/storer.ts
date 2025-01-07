@@ -58,7 +58,7 @@ export class Storer implements IStorer {
     }
     const config = this.authManager.getAuthConfig(authenticator.authType);
     authenticator.dataValues.options = $env.renderJsonTemplate(authenticator.dataValues.options, {
-      omit: config.auth['optionsKeysNotAllowedInEnv'],
+      omit: config?.auth?.['optionsKeysNotAllowedInEnv'],
     });
     return authenticator;
   }
