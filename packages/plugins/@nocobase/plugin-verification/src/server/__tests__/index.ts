@@ -10,6 +10,7 @@
 import { MockServer, createMockServer } from '@nocobase/test';
 
 import { ApplicationOptions } from '@nocobase/server';
+import authors from './collections/authors';
 
 export function sleep(ms: number) {
   return new Promise((resolve) => {
@@ -24,14 +25,11 @@ interface MockAppOptions extends ApplicationOptions {
 export async function getApp(options: MockAppOptions = {}): Promise<MockServer> {
   const app = await createMockServer({
     ...options,
+    async beforeInstall(app) {
+      app.db.collection(authors);
+    },
     plugins: ['verification'],
   });
-
-  try {
-    await app.db.sync();
-  } catch (error) {
-    console.error(error);
-  }
 
   return app;
 }
