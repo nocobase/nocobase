@@ -944,7 +944,7 @@ export const Table: any = withDynamicSchemaProps(
           }, []);
 
           return (
-            <DndContext onDragEnd={onDragEndCallback}>
+            <DndContext onDragEnd={onDragEndCallback} forceKeepDndContext>
               <tbody {...props} />
             </DndContext>
           );
