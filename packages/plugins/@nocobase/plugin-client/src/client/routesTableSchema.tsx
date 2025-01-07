@@ -541,7 +541,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                     recordData._path = path;
 
                     return (
-                      <Typography.Paragraph copyable style={{ marginBottom: 0 }}>
+                      <Typography.Paragraph copyable style={{ marginBottom: 0 }} ellipsis>
                         {path}
                       </Typography.Paragraph>
                     );
