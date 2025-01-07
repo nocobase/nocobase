@@ -71,6 +71,7 @@ server {
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $schema;
         add_header Cache-Control 'no-cache, no-store';
         proxy_cache_bypass $http_upgrade;
         proxy_connect_timeout 600;
