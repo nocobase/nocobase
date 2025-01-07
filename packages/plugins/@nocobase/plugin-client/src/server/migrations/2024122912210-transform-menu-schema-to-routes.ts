@@ -133,12 +133,12 @@ function getNeedRemoveIds(desktopRoutes: any[], menuUiSchemas: any[]) {
       // 之前是不支持配置 tab 的权限的，所以所有的 tab 都不会存在于旧版的 menuUiSchemas 中
       if (item.type === 'tabs') {
         // tab 的父节点就是一个 page
-        const page = desktopRoutes.find((route) => route.id === item.parentId);
+        const page = desktopRoutes.find((route) => route?.id === item?.parentId);
         // tab 要不要过滤掉，和它的父节点（page）有关
-        return !uidList.includes(page.schemaUid);
+        return !uidList.includes(page?.schemaUid);
       }
 
-      return !uidList.includes(item.schemaUid);
+      return !uidList.includes(item?.schemaUid);
     })
-    .map((item) => item.id);
+    .map((item) => item?.id);
 }
