@@ -247,7 +247,6 @@ function AttachmentListItem(props) {
   const onDownload = useCallback(() => {
     saveAs(file.url, `${file.title}${file.extname}`);
   }, [file]);
-
   const { ThumbnailPreviewer = DefaultThumbnailPreviewer } = attachmentFileTypes.getTypeByFile(file) ?? {};
   const item = [
     <span key="thumbnail" className={`${prefixCls}-list-item-thumbnail`}>

@@ -94,7 +94,7 @@ function FileSelector(props) {
   return wrapSSR(
     <div className={cls(`${prefixCls}-wrapper`, `${prefixCls}-picture-card-wrapper`, 'nb-upload', hashId)}>
       <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>
-        <AttachmentList disabled={disabled} multiple={multiple} value={value} onChange={onChange} />
+        <AttachmentList disabled={disabled} multiple={multiple} value={value} onChange={onChange} {...other} />
         {showSelectButton ? (
           <div className={cls(`${prefixCls}-list-picture-card-container`, `${prefixCls}-list-item-container`)}>
             <AntdUpload disabled={disabled} multiple={multiple} listType={'picture-card'} showUploadList={false}>

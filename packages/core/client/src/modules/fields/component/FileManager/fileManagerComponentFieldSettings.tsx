@@ -96,13 +96,6 @@ export const showFileName: any = {
       },
     };
   },
-  useVisible() {
-    const { fieldSchema: tableColumnSchema } = useColumnSchema();
-    const field = useField();
-    const form = useForm();
-    const isReadPretty = tableColumnSchema?.['x-read-pretty'] || field.readPretty || form.readPretty;
-    return isReadPretty;
-  },
 };
 
 export const fileManagerComponentFieldSettings = new SchemaSettings({
