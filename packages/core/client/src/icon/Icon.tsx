@@ -49,10 +49,7 @@ export const Icon = (props: IconProps) => {
   }
   if (type && icons.has(type.toLowerCase())) {
     const IconComponent = icons.get(type.toLowerCase());
-    if (typeof IconComponent === 'object') {
-      return <IconComponent {...restProps} />;
-    }
-    return null;
+    return <IconComponent {...restProps} />;
   }
   if (type && IconFont) {
     return <IconFont type={type} />;
