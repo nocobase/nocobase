@@ -41,15 +41,17 @@ export const useCreateActionProps = () => {
             type: 'void',
             'x-component': 'div',
             properties: {
-              [uid()]: {
+              blocks: {
                 _isJSONSchemaObject: true,
                 version: '2.0',
                 type: 'void',
+                'x-decorator': 'TemplateGridDecorator',
                 'x-component': 'Grid',
                 'x-initializer': 'page:addBlock',
                 'x-uid': uid(),
                 'x-async': false,
                 'x-index': 1,
+                properties: {},
               },
             },
             'x-uid': schemaUid,

@@ -16,6 +16,7 @@ import * as _ from 'lodash';
 import { associationRecordSettingItem, resetSettingItem, formSettingItem } from './settings';
 import { collectAllTemplateUids, getFullSchema } from './utils/template';
 import { registerTemplateBlockInterceptors } from './utils/interceptors';
+import { TemplateGridDecorator } from './components/TemplateGridDecorator';
 
 export class PluginBlockTemplateClient extends Plugin {
   loadingPromises = new Map();
@@ -128,6 +129,10 @@ export class PluginBlockTemplateClient extends Plugin {
       pluginKey: 'block-templates',
       isTopLevel: false,
       Component: BlockTemplatePage,
+    });
+
+    this.app.addComponents({
+      TemplateGridDecorator,
     });
   }
 

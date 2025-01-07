@@ -30,8 +30,8 @@ export function convertTplBlock(tpl, virtual = false, isRoot = true, newRootId?:
       'x-uid': uid(), // 生成一个新的uid
       properties: {},
     });
-    if (newTpl['x-initializer'] === 'template:addBlock') {
-      delete newTpl['x-initializer'];
+    if (newTpl['x-decorator'] === 'TemplateGridDecorator') {
+      delete newTpl['x-decorator'];
     }
     for (const key in tpl.properties) {
       const t = convertTplBlock(tpl.properties[key], virtual, isRoot, newRootId, templateTitle);
@@ -59,6 +59,7 @@ export function convertTplBlock(tpl, virtual = false, isRoot = true, newRootId?:
     if (isRoot) {
       newSchema['x-template-root-uid'] = tpl['x-uid'];
       newSchema['x-uid'] = newRootId;
+      newSchema['x-template-version'] = '1.0';
     }
     if (templateTitle) {
       newSchema['x-template-title'] = templateTitle;
