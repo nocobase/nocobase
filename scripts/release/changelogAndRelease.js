@@ -423,8 +423,8 @@ async function postCMS(tag, content, contentCN) {
     },
     data: {
       slug: tag,
-      title: `Nocobase ${tag}`,
-      title_cn: `Nocobase ${tag}`,
+      title: `NocoBase ${tag}`,
+      title_cn: `NocoBase ${tag}`,
       content,
       content_cn: contentCN,
       description: `Release Note of ${tag}`,
