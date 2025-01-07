@@ -232,7 +232,14 @@ export class Gateway extends EventEmitter {
       });
     }
 
-    const handleApp = await this.getRequestHandleAppName(req as IncomingRequest);
+    let handleApp = 'main';
+    try {
+      handleApp = await this.getRequestHandleAppName(req as IncomingRequest);
+    } catch (error) {
+      console.log(error);
+      this.responseErrorWithCode('APP_INITIALIZING', res, { appName: handleApp });
+      return;
+    }
     const hasApp = AppSupervisor.getInstance().hasApp(handleApp);
 
     if (!hasApp) {
@@ -442,6 +449,10 @@ export class Gateway extends EventEmitter {
       if (!app.listenerCount(`ws:setTag`)) {
         app.on('ws:setTag', ({ clientId, tagKey, tagValue }) => {
           this.wsServer.setClientTag(clientId, tagKey, tagValue);
+        });
+
+        app.on('ws:removeTag', ({ clientId, tagKey }) => {
+          this.wsServer.removeClientTag(clientId, tagKey);
         });
 
         app.on('ws:sendToTag', ({ tagKey, tagValue, message }) => {

@@ -159,6 +159,16 @@ export class WSServer extends EventEmitter {
     console.log(`client tags: ${Array.from(client.tags)}`);
   }
 
+  removeClientTag(clientId: string, tagKey: string) {
+    const client = this.webSocketClients.get(clientId);
+    // remove all tags with the given tagKey
+    client.tags.forEach((tag) => {
+      if (tag.startsWith(tagKey)) {
+        client.tags.delete(tag);
+      }
+    });
+  }
+
   async setClientApp(client: WebSocketClient) {
     const req: IncomingRequest = {
       url: client.url,
@@ -177,31 +187,31 @@ export class WSServer extends EventEmitter {
       AppSupervisor.getInstance().bootStrapApp(handleAppName);
     }
 
-    const appStatus = AppSupervisor.getInstance().getAppStatus(handleAppName, 'initializing');
+    // const appStatus = AppSupervisor.getInstance().getAppStatus(handleAppName, 'initializing');
 
-    if (appStatus === 'not_found') {
-      this.sendMessageToConnection(client, {
-        type: 'maintaining',
-        payload: getPayloadByErrorCode('APP_NOT_FOUND', { appName: handleAppName }),
-      });
-      return;
-    }
+    // if (appStatus === 'not_found') {
+    //   this.sendMessageToConnection(client, {
+    //     type: 'maintaining',
+    //     payload: getPayloadByErrorCode('APP_NOT_FOUND', { appName: handleAppName }),
+    //   });
+    //   return;
+    // }
 
-    if (appStatus === 'initializing') {
-      this.sendMessageToConnection(client, {
-        type: 'maintaining',
-        payload: getPayloadByErrorCode('APP_INITIALIZING', { appName: handleAppName }),
-      });
+    // if (appStatus === 'initializing') {
+    //   this.sendMessageToConnection(client, {
+    //     type: 'maintaining',
+    //     payload: getPayloadByErrorCode('APP_INITIALIZING', { appName: handleAppName }),
+    //   });
 
-      return;
-    }
+    //   return;
+    // }
 
-    const app = await AppSupervisor.getInstance().getApp(handleAppName);
-
-    this.sendMessageToConnection(client, {
-      type: 'maintaining',
-      payload: getPayloadByErrorCode(appStatus, { app }),
-    });
+    // const app = await AppSupervisor.getInstance().getApp(handleAppName);
+    //
+    // this.sendMessageToConnection(client, {
+    //   type: 'maintaining',
+    //   payload: getPayloadByErrorCode(appStatus, { app }),
+    // });
   }
 
   removeConnection(id: string) {

@@ -57,7 +57,6 @@ import {
 import { Plugin } from '../../../application/Plugin';
 import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
 import { Help } from '../../../user/Help';
-import { VariablesProvider } from '../../../variables';
 import { KeepAlive } from './KeepAlive';
 
 export { KeepAlive };
@@ -528,9 +527,7 @@ export const AdminProvider = (props) => {
               <MenuSchemaRequestProvider>
                 <RemoteCollectionManagerProvider>
                   <CurrentAppInfoProvider>
-                    <RemoteSchemaTemplateManagerProvider>
-                      <VariablesProvider>{props.children}</VariablesProvider>
-                    </RemoteSchemaTemplateManagerProvider>
+                    <RemoteSchemaTemplateManagerProvider>{props.children}</RemoteSchemaTemplateManagerProvider>
                   </CurrentAppInfoProvider>
                 </RemoteCollectionManagerProvider>
               </MenuSchemaRequestProvider>

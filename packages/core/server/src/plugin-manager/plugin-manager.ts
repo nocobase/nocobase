@@ -394,10 +394,15 @@ export class PluginManager {
     const packageNames: string[] = items.map((item) => item.packageName);
     const source = [];
     for (const packageName of packageNames) {
-      const dirname = await getPluginBasePath(packageName);
-      const directory = join(dirname, 'server/commands/*.' + (basename(dirname) === 'src' ? '{ts,js}' : 'js'));
+      try {
+        const dirname = await getPluginBasePath(packageName);
+        const directory = join(dirname, 'server/commands/*.' + (basename(dirname) === 'src' ? '{ts,js}' : 'js'));
 
-      source.push(directory.replaceAll(sep, '/'));
+        source.push(directory.replaceAll(sep, '/'));
+      } catch (error) {
+        this.app.log.error(error);
+        continue;
+      }
     }
     for (const plugin of this.options.plugins || []) {
       if (typeof plugin === 'string') {

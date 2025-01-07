@@ -105,6 +105,7 @@ export class Application {
   maintained = false;
   maintaining = false;
   error = null;
+  hasLoadError = false;
 
   private wsAuthorized = false;
 
@@ -158,17 +159,21 @@ export class Application {
 
   private initListeners() {
     this.eventBus.addEventListener('auth:tokenChanged', (event: CustomEvent) => {
-      this.setTokenInWebSocket(event.detail.token);
+      this.setTokenInWebSocket(event.detail);
     });
 
     this.eventBus.addEventListener('maintaining:end', () => {
       if (this.apiClient.auth.token) {
-        this.setTokenInWebSocket(this.apiClient.auth.token);
+        this.setTokenInWebSocket({
+          token: this.apiClient.auth.token,
+          authenticator: this.apiClient.auth.getAuthenticator(),
+        });
       }
     });
   }
 
-  protected setTokenInWebSocket(token: string) {
+  protected setTokenInWebSocket(options: { token: string; authenticator: string }) {
+    const { token, authenticator } = options;
     if (this.maintaining) {
       return;
     }
@@ -178,6 +183,7 @@ export class Application {
         type: 'auth:token',
         payload: {
           token,
+          authenticator,
         },
       }),
     );
@@ -298,6 +304,7 @@ export class Application {
       await this.loadWebSocket();
       await this.pm.load();
     } catch (error) {
+      this.hasLoadError = true;
       if (this.ws.enabled) {
         await new Promise((resolve) => {
           setTimeout(() => resolve(null), 1000);
@@ -338,16 +345,21 @@ export class Application {
         window.location.reload();
         return;
       }
+
       if (data.type === 'notification') {
         this.notification[data.payload?.type || 'info']({ message: data.payload?.message });
         return;
       }
-      const maintaining = data.type === 'maintaining' && data.payload.code !== 'APP_RUNNING';
 
+      const maintaining = data.type === 'maintaining' && data.payload.code !== 'APP_RUNNING';
       if (maintaining) {
         this.setMaintaining(true);
         this.error = data.payload;
       } else {
+        if (this.hasLoadError) {
+          window.location.reload();
+        }
+
         this.setMaintaining(false);
         this.maintained = true;
         this.error = null;
@@ -371,7 +383,7 @@ export class Application {
       const token = this.apiClient.auth.token;
 
       if (token) {
-        this.setTokenInWebSocket(token);
+        this.setTokenInWebSocket({ token, authenticator: this.apiClient.auth.getAuthenticator() });
       }
     });
 

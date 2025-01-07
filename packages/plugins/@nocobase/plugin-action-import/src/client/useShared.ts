@@ -129,10 +129,10 @@ export const useShared = () => {
         };
       }
       const file = value[0] ?? {};
-      if (file.size > 10 * 1024 * 1024) {
+      if (file.size > 80 * 1024 * 1024) {
         return {
           type: 'error',
-          message: t('File size cannot exceed 10M'),
+          message: t('File size cannot exceed 80M'),
         };
       }
       if (!INCLUDE_FILE_TYPE.includes(file.type)) {

@@ -41,7 +41,13 @@ attachmentFileTypes.add({
     return matchMimetype(file, 'image/*');
   },
   getThumbnailURL(file) {
-    return file.url ? `${file.url}${file.thumbnailRule || ''}` : URL.createObjectURL(file.originFileObj);
+    if (file.url) {
+      return `${file.url}${file.thumbnailRule || ''}`;
+    }
+    if (file.originFileObj) {
+      return URL.createObjectURL(file.originFileObj);
+    }
+    return null;
   },
   Previewer({ index, list, onSwitchIndex }) {
     const onDownload = useCallback(

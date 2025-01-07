@@ -79,13 +79,16 @@ export const useStyles = genStyleHook('nb-mobile', (token) => {
           margin: '0px',
         },
       '.ant-pagination .ant-pagination-total-text': {
-        display: 'none',
+        // display: 'none',
       },
       '.ant-pagination .ant-pagination-options': {
         display: 'none',
       },
       '.ant-pagination .ant-pagination-item': {
         display: 'none',
+      },
+      '.ant-pagination .ant-pagination-item-active': {
+        display: 'inline-block',
       },
       '.ant-card-body .nb-action-bar .ant-btn': {
         justifyContent: 'space-between',
