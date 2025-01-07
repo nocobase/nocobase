@@ -125,8 +125,6 @@ export async function createMiddleware(ctx: Context, next: Next) {
   const StorageRepo = ctx.db.getRepository('storages');
   const storage = await StorageRepo.findOne({ filter: storageName ? { name: storageName } : { default: true } });
 
-  await multipart(ctx, next);
-
   const plugin = ctx.app.pm.get(Plugin);
   ctx.storage = plugin.parseStorage(storage);
 
@@ -176,10 +174,10 @@ export async function destroyMiddleware(ctx: Context, next: Next) {
 
   let count = 0;
   const undeleted = [];
+  const plugin = ctx.app.pm.get(Plugin);
   await storages.reduce(
     (promise, storage) =>
       promise.then(async () => {
-        const plugin = ctx.app.pm.get(Plugin);
         const storageConfig = plugin.storageTypes.get(storage.type);
         const result = await storageConfig.delete(plugin.parseStorage(storage), storageGroupedRecords[storage.id]);
         count += result[0];
