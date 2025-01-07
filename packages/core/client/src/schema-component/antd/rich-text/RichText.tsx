@@ -45,7 +45,13 @@ export const RichText = connect(
         modules={modules}
         formats={formats}
         value={resultValue}
-        onChange={onChange}
+        onChange={(value) => {
+          if (value === '<p><br></p>') {
+            onChange(undefined);
+          } else {
+            onChange(value);
+          }
+        }}
         readOnly={disabled}
       />,
     );
