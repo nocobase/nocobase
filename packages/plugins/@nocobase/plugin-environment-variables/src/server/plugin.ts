@@ -14,6 +14,18 @@ import AesEncryptor from './AesEncryptor';
 export class PluginEnvironmentVariablesServer extends Plugin {
   aesEncryptor: AesEncryptor;
   updated = false;
+  async handleSyncMessage(message) {
+    const { type, name, value } = message;
+    if (type === 'updated') {
+      this.updated = true;
+    } else if (type === 'setVariable') {
+      this.app.environment.setVariable(name, value);
+    } else if (type === 'removeVariable') {
+      this.app.environment.removeVariable(name);
+      this.updated = true;
+    }
+  }
+
   async load() {
     this.createAesEncryptor();
     this.registerACL();
@@ -90,8 +102,9 @@ export class PluginEnvironmentVariablesServer extends Plugin {
   }
 
   onEnvironmentSaved() {
-    this.db.on('environmentVariables.afterUpdate', async (model) => {
+    this.db.on('environmentVariables.afterUpdate', async (model, { transaction }) => {
       this.updated = true;
+      this.sendSyncMessage({ type: 'updated' }, { transaction });
     });
     this.db.on('environmentVariables.beforeSave', async (model) => {
       if (model.type === 'secret' && model.changed('value')) {
@@ -119,7 +132,7 @@ export class PluginEnvironmentVariablesServer extends Plugin {
       };
       await next();
     });
-    this.db.on('environmentVariables.afterSave', async (model) => {
+    this.db.on('environmentVariables.afterSave', async (model, { transaction }) => {
       if (model.type === 'secret') {
         try {
           const decrypted = await this.aesEncryptor.decrypt(model.value);
@@ -129,10 +142,12 @@ export class PluginEnvironmentVariablesServer extends Plugin {
         }
       }
       this.app.environment.setVariable(model.name, model.value);
+      this.sendSyncMessage({ type: 'setVariable', name: model.name, value: model.value }, { transaction });
     });
-    this.db.on('environmentVariables.afterDestroy', (model) => {
+    this.db.on('environmentVariables.afterDestroy', async (model, { transaction }) => {
       this.app.environment.removeVariable(model.name);
       this.updated = true;
+      this.sendSyncMessage({ type: 'removeVariable', name: model.name }, { transaction });
     });
   }
 

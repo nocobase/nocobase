@@ -7,16 +7,25 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useApp } from './';
 import { isFunction } from 'lodash';
+import { useMemo } from 'react';
+import { useApp } from './';
 
-const useGlobalVariable = (key) => {
+export const useGlobalVariable = (key: string) => {
   const app = useApp();
-  const environmentVariables = app.getGlobalVar(key);
-  if (isFunction(environmentVariables)) {
-    return environmentVariables();
-  }
-  return environmentVariables;
-};
 
-export { useGlobalVariable };
+  const variable = useMemo(() => {
+    return app.getGlobalVar(key);
+  }, [app, key]);
+
+  if (isFunction(variable)) {
+    try {
+      return variable();
+    } catch (error) {
+      console.error(`Error calling global variable function for key: ${key}`, error);
+      return undefined;
+    }
+  }
+
+  return variable;
+};
