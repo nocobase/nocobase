@@ -147,7 +147,7 @@ describe('underscored options', () => {
           type: 'belongsToMany',
           name: 'tags',
           through: 'collectionCategory',
-          target: 'posts',
+          target: 'tags',
           sourceKey: 'name',
           foreignKey: 'postsName',
           targetKey: 'name',
