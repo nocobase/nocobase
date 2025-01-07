@@ -12,20 +12,18 @@ import { connect, mapReadPretty } from '@formily/react';
 import { TextArea } from './TextArea';
 import { RawTextArea } from './RawTextArea';
 import { Password } from '../password';
-import { useApp } from '../../../';
 import { Variable } from './Variable';
 import { Input } from '../input';
+import { useGlobalVariable } from '../../../application/hooks/useGlobalVariable';
 
 export const useEnvironmentVariableOptions = (scope) => {
-  const app = useApp();
-  const environmentVariables = app.getGlobalVar('$env');
-  const environmentCtx = environmentVariables?.();
+  const environmentVariables = useGlobalVariable('$env');
   return useMemo(() => {
-    if (environmentCtx) {
-      return [environmentCtx].filter(Boolean);
+    if (environmentVariables) {
+      return [environmentVariables].filter(Boolean);
     }
     return scope;
-  }, [environmentCtx, scope]);
+  }, [environmentVariables, scope]);
 };
 
 const isVariable = (value) => {

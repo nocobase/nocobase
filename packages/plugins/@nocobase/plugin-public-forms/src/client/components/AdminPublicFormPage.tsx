@@ -23,6 +23,7 @@ import {
   useApp,
   TextAreaWithGlobalScope,
   ApplicationContext,
+  useGlobalVariable,
 } from '@nocobase/client';
 import { Breadcrumb, Button, Dropdown, Space, Spin, Switch, message, Popover, QRCode } from 'antd';
 import React, { useState } from 'react';
@@ -61,7 +62,7 @@ export function AdminPublicFormPage() {
   const { theme } = useGlobalTheme();
   const apiClient = useAPIClient();
   const app = useApp();
-  const environmentCtx = app.getGlobalVar('$env')?.();
+  const environmentCtx = useGlobalVariable('$env');
   const { data, loading, refresh } = useRequest<any>({
     url: `publicForms:get/${params.name}`,
   });
