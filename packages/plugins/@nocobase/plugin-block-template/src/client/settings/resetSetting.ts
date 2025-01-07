@@ -19,8 +19,8 @@ export const resetSettingItem = {
   useVisible() {
     const fieldSchema = useFieldSchema();
     const templateBlock = _.get(fieldSchema, 'x-template-uid');
-    const isBlock = _.get(fieldSchema, 'x-toolbar') === 'BlockSchemaToolbar';
-    if (!templateBlock || !isBlock) {
+    // const isBlock = _.get(fieldSchema, 'x-toolbar') === 'BlockSchemaToolbar';
+    if (!templateBlock) {
       return false;
     }
     return true;
