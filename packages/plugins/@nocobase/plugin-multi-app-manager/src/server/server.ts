@@ -209,6 +209,12 @@ export class PluginMultiAppManagerServer extends Plugin {
     });
   }
 
+  async beforeEnable() {
+    if (this.app.name !== 'main') {
+      throw new Error('@nocobase/plugin-multi-app-manager can only be enabled in the main app');
+    }
+  }
+
   async load() {
     await this.importCollections(path.resolve(__dirname, 'collections'));
 

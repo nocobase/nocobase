@@ -60,7 +60,7 @@ export const TableColumnActionBar = observer(
       <SortableItem
         className={designerCss({
           margin: isInSubTable ? '-12px -8px' : '-18px -16px',
-          padding: isInSubTable ? '12px 8px' : '18px 16px',
+          padding: isInSubTable ? '12px 8px' : '12px 16px',
         })}
       >
         <Designer />
