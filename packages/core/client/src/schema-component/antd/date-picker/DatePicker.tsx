@@ -101,7 +101,7 @@ DatePicker.RangePicker = function RangePicker(props: any) {
     ...props,
     format: getDateTimeFormat(targetPicker, targetDateFormat, showTime, timeFormat),
     picker: targetPicker,
-    showTime: showTime ? { defaultValue: [dayjs('00:00:00', 'HH:mm:ss'), dayjs('00:00:00', 'HH:mm:ss')] } : false,
+    showTime: showTime ? { defaultValue: [dayjs('00:00:00', 'HH:mm:ss'), dayjs('23:59:59', 'HH:mm:ss')] } : false,
   };
   const [stateProps, setStateProps] = useState(newProps);
   if (isFilterAction) {
