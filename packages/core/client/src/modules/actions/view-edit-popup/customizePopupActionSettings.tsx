@@ -7,13 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useFieldSchema } from '@formily/react';
 import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { useCollection_deprecated } from '../../../collection-manager';
+import { useCollection } from '../../../data-source';
 import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/action/Action.Designer';
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
 import { SchemaSettingsLinkageRules } from '../../../schema-settings';
 import { useOpenModeContext } from '../../popup/OpenModeProvider';
+import { useCurrentPopupRecord } from '../../variable/variablesProvider/VariablePopupRecordProvider';
 
 export const customizePopupActionSettings = new SchemaSettings({
   name: 'actionSettings:popup',
@@ -36,6 +39,11 @@ export const customizePopupActionSettings = new SchemaSettings({
           ...linkageRulesProps,
           collectionName: name,
         };
+      },
+      useVisible() {
+        const { collection } = useCurrentPopupRecord();
+        const currentCollection = useCollection();
+        return collection?.name === currentCollection.name;
       },
     },
     {
