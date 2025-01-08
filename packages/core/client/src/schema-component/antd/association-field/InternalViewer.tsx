@@ -9,6 +9,7 @@
 
 import { observer, useField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
+import { Space } from 'antd';
 import _ from 'lodash';
 import React, { FC, Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDesignable } from '../../';
@@ -26,6 +27,7 @@ import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './ho
 import { transformNestedData } from './InternalCascadeSelect';
 import schema from './schema';
 import { getLabelFormatValue, useLabelUiSchemaV2 } from './util';
+import { getTargetFieldLabel } from '../remote-select/RemoteSelect';
 
 interface IEllipsisWithTooltipRef {
   setPopoverVisible: (boolean) => void;
@@ -67,6 +69,7 @@ const RenderRecord = React.memo(
     ellipsisWithTooltipRef,
     value,
     setBtnHover,
+    targetCollection,
   }: {
     fieldNames: any;
     isTreeCollection: boolean;
@@ -83,38 +86,48 @@ const RenderRecord = React.memo(
     ellipsisWithTooltipRef: React.MutableRefObject<IEllipsisWithTooltipRef>;
     value: any;
     setBtnHover: any;
+    targetCollection: any;
   }) => {
     const [loading, setLoading] = useState(true);
     const [result, setResult] = useState<React.ReactNode[]>([]);
     const needWaitForFieldSchemaUpdatedRef = useRef(false);
     const fieldSchemaRef = useRef(fieldSchema);
     fieldSchemaRef.current = fieldSchema;
-
+    const isGroupLabel = Array.isArray(fieldNames.label) && fieldNames.label.length > 1;
+    const targetCollectionFields = targetCollection.fields;
     const getCustomActionSchema = useCallback(() => {
       return fieldSchemaRef.current;
     }, []);
-
     // The map method here maybe quite time-consuming, especially in table blocks.
     // Therefore, we use an asynchronous approach to render the list,
     // which allows us to avoid blocking the main rendering process.
     useEffect(() => {
       const result = toArr(value).map((record, index, arr) => {
-        const value = record?.[fieldNames?.label || 'label'];
+        const value = isGroupLabel ? (
+          <Space>
+            {fieldNames.label.map((v) => {
+              const targetField = targetCollectionFields.find((f) => {
+                return f.name === v;
+              });
+              return getTargetFieldLabel(record[v], targetField);
+            })}
+          </Space>
+        ) : (
+          record?.[fieldNames?.label || 'label']
+        );
         const label = isTreeCollection
           ? transformNestedData(record)
               .map((o) => o?.[fieldNames?.label || 'label'])
               .join(' / ')
-          : isObject(value)
+          : isObject(value) && !isGroupLabel
             ? JSON.stringify(value)
             : value;
-
         const val = toValue(compile(label), 'N/A');
         const labelUiSchema = getLabelUiSchema(
           record?.__collection || collectionField?.target,
           fieldNames?.label || 'label',
         );
         const text = getLabelFormatValue(compile(labelUiSchema), val, true);
-
         return (
           <Fragment key={`${record?.id}_${index}`}>
             <span>
@@ -189,7 +202,6 @@ const RenderRecord = React.memo(
     if (loading) {
       return null;
     }
-
     return <>{result}</>;
   },
 );
@@ -230,6 +242,7 @@ const ButtonLinkList: FC<ButtonListProps> = observer((props) => {
       ellipsisWithTooltipRef={ellipsisWithTooltipRef}
       value={props.value}
       setBtnHover={props.setBtnHover}
+      targetCollection={targetCollection}
     />
   );
 });

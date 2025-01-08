@@ -26,6 +26,7 @@ import {
   useCollectionRecordData,
 } from '../../..';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
+import { useCollectionManager } from '../../../data-source';
 import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
@@ -35,6 +36,7 @@ import { ActionContextProvider } from '../action';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
+import { getTargetFieldLabel } from '../remote-select/RemoteSelect';
 
 export const useTableSelectorProps = () => {
   const field: any = useField();
@@ -84,19 +86,33 @@ export const InternalPicker = observer(
     const fieldSchema = useFieldSchema();
     const insertSelector = useInsertSchema('Selector');
     const { options: collectionField } = useAssociationFieldContext();
+    const cm = useCollectionManager();
+    const targetCollection = cm.getCollection(collectionField?.target);
+    const targetFields = targetCollection?.fields || [];
     const { collectionName } = useFormBlockContext();
     const compile = useCompile();
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
     const isAllowAddNew = fieldSchema['x-add-new'];
     const [selectedRows, setSelectedRows] = useState([]);
     const recordData = useCollectionRecordData();
+    const isGroupLabel = Array.isArray(fieldNames.label) && fieldNames.label.length > 1;
+
     const options = useMemo(() => {
       if (value && Object.keys(value).length > 0) {
         const opts = (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean).map((option) => {
-          const label = option?.[fieldNames.label];
+          const label = isGroupLabel ? (
+            <Space>
+              {fieldNames.label.map((v) => {
+                const result = targetFields.find((f) => f.name === v);
+                return getTargetFieldLabel(option[v], result);
+              })}
+            </Space>
+          ) : (
+            compile(option[fieldNames.label])
+          );
           return {
             ...option,
-            [fieldNames.label]: getLabelFormatValue(compile(labelUiSchema), compile(label)),
+            [fieldNames.label]: getLabelFormatValue(compile(labelUiSchema), label),
           };
         });
         return opts;

@@ -50,6 +50,29 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   toOptionsItem?: (data) => any;
 };
 
+//格式化标题字段label
+export const getTargetFieldLabel = (value, targetField) => {
+  //日期字段
+  if (targetField.type === 'date') {
+    const { format = 'YYYY-MM-DD', timeFormat, showTime } = targetField?.uiSchema?.['x-component-props'] || {};
+    return dayjs(value).format(`${format} ${showTime ? timeFormat : ''}`);
+  }
+  // 下拉选项字段
+  if (targetField?.uiSchema?.enum) {
+    const item = targetField.uiSchema.enum.find((i) => i.value === value);
+    if (item) {
+      return (
+        <Tag role="button" color={item.color}>
+          {item.label}
+        </Tag>
+      );
+    } else {
+      return value;
+    }
+  }
+  return value;
+};
+
 const InternalRemoteSelect = withDynamicSchemaProps(
   connect(
     (props: RemoteSelectProps) => {
@@ -130,30 +153,6 @@ const InternalRemoteSelect = withDynamicSchemaProps(
 
       const compile = useCompile();
 
-      //格式化标题字段label
-      const getTargetFieldLabel = (name, value) => {
-        const result = targetField.find((v) => v.name === name);
-        //日期字段
-        if (result.type === 'date') {
-          const { format = 'YYYY-MM-DD', timeFormat, showTime } = result?.uiSchema?.['x-component-props'] || {};
-          return dayjs(value).format(`${format} ${showTime ? timeFormat : ''}`);
-        }
-        // 下拉选项字段
-        if (result?.uiSchema?.enum) {
-          const item = result.uiSchema.enum.find((i) => i.value === value);
-          if (item) {
-            return (
-              <Tag role="button" color={item.color}>
-                {item.label}
-              </Tag>
-            );
-          } else {
-            return value;
-          }
-        }
-        return value;
-      };
-
       //格式化options
       const mapOptionsToTags = useCallback(
         (options) => {
@@ -166,7 +165,9 @@ const InternalRemoteSelect = withDynamicSchemaProps(
                 let label = isGroupLabel ? (
                   <Space>
                     {fieldNames.label.map((v) => {
-                      return getTargetFieldLabel(v, option[v]);
+                      const result = targetField.find((v) => v.name === name);
+
+                      return getTargetFieldLabel(option[v], result);
                     })}
                   </Space>
                 ) : (
