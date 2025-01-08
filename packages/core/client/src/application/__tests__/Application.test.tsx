@@ -13,11 +13,11 @@ import MockAdapter from 'axios-mock-adapter';
 import React, { Component } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { describe } from 'vitest';
+import { CollectionFieldInterface } from '../../data-source';
 import { OpenModeProvider } from '../../modules/popup/OpenModeProvider';
 import { Application } from '../Application';
 import { Plugin } from '../Plugin';
 import { useApp } from '../hooks';
-import { CollectionFieldInterface } from '../../data-source';
 
 describe('Application', () => {
   beforeAll(() => {
@@ -82,6 +82,32 @@ describe('Application', () => {
       });
       expect(app.getApiUrl('/test/bar')).toBe('https://123.1.2.3:13000/foo/api/test/bar');
       expect(app.getApiUrl('test/bar')).toBe('https://123.1.2.3:13000/foo/api/test/bar');
+    });
+  });
+
+  describe('getFullUrl', () => {
+    it('default', () => {
+      const app = new Application({});
+      expect(app.getFullUrl('test')).toBe('/test');
+      expect(app.getFullUrl('/test')).toBe('/test');
+    });
+
+    it('custom', () => {
+      const app = new Application({ publicPath: '/nocobase' });
+      expect(app.getFullUrl('/test')).toBe('/nocobase/test');
+      expect(app.getFullUrl('test')).toBe('/nocobase/test');
+    });
+
+    it('sub app', () => {
+      const app = new Application({ name: 'sub1' });
+      expect(app.getFullUrl('test')).toBe('/apps/sub1/test');
+      expect(app.getFullUrl('/test')).toBe('/apps/sub1/test');
+    });
+
+    it('sub app', () => {
+      const app = new Application({ name: 'sub1', publicPath: '/nocobase/' });
+      expect(app.getFullUrl('test')).toBe('/nocobase/apps/sub1/test');
+      expect(app.getFullUrl('/test')).toBe('/nocobase/apps/sub1/test');
     });
   });
 
