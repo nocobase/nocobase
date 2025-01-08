@@ -28,20 +28,29 @@ export function SchemaSettingsBlockTitleItem() {
           title: t('Edit block title'),
           properties: {
             title: {
-              title: t('Block title'),
+              title: t('title'),
               type: 'string',
               default: fieldSchema?.['x-component-props']?.['title'],
               'x-decorator': 'FormItem',
               'x-component': 'Input',
             },
+            description: {
+              title: t('Description'),
+              type: 'string',
+              default: fieldSchema?.['x-component-props']?.['description'],
+              'x-decorator': 'FormItem',
+              'x-component': 'Markdown',
+            },
           },
         } as ISchema
       }
-      onSubmit={({ title }) => {
+      onSubmit={({ title, description }) => {
         const componentProps = fieldSchema['x-component-props'] || {};
         componentProps.title = title;
+        componentProps.description = description;
         fieldSchema['x-component-props'] = componentProps;
         field.componentProps.title = title;
+        field.componentProps.description = description;
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
