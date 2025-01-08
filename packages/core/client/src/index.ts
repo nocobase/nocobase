@@ -78,6 +78,7 @@ export { SwitchLanguage } from './i18n/SwitchLanguage';
 export { VariablePopupRecordProvider } from './modules/variable/variablesProvider/VariablePopupRecordProvider';
 
 export { useCurrentPopupRecord } from './modules/variable/variablesProvider/VariablePopupRecordProvider';
+export { showFileName } from './modules/fields/component/FileManager/fileManagerComponentFieldSettings';
 
 export { languageCodes } from './locale';
 
