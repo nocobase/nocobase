@@ -94,6 +94,7 @@ export const titleField: any = {
       title: t('Title field'),
       options,
       value: fieldNames?.label,
+      mode: 'multiple',
       onChange(label) {
         const schema = {
           ['x-uid']: fieldSchema['x-uid'],
@@ -372,7 +373,6 @@ export const selectComponentFieldSettings = new SchemaSettings({
     },
     {
       ...titleField,
-      useVisible: useIsAssociationField,
     },
     {
       ...enableLink,

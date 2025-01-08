@@ -9,9 +9,9 @@
 
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useFieldSchema } from '@formily/react';
-import { Divider, Tag } from 'antd';
+import { Divider, Tag, Space } from 'antd';
 import dayjs from 'dayjs';
-import { uniqBy } from 'lodash';
+import { uniqBy, assign } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
@@ -81,25 +81,49 @@ const InternalRemoteSelect = withDynamicSchemaProps(
       const { getCollectionJoinField, getInterface } = useCollectionManager_deprecated();
       const colletionFieldName = fieldSchema['x-collection-field'] || fieldSchema.name;
       const collectionField = getField(colletionFieldName) || getCollectionJoinField(colletionFieldName);
-      const targetField =
-        _targetField ||
-        (collectionField?.target &&
-          fieldNames?.label &&
-          getCollectionJoinField(`${collectionField.target}.${fieldNames.label}`));
-
+      const targetField = useMemo(() => {
+        const isGroupLabel = Array.isArray(fieldNames.label) && fieldNames.label.length > 1;
+        if (isGroupLabel) {
+          return (fieldNames.label as any).map((v) => {
+            return (
+              collectionField?.target && fieldNames?.label && getCollectionJoinField(`${collectionField.target}.${v}`)
+            );
+          });
+        } else {
+          return (
+            _targetField ||
+            (collectionField?.target &&
+              fieldNames?.label &&
+              getCollectionJoinField(`${collectionField.target}.${fieldNames.label}`))
+          );
+        }
+      }, [collectionField, fieldNames.label]);
       const operator = useMemo(() => {
-        if (targetField?.interface) {
-          const targetInterface = getInterface(targetField.interface);
-          const initialOperator = targetInterface?.filterable?.operators[0].value || '$includes';
-          if (targetField.type === 'string') {
-            return '$includes';
+        if (Array.isArray(targetField)) {
+          return targetField.map((v) => {
+            const targetInterface = getInterface(v.interface);
+            let initialOperator = targetInterface?.filterable?.operators[0].value || '$includes';
+            if (v.type === 'string') {
+              initialOperator = '$includes';
+            }
+            return {
+              [v.name]: initialOperator,
+            };
+          });
+        } else {
+          if (targetField?.interface) {
+            const targetInterface = getInterface(targetField.interface);
+            const initialOperator = targetInterface?.filterable?.operators[0].value || '$includes';
+            if (targetField.type === 'string') {
+              return '$includes';
+            }
+            return initialOperator;
           }
-          return initialOperator;
         }
         return '$includes';
       }, [targetField]);
-      const compile = useCompile();
 
+      const compile = useCompile();
       const mapOptionsToTags = useCallback(
         (options) => {
           try {
@@ -108,7 +132,12 @@ const InternalRemoteSelect = withDynamicSchemaProps(
                 return ['number', 'string'].includes(typeof v[fieldNames.value]) || !v[fieldNames.value];
               })
               .map((option) => {
-                let label = compile(option[fieldNames.label]);
+                let label =
+                  Array.isArray(fieldNames.label) && fieldNames.label.length > 1 ? (
+                    <Space>{fieldNames.label.map((v) => option[v])}</Space>
+                  ) : (
+                    compile(option[fieldNames.label])
+                  );
 
                 if (targetField?.uiSchema?.enum) {
                   if (Array.isArray(label)) {
@@ -213,18 +242,24 @@ const InternalRemoteSelect = withDynamicSchemaProps(
       }, [runDep]);
 
       const onSearch = async (search) => {
-        run({
-          filter: mergeFilter([
-            search
-              ? {
-                  [fieldNames.label]: {
-                    [operator]: search,
-                  },
-                }
-              : {},
-            service?.params?.filter,
-          ]),
-        });
+        const searchFilter = search
+          ? Array.isArray(fieldNames.label)
+            ? {
+                $or: fieldNames.label.map((field) => {
+                  return {
+                    [field]: { [assign({}, ...operator)[field]]: search },
+                  };
+                }),
+              }
+            : {
+                [fieldNames.label]: { [operator]: search },
+              }
+          : {};
+
+        const updatedFilter = mergeFilter([searchFilter, service?.params?.filter]);
+
+        await run({ filter: updatedFilter });
+
         searchData.current = search;
       };
 
@@ -252,6 +287,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
         firstRun.current = true;
       };
 
+      console.log(mapOptionsToTags(options), toOptionsItem(mapOptionsToTags(options)));
       return (
         <Select
           open={open}
@@ -259,7 +295,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
           autoClearSearchValue
           filterOption={false}
           filterSort={null}
-          fieldNames={fieldNames as any}
+          fieldNames={fieldNames}
           onSearch={onSearch}
           onDropdownVisibleChange={onDropdownVisibleChange}
           objectValue={objectValue}
@@ -284,6 +320,19 @@ const InternalRemoteSelect = withDynamicSchemaProps(
                 )}
               </>
             );
+          }}
+          optionRender={(option, info) => {
+            if (Array.isArray(fieldNames.label) && fieldNames.label.length > 1) {
+              return (
+                <Space>
+                  {fieldNames.label.map((v) => {
+                    return option.data[v];
+                  })}
+                </Space>
+              );
+            } else {
+              return option.label;
+            }
           }}
         />
       );

@@ -547,13 +547,14 @@ export interface SchemaSettingsSelectItemProps
   extends Omit<SchemaSettingsItemProps, 'onChange' | 'onClick'>,
     Omit<SelectWithTitleProps, 'title' | 'defaultValue'> {
   value?: SelectWithTitleProps['defaultValue'];
+  mode?: 'multiple' | 'tags';
 }
 export const SchemaSettingsSelectItem: FC<SchemaSettingsSelectItemProps> = (props) => {
-  const { title, options, value, onChange, ...others } = props;
+  const { title, options, value, onChange, mode, ...others } = props;
 
   return (
     <SchemaSettingsItem title={title} {...others}>
-      <SelectWithTitle {...{ title, defaultValue: value, onChange, options }} />
+      <SelectWithTitle {...{ title, defaultValue: value, onChange, options, mode }} />
     </SchemaSettingsItem>
   );
 };
@@ -683,6 +684,7 @@ export const SchemaSettingsActionModalItem: FC<SchemaSettingsActionModalItemProp
       }),
     [initialValues],
   );
+  console.log;
 
   useEffect(() => {
     form.setInitialValues(cloneDeep(initialValues));
