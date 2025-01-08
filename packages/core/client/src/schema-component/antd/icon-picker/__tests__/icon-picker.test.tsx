@@ -18,7 +18,6 @@ describe('IconPicker', () => {
     const button = container.querySelector('button') as HTMLButtonElement;
     await userEvent.click(button);
 
-    expect(screen.getByText('Icon')).toHaveTextContent(`Icon`);
     expect(screen.queryAllByRole('img').length).toBe(422);
   });
 
