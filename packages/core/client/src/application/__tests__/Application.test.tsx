@@ -85,29 +85,29 @@ describe('Application', () => {
     });
   });
 
-  describe('getFullUrl', () => {
+  describe('getHref', () => {
     it('default', () => {
       const app = new Application({});
-      expect(app.getFullUrl('test')).toBe('/test');
-      expect(app.getFullUrl('/test')).toBe('/test');
+      expect(app.getHref('test')).toBe('/test');
+      expect(app.getHref('/test')).toBe('/test');
     });
 
     it('custom', () => {
       const app = new Application({ publicPath: '/nocobase' });
-      expect(app.getFullUrl('/test')).toBe('/nocobase/test');
-      expect(app.getFullUrl('test')).toBe('/nocobase/test');
+      expect(app.getHref('/test')).toBe('/nocobase/test');
+      expect(app.getHref('test')).toBe('/nocobase/test');
     });
 
     it('sub app', () => {
       const app = new Application({ name: 'sub1' });
-      expect(app.getFullUrl('test')).toBe('/apps/sub1/test');
-      expect(app.getFullUrl('/test')).toBe('/apps/sub1/test');
+      expect(app.getHref('test')).toBe('/apps/sub1/test');
+      expect(app.getHref('/test')).toBe('/apps/sub1/test');
     });
 
     it('sub app', () => {
       const app = new Application({ name: 'sub1', publicPath: '/nocobase/' });
-      expect(app.getFullUrl('test')).toBe('/nocobase/apps/sub1/test');
-      expect(app.getFullUrl('/test')).toBe('/nocobase/apps/sub1/test');
+      expect(app.getHref('test')).toBe('/nocobase/apps/sub1/test');
+      expect(app.getHref('/test')).toBe('/nocobase/apps/sub1/test');
     });
   });
 

@@ -208,7 +208,7 @@ export class Application {
     return this.getPublicPath() + pathname.replace(/^\//g, '');
   }
 
-  getFullUrl(pathname: string) {
+  getHref(pathname: string) {
     const name = this.name;
     if (name && name !== 'main') {
       return this.getPublicPath() + 'apps/' + name + '/' + pathname.replace(/^\//g, '');
