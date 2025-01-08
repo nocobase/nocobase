@@ -252,7 +252,7 @@ function AttachmentListItem(props) {
     <span key="thumbnail" className={`${prefixCls}-list-item-thumbnail`}>
       <ThumbnailPreviewer file={file} />
     </span>,
-    showFileName !== false ? (
+    showFileName !== false && file.title ? (
       <span key="title" className={`${prefixCls}-list-item-name`} title={file.title}>
         {file.status === 'uploading' ? t('Uploading') : file.title}
       </span>
@@ -295,7 +295,7 @@ function AttachmentListItem(props) {
   return (
     <div
       style={{
-        marginBottom: showFileName !== false ? '28px' : '0px',
+        marginBottom: showFileName !== false && file.title ? '28px' : '0px',
       }}
       className={`${prefixCls}-list-picture-card-container ${prefixCls}-list-item-container`}
     >
