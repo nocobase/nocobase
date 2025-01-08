@@ -56,18 +56,15 @@ export function authCheckMiddleware({ app }: { app: Application }) {
         const redirectPath = pathname.startsWith(app.router.basename)
           ? pathname.slice(basename.length) || '/'
           : pathname;
-        if (errorType === ('TOKEN_RENEW_FAILED' satisfies AuthErrorType)) {
-          // return axios.request(error.config);
-          debouncedRedirect(() => {
-            app.apiClient.auth.setToken(null);
-            app.router.navigate(`/signin?redirect=/${redirectPath}${search}`, { replace: true });
-          });
-        } else {
-          debouncedRedirect(() => {
-            app.apiClient.auth.setToken(null);
-            app.router.navigate(`/signin?redirect=/${redirectPath}${search}`, { replace: true });
-          });
-        }
+
+        // to-do wait for solve infinite loop navigate
+        // if (errorType === ('TOKEN_RENEW_FAILED' satisfies AuthErrorType)) {
+        //   return axios.request(error.config);
+        // }
+        debouncedRedirect(() => {
+          app.apiClient.auth.setToken(null);
+          app.router.navigate(`/signin?redirect=/${redirectPath}${search}`, { replace: true });
+        });
       }
     }
     throw error;
