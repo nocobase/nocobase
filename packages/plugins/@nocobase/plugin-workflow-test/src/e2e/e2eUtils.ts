@@ -1040,12 +1040,13 @@ function getHeaders(storageState: any) {
 }
 
 // 用户登录新会话
+export const approvalUserPassword = '1a2B3c4#';
 export const userLogin = async (browser: Browser, approvalUserEmail: string, approvalUser: string) => {
   const context = await browser.newContext();
   const page = await context.newPage();
   await page.goto('signin');
   await page.getByPlaceholder('Email').fill(approvalUserEmail);
-  await page.getByPlaceholder('Password').fill(approvalUser);
+  await page.getByPlaceholder('Password').fill(approvalUserPassword);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await page.waitForLoadState('load');
   return context;
@@ -1073,4 +1074,5 @@ export default module.exports = {
   userLogin,
   apiCreateField,
   apiTriggerCustomActionEvent,
+  approvalUserPassword,
 };

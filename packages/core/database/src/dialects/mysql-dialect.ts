@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { lodash } from '@nocobase/utils';
 import { BaseDialect } from './base-dialect';
 
 export class MysqlDialect extends BaseDialect {
@@ -21,5 +22,10 @@ export class MysqlDialect extends BaseDialect {
       },
       version: '>=8.0.17',
     };
+  }
+
+  getSequelizeOptions(options: any) {
+    lodash.set(options, 'dialectOptions.multipleStatements', true);
+    return options;
   }
 }

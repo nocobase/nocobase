@@ -1051,5 +1051,8 @@
   "Unauthenticated. Please sign in to continue.": "未认证。请登录以继续。",
   "User not found. Please sign in again to continue.": "无法找到用户信息，请重新登录以继续。",
   "Your session has expired. Please sign in again.": "您的会话已过期，请重新登录。",
-  "User password changed, please signin again.": "用户密码已更改，请重新登录。"
+  "User password changed, please signin again.": "用户密码已更改，请重新登录。",
+  "Outlined": "线框风格",
+  "Filled": "实底风格",
+  "Two tone": "双色风格"
 }

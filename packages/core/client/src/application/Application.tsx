@@ -99,11 +99,13 @@ export class Application {
   public schemaSettingsManager: SchemaSettingsManager;
   public dataSourceManager: DataSourceManager;
   public name: string;
+  public globalVars: Record<string, any> = {};
 
   loading = true;
   maintained = false;
   maintaining = false;
   error = null;
+  hasLoadError = false;
 
   private wsAuthorized = false;
 
@@ -302,6 +304,7 @@ export class Application {
       await this.loadWebSocket();
       await this.pm.load();
     } catch (error) {
+      this.hasLoadError = true;
       if (this.ws.enabled) {
         await new Promise((resolve) => {
           setTimeout(() => resolve(null), 1000);
@@ -342,16 +345,21 @@ export class Application {
         window.location.reload();
         return;
       }
+
       if (data.type === 'notification') {
         this.notification[data.payload?.type || 'info']({ message: data.payload?.message });
         return;
       }
-      const maintaining = data.type === 'maintaining' && data.payload.code !== 'APP_RUNNING';
 
+      const maintaining = data.type === 'maintaining' && data.payload.code !== 'APP_RUNNING';
       if (maintaining) {
         this.setMaintaining(true);
         this.error = data.payload;
       } else {
+        if (this.hasLoadError) {
+          window.location.reload();
+        }
+
         this.setMaintaining(false);
         this.maintained = true;
         this.error = null;
@@ -457,5 +465,13 @@ export class Application {
       fieldName,
       componentOption,
     );
+  }
+
+  addGlobalVar(key: string, value: any) {
+    set(this.globalVars, key, value);
+  }
+
+  getGlobalVar(key) {
+    return get(this.globalVars, key);
   }
 }

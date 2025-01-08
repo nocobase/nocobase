@@ -11,6 +11,7 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default {
   dumpRules: 'required',
+  migrationRules: ['overwrite', 'skip'],
   shared: true,
   name: 'collections',
   sortable: 'sort',

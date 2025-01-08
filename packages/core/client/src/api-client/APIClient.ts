@@ -93,7 +93,7 @@ export class APIClient extends APIClientSDK {
       config.headers['X-With-ACL-Meta'] = true;
       const headers = this.getHeaders();
       Object.keys(headers).forEach((key) => {
-        config.headers[key] = headers[key];
+        config.headers[key] = config.headers[key] || headers[key];
       });
       return config;
     });
