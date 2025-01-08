@@ -11,7 +11,10 @@ import { Context } from '@nocobase/actions';
 
 export interface IVerification {
   verify(options: { resource: string; action: string; userInfo: any; verifyParams?: any }): Promise<any>;
-  afterVerify(options: { verifyResult: any }): Promise<any>;
+  postAction?(options: { verifyResult: any }): Promise<any>;
+  getUserVerificationInfo?(userInfo: Record<string, any>): Promise<any>;
+  getUserPublicInfo?(userInfo: Record<string, any>): Promise<any>;
+  validateUserInfo?(userInfo: Record<string, any>): Promise<boolean>;
 }
 
 export abstract class Verification implements IVerification {
@@ -20,7 +23,16 @@ export abstract class Verification implements IVerification {
     this.ctx = ctx;
   }
   abstract verify({ resource, action, userInfo, verifyParams }): Promise<any>;
-  abstract afterVerify({ verifyResult }): Promise<any>;
+  async postAction(options: { verifyResult: any }): Promise<any> {}
+  async getUserVerificationInfo(userInfo: Record<string, any>): Promise<any> {
+    return userInfo;
+  }
+  async getUserPublicInfo(userInfo: Record<string, any>): Promise<any> {
+    return {};
+  }
+  async validateUserInfo(userInfo: Record<string, any>): Promise<boolean> {
+    return true;
+  }
 }
 
 export type VerificationExtend<T extends Verification> = new ({ ctx }) => T;

@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema } from '@formily/react';
+import { ISchema, useForm } from '@formily/react';
 import { SchemaComponent } from '@nocobase/client';
 import React from 'react';
 import { VerificationCode } from './VerificationCode';
 import { SMS_OTP_VERIFICATION_TYPE } from '../../constants';
+import { VerificationFormProps } from '../types';
 
 const schema: ISchema = {
   type: 'object',
@@ -22,13 +23,18 @@ const schema: ISchema = {
       type: 'string',
       required: true,
       'x-component': 'Input',
-      'x-validator': 'phone',
       'x-decorator': 'FormItem',
-      'x-component-props': { placeholder: '{{t("Phone")}}', style: {} },
+      title: '{{t("Phone")}}',
+      'x-component-props': {
+        style: {},
+      },
+      'x-read-pretty': '{{ phone ? true : false }}',
+      default: '{{ phone }}',
     },
     code: {
       type: 'string',
       required: true,
+      title: '{{t("Verification code")}}',
       'x-component': 'VerificationCode',
       'x-use-component-props': 'useVerificationCodeProps',
       'x-component-props': {
@@ -40,7 +46,7 @@ const schema: ISchema = {
     actions: {
       type: 'void',
       'x-component': 'Action',
-      'x-use-component-props': 'useSubmitButtonProps',
+      'x-use-component-props': 'useVerifyActionProps',
       'x-component-props': {
         htmlType: 'submit',
         block: true,
@@ -51,14 +57,21 @@ const schema: ISchema = {
   },
 };
 
-export const SMSVerification = (props: { verificationCodeProps: any; submitButtonProps: any }) => {
-  const { verificationCodeProps, submitButtonProps } = props;
+export const SMSVerification = (props: VerificationFormProps) => {
+  const { verificationType, actionType, publicInfo, getUserVerifyInfo, useVerifyActionProps } = props;
   return (
     <SchemaComponent
       schema={schema}
       scope={{
-        useVerificationCodeProps: () => verificationCodeProps,
-        useSubmitButtonProps: () => submitButtonProps,
+        phone: publicInfo?.phone,
+        useVerificationCodeProps: () => {
+          return {
+            actionType,
+            verificationType,
+            getUserVerifyInfo,
+          };
+        },
+        useVerifyActionProps,
       }}
       components={{ VerificationCode }}
     />

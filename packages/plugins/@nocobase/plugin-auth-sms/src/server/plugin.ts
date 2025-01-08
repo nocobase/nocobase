@@ -24,15 +24,8 @@ export class PluginAuthSMSServer extends Plugin {
     }
     verificationPlugin.verificationManager.registerAction('auth:signIn', {
       manual: true,
-      getUserInfo: (ctx) => {
-        return ctx.action.params.values.phone;
-      },
-      expiresIn: 120,
-      validateUser: async (ctx, phone) => {
-        if (!phone) {
-          throw new Error(ctx.t('Not a valid cellphone number, please re-enter'));
-        }
-        return true;
+      getUserInfoFromCtx: (ctx) => {
+        return ctx.action.params.values;
       },
     });
 

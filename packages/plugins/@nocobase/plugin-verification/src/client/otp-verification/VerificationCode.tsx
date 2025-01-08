@@ -14,13 +14,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export const VerificationCode: React.FC<{
-  targetFieldName?: string;
   actionType: string;
   verificationType: string;
+  getUserVerifyInfo: (form: any) => Record<string, any>;
   value: string;
   onChange: (value: any) => void;
 }> = withDynamicSchemaProps(
-  ({ targetFieldName = 'phone', actionType, verificationType, value, onChange }) => {
+  ({ actionType, verificationType, getUserVerifyInfo, value, onChange }) => {
     const { t } = useTranslation();
     const api = useAPIClient();
     const form = useForm();
@@ -39,13 +39,14 @@ export const VerificationCode: React.FC<{
         return;
       }
       try {
+        const verifyInfo = getUserVerifyInfo(form);
         const {
           data: { data },
         } = await api.resource('verifications').create({
           values: {
             action: actionType,
-            [targetFieldName]: form.values[targetFieldName],
             verificationType,
+            ...verifyInfo,
           },
         });
         message.success(t('Operation succeeded'));
@@ -69,7 +70,7 @@ export const VerificationCode: React.FC<{
           gap: 0.5em;
         `}
       >
-        <Input value={value} onChange={onChange} placeholder={t('Verification code')} />
+        <Input value={value} onChange={onChange} />
         <Button onClick={onGetCode} disabled={count > 0}>
           {count > 0 ? t('Retry after {{count}} seconds', { count }) : t('Send code')}
         </Button>

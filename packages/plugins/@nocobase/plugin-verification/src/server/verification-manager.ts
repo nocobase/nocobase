@@ -22,11 +22,9 @@ type SceneRule = (scene: string, verificationType: string) => boolean;
 
 export interface ActionOptions {
   manual?: boolean;
-  expiresIn?: number;
   getVerificationType?(ctx: Context): string | Promise<string>;
-  getUserInfo(ctx: Context): any | Promise<any>;
+  getUserInfoFromCtx?(ctx: Context): any | Promise<any>;
   getVerifyParams?(ctx: Context): any | Promise<any>;
-  validateUser?(ctx: Context, userInfo: any): boolean | Promise<boolean>;
 }
 
 export class VerificationManager {
@@ -49,11 +47,12 @@ export class VerificationManager {
   getVerificationTypesByScene(scene: string) {
     const verificationTypes = [];
     for (const [type, options] of this.verificationTypes.getEntities()) {
+      const item = { type, title: options.title };
       if (options.scenes.includes(scene)) {
-        verificationTypes.push(type);
+        verificationTypes.push(item);
       }
       if (this.sceneRules.some((rule) => rule(scene, type))) {
-        verificationTypes.push(type);
+        verificationTypes.push(item);
       }
     }
     return verificationTypes;
@@ -61,6 +60,9 @@ export class VerificationManager {
 
   getVerification(type: string) {
     const verificationType = this.verificationTypes.get(type);
+    if (!verificationType) {
+      throw new Error(`Invalid verification type: ${type}`);
+    }
     return verificationType.verification;
   }
 
@@ -81,7 +83,7 @@ export class VerificationManager {
       ctx.throw(400, 'Invalid action');
     }
     const verificationType = this.getVerificationType(ctx, action);
-    const userInfo = await action.getUserInfo(ctx);
+    const userInfo = await action.getUserInfoFromCtx(ctx);
     if (!userInfo) {
       ctx.throw(400, 'Invalid user info');
     }
@@ -102,7 +104,7 @@ export class VerificationManager {
     try {
       await next();
     } finally {
-      await verification.afterVerify?.({ verifyResult });
+      await verification.postAction({ verifyResult });
     }
   }
 

@@ -35,13 +35,22 @@ export async function create(ctx: Context, next: Next) {
     return ctx.throw(500);
   }
 
-  const receiver = action.getUserInfo(ctx);
+  const userInfo = await action.getUserInfoFromCtx(ctx);
+  const receiver = await verification.getUserVerificationInfo(userInfo);
   if (!receiver) {
     return ctx.throw(400, {
       code: 'InvalidReceiver',
       message: ctx.t('Not a valid cellphone number, please re-enter', { ns: namespace }),
     });
   }
+  if (verification.validateUserInfo) {
+    try {
+      await verification.validateUserInfo(userInfo);
+    } catch (err) {
+      return ctx.throw(400, { code: 'InvalidReceiver', message: err.message });
+    }
+  }
+
   const VerificationModel = ctx.db.getModel('verifications');
   const record = await VerificationModel.findOne({
     where: {
@@ -63,43 +72,35 @@ export async function create(ctx: Context, next: Next) {
   }
 
   const code = (<number>await asyncRandomInt(999999)).toString(10).padStart(6, '0');
-  if (action.validateUser) {
-    try {
-      await action.validateUser(ctx, receiver);
-    } catch (err) {
-      return ctx.throw(400, { code: 'InvalidReceiver', message: err.message });
-    }
-  }
-
   const { provider, model: providerItem } = defaultProvider;
-  try {
-    await provider.send(receiver, { code });
-    console.log('verification code sent');
-  } catch (error) {
-    switch (error.name) {
-      case 'InvalidReceiver':
-        // TODO: message should consider email and other providers, maybe use "receiver"
-        return ctx.throw(400, {
-          code: 'InvalidReceiver',
-          message: ctx.t('Not a valid cellphone number, please re-enter', { ns: namespace }),
-        });
-      case 'RateLimit':
-        return ctx.throw(429, ctx.t('You are trying so frequently, please slow down', { ns: namespace }));
-      default:
-        console.error(error);
-        return ctx.throw(
-          500,
-          ctx.t('Verification send failed, please try later or contact to administrator', { ns: namespace }),
-        );
-    }
-  }
+  // try {
+  //   await provider.send(receiver, { code });
+  //   console.log('verification code sent');
+  // } catch (error) {
+  //   switch (error.name) {
+  //     case 'InvalidReceiver':
+  //       // TODO: message should consider email and other providers, maybe use "receiver"
+  //       return ctx.throw(400, {
+  //         code: 'InvalidReceiver',
+  //         message: ctx.t('Not a valid cellphone number, please re-enter', { ns: namespace }),
+  //       });
+  //     case 'RateLimit':
+  //       return ctx.throw(429, ctx.t('You are trying so frequently, please slow down', { ns: namespace }));
+  //     default:
+  //       console.error(error);
+  //       return ctx.throw(
+  //         500,
+  //         ctx.t('Verification send failed, please try later or contact to administrator', { ns: namespace }),
+  //       );
+  //   }
+  // }
 
   const data = {
     id: randomUUID(),
     type: values.action,
     receiver,
     content: code,
-    expiresAt: Date.now() + (action.expiresIn ?? 60) * 1000,
+    expiresAt: Date.now() + (verification.expiresIn ?? 60) * 1000,
     status: CODE_STATUS_UNUSED,
     providerId: providerItem.get('id'),
   };

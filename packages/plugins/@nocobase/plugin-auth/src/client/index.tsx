@@ -97,7 +97,11 @@ const useSignIn = function (name: string) {
   const useSignIn = useLazy<typeof import('./basic').useSignIn>(() => import('./basic'), 'useSignIn');
   return useSignIn(name);
 };
+const useRedirect = function (next = '/admin') {
+  const useRedirect = useLazy<typeof import('./basic').useRedirect>(() => import('./basic'), 'useRedirect');
+  return useRedirect(next);
+};
 
-export { useSignIn };
+export { useSignIn, useRedirect };
 
 export default PluginAuthClient;

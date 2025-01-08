@@ -15,6 +15,7 @@ import { CODE_STATUS_UNUSED, CODE_STATUS_USED } from '../constants';
 import pkg from '../../../package.json';
 
 export class OTPVerification extends Verification {
+  expiresIn = 120;
   providers: Registry<typeof OTPProvider> = new Registry();
 
   async getDefaultProvider(): Promise<{ provider: OTPProvider; model: Model } | null> {
@@ -24,7 +25,7 @@ export class OTPVerification extends Verification {
   async verify({ resource, action, userInfo, verifyParams }): Promise<any> {
     // check if code match, then call next
     // find the code based on action params
-    const receiver = userInfo;
+    const receiver = await this.getUserVerificationInfo(userInfo);
     const content = verifyParams.code;
     const VerificationRepo = this.ctx.db.getRepository('verifications');
     const item = await VerificationRepo.findOne({
@@ -49,7 +50,7 @@ export class OTPVerification extends Verification {
     return { codeInfo: item };
   }
 
-  async afterVerify({ verifyResult }) {
+  async postAction({ verifyResult }) {
     const { codeInfo } = verifyResult;
     await codeInfo.update({
       status: CODE_STATUS_USED,

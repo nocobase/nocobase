@@ -15,13 +15,7 @@ const { SMSVerification } = lazy(() => import('./otp-verification/SMSVerificatio
 import { NAMESPACE } from './locale';
 import { Registry } from '@nocobase/utils/client';
 import { SMS_OTP_VERIFICATION_TYPE } from '../constants';
-import { ComponentType } from 'react';
-
-type VerficationTypeOptions = {
-  components: {
-    VerificationForm: ComponentType<any>;
-  };
-};
+import { VerficationTypeOptions } from './types';
 
 export class PluginVerificationClient extends Plugin {
   verifications = new Registry<VerficationTypeOptions>();
