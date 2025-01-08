@@ -111,12 +111,6 @@ const InternalDndContext = React.memo((props: Props) => {
 
 InternalDndContext.displayName = 'InternalDndContext';
 
-export const DndContext = (props: Props & { forceKeepDndContext?: boolean }) => {
-  const { designable } = useDesignable();
-
-  if (!designable && !props.forceKeepDndContext) {
-    return <>{props.children}</>;
-  }
-
+export const DndContext = (props: Props) => {
   return <InternalDndContext {...props} />;
 };
