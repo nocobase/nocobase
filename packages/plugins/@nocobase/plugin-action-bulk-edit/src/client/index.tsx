@@ -8,7 +8,11 @@
  */
 
 import { Plugin, useActionAvailable } from '@nocobase/client';
-import { bulkEditActionSettings, deprecatedBulkEditActionSettings } from './BulkEditAction.Settings';
+import {
+  bulkEditActionSettings,
+  deprecatedBulkEditActionSettings,
+  bulkEditFormSubmitActionSettings,
+} from './BulkEditAction.Settings';
 import { BulkEditActionDecorator } from './BulkEditActionDecorator';
 import { BulkEditActionInitializer } from './BulkEditActionInitializer';
 import {
@@ -30,6 +34,7 @@ export class PluginActionBulkEditClient extends Plugin {
     this.app.addScopes({ useCustomizeBulkEditActionProps });
     this.app.schemaSettingsManager.add(deprecatedBulkEditActionSettings);
     this.app.schemaSettingsManager.add(bulkEditActionSettings);
+    this.app.schemaSettingsManager.add(bulkEditFormSubmitActionSettings);
     this.app.schemaSettingsManager.add(bulkEditFormItemSettings);
     this.app.schemaInitializerManager.add(BulkEditFormItemInitializers_deprecated);
     this.app.schemaInitializerManager.add(bulkEditFormItemInitializers);

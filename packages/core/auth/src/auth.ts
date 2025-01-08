@@ -31,6 +31,10 @@ interface IAuth {
 }
 
 export abstract class Auth implements IAuth {
+  /**
+   * options keys that are not allowed to use environment variables
+   */
+  public static optionsKeysNotAllowedInEnv: string[];
   abstract user: Model;
   protected authenticator: Authenticator;
   protected options: {
