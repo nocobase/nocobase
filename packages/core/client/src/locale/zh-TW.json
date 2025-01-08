@@ -890,6 +890,7 @@
   "Ellipsis overflow content": "省略超出長度的內容",
   "Hide column": "隱藏列",
   "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "在配置模式下，整個列會變為透明色。在非配置模式下，整個列將被隱藏。即使整個列被隱藏了，其配置的默認值和其他設置仍然有效。",
+  "Show file name": "显示文件名",
   "Desktop routes": "桌面端路由",
   "Route permissions": "路由權限",
   "New routes are allowed to be accessed by default": "新路由默認允許訪問",
@@ -909,3 +910,4 @@
   "Are you sure you want to hide this menu?": "你確定要隱藏這個菜單嗎？",
   "After hiding, this menu will no longer appear in the menu bar. To show it again, you need to go to the route management page to configure it.": "隱藏後，這個菜單將不再出現在菜單欄中。要再次顯示它，你需要到路由管理頁面進行設置。"
 }
+

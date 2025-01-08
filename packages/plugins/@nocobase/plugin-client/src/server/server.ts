@@ -67,11 +67,11 @@ export class PluginClientServer extends Plugin {
     this.app.acl.allow('app', 'getInfo');
     this.app.acl.registerSnippet({
       name: 'app',
-      actions: ['app:restart', 'app:clearCache'],
+      actions: ['app:restart', 'app:refresh', 'app:clearCache'],
     });
     const dialect = this.app.db.sequelize.getDialect();
 
-    this.app.resource({
+    this.app.resourceManager.define({
       name: 'app',
       actions: {
         async getInfo(ctx, next) {
@@ -117,10 +117,14 @@ export class PluginClientServer extends Plugin {
           ctx.app.runAsCLI(['restart'], { from: 'user' });
           await next();
         },
+        async refresh(ctx, next) {
+          ctx.app.runCommand('refresh');
+          await next();
+        },
       },
     });
 
-    this.app.auditManager.registerActions(['app:restart', 'app:clearCache']);
+    this.app.auditManager.registerActions(['app:restart', 'app:refresh', 'app:clearCache']);
 
     this.registerActionHandlers();
     this.bindNewMenuToRoles();

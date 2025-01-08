@@ -179,7 +179,7 @@ export class ApprovalPassthroughModeNode {
     this.AndRadio = page.getByLabel('And', { exact: true });
     this.votingRadio = page.getByLabel('Voting', { exact: true });
     this.votingThresholdEditBox = page
-      .getByLabel('block-item-NegotiationConfig-workflows-Negotiation mode')
+      .getByLabel('block-item-Negotiation-workflows-Negotiation mode')
       .getByRole('spinbutton');
     this.parallellyRadio = page.getByLabel('Parallelly', { exact: true });
     this.sequentiallyRadio = page.getByLabel('Sequentially', { exact: true });
@@ -252,7 +252,7 @@ export class ApprovalBranchModeNode {
     this.AndRadio = page.getByLabel('And', { exact: true });
     this.votingRadio = page.getByLabel('Voting', { exact: true });
     this.votingThresholdEditBox = page
-      .getByLabel('block-item-NegotiationConfig-workflows-Negotiation mode')
+      .getByLabel('block-item-Negotiation-workflows-Negotiation mode')
       .getByRole('spinbutton');
     this.parallellyRadio = page.getByLabel('Parallelly', { exact: true });
     this.sequentiallyRadio = page.getByLabel('Sequentially', { exact: true });
