@@ -49,7 +49,6 @@ export class ToManyInterface extends BaseInterface {
 
       return result;
     });
-    // console.log({values})
     return values;
   }
 }
