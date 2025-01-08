@@ -95,7 +95,7 @@ export const DesktopModeHeader: FC = () => {
         }
       `}
     >
-      <Button style={{ color: 'white' }} href={app.getFullUrl('/admin')}>
+      <Button style={{ color: 'white' }} href={app.getHref('/admin')}>
         {t('Back')}
       </Button>
       <div style={{ display: 'flex', alignItems: 'center' }}>
