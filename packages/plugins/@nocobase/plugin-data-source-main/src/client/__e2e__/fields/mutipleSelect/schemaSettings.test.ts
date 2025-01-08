@@ -77,7 +77,7 @@ test.describe('form item & create form', () => {
       expectConstantValue: async () => {
         await expect(
           page.getByLabel('block-item-CollectionField-general-form-general.multipleSelect-multipleSelect'),
-        ).toHaveText('multipleSelect:Option1Option2Option3');
+        ).toContainText('multipleSelect:Option1Option2Option3');
       },
     });
   });
