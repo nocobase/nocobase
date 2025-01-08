@@ -13,6 +13,7 @@ export default defineCollection({
   dumpRules: {
     group: 'user',
   },
+  migrationRules: ['schema-only', 'overwrite', 'skip'],
   asStrategyResource: true,
   shared: true,
   name: 'attachments',

@@ -10,7 +10,7 @@
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
-import { basename, resolve } from 'path';
+import { basename } from 'path';
 
 import { Transactionable } from '@nocobase/database';
 import fs from 'fs';
@@ -58,6 +58,10 @@ export default class PluginFileManagerServer extends Plugin {
     return await collectionRepository.create({ values: { ...data, ...values }, transaction });
   }
 
+  parseStorage(instance) {
+    return this.app.environment.renderJsonTemplate(instance.toJSON());
+  }
+
   async uploadFile(options: UploadFileOptions) {
     const { storageName, filePath, documentRoot } = options;
     const storageRepository = this.db.getRepository('storages');
@@ -84,6 +88,8 @@ export default class PluginFileManagerServer extends Plugin {
     if (!storageInstance) {
       throw new Error('[file-manager] no linked or default storage provided');
     }
+
+    storageInstance = this.parseStorage(storageInstance);
 
     if (documentRoot) {
       storageInstance.options['documentRoot'] = documentRoot;
@@ -123,7 +129,7 @@ export default class PluginFileManagerServer extends Plugin {
     });
     this.storagesCache = new Map();
     for (const storage of storages) {
-      this.storagesCache.set(storage.get('id'), storage.toJSON());
+      this.storagesCache.set(storage.get('id'), this.parseStorage(storage));
     }
     this.db['_fileStorages'] = this.storagesCache;
   }
@@ -158,7 +164,7 @@ export default class PluginFileManagerServer extends Plugin {
         filterByTk: message.storageId,
       });
       if (storage) {
-        this.storagesCache.set(storage.id, storage.toJSON());
+        this.storagesCache.set(storage.id, this.parseStorage(storage));
       }
     }
     if (message.type === 'storageRemove') {
@@ -185,10 +191,6 @@ export default class PluginFileManagerServer extends Plugin {
     this.storageTypes.register(STORAGE_TYPE_S3, new StorageTypeS3());
     this.storageTypes.register(STORAGE_TYPE_TX_COS, new StorageTypeTxCos());
 
-    await this.db.import({
-      directory: resolve(__dirname, './collections'),
-    });
-
     const Storage = this.db.getModel('storages');
     Storage.afterSave((m, { transaction }) => {
       this.storagesCache.set(m.id, m.toJSON());
@@ -214,14 +216,6 @@ export default class PluginFileManagerServer extends Plugin {
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.storages`,
       actions: ['storages:*'],
-    });
-
-    this.db.addMigrations({
-      namespace: 'file-manager',
-      directory: resolve(__dirname, 'migrations'),
-      context: {
-        plugin: this,
-      },
     });
 
     initActions(this);
