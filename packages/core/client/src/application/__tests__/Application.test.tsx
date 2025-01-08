@@ -85,7 +85,7 @@ describe('Application', () => {
     });
   });
 
-  describe.only('getFullUrl', () => {
+  describe('getFullUrl', () => {
     it('default', () => {
       const app = new Application({});
       expect(app.getFullUrl('test')).toBe('/test');
