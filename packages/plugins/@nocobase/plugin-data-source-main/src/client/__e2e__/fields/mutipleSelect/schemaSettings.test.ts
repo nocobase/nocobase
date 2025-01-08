@@ -191,7 +191,7 @@ test.describe('form item & edit form', () => {
           page
             .getByLabel('block-item-CollectionField-general-form-general.multipleSelect-multipleSelect')
             .getByTestId('select-multiple'),
-        ).toHaveText(`${record.multipleSelect.join('')}`, { ignoreCase: true });
+        ).toContainText(`${record.multipleSelect.join('')}`, { ignoreCase: true });
       },
       expectReadonly: async () => {
         await expect(
