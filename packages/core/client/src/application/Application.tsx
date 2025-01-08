@@ -211,7 +211,7 @@ export class Application {
   getFullUrl(pathname: string) {
     const name = this.name;
     if (name && name !== 'main') {
-      return this.getPublicPath() + 'app/' + name + '/' + pathname.replace(/^\//g, '');
+      return this.getPublicPath() + 'apps/' + name + '/' + pathname.replace(/^\//g, '');
     }
     return this.getPublicPath() + pathname.replace(/^\//g, '');
   }
