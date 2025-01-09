@@ -10,4 +10,4 @@
 export * from './BlockTemplateList';
 export * from './BlockTemplatePage';
 export * from './ConfigureLink';
-export * from './ResetSetting';
+export * from './RevertSetting';

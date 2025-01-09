@@ -13,7 +13,7 @@ import { BlockNameLowercase, NAMESPACE } from './constants';
 import { BlockTemplateList, BlockTemplatePage } from './components';
 import { ISchema, Schema } from '@formily/json-schema';
 import * as _ from 'lodash';
-import { associationRecordSettingItem, resetSettingItem, formSettingItem } from './settings';
+import { associationRecordSettingItem, revertSettingItem, formSettingItem } from './settings';
 import { collectAllTemplateUids, getFullSchema } from './utils/template';
 import { registerTemplateBlockInterceptors } from './utils/interceptors';
 import { TemplateGridDecorator } from './components/TemplateGridDecorator';
@@ -190,7 +190,7 @@ export class PluginBlockTemplateClient extends Plugin {
           const schemaSetting = this.app.schemaSettingsManager.get(key);
           if (schemaSetting && !key.startsWith('fieldSettings:component:')) {
             schemaSetting.add('template-associationRecordSetting', associationRecordSettingItem);
-            schemaSetting.add('template-resetSettingItem', resetSettingItem);
+            schemaSetting.add('template-revertSettingItem', revertSettingItem);
             schemaSetting.add('template-formSettingItem', formSettingItem);
 
             // hide convert to block setting item

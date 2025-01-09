@@ -49,7 +49,7 @@ const findParentRootTemplateSchema = (fieldSchema) => {
   }
 };
 
-export const ResetSetting = () => {
+export const RevertSetting = () => {
   const { refresh } = useDesignable();
   const plugin = usePlugin(PluginBlockTemplateClient);
   const t = useT();

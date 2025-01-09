@@ -9,13 +9,13 @@
 
 import { useFieldSchema } from '@formily/react';
 import _ from 'lodash';
-import { ResetSetting } from '../components/ResetSetting';
+import { RevertSetting } from '../components/RevertSetting';
 import { tStr } from '../locale';
 
-export const resetSettingItem = {
-  name: 'template-reset',
+export const revertSettingItem = {
+  name: 'template-revert',
   title: tStr('Revert to template'),
-  Component: ResetSetting,
+  Component: RevertSetting,
   useVisible() {
     const fieldSchema = useFieldSchema();
     const templateBlock = _.get(fieldSchema, 'x-template-uid');

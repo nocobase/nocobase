@@ -10,7 +10,7 @@
 import { SchemaSettings } from '@nocobase/client';
 import { useT } from '../locale';
 import { associationRecordSettingItem } from './associationRecordSetting';
-import { resetSettingItem } from './resetSetting';
+import { revertSettingItem } from './revertSetting';
 
 export const templateBlockSettings = new SchemaSettings({
   name: 'templateSettings:blockItem',
@@ -26,7 +26,7 @@ export const templateBlockSettings = new SchemaSettings({
         };
       },
       useChildren() {
-        return [resetSettingItem, associationRecordSettingItem];
+        return [revertSettingItem, associationRecordSettingItem];
       },
     },
   ],

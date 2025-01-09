@@ -8,6 +8,6 @@
  */
 
 export * from './formSetting';
-export * from './resetSetting';
+export * from './revertSetting';
 export * from './templateBlockSettings';
 export * from './associationRecordSetting';
