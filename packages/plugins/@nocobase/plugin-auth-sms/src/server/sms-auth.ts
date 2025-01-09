@@ -26,7 +26,8 @@ export class SMSAuth extends BaseAuth {
     const ctx = this.ctx;
     const verificationPlugin: VerificationPlugin = ctx.app.getPlugin('verification');
     if (!verificationPlugin) {
-      throw new Error('auth-sms: @nocobase/plugin-verification is required');
+      ctx.log.error('auth-sms: @nocobase/plugin-verification is required', { method: 'validate' });
+      ctx.throw(500);
     }
     let user: Model;
     ctx.action.mergeParams({
@@ -66,7 +67,7 @@ export class SMSAuth extends BaseAuth {
           throw new Error(ctx.t('The phone number is not registered, please register first', { ns: namespace }));
         }
       } catch (err) {
-        console.log(err);
+        ctx.log.error(err, { method: 'validate' });
         throw new Error(err.message);
       }
     });

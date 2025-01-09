@@ -83,9 +83,12 @@ export class VerificationManager {
       ctx.throw(400, 'Invalid action');
     }
     const verificationType = this.getVerificationType(ctx, action);
-    const userInfo = await action.getUserInfoFromCtx(ctx);
-    if (!userInfo) {
-      ctx.throw(400, 'Invalid user info');
+    let userInfo: any;
+    if (action.getUserInfoFromCtx) {
+      userInfo = await action.getUserInfoFromCtx(ctx);
+      if (!userInfo) {
+        ctx.throw(400, 'Invalid user info');
+      }
     }
     const verifyParams = action.getVerifyParams ? await action.getVerifyParams(ctx) : ctx.action.params.values;
     if (!verifyParams) {
