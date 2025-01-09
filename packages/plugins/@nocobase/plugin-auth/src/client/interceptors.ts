@@ -11,17 +11,6 @@ import { Application } from '@nocobase/client';
 import type { AxiosResponse } from 'axios';
 import debounce from 'lodash/debounce';
 
-type AuthErrorType =
-  | 'EMPTY_TOKEN'
-  | 'EXPIRED_TOKEN'
-  | 'INVALID_TOKEN'
-  | 'RENEWED_TOKEN'
-  | 'MISSING_SESSION'
-  | 'TOKEN_RENEW_FAILED'
-  | 'BLOCKED_TOKEN'
-  | 'EXPIRED_SESSION'
-  | 'NOT_EXIST_USER';
-
 const debouncedRedirect = debounce(
   (redirectFunc) => {
     redirectFunc();
@@ -47,8 +36,14 @@ export function authCheckMiddleware({ app }: { app: Application }) {
     if (error.status === 401) {
       const errors = error?.response?.data?.errors;
       const firstError = Array.isArray(errors) ? errors[0] : null;
-      if (!firstError) throw error;
-      const errorType: AuthErrorType = firstError?.code;
+      if (!firstError) {
+        throw error;
+      }
+      if (firstError?.code === 'USER_HAS_NO_ROLES_ERR') {
+        app.error = firstError;
+        return error;
+      }
+
       const state = app.router.state;
       const { pathname, search } = state.location;
       const basename = app.router.basename;
