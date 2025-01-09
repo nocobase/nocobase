@@ -8,13 +8,12 @@
  */
 
 import { SchemaSettingsItem, useAPIClient, useDesignable, usePlugin } from '@nocobase/client';
-import { useFieldSchema, useField } from '@formily/react';
+import { useFieldSchema, useForm, useField } from '@formily/react';
 import { App } from 'antd';
 import React from 'react';
 import _ from 'lodash';
 import { convertTplBlock } from '../initializers/TemplateBlockInitializer';
 import { Schema } from '@formily/json-schema';
-import { uid } from '@nocobase/utils/client';
 import { useT } from '../locale';
 import PluginBlockTemplateClient from '..';
 
@@ -63,15 +62,13 @@ const findParentRootTemplateSchema = (fieldSchema) => {
 };
 
 export const ResetSetting = () => {
-  // const { dn, template } = useSchemaSettings();
-  const { dn, reset, refresh } = useDesignable();
+  const { refresh } = useDesignable();
   const plugin = usePlugin(PluginBlockTemplateClient);
   const t = useT();
   const api = useAPIClient();
-  // const compile = useCompile();
+  const form = useForm();
   const fieldSchema = useFieldSchema();
   const field = useField();
-  // const form = useForm();
   const { modal, message } = App.useApp();
 
   return (
@@ -101,7 +98,7 @@ export const ResetSetting = () => {
               rootSchema['x-template-title'],
             );
 
-            // 删除老的schema
+            // remove old schema
             const position = findInsertPosition(fieldSchema.parent, fieldSchema['x-uid']);
 
             await api.request({
@@ -128,15 +125,10 @@ export const ResetSetting = () => {
                 return mergedSchema;
               }
             };
-            field.decoratorProps = {
-              ...field.decoratorProps,
-              key: uid(),
-            };
-            field.componentProps = {
-              ...field.componentProps,
-              key: uid(),
-            };
+            const sc = new Schema(fieldSchema.toJSON()).compile();
             refresh({ refreshParentSchema: true });
+            form.clearFormGraph();
+
             message.success(t('Reset successfully'), 0.2);
           },
         });
