@@ -11,9 +11,8 @@ import React, { createContext, useContext, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useACLRoleContext } from '../acl';
 import { ReturnTypeOfUseRequest, useAPIClient, useRequest } from '../api-client';
-import { useLocationNoUpdate } from '../application';
+import { useAppSpin, useLocationNoUpdate } from '../application';
 import { useCompile } from '../schema-component';
-import { useHistoryCollectionsByNames } from '../collection-manager';
 
 export const CurrentUserContext = createContext<ReturnTypeOfUseRequest>(null);
 CurrentUserContext.displayName = 'CurrentUserContext';
@@ -48,6 +47,11 @@ export const CurrentUserProvider = (props) => {
       .check()
       .then((res) => res?.data),
   );
+  const { render } = useAppSpin();
+
+  if (result.loading) {
+    return render();
+  }
 
   return <CurrentUserContext.Provider value={result}>{props.children}</CurrentUserContext.Provider>;
 };
