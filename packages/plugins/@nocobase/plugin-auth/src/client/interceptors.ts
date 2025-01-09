@@ -41,9 +41,8 @@ export function authCheckMiddleware({ app }: { app: Application }) {
       }
       if (firstError?.code === 'USER_HAS_NO_ROLES_ERR') {
         app.error = firstError;
-        return error;
+        throw error;
       }
-
       const state = app.router.state;
       const { pathname, search } = state.location;
       const basename = app.router.basename;
