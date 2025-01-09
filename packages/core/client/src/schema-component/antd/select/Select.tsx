@@ -109,6 +109,7 @@ const ObjectSelect = (props: SelectProps) => {
           </Tag>
         );
       }}
+      maxTagCount="responsive"
       {...others}
     />
   );
@@ -176,6 +177,7 @@ const InternalSelect = connect(
           props.onChange?.(changed === undefined ? null : changed);
         }}
         mode={mode}
+        maxTagCount="responsive"
       />
     );
   },
