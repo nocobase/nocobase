@@ -10,6 +10,7 @@
 import { observer, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import React, { Fragment, useCallback, useRef } from 'react';
+import { Space } from 'antd';
 import { useDesignable } from '../../';
 import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { useCollectionRecordData } from '../../../data-source/collection-record/CollectionRecordProvider';
@@ -21,6 +22,7 @@ import { ButtonListProps, ReadPrettyInternalViewer, isObject } from './InternalV
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { getTabFormatValue, useLabelUiSchema } from './util';
+import { getTargetFieldLabel } from '../remote-select/RemoteSelect';
 
 interface IEllipsisWithTooltipRef {
   setPopoverVisible: (boolean) => void;
@@ -53,6 +55,8 @@ const ButtonTabList: React.FC<ButtonListProps> = observer(
     const needWaitForFieldSchemaUpdatedRef = useRef(false);
     const fieldSchemaRef = useRef(fieldSchema);
     fieldSchemaRef.current = fieldSchema;
+    const isGroupLabel = Array.isArray(fieldNames.label) && fieldNames.label.length > 1;
+    const targetCollectionFields = targetCollection.fields;
 
     const getCustomActionSchema = useCallback(() => {
       return fieldSchemaRef.current;
@@ -60,12 +64,23 @@ const ButtonTabList: React.FC<ButtonListProps> = observer(
 
     const renderRecords = () =>
       toArr(props.value).map((record, index, arr) => {
-        const value = record?.[fieldNames?.label || 'label'];
+        const value = isGroupLabel ? (
+          <Space>
+            {fieldNames.label.map((v) => {
+              const targetField = targetCollectionFields.find((f) => {
+                return f.name === v;
+              });
+              return getTargetFieldLabel(record[v], targetField);
+            })}
+          </Space>
+        ) : (
+          record?.[fieldNames?.label || 'label']
+        );
         const label = isTreeCollection
           ? transformNestedData(record)
               .map((o) => o?.[fieldNames?.label || 'label'])
               .join(' / ')
-          : isObject(value)
+          : isObject(value) && !isGroupLabel
             ? JSON.stringify(value)
             : value;
         const val = toValue(compile(label), 'N/A');
