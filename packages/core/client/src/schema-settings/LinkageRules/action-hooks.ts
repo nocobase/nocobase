@@ -29,7 +29,7 @@ export const useLinkageCollectionFieldOptions = (collectionName: string, readPre
     { label: t('Value'), value: ActionType.Value, selected: false, schema: {} },
   ].filter((v) => {
     if (readPretty) {
-      return [ActionType.Visible, ActionType.None].includes(v.value);
+      return [ActionType.Visible, ActionType.None, ActionType.Hidden].includes(v.value);
     }
     return v;
   });
