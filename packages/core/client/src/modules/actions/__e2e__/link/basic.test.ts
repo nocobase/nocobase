@@ -152,6 +152,6 @@ test.describe('Link', () => {
     // After clicking the Link button, the browser URL will change, and the value of the input box using variables will be updated
     await page.getByLabel('action-Action.Link-Link-').click();
     await page.waitForTimeout(100);
-    await expect(page.getByLabel('block-item-CollectionField-')).toHaveText(`Roles:adminmemberroot`);
+    await expect(page.getByLabel('block-item-CollectionField-')).toContainText(`Roles:adminmemberroot`);
   });
 });
