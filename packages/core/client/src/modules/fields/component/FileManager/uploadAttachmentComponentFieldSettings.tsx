@@ -8,12 +8,12 @@
  */
 
 import { Field } from '@formily/core';
-import { useField, useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema, useForm } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useColumnSchema, useDesignable } from '../../../../schema-component';
 import { useIsFieldReadPretty } from '../../../../schema-component/antd/form-item/FormItem.Settings';
-
+import { showFileName } from './fileManagerComponentFieldSettings';
 export const uploadAttachmentComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:Upload.Attachment',
   items: [
@@ -56,5 +56,6 @@ export const uploadAttachmentComponentFieldSettings = new SchemaSettings({
         };
       },
     },
+    showFileName,
   ],
 });

@@ -571,6 +571,17 @@ export function WorkflowConfig() {
               items: {
                 type: 'object',
                 properties: {
+                  sort: {
+                    type: 'void',
+                    'x-component': 'ArrayTable.Column',
+                    'x-component-props': { width: 50, title: '', align: 'center' },
+                    properties: {
+                      sort: {
+                        type: 'void',
+                        'x-component': 'ArrayTable.SortHandle',
+                      },
+                    },
+                  },
                   context: {
                     type: 'void',
                     'x-component': 'ArrayTable.Column',

@@ -60,7 +60,7 @@ const useSaveSystemSettingsValues = () => {
         },
       });
       await api.request({
-        url: 'systemSettings:update/1',
+        url: 'systemSettings:put',
         method: 'post',
         data: values,
       });
@@ -88,11 +88,14 @@ const schema: ISchema = {
       type: 'void',
       title: '{{t("System settings")}}',
       properties: {
-        title: {
+        raw_title: {
           type: 'string',
           title: "{{t('System title')}}",
           'x-decorator': 'FormItem',
-          'x-component': 'Input.TextArea',
+          'x-component': 'TextAreaWithGlobalScope',
+          'x-component-props': {
+            supportsLineBreak: true,
+          },
           required: true,
         },
         logo: {

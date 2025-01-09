@@ -1047,5 +1047,9 @@
   "Associate": "关联",
   "Please add or select record": "请添加或选择数据",
   "No data": "暂无数据",
-  "Fields can only be used correctly if they are defined with an interface.": "只有字段设置了interface字段才能正常使用"
+  "Fields can only be used correctly if they are defined with an interface.": "只有字段设置了interface字段才能正常使用",
+  "Show file name":"显示文件名",
+  "Outlined": "线框风格",
+  "Filled": "实底风格",
+  "Two tone": "双色风格"
 }

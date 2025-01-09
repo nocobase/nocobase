@@ -68,4 +68,25 @@ describe('APIClient', () => {
     }
     expect(apiClient.auth.role).toBeFalsy();
   });
+
+  test('should not overwrite headers in request', async () => {
+    const instance = axios.create();
+    const apiClient = new APIClient(instance);
+    apiClient.app = {
+      getName: () => 'test',
+    } as any;
+    apiClient.auth.authenticator = 'basic';
+    try {
+      await apiClient.request({
+        method: 'GET',
+        url: '/api/test',
+        headers: {
+          'X-Authenticator': 'test',
+        },
+      });
+    } catch (err) {
+      expect(err).toBeDefined();
+      expect(err.config.headers['X-Authenticator']).toBe('test');
+    }
+  });
 });

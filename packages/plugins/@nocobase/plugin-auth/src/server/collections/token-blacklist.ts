@@ -13,6 +13,7 @@ export default defineCollection({
   dumpRules: {
     group: 'log',
   },
+  migrationRules: ['schema-only', 'skip'],
   shared: true,
   name: 'tokenBlacklist',
   model: 'TokenBlacklistModel',

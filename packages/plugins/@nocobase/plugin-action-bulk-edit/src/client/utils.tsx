@@ -88,7 +88,6 @@ export const useCustomizeBulkEditActionProps = () => {
   const actionField = useField();
   const tableBlockContext = useTableBlockContext();
   const { modal } = App.useApp();
-
   const { rowKey } = tableBlockContext;
   const selectedRecordKeys =
     tableBlockContext.field?.data?.selectedRowKeys ?? expressionScope?.selectedRecordKeys ?? {};
@@ -98,6 +97,7 @@ export const useCustomizeBulkEditActionProps = () => {
     async onClick() {
       const { updateMode } = actionSchema?.['x-action-settings'] ?? {};
       const { onSuccess, skipValidator, triggerWorkflows } = fieldSchema?.['x-action-settings'] ?? {};
+      const { refreshDataBlockRequest } = fieldSchema?.['x-component-props'] ?? {};
       const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
       const { filter } = __parent.service.params?.[0] ?? {};
 
@@ -125,13 +125,13 @@ export const useCustomizeBulkEditActionProps = () => {
         }
         await resource.update(updateData);
         actionField.data.loading = false;
-        if (!(resource instanceof TableFieldResource)) {
-          __parent?.__parent?.service?.refresh?.();
-        }
+
         if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
           setVisible?.(false);
         }
-        setSubmitted(true);
+        if (refreshDataBlockRequest !== false) {
+          setSubmitted(true);
+        }
         if (!successMessage) {
           if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
             if (isURL(redirectTo)) {
