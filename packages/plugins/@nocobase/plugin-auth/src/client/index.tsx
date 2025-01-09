@@ -11,13 +11,13 @@ import { Plugin, lazy, useLazy } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 import { ComponentType } from 'react';
 import { presetAuthType } from '../preset';
+import type { Authenticator as AuthenticatorType } from './authenticator';
+import { authCheckMiddleware } from './interceptors';
+import { NAMESPACE } from './locale';
 // import { AuthProvider } from './AuthProvider';
 const { AuthProvider } = lazy(() => import('./AuthProvider'), 'AuthProvider');
-import type { Authenticator as AuthenticatorType } from './authenticator';
 // import { Options, SignInForm, SignUpForm } from './basic';
 const { Options, SignInForm, SignUpForm } = lazy(() => import('./basic'), 'Options', 'SignInForm', 'SignUpForm');
-import { NAMESPACE } from './locale';
-import { authCheckMiddleware } from './interceptors';
 // import { AuthLayout, SignInPage, SignUpPage } from './pages';
 const { AuthLayout, SignInPage, SignUpPage } = lazy(() => import('./pages'), 'AuthLayout', 'SignInPage', 'SignUpPage');
 // import { Authenticator } from './settings/Authenticator';
@@ -29,7 +29,7 @@ const { AuthenticatorsContextProvider, AuthLayout: ExportAuthLayout } = lazy(
   'AuthenticatorsContextProvider',
   'AuthLayout',
 );
-export { AuthenticatorsContextProvider, ExportAuthLayout as AuthLayout };
+export { ExportAuthLayout as AuthLayout, AuthenticatorsContextProvider };
 
 export type AuthOptions = {
   components: Partial<{
@@ -90,12 +90,7 @@ export class PluginAuthClient extends Plugin {
       sort: 0,
     });
     const [fulfilled, rejected] = authCheckMiddleware({ app: this.app });
-    this.app.apiClient.axios.interceptors.response['handlers'].unshift({
-      fulfilled,
-      rejected,
-      synchronous: false,
-      runWhen: null,
-    });
+    this.app.apiClient.axios.interceptors.response.use(fulfilled, rejected);
   }
 }
 
