@@ -73,6 +73,22 @@ export const getTargetFieldLabel = (value, targetField) => {
   return value;
 };
 
+export const FieldNameLabel = ({ fieldNames, targetFields, record }) => {
+  const compile = useCompile();
+  const isGroupLabel = Array.isArray(fieldNames.label) && fieldNames.label.length > 1;
+  const label = isGroupLabel ? (
+    <Space>
+      {fieldNames.label.map((v) => {
+        const result = targetFields.find((f) => f.name === v);
+        return getTargetFieldLabel(record[v], result);
+      })}
+    </Space>
+  ) : (
+    compile(record[fieldNames.label])
+  );
+  return label;
+};
+
 const InternalRemoteSelect = withDynamicSchemaProps(
   connect(
     (props: RemoteSelectProps) => {
@@ -151,8 +167,6 @@ const InternalRemoteSelect = withDynamicSchemaProps(
         return '$includes';
       }, [targetField]);
 
-      const compile = useCompile();
-
       //格式化options
       const mapOptionsToTags = useCallback(
         (options) => {
@@ -162,16 +176,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
                 return ['number', 'string'].includes(typeof v[fieldNames.value]) || !v[fieldNames.value];
               })
               .map((option) => {
-                let label = isGroupLabel ? (
-                  <Space>
-                    {fieldNames.label.map((v) => {
-                      const result = targetField.find((f) => f.name === v);
-                      return getTargetFieldLabel(option[v], result);
-                    })}
-                  </Space>
-                ) : (
-                  compile(option[fieldNames.label])
-                );
+                let label: any = <FieldNameLabel fieldNames={fieldNames} record={option} targetFields={targetField} />;
                 if (targetField?.uiSchema?.enum) {
                   if (Array.isArray(label)) {
                     label = label

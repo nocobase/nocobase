@@ -36,7 +36,7 @@ import { ActionContextProvider } from '../action';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
-import { getTargetFieldLabel } from '../remote-select/RemoteSelect';
+import { FieldNameLabel } from '../remote-select/RemoteSelect';
 
 export const useTableSelectorProps = () => {
   const field: any = useField();
@@ -95,21 +95,10 @@ export const InternalPicker = observer(
     const isAllowAddNew = fieldSchema['x-add-new'];
     const [selectedRows, setSelectedRows] = useState([]);
     const recordData = useCollectionRecordData();
-    const isGroupLabel = Array.isArray(fieldNames.label) && fieldNames.label.length > 1;
-
     const options = useMemo(() => {
       if (value && Object.keys(value).length > 0) {
         const opts = (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean).map((option) => {
-          const label = isGroupLabel ? (
-            <Space>
-              {fieldNames.label.map((v) => {
-                const result = targetFields.find((f) => f.name === v);
-                return getTargetFieldLabel(option[v], result);
-              })}
-            </Space>
-          ) : (
-            compile(option[fieldNames.label])
-          );
+          const label = <FieldNameLabel fieldNames={fieldNames} record={option} targetFields={targetFields} />;
           return {
             ...option,
             [fieldNames.label]: getLabelFormatValue(compile(labelUiSchema), label),

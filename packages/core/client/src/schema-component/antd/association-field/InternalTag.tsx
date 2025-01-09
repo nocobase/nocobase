@@ -22,7 +22,7 @@ import { ButtonListProps, ReadPrettyInternalViewer, isObject } from './InternalV
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { getTabFormatValue, useLabelUiSchema } from './util';
-import { getTargetFieldLabel } from '../remote-select/RemoteSelect';
+import { FieldNameLabel } from '../remote-select/RemoteSelect';
 
 interface IEllipsisWithTooltipRef {
   setPopoverVisible: (boolean) => void;
@@ -56,7 +56,7 @@ const ButtonTabList: React.FC<ButtonListProps> = observer(
     const fieldSchemaRef = useRef(fieldSchema);
     fieldSchemaRef.current = fieldSchema;
     const isGroupLabel = Array.isArray(fieldNames.label) && fieldNames.label.length > 1;
-    const targetCollectionFields = targetCollection.fields;
+    const targetFields = targetCollection.fields;
 
     const getCustomActionSchema = useCallback(() => {
       return fieldSchemaRef.current;
@@ -64,18 +64,7 @@ const ButtonTabList: React.FC<ButtonListProps> = observer(
 
     const renderRecords = () =>
       toArr(props.value).map((record, index, arr) => {
-        const value = isGroupLabel ? (
-          <Space>
-            {fieldNames.label.map((v) => {
-              const targetField = targetCollectionFields.find((f) => {
-                return f.name === v;
-              });
-              return getTargetFieldLabel(record[v], targetField);
-            })}
-          </Space>
-        ) : (
-          record?.[fieldNames?.label || 'label']
-        );
+        const value = <FieldNameLabel fieldNames={fieldNames} targetFields={targetFields} record={record} />;
         const label = isTreeCollection
           ? transformNestedData(record)
               .map((o) => o?.[fieldNames?.label || 'label'])
