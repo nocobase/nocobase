@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import debounce from 'lodash/debounce';
 import { Application } from '@nocobase/client';
 import type { AxiosResponse } from 'axios';
+import debounce from 'lodash/debounce';
 
 type AuthErrorType =
   | 'EMPTY_TOKEN'
@@ -52,11 +52,11 @@ export function authCheckMiddleware({ app }: { app: Application }) {
       const state = app.router.state;
       const { pathname, search } = state.location;
       const basename = app.router.basename;
-      if (pathname !== '/signin') {
+
+      if (pathname !== app.getHref('signin')) {
         const redirectPath = pathname.startsWith(app.router.basename)
           ? pathname.slice(basename.length) || '/'
           : pathname;
-
         // to-do wait for solve infinite loop navigate
         // if (errorType === ('TOKEN_RENEW_FAILED' satisfies AuthErrorType)) {
         //   return axios.request(error.config);
