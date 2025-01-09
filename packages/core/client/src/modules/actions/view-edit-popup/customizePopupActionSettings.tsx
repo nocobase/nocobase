@@ -41,9 +41,9 @@ export const customizePopupActionSettings = new SchemaSettings({
         };
       },
       useVisible() {
-        const { collection } = useCurrentPopupRecord();
+        const { collection } = useCurrentPopupRecord() || {};
         const currentCollection = useCollection();
-        return collection?.name === currentCollection.name;
+        return !collection || collection?.name === currentCollection?.name;
       },
     },
     {
