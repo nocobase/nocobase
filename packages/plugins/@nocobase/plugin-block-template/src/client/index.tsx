@@ -188,10 +188,12 @@ export class PluginBlockTemplateClient extends Plugin {
         const schemaSettings = this.app.schemaSettingsManager.getAll();
         for (const key in schemaSettings) {
           const schemaSetting = this.app.schemaSettingsManager.get(key);
-          if (schemaSetting) {
+          if (schemaSetting && !key.startsWith('fieldSettings:component:')) {
             schemaSetting.add('template-associationRecordSetting', associationRecordSettingItem);
             schemaSetting.add('template-resetSettingItem', resetSettingItem);
             schemaSetting.add('template-formSettingItem', formSettingItem);
+
+            // hide convert to block setting item
             for (let i = 0; i < schemaSetting.items.length; i++) {
               if (
                 schemaSetting.items[i]['Component'] === SchemaSettingsTemplate ||

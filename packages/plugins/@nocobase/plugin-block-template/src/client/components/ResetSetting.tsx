@@ -17,18 +17,6 @@ import { Schema } from '@formily/json-schema';
 import { useT } from '../locale';
 import PluginBlockTemplateClient from '..';
 
-const cleanSchema = (schema) => {
-  const s = { ...schema, 'x-component-props': {}, 'x-decorator-props': {} };
-  if (s.properties) {
-    for (const key in s.properties) {
-      s.properties[key] = cleanSchema(s.properties[key]);
-    }
-  } else {
-    s.properties = null;
-  }
-  return s;
-};
-
 const findInsertPosition = (parentSchema, uid) => {
   const postion = {
     insertPosition: 'beforeBegin',
