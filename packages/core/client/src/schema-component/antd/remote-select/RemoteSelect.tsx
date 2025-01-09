@@ -165,8 +165,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
                 let label = isGroupLabel ? (
                   <Space>
                     {fieldNames.label.map((v) => {
-                      const result = targetField.find((v) => v.name === name);
-
+                      const result = targetField.find((f) => f.name === v);
                       return getTargetFieldLabel(option[v], result);
                     })}
                   </Space>
@@ -233,6 +232,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
         },
         [targetField?.uiSchema, fieldNames],
       );
+
       const { data, run, loading } = useRequest(
         {
           action: 'list',
@@ -286,7 +286,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
             ? {
                 $or: fieldNames.label
                   .map((field) => {
-                    if (assign({}, ...operator)[field] !== '$includes') {
+                    if (assign({}, ...operator)[field] === '$dateOn') {
                       return null;
                     }
                     return {
@@ -330,7 +330,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
         }
         firstRun.current = true;
       };
-
+      console.log(toOptionsItem(mapOptionsToTags(options)));
       return (
         <Select
           open={open}
