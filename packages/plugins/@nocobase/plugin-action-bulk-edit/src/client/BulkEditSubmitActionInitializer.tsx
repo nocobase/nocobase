@@ -18,7 +18,7 @@ export const BulkEditSubmitActionInitializer = (props) => {
     'x-use-component-props': 'useCustomizeBulkEditActionProps',
     // 'x-designer': 'Action.Designer',
     'x-toolbar': 'ActionSchemaToolbar',
-    'x-settings': 'actionSettings:updateSubmit',
+    'x-settings': 'actionSettings:bulkEditSubmit',
     'x-component-props': {
       type: 'primary',
       htmlType: 'submit',

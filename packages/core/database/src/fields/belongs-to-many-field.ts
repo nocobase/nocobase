@@ -144,6 +144,9 @@ export class BelongsToManyField extends RelationField {
     } else {
       const throughCollectionOptions = {
         name: through,
+        isThrough: true,
+        sourceCollectionName: this.collection.name,
+        targetCollectionName: this.target,
       };
 
       if (this.collection.options.dumpRules) {

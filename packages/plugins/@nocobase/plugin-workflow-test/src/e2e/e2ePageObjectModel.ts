@@ -171,7 +171,7 @@ export class ApprovalPassthroughModeNode {
     this.nodeConfigure = page
       .getByLabel(`Approval-${nodeName}`, { exact: true })
       .getByRole('button', { name: 'Configure' });
-    this.addAssigneesButton = page.getByRole('button', { name: 'plus Add assignee' });
+    this.addAssigneesButton = page.getByRole('button', { name: 'plus Add' });
     this.addSelectAssigneesMenu = page.getByRole('button', { name: 'Select assignees' });
     this.addQueryAssigneesMenu = page.getByRole('button', { name: 'Query assignees' });
     this.assigneesDropDown = page.getByTestId('select-single');
@@ -179,7 +179,7 @@ export class ApprovalPassthroughModeNode {
     this.AndRadio = page.getByLabel('And', { exact: true });
     this.votingRadio = page.getByLabel('Voting', { exact: true });
     this.votingThresholdEditBox = page
-      .getByLabel('block-item-NegotiationConfig-workflows-Negotiation mode')
+      .getByLabel('block-item-Negotiation-workflows-Negotiation mode')
       .getByRole('spinbutton');
     this.parallellyRadio = page.getByLabel('Parallelly', { exact: true });
     this.sequentiallyRadio = page.getByLabel('Sequentially', { exact: true });
@@ -244,7 +244,7 @@ export class ApprovalBranchModeNode {
     this.nodeConfigure = page
       .getByLabel(`Approval-${nodeName}`, { exact: true })
       .getByRole('button', { name: 'Configure' });
-    this.addAssigneesButton = page.getByRole('button', { name: 'plus Add assignee' });
+    this.addAssigneesButton = page.getByRole('button', { name: 'plus Add' });
     this.addSelectAssigneesMenu = page.getByRole('button', { name: 'Select assignees' });
     this.addQueryAssigneesMenu = page.getByRole('button', { name: 'Query assignees' });
     this.assigneesDropDown = page.getByTestId('select-single');
@@ -252,7 +252,7 @@ export class ApprovalBranchModeNode {
     this.AndRadio = page.getByLabel('And', { exact: true });
     this.votingRadio = page.getByLabel('Voting', { exact: true });
     this.votingThresholdEditBox = page
-      .getByLabel('block-item-NegotiationConfig-workflows-Negotiation mode')
+      .getByLabel('block-item-Negotiation-workflows-Negotiation mode')
       .getByRole('spinbutton');
     this.parallellyRadio = page.getByLabel('Parallelly', { exact: true });
     this.sequentiallyRadio = page.getByLabel('Sequentially', { exact: true });

@@ -85,15 +85,16 @@ const useTableSelectorProps = () => {
 function FileSelector(props) {
   const { disabled, multiple, value, onChange, action, onSelect, quickUpload, selectFile, ...other } = props;
   const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
-  const { useFileCollectionStorageRules } = useExpressionScope();
+  const { useFileCollectionStorageRules, useAttachmentFieldProps } = useExpressionScope();
   const { t } = useTranslation();
   const rules = useFileCollectionStorageRules();
+  const attachmentFieldProps = useAttachmentFieldProps();
   // 兼容旧版本
   const showSelectButton = selectFile === undefined && quickUpload === undefined;
   return wrapSSR(
     <div className={cls(`${prefixCls}-wrapper`, `${prefixCls}-picture-card-wrapper`, 'nb-upload', hashId)}>
       <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>
-        <AttachmentList disabled={disabled} multiple={multiple} value={value} onChange={onChange} />
+        <AttachmentList disabled={disabled} multiple={multiple} value={value} onChange={onChange} {...other} />
         {showSelectButton ? (
           <div className={cls(`${prefixCls}-list-picture-card-container`, `${prefixCls}-list-item-container`)}>
             <AntdUpload disabled={disabled} multiple={multiple} listType={'picture-card'} showUploadList={false}>
@@ -116,6 +117,7 @@ function FileSelector(props) {
         ) : null}
         {quickUpload ? (
           <Uploader
+            {...attachmentFieldProps}
             value={value}
             multiple={multiple}
             // onRemove={handleRemove}

@@ -7,8 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import Plugin from '../Plugin';
+
 export class OTPProvider {
-  constructor(protected options: any) {}
+  protected options: any;
+  constructor(
+    protected plugin: Plugin,
+    options: any,
+  ) {
+    this.options = plugin.app.environment.renderJsonTemplate(options);
+  }
 
   async send(receiver: string, data: { [key: string]: any }): Promise<any> {}
 }

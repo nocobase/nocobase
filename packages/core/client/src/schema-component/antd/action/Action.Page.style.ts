@@ -29,6 +29,7 @@ export const useActionPageStyle = genStyleHook('nb-action-page', (token) => {
       },
       '.ant-tabs-content-holder': {
         padding: `${token.paddingPageVertical}px`,
+        paddingBottom: '0px',
       },
     },
   };

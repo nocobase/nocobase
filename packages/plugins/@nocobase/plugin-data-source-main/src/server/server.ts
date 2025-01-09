@@ -13,6 +13,8 @@ import { Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import path from 'path';
 import { CollectionRepository } from '.';
+import { FieldIsDependedOnByOtherError } from './errors/field-is-depended-on-by-other';
+import { FieldNameExistsError } from './errors/field-name-exists-error';
 import {
   afterCreateForForeignKeyField,
   afterCreateForReverseField,
@@ -20,15 +22,13 @@ import {
   beforeDestroyForeignKey,
   beforeInitOptions,
 } from './hooks';
+import { beforeCreateCheckFieldInMySQL } from './hooks/beforeCreateCheckFieldInMySQL';
 import { beforeCreateForValidateField, beforeUpdateForValidateField } from './hooks/beforeCreateForValidateField';
 import { beforeCreateForViewCollection } from './hooks/beforeCreateForViewCollection';
+import { beforeDestoryField } from './hooks/beforeDestoryField';
 import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import viewResourcer from './resourcers/views';
-import { FieldNameExistsError } from './errors/field-name-exists-error';
-import { beforeDestoryField } from './hooks/beforeDestoryField';
-import { FieldIsDependedOnByOtherError } from './errors/field-is-depended-on-by-other';
-import { beforeCreateCheckFieldInMySQL } from './hooks/beforeCreateCheckFieldInMySQL';
 
 export class PluginDataSourceMainServer extends Plugin {
   private loadFilter: Filter = {};
@@ -394,7 +394,6 @@ export class PluginDataSourceMainServer extends Plugin {
   }
 
   async load() {
-    await this.importCollections(path.resolve(__dirname, './collections'));
     this.db.getRepository<CollectionRepository>('collections').setApp(this.app);
 
     const errorHandlerPlugin = this.app.getPlugin<PluginErrorHandler>('error-handler');

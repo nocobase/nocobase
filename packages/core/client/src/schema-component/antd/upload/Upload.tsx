@@ -41,7 +41,13 @@ attachmentFileTypes.add({
     return matchMimetype(file, 'image/*');
   },
   getThumbnailURL(file) {
-    return file.url ? `${file.url}${file.thumbnailRule || ''}` : URL.createObjectURL(file.originFileObj);
+    if (file.url) {
+      return `${file.url}${file.thumbnailRule || ''}`;
+    }
+    if (file.originFileObj) {
+      return URL.createObjectURL(file.originFileObj);
+    }
+    return null;
   },
   Previewer({ index, list, onSwitchIndex }) {
     const onDownload = useCallback(
@@ -170,7 +176,7 @@ function InternalUpload(props: UploadProps) {
   return <AntdUpload {...useUploadProps(rest)} onChange={onFileChange} />;
 }
 
-function ReadPretty({ value, onChange, disabled, multiple, size }: UploadProps) {
+function ReadPretty({ value, onChange, disabled, multiple, size, ...others }: UploadProps) {
   const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
   const useUploadStyleVal = (useUploadStyle as any).default ? (useUploadStyle as any).default : useUploadStyle;
   // 加载 antd 的样式
@@ -186,7 +192,14 @@ function ReadPretty({ value, onChange, disabled, multiple, size }: UploadProps) 
       )}
     >
       <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>
-        <AttachmentList disabled={disabled} readPretty multiple={multiple} value={value} onChange={onChange} />
+        <AttachmentList
+          disabled={disabled}
+          readPretty
+          multiple={multiple}
+          value={value}
+          onChange={onChange}
+          {...others}
+        />
       </div>
     </div>,
   );
@@ -217,7 +230,7 @@ function DefaultThumbnailPreviewer({ file }) {
 }
 
 function AttachmentListItem(props) {
-  const { file, disabled, onPreview, onDelete: propsOnDelete, readPretty } = props;
+  const { file, disabled, onPreview, onDelete: propsOnDelete, readPretty, showFileName } = props;
   const { componentCls: prefixCls } = useStyles();
   const { t } = useTranslation();
   const handleClick = useCallback(
@@ -234,16 +247,16 @@ function AttachmentListItem(props) {
   const onDownload = useCallback(() => {
     saveAs(file.url, `${file.title}${file.extname}`);
   }, [file]);
-
   const { ThumbnailPreviewer = DefaultThumbnailPreviewer } = attachmentFileTypes.getTypeByFile(file) ?? {};
-
   const item = [
     <span key="thumbnail" className={`${prefixCls}-list-item-thumbnail`}>
       <ThumbnailPreviewer file={file} />
     </span>,
-    <span key="title" className={`${prefixCls}-list-item-name`} title={file.title}>
-      {file.status === 'uploading' ? t('Uploading') : file.title}
-    </span>,
+    showFileName !== false && file.title ? (
+      <span key="title" className={`${prefixCls}-list-item-name`} title={file.title}>
+        {file.status === 'uploading' ? t('Uploading') : file.title}
+      </span>
+    ) : null,
   ];
   const wrappedItem = file.url ? (
     <a target="_blank" rel="noopener noreferrer" href={file.url} onClick={handleClick}>
@@ -279,9 +292,13 @@ function AttachmentListItem(props) {
       )}
     </div>
   );
-
   return (
-    <div className={`${prefixCls}-list-picture-card-container ${prefixCls}-list-item-container`}>
+    <div
+      style={{
+        marginBottom: showFileName !== false && file.title ? '28px' : '0px',
+      }}
+      className={`${prefixCls}-list-picture-card-container ${prefixCls}-list-item-container`}
+    >
       {file.status === 'error' ? (
         <Tooltip title={file.response} getPopupContainer={(node) => node.parentNode as HTMLElement}>
           {content}
@@ -303,10 +320,9 @@ function Previewer({ index, onSwitchIndex, list }) {
 }
 
 export function AttachmentList(props) {
-  const { disabled, multiple, value, onChange, readPretty } = props;
+  const { disabled, multiple, value, onChange, readPretty, showFileName } = props;
   const [fileList, setFileList] = useState<any[]>([]);
   const [preview, setPreview] = useState<number>(null);
-
   useEffect(() => {
     const list = toFileList(value);
     setFileList(list);
@@ -341,6 +357,7 @@ export function AttachmentList(props) {
           onPreview={onPreview}
           onDelete={onDelete}
           readPretty={readPretty}
+          showFileName={showFileName}
         />
       ))}
       <Previewer index={preview} onSwitchIndex={setPreview} list={fileList} />

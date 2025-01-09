@@ -1,4 +1,4 @@
-FROM node:20.13-bullseye as builder
+FROM node:20-bookworm as builder
 ARG VERDACCIO_URL=http://host.docker.internal:10104/
 ARG COMMIT_HASH
 ARG APPEND_PRESET_LOCAL_PLUGINS
@@ -7,10 +7,17 @@ ARG PLUGINS_DIRS
 
 ENV PLUGINS_DIRS=${PLUGINS_DIRS}
 
+RUN apt-get update && apt-get install -y jq expect
 
-RUN npx npm-cli-adduser --username test --password test -e test@nocobase.com -r $VERDACCIO_URL
+RUN expect <<EOD
+spawn npm adduser --registry $VERDACCIO_URL
+expect {
+  "Username:" {send "test\r"; exp_continue}
+  "Password:" {send "test\r"; exp_continue}
+  "Email: (this IS public)" {send "test@nocobase.com\r"; exp_continue}
+}
+EOD
 
-RUN apt-get update && apt-get install -y jq
 WORKDIR /tmp
 COPY . /tmp
 RUN  yarn install && yarn build --no-dts
@@ -47,12 +54,12 @@ RUN cd /app \
   && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
 
 
-FROM node:20.13-bullseye-slim
+FROM node:20-bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg \
   && rm -rf /var/lib/apt/lists/*
 
-RUN sh -c 'echo "deb http://mirrors.ustc.edu.cn/postgresql/repos/apt bullseye-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+RUN sh -c 'echo "deb http://mirrors.ustc.edu.cn/postgresql/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
 RUN wget --quiet -O - http://mirrors.ustc.edu.cn/postgresql/repos/apt/ACCC4CF8.asc | apt-key add -
 
 RUN apt-get update && apt-get -y --no-install-recommends install nginx libaio1 postgresql-client-16 postgresql-client-17 \

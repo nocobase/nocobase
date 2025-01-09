@@ -11,7 +11,7 @@ import React, { createContext, useContext, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useACLRoleContext } from '../acl';
 import { ReturnTypeOfUseRequest, useRequest } from '../api-client';
-import { useLocationNoUpdate } from '../application';
+import { useAppSpin, useLocationNoUpdate } from '../application';
 import { useCompile } from '../schema-component';
 
 export const CurrentUserContext = createContext<ReturnTypeOfUseRequest>(null);
@@ -39,9 +39,14 @@ export const useCurrentRoles = () => {
 };
 
 export const CurrentUserProvider = (props) => {
+  const { render } = useAppSpin();
   const result = useRequest<any>({
     url: 'auth:check',
   });
+
+  if (result.loading) {
+    return render();
+  }
 
   return <CurrentUserContext.Provider value={result}>{props.children}</CurrentUserContext.Provider>;
 };
