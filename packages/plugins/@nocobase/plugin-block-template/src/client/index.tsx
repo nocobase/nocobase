@@ -17,6 +17,7 @@ import { associationRecordSettingItem, revertSettingItem, formSettingItem } from
 import { collectAllTemplateUids, getFullSchema } from './utils/template';
 import { registerTemplateBlockInterceptors } from './utils/interceptors';
 import { TemplateGridDecorator } from './components/TemplateGridDecorator';
+import { useIsInTemplate } from './hooks/useIsInTemplate';
 
 export class PluginBlockTemplateClient extends Plugin {
   loadingPromises = new Map();
@@ -210,6 +211,15 @@ export class PluginBlockTemplateClient extends Plugin {
                     return notInBlockTemplate;
                   };
                 }
+              }
+
+              // hide delete setting item
+              if (schemaSetting.items[i]['name'] === 'delete' || schemaSetting.items[i]['name'] === 'remove') {
+                const visible = schemaSetting.items[i]['useVisible'] || (() => true);
+                schemaSetting.items[i]['useVisible'] = function useVisible() {
+                  const isInTemplate = useIsInTemplate(false);
+                  return !isInTemplate && visible();
+                };
               }
             }
           }

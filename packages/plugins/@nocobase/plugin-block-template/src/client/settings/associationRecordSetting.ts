@@ -22,6 +22,7 @@ import { useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { uid } from '@nocobase/utils/client';
 import { Schema } from '@nocobase/utils';
+import { useIsInTemplate } from '../hooks/useIsInTemplate';
 
 async function schemaPatch(
   currentSchema: Schema,
@@ -122,7 +123,6 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
   useVisible() {
     const fieldSchema = useFieldSchema();
     const currentCollection = useCollection();
-    const variables = useLocalVariables();
     const t = useT();
     const currentPopupRecord = useCurrentPopupRecord();
     const decorator = fieldSchema['x-decorator'];
@@ -142,8 +142,8 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
       const associationOptions = associationFields.map((field) => `${field.collectionName}.${field.name}`);
       options.push(...associationOptions);
     }
-    const templateBlock = _.get(fieldSchema, 'x-template-uid');
-    if (!templateBlock || !currentCollection || options.length === 1) {
+    const isInTemplate = useIsInTemplate();
+    if (!isInTemplate || !currentCollection || options.length === 1) {
       return false;
     }
     if (_.get(fieldSchema, 'x-decorator-props.collection') || _.get(fieldSchema, 'x-decorator-props.association')) {
@@ -159,7 +159,6 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
     const currentPopupRecord = useCurrentPopupRecord();
     let currentOption = t('None');
     const options = [t('None')];
-    const variables = useLocalVariables();
     const api = useAPIClient();
     const decorator = fieldSchema['x-decorator'];
     const decoratorProps = fieldSchema['x-decorator-props'];

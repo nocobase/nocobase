@@ -11,18 +11,11 @@ import { useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { RevertSetting } from '../components/RevertSetting';
 import { tStr } from '../locale';
+import { useIsInTemplate } from '../hooks/useIsInTemplate';
 
 export const revertSettingItem = {
   name: 'template-revert',
   title: tStr('Revert to template'),
   Component: RevertSetting,
-  useVisible() {
-    const fieldSchema = useFieldSchema();
-    const templateBlock = _.get(fieldSchema, 'x-template-uid');
-    // const isBlock = _.get(fieldSchema, 'x-toolbar') === 'BlockSchemaToolbar';
-    if (!templateBlock) {
-      return false;
-    }
-    return true;
-  },
+  useVisible: useIsInTemplate,
 };

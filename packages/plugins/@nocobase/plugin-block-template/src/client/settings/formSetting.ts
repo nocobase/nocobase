@@ -19,6 +19,7 @@ import { useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { uid } from '@nocobase/utils/client';
 import { Schema } from '@nocobase/utils';
+import { useIsInTemplate } from '../hooks/useIsInTemplate';
 
 async function schemaPatch(
   currentSchema: Schema,
@@ -111,11 +112,11 @@ export const formSettingItem: SchemaSettingsItemType = {
   useVisible() {
     const fieldSchema = useFieldSchema();
     const decorator = fieldSchema['x-decorator'];
-    const templateBlock = _.get(fieldSchema, 'x-template-uid');
+    const isInTemplate = useIsInTemplate();
     const currentPopupRecord = useCurrentPopupRecord();
     const currentCollectionName =
       fieldSchema['x-decorator-props']?.collection || fieldSchema['x-decorator-props']?.association;
-    if (!templateBlock) {
+    if (!isInTemplate) {
       return false;
     }
     if (
