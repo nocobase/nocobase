@@ -351,6 +351,9 @@ describe('workflow > Plugin', () => {
         },
       });
 
+      const e1s = await w1.getExecutions();
+      expect(e1s.length).toBe(1);
+
       await app.start();
 
       await sleep(500);

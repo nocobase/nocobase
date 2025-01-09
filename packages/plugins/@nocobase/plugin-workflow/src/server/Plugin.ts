@@ -284,7 +284,6 @@ export default class PluginWorkflowServer extends Plugin {
     //   * add all hooks for enabled workflows
     //   * add hooks for create/update[enabled]/delete workflow to add/remove specific hooks
     this.app.on('afterStart', async () => {
-      this.app.setMaintainingMessage('check for not started executions');
       this.ready = true;
 
       const collection = db.getCollection('workflows');
@@ -297,10 +296,12 @@ export default class PluginWorkflowServer extends Plugin {
       });
 
       this.checker = setInterval(() => {
+        this.getLogger('dispatcher').info(`(cycling) check for queueing executions`);
         this.dispatch();
       }, 300_000);
 
-      // check for not started executions
+      // check for queueing executions
+      this.getLogger('dispatcher').info('(starting) check for queueing executions');
       this.dispatch();
     });
 
@@ -427,6 +428,9 @@ export default class PluginWorkflowServer extends Plugin {
       `execution (${job.execution.id}) resuming from job (${job.id}) added to pending list`,
     );
     this.pending.push([job.execution, job]);
+    if (this.executing) {
+      await this.executing;
+    }
     this.dispatch();
   }
 
@@ -434,11 +438,14 @@ export default class PluginWorkflowServer extends Plugin {
    * Start a deferred execution
    * @experimental
    */
-  public start(execution: ExecutionModel) {
+  public async start(execution: ExecutionModel) {
     if (execution.status !== EXECUTION_STATUS.STARTED) {
       return;
     }
     this.pending.push([execution]);
+    if (this.executing) {
+      await this.executing;
+    }
     this.dispatch();
   }
 
@@ -569,29 +576,23 @@ export default class PluginWorkflowServer extends Plugin {
             const execution = (await this.db.getRepository('executions').findOne({
               filter: {
                 status: EXECUTION_STATUS.QUEUEING,
+                'workflow.enabled': true,
               },
               sort: 'id',
               transaction,
             })) as ExecutionModel;
             if (execution) {
-              const workflow = this.enabledCache.get(execution.workflowId);
-              if (workflow) {
-                this.getLogger(execution.workflowId).info(`execution (${execution.id}) fetched from db`);
-                execution.workflow = workflow;
-                next = [execution];
-                await execution.update(
-                  {
-                    status: EXECUTION_STATUS.STARTED,
-                  },
-                  { transaction },
-                );
-              } else {
-                this.getLogger(execution.workflowId).warn(
-                  `workflow ${execution.workflowId} is not enabled, queueing execution skipped`,
-                );
-              }
+              this.getLogger(execution.workflowId).info(`execution (${execution.id}) fetched from db`);
+              execution.workflow = this.enabledCache.get(execution.workflowId);
+              next = [execution];
+              await execution.update(
+                {
+                  status: EXECUTION_STATUS.STARTED,
+                },
+                { transaction },
+              );
             } else {
-              this.getLogger('dispatcher').info(`no execution queued to process`);
+              this.getLogger('dispatcher').info(`no execution in db queued to process`);
             }
           },
         );
@@ -604,6 +605,7 @@ export default class PluginWorkflowServer extends Plugin {
         this.executing = null;
 
         if (next) {
+          this.getLogger('dispatcher').info(`last process finished, will do another dispatch`);
           this.dispatch();
         }
       }
