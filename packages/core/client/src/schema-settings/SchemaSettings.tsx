@@ -104,6 +104,7 @@ import { ChildDynamicComponent } from './EnableChildCollections/DynamicComponent
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
 import { LinkageRuleCategory, LinkageRuleDataKeyMap } from './LinkageRules/type';
+import { CurrentRecordContextProvider, useCurrentRecord } from './VariableInput/hooks/useRecordVariable';
 export interface SchemaSettingsProps {
   title?: any;
   dn?: Designable;
@@ -779,6 +780,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
   const dataSourceKey = useDataSourceKey();
   const record = useCollectionRecord();
   const { association } = useDataBlockProps() || {};
+  const currentRecordCtx = useCurrentRecord();
   const formCtx = useFormBlockContext();
   const blockOptions = useBlockContext();
   const { getOperators } = useOperators();
@@ -820,55 +822,57 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                         }}
                       >
                         <CollectionRecordProvider record={noRecord ? null : record}>
-                          <FormBlockContext.Provider value={formCtx}>
-                            <SubFormProvider value={{ value: subFormValue, collection: subFormCollection, parent }}>
-                              <FormActiveFieldsProvider
-                                name="form"
-                                getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}
-                              >
-                                <LocationSearchContext.Provider value={locationSearch}>
-                                  <BlockRequestContext_deprecated.Provider value={ctx}>
-                                    <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSourceKey}>
-                                      <AssociationOrCollectionProvider
-                                        allowNull
-                                        collection={collection.name}
-                                        association={association}
-                                      >
-                                        <SchemaComponentOptions scope={options.scope} components={options.components}>
-                                          <FormLayout
-                                            layout={'vertical'}
-                                            className={css`
-                                              // screen > 576px
-                                              @media (min-width: 576px) {
-                                                min-width: 520px;
-                                              }
+                          <CurrentRecordContextProvider {...currentRecordCtx}>
+                            <FormBlockContext.Provider value={formCtx}>
+                              <SubFormProvider value={{ value: subFormValue, collection: subFormCollection, parent }}>
+                                <FormActiveFieldsProvider
+                                  name="form"
+                                  getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}
+                                >
+                                  <LocationSearchContext.Provider value={locationSearch}>
+                                    <BlockRequestContext_deprecated.Provider value={ctx}>
+                                      <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSourceKey}>
+                                        <AssociationOrCollectionProvider
+                                          allowNull
+                                          collection={collection.name}
+                                          association={association}
+                                        >
+                                          <SchemaComponentOptions scope={options.scope} components={options.components}>
+                                            <FormLayout
+                                              layout={'vertical'}
+                                              className={css`
+                                                // screen > 576px
+                                                @media (min-width: 576px) {
+                                                  min-width: 520px;
+                                                }
 
-                                              // screen <= 576px
-                                              @media (max-width: 576px) {
-                                                min-width: 320px;
-                                              }
-                                            `}
-                                          >
-                                            <ApplicationContext.Provider value={app}>
-                                              <APIClientProvider apiClient={apiClient}>
-                                                <ConfigProvider locale={locale}>
-                                                  <SchemaComponent
-                                                    components={components}
-                                                    scope={scope}
-                                                    schema={schema}
-                                                  />
-                                                </ConfigProvider>
-                                              </APIClientProvider>
-                                            </ApplicationContext.Provider>
-                                          </FormLayout>
-                                        </SchemaComponentOptions>
-                                      </AssociationOrCollectionProvider>
-                                    </DataSourceApplicationProvider>
-                                  </BlockRequestContext_deprecated.Provider>
-                                </LocationSearchContext.Provider>
-                              </FormActiveFieldsProvider>
-                            </SubFormProvider>
-                          </FormBlockContext.Provider>
+                                                // screen <= 576px
+                                                @media (max-width: 576px) {
+                                                  min-width: 320px;
+                                                }
+                                              `}
+                                            >
+                                              <ApplicationContext.Provider value={app}>
+                                                <APIClientProvider apiClient={apiClient}>
+                                                  <ConfigProvider locale={locale}>
+                                                    <SchemaComponent
+                                                      components={components}
+                                                      scope={scope}
+                                                      schema={schema}
+                                                    />
+                                                  </ConfigProvider>
+                                                </APIClientProvider>
+                                              </ApplicationContext.Provider>
+                                            </FormLayout>
+                                          </SchemaComponentOptions>
+                                        </AssociationOrCollectionProvider>
+                                      </DataSourceApplicationProvider>
+                                    </BlockRequestContext_deprecated.Provider>
+                                  </LocationSearchContext.Provider>
+                                </FormActiveFieldsProvider>
+                              </SubFormProvider>
+                            </FormBlockContext.Provider>
+                          </CurrentRecordContextProvider>
                         </CollectionRecordProvider>
                       </VariablePopupRecordProvider>
                     </BlockContext.Provider>
