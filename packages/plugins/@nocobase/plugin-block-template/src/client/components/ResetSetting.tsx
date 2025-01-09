@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaSettingsItem, useAPIClient, useDesignable, usePlugin } from '@nocobase/client';
-import { useFieldSchema, useForm, useField } from '@formily/react';
+import { SchemaSettingsItem, useAPIClient, useDesignable, useFormBlockProps, usePlugin } from '@nocobase/client';
+import { useFieldSchema, useForm } from '@formily/react';
 import { App } from 'antd';
 import React from 'react';
 import _ from 'lodash';
@@ -67,8 +67,8 @@ export const ResetSetting = () => {
   const t = useT();
   const api = useAPIClient();
   const form = useForm();
+  const { form: blockForm } = useFormBlockProps();
   const fieldSchema = useFieldSchema();
-  const field = useField();
   const { modal, message } = App.useApp();
 
   return (
@@ -125,10 +125,9 @@ export const ResetSetting = () => {
                 return mergedSchema;
               }
             };
-            const sc = new Schema(fieldSchema.toJSON()).compile();
             refresh({ refreshParentSchema: true });
             form.clearFormGraph();
-
+            blockForm?.clearFormGraph();
             message.success(t('Reset successfully'), 0.2);
           },
         });
