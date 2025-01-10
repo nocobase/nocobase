@@ -47,6 +47,10 @@ async function schemaPatch(
       action: 'get',
       ...currentSchema['x-decorator-props'],
     };
+    schema['x-data-templates'] = {
+      ...currentSchema['x-data-templates'],
+      display: false,
+    };
     schema['x-acl-action'] = currentSchema['x-acl-action'].replace(':create', ':update');
     schema['x-settings'] = 'blockSettings:editForm';
     schema['x-use-decorator-props'] = 'useEditFormBlockDecoratorProps';
@@ -76,6 +80,10 @@ async function schemaPatch(
     schema['x-decorator-props'] = {
       ...currentSchema['x-decorator-props'],
       action: undefined,
+    };
+    schema['x-data-templates'] = {
+      ...currentSchema['x-data-templates'],
+      display: currentSchema['x-data-templates']?.items?.length > 0,
     };
     schema['x-acl-action'] = currentSchema['x-acl-action'].replace(':update', ':create');
     schema['x-settings'] = 'blockSettings:createForm';
