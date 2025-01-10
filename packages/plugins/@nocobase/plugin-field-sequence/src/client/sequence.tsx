@@ -186,11 +186,10 @@ const RuleTypes = {
           }
         },
         enum: [
-          { value: 'zero-start', label: `{{t("Zero padding (start)", { ns: "${NAMESPACE}" })}}` },
-          { value: 'zero-end', label: `{{t("Zero padding (end)", { ns: "${NAMESPACE}" })}}` },
+          { value: 'zero', label: `{{t("Zero padding", { ns: "${NAMESPACE}" })}}` },
           { value: 'none', label: `{{t("No padding", { ns: "${NAMESPACE}" })}}` }
         ],
-        default: 'zero-start',
+        default: 'zero',
       }
     },
     defaults: {
