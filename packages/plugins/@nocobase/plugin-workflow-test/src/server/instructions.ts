@@ -78,6 +78,30 @@ export default {
     },
   },
 
+  asyncResume: {
+    async run(node, input, processor) {
+      const job = await processor.saveJob({
+        status: 0,
+        nodeId: node.id,
+        nodeKey: node.key,
+        upstreamId: input?.id ?? null,
+      });
+
+      setTimeout(() => {
+        job.set({
+          status: 1,
+        });
+
+        processor.options.plugin.resume(job);
+      }, 100);
+
+      return null;
+    },
+    resume(node, job, processor) {
+      return job;
+    },
+  },
+
   customizedSuccess: {
     run(node, input, processor) {
       return {
