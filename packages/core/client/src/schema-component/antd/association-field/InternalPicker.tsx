@@ -36,7 +36,7 @@ import { ActionContextProvider } from '../action';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
-import { FieldNameLabel } from '../remote-select/RemoteSelect';
+import { getFieldNameLabel } from '../remote-select/RemoteSelect';
 
 export const useTableSelectorProps = () => {
   const field: any = useField();
@@ -98,7 +98,7 @@ export const InternalPicker = observer(
     const options = useMemo(() => {
       if (value && Object.keys(value).length > 0) {
         const opts = (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean).map((option) => {
-          const label = <FieldNameLabel fieldNames={fieldNames} record={option} targetFields={targetFields} />;
+          const label: any = getFieldNameLabel({ fieldNames, record: option, targetFields, compile });
           return {
             ...option,
             [fieldNames.label]: getLabelFormatValue(compile(labelUiSchema), label),

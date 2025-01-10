@@ -27,7 +27,7 @@ import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './ho
 import { transformNestedData } from './InternalCascadeSelect';
 import schema from './schema';
 import { getLabelFormatValue, useLabelUiSchemaV2 } from './util';
-import { FieldNameLabel } from '../remote-select/RemoteSelect';
+import { getFieldNameLabel } from '../remote-select/RemoteSelect';
 
 interface IEllipsisWithTooltipRef {
   setPopoverVisible: (boolean) => void;
@@ -103,7 +103,7 @@ const RenderRecord = React.memo(
     // which allows us to avoid blocking the main rendering process.
     useEffect(() => {
       const result = toArr(value).map((record, index, arr) => {
-        const value = <FieldNameLabel fieldNames={fieldNames} record={record} targetFields={targetFields} />;
+        const value: any = getFieldNameLabel({ fieldNames, record, targetFields, compile });
         const label = isTreeCollection
           ? transformNestedData(record)
               .map((o) => o?.[fieldNames?.label || 'label'])

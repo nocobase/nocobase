@@ -73,8 +73,7 @@ export const getTargetFieldLabel = (value, targetField) => {
   return value;
 };
 
-export const FieldNameLabel = ({ fieldNames, targetFields, record }) => {
-  const compile = useCompile();
+export const getFieldNameLabel = ({ fieldNames, targetFields, record, compile }) => {
   const isGroupLabel = Array.isArray(fieldNames.label) && fieldNames.label.length > 1;
   const label = isGroupLabel ? (
     <Space>
@@ -93,7 +92,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
   connect(
     (props: RemoteSelectProps) => {
       const {
-        fieldNames = {} as FieldNames,
+        fieldNames = {} as any,
         service = {},
         wait = 300,
         value,
@@ -120,6 +119,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
       const { getCollectionJoinField, getInterface } = useCollectionManager_deprecated();
       const colletionFieldName = fieldSchema['x-collection-field'] || fieldSchema.name;
       const collectionField = getField(colletionFieldName) || getCollectionJoinField(colletionFieldName);
+      const compile = useCompile();
       const isGroupLabel = Array.isArray(fieldNames.label) && fieldNames.label.length > 1;
 
       //标题字段
@@ -176,7 +176,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
                 return ['number', 'string'].includes(typeof v[fieldNames.value]) || !v[fieldNames.value];
               })
               .map((option) => {
-                let label: any = <FieldNameLabel fieldNames={fieldNames} record={option} targetFields={targetField} />;
+                let label: any = getFieldNameLabel({ fieldNames, record: option, targetFields: targetField, compile });
                 if (targetField?.uiSchema?.enum) {
                   if (Array.isArray(label)) {
                     label = label
@@ -335,7 +335,6 @@ const InternalRemoteSelect = withDynamicSchemaProps(
         }
         firstRun.current = true;
       };
-      console.log(toOptionsItem(mapOptionsToTags(options)));
       return (
         <Select
           open={open}
