@@ -1,3 +1,10 @@
+const basename = window['__nocobase_public_path__'] || '/';
+let currentPath = window.location.pathname;
+if (!currentPath.startsWith(basename)) {
+  let newPath = basename + (currentPath.startsWith('/') ? currentPath.slice(1) : currentPath);
+  let newUrl = window.location.origin + newPath + window.location.search + window.location.hash;
+  window.location.href = newUrl;
+}
 showLog = true;
 function log(m) {
   if (window.console && showLog) {
