@@ -272,6 +272,83 @@ const RuleTypes = {
       format: 'YYYYMMDD',
     },
   },
+  randomChar: {
+    title: `{{t("Random character", { ns: "${NAMESPACE}" })}}`,
+    optionRenders: {
+      length: function Length({ value }) {
+        const { t } = useTranslation();
+        return <code>{value}</code>;
+      },
+      charsets: function Charsets({ value }) {
+        const { t } = useTranslation();
+        const charsetLabels = {
+          number: t('Number', { ns: NAMESPACE }),
+          lowercase: t('Lowercase letters', { ns: NAMESPACE }),
+          uppercase: t('Uppercase letters', { ns: NAMESPACE }),
+          symbol: t('Symbols', { ns: NAMESPACE })
+        };
+        return <code>{value?.map(charset => charsetLabels[charset]).join(', ') || t('Number', { ns: NAMESPACE })}</code>;
+      },
+      paddingType: function PaddingType({ value }) {
+        const { t } = useTranslation();
+        const paddingLabels = {
+          zero: t('Zero padding', { ns: NAMESPACE }),
+          none: t('No padding', { ns: NAMESPACE })
+        };
+        return <code>{paddingLabels[value] || t('Zero padding', { ns: NAMESPACE })}</code>;
+      }
+    },
+    fieldset: {
+      length: {
+        type: 'number',
+        title: `{{t("Length", { ns: "${NAMESPACE}" })}}`,
+        description: `{{t("Will generate random characters with specified length.", { ns: "${NAMESPACE}" })}}`,
+        'x-decorator': 'FormItem',
+        'x-component': 'InputNumber',
+        'x-component-props': {
+          min: 1,
+          max: 32,
+        },
+        required: true,
+        default: 6,
+      },
+      charsets: {
+        type: 'array',
+        title: `{{t("Character sets", { ns: "${NAMESPACE}" })}}`,
+        description: `{{t("Select character sets to generate random characters.", { ns: "${NAMESPACE}" })}}`,
+        'x-decorator': 'FormItem',
+        'x-component': 'Select',
+        'x-component-props': {
+          mode: 'multiple',
+        },
+        enum: [
+          { value: 'number', label: `{{t("Number", { ns: "${NAMESPACE}" })}}` },
+          { value: 'lowercase', label: `{{t("Lowercase letters", { ns: "${NAMESPACE}" })}}` },
+          { value: 'uppercase', label: `{{t("Uppercase letters", { ns: "${NAMESPACE}" })}}` },
+          { value: 'symbol', label: `{{t("Symbols", { ns: "${NAMESPACE}" })}}` }
+        ],
+        required: true,
+        default: ['number'],
+      },
+      paddingType: {
+        type: 'string',
+        title: `{{t("Padding type", { ns: "${NAMESPACE}" })}}`,
+        description: `{{t("Select padding type for generated characters.", { ns: "${NAMESPACE}" })}}`,
+        'x-decorator': 'FormItem',
+        'x-component': 'Select',
+        enum: [
+          { value: 'zero', label: `{{t("Zero padding", { ns: "${NAMESPACE}" })}}` },
+          { value: 'none', label: `{{t("No padding", { ns: "${NAMESPACE}" })}}` }
+        ],
+        default: 'zero',
+      }
+    },
+    defaults: {
+      length: 6,
+      charsets: ['number'],
+      paddingType: 'zero'
+    },
+  },
 };
 
 export function RuleConfigForm() {
