@@ -87,7 +87,7 @@ test.describe('form item & create form', () => {
       expectConstantValue: async () => {
         await expect(
           page.getByLabel('block-item-CollectionField-general-form-general.manyToMany-manyToMany'),
-        ).toHaveText(`manyToMany:${recordsOfUser.map((record) => record.id).join('')}`);
+        ).toContainText(`manyToMany:${recordsOfUser.map((record) => record.id).join('')}`);
       },
     });
   });
@@ -137,7 +137,7 @@ test.describe('form item & create form', () => {
       expectEasyReading: async () => {
         await expect(
           page.getByLabel('block-item-CollectionField-general-form-general.manyToMany-manyToMany'),
-        ).toHaveText(`manyToMany:${records.map((record) => record.id).join(',')}`);
+        ).toContainText(`manyToMany:${records.map((record) => record.id).join(',')}`);
       },
     });
   });

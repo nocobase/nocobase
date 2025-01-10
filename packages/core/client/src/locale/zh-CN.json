@@ -275,6 +275,8 @@
   "Formula.js supports most Microsoft Excel formula functions.": "Formula.js 支持大部分 Mircrosoft Excel 公式。",
   "String template": "字符串模板",
   "Simple string replacement, can be used to interpolate variables in a string.": "简单的字符串替换，可以用于在字符串中插入变量。",
+  "https://docs.nocobase.com/handbook/calculation-engines/formula": "https://docs-cn.nocobase.com/handbook/calculation-engines/formula",
+  "https://docs.nocobase.com/handbook/calculation-engines/mathjs": "https://docs-cn.nocobase.com/handbook/calculation-engines/mathjs",
   "Choices": "选择类型",
   "Checkbox": "勾选",
   "Display <icon></icon> when unchecked": "未勾选时显示 <icon></icon>",
