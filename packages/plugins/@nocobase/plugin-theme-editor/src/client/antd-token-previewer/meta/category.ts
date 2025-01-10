@@ -121,7 +121,7 @@ const category: TokenTree<keyof AliasToken | string> = [
         // seedToken: ['colorPrimarySettings'],
         seedToken: ['colorSettings'],
         seedTokenAlpha: true,
-        mapToken: ['colorBgSettingsHover', 'colorBorderSettingsHover'],
+        mapToken: ['colorBgSettingsHover', 'colorTemplateBgSettingsHover', 'colorBorderSettingsHover'],
       },
     ],
   },

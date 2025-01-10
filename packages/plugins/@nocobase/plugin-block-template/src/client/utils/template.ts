@@ -165,6 +165,21 @@ export function convertToCreateSchema(schema: any): any {
   return tmpSchema.toJSON();
 }
 
+function addToolbarClass(schema) {
+  if (schema['x-toolbar'] && schema['x-template-uid']) {
+    _.merge(schema, {
+      'x-toolbar-props': {
+        toolbarClassName: `${schema['x-toolbar-props']?.toolbarClassName || ''} nb-in-template`,
+      },
+    });
+  }
+  if (schema.properties) {
+    for (const key in schema.properties) {
+      addToolbarClass(schema.properties[key]);
+    }
+  }
+}
+
 /**
  * Get the full schema by merging with template schema
  * @param schema The schema to process
@@ -174,6 +189,7 @@ export function convertToCreateSchema(schema: any): any {
 export function getFullSchema(schema: any, templateschemacache: Record<string, any>): any {
   const rootId = schema['x-uid'];
   const templateRootId = schema['x-template-root-uid'];
+  let ret = schema;
 
   if (!templateRootId) {
     for (const key in schema.properties) {
@@ -183,12 +199,13 @@ export function getFullSchema(schema: any, templateschemacache: Record<string, a
         delete schema.properties[key]; // 说明已经从模板中删除了
       }
     }
-    return schema;
   } else {
     const target = _.cloneDeep(templateschemacache[templateRootId]);
     const result = mergeSchema(target, schema, rootId, templateschemacache);
-    return result;
+    ret = result;
   }
+  addToolbarClass(ret);
+  return ret;
 }
 
 /**
