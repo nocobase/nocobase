@@ -64,6 +64,11 @@ export const UPLOAD_PLACEHOLDER = [
     ext: /\.(zip|rar|arj|z|gz|iso|jar|ace|tar|uue|dmg|pkg|lzh|cab)$/i,
     icon: '/file-placeholder/zip-200-200.png',
   },
-];
+].map((item) => {
+  return {
+    ...item,
+    icon: window['__nocobase_public_path__'] + item.icon.slice(1),
+  };
+});
 
-export const UNKNOWN_FILE_ICON = '/file-placeholder/unknown-200-200.png';
+export const UNKNOWN_FILE_ICON = window['__nocobase_public_path__'] + 'file-placeholder/unknown-200-200.png';
