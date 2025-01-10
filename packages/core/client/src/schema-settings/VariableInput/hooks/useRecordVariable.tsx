@@ -9,6 +9,7 @@
 
 import { Schema } from '@formily/json-schema';
 import _ from 'lodash';
+import React, { createContext, FC, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBlockContext } from '../../../block-provider/BlockProvider';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
@@ -24,6 +25,28 @@ interface Props {
   /** 消费变量值的字段 */
   targetFieldSchema?: Schema;
 }
+
+interface CurrentRecordContextProps {
+  recordData: any;
+  collectionName: string;
+}
+
+const CurrentRecordContext = createContext<CurrentRecordContextProps>(null);
+
+export const CurrentRecordContextProvider: FC<CurrentRecordContextProps> = (props) => {
+  const value = useMemo(() => {
+    return {
+      recordData: props.recordData,
+      collectionName: props.collectionName,
+    };
+  }, [props.recordData, props.collectionName]);
+
+  return <CurrentRecordContext.Provider value={value}> {props.children} </CurrentRecordContext.Provider>;
+};
+
+export const useCurrentRecord = () => {
+  return useContext(CurrentRecordContext);
+};
 
 /**
  * @deprecated
@@ -54,15 +77,18 @@ export const useRecordVariable = (props: Props) => {
  * @returns
  */
 export const useCurrentRecordContext = () => {
+  const ctx = useCurrentRecord();
   const { name: blockType } = useBlockContext() || {};
   const collection = useCollection();
   const recordData = useCollectionRecordData();
   const { formRecord, collectionName } = useFormBlockContext();
-  const realCollectionName = formRecord?.data ? collectionName : collection?.name;
+  let realCollectionName = formRecord?.data ? collectionName : collection?.name;
+
+  realCollectionName = ctx?.collectionName || realCollectionName;
 
   return {
     /** 变量值 */
-    currentRecordCtx: formRecord?.data || recordData,
+    currentRecordCtx: ctx?.recordData || formRecord?.data || recordData,
     /** 用于判断是否需要显示配置项 */
     shouldDisplayCurrentRecord: !_.isEmpty(_.omit(recordData, ['__collectionName', '__parent'])) || !!formRecord?.data,
     /** 当前记录对应的 collection name */
