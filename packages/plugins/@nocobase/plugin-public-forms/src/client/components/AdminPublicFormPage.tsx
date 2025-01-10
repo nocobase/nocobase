@@ -33,12 +33,10 @@ import { usePublicFormTranslation, NAMESPACE } from '../locale';
 const PublicFormQRCode = () => {
   const [open, setOpen] = useState(false);
   const { t } = usePublicFormTranslation();
-  const baseURL = window.location.origin;
   const params = useParams();
-  const isUnderSubApp = window.location.pathname.startsWith('/apps');
   const app = useApp();
-  const link =
-    baseURL + (isUnderSubApp ? `/apps/${app.name}/public-forms/${params.name}` : `/public-forms/${params.name}`);
+  const baseURL = window.location.origin;
+  const link = baseURL + app.getHref(`public-forms/${params.name}`);
   const handleQRCodeOpen = (newOpen: boolean) => {
     setOpen(newOpen);
   };
@@ -106,9 +104,7 @@ export function AdminPublicFormPage() {
 
   const handleCopyLink = () => {
     const baseURL = window.location.origin;
-    const isUnderSubApp = window.location.pathname.startsWith('/apps');
-    const link =
-      baseURL + (isUnderSubApp ? `/apps/${app.name}/public-forms/${params.name}` : `/public-forms/${params.name}`);
+    const link = baseURL + app.getHref(`public-forms/${params.name}`);
     navigator.clipboard.writeText(link);
     message.success(t('Link copied successfully'));
   };
