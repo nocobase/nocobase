@@ -15,7 +15,7 @@ import {
   AuthErrorCode,
   TokenInfo,
 } from '@nocobase/auth';
-import type { Logger } from '@nocobase/logger';
+import type { SystemLogger } from '@nocobase/logger';
 import { Cache } from '@nocobase/cache';
 import { randomUUID } from 'crypto';
 import ms from 'ms';
@@ -30,9 +30,9 @@ export class TokenController implements TokenControlService {
   cache: Cache;
   app: Application;
   db: Database;
-  logger: Logger;
+  logger: SystemLogger;
 
-  constructor({ cache, app, logger }: { cache: Cache; app: Application; logger: Logger }) {
+  constructor({ cache, app, logger }: { cache: Cache; app: Application; logger: SystemLogger }) {
     this.cache = cache;
     this.app = app;
     this.logger = logger;
