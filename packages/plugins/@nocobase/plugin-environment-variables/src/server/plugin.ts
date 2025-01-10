@@ -34,9 +34,12 @@ export class PluginEnvironmentVariablesServer extends Plugin {
   }
 
   async createAesEncryptor() {
-    const key = await AesEncryptor.getOrGenerateKey(
-      path.resolve(process.cwd(), 'storage', this.name, this.app.name, 'aes_key.dat'),
-    );
+    let key: any = process.env.ENV_VARS_AES_SECRET_KEY;
+    if (!key) {
+      key = await AesEncryptor.getOrGenerateKey(
+        path.resolve(process.cwd(), 'storage', this.name, this.app.name, 'aes_key.dat'),
+      );
+    }
     this.aesEncryptor = new AesEncryptor(key);
   }
 

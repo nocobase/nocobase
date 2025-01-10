@@ -103,6 +103,8 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
   isThrough?: boolean;
   filterTargetKey?: string | string[];
   fields?: FieldOptions[];
+  fieldSort?: string[];
+
   model?: string | ModelStatic<Model>;
   repository?: string | RepositoryType;
   sortable?: CollectionSortable;
