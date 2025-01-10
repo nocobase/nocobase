@@ -16,7 +16,11 @@ import { useCurrentSchema } from '../utils';
 
 export const InitializerWithSwitch = (props) => {
   const { type, schema, item, remove: passInRemove, disabled } = props;
-  const { exists, remove } = useCurrentSchema(
+  const {
+    exists,
+    remove,
+    schema: currentSchema,
+  } = useCurrentSchema(
     schema?.[type] || item?.schema?.[type],
     type,
     item.find,
@@ -25,13 +29,15 @@ export const InitializerWithSwitch = (props) => {
   );
   const { insert } = useSchemaInitializer();
   const update = useUpdate();
+  const isInTemplate = !!currentSchema?.['x-template-uid'];
+  const switchDisabled = disabled || isInTemplate;
   return (
     <SchemaInitializerSwitch
       checked={exists}
-      disabled={disabled}
+      disabled={switchDisabled}
       title={item.title}
       onClick={() => {
-        if (disabled) {
+        if (switchDisabled) {
           return;
         }
         if (exists) {
