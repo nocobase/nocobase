@@ -65,6 +65,8 @@ server {
         }
     }
 
+    {{otherLocation}}
+
     location ^~ {{publicPath}}api/ {
         proxy_pass http://127.0.0.1:{{apiPort}};
         proxy_http_version 1.1;
