@@ -36,6 +36,7 @@
   "Lowercase letters": "小写字母",
   "Uppercase letters": "大写字母",
   "Symbols": "符号",
-  "Zero padding": "补零",
+  "Zero padding (start)": "前补零",
+  "Zero padding (end)": "后补零",
   "No padding": "不补充"
 }
