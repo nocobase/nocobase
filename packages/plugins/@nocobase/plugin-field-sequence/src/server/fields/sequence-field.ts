@@ -307,7 +307,7 @@ const CHAR_SETS = {
 interface RandomCharOptions {
   length?: number;
   charsets?: Array<keyof typeof CHAR_SETS>;
-  paddingType?: 'zero-start' | 'zero-end' | 'none';
+  paddingType?: 'zero' | 'none';
   paddingChar?: string;
 }
 
@@ -329,7 +329,7 @@ sequencePatterns.register('randomChar', {
     const { 
       length = 6, 
       charsets = ['number'], 
-      paddingType = 'zero-start', 
+      paddingType = 'zero', 
       paddingChar = '0' 
     } = options;
 
@@ -344,17 +344,9 @@ sequencePatterns.register('randomChar', {
 
     let result = Array.from({ length }, () => getRandomChar()).join('');
 
-    if (/^\d+$/.test(result)) {
-      switch (paddingType) {
-        case 'zero-start':
-          result = result.padStart(length, paddingChar);
-          break;
-        case 'zero-end':
-          result = result.padEnd(length, paddingChar);
-          break;
-        default:
-          break;
-      }
+    // 只有当结果全为数字且指定了补零时才进行补零
+    if (paddingType === 'zero' && /^\d+$/.test(result)) {
+      result = result.padStart(length, paddingChar);
     }
 
     return result;
