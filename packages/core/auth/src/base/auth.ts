@@ -10,7 +10,7 @@
 import { Collection, Model } from '@nocobase/database';
 import { Cache } from '@nocobase/cache';
 import jwt from 'jsonwebtoken';
-import { Auth, AuthConfig, AuthErrorType, AuthError } from '../auth';
+import { Auth, AuthConfig, AuthErrorCode, AuthError } from '../auth';
 import { JwtService } from './jwt-service';
 import { ITokenControlService } from './token-control-service';
 
@@ -76,7 +76,7 @@ export class BaseAuth extends Auth {
     if (!token) {
       this.ctx.throw(401, {
         message: this.ctx.t('Unauthenticated. Please sign in to continue.', { ns: localeNamespace }),
-        code: 'EMPTY_TOKEN' satisfies AuthErrorType,
+        code: AuthErrorCode.EMPTY_TOKEN,
       });
     }
 
@@ -93,7 +93,7 @@ export class BaseAuth extends Auth {
         this.ctx.logger.error(err, { method: 'jwt.decode' });
         this.ctx.throw(401, {
           message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
-          code: 'INVALID_TOKEN' satisfies AuthErrorType,
+          code: AuthErrorCode.INVALID_TOKEN,
         });
       }
     }
@@ -104,7 +104,7 @@ export class BaseAuth extends Auth {
     if (blocked) {
       this.ctx.throw(401, {
         message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
-        code: 'BLOCKED_TOKEN' satisfies AuthErrorType,
+        code: AuthErrorCode.BLOCKED_TOKEN,
       });
     }
 
@@ -126,14 +126,14 @@ export class BaseAuth extends Auth {
     if (!temp && tokenStatus !== 'valid') {
       this.ctx.throw(401, {
         message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
-        code: 'INVALID_TOKEN' satisfies AuthErrorType,
+        code: AuthErrorCode.INVALID_TOKEN,
       });
     }
 
     if (tokenStatus === 'valid' && user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
       this.ctx.throw(401, {
         message: this.ctx.t('User password changed, please signin again.', { ns: localeNamespace }),
-        code: 'INVALID_TOKEN' satisfies AuthErrorType,
+        code: AuthErrorCode.INVALID_TOKEN,
       });
     }
 
@@ -142,14 +142,14 @@ export class BaseAuth extends Auth {
       if (!signInTime || Date.now() - signInTime > tokenPolicy.sessionExpirationTime) {
         this.ctx.throw(401, {
           message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
-          code: 'EXPIRED_SESSION' satisfies AuthErrorType,
+          code: AuthErrorCode.EXPIRED_SESSION,
         });
       }
 
       if (tokenPolicy.expiredTokenRenewLimit > 0 && Date.now() - exp * 1000 > tokenPolicy.expiredTokenRenewLimit) {
         this.ctx.throw(401, {
           message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
-          code: 'EXPIRED_SESSION' satisfies AuthErrorType,
+          code: AuthErrorCode.EXPIRED_SESSION,
         });
       }
 
@@ -162,12 +162,12 @@ export class BaseAuth extends Auth {
       } catch (err) {
         const options =
           err instanceof AuthError
-            ? { type: err.type, message: err.message }
-            : { message: err.message, type: 'INVALID_TOKEN' as const };
+            ? { type: err.code, message: err.message }
+            : { message: err.message, type: AuthErrorCode.INVALID_TOKEN };
 
         this.ctx.throw(401, {
           message: options.message,
-          code: options.type satisfies AuthErrorType,
+          code: options.type,
         });
       }
     }
@@ -191,7 +191,7 @@ export class BaseAuth extends Auth {
     if (!user) {
       this.ctx.throw(401, {
         message: this.ctx.t('User not found. Please sign in again to continue.', { ns: localeNamespace }),
-        code: 'NOT_EXIST_USER' satisfies AuthErrorType,
+        code: AuthErrorCode.NOT_EXIST_USER,
       });
     }
     const tokenInfo = await this.tokenController.add({ userId: user.id });

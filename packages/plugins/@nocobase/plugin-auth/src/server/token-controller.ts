@@ -12,6 +12,7 @@ import {
   TokenPolicyConfig,
   NumericTokenPolicyConfig,
   AuthError,
+  AuthErrorCode,
   TokenInfo,
 } from '@nocobase/auth';
 import type { Logger } from '@nocobase/logger';
@@ -110,7 +111,7 @@ export class TokenController implements TokenControlService {
     const model = this.app.db.getModel(issuedTokensCollectionName);
     const exists = await repo.findOne({ filter: { jti } });
     if (!exists) {
-      throw new AuthError({ message: 'jti not found', type: 'TOKEN_RENEW_FAILED' });
+      throw new AuthError({ message: 'jti not found', code: AuthErrorCode.TOKEN_RENEW_FAILED });
     }
     const newId = randomUUID();
     const issuedTime = Date.now();
@@ -124,7 +125,7 @@ export class TokenController implements TokenControlService {
     if (count === 1) {
       return { jti: newId, issuedTime };
     } else {
-      throw new AuthError({ message: 'renew failed', type: 'TOKEN_RENEW_FAILED' });
+      throw new AuthError({ message: 'renew failed', code: AuthErrorCode.TOKEN_RENEW_FAILED });
     }
   };
 }

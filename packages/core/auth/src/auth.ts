@@ -17,23 +17,23 @@ export type AuthConfig = {
   };
   ctx: Context;
 };
+export const AuthErrorCode = {
+  EMPTY_TOKEN: 'EMPTY_TOKEN' as const,
+  EXPIRED_TOKEN: 'EXPIRED_TOKEN' as const,
+  INVALID_TOKEN: 'INVALID_TOKEN' as const,
+  TOKEN_RENEW_FAILED: 'TOKEN_RENEW_FAILED' as const,
+  BLOCKED_TOKEN: 'BLOCKED_TOKEN' as const,
+  EXPIRED_SESSION: 'EXPIRED_SESSION' as const,
+  NOT_EXIST_USER: 'NOT_EXIST_USER' as const,
+};
 
-export type AuthErrorType =
-  | 'EMPTY_TOKEN'
-  | 'EXPIRED_TOKEN'
-  | 'INVALID_TOKEN'
-  | 'RENEWED_TOKEN'
-  | 'TOKEN_RENEW_FAILED'
-  | 'MISSING_SESSION'
-  | 'BLOCKED_TOKEN'
-  | 'EXPIRED_SESSION'
-  | 'NOT_EXIST_USER';
+export type AuthErrorType = keyof typeof AuthErrorCode;
 
 export class AuthError extends Error {
-  type: AuthErrorType;
-  constructor(options: { type: AuthErrorType; message: string }) {
+  code: AuthErrorType;
+  constructor(options: { code: AuthErrorType; message: string }) {
     super(options.message);
-    this.type = options.type;
+    this.code = options.code;
   }
 }
 export type AuthExtend<T extends Auth> = new (config: AuthConfig) => T;

@@ -9,6 +9,7 @@
 
 import { vi } from 'vitest';
 import { BaseAuth } from '../base/auth';
+import { AuthErrorCode } from '../auth';
 
 describe('base-auth', () => {
   it('should validate username', () => {
@@ -125,15 +126,20 @@ describe('base-auth', () => {
   it('signIn: should throw 401', async () => {
     const ctx = {
       t: (s) => s,
-      throw: vi.fn().mockImplementation((status, message) => {
-        throw new Error(message);
-      }),
+      throw: (httpCode, error) => {
+        throw new Error(error.code);
+      },
     };
 
     const auth = new BaseAuth({
       userCollection: {},
       ctx,
     } as any);
+    try {
+      await auth.signIn();
+    } catch (e) {
+      expect(e.message).toBe(AuthErrorCode.NOT_EXIST_USER);
+    }
     await expect(auth.signIn()).rejects.toThrow();
   });
 
