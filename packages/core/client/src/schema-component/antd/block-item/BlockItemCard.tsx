@@ -18,14 +18,12 @@ export const BlockItemCard = React.forwardRef<HTMLDivElement, CardProps | any>((
   const style = useMemo(() => {
     return { marginBottom: token.marginBlock };
   }, [token.marginBlock]);
-  const title =
-    blockTitle ||
-    (description && (
-      <div>
-        {blockTitle}
-        {description && <MarkdownReadPretty value={props.description} style={{ fontWeight: 400, marginTop: '10px' }} />}
-      </div>
-    ));
+  const title = (blockTitle || description) && (
+    <div>
+      {blockTitle}
+      {description && <MarkdownReadPretty value={props.description} style={{ fontWeight: 400, marginTop: '10px' }} />}
+    </div>
+  );
   return (
     <Card ref={ref} bordered={false} style={style} {...others} title={title}>
       {children}
