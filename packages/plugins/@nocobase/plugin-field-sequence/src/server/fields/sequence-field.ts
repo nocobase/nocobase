@@ -295,63 +295,73 @@ sequencePatterns.register('date', {
   },
 });
 
-sequencePatterns.register('random', {
-  validate(options) {
-    if (!options?.digits || options.digits < 1) {
-      return 'options.digits should be configured as a positive integer';
-    }
-    return null;
-  },
-  generate(instance, options) {
-    const { digits = 6 } = options;
-    const min = 0;
-    const max = Math.pow(10, digits) - 1;
-    return Math.floor(Math.random() * (max - min + 1) + min)
-      .toString()
-      .padStart(digits, '0');
-  },
-  batchGenerate(instances, values, options) {
-    instances.forEach((instance, i) => {
-      values[i] = sequencePatterns.get('random').generate.call(this, instance, options);
-    });
-  },
-  getLength(options) {
-    return options.digits;
-  },
-  getMatcher(options) {
-    return `\\d{${options.digits}}`;
-  },
-});
-
-sequencePatterns.register('randomString', {
+sequencePatterns.register('randomChar', {
   validate(options) {
     if (!options?.length || options.length < 1) {
       return 'options.length should be configured as a positive integer';
     }
+    if (!options?.charsets || options.charsets.length === 0) {
+      return 'At least one character set should be selected';
+    }
     return null;
   },
   generate(instance, options) {
-    const { length = 6 } = options;
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const { 
+      length = 6, 
+      charsets = ['number'], 
+      paddingType = 'zero', 
+      paddingChar = '0' 
+    } = options;
+
+    const charsetMap = {
+      number: '0123456789',
+      lowercase: 'abcdefghijklmnopqrstuvwxyz',
+      uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+      symbol: '!@#$%^&*()_+-=[]{}|;:,.<>?'
+    };
+
+    let chars = '';
+    charsets.forEach(charset => {
+      chars += charsetMap[charset] || '';
+    });
+
     let result = '';
     for (let i = 0; i < length; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
+
+    // 处理 padding
+    if (paddingType === 'zero' && /^\d+$/.test(result)) {
+      result = result.padStart(length, paddingChar);
+    }
+
     return result;
   },
   batchGenerate(instances, values, options) {
     instances.forEach((instance, i) => {
-      values[i] = sequencePatterns.get('randomString').generate.call(this, instance, options);
+      values[i] = sequencePatterns.get('randomChar').generate.call(this, instance, options);
     });
   },
   getLength(options) {
     return options.length;
   },
   getMatcher(options) {
-    return `[A-Za-z0-9]{${options.length}}`;
-  },
-});
+    const charsetMap = {
+      number: '0-9',
+      lowercase: 'a-z',
+      uppercase: 'A-Z',
+      symbol: '!@#$%^&*()_+-=[]{}|;:,.<>?'
+    };
 
+    let pattern = '[';
+    (options.charsets || ['number']).forEach(charset => {
+      pattern += charsetMap[charset] || '';
+    });
+    pattern += `]{${options.length || 6}}`;
+
+    return pattern;
+  }
+});
 interface PatternConfig {
   type: string;
   title?: string;
