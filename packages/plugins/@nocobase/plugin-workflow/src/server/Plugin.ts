@@ -10,9 +10,10 @@
 import path from 'path';
 import { randomUUID } from 'crypto';
 
+import { Transaction, Transactionable } from 'sequelize';
 import LRUCache from 'lru-cache';
 
-import { Op, Transaction, Transactionable } from '@nocobase/database';
+import { Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
@@ -568,46 +569,48 @@ export default class PluginWorkflowServer extends Plugin {
         next = this.pending.shift() as Pending;
         this.getLogger(next[0].workflowId).info(`pending execution (${next[0].id}) ready to process`);
       } else {
-        await this.db.sequelize.transaction(
-          {
-            isolationLevel: Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
-          },
-          async (transaction) => {
-            const execution = (await this.db.getRepository('executions').findOne({
-              filter: {
-                status: EXECUTION_STATUS.QUEUEING,
-                'workflow.enabled': true,
-              },
-              sort: 'id',
-              transaction,
-            })) as ExecutionModel;
-            if (execution) {
-              this.getLogger(execution.workflowId).info(`execution (${execution.id}) fetched from db`);
-              execution.workflow = this.enabledCache.get(execution.workflowId);
-              next = [execution];
-              await execution.update(
-                {
-                  status: EXECUTION_STATUS.STARTED,
+        try {
+          await this.db.sequelize.transaction(
+            {
+              isolationLevel:
+                this.db.options.dialect === 'sqlite' ? [][0] : Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+            },
+            async (transaction) => {
+              const execution = (await this.db.getRepository('executions').findOne({
+                filter: {
+                  status: EXECUTION_STATUS.QUEUEING,
+                  'workflow.enabled': true,
                 },
-                { transaction },
-              );
-            } else {
-              this.getLogger('dispatcher').info(`no execution in db queued to process`);
-            }
-          },
-        );
+                sort: 'id',
+                transaction,
+              })) as ExecutionModel;
+              if (execution) {
+                this.getLogger(execution.workflowId).info(`execution (${execution.id}) fetched from db`);
+                await execution.update(
+                  {
+                    status: EXECUTION_STATUS.STARTED,
+                  },
+                  { transaction },
+                );
+                execution.workflow = this.enabledCache.get(execution.workflowId);
+                next = [execution];
+              } else {
+                this.getLogger('dispatcher').info(`no execution in db queued to process`);
+              }
+            },
+          );
+        } catch (error) {
+          this.getLogger('dispatcher').error(`fetching execution from db failed: ${error.message}`, { error });
+        }
       }
-      try {
-        if (next) {
-          await this.process(...next);
-        }
-      } finally {
-        this.executing = null;
+      if (next) {
+        await this.process(...next);
+      }
+      this.executing = null;
 
-        if (next) {
-          this.getLogger('dispatcher').info(`last process finished, will do another dispatch`);
-          this.dispatch();
-        }
+      if (next) {
+        this.getLogger('dispatcher').info(`last process finished, will do another dispatch`);
+        this.dispatch();
       }
     })();
   }
