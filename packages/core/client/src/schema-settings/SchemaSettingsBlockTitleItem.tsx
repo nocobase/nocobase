@@ -33,6 +33,9 @@ export function SchemaSettingsBlockTitleItem() {
               default: fieldSchema?.['x-component-props']?.['title'],
               'x-decorator': 'FormItem',
               'x-component': 'Input',
+              'x-component-props': {
+                'aria-label': 'block-title',
+              },
             },
             description: {
               title: t('Description'),
