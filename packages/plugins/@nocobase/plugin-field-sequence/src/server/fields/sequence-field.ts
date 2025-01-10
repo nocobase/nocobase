@@ -295,17 +295,37 @@ sequencePatterns.register('date', {
   },
 });
 
+// 字符集常量定义
+const CHAR_SETS = {
+  number: '0123456789',
+  lowercase: 'abcdefghijklmnopqrstuvwxyz',
+  uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+  // 符号只保留常用且安全的符号，有需要的可以自己加比如[]{}|;:,.<>放在链接或者文件名里容易出问题的字符
+  symbol: '!@#$%^&*_-+'
+} as const;
+
+interface RandomCharOptions {
+  length?: number;
+  charsets?: Array<keyof typeof CHAR_SETS>;
+  paddingType?: 'zero' | 'none';
+  paddingChar?: string;
+}
+
 sequencePatterns.register('randomChar', {
-  validate(options) {
+  validate(options?: RandomCharOptions) {
     if (!options?.length || options.length < 1) {
       return 'options.length should be configured as a positive integer';
     }
     if (!options?.charsets || options.charsets.length === 0) {
       return 'At least one character set should be selected';
     }
+    if (options.charsets.some(charset => !CHAR_SETS[charset])) {
+      return 'Invalid charset selected';
+    }
     return null;
   },
-  generate(instance, options) {
+  
+  generate(instance: any, options: RandomCharOptions) {
     const { 
       length = 6, 
       charsets = ['number'], 
@@ -313,55 +333,52 @@ sequencePatterns.register('randomChar', {
       paddingChar = '0' 
     } = options;
 
-    const charsetMap = {
-      number: '0123456789',
-      lowercase: 'abcdefghijklmnopqrstuvwxyz',
-      uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-      symbol: '!@#$%^&*()_+-=[]{}|;:,.<>?'
+    const chars = [...new Set(
+      charsets.reduce((acc, charset) => acc + CHAR_SETS[charset], '')
+    )];
+
+    const getRandomChar = () => {
+      const randomIndex = Math.floor(Math.random() * chars.length);
+      return chars[randomIndex];
     };
 
-    let chars = '';
-    charsets.forEach(charset => {
-      chars += charsetMap[charset] || '';
-    });
+    let result = Array.from({ length }, () => getRandomChar()).join('');
 
-    let result = '';
-    for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-
-    // 处理 padding
+    // 根据要求加了padding配置
     if (paddingType === 'zero' && /^\d+$/.test(result)) {
       result = result.padStart(length, paddingChar);
     }
 
     return result;
   },
-  batchGenerate(instances, values, options) {
+
+  batchGenerate(instances: any[], values: string[], options: RandomCharOptions) {
     instances.forEach((instance, i) => {
       values[i] = sequencePatterns.get('randomChar').generate.call(this, instance, options);
     });
   },
-  getLength(options) {
-    return options.length;
+
+  getLength(options: RandomCharOptions) {
+    return options.length || 6;
   },
-  getMatcher(options) {
-    const charsetMap = {
-      number: '0-9',
-      lowercase: 'a-z',
-      uppercase: 'A-Z',
-      symbol: '!@#$%^&*()_+-=[]{}|;:,.<>?'
-    };
 
-    let pattern = '[';
-    (options.charsets || ['number']).forEach(charset => {
-      pattern += charsetMap[charset] || '';
-    });
-    pattern += `]{${options.length || 6}}`;
+  getMatcher(options: RandomCharOptions) {
+    const pattern = [...new Set(
+      (options.charsets || ['number']).reduce((acc, charset) => {
+        switch (charset) {
+          case 'number': return acc + '0-9';
+          case 'lowercase': return acc + 'a-z';
+          case 'uppercase': return acc + 'A-Z';
+          case 'symbol': return acc + CHAR_SETS.symbol.replace('-', '').replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') + '-';
+          default: return acc;
+        }
+      }, '')
+    )].join('');
 
-    return pattern;
+    return `[${pattern}]{${options.length || 6}}`;
   }
 });
+
 interface PatternConfig {
   type: string;
   title?: string;
