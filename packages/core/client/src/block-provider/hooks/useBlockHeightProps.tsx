@@ -19,7 +19,7 @@ export const useBlockHeightProps = () => {
   const pageSchema = useMemo(() => getPageSchema(blockTemplateSchema || fieldSchema), []);
   const { disablePageHeader, enablePageTabs, hidePageTitle } = pageSchema?.['x-component-props'] || {};
   const { titleHeight } = useContext(BlockItemCardContext) || ({} as any);
-  console.log(cardItemSchema?.['x-component-props']?.title || cardItemSchema?.['x-component-props']?.description);
+
   return {
     heightProps: {
       ...cardItemSchema?.['x-component-props'],

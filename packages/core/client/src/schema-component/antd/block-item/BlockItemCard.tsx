@@ -28,8 +28,9 @@ export const BlockItemCard = React.forwardRef<HTMLDivElement, CardProps | any>((
         const height = !description
           ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1
           : titleRef.current.parentElement.offsetHeight;
-        console.log(titleRef.current.parentElement.offsetHeight);
         setTitleHeight(height);
+      } else {
+        titleHeight && setTitleHeight(0);
       }
     }, 500);
 
