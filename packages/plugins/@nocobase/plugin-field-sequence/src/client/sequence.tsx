@@ -181,7 +181,7 @@ const RuleTypes = {
           dependencies: ['charsets'],
           fulfill: {
             state: {
-              hidden: '{{ !$deps[0]?.length || $deps[0].length > 1 || $deps[0][0] !== "number" }}'
+              disabled: '{{ !$deps[0]?.length || $deps[0].length > 1 || $deps[0][0] !== "number" }}'
             }
           }
         },
