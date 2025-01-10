@@ -32,6 +32,7 @@ function consumeTime(n: number) {
 describe('workflow > triggers > schedule > static mode', () => {
   let app: MockServer;
   let db: Database;
+  let plugin;
   let PostRepo;
   let CategoryRepo;
   let WorkflowRepo;
@@ -40,6 +41,7 @@ describe('workflow > triggers > schedule > static mode', () => {
     app = await getApp();
 
     db = app.db;
+    plugin = app.pm.get('workflow') as Plugin;
     const workflow = db.getCollection('workflows');
     WorkflowRepo = workflow.repository;
     PostRepo = db.getCollection('posts').repository;
@@ -393,11 +395,7 @@ describe('workflow > triggers > schedule > static mode', () => {
         type: 'echo',
       });
 
-      (app.pm.get('workflow') as Plugin).trigger(
-        workflow,
-        { date: start },
-        { eventKey: `${workflow.id}@${start.getTime()}` },
-      );
+      plugin.trigger(workflow, { date: start }, { eventKey: `${workflow.id}@${start.getTime()}` });
 
       await sleep(3000);
 
@@ -429,7 +427,7 @@ describe('workflow > triggers > schedule > static mode', () => {
         type: 'echo',
       });
 
-      const trigger = (app.pm.get('workflow') as Plugin).triggers.get(workflow.type);
+      const trigger = plugin.triggers.get(workflow.type);
       trigger.on(workflow);
 
       await sleep(3000);
@@ -438,6 +436,59 @@ describe('workflow > triggers > schedule > static mode', () => {
       expect(e1s.length).toBe(1);
       const j1s = await e1s[0].getJobs();
       expect(j1s.length).toBe(1);
+    });
+
+    it('different workflows could trigger in same time but not duplicated for each', async () => {
+      await sleepToEvenSecond();
+
+      const start = new Date();
+      start.setMilliseconds(0);
+      start.setSeconds(start.getSeconds() + 2);
+
+      const w1 = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'schedule',
+          config: {
+            mode: 0,
+            startsOn: start.toISOString(),
+          },
+        },
+      });
+
+      const n1 = w1.createNode({
+        type: 'echo',
+      });
+
+      const w2 = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'schedule',
+          config: {
+            mode: 0,
+            startsOn: start.toISOString(),
+          },
+        },
+      });
+
+      const n2 = w2.createNode({
+        type: 'echo',
+      });
+
+      plugin.trigger(w1, { date: start }, { eventKey: `${w1.id}@${start.getTime()}` });
+      plugin.trigger(w2, { date: start }, { eventKey: `${w2.id}@${start.getTime()}` });
+
+      await sleep(3000);
+
+      const e1s = await w1.getExecutions();
+      expect(e1s.length).toBe(1);
+      const j1s = await e1s[0].getJobs();
+      expect(j1s.length).toBe(1);
+
+      const e2s = await w2.getExecutions();
+      expect(e2s.length).toBe(1);
+      const j2s = await e2s[0].getJobs();
+      expect(j2s.length).toBe(1);
     });
   });
 });
