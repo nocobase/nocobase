@@ -130,7 +130,7 @@ export default class PluginWorkflowServer extends Plugin {
   /**
    * @experimental
    */
-  getLogger(workflowId: ID): Logger {
+  getLogger(workflowId: ID = 'dispatcher'): Logger {
     const now = new Date();
     const date = `${now.getFullYear()}-${`0${now.getMonth() + 1}`.slice(-2)}-${`0${now.getDate()}`.slice(-2)}`;
     const key = `${date}-${workflowId}}`;
