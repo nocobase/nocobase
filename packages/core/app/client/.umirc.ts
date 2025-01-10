@@ -36,7 +36,7 @@ export default defineConfig({
       `,
     },
     {
-      src: `${appPublicPath}browser-checker.js`,
+      src: `${appPublicPath}browser-checker.js?v=1`,
     },
   ],
   cacheDirectoryPath: process.env.APP_CLIENT_CACHE_DIR || `node_modules/.cache`,
