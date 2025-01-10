@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+const publicPath = window['__nocobase_dev_public_path__'] || window['__nocobase_public_path__'] || '/';
+
 export const UPLOAD_PLACEHOLDER = [
   {
     ext: /\.docx?$/i,
@@ -64,6 +66,11 @@ export const UPLOAD_PLACEHOLDER = [
     ext: /\.(zip|rar|arj|z|gz|iso|jar|ace|tar|uue|dmg|pkg|lzh|cab)$/i,
     icon: '/file-placeholder/zip-200-200.png',
   },
-];
+].map((item) => {
+  return {
+    ext: item.ext,
+    icon: publicPath + item.icon.slice(1),
+  };
+});
 
-export const UNKNOWN_FILE_ICON = '/file-placeholder/unknown-200-200.png';
+export const UNKNOWN_FILE_ICON = publicPath + 'file-placeholder/unknown-200-200.png';

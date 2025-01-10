@@ -99,6 +99,7 @@ export class Application {
   public schemaSettingsManager: SchemaSettingsManager;
   public dataSourceManager: DataSourceManager;
   public name: string;
+  public globalVars: Record<string, any> = {};
 
   loading = true;
   maintained = false;
@@ -263,6 +264,14 @@ export class Application {
   }
 
   getRouteUrl(pathname: string) {
+    return this.getPublicPath() + pathname.replace(/^\//g, '');
+  }
+
+  getHref(pathname: string) {
+    const name = this.name;
+    if (name && name !== 'main') {
+      return this.getPublicPath() + 'apps/' + name + '/' + pathname.replace(/^\//g, '');
+    }
     return this.getPublicPath() + pathname.replace(/^\//g, '');
   }
 
@@ -464,5 +473,13 @@ export class Application {
       fieldName,
       componentOption,
     );
+  }
+
+  addGlobalVar(key: string, value: any) {
+    set(this.globalVars, key, value);
+  }
+
+  getGlobalVar(key) {
+    return get(this.globalVars, key);
   }
 }

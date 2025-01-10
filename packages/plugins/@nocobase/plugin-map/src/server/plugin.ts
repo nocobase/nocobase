@@ -8,11 +8,10 @@
  */
 
 import { InstallOptions, Plugin } from '@nocobase/server';
-import path from 'path';
 import { getConfiguration, setConfiguration } from './actions';
 import { CircleField, LineStringField, PointField, PolygonField } from './fields';
-import { CircleValueParser, LineStringValueParser, PointValueParser, PolygonValueParser } from './value-parsers';
 import { CircleInterface, LineStringInterface, PointInterface, PolygonInterface } from './interfaces';
+import { CircleValueParser, LineStringValueParser, PointValueParser, PolygonValueParser } from './value-parsers';
 
 export class PluginMapServer extends Plugin {
   afterAdd() {}
@@ -39,9 +38,7 @@ export class PluginMapServer extends Plugin {
   }
 
   async load() {
-    await this.importCollections(path.resolve(__dirname, 'collections'));
-
-    this.app.resource({
+    this.app.resourceManager.define({
       name: 'map-configuration',
       actions: {
         get: getConfiguration,

@@ -21,8 +21,11 @@ import {
   Checkbox,
   VariablesProvider,
   useApp,
+  TextAreaWithGlobalScope,
+  ApplicationContext,
+  useGlobalVariable,
 } from '@nocobase/client';
-import { Breadcrumb, Button, Dropdown, Space, Spin, Switch, Input, message, Popover, QRCode } from 'antd';
+import { Breadcrumb, Button, Dropdown, Space, Spin, Switch, message, Popover, QRCode } from 'antd';
 import React, { useState } from 'react';
 import { useParams } from 'react-router';
 import { Link } from 'react-router-dom';
@@ -33,12 +36,10 @@ import { usePublicFormTranslation, NAMESPACE } from '../locale';
 const PublicFormQRCode = () => {
   const [open, setOpen] = useState(false);
   const { t } = usePublicFormTranslation();
-  const baseURL = window.location.origin;
   const params = useParams();
-  const isUnderSubApp = window.location.pathname.startsWith('/apps');
   const app = useApp();
-  const link =
-    baseURL + (isUnderSubApp ? `/apps/${app.name}/public-forms/${params.name}` : `/public-forms/${params.name}`);
+  const baseURL = window.location.origin;
+  const link = baseURL + app.getHref(`public-forms/${params.name}`);
   const handleQRCodeOpen = (newOpen: boolean) => {
     setOpen(newOpen);
   };
@@ -59,6 +60,7 @@ export function AdminPublicFormPage() {
   const { theme } = useGlobalTheme();
   const apiClient = useAPIClient();
   const app = useApp();
+  const environmentCtx = useGlobalVariable('$env');
   const { data, loading, refresh } = useRequest<any>({
     url: `publicForms:get/${params.name}`,
   });
@@ -73,27 +75,32 @@ export function AdminPublicFormPage() {
     });
     await refresh();
   };
-
   const handleSetPassword = async () => {
     const values = await FormDialog(
       t('Password') as any,
       () => {
         return (
-          <SchemaComponentOptions components={{ Checkbox, Input, FormItem }}>
-            <FormLayout layout={'vertical'}>
-              <SchemaComponent
-                schema={{
-                  properties: {
-                    password: {
-                      type: 'string',
-                      'x-decorator': 'FormItem',
-                      'x-component': 'Input.Password',
+          <ApplicationContext.Provider value={app}>
+            <SchemaComponentOptions components={{ Checkbox, TextAreaWithGlobalScope, FormItem }}>
+              <FormLayout layout={'vertical'}>
+                <SchemaComponent
+                  schema={{
+                    properties: {
+                      password: {
+                        type: 'string',
+                        'x-decorator': 'FormItem',
+                        'x-component': 'TextAreaWithGlobalScope',
+                        'x-component-props': {
+                          password: true,
+                          scope: [environmentCtx],
+                        },
+                      },
                     },
-                  },
-                }}
-              />
-            </FormLayout>
-          </SchemaComponentOptions>
+                  }}
+                />
+              </FormLayout>
+            </SchemaComponentOptions>
+          </ApplicationContext.Provider>
         );
       },
       theme,
@@ -106,9 +113,7 @@ export function AdminPublicFormPage() {
 
   const handleCopyLink = () => {
     const baseURL = window.location.origin;
-    const isUnderSubApp = window.location.pathname.startsWith('/apps');
-    const link =
-      baseURL + (isUnderSubApp ? `/apps/${app.name}/public-forms/${params.name}` : `/public-forms/${params.name}`);
+    const link = baseURL + app.getHref(`public-forms/${params.name}`);
     navigator.clipboard.writeText(link);
     message.success(t('Link copied successfully'));
   };

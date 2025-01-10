@@ -10,9 +10,10 @@
 import path from 'path';
 import { randomUUID } from 'crypto';
 
+import { Transaction, Transactionable } from 'sequelize';
 import LRUCache from 'lru-cache';
 
-import { Op, Transactionable } from '@nocobase/database';
+import { Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
@@ -288,7 +289,6 @@ export default class PluginWorkflowServer extends Plugin {
     //   * add all hooks for enabled workflows
     //   * add hooks for create/update[enabled]/delete workflow to add/remove specific hooks
     this.app.on('afterStart', async () => {
-      this.app.setMaintainingMessage('check for not started executions');
       this.ready = true;
 
       const collection = db.getCollection('workflows');
@@ -301,6 +301,7 @@ export default class PluginWorkflowServer extends Plugin {
       });
 
       this.checker = setInterval(() => {
+        this.getLogger('dispatcher').info(`(cycling) check for queueing executions`);
         this.dispatch();
       }, 300_000);
 
@@ -309,7 +310,8 @@ export default class PluginWorkflowServer extends Plugin {
         this.dispatch();
       });
 
-      // check for not started executions
+      // check for queueing executions
+      this.getLogger('dispatcher').info('(starting) check for queueing executions');
       this.dispatch();
     });
 
@@ -383,6 +385,15 @@ export default class PluginWorkflowServer extends Plugin {
       logger.warn(`workflow ${workflow.id} is not enabled, event will be ignored`);
       return;
     }
+    const duplicated = this.events.find(([w, c, { eventKey }]) => {
+      if (eventKey && options.eventKey) {
+        return eventKey === options.eventKey;
+      }
+    });
+    if (duplicated) {
+      logger.warn(`event of workflow ${workflow.id} is duplicated, event will be ignored`);
+      return;
+    }
     // `null` means not to trigger
     if (context == null) {
       logger.warn(`workflow ${workflow.id} event data context is null, event will be ignored`);
@@ -401,6 +412,7 @@ export default class PluginWorkflowServer extends Plugin {
     logger.debug(`event data:`, { context });
 
     if (this.events.length > 1) {
+      logger.info(`new event is pending to be prepared after previous preparation is finished`);
       return;
     }
 
@@ -437,6 +449,9 @@ export default class PluginWorkflowServer extends Plugin {
       `execution (${job.execution.id}) resuming from job (${job.id}) added to pending list`,
     );
     this.pending.push([job.execution, job]);
+    if (this.executing) {
+      await this.executing;
+    }
     this.dispatch();
   }
 
@@ -444,16 +459,15 @@ export default class PluginWorkflowServer extends Plugin {
    * Start a deferred execution
    * @experimental
    */
-  public start(execution: ExecutionModel) {
+  public async start(execution: ExecutionModel) {
     if (execution.status !== EXECUTION_STATUS.STARTED) {
       return;
     }
     this.pending.push([execution]);
+    if (this.executing) {
+      await this.executing;
+    }
     this.dispatch();
-  }
-
-  public createProcessor(execution: ExecutionModel, options = {}): Processor {
-    return new Processor(execution, { ...options, plugin: this });
   }
 
   private async validateEvent(workflow: WorkflowModel, context: any, options: EventOptions) {
@@ -556,7 +570,7 @@ export default class PluginWorkflowServer extends Plugin {
     const event = this.events.shift();
     this.eventsCount = this.events.length;
     if (!event) {
-      this.getLogger('dispatcher').warn(`events queue is empty, no need to prepare`);
+      this.getLogger('dispatcher').info(`events queue is empty, no need to prepare`);
       return;
     }
 
@@ -598,42 +612,59 @@ export default class PluginWorkflowServer extends Plugin {
 
     this.executing = (async () => {
       let next: Pending | null = null;
-      try {
-        // resuming has high priority
-        if (this.pending.length) {
-          next = this.pending.shift() as Pending;
-          this.getLogger(next[0].workflowId).info(`pending execution (${next[0].id}) ready to process`);
-        } else {
-          const execution = (await this.db.getRepository('executions').findOne({
-            filter: {
-              status: EXECUTION_STATUS.QUEUEING,
-              'workflow.enabled': true,
-              'workflow.id': {
-                [Op.not]: null,
-              },
+      // resuming has high priority
+      if (this.pending.length) {
+        next = this.pending.shift() as Pending;
+        this.getLogger(next[0].workflowId).info(`pending execution (${next[0].id}) ready to process`);
+      } else {
+        try {
+          await this.db.sequelize.transaction(
+            {
+              isolationLevel:
+                this.db.options.dialect === 'sqlite' ? [][0] : Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
             },
-            appends: ['workflow'],
-            sort: 'id',
-          })) as ExecutionModel;
-          if (execution) {
-            this.getLogger(execution.workflowId).info(`execution (${execution.id}) fetched from db`);
-            next = [execution];
-          }
-        }
-        if (next) {
-          await this.process(...next);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        this.executing = null;
-        this.getLogger('dispatcher').info(`execution dispatched finished`);
-
-        if (next) {
-          this.dispatch();
+            async (transaction) => {
+              const execution = (await this.db.getRepository('executions').findOne({
+                filter: {
+                  status: EXECUTION_STATUS.QUEUEING,
+                  'workflow.enabled': true,
+                },
+                sort: 'id',
+                transaction,
+              })) as ExecutionModel;
+              if (execution) {
+                this.getLogger(execution.workflowId).info(`execution (${execution.id}) fetched from db`);
+                await execution.update(
+                  {
+                    status: EXECUTION_STATUS.STARTED,
+                  },
+                  { transaction },
+                );
+                execution.workflow = this.enabledCache.get(execution.workflowId);
+                next = [execution];
+              } else {
+                this.getLogger('dispatcher').info(`no execution in db queued to process`);
+              }
+            },
+          );
+        } catch (error) {
+          this.getLogger('dispatcher').error(`fetching execution from db failed: ${error.message}`, { error });
         }
       }
+      if (next) {
+        await this.process(...next);
+      }
+      this.executing = null;
+
+      if (next) {
+        this.getLogger('dispatcher').info(`last process finished, will do another dispatch`);
+        this.dispatch();
+      }
     })();
+  }
+
+  public createProcessor(execution: ExecutionModel, options = {}): Processor {
+    return new Processor(execution, { ...options, plugin: this });
   }
 
   private async process(execution: ExecutionModel, job?: JobModel, options: Transactionable = {}): Promise<Processor> {

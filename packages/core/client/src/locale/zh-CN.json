@@ -275,6 +275,8 @@
   "Formula.js supports most Microsoft Excel formula functions.": "Formula.js 支持大部分 Mircrosoft Excel 公式。",
   "String template": "字符串模板",
   "Simple string replacement, can be used to interpolate variables in a string.": "简单的字符串替换，可以用于在字符串中插入变量。",
+  "https://docs.nocobase.com/handbook/calculation-engines/formula": "https://docs-cn.nocobase.com/handbook/calculation-engines/formula",
+  "https://docs.nocobase.com/handbook/calculation-engines/mathjs": "https://docs-cn.nocobase.com/handbook/calculation-engines/mathjs",
   "Choices": "选择类型",
   "Checkbox": "勾选",
   "Display <icon></icon> when unchecked": "未勾选时显示 <icon></icon>",
@@ -1045,8 +1047,12 @@
   "Bulk enable": "批量激活",
   "Search plugin...": "搜索插件...",
   "Package name": "包名",
+  "Show file name":"显示文件名",
+  "Outlined": "线框风格",
+  "Filled": "实底风格",
+  "Two tone": "双色风格",
   "Associate": "关联",
-  "Please add or select record": "请添加或选择数据",
-  "No data": "暂无数据",
+  "Please add or select record":"请添加或选择数据",
+  "No data":"暂无数据",
   "Fields can only be used correctly if they are defined with an interface.": "只有字段设置了interface字段才能正常使用"
 }
