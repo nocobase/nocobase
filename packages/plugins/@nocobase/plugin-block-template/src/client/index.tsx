@@ -62,7 +62,7 @@ export class PluginBlockTemplateClient extends Plugin {
     // Register axios interceptors for template block operations
     registerTemplateBlockInterceptors(this.app.apiClient, this.templateBlocks);
 
-    this.app.addComponents({ TemplateBlockInitializer: TemplateBlockInitializer as any });
+    this.app.addComponents({ TemplateGridDecorator, TemplateBlockInitializer: TemplateBlockInitializer as any });
 
     this.app.schemaInitializerManager.addItem('page:addBlock', 'templates', {
       name: BlockNameLowercase,
@@ -131,10 +131,6 @@ export class PluginBlockTemplateClient extends Plugin {
       isTopLevel: false,
       Component: BlockTemplatePage,
     });
-
-    this.app.addComponents({
-      TemplateGridDecorator,
-    });
   }
 
   #fetchAllTemplates(templateUids, schema) {
@@ -201,10 +197,13 @@ export class PluginBlockTemplateClient extends Plugin {
                 schemaSetting.items[i]['Component'] === SchemaSettingsFormItemTemplate
               ) {
                 const visible = schemaSetting.items[i]['useVisible'] || (() => true);
-                schemaSetting.items[i]['useVisible'] = () => {
-                  const notInBlockTemplate = !window.location.pathname.includes('admin/settings/block-templates');
-                  return notInBlockTemplate && visible();
-                };
+                // schemaSetting.items[i]['useVisible'] = () => {
+                //   const notInBlockTemplate = !window.location.pathname.includes('admin/settings/block-templates');
+                //   return notInBlockTemplate && visible();
+                // };
+
+                // hide covert to block setting item
+                schemaSetting.items[i]['useVisible'] = () => false;
                 if (schemaSetting.items[i + 1]?.['type'] === 'divider') {
                   schemaSetting.items[i + 1]['useVisible'] = () => {
                     const notInBlockTemplate = !window.location.pathname.includes('admin/settings/block-templates');
