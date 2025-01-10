@@ -102,6 +102,7 @@ const useTableHeight = () => {
   const { designable } = useDesignable();
   const schema = useFieldSchema();
   const heightProps = tableHeightProps || blockHeightProps;
+  const { titleHeight } = blockHeightProps;
   const pageFullScreenHeight = useFullScreenHeight(heightProps);
   const { name } = useCollection();
   const { heightMode, height, title } = heightProps;
@@ -113,7 +114,7 @@ const useTableHeight = () => {
   const actionBarHeight = hasTableActions || designable ? token.controlHeight + 2 * token.marginLG : token.marginLG;
   const tableHeaderHeight =
     (designable && !InternalWorkflowCollection.includes(name) ? token.controlHeight : 22) + 2 * token.padding + 1;
-  const blockHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
+  const blockHeaderHeight = title ? titleHeight : 0;
   if (heightMode === HeightMode.FULL_HEIGHT) {
     return (
       window.innerHeight -
@@ -135,16 +136,16 @@ interface UseDataBlockHeightOptions {
 export const useDataBlockHeight = (options?: UseDataBlockHeightOptions) => {
   const { heightProps } = useBlockHeightProps();
   const pageFullScreenHeight = useFullScreenHeight();
-  const { token } = theme.useToken();
 
-  const { heightMode, height, title } = heightProps || {};
-  const blockHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
+  const { heightMode, height, title, titleHeight } = heightProps || {};
 
+  const blockHeaderHeight = title ? titleHeight : 0;
   if (!heightProps?.heightMode || heightMode === HeightMode.DEFAULT) {
     return;
   }
   if (heightMode === HeightMode.FULL_HEIGHT) {
     let res = window.innerHeight - pageFullScreenHeight;
+    console.log(res);
     if (options?.removeBlockHeaderHeight) {
       res = res - blockHeaderHeight;
     }
