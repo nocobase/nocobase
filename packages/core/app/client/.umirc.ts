@@ -24,6 +24,7 @@ export default defineConfig({
       content: isDevCmd
         ? `
           window['__nocobase_public_path__'] = "${process.env.APP_PUBLIC_PATH || '/'}";
+          window['__nocobase_dev_public_path__'] = "/";
         `
         : `
         window['__webpack_public_path__'] = '{{env.APP_PUBLIC_PATH}}';
