@@ -113,7 +113,6 @@ const RuleTypes = {
     title: `{{t("Random character", { ns: "${NAMESPACE}" })}}`,
     optionRenders: {
       length: function Length({ value }) {
-        const { t } = useTranslation();
         return <code>{value}</code>;
       },
       charsets: function Charsets({ value }) {
@@ -157,6 +156,7 @@ const RuleTypes = {
         'x-component': 'Select',
         'x-component-props': {
           mode: 'multiple',
+          allowClear: false,
         },
         enum: [
           { value: 'number', label: `{{t("Number", { ns: "${NAMESPACE}" })}}` },
@@ -166,6 +166,10 @@ const RuleTypes = {
         ],
         required: true,
         default: ['number'],
+        'x-validator': {
+          minItems: 1,
+          message: `{{t("At least one character set should be selected", { ns: "${NAMESPACE}" })}}`
+        }
       },
       paddingType: {
         type: 'string',
@@ -173,6 +177,14 @@ const RuleTypes = {
         description: `{{t("Select padding type for generated characters.", { ns: "${NAMESPACE}" })}}`,
         'x-decorator': 'FormItem',
         'x-component': 'Select',
+        'x-reactions': {
+          dependencies: ['charsets'],
+          fulfill: {
+            state: {
+              hidden: '{{ !$deps[0]?.length || $deps[0].length > 1 || $deps[0][0] !== "number" }}'
+            }
+          }
+        },
         enum: [
           { value: 'zero', label: `{{t("Zero padding", { ns: "${NAMESPACE}" })}}` },
           { value: 'none', label: `{{t("No padding", { ns: "${NAMESPACE}" })}}` }
