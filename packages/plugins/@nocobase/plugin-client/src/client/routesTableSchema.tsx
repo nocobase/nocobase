@@ -1095,7 +1095,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
               },
               access: {
                 type: 'void',
-                title: '{{t("Access")}}',
+                title: '{{t("View")}}',
                 'x-component': 'Action.Link',
                 'x-use-component-props': () => {
                   const recordData = useCollectionRecordData();
