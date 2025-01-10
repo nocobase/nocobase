@@ -307,7 +307,7 @@ const CHAR_SETS = {
 interface RandomCharOptions {
   length?: number;
   charsets?: Array<keyof typeof CHAR_SETS>;
-  paddingType?: 'zero' | 'none';
+  paddingType?: 'zero-start' | 'zero-end' | 'none';
   paddingChar?: string;
 }
 
@@ -329,7 +329,7 @@ sequencePatterns.register('randomChar', {
     const { 
       length = 6, 
       charsets = ['number'], 
-      paddingType = 'zero', 
+      paddingType = 'zero-start', 
       paddingChar = '0' 
     } = options;
 
@@ -344,9 +344,17 @@ sequencePatterns.register('randomChar', {
 
     let result = Array.from({ length }, () => getRandomChar()).join('');
 
-    // 根据要求加了padding配置
-    if (paddingType === 'zero' && /^\d+$/.test(result)) {
-      result = result.padStart(length, paddingChar);
+    if (/^\d+$/.test(result)) {
+      switch (paddingType) {
+        case 'zero-start':
+          result = result.padStart(length, paddingChar);
+          break;
+        case 'zero-end':
+          result = result.padEnd(length, paddingChar);
+          break;
+        default:
+          break;
+      }
     }
 
     return result;
