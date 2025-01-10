@@ -14,19 +14,20 @@ import { MarkdownReadPretty } from '../markdown';
 
 export const BlockItemCard = React.forwardRef<HTMLDivElement, CardProps | any>(({ children, ...props }, ref) => {
   const { token } = useToken();
+  const { title: blockTitle, description, ...others } = props;
   const style = useMemo(() => {
     return { marginBottom: token.marginBlock };
   }, [token.marginBlock]);
-  const title = (
-    <div>
-      {props.title}
-      {props.description && (
-        <MarkdownReadPretty value={props.description} style={{ fontWeight: 400, marginTop: '10px' }} />
-      )}
-    </div>
-  );
+  const title =
+    blockTitle ||
+    (description && (
+      <div>
+        {blockTitle}
+        {description && <MarkdownReadPretty value={props.description} style={{ fontWeight: 400, marginTop: '10px' }} />}
+      </div>
+    ));
   return (
-    <Card ref={ref} bordered={false} style={style} {...props} title={title}>
+    <Card ref={ref} bordered={false} style={style} {...others} title={title}>
       {children}
     </Card>
   );
