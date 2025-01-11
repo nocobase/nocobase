@@ -70,7 +70,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libfreetype6 \
   fontconfig \
   libgssapi-krb5-2 \
-  ttf-mscorefonts-installer \
+  msttcorefonts \
   fonts-wqy-zenhei \
   && rm -rf /var/lib/apt/lists/*
 
