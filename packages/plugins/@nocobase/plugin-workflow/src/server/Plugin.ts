@@ -371,7 +371,7 @@ export default class PluginWorkflowServer extends Plugin {
       }
     });
     if (duplicated) {
-      logger.warn(`event of workflow ${workflow.id} is duplicated, event will be ignored`);
+      logger.warn(`event of workflow ${workflow.id} is duplicated (${options.eventKey}), event will be ignored`);
       return;
     }
     // `null` means not to trigger
@@ -431,8 +431,9 @@ export default class PluginWorkflowServer extends Plugin {
     this.pending.push([job.execution, job]);
     if (this.executing) {
       await this.executing;
+    } else {
+      this.dispatch();
     }
-    this.dispatch();
   }
 
   /**
@@ -446,8 +447,9 @@ export default class PluginWorkflowServer extends Plugin {
     this.pending.push([execution]);
     if (this.executing) {
       await this.executing;
+    } else {
+      this.dispatch();
     }
-    this.dispatch();
   }
 
   private async createExecution(
