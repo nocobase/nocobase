@@ -91,7 +91,7 @@ export const RevertSetting = () => {
             const position = findInsertPosition(fieldSchema.parent, fieldSchema['x-uid']);
 
             await api.request({
-              url: `/uiSchemas:remove/${newSchema['x-uid']}?resettemplate=true`,
+              url: `/uiSchemas:remove/${fieldSchema['x-uid']}?resettemplate=true`,
             });
 
             // insertAdjacent
