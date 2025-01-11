@@ -235,4 +235,17 @@ export default class CollectionTrigger extends Trigger {
       transaction: this.workflow.useDataSourceTransaction(dataSourceName, transaction),
     });
   }
+
+  validateConfig(values) {
+    if (!values.data) {
+      return {
+        valid: false,
+        message: 'Data property is required',
+      };
+    }
+
+    return {
+      valid: true,
+    };
+  }
 }

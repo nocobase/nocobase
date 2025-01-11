@@ -20,6 +20,7 @@ export abstract class Trigger {
     return true;
   }
   duplicateConfig?(workflow: WorkflowModel, options: Transactionable): object | Promise<object>;
+  validateConfig?(values: any): { valid: boolean; message?: string };
   sync?: boolean;
   execute?(
     workflow: WorkflowModel,
