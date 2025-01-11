@@ -190,7 +190,7 @@ export function convertToCreateSchema(schema: any): any {
   return tmpSchema.toJSON();
 }
 
-function addToolbarClass(schema) {
+export function addToolbarClass(schema) {
   if (schema['x-toolbar'] && schema['x-template-uid']) {
     _.merge(schema, {
       'x-toolbar-props': {

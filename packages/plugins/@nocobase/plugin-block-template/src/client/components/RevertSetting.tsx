@@ -16,6 +16,7 @@ import { convertTplBlock } from '../initializers/TemplateBlockInitializer';
 import { Schema } from '@formily/json-schema';
 import { useT } from '../locale';
 import PluginBlockTemplateClient from '..';
+import { addToolbarClass } from '../utils/template';
 
 const findInsertPosition = (parentSchema, uid) => {
   const postion = {
@@ -106,12 +107,15 @@ export const RevertSetting = () => {
 
             // this is a hack to make the schema component refresh to the new schema
             fieldSchema.toJSON = () => {
+              let ret;
               if (schema['x-template-root-uid'] || fieldSchema.parent?.['x-template-root-uid']) {
-                return schema.toJSON();
+                ret = schema.toJSON();
               } else {
                 const mergedSchema = _.merge(templateSchema, schema.toJSON());
-                return mergedSchema;
+                ret = mergedSchema;
               }
+              addToolbarClass(ret);
+              return ret;
             };
             refresh({ refreshParentSchema: true });
             form.clearFormGraph();
