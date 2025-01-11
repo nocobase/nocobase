@@ -12,6 +12,31 @@ import * as _ from 'lodash';
 import { convertTplBlock } from '../initializers';
 
 /**
+ * Helper function to synchronize unique field template information
+ * @param sourceValue The source value object to modify
+ * @param skey The source key
+ * @param removedTargetKeys Array of removed target keys
+ * @param objectValue The object value containing template UIDs
+ */
+function syncUniqueFieldTemplateInfo(sourceValue: any, skey: string, removedTargetKeys: string[], objectValue: any) {
+  if (removedTargetKeys.length > 0) {
+    sourceValue[skey]['x-removed-target-key'] = removedTargetKeys[0];
+    sourceValue[skey]['x-template-uid'] = objectValue[removedTargetKeys[0]]['x-uid'];
+    const sourceSchema = sourceValue[skey];
+    const removedSchema = objectValue[removedTargetKeys[0]];
+    _.mergeWith(sourceSchema, removedSchema, function mergeTemplateUid(sSchema, rSchema, key) {
+      if (key === 'properties' && sSchema) {
+        for (const pkey in sSchema) {
+          sSchema[pkey]['x-template-uid'] = rSchema?.[pkey]?.['x-uid'];
+          mergeTemplateUid(sSchema[pkey]?.['properties'], rSchema?.[pkey]?.['properties'], 'properties');
+        }
+      }
+      return sSchema;
+    });
+  }
+}
+
+/**
  * Collects all template UIDs from a schema and its nested properties
  * @param schema The schema to collect template UIDs from
  * @param uids Set to store unique template UIDs
@@ -254,9 +279,7 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
                     const targetUseComponentProps = objectValue[key]?.['x-use-component-props'];
                     return sourceUseComponentProps === targetUseComponentProps;
                   });
-                  if (removedTargetKeys.length > 0) {
-                    sourceValue[skey]['x-removed-target-key'] = removedTargetKeys[0];
-                  }
+                  syncUniqueFieldTemplateInfo(sourceValue, skey, removedTargetKeys, objectValue);
                 }
               }
 
@@ -276,9 +299,7 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
                     targetKeys,
                     (key) => objectValue[key]?.['x-settings'] === `actionSettings:${targetActionName}`,
                   );
-                  if (removedTargetKeys.length > 0) {
-                    sourceValue[skey]['x-removed-target-key'] = removedTargetKeys[0];
-                  }
+                  syncUniqueFieldTemplateInfo(sourceValue, skey, removedTargetKeys, objectValue);
                 }
               }
             }
@@ -301,9 +322,7 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
                     );
                     return xColField === targetColField;
                   });
-                  if (removedTargetKeys.length > 0) {
-                    sourceValue[skey]['x-removed-target-key'] = removedTargetKeys[0];
-                  }
+                  syncUniqueFieldTemplateInfo(sourceValue, skey, removedTargetKeys, objectValue);
                 }
               }
               // find the x-initializer: "table:configureItemActions"
@@ -311,9 +330,7 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
                 const removedTargetKeys = _.remove(targetKeys, (key) => {
                   return objectValue[key]?.['x-initializer'] === 'table:configureItemActions';
                 });
-                if (removedTargetKeys.length > 0) {
-                  sourceValue[skey]['x-removed-target-key'] = removedTargetKeys[0];
-                }
+                syncUniqueFieldTemplateInfo(sourceValue, skey, removedTargetKeys, objectValue);
               }
             }
           }
@@ -327,9 +344,7 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
                 const targetXColFields = collectCollectionFields(objectValue[key]?.['properties'] || {});
                 return !!_.find(xColFields, (field) => targetXColFields.includes(field));
               });
-              if (removedTargetKeys.length > 0) {
-                sourceValue[skey]['x-removed-target-key'] = removedTargetKeys[0];
-              }
+              syncUniqueFieldTemplateInfo(sourceValue, skey, removedTargetKeys, objectValue);
             }
           }
 
