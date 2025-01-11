@@ -26,10 +26,16 @@ function syncUniqueFieldTemplateInfo(sourceValue: any, skey: string, removedTarg
     const removedSchema = objectValue[removedTargetKeys[0]];
     _.mergeWith(sourceSchema, removedSchema, function mergeTemplateUid(sSchema, rSchema, key) {
       if (key === 'properties' && sSchema) {
-        for (const pkey in sSchema) {
-          sSchema[pkey]['x-template-uid'] = rSchema?.[pkey]?.['x-uid'];
-          mergeTemplateUid(sSchema[pkey]?.['properties'], rSchema?.[pkey]?.['properties'], 'properties');
-        }
+        const sKeys = Object.keys(sSchema || {});
+        const rKeys = Object.keys(rSchema || {});
+        sKeys.forEach((skey, keyIndex) => {
+          if (sSchema[skey]['x-component'] === 'Grid.Row' || sSchema[skey]['x-component'] === 'Grid.Col') {
+            mergeTemplateUid(sSchema[skey]?.['properties'], rSchema[rKeys[keyIndex]]?.['properties'], 'properties');
+          } else {
+            sSchema[skey]['x-template-uid'] = rSchema?.[rKeys[keyIndex]]?.['x-uid'];
+            mergeTemplateUid(sSchema[skey]?.['properties'], rSchema?.[rKeys[keyIndex]]?.['properties'], 'properties');
+          }
+        });
       }
       return sSchema;
     });
@@ -190,6 +196,31 @@ export function convertToCreateSchema(schema: any): any {
   return tmpSchema.toJSON();
 }
 
+function cleanSchema(schema?: any) {
+  const properties = schema?.properties || {};
+  for (const key of Object.keys(properties)) {
+    if (schema.properties[key]['x-component'] === undefined) {
+      delete schema.properties[key];
+    }
+    // 如果x-component是Grid.Row，且内部无任何内容，则删除
+    if (properties[key]?.['x-component'] === 'Grid.Row') {
+      let hasProperties = false;
+      const cols = Object.values(properties[key]?.['properties'] || {});
+      for (const col of cols) {
+        if (col['x-component'] === 'Grid.Col') {
+          if (!_.isEmpty(col['properties'])) {
+            hasProperties = true;
+          }
+        }
+      }
+      if (!hasProperties) {
+        delete properties[key];
+      }
+    }
+    cleanSchema(properties[key]);
+  }
+}
+
 export function addToolbarClass(schema) {
   if (schema['x-toolbar'] && schema['x-template-uid']) {
     _.merge(schema, {
@@ -230,6 +261,7 @@ export function getFullSchema(schema: any, templateschemacache: Record<string, a
     ret = result;
   }
   addToolbarClass(ret);
+  cleanSchema(ret);
   return ret;
 }
 
@@ -394,27 +426,6 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
                 properties[key]['x-index'] = Math.max(...parentIndexs) + 1;
               }
               parentIndexs.push(properties[key]['x-index']);
-            }
-          }
-          for (const key in properties) {
-            const property = properties[key];
-            if (property['x-component'] === undefined) {
-              delete properties[key]; // 说明已经从模板中删除了
-            }
-            // 如果x-component是Grid.Row，且内部无任何内容，则删除
-            if (properties[key]?.['x-component'] === 'Grid.Row') {
-              let hasProperties = false;
-              const cols = Object.values(properties[key]?.['properties'] || {});
-              for (const col of cols) {
-                if (col['x-component'] === 'Grid.Col') {
-                  if (!_.isEmpty(col['properties'])) {
-                    hasProperties = true;
-                  }
-                }
-              }
-              if (!hasProperties) {
-                delete properties[key];
-              }
             }
           }
 
