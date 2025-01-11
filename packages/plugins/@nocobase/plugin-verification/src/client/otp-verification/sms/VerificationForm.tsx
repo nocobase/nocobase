@@ -10,9 +10,9 @@
 import { ISchema, useForm } from '@formily/react';
 import { SchemaComponent } from '@nocobase/client';
 import React from 'react';
-import { VerificationCode } from './VerificationCode';
-import { SMS_OTP_VERIFICATION_TYPE } from '../../constants';
-import { VerificationFormProps } from '../types';
+import { VerificationCode } from '../VerificationCode';
+import { SMS_OTP_VERIFICATION_TYPE } from '../../../constants';
+import { VerificationFormProps } from '../../verification-manager';
 
 const schema: ISchema = {
   type: 'object',
@@ -57,7 +57,7 @@ const schema: ISchema = {
   },
 };
 
-export const SMSVerification = (props: VerificationFormProps) => {
+export const VerificationForm = (props: VerificationFormProps) => {
   const { verificationType, actionType, publicInfo, getUserVerifyInfo, useVerifyActionProps } = props;
   return (
     <SchemaComponent

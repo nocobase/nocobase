@@ -7,16 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Plugin from '../Plugin';
-
-export class OTPProvider {
-  protected options: any;
-  constructor(
-    protected plugin: Plugin,
-    options: any,
-  ) {
-    this.options = plugin.app.environment.renderJsonTemplate(options);
-  }
+export class SMSProvider {
+  constructor(protected options: any) {}
 
   async send(receiver: string, data: { [key: string]: any }): Promise<any> {}
 }

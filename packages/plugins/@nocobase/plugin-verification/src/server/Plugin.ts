@@ -11,30 +11,48 @@ import { Plugin } from '@nocobase/server';
 import { tval } from '@nocobase/utils';
 import { namespace } from '.';
 import initActions from './actions';
-import { PROVIDER_TYPE_SMS_ALIYUN } from './constants';
+import { PROVIDER_TYPE_SMS_ALIYUN, PROVIDER_TYPE_SMS_TENCENT } from '../constants';
 import { VerificationManager } from './verification-manager';
-import { SMSOTPVerification } from './otp-verification/sms';
+import { SMSOTPProviderManager, SMSOTPVerification } from './otp-verification/sms';
 import { SMS_OTP_VERIFICATION_TYPE } from '../constants';
+import verificatorsActions from './actions/verificators';
+import smsAliyun from './otp-verification/sms/providers/sms-aliyun';
+import smsTencent from './otp-verification/sms/providers/sms-tencent';
+import smsOTPProviders from './otp-verification/sms/resource/sms-otp-providers';
 
 export default class PluginVerficationServer extends Plugin {
   verificationManager = new VerificationManager();
+  smsOTPProviderManager = new SMSOTPProviderManager();
 
   async load() {
     initActions(this);
 
     // add middleware to action
     this.app.resourceManager.use(this.verificationManager.middleware());
+    this.app.resourceManager.define(smsOTPProviders);
+
+    Object.entries(verificatorsActions).forEach(([action, handler]) =>
+      this.app.resourceManager.registerActionHandler(`verificators:${action}`, handler),
+    );
 
     this.app.acl.allow('verifications', 'create', 'public');
     this.app.acl.registerSnippet({
-      name: `pm.${this.name}.providers`,
-      actions: ['verifications_providers:*'],
+      name: `pm.${this.name}.verificators`,
+      actions: ['verificators:*', 'smsOTPProviders:*'],
     });
 
     this.verificationManager.registerVerificationType(SMS_OTP_VERIFICATION_TYPE, {
-      title: tval('SMS verification code', { ns: namespace }),
+      title: tval('SMS OTP', { ns: namespace }),
       scenes: ['auth-sms'],
       verification: SMSOTPVerification,
+    });
+    this.smsOTPProviderManager.registerProvider(PROVIDER_TYPE_SMS_ALIYUN, {
+      title: tval('Aliyun SMS', { ns: namespace }),
+      provider: smsAliyun,
+    });
+    this.smsOTPProviderManager.registerProvider(PROVIDER_TYPE_SMS_TENCENT, {
+      title: tval('Tencent SMS', { ns: namespace }),
+      provider: smsTencent,
     });
   }
 

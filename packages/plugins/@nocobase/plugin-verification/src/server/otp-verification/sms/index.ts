@@ -7,19 +7,37 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { PROVIDER_TYPE_SMS_ALIYUN, PROVIDER_TYPE_SMS_TENCENT } from '../constants';
-import { OTPVerification } from './opt-verification';
-import smsAliyun from './providers/sms-aliyun';
-import smsTencent from './providers/sms-tencent';
+import { Registry } from '@nocobase/utils';
+import { OTPVerification } from '..';
+import { SMSProvider } from './providers';
+
+type SMSProviderOptions = {
+  title: string;
+  provider: typeof SMSProvider;
+};
+
+export class SMSOTPProviderManager {
+  providers = new Registry<SMSProviderOptions>();
+
+  registerProvider(type: string, options: SMSProviderOptions) {
+    this.providers.register(type, options);
+  }
+
+  listProviders() {
+    return Array.from(this.providers.getEntities()).map(([providerType, options]) => ({
+      name: providerType,
+      title: options.title,
+    }));
+  }
+}
 
 export class SMSOTPVerification extends OTPVerification {
   constructor({ ctx }) {
     super({ ctx });
-    this.providers.register(PROVIDER_TYPE_SMS_ALIYUN, smsAliyun);
-    this.providers.register(PROVIDER_TYPE_SMS_TENCENT, smsTencent);
   }
 
   async getDefaultProvider() {
+    return null;
     const repo = this.ctx.db.getRepository('verifications_providers');
     const provider = await repo.findOne({
       filter: {
@@ -33,8 +51,9 @@ export class SMSOTPVerification extends OTPVerification {
     if (!Provider) {
       return null;
     }
+    const options = this.ctx.app.environment.renderJsonTemplate(provider.options);
     return {
-      provider: new Provider(provider.options),
+      provider: new Provider(options),
       model: provider,
     };
   }

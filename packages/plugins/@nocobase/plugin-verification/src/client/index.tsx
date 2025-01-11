@@ -8,35 +8,34 @@
  */
 
 import { Plugin } from '@nocobase/client';
-// import { VerificationProviders } from './VerificationProviders';
 import { lazy } from '@nocobase/client';
-const { VerificationProviders } = lazy(() => import('./VerificationProviders'), 'VerificationProviders');
-const { SMSVerification } = lazy(() => import('./otp-verification/SMSVerification'), 'SMSVerification');
+const { Verificators } = lazy(() => import('./verificators/Verificators'), 'Verificators');
+const { VerificatorSelect } = lazy(() => import('./verificators/VerificatorSelect'), 'VerificatorSelect');
 import { NAMESPACE } from './locale';
-import { Registry } from '@nocobase/utils/client';
-import { SMS_OTP_VERIFICATION_TYPE } from '../constants';
-import { VerficationTypeOptions } from './types';
+import { PROVIDER_TYPE_SMS_ALIYUN, PROVIDER_TYPE_SMS_TENCENT, SMS_OTP_VERIFICATION_TYPE } from '../constants';
+import { VerificationManager } from './verification-manager';
+import { smsAliyunProviderOptions, smsOTPVerificationOptions, smsTencentProviderOptions } from './otp-verification/sms';
+import { SMSOTPProviderManager } from './otp-verification/sms/provider-manager';
 
 export class PluginVerificationClient extends Plugin {
-  verifications = new Registry<VerficationTypeOptions>();
-
-  registerVerificationType(type: string, options: VerficationTypeOptions) {
-    this.verifications.register(type, options);
-  }
+  verificationManager = new VerificationManager();
+  smsOTPProviderManager = new SMSOTPProviderManager();
 
   async load() {
     this.app.pluginSettingsManager.add(NAMESPACE, {
       icon: 'CheckCircleOutlined',
       title: `{{t("Verification", { ns: "${NAMESPACE}" })}}`,
-      Component: VerificationProviders,
-      aclSnippet: 'pm.verification.providers',
+      Component: Verificators,
+      aclSnippet: 'pm.verification.verificators',
     });
 
-    this.registerVerificationType(SMS_OTP_VERIFICATION_TYPE, {
-      components: {
-        VerificationForm: SMSVerification,
-      },
+    this.app.addComponents({
+      VerificatorSelect,
     });
+
+    this.verificationManager.registerVerificationType(SMS_OTP_VERIFICATION_TYPE, smsOTPVerificationOptions);
+    this.smsOTPProviderManager.registerProvider(PROVIDER_TYPE_SMS_ALIYUN, smsAliyunProviderOptions);
+    this.smsOTPProviderManager.registerProvider(PROVIDER_TYPE_SMS_TENCENT, smsTencentProviderOptions);
   }
 }
 

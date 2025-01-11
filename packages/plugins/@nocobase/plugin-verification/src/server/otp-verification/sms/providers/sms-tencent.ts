@@ -8,12 +8,12 @@
  */
 
 import * as tencentcloud from 'tencentcloud-sdk-nodejs';
-import { OTPProvider } from '../Provider';
+import { SMSProvider } from '.';
 
 // 导入对应产品模块的client models。
 const smsClient = tencentcloud.sms.v20210111.Client;
 
-export default class extends OTPProvider {
+export default class extends SMSProvider {
   client: InstanceType<typeof smsClient>;
 
   constructor(options) {

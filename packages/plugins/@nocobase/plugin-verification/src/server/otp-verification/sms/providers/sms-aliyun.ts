@@ -10,9 +10,9 @@
 import DysmsApi, { SendSmsRequest } from '@alicloud/dysmsapi20170525';
 import * as OpenApi from '@alicloud/openapi-client';
 import { RuntimeOptions } from '@alicloud/tea-util';
-import { OTPProvider } from '../Provider';
+import { SMSProvider } from '.';
 
-export default class extends OTPProvider {
+export default class extends SMSProvider {
   client: DysmsApi;
 
   constructor(options: any) {

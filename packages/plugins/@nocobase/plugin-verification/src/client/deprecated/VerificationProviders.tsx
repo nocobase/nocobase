@@ -11,7 +11,7 @@ import { SchemaComponent } from '@nocobase/client';
 import React from 'react';
 import { Card } from 'antd';
 
-import providers from './schemas/providers';
+import providers from '../../schemas/providers';
 import ProviderOptions from './ProviderOptions';
 
 export function VerificationProviders() {

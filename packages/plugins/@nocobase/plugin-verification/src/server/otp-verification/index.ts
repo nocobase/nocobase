@@ -8,19 +8,12 @@
  */
 
 import { Verification } from '../verification';
-import { Registry } from '@nocobase/utils';
-import { OTPProvider } from './Provider';
-import { Model, Op } from '@nocobase/database';
+import { Op } from '@nocobase/database';
 import { CODE_STATUS_UNUSED, CODE_STATUS_USED } from '../constants';
 import pkg from '../../../package.json';
 
 export class OTPVerification extends Verification {
   expiresIn = 120;
-  providers: Registry<typeof OTPProvider> = new Registry();
-
-  async getDefaultProvider(): Promise<{ provider: OTPProvider; model: Model } | null> {
-    return null;
-  }
 
   async verify({ resource, action, userInfo, verifyParams }): Promise<any> {
     // check if code match, then call next

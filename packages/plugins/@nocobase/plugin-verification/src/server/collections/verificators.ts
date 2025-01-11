@@ -7,5 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const CODE_STATUS_UNUSED = 0;
-export const CODE_STATUS_USED = 1;
+import { defineCollection } from '@nocobase/database';
+import verificators from '../../collections/verificators';
+
+export default defineCollection({
+  migrationRules: ['overwrite', 'skip'],
+  ...verificators,
+});

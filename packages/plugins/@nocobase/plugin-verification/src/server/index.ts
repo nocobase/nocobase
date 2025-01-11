@@ -11,6 +11,6 @@
 import { name } from '../../package.json';
 export { default } from './Plugin';
 export * from './constants';
-export { OTPProvider } from './otp-verification/Provider';
+export { SMSOTPVerification } from './otp-verification/sms';
 
 export const namespace = name;

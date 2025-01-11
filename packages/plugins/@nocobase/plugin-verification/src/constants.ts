@@ -8,3 +8,5 @@
  */
 
 export const SMS_OTP_VERIFICATION_TYPE = 'sms-otp';
+export const PROVIDER_TYPE_SMS_ALIYUN = 'sms-aliyun';
+export const PROVIDER_TYPE_SMS_TENCENT = 'sms-tencent';

@@ -36,6 +36,13 @@ export class VerificationManager {
     this.verificationTypes.register(type, options);
   }
 
+  listTypes() {
+    return Array.from(this.verificationTypes.getEntities()).map(([verificationType, options]) => ({
+      name: verificationType,
+      title: options.title,
+    }));
+  }
+
   addSceneRule(rule: SceneRule) {
     this.sceneRules.push(rule);
   }
