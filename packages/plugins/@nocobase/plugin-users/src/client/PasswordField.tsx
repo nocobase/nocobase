@@ -31,8 +31,6 @@ export const PasswordField: React.FC = () => {
   return (
     <Row gutter={10}>
       <Col span={18}>
-        {/* used for preventing autofill */}
-        <input type="password" name="password-hide" autoComplete="new-password" hidden />
         <Password
           checkStrength={true}
           visibilityToggle={{
