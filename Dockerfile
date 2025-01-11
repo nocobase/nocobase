@@ -70,8 +70,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libfreetype6 \
   fontconfig \
   libgssapi-krb5-2 \
-  msttcorefonts \
-  fonts-wqy-zenhei \
+  fonts-liberation \
+  fonts-noto-cjk \
   && rm -rf /var/lib/apt/lists/*
 
 RUN rm -rf /etc/nginx/sites-enabled/default
