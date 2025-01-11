@@ -39,7 +39,7 @@ export const PasswordField: React.FC = () => {
           }}
           value={field.value}
           onChange={(e: any) => field.setValue(e.target.value)}
-          autoComplete="off"
+          autoComplete="new-password"
         />
       </Col>
       <Col span={4}>
