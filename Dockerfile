@@ -70,9 +70,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libfreetype6 \
   fontconfig \
   libgssapi-krb5-2 \
-  ttf-mscorefonts-installer \
-  fonts-wqy-zenhei && \
-  rm -rf /var/lib/apt/lists/*
+  fonts-liberation \
+  fonts-noto-cjk \
+  && rm -rf /var/lib/apt/lists/*
 
 RUN rm -rf /etc/nginx/sites-enabled/default
 COPY ./docker/nocobase/nocobase.conf /etc/nginx/sites-enabled/nocobase.conf
