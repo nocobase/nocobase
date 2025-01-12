@@ -53,7 +53,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
       action: 'list',
       dragSort: false,
       params: {
-        sort: ['createdAt'],
+        sort: ['sort'],
         pageSize: 20,
       },
       treeTable: true,
