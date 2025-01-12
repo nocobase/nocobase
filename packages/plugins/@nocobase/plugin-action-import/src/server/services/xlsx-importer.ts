@@ -66,7 +66,8 @@ export class XlsxImporter extends EventEmitter {
       }
     }
 
-    await this.getData();
+    const data = await this.getData();
+    return data;
   }
 
   async run(options: RunOptions = {}) {
