@@ -11,6 +11,7 @@ import { Registry } from '@nocobase/utils';
 import { Verification, VerificationExtend } from './verification';
 import { Context, Next } from '@nocobase/actions';
 import PluginVerficationServer from './Plugin';
+import { Database } from '@nocobase/database';
 
 export type VerificationTypeOptions = {
   title: string;
@@ -22,15 +23,19 @@ type SceneRule = (scene: string, verificationType: string) => boolean;
 
 export interface ActionOptions {
   manual?: boolean;
-  getVerificationType?(ctx: Context): string | Promise<string>;
   getUserInfoFromCtx?(ctx: Context): any | Promise<any>;
   getVerifyParams?(ctx: Context): any | Promise<any>;
 }
 
 export class VerificationManager {
+  db: Database;
   verificationTypes = new Registry<VerificationTypeOptions>();
   sceneRules = new Array<SceneRule>();
   actions = new Registry<ActionOptions>();
+
+  constructor({ db }) {
+    this.db = db;
+  }
 
   registerVerificationType(type: string, options: VerificationTypeOptions) {
     this.verificationTypes.register(type, options);
@@ -73,12 +78,12 @@ export class VerificationManager {
     return verificationType.verification;
   }
 
-  getVerificationType(ctx: Context, action: ActionOptions) {
-    return action.getVerificationType
-      ? action.getVerificationType(ctx)
-      : ctx.action.params.values?.verificationType ||
-          ctx.action.params.verificationType ||
-          ctx.get('x-verification-type');
+  async getVerificators(verificatorNames: string[]) {
+    return await this.db.getRepository('verificators').find({
+      filter: {
+        name: verificatorNames,
+      },
+    });
   }
 
   // verify manually
@@ -89,7 +94,16 @@ export class VerificationManager {
     if (!action) {
       ctx.throw(400, 'Invalid action');
     }
-    const verificationType = this.getVerificationType(ctx, action);
+    const verificatorName = ctx.action.params.values?.verificator;
+    if (!verificatorName) {
+      ctx.throw(400, 'Invalid verificator');
+    }
+    const verificator = await ctx.db.getRepository('verificators').findOne({
+      filterByTk: verificatorName,
+    });
+    if (!verificator) {
+      ctx.throw(400, 'Invalid verificator');
+    }
     let userInfo: any;
     if (action.getUserInfoFromCtx) {
       userInfo = await action.getUserInfoFromCtx(ctx);
@@ -103,8 +117,8 @@ export class VerificationManager {
     }
     const plugin = ctx.app.pm.get('verification') as PluginVerficationServer;
     const verificationManager = plugin.verificationManager;
-    const Verification = verificationManager.getVerification(verificationType);
-    const verification = new Verification({ ctx });
+    const Verification = verificationManager.getVerification(verificator.verificationType);
+    const verification = new Verification({ ctx, name: verificator.name, options: verificator.options });
     const verifyResult = await verification.verify({
       resource: resourceName,
       action: actionName,

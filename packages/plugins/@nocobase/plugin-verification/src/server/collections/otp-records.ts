@@ -38,15 +38,17 @@ export default defineCollection({
     {
       type: 'unixTimestamp',
       name: 'expiresAt',
+      accuracy: 'millisecond',
     },
     {
       type: 'string',
-      name: 'content',
+      name: 'code',
     },
     {
       type: 'belongsTo',
       name: 'verificator',
       target: 'verificators',
+      targetKey: 'name',
     },
   ],
 });

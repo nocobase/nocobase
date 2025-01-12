@@ -26,7 +26,7 @@ const phoneForm: ISchema = {
         actionType: 'auth:signIn',
         useVerifyActionProps: '{{ useVerifyActionProps }}',
         getUserVerifyInfo: (form) => ({ phone: form.values?.phone }),
-        verificationType: SMS_OTP_VERIFICATION_TYPE,
+        verificator: '{{ verificator }}',
       },
     },
     tip: {
@@ -61,13 +61,13 @@ export const SigninPage = (props: { authenticator: Authenticator }) => {
   const { name, options } = authenticator;
   const autoSignup = !!options?.autoSignup;
   const verficationPlugin = usePlugin('verification') as PluginVerificationClient;
-  const smsVerification = verficationPlugin.verifications.get(SMS_OTP_VERIFICATION_TYPE);
+  const smsVerification = verficationPlugin.verificationManager.getVerification(SMS_OTP_VERIFICATION_TYPE);
   const VerificationForm = smsVerification?.components.VerificationForm;
 
   return (
     <SchemaComponent
       schema={phoneForm}
-      scope={{ useVerifyActionProps: () => useVerifyActionProps(name), autoSignup }}
+      scope={{ useVerifyActionProps: () => useVerifyActionProps(name), autoSignup, verificator: options?.verificator }}
       components={{ VerificationForm }}
     />
   );

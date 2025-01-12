@@ -10,7 +10,6 @@
 import { Plugin } from '@nocobase/server';
 import { tval } from '@nocobase/utils';
 import { namespace } from '.';
-import initActions from './actions';
 import { PROVIDER_TYPE_SMS_ALIYUN, PROVIDER_TYPE_SMS_TENCENT } from '../constants';
 import { VerificationManager } from './verification-manager';
 import { SMSOTPProviderManager, SMSOTPVerification } from './otp-verification/sms';
@@ -19,23 +18,23 @@ import verificatorsActions from './actions/verificators';
 import smsAliyun from './otp-verification/sms/providers/sms-aliyun';
 import smsTencent from './otp-verification/sms/providers/sms-tencent';
 import smsOTPProviders from './otp-verification/sms/resource/sms-otp-providers';
+import smsOTP from './otp-verification/sms/resource/sms-otp';
 
 export default class PluginVerficationServer extends Plugin {
-  verificationManager = new VerificationManager();
+  verificationManager = new VerificationManager({ db: this.db });
   smsOTPProviderManager = new SMSOTPProviderManager();
 
   async load() {
-    initActions(this);
-
     // add middleware to action
     this.app.resourceManager.use(this.verificationManager.middleware());
     this.app.resourceManager.define(smsOTPProviders);
+    this.app.resourceManager.define(smsOTP);
 
     Object.entries(verificatorsActions).forEach(([action, handler]) =>
       this.app.resourceManager.registerActionHandler(`verificators:${action}`, handler),
     );
 
-    this.app.acl.allow('verifications', 'create', 'public');
+    this.app.acl.allow('smsOTP', 'create', 'public');
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.verificators`,
       actions: ['verificators:*', 'smsOTPProviders:*'],

@@ -8,7 +8,6 @@
  */
 
 import { Verification } from '../verification';
-import { Op } from '@nocobase/database';
 import { CODE_STATUS_UNUSED, CODE_STATUS_USED } from '../constants';
 import pkg from '../../../package.json';
 
@@ -19,17 +18,18 @@ export class OTPVerification extends Verification {
     // check if code match, then call next
     // find the code based on action params
     const receiver = await this.getUserVerificationInfo(userInfo);
-    const content = verifyParams.code;
-    const VerificationRepo = this.ctx.db.getRepository('verifications');
+    const code = verifyParams.code;
+    const VerificationRepo = this.ctx.db.getRepository('otpRecords');
     const item = await VerificationRepo.findOne({
       filter: {
         receiver,
-        type: `${resource}:${action}`,
-        content,
+        action: `${resource}:${action}`,
+        code,
         expiresAt: {
-          [Op.gt]: new Date(),
+          $dateAfter: new Date(),
         },
         status: CODE_STATUS_UNUSED,
+        verificatorName: this.name,
       },
     });
 

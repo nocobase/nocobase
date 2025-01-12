@@ -32,7 +32,7 @@ export class SMSAuth extends BaseAuth {
     let user: Model;
     ctx.action.mergeParams({
       values: {
-        verificationType: 'sms-otp',
+        verificator: this.options.public?.verificator,
       },
     });
     await verificationPlugin.verificationManager.verify(ctx, async () => {

@@ -11,7 +11,7 @@ import { Registry } from '@nocobase/utils/client';
 import { ComponentType } from 'react';
 
 export type VerificationFormProps = {
-  verificationType: string;
+  verificator: string;
   actionType: string;
   publicInfo: any;
   getUserVerifyInfo: (form: any) => Record<string, any>;

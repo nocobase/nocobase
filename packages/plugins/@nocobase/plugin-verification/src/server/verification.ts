@@ -18,9 +18,13 @@ export interface IVerification {
 }
 
 export abstract class Verification implements IVerification {
+  name: string;
   protected ctx: Context;
-  constructor({ ctx }) {
+  protected options: Record<string, any>;
+  constructor({ ctx, name, options }) {
     this.ctx = ctx;
+    this.name = name;
+    this.options = options;
   }
   abstract verify({ resource, action, userInfo, verifyParams }): Promise<any>;
   async postAction(options: { verifyResult: any }): Promise<any> {}
@@ -35,4 +39,4 @@ export abstract class Verification implements IVerification {
   }
 }
 
-export type VerificationExtend<T extends Verification> = new ({ ctx }) => T;
+export type VerificationExtend<T extends Verification> = new ({ ctx, name, options }) => T;

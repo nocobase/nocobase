@@ -22,17 +22,17 @@ export const Options = () => {
           sms: {
             type: 'void',
             properties: {
-              verificator: {
-                type: 'string',
-                'x-component': 'VerificatorSelect',
-                'x-component-props': {
-                  title: '{{t("Verificator")}}',
-                  scene: 'auth-sms',
-                },
-              },
               public: {
                 type: 'object',
                 properties: {
+                  verificator: {
+                    type: 'string',
+                    'x-component': 'VerificatorSelect',
+                    'x-component-props': {
+                      title: '{{t("Verificator")}}',
+                      scene: 'auth-sms',
+                    },
+                  },
                   autoSignup: {
                     'x-decorator': 'FormItem',
                     type: 'boolean',

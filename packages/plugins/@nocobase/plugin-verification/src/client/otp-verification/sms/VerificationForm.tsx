@@ -39,7 +39,6 @@ const schema: ISchema = {
       'x-use-component-props': 'useVerificationCodeProps',
       'x-component-props': {
         targetFieldName: 'phone',
-        verificationType: SMS_OTP_VERIFICATION_TYPE,
       },
       'x-decorator': 'FormItem',
     },
@@ -58,7 +57,7 @@ const schema: ISchema = {
 };
 
 export const VerificationForm = (props: VerificationFormProps) => {
-  const { verificationType, actionType, publicInfo, getUserVerifyInfo, useVerifyActionProps } = props;
+  const { verificator, actionType, publicInfo, getUserVerifyInfo, useVerifyActionProps } = props;
   return (
     <SchemaComponent
       schema={schema}
@@ -67,7 +66,7 @@ export const VerificationForm = (props: VerificationFormProps) => {
         useVerificationCodeProps: () => {
           return {
             actionType,
-            verificationType,
+            verificator,
             getUserVerifyInfo,
           };
         },

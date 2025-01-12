@@ -10,6 +10,7 @@
 import { Registry } from '@nocobase/utils';
 import { OTPVerification } from '..';
 import { SMSProvider } from './providers';
+import PluginVerficationServer from '../../Plugin';
 
 type SMSProviderOptions = {
   title: string;
@@ -32,30 +33,22 @@ export class SMSOTPProviderManager {
 }
 
 export class SMSOTPVerification extends OTPVerification {
-  constructor({ ctx }) {
-    super({ ctx });
-  }
-
-  async getDefaultProvider() {
-    return null;
-    const repo = this.ctx.db.getRepository('verifications_providers');
-    const provider = await repo.findOne({
-      filter: {
-        default: true,
-      },
-    });
-    if (!provider) {
+  async getProvider() {
+    const { provider: providerType, settings } = this.options;
+    if (!providerType) {
       return null;
     }
-    const Provider = this.providers.get(provider.type);
+    const plugin = this.ctx.app.pm.get('verification') as PluginVerficationServer;
+    const providerOptions = plugin.smsOTPProviderManager.providers.get(providerType);
+    if (!providerOptions) {
+      return null;
+    }
+    const Provider = providerOptions.provider;
     if (!Provider) {
       return null;
     }
-    const options = this.ctx.app.environment.renderJsonTemplate(provider.options);
-    return {
-      provider: new Provider(options),
-      model: provider,
-    };
+    const options = this.ctx.app.environment.renderJsonTemplate(settings);
+    return new Provider(options);
   }
 
   async getUserVerificationInfo(userInfo?: { phone?: string }) {
