@@ -48,6 +48,7 @@ export const createActionSchema = {
               type: 'string',
               'x-decorator': 'FormItem',
               'x-component': 'CollectionField',
+              'x-validator': 'uid',
               description:
                 "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
             },
