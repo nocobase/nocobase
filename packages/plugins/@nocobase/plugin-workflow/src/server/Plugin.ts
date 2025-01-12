@@ -388,7 +388,7 @@ export default class PluginWorkflowServer extends Plugin {
       }
     });
     if (duplicated) {
-      logger.warn(`event of workflow ${workflow.id} is duplicated, event will be ignored`);
+      logger.warn(`event of workflow ${workflow.id} is duplicated (${options.eventKey}), event will be ignored`);
       return;
     }
     // `null` means not to trigger
