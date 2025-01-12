@@ -33,6 +33,12 @@ export const editActionSchema = {
               'x-decorator': 'FormItem',
               'x-component': 'CollectionField',
             },
+            key: {
+              type: 'string',
+              'x-decorator': 'FormItem',
+              'x-component': 'CollectionField',
+              'x-disabled': true,
+            },
             description: {
               type: 'string',
               'x-decorator': 'FormItem',
