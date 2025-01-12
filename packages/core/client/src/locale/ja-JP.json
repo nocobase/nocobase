@@ -1035,5 +1035,7 @@
   "Are you sure you want to hide these routes in menu?": "これらのルートをメニューに非表示にしますか？",
   "Are you sure you want to show these routes in menu?": "これらのルートをメニューに表示しますか？",
   "Are you sure you want to hide this menu?": "このメニューを非表示にしますか？",
-  "After hiding, this menu will no longer appear in the menu bar. To show it again, you need to go to the route management page to configure it.": "非表示にすると、このメニューはメニューバーに表示されなくなります。再表示するには、ルート管理ページで設定する必要があります。"
+  "After hiding, this menu will no longer appear in the menu bar. To show it again, you need to go to the route management page to configure it.": "非表示にすると、このメニューはメニューバーに表示されなくなります。再表示するには、ルート管理ページで設定する必要があります。",
+  "If selected, the page will display Tab pages.": "選択されている場合、ページはタブページを表示します。",
+  "If selected, the route will be displayed in the menu.": "選択されている場合、ルートはメニューに表示されます。"
 }

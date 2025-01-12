@@ -817,5 +817,7 @@
   "Are you sure you want to hide these routes in menu?": "Êtes-vous sûr de vouloir masquer ces routes dans le menu ?",
   "Are you sure you want to show these routes in menu?": "Êtes-vous sûr de vouloir afficher ces routes dans le menu ?",
   "Are you sure you want to hide this menu?": "Êtes-vous sûr de vouloir masquer ce menu ?",
-  "After hiding, this menu will no longer appear in the menu bar. To show it again, you need to go to the route management page to configure it.": "Après avoir masqué, ce menu ne sera plus affiché dans la barre de menu. Pour le réafficher, vous devez aller à la page de gestion des routes pour le configurer."
+  "After hiding, this menu will no longer appear in the menu bar. To show it again, you need to go to the route management page to configure it.": "Après avoir masqué, ce menu ne sera plus affiché dans la barre de menu. Pour le réafficher, vous devez aller à la page de gestion des routes pour le configurer.",
+  "If selected, the page will display Tab pages.": "Si sélectionné, la page affichera des onglets.",
+  "If selected, the route will be displayed in the menu.": "Si sélectionné, la route sera affichée dans le menu."
 }

@@ -55,6 +55,9 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
       params: {
         sort: ['sort'],
         pageSize: 20,
+        filter: {
+          'hidden.$ne': true,
+        },
       },
       treeTable: true,
     },
@@ -329,6 +332,9 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                         type: 'boolean',
                         title: '{{t("Show in menu")}}',
                         'x-decorator': 'FormItem',
+                        'x-decorator-props': {
+                          tooltip: '{{t(`If selected, the route will be displayed in the menu.`)}}',
+                        },
                         'x-component': (props) => {
                           const [checked, setChecked] = useState(!props.value);
                           const onChange = () => {
@@ -336,6 +342,26 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                             props.onChange?.(checked);
                           };
                           return <Checkbox checked={checked} onChange={onChange} />;
+                        },
+                        default: false,
+                      },
+                      enableTabs: {
+                        type: 'boolean',
+                        title: '{{t("Enable page tabs")}}',
+                        'x-decorator': 'FormItem',
+                        'x-decorator-props': {
+                          tooltip: '{{t(`If selected, the page will display Tab pages.`)}}',
+                        },
+                        'x-component': (props) => {
+                          return <Checkbox checked={props.value} onChange={props.onChange} />;
+                        },
+                        'x-reactions': {
+                          dependencies: ['type'],
+                          fulfill: {
+                            state: {
+                              hidden: '{{$deps[0] !== "page"}}',
+                            },
+                          },
                         },
                         default: false,
                       },
@@ -750,6 +776,9 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                             type: 'boolean',
                             title: '{{t("Show in menu")}}',
                             'x-decorator': 'FormItem',
+                            'x-decorator-props': {
+                              tooltip: '{{t(`If selected, the route will be displayed in the menu.`)}}',
+                            },
                             'x-component': (props) => {
                               const [checked, setChecked] = useState(!props.value);
                               const onChange = () => {
@@ -757,6 +786,26 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                 props.onChange?.(checked);
                               };
                               return <Checkbox checked={checked} onChange={onChange} />;
+                            },
+                            default: false,
+                          },
+                          enableTabs: {
+                            type: 'boolean',
+                            title: '{{t("Enable page tabs")}}',
+                            'x-decorator': 'FormItem',
+                            'x-decorator-props': {
+                              tooltip: '{{t(`If selected, the page will display Tab pages.`)}}',
+                            },
+                            'x-component': (props) => {
+                              return <Checkbox checked={props.value} onChange={props.onChange} />;
+                            },
+                            'x-reactions': {
+                              dependencies: ['type'],
+                              fulfill: {
+                                state: {
+                                  hidden: '{{$deps[0] !== "page"}}',
+                                },
+                              },
                             },
                             default: false,
                           },
@@ -1016,6 +1065,9 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                             type: 'boolean',
                             title: '{{t("Show in menu")}}',
                             'x-decorator': 'FormItem',
+                            'x-decorator-props': {
+                              tooltip: '{{t(`If selected, the route will be displayed in the menu.`)}}',
+                            },
                             'x-component': (props) => {
                               const [checked, setChecked] = useState(!props.value);
                               const onChange = () => {
@@ -1023,6 +1075,26 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                 props.onChange?.(checked);
                               };
                               return <Checkbox checked={checked} onChange={onChange} />;
+                            },
+                            default: false,
+                          },
+                          enableTabs: {
+                            type: 'boolean',
+                            title: '{{t("Enable page tabs")}}',
+                            'x-decorator': 'FormItem',
+                            'x-decorator-props': {
+                              tooltip: '{{t(`If selected, the page will display Tab pages.`)}}',
+                            },
+                            'x-component': (props) => {
+                              return <Checkbox checked={props.value} onChange={props.onChange} />;
+                            },
+                            'x-reactions': {
+                              dependencies: ['type'],
+                              fulfill: {
+                                state: {
+                                  hidden: '{{$deps[0] !== "page"}}',
+                                },
+                              },
                             },
                             default: false,
                           },

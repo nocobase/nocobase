@@ -342,6 +342,26 @@ export default {
         title: '{{t("Hide in menu")}}',
       },
     },
+    {
+      type: 'boolean',
+      name: 'enableTabs',
+      interface: 'checkbox',
+      uiSchema: {
+        type: 'boolean',
+        'x-component': 'Checkbox',
+        title: '{{t("Enable tabs")}}',
+      },
+    },
+    {
+      type: 'boolean',
+      name: 'hidden',
+      interface: 'checkbox',
+      uiSchema: {
+        type: 'boolean',
+        'x-component': 'Checkbox',
+        title: '{{t("Hidden")}}',
+      },
+    },
   ],
   category: [],
   logging: true,

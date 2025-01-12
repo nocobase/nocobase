@@ -129,6 +129,21 @@ export class PluginClientServer extends Plugin {
     this.registerActionHandlers();
     this.bindNewMenuToRoles();
     this.setACL();
+
+    this.app.db.on('desktopRoutes.afterUpdate', async (instance: Model, { transaction }) => {
+      if (instance.changed('enableTabs')) {
+        const repository = this.app.db.getRepository('desktopRoutes');
+        await repository.update({
+          filter: {
+            parentId: instance.id,
+          },
+          values: {
+            hidden: !instance.enableTabs,
+          },
+          transaction,
+        });
+      }
+    });
   }
 
   setACL() {

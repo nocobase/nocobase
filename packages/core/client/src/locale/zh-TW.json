@@ -908,6 +908,8 @@
   "Are you sure you want to hide these routes in menu?": "你確定要在菜單中隱藏這些路由嗎？",
   "Are you sure you want to show these routes in menu?": "你確定要在菜單中顯示這些路由嗎？",
   "Are you sure you want to hide this menu?": "你確定要隱藏這個菜單嗎？",
-  "After hiding, this menu will no longer appear in the menu bar. To show it again, you need to go to the route management page to configure it.": "隱藏後，這個菜單將不再出現在菜單欄中。要再次顯示它，你需要到路由管理頁面進行設置。"
+  "After hiding, this menu will no longer appear in the menu bar. To show it again, you need to go to the route management page to configure it.": "隱藏後，這個菜單將不再出現在菜單欄中。要再次顯示它，你需要到路由管理頁面進行設置。",
+  "If selected, the page will display Tab pages.": "如果選中，該頁面將顯示標籤頁。",
+  "If selected, the route will be displayed in the menu.": "如果選中，該路由將顯示在菜單中。"
 }
 

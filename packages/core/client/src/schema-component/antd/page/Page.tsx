@@ -55,11 +55,10 @@ const InternalPage = React.memo((props: PageProps) => {
   const fieldSchema = useFieldSchema();
   const currentTabUid = props.currentTabUid;
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
-  const enablePageTabs = fieldSchema['x-component-props']?.enablePageTabs;
   const searchParams = useCurrentSearchParams();
   const loading = false;
   const currentRoute = useCurrentRoute();
-
+  const enablePageTabs = currentRoute.enableTabs;
   const defaultActiveKey = useMemo(
     () => getDefaultActiveKey(currentRoute?.children?.[0]?.schemaUid, fieldSchema),
     [currentRoute?.children, fieldSchema],
@@ -316,7 +315,7 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
     );
   }, [dn, getAriaLabel, options?.components, options?.scope, t, theme]);
 
-  const enablePageTabs = fieldSchema['x-component-props']?.enablePageTabs;
+  const enablePageTabs = currentRoute.enableTabs;
 
   // 这里的样式是为了保证页面 tabs 标签下面的分割线和页面内容对齐（页面内边距可以通过主题编辑器调节）
   const tabBarStyle = useMemo(
@@ -387,7 +386,8 @@ const NocoBasePageHeader = React.memo(({ activeKey, className }: { activeKey: st
   const [pageTitle, setPageTitle] = useState(() => t(fieldSchema.title));
 
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
-  const enablePageTabs = fieldSchema['x-component-props']?.enablePageTabs;
+  const currentRoute = useCurrentRoute();
+  const enablePageTabs = currentRoute.enableTabs;
   const hidePageTitle = fieldSchema['x-component-props']?.hidePageTitle;
 
   useEffect(() => {

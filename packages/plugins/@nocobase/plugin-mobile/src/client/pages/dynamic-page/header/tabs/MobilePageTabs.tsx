@@ -20,7 +20,9 @@ import { useStyles } from './styles';
 
 export const MobilePageTabs: FC = () => {
   const { activeTabBarItem, resource, refresh } = useMobileRoutes();
-  const { displayTabs = false } = useMobilePage();
+  const { displayTabs: _displayTabs } = useMobilePage();
+  const displayTabs = activeTabBarItem?.enableTabs === undefined ? _displayTabs : activeTabBarItem.enableTabs;
+
   const compile = useCompile();
 
   const navigate = useNavigate();

@@ -26,6 +26,8 @@ export interface MobileRouteItem {
   parentId?: number;
   children?: MobileRouteItem[];
   hideInMenu?: boolean;
+  enableTabs?: boolean;
+  hidden?: boolean;
 }
 
 export const MobileRoutesContext = createContext<MobileRoutesContextValue>(null);
