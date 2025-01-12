@@ -41,7 +41,7 @@ import { SchemaComponent, SchemaComponentOptions } from '../../core';
 import { useDesignable } from '../../hooks';
 import { useToken } from '../__builtins__';
 import { ErrorFallback } from '../error-fallback';
-import { useNocoBaseRoutes } from '../menu/Menu';
+import { useMenuDragEnd, useNocoBaseRoutes } from '../menu/Menu';
 import { useStyles } from './Page.style';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 import { PopupRouteContextResetter } from './PopupRouteContextResetter';
@@ -364,8 +364,10 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
     currentRoute,
   ]);
 
+  const { onDragEnd } = useMenuDragEnd();
+
   return enablePageTabs ? (
-    <DndContext>
+    <DndContext onDragEnd={onDragEnd}>
       <Tabs
         size={'small'}
         activeKey={activeKey}

@@ -508,7 +508,7 @@ const useSideMenuRef = () => {
 const MenuItemDesignerContext = createContext(null);
 MenuItemDesignerContext.displayName = 'MenuItemDesignerContext';
 
-const useMenuDragEnd = () => {
+export const useMenuDragEnd = () => {
   const { moveRoute } = useNocoBaseRoutes();
 
   const onDragEnd = useCallback(
