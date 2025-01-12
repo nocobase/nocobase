@@ -285,6 +285,7 @@ export default defineCollection({
       collectionName: 'mobileRoutes',
       parentKey: null,
       reverseKey: null,
+      scopeKey: 'parentId',
       uiSchema: {
         type: 'number',
         'x-component': 'InputNumber',

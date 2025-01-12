@@ -313,6 +313,7 @@ export default {
       collectionName: 'desktopRoutes',
       parentKey: null,
       reverseKey: null,
+      scopeKey: 'parentId',
       uiSchema: {
         type: 'number',
         'x-component': 'InputNumber',
