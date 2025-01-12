@@ -143,7 +143,8 @@ export class PluginBlockTemplateClient extends Plugin {
             url: `/uiSchemas:getJsonSchema/${uid}`,
           })
           .then((res) => {
-            this.setTemplateCache(res?.data?.data);
+            const templateSchema = res?.data?.data || {};
+            this.setTemplateCache({ ...templateSchema, 'x-uid': uid });
             return this.templateschemacache[uid];
           })
           .catch((error) => {
@@ -195,6 +196,7 @@ export class PluginBlockTemplateClient extends Plugin {
       }
     };
     clearTemplateBlocks(templateSchema);
+    delete this.templateschemacache[templateRootUid];
   };
 
   #saveTemplateBlocks = (schema: ISchema) => {

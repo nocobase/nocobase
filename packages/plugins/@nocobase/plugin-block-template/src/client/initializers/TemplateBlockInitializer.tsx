@@ -257,11 +257,17 @@ export const TemplateBlockInitializer = () => {
       title: string;
       description: string;
       uid: string;
+      configured: boolean;
     }[];
   }>(
     {
       url: 'blockTemplates:list',
       method: 'get',
+      params: {
+        filter: {
+          configured: true,
+        },
+      },
     },
     {
       uid: 'blockTemplates',

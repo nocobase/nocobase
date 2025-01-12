@@ -33,5 +33,10 @@ export default defineCollection({
       target: 'uiSchemas',
       foreignKey: 'uid',
     },
+    {
+      type: 'boolean',
+      name: 'configured',
+      defaultValue: false,
+    },
   ],
 });

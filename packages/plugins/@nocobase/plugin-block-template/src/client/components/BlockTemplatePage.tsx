@@ -14,13 +14,14 @@ import { useParams } from 'react-router';
 import { Link } from 'react-router-dom';
 import { Breadcrumb, Spin, theme } from 'antd';
 import PluginBlockTemplateClient from '..';
+import { BlockTemplateInfoContext } from './BlockTemplateInfoContext';
 
 export const BlockTemplatePage = () => {
   const params = useParams();
   const { token } = theme.useToken();
   const t = useT();
   const plugin = usePlugin(PluginBlockTemplateClient);
-  const { data, loading, refresh } = useRequest<any>({
+  const { data, loading } = useRequest<any>({
     url: `blockTemplates:get/${params.key}`,
   });
   const { title } = data?.data || {};
@@ -75,7 +76,9 @@ export const BlockTemplatePage = () => {
         />
       </div>
       <div style={{ marginTop: token.marginXL }}>
-        <RemoteSchemaComponent onSuccess={refreshTemplateSchemaCache} onlyRenderProperties={true} uid={schemaUid} />
+        <BlockTemplateInfoContext.Provider value={data?.data}>
+          <RemoteSchemaComponent onSuccess={refreshTemplateSchemaCache} onlyRenderProperties={true} uid={schemaUid} />
+        </BlockTemplateInfoContext.Provider>
       </div>
     </div>
   );
