@@ -45,7 +45,7 @@ export const useBulkDestroyAction = () => {
 
       // Clear template cache
       for (const key in plugin.templateschemacache) {
-        delete plugin.templateschemacache[key];
+        plugin.clearTemplateCache(key);
       }
       plugin.loadingPromises.clear();
 

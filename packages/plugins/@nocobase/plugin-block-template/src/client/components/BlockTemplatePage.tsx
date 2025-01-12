@@ -46,7 +46,7 @@ export const BlockTemplatePage = () => {
     };
     const uids = getUids(data);
     uids.forEach((uid) => {
-      delete plugin.templateschemacache[uid];
+      plugin.clearTemplateCache(uid);
     });
     plugin.loadingPromises.clear();
   };

@@ -223,9 +223,10 @@ function cleanSchema(schema?: any) {
 
 export function addToolbarClass(schema) {
   if (schema['x-toolbar'] && schema['x-template-uid']) {
+    const className = `${schema['x-toolbar-props']?.toolbarClassName || ''}`;
     _.merge(schema, {
       'x-toolbar-props': {
-        toolbarClassName: `${schema['x-toolbar-props']?.toolbarClassName || ''} nb-in-template`,
+        toolbarClassName: `${className.includes('nb-in-template') ? className : `${className} nb-in-template`}`,
       },
     });
   }
@@ -381,7 +382,7 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
           }
 
           const keys = _.union(targetKeys, sourceKeys);
-          const removedKeys = source['x-removed-properties'] || [];
+
           // Find keys that exist in targetKeys but not in sourceKeys, indicating new fields
           const newKeys = _.difference(targetKeys, sourceKeys);
           if (newKeys.length > 0) {
@@ -403,9 +404,6 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
           const properties = {};
           for (let i = 0; i < keys.length; i++) {
             const k = keys[i];
-            if (removedKeys.includes(k)) {
-              continue;
-            }
             const sourceProperty = sourceValue?.[k] || {};
             if (_.get(objectValue, [k, 'properties'])) {
               sourceProperty['properties'] = sourceProperty['properties'] || {};

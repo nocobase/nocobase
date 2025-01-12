@@ -20,39 +20,14 @@ import {
  * Register template block related interceptors for axios
  * Handles schema removal and patching operations for template blocks
  * @param apiClient The API client instance
- * @param templateBlocks The template blocks cache
+ * @param pageBlocks The template blocks cache
  */
-export function registerTemplateBlockInterceptors(apiClient: any, templateBlocks: Record<string, any>) {
+export function registerTemplateBlockInterceptors(apiClient: any, pageBlocks: Record<string, any>) {
   apiClient.axios.interceptors.request.use(async (config: AxiosRequestConfig) => {
-    // Handle schema removal
-    if (config.url?.includes('uiSchemas:remove')) {
-      const uidWithQuery = config.url.split('/').pop();
-      const uid = uidWithQuery?.split('?')[0];
-      const query = uidWithQuery?.split('?')[1];
-      const skipRemovePatch = query?.includes('resettemplate=true');
-      const currentSchema = findSchemaCache(templateBlocks, uid);
-      const ret = findParentSchemaByUid(currentSchema, uid);
-      if (ret && ret.parent && !skipRemovePatch) {
-        const { parent } = ret;
-        if (!parent['x-removed-properties']) {
-          parent['x-removed-properties'] = [];
-        }
-        parent['x-removed-properties'].push(ret.schema?.['x-removed-target-key'] || ret.key);
-        await apiClient.request({
-          url: `/uiSchemas:patch`,
-          method: 'post',
-          data: {
-            'x-uid': parent['x-uid'],
-            'x-removed-properties': parent['x-removed-properties'],
-          },
-        });
-      }
-    }
-
     // Handle schema patching
     if (config.url?.includes('uiSchemas:patch')) {
       const xUid = config.data?.['x-uid'];
-      const currentSchema = findSchemaCache(templateBlocks, xUid);
+      const currentSchema = findSchemaCache(pageBlocks, xUid);
       const virtualSchema = findFirstVirtualSchema(currentSchema, xUid);
       if (virtualSchema) {
         setToTrueSchema(virtualSchema.schema);
@@ -71,7 +46,7 @@ export function registerTemplateBlockInterceptors(apiClient: any, templateBlocks
     if (config.url?.includes('uiSchemas:batchPatch')) {
       const schemas = config.data;
       for (const schema of schemas) {
-        const currentSchema = findSchemaCache(templateBlocks, schema['x-uid']);
+        const currentSchema = findSchemaCache(pageBlocks, schema['x-uid']);
         const virtualSchema = findFirstVirtualSchema(currentSchema, schema['x-uid']);
         if (virtualSchema) {
           setToTrueSchema(virtualSchema.schema);
@@ -89,7 +64,8 @@ export function registerTemplateBlockInterceptors(apiClient: any, templateBlocks
     if (config.url?.includes('uiSchemas:insertAdjacent')) {
       const uidWithQuery = config.url.split('/').pop();
       const uid = uidWithQuery?.split('?')[0];
-      const currentSchema = findSchemaCache(templateBlocks, uid);
+      const schemaId = config.data?.schema['x-uid'] || config.data?.schema;
+      const currentSchema = findSchemaCache(pageBlocks, uid);
       const virtualSchema = findFirstVirtualSchema(currentSchema, uid);
       if (virtualSchema) {
         setToTrueSchema(virtualSchema.schema);
@@ -98,6 +74,21 @@ export function registerTemplateBlockInterceptors(apiClient: any, templateBlocks
           method: 'post',
           data: {
             schema: convertToCreateSchema(virtualSchema.schema),
+          },
+        });
+      }
+      const cs = findSchemaCache(pageBlocks, schemaId);
+      const vs = findFirstVirtualSchema(cs, schemaId);
+      if (vs) {
+        setToTrueSchema(vs.schema);
+        if (config.data?.wrap) {
+          setToTrueSchema(config.data.wrap);
+        }
+        await apiClient.request({
+          url: `/uiSchemas:insertAdjacent/${vs.insertTarget}?position=${vs.insertPosition}`,
+          method: 'post',
+          data: {
+            schema: convertToCreateSchema(vs.schema),
           },
         });
       }

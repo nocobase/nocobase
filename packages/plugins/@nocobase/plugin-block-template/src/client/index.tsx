@@ -21,9 +21,9 @@ import { useIsInTemplate } from './hooks/useIsInTemplate';
 
 export class PluginBlockTemplateClient extends Plugin {
   loadingPromises = new Map();
+  templateBlocks = new Map();
   templateschemacache = {};
-  // #schemas = {};
-  templateBlocks = {};
+  pageBlocks = {};
 
   async afterAdd() {
     // await this.app.pm.add()
@@ -53,14 +53,14 @@ export class PluginBlockTemplateClient extends Plugin {
         }
 
         const sc = getFullSchema(s, this.templateschemacache);
-        this.templateBlocks[sc['x-uid']] = sc;
+        this.pageBlocks[sc['x-uid']] = sc;
         return sc;
       }
       return s;
     });
 
     // Register axios interceptors for template block operations
-    registerTemplateBlockInterceptors(this.app.apiClient, this.templateBlocks);
+    registerTemplateBlockInterceptors(this.app.apiClient, this.pageBlocks);
 
     this.app.addComponents({ TemplateGridDecorator, TemplateBlockInitializer: TemplateBlockInitializer as any });
 
@@ -133,7 +133,7 @@ export class PluginBlockTemplateClient extends Plugin {
     });
   }
 
-  #fetchAllTemplates(templateUids, schema) {
+  #fetchAllTemplates(templateUids: Set<string>, schema: ISchema) {
     const promises = [];
 
     for (const uid of templateUids) {
@@ -143,7 +143,7 @@ export class PluginBlockTemplateClient extends Plugin {
             url: `/uiSchemas:getJsonSchema/${uid}`,
           })
           .then((res) => {
-            this.templateschemacache[uid] = res?.data?.data;
+            this.setTemplateCache(res?.data?.data);
             return this.templateschemacache[uid];
           })
           .catch((error) => {
@@ -175,7 +175,39 @@ export class PluginBlockTemplateClient extends Plugin {
     return null;
   }
 
-  #loadSchemaSettings() {
+  setTemplateCache = (schema?: ISchema) => {
+    if (!schema) {
+      return;
+    }
+    this.templateschemacache[schema['x-uid']] = schema;
+    this.#saveTemplateBlocks(schema);
+  };
+
+  clearTemplateCache = (templateRootUid: string) => {
+    const templateSchema = this.templateschemacache[templateRootUid];
+    const clearTemplateBlocks = (schema?: ISchema) => {
+      if (!schema) {
+        return;
+      }
+      this.templateBlocks.delete(schema['x-uid']);
+      for (const s of Object.values(schema['properties'] || {})) {
+        clearTemplateBlocks(s);
+      }
+    };
+    clearTemplateBlocks(templateSchema);
+  };
+
+  #saveTemplateBlocks = (schema: ISchema) => {
+    if (!schema) {
+      return;
+    }
+    this.templateBlocks.set(schema['x-uid'], schema);
+    for (const s of Object.values(schema['properties'] || {})) {
+      this.#saveTemplateBlocks(s);
+    }
+  };
+
+  #loadSchemaSettings = () => {
     // Check if this.app.loading is true every 1s
     // If true, wait 1s and check again
     // If false, stop checking and add template settings
@@ -225,7 +257,7 @@ export class PluginBlockTemplateClient extends Plugin {
         }
       }
     }, 1000);
-  }
+  };
 }
 
 export default PluginBlockTemplateClient;

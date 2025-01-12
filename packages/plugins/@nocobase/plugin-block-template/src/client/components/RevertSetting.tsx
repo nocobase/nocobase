@@ -77,7 +77,7 @@ export const RevertSetting = () => {
             const rootSchema = findParentRootTemplateSchema(fieldSchema);
             const isRoot = rootSchema === fieldSchema;
             if (isRoot) {
-              plugin.templateschemacache[templateSchema['x-uid']] = templateSchema;
+              plugin.setTemplateCache(templateSchema);
             }
             const newSchema = convertTplBlock(
               templateSchema,

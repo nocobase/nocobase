@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaInitializerItem, useRequest, useAPIClient, useDesignable, usePlugin } from '@nocobase/client';
+import { SchemaInitializerItem, useRequest, useAPIClient, useDesignable, usePlugin, ISchema } from '@nocobase/client';
 import React, { useState, useRef, useEffect } from 'react';
 import { CopyOutlined, LoadingOutlined } from '@ant-design/icons';
 import { Input, Divider, Empty } from 'antd';
@@ -127,8 +127,8 @@ function convertTemplateToBlock(data, templateTitle?: string) {
   return schemas;
 }
 
-function saveSchemasToCache(schemas, template, templateschemacache) {
-  const findTemplateSchema = (uid, tpl) => {
+function saveSchemasToCache(schemas: ISchema[], template: ISchema, setTemplateCache: (schema: ISchema) => void) {
+  const findTemplateSchema = (uid: string, tpl: ISchema) => {
     if (tpl['x-uid'] === uid) {
       return tpl;
     }
@@ -141,9 +141,9 @@ function saveSchemasToCache(schemas, template, templateschemacache) {
       }
     }
   };
-  const saveSchemaToCache = (schema) => {
+  const saveSchemaToCache = (schema: ISchema) => {
     if (schema['x-template-root-uid']) {
-      templateschemacache[schema['x-template-root-uid']] = findTemplateSchema(schema['x-template-root-uid'], template);
+      setTemplateCache(findTemplateSchema(schema['x-template-root-uid'], template));
     } else {
       if (schema.properties) {
         for (const key in schema.properties) {
@@ -241,7 +241,7 @@ export const TemplateBlockInitializer = () => {
 
     const template = data?.data;
     const schemas = convertTemplateToBlock(template, item.label);
-    saveSchemasToCache(schemas, template, plugin.templateschemacache);
+    saveSchemasToCache(schemas, template, plugin.setTemplateCache);
     correctIdReferences(schemas);
     for (const schema of schemas) {
       await new Promise((resolve) => {

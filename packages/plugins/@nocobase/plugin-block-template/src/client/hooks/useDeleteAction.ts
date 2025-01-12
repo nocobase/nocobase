@@ -41,7 +41,7 @@ export function useDeleteAction() {
         removeSchema: !keepBlocks,
       });
       for (const key in plugin.templateschemacache) {
-        delete plugin.templateschemacache[key];
+        plugin.clearTemplateCache(key);
       }
       plugin.loadingPromises.clear();
 
