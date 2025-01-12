@@ -72,7 +72,7 @@ test.describe('page schema settings', () => {
 
 test.describe('tabs schema settings', () => {
   async function showSettingsOfTab(page: Page) {
-    await page.getByText('Tab', { exact: true }).hover();
+    await page.getByText('Unnamed', { exact: true }).hover();
     await page.getByRole('tab').getByLabel('designer-schema-settings-Page').hover();
   }
 
@@ -107,6 +107,6 @@ test.describe('tabs schema settings', () => {
     await page.getByRole('menuitem', { name: 'Delete', exact: true }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
-    await expect(page.getByText('Tab', { exact: true })).toBeHidden();
+    await expect(page.getByText('Unnamed', { exact: true })).toBeHidden();
   });
 });
