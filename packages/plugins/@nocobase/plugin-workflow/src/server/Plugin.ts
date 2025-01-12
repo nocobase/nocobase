@@ -431,9 +431,8 @@ export default class PluginWorkflowServer extends Plugin {
     this.pending.push([job.execution, job]);
     if (this.executing) {
       await this.executing;
-    } else {
-      this.dispatch();
     }
+    this.dispatch();
   }
 
   /**
@@ -447,9 +446,8 @@ export default class PluginWorkflowServer extends Plugin {
     this.pending.push([execution]);
     if (this.executing) {
       await this.executing;
-    } else {
-      this.dispatch();
     }
+    this.dispatch();
   }
 
   private async createExecution(
