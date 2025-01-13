@@ -154,10 +154,11 @@ export default class extends Instruction {
         result[item.status] = 0;
       }
       result[item.status] += 1;
+      assignees.push(item.userId);
       return result;
     }, {});
     const distribution = Object.keys(distributionMap).map((status) => ({
-      status,
+      status: Number.parseInt(status, 10),
       count: distributionMap[status],
     }));
 
