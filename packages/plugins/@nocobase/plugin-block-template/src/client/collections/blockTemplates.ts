@@ -38,22 +38,12 @@ export const blockTemplatesCollection = {
     {
       type: 'string',
       name: 'type',
-      interface: 'select',
+      interface: 'radioGroup',
       uiSchema: {
         type: 'string',
-        required: true,
         title: tStr('Type'),
-        'x-component': 'Select',
-        'x-use-component-props': function useComponentProps() {
-          const t = useT();
-          return {
-            defaultValue: 'Desktop',
-            options: [
-              { label: t('Desktop'), value: 'Desktop' },
-              { label: t('Mobile'), value: 'Mobile' },
-            ],
-          };
-        },
+        'x-component': 'Radio.Group',
+        enum: '{{ typeOptions }}',
       },
     },
     {

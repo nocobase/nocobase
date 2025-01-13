@@ -24,9 +24,15 @@ import {
   useDeleteAction,
   useBulkDestroyAction,
 } from '../hooks';
+import { useT } from '../locale';
 
 export const BlockTemplateList = () => {
   const scCtx = useSchemaComponentContext();
+  const t = useT();
+  const typeOptions = [
+    { label: t('Desktop'), value: 'Desktop' },
+    { label: t('Mobile'), value: 'Mobile' },
+  ];
   return (
     <ExtendCollectionsProvider collections={[blockTemplatesCollection]}>
       <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
@@ -39,6 +45,7 @@ export const BlockTemplateList = () => {
             useDeleteAction,
             useDuplicateAction,
             useBulkDestroyAction,
+            typeOptions,
           }}
         />
       </SchemaComponentContext.Provider>
