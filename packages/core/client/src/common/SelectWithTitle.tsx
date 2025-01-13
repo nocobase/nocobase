@@ -16,10 +16,9 @@ export interface SelectWithTitleProps {
   options?: any;
   fieldNames?: any;
   onChange?: (...args: any[]) => void;
-  mode?: 'multiple' | 'tags';
 }
 
-export function SelectWithTitle({ title, defaultValue, onChange, options, fieldNames, mode }: SelectWithTitleProps) {
+export function SelectWithTitle({ title, defaultValue, onChange, options, fieldNames }: SelectWithTitleProps) {
   const [open, setOpen] = useState(false);
   const timerRef = useRef<any>(null);
   return (
@@ -50,7 +49,6 @@ export function SelectWithTitle({ title, defaultValue, onChange, options, fieldN
         onMouseEnter={() => {
           clearTimeout(timerRef.current);
         }}
-        mode={mode}
       />
     </div>
   );

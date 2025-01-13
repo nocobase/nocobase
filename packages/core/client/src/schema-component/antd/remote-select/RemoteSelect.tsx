@@ -79,7 +79,7 @@ export const getFieldNameLabel = ({ fieldNames, targetFields, record, compile })
     <Space>
       {fieldNames.label.map((v) => {
         const result = targetFields.find((f) => f.name === v);
-        return getTargetFieldLabel(record[v], result);
+        return getTargetFieldLabel(compile(record[v]), result);
       })}
     </Space>
   ) : (

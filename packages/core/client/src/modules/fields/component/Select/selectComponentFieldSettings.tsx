@@ -35,6 +35,7 @@ import { useIsShowMultipleSwitch } from '../../../../schema-settings/hooks/useIs
 import { useLocalVariables, useVariables } from '../../../../variables';
 import { useOpenModeContext } from '../../../popup/OpenModeProvider';
 import { ellipsisSettingsItem, enableLinkSettingsItem, openModeSettingsItem } from '../Input/inputComponentSettings';
+import { SchemaSettingsTitleField } from '../../../../schema-settings/SchemaSettingsTitleField';
 
 const enableLink = {
   name: 'enableLink',
@@ -67,55 +68,6 @@ const enableLink = {
             },
           },
         });
-      },
-    };
-  },
-};
-
-export const titleField: any = {
-  name: 'titleField',
-  type: 'select',
-  useComponentProps() {
-    const { t } = useTranslation();
-    const field = useField<Field>();
-    const { dn } = useDesignable();
-    const options = useTitleFieldOptions();
-    const { uiSchema, fieldSchema: tableColumnSchema, collectionField: tableColumnField } = useColumnSchema();
-    const schema = useFieldSchema();
-    const fieldSchema = tableColumnSchema || schema;
-    const targetCollectionField = useCollectionField();
-    const collectionField = tableColumnField || targetCollectionField;
-    const fieldNames = {
-      ...collectionField?.uiSchema?.['x-component-props']?.['fieldNames'],
-      ...field?.componentProps?.fieldNames,
-      ...fieldSchema?.['x-component-props']?.['fieldNames'],
-    };
-    return {
-      title: t('Title field'),
-      options,
-      value: fieldNames?.label,
-      mode: 'multiple',
-      onChange(label) {
-        const schema = {
-          ['x-uid']: fieldSchema['x-uid'],
-        };
-        const newFieldNames = {
-          ...collectionField?.uiSchema?.['x-component-props']?.['fieldNames'],
-          ...fieldSchema['x-component-props']?.['fieldNames'],
-          label,
-        };
-        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-        fieldSchema['x-component-props']['fieldNames'] = newFieldNames;
-        schema['x-component-props'] = fieldSchema['x-component-props'];
-        field.componentProps.fieldNames = fieldSchema['x-component-props'].fieldNames;
-        const path = field.path?.splice(field.path?.length - 1, 1);
-        field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
-          f.componentProps.fieldNames = fieldNames;
-        });
-        dn.emit('patch', {
-          schema,
-        });
-        dn.refresh();
       },
     };
   },
@@ -372,7 +324,8 @@ export const selectComponentFieldSettings = new SchemaSettings({
       },
     },
     {
-      ...titleField,
+      name: 'titleField',
+      Component: SchemaSettingsTitleField,
     },
     {
       ...enableLink,
@@ -442,7 +395,8 @@ export const filterSelectComponentFieldSettings = new SchemaSettings({
     },
     getAllowMultiple({ title: 'Allow multiple selection' }),
     {
-      ...titleField,
+      name: 'titleField',
+      Component: SchemaSettingsTitleField,
       useVisible: useIsAssociationField,
     },
     {
