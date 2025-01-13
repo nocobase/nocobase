@@ -10,7 +10,7 @@
 import { Migration } from '@nocobase/server';
 
 export default class extends Migration {
-  appVersion = '<=1.6.0-alpha.9';
+  appVersion = '<1.6.0-alpha.13';
   async up() {
     const uiSchemas: any = this.db.getRepository('uiSchemas');
     const desktopRoutes: any = this.db.getRepository('desktopRoutes');
