@@ -94,7 +94,6 @@ export function registerTemplateBlockInterceptors(apiClient: any, pageBlocks: Re
       }
     }
 
-    // TODO: After drag and drop, template synchronization may be lost. Only necessary properties should be synced to data
     return config;
   });
 }

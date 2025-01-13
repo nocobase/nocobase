@@ -28,6 +28,11 @@ export default defineCollection({
       name: 'description',
     },
     {
+      type: 'string',
+      name: 'type',
+      defaultValue: 'Desktop',
+    },
+    {
       type: 'belongsTo',
       name: 'uiSchema',
       target: 'uiSchemas',

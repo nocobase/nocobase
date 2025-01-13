@@ -80,6 +80,7 @@ export function useDuplicateAction() {
         values: {
           title: `${values.title}`,
           description: record.description,
+          type: record.type,
           key: newKey,
           uid: newSchemaUid,
         },

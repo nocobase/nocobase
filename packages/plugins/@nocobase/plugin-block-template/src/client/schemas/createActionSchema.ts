@@ -31,6 +31,7 @@ export const createActionSchema = {
         const form = createForm({
           initialValues: {
             key: `t_${uid()}`,
+            type: 'Desktop',
           },
         });
         return { form };
@@ -51,6 +52,11 @@ export const createActionSchema = {
               'x-validator': 'uid',
               description:
                 "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+            },
+            type: {
+              type: 'string',
+              'x-decorator': 'FormItem',
+              'x-component': 'CollectionField',
             },
             description: {
               type: 'string',

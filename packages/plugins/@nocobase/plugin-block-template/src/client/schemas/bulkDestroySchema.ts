@@ -23,7 +23,6 @@ export const bulkDestroySchema = {
   properties: {
     modal: {
       type: 'void',
-      'x-decorator': 'FormV2',
       'x-component': 'Action.Modal',
       title: '{{t("Delete")}}',
       properties: {
