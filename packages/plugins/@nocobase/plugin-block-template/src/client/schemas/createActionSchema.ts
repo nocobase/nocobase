@@ -26,7 +26,7 @@ export const createActionSchema = {
       type: 'void',
       'x-component': 'Action.Drawer',
       title: `{{t("Add new", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormV2',
+      'x-decorator': 'Form',
       'x-use-decorator-props': () => {
         const form = createForm({
           initialValues: {
@@ -50,6 +50,7 @@ export const createActionSchema = {
               'x-decorator': 'FormItem',
               'x-component': 'CollectionField',
               'x-validator': 'uid',
+              default: `t_${uid()}`,
               description:
                 "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
             },
@@ -57,6 +58,7 @@ export const createActionSchema = {
               type: 'string',
               'x-decorator': 'FormItem',
               'x-component': 'CollectionField',
+              default: 'Desktop',
             },
             description: {
               type: 'string',
