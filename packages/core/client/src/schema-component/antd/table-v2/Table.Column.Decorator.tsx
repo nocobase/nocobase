@@ -17,6 +17,7 @@ import {
   useCompile,
   useDesigner,
   useFlag,
+  useSchemaComponentContext,
 } from '../../../';
 import { designerCss } from './Table.Column.ActionBar';
 import { isCollectionFieldComponent } from './utils';
@@ -71,6 +72,7 @@ export const TableColumnDecorator = (props) => {
   const Designer = useDesigner();
   const field = useField();
   const { fieldSchema, uiSchema, collectionField } = useColumnSchema();
+  const { designable } = useSchemaComponentContext();
   const compile = useCompile();
   const { isInSubTable } = useFlag() || {};
   useEffect(() => {
@@ -84,6 +86,10 @@ export const TableColumnDecorator = (props) => {
       field.title = uiSchema?.title;
     }
   }, [uiSchema?.title]);
+
+  if (!designable || Designer.isNullComponent) {
+    return props.children;
+  }
   return (
     <SortableItem
       className={designerCss({
