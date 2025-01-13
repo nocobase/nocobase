@@ -12,6 +12,8 @@ import {
   SchemaSettingsSelectItem,
   useDesignable,
   SchemaSettingsBlockHeightItem,
+  SchemaSettingsModalItem,
+  useOpenModeContext,
 } from '@nocobase/client';
 import { CustomSchemaSettingsBlockTitleItem } from './SchemaSettingsBlockTitleItem';
 import React from 'react';
@@ -53,6 +55,45 @@ const ActionPanelLayout = () => {
   );
 };
 
+export function ActionPanelItemsPerRow() {
+  const field = useField();
+  const fieldSchema = useFieldSchema();
+  const { dn } = useDesignable();
+  const { t } = useTranslation();
+
+  return (
+    <SchemaSettingsModalItem
+      title={t('Items per row')}
+      schema={{
+        type: 'object',
+        title: t('Items per row'),
+        properties: {
+          itemsPerRow: {
+            title: t('Items per row'),
+            type: 'number',
+            default: fieldSchema?.['x-decorator-props']?.['itemsPerRow'] || 4,
+            'x-decorator': 'FormItem',
+            'x-component': 'InputNumber',
+          },
+        },
+      }}
+      onSubmit={({ itemsPerRow }) => {
+        const componentProps = fieldSchema['x-decorator-props'] || {};
+        componentProps.itemsPerRow = itemsPerRow;
+        fieldSchema['x-decorator-props'] = componentProps;
+        field.decoratorProps.ItemsPerRow = itemsPerRow;
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-decorator-props': fieldSchema['x-decorator-props'],
+          },
+        });
+        dn.refresh();
+      }}
+    />
+  );
+}
+
 export const workbenchBlockSettings = new SchemaSettings({
   name: 'blockSettings:workbench',
   items: [
@@ -67,6 +108,15 @@ export const workbenchBlockSettings = new SchemaSettings({
     {
       name: 'layout',
       Component: ActionPanelLayout,
+    },
+    {
+      name: 'itemsPerRow',
+      Component: ActionPanelItemsPerRow,
+      useVisible() {
+        const { isMobile } = useOpenModeContext() || {};
+        const fieldSchema = useFieldSchema();
+        return isMobile && fieldSchema?.['x-component-props']?.layout !== WorkbenchLayout.List;
+      },
     },
     {
       type: 'remove',

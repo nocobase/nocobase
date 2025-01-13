@@ -21,7 +21,7 @@ import {
   withDynamicSchemaProps,
 } from '@nocobase/client';
 import { Avatar, List, Space, theme } from 'antd';
-import React, { createContext, useEffect, useState } from 'react';
+import React, { createContext, useEffect, useState, useRef, useMemo } from 'react';
 import { WorkbenchLayout } from './workbenchBlockSettings';
 
 const ConfigureActionsButton = observer(
@@ -33,49 +33,91 @@ const ConfigureActionsButton = observer(
   { displayName: 'WorkbenchConfigureActionsButton' },
 );
 
-const InternalIcons = () => {
+const ResponsiveSpace = () => {
   const fieldSchema = useFieldSchema();
-  const { designable } = useDesignable();
-  const { layout = WorkbenchLayout.Grid } = fieldSchema.parent['x-component-props'] || {};
-  const [gap, setGap] = useState(8); // 初始 gap 值
+  const { itemsPerRow } = fieldSchema.parent['x-decorator-props'] || {};
 
+  const containerRef = useRef(null); // 引用容器
+  const [containerWidth, setContainerWidth] = useState(0); // 容器宽度
+  const gap = 8;
+  // 使用 ResizeObserver 动态获取容器宽度
   useEffect(() => {
-    const calculateGap = () => {
-      const container = document.getElementsByClassName('mobile-page-content')[0] as any;
-      if (container) {
-        const containerWidth = container.offsetWidth - 48;
-        const itemWidth = 100; // 每个 item 的宽度
-        const itemsPerRow = Math.floor(containerWidth / itemWidth); // 每行能容纳的 item 数
-        // 计算实际需要的 gap 值
-        const totalItemWidth = itemsPerRow * itemWidth;
-        const totalAvailableWidth = containerWidth;
-        const totalGapsWidth = totalAvailableWidth - totalItemWidth;
-
-        if (totalGapsWidth > 0) {
-          setGap(totalGapsWidth / (itemsPerRow - 1));
-        } else {
-          setGap(0); // 如果没有足够的空间，则设置 gap 为 0
-        }
+    const handleResize = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.offsetWidth); // 更新宽度
       }
     };
+    // 初始化 ResizeObserver
+    const resizeObserver = new ResizeObserver(handleResize);
 
-    window.addEventListener('resize', calculateGap);
-    calculateGap(); // 初始化时计算 gap
+    // 监听容器宽度变化
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+      handleResize(); // 初始化时获取一次宽度
+    }
 
     return () => {
-      window.removeEventListener('resize', calculateGap);
+      if (containerRef.current) {
+        resizeObserver.unobserve(containerRef.current);
+      }
     };
-  }, [Object.keys(fieldSchema?.properties || {}).length]);
+  }, []);
+  // 计算每个元素的宽度
+  const itemWidth = useMemo(() => {
+    const totalGapWidth = gap * itemsPerRow;
+    const availableWidth = containerWidth - totalGapWidth;
+    return availableWidth / itemsPerRow;
+  }, [itemsPerRow, gap, containerWidth]);
 
+  // 计算 Avatar 的宽度
+  const avatarSize = useMemo(() => {
+    return Math.floor(itemWidth * 0.8); // Avatar 大小为 item 宽度的 60%
+  }, [itemWidth, itemsPerRow]);
   return (
-    <div style={{ marginBottom: designable ? '1rem' : 0 }} className="nb-action-panel-warp">
+    <div ref={containerRef} style={{ width: '100%' }}>
+      <Space
+        wrap
+        style={{ width: '100%', display: 'flex' }}
+        size={gap}
+        align="center"
+        className={css`
+          .ant-space-item {
+            width: ${itemWidth}px;
+            display: flex;
+            .ant-avatar-circle {
+              width: ${avatarSize}px !important;
+              height: ${avatarSize}px !important;
+              line-height: ${avatarSize}px !important;
+            }
+          }
+        `}
+      >
+        {fieldSchema.mapProperties((s, key) => (
+          <div
+            key={key}
+            style={{
+              flexBasis: `${itemWidth}px`,
+              flexShrink: 0,
+              flexGrow: 0,
+              display: 'flex',
+            }}
+          >
+            <NocoBaseRecursionField name={key} schema={s} />
+          </div>
+        ))}
+      </Space>
+    </div>
+  );
+};
+
+const InternalIcons = () => {
+  const fieldSchema = useFieldSchema();
+  const { layout = WorkbenchLayout.Grid } = fieldSchema.parent['x-component-props'] || {};
+  return (
+    <div className="nb-action-panel-warp">
       <DndContext>
         {layout === WorkbenchLayout.Grid ? (
-          <Space wrap size={gap}>
-            {fieldSchema.mapProperties((s, key) => (
-              <NocoBaseRecursionField name={key} schema={s} key={key} />
-            ))}
-          </Space>
+          <ResponsiveSpace />
         ) : (
           <List itemLayout="horizontal">
             {fieldSchema.mapProperties((s, key) => {
@@ -138,6 +180,8 @@ export const WorkbenchBlock: any = withDynamicSchemaProps(
               margin-right: -24px;
               padding-left: 24px;
               padding-right: 24px;
+              margin-top: 0.5rem;
+              margin-bottom: 0.5rem;
             }
           `}
         >
