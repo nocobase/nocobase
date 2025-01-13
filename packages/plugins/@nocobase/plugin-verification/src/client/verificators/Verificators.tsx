@@ -13,14 +13,19 @@ import {
   ExtendCollectionsProvider,
   SchemaComponent,
   useAPIClient,
+  useActionContext,
+  useBlockRequestContext,
+  useCollection,
   useCollectionRecordData,
+  useDataBlockRequest,
+  useDataBlockResource,
   usePlugin,
   useRequest,
 } from '@nocobase/client';
 import { verficatorsSchema, createVerificatorSchema } from '../schemas/verificators';
 import verificators from '../../collections/verificators';
 import { useVerificationTranslation } from '../locale';
-import { Button, Dropdown } from 'antd';
+import { Button, Dropdown, App } from 'antd';
 import { PlusOutlined, DownOutlined } from '@ant-design/icons';
 import { VerificationTypeContext, VerificationTypesContext, useVerificationTypes } from './verification-types';
 import { Schema, observer, useForm } from '@formily/react';
@@ -56,6 +61,51 @@ const useEditFormProps = () => {
   );
   return {
     form,
+  };
+};
+
+const useCancelActionProps = () => {
+  const { setVisible } = useActionContext();
+  const form = useForm();
+  return {
+    type: 'default',
+    onClick() {
+      setVisible(false);
+      form.reset();
+    },
+  };
+};
+
+const useSubmitActionProps = () => {
+  const { setVisible } = useActionContext();
+  const { message } = App.useApp();
+  const form = useForm();
+  const resource = useDataBlockResource();
+  const { refresh } = useDataBlockRequest();
+  const collection = useCollection();
+  const filterTk = collection.getFilterTargetKey();
+  const { t } = useVerificationTranslation();
+
+  return {
+    type: 'primary',
+    async onClick() {
+      await form.submit();
+      const values = form.values;
+      if (values[filterTk]) {
+        await resource.update({
+          values,
+          filterByTk: values[filterTk],
+        });
+      } else {
+        await resource.create({
+          values,
+        });
+      }
+      refresh();
+      message.success(t('Saved successfully'));
+      setVisible(false);
+      form.reset();
+    },
   };
 };
 
@@ -133,7 +183,7 @@ export const Verificators: React.FC = () => {
         <SchemaComponent
           schema={verficatorsSchema}
           components={{ AddNew, Settings }}
-          scope={{ types, useEditFormProps }}
+          scope={{ types, useEditFormProps, useCancelActionProps, useSubmitActionProps }}
         />
       </ExtendCollectionsProvider>
     </VerificationTypesContext.Provider>

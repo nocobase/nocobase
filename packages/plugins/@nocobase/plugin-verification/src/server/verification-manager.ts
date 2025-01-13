@@ -15,7 +15,6 @@ import { Database } from '@nocobase/database';
 
 export type VerificationTypeOptions = {
   title: string;
-  scenes: string[];
   verification: VerificationExtend<Verification>;
 };
 
@@ -60,9 +59,6 @@ export class VerificationManager {
     const verificationTypes = [];
     for (const [type, options] of this.verificationTypes.getEntities()) {
       const item = { type, title: options.title };
-      if (options.scenes.includes(scene)) {
-        verificationTypes.push(item);
-      }
       if (this.sceneRules.some((rule) => rule(scene, type))) {
         verificationTypes.push(item);
       }

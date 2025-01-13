@@ -83,15 +83,6 @@ export const verficatorsSchema: ISchema = {
             },
           },
           properties: {
-            filter: {
-              'x-component': 'Filter.Action',
-              'x-use-component-props': 'useFilterActionProps',
-              title: "{{t('Filter')}}",
-              'x-component-props': {
-                icon: 'FilterOutlined',
-              },
-              'x-align': 'left',
-            },
             refresh: {
               title: "{{t('Refresh')}}",
               'x-component': 'Action',
@@ -126,7 +117,7 @@ export const verficatorsSchema: ISchema = {
           'x-component': 'TableV2',
           'x-use-component-props': 'useTableBlockProps',
           'x-component-props': {
-            rowKey: 'id',
+            rowKey: 'name',
             rowSelection: {
               type: 'checkbox',
             },
@@ -218,25 +209,25 @@ export const verficatorsSchema: ISchema = {
                               type: 'object',
                               'x-component': 'Settings',
                             },
-                            // footer: {
-                            //   type: 'void',
-                            //   'x-component': 'Action.Drawer.Footer',
-                            //   properties: {
-                            //     cancel: {
-                            //       title: '{{ t("Cancel") }}',
-                            //       'x-component': 'Action',
-                            //       'x-use-component-props': 'useCancelActionProps',
-                            //     },
-                            //     submit: {
-                            //       title: '{{ t("Submit") }}',
-                            //       'x-component': 'Action',
-                            //       'x-component-props': {
-                            //         type: 'primary',
-                            //       },
-                            //       'x-use-component-props': 'useSubmitActionProps',
-                            //     },
-                            //   },
-                            // },
+                            footer: {
+                              type: 'void',
+                              'x-component': 'Action.Drawer.Footer',
+                              properties: {
+                                cancel: {
+                                  title: '{{ t("Cancel") }}',
+                                  'x-component': 'Action',
+                                  'x-use-component-props': 'useCancelActionProps',
+                                },
+                                submit: {
+                                  title: '{{ t("Submit") }}',
+                                  'x-component': 'Action',
+                                  'x-component-props': {
+                                    type: 'primary',
+                                  },
+                                  'x-use-component-props': 'useSubmitActionProps',
+                                },
+                              },
+                            },
                           },
                         },
                       },

@@ -42,9 +42,11 @@ export default class PluginVerficationServer extends Plugin {
 
     this.verificationManager.registerVerificationType(SMS_OTP_VERIFICATION_TYPE, {
       title: tval('SMS OTP', { ns: namespace }),
-      scenes: ['auth-sms'],
       verification: SMSOTPVerification,
     });
+    this.verificationManager.addSceneRule(
+      (scene, verificationType) => scene === 'auth-sms' && verificationType === SMS_OTP_VERIFICATION_TYPE,
+    );
     this.smsOTPProviderManager.registerProvider(PROVIDER_TYPE_SMS_ALIYUN, {
       title: tval('Aliyun SMS', { ns: namespace }),
       provider: smsAliyun,
