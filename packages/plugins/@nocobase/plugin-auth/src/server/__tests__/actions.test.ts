@@ -454,6 +454,7 @@ describe('actions', () => {
       expect(res2.statusCode).toEqual(200);
       const res3 = await userAgent.post('/auth:check').set({ 'X-Authenticator': 'basic' }).send();
       expect(res3.statusCode).toEqual(401);
+      expect(res3.text).toBe('User password changed, please signin again.');
     });
   });
 });

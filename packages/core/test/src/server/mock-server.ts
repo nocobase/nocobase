@@ -76,6 +76,7 @@ interface Resource {
 interface ExtendedAgent extends SuperAgentTest {
   login: (user: any, roleName?: string) => ExtendedAgent;
   loginUsingId: (userId: number, roleName?: string) => ExtendedAgent;
+  loginWithJti: (user: any, roleName?: string) => Promise<ExtendedAgent>;
   resource: (name: string, resourceOf?: any) => Resource;
 }
 

@@ -36,15 +36,13 @@ describe('base-auth', () => {
       ctx: {
         t: (s) => s,
         getBearerToken: () => null,
+        throw: (httpCode, err) => {
+          throw new Error(err.message);
+        },
       },
     } as any);
-    let user = null;
-    try {
-      user = await auth.check();
-      expect(user).toBe(null);
-    } catch (error) {
-      expect(user).toBe(null);
-    }
+
+    expect(auth.check()).rejects.toThrow('Unauthenticated. Please sign in to continue.');
   });
 
   it('check: should set roleName to headers', async () => {
@@ -180,5 +178,25 @@ describe('base-auth', () => {
     const res = await auth.signIn();
     expect(res.token).toBe('token');
     expect(res.user).toEqual({ id: 1 });
+  });
+
+  it('should throw invalid error', async () => {
+    const ctx = {
+      t: (s) => s,
+      getBearerToken: () => 'token',
+      throw: (httpCode, error) => {
+        throw new Error(error.code);
+      },
+    };
+
+    const auth = new BaseAuth({
+      userCollection: {},
+      ctx,
+    } as any);
+    try {
+      await auth.validate();
+    } catch (e) {
+      expect(e.message).toBe(AuthErrorCode.INVALID_TOKEN);
+    }
   });
 });

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BaseAuth } from '@nocobase/auth';
+import { AuthErrorCode, BaseAuth } from '@nocobase/auth';
 import { Database, Model } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
 import { AuthErrorType } from '@nocobase/auth';
@@ -107,27 +107,6 @@ describe('auth', () => {
     await app.cache.reset();
     await app.destroy();
   });
-  // const not_exist_jwtid = 'jti_not_exist';
-  // it('should throw error when jti not exist', async () => {
-  //   const token = app.authManager.jwt.sign(
-  //     { userId: user.id, temp: true },
-  //     { jwtid: not_exist_jwtid, expiresIn: '1d' },
-  //   );
-  //   ctx.setToken(token);
-  //   await expect(auth.check()).rejects.toThrowError('MISSING_SESSION' satisfies AuthErrorType);
-  // });
-
-  // it('api token do not check accsss', async () => {
-  //   await auth.tokenController.setConfig({
-  //     tokenExpirationTime: '0s',
-  //     sessionExpirationTime: '0s',
-  //     expiredTokenRenewLimit: '0s',
-  //   });
-  //   const token = app.authManager.jwt.sign({ userId: user.id }, { expiresIn: '1d' });
-  //   ctx.setToken(token);
-  //   await sleep(2000);
-  //   await expect(auth.check()).resolves.not.toThrow();
-  // });
 
   it('when token expired and login valid, it generate a new token', async () => {
     await auth.tokenController.setConfig({
@@ -185,7 +164,18 @@ describe('auth', () => {
       .fill(null)
       .map(() => auth.tokenController.renew(tokenInfo.jti));
     const allSettled = await Promise.allSettled(renewTasks);
-    const result = allSettled.filter((result) => result.status === 'fulfilled');
-    expect(result).toHaveLength(1);
+    const successTasks = allSettled.filter((result) => result.status === 'fulfilled');
+    expect(successTasks).toHaveLength(1);
+    const failedTasks = allSettled.filter(
+      (result) => result.status === 'rejected' && result.reason.code === AuthErrorCode.TOKEN_RENEW_FAILED,
+    );
+    expect(failedTasks).toHaveLength(14);
+  });
+  it('use token policy tokenExpirationTime as token expirein', async () => {
+    const config = await auth.tokenController.getConfig();
+    const { token } = await auth.signIn();
+    const decoded = await auth.jwt.decode(token);
+    expect(decoded.exp - decoded.iat).toBe(Math.floor(config.tokenExpirationTime / 1000));
+    expect(decoded.signInTime).toBeTruthy();
   });
 });
