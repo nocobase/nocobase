@@ -748,6 +748,7 @@ const createPage = async (options?: CreatePageOptions) => {
   const title = name || menuSchemaUid;
   const newPageSchema = keepUid ? pageSchema : updateUidOfPageSchema(pageSchema);
   let routeId;
+  let schemaUid;
 
   if (type === 'group') {
     const result = await api.post('/api/desktopRoutes:create', {
@@ -766,6 +767,7 @@ const createPage = async (options?: CreatePageOptions) => {
 
     const data = await result.json();
     routeId = data.data?.id;
+    schemaUid = menuSchemaUid;
   }
 
   if (type === 'page') {
@@ -774,8 +776,8 @@ const createPage = async (options?: CreatePageOptions) => {
       data: {
         type: 'page',
         title,
-        schemaUid: menuSchemaUid,
-        pageSchemaUid: newPageSchema?.['x-uid'] || pageSchemaUid,
+        schemaUid: newPageSchema?.['x-uid'] || pageSchemaUid,
+        menuSchemaUid,
         hideInMenu: false,
         children: newPageSchema
           ? schemaToRoutes(newPageSchema)
@@ -797,6 +799,7 @@ const createPage = async (options?: CreatePageOptions) => {
 
     const data = await result.json();
     routeId = data.data?.id;
+    schemaUid = newPageSchema?.['x-uid'] || pageSchemaUid;
   }
 
   if (type === 'link') {
@@ -819,6 +822,7 @@ const createPage = async (options?: CreatePageOptions) => {
 
     const data = await result.json();
     routeId = data.data?.id;
+    schemaUid = menuSchemaUid;
   }
 
   const result = await api.post(`/api/uiSchemas:insertAdjacent/nocobase-admin-menu?position=beforeEnd`, {
@@ -864,7 +868,7 @@ const createPage = async (options?: CreatePageOptions) => {
     throw new Error(await result.text());
   }
 
-  return { schemaUid: menuSchemaUid, routeId };
+  return { schemaUid, routeId };
 };
 
 /**

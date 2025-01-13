@@ -579,7 +579,7 @@ export class AdminLayoutPlugin extends Plugin {
 
 function getRouteNodeBySchemaUid(schemaUid: string, treeArray: any[]) {
   for (const node of treeArray) {
-    if (node.schemaUid === schemaUid) {
+    if (schemaUid === node.schemaUid || schemaUid === node.menuSchemaUid) {
       return node;
     }
 

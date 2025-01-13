@@ -79,8 +79,8 @@ export const PageMenuItem = () => {
       title: values.title,
       icon: values.icon,
       parentId: parentRoute?.id,
-      schemaUid: menuSchemaUid,
-      pageSchemaUid,
+      schemaUid: pageSchemaUid,
+      menuSchemaUid,
       children: [
         {
           type: NocoBaseDesktopRouteType.tabs,

@@ -183,8 +183,8 @@ const InsertMenuItems = (props) => {
             icon,
             // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
             parentId: insertPosition === 'beforeEnd' ? route?.id : parentRoute?.id,
-            schemaUid: menuSchemaUid,
-            pageSchemaUid,
+            schemaUid: pageSchemaUid,
+            menuSchemaUid,
             children: [
               {
                 type: NocoBaseDesktopRouteType.tabs,

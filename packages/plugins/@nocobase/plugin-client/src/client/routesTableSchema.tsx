@@ -413,9 +413,11 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
 
                                   const res = await createRoute({
                                     ..._.omit(form.values, ['href', 'params', 'url']),
-                                    schemaUid: menuSchemaUid,
-                                    pageSchemaUid:
-                                      NocoBaseDesktopRouteType.page === form.values.type ? pageSchemaUid : undefined,
+                                    schemaUid:
+                                      NocoBaseDesktopRouteType.page === form.values.type
+                                        ? pageSchemaUid
+                                        : menuSchemaUid,
+                                    menuSchemaUid,
                                     options,
                                   });
 
@@ -562,7 +564,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                   }
 
                   if (recordData.type === NocoBaseDesktopRouteType.page) {
-                    const path = `${basenameOfCurrentRouter.slice(0, -1)}${basename}/${recordData.schemaUid}`;
+                    const path = `${basenameOfCurrentRouter.slice(0, -1)}${basename}/${recordData.menuSchemaUid}`;
                     // 在点击 Access 按钮时，会用到
                     recordData._path = path;
 
@@ -870,11 +872,11 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                         const res = await createRoute({
                                           parentId: recordData.id,
                                           ..._.omit(form.values, ['href', 'params']),
-                                          schemaUid: menuSchemaUid,
-                                          pageSchemaUid:
+                                          schemaUid:
                                             NocoBaseDesktopRouteType.page === form.values.type
                                               ? pageSchemaUid
-                                              : undefined,
+                                              : menuSchemaUid,
+                                          menuSchemaUid,
                                           options,
                                         });
 

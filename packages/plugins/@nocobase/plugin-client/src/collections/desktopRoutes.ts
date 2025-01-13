@@ -221,6 +221,7 @@ export default {
         title: '{{t("Icon")}}',
       },
     },
+    // 页面的 schema uid
     {
       key: '6bbyhv00bp4',
       name: 'schemaUid',
@@ -236,10 +237,10 @@ export default {
         title: '{{t("Schema UID")}}',
       },
     },
-    // schemaUid 是用于存储菜单的 schema uid，pageSchemaUid 是用于存储菜单中的页面的 schema uid
+    // 菜单的 schema uid
     {
       key: '6bbyhv00bp5',
-      name: 'pageSchemaUid',
+      name: 'menuSchemaUid',
       type: 'string',
       interface: 'input',
       description: null,
@@ -249,7 +250,7 @@ export default {
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
-        title: '{{t("Page Schema UID")}}',
+        title: '{{t("Menu Schema UID")}}',
       },
     },
     {

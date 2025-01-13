@@ -29,6 +29,7 @@ export interface NocoBaseDesktopRoute {
   title?: string;
   icon?: string;
   schemaUid?: string;
+  menuSchemaUid?: string;
   tabSchemaName?: string;
   /**
    * schemaUid 是用于存储菜单的 schema uid，pageSchemaUid 是用于存储菜单中的页面的 schema uid
@@ -117,7 +118,7 @@ function convertRouteToSchema(route: NocoBaseDesktopRoute) {
         )
       : {},
     'x-app-version': '1.5.0-beta.12',
-    'x-uid': route.schemaUid,
+    'x-uid': route.type === NocoBaseDesktopRouteType.page ? route.menuSchemaUid : route.schemaUid,
     'x-async': false,
     __route__: route,
   };
