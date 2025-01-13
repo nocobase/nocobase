@@ -289,7 +289,7 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
 
         if (keyName === 'properties') {
           const sourceKeys = Object.keys(sourceValue);
-          const targetKeys = Object.keys(objectValue || {});
+          let targetKeys = Object.keys(objectValue || {});
           // remove duplicate configureActions keys and configureFields keys
           if (/:configure.*Actions/.test(object['x-initializer'])) {
             // "x-settings": "actionSettings:bulkDelete"
@@ -379,6 +379,54 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
               });
               syncUniqueFieldTemplateInfo(sourceValue, skey, removedTargetKeys, objectValue);
             }
+          }
+
+          // 处理Grid的拖动后行列改变的情况
+          if (source['x-component'] === 'Grid' && target['x-component'] === 'Grid') {
+            const tItemsMap = new Map();
+
+            for (const [rowKey, row] of Object.entries(object['properties'] || {})) {
+              for (const [colKey, col] of Object.entries(row['properties'] || {})) {
+                for (const [itemKey, item] of Object.entries(col['properties'] || {})) {
+                  if (item['x-uid']) {
+                    tItemsMap.set(item['x-uid'], { schema: item, row, col, rowKey, colKey, itemKey });
+                  }
+                }
+              }
+            }
+
+            for (const row of Object.values(source['properties'] || {})) {
+              for (const col of Object.values(row['properties'] || {})) {
+                for (const [schemaKey, schema] of Object.entries(col['properties'] || {})) {
+                  if (schema['x-template-uid']) {
+                    const matchedItem = tItemsMap.get(schema['x-template-uid']);
+                    if (matchedItem) {
+                      col['properties'][schemaKey] = mergeSchema(
+                        matchedItem.schema || {},
+                        schema || {},
+                        rootId,
+                        templateschemacache,
+                      );
+                      tItemsMap.delete(schema['x-template-uid']);
+                    }
+                  }
+                }
+              }
+            }
+
+            const targetProperties = {};
+            for (const [itemId, item] of tItemsMap) {
+              targetProperties[item.rowKey] = targetProperties[item.rowKey] || {
+                properties: {},
+              };
+              targetProperties[item.rowKey]['properties'][item.colKey] = targetProperties[item.rowKey]['properties'][
+                item.colKey
+              ] || {
+                properties: {},
+              };
+              targetProperties[item.rowKey]['properties'][item.colKey]['properties'][item.itemKey] = item.schema;
+            }
+            targetKeys = Object.keys(targetProperties);
           }
 
           const keys = _.union(targetKeys, sourceKeys);
