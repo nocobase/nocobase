@@ -195,6 +195,7 @@ export const SubTable: any = observer(
         hideOnSinglePage: false,
       };
     }, [field.value?.length, pageSize, currentPage]);
+
     return (
       <div className={subTableContainer}>
         <FlagProvider isInSubTable>
@@ -209,7 +210,8 @@ export const SubTable: any = observer(
                   showIndex
                   dragSort={false}
                   showDel={
-                    allowAddnew !== false || allowSelectExistingRecord !== false || allowDisassociation !== false
+                    field.editable &&
+                    (allowAddnew !== false || allowSelectExistingRecord !== false || allowDisassociation !== false)
                       ? (record) => {
                           if (!field.editable) {
                             return false;
