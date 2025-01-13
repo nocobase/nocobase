@@ -57,7 +57,8 @@ export const TableColumnActionBar = observer(
     const Designer = useDesigner();
     const { isInSubTable } = useFlag() || {};
     const { designable } = useSchemaComponentContext();
-    if (!designable) {
+
+    if (!designable || Designer.isNullComponent) {
       return props.children;
     }
 
