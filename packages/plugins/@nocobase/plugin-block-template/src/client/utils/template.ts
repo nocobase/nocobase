@@ -417,16 +417,19 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
             const targetProperties = {};
             for (const [itemId, item] of tItemsMap) {
               targetProperties[item.rowKey] = targetProperties[item.rowKey] || {
+                ...item.row,
                 properties: {},
               };
               targetProperties[item.rowKey]['properties'][item.colKey] = targetProperties[item.rowKey]['properties'][
                 item.colKey
               ] || {
+                ...item.col,
                 properties: {},
               };
               targetProperties[item.rowKey]['properties'][item.colKey]['properties'][item.itemKey] = item.schema;
             }
             targetKeys = Object.keys(targetProperties);
+            objectValue = targetProperties;
           }
 
           const keys = _.union(targetKeys, sourceKeys);
