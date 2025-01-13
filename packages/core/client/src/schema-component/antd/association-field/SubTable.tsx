@@ -228,7 +228,8 @@ export const SubTable: any = observer(
                   showIndex
                   dragSort={false}
                   showDel={
-                    allowAddnew !== false || allowSelectExistingRecord !== false || allowDisassociation !== false
+                    field.editable &&
+                    (allowAddnew !== false || allowSelectExistingRecord !== false || allowDisassociation !== false)
                       ? (record) => {
                           if (!field.editable) {
                             return false;
