@@ -13,7 +13,7 @@ import { Layout, Menu, Result } from 'antd';
 import React, { createContext, useCallback, useMemo } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ADMIN_SETTINGS_PATH, PluginSettingsPageType, useApp } from '../application';
-import { useCompile, SchemaComponentContext } from '../schema-component';
+import { useCompile } from '../schema-component';
 import { useStyles } from './style';
 
 export const SettingsCenterContext = createContext<any>({});
@@ -211,9 +211,7 @@ export const AdminSettingsLayout = () => {
           )}
           <div className={styles.pageContent}>
             {currentSetting ? (
-              <SchemaComponentContext.Provider value={{ designable: false }}>
-                <Outlet />
-              </SchemaComponentContext.Provider>
+              <Outlet />
             ) : (
               <Result status="404" title="404" subTitle="Sorry, the page you visited does not exist." />
             )}
