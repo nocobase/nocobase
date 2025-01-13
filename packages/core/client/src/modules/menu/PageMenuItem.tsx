@@ -81,12 +81,14 @@ export const PageMenuItem = () => {
       parentId: parentRoute?.id,
       schemaUid: pageSchemaUid,
       menuSchemaUid,
+      enableTabs: false,
       children: [
         {
           type: NocoBaseDesktopRouteType.tabs,
           title: '{{t("Tab")}}',
           schemaUid: tabSchemaUid,
           tabSchemaName,
+          hidden: true,
         },
       ],
     });

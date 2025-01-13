@@ -185,12 +185,14 @@ const InsertMenuItems = (props) => {
             parentId: insertPosition === 'beforeEnd' ? route?.id : parentRoute?.id,
             schemaUid: pageSchemaUid,
             menuSchemaUid,
+            enableTabs: false,
             children: [
               {
                 type: NocoBaseDesktopRouteType.tabs,
                 title: '{{t("Tab")}}',
                 schemaUid: tabSchemaUid,
                 tabSchemaName,
+                hidden: true,
               },
             ],
           });

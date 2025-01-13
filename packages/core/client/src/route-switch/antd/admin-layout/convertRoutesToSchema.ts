@@ -42,6 +42,7 @@ export interface NocoBaseDesktopRoute {
   sort?: number;
   hideInMenu?: boolean;
   enableTabs?: boolean;
+  hidden?: boolean;
 
   // 关联字段
   roles?: Array<{
