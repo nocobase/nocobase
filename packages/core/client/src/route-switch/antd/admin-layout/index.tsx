@@ -71,7 +71,7 @@ const CurrentRouteProvider: FC<{ uid: string }> = ({ children, uid }) => {
 };
 
 export const useCurrentRoute = () => {
-  return useContext(RouteContext);
+  return useContext(RouteContext) || {};
 };
 
 const useMenuProps = () => {
