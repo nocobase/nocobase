@@ -72,27 +72,22 @@ export default class ScheduleTrigger extends Trigger {
   validateConfig(values) {
     if (!values.mode) {
       return {
-        valid: false,
         message: 'Mode property is required',
       };
     }
 
     if (!values.startsOn) {
       return {
-        valid: false,
-        message: 'StartsOn property is required',
+        startsOn: 'StartsOn property is required',
       };
     }
 
     if (values.mode === 1 && !values.collection) {
       return {
-        valid: false,
         message: 'Collection property is required',
       };
     }
 
-    return {
-      valid: true,
-    };
+    return null;
   }
 }
