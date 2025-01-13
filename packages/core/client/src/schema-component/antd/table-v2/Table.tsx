@@ -499,11 +499,11 @@ const InternalBodyCellComponent = (props) => {
   const isIndex = props.className?.includes('selection-column');
   const { record, schema, rowIndex, isSubTable, ...others } = props;
   const { valueMap } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
-  const isReadyPrettyMode =
+  const isReadPrettyMode =
     !!schema?.properties && Object.values(schema.properties).some((item) => item['x-read-pretty'] === true);
   const mergedStyle = useMemo(
-    () => Object.assign({ ...props.style }, isReadyPrettyMode ? valueMap : {}),
-    [isReadyPrettyMode, props.style, valueMap],
+    () => Object.assign({ ...props.style }, isReadPrettyMode ? valueMap : {}),
+    [isReadPrettyMode, props.style, valueMap],
   );
   const skeletonStyle = {
     height: '1em',
