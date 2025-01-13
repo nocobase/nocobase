@@ -7,10 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { NocoBaseDesktopRouteType } from '@nocobase/client';
+
 export function getSchemaUidByRouteId(routeId: number, treeArray: any[]) {
   for (const node of treeArray) {
     if (node.id === routeId) {
-      return node.schemaUid;
+      return node.type === NocoBaseDesktopRouteType.page ? node.menuSchemaUid : node.schemaUid;
     }
 
     if (node.children?.length) {
