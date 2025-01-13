@@ -499,9 +499,12 @@ const InternalBodyCellComponent = (props) => {
   const isIndex = props.className?.includes('selection-column');
   const { record, schema, rowIndex, isSubTable, ...others } = props;
   const { valueMap } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
-  const mergedStyle = useMemo(() => Object.assign({ ...props.style }, valueMap), [props.style, valueMap]);
   const isReadyPrettyMode =
     !!schema?.properties && Object.values(schema.properties).some((item) => item['x-read-pretty'] === true);
+  const mergedStyle = useMemo(
+    () => Object.assign({ ...props.style }, isReadyPrettyMode ? valueMap : {}),
+    [isReadyPrettyMode, props.style, valueMap],
+  );
   const skeletonStyle = {
     height: '1em',
     backgroundColor: 'rgba(0, 0, 0, 0.06)',
@@ -509,11 +512,7 @@ const InternalBodyCellComponent = (props) => {
   };
 
   return (
-    <td
-      {...others}
-      className={classNames(props.className, cellClass)}
-      style={isReadyPrettyMode ? mergedStyle : props.style}
-    >
+    <td {...others} className={classNames(props.className, cellClass)} style={mergedStyle}>
       {/* Lazy rendering cannot be used in sub-tables. */}
       {isSubTable || inView || isIndex ? props.children : <div style={skeletonStyle} />}
     </td>
