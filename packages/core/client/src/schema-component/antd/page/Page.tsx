@@ -300,7 +300,7 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
             await createRoute({
               type: NocoBaseDesktopRouteType.tabs,
               schemaUid,
-              title: title || '{{t("Tab")}}',
+              title: title || '{{t("Unnamed")}}',
               icon,
               parentId: currentRoute.id,
               tabSchemaName,

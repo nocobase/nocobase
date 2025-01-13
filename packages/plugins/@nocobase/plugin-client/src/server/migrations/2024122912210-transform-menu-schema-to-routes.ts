@@ -117,7 +117,7 @@ export async function schemaToRoutes(schema: any, uiSchemas: any) {
     // Tab
     return {
       type: 'tabs',
-      title: item.title || '{{t("Tab")}}',
+      title: item.title || '{{t("Unnamed")}}',
       icon: item['x-component-props']?.icon,
       schemaUid: item['x-uid'],
       tabSchemaName: key,

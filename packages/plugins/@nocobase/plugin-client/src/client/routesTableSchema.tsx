@@ -426,7 +426,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                       schemaUid: tabSchemaUid,
                                       parentId: res?.data?.data?.id,
                                       type: NocoBaseDesktopRouteType.tabs,
-                                      title: '{{t("Tab")}}',
+                                      title: '{{t("Unnamed")}}',
                                       tabSchemaName,
                                     });
                                   }
@@ -884,7 +884,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                           await createRoute({
                                             parentId: res?.data?.data?.id,
                                             type: NocoBaseDesktopRouteType.tabs,
-                                            title: '{{t("Tab")}}',
+                                            title: '{{t("Unnamed")}}',
                                             schemaUid: tabSchemaUid,
                                             tabSchemaName,
                                           });
