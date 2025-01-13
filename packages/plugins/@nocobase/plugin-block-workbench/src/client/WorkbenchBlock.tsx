@@ -35,7 +35,7 @@ const ConfigureActionsButton = observer(
 
 const ResponsiveSpace = () => {
   const fieldSchema = useFieldSchema();
-  const { itemsPerRow } = fieldSchema.parent['x-decorator-props'] || {};
+  const { itemsPerRow = 4 } = fieldSchema.parent['x-decorator-props'] || {};
 
   const containerRef = useRef(null); // 引用容器
   const [containerWidth, setContainerWidth] = useState(0); // 容器宽度
