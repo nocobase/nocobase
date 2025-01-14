@@ -97,6 +97,15 @@ export class PluginClientServer extends Plugin {
           if (process.env['EXPORT_LIMIT']) {
             info.exportLimit = parseInt(process.env['EXPORT_LIMIT']);
           }
+
+          if (process.env['EXPORT_AUTO_MODE_THRESHOLD']) {
+            info.exportAutoModeThreshold = parseInt(process.env['EXPORT_AUTO_MODE_THRESHOLD']);
+          }
+
+          if (process.env['EXPORT_ATTACHMENTS_AUTO_MODE_THRESHOLD']) {
+            info.exportAttachmentsAutoModeThreshold = parseInt(process.env['EXPORT_ATTACHMENTS_AUTO_MODE_THRESHOLD']);
+          }
+
           ctx.body = info;
           await next();
         },

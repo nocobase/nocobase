@@ -119,7 +119,7 @@ export class BaseTaskManager extends EventEmitter implements AsyncTasksManager {
   }
 
   registerTaskType(taskType: TaskConstructor): void {
-    this.logger.info(`Registering task type: ${taskType.type}`);
+    this.logger.debug(`Registering task type: ${taskType.type}`);
     this.taskTypes.set(taskType.type, taskType);
   }
 
