@@ -101,7 +101,15 @@ describe('xlsx importer', () => {
         workbook: template,
       });
 
-      await expect(importer.validate()).resolves.toBeUndefined();
+      let error;
+
+      try {
+        await importer.validate();
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).toBeUndefined();
     });
   });
 
