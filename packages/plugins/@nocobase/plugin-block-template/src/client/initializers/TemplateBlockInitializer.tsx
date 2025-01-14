@@ -8,13 +8,14 @@
  */
 
 import { SchemaInitializerItem, useRequest, useAPIClient, useDesignable, usePlugin, ISchema } from '@nocobase/client';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { CopyOutlined, LoadingOutlined } from '@ant-design/icons';
 import { Input, Divider, Empty } from 'antd';
 import * as _ from 'lodash';
 import { uid } from '@nocobase/utils/client';
 import PluginBlockTemplateClient from '..';
 import { useT } from '../locale';
+import PluginMobileClient from '@nocobase/plugin-mobile/client';
 
 export function convertTplBlock(tpl, virtual = false, isRoot = true, newRootId?: string, templateTitle?: string) {
   if (!newRootId) {
@@ -230,8 +231,12 @@ export const TemplateBlockInitializer = () => {
   const api = useAPIClient();
   const { insertAdjacent } = useDesignable();
   const plugin = usePlugin(PluginBlockTemplateClient);
+  const mobilePlugin = usePlugin(PluginMobileClient);
   const [searchValue, setSearchValue] = useState('');
   const t = useT();
+  const isMobile = useMemo(() => {
+    return window.location.pathname.includes(mobilePlugin.mobileBasename);
+  }, [mobilePlugin]);
 
   const handleClick = async ({ item }) => {
     const { value: uid } = item;
@@ -266,6 +271,7 @@ export const TemplateBlockInitializer = () => {
       params: {
         filter: {
           configured: true,
+          type: isMobile ? 'Mobile' : { $ne: 'Mobile' },
         },
       },
     },

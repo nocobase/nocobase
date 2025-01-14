@@ -29,6 +29,7 @@ export const useCreateActionProps = () => {
       const values = form.values;
       const key = values.key;
       const schemaUid = uid();
+      const isMobile = values['type'] === 'Mobile';
       const schema = {
         type: 'void',
         name: key,
@@ -40,6 +41,15 @@ export const useCreateActionProps = () => {
             version: '2.0',
             type: 'void',
             'x-component': 'div',
+            ...(isMobile
+              ? {
+                  'x-component-props': {
+                    style: {
+                      padding: '10px',
+                    },
+                  },
+                }
+              : {}),
             properties: {
               blocks: {
                 _isJSONSchemaObject: true,
@@ -47,7 +57,7 @@ export const useCreateActionProps = () => {
                 type: 'void',
                 'x-decorator': 'TemplateGridDecorator',
                 'x-component': 'Grid',
-                'x-initializer': 'page:addBlock',
+                'x-initializer': isMobile ? 'mobile:addBlock' : 'page:addBlock',
                 'x-uid': uid(),
                 'x-async': false,
                 'x-index': 1,

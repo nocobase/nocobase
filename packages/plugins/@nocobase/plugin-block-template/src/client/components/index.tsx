@@ -11,3 +11,5 @@ export * from './BlockTemplateList';
 export * from './BlockTemplatePage';
 export * from './ConfigureLink';
 export * from './RevertSetting';
+export * from './BlockTemplateInfoContext';
+export * from './TemplateGridDecorator';

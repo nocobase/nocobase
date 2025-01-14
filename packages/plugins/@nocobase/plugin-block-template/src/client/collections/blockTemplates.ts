@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tStr, useT } from '../locale';
+import { tStr } from '../locale';
 
 export const blockTemplatesCollection = {
   name: 'blockTemplates',

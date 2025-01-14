@@ -7,13 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useFilterByTk } from '@nocobase/client';
+import { useCollectionRecordData, useFilterByTk } from '@nocobase/client';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useT } from '../locale';
 export const ConfigureLink = () => {
   const value = useFilterByTk();
+  const recordData = useCollectionRecordData();
   const t = useT();
+  let to = `/admin/settings/block-templates/${value}`;
+  if (recordData.type === 'Mobile') {
+    to = `/m/block-templates/${recordData.key}/${recordData.uid}`;
+  }
 
-  return <Link to={`/admin/settings/block-templates/${value}`}>{t('Configure')}</Link>;
+  return <Link to={to}>{t('Configure')}</Link>;
 };

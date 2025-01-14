@@ -8,8 +8,8 @@
  */
 
 import { Plugin, SchemaSettingsFormItemTemplate, SchemaSettingsTemplate } from '@nocobase/client';
-import { TemplateBlockInitializer, addBlockInitializers } from './initializers';
-import { BlockNameLowercase, NAMESPACE } from './constants';
+import { templateBlockInitializerItem } from './initializers';
+import { NAMESPACE } from './constants';
 import { BlockTemplateList, BlockTemplatePage } from './components';
 import { ISchema, Schema } from '@formily/json-schema';
 import * as _ from 'lodash';
@@ -18,6 +18,8 @@ import { collectAllTemplateUids, getFullSchema } from './utils/template';
 import { registerTemplateBlockInterceptors } from './utils/interceptors';
 import { TemplateGridDecorator } from './components/TemplateGridDecorator';
 import { useIsInTemplate } from './hooks/useIsInTemplate';
+import PluginMobileClient from '@nocobase/plugin-mobile/client';
+import { BlockTemplateMobilePage } from './components/BlockTemplateMobilePage';
 
 export class PluginBlockTemplateClient extends Plugin {
   loadingPromises = new Map();
@@ -62,63 +64,23 @@ export class PluginBlockTemplateClient extends Plugin {
     // Register axios interceptors for template block operations
     registerTemplateBlockInterceptors(this.app.apiClient, this.pageBlocks);
 
-    this.app.addComponents({ TemplateGridDecorator, TemplateBlockInitializer: TemplateBlockInitializer as any });
+    this.app.addComponents({ TemplateGridDecorator });
 
-    this.app.schemaInitializerManager.addItem('page:addBlock', 'templates', {
-      name: BlockNameLowercase,
-      Component: 'TemplateBlockInitializer',
-      title: '{{t("Templates")}}',
-      icon: 'TableOutlined',
-      sort: -1,
-      wrap: (t) => t,
-      useVisible: () => {
-        // check if url contains admin/settings/block-templates
-        return !window.location.pathname.includes('admin/settings/block-templates');
-      },
-    });
+    this.app.schemaInitializerManager.addItem('page:addBlock', 'templates', templateBlockInitializerItem);
 
-    this.app.schemaInitializerManager.addItem('popup:common:addBlock', 'templates', {
-      name: BlockNameLowercase,
-      Component: 'TemplateBlockInitializer',
-      title: '{{t("Templates")}}',
-      icon: 'TableOutlined',
-      sort: -1,
-      wrap: (t) => t,
-      useVisible: () => {
-        // check if url contains admin/settings/block-templates
-        return !window.location.pathname.includes('admin/settings/block-templates');
-      },
-    });
+    this.app.schemaInitializerManager.addItem('popup:common:addBlock', 'templates', templateBlockInitializerItem);
 
-    this.app.schemaInitializerManager.addItem('popup:addNew:addBlock', 'templates', {
-      name: BlockNameLowercase,
-      Component: 'TemplateBlockInitializer',
-      title: '{{t("Templates")}}',
-      icon: 'TableOutlined',
-      sort: -1,
-      wrap: (t) => t,
-      useVisible: () => {
-        // check if url contains admin/settings/block-templates
-        return !window.location.pathname.includes('admin/settings/block-templates');
-      },
-    });
+    this.app.schemaInitializerManager.addItem('popup:addNew:addBlock', 'templates', templateBlockInitializerItem);
 
-    this.app.schemaInitializerManager.addItem('mobile:addBlock', 'templates', {
-      name: BlockNameLowercase,
-      Component: 'TemplateBlockInitializer',
-      title: '{{t("Templates")}}',
-      icon: 'TableOutlined',
-      sort: -1,
-      wrap: (t) => t,
-      useVisible: () => {
-        // check if url contains admin/settings/block-templates
-        return !window.location.pathname.includes('admin/settings/block-templates');
-      },
-    });
+    this.app.schemaInitializerManager.addItem('mobile:addBlock', 'templates', templateBlockInitializerItem);
 
-    this.app.schemaInitializerManager.add(addBlockInitializers);
+    this.app.schemaInitializerManager.addItem(
+      'mobile:popup:common:addBlock',
+      'templates',
+      templateBlockInitializerItem,
+    );
 
-    this.#loadSchemaSettings();
+    this.#afterAllPluginsLoaded();
     this.app.pluginSettingsManager.add('block-templates', {
       title: `{{t("Block templates", { ns: "${NAMESPACE}" })}}`,
       icon: 'TableOutlined',
@@ -131,6 +93,18 @@ export class PluginBlockTemplateClient extends Plugin {
       isTopLevel: false,
       Component: BlockTemplatePage,
     });
+
+    // add mobile router
+    this.app.pluginManager.get<PluginMobileClient>('mobile')?.mobileRouter?.add('mobile.schema.blockTemplate', {
+      path: `/block-templates/:key/:pageSchemaUid`,
+      Component: BlockTemplateMobilePage,
+    });
+  }
+
+  isInBlockTemplateConfigPage() {
+    const mobilePath = this.app.pluginManager.get<PluginMobileClient>('mobile')?.mobileBasename + '/block-templates';
+    const desktopPath = 'admin/settings/block-templates';
+    return window.location.pathname.includes(desktopPath) || window.location.pathname.includes(mobilePath);
   }
 
   #fetchAllTemplates(templateUids: Set<string>, schema: ISchema) {
@@ -209,13 +183,15 @@ export class PluginBlockTemplateClient extends Plugin {
     }
   };
 
-  #loadSchemaSettings = () => {
+  #afterAllPluginsLoaded = () => {
     // Check if this.app.loading is true every 1s
     // If true, wait 1s and check again
     // If false, stop checking and add template settings
     const interval = setInterval(() => {
       if (!this.app.loading) {
         clearInterval(interval);
+
+        // add template settings
         const schemaSettings = this.app.schemaSettingsManager.getAll();
         for (const key in schemaSettings) {
           const schemaSetting = this.app.schemaSettingsManager.get(key);
@@ -230,7 +206,7 @@ export class PluginBlockTemplateClient extends Plugin {
                 schemaSetting.items[i]['Component'] === SchemaSettingsTemplate ||
                 schemaSetting.items[i]['Component'] === SchemaSettingsFormItemTemplate
               ) {
-                const visible = schemaSetting.items[i]['useVisible'] || (() => true);
+                // const visible = schemaSetting.items[i]['useVisible'] || (() => true);
                 // schemaSetting.items[i]['useVisible'] = () => {
                 //   const notInBlockTemplate = !window.location.pathname.includes('admin/settings/block-templates');
                 //   return notInBlockTemplate && visible();
@@ -240,8 +216,7 @@ export class PluginBlockTemplateClient extends Plugin {
                 schemaSetting.items[i]['useVisible'] = () => false;
                 if (schemaSetting.items[i + 1]?.['type'] === 'divider') {
                   schemaSetting.items[i + 1]['useVisible'] = () => {
-                    const notInBlockTemplate = !window.location.pathname.includes('admin/settings/block-templates');
-                    return notInBlockTemplate;
+                    return !this.isInBlockTemplateConfigPage();
                   };
                 }
               }
