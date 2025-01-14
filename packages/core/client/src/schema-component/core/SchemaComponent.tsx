@@ -63,7 +63,7 @@ const RecursionSchemaComponent = memo((props: ISchemaFieldProps & SchemaComponen
       /**
        * @deprecated
        */
-      refresh: _.noop,
+      refresh: ctx.refresh || _.noop,
     }),
     [ctx, distributed],
   );

@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.4.24](https://github.com/nocobase/nocobase/compare/v1.4.23...v1.4.24) - 2025-01-14
+
+### 🚀 Improvements
+
+- **[client]** datePicker component input read only ([#6061](https://github.com/nocobase/nocobase/pull/6061)) by @Cyx649312038
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fix incorrect loading of modal association  fields in table block ([#6060](https://github.com/nocobase/nocobase/pull/6060)) by @katherinehhh
+
+  - Fix style issue in sub-table in detail block ([#6049](https://github.com/nocobase/nocobase/pull/6049)) by @katherinehhh
+
+  - Fix number field format in readPretty mode affecting edit mode ([#6050](https://github.com/nocobase/nocobase/pull/6050)) by @katherinehhh
+
+  - Fix table header cell style issue in ant-table ([#6052](https://github.com/nocobase/nocobase/pull/6052)) by @katherinehhh
+
+- **[database]** fix an issue when init sort field with primary key ([#6059](https://github.com/nocobase/nocobase/pull/6059)) by @chareice
+
+- **[Data visualization]** Remove the `LIMIT` clause when using aggregate functions without setting dimensions in chart queries ([#6062](https://github.com/nocobase/nocobase/pull/6062)) by @2013xile
+
+- **[Backup manager]** Fixed backup download error for users only logged into sub-app by @gchust
+
+## [v1.4.23](https://github.com/nocobase/nocobase/compare/v1.4.22...v1.4.23) - 2025-01-13
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix the issue where fixed actions column are not working properly in tables ([#6048](https://github.com/nocobase/nocobase/pull/6048)) by @zhangzhonghe
+
+- **[Users]** Disable browser autofill when setting passwords for users in user management ([#6041](https://github.com/nocobase/nocobase/pull/6041)) by @2013xile
+
+- **[Workflow]** Fix date field based schedule event not triggers after app started ([#6042](https://github.com/nocobase/nocobase/pull/6042)) by @mytharcher
+
 ## [v1.4.22](https://github.com/nocobase/nocobase/compare/v1.4.21...v1.4.22) - 2025-01-10
 
 ### 🚀 Improvements

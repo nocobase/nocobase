@@ -224,6 +224,9 @@ export class WSServer extends EventEmitter {
 
   setClientTag(clientId: string, tagKey: string, tagValue: string) {
     const client = this.webSocketClients.get(clientId);
+    if (!client) {
+      return;
+    }
     client.tags.add(`${tagKey}#${tagValue}`);
     console.log(`client tags: ${Array.from(client.tags)}`);
   }
