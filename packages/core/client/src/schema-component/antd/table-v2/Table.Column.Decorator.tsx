@@ -88,7 +88,15 @@ export const TableColumnDecorator = (props) => {
   }, [uiSchema?.title]);
 
   if (!designable || Designer.isNullComponent) {
-    return props.children;
+    return (
+      <CollectionFieldContext.Provider value={collectionField}>
+        <Designer fieldSchema={fieldSchema} uiSchema={uiSchema} collectionField={collectionField} />
+        <span role="button">
+          {fieldSchema?.required && <span className="ant-formily-item-asterisk">*</span>}
+          <span>{field?.title || compile(uiSchema?.title)}</span>
+        </span>
+      </CollectionFieldContext.Provider>
+    );
   }
   return (
     <SortableItem
