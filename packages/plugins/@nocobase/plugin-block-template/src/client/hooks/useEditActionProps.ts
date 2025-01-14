@@ -8,9 +8,16 @@
  */
 
 import { useForm } from '@formily/react';
-import { useActionContext, useCollection, useDataBlockRequest, useDataBlockResource } from '@nocobase/client';
+import {
+  useActionContext,
+  useCollection,
+  useDataBlockRequest,
+  useDataBlockResource,
+  usePlugin,
+} from '@nocobase/client';
 import { App as AntdApp } from 'antd';
 import { useT } from '../locale';
+import { PluginBlockTemplateClient } from '..';
 
 export const useEditActionProps = () => {
   const { setVisible } = useActionContext();
@@ -18,6 +25,7 @@ export const useEditActionProps = () => {
   const form = useForm();
   const resource = useDataBlockResource();
   const collection = useCollection();
+  const plugin = usePlugin(PluginBlockTemplateClient);
   const t = useT();
   const { refresh } = useDataBlockRequest();
 
@@ -30,9 +38,9 @@ export const useEditActionProps = () => {
         values,
         filterByTk: values[collection.filterTargetKey],
       });
-      form.reset();
       refresh();
       message.success(t('Saved successfully'));
+      plugin.templateInfos.set(values[collection.filterTargetKey], values);
       setVisible(false);
     },
   };

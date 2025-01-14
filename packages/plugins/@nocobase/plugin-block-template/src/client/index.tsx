@@ -24,6 +24,7 @@ import { BlockTemplateMobilePage } from './components/BlockTemplateMobilePage';
 export class PluginBlockTemplateClient extends Plugin {
   loadingPromises = new Map();
   templateBlocks = new Map();
+  templateInfos = new Map();
   templateschemacache = {};
   pageBlocks = {};
 
@@ -54,7 +55,7 @@ export class PluginBlockTemplateClient extends Plugin {
           throw pendingPromise; // will be handled by react suspense, this is not a real error
         }
 
-        const sc = getFullSchema(s, this.templateschemacache);
+        const sc = getFullSchema(s, this.templateschemacache, this.templateInfos);
         this.pageBlocks[sc['x-uid']] = sc;
         return sc;
       }
@@ -129,6 +130,30 @@ export class PluginBlockTemplateClient extends Plugin {
         promises.push(this.templateschemacache[uid]);
       } else if (this.templateschemacache[uid].then) {
         promises.push(this.templateschemacache[uid]);
+      }
+    }
+
+    if (schema['x-block-template-key']) {
+      const templateKey = schema['x-block-template-key'];
+      if (!this.templateInfos.has(templateKey)) {
+        const templateInfoPromise = this.app.apiClient
+          .request({
+            url: `/blockTemplates:get/${templateKey}`,
+          })
+          .then((res) => {
+            const templateInfo = res?.data?.data || {};
+            this.templateInfos.set(templateKey, templateInfo);
+            return templateInfo;
+          })
+          .catch((error) => {
+            console.error(`Failed to fetch template info for key ${templateKey}:`, error);
+            this.templateInfos.delete(templateKey);
+            return null;
+          });
+        this.templateInfos.set(templateKey, templateInfoPromise);
+        promises.push(templateInfoPromise);
+      } else if (this.templateInfos.get(templateKey)?.then) {
+        promises.push(this.templateInfos.get(templateKey));
       }
     }
 

@@ -16,7 +16,7 @@ import { convertTplBlock } from '../initializers/TemplateBlockInitializer';
 import { Schema } from '@formily/json-schema';
 import { useT } from '../locale';
 import PluginBlockTemplateClient from '..';
-import { addToolbarClass } from '../utils/template';
+import { addToolbarClass, syncTemplateTitle } from '../utils/template';
 
 const findInsertPosition = (parentSchema, uid) => {
   const postion = {
@@ -84,7 +84,7 @@ export const RevertSetting = () => {
               false,
               isRoot,
               rootSchema['x-uid'],
-              rootSchema['x-template-title'],
+              rootSchema['x-block-template-key'],
             );
 
             // remove old schema
@@ -115,6 +115,7 @@ export const RevertSetting = () => {
                 ret = mergedSchema;
               }
               addToolbarClass(ret);
+              syncTemplateTitle(ret, plugin.templateInfos);
               return ret;
             };
             refresh({ refreshParentSchema: true });

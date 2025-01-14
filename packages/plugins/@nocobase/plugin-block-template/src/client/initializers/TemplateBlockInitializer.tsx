@@ -17,7 +17,7 @@ import PluginBlockTemplateClient from '..';
 import { useT } from '../locale';
 import PluginMobileClient from '@nocobase/plugin-mobile/client';
 
-export function convertTplBlock(tpl, virtual = false, isRoot = true, newRootId?: string, templateTitle?: string) {
+export function convertTplBlock(tpl, virtual = false, isRoot = true, newRootId?: string, templateKey?: string) {
   if (!newRootId) {
     newRootId = uid();
   }
@@ -35,7 +35,7 @@ export function convertTplBlock(tpl, virtual = false, isRoot = true, newRootId?:
       delete newTpl['x-decorator'];
     }
     for (const key in tpl.properties) {
-      const t = convertTplBlock(tpl.properties[key], virtual, isRoot, newRootId, templateTitle);
+      const t = convertTplBlock(tpl.properties[key], virtual, isRoot, newRootId, templateKey);
       if (isRoot) {
         newRootId = uid(); // 多个Grid.Row的时候，每个Grid.Row都要生成一个新的uid
       }
@@ -62,15 +62,15 @@ export function convertTplBlock(tpl, virtual = false, isRoot = true, newRootId?:
       newSchema['x-uid'] = newRootId;
       newSchema['x-template-version'] = '1.0';
     }
-    if (templateTitle) {
-      newSchema['x-template-title'] = templateTitle;
+    if (templateKey) {
+      newSchema['x-block-template-key'] = templateKey;
     }
     // filter should be in tpl
     if (_.get(tpl, 'x-filter-targets')) {
       newSchema['x-filter-targets'] = tpl['x-filter-targets'];
     }
     for (const key in tpl.properties) {
-      newSchema.properties[key] = convertTplBlock(tpl.properties[key], virtual, false, newRootId, templateTitle);
+      newSchema.properties[key] = convertTplBlock(tpl.properties[key], virtual, false, newRootId, templateKey);
     }
     return newSchema;
   }
@@ -111,7 +111,7 @@ function correctIdReferences(schemas) {
   }
 }
 
-function convertTemplateToBlock(data, templateTitle?: string) {
+function convertTemplateToBlock(data, templateKey?: string) {
   // debugger;
   let tpls = data?.properties; // Grid开始的区块
   tpls = _.get(Object.values(tpls), '0.properties'); // Grid.Row开始的区块
@@ -119,7 +119,7 @@ function convertTemplateToBlock(data, templateTitle?: string) {
   // 遍历 tpl的所有属性，每一个属性其实是一个区块
   for (const key in tpls) {
     const tpl = tpls[key];
-    const schema = convertTplBlock(tpl, false, true, undefined, templateTitle);
+    const schema = convertTplBlock(tpl, false, true, undefined, templateKey);
     if (schema) {
       schemas.push(schema);
     }
@@ -245,7 +245,7 @@ export const TemplateBlockInitializer = () => {
     });
 
     const template = data?.data;
-    const schemas = convertTemplateToBlock(template, item.label);
+    const schemas = convertTemplateToBlock(template, item.key);
     saveSchemasToCache(schemas, template, plugin.setTemplateCache);
     correctIdReferences(schemas);
     for (const schema of schemas) {
@@ -259,6 +259,7 @@ export const TemplateBlockInitializer = () => {
 
   const { data, loading } = useRequest<{
     data: {
+      key: string;
       title: string;
       description: string;
       uid: string;
@@ -309,7 +310,7 @@ export const TemplateBlockInitializer = () => {
     },
     ...(filteredData?.length
       ? filteredData.map((item) => ({
-          key: item.uid,
+          key: item.key,
           label: item.title,
           value: item.uid,
         }))

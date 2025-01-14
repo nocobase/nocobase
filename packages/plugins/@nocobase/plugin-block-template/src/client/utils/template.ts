@@ -237,13 +237,29 @@ export function addToolbarClass(schema) {
   }
 }
 
+export function syncTemplateTitle(schema: any, templateInfos: Map<string, any>) {
+  if (schema['x-block-template-key']) {
+    schema['x-template-title'] = templateInfos.get(schema['x-block-template-key'])?.title;
+  }
+  if (schema.properties) {
+    for (const key in schema.properties) {
+      syncTemplateTitle(schema.properties[key], templateInfos);
+    }
+  }
+}
+
 /**
  * Get the full schema by merging with template schema
  * @param schema The schema to process
  * @param templateschemacache The template schema cache
+ * @param templateInfos The template info cache
  * @returns The full schema
  */
-export function getFullSchema(schema: any, templateschemacache: Record<string, any>): any {
+export function getFullSchema(
+  schema: any,
+  templateschemacache: Record<string, any>,
+  templateInfos: Map<string, any>,
+): any {
   const rootId = schema['x-uid'];
   const templateRootId = schema['x-template-root-uid'];
   let ret = schema;
@@ -251,17 +267,18 @@ export function getFullSchema(schema: any, templateschemacache: Record<string, a
   if (!templateRootId) {
     for (const key in schema.properties) {
       const property = schema.properties[key];
-      schema.properties[key] = getFullSchema(property, templateschemacache);
+      schema.properties[key] = getFullSchema(property, templateschemacache, templateInfos);
       if (schema.properties[key]['x-component'] === undefined) {
         delete schema.properties[key]; // 说明已经从模板中删除了
       }
     }
   } else {
     const target = _.cloneDeep(templateschemacache[templateRootId]);
-    const result = mergeSchema(target, schema, rootId, templateschemacache);
+    const result = mergeSchema(target, schema, rootId, templateschemacache, templateInfos);
     ret = result;
   }
   addToolbarClass(ret);
+  syncTemplateTitle(ret, templateInfos);
   cleanSchema(ret);
   return ret;
 }
@@ -272,9 +289,16 @@ export function getFullSchema(schema: any, templateschemacache: Record<string, a
  * @param source The source schema
  * @param rootId The root UID
  * @param templateschemacache The template schema cache
+ * @param templateInfos The template info cache
  * @returns The merged schema
  */
-export function mergeSchema(target: any, source: any, rootId: string, templateschemacache: Record<string, any>): any {
+export function mergeSchema(
+  target: any,
+  source: any,
+  rootId: string,
+  templateschemacache: Record<string, any>,
+  templateInfos: Map<string, any>,
+): any {
   return _.mergeWith(
     target,
     source,
@@ -406,6 +430,7 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
                         schema || {},
                         rootId,
                         templateschemacache,
+                        templateInfos,
                       );
                       tItemsMap.delete(schema['x-template-uid']);
                     }
@@ -445,7 +470,7 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
                 true,
                 false,
                 rootId,
-                _.get(source, 'x-template-title'),
+                _.get(source, 'x-block-template-key'),
               );
               newSchema['name'] = key;
               newSchemas.push(newSchema);
@@ -459,9 +484,15 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
             if (_.get(objectValue, [k, 'properties'])) {
               sourceProperty['properties'] = sourceProperty['properties'] || {};
             }
-            properties[k] = mergeSchema(objectValue?.[k] || {}, sourceValue?.[k], rootId, templateschemacache);
+            properties[k] = mergeSchema(
+              objectValue?.[k] || {},
+              sourceValue?.[k],
+              rootId,
+              templateschemacache,
+              templateInfos,
+            );
             if (properties[k]['x-template-root-uid']) {
-              properties[k] = getFullSchema(properties[k], templateschemacache);
+              properties[k] = getFullSchema(properties[k], templateschemacache, templateInfos);
             }
           }
 
@@ -481,7 +512,7 @@ export function mergeSchema(target: any, source: any, rootId: string, templatesc
           return properties;
         }
 
-        return mergeSchema(objectValue || {}, sourceValue, rootId, templateschemacache);
+        return mergeSchema(objectValue || {}, sourceValue, rootId, templateschemacache, templateInfos);
       }
       return sourceValue;
     },
