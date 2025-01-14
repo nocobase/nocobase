@@ -56,7 +56,10 @@ export class SortField extends Field {
       const model = this.collection.model;
 
       if (model.primaryKeyAttribute) {
-        return model.rawAttributes[model.primaryKeyAttribute].field;
+        const primaryKeyAttribute = model.rawAttributes[model.primaryKeyAttribute];
+        if (primaryKeyAttribute.autoIncrement) {
+          return primaryKeyAttribute.field;
+        }
       }
 
       if (model.rawAttributes['createdAt']) {
