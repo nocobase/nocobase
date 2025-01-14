@@ -137,7 +137,11 @@ function getNeedRemoveIds(desktopRoutes: any[], menuUiSchemas: any[]) {
         // tab 的父节点就是一个 page
         const page = desktopRoutes.find((route) => route?.id === item?.parentId);
         // tab 要不要过滤掉，和它的父节点（page）有关
-        return !uidList.includes(page?.schemaUid);
+        return !uidList.includes(page?.menuSchemaUid);
+      }
+
+      if (item.type === 'page') {
+        return !uidList.includes(item?.menuSchemaUid);
       }
 
       return !uidList.includes(item?.schemaUid);
