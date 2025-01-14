@@ -22,7 +22,19 @@ import {
   VariablesProvider,
   useApp,
 } from '@nocobase/client';
-import { Breadcrumb, Button, Dropdown, Space, Spin, Switch, Input, message, Popover, QRCode } from 'antd';
+import {
+  Breadcrumb,
+  Button,
+  Dropdown,
+  Space,
+  Spin,
+  Switch,
+  Input,
+  message,
+  Popover,
+  QRCode,
+  theme as AntdTheme,
+} from 'antd';
 import React, { useState } from 'react';
 import { useParams } from 'react-router';
 import { Link } from 'react-router-dom';
@@ -56,6 +68,7 @@ export function AdminPublicFormPage() {
   const { t } = usePublicFormTranslation();
   const { theme } = useGlobalTheme();
   const apiClient = useAPIClient();
+  const { token } = AntdTheme.useToken();
   const app = useApp();
   const { data, loading, refresh } = useRequest<any>({
     url: `publicForms:get/${params.name}`,
@@ -118,6 +131,8 @@ export function AdminPublicFormPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          background: `${token.colorBgContainer}`,
+          borderBottom: `1px solid ${token.colorBorderSecondary}`,
         }}
       >
         <Breadcrumb
