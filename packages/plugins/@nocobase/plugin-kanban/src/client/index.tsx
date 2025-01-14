@@ -44,6 +44,15 @@ const KanbanPluginProvider = React.memo((props) => {
 KanbanPluginProvider.displayName = 'KanbanPluginProvider';
 
 class PluginKanbanClient extends Plugin {
+  groupFields:
+    | string[]
+    | {
+        type: string;
+        useItemField: Function;
+      }[] = ['select', 'radioGroup'];
+  registerGroupFieldType(data) {
+    this.groupFields.push(data);
+  }
   async load() {
     this.app.use(KanbanPluginProvider);
     this.app.schemaInitializerManager.add(kanbanCardInitializers_deprecated);

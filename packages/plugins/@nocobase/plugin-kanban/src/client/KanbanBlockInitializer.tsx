@@ -22,6 +22,7 @@ import {
   SchemaComponent,
   SchemaComponentOptions,
   useAPIClient,
+  useApp,
   useCollectionManager_deprecated,
   useGlobalTheme,
   useSchemaInitializer,
@@ -153,10 +154,14 @@ export const useCreateKanbanBlock = () => {
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
   const api = useAPIClient();
+  const app = useApp();
+  const plugin = app.pm.get('kanban') as any;
+  const { groupFields } = plugin;
+
   const createKanbanBlock = async ({ item }) => {
     const collectionFields = getCollectionFields(item.name, item.dataSource);
     const fields = collectionFields
-      ?.filter((field) => ['select', 'radioGroup'].includes(field.interface))
+      ?.filter((field) => groupFields.includes(field.interface))
       ?.map((field) => {
         return {
           label: field?.uiSchema?.title,

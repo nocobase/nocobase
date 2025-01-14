@@ -98,7 +98,6 @@ export const useKanbanBlockProps = () => {
   const ctx = useKanbanBlockContext();
   const [dataSource, setDataSource] = useState([]);
   const primaryKey = useCollection()?.getPrimaryKey();
-
   useEffect(() => {
     const data = toColumns(ctx.groupField, ctx?.service?.data?.data, primaryKey);
     if (isEqual(field.value, data) && dataSource === field.value) {
