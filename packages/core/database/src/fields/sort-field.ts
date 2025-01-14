@@ -52,19 +52,6 @@ export class SortField extends Field {
 
   initRecordsSortValue = async (options) => {
     const { transaction } = options;
-    const orderField = (() => {
-      const model = this.collection.model;
-
-      if (model.primaryKeyAttribute) {
-        return model.primaryKeyAttribute;
-      }
-
-      if (model.rawAttributes['createdAt']) {
-        return model.rawAttributes['createdAt'].field;
-      }
-
-      throw new Error(`can not find order key for collection ${this.collection.name}`);
-    })();
 
     const needInit = async (scopeKey = null, scopeValue = null) => {
       const filter = {};
@@ -89,6 +76,23 @@ export class SortField extends Field {
     };
 
     const doInit = async (scopeKey = null, scopeValue = null) => {
+      const orderField = (() => {
+        const model = this.collection.model;
+
+        if (model.primaryKeyAttribute) {
+          const primaryKeyAttribute = model.rawAttributes[model.primaryKeyAttribute];
+          if (primaryKeyAttribute.autoIncrement) {
+            return primaryKeyAttribute.field;
+          }
+        }
+
+        if (model.rawAttributes['createdAt']) {
+          return model.rawAttributes['createdAt'].field;
+        }
+
+        throw new Error(`can not find order key for collection ${this.collection.name}`);
+      })();
+
       const queryInterface = this.collection.db.sequelize.getQueryInterface();
 
       if (scopeKey) {
