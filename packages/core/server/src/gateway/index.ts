@@ -433,62 +433,6 @@ export class Gateway extends EventEmitter {
 
     this.wsServer = new WSServer();
 
-    this.wsServer.on('message', async ({ client, message }) => {
-      const app = await AppSupervisor.getInstance().getApp(client.app);
-
-      if (!app) {
-        return;
-      }
-
-      const parsedMessage = JSON.parse(message.toString());
-
-      if (!parsedMessage.type) {
-        return;
-      }
-
-      if (!app.listenerCount(`ws:setTag`)) {
-        app.on('ws:setTag', ({ clientId, tagKey, tagValue }) => {
-          this.wsServer.setClientTag(clientId, tagKey, tagValue);
-        });
-
-        app.on('ws:removeTag', ({ clientId, tagKey }) => {
-          this.wsServer.removeClientTag(clientId, tagKey);
-        });
-
-        app.on('ws:sendToTag', ({ tagKey, tagValue, message }) => {
-          this.wsServer.sendToConnectionsByTags(
-            [
-              { tagName: tagKey, tagValue },
-              { tagName: 'app', tagValue: app.name },
-            ],
-            message,
-          );
-        });
-
-        app.on('ws:sendToTags', ({ tags, message }) => {
-          this.wsServer.sendToConnectionsByTags(tags, message);
-        });
-
-        app.on('ws:authorized', ({ clientId, userId }) => {
-          this.wsServer.sendToConnectionsByTags(
-            [
-              { tagName: 'userId', tagValue: userId },
-              { tagName: 'app', tagValue: app.name },
-            ],
-            { type: 'authorized' },
-          );
-        });
-      }
-
-      const eventName = `ws:message:${parsedMessage.type}`;
-
-      app.emit(eventName, {
-        clientId: client.id,
-        tags: [...client.tags],
-        payload: parsedMessage.payload,
-      });
-    });
-
     this.server.on('upgrade', (request, socket, head) => {
       const { pathname } = parse(request.url);
 

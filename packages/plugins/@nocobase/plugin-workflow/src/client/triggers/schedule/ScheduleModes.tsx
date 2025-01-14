@@ -12,6 +12,7 @@ import { DatePicker } from 'antd';
 import { NAMESPACE, lang } from '../../locale';
 import { appends, collection } from '../../schemas/collection';
 import { SCHEDULE_MODE } from './constants';
+import { dayjs } from '@nocobase/utils/client';
 
 export const ScheduleModes = {
   [SCHEDULE_MODE.STATIC]: {
@@ -82,7 +83,7 @@ export const ScheduleModes = {
           nullable: false,
           changeOnSelect: true,
           render(props) {
-            return <DatePicker showTime placeholder={lang('Current time')} {...props} />;
+            return <DatePicker showTime placeholder={lang('Current time')} {...props} value={dayjs(props.value)} />;
           },
         },
       },

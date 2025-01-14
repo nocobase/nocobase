@@ -5,6 +5,28 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.4.23](https://github.com/nocobase/nocobase/compare/v1.4.22...v1.4.23) - 2025-01-13
+
+### 🐛 修复
+
+- **[client]** 修复在表格中固定操作列不生效的问题 ([#6048](https://github.com/nocobase/nocobase/pull/6048)) by @zhangzhonghe
+
+- **[用户]** 在用户管理中给用户设置密码的时候关闭浏览器自动填充 ([#6041](https://github.com/nocobase/nocobase/pull/6041)) by @2013xile
+
+- **[工作流]** 修复基于数据表字段的定时任务在启动后不执行的问题 ([#6042](https://github.com/nocobase/nocobase/pull/6042)) by @mytharcher
+
+## [v1.4.22](https://github.com/nocobase/nocobase/compare/v1.4.21...v1.4.22) - 2025-01-10
+
+### 🚀 优化
+
+- **[evaluators]** 升级 formula.js 库的版本至 4.4.9 ([#6037](https://github.com/nocobase/nocobase/pull/6037)) by @mytharcher
+
+- **[工作流]** 修复工作流插件的日志 API ([#6036](https://github.com/nocobase/nocobase/pull/6036)) by @mytharcher
+
+### 🐛 修复
+
+- **[工作流]** 为避免重复触发增加防御性逻辑 ([#6022](https://github.com/nocobase/nocobase/pull/6022)) by @mytharcher
+
 ## [v1.4.21](https://github.com/nocobase/nocobase/compare/v1.4.20...v1.4.21) - 2025-01-10
 
 ### 🚀 优化
