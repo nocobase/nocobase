@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useRef } from 'react';
+import React, { useCallback, useContext, useEffect, useRef } from 'react';
 import { observer, useFieldSchema, useField, useFormEffects } from '@formily/react';
 import { onFieldReact } from '@formily/core';
 import { useUpdate } from 'ahooks';
@@ -50,24 +50,30 @@ export const TemplateGridDecorator = observer((props: any) => {
     [api, template],
   );
 
+  const syncTemplateInfo = useCallback(() => {
+    const configured = Object.keys(fieldSchema['properties'] || {}).length > 0;
+    updateInitializerDisplay(configured);
+    updateTemplateConfigured(configured);
+  }, [fieldSchema, updateInitializerDisplay, updateTemplateConfigured]);
+
   const onChange = useCallback(
     // schema will not be passed here, is it a core bug?
     () => {
-      const configured = Object.keys(fieldSchema?.['properties'] || {}).length > 0;
-      updateInitializerDisplay(configured);
-      updateTemplateConfigured(configured);
+      syncTemplateInfo();
       onChangeFromContext?.(fieldSchema);
     },
-    [fieldSchema, updateInitializerDisplay, updateTemplateConfigured, onChangeFromContext],
+    [fieldSchema, syncTemplateInfo, onChangeFromContext],
   );
 
   useFormEffects(() => {
     onFieldReact('blocks.*.*', () => {
-      const configured = Object.keys(fieldSchema['properties'] || {}).length > 0;
-      updateInitializerDisplay(configured);
-      updateTemplateConfigured(configured);
+      syncTemplateInfo();
     });
   });
+
+  useEffect(() => {
+    syncTemplateInfo();
+  }, [syncTemplateInfo]);
 
   return (
     <SchemaComponentOnChangeContext.Provider value={{ onChange }}>
