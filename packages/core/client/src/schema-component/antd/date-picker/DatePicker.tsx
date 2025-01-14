@@ -160,6 +160,7 @@ export const DatePicker: ComposedDatePicker = (props: any) => {
     disabledDate,
     disabledTime,
     showTime: props.showTime ? { defaultValue: dayjs('00:00:00', 'HH:mm:ss') } : false,
+    inputReadOnly: true,
   };
   return <InternalDatePicker {...newProps} value={value} />;
 };
@@ -206,6 +207,7 @@ DatePicker.RangePicker = function RangePicker(props: any) {
     format: getDateTimeFormat(targetPicker, targetDateFormat, showTime, timeFormat),
     picker: targetPicker,
     showTime: showTime ? { defaultValue: [dayjs('00:00:00', 'HH:mm:ss'), dayjs('23:59:59', 'HH:mm:ss')] } : false,
+    inputReadOnly: true,
   };
   const [stateProps, setStateProps] = useState(newProps);
   if (isFilterAction) {
@@ -277,6 +279,7 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
     showTime: showTime ? { defaultValue: dayjs('00:00:00', 'HH:mm:ss') } : false,
     format: getDateTimeFormat(targetPicker, targetDateFormat, showTime, timeFormat),
     picker: targetPicker,
+    inputReadOnly: true,
     onChange: (val) => {
       props.onChange(undefined);
       setTimeout(() => {
