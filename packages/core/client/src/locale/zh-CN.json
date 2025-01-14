@@ -865,6 +865,7 @@
   "Allow add new, update and delete actions": "允许增删改操作",
   "Date display format": "日期显示格式",
   "Date range limit": "日期限定范围",
+  "Date Input Read only": "日期输入框只读",
   "MinDate": "最小日期",
   "MaxDate": "最大日期",
   "Please select time or variable": "请选择时间或变量",
