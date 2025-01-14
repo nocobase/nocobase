@@ -62,7 +62,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg \
 RUN sh -c 'echo "deb http://mirrors.ustc.edu.cn/postgresql/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
 RUN wget --quiet -O - http://mirrors.ustc.edu.cn/postgresql/repos/apt/ACCC4CF8.asc | apt-key add -
 
-RUN apt-get update && apt-get -y --no-install-recommends install nginx libaio1 postgresql-client-16 postgresql-client-17 \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  nginx \
+  libaio1 \
+  postgresql-client-16 \
+  postgresql-client-17 \
+  libfreetype6 \
+  fontconfig \
+  libgssapi-krb5-2 \
+  fonts-liberation \
+  fonts-noto-cjk \
   && rm -rf /var/lib/apt/lists/*
 
 RUN rm -rf /etc/nginx/sites-enabled/default

@@ -14,9 +14,9 @@ import { ActionContextProvider, SchemaComponentOptions, useActionContext, useDes
 import { PopupVisibleProvider } from '../../antd/page/PagePopups';
 import { usePopupUtils } from '../../antd/page/pagePopupUtils';
 import { popupSchema } from './schema';
-
 import { CollectionProvider, useCollection } from '../../../data-source';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
+import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 
 const useInsertSchema = () => {
   const fieldSchema = useFieldSchema();
@@ -109,12 +109,14 @@ function withPopupWrapper<T>(WrappedComponent: React.ComponentType<T>) {
         >
           <CollectionProvider name={collection.name}>
             <SchemaComponentOptions>
-              <NocoBaseRecursionField
-                onlyRenderProperties
-                basePath={field?.address}
-                schema={fieldSchema}
-                filterProperties={filterProperties}
-              />
+              <VariablePopupRecordProvider>
+                <NocoBaseRecursionField
+                  onlyRenderProperties
+                  basePath={field?.address}
+                  schema={fieldSchema}
+                  filterProperties={filterProperties}
+                />
+              </VariablePopupRecordProvider>
             </SchemaComponentOptions>
           </CollectionProvider>
           <a onClick={handleClick}>
