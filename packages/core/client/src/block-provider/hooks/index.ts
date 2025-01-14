@@ -1588,6 +1588,7 @@ export const getAppends = ({
         'AssociationField.AddNewer',
         'TableField',
         'Kanban.CardViewer',
+        'Action.Container',
       ].includes(s['x-component'])
     ) {
       getAppends({
