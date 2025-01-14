@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { schemaToRoutes } from '../migrations/2024122912210-transform-menu-schema-to-routes';
+import { schemaToRoutes } from '../migrations/2024122912211-transform-menu-schema-to-routes';
 
 describe('schemaToRoutes', () => {
   it('should return empty array for empty schema', async () => {
@@ -70,8 +70,8 @@ describe('schemaToRoutes', () => {
         type: 'page',
         title: 'Page 1',
         icon: 'PageIcon',
-        schemaUid: 'page-1',
-        pageSchemaUid: 'page-schema-1',
+        menuSchemaUid: 'page-1',
+        schemaUid: 'page-schema-1',
         hideInMenu: false,
         children: [],
       },
