@@ -42,9 +42,13 @@ export type UploadFileOptions = {
   documentRoot?: string;
 };
 
-export default class PluginFileManagerServer extends Plugin {
+export class PluginFileManagerServer extends Plugin {
   storageTypes = new Registry<IStorage>();
   storagesCache = new Map<number, StorageModel>();
+
+  registerStorageType(type: string, options: IStorage) {
+    this.storageTypes.register(type, options);
+  }
 
   async createFileRecord(options: FileRecordOptions) {
     const { values, storageName, collectionName, filePath, transaction } = options;
@@ -257,3 +261,5 @@ export default class PluginFileManagerServer extends Plugin {
     this.app.db.interfaceManager.registerInterfaceType('attachment', AttachmentInterface);
   }
 }
+
+export default PluginFileManagerServer;
