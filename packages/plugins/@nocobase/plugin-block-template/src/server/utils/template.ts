@@ -274,6 +274,7 @@ function cleanSchema(schema?: Schema, templateId?: string) {
   for (const key of Object.keys(properties)) {
     if (schema.properties[key]['x-component'] === undefined && !schema.properties[key]['x-template-root-uid']) {
       delete schema.properties[key];
+      continue;
     }
     if (schema.properties[key]['x-template-root-uid'] && schema.properties[key]['x-template-root-uid'] !== templateId) {
       continue;
