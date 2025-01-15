@@ -43,15 +43,40 @@ const KanbanPluginProvider = React.memo((props) => {
 });
 KanbanPluginProvider.displayName = 'KanbanPluginProvider';
 
+type GroupOption = {
+  value: string | number;
+  label: string;
+  color: string;
+};
+
+type CollectionField = {
+  name: string;
+  type: string;
+  interface: string;
+  [key: string]: any; // 扩展字段
+};
+
+type UseGetGroupOptions = (collectionField: CollectionField) => { options: GroupOption[] };
+
+const useDefaultGroupFieldsOptions = (collectionField) => {
+  return { options: collectionField.uiSchema.enum };
+};
 class PluginKanbanClient extends Plugin {
-  groupFields:
-    | string[]
-    | {
-        type: string;
-        useItemField: Function;
-      }[] = ['select', 'radioGroup'];
-  registerGroupFieldType(data) {
-    this.groupFields.push(data);
+  groupFields: {
+    type: string;
+    useGetGroupOptions: UseGetGroupOptions;
+  }[] = [
+    { type: 'select', useGetGroupOptions: useDefaultGroupFieldsOptions },
+    { type: 'radioGroup', useGetGroupOptions: useDefaultGroupFieldsOptions },
+  ];
+
+  registerGroupFieldType(data: any) {
+    if (Array.isArray(data)) {
+      const result = this.groupFields.concat(data);
+      this.groupFields = result;
+    } else {
+      this.groupFields.push(data);
+    }
   }
   async load() {
     this.app.use(KanbanPluginProvider);

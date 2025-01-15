@@ -133,7 +133,8 @@ export const useCollectionManager_deprecated = (dataSourceName?: string) => {
   const getCollectionFieldsOptions = useCallback(
     (
       collectionName: string,
-      type: string | string[] = 'string',
+      type?: string | string[],
+      interfaces?: string | string[],
       opts?: {
         dataSource?: string;
         cached?: Record<string, any>;
@@ -183,8 +184,11 @@ export const useCollectionManager_deprecated = (dataSourceName?: string) => {
         return _.cloneDeep(cached[collectionName]);
       }
 
-      if (typeof type === 'string') {
+      if (type && typeof type === 'string') {
         type = [type];
+      }
+      if (interfaces && typeof interfaces === 'string') {
+        interfaces = [interfaces];
       }
       const fields = getCollectionFields(collectionName, customDataSourceNameValue);
       const options = fields
@@ -193,7 +197,8 @@ export const useCollectionManager_deprecated = (dataSourceName?: string) => {
             field.interface &&
             !exceptInterfaces.includes(field.interface) &&
             (allowAllTypes ||
-              type.includes(field.type) ||
+              (type && type.includes(field.type)) ||
+              (interfaces && interfaces.includes(field.interface)) ||
               (association && field.target && field.target !== collectionName && Array.isArray(association)
                 ? association.includes(field.interface)
                 : false)),
@@ -207,7 +212,7 @@ export const useCollectionManager_deprecated = (dataSourceName?: string) => {
           if (association && field.target) {
             result.children = collectionNames.includes(field.target)
               ? []
-              : getCollectionFieldsOptions(field.target, type, {
+              : getCollectionFieldsOptions(field.target, type, interfaces, {
                   ...opts,
                   cached,
                   dataSource: customDataSourceNameValue,

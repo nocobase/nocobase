@@ -28,6 +28,34 @@ import {
 } from './schema-initializer/items';
 
 export class PluginCalendarClient extends Plugin {
+  titleFields = ['input', 'select', 'phone', 'email', 'radioGroup'];
+  dateTimeFields = ['date', 'datetime', 'dateOnly', 'datetimeNoTz', 'unixTimestamp', 'createdAt', 'updatedAt'];
+  backgroundColorFields = ['radioGroup', 'select'];
+
+  registerTitleFields(data: any) {
+    if (Array.isArray(data)) {
+      const result = this.titleFields.concat(data);
+      this.titleFields = result;
+    } else {
+      this.titleFields.push(data);
+    }
+  }
+  registerDateTimeFields(data: any) {
+    if (Array.isArray(data)) {
+      const result = this.dateTimeFields.concat(data);
+      this.dateTimeFields = result;
+    } else {
+      this.dateTimeFields.push(data);
+    }
+  }
+  registerBackgroundColorFields(data: any) {
+    if (Array.isArray(data)) {
+      const result = this.backgroundColorFields.concat(data);
+      this.backgroundColorFields = result;
+    } else {
+      this.backgroundColorFields.push(data);
+    }
+  }
   async load() {
     this.app.dataSourceManager.addCollectionTemplates([CalendarCollectionTemplate]);
     this.app.schemaInitializerManager.addItem('page:addBlock', 'dataBlocks.calendar', {

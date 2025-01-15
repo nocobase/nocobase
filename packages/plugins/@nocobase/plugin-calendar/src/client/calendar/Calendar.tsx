@@ -30,6 +30,7 @@ import {
   useToken,
   withDynamicSchemaProps,
   withSkeletonComponent,
+  useApp,
 } from '@nocobase/client';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
@@ -116,6 +117,9 @@ const useEvents = (
   );
   const { t } = useTranslation();
   const { fields } = useCollection();
+  const app = useApp();
+  const plugin = app.pm.get('calendar') as any;
+  const { titleFields } = plugin;
   const labelUiSchema = fields.find((v) => v.name === fieldNames?.title)?.uiSchema;
   const enumUiSchema = fields.find((v) => v.name === fieldNames?.colorFieldName);
   return useMemo(() => {
@@ -164,7 +168,10 @@ const useEvents = (
         });
 
         if (res) return out;
-        const title = getLabelFormatValue(labelUiSchema, get(item, fieldNames.title), true);
+        const targetTitleCollectionField = fields.find((v) => v.name === fieldNames.title);
+        const targetTitle = titleFields.find((v) => v.interface === targetTitleCollectionField.interface);
+        const title = getLabelFormatValue(labelUiSchema, get(item, fieldNames.title), true, targetTitle?.CustomLabel);
+
         const event: Event = {
           id: get(item, fieldNames.id || 'id'),
           colorFieldValue: item[fieldNames.colorFieldName],

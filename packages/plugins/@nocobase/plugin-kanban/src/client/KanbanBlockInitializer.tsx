@@ -161,7 +161,7 @@ export const useCreateKanbanBlock = () => {
   const createKanbanBlock = async ({ item }) => {
     const collectionFields = getCollectionFields(item.name, item.dataSource);
     const fields = collectionFields
-      ?.filter((field) => groupFields.includes(field.interface))
+      ?.filter((field) => groupFields.find((v) => v.type === field.interface))
       ?.map((field) => {
         return {
           label: field?.uiSchema?.title,
@@ -223,13 +223,16 @@ export function useCreateAssociationKanbanBlock() {
   const { theme } = useGlobalTheme();
   const { getCollectionFields } = useCollectionManager_deprecated();
   const api = useAPIClient();
+  const app = useApp();
 
   const createAssociationKanbanBlock = async ({ item }) => {
-    console.log(item);
     const field = item.associationField;
     const collectionFields = getCollectionFields(item.name, item.dataSource);
+    const plugin = app.pm.get('kanban') as any;
+    const { groupFields } = plugin;
+
     const fields = collectionFields
-      ?.filter((field) => ['select', 'radioGroup'].includes(field.interface))
+      ?.filter((field) => groupFields.find((v) => v.type === field.interface))
       ?.map((field) => {
         return {
           label: field?.uiSchema?.title,
