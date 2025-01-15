@@ -24,6 +24,7 @@ import {
   useDesignable,
   useFormBlockContext,
   usePopupSettings,
+  useApp,
 } from '@nocobase/client';
 import React, { useMemo } from 'react';
 import { useTranslation } from '../../locale';
@@ -73,14 +74,17 @@ export const calendarBlockSettings = new SchemaSettings({
         const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
         const { service } = useCalendarBlockContext();
         const { getCollectionFieldsOptions } = useCollectionManager_deprecated();
-        const { name, title } = useCollection();
+        const { name } = useCollection();
+        const app = useApp();
+        const plugin = app.pm.get('calendar') as any;
+        const { titleFields } = plugin;
 
         const field = useField();
         const { dn } = useDesignable();
         return {
           title: t('Title field'),
           value: fieldNames.title,
-          options: getCollectionFieldsOptions(name, 'string'),
+          options: getCollectionFieldsOptions(name, null, titleFields),
           onChange: (title) => {
             const fieldNames = field.decoratorProps.fieldNames || {};
             fieldNames['title'] = title;
@@ -112,11 +116,12 @@ export const calendarBlockSettings = new SchemaSettings({
         const { name } = useCollection();
         const field = useField();
         const { dn } = useDesignable();
-        const fliedList = getCollectionFieldsOptions(name, 'string');
-        const filteredItems = [
-          { label: t('Not selected'), value: '' },
-          ...fliedList.filter((item) => item.interface === 'radioGroup' || item.interface === 'select'),
-        ];
+        const app = useApp();
+        const plugin = app.pm.get('calendar') as any;
+        const { backgroundColorFields } = plugin;
+        const fliedList = getCollectionFieldsOptions(name, null, backgroundColorFields);
+        const filteredItems = [{ label: t('Not selected'), value: '' }, ...fliedList];
+
         return {
           title: t('Background color field'),
           value: fieldNames.colorFieldName || '',
@@ -230,10 +235,13 @@ export const calendarBlockSettings = new SchemaSettings({
         const { dn } = useDesignable();
         const { service } = useCalendarBlockContext();
         const { name } = useCollection();
+        const app = useApp();
+        const plugin = app.pm.get('calendar') as any;
+        const { dateTimeFields } = plugin;
         return {
           title: t('Start date field'),
           value: fieldNames.start,
-          options: getCollectionFieldsOptions(name, ['date', 'datetime', 'dateOnly', 'datetimeNoTz', 'unixTimestamp'], {
+          options: getCollectionFieldsOptions(name, null, dateTimeFields, {
             association: ['o2o', 'obo', 'oho', 'm2o'],
           }),
           onChange: (start) => {
@@ -265,10 +273,13 @@ export const calendarBlockSettings = new SchemaSettings({
         const { dn } = useDesignable();
         const { name } = useCollection();
         const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
+        const app = useApp();
+        const plugin = app.pm.get('calendar') as any;
+        const { dateTimeFields } = plugin;
         return {
           title: t('End date field'),
           value: fieldNames.end,
-          options: getCollectionFieldsOptions(name, ['date', 'datetime', 'dateOnly', 'datetimeNoTz', 'unixTimestamp'], {
+          options: getCollectionFieldsOptions(name, null, dateTimeFields, {
             association: ['o2o', 'obo', 'oho', 'm2o'],
           }),
           onChange: (end) => {

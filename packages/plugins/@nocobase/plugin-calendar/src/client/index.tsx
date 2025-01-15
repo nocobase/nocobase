@@ -29,8 +29,8 @@ import {
 
 export class PluginCalendarClient extends Plugin {
   titleFields = ['input', 'select', 'phone', 'email', 'radioGroup'];
-
   dateTimeFields = ['date', 'datetime', 'dateOnly', 'datetimeNoTz', 'unixTimestamp', 'createdAt', 'updatedAt'];
+  backgroundColorFields = ['radioGroup', 'select'];
 
   registerTitleFields(data: any) {
     if (Array.isArray(data)) {
@@ -46,6 +46,14 @@ export class PluginCalendarClient extends Plugin {
       this.dateTimeFields = result;
     } else {
       this.dateTimeFields.push(data);
+    }
+  }
+  registerBackgroundColorFields(data: any) {
+    if (Array.isArray(data)) {
+      const result = this.backgroundColorFields.concat(data);
+      this.backgroundColorFields = result;
+    } else {
+      this.backgroundColorFields.push(data);
     }
   }
   async load() {
