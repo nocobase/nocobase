@@ -97,17 +97,19 @@ function PluginInfo(props: IPluginInfo) {
         `}
         actions={[
           <Space split={<Divider type="vertical" />} key={'1'}>
-            <a
-              key={'5'}
-              href={homepage}
-              target="_blank"
-              onClick={(event) => {
-                event.stopPropagation();
-              }}
-              rel="noreferrer"
-            >
-              <ReadOutlined /> {t('Docs')}
-            </a>
+            {homepage && (
+              <a
+                key={'5'}
+                href={homepage}
+                target="_blank"
+                onClick={(event) => {
+                  event.stopPropagation();
+                }}
+                rel="noreferrer"
+              >
+                <ReadOutlined /> {t('Docs')}
+              </a>
+            )}
             {updatable && (
               <a
                 key={'3'}
