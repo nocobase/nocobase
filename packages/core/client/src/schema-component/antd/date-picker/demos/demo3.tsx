@@ -17,7 +17,6 @@ const schema = {
         dateFormat: 'YYYY/MM/DD',
         showTime: false,
         utc: false,
-        inputReadOnly: false,
       },
       'x-reactions': {
         target: '*(read1,read2)',
