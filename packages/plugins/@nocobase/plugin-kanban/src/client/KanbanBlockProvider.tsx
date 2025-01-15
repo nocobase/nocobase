@@ -135,7 +135,7 @@ export const useKanbanBlockProps = () => {
   const app = useApp();
   const plugin = app.pm.get('kanban') as any;
   const { groupFields } = plugin;
-  const targetGroupField = groupFields.find((v) => v.type === ctx.groupField.name);
+  const targetGroupField = groupFields.find((v) => v.type === ctx.groupField.interface);
   const options = targetGroupField?.useGetGroupOptions(ctx.groupField, api) || [];
 
   useEffect(() => {
