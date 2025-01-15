@@ -49,7 +49,12 @@ function CommonRepeatField({ value, onChange }) {
   return (
     <InputNumber
       value={value / option.value}
-      onChange={(v) => onChange(v * option.value)}
+      onChange={(v) => {
+        if (!v) {
+          return;
+        }
+        onChange(v * option.value);
+      }}
       min={1}
       addonBefore={t('Every')}
       addonAfter={t(option.unitText)}
@@ -71,9 +76,9 @@ export function RepeatField({ value = null, onChange }) {
         onChange('0 * * * * *');
         return;
       }
-      onChange(v);
+      onChange(typeof typeValue === 'number' ? Math.round((value / typeValue) * v) : v);
     },
-    [onChange],
+    [onChange, typeValue, value],
   );
 
   return (
