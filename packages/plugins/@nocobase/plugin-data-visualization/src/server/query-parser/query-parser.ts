@@ -100,19 +100,22 @@ export class QueryParser {
       } = this.parseDimensions(ctx, dimensions, hasAgg, ctx.get?.('x-timezone'));
       const order = this.parseOrders(ctx, orders, hasAgg);
 
+      const queryParams = {
+        where,
+        attributes: [...measureAttributes, ...dimensionAttributes],
+        include,
+        group,
+        order,
+        subQuery: false,
+        raw: true,
+      };
+      if (!hasAgg || dimensions.length) {
+        queryParams['limit'] = limit || 2000;
+        queryParams['offset'] = offset || 0;
+      }
       ctx.action.params.values = {
         ...ctx.action.params.values,
-        queryParams: {
-          where,
-          attributes: [...measureAttributes, ...dimensionAttributes],
-          include,
-          group,
-          order,
-          limit: limit || 2000,
-          offset: offset || 0,
-          subQuery: false,
-          raw: true,
-        },
+        queryParams,
         fieldMap: { ...measureFieldMap, ...dimensionFieldMap },
       };
       await next();
