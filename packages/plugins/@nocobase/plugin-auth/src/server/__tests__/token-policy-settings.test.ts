@@ -7,17 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AuthErrorCode, BaseAuth } from '@nocobase/auth';
+import { BaseAuth } from '@nocobase/auth';
 import { Database, Model } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
-import { AuthErrorType } from '@nocobase/auth';
 import ms from 'ms';
 import { tokenPolicyCollectionName, tokenPolicyRecordKey } from '../../constants';
-function sleep(ms) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
 
 class MockContext {
   token: string;
