@@ -111,7 +111,6 @@ export const toColumns = (groupCollectionField: any, dataSource: Array<any> = []
       cards: [],
     };
   });
-  console.log(columns);
   dataSource.forEach((ds) => {
     const value = ds[groupCollectionField.name];
     if (value && columns[value]) {
@@ -131,13 +130,11 @@ export const useKanbanBlockProps = () => {
   const ctx = useKanbanBlockContext();
   const [dataSource, setDataSource] = useState([]);
   const primaryKey = useCollection()?.getPrimaryKey();
-  const api = useAPIClient();
   const app = useApp();
   const plugin = app.pm.get('kanban') as any;
   const { groupFields } = plugin;
   const targetGroupField = groupFields.find((v) => v.type === ctx.groupField.interface);
-  const options = targetGroupField?.useGetGroupOptions(ctx.groupField, api) || [];
-
+  const { options } = targetGroupField.useGetGroupOptions(ctx.groupField);
   useEffect(() => {
     const data = toColumns(ctx.groupField, ctx?.service?.data?.data, primaryKey, options);
     if (isEqual(field.value, data) && dataSource === field.value) {
@@ -145,7 +142,7 @@ export const useKanbanBlockProps = () => {
     }
     field.value = data;
     setDataSource(field.value);
-  }, [ctx?.service?.loading]);
+  }, [ctx?.service?.loading, options]);
 
   const disableCardDrag = useDisableCardDrag();
 

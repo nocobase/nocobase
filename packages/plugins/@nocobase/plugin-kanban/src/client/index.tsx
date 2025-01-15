@@ -59,7 +59,7 @@ type CollectionField = {
 type UseGetGroupOptions = (collectionField: CollectionField) => GroupOption[];
 
 const useDefaultGroupFieldsOptions = (collectionField) => {
-  return collectionField.uiSchema.enum;
+  return { options: collectionField.uiSchema.enum };
 };
 class PluginKanbanClient extends Plugin {
   groupFields: {
