@@ -7,22 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/server';
+import React from 'react';
+import { useControllableValue } from 'ahooks';
+import { Card, Space, TreeSelect, Input } from 'antd';
 
-export class PluginProTplServer extends Plugin {
-  async afterAdd() {}
-
-  async beforeLoad() {}
-
-  async load() {}
-
-  async install() {}
-
-  async afterEnable() {}
-
-  async afterDisable() {}
-
-  async remove() {}
+export default function ConditionInput(props) {
+  const [state, setState] = useControllableValue<Array<any>>(props, {
+    defaultValue: [],
+  });
+  return <Input />;
 }
-
-export default PluginProTplServer;

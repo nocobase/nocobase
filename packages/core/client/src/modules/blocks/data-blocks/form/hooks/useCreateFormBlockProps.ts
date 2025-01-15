@@ -8,7 +8,9 @@
  */
 
 import { useFormBlockProps } from '../../../../../block-provider/FormBlockProvider';
+import { useCreateFormBlockEventsInterface } from './useCreateFormBlockEventsInterface';
 
 export function useCreateFormBlockProps() {
+  useCreateFormBlockEventsInterface();
   return useFormBlockProps();
 }

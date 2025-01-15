@@ -7,4 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { default } from './plugin';
+export const PluginName = 'event-flow';
+
+export interface IEventFlowEvent {
+  event: string;
+  condition: string;
+  actions: string[];
+}

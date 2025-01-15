@@ -324,6 +324,11 @@ export default {
             example: false,
             description: 'async or not',
           },
+          'x-events-setting': {
+            type: 'array',
+            example: [],
+            description: 'event flow setting',
+          },
           name: {
             type: 'string',
             name: '2qakvs173rs',

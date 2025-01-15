@@ -30,6 +30,7 @@ import { AssociationFilterPlugin, SchemaInitializerPlugin } from '../schema-init
 import { SchemaSettingsPlugin } from '../schema-settings';
 import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
 import { SystemSettingsPlugin } from '../system-settings';
+import { EventFlowPlugin } from '../event-flow';
 import { CurrentUserProvider, CurrentUserSettingsMenuProvider } from '../user';
 import { LocalePlugin } from './plugins/LocalePlugin';
 import { tval } from '@nocobase/utils/client';
@@ -357,5 +358,6 @@ export class NocoBaseBuildInPlugin extends Plugin {
     await this.app.pm.add(RemoteDocumentTitlePlugin, { name: 'remote-document-title' });
     await this.app.pm.add(PMPlugin, { name: 'builtin-pm' });
     await this.app.pm.add(CollectionPlugin, { name: 'builtin-collection' });
+    await this.app.pm.add(EventFlowPlugin, { name: EventFlowPlugin.name });
   }
 }
