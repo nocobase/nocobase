@@ -17,7 +17,6 @@ const schema = {
         dateFormat: 'YYYY/MM/DD',
         showTime: true,
         gmt: true,
-        inputReadOnly: false,
       },
       default: '2022-06-04T15:00:00.000Z',
       'x-reactions': {
