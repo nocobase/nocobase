@@ -14,6 +14,33 @@ import { FormulaFieldInterface } from './interfaces/formula';
 import { FormulaComponentFieldSettings } from './FormulaComponentFieldSettings';
 
 export class PluginFieldFormulaClient extends Plugin {
+  expressionSupportFields = [
+    'checkbox',
+    'number',
+    'percent',
+    'integer',
+    'number',
+    'percent',
+    'input',
+    'textarea',
+    'email',
+    'phone',
+    'datetime',
+    'createdAt',
+    'updatedAt',
+    'radioGroup',
+    'checkboxGroup',
+    'select',
+    'multipleSelect',
+  ];
+  registerExpressionSupportFields(data: any) {
+    if (Array.isArray(data)) {
+      const result = this.expressionSupportFields.concat(data);
+      this.expressionSupportFields = result;
+    } else {
+      this.expressionSupportFields.push(data);
+    }
+  }
   async load() {
     this.app.addComponents({
       Formula,

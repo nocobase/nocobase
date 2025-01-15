@@ -150,31 +150,6 @@ export class FormulaFieldInterface extends CollectionFieldInterface {
       'x-component': 'Formula.Expression',
       'x-decorator': 'FormItem',
       'x-component-props': {
-        supports: [
-          'checkbox',
-
-          'number',
-          'percent',
-          'integer',
-          'number',
-          'percent',
-
-          'input',
-          'textarea',
-          'email',
-          'phone',
-
-          'datetime',
-          'createdAt',
-          'updatedAt',
-
-          'radioGroup',
-          'checkboxGroup',
-          'select',
-          'multipleSelect',
-
-          // 'json'
-        ],
         useCurrentFields: '{{ useCurrentFields }}',
         // evaluate(exp: string) {
         //   const { values } = useForm();
