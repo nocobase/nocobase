@@ -53,7 +53,10 @@ export const Mobile = () => {
         viewportMeta.setAttribute('name', 'viewport');
         document.head.appendChild(viewportMeta);
       }
-      viewportMeta.setAttribute('content', 'width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no');
+      viewportMeta.setAttribute(
+        'content',
+        'width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover',
+      );
 
       document.body.style.backgroundColor = PageBackgroundColor;
       document.body.style.overflow = 'hidden';
