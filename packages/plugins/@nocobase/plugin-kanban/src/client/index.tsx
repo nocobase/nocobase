@@ -56,7 +56,7 @@ type CollectionField = {
   [key: string]: any; // 扩展字段
 };
 
-type UseGetGroupOptions = (collectionField: CollectionField) => GroupOption[];
+type UseGetGroupOptions = (collectionField: CollectionField) => { options: GroupOption[] };
 
 const useDefaultGroupFieldsOptions = (collectionField) => {
   return { options: collectionField.uiSchema.enum };
