@@ -236,13 +236,13 @@ export default class extends Trigger {
   validateConfig(values) {
     if (!values.data) {
       return {
-        message: 'Data property is required',
+        data: 'Data property is required',
       };
     }
 
     if (!values.userId) {
       return {
-        message: 'UserId property is required',
+        userId: 'UserId property is required',
       };
     }
 

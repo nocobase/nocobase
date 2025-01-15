@@ -72,7 +72,7 @@ export default class ScheduleTrigger extends Trigger {
   validateConfig(values) {
     if (!values.mode) {
       return {
-        message: 'Mode property is required',
+        mode: 'Mode property is required',
       };
     }
 
@@ -82,9 +82,9 @@ export default class ScheduleTrigger extends Trigger {
       };
     }
 
-    if (values.mode === 1 && !values.collection) {
+    if (values.mode === SCHEDULE_MODE.DATE_FIELD && !values.collection) {
       return {
-        message: 'Collection property is required',
+        collection: 'Collection property is required',
       };
     }
 
