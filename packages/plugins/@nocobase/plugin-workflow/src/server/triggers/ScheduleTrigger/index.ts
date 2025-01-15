@@ -8,6 +8,7 @@
  */
 
 import { Context } from '@nocobase/actions';
+import { parseCollectionName } from '@nocobase/data-source-manager';
 import Trigger from '..';
 import type Plugin from '../../Plugin';
 import DateFieldScheduleTrigger from './DateFieldScheduleTrigger';
@@ -46,9 +47,12 @@ export default class ScheduleTrigger extends Trigger {
     }
   }
 
-  async execute(workflow, context: Context, options) {
-    const { values } = context.action.params;
-    return this.workflow.trigger(workflow, { ...values, date: values?.date ?? new Date() }, options);
+  async execute(workflow, values: any, options) {
+    const mode = workflow.config.mode;
+    const trigger = this.getTrigger(mode);
+    if (trigger) {
+      return trigger.execute(workflow, values, options);
+    }
   }
 
   // async validateEvent(workflow: WorkflowModel, context: any, options: Transactionable): Promise<boolean> {
