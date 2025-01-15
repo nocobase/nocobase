@@ -106,12 +106,14 @@ export const handleDateChangeOnForm = (value, dateOnly, utc, picker, showTime, g
 };
 
 export const mapDatePicker = function () {
+  const isMobileMedia = isMobile();
   return (props: any) => {
     const { dateOnly, showTime, picker = 'date', utc, gmt, underFilter } = props;
     const format = getDefaultFormat(props);
     const onChange = props.onChange;
     return {
       ...props,
+      inputReadOnly: isMobileMedia,
       format: format,
       value: str2moment(props.value, props),
       onChange: (value: Dayjs | null, dateString) => {
@@ -126,8 +128,12 @@ export const mapDatePicker = function () {
     };
   };
 };
+export function isMobile() {
+  return window.matchMedia('(max-width: 768px)').matches;
+}
 
 export const mapRangePicker = function () {
+  const isMobileMedia = isMobile();
   return (props: any) => {
     const format = getDefaultFormat(props) as any;
     const onChange = props.onChange;
@@ -136,6 +142,7 @@ export const mapRangePicker = function () {
       ...props,
       format: format,
       value: str2moment(props.value, props),
+      inputReadOnly: isMobileMedia,
       onChange: (value: Dayjs[]) => {
         if (onChange) {
           if (underFilter) {
