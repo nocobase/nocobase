@@ -9,14 +9,17 @@
 
 import { NocoBaseDesktopRouteType } from '@nocobase/client';
 
-export function getSchemaUidByRouteId(routeId: number, treeArray: any[]) {
+export function getSchemaUidByRouteId(routeId: number, treeArray: any[], isMobile: boolean) {
   for (const node of treeArray) {
     if (node.id === routeId) {
-      return node.type === NocoBaseDesktopRouteType.page ? node.menuSchemaUid : node.schemaUid;
+      if (node.type === NocoBaseDesktopRouteType.page) {
+        return isMobile ? node.schemaUid : node.menuSchemaUid;
+      }
+      return node.schemaUid;
     }
 
     if (node.children?.length) {
-      const result = getSchemaUidByRouteId(routeId, node.children);
+      const result = getSchemaUidByRouteId(routeId, node.children, isMobile);
       if (result) {
         return result;
       }

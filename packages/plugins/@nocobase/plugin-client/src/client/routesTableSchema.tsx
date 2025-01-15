@@ -99,7 +99,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                   }
 
                   for (const id of filterByTk) {
-                    const schemaUid = getSchemaUidByRouteId(id, data?.data);
+                    const schemaUid = getSchemaUidByRouteId(id, data?.data, isMobile);
                     await deleteRouteSchema(schemaUid);
                   }
 
@@ -564,7 +564,9 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                   }
 
                   if (recordData.type === NocoBaseDesktopRouteType.page) {
-                    const path = `${basenameOfCurrentRouter.slice(0, -1)}${basename}/${recordData.menuSchemaUid}`;
+                    const path = `${basenameOfCurrentRouter.slice(0, -1)}${basename}/${
+                      isMobile ? recordData.schemaUid : recordData.menuSchemaUid
+                    }`;
                     // 在点击 Access 按钮时，会用到
                     recordData._path = path;
 
@@ -579,6 +581,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                     const path = `${basenameOfCurrentRouter.slice(0, -1)}${basename}/${getSchemaUidByRouteId(
                       recordData.parentId,
                       data.data,
+                      isMobile,
                     )}/tabs/${recordData.tabSchemaName || recordData.schemaUid}`;
                     recordData._path = path;
 
