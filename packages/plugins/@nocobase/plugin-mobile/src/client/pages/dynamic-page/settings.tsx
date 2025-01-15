@@ -128,6 +128,7 @@ export const mobilePageSettings = new SchemaSettings({
 
                 refresh();
               },
+              checked: activeTabBarItem.enableTabs,
             };
           },
         }),

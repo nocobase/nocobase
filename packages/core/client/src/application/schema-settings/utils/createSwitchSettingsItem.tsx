@@ -62,7 +62,10 @@ export function createSwitchSettingsItem(options: CreateSwitchSchemaSettingsItem
 
       return {
         title: typeof title === 'function' ? title(t) : compile(title),
-        checked: !!_.get(fieldSchema, schemaKey, defaultValue),
+        checked:
+          dynamicComponentProps?.checked === undefined
+            ? !!_.get(fieldSchema, schemaKey, defaultValue)
+            : dynamicComponentProps?.checked,
         onChange(v) {
           dynamicComponentProps?.onChange?.(v);
           const newSchema = getNewSchema({ fieldSchema, schemaKey, value: v });
