@@ -11,7 +11,7 @@ import { ISchema } from '@formily/react';
 import { isArr } from '@formily/shared';
 import { dayjs, getDefaultFormat, str2moment } from '@nocobase/utils/client';
 import { Tag } from 'antd';
-import React from 'react';
+import React, { Component } from 'react';
 import { CollectionFieldOptions_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 
 export const useLabelUiSchema = (collectionField: CollectionFieldOptions_deprecated, label: string): ISchema => {
@@ -30,7 +30,10 @@ export const getDatePickerLabels = (props): string => {
   return isArr(labels) ? labels.join('~') : labels;
 };
 
-export const getLabelFormatValue = (labelUiSchema: ISchema, value: any, isTag = false): any => {
+export const getLabelFormatValue = (labelUiSchema: ISchema, value: any, isTag = false, CustomLabel?: any): any => {
+  if (CustomLabel) {
+    return <CustomLabel value={value} />;
+  }
   if (Array.isArray(labelUiSchema?.enum) && value) {
     const opt: any = labelUiSchema.enum.find((option: any) => option.value === value);
     if (isTag) {
