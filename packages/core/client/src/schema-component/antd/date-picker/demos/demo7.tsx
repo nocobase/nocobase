@@ -1,5 +1,3 @@
-
-
 /**
  * title: DatePicker
  */
@@ -20,6 +18,7 @@ const schema = {
         showTime: false,
         gmt: true,
         utc: true,
+        inputReadOnly: false,
       },
       'x-reactions': {
         target: '*(read1,read2)',
