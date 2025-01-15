@@ -14,7 +14,7 @@ import EventSelect from './EventSelect';
 import ConditionInput from './ConditionInput';
 import ActionsInput from './ActionsInput';
 import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
-import { IEventFlowEvent } from '../types';
+import { EventSetting } from '../types';
 
 const EventCard = (props) => {
   const { modules, onDelete } = props;
@@ -46,7 +46,7 @@ const EventCard = (props) => {
 
 export default function EventsSetting(props) {
   const { modules, value } = props;
-  const [state, setState] = useControllableValue<Array<IEventFlowEvent | {}>>(props, {
+  const [state, setState] = useControllableValue<Array<EventSetting | {}>>(props, {
     defaultValue: [],
   });
   console.log('modules', state, value);

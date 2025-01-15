@@ -7,5 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './useEventDefinitions';
-export * from './useEventSettings';
+import { EventDefinition } from '../types';
+
+export const useEventDefinitions = (definitions?: EventDefinition[]) => {
+  // console.log(definitions);
+};

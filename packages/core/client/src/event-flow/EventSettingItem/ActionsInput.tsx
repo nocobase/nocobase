@@ -11,9 +11,9 @@ import React from 'react';
 import { useControllableValue } from 'ahooks';
 import { Card, Space, Button, Tag, Tooltip, Select, TreeSelect } from 'antd';
 import { CloseOutlined, PlusOutlined, SettingFilled } from '@ant-design/icons';
-import { IEventFlowModule } from '../index';
+import { EventDefinition } from '../types';
 
-export default function ActionsInput(props: { modules: IEventFlowModule[]; value: any; onChange: (v: any) => void }) {
+export default function ActionsInput(props: { modules: EventDefinition[]; value: any; onChange: (v: any) => void }) {
   const { modules } = props;
   const [state, setState] = useControllableValue<Array<any>>(props, {
     defaultValue: [],

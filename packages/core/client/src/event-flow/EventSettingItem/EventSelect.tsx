@@ -10,9 +10,9 @@
 import React from 'react';
 import { useControllableValue } from 'ahooks';
 import { Card, Space, TreeSelect } from 'antd';
-import { IEventFlowModule } from '../index';
+import { EventDefinition } from '../types';
 
-export default function EventSelect(props: { modules: IEventFlowModule[]; value: any; onChange: (v: any) => void }) {
+export default function EventSelect(props: { modules: EventDefinition[]; value: any; onChange: (v: any) => void }) {
   const { modules, onChange } = props;
   const [state, setState] = useControllableValue<Array<any>>(props, {
     defaultValue: undefined,

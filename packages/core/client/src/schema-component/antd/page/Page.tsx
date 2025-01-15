@@ -42,7 +42,6 @@ import { ErrorFallback } from '../error-fallback';
 import { useStyles } from './Page.style';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 import { PopupRouteContextResetter } from './PopupRouteContextResetter';
-import { useEventFlow } from '../../../event-flow/hooks';
 
 interface PageProps {
   currentTabUid: string;
@@ -50,7 +49,6 @@ interface PageProps {
 }
 
 const InternalPage = React.memo((props: PageProps) => {
-  useEventFlow();
   const fieldSchema = useFieldSchema();
   const currentTabUid = props.currentTabUid;
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;

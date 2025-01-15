@@ -18,7 +18,7 @@ import {
 import React from 'react';
 import { ISchema, useField } from '@formily/react';
 import EventsSetting from './EventsSetting';
-import { EventFlowPlugin } from '..';
+import { EventFlowPlugin, SchemaSettingsKey } from '..';
 import { useFieldSchema } from '@formily/react';
 
 export const EventSettingItem = () => {
@@ -28,7 +28,7 @@ export const EventSettingItem = () => {
   const { patch } = useDesignable();
   const app = useApp();
   const eventFlowPlugin = usePlugin(EventFlowPlugin.name) as any;
-  console.log('eventFlowPlugin', schema);
+  console.log('eventFlowPlugin', eventFlowPlugin);
   const { dn } = useDesignable();
   const fieldSchema = useFieldSchema();
   console.log('fieldSchema', fieldSchema);
@@ -45,7 +45,7 @@ export const EventSettingItem = () => {
           properties: {
             events: {
               type: 'array',
-              default: fieldSchema?.['x-event-flow-setting'] || [],
+              default: fieldSchema?.[SchemaSettingsKey] || [],
               'x-decorator': 'FormItem',
               'x-component': 'EventsSetting',
               'x-component-props': {
@@ -57,11 +57,11 @@ export const EventSettingItem = () => {
       }
       onSubmit={({ events }) => {
         console.log('onSubmit', events);
-        fieldSchema['x-event-flow-setting'] = events;
+        fieldSchema[SchemaSettingsKey] = events;
         dn.emit('patch', {
           schema: {
             'x-uid': fieldSchema['x-uid'],
-            'x-event-flow-setting': events,
+            [SchemaSettingsKey]: events,
           },
         });
         eventFlowPlugin.registerEvents(events);

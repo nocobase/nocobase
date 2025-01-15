@@ -12,5 +12,6 @@ import { useCreateFormBlockEventsInterface } from './useCreateFormBlockEventsInt
 
 export function useCreateFormBlockProps() {
   useCreateFormBlockEventsInterface();
+  console.log('11111');
   return useFormBlockProps();
 }
