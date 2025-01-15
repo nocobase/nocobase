@@ -312,14 +312,6 @@ export const TemplateBlockInitializer = () => {
     },
   );
 
-  if (loading) {
-    return (
-      <div>
-        <LoadingOutlined /> {t('Templates')}
-      </div>
-    );
-  }
-
   const filteredData = data?.data?.filter(
     (item) => !searchValue || item.title.toLowerCase().includes(searchValue.toLowerCase()),
   );
@@ -359,6 +351,20 @@ export const TemplateBlockInitializer = () => {
           },
         ]),
   ];
+
+  useEffect(() => {
+    filteredData?.forEach((item) => {
+      plugin.templateInfos.set(item.key, item);
+    });
+  }, [filteredData, plugin.templateInfos]);
+
+  if (loading) {
+    return (
+      <div>
+        <LoadingOutlined /> {t('Templates')}
+      </div>
+    );
+  }
 
   return (
     <SchemaInitializerItem
