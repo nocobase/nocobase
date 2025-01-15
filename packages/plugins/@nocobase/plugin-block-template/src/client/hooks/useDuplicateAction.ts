@@ -8,7 +8,6 @@
  */
 
 import {
-  ActionProps,
   useCollection,
   useCollectionRecordData,
   useBlockRequestContext,
@@ -64,7 +63,7 @@ export function useDuplicateAction() {
       });
       const duplicatedSchema = duplicateSchema(_.cloneDeep(schema?.data));
       const newSchemaUid = duplicatedSchema['x-uid'];
-      const newKey = uid();
+      const newKey = `t_${uid()}`;
       await api.resource('uiSchemas').insert({
         values: {
           type: 'void',
@@ -78,9 +77,8 @@ export function useDuplicateAction() {
       });
       await resource.create({
         values: {
+          ...record,
           title: `${values.title}`,
-          description: record.description,
-          type: record.type,
           key: newKey,
           uid: newSchemaUid,
         },

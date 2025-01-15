@@ -7,7 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaInitializerItem, useRequest, useAPIClient, useDesignable, usePlugin, ISchema } from '@nocobase/client';
+import {
+  SchemaInitializerItem,
+  useRequest,
+  useAPIClient,
+  useDesignable,
+  usePlugin,
+  ISchema,
+  useResource,
+} from '@nocobase/client';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { CopyOutlined, LoadingOutlined } from '@ant-design/icons';
 import { Input, Divider, Empty } from 'antd';
@@ -232,10 +240,11 @@ export const TemplateBlockInitializer = () => {
   const { insertAdjacent } = useDesignable();
   const plugin = usePlugin(PluginBlockTemplateClient);
   const mobilePlugin = usePlugin(PluginMobileClient);
+  const blockTemplatesResource = useResource('blockTemplates');
   const [searchValue, setSearchValue] = useState('');
   const t = useT();
   const isMobile = useMemo(() => {
-    return window.location.pathname.includes(mobilePlugin.mobileBasename);
+    return window.location.pathname.startsWith(mobilePlugin.mobileBasename);
   }, [mobilePlugin]);
 
   const handleClick = async ({ item }) => {
@@ -255,6 +264,28 @@ export const TemplateBlockInitializer = () => {
         });
       });
     }
+    // server hook only support root node, so we do the link from client
+    const links = [];
+    const fillLink = (schema: ISchema) => {
+      if (schema['x-template-root-uid']) {
+        links.push({
+          templateKey: item.key,
+          templateBlockUid: schema['x-template-root-uid'],
+          blockUid: schema['x-uid'],
+        });
+      }
+      if (schema.properties) {
+        for (const key in schema.properties) {
+          fillLink(schema.properties[key]);
+        }
+      }
+    };
+    for (const schema of schemas) {
+      fillLink(schema);
+    }
+    blockTemplatesResource.link({
+      values: links,
+    });
   };
 
   const { data, loading } = useRequest<{

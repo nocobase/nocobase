@@ -8,13 +8,13 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import { destroy } from './actions';
+import { destroy, link } from './actions';
 
 export class PluginBlockTemplateServer extends Plugin {
   beforeLoad() {
     this.app.acl.allow('blockTemplates', '*', 'loggedIn');
-
     this.app.resourceManager.registerActionHandler('blockTemplates:destroy', destroy);
+    this.app.resourceManager.registerActionHandler('blockTemplates:link', link);
   }
 
   async load() {}

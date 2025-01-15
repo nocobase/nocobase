@@ -406,7 +406,7 @@ export function mergeSchema(
           }
 
           // 处理Grid的拖动后行列改变的情况
-          if (source['x-component'] === 'Grid' && target['x-component'] === 'Grid') {
+          if (source['x-component'] === 'Grid' && object['x-component'] === 'Grid') {
             const tItemsMap = new Map();
 
             for (const [rowKey, row] of Object.entries(object['properties'] || {})) {
@@ -463,7 +463,6 @@ export function mergeSchema(
           const newKeys = _.difference(targetKeys, sourceKeys);
           if (newKeys.length > 0) {
             const newProperties = _.cloneDeep(_.pick(objectValue, newKeys));
-            const newSchemas = [];
             for (const key of newKeys) {
               const newSchema = convertTplBlock(
                 newProperties[key],
@@ -473,17 +472,16 @@ export function mergeSchema(
                 _.get(source, 'x-block-template-key'),
               );
               newSchema['name'] = key;
-              newSchemas.push(newSchema);
-              source['properties'][key] = newSchema;
+              sourceValue[key] = newSchema;
             }
           }
           const properties = {};
           for (let i = 0; i < keys.length; i++) {
             const k = keys[i];
-            const sourceProperty = sourceValue?.[k] || {};
-            if (_.get(objectValue, [k, 'properties'])) {
-              sourceProperty['properties'] = sourceProperty['properties'] || {};
-            }
+            // const sourceProperty = sourceValue?.[k] || {};
+            // if (_.get(objectValue, [k, 'properties'])) {
+            //   sourceProperty['properties'] = sourceProperty['properties'] || {};
+            // }
             properties[k] = mergeSchema(
               objectValue?.[k] || {},
               sourceValue?.[k],

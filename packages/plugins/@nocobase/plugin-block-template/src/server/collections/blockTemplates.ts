@@ -43,5 +43,12 @@ export default defineCollection({
       name: 'configured',
       defaultValue: false,
     },
+    {
+      type: 'hasMany',
+      name: 'links',
+      target: 'blockTemplateLinks',
+      foreignKey: 'templateKey',
+      targetKey: 'key',
+    },
   ],
 });
