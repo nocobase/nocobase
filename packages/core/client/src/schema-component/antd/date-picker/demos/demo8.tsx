@@ -18,7 +18,6 @@ const schema = {
         showTime: false,
         gmt: false,
         utc: true,
-        inputReadOnly: false,
       },
       'x-reactions': {
         target: '*(read1,read2)',

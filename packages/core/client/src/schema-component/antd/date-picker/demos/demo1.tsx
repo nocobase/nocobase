@@ -16,7 +16,6 @@ const schema = {
       'x-component-props': {
         dateFormat: 'YYYY/MM/DD',
         showTime: true,
-        inputReadOnly: false,
       },
       'x-reactions': {
         target: '*(read1,read2)',
