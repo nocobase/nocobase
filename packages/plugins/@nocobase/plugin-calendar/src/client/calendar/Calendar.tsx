@@ -34,7 +34,7 @@ import {
 } from '@nocobase/client';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
-import { cloneDeep, get } from 'lodash';
+import { cloneDeep, get, omit } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View } from 'react-big-calendar';
 import { i18nt, useTranslation } from '../../locale';
@@ -441,7 +441,7 @@ export const Calendar: any = withDynamicSchemaProps(
                   return;
                 }
                 record.__event = {
-                  ...event,
+                  ...omit(event, 'title'),
                   start: formatDate(dayjs(event.start)),
                   end: formatDate(dayjs(event.end)),
                 };
