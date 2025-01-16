@@ -248,6 +248,29 @@ const Tasks = () => {
   ) : null;
 };
 
+const Retry = () => {
+  const { t } = useUserDataSyncSourceTranslation();
+  const record = useCollectionRecordData();
+  if (record.status !== 'failed') {
+    return null;
+  }
+  return (
+    <SchemaComponent
+      scope={{ t }}
+      schema={{
+        type: 'void',
+        properties: {
+          retry: {
+            title: '{{ t("Retry") }}',
+            'x-component': 'Action.Link',
+            'x-use-component-props': 'useRetryActionProps',
+          },
+        },
+      }}
+    />
+  );
+};
+
 export const UserDataSyncSource: React.FC = () => {
   const { t } = useUserDataSyncSourceTranslation();
   const [types, setTypes] = useState([]);
@@ -277,7 +300,7 @@ export const UserDataSyncSource: React.FC = () => {
       <ExtendCollectionsProvider collections={[sourceCollection]}>
         <SchemaComponent
           schema={userDataSyncSourcesSchema}
-          components={{ AddNew, Options, Tasks }}
+          components={{ AddNew, Options, Tasks, Retry }}
           scope={{
             types,
             t,
