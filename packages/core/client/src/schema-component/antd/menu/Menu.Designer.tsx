@@ -20,6 +20,7 @@ import { createDesignable, useCompile, useNocoBaseRoutes } from '../..';
 import {
   GeneralSchemaDesigner,
   getPageMenuSchema,
+  isVariable,
   SchemaSettingsDivider,
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
@@ -36,17 +37,17 @@ const insertPositionToMethod = {
   afterEnd: 'insertAfter',
 };
 
-const toItems = (properties = {}) => {
+const toItems = (properties = {}, { t, compile }) => {
   const items = [];
   for (const key in properties) {
     if (Object.prototype.hasOwnProperty.call(properties, key)) {
       const element = properties[key];
       const item = {
-        label: element.title,
+        label: isVariable(element.title) ? compile(element.title) : t(element.title),
         value: `${element['x-uid']}||${element['x-component']}`,
       };
       if (element.properties) {
-        const children = toItems(element.properties);
+        const children = toItems(element.properties, { t, compile });
         if (children?.length) {
           item['children'] = children;
         }
@@ -308,7 +309,7 @@ export const MenuDesigner = () => {
     () => compile(menuSchema?.['x-component-props']?.['onSelect']),
     [menuSchema?.['x-component-props']?.['onSelect']],
   );
-  const items = useMemo(() => toItems(menuSchema?.properties), [menuSchema?.properties]);
+  const items = useMemo(() => toItems(menuSchema?.properties, { t, compile }), [menuSchema?.properties, t, compile]);
   const effects = useCallback(
     (form) => {
       onFieldChange('target', (field: Field) => {
