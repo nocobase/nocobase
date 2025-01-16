@@ -7,8 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Context } from '@nocobase/actions';
-import { parseCollectionName } from '@nocobase/data-source-manager';
 import Trigger from '..';
 import type Plugin from '../../Plugin';
 import DateFieldScheduleTrigger from './DateFieldScheduleTrigger';
@@ -68,4 +66,26 @@ export default class ScheduleTrigger extends Trigger {
   //   });
   //   return !existed.length;
   // }
+
+  validateConfig(values) {
+    if (!values.mode) {
+      return {
+        mode: 'Mode property is required',
+      };
+    }
+
+    if (!values.startsOn) {
+      return {
+        startsOn: 'StartsOn property is required',
+      };
+    }
+
+    if (values.mode === SCHEDULE_MODE.DATE_FIELD && !values.collection) {
+      return {
+        collection: 'Collection property is required',
+      };
+    }
+
+    return null;
+  }
 }

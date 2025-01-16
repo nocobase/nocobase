@@ -38,6 +38,10 @@ export default defineCollection({
       primaryKey: false,
     },
     {
+      type: 'string',
+      name: 'title',
+    },
+    {
       type: 'belongsTo',
       name: 'execution',
     },
