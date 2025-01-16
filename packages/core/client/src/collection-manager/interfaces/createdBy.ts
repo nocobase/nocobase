@@ -23,6 +23,8 @@ export class CreatedByFieldInterface extends CollectionFieldInterface {
     type: 'belongsTo',
     target: 'users',
     foreignKey: 'createdById',
+    interface: 'createdBy',
+    name: 'createdBy',
     uiSchema: {
       type: 'object',
       title: '{{t("Created by")}}',
@@ -76,4 +78,6 @@ export class CreatedByFieldInterface extends CollectionFieldInterface {
       schema['x-component-props']['ellipsis'] = true;
     }
   }
+  description = '{{t("Store the creation user of each record")}}';
+  presetField: true;
 }

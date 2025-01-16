@@ -134,7 +134,7 @@ export const useKanbanBlockProps = () => {
   const plugin = app.pm.get('kanban') as any;
   const { groupFields } = plugin;
   const targetGroupField = groupFields.find((v) => v.type === ctx.groupField.interface);
-  const { options } = targetGroupField.useGetGroupOptions(ctx.groupField);
+  const { options } = targetGroupField?.useGetGroupOptions(ctx.groupField) || { options: [] };
   useEffect(() => {
     const data = toColumns(ctx.groupField, ctx?.service?.data?.data, primaryKey, options);
     if (isEqual(field.value, data) && dataSource === field.value) {

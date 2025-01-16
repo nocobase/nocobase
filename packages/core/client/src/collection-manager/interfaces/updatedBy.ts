@@ -23,6 +23,8 @@ export class UpdatedByFieldInterface extends CollectionFieldInterface {
     type: 'belongsTo',
     target: 'users',
     foreignKey: 'updatedById',
+    interface: 'updatedBy',
+    name: 'updatedBy',
     uiSchema: {
       type: 'object',
       title: '{{t("Last updated by")}}',
@@ -75,4 +77,6 @@ export class UpdatedByFieldInterface extends CollectionFieldInterface {
       schema['x-component-props']['ellipsis'] = true;
     }
   }
+  description = '{{t("Store the last update user of each record")}}';
+  presetField = true;
 }

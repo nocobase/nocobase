@@ -24,6 +24,7 @@ export class IdFieldInterface extends CollectionFieldInterface {
     autoIncrement: true,
     primaryKey: true,
     allowNull: false,
+    interface: 'id',
     uiSchema: {
       type: 'number',
       title: '{{t("ID")}}',
@@ -55,5 +56,7 @@ export class IdFieldInterface extends CollectionFieldInterface {
   filterable = {
     operators: operators.id,
   };
+  presetField = true;
+  description = '{{t("Primary key, unique identifier, self growth") }}';
   titleUsable = true;
 }
