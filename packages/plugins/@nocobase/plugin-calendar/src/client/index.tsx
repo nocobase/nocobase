@@ -55,7 +55,7 @@ export class PluginCalendarClient extends Plugin {
     email: { CustomLabel },
     radioGroup: { CustomLabel },
   };
-  backgroundColorFields: {
+  colorFields: {
     [T: string]: { useGetColor: (field: any) => ColorFunctions };
   } = {
     select: { useGetColor },
@@ -78,10 +78,10 @@ export class PluginCalendarClient extends Plugin {
     }
   }
   registerColorFieldInterface(type, option) {
-    this.backgroundColorFields[type] = option;
+    this.colorFields[type] = option;
   }
   getColorFieldInterface(type) {
-    return this.backgroundColorFields[type];
+    return this.colorFields[type];
   }
   async load() {
     this.app.dataSourceManager.addCollectionTemplates([CalendarCollectionTemplate]);
