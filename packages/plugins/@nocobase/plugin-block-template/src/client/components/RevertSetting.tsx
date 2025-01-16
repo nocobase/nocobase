@@ -65,7 +65,7 @@ export const RevertSetting = () => {
   const api = useAPIClient();
   const form = useForm();
   const field = useField();
-  const { runAsync } = useDataBlockRequest();
+  // const { runAsync } = useDataBlockRequest();
   const { form: blockForm } = useFormBlockProps();
   const fieldSchema = useFieldSchema();
   const { modal, message } = App.useApp();
@@ -140,7 +140,7 @@ export const RevertSetting = () => {
             // const values = form.values;
             form.clearFormGraph(field.address, true);
             blockForm?.clearFormGraph(field.address, true);
-            runAsync?.();
+            // runAsync?.();
             message.success(t('Reset successfully'), 0.2);
           },
         });
