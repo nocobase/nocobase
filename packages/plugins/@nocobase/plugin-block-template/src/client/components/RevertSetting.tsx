@@ -7,8 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaSettingsItem, useAPIClient, useDesignable, useFormBlockProps, usePlugin } from '@nocobase/client';
-import { useFieldSchema, useForm } from '@formily/react';
+import {
+  SchemaSettingsItem,
+  useAPIClient,
+  useDataBlockRequest,
+  useDesignable,
+  useFormBlockProps,
+  usePlugin,
+} from '@nocobase/client';
+import { useFieldSchema, useForm, useField } from '@formily/react';
 import { App } from 'antd';
 import React from 'react';
 import _ from 'lodash';
@@ -17,6 +24,7 @@ import { Schema } from '@formily/json-schema';
 import { useT } from '../locale';
 import PluginBlockTemplateClient from '..';
 import { addToolbarClass, syncTemplateTitle } from '../utils/template';
+import { uid } from '@nocobase/utils/client';
 
 const findInsertPosition = (parentSchema, uid) => {
   const postion = {
@@ -56,6 +64,8 @@ export const RevertSetting = () => {
   const t = useT();
   const api = useAPIClient();
   const form = useForm();
+  const field = useField();
+  const { runAsync } = useDataBlockRequest();
   const { form: blockForm } = useFormBlockProps();
   const fieldSchema = useFieldSchema();
   const { modal, message } = App.useApp();
@@ -91,7 +101,7 @@ export const RevertSetting = () => {
             const position = findInsertPosition(fieldSchema.parent, fieldSchema['x-uid']);
 
             await api.request({
-              url: `/uiSchemas:remove/${fieldSchema['x-uid']}?resettemplate=true`,
+              url: `/uiSchemas:remove/${fieldSchema['x-uid']}`,
             });
 
             // insertAdjacent
@@ -119,8 +129,18 @@ export const RevertSetting = () => {
               return ret;
             };
             refresh({ refreshParentSchema: true });
-            form.clearFormGraph();
-            blockForm?.clearFormGraph();
+            field['componentProps'] = {
+              ...templateSchema['x-component-props'],
+              key: uid(),
+            };
+            field['decoratorProps'] = {
+              ...templateSchema['x-decorator-props'],
+              key: uid(),
+            };
+            // const values = form.values;
+            form.clearFormGraph(field.address, true);
+            blockForm?.clearFormGraph(field.address, true);
+            runAsync?.();
             message.success(t('Reset successfully'), 0.2);
           },
         });
