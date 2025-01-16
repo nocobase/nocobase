@@ -154,6 +154,10 @@ export class APIClient extends APIClientSDK {
       // return;
       throw error;
     }
+    const skipNotify: boolean | ((error: any) => boolean) = error.config.skipNotify;
+    if (skipNotify && ((typeof skipNotify === 'function' && skipNotify(error)) || skipNotify === true)) {
+      throw error;
+    }
     const redirectTo = error?.response?.data?.redirectTo;
     if (redirectTo) {
       return (window.location.href = redirectTo);

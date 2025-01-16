@@ -42,9 +42,16 @@ export const CurrentUserProvider = (props) => {
   const api = useAPIClient();
   const result = useRequest<any>(() =>
     api
-      .silent()
-      .resource('auth')
-      .check()
+      .request({
+        url: '/auth:check',
+        skipNotify: (error) => {
+          const errs = api.toErrMessages(error);
+          if (errs.find((error: { code?: string }) => error.code === 'EMPTY_TOKEN')) {
+            return true;
+          }
+          return false;
+        },
+      })
       .then((res) => res?.data),
   );
   const { render } = useAppSpin();
@@ -64,10 +71,6 @@ export const NavigateToSigninWithRedirect = () => {
 
 export const NavigateIfNotSignIn = ({ children }) => {
   const result = useCurrentUserContext();
-
-  if (result.loading) {
-    return null;
-  }
 
   if (result.loading === false && !result.data?.data?.id) {
     return <NavigateToSigninWithRedirect />;
