@@ -151,6 +151,7 @@ export class PluginAuthServer extends Plugin {
         userId: user.id,
       });
     });
+
     this.app.auditManager.registerActions([
       {
         name: 'auth:signIn',
