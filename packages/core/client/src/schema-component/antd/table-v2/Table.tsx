@@ -495,10 +495,6 @@ const cellClass = css`
   }
 `;
 
-const floatLeftClass = css`
-  float: left;
-`;
-
 const rowSelectCheckboxWrapperClass = css`
   position: relative;
   display: flex;
@@ -1057,7 +1053,7 @@ export const Table: any = withDynamicSchemaProps(
                     <div
                       role="button"
                       aria-label={`table-index-${index}`}
-                      className={classNames(checked ? 'checked' : floatLeftClass, rowSelectCheckboxWrapperClass, {
+                      className={classNames(checked ? 'checked' : null, rowSelectCheckboxWrapperClass, {
                         [rowSelectCheckboxWrapperClassHover]: isRowSelect,
                       })}
                     >
