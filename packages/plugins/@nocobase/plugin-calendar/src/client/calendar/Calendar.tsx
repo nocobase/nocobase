@@ -302,6 +302,11 @@ export const Calendar: any = withDynamicSchemaProps(
       const ctx = useActionContext();
       const [visibleAddNewer, setVisibleAddNewer] = useState(false);
       const [currentSelectDate, setCurrentSelectDate] = useState(undefined);
+      const app = useApp();
+      const plugin = app.pm.get('calendar') as any;
+      const colorCollectionField = collection.getField(fieldNames.colorFieldName);
+      const { useGetColor } = plugin.getColorFieldInterface(colorCollectionField.interface) || {};
+      const { getFontColor, getBackgroundColor } = useGetColor(colorCollectionField);
       useEffect(() => {
         setView(props.defaultView);
       }, [props.defaultView]);
@@ -345,10 +350,17 @@ export const Calendar: any = withDynamicSchemaProps(
 
       const eventPropGetter = (event: Event) => {
         if (event.colorFieldValue) {
-          const fontColor = token[`${getColorString(event.colorFieldValue, enumList)}7`];
-          const backgroundColor = token[`${getColorString(event.colorFieldValue, enumList)}1`];
+          const fontColor = getFontColor(event.colorFieldValue);
+          const backgroundColor = getBackgroundColor(event.colorFieldValue);
+          const style = {};
+          if (fontColor) {
+            style['fontColor'] = fontColor;
+          }
+          if (backgroundColor) {
+            style['backgroundColor'] = backgroundColor;
+          }
           return {
-            style: { color: fontColor, backgroundColor, border: 'none' },
+            style,
           };
         }
       };

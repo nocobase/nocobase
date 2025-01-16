@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/client';
+import { Plugin, useToken } from '@nocobase/client';
 import { generateNTemplate } from '../locale';
 import { CalendarV2 } from './calendar';
 import { calendarBlockSettings } from './calendar/Calender.Settings';
@@ -28,22 +28,25 @@ import {
 } from './schema-initializer/items';
 
 const CustomLabel = ({ value }) => {
-  return value;
+  return value || 'N/A';
 };
 interface ColorFunctions {
   loading: boolean;
-  getFontColor: () => string;
-  getBackgroundColor: () => string;
+  getFontColor: (value) => string;
+  getBackgroundColor: (value) => string;
 }
 
 const useGetColor = (field) => {
+  const { token } = useToken();
   return {
     loading: false,
-    getFontColor: () => {
-      return '';
+    getFontColor(value) {
+      const option = field.uiSchema.enum.find((item) => item.value === value);
+      return token[`${option.color}7`];
     },
-    getBackgroundColor: () => {
-      return '';
+    getBackgroundColor(value) {
+      const option = field.uiSchema.enum.find((item) => item.value === value);
+      return token[`${option.color}1`];
     },
   };
 };
@@ -66,7 +69,7 @@ export class PluginCalendarClient extends Plugin {
   registerTitleFields(key, options) {
     this.titleFields[key] = options;
   }
-  getTitleFields(key) {
+  getTitleFields(key: string) {
     return this.titleFields[key];
   }
   registerDateTimeFields(data: any) {
@@ -80,7 +83,7 @@ export class PluginCalendarClient extends Plugin {
   registerColorFieldInterface(type, option) {
     this.colorFields[type] = option;
   }
-  getColorFieldInterface(type) {
+  getColorFieldInterface(type: string) {
     return this.colorFields[type];
   }
   async load() {

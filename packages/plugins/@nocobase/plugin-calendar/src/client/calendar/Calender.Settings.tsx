@@ -118,8 +118,8 @@ export const calendarBlockSettings = new SchemaSettings({
         const { dn } = useDesignable();
         const app = useApp();
         const plugin = app.pm.get('calendar') as any;
-        const { backgroundColorFields } = plugin;
-        const fliedList = getCollectionFieldsOptions(name, null, Object.keys(backgroundColorFields));
+        const { colorFields } = plugin;
+        const fliedList = getCollectionFieldsOptions(name, null, Object.keys(colorFields));
         const filteredItems = [{ label: t('Not selected'), value: '' }, ...fliedList];
 
         return {
