@@ -277,6 +277,9 @@ export function mergeSchema(
       if (sourceValue == null) {
         return objectValue;
       }
+      if (keyName === 'default' && object['x-settings'] === 'actionSettings:filter') {
+        return sourceValue || objectValue;
+      }
       if (_.isObject(sourceValue)) {
         if (_.isArray(sourceValue)) {
           return sourceValue || objectValue;
