@@ -79,7 +79,7 @@ export async function destroy(ctx: Context, next) {
         const treePathTableName = uiSchemaRepository.uiSchemaTreePathTableName;
         const positionInfo = await ctx.db.sequelize.query<{ type: string; sort: number }>(
           `SELECT TreeTable.sort, TreeTable.type 
-           FROM "${treePathTableName}" as TreeTable
+           FROM ${treePathTableName} as TreeTable
            WHERE TreeTable.depth = 1 AND TreeTable.descendant = :uid`,
           {
             replacements: { uid: link.blockUid },
