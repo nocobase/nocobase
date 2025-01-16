@@ -232,4 +232,20 @@ export default class extends Trigger {
       options,
     );
   }
+
+  validateConfig(values) {
+    if (!values.data) {
+      return {
+        data: 'Data property is required',
+      };
+    }
+
+    if (!values.userId) {
+      return {
+        userId: 'UserId property is required',
+      };
+    }
+
+    return null;
+  }
 }
