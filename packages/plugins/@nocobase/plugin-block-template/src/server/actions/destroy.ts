@@ -76,7 +76,7 @@ export async function destroy(ctx: Context, next) {
         }
 
         // 2. 获取当前节点的位置信息
-        const treePathTableName = ctx.db.getCollection('uiSchemaTreePath').model.tableName;
+        const treePathTableName = uiSchemaRepository.uiSchemaTreePathTableName;
         const positionInfo = await ctx.db.sequelize.query<{ type: string; sort: number }>(
           `SELECT TreeTable.sort, TreeTable.type 
            FROM "${treePathTableName}" as TreeTable
