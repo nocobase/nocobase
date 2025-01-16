@@ -279,7 +279,6 @@ function cleanSchema(schema?: Schema, templateId?: string) {
     if (schema.properties[key]['x-template-root-uid'] && schema.properties[key]['x-template-root-uid'] !== templateId) {
       continue;
     }
-    // 如果x-component是Grid.Row，且内部无任何内容，则删除
     if (properties[key]?.['x-component'] === 'Grid.Row') {
       let hasProperties = false;
       const cols = Object.values(properties[key]?.['properties'] || {});
