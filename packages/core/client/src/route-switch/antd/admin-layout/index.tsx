@@ -431,15 +431,19 @@ const pageContentStyle: React.CSSProperties = {
 };
 
 export const LayoutContent = () => {
+  const currentPageUid = useCurrentPageUid();
+
   /* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */
   return (
-    <Layout.Content className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
-      <header className={layoutContentHeaderClass}></header>
-      <div style={pageContentStyle}>
-        <Outlet />
-      </div>
-      {/* {service.contentLoading ? render() : <Outlet />} */}
-    </Layout.Content>
+    <CurrentRouteProvider uid={currentPageUid}>
+      <Layout.Content className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
+        <header className={layoutContentHeaderClass}></header>
+        <div style={pageContentStyle}>
+          <Outlet />
+        </div>
+        {/* {service.contentLoading ? render() : <Outlet />} */}
+      </Layout.Content>
+    </CurrentRouteProvider>
   );
 };
 
@@ -462,7 +466,6 @@ const NocoBaseLogo = () => {
 export const InternalAdminLayout = () => {
   const { token } = useToken();
   const sideMenuRef = useRef<HTMLDivElement>();
-  const currentPageUid = useCurrentPageUid();
 
   const layoutHeaderCss = useMemo(() => {
     return css`
@@ -531,9 +534,7 @@ export const InternalAdminLayout = () => {
         </div>
       </Layout.Header>
       <AdminSideBar sideMenuRef={sideMenuRef} />
-      <CurrentRouteProvider uid={currentPageUid}>
-        <LayoutContent />
-      </CurrentRouteProvider>
+      <LayoutContent />
     </Layout>
   );
 };
