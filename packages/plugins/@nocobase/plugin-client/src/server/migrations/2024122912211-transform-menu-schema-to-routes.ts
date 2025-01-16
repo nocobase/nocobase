@@ -10,7 +10,7 @@
 import { Migration } from '@nocobase/server';
 
 export default class extends Migration {
-  appVersion = '<1.6.0-alpha.13';
+  appVersion = '<1.6.0-alpha.16';
   async up() {
     const uiSchemas: any = this.db.getRepository('uiSchemas');
     const desktopRoutes: any = this.db.getRepository('desktopRoutes');
@@ -59,7 +59,7 @@ export default class extends Migration {
           transaction,
         });
 
-        allMobileRoutes.forEach(async (item) => {
+        allMobileRoutes?.forEach(async (item) => {
           if (item.type !== 'page') {
             return;
           }
@@ -72,6 +72,7 @@ export default class extends Migration {
             values: {
               enableTabs,
             },
+            transaction,
           });
 
           await mobileRoutes.update({
@@ -81,6 +82,7 @@ export default class extends Migration {
             values: {
               hidden: !enableTabs,
             },
+            transaction,
           });
         });
       });
