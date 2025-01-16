@@ -611,9 +611,9 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                   const recordData = useCollectionRecordData();
                   return {
                     disabled:
-                      !recordData.enableTabs ||
                       (recordData.type !== NocoBaseDesktopRouteType.group &&
-                        recordData.type !== NocoBaseDesktopRouteType.page),
+                        recordData.type !== NocoBaseDesktopRouteType.page) ||
+                      (!recordData.enableTabs && recordData.type === NocoBaseDesktopRouteType.page),
                     openMode: 'drawer',
                   };
                 },
