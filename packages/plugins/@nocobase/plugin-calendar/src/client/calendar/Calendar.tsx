@@ -306,7 +306,7 @@ export const Calendar: any = withDynamicSchemaProps(
       const plugin = app.pm.get('calendar') as any;
       const colorCollectionField = collection.getField(fieldNames.colorFieldName);
       const { useGetColor } = plugin.getColorFieldInterface(colorCollectionField?.interface) || {};
-      const { getFontColor, getBackgroundColor } = useGetColor(colorCollectionField);
+      const { getFontColor, getBackgroundColor } = useGetColor?.(colorCollectionField) || {};
       useEffect(() => {
         setView(props.defaultView);
       }, [props.defaultView]);
@@ -350,8 +350,8 @@ export const Calendar: any = withDynamicSchemaProps(
 
       const eventPropGetter = (event: Event) => {
         if (event.colorFieldValue) {
-          const fontColor = getFontColor(event.colorFieldValue);
-          const backgroundColor = getBackgroundColor(event.colorFieldValue);
+          const fontColor = getFontColor?.(event.colorFieldValue);
+          const backgroundColor = getBackgroundColor?.(event.colorFieldValue);
           const style = {};
           if (fontColor) {
             style['fontColor'] = fontColor;
