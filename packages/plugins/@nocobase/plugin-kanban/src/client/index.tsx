@@ -62,22 +62,19 @@ const useDefaultGroupFieldsOptions = (collectionField) => {
   return { options: collectionField.uiSchema.enum };
 };
 class PluginKanbanClient extends Plugin {
-  groupFields: {
-    type: string;
-    useGetGroupOptions: UseGetGroupOptions;
-  }[] = [
-    { type: 'select', useGetGroupOptions: useDefaultGroupFieldsOptions },
-    { type: 'radioGroup', useGetGroupOptions: useDefaultGroupFieldsOptions },
-  ];
+  groupFields: { [T: string]: { useGetGroupOptions: UseGetGroupOptions } } = {
+    select: { useGetGroupOptions: useDefaultGroupFieldsOptions },
+    radioGroup: { useGetGroupOptions: useDefaultGroupFieldsOptions },
+  };
 
-  registerGroupFieldType(data: any) {
-    if (Array.isArray(data)) {
-      const result = this.groupFields.concat(data);
-      this.groupFields = result;
-    } else {
-      this.groupFields.push(data);
-    }
+  registerGroupFieldType(key, options) {
+    this.groupFields[key] = options;
   }
+
+  getGroupFieldType(key) {
+    return this.groupFields[key];
+  }
+
   async load() {
     this.app.use(KanbanPluginProvider);
     this.app.schemaInitializerManager.add(kanbanCardInitializers_deprecated);
