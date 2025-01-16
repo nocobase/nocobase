@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.4.26](https://github.com/nocobase/nocobase/compare/v1.4.25...v1.4.26) - 2025-01-16
+
+### 🚀 Improvements
+
+- **[client]** Allows to add descriptions for SQL collections ([#6081](https://github.com/nocobase/nocobase/pull/6081)) by @2013xile
+
+- **[resourcer]** Allow empty object as values in action ([#6070](https://github.com/nocobase/nocobase/pull/6070)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[Localization]** Avoid API request when attempting to delete an empty translation ([#6078](https://github.com/nocobase/nocobase/pull/6078)) by @2013xile
+
 ## [v1.4.25](https://github.com/nocobase/nocobase/compare/v1.4.24...v1.4.25) - 2025-01-15
 
 ### 🚀 Improvements

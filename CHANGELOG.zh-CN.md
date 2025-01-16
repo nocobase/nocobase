@@ -5,6 +5,18 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.4.26](https://github.com/nocobase/nocobase/compare/v1.4.25...v1.4.26) - 2025-01-16
+
+### 🚀 优化
+
+- **[client]** 支持给 SQL 数据表添加描述 ([#6081](https://github.com/nocobase/nocobase/pull/6081)) by @2013xile
+
+- **[resourcer]** 支持 API 请求中传入空对象作为 values 的值 ([#6070](https://github.com/nocobase/nocobase/pull/6070)) by @mytharcher
+
+### 🐛 修复
+
+- **[本地化]** 译文为空时，点击“删除译文按钮”不请求接口 ([#6078](https://github.com/nocobase/nocobase/pull/6078)) by @2013xile
+
 ## [v1.4.25](https://github.com/nocobase/nocobase/compare/v1.4.24...v1.4.25) - 2025-01-15
 
 ### 🚀 优化
