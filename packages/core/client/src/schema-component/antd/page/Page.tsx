@@ -35,10 +35,11 @@ import { Icon } from '../../../icon';
 import { NocoBaseDesktopRouteType, useCurrentRoute } from '../../../route-switch/antd/admin-layout';
 import { KeepAliveProvider, useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
+import { isVariable } from '../../../variables/utils/isVariable';
 import { DndContext } from '../../common';
 import { SortableItem } from '../../common/sortable-item';
 import { SchemaComponent, SchemaComponentOptions } from '../../core';
-import { useDesignable } from '../../hooks';
+import { useCompile, useDesignable } from '../../hooks';
 import { useToken } from '../__builtins__';
 import { ErrorFallback } from '../error-fallback';
 import { useMenuDragEnd, useNocoBaseRoutes } from '../menu/Menu';
@@ -252,6 +253,7 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
   const { theme } = useGlobalTheme();
   const currentRoute = useCurrentRoute();
   const { createRoute } = useNocoBaseRoutes();
+  const compile = useCompile();
 
   const tabBarExtraContent = useMemo(() => {
     return (
@@ -347,7 +349,7 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
               className={classNames('nb-action-link', 'designerCss', className)}
             >
               {schema['x-icon'] && <Icon style={{ marginRight: 8 }} type={schema['x-icon']} />}
-              <span>{tabRoute.title || t('Unnamed')}</span>
+              <span>{isVariable(tabRoute.title ? compile(tabRoute.title) : t(tabRoute.title)) || t('Unnamed')}</span>
               <PageTabDesigner schema={schema} />
             </SortableItem>
           ),
