@@ -75,6 +75,9 @@ async function schemaPatch(
         newActionBarSchemas[key]['x-use-component-props'] = 'useUpdateActionProps';
         newActionBarSchemas[key]['x-uid'] = actionBarSchema.properties[key]['x-uid'];
       }
+      if (actionBarSchema.properties[key]['x-settings'].includes('actionSettings:popup')) {
+        actionBarSchema.properties[key]['x-hidden'] = false;
+      }
     }
   } else {
     schema['x-decorator-props'] = {
@@ -108,6 +111,9 @@ async function schemaPatch(
         newActionBarSchemas[key]['x-settings'] = 'actionSettings:createSubmit';
         newActionBarSchemas[key]['x-use-component-props'] = 'useCreateActionProps';
         newActionBarSchemas[key]['x-uid'] = actionBarSchema.properties[key]['x-uid'];
+      }
+      if (actionBarSchema.properties[key]['x-settings'].includes('actionSettings:popup')) {
+        actionBarSchema.properties[key]['x-hidden'] = true;
       }
     }
   }

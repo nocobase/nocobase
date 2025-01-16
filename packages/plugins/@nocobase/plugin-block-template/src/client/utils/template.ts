@@ -92,35 +92,6 @@ export function findSchemaCache(cache: Record<string, any>, uid: string): any {
 }
 
 /**
- * Find a schema and its parent by UID
- * @param schema The schema to search in
- * @param uid The UID to search for
- * @param parent The parent schema (used in recursion)
- * @param key The key in parent's properties (used in recursion)
- * @returns Object containing parent, schema and key, or null if not found
- */
-export function findParentSchemaByUid(
-  schema: any,
-  uid: string,
-  parent: any = null,
-  key?: string,
-): { parent: any; schema: any; key: string } | null {
-  if (!schema) {
-    return null;
-  }
-  if (schema['x-uid'] === uid) {
-    return { parent, schema, key };
-  }
-  for (const key in schema.properties) {
-    const result = findParentSchemaByUid(schema.properties[key], uid, schema, key);
-    if (result) {
-      return result;
-    }
-  }
-  return null;
-}
-
-/**
  * Find the first virtual schema by UID
  * @param schema The schema to search in
  * @param uid The UID to search for

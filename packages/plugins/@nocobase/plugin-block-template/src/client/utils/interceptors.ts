@@ -8,13 +8,7 @@
  */
 
 import { AxiosRequestConfig } from 'axios';
-import {
-  findSchemaCache,
-  findParentSchemaByUid,
-  findFirstVirtualSchema,
-  convertToCreateSchema,
-  setToTrueSchema,
-} from './template';
+import { findSchemaCache, findFirstVirtualSchema, convertToCreateSchema, setToTrueSchema } from './template';
 
 /**
  * Register template block related interceptors for axios
