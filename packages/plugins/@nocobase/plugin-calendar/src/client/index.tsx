@@ -27,18 +27,47 @@ import {
   useCreateCalendarBlock,
 } from './schema-initializer/items';
 
-export class PluginCalendarClient extends Plugin {
-  titleFields = ['input', 'select', 'phone', 'email', 'radioGroup'];
-  dateTimeFields = ['date', 'datetime', 'dateOnly', 'datetimeNoTz', 'unixTimestamp', 'createdAt', 'updatedAt'];
-  backgroundColorFields = ['radioGroup', 'select'];
+const CustomLabel = ({ value }) => {
+  return value;
+};
+interface ColorFunctions {
+  loading: boolean;
+  getFontColor: () => string;
+  getBackgroundColor: () => string;
+}
 
-  registerTitleFields(data: any) {
-    if (Array.isArray(data)) {
-      const result = this.titleFields.concat(data);
-      this.titleFields = result;
-    } else {
-      this.titleFields.push(data);
-    }
+const useGetColor = (field) => {
+  return {
+    loading: false,
+    getFontColor: () => {
+      return '';
+    },
+    getBackgroundColor: () => {
+      return '';
+    },
+  };
+};
+export class PluginCalendarClient extends Plugin {
+  titleFields: { [T: string]: { CustomLabel: Function } } = {
+    input: { CustomLabel },
+    select: { CustomLabel },
+    phone: { CustomLabel },
+    email: { CustomLabel },
+    radioGroup: { CustomLabel },
+  };
+  backgroundColorFields: {
+    [T: string]: { useGetColor: (field: any) => ColorFunctions };
+  } = {
+    select: { useGetColor },
+  };
+
+  dateTimeFields = ['date', 'datetime', 'dateOnly', 'datetimeNoTz', 'unixTimestamp', 'createdAt', 'updatedAt'];
+
+  registerTitleFields(key, options) {
+    this.titleFields[key] = options;
+  }
+  getTitleFields(key) {
+    return this.titleFields[key];
   }
   registerDateTimeFields(data: any) {
     if (Array.isArray(data)) {
@@ -48,13 +77,11 @@ export class PluginCalendarClient extends Plugin {
       this.dateTimeFields.push(data);
     }
   }
-  registerBackgroundColorFields(data: any) {
-    if (Array.isArray(data)) {
-      const result = this.backgroundColorFields.concat(data);
-      this.backgroundColorFields = result;
-    } else {
-      this.backgroundColorFields.push(data);
-    }
+  registerColorFieldInterface(type, option) {
+    this.backgroundColorFields[type] = option;
+  }
+  getColorFieldInterface(type) {
+    return this.backgroundColorFields[type];
   }
   async load() {
     this.app.dataSourceManager.addCollectionTemplates([CalendarCollectionTemplate]);
