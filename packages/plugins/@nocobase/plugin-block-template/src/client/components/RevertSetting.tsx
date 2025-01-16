@@ -133,11 +133,18 @@ export const RevertSetting = () => {
               ...templateSchema['x-component-props'],
               key: uid(),
             };
+            if (field.parent['componentProps']) {
+              field.parent['componentProps'] = {
+                ...field.parent['componentProps'],
+                key: uid(),
+              };
+            }
             field['decoratorProps'] = {
               ...templateSchema['x-decorator-props'],
               key: uid(),
             };
             // const values = form.values;
+            form.reset();
             form.clearFormGraph(field.address, true);
             blockForm?.clearFormGraph(field.address, true);
             // runAsync?.();
