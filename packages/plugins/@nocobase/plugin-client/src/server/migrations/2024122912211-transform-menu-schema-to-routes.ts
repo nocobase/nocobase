@@ -14,6 +14,7 @@ export default class extends Migration {
   async up() {
     const uiSchemas: any = this.db.getRepository('uiSchemas');
     const desktopRoutes: any = this.db.getRepository('desktopRoutes');
+    const mobileRoutes: any = this.db.getRepository('mobileRoutes');
     const rolesRepository = this.db.getRepository('roles');
     const menuSchema = await uiSchemas.getJsonSchema('nocobase-admin-menu');
     const routes = await schemaToRoutes(menuSchema, uiSchemas);
@@ -52,6 +53,36 @@ export default class extends Migration {
             transaction,
           });
         }
+
+        // 3. 将旧版的移动端菜单数据转换为新版的移动端菜单数据
+        const allMobileRoutes = await mobileRoutes.findAll({
+          transaction,
+        });
+
+        allMobileRoutes.forEach(async (item) => {
+          if (item.type !== 'page') {
+            return;
+          }
+
+          const mobileRouteSchema = await uiSchemas.getJsonSchema(item.schemaUid);
+          const enableTabs = !!mobileRouteSchema?.['x-component-props']?.displayTabs;
+
+          await mobileRoutes.update({
+            filterByTk: item.id,
+            values: {
+              enableTabs,
+            },
+          });
+
+          await mobileRoutes.update({
+            filter: {
+              parentId: item.id,
+            },
+            values: {
+              hidden: !enableTabs,
+            },
+          });
+        });
       });
     } catch (error) {
       console.error('Migration failed:', error);
