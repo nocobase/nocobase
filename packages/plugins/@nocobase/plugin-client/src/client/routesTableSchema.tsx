@@ -892,6 +892,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                             title: '{{t("Unnamed")}}',
                                             schemaUid: tabSchemaUid,
                                             tabSchemaName,
+                                            hidden: true,
                                           });
                                         }
                                       }
