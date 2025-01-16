@@ -138,6 +138,7 @@ export const useChartFilter = () => {
           ...field.uiSchema?.['x-component-props'],
           'filter-operator': defaultOperator,
         },
+        'x-filter-operators': defaultOperator?.value,
       };
       if (field.interface === 'formula') {
         const component = getFormulaComponent(field.dataType) || 'Input';
@@ -195,6 +196,7 @@ export const useChartFilter = () => {
         'x-component-props': {
           'filter-operator': defaultOperator,
         },
+        'x-filter-operators': defaultOperator?.value,
       };
       if (defaultOperator?.noValue) {
         schema = {
