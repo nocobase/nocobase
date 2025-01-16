@@ -36,7 +36,7 @@ function syncUniqueFieldTemplateInfo(sourceValue: any, skey: string, removedTarg
         const rKeys = Object.keys(rSchema || {});
         sKeys.forEach((skey, keyIndex) => {
           if (sSchema[skey]['x-component'] === 'Grid.Row' || sSchema[skey]['x-component'] === 'Grid.Col') {
-            mergeTemplateUid(sSchema[skey]?.['properties'], rSchema[rKeys[keyIndex]]?.['properties'], 'properties');
+            mergeTemplateUid(sSchema[skey]?.['properties'], rSchema?.[rKeys[keyIndex]]?.['properties'], 'properties');
           } else {
             sSchema[skey]['x-template-uid'] = rSchema?.[rKeys[keyIndex]]?.['x-uid'];
             mergeTemplateUid(sSchema[skey]?.['properties'], rSchema?.[rKeys[keyIndex]]?.['properties'], 'properties');
