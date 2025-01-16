@@ -9,13 +9,14 @@
 
 import React, { ComponentType } from 'react';
 import { observer, useFieldSchema } from '@formily/react';
-import { useEventDefinitions, useEventSettings } from '../hooks';
 import { SchemaSettingsKey, SchemaDefinitionsKey } from '../types';
+import { useEvent } from '../hooks/useEvent';
 
 const WarpComponent = (props: any) => {
   const fieldSchema = useFieldSchema();
-  useEventDefinitions(fieldSchema?.[SchemaDefinitionsKey]);
-  useEventSettings(fieldSchema?.[SchemaSettingsKey]);
+  const { register, define } = useEvent();
+  define(fieldSchema?.[SchemaDefinitionsKey]);
+  register(fieldSchema?.[SchemaSettingsKey]);
   return props.children;
 };
 

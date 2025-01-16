@@ -10,13 +10,13 @@
 import { usePlugin } from '../../../../../application/hooks/usePlugin';
 import { useApp } from '../../../../../application/hooks/useApp';
 import { useFormBlockProps } from '../../../../../block-provider/FormBlockProvider';
-import { EventFlowPlugin } from '../../../../../event-flow';
+import { useEvent } from '../../../../../event-flow';
 import { useRefreshActionProps } from '../../../../../block-provider/hooks';
 
 export function useTableBlockEventsInterface() {
   const { form } = useFormBlockProps();
   const app = useApp();
-  const eventFlowPlugin = usePlugin(EventFlowPlugin.name) as any;
+  const { register, define } = useEvent();
   const props = useRefreshActionProps();
   console.log('useTableBlockEventsInterface', props);
 
@@ -48,5 +48,5 @@ export function useTableBlockEventsInterface() {
       },
     ],
   };
-  eventFlowPlugin.register(types);
+  define(types);
 }

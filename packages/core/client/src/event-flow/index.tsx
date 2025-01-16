@@ -10,3 +10,4 @@
 export * from './types';
 export * from './hoc/withSchemaEvent';
 export * from './EventFlowPlugin';
+export * from './hooks/useEvent';

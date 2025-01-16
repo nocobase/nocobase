@@ -16,8 +16,11 @@ import { EventDefinition } from './types';
 
 export class EventFlowPlugin extends Plugin {
   static name = PluginName;
-  modules: EventDefinition[] = [];
+  /** 事件定义 */
+  definitions: EventDefinition[] = [];
+  /** 事件设置 */
   events: Map<string, EventSetting> = new Map();
+
   async afterAdd() {
     // await this.app.pm.add()
   }
@@ -29,17 +32,30 @@ export class EventFlowPlugin extends Plugin {
     this.schemaSettingsManager.addItem('PageSettings', PluginName, {
       Component: EventSettingItem,
     });
-    this.app.use(EventFlowProvider);
+    // this.app.use(EventFlowProvider);
     // this.app.addComponents({})
     // this.app.addScopes({})
     // this.app.addProvider()
     // this.app.addProviders()
     // this.app.router.add()
   }
-  register(values: EventDefinition) {
-    console.log('register', values);
-    this.modules.push(values);
-    this.modules = uniqBy(this.modules, 'name');
+  // 定义事件
+  define(definition: EventDefinition[] | EventDefinition) {
+    if (!definition) {
+      return;
+    }
+    if (Array.isArray(definition)) {
+      this.definitions.push(...definition);
+    } else {
+      this.definitions.push(definition);
+    }
+    this.definitions = uniqBy(this.definitions, (item) => item.name + item.uid);
+  }
+  // 运行时注册事件
+  register(events: EventSetting[]) {
+    events?.forEach((event) => {
+      this.on(event);
+    });
   }
   // 触发事件
   emit(moduleName: string, eventName: string, params: any) {
@@ -49,11 +65,10 @@ export class EventFlowPlugin extends Plugin {
       event.actions.forEach((action) => {
         const actionModuleName = action.split('.')[0];
         const actionName = action.split('.')[1];
-        const module = this.modules.find((module) => module.name === moduleName);
-        const moduleAction = this.modules
+        const module = this.definitions.find((module) => module.name === moduleName);
+        const moduleAction = this.definitions
           .find((module) => module.name === actionModuleName)
           ?.actions?.find((action) => action.name === actionName);
-        console.log('moduleAction', moduleAction);
         if (moduleAction) {
           moduleAction?.fn(params);
         }
@@ -62,10 +77,5 @@ export class EventFlowPlugin extends Plugin {
   }
   on(event: EventSetting) {
     this.events.set(event.event, event);
-  }
-  registerEvents(events: EventSetting[]) {
-    events.forEach((event) => {
-      this.on(event);
-    });
   }
 }

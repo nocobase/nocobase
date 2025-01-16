@@ -23,31 +23,36 @@ export interface EventAction {
   name: string;
   title: string;
   description?: string;
-  params: IEventParam[];
-  fn: (params: any) => void;
+  params?: IEventParam[];
+  fn: (params?: any) => void;
 }
 
 /** 事件事件 */
 export interface EventEvent {
   name: string;
   title: string;
-  description: string;
-  params: IEventParam[];
+  uid?: string;
+  description?: string;
+  params?: IEventParam[];
 }
 
 /** 事件定义 */
 export interface EventDefinition {
   name: string;
+  /** 标识同一类型组件的不同实例 */
+  uid?: string;
   title: string;
-  description: string;
-  actions?: EventAction[];
+  description?: string;
   events?: EventEvent[];
   states?: IEventParam[];
+  actions?: EventAction[];
 }
 
 /** 事件设置 */
 export interface EventSetting {
   event: string;
+  /** 标识同一类型组件的不同实例 */
+  uid?: string;
   condition: string;
   actions: string[];
 }

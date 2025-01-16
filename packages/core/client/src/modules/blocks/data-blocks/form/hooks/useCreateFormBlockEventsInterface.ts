@@ -7,15 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { usePlugin } from '../../../../../application/hooks/usePlugin';
 import { useApp } from '../../../../../application/hooks/useApp';
 import { useFormBlockProps } from '../../../../../block-provider/FormBlockProvider';
-import { EventFlowPlugin } from '../../../../../event-flow';
+import { useEvent } from '../../../../../event-flow';
 
 export function useCreateFormBlockEventsInterface() {
   const { form } = useFormBlockProps();
   const app = useApp();
-  const eventFlowPlugin = usePlugin(EventFlowPlugin.name) as any;
+  const { register, define, emit } = useEvent();
   console.log('app.pm', form);
 
   const inter = {
@@ -26,14 +25,14 @@ export function useCreateFormBlockEventsInterface() {
         name: 'onSubmit',
         title: 'submit event',
         description: 'form submit',
-        params: {
-          e: 'event',
-        },
+        // params: {
+        //   e: 'event',
+        // },
       },
     ],
-    state: {
-      isSubmitting: 'isSubmitting',
-    },
+    // state: {
+    //   isSubmitting: 'isSubmitting',
+    // },
     actions: [
       {
         name: 'submit',
@@ -45,12 +44,14 @@ export function useCreateFormBlockEventsInterface() {
       },
     ],
   };
+
   form.subscribe(({ type, payload }) => {
     console.log('type', type, payload);
     // 表格重置后代表着添加成功
     if (type === 'onFormReset') {
-      eventFlowPlugin.emit(inter.name, 'onSubmit', payload);
+      emit(inter.name, 'onSubmit', payload);
     }
   });
-  eventFlowPlugin.register(inter);
+
+  define(inter);
 }

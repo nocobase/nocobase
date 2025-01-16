@@ -44,12 +44,11 @@ const EventCard = (props) => {
   );
 };
 
-export default function EventsSetting(props) {
+export default function EventSettings(props) {
   const { modules, value } = props;
   const [state, setState] = useControllableValue<Array<EventSetting | {}>>(props, {
     defaultValue: [],
   });
-  console.log('modules', state, value);
   const onAdd = () => {
     setState([...state, {}]);
   };
@@ -58,7 +57,7 @@ export default function EventsSetting(props) {
     newState.splice(index, 1);
     setState(newState);
   };
-  console.log('state', state);
+
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
       {Array.from(state).map((item, index) => (
