@@ -428,6 +428,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                       type: NocoBaseDesktopRouteType.tabs,
                                       title: '{{t("Unnamed")}}',
                                       tabSchemaName,
+                                      hidden: true,
                                     });
                                   }
 
@@ -1255,7 +1256,7 @@ function useCreateRouteSchema(isMobile: boolean) {
 
       const typeToSchema = {
         [NocoBaseDesktopRouteType.page]: isMobile
-          ? getMobilePageSchema(menuSchemaUid, tabSchemaUid).schema
+          ? getMobilePageSchema(pageSchemaUid, tabSchemaUid).schema
           : getPageMenuSchema({
               title,
               icon,
@@ -1268,12 +1269,22 @@ function useCreateRouteSchema(isMobile: boolean) {
         [NocoBaseDesktopRouteType.link]: getLinkMenuSchema({ title, icon, schemaUid: menuSchemaUid, href, params }),
       };
 
-      await resource['insertAdjacent/nocobase-admin-menu']({
-        position: 'beforeEnd',
-        values: {
-          schema: typeToSchema[type],
-        },
-      });
+      if (isMobile) {
+        await resource['insertAdjacent']({
+          resourceIndex: 'mobile',
+          position: 'beforeEnd',
+          values: {
+            schema: typeToSchema[type],
+          },
+        });
+      } else {
+        await resource['insertAdjacent/nocobase-admin-menu']({
+          position: 'beforeEnd',
+          values: {
+            schema: typeToSchema[type],
+          },
+        });
+      }
 
       return { menuSchemaUid, pageSchemaUid, tabSchemaUid, tabSchemaName };
     },
