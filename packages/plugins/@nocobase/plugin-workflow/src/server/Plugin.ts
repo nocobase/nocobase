@@ -487,9 +487,10 @@ export default class PluginWorkflowServer extends Plugin {
         transaction: options.transaction,
       });
 
-      if (existed) {
+      const limitCount = workflow.options.stackLimit || 1;
+      if (existed >= limitCount) {
         this.getLogger(workflow.id).warn(
-          `workflow ${workflow.id} has already been triggered in stacks executions (${stack}), and newly triggering will be skipped.`,
+          `workflow ${workflow.id} has already been triggered in stacks executions (${stack}), and max call coont is ${limitCount}, newly triggering will be skipped.`,
         );
 
         valid = false;
