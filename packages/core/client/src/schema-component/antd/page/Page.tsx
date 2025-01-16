@@ -35,7 +35,6 @@ import { Icon } from '../../../icon';
 import { NocoBaseDesktopRouteType, useCurrentRoute } from '../../../route-switch/antd/admin-layout';
 import { KeepAliveProvider, useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
-import { isVariable } from '../../../variables/utils/isVariable';
 import { DndContext } from '../../common';
 import { SortableItem } from '../../common/sortable-item';
 import { SchemaComponent, SchemaComponentOptions } from '../../core';
@@ -349,7 +348,7 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
               className={classNames('nb-action-link', 'designerCss', className)}
             >
               {schema['x-icon'] && <Icon style={{ marginRight: 8 }} type={schema['x-icon']} />}
-              <span>{isVariable(tabRoute.title ? compile(tabRoute.title) : t(tabRoute.title)) || t('Unnamed')}</span>
+              <span>{(tabRoute.title && compile(t(tabRoute.title))) || t('Unnamed')}</span>
               <PageTabDesigner schema={schema} />
             </SortableItem>
           ),

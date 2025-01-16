@@ -67,14 +67,10 @@ export const pageTabSettings = new SchemaSettings({
             });
 
             // 更新路由
-            updateRoute(
-              schema['__route__'].id,
-              {
-                title,
-                icon,
-              },
-              false,
-            );
+            updateRoute(schema['__route__'].id, {
+              title,
+              icon,
+            });
           },
         };
       },
