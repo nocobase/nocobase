@@ -236,10 +236,10 @@ export default class CollectionTrigger extends Trigger {
     });
   }
 
-  validateConfig(values) {
+  validateContext(values) {
     if (!values.data) {
       return {
-        data: 'Data property is required',
+        data: 'Data is required',
       };
     }
 
