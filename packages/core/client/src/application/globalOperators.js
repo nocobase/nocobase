@@ -362,7 +362,7 @@ export function getOperators() {
   };
 
   jsonLogic.getValues = function (logic) {
-    return logic[jsonLogic.get_operator(logic)];
+    return logic[jsonLogic.getOperator(logic)];
   };
 
   jsonLogic.apply = function (logic, data) {
@@ -377,7 +377,7 @@ export function getOperators() {
       return logic;
     }
 
-    var op = jsonLogic.get_operator(logic);
+    var op = jsonLogic.getOperator(logic);
     var values = logic[op];
     var i;
     var current;
@@ -541,7 +541,7 @@ export function getOperators() {
     var collection = [];
 
     if (jsonLogic.is_logic(logic)) {
-      var op = jsonLogic.get_operator(logic);
+      var op = jsonLogic.getOperator(logic);
       var values = logic[op];
 
       if (!Array.isArray(values)) {
@@ -591,8 +591,8 @@ export function getOperators() {
 
     if (jsonLogic.is_logic(pattern)) {
       if (jsonLogic.is_logic(rule)) {
-        var pattern_op = jsonLogic.get_operator(pattern);
-        var rule_op = jsonLogic.get_operator(rule);
+        var pattern_op = jsonLogic.getOperator(pattern);
+        var rule_op = jsonLogic.getOperator(rule);
 
         if (pattern_op === '@' || pattern_op === rule_op) {
           // echo "\nOperators match, go deeper\n";
