@@ -417,7 +417,7 @@ export default class PluginWorkflowServer extends Plugin {
     }
 
     // NOTE: no await for quick return
-    setTimeout(this.prepare);
+    setImmediate(this.prepare);
   }
 
   private async triggerSync(
@@ -463,6 +463,7 @@ export default class PluginWorkflowServer extends Plugin {
     if (execution.status !== EXECUTION_STATUS.STARTED) {
       return;
     }
+    this.getLogger(execution.workflowId).info(`starting deferred execution (${execution.id})`);
     this.pending.push([execution]);
     if (this.executing) {
       await this.executing;
@@ -591,6 +592,10 @@ export default class PluginWorkflowServer extends Plugin {
     if (this.events.length) {
       await this.prepare();
     } else {
+      this.getLogger('dispatcher').info('no more events need to be prepared, dispatching...');
+      if (this.executing) {
+        await this.executing;
+      }
       this.dispatch();
     }
   };
@@ -656,7 +661,7 @@ export default class PluginWorkflowServer extends Plugin {
       }
       this.executing = null;
 
-      if (next) {
+      if (next || this.pending.length) {
         this.getLogger('dispatcher').info(`last process finished, will do another dispatch`);
         this.dispatch();
       }
@@ -668,11 +673,12 @@ export default class PluginWorkflowServer extends Plugin {
   }
 
   private async process(execution: ExecutionModel, job?: JobModel, options: Transactionable = {}): Promise<Processor> {
+    const logger = this.getLogger(execution.workflowId);
     if (execution.status === EXECUTION_STATUS.QUEUEING) {
       const transaction = await this.useDataSourceTransaction('main', options.transaction);
       await execution.update({ status: EXECUTION_STATUS.STARTED }, { transaction });
+      logger.info(`queueing execution (${execution.id}) from pending list updated to started`);
     }
-    const logger = this.getLogger(execution.workflowId);
     const processor = this.createProcessor(execution, options);
 
     logger.info(`execution (${execution.id}) ${job ? 'resuming' : 'starting'}...`);
