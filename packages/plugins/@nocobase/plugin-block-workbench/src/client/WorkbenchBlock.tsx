@@ -89,6 +89,9 @@ const ResponsiveSpace = () => {
           .ant-space-item {
             width: ${itemWidth}px;
             display: flex;
+            .nb-action-panel-container {
+              max-width: ${itemWidth}px;
+            }
             .ant-avatar-circle {
               width: ${avatarSize}px !important;
               height: ${avatarSize}px !important;
