@@ -40,8 +40,7 @@ function isMobile() {
 
 const ResponsiveSpace = () => {
   const fieldSchema = useFieldSchema();
-  const { isMobile } = useOpenModeContext() || {};
-
+  const isMobileMedia = isMobile();
   const { itemsPerRow = 4 } = fieldSchema.parent['x-decorator-props'] || {};
 
   const containerRef = useRef(null); // 引用容器
@@ -95,7 +94,7 @@ const ResponsiveSpace = () => {
 
   // 计算 Avatar 的宽度
   const avatarSize = useMemo(() => {
-    return isMobile ? Math.floor(itemWidth * 0.8) : 54; // Avatar 大小为 item 宽度的 60%
+    return isMobileMedia ? Math.floor(itemWidth * 0.8) : 54; // Avatar 大小为 item 宽度的 60%
   }, [itemWidth, itemsPerRow, containerWidth]);
 
   return (
