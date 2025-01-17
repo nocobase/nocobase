@@ -380,6 +380,17 @@ export function mergeSchema(
             }
           }
 
+          if (target['x-decorator'] === 'DndContext') {
+            for (const skey of sourceKeys) {
+              if (sourceValue[skey]['x-settings'] === 'actionSettings:delete') {
+                const removedTargetKeys = _.remove(targetKeys, (key) => {
+                  return objectValue[key]?.['x-settings'] === 'actionSettings:delete';
+                });
+                syncUniqueFieldTemplateInfo(sourceValue, skey, removedTargetKeys, objectValue);
+              }
+            }
+          }
+
           // 处理Grid的拖动后行列改变的情况
           if (source['x-component'] === 'Grid' && object['x-component'] === 'Grid') {
             const tItemsMap = new Map();
