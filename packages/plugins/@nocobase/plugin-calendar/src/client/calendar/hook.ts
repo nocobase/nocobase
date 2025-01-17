@@ -13,13 +13,13 @@ import { theme } from 'antd';
 export const useCalenderHeight = () => {
   const height = useDataBlockHeight();
   const { heightProps } = useBlockHeightProps();
-  const { title } = heightProps;
+  const { title, titleHeight } = heightProps;
   const { token } = theme.useToken();
   if (!height) {
     return;
   }
   const paddingHeight = 2 * token.paddingLG;
-  const blockTitleHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
+  const blockTitleHeaderHeight = title ? titleHeight : 0;
 
   return height - paddingHeight - blockTitleHeaderHeight;
 };
