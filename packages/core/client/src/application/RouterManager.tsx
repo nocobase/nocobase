@@ -9,7 +9,6 @@
 
 import { get, set } from 'lodash';
 import React, { ComponentType, createContext, useContext } from 'react';
-import { Router } from '@remix-run/router';
 import {
   BrowserRouterProps,
   createBrowserRouter,
@@ -180,7 +179,7 @@ export class RouterManager {
         },
       ],
       opts,
-    ) as Router;
+    );
 
     const RenderRouter: React.FC<{ BaseLayout?: ComponentType }> = ({ BaseLayout = BlankComponent }) => {
       return (
