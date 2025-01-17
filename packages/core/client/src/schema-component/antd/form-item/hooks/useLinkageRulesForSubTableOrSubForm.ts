@@ -17,6 +17,7 @@ import { forEachLinkageRule } from '../../../../schema-settings/LinkageRules/for
 import useLocalVariables from '../../../../variables/hooks/useLocalVariables';
 import useVariables from '../../../../variables/hooks/useVariables';
 import { useSubFormValue } from '../../association-field/hooks';
+import { useApp } from '../../../../application';
 
 /**
  * used to bind the linkage rules of the sub-table or sub-form with the current field
@@ -35,6 +36,7 @@ export const useLinkageRulesForSubTableOrSubForm = () => {
   const variables = useVariables();
 
   const linkageRules = getLinkageRules(schemaOfSubTableOrSubForm);
+  const app = useApp();
 
   useEffect(() => {
     if (!(field.onUnmount as any).__rested) {
@@ -63,16 +65,19 @@ export const useLinkageRulesForSubTableOrSubForm = () => {
     forEachLinkageRule(linkageRules, (action, rule) => {
       if (action.targetFields?.includes(fieldSchema.name)) {
         disposes.push(
-          bindLinkageRulesToFiled({
-            field,
-            linkageRules,
-            formValues: formValue,
-            localVariables,
-            action,
-            rule,
-            variables,
-            variableNameOfLeftCondition: '$iteration',
-          }),
+          bindLinkageRulesToFiled(
+            {
+              field,
+              linkageRules,
+              formValues: formValue,
+              localVariables,
+              action,
+              rule,
+              variables,
+              variableNameOfLeftCondition: '$iteration',
+            },
+            app.operators,
+          ),
         );
       }
     });

@@ -9,13 +9,11 @@
 
 /* globals define,module */
 
-import dayjs from 'dayjs';
-
 /*
 Using a Universal Module Loader that should be browser, require, and AMD friendly
 http://ricostacruz.com/cheatsheets/umdjs.html
 */
-export function getJsonLogic() {
+export function getOperators() {
   'use strict';
   /* globals console:false */
 
@@ -307,11 +305,11 @@ export function getJsonLogic() {
     },
     missing: function () {
       /*
-        Missing can receive many keys as many arguments, like {"missing:[1,2]}
-        Missing can also receive *one* argument that is an array of keys,
-        which typically happens if it's actually acting on the output of another command
-        (like 'if' or 'merge')
-        */
+          Missing can receive many keys as many arguments, like {"missing:[1,2]}
+          Missing can also receive *one* argument that is an array of keys,
+          which typically happens if it's actually acting on the output of another command
+          (like 'if' or 'merge')
+          */
 
       var missing = [];
       var keys = Array.isArray(arguments[0]) ? arguments[0] : arguments;
@@ -348,10 +346,10 @@ export function getJsonLogic() {
   };
 
   /*
-    This helper will defer to the JsonLogic spec as a tie-breaker when different language interpreters define different behavior for the truthiness of primitives.  E.g., PHP considers empty arrays to be falsy, but Javascript considers them to be truthy. JsonLogic, as an ecosystem, needs one consistent answer.
-
-    Spec and rationale here: http://jsonlogic.com/truthy
-    */
+      This helper will defer to the JsonLogic spec as a tie-breaker when different language interpreters define different behavior for the truthiness of primitives.  E.g., PHP considers empty arrays to be falsy, but Javascript considers them to be truthy. JsonLogic, as an ecosystem, needs one consistent answer.
+  
+      Spec and rationale here: http://jsonlogic.com/truthy
+      */
   jsonLogic.truthy = function (value) {
     if (Array.isArray(value) && value.length === 0) {
       return false;
@@ -359,11 +357,11 @@ export function getJsonLogic() {
     return !!value;
   };
 
-  jsonLogic.get_operator = function (logic) {
+  jsonLogic.getOperator = function (logic) {
     return Object.keys(logic)[0];
   };
 
-  jsonLogic.get_values = function (logic) {
+  jsonLogic.getValues = function (logic) {
     return logic[jsonLogic.get_operator(logic)];
   };
 
@@ -395,18 +393,18 @@ export function getJsonLogic() {
     // 'if', 'and', and 'or' violate the normal rule of depth-first calculating consequents, let each manage recursion as needed.
     if (op === 'if' || op == '?:') {
       /* 'if' should be called with a odd number of parameters, 3 or greater
-        This works on the pattern:
-        if( 0 ){ 1 }else{ 2 };
-        if( 0 ){ 1 }else if( 2 ){ 3 }else{ 4 };
-        if( 0 ){ 1 }else if( 2 ){ 3 }else if( 4 ){ 5 }else{ 6 };
-
-        The implementation is:
-        For pairs of values (0,1 then 2,3 then 4,5 etc)
-        If the first evaluates truthy, evaluate and return the second
-        If the first evaluates falsy, jump to the next pair (e.g, 0,1 to 2,3)
-        given one parameter, evaluate and return it. (it's an Else and all the If/ElseIf were false)
-        given 0 parameters, return NULL (not great practice, but there was no Else)
-        */
+          This works on the pattern:
+          if( 0 ){ 1 }else{ 2 };
+          if( 0 ){ 1 }else if( 2 ){ 3 }else{ 4 };
+          if( 0 ){ 1 }else if( 2 ){ 3 }else if( 4 ){ 5 }else{ 6 };
+  
+          The implementation is:
+          For pairs of values (0,1 then 2,3 then 4,5 etc)
+          If the first evaluates truthy, evaluate and return the second
+          If the first evaluates falsy, jump to the next pair (e.g, 0,1 to 2,3)
+          given one parameter, evaluate and return it. (it's an Else and all the If/ElseIf were false)
+          given 0 parameters, return NULL (not great practice, but there was no Else)
+          */
       for (i = 0; i < values.length - 1; i += 2) {
         if (jsonLogic.truthy(jsonLogic.apply(values[i], data))) {
           return jsonLogic.apply(values[i + 1], data);
@@ -564,11 +562,11 @@ export function getJsonLogic() {
     return arrayUnique(collection);
   };
 
-  jsonLogic.add_operation = function (name, code) {
+  jsonLogic.addOperation = function (name, code) {
     operations[name] = code;
   };
 
-  jsonLogic.rm_operation = function (name) {
+  jsonLogic.rmOperation = function (name) {
     delete operations[name];
   };
 
@@ -610,8 +608,8 @@ export function getJsonLogic() {
           return false;
         }
         /*
-            Note, array order MATTERS, because we're using this array test logic to consider arguments, where order can matter. (e.g., + is commutative, but '-' or 'if' or 'var' are NOT)
-          */
+              Note, array order MATTERS, because we're using this array test logic to consider arguments, where order can matter. (e.g., + is commutative, but '-' or 'if' or 'var' are NOT)
+            */
         for (var i = 0; i < pattern.length; i += 1) {
           // If any fail, we fail
           if (!jsonLogic.rule_like(rule[i], pattern[i])) {

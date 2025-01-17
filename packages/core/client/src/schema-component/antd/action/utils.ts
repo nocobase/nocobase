@@ -80,25 +80,28 @@ export const requestSettingsSchema: ISchema = {
   },
 };
 
-export const linkageAction = async ({
-  operator,
-  field,
-  condition,
-  variables,
-  localVariables,
-}: {
-  operator;
-  field;
-  condition;
-  variables: VariablesContextType;
-  localVariables: VariableOption[];
-}) => {
+export const linkageAction = async (
+  {
+    operator,
+    field,
+    condition,
+    variables,
+    localVariables,
+  }: {
+    operator;
+    field;
+    condition;
+    variables: VariablesContextType;
+    localVariables: VariableOption[];
+  },
+  operators: any,
+) => {
   const disableResult = field?.stateOfLinkageRules?.disabled || [false];
   const displayResult = field?.stateOfLinkageRules?.display || ['visible'];
 
   switch (operator) {
     case ActionType.Visible:
-      if (await conditionAnalyses({ ruleGroup: condition, variables, localVariables })) {
+      if (await conditionAnalyses({ ruleGroup: condition, variables, localVariables }, operators)) {
         displayResult.push(operator);
         field.data = field.data || {};
         field.data.hidden = false;
@@ -110,7 +113,7 @@ export const linkageAction = async ({
       field.display = last(displayResult);
       break;
     case ActionType.Hidden:
-      if (await conditionAnalyses({ ruleGroup: condition, variables, localVariables })) {
+      if (await conditionAnalyses({ ruleGroup: condition, variables, localVariables }, operators)) {
         field.data = field.data || {};
         field.data.hidden = true;
       } else {
@@ -119,7 +122,7 @@ export const linkageAction = async ({
       }
       break;
     case ActionType.Disabled:
-      if (await conditionAnalyses({ ruleGroup: condition, variables, localVariables })) {
+      if (await conditionAnalyses({ ruleGroup: condition, variables, localVariables }, operators)) {
         disableResult.push(true);
       }
       field.stateOfLinkageRules = {
@@ -130,7 +133,7 @@ export const linkageAction = async ({
       field.componentProps['disabled'] = last(disableResult);
       break;
     case ActionType.Active:
-      if (await conditionAnalyses({ ruleGroup: condition, variables, localVariables })) {
+      if (await conditionAnalyses({ ruleGroup: condition, variables, localVariables }, operators)) {
         disableResult.push(false);
       } else {
         disableResult.push(field.disabled);

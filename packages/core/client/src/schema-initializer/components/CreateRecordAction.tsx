@@ -22,6 +22,7 @@ import { linkageAction } from '../../schema-component/antd/action/utils';
 import { usePopupUtils } from '../../schema-component/antd/page/pagePopupUtils';
 import { parseVariables } from '../../schema-component/common/utils/uitls';
 import { useLocalVariables, useVariables } from '../../variables';
+import { useApp } from '../../application';
 
 export function useAclCheck(actionPath) {
   const aclCheck = useAclCheckFn();
@@ -73,6 +74,7 @@ const InternalCreateRecordAction = (props: any, ref) => {
   const { openPopup } = usePopupUtils();
   const treeRecordData = useTreeParentRecord();
   const cm = useCollectionManager();
+  const app = useApp();
 
   useEffect(() => {
     field.stateOfLinkageRules = {};
@@ -80,13 +82,16 @@ const InternalCreateRecordAction = (props: any, ref) => {
       .filter((k) => !k.disabled)
       .forEach((v) => {
         v.actions?.forEach((h) => {
-          linkageAction({
-            operator: h.operator,
-            field,
-            condition: v.condition,
-            variables,
-            localVariables,
-          });
+          linkageAction(
+            {
+              operator: h.operator,
+              field,
+              condition: v.condition,
+              variables,
+              localVariables,
+            },
+            app.operators,
+          );
         });
       });
   }, [field, linkageRules, localVariables, variables]);
@@ -143,7 +148,6 @@ export const CreateAction = observer(
     const form = useForm();
     const variables = useVariables();
     const aclCheck = useAclCheckFn();
-
     const enableChildren = fieldSchema['x-enable-children'] || [];
     const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
     const linkageFromForm = fieldSchema?.['x-component-props']?.['linkageFromForm'];
@@ -176,6 +180,7 @@ export const CreateAction = observer(
     const compile = useCompile();
     const { designable } = useDesignable();
     const icon = props.icon || null;
+    const app = useApp();
     const menuItems = useMemo<MenuProps['items']>(() => {
       return inheritsCollections.map((option) => ({
         key: option.name,
@@ -196,13 +201,16 @@ export const CreateAction = observer(
         .filter((k) => !k.disabled)
         .forEach((v) => {
           v.actions?.forEach((h) => {
-            linkageAction({
-              operator: h.operator,
-              field,
-              condition: v.condition,
-              variables,
-              localVariables,
-            });
+            linkageAction(
+              {
+                operator: h.operator,
+                field,
+                condition: v.condition,
+                variables,
+                localVariables,
+              },
+              app.operators,
+            );
           });
         });
     }, [field, linkageRules, localVariables, variables]);

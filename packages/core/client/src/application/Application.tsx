@@ -45,6 +45,7 @@ import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import type { Plugin } from './Plugin';
 import type { RequireJS } from './utils/requirejs';
+import { getOperators } from './globalOperators';
 
 declare global {
   interface Window {
@@ -100,7 +101,7 @@ export class Application {
   public dataSourceManager: DataSourceManager;
   public name: string;
   public globalVars: Record<string, any> = {};
-
+  public operators: Record<string, any> = {};
   loading = true;
   maintained = false;
   maintaining = false;
@@ -155,6 +156,7 @@ export class Application {
       this.apiClient.auth.locale = lng;
     });
     this.initListeners();
+    this.operators = getOperators();
   }
 
   private initListeners() {
@@ -481,5 +483,12 @@ export class Application {
 
   getGlobalVar(key) {
     return get(this.globalVars, key);
+  }
+
+  registerOperators(key, operator) {
+    this.operators[key] = operator;
+  }
+  getOperator(key) {
+    return this.operators[key];
   }
 }

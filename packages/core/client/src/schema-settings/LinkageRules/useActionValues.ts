@@ -15,7 +15,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useLocalVariables, useVariables } from '../../variables';
 import { getSatisfiedValueMap } from './compute-rules';
 import { LinkageRuleCategory, LinkageRuleDataKeyMap } from './type';
-
+import { useApp } from '../../application';
 export function useSatisfiedActionValues({
   formValues,
   category = 'default',
@@ -35,10 +35,11 @@ export function useSatisfiedActionValues({
   const localVariables = useLocalVariables({ currentForm: { values: formValues } as any });
   const localSchema = schema ?? fieldSchema;
   const styleRules = rules ?? localSchema[LinkageRuleDataKeyMap[category]];
+  const app = useApp();
 
   const compute = useCallback(() => {
     if (styleRules && formValues) {
-      getSatisfiedValueMap({ rules: styleRules, variables, localVariables })
+      getSatisfiedValueMap({ rules: styleRules, variables, localVariables }, app.operators)
         .then((valueMap) => {
           if (!isEmpty(valueMap)) {
             setValueMap(valueMap);

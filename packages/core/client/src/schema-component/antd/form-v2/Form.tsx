@@ -27,6 +27,7 @@ import { useToken } from '../../../style';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { useProps } from '../../hooks/useProps';
 import { useFormBlockHeight } from './hook';
+import { useApp } from '../../../application';
 
 export interface FormProps extends IFormLayoutProps {
   form?: FormilyForm;
@@ -136,6 +137,7 @@ const WithForm = (props: WithFormProps) => {
   const localVariables = useLocalVariables({ currentForm: form });
   const { templateFinished } = useTemplateBlockContext();
   const { loading } = useDataBlockRequest() || {};
+  const app = useApp();
   const linkageRules: any[] =
     (getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'])?.filter((k) => !k.disabled) || [];
 
@@ -175,15 +177,18 @@ const WithForm = (props: WithFormProps) => {
             // 之前使用的 `onFieldReact` 有问题，没有办法被取消监听，所以这里用 `onFieldInit` 和 `reaction` 代替
             onFieldInit(`*(${fields})`, (field: any, form) => {
               disposes.push(
-                bindLinkageRulesToFiled({
-                  field,
-                  linkageRules,
-                  formValues: form.values,
-                  localVariables,
-                  action,
-                  rule,
-                  variables,
-                }),
+                bindLinkageRulesToFiled(
+                  {
+                    field,
+                    linkageRules,
+                    formValues: form.values,
+                    localVariables,
+                    action,
+                    rule,
+                    variables,
+                  },
+                  app.operators,
+                ),
               );
             });
           }

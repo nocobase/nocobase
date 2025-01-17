@@ -47,6 +47,7 @@ import { ActionContextProvider } from './context';
 import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ActionContextProps, ActionProps, ComposedAction } from './types';
 import { linkageAction, setInitialActionState } from './utils';
+import { useApp } from '../../../application';
 
 const useA = () => {
   return {
@@ -95,7 +96,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const { setSubmitted } = useActionContext();
     const { getAriaLabel } = useGetAriaLabelOfAction(title);
     const parentRecordData = useCollectionParentRecordData();
-
+    const app = useApp();
     useEffect(() => {
       if (field.stateOfLinkageRules) {
         setInitialActionState(field);
@@ -105,13 +106,16 @@ export const Action: ComposedAction = withDynamicSchemaProps(
         .filter((k) => !k.disabled)
         .forEach((v) => {
           v.actions?.forEach((h) => {
-            linkageAction({
-              operator: h.operator,
-              field,
-              condition: v.condition,
-              variables,
-              localVariables,
-            });
+            linkageAction(
+              {
+                operator: h.operator,
+                field,
+                condition: v.condition,
+                variables,
+                localVariables,
+              },
+              app.operators,
+            );
           });
         });
     }, [field, linkageRules, localVariables, variables]);
