@@ -129,7 +129,13 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
 
   return (
     <SchemaToolbarProvider {...contextValue}>
-      <div className={classNames('general-schema-designer', overrideAntdCSS)}>
+      <div
+        className={classNames(
+          'general-schema-designer',
+          overrideAntdCSS,
+          fieldSchema['x-template-uid'] ? 'nb-in-template' : '',
+        )}
+      >
         {title && (
           <div className={classNames('general-schema-designer-title', titleCss)}>
             <Space size={2}>

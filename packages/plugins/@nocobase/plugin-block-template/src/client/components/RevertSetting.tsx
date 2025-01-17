@@ -7,14 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  SchemaSettingsItem,
-  useAPIClient,
-  useDataBlockRequest,
-  useDesignable,
-  useFormBlockProps,
-  usePlugin,
-} from '@nocobase/client';
+import { SchemaSettingsItem, useAPIClient, useDesignable, useFormBlockProps, usePlugin } from '@nocobase/client';
 import { useFieldSchema, useForm, useField } from '@formily/react';
 import { App } from 'antd';
 import React from 'react';
