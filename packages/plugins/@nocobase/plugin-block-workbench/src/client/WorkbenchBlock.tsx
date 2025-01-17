@@ -19,9 +19,10 @@ import {
   useDesignable,
   useSchemaInitializerRender,
   withDynamicSchemaProps,
+  useOpenModeContext,
 } from '@nocobase/client';
 import { Avatar, List, Space, theme } from 'antd';
-import React, { createContext, useEffect, useState, useRef, useMemo } from 'react';
+import React, { createContext, useEffect, useState, useRef, useMemo, useLayoutEffect } from 'react';
 import { WorkbenchLayout } from './workbenchBlockSettings';
 
 const ConfigureActionsButton = observer(
@@ -39,7 +40,8 @@ function isMobile() {
 
 const ResponsiveSpace = () => {
   const fieldSchema = useFieldSchema();
-  const isMobileMedia = isMobile();
+  const { isMobile } = useOpenModeContext() || {};
+
   const { itemsPerRow = 4 } = fieldSchema.parent['x-decorator-props'] || {};
 
   const containerRef = useRef(null); // 引用容器
@@ -67,6 +69,23 @@ const ResponsiveSpace = () => {
       }
     };
   }, []);
+
+  useLayoutEffect(() => {
+    if (!containerRef.current) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width); // 更新宽度
+      }
+    });
+
+    observer.observe(containerRef.current);
+
+    return () => {
+      observer.unobserve(containerRef.current);
+    };
+  }, []);
+
   // 计算每个元素的宽度
   const itemWidth = useMemo(() => {
     const totalGapWidth = gap * itemsPerRow;
@@ -76,8 +95,9 @@ const ResponsiveSpace = () => {
 
   // 计算 Avatar 的宽度
   const avatarSize = useMemo(() => {
-    return isMobileMedia ? Math.floor(itemWidth * 0.8) : 54; // Avatar 大小为 item 宽度的 60%
-  }, [itemWidth, itemsPerRow]);
+    return isMobile ? Math.floor(itemWidth * 0.8) : 54; // Avatar 大小为 item 宽度的 60%
+  }, [itemWidth, itemsPerRow, containerWidth]);
+
   return (
     <div ref={containerRef} style={{ width: '100%' }}>
       <Space
