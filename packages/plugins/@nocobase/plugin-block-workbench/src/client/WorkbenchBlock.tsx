@@ -87,7 +87,7 @@ const ResponsiveSpace = () => {
         align="center"
         className={css`
           .ant-space-item {
-            width: ${itemWidth}px;
+            max-width: ${itemWidth}px;
             display: flex;
             .nb-action-panel-container {
               max-width: ${itemWidth}px;
