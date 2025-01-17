@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { uid } from '@nocobase/utils/client';
 import { NAMESPACE } from '../constants';
-import { createForm } from '@formily/core';
+import { useContext } from 'react';
+import { NewTemplateFormContext } from '../components/AddNewTemplate';
 
 export const createActionSchema = {
-  type: 'void',
+  type: 'object',
   'x-component': 'Action',
   title: `{{t("Add new", { ns: "${NAMESPACE}" })}}`,
   'x-align': 'right',
@@ -26,14 +26,9 @@ export const createActionSchema = {
       type: 'void',
       'x-component': 'Action.Drawer',
       title: `{{t("Add new", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'Form',
-      'x-use-decorator-props': () => {
-        const form = createForm({
-          initialValues: {
-            key: `t_${uid()}`,
-            type: 'Desktop',
-          },
-        });
+      'x-decorator': 'FormV2',
+      'x-use-decorator-props': function useCreateFormProps() {
+        const form = useContext(NewTemplateFormContext);
         return { form };
       },
       properties: {
@@ -50,7 +45,6 @@ export const createActionSchema = {
               'x-decorator': 'FormItem',
               'x-component': 'CollectionField',
               'x-validator': 'uid',
-              default: `t_${uid()}`,
               description:
                 "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
             },
@@ -58,7 +52,6 @@ export const createActionSchema = {
               type: 'string',
               'x-decorator': 'FormItem',
               'x-component': 'CollectionField',
-              default: 'Desktop',
             },
             description: {
               type: 'string',

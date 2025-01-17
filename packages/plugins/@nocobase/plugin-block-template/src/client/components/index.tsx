@@ -7,8 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+export * from './AddNewTemplate';
 export * from './BlockTemplateList';
 export * from './BlockTemplatePage';
+export * from './BlockTemplateMobilePage';
 export * from './ConfigureLink';
 export * from './RevertSetting';
 export * from './BlockTemplateInfoContext';

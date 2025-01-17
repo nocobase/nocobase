@@ -16,6 +16,7 @@ import { editActionSchema } from './editActionSchema';
 import { NAMESPACE } from '../constants';
 import { tStr } from '../locale';
 import { bulkDestroySchema } from './bulkDestroySchema';
+import { AddNewTemplate } from '../components/AddNewTemplate';
 
 export const blockTemplatesSchema: ISchema = {
   type: 'void',
@@ -66,7 +67,10 @@ export const blockTemplatesSchema: ISchema = {
           },
         },
         bulkDestroySchema,
-        createActionSchema,
+        addNew: {
+          type: 'void',
+          'x-component': AddNewTemplate,
+        },
       },
     },
     table: {
