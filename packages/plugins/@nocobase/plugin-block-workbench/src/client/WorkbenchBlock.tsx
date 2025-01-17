@@ -33,8 +33,13 @@ const ConfigureActionsButton = observer(
   { displayName: 'WorkbenchConfigureActionsButton' },
 );
 
+function isMobile() {
+  return window.matchMedia('(max-width: 768px)').matches;
+}
+
 const ResponsiveSpace = () => {
   const fieldSchema = useFieldSchema();
+  const isMobileMedia = isMobile();
   const { itemsPerRow = 4 } = fieldSchema.parent['x-decorator-props'] || {};
 
   const containerRef = useRef(null); // 引用容器
@@ -71,7 +76,7 @@ const ResponsiveSpace = () => {
 
   // 计算 Avatar 的宽度
   const avatarSize = useMemo(() => {
-    return Math.floor(itemWidth * 0.8); // Avatar 大小为 item 宽度的 60%
+    return isMobileMedia ? Math.floor(itemWidth * 0.8) : 54; // Avatar 大小为 item 宽度的 60%
   }, [itemWidth, itemsPerRow]);
   return (
     <div ref={containerRef} style={{ width: '100%' }}>

@@ -74,6 +74,10 @@ export function ActionPanelItemsPerRow() {
             default: fieldSchema?.['x-decorator-props']?.['itemsPerRow'] || 4,
             'x-decorator': 'FormItem',
             'x-component': 'InputNumber',
+            'x-component-props': {
+              min: 1,
+            },
+            required: true,
           },
         },
       }}
