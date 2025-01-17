@@ -96,9 +96,9 @@ function useExecuteConfirmAction() {
   const ctx = useActionContext();
   const navigate = useNavigateNoUpdate();
   const { message: messageApi } = App.useApp();
-  const { autoRevision, ...values } = form.values;
   return {
     async run() {
+      const { autoRevision, ...values } = form.values;
       // Not executed, could choose to create new version (by default)
       // Executed, stay in current version, and refresh
       await form.submit();
