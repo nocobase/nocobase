@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useControllableValue } from 'ahooks';
 import { Card, Form, Space, Button } from 'antd';
 import EventSelect from './EventSelect';
@@ -15,6 +15,9 @@ import ConditionInput from './ConditionInput';
 import ActionsInput from './ActionsInput';
 import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
 import { EventSetting } from '../types';
+import { FormLinkageRules } from './LinkageRules';
+import { createForm } from '@formily/core';
+import options from './options.json';
 
 const EventCard = (props) => {
   const { modules, onDelete } = props;
@@ -25,12 +28,21 @@ const EventCard = (props) => {
       actions: undefined,
     },
   });
+
+  const form = useMemo(
+    () =>
+      createForm({
+        initialValues: { rules: [] },
+      }),
+    [],
+  );
+
   return (
     <Card size="small" style={{ width: '100%' }} title="事件配置" extra={<CloseOutlined onClick={onDelete} />}>
       <Form.Item label="事件：">
         <EventSelect modules={modules} value={state.event} onChange={(v) => setState({ ...state, event: v })} />
       </Form.Item>
-      <Form.Item label="执行条件：">
+      {/* <Form.Item label="执行条件：">
         <ConditionInput
           modules={modules}
           value={state.condition}
@@ -39,7 +51,23 @@ const EventCard = (props) => {
       </Form.Item>
       <Form.Item label="执行动作：">
         <ActionsInput modules={modules} value={state.actions} onChange={(v) => setState({ ...state, actions: v })} />
-      </Form.Item>
+      </Form.Item> */}
+      <FormLinkageRules
+        category="default"
+        collectionName="t_aierml1wni1"
+        elementType="field"
+        defaultValues={[]}
+        form={form}
+        formBlockType="create"
+        linkageOptions={[]}
+        localVariables={[]}
+        options={options}
+        variables={{}}
+        value={{ rules: [] }}
+        record={{
+          __collectionName: 't_aierml1wni1',
+        }}
+      />
     </Card>
   );
 };

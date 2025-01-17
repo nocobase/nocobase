@@ -28,19 +28,19 @@ export const useEvent = () => {
     } else if (definition) {
       definition.uid = uid;
     }
-    eventFlowPlugin.define(definition);
+    eventFlowPlugin?.define(definition);
   });
 
   const register = useMemoizedFn((events: EventSetting[]) => {
-    eventFlowPlugin.register(events);
+    eventFlowPlugin?.register(events);
   });
 
   const emit = useMemoizedFn(async ({ name, eventName, params }: { name: string; eventName: string; params?: any }) => {
-    await eventFlowPlugin.emit({ name, eventName, uid, params });
+    await eventFlowPlugin?.emit({ name, eventName, uid, params });
   });
 
   return {
-    definitions: eventFlowPlugin.definitions,
+    definitions: eventFlowPlugin?.definitions,
     // 定义事件
     define,
     // 运行时事件注册

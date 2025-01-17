@@ -1,0 +1,4102 @@
+[
+  {
+    "name": "createdAt",
+    "title": "{{t(\"Created at\")}}",
+    "schema": {
+      "type": "datetime",
+      "title": "{{t(\"Created at\")}}",
+      "x-component": "DatePicker",
+      "x-component-props": {},
+      "x-read-pretty": true,
+      "rawTitle": "{{t(\"Created at\")}}"
+    },
+    "operators": [
+      {
+        "label": "{{ t('is') }}",
+        "value": "$dateOn",
+        "selected": true,
+        "schema": {
+          "x-component": "DatePicker.FilterWithPicker"
+        },
+        "onlyFilterAction": true
+      },
+      {
+        "label": "{{ t('is not') }}",
+        "value": "$dateNotOn",
+        "schema": {
+          "x-component": "DatePicker.FilterWithPicker"
+        },
+        "onlyFilterAction": true
+      },
+      {
+        "label": "{{ t('is before') }}",
+        "value": "$dateBefore",
+        "schema": {
+          "x-component": "DatePicker.FilterWithPicker"
+        },
+        "onlyFilterAction": true
+      },
+      {
+        "label": "{{ t('is after') }}",
+        "value": "$dateAfter",
+        "schema": {
+          "x-component": "DatePicker.FilterWithPicker"
+        },
+        "onlyFilterAction": true
+      },
+      {
+        "label": "{{ t('is on or after') }}",
+        "value": "$dateNotBefore",
+        "schema": {
+          "x-component": "DatePicker.FilterWithPicker"
+        },
+        "onlyFilterAction": true
+      },
+      {
+        "label": "{{ t('is on or before') }}",
+        "value": "$dateNotAfter",
+        "schema": {
+          "x-component": "DatePicker.FilterWithPicker"
+        },
+        "onlyFilterAction": true
+      },
+      {
+        "label": "{{ t('is between') }}",
+        "value": "$dateBetween",
+        "schema": {
+          "x-component": "DatePicker.RangePicker"
+        }
+      },
+      {
+        "label": "{{ t('is empty') }}",
+        "value": "$empty",
+        "noValue": true
+      },
+      {
+        "label": "{{ t('is not empty') }}",
+        "value": "$notEmpty",
+        "noValue": true
+      }
+    ],
+    "interface": "createdAt"
+  },
+  {
+    "name": "updatedAt",
+    "title": "{{t(\"Last updated at\")}}",
+    "schema": {
+      "type": "string",
+      "title": "{{t(\"Last updated at\")}}",
+      "x-component": "DatePicker",
+      "x-component-props": {},
+      "x-read-pretty": true,
+      "rawTitle": "{{t(\"Last updated at\")}}"
+    },
+    "operators": [
+      {
+        "label": "{{ t('is') }}",
+        "value": "$dateOn",
+        "selected": true,
+        "schema": {
+          "x-component": "DatePicker.FilterWithPicker"
+        },
+        "onlyFilterAction": true
+      },
+      {
+        "label": "{{ t('is not') }}",
+        "value": "$dateNotOn",
+        "schema": {
+          "x-component": "DatePicker.FilterWithPicker"
+        },
+        "onlyFilterAction": true
+      },
+      {
+        "label": "{{ t('is before') }}",
+        "value": "$dateBefore",
+        "schema": {
+          "x-component": "DatePicker.FilterWithPicker"
+        },
+        "onlyFilterAction": true
+      },
+      {
+        "label": "{{ t('is after') }}",
+        "value": "$dateAfter",
+        "schema": {
+          "x-component": "DatePicker.FilterWithPicker"
+        },
+        "onlyFilterAction": true
+      },
+      {
+        "label": "{{ t('is on or after') }}",
+        "value": "$dateNotBefore",
+        "schema": {
+          "x-component": "DatePicker.FilterWithPicker"
+        },
+        "onlyFilterAction": true
+      },
+      {
+        "label": "{{ t('is on or before') }}",
+        "value": "$dateNotAfter",
+        "schema": {
+          "x-component": "DatePicker.FilterWithPicker"
+        },
+        "onlyFilterAction": true
+      },
+      {
+        "label": "{{ t('is between') }}",
+        "value": "$dateBetween",
+        "schema": {
+          "x-component": "DatePicker.RangePicker"
+        }
+      },
+      {
+        "label": "{{ t('is empty') }}",
+        "value": "$empty",
+        "noValue": true
+      },
+      {
+        "label": "{{ t('is not empty') }}",
+        "value": "$notEmpty",
+        "noValue": true
+      }
+    ],
+    "interface": "updatedAt"
+  },
+  {
+    "name": "id",
+    "title": "{{t(\"ID\")}}",
+    "schema": {
+      "type": "number",
+      "title": "{{t(\"ID\")}}",
+      "x-component": "InputNumber",
+      "x-read-pretty": true,
+      "rawTitle": "{{t(\"ID\")}}"
+    },
+    "operators": [
+      {
+        "label": "{{t(\"=\")}}",
+        "value": "$eq",
+        "selected": true
+      },
+      {
+        "label": "{{t(\"≠\")}}",
+        "value": "$ne"
+      },
+      {
+        "label": "{{t(\">\")}}",
+        "value": "$gt"
+      },
+      {
+        "label": "{{t(\"≥\")}}",
+        "value": "$gte"
+      },
+      {
+        "label": "{{t(\"<\")}}",
+        "value": "$lt"
+      },
+      {
+        "label": "{{t(\"≤\")}}",
+        "value": "$lte"
+      },
+      {
+        "label": "{{t(\"is empty\")}}",
+        "value": "$empty",
+        "noValue": true
+      },
+      {
+        "label": "{{t(\"is not empty\")}}",
+        "value": "$notEmpty",
+        "noValue": true
+      }
+    ],
+    "interface": "integer"
+  },
+  {
+    "name": "f_7eaqdigaa06",
+    "title": "f_7eaqdigaa06",
+    "schema": {
+      "type": "number",
+      "title": "f_7eaqdigaa06",
+      "x-component": "InputNumber",
+      "x-read-pretty": true,
+      "rawTitle": "f_7eaqdigaa06"
+    },
+    "operators": [
+      {
+        "label": "{{t(\"=\")}}",
+        "value": "$eq",
+        "selected": true
+      },
+      {
+        "label": "{{t(\"≠\")}}",
+        "value": "$ne"
+      },
+      {
+        "label": "{{t(\">\")}}",
+        "value": "$gt"
+      },
+      {
+        "label": "{{t(\"≥\")}}",
+        "value": "$gte"
+      },
+      {
+        "label": "{{t(\"<\")}}",
+        "value": "$lt"
+      },
+      {
+        "label": "{{t(\"≤\")}}",
+        "value": "$lte"
+      },
+      {
+        "label": "{{t(\"is empty\")}}",
+        "value": "$empty",
+        "noValue": true
+      },
+      {
+        "label": "{{t(\"is not empty\")}}",
+        "value": "$notEmpty",
+        "noValue": true
+      }
+    ],
+    "interface": "integer"
+  },
+  {
+    "name": "f_6pzktsnq4uz",
+    "title": "number",
+    "schema": {
+      "type": "number",
+      "x-component": "InputNumber",
+      "x-component-props": {
+        "stringMode": true,
+        "step": "1"
+      },
+      "title": "number",
+      "rawTitle": "number"
+    },
+    "operators": [
+      {
+        "label": "{{t(\"=\")}}",
+        "value": "$eq",
+        "selected": true
+      },
+      {
+        "label": "{{t(\"≠\")}}",
+        "value": "$ne"
+      },
+      {
+        "label": "{{t(\">\")}}",
+        "value": "$gt"
+      },
+      {
+        "label": "{{t(\"≥\")}}",
+        "value": "$gte"
+      },
+      {
+        "label": "{{t(\"<\")}}",
+        "value": "$lt"
+      },
+      {
+        "label": "{{t(\"≤\")}}",
+        "value": "$lte"
+      },
+      {
+        "label": "{{t(\"is empty\")}}",
+        "value": "$empty",
+        "noValue": true
+      },
+      {
+        "label": "{{t(\"is not empty\")}}",
+        "value": "$notEmpty",
+        "noValue": true
+      }
+    ],
+    "interface": "number"
+  },
+  {
+    "name": "f_9588ivyks76",
+    "title": "一对一3",
+    "schema": {
+      "x-component": "AssociationField",
+      "x-component-props": {
+        "multiple": false
+      },
+      "title": "一对一3",
+      "rawTitle": "一对一3"
+    },
+    "operators": [],
+    "interface": "oho",
+    "children": [
+      {
+        "name": "title",
+        "title": "{{t(\"Title\")}}",
+        "schema": {
+          "type": "string",
+          "title": "{{t(\"Title\")}}",
+          "x-component": "Input",
+          "rawTitle": "{{t(\"Title\")}}"
+        },
+        "operators": [
+          {
+            "label": "{{t(\"contains\")}}",
+            "value": "$includes",
+            "selected": true
+          },
+          {
+            "label": "{{t(\"does not contain\")}}",
+            "value": "$notIncludes"
+          },
+          {
+            "label": "{{t(\"is\")}}",
+            "value": "$eq"
+          },
+          {
+            "label": "{{t(\"is not\")}}",
+            "value": "$ne"
+          },
+          {
+            "label": "{{t(\"is empty\")}}",
+            "value": "$empty",
+            "noValue": true
+          },
+          {
+            "label": "{{t(\"is not empty\")}}",
+            "value": "$notEmpty",
+            "noValue": true
+          }
+        ],
+        "interface": "input"
+      },
+      {
+        "name": "filename",
+        "title": "{{t(\"File name\", { ns: \"file-manager\" })}}",
+        "schema": {
+          "type": "string",
+          "title": "{{t(\"File name\", { ns: \"file-manager\" })}}",
+          "x-component": "Input",
+          "x-read-pretty": true,
+          "rawTitle": "{{t(\"File name\", { ns: \"file-manager\" })}}"
+        },
+        "operators": [
+          {
+            "label": "{{t(\"contains\")}}",
+            "value": "$includes",
+            "selected": true
+          },
+          {
+            "label": "{{t(\"does not contain\")}}",
+            "value": "$notIncludes"
+          },
+          {
+            "label": "{{t(\"is\")}}",
+            "value": "$eq"
+          },
+          {
+            "label": "{{t(\"is not\")}}",
+            "value": "$ne"
+          },
+          {
+            "label": "{{t(\"is empty\")}}",
+            "value": "$empty",
+            "noValue": true
+          },
+          {
+            "label": "{{t(\"is not empty\")}}",
+            "value": "$notEmpty",
+            "noValue": true
+          }
+        ],
+        "interface": "input"
+      },
+      {
+        "name": "extname",
+        "title": "{{t(\"Extension name\", { ns: \"file-manager\" })}}",
+        "schema": {
+          "type": "string",
+          "title": "{{t(\"Extension name\", { ns: \"file-manager\" })}}",
+          "x-component": "Input",
+          "x-read-pretty": true,
+          "rawTitle": "{{t(\"Extension name\", { ns: \"file-manager\" })}}"
+        },
+        "operators": [
+          {
+            "label": "{{t(\"contains\")}}",
+            "value": "$includes",
+            "selected": true
+          },
+          {
+            "label": "{{t(\"does not contain\")}}",
+            "value": "$notIncludes"
+          },
+          {
+            "label": "{{t(\"is\")}}",
+            "value": "$eq"
+          },
+          {
+            "label": "{{t(\"is not\")}}",
+            "value": "$ne"
+          },
+          {
+            "label": "{{t(\"is empty\")}}",
+            "value": "$empty",
+            "noValue": true
+          },
+          {
+            "label": "{{t(\"is not empty\")}}",
+            "value": "$notEmpty",
+            "noValue": true
+          }
+        ],
+        "interface": "input"
+      },
+      {
+        "name": "size",
+        "title": "{{t(\"Size\", { ns: \"file-manager\" })}}",
+        "schema": {
+          "type": "number",
+          "title": "{{t(\"Size\", { ns: \"file-manager\" })}}",
+          "x-component": "InputNumber",
+          "x-read-pretty": true,
+          "x-component-props": {
+            "stringMode": true,
+            "step": "0"
+          },
+          "rawTitle": "{{t(\"Size\", { ns: \"file-manager\" })}}"
+        },
+        "operators": [
+          {
+            "label": "{{t(\"=\")}}",
+            "value": "$eq",
+            "selected": true
+          },
+          {
+            "label": "{{t(\"≠\")}}",
+            "value": "$ne"
+          },
+          {
+            "label": "{{t(\">\")}}",
+            "value": "$gt"
+          },
+          {
+            "label": "{{t(\"≥\")}}",
+            "value": "$gte"
+          },
+          {
+            "label": "{{t(\"<\")}}",
+            "value": "$lt"
+          },
+          {
+            "label": "{{t(\"≤\")}}",
+            "value": "$lte"
+          },
+          {
+            "label": "{{t(\"is empty\")}}",
+            "value": "$empty",
+            "noValue": true
+          },
+          {
+            "label": "{{t(\"is not empty\")}}",
+            "value": "$notEmpty",
+            "noValue": true
+          }
+        ],
+        "interface": "integer"
+      },
+      {
+        "name": "mimetype",
+        "title": "{{t(\"MIME type\", { ns: \"file-manager\" })}}",
+        "schema": {
+          "type": "string",
+          "title": "{{t(\"MIME type\", { ns: \"file-manager\" })}}",
+          "x-component": "Input",
+          "x-read-pretty": true,
+          "rawTitle": "{{t(\"MIME type\", { ns: \"file-manager\" })}}"
+        },
+        "operators": [
+          {
+            "label": "{{t(\"contains\")}}",
+            "value": "$includes",
+            "selected": true
+          },
+          {
+            "label": "{{t(\"does not contain\")}}",
+            "value": "$notIncludes"
+          },
+          {
+            "label": "{{t(\"is\")}}",
+            "value": "$eq"
+          },
+          {
+            "label": "{{t(\"is not\")}}",
+            "value": "$ne"
+          },
+          {
+            "label": "{{t(\"is empty\")}}",
+            "value": "$empty",
+            "noValue": true
+          },
+          {
+            "label": "{{t(\"is not empty\")}}",
+            "value": "$notEmpty",
+            "noValue": true
+          }
+        ],
+        "interface": "input"
+      },
+      {
+        "name": "path",
+        "title": "{{t(\"Path\", { ns: \"file-manager\" })}}",
+        "schema": {
+          "type": "string",
+          "title": "{{t(\"Path\", { ns: \"file-manager\" })}}",
+          "x-component": "Input",
+          "x-read-pretty": true,
+          "rawTitle": "{{t(\"Path\", { ns: \"file-manager\" })}}"
+        },
+        "operators": [
+          {
+            "label": "{{t(\"contains\")}}",
+            "value": "$includes",
+            "selected": true
+          },
+          {
+            "label": "{{t(\"does not contain\")}}",
+            "value": "$notIncludes"
+          },
+          {
+            "label": "{{t(\"is\")}}",
+            "value": "$eq"
+          },
+          {
+            "label": "{{t(\"is not\")}}",
+            "value": "$ne"
+          },
+          {
+            "label": "{{t(\"is empty\")}}",
+            "value": "$empty",
+            "noValue": true
+          },
+          {
+            "label": "{{t(\"is not empty\")}}",
+            "value": "$notEmpty",
+            "noValue": true
+          }
+        ],
+        "interface": "input"
+      },
+      {
+        "name": "url",
+        "title": "{{t(\"URL\")}}",
+        "schema": {
+          "type": "string",
+          "title": "{{t(\"URL\")}}",
+          "x-component": "Input.URL",
+          "x-read-pretty": true,
+          "rawTitle": "{{t(\"URL\")}}"
+        },
+        "operators": [
+          {
+            "label": "{{t(\"contains\")}}",
+            "value": "$includes",
+            "selected": true
+          },
+          {
+            "label": "{{t(\"does not contain\")}}",
+            "value": "$notIncludes"
+          },
+          {
+            "label": "{{t(\"is\")}}",
+            "value": "$eq"
+          },
+          {
+            "label": "{{t(\"is not\")}}",
+            "value": "$ne"
+          },
+          {
+            "label": "{{t(\"is empty\")}}",
+            "value": "$empty",
+            "noValue": true
+          },
+          {
+            "label": "{{t(\"is not empty\")}}",
+            "value": "$notEmpty",
+            "noValue": true
+          }
+        ],
+        "interface": "url"
+      },
+      {
+        "name": "preview",
+        "title": "{{t(\"Preview\", { ns: \"file-manager\" })}}",
+        "schema": {
+          "type": "string",
+          "title": "{{t(\"Preview\", { ns: \"file-manager\" })}}",
+          "x-component": "Preview",
+          "x-read-pretty": true,
+          "rawTitle": "{{t(\"Preview\", { ns: \"file-manager\" })}}"
+        },
+        "operators": [
+          {
+            "label": "{{t(\"contains\")}}",
+            "value": "$includes",
+            "selected": true
+          },
+          {
+            "label": "{{t(\"does not contain\")}}",
+            "value": "$notIncludes"
+          },
+          {
+            "label": "{{t(\"is\")}}",
+            "value": "$eq"
+          },
+          {
+            "label": "{{t(\"is not\")}}",
+            "value": "$ne"
+          },
+          {
+            "label": "{{t(\"is empty\")}}",
+            "value": "$empty",
+            "noValue": true
+          },
+          {
+            "label": "{{t(\"is not empty\")}}",
+            "value": "$notEmpty",
+            "noValue": true
+          }
+        ],
+        "interface": "url"
+      },
+      {
+        "name": "createdAt",
+        "title": "{{t(\"Created at\")}}",
+        "schema": {
+          "type": "datetime",
+          "title": "{{t(\"Created at\")}}",
+          "x-component": "DatePicker",
+          "x-component-props": {},
+          "x-read-pretty": true,
+          "rawTitle": "{{t(\"Created at\")}}"
+        },
+        "operators": [
+          {
+            "label": "{{ t('is') }}",
+            "value": "$dateOn",
+            "selected": true,
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is not') }}",
+            "value": "$dateNotOn",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is before') }}",
+            "value": "$dateBefore",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is after') }}",
+            "value": "$dateAfter",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is on or after') }}",
+            "value": "$dateNotBefore",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is on or before') }}",
+            "value": "$dateNotAfter",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is between') }}",
+            "value": "$dateBetween",
+            "schema": {
+              "x-component": "DatePicker.RangePicker"
+            }
+          },
+          {
+            "label": "{{ t('is empty') }}",
+            "value": "$empty",
+            "noValue": true
+          },
+          {
+            "label": "{{ t('is not empty') }}",
+            "value": "$notEmpty",
+            "noValue": true
+          }
+        ],
+        "interface": "createdAt"
+      },
+      {
+        "name": "updatedAt",
+        "title": "{{t(\"Last updated at\")}}",
+        "schema": {
+          "type": "string",
+          "title": "{{t(\"Last updated at\")}}",
+          "x-component": "DatePicker",
+          "x-component-props": {},
+          "x-read-pretty": true,
+          "rawTitle": "{{t(\"Last updated at\")}}"
+        },
+        "operators": [
+          {
+            "label": "{{ t('is') }}",
+            "value": "$dateOn",
+            "selected": true,
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is not') }}",
+            "value": "$dateNotOn",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is before') }}",
+            "value": "$dateBefore",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is after') }}",
+            "value": "$dateAfter",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is on or after') }}",
+            "value": "$dateNotBefore",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is on or before') }}",
+            "value": "$dateNotAfter",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is between') }}",
+            "value": "$dateBetween",
+            "schema": {
+              "x-component": "DatePicker.RangePicker"
+            }
+          },
+          {
+            "label": "{{ t('is empty') }}",
+            "value": "$empty",
+            "noValue": true
+          },
+          {
+            "label": "{{ t('is not empty') }}",
+            "value": "$notEmpty",
+            "noValue": true
+          }
+        ],
+        "interface": "updatedAt"
+      },
+      {
+        "name": "id",
+        "title": "{{t(\"ID\")}}",
+        "schema": {
+          "type": "number",
+          "title": "{{t(\"ID\")}}",
+          "x-component": "InputNumber",
+          "x-read-pretty": true,
+          "rawTitle": "{{t(\"ID\")}}"
+        },
+        "operators": [
+          {
+            "label": "{{t(\"=\")}}",
+            "value": "$eq",
+            "selected": true
+          },
+          {
+            "label": "{{t(\"≠\")}}",
+            "value": "$ne"
+          },
+          {
+            "label": "{{t(\">\")}}",
+            "value": "$gt"
+          },
+          {
+            "label": "{{t(\"≥\")}}",
+            "value": "$gte"
+          },
+          {
+            "label": "{{t(\"<\")}}",
+            "value": "$lt"
+          },
+          {
+            "label": "{{t(\"≤\")}}",
+            "value": "$lte"
+          },
+          {
+            "label": "{{t(\"is empty\")}}",
+            "value": "$empty",
+            "noValue": true
+          },
+          {
+            "label": "{{t(\"is not empty\")}}",
+            "value": "$notEmpty",
+            "noValue": true
+          }
+        ],
+        "interface": "integer"
+      },
+      {
+        "name": "f_1i4tiecvwxb",
+        "title": "f_1i4tiecvwxb",
+        "schema": {
+          "type": "number",
+          "title": "f_1i4tiecvwxb",
+          "x-component": "InputNumber",
+          "x-read-pretty": true,
+          "rawTitle": "f_1i4tiecvwxb"
+        },
+        "operators": [
+          {
+            "label": "{{t(\"=\")}}",
+            "value": "$eq",
+            "selected": true
+          },
+          {
+            "label": "{{t(\"≠\")}}",
+            "value": "$ne"
+          },
+          {
+            "label": "{{t(\">\")}}",
+            "value": "$gt"
+          },
+          {
+            "label": "{{t(\"≥\")}}",
+            "value": "$gte"
+          },
+          {
+            "label": "{{t(\"<\")}}",
+            "value": "$lt"
+          },
+          {
+            "label": "{{t(\"≤\")}}",
+            "value": "$lte"
+          },
+          {
+            "label": "{{t(\"is empty\")}}",
+            "value": "$empty",
+            "noValue": true
+          },
+          {
+            "label": "{{t(\"is not empty\")}}",
+            "value": "$notEmpty",
+            "noValue": true
+          }
+        ],
+        "interface": "integer"
+      },
+      {
+        "name": "createdBy",
+        "title": "{{t(\"Created by\")}}",
+        "schema": {
+          "type": "object",
+          "title": "{{t(\"Created by\")}}",
+          "x-component": "AssociationField",
+          "x-component-props": {
+            "fieldNames": {
+              "value": "id",
+              "label": "nickname"
+            }
+          },
+          "x-read-pretty": true,
+          "rawTitle": "{{t(\"Created by\")}}"
+        },
+        "operators": [],
+        "interface": "createdBy",
+        "children": [
+          {
+            "name": "id",
+            "title": "{{t(\"ID\")}}",
+            "schema": {
+              "type": "number",
+              "title": "{{t(\"ID\")}}",
+              "x-component": "InputNumber",
+              "x-read-pretty": true,
+              "rawTitle": "{{t(\"ID\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"exists\")}}",
+                "value": "$exists",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"not exists\")}}",
+                "value": "$notExists",
+                "noValue": true
+              }
+            ],
+            "interface": "id"
+          },
+          {
+            "name": "nickname",
+            "title": "{{t(\"Nickname\")}}",
+            "schema": {
+              "type": "string",
+              "title": "{{t(\"Nickname\")}}",
+              "x-component": "Input",
+              "rawTitle": "{{t(\"Nickname\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"contains\")}}",
+                "value": "$includes",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"does not contain\")}}",
+                "value": "$notIncludes"
+              },
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq"
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"is empty\")}}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"is not empty\")}}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "input"
+          },
+          {
+            "name": "username",
+            "title": "{{t(\"Username\")}}",
+            "schema": {
+              "type": "string",
+              "title": "{{t(\"Username\")}}",
+              "x-component": "Input",
+              "x-validator": {
+                "username": true
+              },
+              "required": true,
+              "rawTitle": "{{t(\"Username\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"contains\")}}",
+                "value": "$includes",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"does not contain\")}}",
+                "value": "$notIncludes"
+              },
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq"
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"is empty\")}}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"is not empty\")}}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "input"
+          },
+          {
+            "name": "email",
+            "title": "{{t(\"Email\")}}",
+            "schema": {
+              "type": "string",
+              "title": "{{t(\"Email\")}}",
+              "x-component": "Input",
+              "x-validator": "email",
+              "required": true,
+              "rawTitle": "{{t(\"Email\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"contains\")}}",
+                "value": "$includes",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"does not contain\")}}",
+                "value": "$notIncludes"
+              },
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq"
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"is empty\")}}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"is not empty\")}}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "email"
+          },
+          {
+            "name": "phone",
+            "title": "{{t(\"Phone\")}}",
+            "schema": {
+              "type": "string",
+              "title": "{{t(\"Phone\")}}",
+              "x-component": "Input",
+              "required": true,
+              "rawTitle": "{{t(\"Phone\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"contains\")}}",
+                "value": "$includes",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"does not contain\")}}",
+                "value": "$notIncludes"
+              },
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq"
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"is empty\")}}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"is not empty\")}}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "input"
+          },
+          {
+            "name": "createdAt",
+            "title": "{{t(\"Created at\")}}",
+            "schema": {
+              "x-component-props": {
+                "dateFormat": "YYYY-MM-DD"
+              },
+              "type": "datetime",
+              "title": "{{t(\"Created at\")}}",
+              "x-component": "DatePicker",
+              "x-read-pretty": true,
+              "rawTitle": "{{t(\"Created at\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{ t('is') }}",
+                "value": "$dateOn",
+                "selected": true,
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is not') }}",
+                "value": "$dateNotOn",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is before') }}",
+                "value": "$dateBefore",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is after') }}",
+                "value": "$dateAfter",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is on or after') }}",
+                "value": "$dateNotBefore",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is on or before') }}",
+                "value": "$dateNotAfter",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is between') }}",
+                "value": "$dateBetween",
+                "schema": {
+                  "x-component": "DatePicker.RangePicker"
+                }
+              },
+              {
+                "label": "{{ t('is empty') }}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{ t('is not empty') }}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "createdAt"
+          },
+          {
+            "name": "updatedAt",
+            "title": "{{t(\"Last updated at\")}}",
+            "schema": {
+              "x-component-props": {
+                "dateFormat": "YYYY-MM-DD"
+              },
+              "type": "datetime",
+              "title": "{{t(\"Last updated at\")}}",
+              "x-component": "DatePicker",
+              "x-read-pretty": true,
+              "rawTitle": "{{t(\"Last updated at\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{ t('is') }}",
+                "value": "$dateOn",
+                "selected": true,
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is not') }}",
+                "value": "$dateNotOn",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is before') }}",
+                "value": "$dateBefore",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is after') }}",
+                "value": "$dateAfter",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is on or after') }}",
+                "value": "$dateNotBefore",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is on or before') }}",
+                "value": "$dateNotAfter",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is between') }}",
+                "value": "$dateBetween",
+                "schema": {
+                  "x-component": "DatePicker.RangePicker"
+                }
+              },
+              {
+                "label": "{{ t('is empty') }}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{ t('is not empty') }}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "updatedAt"
+          }
+        ]
+      },
+      {
+        "name": "updatedBy",
+        "title": "{{t(\"Last updated by\")}}",
+        "schema": {
+          "type": "object",
+          "title": "{{t(\"Last updated by\")}}",
+          "x-component": "AssociationField",
+          "x-component-props": {
+            "fieldNames": {
+              "value": "id",
+              "label": "nickname"
+            }
+          },
+          "x-read-pretty": true,
+          "rawTitle": "{{t(\"Last updated by\")}}"
+        },
+        "operators": [],
+        "interface": "updatedBy",
+        "children": [
+          {
+            "name": "id",
+            "title": "{{t(\"ID\")}}",
+            "schema": {
+              "type": "number",
+              "title": "{{t(\"ID\")}}",
+              "x-component": "InputNumber",
+              "x-read-pretty": true,
+              "rawTitle": "{{t(\"ID\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"exists\")}}",
+                "value": "$exists",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"not exists\")}}",
+                "value": "$notExists",
+                "noValue": true
+              }
+            ],
+            "interface": "id"
+          },
+          {
+            "name": "nickname",
+            "title": "{{t(\"Nickname\")}}",
+            "schema": {
+              "type": "string",
+              "title": "{{t(\"Nickname\")}}",
+              "x-component": "Input",
+              "rawTitle": "{{t(\"Nickname\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"contains\")}}",
+                "value": "$includes",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"does not contain\")}}",
+                "value": "$notIncludes"
+              },
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq"
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"is empty\")}}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"is not empty\")}}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "input"
+          },
+          {
+            "name": "username",
+            "title": "{{t(\"Username\")}}",
+            "schema": {
+              "type": "string",
+              "title": "{{t(\"Username\")}}",
+              "x-component": "Input",
+              "x-validator": {
+                "username": true
+              },
+              "required": true,
+              "rawTitle": "{{t(\"Username\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"contains\")}}",
+                "value": "$includes",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"does not contain\")}}",
+                "value": "$notIncludes"
+              },
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq"
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"is empty\")}}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"is not empty\")}}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "input"
+          },
+          {
+            "name": "email",
+            "title": "{{t(\"Email\")}}",
+            "schema": {
+              "type": "string",
+              "title": "{{t(\"Email\")}}",
+              "x-component": "Input",
+              "x-validator": "email",
+              "required": true,
+              "rawTitle": "{{t(\"Email\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"contains\")}}",
+                "value": "$includes",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"does not contain\")}}",
+                "value": "$notIncludes"
+              },
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq"
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"is empty\")}}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"is not empty\")}}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "email"
+          },
+          {
+            "name": "phone",
+            "title": "{{t(\"Phone\")}}",
+            "schema": {
+              "type": "string",
+              "title": "{{t(\"Phone\")}}",
+              "x-component": "Input",
+              "required": true,
+              "rawTitle": "{{t(\"Phone\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"contains\")}}",
+                "value": "$includes",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"does not contain\")}}",
+                "value": "$notIncludes"
+              },
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq"
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"is empty\")}}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"is not empty\")}}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "input"
+          },
+          {
+            "name": "createdAt",
+            "title": "{{t(\"Created at\")}}",
+            "schema": {
+              "x-component-props": {
+                "dateFormat": "YYYY-MM-DD"
+              },
+              "type": "datetime",
+              "title": "{{t(\"Created at\")}}",
+              "x-component": "DatePicker",
+              "x-read-pretty": true,
+              "rawTitle": "{{t(\"Created at\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{ t('is') }}",
+                "value": "$dateOn",
+                "selected": true,
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is not') }}",
+                "value": "$dateNotOn",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is before') }}",
+                "value": "$dateBefore",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is after') }}",
+                "value": "$dateAfter",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is on or after') }}",
+                "value": "$dateNotBefore",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is on or before') }}",
+                "value": "$dateNotAfter",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is between') }}",
+                "value": "$dateBetween",
+                "schema": {
+                  "x-component": "DatePicker.RangePicker"
+                }
+              },
+              {
+                "label": "{{ t('is empty') }}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{ t('is not empty') }}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "createdAt"
+          },
+          {
+            "name": "updatedAt",
+            "title": "{{t(\"Last updated at\")}}",
+            "schema": {
+              "x-component-props": {
+                "dateFormat": "YYYY-MM-DD"
+              },
+              "type": "datetime",
+              "title": "{{t(\"Last updated at\")}}",
+              "x-component": "DatePicker",
+              "x-read-pretty": true,
+              "rawTitle": "{{t(\"Last updated at\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{ t('is') }}",
+                "value": "$dateOn",
+                "selected": true,
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is not') }}",
+                "value": "$dateNotOn",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is before') }}",
+                "value": "$dateBefore",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is after') }}",
+                "value": "$dateAfter",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is on or after') }}",
+                "value": "$dateNotBefore",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is on or before') }}",
+                "value": "$dateNotAfter",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is between') }}",
+                "value": "$dateBetween",
+                "schema": {
+                  "x-component": "DatePicker.RangePicker"
+                }
+              },
+              {
+                "label": "{{ t('is empty') }}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{ t('is not empty') }}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "updatedAt"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "createdBy",
+    "title": "{{t(\"Created by\")}}",
+    "schema": {
+      "type": "object",
+      "title": "{{t(\"Created by\")}}",
+      "x-component": "AssociationField",
+      "x-component-props": {
+        "fieldNames": {
+          "value": "id",
+          "label": "nickname"
+        }
+      },
+      "x-read-pretty": true,
+      "rawTitle": "{{t(\"Created by\")}}"
+    },
+    "operators": [],
+    "interface": "createdBy",
+    "children": [
+      {
+        "name": "id",
+        "title": "{{t(\"ID\")}}",
+        "schema": {
+          "type": "number",
+          "title": "{{t(\"ID\")}}",
+          "x-component": "InputNumber",
+          "x-read-pretty": true,
+          "rawTitle": "{{t(\"ID\")}}"
+        },
+        "operators": [
+          {
+            "label": "{{t(\"is\")}}",
+            "value": "$eq",
+            "selected": true
+          },
+          {
+            "label": "{{t(\"is not\")}}",
+            "value": "$ne"
+          },
+          {
+            "label": "{{t(\"exists\")}}",
+            "value": "$exists",
+            "noValue": true
+          },
+          {
+            "label": "{{t(\"not exists\")}}",
+            "value": "$notExists",
+            "noValue": true
+          }
+        ],
+        "interface": "id"
+      },
+      {
+        "name": "nickname",
+        "title": "{{t(\"Nickname\")}}",
+        "schema": {
+          "type": "string",
+          "title": "{{t(\"Nickname\")}}",
+          "x-component": "Input",
+          "rawTitle": "{{t(\"Nickname\")}}"
+        },
+        "operators": [
+          {
+            "label": "{{t(\"contains\")}}",
+            "value": "$includes",
+            "selected": true
+          },
+          {
+            "label": "{{t(\"does not contain\")}}",
+            "value": "$notIncludes"
+          },
+          {
+            "label": "{{t(\"is\")}}",
+            "value": "$eq"
+          },
+          {
+            "label": "{{t(\"is not\")}}",
+            "value": "$ne"
+          },
+          {
+            "label": "{{t(\"is empty\")}}",
+            "value": "$empty",
+            "noValue": true
+          },
+          {
+            "label": "{{t(\"is not empty\")}}",
+            "value": "$notEmpty",
+            "noValue": true
+          }
+        ],
+        "interface": "input"
+      },
+      {
+        "name": "username",
+        "title": "{{t(\"Username\")}}",
+        "schema": {
+          "type": "string",
+          "title": "{{t(\"Username\")}}",
+          "x-component": "Input",
+          "x-validator": {
+            "username": true
+          },
+          "required": true,
+          "rawTitle": "{{t(\"Username\")}}"
+        },
+        "operators": [
+          {
+            "label": "{{t(\"contains\")}}",
+            "value": "$includes",
+            "selected": true
+          },
+          {
+            "label": "{{t(\"does not contain\")}}",
+            "value": "$notIncludes"
+          },
+          {
+            "label": "{{t(\"is\")}}",
+            "value": "$eq"
+          },
+          {
+            "label": "{{t(\"is not\")}}",
+            "value": "$ne"
+          },
+          {
+            "label": "{{t(\"is empty\")}}",
+            "value": "$empty",
+            "noValue": true
+          },
+          {
+            "label": "{{t(\"is not empty\")}}",
+            "value": "$notEmpty",
+            "noValue": true
+          }
+        ],
+        "interface": "input"
+      },
+      {
+        "name": "email",
+        "title": "{{t(\"Email\")}}",
+        "schema": {
+          "type": "string",
+          "title": "{{t(\"Email\")}}",
+          "x-component": "Input",
+          "x-validator": "email",
+          "required": true,
+          "rawTitle": "{{t(\"Email\")}}"
+        },
+        "operators": [
+          {
+            "label": "{{t(\"contains\")}}",
+            "value": "$includes",
+            "selected": true
+          },
+          {
+            "label": "{{t(\"does not contain\")}}",
+            "value": "$notIncludes"
+          },
+          {
+            "label": "{{t(\"is\")}}",
+            "value": "$eq"
+          },
+          {
+            "label": "{{t(\"is not\")}}",
+            "value": "$ne"
+          },
+          {
+            "label": "{{t(\"is empty\")}}",
+            "value": "$empty",
+            "noValue": true
+          },
+          {
+            "label": "{{t(\"is not empty\")}}",
+            "value": "$notEmpty",
+            "noValue": true
+          }
+        ],
+        "interface": "email"
+      },
+      {
+        "name": "phone",
+        "title": "{{t(\"Phone\")}}",
+        "schema": {
+          "type": "string",
+          "title": "{{t(\"Phone\")}}",
+          "x-component": "Input",
+          "required": true,
+          "rawTitle": "{{t(\"Phone\")}}"
+        },
+        "operators": [
+          {
+            "label": "{{t(\"contains\")}}",
+            "value": "$includes",
+            "selected": true
+          },
+          {
+            "label": "{{t(\"does not contain\")}}",
+            "value": "$notIncludes"
+          },
+          {
+            "label": "{{t(\"is\")}}",
+            "value": "$eq"
+          },
+          {
+            "label": "{{t(\"is not\")}}",
+            "value": "$ne"
+          },
+          {
+            "label": "{{t(\"is empty\")}}",
+            "value": "$empty",
+            "noValue": true
+          },
+          {
+            "label": "{{t(\"is not empty\")}}",
+            "value": "$notEmpty",
+            "noValue": true
+          }
+        ],
+        "interface": "input"
+      },
+      {
+        "name": "createdAt",
+        "title": "{{t(\"Created at\")}}",
+        "schema": {
+          "x-component-props": {
+            "dateFormat": "YYYY-MM-DD"
+          },
+          "type": "datetime",
+          "title": "{{t(\"Created at\")}}",
+          "x-component": "DatePicker",
+          "x-read-pretty": true,
+          "rawTitle": "{{t(\"Created at\")}}"
+        },
+        "operators": [
+          {
+            "label": "{{ t('is') }}",
+            "value": "$dateOn",
+            "selected": true,
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is not') }}",
+            "value": "$dateNotOn",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is before') }}",
+            "value": "$dateBefore",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is after') }}",
+            "value": "$dateAfter",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is on or after') }}",
+            "value": "$dateNotBefore",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is on or before') }}",
+            "value": "$dateNotAfter",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is between') }}",
+            "value": "$dateBetween",
+            "schema": {
+              "x-component": "DatePicker.RangePicker"
+            }
+          },
+          {
+            "label": "{{ t('is empty') }}",
+            "value": "$empty",
+            "noValue": true
+          },
+          {
+            "label": "{{ t('is not empty') }}",
+            "value": "$notEmpty",
+            "noValue": true
+          }
+        ],
+        "interface": "createdAt"
+      },
+      {
+        "name": "updatedAt",
+        "title": "{{t(\"Last updated at\")}}",
+        "schema": {
+          "x-component-props": {
+            "dateFormat": "YYYY-MM-DD"
+          },
+          "type": "datetime",
+          "title": "{{t(\"Last updated at\")}}",
+          "x-component": "DatePicker",
+          "x-read-pretty": true,
+          "rawTitle": "{{t(\"Last updated at\")}}"
+        },
+        "operators": [
+          {
+            "label": "{{ t('is') }}",
+            "value": "$dateOn",
+            "selected": true,
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is not') }}",
+            "value": "$dateNotOn",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is before') }}",
+            "value": "$dateBefore",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is after') }}",
+            "value": "$dateAfter",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is on or after') }}",
+            "value": "$dateNotBefore",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is on or before') }}",
+            "value": "$dateNotAfter",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is between') }}",
+            "value": "$dateBetween",
+            "schema": {
+              "x-component": "DatePicker.RangePicker"
+            }
+          },
+          {
+            "label": "{{ t('is empty') }}",
+            "value": "$empty",
+            "noValue": true
+          },
+          {
+            "label": "{{ t('is not empty') }}",
+            "value": "$notEmpty",
+            "noValue": true
+          }
+        ],
+        "interface": "updatedAt"
+      },
+      {
+        "name": "createdBy",
+        "title": "{{t(\"Created by\")}}",
+        "schema": {
+          "type": "object",
+          "title": "{{t(\"Created by\")}}",
+          "x-component": "AssociationField",
+          "x-component-props": {
+            "fieldNames": {
+              "value": "id",
+              "label": "nickname"
+            }
+          },
+          "x-read-pretty": true,
+          "rawTitle": "{{t(\"Created by\")}}"
+        },
+        "operators": [],
+        "interface": "createdBy",
+        "children": [
+          {
+            "name": "id",
+            "title": "{{t(\"ID\")}}",
+            "schema": {
+              "type": "number",
+              "title": "{{t(\"ID\")}}",
+              "x-component": "InputNumber",
+              "x-read-pretty": true,
+              "rawTitle": "{{t(\"ID\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"exists\")}}",
+                "value": "$exists",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"not exists\")}}",
+                "value": "$notExists",
+                "noValue": true
+              }
+            ],
+            "interface": "id"
+          },
+          {
+            "name": "nickname",
+            "title": "{{t(\"Nickname\")}}",
+            "schema": {
+              "type": "string",
+              "title": "{{t(\"Nickname\")}}",
+              "x-component": "Input",
+              "rawTitle": "{{t(\"Nickname\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"contains\")}}",
+                "value": "$includes",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"does not contain\")}}",
+                "value": "$notIncludes"
+              },
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq"
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"is empty\")}}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"is not empty\")}}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "input"
+          },
+          {
+            "name": "username",
+            "title": "{{t(\"Username\")}}",
+            "schema": {
+              "type": "string",
+              "title": "{{t(\"Username\")}}",
+              "x-component": "Input",
+              "x-validator": {
+                "username": true
+              },
+              "required": true,
+              "rawTitle": "{{t(\"Username\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"contains\")}}",
+                "value": "$includes",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"does not contain\")}}",
+                "value": "$notIncludes"
+              },
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq"
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"is empty\")}}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"is not empty\")}}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "input"
+          },
+          {
+            "name": "email",
+            "title": "{{t(\"Email\")}}",
+            "schema": {
+              "type": "string",
+              "title": "{{t(\"Email\")}}",
+              "x-component": "Input",
+              "x-validator": "email",
+              "required": true,
+              "rawTitle": "{{t(\"Email\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"contains\")}}",
+                "value": "$includes",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"does not contain\")}}",
+                "value": "$notIncludes"
+              },
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq"
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"is empty\")}}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"is not empty\")}}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "email"
+          },
+          {
+            "name": "phone",
+            "title": "{{t(\"Phone\")}}",
+            "schema": {
+              "type": "string",
+              "title": "{{t(\"Phone\")}}",
+              "x-component": "Input",
+              "required": true,
+              "rawTitle": "{{t(\"Phone\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"contains\")}}",
+                "value": "$includes",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"does not contain\")}}",
+                "value": "$notIncludes"
+              },
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq"
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"is empty\")}}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"is not empty\")}}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "input"
+          },
+          {
+            "name": "createdAt",
+            "title": "{{t(\"Created at\")}}",
+            "schema": {
+              "x-component-props": {
+                "dateFormat": "YYYY-MM-DD"
+              },
+              "type": "datetime",
+              "title": "{{t(\"Created at\")}}",
+              "x-component": "DatePicker",
+              "x-read-pretty": true,
+              "rawTitle": "{{t(\"Created at\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{ t('is') }}",
+                "value": "$dateOn",
+                "selected": true,
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is not') }}",
+                "value": "$dateNotOn",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is before') }}",
+                "value": "$dateBefore",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is after') }}",
+                "value": "$dateAfter",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is on or after') }}",
+                "value": "$dateNotBefore",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is on or before') }}",
+                "value": "$dateNotAfter",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is between') }}",
+                "value": "$dateBetween",
+                "schema": {
+                  "x-component": "DatePicker.RangePicker"
+                }
+              },
+              {
+                "label": "{{ t('is empty') }}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{ t('is not empty') }}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "createdAt"
+          },
+          {
+            "name": "updatedAt",
+            "title": "{{t(\"Last updated at\")}}",
+            "schema": {
+              "x-component-props": {
+                "dateFormat": "YYYY-MM-DD"
+              },
+              "type": "datetime",
+              "title": "{{t(\"Last updated at\")}}",
+              "x-component": "DatePicker",
+              "x-read-pretty": true,
+              "rawTitle": "{{t(\"Last updated at\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{ t('is') }}",
+                "value": "$dateOn",
+                "selected": true,
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is not') }}",
+                "value": "$dateNotOn",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is before') }}",
+                "value": "$dateBefore",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is after') }}",
+                "value": "$dateAfter",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is on or after') }}",
+                "value": "$dateNotBefore",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is on or before') }}",
+                "value": "$dateNotAfter",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is between') }}",
+                "value": "$dateBetween",
+                "schema": {
+                  "x-component": "DatePicker.RangePicker"
+                }
+              },
+              {
+                "label": "{{ t('is empty') }}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{ t('is not empty') }}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "updatedAt"
+          }
+        ]
+      },
+      {
+        "name": "updatedBy",
+        "title": "{{t(\"Last updated by\")}}",
+        "schema": {
+          "type": "object",
+          "title": "{{t(\"Last updated by\")}}",
+          "x-component": "AssociationField",
+          "x-component-props": {
+            "fieldNames": {
+              "value": "id",
+              "label": "nickname"
+            }
+          },
+          "x-read-pretty": true,
+          "rawTitle": "{{t(\"Last updated by\")}}"
+        },
+        "operators": [],
+        "interface": "updatedBy",
+        "children": [
+          {
+            "name": "id",
+            "title": "{{t(\"ID\")}}",
+            "schema": {
+              "type": "number",
+              "title": "{{t(\"ID\")}}",
+              "x-component": "InputNumber",
+              "x-read-pretty": true,
+              "rawTitle": "{{t(\"ID\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"exists\")}}",
+                "value": "$exists",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"not exists\")}}",
+                "value": "$notExists",
+                "noValue": true
+              }
+            ],
+            "interface": "id"
+          },
+          {
+            "name": "nickname",
+            "title": "{{t(\"Nickname\")}}",
+            "schema": {
+              "type": "string",
+              "title": "{{t(\"Nickname\")}}",
+              "x-component": "Input",
+              "rawTitle": "{{t(\"Nickname\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"contains\")}}",
+                "value": "$includes",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"does not contain\")}}",
+                "value": "$notIncludes"
+              },
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq"
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"is empty\")}}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"is not empty\")}}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "input"
+          },
+          {
+            "name": "username",
+            "title": "{{t(\"Username\")}}",
+            "schema": {
+              "type": "string",
+              "title": "{{t(\"Username\")}}",
+              "x-component": "Input",
+              "x-validator": {
+                "username": true
+              },
+              "required": true,
+              "rawTitle": "{{t(\"Username\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"contains\")}}",
+                "value": "$includes",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"does not contain\")}}",
+                "value": "$notIncludes"
+              },
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq"
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"is empty\")}}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"is not empty\")}}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "input"
+          },
+          {
+            "name": "email",
+            "title": "{{t(\"Email\")}}",
+            "schema": {
+              "type": "string",
+              "title": "{{t(\"Email\")}}",
+              "x-component": "Input",
+              "x-validator": "email",
+              "required": true,
+              "rawTitle": "{{t(\"Email\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"contains\")}}",
+                "value": "$includes",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"does not contain\")}}",
+                "value": "$notIncludes"
+              },
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq"
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"is empty\")}}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"is not empty\")}}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "email"
+          },
+          {
+            "name": "phone",
+            "title": "{{t(\"Phone\")}}",
+            "schema": {
+              "type": "string",
+              "title": "{{t(\"Phone\")}}",
+              "x-component": "Input",
+              "required": true,
+              "rawTitle": "{{t(\"Phone\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"contains\")}}",
+                "value": "$includes",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"does not contain\")}}",
+                "value": "$notIncludes"
+              },
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq"
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"is empty\")}}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"is not empty\")}}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "input"
+          },
+          {
+            "name": "createdAt",
+            "title": "{{t(\"Created at\")}}",
+            "schema": {
+              "x-component-props": {
+                "dateFormat": "YYYY-MM-DD"
+              },
+              "type": "datetime",
+              "title": "{{t(\"Created at\")}}",
+              "x-component": "DatePicker",
+              "x-read-pretty": true,
+              "rawTitle": "{{t(\"Created at\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{ t('is') }}",
+                "value": "$dateOn",
+                "selected": true,
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is not') }}",
+                "value": "$dateNotOn",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is before') }}",
+                "value": "$dateBefore",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is after') }}",
+                "value": "$dateAfter",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is on or after') }}",
+                "value": "$dateNotBefore",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is on or before') }}",
+                "value": "$dateNotAfter",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is between') }}",
+                "value": "$dateBetween",
+                "schema": {
+                  "x-component": "DatePicker.RangePicker"
+                }
+              },
+              {
+                "label": "{{ t('is empty') }}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{ t('is not empty') }}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "createdAt"
+          },
+          {
+            "name": "updatedAt",
+            "title": "{{t(\"Last updated at\")}}",
+            "schema": {
+              "x-component-props": {
+                "dateFormat": "YYYY-MM-DD"
+              },
+              "type": "datetime",
+              "title": "{{t(\"Last updated at\")}}",
+              "x-component": "DatePicker",
+              "x-read-pretty": true,
+              "rawTitle": "{{t(\"Last updated at\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{ t('is') }}",
+                "value": "$dateOn",
+                "selected": true,
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is not') }}",
+                "value": "$dateNotOn",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is before') }}",
+                "value": "$dateBefore",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is after') }}",
+                "value": "$dateAfter",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is on or after') }}",
+                "value": "$dateNotBefore",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is on or before') }}",
+                "value": "$dateNotAfter",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is between') }}",
+                "value": "$dateBetween",
+                "schema": {
+                  "x-component": "DatePicker.RangePicker"
+                }
+              },
+              {
+                "label": "{{ t('is empty') }}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{ t('is not empty') }}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "updatedAt"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "updatedBy",
+    "title": "{{t(\"Last updated by\")}}",
+    "schema": {
+      "type": "object",
+      "title": "{{t(\"Last updated by\")}}",
+      "x-component": "AssociationField",
+      "x-component-props": {
+        "fieldNames": {
+          "value": "id",
+          "label": "nickname"
+        }
+      },
+      "x-read-pretty": true,
+      "rawTitle": "{{t(\"Last updated by\")}}"
+    },
+    "operators": [],
+    "interface": "updatedBy",
+    "children": [
+      {
+        "name": "id",
+        "title": "{{t(\"ID\")}}",
+        "schema": {
+          "type": "number",
+          "title": "{{t(\"ID\")}}",
+          "x-component": "InputNumber",
+          "x-read-pretty": true,
+          "rawTitle": "{{t(\"ID\")}}"
+        },
+        "operators": [
+          {
+            "label": "{{t(\"is\")}}",
+            "value": "$eq",
+            "selected": true
+          },
+          {
+            "label": "{{t(\"is not\")}}",
+            "value": "$ne"
+          },
+          {
+            "label": "{{t(\"exists\")}}",
+            "value": "$exists",
+            "noValue": true
+          },
+          {
+            "label": "{{t(\"not exists\")}}",
+            "value": "$notExists",
+            "noValue": true
+          }
+        ],
+        "interface": "id"
+      },
+      {
+        "name": "nickname",
+        "title": "{{t(\"Nickname\")}}",
+        "schema": {
+          "type": "string",
+          "title": "{{t(\"Nickname\")}}",
+          "x-component": "Input",
+          "rawTitle": "{{t(\"Nickname\")}}"
+        },
+        "operators": [
+          {
+            "label": "{{t(\"contains\")}}",
+            "value": "$includes",
+            "selected": true
+          },
+          {
+            "label": "{{t(\"does not contain\")}}",
+            "value": "$notIncludes"
+          },
+          {
+            "label": "{{t(\"is\")}}",
+            "value": "$eq"
+          },
+          {
+            "label": "{{t(\"is not\")}}",
+            "value": "$ne"
+          },
+          {
+            "label": "{{t(\"is empty\")}}",
+            "value": "$empty",
+            "noValue": true
+          },
+          {
+            "label": "{{t(\"is not empty\")}}",
+            "value": "$notEmpty",
+            "noValue": true
+          }
+        ],
+        "interface": "input"
+      },
+      {
+        "name": "username",
+        "title": "{{t(\"Username\")}}",
+        "schema": {
+          "type": "string",
+          "title": "{{t(\"Username\")}}",
+          "x-component": "Input",
+          "x-validator": {
+            "username": true
+          },
+          "required": true,
+          "rawTitle": "{{t(\"Username\")}}"
+        },
+        "operators": [
+          {
+            "label": "{{t(\"contains\")}}",
+            "value": "$includes",
+            "selected": true
+          },
+          {
+            "label": "{{t(\"does not contain\")}}",
+            "value": "$notIncludes"
+          },
+          {
+            "label": "{{t(\"is\")}}",
+            "value": "$eq"
+          },
+          {
+            "label": "{{t(\"is not\")}}",
+            "value": "$ne"
+          },
+          {
+            "label": "{{t(\"is empty\")}}",
+            "value": "$empty",
+            "noValue": true
+          },
+          {
+            "label": "{{t(\"is not empty\")}}",
+            "value": "$notEmpty",
+            "noValue": true
+          }
+        ],
+        "interface": "input"
+      },
+      {
+        "name": "email",
+        "title": "{{t(\"Email\")}}",
+        "schema": {
+          "type": "string",
+          "title": "{{t(\"Email\")}}",
+          "x-component": "Input",
+          "x-validator": "email",
+          "required": true,
+          "rawTitle": "{{t(\"Email\")}}"
+        },
+        "operators": [
+          {
+            "label": "{{t(\"contains\")}}",
+            "value": "$includes",
+            "selected": true
+          },
+          {
+            "label": "{{t(\"does not contain\")}}",
+            "value": "$notIncludes"
+          },
+          {
+            "label": "{{t(\"is\")}}",
+            "value": "$eq"
+          },
+          {
+            "label": "{{t(\"is not\")}}",
+            "value": "$ne"
+          },
+          {
+            "label": "{{t(\"is empty\")}}",
+            "value": "$empty",
+            "noValue": true
+          },
+          {
+            "label": "{{t(\"is not empty\")}}",
+            "value": "$notEmpty",
+            "noValue": true
+          }
+        ],
+        "interface": "email"
+      },
+      {
+        "name": "phone",
+        "title": "{{t(\"Phone\")}}",
+        "schema": {
+          "type": "string",
+          "title": "{{t(\"Phone\")}}",
+          "x-component": "Input",
+          "required": true,
+          "rawTitle": "{{t(\"Phone\")}}"
+        },
+        "operators": [
+          {
+            "label": "{{t(\"contains\")}}",
+            "value": "$includes",
+            "selected": true
+          },
+          {
+            "label": "{{t(\"does not contain\")}}",
+            "value": "$notIncludes"
+          },
+          {
+            "label": "{{t(\"is\")}}",
+            "value": "$eq"
+          },
+          {
+            "label": "{{t(\"is not\")}}",
+            "value": "$ne"
+          },
+          {
+            "label": "{{t(\"is empty\")}}",
+            "value": "$empty",
+            "noValue": true
+          },
+          {
+            "label": "{{t(\"is not empty\")}}",
+            "value": "$notEmpty",
+            "noValue": true
+          }
+        ],
+        "interface": "input"
+      },
+      {
+        "name": "createdAt",
+        "title": "{{t(\"Created at\")}}",
+        "schema": {
+          "x-component-props": {
+            "dateFormat": "YYYY-MM-DD"
+          },
+          "type": "datetime",
+          "title": "{{t(\"Created at\")}}",
+          "x-component": "DatePicker",
+          "x-read-pretty": true,
+          "rawTitle": "{{t(\"Created at\")}}"
+        },
+        "operators": [
+          {
+            "label": "{{ t('is') }}",
+            "value": "$dateOn",
+            "selected": true,
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is not') }}",
+            "value": "$dateNotOn",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is before') }}",
+            "value": "$dateBefore",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is after') }}",
+            "value": "$dateAfter",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is on or after') }}",
+            "value": "$dateNotBefore",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is on or before') }}",
+            "value": "$dateNotAfter",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is between') }}",
+            "value": "$dateBetween",
+            "schema": {
+              "x-component": "DatePicker.RangePicker"
+            }
+          },
+          {
+            "label": "{{ t('is empty') }}",
+            "value": "$empty",
+            "noValue": true
+          },
+          {
+            "label": "{{ t('is not empty') }}",
+            "value": "$notEmpty",
+            "noValue": true
+          }
+        ],
+        "interface": "createdAt"
+      },
+      {
+        "name": "updatedAt",
+        "title": "{{t(\"Last updated at\")}}",
+        "schema": {
+          "x-component-props": {
+            "dateFormat": "YYYY-MM-DD"
+          },
+          "type": "datetime",
+          "title": "{{t(\"Last updated at\")}}",
+          "x-component": "DatePicker",
+          "x-read-pretty": true,
+          "rawTitle": "{{t(\"Last updated at\")}}"
+        },
+        "operators": [
+          {
+            "label": "{{ t('is') }}",
+            "value": "$dateOn",
+            "selected": true,
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is not') }}",
+            "value": "$dateNotOn",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is before') }}",
+            "value": "$dateBefore",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is after') }}",
+            "value": "$dateAfter",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is on or after') }}",
+            "value": "$dateNotBefore",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is on or before') }}",
+            "value": "$dateNotAfter",
+            "schema": {
+              "x-component": "DatePicker.FilterWithPicker"
+            },
+            "onlyFilterAction": true
+          },
+          {
+            "label": "{{ t('is between') }}",
+            "value": "$dateBetween",
+            "schema": {
+              "x-component": "DatePicker.RangePicker"
+            }
+          },
+          {
+            "label": "{{ t('is empty') }}",
+            "value": "$empty",
+            "noValue": true
+          },
+          {
+            "label": "{{ t('is not empty') }}",
+            "value": "$notEmpty",
+            "noValue": true
+          }
+        ],
+        "interface": "updatedAt"
+      },
+      {
+        "name": "createdBy",
+        "title": "{{t(\"Created by\")}}",
+        "schema": {
+          "type": "object",
+          "title": "{{t(\"Created by\")}}",
+          "x-component": "AssociationField",
+          "x-component-props": {
+            "fieldNames": {
+              "value": "id",
+              "label": "nickname"
+            }
+          },
+          "x-read-pretty": true,
+          "rawTitle": "{{t(\"Created by\")}}"
+        },
+        "operators": [],
+        "interface": "createdBy",
+        "children": [
+          {
+            "name": "id",
+            "title": "{{t(\"ID\")}}",
+            "schema": {
+              "type": "number",
+              "title": "{{t(\"ID\")}}",
+              "x-component": "InputNumber",
+              "x-read-pretty": true,
+              "rawTitle": "{{t(\"ID\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"exists\")}}",
+                "value": "$exists",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"not exists\")}}",
+                "value": "$notExists",
+                "noValue": true
+              }
+            ],
+            "interface": "id"
+          },
+          {
+            "name": "nickname",
+            "title": "{{t(\"Nickname\")}}",
+            "schema": {
+              "type": "string",
+              "title": "{{t(\"Nickname\")}}",
+              "x-component": "Input",
+              "rawTitle": "{{t(\"Nickname\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"contains\")}}",
+                "value": "$includes",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"does not contain\")}}",
+                "value": "$notIncludes"
+              },
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq"
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"is empty\")}}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"is not empty\")}}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "input"
+          },
+          {
+            "name": "username",
+            "title": "{{t(\"Username\")}}",
+            "schema": {
+              "type": "string",
+              "title": "{{t(\"Username\")}}",
+              "x-component": "Input",
+              "x-validator": {
+                "username": true
+              },
+              "required": true,
+              "rawTitle": "{{t(\"Username\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"contains\")}}",
+                "value": "$includes",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"does not contain\")}}",
+                "value": "$notIncludes"
+              },
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq"
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"is empty\")}}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"is not empty\")}}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "input"
+          },
+          {
+            "name": "email",
+            "title": "{{t(\"Email\")}}",
+            "schema": {
+              "type": "string",
+              "title": "{{t(\"Email\")}}",
+              "x-component": "Input",
+              "x-validator": "email",
+              "required": true,
+              "rawTitle": "{{t(\"Email\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"contains\")}}",
+                "value": "$includes",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"does not contain\")}}",
+                "value": "$notIncludes"
+              },
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq"
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"is empty\")}}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"is not empty\")}}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "email"
+          },
+          {
+            "name": "phone",
+            "title": "{{t(\"Phone\")}}",
+            "schema": {
+              "type": "string",
+              "title": "{{t(\"Phone\")}}",
+              "x-component": "Input",
+              "required": true,
+              "rawTitle": "{{t(\"Phone\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"contains\")}}",
+                "value": "$includes",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"does not contain\")}}",
+                "value": "$notIncludes"
+              },
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq"
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"is empty\")}}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"is not empty\")}}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "input"
+          },
+          {
+            "name": "createdAt",
+            "title": "{{t(\"Created at\")}}",
+            "schema": {
+              "x-component-props": {
+                "dateFormat": "YYYY-MM-DD"
+              },
+              "type": "datetime",
+              "title": "{{t(\"Created at\")}}",
+              "x-component": "DatePicker",
+              "x-read-pretty": true,
+              "rawTitle": "{{t(\"Created at\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{ t('is') }}",
+                "value": "$dateOn",
+                "selected": true,
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is not') }}",
+                "value": "$dateNotOn",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is before') }}",
+                "value": "$dateBefore",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is after') }}",
+                "value": "$dateAfter",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is on or after') }}",
+                "value": "$dateNotBefore",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is on or before') }}",
+                "value": "$dateNotAfter",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is between') }}",
+                "value": "$dateBetween",
+                "schema": {
+                  "x-component": "DatePicker.RangePicker"
+                }
+              },
+              {
+                "label": "{{ t('is empty') }}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{ t('is not empty') }}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "createdAt"
+          },
+          {
+            "name": "updatedAt",
+            "title": "{{t(\"Last updated at\")}}",
+            "schema": {
+              "x-component-props": {
+                "dateFormat": "YYYY-MM-DD"
+              },
+              "type": "datetime",
+              "title": "{{t(\"Last updated at\")}}",
+              "x-component": "DatePicker",
+              "x-read-pretty": true,
+              "rawTitle": "{{t(\"Last updated at\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{ t('is') }}",
+                "value": "$dateOn",
+                "selected": true,
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is not') }}",
+                "value": "$dateNotOn",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is before') }}",
+                "value": "$dateBefore",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is after') }}",
+                "value": "$dateAfter",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is on or after') }}",
+                "value": "$dateNotBefore",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is on or before') }}",
+                "value": "$dateNotAfter",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is between') }}",
+                "value": "$dateBetween",
+                "schema": {
+                  "x-component": "DatePicker.RangePicker"
+                }
+              },
+              {
+                "label": "{{ t('is empty') }}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{ t('is not empty') }}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "updatedAt"
+          }
+        ]
+      },
+      {
+        "name": "updatedBy",
+        "title": "{{t(\"Last updated by\")}}",
+        "schema": {
+          "type": "object",
+          "title": "{{t(\"Last updated by\")}}",
+          "x-component": "AssociationField",
+          "x-component-props": {
+            "fieldNames": {
+              "value": "id",
+              "label": "nickname"
+            }
+          },
+          "x-read-pretty": true,
+          "rawTitle": "{{t(\"Last updated by\")}}"
+        },
+        "operators": [],
+        "interface": "updatedBy",
+        "children": [
+          {
+            "name": "id",
+            "title": "{{t(\"ID\")}}",
+            "schema": {
+              "type": "number",
+              "title": "{{t(\"ID\")}}",
+              "x-component": "InputNumber",
+              "x-read-pretty": true,
+              "rawTitle": "{{t(\"ID\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"exists\")}}",
+                "value": "$exists",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"not exists\")}}",
+                "value": "$notExists",
+                "noValue": true
+              }
+            ],
+            "interface": "id"
+          },
+          {
+            "name": "nickname",
+            "title": "{{t(\"Nickname\")}}",
+            "schema": {
+              "type": "string",
+              "title": "{{t(\"Nickname\")}}",
+              "x-component": "Input",
+              "rawTitle": "{{t(\"Nickname\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"contains\")}}",
+                "value": "$includes",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"does not contain\")}}",
+                "value": "$notIncludes"
+              },
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq"
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"is empty\")}}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"is not empty\")}}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "input"
+          },
+          {
+            "name": "username",
+            "title": "{{t(\"Username\")}}",
+            "schema": {
+              "type": "string",
+              "title": "{{t(\"Username\")}}",
+              "x-component": "Input",
+              "x-validator": {
+                "username": true
+              },
+              "required": true,
+              "rawTitle": "{{t(\"Username\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"contains\")}}",
+                "value": "$includes",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"does not contain\")}}",
+                "value": "$notIncludes"
+              },
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq"
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"is empty\")}}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"is not empty\")}}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "input"
+          },
+          {
+            "name": "email",
+            "title": "{{t(\"Email\")}}",
+            "schema": {
+              "type": "string",
+              "title": "{{t(\"Email\")}}",
+              "x-component": "Input",
+              "x-validator": "email",
+              "required": true,
+              "rawTitle": "{{t(\"Email\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"contains\")}}",
+                "value": "$includes",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"does not contain\")}}",
+                "value": "$notIncludes"
+              },
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq"
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"is empty\")}}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"is not empty\")}}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "email"
+          },
+          {
+            "name": "phone",
+            "title": "{{t(\"Phone\")}}",
+            "schema": {
+              "type": "string",
+              "title": "{{t(\"Phone\")}}",
+              "x-component": "Input",
+              "required": true,
+              "rawTitle": "{{t(\"Phone\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{t(\"contains\")}}",
+                "value": "$includes",
+                "selected": true
+              },
+              {
+                "label": "{{t(\"does not contain\")}}",
+                "value": "$notIncludes"
+              },
+              {
+                "label": "{{t(\"is\")}}",
+                "value": "$eq"
+              },
+              {
+                "label": "{{t(\"is not\")}}",
+                "value": "$ne"
+              },
+              {
+                "label": "{{t(\"is empty\")}}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{t(\"is not empty\")}}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "input"
+          },
+          {
+            "name": "createdAt",
+            "title": "{{t(\"Created at\")}}",
+            "schema": {
+              "x-component-props": {
+                "dateFormat": "YYYY-MM-DD"
+              },
+              "type": "datetime",
+              "title": "{{t(\"Created at\")}}",
+              "x-component": "DatePicker",
+              "x-read-pretty": true,
+              "rawTitle": "{{t(\"Created at\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{ t('is') }}",
+                "value": "$dateOn",
+                "selected": true,
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is not') }}",
+                "value": "$dateNotOn",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is before') }}",
+                "value": "$dateBefore",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is after') }}",
+                "value": "$dateAfter",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is on or after') }}",
+                "value": "$dateNotBefore",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is on or before') }}",
+                "value": "$dateNotAfter",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is between') }}",
+                "value": "$dateBetween",
+                "schema": {
+                  "x-component": "DatePicker.RangePicker"
+                }
+              },
+              {
+                "label": "{{ t('is empty') }}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{ t('is not empty') }}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "createdAt"
+          },
+          {
+            "name": "updatedAt",
+            "title": "{{t(\"Last updated at\")}}",
+            "schema": {
+              "x-component-props": {
+                "dateFormat": "YYYY-MM-DD"
+              },
+              "type": "datetime",
+              "title": "{{t(\"Last updated at\")}}",
+              "x-component": "DatePicker",
+              "x-read-pretty": true,
+              "rawTitle": "{{t(\"Last updated at\")}}"
+            },
+            "operators": [
+              {
+                "label": "{{ t('is') }}",
+                "value": "$dateOn",
+                "selected": true,
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is not') }}",
+                "value": "$dateNotOn",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is before') }}",
+                "value": "$dateBefore",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is after') }}",
+                "value": "$dateAfter",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is on or after') }}",
+                "value": "$dateNotBefore",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is on or before') }}",
+                "value": "$dateNotAfter",
+                "schema": {
+                  "x-component": "DatePicker.FilterWithPicker"
+                },
+                "onlyFilterAction": true
+              },
+              {
+                "label": "{{ t('is between') }}",
+                "value": "$dateBetween",
+                "schema": {
+                  "x-component": "DatePicker.RangePicker"
+                }
+              },
+              {
+                "label": "{{ t('is empty') }}",
+                "value": "$empty",
+                "noValue": true
+              },
+              {
+                "label": "{{ t('is not empty') }}",
+                "value": "$notEmpty",
+                "noValue": true
+              }
+            ],
+            "interface": "updatedAt"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "f_1or3dsetv0w",
+    "title": "图片",
+    "schema": {
+      "type": "array",
+      "x-component": "Upload.Attachment",
+      "x-use-component-props": "useAttachmentFieldProps",
+      "x-component-props": {
+        "multiple": true
+      },
+      "title": "图片",
+      "rawTitle": "图片"
+    },
+    "operators": [],
+    "interface": "attachment",
+    "children": [
+      {
+        "name": "id",
+        "title": "{{t(\"Exists\")}}",
+        "operators": [
+          {
+            "label": "{{t(\"exists\")}}",
+            "value": "$exists",
+            "noValue": true
+          },
+          {
+            "label": "{{t(\"not exists\")}}",
+            "value": "$notExists",
+            "noValue": true
+          }
+        ],
+        "schema": {
+          "title": "{{t(\"Exists\")}}",
+          "type": "string",
+          "x-component": "Input"
+        }
+      },
+      {
+        "name": "filename",
+        "title": "{{t(\"Filename\", { ns: \"file-manager\" })}}",
+        "operators": [
+          {
+            "label": "{{t(\"contains\")}}",
+            "value": "$includes",
+            "selected": true
+          },
+          {
+            "label": "{{t(\"does not contain\")}}",
+            "value": "$notIncludes"
+          },
+          {
+            "label": "{{t(\"is\")}}",
+            "value": "$eq"
+          },
+          {
+            "label": "{{t(\"is not\")}}",
+            "value": "$ne"
+          },
+          {
+            "label": "{{t(\"is empty\")}}",
+            "value": "$empty",
+            "noValue": true
+          },
+          {
+            "label": "{{t(\"is not empty\")}}",
+            "value": "$notEmpty",
+            "noValue": true
+          }
+        ],
+        "schema": {
+          "title": "{{t(\"Filename\", { ns: \"file-manager\" })}}",
+          "type": "string",
+          "x-component": "Input"
+        }
+      }
+    ]
+  }
+]
