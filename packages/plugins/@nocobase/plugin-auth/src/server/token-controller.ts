@@ -111,7 +111,17 @@ export class TokenController implements TokenControlService {
     const model = this.app.db.getModel(issuedTokensCollectionName);
     const exists = await repo.findOne({ filter: { jti } });
     if (!exists) {
-      throw new AuthError({ message: 'jti not found', code: AuthErrorCode.TOKEN_RENEW_FAILED });
+      this.logger.error('jti not found', {
+        module: 'auth',
+        submodule: 'token-controller',
+        method: 'renew',
+        jti,
+        code: AuthErrorCode.TOKEN_RENEW_FAILED,
+      });
+      throw new AuthError({
+        message: 'Your session has expired. Please sign in again.',
+        code: AuthErrorCode.TOKEN_RENEW_FAILED,
+      });
     }
     const newId = randomUUID();
     const issuedTime = Date.now();
@@ -125,7 +135,18 @@ export class TokenController implements TokenControlService {
     if (count === 1) {
       return { jti: newId, issuedTime };
     } else {
-      throw new AuthError({ message: 'renew failed', code: AuthErrorCode.TOKEN_RENEW_FAILED });
+      this.logger.error('jti renew failed', {
+        module: 'auth',
+        submodule: 'token-controller',
+        method: 'renew',
+        jti,
+        code: AuthErrorCode.TOKEN_RENEW_FAILED,
+      });
+
+      throw new AuthError({
+        message: 'Your session has expired. Please sign in again.',
+        code: AuthErrorCode.TOKEN_RENEW_FAILED,
+      });
     }
   };
 }

@@ -166,7 +166,7 @@ export class BaseAuth extends Auth {
             : { message: err.message, type: AuthErrorCode.INVALID_TOKEN };
 
         this.ctx.throw(401, {
-          message: options.message,
+          message: this.ctx.t(options.message, { ns: localeNamespace }),
           code: options.type,
         });
       }
