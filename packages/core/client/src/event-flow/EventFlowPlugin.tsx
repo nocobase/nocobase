@@ -58,22 +58,22 @@ export class EventFlowPlugin extends Plugin {
     });
   }
   // 触发事件
-  emit(moduleName: string, eventName: string, params: any) {
-    console.log('emit', moduleName, eventName, params);
-    const event = this.events.find((event) => event.event === `${moduleName}.${eventName}`);
-    if (event) {
-      event.actions.forEach((action) => {
-        const actionModuleName = action.split('.')[0];
-        const actionName = action.split('.')[1];
-        const module = this.definitions.find((module) => module.name === moduleName);
-        const moduleAction = this.definitions
-          .find((module) => module.name === actionModuleName)
-          ?.actions?.find((action) => action.name === actionName);
-        if (moduleAction) {
-          moduleAction?.fn(params);
-        }
-      });
-    }
+  async emit({ name, eventName, uid, params }: { name: string; eventName: string; uid?: string; params?: any }) {
+    // console.log('emit', name, eventName, params);
+    // const event = this.events.find((event) => event.event === `${name}.${eventName}`);
+    // if (event) {
+    //   event.actions.forEach((action) => {
+    //     const actionModuleName = action.split('.')[0];
+    //     const actionName = action.split('.')[1];
+    //     const module = this.definitions.find((definition) => definition.name === name);
+    //     const moduleAction = this.definitions
+    //       .find((module) => module.name === actionModuleName)
+    //       ?.actions?.find((action) => action.name === actionName);
+    //     if (moduleAction) {
+    //       moduleAction?.fn(params);
+    //     }
+    //   });
+    // }
   }
   on(event: EventSetting) {
     this.events.set(event.event, event);

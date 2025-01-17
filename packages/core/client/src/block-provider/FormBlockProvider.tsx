@@ -25,6 +25,7 @@ import { useActionContext, useDesignable } from '../schema-component';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
 import { FormActiveFieldsProvider } from './hooks/useFormActiveFields';
+import { useFormEvents } from './hooks/useFormEvents';
 
 export const FormBlockContext = createContext<{
   form?: any;
@@ -87,6 +88,7 @@ const InternalFormBlockProvider = (props) => {
     service,
     updateAssociationValues,
   ]);
+  useFormEvents({ form });
 
   return (
     <FormBlockContext.Provider value={formBlockValue}>

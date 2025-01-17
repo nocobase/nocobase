@@ -11,23 +11,26 @@ import { useApp } from '../../../../../application/hooks/useApp';
 import { useFormBlockProps } from '../../../../../block-provider/FormBlockProvider';
 import { useEvent } from '../../../../../event-flow';
 
-export function useCreateFormBlockEventsInterface() {
+export function useCreateFormBlockEventsDefine() {
   const { form } = useFormBlockProps();
   const app = useApp();
-  const { register, define, emit } = useEvent();
-  console.log('app.pm', form);
+  const { define, emit } = useEvent();
 
   const inter = {
     name: 'form',
-    title: 'form',
+    title: '表单',
     events: [
       {
-        name: 'onSubmit',
-        title: 'submit event',
-        description: 'form submit',
-        // params: {
-        //   e: 'event',
-        // },
+        name: 'valueChange',
+        title: '表单值改变',
+        params: {
+          values: {
+            name: 'values',
+            title: '表单值',
+            type: 'object',
+            description: '表单值',
+          },
+        },
       },
     ],
     // state: {
@@ -45,8 +48,8 @@ export function useCreateFormBlockEventsInterface() {
     ],
   };
 
-  form.subscribe(({ type, payload }) => {
-    console.log('type', type, payload);
+  form.subscribe(({ type, payload, ...args }) => {
+    console.log('type', type, payload, args);
     // 表格重置后代表着添加成功
     if (type === 'onFormReset') {
       emit(inter.name, 'onSubmit', payload);

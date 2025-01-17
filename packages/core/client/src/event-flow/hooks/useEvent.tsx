@@ -13,31 +13,39 @@ import { useApp, usePlugin, useSchemaSettings } from '@nocobase/client';
 import React from 'react';
 import { ISchema, useField } from '@formily/react';
 import { EventFlowPlugin } from '..';
+import { useMemoizedFn } from 'ahooks';
 
 export const useEvent = () => {
   const fieldSchema = useFieldSchema();
   const uid = fieldSchema?.['x-uid'];
   const eventFlowPlugin: EventFlowPlugin = usePlugin(EventFlowPlugin.name) as any;
+
+  const define = useMemoizedFn((definition: EventDefinition[] | EventDefinition) => {
+    if (Array.isArray(definition)) {
+      definition.forEach((item) => {
+        item.uid = uid;
+      });
+    } else if (definition) {
+      definition.uid = uid;
+    }
+    eventFlowPlugin.define(definition);
+  });
+
+  const register = useMemoizedFn((events: EventSetting[]) => {
+    eventFlowPlugin.register(events);
+  });
+
+  const emit = useMemoizedFn(async ({ name, eventName, params }: { name: string; eventName: string; params?: any }) => {
+    await eventFlowPlugin.emit({ name, eventName, uid, params });
+  });
+
   return {
     definitions: eventFlowPlugin.definitions,
     // 定义事件
-    define: (definition: EventDefinition[] | EventDefinition) => {
-      if (Array.isArray(definition)) {
-        definition.forEach((item) => {
-          item.uid = uid;
-        });
-      } else if (definition) {
-        definition.uid = uid;
-      }
-      eventFlowPlugin.define(definition);
-    },
+    define,
     // 运行时事件注册
-    register: (events: EventSetting[]) => {
-      eventFlowPlugin.register(events);
-    },
+    register,
     // 触发事件
-    emit: (definitionName: string, eventName: string, params: any) => {
-      eventFlowPlugin.emit(definitionName, eventName, params);
-    },
+    emit,
   };
 };

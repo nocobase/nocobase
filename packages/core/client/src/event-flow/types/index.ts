@@ -11,11 +11,15 @@ export const PluginName = 'event';
 export const SchemaSettingsKey = 'x-event-settings';
 export const SchemaDefinitionsKey = 'x-event-definitions';
 
-interface IEventParam {
-  name: string;
-  title: string;
-  description: string;
+export interface EventParam {
+  name?: string; // 在item 情况下没有name https://json-schema.org/understanding-json-schema/reference/array
+  title?: string;
+  description?: string;
   type: string;
+  properties?: {
+    [key: string]: EventParam;
+  };
+  items?: EventParam;
 }
 
 /** 事件动作 */
@@ -23,7 +27,9 @@ export interface EventAction {
   name: string;
   title: string;
   description?: string;
-  params?: IEventParam[];
+  params?: {
+    [key: string]: EventParam;
+  };
   fn: (params?: any) => void;
 }
 
@@ -33,7 +39,9 @@ export interface EventEvent {
   title: string;
   uid?: string;
   description?: string;
-  params?: IEventParam[];
+  params?: {
+    [key: string]: EventParam;
+  };
 }
 
 /** 事件定义 */
@@ -44,7 +52,9 @@ export interface EventDefinition {
   title: string;
   description?: string;
   events?: EventEvent[];
-  states?: IEventParam[];
+  states?: {
+    [key: string]: EventParam;
+  };
   actions?: EventAction[];
 }
 

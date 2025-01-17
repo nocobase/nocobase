@@ -8,10 +8,9 @@
  */
 
 import { useFormBlockProps } from '../../../../../block-provider/FormBlockProvider';
-import { useCreateFormBlockEventsInterface } from './useCreateFormBlockEventsInterface';
+import { useCreateFormBlockEventsDefine } from './useCreateFormBlockEventsDefine';
 
 export function useCreateFormBlockProps() {
-  useCreateFormBlockEventsInterface();
-  console.log('11111');
+  // useCreateFormBlockEventsDefine();
   return useFormBlockProps();
 }
