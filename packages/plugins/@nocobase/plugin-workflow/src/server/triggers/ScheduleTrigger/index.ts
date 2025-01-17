@@ -67,25 +67,19 @@ export default class ScheduleTrigger extends Trigger {
   //   return !existed.length;
   // }
 
-  validateConfig(values) {
-    if (!values.mode) {
+  validateContext(values) {
+    if (!values?.mode) {
       return {
-        mode: 'Mode property is required',
+        mode: 'Mode is required',
+      };
+    }
+    const trigger = this.getTrigger(values.mode);
+    if (!trigger) {
+      return {
+        mode: 'Mode in invalid',
       };
     }
 
-    if (!values.startsOn) {
-      return {
-        startsOn: 'StartsOn property is required',
-      };
-    }
-
-    if (values.mode === SCHEDULE_MODE.DATE_FIELD && !values.collection) {
-      return {
-        collection: 'Collection property is required',
-      };
-    }
-
-    return null;
+    return trigger.validateContext?.(values);
   }
 }
