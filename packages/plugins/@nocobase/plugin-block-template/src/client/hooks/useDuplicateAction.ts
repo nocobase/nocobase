@@ -25,8 +25,10 @@ const duplicateSchema = (schema) => {
   if (!schema) {
     return null;
   }
+  if (schema['x-component'] === 'CustomRequestAction') {
+    schema['x-custom-request-id'] = schema['x-custom-request-id'] || schema['x-uid'];
+  }
   schema['x-uid'] = uid();
-  // TODO: some id reference will be lost
   if (schema.properties) {
     for (const key of Object.keys(schema.properties)) {
       duplicateSchema(schema.properties[key]);

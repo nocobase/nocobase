@@ -23,7 +23,7 @@ import { convertTplBlock } from '../initializers/TemplateBlockInitializer';
 import { Schema } from '@formily/json-schema';
 import { useT } from '../locale';
 import PluginBlockTemplateClient from '..';
-import { addToolbarClass, syncTemplateTitle } from '../utils/template';
+import { addToolbarClass, syncExtraTemplateInfo } from '../utils/template';
 import { uid } from '@nocobase/utils/client';
 
 const findInsertPosition = (parentSchema, uid) => {
@@ -125,7 +125,7 @@ export const RevertSetting = () => {
                 ret = mergedSchema;
               }
               addToolbarClass(ret);
-              syncTemplateTitle(ret, plugin.templateInfos);
+              syncExtraTemplateInfo(ret, plugin.templateInfos);
               return ret;
             };
             refresh({ refreshParentSchema: true });

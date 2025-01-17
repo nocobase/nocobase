@@ -73,6 +73,9 @@ export function convertTplBlock(tpl, virtual = false, isRoot = true, newRootId?:
     if (templateKey) {
       newSchema['x-block-template-key'] = templateKey;
     }
+    if (tpl['x-component'] === 'CustomRequestAction') {
+      newSchema['x-custom-request-id'] = tpl['x-custom-request-id'] || tpl['x-uid'];
+    }
     // filter should be in tpl
     if (_.get(tpl, 'x-filter-targets')) {
       newSchema['x-filter-targets'] = tpl['x-filter-targets'];
@@ -97,8 +100,9 @@ function getSchemaUidMaps(schema, idMap = {}) {
 }
 
 function correctIdReference(schema, idMaps) {
+  const skipReplaceKeys = ['x-uid', 'x-template-uid', 'x-template-root-uid', 'x-custom-request-id'];
   for (const key in schema) {
-    if (key !== 'x-uid' && key !== 'x-template-uid' && key !== 'x-template-root-uid') {
+    if (!skipReplaceKeys.includes(key)) {
       if (schema[key] && typeof schema[key] === 'string') {
         schema[key] = idMaps[schema[key]] || schema[key];
       }

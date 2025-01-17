@@ -27,8 +27,8 @@ export const CustomRequestActionACLDecorator = (props) => {
       cacheKey: listByCurrentRoleUrl,
     },
   );
-
-  if (!isRoot && !data?.data?.includes(fieldSchema?.['x-uid'])) {
+  const requestId = fieldSchema?.['x-custom-request-id'] || fieldSchema?.['x-uid'];
+  if (!isRoot && !data?.data?.includes(requestId)) {
     return null;
   }
 

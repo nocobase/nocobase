@@ -47,8 +47,9 @@ export const useCustomizeRequestActionProps = () => {
       actionField.data ??= {};
       actionField.data.loading = true;
       try {
+        const requestId = fieldSchema['x-custom-request-id'] || fieldSchema['x-uid'];
         const res = await apiClient.request({
-          url: `/customRequests:send/${fieldSchema['x-uid']}`,
+          url: `/customRequests:send/${requestId}`,
           method: 'POST',
           data: {
             currentRecord: {

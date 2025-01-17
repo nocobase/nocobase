@@ -208,13 +208,13 @@ export function addToolbarClass(schema) {
   }
 }
 
-export function syncTemplateTitle(schema: any, templateInfos: Map<string, any>) {
+export function syncExtraTemplateInfo(schema: any, templateInfos: Map<string, any>) {
   if (schema['x-block-template-key']) {
     schema['x-template-title'] = templateInfos.get(schema['x-block-template-key'])?.title;
   }
   if (schema.properties) {
     for (const key in schema.properties) {
-      syncTemplateTitle(schema.properties[key], templateInfos);
+      syncExtraTemplateInfo(schema.properties[key], templateInfos);
     }
   }
 }
@@ -249,7 +249,7 @@ export function getFullSchema(
     ret = result;
   }
   addToolbarClass(ret);
-  syncTemplateTitle(ret, templateInfos);
+  syncExtraTemplateInfo(ret, templateInfos);
   cleanSchema(ret);
   return ret;
 }
@@ -280,6 +280,7 @@ export function mergeSchema(
       if (keyName === 'default' && object['x-settings'] === 'actionSettings:filter') {
         return sourceValue || objectValue;
       }
+
       if (_.isObject(sourceValue)) {
         if (_.isArray(sourceValue)) {
           return sourceValue || objectValue;
