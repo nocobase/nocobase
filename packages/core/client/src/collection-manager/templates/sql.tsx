@@ -83,7 +83,6 @@ export class SqlCollectionTemplate extends CollectionTemplate {
         },
       },
     },
-    ...getConfigurableProperties('category'),
     filterTargetKey: {
       title: `{{ t("Record unique key")}}`,
       type: 'single',
@@ -95,5 +94,6 @@ export class SqlCollectionTemplate extends CollectionTemplate {
       },
       'x-reactions': ['{{useAsyncDataSource(loadFilterTargetKeys)}}'],
     },
+    ...getConfigurableProperties('category', 'description'),
   };
 }

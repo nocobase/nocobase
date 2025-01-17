@@ -187,6 +187,10 @@ export class WSServer extends EventEmitter {
       );
     });
 
+    app.on('ws:sendToClient', ({ clientId, message }) => {
+      this.sendToClient(clientId, message);
+    });
+
     app.on('ws:sendToCurrentApp', ({ message }) => {
       this.sendToConnectionsByTag('app', app.name, message);
     });
@@ -196,13 +200,7 @@ export class WSServer extends EventEmitter {
     });
 
     app.on('ws:authorized', ({ clientId, userId }) => {
-      this.sendToConnectionsByTags(
-        [
-          { tagName: 'userId', tagValue: userId },
-          { tagName: 'app', tagValue: app.name },
-        ],
-        { type: 'authorized' },
-      );
+      this.sendToClient(clientId, { type: 'authorized' });
     });
   }
 
@@ -286,6 +284,13 @@ export class WSServer extends EventEmitter {
         this.sendMessageToConnection(client, sendMessage);
       }
     });
+  }
+
+  sendToClient(clientId: string, sendMessage: object) {
+    const client = this.webSocketClients.get(clientId);
+    if (client) {
+      this.sendMessageToConnection(client, sendMessage);
+    }
   }
 
   loopThroughConnections(callback: (client: WebSocketClient) => void) {

@@ -290,10 +290,7 @@ export const tasksTableBlockSchema: ISchema = {
                       properties: {
                         sync: {
                           type: 'void',
-                          title: '{{ t("Retry") }}',
-                          'x-component': 'Action.Link',
-                          'x-use-component-props': 'useRetryActionProps',
-                          'x-display': '{{ $record.status === "failed" ? "visible" : "hidden" }}',
+                          'x-component': 'Retry',
                         },
                       },
                     },

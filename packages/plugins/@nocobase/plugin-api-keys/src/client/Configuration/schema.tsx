@@ -12,8 +12,8 @@ import { uid } from '@formily/shared';
 import { useActionContext, useBlockRequestContext, useRecord } from '@nocobase/client';
 import { Alert, Modal, Space, Typography } from 'antd';
 import React from 'react';
-import { generateNTemplate } from '../../locale';
 import apiKeysCollection from '../../collections/apiKeys';
+import { generateNTemplate } from '../../locale';
 import { useTranslation } from '../locale';
 const { useModal } = Modal;
 
@@ -200,7 +200,7 @@ export const configurationSchema: ISchema = {
               title: generateNTemplate('Role'),
               properties: {
                 role: {
-                  type: 'object',
+                  type: 'string',
                   'x-collection-field': 'apiKeys.role',
                   'x-component': 'CollectionField',
                   'x-component-props': {
