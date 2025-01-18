@@ -602,13 +602,17 @@ const InternalBodyCellComponent = React.memo<BodyCellComponentProps>((props) => 
   const { record, schema, rowIndex, isSubTable, ...others } = props;
   const styleRules = schema?.[LinkageRuleDataKeyMap['style']];
   const [dynamicStyle, setDynamicStyle] = useState({});
-  const style = useMemo(() => ({ ...props.style, ...dynamicStyle }), [props.style, dynamicStyle]);
+  const isReadPrettyMode =
+    !!schema?.properties && Object.values(schema.properties).some((item) => item['x-read-pretty'] === true);
+  const mergedStyle = useMemo(() => ({ ...props.style, ...dynamicStyle }), [props.style, dynamicStyle]);
 
   return (
     <>
       {/* To improve rendering performance, do not render GetStyleRules component when no style rules are set */}
-      {!_.isEmpty(styleRules) && <GetStyleRules record={record} schema={schema} onStyleChange={setDynamicStyle} />}
-      <td {...others} className={classNames(props.className, cellClass)} style={style}>
+      {!_.isEmpty(styleRules) && (
+        <GetStyleRules record={record} schema={schema} onStyleChange={isReadPrettyMode ? setDynamicStyle : _.noop} />
+      )}
+      <td {...others} className={classNames(props.className, cellClass)} style={mergedStyle}>
         {props.children}
       </td>
     </>
@@ -745,9 +749,6 @@ const InternalNocoBaseTable = React.memo(
                   }
                   .ant-table-cell-fix-right {
                     padding: 8px 16px !important;
-                  }
-                  .ant-table-thead .ant-table-cell {
-                    padding: 8px 16px;
                   }
                 }
               }

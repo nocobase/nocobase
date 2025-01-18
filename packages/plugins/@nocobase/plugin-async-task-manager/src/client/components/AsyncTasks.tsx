@@ -1,13 +1,21 @@
 import React, { useEffect } from 'react';
 import { Button, Popover, Table, Tag, Progress, Space, Tooltip, Popconfirm, Modal, Empty } from 'antd';
-import { Icon, useApp, usePlugin } from '@nocobase/client';
-import { ExclamationCircleOutlined } from '@ant-design/icons';
+import { createStyles, Icon, useApp, usePlugin } from '@nocobase/client';
+
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useT } from '../locale';
 import { useAsyncTask } from '../AsyncTaskManagerProvider';
 import { useCurrentAppInfo } from '@nocobase/client';
+const useStyles = createStyles(({ token }) => {
+  return {
+    button: {
+      // @ts-ignore
+      color: token.colorTextHeaderMenu + ' !important',
+    },
+  };
+});
 
 // Configure dayjs
 dayjs.extend(relativeTime);
@@ -48,6 +56,7 @@ export const AsyncTasks = () => {
   const app = useApp();
   const appInfo = useCurrentAppInfo();
   const t = useT();
+  const { styles } = useStyles();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -139,13 +148,14 @@ export const AsyncTasks = () => {
         };
 
         const actionText = actionTypeMap[title.actionType] || title.actionType;
+
         const taskTypeMap = {
           'export-attachments': t('Export {collection} attachments'),
           export: t('Export {collection} data'),
           import: t('Import {collection} data'),
         };
 
-        const taskTemplate = taskTypeMap[title.actionType] || `${actionText} ${title.collection} ${t('Data')}`;
+        const taskTemplate = taskTypeMap[title.actionType] || `${actionText}`;
         return taskTemplate.replace('{collection}', title.collection);
       },
     },
@@ -266,7 +276,7 @@ export const AsyncTasks = () => {
         const actions = [];
         const isTaskCancelling = cancellingTasks.has(record.taskId);
 
-        if (record.status.type === 'running' || record.status.type === 'pending') {
+        if ((record.status.type === 'running' || record.status.type === 'pending') && record.cancelable) {
           actions.push(
             <Popconfirm
               key="cancel"
@@ -368,7 +378,7 @@ export const AsyncTasks = () => {
         onOpenChange={setPopoverVisible}
       >
         <Button
-          className="sync-task-button"
+          className={['sync-task-button', styles.button].join(' ')}
           icon={<Icon type={'SyncOutlined'} spin={hasProcessingTasks} />}
           onClick={() => setPopoverVisible(!popoverVisible)}
         />

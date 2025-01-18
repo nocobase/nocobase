@@ -16,6 +16,7 @@ import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import lodash from 'lodash';
 import { Logger } from '@nocobase/logger';
 import EventEmitter from 'events';
+import { parse } from 'url';
 
 declare class WebSocketWithId extends WebSocket {
   id: string;
@@ -135,6 +136,72 @@ export class WSServer extends EventEmitter {
         },
       });
     });
+
+    AppSupervisor.getInstance().on('afterAppAdded', (app) => {
+      this.bindAppWSEvents(app);
+    });
+
+    this.on('message', async ({ client, message }) => {
+      const app = await AppSupervisor.getInstance().getApp(client.app);
+
+      if (!app) {
+        return;
+      }
+
+      const parsedMessage = JSON.parse(message.toString());
+
+      if (!parsedMessage.type) {
+        return;
+      }
+
+      const eventName = `ws:message:${parsedMessage.type}`;
+
+      app.emit(eventName, {
+        clientId: client.id,
+        tags: [...client.tags],
+        payload: parsedMessage.payload,
+      });
+    });
+  }
+
+  bindAppWSEvents(app) {
+    if (app.listenerCount('ws:setTag') > 0) {
+      return;
+    }
+
+    app.on('ws:setTag', ({ clientId, tagKey, tagValue }) => {
+      this.setClientTag(clientId, tagKey, tagValue);
+    });
+
+    app.on('ws:removeTag', ({ clientId, tagKey }) => {
+      this.removeClientTag(clientId, tagKey);
+    });
+
+    app.on('ws:sendToTag', ({ tagKey, tagValue, message }) => {
+      this.sendToConnectionsByTags(
+        [
+          { tagName: tagKey, tagValue },
+          { tagName: 'app', tagValue: app.name },
+        ],
+        message,
+      );
+    });
+
+    app.on('ws:sendToClient', ({ clientId, message }) => {
+      this.sendToClient(clientId, message);
+    });
+
+    app.on('ws:sendToCurrentApp', ({ message }) => {
+      this.sendToConnectionsByTag('app', app.name, message);
+    });
+
+    app.on('ws:sendToTags', ({ tags, message }) => {
+      this.sendToConnectionsByTags(tags, message);
+    });
+
+    app.on('ws:authorized', ({ clientId, userId }) => {
+      this.sendToClient(clientId, { type: 'authorized' });
+    });
   }
 
   addNewConnection(ws: WebSocketWithId, request: IncomingMessage) {
@@ -155,6 +222,9 @@ export class WSServer extends EventEmitter {
 
   setClientTag(clientId: string, tagKey: string, tagValue: string) {
     const client = this.webSocketClients.get(clientId);
+    if (!client) {
+      return;
+    }
     client.tags.add(`${tagKey}#${tagValue}`);
     console.log(`client tags: ${Array.from(client.tags)}`);
   }
@@ -186,32 +256,6 @@ export class WSServer extends EventEmitter {
     if (!hasApp) {
       AppSupervisor.getInstance().bootStrapApp(handleAppName);
     }
-
-    // const appStatus = AppSupervisor.getInstance().getAppStatus(handleAppName, 'initializing');
-
-    // if (appStatus === 'not_found') {
-    //   this.sendMessageToConnection(client, {
-    //     type: 'maintaining',
-    //     payload: getPayloadByErrorCode('APP_NOT_FOUND', { appName: handleAppName }),
-    //   });
-    //   return;
-    // }
-
-    // if (appStatus === 'initializing') {
-    //   this.sendMessageToConnection(client, {
-    //     type: 'maintaining',
-    //     payload: getPayloadByErrorCode('APP_INITIALIZING', { appName: handleAppName }),
-    //   });
-
-    //   return;
-    // }
-
-    // const app = await AppSupervisor.getInstance().getApp(handleAppName);
-    //
-    // this.sendMessageToConnection(client, {
-    //   type: 'maintaining',
-    //   payload: getPayloadByErrorCode(appStatus, { app }),
-    // });
   }
 
   removeConnection(id: string) {
@@ -240,6 +284,13 @@ export class WSServer extends EventEmitter {
         this.sendMessageToConnection(client, sendMessage);
       }
     });
+  }
+
+  sendToClient(clientId: string, sendMessage: object) {
+    const client = this.webSocketClients.get(clientId);
+    if (client) {
+      this.sendMessageToConnection(client, sendMessage);
+    }
   }
 
   loopThroughConnections(callback: (client: WebSocketClient) => void) {

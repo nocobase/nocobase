@@ -25,7 +25,19 @@ import {
   ApplicationContext,
   useGlobalVariable,
 } from '@nocobase/client';
-import { Breadcrumb, Button, Dropdown, Space, Spin, Switch, message, Popover, QRCode } from 'antd';
+import {
+  Breadcrumb,
+  Button,
+  Dropdown,
+  Space,
+  Spin,
+  Switch,
+  Input,
+  message,
+  Popover,
+  QRCode,
+  theme as AntdTheme,
+} from 'antd';
 import React, { useState } from 'react';
 import { useParams } from 'react-router';
 import { Link } from 'react-router-dom';
@@ -36,12 +48,10 @@ import { usePublicFormTranslation, NAMESPACE } from '../locale';
 const PublicFormQRCode = () => {
   const [open, setOpen] = useState(false);
   const { t } = usePublicFormTranslation();
-  const baseURL = window.location.origin;
   const params = useParams();
-  const isUnderSubApp = window.location.pathname.startsWith('/apps');
   const app = useApp();
-  const link =
-    baseURL + (isUnderSubApp ? `/apps/${app.name}/public-forms/${params.name}` : `/public-forms/${params.name}`);
+  const baseURL = window.location.origin;
+  const link = baseURL + app.getHref(`public-forms/${params.name}`);
   const handleQRCodeOpen = (newOpen: boolean) => {
     setOpen(newOpen);
   };
@@ -61,6 +71,7 @@ export function AdminPublicFormPage() {
   const { t } = usePublicFormTranslation();
   const { theme } = useGlobalTheme();
   const apiClient = useAPIClient();
+  const { token } = AntdTheme.useToken();
   const app = useApp();
   const environmentCtx = useGlobalVariable('$env');
   const { data, loading, refresh } = useRequest<any>({
@@ -115,9 +126,7 @@ export function AdminPublicFormPage() {
 
   const handleCopyLink = () => {
     const baseURL = window.location.origin;
-    const isUnderSubApp = window.location.pathname.startsWith('/apps');
-    const link =
-      baseURL + (isUnderSubApp ? `/apps/${app.name}/public-forms/${params.name}` : `/public-forms/${params.name}`);
+    const link = baseURL + app.getHref(`public-forms/${params.name}`);
     navigator.clipboard.writeText(link);
     message.success(t('Link copied successfully'));
   };
@@ -131,6 +140,8 @@ export function AdminPublicFormPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          background: `${token.colorBgContainer}`,
+          borderBottom: `1px solid ${token.colorBorderSecondary}`,
         }}
       >
         <Breadcrumb

@@ -88,7 +88,7 @@ export type DumpRules =
   | ({ skipped: true } & BaseDumpRules)
   | ({ group: BuiltInGroup | string } & BaseDumpRules);
 
-export type MigrationRule = 'overwrite' | 'skip' | 'upsert' | 'schema-only' | 'insert-ignore';
+export type MigrationRule = 'overwrite' | 'skip' | 'upsert' | 'schema-only' | 'insert-ignore' | (string & {}) | null;
 
 export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> {
   name: string;
@@ -103,6 +103,8 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
   isThrough?: boolean;
   filterTargetKey?: string | string[];
   fields?: FieldOptions[];
+  fieldSort?: string[];
+
   model?: string | ModelStatic<Model>;
   repository?: string | RepositoryType;
   sortable?: CollectionSortable;

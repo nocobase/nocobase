@@ -19,6 +19,7 @@ import {
   useDesignable,
   useSchemaInitializerRender,
   withDynamicSchemaProps,
+  useBlockHeightProps,
 } from '@nocobase/client';
 import { Avatar, List, Space, theme } from 'antd';
 import React, { createContext, useEffect, useState } from 'react';
@@ -126,13 +127,19 @@ export const WorkbenchBlock: any = withDynamicSchemaProps(
     const targetHeight = useBlockHeight();
     const { token } = theme.useToken();
     const { designable } = useDesignable();
-
+    const { heightProps } = useBlockHeightProps() || {};
+    const { titleHeight } = heightProps || {};
+    const internalHeight = 2 * token.paddingLG + token.controlHeight + token.marginLG + titleHeight;
     return (
       <div className="nb-action-penal-container">
         <div
           className={css`
             .nb-action-panel-warp {
-              height: ${targetHeight ? targetHeight - (designable ? 4 : 2) * token.marginLG + 'px' : '100%'};
+              height: ${targetHeight
+                ? targetHeight -
+                  (designable ? internalHeight : 2 * token.paddingLG + token.marginLG + titleHeight) +
+                  'px'
+                : '100%'};
               overflow-y: auto;
               margin-left: -24px;
               margin-right: -24px;
