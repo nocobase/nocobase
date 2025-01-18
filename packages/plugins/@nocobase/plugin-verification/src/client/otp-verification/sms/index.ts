@@ -11,11 +11,13 @@ import { AliyunSettings } from './providers/AliyunSettings';
 import { TencentSettings } from './providers/TencentSettings';
 import { VerificationForm } from './VerificationForm';
 import { AdminSettingsForm } from './AdminSettingsForm';
+import { BindForm } from './BindForm';
 
 export const smsOTPVerificationOptions = {
   components: {
     VerificationForm,
     AdminSettingsForm,
+    BindForm,
   },
 };
 

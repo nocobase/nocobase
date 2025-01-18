@@ -25,7 +25,7 @@ type SceneRule = (scene: string, verificationType: string) => boolean;
 export interface ActionOptions {
   manual?: boolean;
   getUserIdFromCtx?(ctx: Context): number | Promise<number>;
-  getBoundUUIDFromCtx?(ctx: Context): string | Promise<string>;
+  getBoundInfoFromCtx?(ctx: Context): any | Promise<any>;
   getVerifyParams?(ctx: Context): any | Promise<any>;
   onVerifySuccess?(ctx: Context, userId: number, verifyResult: any): any | Promise<any>;
   onVerifyFail?(ctx: Context, err: Error, userId: number, verifyResult: any): any | Promise<any>;
@@ -130,9 +130,9 @@ export class VerificationManager {
     const Verification = verificationManager.getVerification(verificator.verificationType);
     const verification = new Verification({ ctx, verificator, options: verificator.options });
     let userId: number;
-    let boundUUID: string;
-    if (action.getBoundUUIDFromCtx) {
-      boundUUID = await action.getBoundUUIDFromCtx(ctx);
+    let boundInfo: string;
+    if (action.getBoundInfoFromCtx) {
+      boundInfo = await action.getBoundInfoFromCtx(ctx);
     } else {
       if (action.getUserIdFromCtx) {
         userId = await action.getUserIdFromCtx(ctx);
@@ -142,13 +142,13 @@ export class VerificationManager {
       if (!userId) {
         ctx.throw(400, 'Invalid user info');
       }
-      boundUUID = await verification.getBoundUUID(userId);
+      boundInfo = await verification.getBoundInfo(userId);
     }
-    await verification.validateBoundUUID(boundUUID);
+    await verification.validateBoundInfo(boundInfo);
     const verifyResult = await verification.verify({
       resource: resourceName,
       action: actionName,
-      boundUUID,
+      boundInfo,
       verifyParams,
     });
     try {

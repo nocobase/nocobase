@@ -26,7 +26,7 @@ export default class PluginVerficationServer extends Plugin {
 
   async load() {
     // add middleware to action
-    this.app.resourceManager.use(this.verificationManager.middleware());
+    this.app.dataSourceManager.use(this.verificationManager.middleware());
     this.app.resourceManager.define(smsOTPProviders);
     this.app.resourceManager.define(smsOTP);
 
@@ -36,6 +36,7 @@ export default class PluginVerficationServer extends Plugin {
 
     this.app.acl.allow('verificators', 'listByUser', 'loggedIn');
     this.app.acl.allow('verificators', 'bind', 'loggedIn');
+    this.app.acl.allow('verificators', 'unbind', 'loggedIn');
     this.app.acl.allow('smsOTP', 'create', 'public');
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.verificators`,
@@ -51,8 +52,16 @@ export default class PluginVerficationServer extends Plugin {
       verification: SMSOTPVerification,
     });
     this.verificationManager.addSceneRule(
-      (scene, verificationType) => scene === 'auth-sms' && verificationType === SMS_OTP_VERIFICATION_TYPE,
+      (scene, verificationType) =>
+        ['auth-sms', 'unbind-verificator'].includes(scene) && verificationType === SMS_OTP_VERIFICATION_TYPE,
     );
+    this.verificationManager.registerAction('verificators:bind', {
+      manual: true,
+      getBoundInfoFromCtx: (ctx) => {
+        return ctx.action.params.values || {};
+      },
+    });
+    this.verificationManager.registerAction('verificators:unbind', {});
     this.smsOTPProviderManager.registerProvider(PROVIDER_TYPE_SMS_ALIYUN, {
       title: tval('Aliyun SMS', { ns: namespace }),
       provider: smsAliyun,

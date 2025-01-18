@@ -13,7 +13,7 @@ import { ComponentType } from 'react';
 export type VerificationFormProps = {
   verificator: string;
   actionType: string;
-  publicInfo: any;
+  boundInfo: any;
   getUserVerifyInfo: (form: any) => Record<string, any>;
   useVerifyActionProps: any;
 };

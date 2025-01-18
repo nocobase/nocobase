@@ -14,8 +14,8 @@ import pkg from '../../../package.json';
 export class OTPVerification extends Verification {
   expiresIn = 120;
 
-  async verify({ resource, action, boundUUID, verifyParams }): Promise<any> {
-    const receiver = boundUUID;
+  async verify({ resource, action, boundInfo, verifyParams }): Promise<any> {
+    const { uuid: receiver } = boundInfo;
     const code = verifyParams.code;
     const VerificationRepo = this.ctx.db.getRepository('otpRecords');
     const item = await VerificationRepo.findOne({
@@ -39,6 +39,17 @@ export class OTPVerification extends Verification {
     }
 
     return { codeInfo: item };
+  }
+
+  async bind(): Promise<{ uuid: string; meta?: any }> {
+    const { uuid, code } = this.ctx.action.params.values || {};
+    await this.verify({
+      resource: 'verificators',
+      action: 'bind',
+      boundInfo: { uuid },
+      verifyParams: { code },
+    });
+    return { uuid };
   }
 
   async onActionComplete({ verifyResult }) {

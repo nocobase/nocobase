@@ -22,23 +22,33 @@ export default {
     const plugin = ctx.app.pm.get('verification') as PluginVerificationServer;
     const verificationTypes = plugin.verificationManager.getVerificationTypesByScene(scene);
     if (!verificationTypes.length) {
-      return { verificators: [], availableTypes: [] };
+      ctx.body = [];
+      return next();
     }
     const verificators = await ctx.db.getRepository('verificators').find({
       filter: {
         verificationType: verificationTypes.map((item) => item.type),
       },
     });
-    ctx.body = {
-      verificators: (verificators || []).map((item: { name: string; title: string }) => ({
-        name: item.name,
-        title: item.title,
-      })),
-      availableTypes: verificationTypes.map((item) => ({
-        name: item.type,
-        title: item.title,
-      })),
-    };
+    if (!verificators.length) {
+      ctx.body = [];
+      return next();
+    }
+    const result = [];
+    for (const verificator of verificators) {
+      const verificationType = plugin.verificationManager.verificationTypes.get(verificator.verificationType);
+      const Verification = plugin.verificationManager.getVerification(verificator.verificationType);
+      const verification = new Verification({ ctx, verificator, options: verificator.options });
+      const publicBoundInfo = await verification.getPublicBoundInfo(ctx.auth.user.id);
+      result.push({
+        name: verificator.name,
+        title: verificator.title,
+        verificationType: verificator.verificationType,
+        verificationTypeTitle: verificationType?.title,
+        boundInfo: publicBoundInfo,
+      });
+    }
+    ctx.body = result;
     await next();
   },
   listByUser: async (ctx: Context, next: Next) => {
@@ -94,6 +104,17 @@ export default {
       },
     });
     ctx.body = {};
+    await next();
+  },
+  unbind: async (ctx: Context, next: Next) => {
+    const { unbindVerificator: name } = ctx.action.params.values || {};
+    const user = ctx.auth.user;
+    const verificationPlugin = ctx.app.pm.get('verification') as PluginVerificationServer;
+    const verificator = await verificationPlugin.verificationManager.getVerificator(name);
+    if (!verificator) {
+      return ctx.throw(400, ctx.t('Invalid verificator'));
+    }
+    await verificator.removeUser(user.id);
     await next();
   },
 };

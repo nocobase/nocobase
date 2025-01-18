@@ -16,11 +16,10 @@ import { useTranslation } from 'react-i18next';
 export const VerificationCode: React.FC<{
   actionType: string;
   verificator: string;
-  getUserVerifyInfo: (form: any) => Record<string, any>;
   value: string;
   onChange: (value: any) => void;
 }> = withDynamicSchemaProps(
-  ({ actionType, verificator, getUserVerifyInfo, value, onChange }) => {
+  ({ actionType, verificator, value, onChange }) => {
     const { t } = useTranslation();
     const api = useAPIClient();
     const form = useForm();
@@ -39,14 +38,13 @@ export const VerificationCode: React.FC<{
         return;
       }
       try {
-        const verifyInfo = getUserVerifyInfo(form);
         const {
           data: { data },
         } = await api.resource('smsOTP').create({
           values: {
             action: actionType,
             verificator,
-            ...verifyInfo,
+            ...form.values,
           },
         });
         message.success(t('Operation succeeded'));

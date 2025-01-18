@@ -49,9 +49,9 @@ export default {
         return ctx.throw(500);
       }
 
-      let boundUUID: string;
-      if (action.getBoundUUIDFromCtx) {
-        boundUUID = await action.getBoundUUIDFromCtx(ctx);
+      let boundInfo: { uuid: string };
+      if (action.getBoundInfoFromCtx) {
+        boundInfo = await action.getBoundInfoFromCtx(ctx);
       } else {
         let userId: number;
         if (action.getUserIdFromCtx) {
@@ -59,10 +59,10 @@ export default {
         } else {
           userId = ctx.auth.user.id;
         }
-        boundUUID = await verification.getBoundUUID(userId);
+        boundInfo = await verification.getBoundInfo(userId);
       }
-      await verification.validateBoundUUID?.(boundUUID);
-      const receiver = boundUUID;
+      await verification.validateBoundInfo?.(boundInfo);
+      const { uuid: receiver } = boundInfo;
       const record = await ctx.db.getRepository('otpRecords').findOne({
         filter: {
           action: actionName,

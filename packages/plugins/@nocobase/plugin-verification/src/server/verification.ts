@@ -11,14 +11,14 @@ import { Context } from '@nocobase/actions';
 import { Model } from '@nocobase/database';
 
 export interface IVerification {
-  verify(options: { resource: string; action: string; boundUUID: string; verifyParams?: any }): Promise<any>;
+  verify(options: { resource: string; action: string; boundInfo: any; verifyParams?: any }): Promise<any>;
   onActionComplete?(options: { verifyResult: any }): Promise<any>;
-  getBoundUUID?(userId: number): Promise<string>;
+  getBoundInfo?(userId: number): Promise<any>;
   getPublicBoundInfo?(userId: number): Promise<{
     bound: boolean;
     publicInfo?: any;
   }>;
-  validateBoundUUID?(boundInfo: string): Promise<boolean>;
+  validateBoundInfo?(boundInfo: string): Promise<boolean>;
   bind?(userId: number): Promise<{
     uuid: string;
     meta?: any;
@@ -39,30 +39,29 @@ export abstract class Verification implements IVerification {
     return this.ctx.db.getRepository('usersVerificators');
   }
 
-  abstract verify({ resource, action, boundUUID, verifyParams }): Promise<any>;
+  abstract verify({ resource, action, boundInfo, verifyParams }): Promise<any>;
   async onActionComplete(options: { verifyResult: any }): Promise<any> {}
   async bind(userId: number): Promise<{ uuid: string; meta?: any }> {
     throw new Error('Not implemented');
   }
 
-  async getBoundUUID(userId: number): Promise<string> {
-    const boundInfo = await this.throughRepo.findOne({
+  async getBoundInfo(userId: number): Promise<any> {
+    return this.throughRepo.findOne({
       filter: {
         verificator: this.verificator.name,
         userId,
       },
     });
-    return boundInfo?.uuid;
   }
 
   async getPublicBoundInfo(userId: number): Promise<any> {
-    const uuid = await this.getBoundUUID(userId);
+    const boundInfo = await this.getBoundInfo(userId);
     return {
-      bound: uuid ? true : false,
+      bound: boundInfo ? true : false,
     };
   }
 
-  async validateBoundUUID(boundUUID: string): Promise<boolean> {
+  async validateBoundInfo(boundInfo: any): Promise<boolean> {
     return true;
   }
 }

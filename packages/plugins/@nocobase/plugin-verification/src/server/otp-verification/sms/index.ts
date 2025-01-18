@@ -52,17 +52,18 @@ export class SMSOTPVerification extends OTPVerification {
   }
 
   async getPublicBoundInfo(userId: number) {
-    const phone = await this.getBoundUUID(userId);
-    if (!phone) {
+    const boundInfo = await this.getBoundInfo(userId);
+    if (!boundInfo) {
       return { bound: false };
     }
+    const { uuid: phone } = boundInfo;
     return {
       bound: true,
       publicInfo: '*'.repeat(phone.length - 4) + phone.slice(-4),
     };
   }
 
-  async validateBoundUUID(phone: string): Promise<boolean> {
+  async validateBoundInfo({ uuid: phone }): Promise<boolean> {
     if (!phone) {
       throw new Error(this.ctx.t('Not a valid cellphone number, please re-enter'));
     }

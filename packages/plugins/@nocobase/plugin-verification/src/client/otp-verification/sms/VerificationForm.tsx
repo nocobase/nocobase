@@ -14,11 +14,10 @@ import { VerificationCode } from '../VerificationCode';
 import { VerificationFormProps } from '../../verification-manager';
 
 const schema: ISchema = {
-  type: 'object',
-  name: 'phoneForm',
-  'x-component': 'Form',
+  type: 'void',
+  name: 'sms-otp',
   properties: {
-    phone: {
+    uuid: {
       type: 'string',
       required: true,
       'x-component': 'Input',
@@ -41,27 +40,27 @@ const schema: ISchema = {
       },
       'x-decorator': 'FormItem',
     },
-    actions: {
-      type: 'void',
-      'x-component': 'Action',
-      'x-use-component-props': 'useVerifyActionProps',
-      'x-component-props': {
-        htmlType: 'submit',
-        block: true,
-        type: 'primary',
-        style: { width: '100%' },
-      },
-    },
+    // actions: {
+    //   type: 'void',
+    //   'x-component': 'Action',
+    //   'x-use-component-props': 'useVerifyActionProps',
+    //   'x-component-props': {
+    //     htmlType: 'submit',
+    //     block: true,
+    //     type: 'primary',
+    //     style: { width: '100%' },
+    //   },
+    // },
   },
 };
 
 export const VerificationForm = (props: VerificationFormProps) => {
-  const { verificator, actionType, publicInfo, getUserVerifyInfo, useVerifyActionProps } = props;
+  const { verificator, actionType, boundInfo, getUserVerifyInfo, useVerifyActionProps } = props;
   return (
     <SchemaComponent
       schema={schema}
       scope={{
-        phone: publicInfo?.phone,
+        phone: boundInfo?.publicInfo,
         useVerificationCodeProps: () => {
           return {
             actionType,
