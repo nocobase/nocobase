@@ -34,6 +34,8 @@ export default class PluginVerficationServer extends Plugin {
       this.app.resourceManager.registerActionHandler(`verificators:${action}`, handler),
     );
 
+    this.app.acl.allow('verificators', 'listByUser', 'loggedIn');
+    this.app.acl.allow('verificators', 'bind', 'loggedIn');
     this.app.acl.allow('smsOTP', 'create', 'public');
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.verificators`,
@@ -42,6 +44,10 @@ export default class PluginVerficationServer extends Plugin {
 
     this.verificationManager.registerVerificationType(SMS_OTP_VERIFICATION_TYPE, {
       title: tval('SMS OTP', { ns: namespace }),
+      description: tval('Get one-time codes sent to your phone via SMS to complete authentication requests.', {
+        ns: namespace,
+      }),
+      bindingRequired: true,
       verification: SMSOTPVerification,
     });
     this.verificationManager.addSceneRule(

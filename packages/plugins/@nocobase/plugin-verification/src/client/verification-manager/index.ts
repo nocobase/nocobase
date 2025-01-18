@@ -18,10 +18,15 @@ export type VerificationFormProps = {
   useVerifyActionProps: any;
 };
 
+export type BindFormProps = {
+  verificator: string;
+};
+
 export type VerificationTypeOptions = {
   components: {
-    VerificationForm: ComponentType<VerificationFormProps>;
     AdminSettingsForm: ComponentType;
+    VerificationForm: ComponentType<VerificationFormProps>;
+    BindForm?: ComponentType<BindFormProps>;
   };
 };
 

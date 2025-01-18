@@ -50,7 +50,7 @@ export const createVerificatorSchema = {
               'x-component-props': {
                 type: 'primary',
               },
-              'x-use-component-props': 'useSubmitActionProps',
+              'x-use-component-props': 'useCreateActionProps',
             },
           },
         },
@@ -224,7 +224,7 @@ export const verficatorsSchema: ISchema = {
                                   'x-component-props': {
                                     type: 'primary',
                                   },
-                                  'x-use-component-props': 'useSubmitActionProps',
+                                  'x-use-component-props': 'useEditActionProps',
                                 },
                               },
                             },

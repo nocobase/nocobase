@@ -14,7 +14,6 @@ import {
   SchemaComponent,
   useAPIClient,
   useActionContext,
-  useBlockRequestContext,
   useCollection,
   useCollectionRecordData,
   useDataBlockRequest,
@@ -39,7 +38,7 @@ const useCreateFormProps = () => {
     () =>
       createForm({
         initialValues: {
-          uid: `v_${uid()}`,
+          name: `v_${uid()}`,
           verificationType: type,
         },
       }),
@@ -76,7 +75,31 @@ const useCancelActionProps = () => {
   };
 };
 
-const useSubmitActionProps = () => {
+const useCreateActionProps = () => {
+  const { setVisible } = useActionContext();
+  const { message } = App.useApp();
+  const form = useForm();
+  const resource = useDataBlockResource();
+  const { refresh } = useDataBlockRequest();
+  const { t } = useVerificationTranslation();
+
+  return {
+    type: 'primary',
+    async onClick() {
+      await form.submit();
+      const values = form.values;
+      await resource.create({
+        values,
+      });
+      refresh();
+      message.success(t('Saved successfully'));
+      setVisible(false);
+      form.reset();
+    },
+  };
+};
+
+const useEditActionProps = () => {
   const { setVisible } = useActionContext();
   const { message } = App.useApp();
   const form = useForm();
@@ -91,16 +114,10 @@ const useSubmitActionProps = () => {
     async onClick() {
       await form.submit();
       const values = form.values;
-      if (values[filterTk]) {
-        await resource.update({
-          values,
-          filterByTk: values[filterTk],
-        });
-      } else {
-        await resource.create({
-          values,
-        });
-      }
+      await resource.update({
+        values,
+        filterByTk: values[filterTk],
+      });
       refresh();
       message.success(t('Saved successfully'));
       setVisible(false);
@@ -146,7 +163,6 @@ export const Settings = observer(
   () => {
     const form = useForm();
     const record = useCollectionRecordData();
-    console.log(record);
     const Component = useAdminSettingsForm(form.values.verificationType || record.verificationType);
     return Component ? <Component /> : null;
   },
@@ -183,7 +199,7 @@ export const Verificators: React.FC = () => {
         <SchemaComponent
           schema={verficatorsSchema}
           components={{ AddNew, Settings }}
-          scope={{ types, useEditFormProps, useCancelActionProps, useSubmitActionProps }}
+          scope={{ types, useEditFormProps, useCancelActionProps, useCreateActionProps, useEditActionProps }}
         />
       </ExtendCollectionsProvider>
     </VerificationTypesContext.Provider>

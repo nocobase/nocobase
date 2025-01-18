@@ -51,22 +51,19 @@ export class SMSOTPVerification extends OTPVerification {
     return new Provider(options);
   }
 
-  async getUserVerificationInfo(userInfo?: { phone?: string }) {
-    return userInfo?.phone;
-  }
-
-  async getUserPublicInfo(userInfo?: { phone?: string }): Promise<any> {
-    const { phone } = userInfo || {};
+  async getPublicBoundInfo(userId: number) {
+    const phone = await this.getBoundUUID(userId);
     if (!phone) {
-      return {};
+      return { bound: false };
     }
     return {
-      phone: '*'.repeat(phone.length - 4) + phone.slice(-4),
+      bound: true,
+      publicInfo: '*'.repeat(phone.length - 4) + phone.slice(-4),
     };
   }
 
-  async validateUserInfo(userInfo: Record<string, any>): Promise<boolean> {
-    if (!userInfo?.phone) {
+  async validateBoundUUID(phone: string): Promise<boolean> {
+    if (!phone) {
       throw new Error(this.ctx.t('Not a valid cellphone number, please re-enter'));
     }
     return true;

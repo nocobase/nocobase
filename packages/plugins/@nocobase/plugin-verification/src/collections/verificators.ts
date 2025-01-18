@@ -32,5 +32,17 @@ export default {
       type: 'jsonb',
       name: 'options',
     },
+    {
+      interface: 'm2m',
+      type: 'belongsToMany',
+      name: 'users',
+      target: 'users',
+      foreignKey: 'verificator',
+      otherKey: 'userId',
+      onDelete: 'CASCADE',
+      sourceKey: 'name',
+      targetKey: 'id',
+      through: 'usersVerificators',
+    },
   ],
 };

@@ -14,10 +14,8 @@ import pkg from '../../../package.json';
 export class OTPVerification extends Verification {
   expiresIn = 120;
 
-  async verify({ resource, action, userInfo, verifyParams }): Promise<any> {
-    // check if code match, then call next
-    // find the code based on action params
-    const receiver = await this.getUserVerificationInfo(userInfo);
+  async verify({ resource, action, boundUUID, verifyParams }): Promise<any> {
+    const receiver = boundUUID;
     const code = verifyParams.code;
     const VerificationRepo = this.ctx.db.getRepository('otpRecords');
     const item = await VerificationRepo.findOne({
@@ -29,7 +27,7 @@ export class OTPVerification extends Verification {
           $dateAfter: new Date(),
         },
         status: CODE_STATUS_UNUSED,
-        verificatorName: this.name,
+        verificatorName: this.verificator.name,
       },
     });
 
@@ -43,7 +41,7 @@ export class OTPVerification extends Verification {
     return { codeInfo: item };
   }
 
-  async postAction({ verifyResult }) {
+  async onActionComplete({ verifyResult }) {
     const { codeInfo } = verifyResult;
     await codeInfo.update({
       status: CODE_STATUS_USED,

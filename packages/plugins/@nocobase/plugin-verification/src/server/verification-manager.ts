@@ -15,6 +15,8 @@ import { Database } from '@nocobase/database';
 
 export type VerificationTypeOptions = {
   title: string;
+  description?: string;
+  bindingRequired?: boolean;
   verification: VerificationExtend<Verification>;
 };
 
@@ -22,8 +24,11 @@ type SceneRule = (scene: string, verificationType: string) => boolean;
 
 export interface ActionOptions {
   manual?: boolean;
-  getUserInfoFromCtx?(ctx: Context): any | Promise<any>;
+  getUserIdFromCtx?(ctx: Context): number | Promise<number>;
+  getBoundUUIDFromCtx?(ctx: Context): string | Promise<string>;
   getVerifyParams?(ctx: Context): any | Promise<any>;
+  onVerifySuccess?(ctx: Context, userId: number, verifyResult: any): any | Promise<any>;
+  onVerifyFail?(ctx: Context, err: Error, userId: number, verifyResult: any): any | Promise<any>;
 }
 
 export class VerificationManager {
@@ -74,10 +79,25 @@ export class VerificationManager {
     return verificationType.verification;
   }
 
+  async getVerificator(verificatorName: string) {
+    return await this.db.getRepository('verificators').findOne({
+      filterByTk: verificatorName,
+    });
+  }
+
   async getVerificators(verificatorNames: string[]) {
     return await this.db.getRepository('verificators').find({
       filter: {
         name: verificatorNames,
+      },
+    });
+  }
+
+  async getBoundRecord(userId: number, verificator: string) {
+    return await this.db.getRepository('usersVerificators').findOne({
+      filter: {
+        userId,
+        verificator,
       },
     });
   }
@@ -100,31 +120,45 @@ export class VerificationManager {
     if (!verificator) {
       ctx.throw(400, 'Invalid verificator');
     }
-    let userInfo: any;
-    if (action.getUserInfoFromCtx) {
-      userInfo = await action.getUserInfoFromCtx(ctx);
-      if (!userInfo) {
-        ctx.throw(400, 'Invalid user info');
-      }
-    }
     const verifyParams = action.getVerifyParams ? await action.getVerifyParams(ctx) : ctx.action.params.values;
     if (!verifyParams) {
       ctx.throw(400, 'Invalid verify params');
     }
+
     const plugin = ctx.app.pm.get('verification') as PluginVerficationServer;
     const verificationManager = plugin.verificationManager;
     const Verification = verificationManager.getVerification(verificator.verificationType);
-    const verification = new Verification({ ctx, name: verificator.name, options: verificator.options });
+    const verification = new Verification({ ctx, verificator, options: verificator.options });
+    let userId: number;
+    let boundUUID: string;
+    if (action.getBoundUUIDFromCtx) {
+      boundUUID = await action.getBoundUUIDFromCtx(ctx);
+    } else {
+      if (action.getUserIdFromCtx) {
+        userId = await action.getUserIdFromCtx(ctx);
+      } else {
+        userId = ctx.auth.user?.id;
+      }
+      if (!userId) {
+        ctx.throw(400, 'Invalid user info');
+      }
+      boundUUID = await verification.getBoundUUID(userId);
+    }
+    await verification.validateBoundUUID(boundUUID);
     const verifyResult = await verification.verify({
       resource: resourceName,
       action: actionName,
-      userInfo,
+      boundUUID,
       verifyParams,
     });
     try {
       await next();
+      await action.onVerifySuccess?.(ctx, userId, verifyResult);
+    } catch (err) {
+      await action.onVerifyFail?.(ctx, err, userId, verifyResult);
+      throw err;
     } finally {
-      await verification.postAction({ verifyResult });
+      await verification.onActionComplete({ verifyResult });
     }
   }
 

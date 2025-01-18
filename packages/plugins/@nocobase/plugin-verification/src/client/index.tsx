@@ -11,6 +11,7 @@ import { Plugin } from '@nocobase/client';
 import { lazy } from '@nocobase/client';
 const { Verificators } = lazy(() => import('./verificators/Verificators'), 'Verificators');
 const { VerificatorSelect } = lazy(() => import('./verificators/VerificatorSelect'), 'VerificatorSelect');
+const { VerificationMenuProvider } = lazy(() => import('./VerificationMenuProvider'), 'VerificationMenuProvider');
 import { NAMESPACE } from './locale';
 import { PROVIDER_TYPE_SMS_ALIYUN, PROVIDER_TYPE_SMS_TENCENT, SMS_OTP_VERIFICATION_TYPE } from '../constants';
 import { VerificationManager } from './verification-manager';
@@ -22,6 +23,7 @@ export class PluginVerificationClient extends Plugin {
   smsOTPProviderManager = new SMSOTPProviderManager();
 
   async load() {
+    this.app.use(VerificationMenuProvider);
     this.app.pluginSettingsManager.add(NAMESPACE, {
       icon: 'CheckCircleOutlined',
       title: `{{t("Verification", { ns: "${NAMESPACE}" })}}`,
@@ -40,4 +42,5 @@ export class PluginVerificationClient extends Plugin {
 }
 
 export { SMS_OTP_VERIFICATION_TYPE };
+export { UserVerificatorsContext } from './VerificationMenuProvider';
 export default PluginVerificationClient;

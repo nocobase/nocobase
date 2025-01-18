@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import actions, { Context, Next } from '@nocobase/actions';
+import { Context, Next } from '@nocobase/actions';
 import dayjs from 'dayjs';
 import { randomInt, randomUUID } from 'crypto';
 import { promisify } from 'util';
@@ -40,7 +40,7 @@ export default {
       const Verification = verificationManager.getVerification(verificator.verificationType);
       const verification = new Verification({
         ctx,
-        name: verificator.name,
+        verificator,
         options: verificator.options,
       }) as SMSOTPVerification;
       const provider = await verification.getProvider();
@@ -49,22 +49,20 @@ export default {
         return ctx.throw(500);
       }
 
-      const userInfo = await action.getUserInfoFromCtx(ctx);
-      const receiver = await verification.getUserVerificationInfo(userInfo);
-      if (!receiver) {
-        return ctx.throw(400, {
-          code: 'InvalidReceiver',
-          message: ctx.t('Not a valid cellphone number, please re-enter', { ns: namespace }),
-        });
-      }
-      if (verification.validateUserInfo) {
-        try {
-          await verification.validateUserInfo(userInfo);
-        } catch (err) {
-          return ctx.throw(400, { code: 'InvalidReceiver', message: err.message });
+      let boundUUID: string;
+      if (action.getBoundUUIDFromCtx) {
+        boundUUID = await action.getBoundUUIDFromCtx(ctx);
+      } else {
+        let userId: number;
+        if (action.getUserIdFromCtx) {
+          userId = await action.getUserIdFromCtx(ctx);
+        } else {
+          userId = ctx.auth.user.id;
         }
+        boundUUID = await verification.getBoundUUID(userId);
       }
-
+      await verification.validateBoundUUID?.(boundUUID);
+      const receiver = boundUUID;
       const record = await ctx.db.getRepository('otpRecords').findOne({
         filter: {
           action: actionName,

@@ -24,8 +24,9 @@ export class PluginAuthSMSServer extends Plugin {
     }
     verificationPlugin.verificationManager.registerAction('auth:signIn', {
       manual: true,
-      getUserInfoFromCtx: (ctx) => {
-        return ctx.action.params.values;
+      getBoundUUIDFromCtx: (ctx) => {
+        const { phone } = ctx.action.params.values || {};
+        return phone;
       },
     });
 

@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema, useForm } from '@formily/react';
+import { ISchema } from '@formily/react';
 import { SchemaComponent } from '@nocobase/client';
 import React from 'react';
 import { VerificationCode } from '../VerificationCode';
-import { SMS_OTP_VERIFICATION_TYPE } from '../../../constants';
 import { VerificationFormProps } from '../../verification-manager';
 
 const schema: ISchema = {

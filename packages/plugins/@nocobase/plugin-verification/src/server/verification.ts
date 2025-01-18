@@ -8,35 +8,63 @@
  */
 
 import { Context } from '@nocobase/actions';
+import { Model } from '@nocobase/database';
 
 export interface IVerification {
-  verify(options: { resource: string; action: string; userInfo: any; verifyParams?: any }): Promise<any>;
-  postAction?(options: { verifyResult: any }): Promise<any>;
-  getUserVerificationInfo?(userInfo: Record<string, any>): Promise<any>;
-  getUserPublicInfo?(userInfo: Record<string, any>): Promise<any>;
-  validateUserInfo?(userInfo: Record<string, any>): Promise<boolean>;
+  verify(options: { resource: string; action: string; boundUUID: string; verifyParams?: any }): Promise<any>;
+  onActionComplete?(options: { verifyResult: any }): Promise<any>;
+  getBoundUUID?(userId: number): Promise<string>;
+  getPublicBoundInfo?(userId: number): Promise<{
+    bound: boolean;
+    publicInfo?: any;
+  }>;
+  validateBoundUUID?(boundInfo: string): Promise<boolean>;
+  bind?(userId: number): Promise<{
+    uuid: string;
+    meta?: any;
+  }>;
 }
 
 export abstract class Verification implements IVerification {
-  name: string;
+  verificator: Model;
   protected ctx: Context;
   protected options: Record<string, any>;
-  constructor({ ctx, name, options }) {
+  constructor({ ctx, verificator, options }) {
     this.ctx = ctx;
-    this.name = name;
+    this.verificator = verificator;
     this.options = options;
   }
-  abstract verify({ resource, action, userInfo, verifyParams }): Promise<any>;
-  async postAction(options: { verifyResult: any }): Promise<any> {}
-  async getUserVerificationInfo(userInfo: Record<string, any>): Promise<any> {
-    return userInfo;
+
+  get throughRepo() {
+    return this.ctx.db.getRepository('usersVerificators');
   }
-  async getUserPublicInfo(userInfo: Record<string, any>): Promise<any> {
-    return {};
+
+  abstract verify({ resource, action, boundUUID, verifyParams }): Promise<any>;
+  async onActionComplete(options: { verifyResult: any }): Promise<any> {}
+  async bind(userId: number): Promise<{ uuid: string; meta?: any }> {
+    throw new Error('Not implemented');
   }
-  async validateUserInfo(userInfo: Record<string, any>): Promise<boolean> {
+
+  async getBoundUUID(userId: number): Promise<string> {
+    const boundInfo = await this.throughRepo.findOne({
+      filter: {
+        verificator: this.verificator.name,
+        userId,
+      },
+    });
+    return boundInfo?.uuid;
+  }
+
+  async getPublicBoundInfo(userId: number): Promise<any> {
+    const uuid = await this.getBoundUUID(userId);
+    return {
+      bound: uuid ? true : false,
+    };
+  }
+
+  async validateBoundUUID(boundUUID: string): Promise<boolean> {
     return true;
   }
 }
 
-export type VerificationExtend<T extends Verification> = new ({ ctx, name, options }) => T;
+export type VerificationExtend<T extends Verification> = new ({ ctx, verificator, options }) => T;
