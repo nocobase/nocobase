@@ -31,6 +31,7 @@ describe('workflow > action-trigger', () => {
   beforeEach(async () => {
     app = await getApp({
       plugins: ['users', 'auth', 'acl', 'data-source-manager', 'system-settings', Plugin],
+      acl: true,
     });
     await app.pm.get('auth').install();
     agent = app.agent();

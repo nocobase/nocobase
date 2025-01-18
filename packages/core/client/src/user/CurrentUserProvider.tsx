@@ -10,7 +10,7 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useACLRoleContext } from '../acl';
-import { ReturnTypeOfUseRequest, useRequest } from '../api-client';
+import { ReturnTypeOfUseRequest, useAPIClient, useRequest } from '../api-client';
 import { useAppSpin, useLocationNoUpdate } from '../application';
 import { useCompile } from '../schema-component';
 
@@ -39,10 +39,22 @@ export const useCurrentRoles = () => {
 };
 
 export const CurrentUserProvider = (props) => {
+  const api = useAPIClient();
+  const result = useRequest<any>(() =>
+    api
+      .request({
+        url: '/auth:check',
+        skipNotify: (error) => {
+          const errs = api.toErrMessages(error);
+          if (errs.find((error: { code?: string }) => error.code === 'EMPTY_TOKEN')) {
+            return true;
+          }
+          return false;
+        },
+      })
+      .then((res) => res?.data),
+  );
   const { render } = useAppSpin();
-  const result = useRequest<any>({
-    url: 'auth:check',
-  });
 
   if (result.loading) {
     return render();
