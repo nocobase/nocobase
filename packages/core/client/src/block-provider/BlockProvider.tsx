@@ -281,13 +281,14 @@ export const useBlockAssociationContext = () => {
   return useContext(BlockAssociationContext) || association;
 };
 
-export const useFilterByTk = () => {
+export const useFilterByTk = (blockProps?: any) => {
   const { resource, __parent } = useBlockRequestContext();
   const recordIndex = useRecordIndex();
   const recordData = useCollectionRecordData();
   const collection = useCollection_deprecated();
   const { getCollectionField } = useCollectionManager_deprecated();
-  const assoc = useBlockAssociationContext();
+  const association = useBlockAssociationContext();
+  const assoc = blockProps?.association || association;
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
 
   if (!withoutTableFieldResource) {
@@ -336,8 +337,8 @@ export const useSourceIdFromParentRecord = () => {
  * @internal
  * @returns
  */
-export const useParamsFromRecord = () => {
-  const filterByTk = useFilterByTk();
+export const useParamsFromRecord = (props?: any) => {
+  const filterByTk = useFilterByTk(props);
   const record = useRecord();
   const { fields } = useCollection_deprecated();
   const fieldSchema = useFieldSchema();

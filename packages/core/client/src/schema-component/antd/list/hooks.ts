@@ -31,19 +31,12 @@ export const useListBlockHeight = () => {
   const { token } = theme.useToken();
   const { designable } = useDesignable();
   const { heightProps } = useBlockHeightProps() || {};
-  const { title } = heightProps || {};
-  const {
-    service: { data },
-  } = useListBlockContext() || {};
-  const { count, pageSize } = (data as any)?.meta || ({} as any);
-  const hasPagination = count > pageSize;
-
+  const { title, titleHeight } = heightProps || {};
   if (!height) {
     return;
   }
-  const blockTitleHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
+  const blockTitleHeaderHeight = title ? titleHeight : 0;
   const hasListActions = Object.keys(schema.parent.properties.actionBar?.properties || {}).length > 0;
   const actionBarHeight = hasListActions || designable ? token.controlHeight + 2 * token.marginLG : token.marginLG;
-  const paginationHeight = hasPagination ? token.controlHeight + token.paddingLG + token.marginLG : token.marginLG;
-  return height - actionBarHeight - paginationHeight - blockTitleHeaderHeight;
+  return height - actionBarHeight - token.paddingLG - blockTitleHeaderHeight;
 };

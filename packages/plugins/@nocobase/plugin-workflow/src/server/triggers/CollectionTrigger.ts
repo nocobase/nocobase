@@ -235,4 +235,14 @@ export default class CollectionTrigger extends Trigger {
       transaction: this.workflow.useDataSourceTransaction(dataSourceName, transaction),
     });
   }
+
+  validateContext(values) {
+    if (!values.data) {
+      return {
+        data: 'Data is required',
+      };
+    }
+
+    return null;
+  }
 }

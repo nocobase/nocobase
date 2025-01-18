@@ -437,4 +437,13 @@ export default class DateFieldScheduleTrigger {
 
     return this.workflow.trigger(workflow, { ...values, data, date: values?.date ?? new Date() }, options);
   }
+
+  validateContext(values) {
+    if (!values?.data) {
+      return {
+        data: 'Data is required',
+      };
+    }
+    return null;
+  }
 }

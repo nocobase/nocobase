@@ -232,4 +232,20 @@ export default class extends Trigger {
       options,
     );
   }
+
+  validateContext(values) {
+    if (!values.data) {
+      return {
+        data: 'Data is required',
+      };
+    }
+
+    if (!values.userId) {
+      return {
+        userId: 'UserId is required',
+      };
+    }
+
+    return null;
+  }
 }
