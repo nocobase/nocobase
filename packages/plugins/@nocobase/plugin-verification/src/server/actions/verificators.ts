@@ -22,33 +22,23 @@ export default {
     const plugin = ctx.app.pm.get('verification') as PluginVerificationServer;
     const verificationTypes = plugin.verificationManager.getVerificationTypesByScene(scene);
     if (!verificationTypes.length) {
-      ctx.body = [];
-      return next();
+      return { verificators: [], availableTypes: [] };
     }
     const verificators = await ctx.db.getRepository('verificators').find({
       filter: {
         verificationType: verificationTypes.map((item) => item.type),
       },
     });
-    if (!verificators.length) {
-      ctx.body = [];
-      return next();
-    }
-    const result = [];
-    for (const verificator of verificators) {
-      const verificationType = plugin.verificationManager.verificationTypes.get(verificator.verificationType);
-      const Verification = plugin.verificationManager.getVerification(verificator.verificationType);
-      const verification = new Verification({ ctx, verificator, options: verificator.options });
-      const publicBoundInfo = await verification.getPublicBoundInfo(ctx.auth.user.id);
-      result.push({
-        name: verificator.name,
-        title: verificator.title,
-        verificationType: verificator.verificationType,
-        verificationTypeTitle: verificationType?.title,
-        boundInfo: publicBoundInfo,
-      });
-    }
-    ctx.body = result;
+    ctx.body = {
+      verificators: (verificators || []).map((item: { name: string; title: string }) => ({
+        name: item.name,
+        title: item.title,
+      })),
+      availableTypes: verificationTypes.map((item) => ({
+        name: item.type,
+        title: item.title,
+      })),
+    };
     await next();
   },
   listByUser: async (ctx: Context, next: Next) => {
@@ -78,6 +68,40 @@ export default {
       } catch (error) {
         ctx.log.error(error);
       }
+    }
+    ctx.body = result;
+    await next();
+  },
+  listForVerify: async (ctx: Context, next: Next) => {
+    const { scene } = ctx.action.params || {};
+    const plugin = ctx.app.pm.get('verification') as PluginVerificationServer;
+    const verificationTypes = plugin.verificationManager.getVerificationTypesByScene(scene);
+    if (!verificationTypes.length) {
+      ctx.body = [];
+      return next();
+    }
+    const verificators = await ctx.db.getRepository('verificators').find({
+      filter: {
+        verificationType: verificationTypes.map((item) => item.type),
+      },
+    });
+    if (!verificators.length) {
+      ctx.body = [];
+      return next();
+    }
+    const result = [];
+    for (const verificator of verificators) {
+      const verificationType = plugin.verificationManager.verificationTypes.get(verificator.verificationType);
+      const Verification = plugin.verificationManager.getVerification(verificator.verificationType);
+      const verification = new Verification({ ctx, verificator, options: verificator.options });
+      const publicBoundInfo = await verification.getPublicBoundInfo(ctx.auth.user.id);
+      result.push({
+        name: verificator.name,
+        title: verificator.title,
+        verificationType: verificator.verificationType,
+        verificationTypeTitle: verificationType?.title,
+        boundInfo: publicBoundInfo,
+      });
     }
     ctx.body = result;
     await next();

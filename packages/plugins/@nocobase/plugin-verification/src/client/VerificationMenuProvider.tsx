@@ -160,7 +160,7 @@ const UnbindForm: React.FC = () => {
   const { data: verificators } = useRequest<any[]>(() =>
     api
       .resource('verificators')
-      .listByScene({
+      .listForVerify({
         scene: 'unbind-verificator',
       })
       .then((res) => res?.data?.data),

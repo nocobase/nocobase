@@ -14,8 +14,6 @@ export type VerificationFormProps = {
   verificator: string;
   actionType: string;
   boundInfo: any;
-  getUserVerifyInfo: (form: any) => Record<string, any>;
-  useVerifyActionProps: any;
 };
 
 export type BindFormProps = {

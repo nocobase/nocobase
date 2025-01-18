@@ -37,7 +37,7 @@ export class SMSAuth extends BaseAuth {
     });
     await verificationPlugin.verificationManager.verify(ctx, async () => {
       const {
-        values: { phone },
+        values: { uuid: phone },
       } = ctx.action.params;
       try {
         // History data compatible processing

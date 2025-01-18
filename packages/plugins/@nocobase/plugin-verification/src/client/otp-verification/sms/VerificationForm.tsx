@@ -35,27 +35,13 @@ const schema: ISchema = {
       title: '{{t("Verification code")}}',
       'x-component': 'VerificationCode',
       'x-use-component-props': 'useVerificationCodeProps',
-      'x-component-props': {
-        targetFieldName: 'phone',
-      },
       'x-decorator': 'FormItem',
     },
-    // actions: {
-    //   type: 'void',
-    //   'x-component': 'Action',
-    //   'x-use-component-props': 'useVerifyActionProps',
-    //   'x-component-props': {
-    //     htmlType: 'submit',
-    //     block: true,
-    //     type: 'primary',
-    //     style: { width: '100%' },
-    //   },
-    // },
   },
 };
 
 export const VerificationForm = (props: VerificationFormProps) => {
-  const { verificator, actionType, boundInfo, getUserVerifyInfo, useVerifyActionProps } = props;
+  const { verificator, actionType, boundInfo } = props;
   return (
     <SchemaComponent
       schema={schema}
@@ -65,10 +51,8 @@ export const VerificationForm = (props: VerificationFormProps) => {
           return {
             actionType,
             verificator,
-            getUserVerifyInfo,
           };
         },
-        useVerifyActionProps,
       }}
       components={{ VerificationCode }}
     />

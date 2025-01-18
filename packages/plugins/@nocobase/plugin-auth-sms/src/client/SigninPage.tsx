@@ -17,16 +17,26 @@ import { useAuthTranslation } from './locale';
 const phoneForm: ISchema = {
   type: 'object',
   name: 'phoneForm',
-  'x-component': 'Form',
+  'x-component': 'FormV2',
   properties: {
     form: {
       type: 'void',
       'x-component': 'VerificationForm',
       'x-component-props': {
         actionType: 'auth:signIn',
-        useVerifyActionProps: '{{ useVerifyActionProps }}',
-        getUserVerifyInfo: (form) => ({ phone: form.values?.phone }),
         verificator: '{{ verificator }}',
+      },
+    },
+    actions: {
+      type: 'void',
+      title: '{{t("Sign in")}}',
+      'x-component': 'Action',
+      'x-use-component-props': 'useVerifyActionProps',
+      'x-component-props': {
+        htmlType: 'submit',
+        block: true,
+        type: 'primary',
+        style: { width: '100%' },
       },
     },
     tip: {
