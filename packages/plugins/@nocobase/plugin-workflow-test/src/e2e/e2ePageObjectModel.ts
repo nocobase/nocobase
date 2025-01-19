@@ -110,7 +110,7 @@ export class ApprovalTriggerNode {
     this.page = page;
     this.node = page.getByLabel(`Trigger-${triggerName}`);
     this.nodeTitle = page.getByLabel(`Trigger-${triggerName}`).getByRole('textbox');
-    this.nodeConfigure = page.getByLabel(`Trigger-${triggerName}`).getByRole('button', { name: 'Configure' });
+    this.nodeConfigure = this.node.locator('>div').first();
     this.collectionDropDown = page
       .getByLabel('block-item-DataSourceCollectionCascader-workflows-Collection')
       .locator('.ant-select-selection-search-input');
@@ -168,9 +168,7 @@ export class ApprovalPassthroughModeNode {
     this.page = page;
     this.node = page.getByLabel(`Approval-${nodeName}`, { exact: true });
     this.nodeTitle = page.getByLabel(`Approval-${nodeName}`, { exact: true }).getByRole('textbox');
-    this.nodeConfigure = page
-      .getByLabel(`Approval-${nodeName}`, { exact: true })
-      .getByRole('button', { name: 'Configure' });
+    this.nodeConfigure = this.node.locator('>div').first();
     this.addAssigneesButton = page.getByRole('button', { name: 'plus Add assignee' });
     this.addSelectAssigneesMenu = page.getByRole('button', { name: 'Select assignees' });
     this.addQueryAssigneesMenu = page.getByRole('button', { name: 'Query assignees' });
