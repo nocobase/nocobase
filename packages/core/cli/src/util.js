@@ -11,11 +11,12 @@ const net = require('net');
 const chalk = require('chalk');
 const execa = require('execa');
 const fg = require('fast-glob');
-const { dirname, join, resolve, sep } = require('path');
+const { dirname, join, resolve, sep, isAbsolute } = require('path');
 const { readFile, writeFile } = require('fs').promises;
 const { existsSync, mkdirSync, cpSync, writeFileSync } = require('fs');
 const dotenv = require('dotenv');
-const fs = require('fs');
+const fs = require('fs-extra');
+const os = require('os');
 const moment = require('moment-timezone');
 
 exports.isPackageValid = (pkg) => {
@@ -325,6 +326,32 @@ function areTimeZonesEqual(timeZone1, timeZone2) {
   return moment.tz(timeZone1).format('Z') === moment.tz(timeZone2).format('Z');
 }
 
+function generateGatewayPath() {
+  if (process.env.SOCKET_PATH) {
+    if (isAbsolute(process.env.SOCKET_PATH)) {
+      return process.env.SOCKET_PATH;
+    }
+    return resolve(process.cwd(), process.env.SOCKET_PATH);
+  }
+  if (process.env.NOCOBASE_RUNNING_IN_DOCKER === 'true') {
+    return path.resolve(os.homedir(), '.nocobase', 'gateway.sock');
+  }
+  return resolve(process.cwd(), 'storage/gateway.sock');
+}
+
+function generatePm2Home() {
+  if (process.env.PM2_HOME) {
+    if (isAbsolute(process.env.PM2_HOME)) {
+      return process.env.PM2_HOME;
+    }
+    return resolve(process.cwd(), process.env.PM2_HOME);
+  }
+  if (process.env.NOCOBASE_RUNNING_IN_DOCKER === 'true') {
+    return path.resolve(os.homedir(), '.nocobase', 'pm2');
+  }
+  return resolve(process.cwd(), './storage/.pm2');
+}
+
 exports.initEnv = function initEnv() {
   const env = {
     APP_ENV: 'development',
@@ -343,9 +370,9 @@ exports.initEnv = function initEnv() {
     MFSU_AD: 'none',
     MAKO_AD: 'none',
     WS_PATH: '/ws',
-    SOCKET_PATH: 'storage/gateway.sock',
+    // PM2_HOME: generatePm2Home(),
+    // SOCKET_PATH: generateGatewayPath(),
     NODE_MODULES_PATH: resolve(process.cwd(), 'node_modules'),
-    PM2_HOME: resolve(process.cwd(), './storage/.pm2'),
     PLUGIN_PACKAGE_PREFIX: '@nocobase/plugin-,@nocobase/plugin-sample-,@nocobase/preset-',
     SERVER_TSCONFIG_PATH: './tsconfig.server.json',
     PLAYWRIGHT_AUTH_FILE: resolve(process.cwd(), 'storage/playwright/.auth/admin.json'),
@@ -428,6 +455,11 @@ exports.initEnv = function initEnv() {
       `process.env.DB_TIMEZONE="${process.env.DB_TIMEZONE}" and process.env.TZ="${process.env.TZ}" are different`,
     );
   }
+
+  process.env.PM2_HOME = generatePm2Home();
+  process.env.SOCKET_PATH = generateGatewayPath();
+  fs.mkdirpSync(dirname(process.env.SOCKET_PATH), { force: true, recursive: true });
+  fs.mkdirpSync(process.env.PM2_HOME, { force: true, recursive: true });
 };
 
 exports.generatePlugins = function () {
