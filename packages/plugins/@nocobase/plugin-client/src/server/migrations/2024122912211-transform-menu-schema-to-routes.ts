@@ -19,49 +19,47 @@ export default class extends Migration {
     const menuSchema = await uiSchemas.getJsonSchema('nocobase-admin-menu');
     const routes = await schemaToRoutes(menuSchema, uiSchemas);
 
-    if (routes.length === 0) {
-      return;
-    }
-
     try {
       await this.db.sequelize.transaction(async (transaction) => {
-        // 1. 将旧版菜单数据转换为新版菜单数据
-        await desktopRoutes.createMany({
-          records: routes,
-          transaction,
-        });
-
-        // 2. 将旧版的权限配置，转换为新版的权限配置
-
-        const roles = await rolesRepository.find({
-          appends: ['desktopRoutes', 'menuUiSchemas'],
-          transaction,
-        });
-
-        for (const role of roles) {
-          const menuUiSchemas = role.menuUiSchemas || [];
-          const desktopRoutes = role.desktopRoutes || [];
-          const needRemoveIds = getNeedRemoveIds(desktopRoutes, menuUiSchemas);
-
-          if (needRemoveIds.length === 0) {
-            return;
-          }
-
-          // @ts-ignore
-          await this.db.getRepository('roles.desktopRoutes', role.name).remove({
-            tk: needRemoveIds,
+        if (routes.length > 0) {
+          // 1. 将旧版菜单数据转换为新版菜单数据
+          await desktopRoutes.createMany({
+            records: routes,
             transaction,
           });
+
+          // 2. 将旧版的权限配置，转换为新版的权限配置
+
+          const roles = await rolesRepository.find({
+            appends: ['desktopRoutes', 'menuUiSchemas'],
+            transaction,
+          });
+
+          for (const role of roles) {
+            const menuUiSchemas = role.menuUiSchemas || [];
+            const desktopRoutes = role.desktopRoutes || [];
+            const needRemoveIds = getNeedRemoveIds(desktopRoutes, menuUiSchemas);
+
+            if (needRemoveIds.length === 0) {
+              return;
+            }
+
+            // @ts-ignore
+            await this.db.getRepository('roles.desktopRoutes', role.name).remove({
+              tk: needRemoveIds,
+              transaction,
+            });
+          }
         }
 
         // 3. 将旧版的移动端菜单数据转换为新版的移动端菜单数据
-        const allMobileRoutes = await mobileRoutes.findAll({
+        const allMobileRoutes = await mobileRoutes.find({
           transaction,
         });
 
-        allMobileRoutes?.forEach(async (item) => {
+        for (const item of allMobileRoutes || []) {
           if (item.type !== 'page') {
-            return;
+            continue;
           }
 
           const mobileRouteSchema = await uiSchemas.getJsonSchema(item.schemaUid);
@@ -84,7 +82,7 @@ export default class extends Migration {
             },
             transaction,
           });
-        });
+        }
       });
     } catch (error) {
       console.error('Migration failed:', error);
