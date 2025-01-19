@@ -106,11 +106,14 @@ const ResponsiveSpace = () => {
         wrap
         style={{ width: '100%', display: 'flex' }}
         size={gap}
-        align="center"
+        align="start"
         className={css`
           .ant-space-item {
             width: ${itemWidth}px;
             display: flex;
+            .ant-nb-action {
+              padding: 4px 0px;
+            }
             .nb-action-panel-container {
               width: ${itemWidth}px !important;
             }
