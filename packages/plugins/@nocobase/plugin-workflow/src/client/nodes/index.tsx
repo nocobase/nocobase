@@ -60,6 +60,7 @@ export abstract class Instruction {
   type: string;
   group: string;
   description?: string;
+  icon?: JSX.Element;
   /**
    * @deprecated migrate to `presetFieldset` instead
    */
@@ -610,7 +611,7 @@ export function NodeDefaultView(props) {
       >
         <div className={styles.nodeHeaderClass}>
           <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
-            <Tag>{typeTitle}</Tag>
+            <Tag icon={instruction.icon}>{typeTitle}</Tag>
             <span className="workflow-node-id">{data.id}</span>
           </div>
           <div className="workflow-node-actions">
@@ -646,15 +647,15 @@ export function NodeDefaultView(props) {
                 type: 'void',
                 properties: {
                   ...(instruction.view ? { view: instruction.view } : {}),
-                  button: {
-                    type: 'void',
-                    'x-content': detailText,
-                    'x-component': Button,
-                    'x-component-props': {
-                      type: 'link',
-                      className: 'workflow-node-config-button',
-                    },
-                  },
+                  // button: {
+                  //   type: 'void',
+                  //   'x-content': detailText,
+                  //   'x-component': Button,
+                  //   'x-component-props': {
+                  //     type: 'link',
+                  //     className: 'workflow-node-config-button',
+                  //   },
+                  // },
                   [data.id]: {
                     type: 'void',
                     title: (
