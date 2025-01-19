@@ -99,7 +99,7 @@ const ResponsiveSpace = () => {
 
   // 计算 Avatar 的宽度
   const avatarSize = useMemo(() => {
-    return isUnderMobile ? Math.floor(itemWidth * 0.8) : 54; // Avatar 大小为 item 宽度的 60%
+    return isUnderMobile ? (Math.floor(itemWidth * 0.8) > 70 ? 70 : Math.floor(itemWidth * 0.8)) : 54; // Avatar 大小为 item 宽度的 60%
   }, [itemWidth, itemsPerRow, containerWidth]);
 
   return (
