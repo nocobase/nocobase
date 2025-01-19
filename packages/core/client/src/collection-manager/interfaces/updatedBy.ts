@@ -78,5 +78,7 @@ export class UpdatedByFieldInterface extends CollectionFieldInterface {
     }
   }
   description = '{{t("Store the last update user of each record")}}';
-  presetField = true;
+  presetField = {
+    order: 5,
+  };
 }

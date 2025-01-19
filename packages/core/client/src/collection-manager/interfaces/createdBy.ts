@@ -79,5 +79,7 @@ export class CreatedByFieldInterface extends CollectionFieldInterface {
     }
   }
   description = '{{t("Store the creation user of each record")}}';
-  presetField = true;
+  presetField = {
+    order: 4,
+  };
 }

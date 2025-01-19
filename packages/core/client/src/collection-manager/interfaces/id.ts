@@ -56,7 +56,10 @@ export class IdFieldInterface extends CollectionFieldInterface {
   filterable = {
     operators: operators.id,
   };
-  presetField = true;
+
   description = '{{t("Primary key, unique identifier, self growth") }}';
   titleUsable = true;
+  presetField = {
+    order: 1,
+  };
 }

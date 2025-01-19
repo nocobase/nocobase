@@ -10,7 +10,7 @@
 import { observer, useForm } from '@formily/react';
 import { Table, Tag } from 'antd';
 import React, { useEffect, useState, useMemo } from 'react';
-import { mapValues, uniqBy } from 'lodash';
+import { mapValues, uniqBy, orderBy } from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager_deprecated } from '../../';
 import { useCompile } from '../../../';
@@ -23,13 +23,15 @@ export const PresetFields = observer(
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
     const { t } = useTranslation();
 
-    const presetInterfaceFields = [];
-
-    mapValues(interfaces, (v: any) => {
-      if (v.presetField) {
-        presetInterfaceFields.push(v);
-      }
-    });
+    const presetInterfaceFields = useMemo(() => {
+      const result = [];
+      mapValues(interfaces, (v: any) => {
+        if (v.presetField) {
+          result.push(v);
+        }
+      });
+      return orderBy(result, ['presetField.order', 'desc']);
+    }, []);
 
     const column = useMemo(
       () => [

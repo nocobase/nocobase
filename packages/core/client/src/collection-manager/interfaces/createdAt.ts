@@ -39,6 +39,8 @@ export class CreatedAtFieldInterface extends CollectionFieldInterface {
   filterable = {
     operators: operators.datetime,
   };
-  presetField = true;
   titleUsable = true;
+  presetField = {
+    order: 2,
+  };
 }
