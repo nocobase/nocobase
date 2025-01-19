@@ -118,6 +118,9 @@ export async function schemaToRoutes(schema: any, uiSchemas: any) {
       const menuSchema = await uiSchemas.getProperties(item['x-uid']);
       const pageSchema = menuSchema?.properties?.page;
       const enableTabs = pageSchema?.['x-component-props']?.enablePageTabs;
+      const enableHeader = !pageSchema?.['x-component-props']?.disablePageHeader;
+      const displayTitle = !pageSchema?.['x-component-props']?.hidePageTitle;
+
       return {
         type: 'page',
         title: item.title,
@@ -126,6 +129,8 @@ export async function schemaToRoutes(schema: any, uiSchemas: any) {
         menuSchemaUid: item['x-uid'],
         hideInMenu: false,
         enableTabs,
+        enableHeader,
+        displayTitle,
         children: (await schemaToRoutes(pageSchema, uiSchemas)).map((item) => ({ ...item, hidden: !enableTabs })),
       };
     }

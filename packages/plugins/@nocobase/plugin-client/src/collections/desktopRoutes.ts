@@ -355,6 +355,26 @@ export default {
     },
     {
       type: 'boolean',
+      name: 'enableHeader',
+      interface: 'checkbox',
+      uiSchema: {
+        type: 'boolean',
+        'x-component': 'Checkbox',
+        title: '{{t("Enable header")}}',
+      },
+    },
+    {
+      type: 'boolean',
+      name: 'displayTitle',
+      interface: 'checkbox',
+      uiSchema: {
+        type: 'boolean',
+        'x-component': 'Checkbox',
+        title: '{{t("Display title")}}',
+      },
+    },
+    {
+      type: 'boolean',
       name: 'hidden',
       interface: 'checkbox',
       uiSchema: {
