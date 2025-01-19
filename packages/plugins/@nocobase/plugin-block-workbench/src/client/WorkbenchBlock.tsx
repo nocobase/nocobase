@@ -43,9 +43,8 @@ const ResponsiveSpace = () => {
   const fieldSchema = useFieldSchema();
   const isMobileMedia = isMobile();
   const { isMobile: underMobileCtx } = useOpenModeContext() || {};
-
   const { itemsPerRow = 4 } = fieldSchema.parent['x-decorator-props'] || {};
-
+  const isUnderMobile = isMobileMedia || underMobileCtx;
   const containerRef = useRef(null); // 引用容器
   const [containerWidth, setContainerWidth] = useState(0); // 容器宽度
   const gap = 8;
@@ -90,14 +89,17 @@ const ResponsiveSpace = () => {
 
   // 计算每个元素的宽度
   const itemWidth = useMemo(() => {
-    const totalGapWidth = gap * itemsPerRow;
-    const availableWidth = containerWidth - totalGapWidth;
-    return availableWidth / itemsPerRow;
+    if (isUnderMobile) {
+      const totalGapWidth = gap * itemsPerRow;
+      const availableWidth = containerWidth - totalGapWidth;
+      return availableWidth / itemsPerRow;
+    }
+    return 70;
   }, [itemsPerRow, gap, containerWidth]);
 
   // 计算 Avatar 的宽度
   const avatarSize = useMemo(() => {
-    return isMobileMedia || underMobileCtx ? Math.floor(itemWidth * 0.8) : 54; // Avatar 大小为 item 宽度的 60%
+    return isUnderMobile ? Math.floor(itemWidth * 0.8) : 54; // Avatar 大小为 item 宽度的 60%
   }, [itemWidth, itemsPerRow, containerWidth]);
 
   return (
@@ -109,10 +111,10 @@ const ResponsiveSpace = () => {
         align="start"
         className={css`
           .ant-space-item {
-            width: ${itemWidth}px;
+            width: ${isUnderMobile ? itemWidth + 'px' : '100%'}
             display: flex;
             .ant-nb-action {
-              padding: 4px 0px;
+              padding: ${isUnderMobile ? '4px 0px' : null};
             }
             .nb-action-panel-container {
               width: ${itemWidth}px !important;
@@ -128,12 +130,14 @@ const ResponsiveSpace = () => {
         {fieldSchema.mapProperties((s, key) => (
           <div
             key={key}
-            style={{
-              flexBasis: `${itemWidth}px`,
-              flexShrink: 0,
-              flexGrow: 0,
-              display: 'flex',
-            }}
+            style={
+              isUnderMobile && {
+                flexBasis: `${itemWidth}px`,
+                flexShrink: 0,
+                flexGrow: 0,
+                display: 'flex',
+              }
+            }
           >
             <NocoBaseRecursionField name={key} schema={s} />
           </div>
