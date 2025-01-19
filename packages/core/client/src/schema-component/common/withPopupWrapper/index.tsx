@@ -48,6 +48,12 @@ const FieldLink = (props: any) => {
   const { openPopup } = usePopupUtils();
   const needWaitForFieldSchemaUpdatedRef = useRef(false);
   const insertPopup = useInsertSchema();
+  const fieldSchemaRef = useRef(fieldSchema);
+  fieldSchemaRef.current = fieldSchema;
+
+  const getCustomActionSchema = useCallback(() => {
+    return fieldSchemaRef.current;
+  }, []);
 
   const handleClick = useCallback(() => {
     if (!fieldSchema.properties) {
@@ -59,7 +65,7 @@ const FieldLink = (props: any) => {
       // When first inserting, the fieldSchema instance will be updated to a new instance.
       // We need to wait for the instance update before opening the popup to prevent configuration loss.
       setTimeout(() => {
-        openPopup({ customActionSchema: fieldSchema });
+        openPopup({ customActionSchema: getCustomActionSchema() });
       });
       needWaitForFieldSchemaUpdatedRef.current = false;
 
@@ -67,7 +73,7 @@ const FieldLink = (props: any) => {
     } else if (fieldSchema.properties) {
       openPopup();
     }
-  }, [fieldSchema, insertPopup, openPopup]);
+  }, [fieldSchema, insertPopup, openPopup, getCustomActionSchema]);
 
   return (
     <a onClick={handleClick}>
