@@ -11,7 +11,14 @@ import { Application } from '@nocobase/client';
 import type { AxiosResponse } from 'axios';
 import debounce from 'lodash/debounce';
 
-const pathJoin = (parts, sep = '/') => parts.join(sep).replace(new RegExp(sep + '{1,}', 'g'), sep);
+function removeBasename(pathname, basename) {
+  // Escape special characters in basename for use in regex
+  const escapedBasename = basename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Create a regex to match the basename at the start of pathname, followed by a slash or end of string
+  const regex = new RegExp(`^${escapedBasename.replace(/\/?$/, '')}(\\/|$)`);
+  // If it matches, remove the basename; otherwise, return the pathname unchanged
+  return pathname.replace(regex, '/') || pathname;
+}
 
 const debouncedRedirect = debounce(
   (redirectFunc) => {
@@ -50,12 +57,7 @@ export function authCheckMiddleware({ app }: { app: Application }) {
       const basename = app.router.basename;
 
       if (pathname !== app.getHref('signin')) {
-        const routePath = pathname.startsWith(app.router.basename) ? pathname.slice(basename.length) || '/' : pathname;
-        const redirectPath = pathJoin([app.router.basename, routePath]);
-        // to-do wait for solve infinite loop navigate
-        // if (errorType === ('TOKEN_RENEW_FAILED' satisfies AuthErrorType)) {
-        //   return axios.request(error.config);
-        // }
+        const redirectPath = removeBasename(pathname, basename);
 
         debouncedRedirect(() => {
           app.apiClient.auth.setToken(null);
