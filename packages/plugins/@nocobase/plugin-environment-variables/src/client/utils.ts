@@ -18,9 +18,9 @@ export const useGetEnvironmentVariables = () => {
   if (!variablesLoading && variables?.data?.length) {
     return {
       name: '$env',
-      title: t('Environment variables'),
+      title: t('Variables and secrets'),
       value: '$env',
-      label: t('Environment variables'),
+      label: t('Variables and secrets'),
       children: variables?.data
         .map((v) => {
           return { title: v.name, name: v.name, value: v.name, label: v.name };
