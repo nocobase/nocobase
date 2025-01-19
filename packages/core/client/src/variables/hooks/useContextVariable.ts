@@ -24,9 +24,8 @@ const useContextVariable = (): VariableOption => {
   const collection = useCollection();
   const _blockData = useDataBlockRequestData();
   const tableBlockContextBasicValue = useTableBlockContextBasicValue() || {};
-  const isInBlockTemplatePage = window.location.pathname.includes('/block-templates');
 
-  if (!isPopupVisibleControlledByURL() && !isInBlockTemplatePage) {
+  if (isPopupVisibleControlledByURL()) {
     tableBlockContext = getStoredPopupContext(params?.popupuid)?.tableBlockContext;
   } else {
     tableBlockContext = { ...tableBlockContextBasicValue, collection, blockData: _blockData };
