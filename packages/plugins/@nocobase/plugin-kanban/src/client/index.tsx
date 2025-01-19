@@ -72,7 +72,10 @@ class PluginKanbanClient extends Plugin {
   }
 
   getGroupFieldType(key) {
-    return this.groupFields[key];
+    if (key) {
+      return this.groupFields[key];
+    }
+    return this.groupFields;
   }
 
   async load() {

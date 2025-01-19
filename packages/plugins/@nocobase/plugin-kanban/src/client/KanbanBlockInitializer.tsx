@@ -156,12 +156,11 @@ export const useCreateKanbanBlock = () => {
   const api = useAPIClient();
   const app = useApp();
   const plugin = app.pm.get('kanban') as any;
-  const { groupFields } = plugin;
-
+  const groupFields = plugin.getGroupFieldType() || [];
   const createKanbanBlock = async ({ item }) => {
     const collectionFields = getCollectionFields(item.name, item.dataSource);
     const fields = collectionFields
-      ?.filter((field) => groupFields.find((v) => v.type === field.interface))
+      ?.filter((field) => Object.keys(groupFields).find((v) => v === field.interface))
       ?.map((field) => {
         return {
           label: field?.uiSchema?.title,
@@ -232,7 +231,7 @@ export function useCreateAssociationKanbanBlock() {
     const { groupFields } = plugin;
 
     const fields = collectionFields
-      ?.filter((field) => groupFields.find((v) => v.type === field.interface))
+      ?.filter((field) => Object.keys(groupFields).find((v) => v === field.interface))
       ?.map((field) => {
         return {
           label: field?.uiSchema?.title,
