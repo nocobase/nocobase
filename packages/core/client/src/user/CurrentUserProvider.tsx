@@ -51,6 +51,7 @@ export const CurrentUserProvider = (props) => {
           }
           return false;
         },
+        skipAuth: true,
       })
       .then((res) => res?.data),
   );
