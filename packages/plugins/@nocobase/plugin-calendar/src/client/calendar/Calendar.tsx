@@ -256,6 +256,18 @@ const useInsertSchema = (component) => {
   return insert;
 };
 
+const useDefaultGetColor = () => {
+  const { token } = useToken();
+  return {
+    getFontColor(value) {
+      return null;
+    },
+    getBackgroundColor(value) {
+      return null;
+    },
+  };
+};
+
 export const Calendar: any = withDynamicSchemaProps(
   withSkeletonComponent(
     (props: any) => {
@@ -305,7 +317,8 @@ export const Calendar: any = withDynamicSchemaProps(
       const app = useApp();
       const plugin = app.pm.get('calendar') as any;
       const colorCollectionField = collection.getField(fieldNames.colorFieldName);
-      const { useGetColor } = plugin.getColorFieldInterface(colorCollectionField?.interface) || {};
+      const pluginColorField = plugin.getColorFieldInterface(colorCollectionField?.interface) || {};
+      const { useGetColor = useDefaultGetColor } = pluginColorField;
       const { getFontColor, getBackgroundColor } = useGetColor?.(colorCollectionField) || {};
       useEffect(() => {
         setView(props.defaultView);

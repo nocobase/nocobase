@@ -70,7 +70,11 @@ export class PluginCalendarClient extends Plugin {
     this.titleFields[key] = options;
   }
   getTitleFields(key: string) {
-    return this.titleFields[key];
+    if (key) {
+      return this.titleFields[key];
+    } else {
+      return this.titleFields;
+    }
   }
   registerDateTimeFields(data: any) {
     if (Array.isArray(data)) {

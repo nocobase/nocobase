@@ -77,7 +77,7 @@ export const useCreateCalendarBlock = () => {
     const titleFieldsOptions = getCollectionFieldsOptions(
       item.name,
       null,
-      titleFields.map((v) => v.interface || v),
+      Object.keys(titleFields).map((v) => v || v),
       {
         dataSource: item.dataSource,
       },
