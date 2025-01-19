@@ -77,7 +77,7 @@ export const BlockTemplatePage = () => {
       </div>
       <div style={{ marginTop: token.marginXL }}>
         <BlockTemplateInfoContext.Provider value={data?.data}>
-          <RemoteSchemaComponent onSuccess={refreshTemplateSchemaCache} onlyRenderProperties={true} uid={schemaUid} />
+          <RemoteSchemaComponent onSuccess={refreshTemplateSchemaCache} uid={schemaUid} />
         </BlockTemplateInfoContext.Provider>
       </div>
     </div>

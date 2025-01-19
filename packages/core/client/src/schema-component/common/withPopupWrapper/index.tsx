@@ -42,50 +42,51 @@ const filterProperties = (s) => {
   return s['x-component'] === 'Action.Container';
 };
 
+const FieldLink = (props: any) => {
+  const { WrappedComponent, ...rest } = props;
+  const fieldSchema = useFieldSchema();
+  const { openPopup } = usePopupUtils();
+  const needWaitForFieldSchemaUpdatedRef = useRef(false);
+  const insertPopup = useInsertSchema();
+
+  const handleClick = useCallback(() => {
+    if (!fieldSchema.properties) {
+      insertPopup(popupSchema);
+      needWaitForFieldSchemaUpdatedRef.current = true;
+    }
+
+    if (needWaitForFieldSchemaUpdatedRef.current) {
+      // When first inserting, the fieldSchema instance will be updated to a new instance.
+      // We need to wait for the instance update before opening the popup to prevent configuration loss.
+      setTimeout(() => {
+        openPopup({ customActionSchema: fieldSchema });
+      });
+      needWaitForFieldSchemaUpdatedRef.current = false;
+
+      // Only open the popup when the popup schema exists
+    } else if (fieldSchema.properties) {
+      openPopup();
+    }
+  }, [fieldSchema, insertPopup, openPopup]);
+
+  return (
+    <a onClick={handleClick}>
+      <WrappedComponent {...rest} />
+    </a>
+  );
+};
+
 // 高阶组件：用来包装每个组件并添加弹窗功能
 function withPopupWrapper<T>(WrappedComponent: React.ComponentType<T>) {
   return (props: T) => {
     const [visible, setVisible] = useState(false);
     const [formValueChanged, setFormValueChanged] = useState(false);
-    const insertPopup = useInsertSchema();
     const collection = useCollection();
     const ctx = useActionContext();
     const field: any = useField();
     const fieldSchema = useFieldSchema();
     const { enableLink, openMode, openSize } = fieldSchema?.['x-component-props'] || {};
     const { visibleWithURL, setVisibleWithURL } = usePopupUtils();
-    const { openPopup } = usePopupUtils();
-    const needWaitForFieldSchemaUpdatedRef = useRef(false);
-    const fieldSchemaRef = useRef(fieldSchema);
-    fieldSchemaRef.current = fieldSchema;
-
-    const getCustomActionSchema = useCallback(() => {
-      return fieldSchemaRef.current;
-    }, []);
-
-    const handleClick = useCallback(() => {
-      if (!fieldSchema.properties) {
-        insertPopup(popupSchema);
-        needWaitForFieldSchemaUpdatedRef.current = true;
-      }
-
-      if (needWaitForFieldSchemaUpdatedRef.current) {
-        // When first inserting, the fieldSchema instance will be updated to a new instance.
-        // We need to wait for the instance update before opening the popup to prevent configuration loss.
-        setTimeout(() => {
-          openPopup({
-            customActionSchema: getCustomActionSchema(),
-          });
-        });
-        needWaitForFieldSchemaUpdatedRef.current = false;
-
-        // Only open the popup when the popup schema exists
-      } else if (fieldSchema.properties) {
-        openPopup();
-      }
-    }, [fieldSchema, insertPopup, openPopup, getCustomActionSchema]);
-    const { setSubmitted } = ctx;
-
     const handleVisibleChange = useCallback(
       (value: boolean): void => {
         setVisible?.(value);
@@ -93,6 +94,11 @@ function withPopupWrapper<T>(WrappedComponent: React.ComponentType<T>) {
       },
       [setVisibleWithURL],
     );
+    const fieldSchemaRef = useRef(fieldSchema);
+    fieldSchemaRef.current = fieldSchema;
+
+    const { setSubmitted } = ctx;
+
     return enableLink ? (
       <PopupVisibleProvider visible={false}>
         <ActionContextProvider
@@ -119,9 +125,7 @@ function withPopupWrapper<T>(WrappedComponent: React.ComponentType<T>) {
               </VariablePopupRecordProvider>
             </SchemaComponentOptions>
           </CollectionProvider>
-          <a onClick={handleClick}>
-            <WrappedComponent {...props} />
-          </a>
+          <FieldLink {...props} WrappedComponent={WrappedComponent} />
         </ActionContextProvider>
       </PopupVisibleProvider>
     ) : (
