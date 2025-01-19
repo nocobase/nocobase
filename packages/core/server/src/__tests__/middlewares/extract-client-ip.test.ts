@@ -7,8 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import supertest from 'supertest';
-import { Application } from '../../application';
 import { extractClientIp } from '../../middlewares';
 
 describe('extract client ip middleware', () => {
