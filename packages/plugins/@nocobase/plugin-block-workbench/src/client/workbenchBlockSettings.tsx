@@ -68,7 +68,6 @@ export function ActionPanelItemsPerRow() {
         type: 'object',
         properties: {
           itemsPerRow: {
-            title: t('Items per row', { ns: 'block-workbench' }),
             type: 'number',
             default: fieldSchema?.['x-decorator-props']?.['itemsPerRow'] || 4,
             'x-decorator': 'FormItem',
