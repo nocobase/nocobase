@@ -612,7 +612,6 @@ export function NodeDefaultView(props) {
         <div className={styles.nodeHeaderClass}>
           <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
             <Tag icon={instruction.icon}>{typeTitle}</Tag>
-            <span className="workflow-node-id">{data.id}</span>
           </div>
           <div className="workflow-node-actions">
             <RemoveButton />
