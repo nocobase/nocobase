@@ -63,13 +63,13 @@ export function ActionPanelItemsPerRow() {
 
   return (
     <SchemaSettingsModalItem
-      title={t('Items per row')}
+      title={t('Items per row', { ns: 'block-workbench' })}
       schema={{
         type: 'object',
-        title: t('Items per row'),
+        title: t('Items per row', { ns: 'block-workbench' }),
         properties: {
           itemsPerRow: {
-            title: t('Items per row'),
+            title: t('Items per row', { ns: 'block-workbench' }),
             type: 'number',
             default: fieldSchema?.['x-decorator-props']?.['itemsPerRow'] || 4,
             'x-decorator': 'FormItem',
@@ -78,7 +78,7 @@ export function ActionPanelItemsPerRow() {
               min: 1,
               max: 6,
             },
-            description: t('At least 1, up to 6'),
+            description: t('At least 1, up to 6', { ns: 'block-workbench' }),
             required: true,
           },
         },
