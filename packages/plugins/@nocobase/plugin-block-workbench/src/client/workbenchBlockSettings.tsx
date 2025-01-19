@@ -66,7 +66,6 @@ export function ActionPanelItemsPerRow() {
       title={t('Items per row', { ns: 'block-workbench' })}
       schema={{
         type: 'object',
-        title: t('Items per row', { ns: 'block-workbench' }),
         properties: {
           itemsPerRow: {
             title: t('Items per row', { ns: 'block-workbench' }),
