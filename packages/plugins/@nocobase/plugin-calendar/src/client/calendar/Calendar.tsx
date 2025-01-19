@@ -303,7 +303,6 @@ export const Calendar: any = withDynamicSchemaProps(
       const parentRecordData = useCollectionParentRecordData();
       const fieldSchema = useFieldSchema();
       const field = useField();
-      const { token } = useToken();
       //nint deal with slot select to show create popup
       const { parseAction } = useACLRoleContext();
       const collection = useCollection();
