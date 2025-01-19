@@ -76,7 +76,9 @@ export function ActionPanelItemsPerRow() {
             'x-component': 'InputNumber',
             'x-component-props': {
               min: 1,
+              max: 6,
             },
+            description: t('At least 1, up to 6'),
             required: true,
           },
         },

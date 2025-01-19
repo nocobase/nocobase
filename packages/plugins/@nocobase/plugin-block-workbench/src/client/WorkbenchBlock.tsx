@@ -20,6 +20,7 @@ import {
   useSchemaInitializerRender,
   withDynamicSchemaProps,
   useBlockHeightProps,
+  useOpenModeContext,
 } from '@nocobase/client';
 import { Avatar, List, Space, theme } from 'antd';
 import React, { createContext, useEffect, useState, useRef, useMemo, useLayoutEffect } from 'react';
@@ -41,6 +42,8 @@ function isMobile() {
 const ResponsiveSpace = () => {
   const fieldSchema = useFieldSchema();
   const isMobileMedia = isMobile();
+  const { isMobile: underMobileCtx } = useOpenModeContext() || {};
+
   const { itemsPerRow = 4 } = fieldSchema.parent['x-decorator-props'] || {};
 
   const containerRef = useRef(null); // 引用容器
@@ -94,7 +97,7 @@ const ResponsiveSpace = () => {
 
   // 计算 Avatar 的宽度
   const avatarSize = useMemo(() => {
-    return isMobileMedia ? Math.floor(itemWidth * 0.8) : 54; // Avatar 大小为 item 宽度的 60%
+    return isMobileMedia || underMobileCtx ? Math.floor(itemWidth * 0.8) : 54; // Avatar 大小为 item 宽度的 60%
   }, [itemWidth, itemsPerRow, containerWidth]);
 
   return (
@@ -109,7 +112,7 @@ const ResponsiveSpace = () => {
             width: ${itemWidth}px;
             display: flex;
             .nb-action-panel-container {
-              width: ${itemWidth}px;
+              width: ${itemWidth}px !important;
             }
             .ant-avatar-circle {
               width: ${avatarSize}px !important;
