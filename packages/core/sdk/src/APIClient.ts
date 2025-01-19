@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, RawAxiosRequestHeaders } from 'axios';
+import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse, RawAxiosRequestHeaders } from 'axios';
 import qs from 'qs';
 
 export interface ActionParams {
@@ -354,7 +354,11 @@ export class APIClient {
     });
   }
 
-  request<T = any, R = AxiosResponse<T>, D = any>(config: AxiosRequestConfig<D> | ResourceActionOptions): Promise<R> {
+  request<T = any, R = AxiosResponse<T>, D = any>(
+    config: (AxiosRequestConfig<D> | ResourceActionOptions) & {
+      skipNotify?: boolean | ((error: any) => boolean);
+    },
+  ): Promise<R> {
     const { resource, resourceOf, action, params, headers } = config as any;
     if (resource) {
       return this.resource(resource, resourceOf, headers)[action](params);

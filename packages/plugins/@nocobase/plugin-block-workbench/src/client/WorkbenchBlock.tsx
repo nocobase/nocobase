@@ -19,9 +19,11 @@ import {
   useDesignable,
   useSchemaInitializerRender,
   withDynamicSchemaProps,
+  useBlockHeightProps,
+  useOpenModeContext,
 } from '@nocobase/client';
 import { Avatar, List, Space, theme } from 'antd';
-import React, { createContext, useEffect, useState } from 'react';
+import React, { createContext, useEffect, useState, useRef, useMemo, useLayoutEffect } from 'react';
 import { WorkbenchLayout } from './workbenchBlockSettings';
 
 const ConfigureActionsButton = observer(
@@ -33,49 +35,126 @@ const ConfigureActionsButton = observer(
   { displayName: 'WorkbenchConfigureActionsButton' },
 );
 
-const InternalIcons = () => {
+function isMobile() {
+  return window.matchMedia('(max-width: 768px)').matches;
+}
+
+const ResponsiveSpace = () => {
   const fieldSchema = useFieldSchema();
-  const { designable } = useDesignable();
-  const { layout = WorkbenchLayout.Grid } = fieldSchema.parent['x-component-props'] || {};
-  const [gap, setGap] = useState(8); // 初始 gap 值
-
+  const isMobileMedia = isMobile();
+  const { isMobile: underMobileCtx } = useOpenModeContext() || {};
+  const { itemsPerRow = 4 } = fieldSchema.parent['x-decorator-props'] || {};
+  const isUnderMobile = isMobileMedia || underMobileCtx;
+  const containerRef = useRef(null); // 引用容器
+  const [containerWidth, setContainerWidth] = useState(0); // 容器宽度
+  const gap = 8;
+  // 使用 ResizeObserver 动态获取容器宽度
   useEffect(() => {
-    const calculateGap = () => {
-      const container = document.getElementsByClassName('mobile-page-content')[0] as any;
-      if (container) {
-        const containerWidth = container.offsetWidth - 48;
-        const itemWidth = 100; // 每个 item 的宽度
-        const itemsPerRow = Math.floor(containerWidth / itemWidth); // 每行能容纳的 item 数
-        // 计算实际需要的 gap 值
-        const totalItemWidth = itemsPerRow * itemWidth;
-        const totalAvailableWidth = containerWidth;
-        const totalGapsWidth = totalAvailableWidth - totalItemWidth;
-
-        if (totalGapsWidth > 0) {
-          setGap(totalGapsWidth / (itemsPerRow - 1));
-        } else {
-          setGap(0); // 如果没有足够的空间，则设置 gap 为 0
-        }
+    const handleResize = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.offsetWidth); // 更新宽度
       }
     };
+    // 初始化 ResizeObserver
+    const resizeObserver = new ResizeObserver(handleResize);
 
-    window.addEventListener('resize', calculateGap);
-    calculateGap(); // 初始化时计算 gap
+    // 监听容器宽度变化
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+      handleResize(); // 初始化时获取一次宽度
+    }
 
     return () => {
-      window.removeEventListener('resize', calculateGap);
+      if (containerRef.current) {
+        resizeObserver.unobserve(containerRef.current);
+      }
     };
-  }, [Object.keys(fieldSchema?.properties || {}).length]);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!containerRef.current) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width); // 更新宽度
+      }
+    });
+
+    observer.observe(containerRef.current);
+
+    return () => {
+      observer.unobserve(containerRef.current);
+    };
+  }, []);
+
+  // 计算每个元素的宽度
+  const itemWidth = useMemo(() => {
+    if (isUnderMobile) {
+      const totalGapWidth = gap * itemsPerRow;
+      const availableWidth = containerWidth - totalGapWidth;
+      return availableWidth / itemsPerRow;
+    }
+    return 70;
+  }, [itemsPerRow, gap, containerWidth]);
+
+  // 计算 Avatar 的宽度
+  const avatarSize = useMemo(() => {
+    return isUnderMobile ? (Math.floor(itemWidth * 0.8) > 70 ? 60 : Math.floor(itemWidth * 0.8)) : 54; // Avatar 大小为 item 宽度的 60%
+  }, [itemWidth, itemsPerRow, containerWidth]);
 
   return (
-    <div style={{ marginBottom: designable ? '1rem' : 0 }} className="nb-action-panel-warp">
+    <div ref={containerRef} style={{ width: '100%' }}>
+      <Space
+        wrap
+        style={{ width: '100%', display: 'flex' }}
+        size={gap}
+        align="start"
+        className={css`
+          .ant-space-item {
+            width: ${isUnderMobile ? itemWidth + 'px' : '100%'}
+            display: flex;
+            .ant-nb-action {
+              padding: ${isUnderMobile ? '4px 0px' : null};
+            }
+            .nb-action-panel-container {
+              width: ${itemWidth}px !important;
+            }
+            .ant-avatar-circle {
+              width: ${avatarSize}px !important;
+              height: ${avatarSize}px !important;
+              line-height: ${avatarSize}px !important;
+            }
+          }
+        `}
+      >
+        {fieldSchema.mapProperties((s, key) => (
+          <div
+            key={key}
+            style={
+              isUnderMobile && {
+                flexBasis: `${itemWidth}px`,
+                flexShrink: 0,
+                flexGrow: 0,
+                display: 'flex',
+              }
+            }
+          >
+            <NocoBaseRecursionField name={key} schema={s} />
+          </div>
+        ))}
+      </Space>
+    </div>
+  );
+};
+
+const InternalIcons = () => {
+  const fieldSchema = useFieldSchema();
+  const { layout = WorkbenchLayout.Grid } = fieldSchema.parent['x-component-props'] || {};
+  return (
+    <div className="nb-action-panel-warp">
       <DndContext>
         {layout === WorkbenchLayout.Grid ? (
-          <Space wrap size={gap}>
-            {fieldSchema.mapProperties((s, key) => (
-              <NocoBaseRecursionField name={key} schema={s} key={key} />
-            ))}
-          </Space>
+          <ResponsiveSpace />
         ) : (
           <List itemLayout="horizontal">
             {fieldSchema.mapProperties((s, key) => {
@@ -126,18 +205,26 @@ export const WorkbenchBlock: any = withDynamicSchemaProps(
     const targetHeight = useBlockHeight();
     const { token } = theme.useToken();
     const { designable } = useDesignable();
-
+    const { heightProps } = useBlockHeightProps() || {};
+    const { titleHeight } = heightProps || {};
+    const internalHeight = 2 * token.paddingLG + token.controlHeight + token.marginLG + titleHeight;
     return (
       <div className="nb-action-penal-container">
         <div
           className={css`
             .nb-action-panel-warp {
-              height: ${targetHeight ? targetHeight - (designable ? 4 : 2) * token.marginLG + 'px' : '100%'};
+              height: ${targetHeight
+                ? targetHeight -
+                  (designable ? internalHeight : 2 * token.paddingLG + token.marginLG + titleHeight) +
+                  'px'
+                : '100%'};
               overflow-y: auto;
               margin-left: -24px;
               margin-right: -24px;
               padding-left: 24px;
               padding-right: 24px;
+              margin-top: 0.5rem;
+              margin-bottom: 0.5rem;
             }
           `}
         >

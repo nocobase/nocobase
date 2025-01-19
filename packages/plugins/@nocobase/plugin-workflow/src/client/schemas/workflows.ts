@@ -168,6 +168,18 @@ const workflowFieldset = {
           multiple: true,
         },
       },
+      stackLimit: {
+        type: 'number',
+        title: `{{ t("Maximum number of loop calls", { ns: "${NAMESPACE}" }) }}`,
+        description: `{{ t("If the number of loop calls is too large, there will be performance issues.", { ns: "${NAMESPACE}" }) }}`,
+        'x-decorator': 'FormItem',
+        default: 1,
+        'x-component': 'InputNumber',
+        'x-component-props': {
+          min: 1,
+          precision: 0,
+        },
+      },
     },
   },
 };

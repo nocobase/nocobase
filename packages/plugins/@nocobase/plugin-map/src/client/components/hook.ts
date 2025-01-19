@@ -16,7 +16,7 @@ export const useMapHeight = () => {
   const { token } = theme.useToken();
   const { designable } = useDesignable();
   const { heightProps } = useBlockHeightProps() || {};
-  const { title } = heightProps || {};
+  const { title, titleHeight } = heightProps || {};
   const schema = useFieldSchema();
   if (!height) {
     return;
@@ -25,6 +25,6 @@ export const useMapHeight = () => {
   const actionBarHeight =
     designable || hasMapAction ? token.paddingLG + token.controlHeight + token.margin : token.paddingLG + token.margin;
   const footerHeight = token.paddingLG;
-  const blockTitleHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
+  const blockTitleHeaderHeight = title ? titleHeight : 0;
   return height - actionBarHeight - footerHeight - blockTitleHeaderHeight;
 };
