@@ -296,7 +296,7 @@ export class ScheduleTriggerNode {
   addNodeButton: Locator;
   constructor(page: Page, triggerName: string, collectionName: string) {
     this.page = page;
-    this.node = page.getByText('TriggeraConfigure');
+    this.node = page.getByLabel(`Trigger-${triggerName}`);
     this.nodeTitle = page.locator('textarea').filter({ hasText: triggerName });
     this.nodeConfigure = this.node.locator('>div').first();
     this.customTimeTriggerOptions = page.getByLabel('Based on certain date');
