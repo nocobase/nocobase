@@ -47,7 +47,7 @@ export const Tabs: any = React.memo((props: TabsProps) => {
     });
 
     return result;
-  }, [fieldSchema.mapProperties((s, key) => key).join()]);
+  }, [fieldSchema]);
 
   const tabBarExtraContent = useMemo(
     () => ({
