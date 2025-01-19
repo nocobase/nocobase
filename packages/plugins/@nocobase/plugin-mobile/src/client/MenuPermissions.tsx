@@ -106,6 +106,9 @@ export const MenuPermissions: React.FC<{
       action: 'list',
       params: {
         paginate: false,
+        filter: {
+          hidden: { $ne: true },
+        },
       },
     },
     {

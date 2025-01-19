@@ -95,7 +95,17 @@ const DesktopRoutesProvider: FC<{
   const api = useAPIClient();
   const resource = useMemo(() => api.resource('desktopRoutes'), [api]);
   const { data, runAsync: refresh } = useRequest<{ data: any[] }>(
-    () => resource.list({ tree: true, sort: 'sort' }).then((res) => res.data),
+    () =>
+      resource
+        .list({
+          tree: true,
+          sort: 'sort',
+          paginate: false,
+          filter: {
+            hidden: { $ne: true },
+          },
+        })
+        .then((res) => res.data),
     {
       manual: true,
     },
@@ -141,6 +151,9 @@ export const MenuPermissions: React.FC<{
       action: 'list',
       params: {
         paginate: false,
+        filter: {
+          hidden: { $ne: true },
+        },
       },
     },
     {
