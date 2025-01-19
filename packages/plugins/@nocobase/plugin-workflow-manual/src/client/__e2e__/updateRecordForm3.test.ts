@@ -126,7 +126,7 @@ test.describe('field data update', () => {
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
     const blockTitle = 'Create record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
+    await page.getByLabel('block-title').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
       .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
@@ -289,7 +289,7 @@ test.describe('field data update', () => {
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
     const blockTitle = 'Create record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
+    await page.getByLabel('block-title').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
       .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
@@ -452,7 +452,7 @@ test.describe('field data update', () => {
     await page.getByLabel(`designer-schema-settings-CardItem-UpdateFormDesigner-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
     const blockTitle = 'Create record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
+    await page.getByLabel('block-title').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
       .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
