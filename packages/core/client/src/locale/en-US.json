@@ -53,180 +53,180 @@
   "Insert right": "Rechts invoegen",
   "Insert inner": "Binnenkant invoegen",
   "Delete": "Verwijder",
-  "Disassociate": "Loskoppelen"
-  "Disassociate record": "Record loskoppelen"
-  "Are you sure you want to disassociate it?": "Weet je zeker dat je het wilt loskoppelen?"
-  "UI editor": "UI-editor"
-  "Collection": "Collectie"
-  "Collection selector": "Collectie selector"
-  "Providing certain collections as options for users, typically used in polymorphic or inheritance scenarios": "Bepaalde collecties aanbieden als opties voor gebruikers, meestal gebruikt in polymorfe of erfelijkheidsscenario's"
-  "Collections & Fields": "Collecties & Velden"
-  "All collections": "Alle collecties"
-  "Add category": "Categorie toevoegen"
-  "Enable child collections": "Onderliggende collecties inschakelen"
-  "Allow adding records to the current collection": "Toestaan ​​dat records aan de huidige collectie worden toegevoegd"
-  "Delete category": "Categorie verwijderen"
-  "Edit category": "Categorie bewerken"
-  "Collection category": "Collectie categorie"
-  "Collection template": "Collectie sjabloon"
-  "Sort": "Sorteren"
-  "Categories": "Categorieën"
-  "Visible": "Zichtbaar"
-  "Read only": "Alleen-lezen"
-  "Easy reading": "Gemakkelijk te lezen"
-  "Hidden": "Verborgen"
-  "Hidden(reserved value)": "Verborgen (gereserveerde waarde)"
-  "Not required": "Niet vereist"
-  "Value": "Waarde"
-  "Disabled": "Uitgeschakeld"
-  "Enabled": "Ingeschakeld"
-  "Problematic": "Problematisch"
-  "Setting": "Instelling"
-  "On": "Aan"
-  "Off": "Uit"
-  "Empty": "Leeg"
-  "Linkage rule": "Koppelingregel"
-  "Linkage rules": "Koppelingregels"
-  "Condition": "Voorwaarde"
-  "Properties": "Eigenschappen"
-  "Add linkage rule": "Koppelingregel toevoegen"
-  "Add property": "Eigenschap toevoegen"
-  "Category name": "Categorie naam"
-  "Roles & Permissions": "Rollen & Machtigingen"
-  "Edit profile": "Profiel bewerken"
-  "Change password": "Wachtwoord wijzigen"
-  "Old password": "Oud wachtwoord"
-  "New password": "Nieuw wachtwoord"
-  "Switch role": "Rol wisselen"
-  "Super admin": "Superbeheerder"
-  "Language": "Taal"
-  "Allow sign up": "Registratie toestaan"
-  "Enable SMS authentication": "SMS-authenticatie inschakelen"
-  "Sign out": "Afmelden"
-  "Cancel": "Annuleren"
-  "Submit": "Indienen"
-  "Close": "Sluiten"
-  "Set the data scope": "Stel de gegevensomvang in"
-  "Set data loading mode": "Stel de gegevenslaadmodus in"
-  "Load all data when filter is empty": "Laad alle gegevens wanneer filter leeg is"
-  "Do not load data when filter is empty": "Laad geen gegevens wanneer filter leeg is"
-  "Data loading mode": "Gegevenslaadmodus"
-  "Data blocks": "Gegevensblokken"
-  "Filter blocks": "Filterblokken"
-  "Table": "Tabel"
-  "Table OID(Inheritance)": "Tabel OID (Erfelijkheid)"
-  "Form": "Formulier"
-  "List": "Lijst"
-  "Grid Card": "Rasterkaart"
-  "pixels": "pixels"
-  "Screen size": "Schermgrootte"
-  "Display title": "Titel weergeven"
-  "Set the count of columns displayed in a row": "Stel het aantal kolommen in dat in een rij wordt weergegeven"
-  "Column": "Kolom"
-  "Phone device": "Telefoonapparaat"
-  "Tablet device": "Tabletapparaat"
-  "Desktop device": "Desktopapparaat"
-  "Large screen device": "Groot schermapparaat"
-  "Collapse": "Inklappen"
-  "Select data source": "Gegevensbron selecteren"
-  "Calendar": "Kalender"
-  "Delete events": "Gebeurtenissen verwijderen"
-  "This event": "Deze gebeurtenis"
-  "This and following events": "Deze en volgende gebeurtenissen"
-  "All events": "Alle gebeurtenissen"
-  "Delete this event?": "Deze gebeurtenis verwijderen?"
-  "Delete Event": "Verwijder gebeurtenis"
-  "Kanban": "Kanban"
-  "Gantt": "Gantt"
-  "Create gantt block": "Maak Gantt-blok"
-  "Progress field": "Voortgangsveld"
-  "Time scale": "Tijdschaal"
-  "Hour": "Uur"
-  "Quarter of day": "Kwartaal van de dag"
-  "Half of day": "Helft van de dag"
-  "Year": "Jaar"
-  "QuarterYear": "Kwartaaljaar"
-  "Select grouping field": "Selecteer groeperingsveld"
-  "Media": "Media"
-  "Markdown": "Markdown"
-  "Wysiwyg": "Wysiwyg"
-  "Chart blocks": "Grafiekblokken"
-  "Column chart": "Kolomgrafiek"
-  "Bar chart": "Staafgrafiek"
-  "Line chart": "Lijngrafiek"
-  "Pie chart": "Taartgrafiek"
-  "Area chart": "Oppervlaktegrafiek"
-  "Other chart": "Andere grafiek"
-  "Other blocks": "Andere blokken"
-  "In configuration": "In configuratie"
-  "Chart title": "Grafiektitel"
-  "Chart type": "Grafiektype"
-  "Chart config": "Grafiekconfiguratie"
-  "Templates": "Sjablonen"
-  "Select template": "Selecteer sjabloon"
-  "Action logs": "Actielogs"
-  "Create template": "Sjabloon maken"
-  "Edit markdown": "Bewerk markdown"
-  "Add block": "Blok toevoegen"
-  "Add new": "Nieuwe toevoegen"
-  "Add record": "Record toevoegen"
-  "Add child": "Kind toevoegen"
-  "Collapse all": "Alles inklappen"
-  "Expand all": "Alles uitbreiden"
-  "Expand/Collapse": "Uitbreiden/Inklappen"
-  "Default collapse": "Standaard inklappen"
-  "Tree table": "Boomtabel"
-  "Custom field display name": "Aangepaste veldweergavenaam"
-  "Display fields": "Weergavevelden"
-  "Edit record": "Record bewerken"
-  "Delete menu item": "Menu-item verwijderen"
-  "Add page": "Pagina toevoegen"
-  "Add group": "Groep toevoegen"
-  "Add link": "Link toevoegen"
-  "Insert above": "Boven invoegen"
-  "Insert below": "Onder invoegen"
-  "Save": "Opslaan"
-  "Delete block": "Blok verwijderen"
-  "Are you sure you want to delete it?": "Weet je zeker dat je het wilt verwijderen?"
-  "This is a demo text, supports Markdown syntax.": "Dit is een demo-tekst, ondersteunt Markdown-syntaxis."
-  "Filter": "Filter"
-  "Connect data blocks": "Verbind gegevensblokken"
-  "Action type": "Actietype"
-  "Actions": "Acties"
-  "Insert": "Invoegen"
-  "Insert if not exists": "Invoegen als het niet bestaat"
-  "Insert if not exists, or update": "Invoegen als het niet bestaat, of bijwerken"
-  "Determine whether a record exists by the following fields": "Bepaal of een record bestaat op basis van de volgende velden"
-  "Update": "Bijwerken"
-  "Update record": "Record bijwerken"
-  "View": "Bekijken"
-  "View record": "Record bekijken"
-  "Refresh": "Vernieuwen"
-  "Data changes": "Gegevenswijzigingen"
-  "Field name": "Veldnaam"
-  "Before change": "Voor wijziging"
-  "After change": "Na wijziging"
-  "Delete record": "Record verwijderen"
-  "Delete collection": "Collectie verwijderen"
-  "Create collection": "Collectie maken"
-  "Collection display name": "Weergavenaam collectie"
-  "Collection name": "Naam collectie"
-  "Inherits": "Erft"
-  "Primary key, unique identifier, self growth": "Primaire sleutel, unieke identifier, zelfgroei"
-  "Store the creation user of each record": "Sla de gebruiker van de record aanmaak op"
-  "Store the last update user of each record": "Sla de gebruiker van de laatste update op"
-  "Store the creation time of each record": "Sla de creatietijd van elke record op"
-  "Store the last update time of each record": "Sla de laatste update tijd van elke record op"
-  "More options": "Meer opties"
-  "Records can be sorted": "Records kunnen worden gesorteerd"
-  "Calendar collection": "Kalendercollectie"
-  "General collection": "Algemene collectie"
-  "Connect to database view": "Verbind met databaseweergave"
-  "Sync from database": "Synchroniseren vanuit database"
-  "Source collections": "Broncollecties"
-  "Field source": "Veldbron"
-  "Preview": "Voorbeeld"
-  "Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.": "Willekeurig gegenereerd en kan worden aangepast. Ondersteunt letters, cijfers en onderstrepingstekens, moet beginnen met een letter."
+  "Disassociate": "Loskoppelen",
+  "Disassociate record": "Record loskoppelen",
+  "Are you sure you want to disassociate it?": "Weet je zeker dat je het wilt loskoppelen?",
+  "UI editor": "UI-editor",
+  "Collection": "Collectie",
+  "Collection selector": "Collectie selector",
+  "Providing certain collections as options for users, typically used in polymorphic or inheritance scenarios": "Bepaalde collecties aanbieden als opties voor gebruikers, meestal gebruikt in polymorfe of erfelijkheidsscenario's",
+  "Collections & Fields": "Collecties & Velden",
+  "All collections": "Alle collecties",
+  "Add category": "Categorie toevoegen",
+  "Enable child collections": "Onderliggende collecties inschakelen",
+  "Allow adding records to the current collection": "Toestaan ​​dat records aan de huidige collectie worden toegevoegd",
+  "Delete category": "Categorie verwijderen",
+  "Edit category": "Categorie bewerken",
+  "Collection category": "Collectie categorie",
+  "Collection template": "Collectie sjabloon",
+  "Sort": "Sorteren",
+  "Categories": "Categorieën",
+  "Visible": "Zichtbaar",
+  "Read only": "Alleen-lezen",
+  "Easy reading": "Gemakkelijk te lezen",
+  "Hidden": "Verborgen",
+  "Hidden(reserved value)": "Verborgen (gereserveerde waarde)",
+  "Not required": "Niet vereist",
+  "Value": "Waarde",
+  "Disabled": "Uitgeschakeld",
+  "Enabled": "Ingeschakeld",
+  "Problematic": "Problematisch",
+  "Setting": "Instelling",
+  "On": "Aan",
+  "Off": "Uit",
+  "Empty": "Leeg",
+  "Linkage rule": "Koppelingregel",
+  "Linkage rules": "Koppelingregels",
+  "Condition": "Voorwaarde",
+  "Properties": "Eigenschappen",
+  "Add linkage rule": "Koppelingregel toevoegen",
+  "Add property": "Eigenschap toevoegen",
+  "Category name": "Categorie naam",
+  "Roles & Permissions": "Rollen & Machtigingen",
+  "Edit profile": "Profiel bewerken",
+  "Change password": "Wachtwoord wijzigen",
+  "Old password": "Oud wachtwoord",
+  "New password": "Nieuw wachtwoord",
+  "Switch role": "Rol wisselen",
+  "Super admin": "Superbeheerder",
+  "Language": "Taal",
+  "Allow sign up": "Registratie toestaan",
+  "Enable SMS authentication": "SMS-authenticatie inschakelen",
+  "Sign out": "Afmelden",
+  "Cancel": "Annuleren",
+  "Submit": "Indienen",
+  "Close": "Sluiten",
+  "Set the data scope": "Stel de gegevensomvang in",
+  "Set data loading mode": "Stel de gegevenslaadmodus in",
+  "Load all data when filter is empty": "Laad alle gegevens wanneer filter leeg is",
+  "Do not load data when filter is empty": "Laad geen gegevens wanneer filter leeg is",
+  "Data loading mode": "Gegevenslaadmodus",
+  "Data blocks": "Gegevensblokken",
+  "Filter blocks": "Filterblokken",
+  "Table": "Tabel",
+  "Table OID(Inheritance)": "Tabel OID (Erfelijkheid)",
+  "Form": "Formulier",
+  "List": "Lijst",
+  "Grid Card": "Rasterkaart",
+  "pixels": "pixels",
+  "Screen size": "Schermgrootte",
+  "Display title": "Titel weergeven",
+  "Set the count of columns displayed in a row": "Stel het aantal kolommen in dat in een rij wordt weergegeven",
+  "Column": "Kolom",
+  "Phone device": "Telefoonapparaat",
+  "Tablet device": "Tabletapparaat",
+  "Desktop device": "Desktopapparaat",
+  "Large screen device": "Groot schermapparaat",
+  "Collapse": "Inklappen",
+  "Select data source": "Gegevensbron selecteren",
+  "Calendar": "Kalender",
+  "Delete events": "Gebeurtenissen verwijderen",
+  "This event": "Deze gebeurtenis",
+  "This and following events": "Deze en volgende gebeurtenissen",
+  "All events": "Alle gebeurtenissen",
+  "Delete this event?": "Deze gebeurtenis verwijderen?",
+  "Delete Event": "Verwijder gebeurtenis",
+  "Kanban": "Kanban",
+  "Gantt": "Gantt",
+  "Create gantt block": "Maak Gantt-blok",
+  "Progress field": "Voortgangsveld",
+  "Time scale": "Tijdschaal",
+  "Hour": "Uur",
+  "Quarter of day": "Kwartaal van de dag",
+  "Half of day": "Helft van de dag",
+  "Year": "Jaar",
+  "QuarterYear": "Kwartaaljaar",
+  "Select grouping field": "Selecteer groeperingsveld",
+  "Media": "Media",
+  "Markdown": "Markdown",
+  "Wysiwyg": "Wysiwyg",
+  "Chart blocks": "Grafiekblokken",
+  "Column chart": "Kolomgrafiek",
+  "Bar chart": "Staafgrafiek",
+  "Line chart": "Lijngrafiek",
+  "Pie chart": "Taartgrafiek",
+  "Area chart": "Oppervlaktegrafiek",
+  "Other chart": "Andere grafiek",
+  "Other blocks": "Andere blokken",
+  "In configuration": "In configuratie",
+  "Chart title": "Grafiektitel",
+  "Chart type": "Grafiektype",
+  "Chart config": "Grafiekconfiguratie",
+  "Templates": "Sjablonen",
+  "Select template": "Selecteer sjabloon",
+  "Action logs": "Actielogs",
+  "Create template": "Sjabloon maken",
+  "Edit markdown": "Bewerk markdown",
+  "Add block": "Blok toevoegen",
+  "Add new": "Nieuwe toevoegen",
+  "Add record": "Record toevoegen",
+  "Add child": "Kind toevoegen",
+  "Collapse all": "Alles inklappen",
+  "Expand all": "Alles uitbreiden",
+  "Expand/Collapse": "Uitbreiden/Inklappen",
+  "Default collapse": "Standaard inklappen",
+  "Tree table": "Boomtabel",
+  "Custom field display name": "Aangepaste veldweergavenaam",
+  "Display fields": "Weergavevelden",
+  "Edit record": "Record bewerken",
+  "Delete menu item": "Menu-item verwijderen",
+  "Add page": "Pagina toevoegen",
+  "Add group": "Groep toevoegen",
+  "Add link": "Link toevoegen",
+  "Insert above": "Boven invoegen",
+  "Insert below": "Onder invoegen",
+  "Save": "Opslaan",
+  "Delete block": "Blok verwijderen",
+  "Are you sure you want to delete it?": "Weet je zeker dat je het wilt verwijderen?",
+  "This is a demo text, supports Markdown syntax.": "Dit is een demo-tekst, ondersteunt Markdown-syntaxis.",
+  "Filter": "Filter",
+  "Connect data blocks": "Verbind gegevensblokken",
+  "Action type": "Actietype",
+  "Actions": "Acties",
+  "Insert": "Invoegen",
+  "Insert if not exists": "Invoegen als het niet bestaat",
+  "Insert if not exists, or update": "Invoegen als het niet bestaat, of bijwerken",
+  "Determine whether a record exists by the following fields": "Bepaal of een record bestaat op basis van de volgende velden",
+  "Update": "Bijwerken",
+  "Update record": "Record bijwerken",
+  "View": "Bekijken",
+  "View record": "Record bekijken",
+  "Refresh": "Vernieuwen",
+  "Data changes": "Gegevenswijzigingen",
+  "Field name": "Veldnaam",
+  "Before change": "Voor wijziging",
+  "After change": "Na wijziging",
+  "Delete record": "Record verwijderen",
+  "Delete collection": "Collectie verwijderen",
+  "Create collection": "Collectie maken",
+  "Collection display name": "Weergavenaam collectie",
+  "Collection name": "Naam collectie",
+  "Inherits": "Erft",
+  "Primary key, unique identifier, self growth": "Primaire sleutel, unieke identifier, zelfgroei",
+  "Store the creation user of each record": "Sla de gebruiker van de record aanmaak op",
+  "Store the last update user of each record": "Sla de gebruiker van de laatste update op",
+  "Store the creation time of each record": "Sla de creatietijd van elke record op",
+  "Store the last update time of each record": "Sla de laatste update tijd van elke record op",
+  "More options": "Meer opties",
+  "Records can be sorted": "Records kunnen worden gesorteerd",
+  "Calendar collection": "Kalendercollectie",
+  "General collection": "Algemene collectie",
+  "Connect to database view": "Verbind met databaseweergave",
+  "Sync from database": "Synchroniseren vanuit database",
+  "Source collections": "Broncollecties",
+  "Field source": "Veldbron",
+  "Preview": "Voorbeeld",
+  "Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.": "Willekeurig gegenereerd en kan worden aangepast. Ondersteunt letters, cijfers en onderstrepingstekens, moet beginnen met een letter.",
   "Edit": "Bewerken",
   "Edit collection": "Bewerk verzameling",
   "Configure fields": "Configureer velden",
