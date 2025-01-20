@@ -92,7 +92,7 @@ export const AssociationFieldProvider = observer(
         return;
       }
       // TODO：这个判断不严谨
-      if (field.editable) {
+      if (['Picker', 'Select'].includes(currentMode) && fieldSchema.default) {
         run();
       }
       // 如果是表单模板数据，使用子表单和子表格组件时，过滤掉关系 ID
