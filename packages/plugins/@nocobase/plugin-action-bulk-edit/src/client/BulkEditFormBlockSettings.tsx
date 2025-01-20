@@ -8,22 +8,22 @@
  */
 
 import { useFieldSchema } from '@formily/react';
-import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
-import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
-import { useCollection_deprecated } from '../../../../collection-manager';
-import { useCollection } from '../../../../data-source/collection/CollectionProvider';
 import {
+  SchemaSettings,
+  useBlockTemplateContext,
+  SchemaSettingsLayoutItem,
   SchemaSettingsDataTemplates,
+  useFormBlockContext,
   SchemaSettingsFormItemTemplate,
+  useCollection,
+  useCollection_deprecated,
+  SchemaSettingsBlockHeightItem,
+  SchemaSettingsBlockTitleItem,
   SchemaSettingsLinkageRules,
-} from '../../../../schema-settings';
-import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
-import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
-import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
-import { SchemaSettingsLayoutItem } from '../../../../schema-settings/SchemaSettingsLayoutItem';
+} from '@nocobase/client';
 
-export const createFormBlockSettings = new SchemaSettings({
-  name: 'blockSettings:createForm',
+export const bulkEditFormBlockSettings = new SchemaSettings({
+  name: 'blockSettings:bulkEditForm',
   items: [
     {
       name: 'title',
@@ -43,21 +43,7 @@ export const createFormBlockSettings = new SchemaSettings({
         };
       },
     },
-    {
-      name: 'dataTemplates',
-      Component: SchemaSettingsDataTemplates,
-      useVisible() {
-        const { action } = useFormBlockContext();
-        const schema = useFieldSchema();
-        return !action && schema?.['x-acl-action'].includes('create');
-      },
-      useComponentProps() {
-        const { name } = useCollection_deprecated();
-        return {
-          collectionName: name,
-        };
-      },
-    },
+
     {
       name: 'divider',
       type: 'divider',
