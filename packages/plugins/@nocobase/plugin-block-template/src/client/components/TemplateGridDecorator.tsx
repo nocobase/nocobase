@@ -70,7 +70,7 @@ export const TemplateGridDecorator = observer((props: any) => {
         update();
       }
     },
-    [update, field],
+    [update, field, updateInitializer],
   );
 
   const updateTemplateConfigured = useCallback(
