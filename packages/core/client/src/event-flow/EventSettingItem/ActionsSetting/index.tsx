@@ -20,19 +20,18 @@ import { SubFormProvider } from '../../../schema-component/antd/association-fiel
 import { DynamicComponentProps } from '../../../schema-component/antd/filter/DynamicComponent';
 import { FilterContext } from '../../../schema-component/antd/filter/context';
 import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
-import { LinkageRuleActionGroup } from './LinkageRuleActionGroup';
+import { Actions } from './Actions';
 import { EnableLinkage } from './components/EnableLinkage';
 import { ArrayCollapse } from './components/LinkageHeader';
 import { FormProvider, createSchemaField } from '@formily/react';
-import { Filter } from '../filter';
+import { Filter } from '../Filter2';
 
 export interface Props {
   dynamicComponent: any;
 }
 
-export const FormLinkageRules = withDynamicSchemaProps(
+export const ActionsSetting = withDynamicSchemaProps(
   observer((props: Props) => {
-    console.log('FormLinkageRules22', props);
     const fieldSchema = useFieldSchema();
     const { options, defaultValues, collectionName, form, variables, localVariables, record, dynamicComponent } =
       useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
@@ -70,7 +69,7 @@ export const FormLinkageRules = withDynamicSchemaProps(
                     wrapperCol: 16,
                   },
                   properties: {
-                    conditions: {
+                    conditionsTitle: {
                       'x-component': 'h4',
                       'x-content': '{{ t("Condition") }}',
                     },
@@ -106,13 +105,13 @@ export const FormLinkageRules = withDynamicSchemaProps(
                         },
                       },
                     },
-                    actions: {
+                    actionsTitle: {
                       'x-component': 'h4',
-                      'x-content': '{{ t("Properties") }}',
+                      'x-content': '{{ t("动作") }}',
                     },
-                    action: {
+                    actions: {
                       type: 'void',
-                      'x-component': (_props) => <LinkageRuleActionGroup {..._props} {...props} />,
+                      'x-component': (_props) => <Actions {..._props} {...props} />,
                     },
                   },
                 },
@@ -173,18 +172,18 @@ export const FormLinkageRules = withDynamicSchemaProps(
 
     return (
       // 这里使用 SubFormProvider 包裹，是为了让子表格的联动规则中 “当前对象” 的配置显示正确
-      <FormProvider form={form}>
-        <SubFormProvider value={{ value: null, collection: { name: collectionName } as any }}>
-          <RecordProvider record={record} parent={parentRecordData}>
-            <FilterContext.Provider value={value}>
-              <CollectionProvider name={collectionName}>
-                <SchemaComponent components={components} schema={schema} />
-              </CollectionProvider>
-            </FilterContext.Provider>
-          </RecordProvider>
-        </SubFormProvider>
-      </FormProvider>
+      // <FormProvider form={form}>
+      <SubFormProvider value={{ value: null, collection: { name: collectionName } as any }}>
+        <RecordProvider record={record} parent={parentRecordData}>
+          <FilterContext.Provider value={value}>
+            <CollectionProvider name={collectionName}>
+              <SchemaComponent components={components} schema={schema} />
+            </CollectionProvider>
+          </FilterContext.Provider>
+        </RecordProvider>
+      </SubFormProvider>
+      // </FormProvider>
     );
   }),
-  { displayName: 'FormLinkageRules' },
+  { displayName: 'ActionsSetting' },
 );

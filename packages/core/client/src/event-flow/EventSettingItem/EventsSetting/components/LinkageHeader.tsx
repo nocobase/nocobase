@@ -24,25 +24,26 @@ const LinkageRulesTitle = (props) => {
   const index = ArrayBase.useIndex(props.index);
   const { t } = useTranslation();
   const value = array?.field?.value[index];
-  return (
-    <Input.TextArea
-      value={value.title}
-      defaultValue={t('Linkage rule')}
-      onChange={(ev) => {
-        ev.stopPropagation();
-        array.field.value.splice(index, 1, { ...value, title: ev.target.value });
-      }}
-      onBlur={(ev) => {
-        ev.stopPropagation();
-        array.field.value.splice(index, 1, { ...value, title: ev.target.value });
-      }}
-      autoSize
-      style={{ width: '70%', border: 'none' }}
-      onClick={(e) => {
-        e.stopPropagation();
-      }}
-    />
-  );
+  return <div>{`事件 ${index + 1}`}</div>;
+  // return (
+  //   <Input.TextArea
+  //     value={value.title}
+  //     defaultValue={t('Linkage rule')}
+  //     onChange={(ev) => {
+  //       ev.stopPropagation();
+  //       array.field.value.splice(index, 1, { ...value, title: ev.target.value });
+  //     }}
+  //     onBlur={(ev) => {
+  //       ev.stopPropagation();
+  //       array.field.value.splice(index, 1, { ...value, title: ev.target.value });
+  //     }}
+  //     autoSize
+  //     style={{ width: '70%', border: 'none' }}
+  //     onClick={(e) => {
+  //       e.stopPropagation();
+  //     }}
+  //   />
+  // );
 };
 
 export interface IArrayCollapseProps extends CollapseProps {
@@ -133,6 +134,9 @@ export const ArrayCollapse: ComposedArrayCollapse = observer(
     };
 
     const renderItems = () => {
+      if (!dataSource || dataSource.length === 0) {
+        return null;
+      }
       return (
         <Collapse
           {...props}

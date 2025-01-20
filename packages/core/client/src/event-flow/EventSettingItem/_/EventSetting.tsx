@@ -1,11 +1,11 @@
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
+// /**
+//  * This file is part of the NocoBase (R) project.
+//  * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+//  * Authors: NocoBase Team.
+//  *
+//  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+//  * For more information, please refer to: https://www.nocobase.com/agreement.
+//  */
 
 import React, { useMemo } from 'react';
 import { useControllableValue } from 'ahooks';
@@ -14,10 +14,11 @@ import EventSelect from './EventSelect';
 import ConditionInput from './ConditionInput';
 import ActionsInput from './ActionsInput';
 import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
-import { EventSetting } from '../types';
+import { EventSetting } from '../../types';
 import { FormLinkageRules } from './LinkageRules';
 import { createForm } from '@formily/core';
-import options from './options.json';
+import options from '../options.json';
+import { onFormValuesChange, onFormInit } from '@formily/core';
 
 const EventCard = (props) => {
   const { modules, onDelete } = props;
@@ -33,6 +34,11 @@ const EventCard = (props) => {
     () =>
       createForm({
         initialValues: { rules: [] },
+        effects() {
+          onFormValuesChange((form) => {
+            console.log('onFormValuesChange', JSON.parse(JSON.stringify(form.values)));
+          });
+        },
       }),
     [],
   );
@@ -53,7 +59,7 @@ const EventCard = (props) => {
         <ActionsInput modules={modules} value={state.actions} onChange={(v) => setState({ ...state, actions: v })} />
       </Form.Item> */}
       <FormLinkageRules
-        category="default"
+        // category="default"
         collectionName="t_aierml1wni1"
         elementType="field"
         defaultValues={[]}
@@ -63,9 +69,12 @@ const EventCard = (props) => {
         localVariables={[]}
         options={options}
         variables={{}}
-        value={{ rules: [] }}
-        record={{
-          __collectionName: 't_aierml1wni1',
+        // value={{ rules: [] }}
+        // record={{
+        //   __collectionName: 't_aierml1wni1',
+        // }}
+        onChange={(v) => {
+          console.log('onChange', v);
         }}
       />
     </Card>

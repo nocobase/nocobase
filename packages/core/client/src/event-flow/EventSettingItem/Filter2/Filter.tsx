@@ -54,7 +54,6 @@ export const Filter: any = withDynamicSchemaProps(
     }, [fieldSchema.defaultValue]);
     return (
       <div className={className}>
-        1111
         <FilterContext.Provider
           value={{
             field,

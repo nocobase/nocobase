@@ -10,24 +10,30 @@
 import React from 'react';
 import { useControllableValue } from 'ahooks';
 import { Card, Space, TreeSelect } from 'antd';
-import { EventDefinition } from '../types';
+import { EventDefinition } from '../../types';
 
-export default function EventSelect(props: { modules: EventDefinition[]; value: any; onChange: (v: any) => void }) {
-  const { modules, onChange } = props;
-  const [state, setState] = useControllableValue<Array<any>>(props, {
+export default function EventSelect(props: {
+  definitions: EventDefinition[];
+  value: any;
+  onChange: (v: any) => void;
+  className?: string;
+}) {
+  const { definitions, className } = props;
+  const [state, setState] = useControllableValue<String>(props, {
     defaultValue: undefined,
   });
 
-  let treeData = modules?.map((module) => ({
+  let treeData = definitions?.map((module) => ({
     value: module.name,
-    title: module.title,
+    title: module.title + ' - ' + module.uid,
+    selectable: false,
     children:
       module?.events?.map((event) => ({
         value: module.name + '.' + event.name,
         title: event.title,
       })) || [],
   }));
-  treeData = treeData.filter((item) => item.children.length > 0);
+  treeData = treeData?.filter((item) => item.children.length > 0);
 
   return (
     <TreeSelect
@@ -40,6 +46,7 @@ export default function EventSelect(props: { modules: EventDefinition[]; value: 
         setState(value);
       }}
       treeData={treeData}
+      className={className}
     />
   );
 }

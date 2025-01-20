@@ -14,14 +14,22 @@ import {
   useApp,
   usePlugin,
   useSchemaSettings,
+  useLinkageCollectionFilterOptions,
+  useFormBlockContext,
+  useVariables,
+  useLocalVariables,
+  useFormBlockType,
+  useRecord,
 } from '@nocobase/client';
 import React from 'react';
 import { ISchema, useField } from '@formily/react';
-import EventSettings from './EventSetting';
 import { SchemaSettingsKey, useEvent } from '..';
 import { useFieldSchema } from '@formily/react';
+import { useLinkageCollectionFieldOptions } from './ActionsSetting/action-hooks';
+import { EventsSetting } from './EventsSetting';
 
-export const EventSettingItem = () => {
+// packages/core/client/src/schema-settings/SchemaSettings.tsx
+export const EventSettingItem = (props) => {
   // const field = useField();
   const filed = useField();
   const schema = useFieldSchema();
@@ -31,10 +39,20 @@ export const EventSettingItem = () => {
   const { dn } = useDesignable();
   const fieldSchema = useFieldSchema();
   console.log('definitions', definitions);
+  const { readPretty, Component, afterSubmit } = props;
+  const collectionName = 't_aierml1wni1';
+  const options = useLinkageCollectionFilterOptions(collectionName);
+  const linkageOptions = useLinkageCollectionFieldOptions(collectionName, readPretty);
+  const { form } = useFormBlockContext();
+  const variables = useVariables();
+  const localVariables = useLocalVariables();
+  const { type: formBlockType } = useFormBlockType();
+  const record = useRecord();
+
   return (
     <SchemaSettingsModalItem
       title={'Event Setting'}
-      components={{ EventSettings }}
+      components={{ EventsSetting }}
       initialValues={{}}
       scope={{}}
       width={1000}
@@ -44,12 +62,22 @@ export const EventSettingItem = () => {
           title: '事件配置',
           properties: {
             events: {
-              type: 'array',
-              default: fieldSchema?.[SchemaSettingsKey] || [],
-              'x-decorator': 'FormItem',
-              'x-component': 'EventSettings',
-              'x-component-props': {
-                modules: definitions,
+              'x-component': EventsSetting,
+              'x-use-component-props': () => {
+                return {
+                  definitions,
+                  options,
+                  defaultValues: undefined,
+                  linkageOptions,
+                  category: 'default',
+                  elementType: 'field',
+                  collectionName,
+                  form,
+                  variables,
+                  localVariables,
+                  record,
+                  formBlockType,
+                };
               },
             },
           },
