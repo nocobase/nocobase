@@ -51,17 +51,20 @@ export const AssociationFieldProvider = observer(
     const { loading: rLoading, run } = useRequest(
       () => {
         const targetKey = collectionField.targetKey;
-        if (!fieldSchema.default || !['Picker', 'Select'].includes(currentMode)) {
-          return Promise.resolve(null);
+        if (!fieldSchema.default) {
+          return Promise.reject(null);
+        }
+        if (!['Picker', 'Select'].includes(currentMode)) {
+          return Promise.reject(null);
         }
         if (!_.isObject(fieldSchema.default)) {
-          return Promise.resolve(null);
+          return Promise.reject(null);
         }
         const ids = Array.isArray(fieldSchema.default)
           ? fieldSchema.default.map((item) => item[targetKey])
           : fieldSchema.default[targetKey];
         if (!ids) {
-          return Promise.resolve(null);
+          return Promise.reject(null);
         }
         return api.request({
           resource: collectionField.target,
@@ -76,9 +79,7 @@ export const AssociationFieldProvider = observer(
       {
         manual: true,
         onSuccess(res) {
-          if (!res?.data?.data) {
-            return;
-          }
+          field.initialValue = res?.data?.data;
           field.value = res?.data?.data;
         },
       },
@@ -133,6 +134,7 @@ export const AssociationFieldProvider = observer(
       if (currentMode === 'SubTable') {
         field.value = [];
       }
+
       setLoading(false);
     }, [currentMode, collectionField, field]);
 
