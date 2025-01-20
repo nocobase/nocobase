@@ -256,18 +256,6 @@ const useInsertSchema = (component) => {
   return insert;
 };
 
-const useDefaultGetColor = () => {
-  const { token } = useToken();
-  return {
-    getFontColor(value) {
-      return null;
-    },
-    getBackgroundColor(value) {
-      return null;
-    },
-  };
-};
-
 export const Calendar: any = withDynamicSchemaProps(
   withSkeletonComponent(
     (props: any) => {
@@ -293,7 +281,7 @@ export const Calendar: any = withDynamicSchemaProps(
       }, [reactBigCalendar]);
 
       // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-      const { dataSource, fieldNames, showLunar, defaultView } = useProps(props);
+      const { dataSource, fieldNames, showLunar, defaultView, getFontColor, getBackgroundColor } = useProps(props);
       const height = useCalenderHeight();
       const [date, setDate] = useState<Date>(new Date());
       const [view, setView] = useState<View>(props.defaultView || 'month');
@@ -313,12 +301,8 @@ export const Calendar: any = withDynamicSchemaProps(
       const ctx = useActionContext();
       const [visibleAddNewer, setVisibleAddNewer] = useState(false);
       const [currentSelectDate, setCurrentSelectDate] = useState(undefined);
-      const app = useApp();
-      const plugin = app.pm.get('calendar') as any;
       const colorCollectionField = collection.getField(fieldNames.colorFieldName);
-      const pluginColorField = plugin.getColorFieldInterface(colorCollectionField?.interface) || {};
-      const { useGetColor = useDefaultGetColor } = pluginColorField;
-      const { getFontColor, getBackgroundColor } = useGetColor?.(colorCollectionField) || {};
+
       useEffect(() => {
         setView(props.defaultView);
       }, [props.defaultView]);
