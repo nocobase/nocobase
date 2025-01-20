@@ -13,7 +13,13 @@ import _ from 'lodash';
 import React, { FC, Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDesignable, usePopupSettings } from '../../';
 import { WithoutTableFieldResource } from '../../../block-provider';
-import { CollectionRecordProvider, useCollectionManager, useCollectionRecordData } from '../../../data-source';
+import {
+  CollectionRecordProvider,
+  DataBlockProvider,
+  useCollection,
+  useCollectionManager,
+  useCollectionRecordData,
+} from '../../../data-source';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { useOpenModeContext } from '../../../modules/popup/OpenModeProvider';
 import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
@@ -284,6 +290,7 @@ export const ReadPrettyInternalViewer: React.FC<ReadPrettyInternalViewerProps> =
   const parentRecordData = useCollectionRecordData();
   const [recordData, setRecordData] = useState(null);
   const { isPopupVisibleControlledByURL } = usePopupSettings();
+  const collection = useCollection();
 
   const onClickItem = useCallback((props: { recordData: any }) => {
     setRecordData(props.recordData);
@@ -329,14 +336,24 @@ export const ReadPrettyInternalViewer: React.FC<ReadPrettyInternalViewerProps> =
     }
 
     return (
-      <CollectionRecordProvider isNew={false} record={recordData} parentRecord={parentRecordData}>
-        {/* The recordData here is only provided when the popup is opened, not the current row record */}
-        <VariablePopupRecordProvider>
-          <WithoutTableFieldResource.Provider value={true}>
-            <NocoBaseRecursionField schema={fieldSchema} onlyRenderProperties basePath={field.address} />
-          </WithoutTableFieldResource.Provider>
-        </VariablePopupRecordProvider>
-      </CollectionRecordProvider>
+      <DataBlockProvider
+        dataSource={collection.dataSource}
+        collection={collection.name}
+        association={collectionField.target}
+        sourceId={recordData?.[collection.getPrimaryKey()]}
+        record={recordData}
+        parentRecord={parentRecordData}
+        action="get"
+      >
+        <CollectionRecordProvider isNew={false} record={recordData} parentRecord={parentRecordData}>
+          {/* The recordData here is only provided when the popup is opened, not the current row record */}
+          <VariablePopupRecordProvider>
+            <WithoutTableFieldResource.Provider value={true}>
+              <NocoBaseRecursionField schema={fieldSchema} onlyRenderProperties basePath={field.address} />
+            </WithoutTableFieldResource.Provider>
+          </VariablePopupRecordProvider>
+        </CollectionRecordProvider>
+      </DataBlockProvider>
     );
   };
 
