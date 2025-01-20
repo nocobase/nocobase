@@ -26,12 +26,14 @@ import {
 } from './BulkEditFormActionInitializers';
 import { BulkEditFormItemInitializers_deprecated, bulkEditFormItemInitializers } from './BulkEditFormItemInitializers';
 import { bulkEditFormItemSettings } from './bulkEditFormItemSettings';
+import { bulkEditFormBlockSettings } from './BulkEditFormBlockSettings';
 import { BulkEditField } from './component/BulkEditField';
 import { useCustomizeBulkEditActionProps } from './utils';
 export class PluginActionBulkEditClient extends Plugin {
   async load() {
     this.app.addComponents({ BulkEditField, BulkEditActionDecorator });
     this.app.addScopes({ useCustomizeBulkEditActionProps });
+    this.app.schemaSettingsManager.add(bulkEditFormBlockSettings);
     this.app.schemaSettingsManager.add(deprecatedBulkEditActionSettings);
     this.app.schemaSettingsManager.add(bulkEditActionSettings);
     this.app.schemaSettingsManager.add(bulkEditFormSubmitActionSettings);
