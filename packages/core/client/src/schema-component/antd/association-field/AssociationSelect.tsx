@@ -16,20 +16,11 @@ import { isFunction } from 'mathjs';
 import { isEqual } from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ClearCollectionFieldContext,
-  RecordProvider,
-  useAPIClient,
-  useCollectionRecordData,
-  useCollectionManager_deprecated,
-} from '../../../';
+import { ClearCollectionFieldContext, RecordProvider, useAPIClient, useCollectionRecordData } from '../../../';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { getInnermostKeyAndValue } from '../../common/utils/uitls';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
-import { useRequest } from '../../../api-client';
-import { useDataSourceHeaders } from '../../../data-source/utils';
-import { useDataSourceKey } from '../../../data-source/data-source/DataSourceProvider';
 
 export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
   addMode?: 'quickAdd' | 'modalAdd';
@@ -78,27 +69,6 @@ const InternalAssociationSelect = observer(
     const api = useAPIClient();
     const resource = api.resource(collectionField.target);
     const recordData = useCollectionRecordData();
-    const dataSource = useDataSourceKey();
-    const { getCollection } = useCollectionManager_deprecated();
-    const targetCollection = getCollection(collectionField?.name, dataSource);
-    const headers = useDataSourceHeaders(dataSource);
-    const { data, run, loading }: any = useRequest(
-      {
-        action: 'list',
-        ...service,
-        headers,
-        params: {
-          pageSize: 200,
-          ...service?.params,
-          filter: service?.params?.filter,
-        },
-      },
-      {
-        manual: true,
-        debounceWait: 300,
-        ...(service.defaultParams ? { defaultParams: [service.defaultParams] } : {}),
-      },
-    );
     useEffect(() => {
       const initValue = isVariable(field.value) ? undefined : field.value;
       const value = Array.isArray(initValue) ? initValue.filter(Boolean) : initValue;
@@ -126,19 +96,6 @@ const InternalAssociationSelect = observer(
         form.removeEffects(id);
       };
     }, []);
-    useEffect(() => {
-      if (fieldSchema.default && !isVariable(field.default)) {
-        run();
-      }
-    }, []);
-    useEffect(() => {
-      if (!loading && data) {
-        const item = data?.data?.find((v) => {
-          return v[targetCollection?.filterTargetKey] === fieldSchema.default[targetCollection?.filterTargetKey];
-        });
-        field.value = item;
-      }
-    }, [loading]);
 
     const handleCreateAction = async (props) => {
       const { search: value, callBack } = props;

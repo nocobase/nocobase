@@ -14,6 +14,9 @@ import { useCollectionManager } from '../../../data-source/collection';
 import { markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
 import { useSchemaComponentContext } from '../../hooks';
 import { AssociationFieldContext } from './context';
+import { useDataSourceKey } from '../../../data-source/data-source/DataSourceProvider';
+import { useCollectionManager_deprecated, useAPIClient } from '../../../';
+import { isVariable } from '../../../variables/utils/isVariable';
 
 export const AssociationFieldProvider = observer(
   (props) => {
@@ -44,6 +47,11 @@ export const AssociationFieldProvider = observer(
     );
 
     const [loading, setLoading] = useState(!field.readPretty);
+    const dataSource = useDataSourceKey();
+    const api = useAPIClient();
+    const { getCollection } = useCollectionManager_deprecated();
+    const targetCollection = getCollection(collectionField?.name, dataSource);
+    const resource = api.resource(collectionField.target);
 
     useEffect(() => {
       setLoading(true);
@@ -77,6 +85,29 @@ export const AssociationFieldProvider = observer(
             field.value = [markRecordAsNew({})];
           }
         }
+        if (currentMode === 'Select') {
+          if (field.initialValue && !isVariable(field.initialValue)) {
+            try {
+              resource
+                .list()
+                .then(({ data }) => {
+                  if (data?.data) {
+                    const item = data?.data?.find((v) => {
+                      return (
+                        v[targetCollection?.filterTargetKey] === fieldSchema.default[targetCollection?.filterTargetKey]
+                      );
+                    });
+                    field.value = item;
+                  }
+                })
+                .catch((error) => {
+                  console.error('Error while fetching resource list:', error);
+                });
+            } catch (error) {
+              console.error('Unexpected error:', error);
+            }
+          }
+        }
         setLoading(false);
         return;
       }
@@ -90,6 +121,7 @@ export const AssociationFieldProvider = observer(
       if (currentMode === 'SubTable') {
         field.value = [];
       }
+
       setLoading(false);
     }, [currentMode, collectionField, field]);
 
