@@ -13,6 +13,7 @@ const useStyles = createStyles(({ css, token }) => {
   return {
     workflowPageClass: css`
       flex-grow: 1;
+      height: 100%;
       overflow: hidden;
       display: flex;
       flex-direction: column;
