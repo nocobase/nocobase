@@ -41,7 +41,7 @@ export default class extends Migration {
             const needRemoveIds = getNeedRemoveIds(desktopRoutes, menuUiSchemas);
 
             if (needRemoveIds.length === 0) {
-              return;
+              continue;
             }
 
             // @ts-ignore
