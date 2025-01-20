@@ -111,9 +111,11 @@ export const MobileRoutesProvider: FC<{
     loading,
   } = useRequest<{ data: MobileRouteItem[] }>(
     () =>
-      resource[action]({ tree: true, sort: 'sort', paginate: false, filter: { hidden: { $ne: true } } }).then(
-        (res) => res.data,
-      ),
+      resource[action](
+        action === 'listAccessible'
+          ? { tree: true, sort: 'sort' }
+          : { tree: true, sort: 'sort', paginate: false, filter: { hidden: { $ne: true } } },
+      ).then((res) => res.data),
     {
       manual,
     },
