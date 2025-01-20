@@ -309,6 +309,7 @@ export const TemplateBlockInitializer = () => {
           configured: true,
           type: isMobile ? 'Mobile' : { $ne: 'Mobile' },
         },
+        paginate: false,
       },
     },
     {
