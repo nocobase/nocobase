@@ -63,7 +63,7 @@ export const AssociationFieldProvider = observer(
         const ids = Array.isArray(fieldSchema.default)
           ? fieldSchema.default.map((item) => item[targetKey])
           : fieldSchema.default[targetKey];
-        if (!ids) {
+        if (_.isUndefined(ids) || _.isNil(ids) || _.isNaN(ids)) {
           return Promise.reject(null);
         }
         return api.request({
@@ -80,7 +80,7 @@ export const AssociationFieldProvider = observer(
         manual: true,
         onSuccess(res) {
           field.initialValue = res?.data?.data;
-          field.value = res?.data?.data;
+          // field.value = res?.data?.data;
         },
       },
     );
