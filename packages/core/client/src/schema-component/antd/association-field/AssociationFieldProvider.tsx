@@ -14,6 +14,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useAPIClient, useRequest } from '../../../api-client';
 import { useCollectionManager } from '../../../data-source/collection';
 import { markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
+import { useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
 import { useSchemaComponentContext } from '../../hooks';
 import { AssociationFieldContext } from './context';
 
@@ -85,7 +86,13 @@ export const AssociationFieldProvider = observer(
       },
     );
 
+    const { active } = useKeepAlive();
+
     useEffect(() => {
+      if (!active) {
+        return;
+      }
+
       setLoading(true);
       if (!collectionField) {
         setLoading(false);
@@ -136,7 +143,7 @@ export const AssociationFieldProvider = observer(
       }
 
       setLoading(false);
-    }, [currentMode, collectionField, field]);
+    }, [currentMode, collectionField, field, active]);
 
     if (loading || rLoading) {
       return null;
