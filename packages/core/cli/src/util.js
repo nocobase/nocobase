@@ -334,7 +334,7 @@ function generateGatewayPath() {
     return resolve(process.cwd(), process.env.SOCKET_PATH);
   }
   if (process.env.NOCOBASE_RUNNING_IN_DOCKER === 'true') {
-    return path.resolve(os.homedir(), '.nocobase', 'gateway.sock');
+    return resolve(os.homedir(), '.nocobase', 'gateway.sock');
   }
   return resolve(process.cwd(), 'storage/gateway.sock');
 }
@@ -347,7 +347,7 @@ function generatePm2Home() {
     return resolve(process.cwd(), process.env.PM2_HOME);
   }
   if (process.env.NOCOBASE_RUNNING_IN_DOCKER === 'true') {
-    return path.resolve(os.homedir(), '.nocobase', 'pm2');
+    return resolve(os.homedir(), '.nocobase', 'pm2');
   }
   return resolve(process.cwd(), './storage/.pm2');
 }
