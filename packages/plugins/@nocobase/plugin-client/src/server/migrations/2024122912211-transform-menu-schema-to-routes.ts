@@ -52,36 +52,38 @@ export default class extends Migration {
           }
         }
 
-        // 3. 将旧版的移动端菜单数据转换为新版的移动端菜单数据
-        const allMobileRoutes = await mobileRoutes.find({
-          transaction,
-        });
+        if (mobileRoutes) {
+          // 3. 将旧版的移动端菜单数据转换为新版的移动端菜单数据
+          const allMobileRoutes = await mobileRoutes.find({
+            transaction,
+          });
 
-        for (const item of allMobileRoutes || []) {
-          if (item.type !== 'page') {
-            continue;
+          for (const item of allMobileRoutes || []) {
+            if (item.type !== 'page') {
+              continue;
+            }
+
+            const mobileRouteSchema = await uiSchemas.getJsonSchema(item.schemaUid);
+            const enableTabs = !!mobileRouteSchema?.['x-component-props']?.displayTabs;
+
+            await mobileRoutes.update({
+              filterByTk: item.id,
+              values: {
+                enableTabs,
+              },
+              transaction,
+            });
+
+            await mobileRoutes.update({
+              filter: {
+                parentId: item.id,
+              },
+              values: {
+                hidden: !enableTabs,
+              },
+              transaction,
+            });
           }
-
-          const mobileRouteSchema = await uiSchemas.getJsonSchema(item.schemaUid);
-          const enableTabs = !!mobileRouteSchema?.['x-component-props']?.displayTabs;
-
-          await mobileRoutes.update({
-            filterByTk: item.id,
-            values: {
-              enableTabs,
-            },
-            transaction,
-          });
-
-          await mobileRoutes.update({
-            filter: {
-              parentId: item.id,
-            },
-            values: {
-              hidden: !enableTabs,
-            },
-            transaction,
-          });
         }
       });
     } catch (error) {
