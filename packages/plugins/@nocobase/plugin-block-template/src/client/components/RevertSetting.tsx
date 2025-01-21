@@ -89,6 +89,7 @@ export const RevertSetting = () => {
               rootSchema['x-uid'],
               rootSchema['x-block-template-key'],
             );
+            newSchema['x-index'] = fieldSchema['x-index'];
 
             // remove old schema
             const position = findInsertPosition(fieldSchema.parent, fieldSchema['x-uid']);
