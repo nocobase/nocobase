@@ -170,8 +170,8 @@ const workflowFieldset = {
       },
       stackLimit: {
         type: 'number',
-        title: `{{ t("Maximum number of loop calls", { ns: "${NAMESPACE}" }) }}`,
-        description: `{{ t("If the number of loop calls is too large, there will be performance issues.", { ns: "${NAMESPACE}" }) }}`,
+        title: `{{ t("Maximum number of cycling triggers", { ns: "${NAMESPACE}" }) }}`,
+        description: `{{ t("The triggers of same workflow by some node (create, update and sub-flow etc.) more than this number will be ignored. Large number may cause performance issues. Please use with caution.", { ns: "${NAMESPACE}" }) }}`,
         'x-decorator': 'FormItem',
         default: 1,
         'x-component': 'InputNumber',

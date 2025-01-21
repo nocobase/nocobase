@@ -381,13 +381,13 @@ export default class extends Instruction {
             className={cx(
               styles.branchBlockClass,
               css`
-                padding-left: 16em;
+                padding-left: 4em;
               `,
             )}
           >
             <Branch from={data} entry={entry} branchIndex={entry?.branchIndex ?? 0} />
 
-            <div className={styles.branchClass}>
+            <div className={styles.branchClass} style={{ minWidth: '4em' }}>
               <div className="workflow-branch-lines" />
               <div className={styles.loopLineClass}>
                 <ArrowUpOutlined />
