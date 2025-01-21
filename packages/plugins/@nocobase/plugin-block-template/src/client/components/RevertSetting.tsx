@@ -122,25 +122,25 @@ export const RevertSetting = () => {
               return ret;
             };
             refresh({ refreshParentSchema: true });
+            // set componentProps, otherwise some components props will not be refreshed
             field['componentProps'] = {
               ...templateSchema['x-component-props'],
               key: uid(),
             };
-            if (field.parent['componentProps']) {
+            if (field.parent?.['componentProps']) {
               field.parent['componentProps'] = {
                 ...field.parent['componentProps'],
                 key: uid(),
               };
             }
+            // set decoratorProps, otherwise title will not be refreshed
             field['decoratorProps'] = {
               ...templateSchema['x-decorator-props'],
               key: uid(),
             };
-            // const values = form.values;
             form.reset();
-            form.clearFormGraph(field.address, true);
-            blockForm?.clearFormGraph(field.address, true);
-            // runAsync?.();
+            form.clearFormGraph();
+            blockForm?.clearFormGraph();
             message.success(t('Reset successfully'), 0.2);
           },
         });
