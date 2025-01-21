@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, SchemaSettingsFormItemTemplate, SchemaSettingsTemplate } from '@nocobase/client';
+import { Plugin } from '@nocobase/client';
 import { templateBlockInitializerItem } from './initializers';
 import { NAMESPACE } from './constants';
 import { BlockTemplateList, BlockTemplatePage } from './components';
@@ -17,9 +17,9 @@ import { associationRecordSettingItem, revertSettingItem, formSettingItem } from
 import { collectAllTemplateUids, getFullSchema } from './utils/template';
 import { registerTemplateBlockInterceptors } from './utils/interceptors';
 import { TemplateGridDecorator } from './components/TemplateGridDecorator';
-import { useIsInTemplate } from './hooks/useIsInTemplate';
 import PluginMobileClient from '@nocobase/plugin-mobile/client';
 import { BlockTemplateMobilePage } from './components/BlockTemplateMobilePage';
+import { hideConvertToBlockSettingItem, hideDeleteSettingItem } from './utils/setting';
 
 export class PluginBlockTemplateClient extends Plugin {
   loadingPromises = new Map();
@@ -220,40 +220,17 @@ export class PluginBlockTemplateClient extends Plugin {
         const schemaSettings = this.app.schemaSettingsManager.getAll();
         for (const key in schemaSettings) {
           const schemaSetting = this.app.schemaSettingsManager.get(key);
+          // if not filter out fieldSettings:component:, we will show two revert setting item
           if (schemaSetting && !key.startsWith('fieldSettings:component:')) {
             schemaSetting.add('template-associationRecordSetting', associationRecordSettingItem);
             schemaSetting.add('template-revertSettingItem', revertSettingItem);
             schemaSetting.add('template-formSettingItem', formSettingItem);
 
-            // hide convert to block setting item
             for (let i = 0; i < schemaSetting.items.length; i++) {
-              if (
-                schemaSetting.items[i]['Component'] === SchemaSettingsTemplate ||
-                schemaSetting.items[i]['Component'] === SchemaSettingsFormItemTemplate
-              ) {
-                // const visible = schemaSetting.items[i]['useVisible'] || (() => true);
-                // schemaSetting.items[i]['useVisible'] = () => {
-                //   const notInBlockTemplate = !window.location.pathname.includes('admin/settings/block-templates');
-                //   return notInBlockTemplate && visible();
-                // };
-
-                // hide covert to block setting item
-                schemaSetting.items[i]['useVisible'] = () => false;
-                if (schemaSetting.items[i + 1]?.['type'] === 'divider') {
-                  schemaSetting.items[i + 1]['useVisible'] = () => {
-                    return !this.isInBlockTemplateConfigPage();
-                  };
-                }
-              }
-
+              // hide convert to block setting item
+              hideConvertToBlockSettingItem(schemaSetting.items[i], schemaSetting.items[i + 1]);
               // hide delete setting item
-              if (schemaSetting.items[i]['name'] === 'delete' || schemaSetting.items[i]['name'] === 'remove') {
-                const visible = schemaSetting.items[i]['useVisible'] || (() => true);
-                schemaSetting.items[i]['useVisible'] = function useVisible() {
-                  const isInTemplate = useIsInTemplate(false);
-                  return !isInTemplate && visible();
-                };
-              }
+              hideDeleteSettingItem(schemaSetting.items[i]);
             }
           }
         }
