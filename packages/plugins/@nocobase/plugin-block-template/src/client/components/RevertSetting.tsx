@@ -52,7 +52,7 @@ const findParentRootTemplateSchema = (fieldSchema) => {
 };
 
 export const RevertSetting = () => {
-  const { refresh } = useDesignable();
+  const { refresh, remove } = useDesignable();
   const plugin = usePlugin(PluginBlockTemplateClient);
   const t = useT();
   const api = useAPIClient();
@@ -77,6 +77,22 @@ export const RevertSetting = () => {
               url: `/uiSchemas:getJsonSchema/${templateSchemaId}`,
             });
             const templateSchema = res.data?.data;
+            if (!templateSchema?.['x-uid']) {
+              // this means the template has already been deleted
+              remove(null, {
+                removeParentsIfNoChildren: true,
+                breakRemoveOn: {
+                  'x-component': 'Grid',
+                },
+              });
+              refresh({ refreshParentSchema: true });
+              form.reset();
+              form.clearFormGraph();
+              blockForm?.clearFormGraph();
+              message.success(t('Reset successfully'), 0.2);
+              return;
+            }
+
             const rootSchema = findParentRootTemplateSchema(fieldSchema);
             const isRoot = rootSchema === fieldSchema;
             if (isRoot) {
