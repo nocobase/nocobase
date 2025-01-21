@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.4.28](https://github.com/nocobase/nocobase/compare/v1.4.27...v1.4.28) - 2025-01-21
+
+### 🐛 Bug Fixes
+
+- **[client]** The default value of the assocation field has not been updated ([#6103](https://github.com/nocobase/nocobase/pull/6103)) by @chenos
+
+- **[Action: Batch edit]** Remove form data template from bulk edit action form  settings ([#6098](https://github.com/nocobase/nocobase/pull/6098)) by @katherinehhh
+
+- **[Verification]** Fix provider ID could be edit ([#6097](https://github.com/nocobase/nocobase/pull/6097)) by @mytharcher
+
 ## [v1.4.27](https://github.com/nocobase/nocobase/compare/v1.4.26...v1.4.27) - 2025-01-18
 
 ### 🐛 Bug Fixes
