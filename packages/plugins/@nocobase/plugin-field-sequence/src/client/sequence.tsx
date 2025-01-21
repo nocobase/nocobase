@@ -125,14 +125,6 @@ const RuleTypes = {
         };
         return <code>{value?.map(charset => charsetLabels[charset]).join(', ') || t('Number', { ns: NAMESPACE })}</code>;
       },
-      paddingType: function PaddingType({ value }) {
-        const { t } = useTranslation();
-        const paddingLabels = {
-          zero: t('Zero padding', { ns: NAMESPACE }),
-          none: t('No padding', { ns: NAMESPACE })
-        };
-        return <code>{paddingLabels[value] || t('Zero padding', { ns: NAMESPACE })}</code>;
-      }
     },
     fieldset: {
       length: {
@@ -171,31 +163,10 @@ const RuleTypes = {
           message: `{{t("At least one character set should be selected", { ns: "${NAMESPACE}" })}}`
         }
       },
-      paddingType: {
-        type: 'string',
-        title: `{{t("Padding type", { ns: "${NAMESPACE}" })}}`,
-        description: `{{t("Select padding type for generated characters.", { ns: "${NAMESPACE}" })}}`,
-        'x-decorator': 'FormItem',
-        'x-component': 'Select',
-        'x-reactions': {
-          dependencies: ['charsets'],
-          fulfill: {
-            state: {
-              disabled: '{{ !$deps[0]?.length || $deps[0].length > 1 || $deps[0][0] !== "number" }}'
-            }
-          }
-        },
-        enum: [
-          { value: 'zero', label: `{{t("Zero padding", { ns: "${NAMESPACE}" })}}` },
-          { value: 'none', label: `{{t("No padding", { ns: "${NAMESPACE}" })}}` }
-        ],
-        default: 'zero',
-      }
     },
     defaults: {
       length: 6,
       charsets: ['number'],
-      paddingType: 'zero'
     },
   },
   integer: {
