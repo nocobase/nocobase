@@ -19,7 +19,11 @@ export interface IVerification {
     publicInfo?: any;
   }>;
   validateBoundInfo?(boundInfo: string): Promise<boolean>;
-  bind?(userId: number): Promise<{
+  bind?(
+    userId: number,
+    resource?: string,
+    action?: string,
+  ): Promise<{
     uuid: string;
     meta?: any;
   }>;
@@ -41,7 +45,7 @@ export abstract class Verification implements IVerification {
 
   abstract verify({ resource, action, boundInfo, verifyParams }): Promise<any>;
   async onActionComplete(options: { verifyResult: any }): Promise<any> {}
-  async bind(userId: number): Promise<{ uuid: string; meta?: any }> {
+  async bind(userId: number, resource?: string, action?: string): Promise<{ uuid: string; meta?: any }> {
     throw new Error('Not implemented');
   }
 

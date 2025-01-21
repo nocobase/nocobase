@@ -15,6 +15,7 @@ import { BindFormProps } from '../../verification-manager';
 
 const schema: ISchema = {
   type: 'void',
+  name: 'sms-otp',
   properties: {
     uuid: {
       type: 'string',
@@ -33,7 +34,7 @@ const schema: ISchema = {
       'x-component': 'VerificationCode',
       'x-component-props': {
         targetFieldName: 'phone',
-        actionType: 'verificators:bind',
+        actionType: '{{ actionType }}',
         verificator: '{{ verificator }}',
       },
       'x-decorator': 'FormItem',
@@ -42,6 +43,6 @@ const schema: ISchema = {
 };
 
 export const BindForm = (props: BindFormProps) => {
-  const { verificator } = props;
-  return <SchemaComponent scope={{ verificator }} schema={schema} components={{ VerificationCode }} />;
+  const { verificator, actionType } = props;
+  return <SchemaComponent scope={{ verificator, actionType }} schema={schema} components={{ VerificationCode }} />;
 };

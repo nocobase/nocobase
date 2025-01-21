@@ -41,7 +41,7 @@ const schema: ISchema = {
 };
 
 export const VerificationForm = (props: VerificationFormProps) => {
-  const { verificator, actionType, boundInfo } = props;
+  const { verificator, actionType, boundInfo, isLogged } = props;
   return (
     <SchemaComponent
       schema={schema}
@@ -51,6 +51,7 @@ export const VerificationForm = (props: VerificationFormProps) => {
           return {
             actionType,
             verificator,
+            isLogged,
           };
         },
       }}

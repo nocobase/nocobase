@@ -41,11 +41,11 @@ export class OTPVerification extends Verification {
     return { codeInfo: item };
   }
 
-  async bind(): Promise<{ uuid: string; meta?: any }> {
+  async bind(userId: number, resource?: string, action?: string): Promise<{ uuid: string; meta?: any }> {
     const { uuid, code } = this.ctx.action.params.values || {};
     await this.verify({
-      resource: 'verificators',
-      action: 'bind',
+      resource: resource || 'verificators',
+      action: action || 'bind',
       boundInfo: { uuid },
       verifyParams: { code },
     });

@@ -95,6 +95,9 @@ export default {
       const Verification = plugin.verificationManager.getVerification(verificator.verificationType);
       const verification = new Verification({ ctx, verificator, options: verificator.options });
       const publicBoundInfo = await verification.getPublicBoundInfo(ctx.auth.user.id);
+      if (!publicBoundInfo?.bound) {
+        continue;
+      }
       result.push({
         name: verificator.name,
         title: verificator.title,

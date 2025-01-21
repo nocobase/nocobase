@@ -23,6 +23,7 @@ import { uid } from '@formily/shared';
 import { Schema, useForm } from '@formily/react';
 import { useVerificationTranslation } from './locale';
 import PluginVerificationClient from '.';
+import { createForm } from '@formily/core';
 
 export const UserVerificatorsContext = createContext<{
   refresh: () => void;
@@ -53,7 +54,7 @@ const useBindActionProps = (verificator: string) => {
   };
 };
 
-const useUnbindActionProps = (unbindVerificator: string) => {
+const useUnbindActionProps = () => {
   const form = useForm();
   const api = useAPIClient();
   const { t } = useVerificationTranslation();
@@ -67,7 +68,6 @@ const useUnbindActionProps = (unbindVerificator: string) => {
       await form.submit();
       await api.resource('verificators').unbind({
         values: {
-          unbindVerificator,
           ...form.values,
         },
       });
@@ -84,6 +84,22 @@ const useCancelActionProps = () => {
     onClick: () => {
       setVisible(false);
     },
+  };
+};
+
+const useFormProps = (verificator: string, unbindVerificator: string) => {
+  const form = useMemo(
+    () =>
+      createForm({
+        initialValues: {
+          verificator,
+          unbindVerificator,
+        },
+      }),
+    [verificator, unbindVerificator],
+  );
+  return {
+    form,
   };
 };
 
@@ -123,6 +139,8 @@ const BindModal: React.FC<{
                 'x-component': 'C',
                 'x-component-props': {
                   verificator: verificator.name,
+                  actionType: 'verificators:bind',
+                  isLogged: true,
                 },
               },
               footer: {
@@ -152,46 +170,73 @@ const BindModal: React.FC<{
   );
 };
 
-const UnbindForm: React.FC = () => {
+const UnbindForm: React.FC<{
+  verificators: any[];
+  unbindVerificator: string;
+}> = ({ verificators, unbindVerificator }) => {
   const { t } = useVerificationTranslation();
-  const form = useForm();
   const plugin = usePlugin('verification') as PluginVerificationClient;
-  const api = useAPIClient();
-  const { data: verificators } = useRequest<any[]>(() =>
-    api
-      .resource('verificators')
-      .listForVerify({
-        scene: 'unbind-verificator',
-      })
-      .then((res) => res?.data?.data),
-  );
-
-  useEffect(() => {
-    if (!verificators?.length) {
-      return;
-    }
-    form.setValuesIn('verificator', verificators[0].name);
-  }, [form, verificators]);
-
-  if (!verificators?.length) {
-    return null;
-  }
 
   const tabs = verificators
-    .filter((verificator) => verificator.boundInfo?.bound)
     .map((verificator) => {
       const verification = plugin.verificationManager.getVerification(verificator.verificationType);
       const C = verification?.components?.VerificationForm;
       if (!C) {
         return;
       }
-      const defaultTabTitle = Schema.compile(verificator.verificatorTypeTitle || verificator.verificationType, { t });
+      const defaultTabTitle = Schema.compile(verificator.verificationTypeTitle || verificator.verificationType, { t });
       return {
-        component: createElement(C, {
-          boundInfo: verificator.boundInfo,
-          actionType: 'verificators:unbind',
-          verificator: verificator.name,
-        }),
+        component: (
+          <SchemaComponent
+            components={{ C }}
+            scope={{
+              useCancelActionProps,
+              useUnbindActionProps,
+              useFormProps: () => useFormProps(verificator.name, unbindVerificator),
+            }}
+            schema={{
+              type: 'void',
+              properties: {
+                form: {
+                  type: 'object',
+                  'x-component': 'FormV2',
+                  'x-use-component-props': 'useFormProps',
+                  properties: {
+                    bind: {
+                      type: 'void',
+                      'x-component': 'C',
+                      'x-component-props': {
+                        actionType: 'verificators:unbind',
+                        verificator: verificator.name,
+                        boundInfo: verificator.boundInfo,
+                        isLogged: true,
+                      },
+                    },
+                    footer: {
+                      type: 'void',
+                      'x-component': 'Action.Modal.FootBar',
+                      properties: {
+                        close: {
+                          title: t('Cancel'),
+                          'x-component': 'Action',
+                          'x-component-props': {
+                            type: 'default',
+                          },
+                          'x-use-component-props': 'useCancelActionProps',
+                        },
+                        submit: {
+                          title: t('Unbind'),
+                          'x-component': 'Action',
+                          'x-use-component-props': 'useUnbindActionProps',
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            }}
+          />
+        ),
         tabTitle: verificator.title || defaultTabTitle,
         ...verificator,
       };
@@ -202,9 +247,7 @@ const UnbindForm: React.FC = () => {
     <>
       {tabs.length ? (
         <Tabs
-          onTabClick={(key) => {
-            form.setValuesIn('verificator', key);
-          }}
+          destroyInactiveTabPane={true}
           items={tabs.map((tab) => ({ label: tab.tabTitle, key: tab.name, children: tab.component }))}
         />
       ) : null}
@@ -220,13 +263,26 @@ const UnbindModal: React.FC<{
   };
 }> = ({ verificator }) => {
   const { t } = useVerificationTranslation();
-  if (!verificator) {
+  const api = useAPIClient();
+  const { data: verificators, loading } = useRequest<any[]>(
+    () =>
+      api
+        .resource('verificators')
+        .listForVerify({
+          scene: 'unbind-verificator',
+        })
+        .then((res) => res?.data?.data),
+    {
+      refreshDeps: [verificator],
+    },
+  );
+
+  if (!verificator || loading) {
     return null;
   }
 
   return (
     <SchemaComponent
-      scope={{ useUnbindActionProps: () => useUnbindActionProps(verificator.name), useCancelActionProps }}
       components={{ UnbindForm }}
       schema={{
         type: 'void',
@@ -238,29 +294,13 @@ const UnbindModal: React.FC<{
               width: 520,
             },
             title: t('Unbind verificator'),
-            'x-decorator': 'FormV2',
             properties: {
               [uid()]: {
                 type: 'void',
                 'x-component': 'UnbindForm',
-              },
-              footer: {
-                type: 'void',
-                'x-component': 'Action.Modal.Footer',
-                properties: {
-                  close: {
-                    title: t('Cancel'),
-                    'x-component': 'Action',
-                    'x-component-props': {
-                      type: 'default',
-                    },
-                    'x-use-component-props': 'useCancelActionProps',
-                  },
-                  submit: {
-                    title: t('Unbind'),
-                    'x-component': 'Action',
-                    'x-use-component-props': 'useUnbindActionProps',
-                  },
+                'x-component-props': {
+                  verificators,
+                  unbindVerificator: verificator.name,
                 },
               },
             },
@@ -339,10 +379,10 @@ const Verificators: React.FC = () => {
         )}
       />
       <ActionContextProvider value={{ visible: openBindModal, setVisible: setOpenBindModal }}>
-        <BindModal verificator={verificator} />
+        {openBindModal ? <BindModal verificator={verificator} /> : null}
       </ActionContextProvider>
       <ActionContextProvider value={{ visible: openUnbindModal, setVisible: setOpenUnbindModal }}>
-        <UnbindModal verificator={verificator} />
+        {openUnbindModal ? <UnbindModal verificator={verificator} /> : null}
       </ActionContextProvider>
     </UserVerificatorsContext.Provider>
   );

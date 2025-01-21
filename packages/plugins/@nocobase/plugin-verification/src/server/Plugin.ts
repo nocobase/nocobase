@@ -37,7 +37,8 @@ export default class PluginVerficationServer extends Plugin {
     this.app.acl.allow('verificators', 'listByUser', 'loggedIn');
     this.app.acl.allow('verificators', 'bind', 'loggedIn');
     this.app.acl.allow('verificators', 'unbind', 'loggedIn');
-    this.app.acl.allow('smsOTP', 'create', 'public');
+    this.app.acl.allow('smsOTP', 'create', 'loggedIn');
+    this.app.acl.allow('smsOTP', 'publicCreate');
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.verificators`,
       actions: ['verificators:*', 'smsOTPProviders:*'],

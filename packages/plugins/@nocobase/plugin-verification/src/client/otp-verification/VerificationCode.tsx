@@ -18,8 +18,9 @@ export const VerificationCode: React.FC<{
   verificator: string;
   value: string;
   onChange: (value: any) => void;
+  isLogged?: boolean;
 }> = withDynamicSchemaProps(
-  ({ actionType, verificator, value, onChange }) => {
+  ({ actionType, verificator, value, onChange, isLogged }) => {
     const { t } = useTranslation();
     const api = useAPIClient();
     const form = useForm();
@@ -37,10 +38,11 @@ export const VerificationCode: React.FC<{
       if (count > 0) {
         return;
       }
+      const method = isLogged ? 'create' : 'publicCreate';
       try {
         const {
           data: { data },
-        } = await api.resource('smsOTP').create({
+        } = await api.resource('smsOTP')[method]({
           values: {
             action: actionType,
             verificator,

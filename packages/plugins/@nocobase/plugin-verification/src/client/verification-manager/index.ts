@@ -14,10 +14,13 @@ export type VerificationFormProps = {
   verificator: string;
   actionType: string;
   boundInfo: any;
+  isLogged?: boolean;
 };
 
 export type BindFormProps = {
   verificator: string;
+  actionType: string;
+  isLogged?: boolean;
 };
 
 export type VerificationTypeOptions = {
