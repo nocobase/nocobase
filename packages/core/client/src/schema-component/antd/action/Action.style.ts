@@ -34,6 +34,9 @@ const useStyles = genStyleHook('nb-action', (token) => {
         background: 'var(--colorBgSettingsHover)',
         border: '0',
         pointerEvents: 'none',
+        '&.nb-in-template': {
+          background: 'var(--colorTemplateBgSettingsHover)',
+        },
         '> .general-schema-designer-icons': {
           position: 'absolute',
           right: '2px',

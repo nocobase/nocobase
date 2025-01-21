@@ -193,7 +193,7 @@ function cleanSchema(schema?: any) {
 }
 
 export function addToolbarClass(schema) {
-  if (schema['x-toolbar'] && schema['x-template-uid']) {
+  if ((schema['x-toolbar'] || schema['x-designer']) && schema['x-template-uid']) {
     const className = `${schema['x-toolbar-props']?.toolbarClassName || ''}`;
     _.merge(schema, {
       'x-toolbar-props': {
