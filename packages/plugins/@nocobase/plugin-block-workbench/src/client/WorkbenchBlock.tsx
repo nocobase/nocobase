@@ -147,9 +147,10 @@ const ResponsiveSpace = () => {
 
 const InternalIcons = () => {
   const fieldSchema = useFieldSchema();
+  const { designable } = useDesignable();
   const { layout = WorkbenchLayout.Grid } = fieldSchema.parent['x-component-props'] || {};
   return (
-    <div className="nb-action-panel-warp">
+    <div style={{ marginBottom: designable ? '1rem' : 0 }} className="nb-action-panel-warp">
       <DndContext>
         {layout === WorkbenchLayout.Grid ? (
           <ResponsiveSpace />
