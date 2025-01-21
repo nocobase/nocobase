@@ -14,12 +14,14 @@ import { useUpdate } from 'ahooks';
 import { SchemaComponentOnChangeContext, useAPIClient } from '@nocobase/client';
 import { useBlockTemplateInfo } from './BlockTemplateInfoContext';
 import { Schema } from '@nocobase/utils';
+import { findBlockRootSchema } from '../utils/schema';
 
 export const TemplateGridDecorator = observer((props: any) => {
   const fieldSchema = useFieldSchema();
   const field = useField();
   const update = useUpdate();
   const preInitializerDisplay = useRef('block');
+  const preBlockSchemaUid = useRef(fieldSchema['x-uid']);
   const api = useAPIClient();
   const template = useBlockTemplateInfo();
 
@@ -31,7 +33,7 @@ export const TemplateGridDecorator = observer((props: any) => {
     },
   };
 
-  // used to hide add blocks button in toolbar, for the moment, only support one layer
+  // used to hide add blocks button in toolbar, for the moment, only need to support one layer
   const updateInitializer = useCallback(
     (display: string) => {
       let updatedLayer = 0;
@@ -83,9 +85,19 @@ export const TemplateGridDecorator = observer((props: any) => {
           values: { configured },
         });
         template.configured = configured;
+        if (!configured && preBlockSchemaUid.current) {
+          // this means the block has already been deleted
+          // let's call the remove API, otherwise the block will still be cached in server!!!
+          // maybe better way is to update cache in server clearXUidPathCache?
+          api.request({
+            url: `/uiSchemas:remove/${preBlockSchemaUid.current}`,
+          });
+        } else {
+          preBlockSchemaUid.current = findBlockRootSchema(fieldSchema)?.['x-uid'];
+        }
       }
     },
-    [api, template],
+    [api, template, fieldSchema],
   );
 
   const syncTemplateInfo = useCallback(() => {
