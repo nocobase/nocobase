@@ -1,6 +1,6 @@
 {
   "Environment": "环境",
-  "Environment variables": "环境变量",
+  "Variables and secrets": "变量和密钥",
   "Variables": "变量",
   "Secrets": "密钥",
   "Add variable": "添加变量",
@@ -12,5 +12,5 @@
   "Encrypted": "加密",
   "Delete variable": "删除变量",
   "Restart now": "立即重启",
-  "Environment variables have been updated. A restart is required for the changes to take effect.": "检测到环境变量有更新，需重启应用才能生效。"
+  "Variables and secrets have been updated. A restart is required for the changes to take effect.": "检测到变量和密钥有更新，需重启应用才能生效。"
 }
