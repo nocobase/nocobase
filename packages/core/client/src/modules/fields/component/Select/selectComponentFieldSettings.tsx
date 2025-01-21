@@ -192,6 +192,9 @@ const quickCreate: any = {
               title: "{{t('Add new')}}",
               // 'x-designer': 'Action.Designer',
               'x-toolbar': 'ActionSchemaToolbar',
+              'x-toolbar-props': {
+                draggable: false,
+              },
               'x-settings': 'actionSettings:addNew',
               'x-component': 'Action',
               'x-decorator': 'ACLActionProvider',
