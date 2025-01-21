@@ -16,6 +16,7 @@ import { WithoutTableFieldResource } from '../../../block-provider';
 import {
   CollectionRecordProvider,
   DataBlockProvider,
+  useAssociationName,
   useCollection,
   useCollectionManager,
   useCollectionRecordData,
@@ -284,6 +285,7 @@ export const ReadPrettyInternalViewer: React.FC<ReadPrettyInternalViewerProps> =
   const field = useField();
   const [visible, setVisible] = useState(false);
   const { options: collectionField } = useAssociationFieldContext();
+  const associationName = useAssociationName();
   const { visibleWithURL, setVisibleWithURL } = usePopupUtils();
   const [btnHover, setBtnHover] = useState(!!visibleWithURL);
   const { defaultOpenMode } = useOpenModeContext();
@@ -339,7 +341,7 @@ export const ReadPrettyInternalViewer: React.FC<ReadPrettyInternalViewerProps> =
       <DataBlockProvider
         dataSource={collection.dataSource}
         collection={collection.name}
-        association={collectionField.target}
+        association={associationName}
         sourceId={recordData?.[collection.getPrimaryKey()]}
         record={recordData}
         parentRecord={parentRecordData}
