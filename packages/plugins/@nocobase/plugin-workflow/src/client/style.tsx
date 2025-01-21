@@ -13,6 +13,7 @@ const useStyles = createStyles(({ css, token }) => {
   return {
     workflowPageClass: css`
       flex-grow: 1;
+      height: 100%;
       overflow: hidden;
       display: flex;
       flex-direction: column;
@@ -379,6 +380,7 @@ const useStyles = createStyles(({ css, token }) => {
       padding: 1em 0;
 
       > .ant-btn {
+        line-height: 1em;
         &:disabled {
           visibility: hidden;
         }
