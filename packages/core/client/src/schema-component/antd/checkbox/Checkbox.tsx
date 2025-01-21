@@ -50,9 +50,11 @@ export const Checkbox: ComposedCheckbox = connect(
     if (props.underFilter) {
       return (
         <Select
+          {...props}
+          value={props.checked}
           options={compile([
-            { label: '{{t("Yes")}}', value: false },
-            { label: '{{t("No")}}', value: true },
+            { label: '{{t("Yes")}}', value: true },
+            { label: '{{t("No")}}', value: false },
           ])}
           onChange={changeHandler}
         />
