@@ -10,7 +10,7 @@
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
 import { isValid } from '@formily/shared';
-import { Checkbox as AntdCheckbox, Tag, Select } from 'antd';
+import { Checkbox as AntdCheckbox, Tag } from 'antd';
 import type {
   CheckboxGroupProps as AntdCheckboxGroupProps,
   CheckboxProps as AntdCheckboxProps,
@@ -18,7 +18,6 @@ import type {
 import uniq from 'lodash/uniq';
 import React, { FC, useEffect, useState } from 'react';
 import { useCollectionField } from '../../../data-source/collection-field/CollectionFieldProvider';
-import { useCompile } from '../../hooks';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 
 type ComposedCheckbox = React.ForwardRefExoticComponent<
@@ -43,23 +42,9 @@ const ReadPretty: FC<CheckboxReadPrettyProps> = (props) => {
 
 export const Checkbox: ComposedCheckbox = connect(
   (props: AntdCheckboxProps | any) => {
-    const compile = useCompile();
     const changeHandler = (val) => {
       props?.onChange(val);
     };
-    if (props.underFilter) {
-      return (
-        <Select
-          {...props}
-          value={props.checked}
-          options={compile([
-            { label: '{{t("Yes")}}', value: true },
-            { label: '{{t("No")}}', value: false },
-          ])}
-          onChange={changeHandler}
-        />
-      );
-    }
     return <AntdCheckbox {...props} onChange={changeHandler} />;
   },
   mapProps({

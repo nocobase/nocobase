@@ -164,7 +164,27 @@ export const time = [
 ];
 
 export const boolean = [
-  { label: '{{t("Yes")}}', value: '$isTruly', selected: true, noValue: true },
+  {
+    label: '{{t("Yes")}}',
+    value: '$isTruly',
+    selected: true,
+    noValue: true,
+    schema: {
+      'x-component': 'Select',
+      'x-component-props': {
+        options: [
+          {
+            label: '{{t("Yes")}}',
+            value: true,
+          },
+          {
+            label: '{{t("False")}}',
+            value: false,
+          },
+        ],
+      },
+    },
+  },
   { label: '{{t("No")}}', value: '$isFalsy', noValue: true },
 ];
 
