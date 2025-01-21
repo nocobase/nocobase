@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.4.29](https://github.com/nocobase/nocobase/compare/v1.4.28...v1.4.29) - 2025-01-21
+
+### 🎉 New Features
+
+- **[Block: Action panel]** Support configuring  the number of icons per row in the mobile  action penal ([#6106](https://github.com/nocobase/nocobase/pull/6106)) by @katherinehhh
+
 ## [v1.4.28](https://github.com/nocobase/nocobase/compare/v1.4.27...v1.4.28) - 2025-01-21
 
 ### 🐛 Bug Fixes
