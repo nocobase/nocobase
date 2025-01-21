@@ -30,12 +30,8 @@
   "Will generate random characters with specified length.": "将生成指定长度的随机字符。",
   "Character sets": "字符集",
   "Select character sets to generate random characters.": "选择用于生成随机字符的字符集。",
-  "Padding type": "补充类型",
-  "Select padding type for generated characters.": "选择生成字符的补充类型。",
   "Number": "数字",
   "Lowercase letters": "小写字母",
   "Uppercase letters": "大写字母",
-  "Symbols": "符号",
-  "Zero padding": "补零",
-  "No padding": "不补充"
+  "Symbols": "符号"
 }
