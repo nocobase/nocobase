@@ -185,7 +185,26 @@ export const boolean = [
       },
     },
   },
-  { label: '{{t("No")}}', value: '$isFalsy', noValue: true },
+  {
+    label: '{{t("No")}}',
+    value: '$isFalsy',
+    noValue: true,
+    schema: {
+      'x-component': 'Select',
+      'x-component-props': {
+        options: [
+          {
+            label: '{{t("Yes")}}',
+            value: true,
+          },
+          {
+            label: '{{t("False")}}',
+            value: false,
+          },
+        ],
+      },
+    },
+  },
 ];
 
 export const tableoid = [
