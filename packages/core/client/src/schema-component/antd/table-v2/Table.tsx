@@ -755,6 +755,10 @@ export const Table: any = withDynamicSchemaProps(
      * @returns
      */
     const defaultRowKey = useCallback((record: any) => {
+      if (_.isString(rowKey)) {
+        return rowKey;
+      }
+
       if (rowKey) {
         return getRowKey(record);
       }
