@@ -307,8 +307,6 @@ const CHAR_SETS = {
 interface RandomCharOptions {
   length?: number;
   charsets?: Array<keyof typeof CHAR_SETS>;
-  paddingType?: 'zero' | 'none';
-  paddingChar?: string;
 }
 
 sequencePatterns.register('randomChar', {
@@ -328,9 +326,7 @@ sequencePatterns.register('randomChar', {
   generate(instance: any, options: RandomCharOptions) {
     const { 
       length = 6, 
-      charsets = ['number'], 
-      paddingType = 'zero', 
-      paddingChar = '0' 
+      charsets = ['number']
     } = options;
 
     const chars = [...new Set(
@@ -342,14 +338,7 @@ sequencePatterns.register('randomChar', {
       return chars[randomIndex];
     };
 
-    let result = Array.from({ length }, () => getRandomChar()).join('');
-
-    // 只有当结果全为数字且指定了补零时才进行补零
-    if (paddingType === 'zero' && /^\d+$/.test(result)) {
-      result = result.padStart(length, paddingChar);
-    }
-
-    return result;
+    return Array.from({ length }, () => getRandomChar()).join('');
   },
 
   batchGenerate(instances: any[], values: string[], options: RandomCharOptions) {
