@@ -198,7 +198,7 @@ export const boolean = [
             value: true,
           },
           {
-            label: '{{t("False")}}',
+            label: '{{t("No")}}',
             value: false,
           },
         ],
