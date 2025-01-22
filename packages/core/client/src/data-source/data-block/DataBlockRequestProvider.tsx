@@ -116,8 +116,9 @@ export const BlockRequestContextProvider: FC<{ recordRequest: UseRequestResult<a
   const prevPageActiveRef = useRef(pageActive);
   // Prevent page switching lag
   const deferredPageActive = useDeferredValue(pageActive);
+  const blockProps = useDataBlockProps();
 
-  if (deferredPageActive && !prevPageActiveRef.current) {
+  if (deferredPageActive && !prevPageActiveRef.current && blockProps.dataLoadingMode === 'auto') {
     props.recordRequest?.refresh();
   }
 
