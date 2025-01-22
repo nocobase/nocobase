@@ -12,10 +12,10 @@ import { css } from '@emotion/css';
 import { useField, useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import classNames from 'classnames';
-//@ts-ignore
 import React, {
   createContext,
   FC,
+  //@ts-ignore
   startTransition,
   useCallback,
   useEffect,
