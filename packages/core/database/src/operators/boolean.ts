@@ -25,7 +25,7 @@ export default {
   },
 
   $isTruly(value) {
-    if (value === false || value === 'false') {
+    if (value === true || value === 'true') {
       return {
         [Op.eq]: true,
       };
