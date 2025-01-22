@@ -263,11 +263,11 @@ export class PluginManager {
     return this.app.pm.pluginAliases.keys();
   }
 
-  get(name: string | typeof Plugin) {
+  get<T extends Plugin>(name: string | typeof Plugin | (new () => T)): T {
     if (typeof name === 'string') {
-      return this.app.pm.pluginAliases.get(name);
+      return this.app.pm.pluginAliases.get(name) as any;
     }
-    return this.app.pm.pluginInstances.get(name);
+    return this.app.pm.pluginInstances.get(name as any) as any;
   }
 
   has(name: string | typeof Plugin) {
@@ -277,7 +277,7 @@ export class PluginManager {
     return this.app.pm.pluginInstances.has(name);
   }
 
-  del(name: string | typeof Plugin) {
+  del(name: any) {
     const instance = this.get(name);
     if (instance) {
       this.app.pm.pluginAliases.delete(instance.name);

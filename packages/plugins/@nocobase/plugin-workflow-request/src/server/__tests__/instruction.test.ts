@@ -523,7 +523,7 @@ describe('workflow > instructions > request', () => {
 
       const token = jwt.sign(
         {
-          userId: typeof user.id,
+          userId: user.id,
         },
         process.env.APP_KEY,
         {

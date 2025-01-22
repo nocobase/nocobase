@@ -57,7 +57,7 @@ describe('actions', () => {
         filterByTk: 'test',
       });
       expect(res.status).toBe(200);
-      expect(params).toMatchSnapshot();
+      expect(params).toMatchObject({});
     });
 
     test('currentRecord.data', async () => {

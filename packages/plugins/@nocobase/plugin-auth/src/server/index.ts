@@ -12,3 +12,4 @@ export { AuthModel } from './model/authenticator';
 export { presetAuthType } from '../preset';
 
 export { default } from './plugin';
+export * from '../constants';

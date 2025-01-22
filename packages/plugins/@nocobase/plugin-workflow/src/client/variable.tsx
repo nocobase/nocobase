@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, useCallback, useContext } from 'react';
 import { uniqBy } from 'lodash';
+import React, { createContext, useCallback, useContext } from 'react';
 
-import { Variable, parseCollectionName, useApp, useCompile, usePlugin, useGlobalVariable } from '@nocobase/client';
+import { Variable, parseCollectionName, useApp, useCompile, useGlobalVariable, usePlugin } from '@nocobase/client';
 
 import WorkflowPlugin from '.';
 import { useFlowContext } from './FlowContext';
