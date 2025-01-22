@@ -270,6 +270,10 @@ export function mergeSchema(
   templateschemacache: Record<string, any>,
   templateInfos: Map<string, any>,
 ): any {
+  if (target['properties'] && !source['properties']) {
+    source['properties'] = {};
+  }
+
   return _.mergeWith(
     target,
     source,
