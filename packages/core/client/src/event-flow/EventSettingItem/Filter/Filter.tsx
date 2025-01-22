@@ -18,6 +18,7 @@ import { FilterAction } from './FilterAction';
 import { FilterGroup } from './FilterGroup';
 import { SaveDefaultValue } from './SaveDefaultValue';
 import { FilterContext, FilterContextProps } from './context';
+import { ArrayBase } from '@formily/antd-v5';
 
 const useDef = (options: UseRequestOptions) => {
   const field = useField<ObjectFieldModel>();
@@ -35,9 +36,8 @@ export interface FilterProps extends Omit<FilterContextProps, 'field' | 'fieldSc
 export const Filter: any = withDynamicSchemaProps(
   observer((props: any) => {
     const { useDataSource = useDef } = props;
-    console.log('Filter111', props);
     // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-    const { options, dynamicComponent, className, collectionName } = useProps(props);
+    const { options, dynamicComponent, className, collectionName } = props;
 
     const field = useField<ObjectFieldModel>();
     const fieldSchema: any = useFieldSchema();
@@ -46,6 +46,10 @@ export const Filter: any = withDynamicSchemaProps(
         field.dataSource = data?.data || [];
       },
     });
+    const array = ArrayBase.useArray();
+    const index = ArrayBase.useIndex();
+    console.log('array', array);
+    console.log('index', index);
 
     useEffect(() => {
       if (fieldSchema.defaultValue) {
@@ -64,6 +68,7 @@ export const Filter: any = withDynamicSchemaProps(
             collectionName,
           }}
         >
+          {index}
           <FilterGroup {...props} bordered={false} />
         </FilterContext.Provider>
       </div>

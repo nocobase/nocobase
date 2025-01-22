@@ -14,6 +14,7 @@ import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { Action } from './Action';
+import { ArrayBase } from '@formily/antd-v5';
 
 interface LinkageRuleActionGroupProps {
   type: 'button' | 'field' | 'style';

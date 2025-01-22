@@ -53,9 +53,10 @@ export class EventFlowPlugin extends Plugin {
   }
   // 运行时注册事件
   register(events: EventSetting[]) {
-    events?.forEach((event) => {
-      this.on(event);
-    });
+    console.log('todo register', events);
+    // events?.forEach((event) => {
+    //   this.on(event);
+    // });
   }
   // 触发事件
   async emit({ name, eventName, uid, params }: { name: string; eventName: string; uid?: string; params?: any }) {

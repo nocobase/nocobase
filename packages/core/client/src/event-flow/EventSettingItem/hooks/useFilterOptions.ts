@@ -7,6 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const arrayCollapseItemStyle = {
-  marginBottom: 10,
+export const useFilterOptions = () => {
+  return { filterOptions: [] };
 };

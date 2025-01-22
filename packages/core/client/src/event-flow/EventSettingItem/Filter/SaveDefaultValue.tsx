@@ -43,7 +43,7 @@ export const SaveDefaultValue = (props) => {
         });
         dn.refresh();
         filterSchema.default = defaultValue;
-        console.log('filterSchema', defaultValue);
+        // console.log('filterSchema', defaultValue);
       }}
     >
       {t('Save conditions')}

@@ -20,6 +20,8 @@ export interface EventParam {
     [key: string]: EventParam;
   };
   items?: EventParam;
+  interface?: string;
+  uiSchema?: any;
 }
 
 /** 事件动作 */
@@ -42,6 +44,7 @@ export interface EventEvent {
   params?: {
     [key: string]: EventParam;
   };
+  value?: any;
 }
 
 /** 事件定义 */
@@ -60,7 +63,11 @@ export interface EventDefinition {
 
 /** 事件设置 */
 export interface EventSetting {
-  event: string;
+  event: {
+    definition: string;
+    event: string;
+    uid?: string;
+  };
   /** 标识同一类型组件的不同实例 */
   uid?: string;
   condition: string;

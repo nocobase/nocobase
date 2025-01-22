@@ -35,9 +35,15 @@ export function useFormEvents({ form }) {
         },
       },
     ],
-    // state: {
-    //   isSubmitting: 'isSubmitting',
-    // },
+    states: {
+      values: {
+        name: 'values',
+        title: '表单值',
+        type: 'object',
+        properties: fieldsMap,
+        value: form.values,
+      },
+    },
     actions: [
       {
         name: 'reset',

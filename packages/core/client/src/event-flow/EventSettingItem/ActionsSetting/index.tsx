@@ -21,22 +21,43 @@ import { DynamicComponentProps } from '../../../schema-component/antd/filter/Dyn
 import { FilterContext } from '../../../schema-component/antd/filter/context';
 import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
 import { Actions } from './Actions';
-import { EnableLinkage } from './components/EnableLinkage';
-import { ArrayCollapse } from './components/LinkageHeader';
 import { FormProvider, createSchemaField } from '@formily/react';
-import { Filter } from '../Filter2';
+import { ArrayCollapse } from '../components/LinkageHeader';
+import { Filter } from '../Filter';
+import { ArrayBase } from '@formily/antd-v5';
+import { useFilterOptions } from './hooks/useFilterOptions';
+import { EventDefinition, EventSetting } from '../../types';
+import { useVariableOptions } from './hooks/useVariableOptions';
+import { uniqBy } from 'lodash';
 
 export interface Props {
   dynamicComponent: any;
+  definitions: EventDefinition[];
 }
 
 export const ActionsSetting = withDynamicSchemaProps(
   observer((props: Props) => {
     const fieldSchema = useFieldSchema();
-    const { options, defaultValues, collectionName, form, variables, localVariables, record, dynamicComponent } =
-      useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
+    const array = ArrayBase.useArray();
+    const recordValues = ArrayBase.useRecord();
+    const index = ArrayBase.useIndex();
+    const {
+      definitions,
+      options,
+      defaultValues,
+      collectionName,
+      form,
+      variables,
+      localVariables,
+      record,
+      dynamicComponent,
+    } = props;
     const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
     const parentRecordData = useCollectionParentRecordData();
+
+    const filterOptions = useFilterOptions(recordValues);
+    const variableOptions = useVariableOptions();
+    console.log('variableOptions', variableOptions);
 
     const components = useMemo(() => ({ ArrayCollapse, Filter }), []);
     const schema = useMemo(
@@ -50,6 +71,10 @@ export const ActionsSetting = withDynamicSchemaProps(
             'x-decorator': 'FormItem',
             'x-component-props': {
               accordion: true,
+              titleRender: (item: any, index: number) => {
+                return `动作 ${index + 1}`;
+              },
+              showEmpty: false,
             },
             items: {
               type: 'object',
@@ -77,7 +102,7 @@ export const ActionsSetting = withDynamicSchemaProps(
                       'x-component': 'Filter',
                       'x-use-component-props': () => {
                         return {
-                          options,
+                          options: filterOptions,
                           className: css`
                             position: relative;
                             width: 100%;
@@ -100,6 +125,10 @@ export const ActionsSetting = withDynamicSchemaProps(
                                 localVariables,
                                 getAllCollectionsInheritChain,
                               })}
+                              returnScope={(scope) => {
+                                // console.log('scope', [...scope, ...variableOptions]);
+                                return uniqBy([...scope, ...variableOptions], 'key');
+                              }}
                             />
                           );
                         },
@@ -161,6 +190,7 @@ export const ActionsSetting = withDynamicSchemaProps(
         props,
         record,
         variables,
+        filterOptions,
       ],
     );
     const value = useMemo(
@@ -168,22 +198,22 @@ export const ActionsSetting = withDynamicSchemaProps(
       [dynamicComponent, fieldSchema, options],
     );
 
-    // return <SchemaComponent components={components} schema={schema} />;
+    return <SchemaComponent components={components} schema={schema} />;
 
-    return (
-      // 这里使用 SubFormProvider 包裹，是为了让子表格的联动规则中 “当前对象” 的配置显示正确
-      // <FormProvider form={form}>
-      <SubFormProvider value={{ value: null, collection: { name: collectionName } as any }}>
-        <RecordProvider record={record} parent={parentRecordData}>
-          <FilterContext.Provider value={value}>
-            <CollectionProvider name={collectionName}>
-              <SchemaComponent components={components} schema={schema} />
-            </CollectionProvider>
-          </FilterContext.Provider>
-        </RecordProvider>
-      </SubFormProvider>
-      // </FormProvider>
-    );
+    // return (
+    //   // 这里使用 SubFormProvider 包裹，是为了让子表格的联动规则中 “当前对象” 的配置显示正确
+    //   // <FormProvider form={form}>
+    //   <SubFormProvider value={{ value: null, collection: { name: collectionName } as any }}>
+    //     <RecordProvider record={record} parent={parentRecordData}>
+    //       <FilterContext.Provider value={value}>
+    //         <CollectionProvider name={collectionName}>
+    //           <SchemaComponent components={components} schema={schema} />
+    //         </CollectionProvider>
+    //       </FilterContext.Provider>
+    //     </RecordProvider>
+    //   </SubFormProvider>
+    //   // </FormProvider>
+    // );
   }),
   { displayName: 'ActionsSetting' },
 );

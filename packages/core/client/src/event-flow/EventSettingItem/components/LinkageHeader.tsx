@@ -16,38 +16,13 @@ import { Badge, Card, Collapse, CollapsePanelProps, CollapseProps, Empty, Input 
 import { cloneDeep } from 'lodash';
 import React, { Fragment, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useToken } from '../../../../style';
+import { useToken } from '../../../style';
 import { arrayCollapseItemStyle } from './LinkageHeader.style';
-
-const LinkageRulesTitle = (props) => {
-  const array = ArrayBase.useArray();
-  const index = ArrayBase.useIndex(props.index);
-  const { t } = useTranslation();
-  const value = array?.field?.value[index];
-  return <div>{`事件 ${index + 1}`}</div>;
-  // return (
-  //   <Input.TextArea
-  //     value={value.title}
-  //     defaultValue={t('Linkage rule')}
-  //     onChange={(ev) => {
-  //       ev.stopPropagation();
-  //       array.field.value.splice(index, 1, { ...value, title: ev.target.value });
-  //     }}
-  //     onBlur={(ev) => {
-  //       ev.stopPropagation();
-  //       array.field.value.splice(index, 1, { ...value, title: ev.target.value });
-  //     }}
-  //     autoSize
-  //     style={{ width: '70%', border: 'none' }}
-  //     onClick={(e) => {
-  //       e.stopPropagation();
-  //     }}
-  //   />
-  // );
-};
 
 export interface IArrayCollapseProps extends CollapseProps {
   defaultOpenPanelCount?: number;
+  titleRender?: (item: any, index: number) => React.ReactNode;
+  showEmpty?: boolean;
 }
 type ComposedArrayCollapse = React.FC<React.PropsWithChildren<IArrayCollapseProps>> & {
   CollapsePanel?: React.FC<React.PropsWithChildren<CollapsePanelProps>>;
@@ -103,6 +78,7 @@ const insertActiveKeys = (activeKeys: number[], index: number) => {
 
 export const ArrayCollapse: ComposedArrayCollapse = observer(
   (props: IArrayCollapseProps) => {
+    const { titleRender, showEmpty = true } = props;
     const field = useField<ArrayField>();
     const dataSource = Array.isArray(field.value) ? field.value : [];
     const [activeKeys, setActiveKeys] = useState<number[]>(
@@ -124,6 +100,7 @@ export const ArrayCollapse: ComposedArrayCollapse = observer(
         return addition;
       }, null);
     };
+
     const renderEmpty = () => {
       if (dataSource.length) return;
       return (
@@ -144,8 +121,7 @@ export const ArrayCollapse: ComposedArrayCollapse = observer(
           onChange={(keys: string[]) => setActiveKeys(toArr(keys).map(Number))}
           className={props.className}
           style={arrayCollapseItemStyle}
-        >
-          {dataSource.map((item, index) => {
+          items={dataSource.map((item, index) => {
             const items = Array.isArray(schema.items) ? schema.items[index] || schema.items[0] : schema.items;
 
             const panelProps = field.query(`${field.address}.${index}`).get('componentProps');
@@ -172,13 +148,12 @@ export const ArrayCollapse: ComposedArrayCollapse = observer(
                     <Badge size="small" className="errors-badge" count={errors.length}>
                       {header}
                     </Badge>
-                  ) : (
-                    <LinkageRulesTitle item={item.initialValue || item} index={index} />
-                  )}
+                  ) : titleRender ? (
+                    titleRender(item, index)
+                  ) : null}
                 </ArrayBase.Item>
               );
             };
-
             const extra = (
               <ArrayBase.Item index={index} record={item}>
                 <RecursionField
@@ -195,25 +170,28 @@ export const ArrayCollapse: ComposedArrayCollapse = observer(
             );
 
             const content = (
-              <RecursionField
-                schema={items}
-                name={index}
-                filterProperties={(schema) => {
-                  if (isIndexComponent(schema)) return false;
-                  if (isOperationComponent(schema)) return false;
-                  return true;
-                }}
-              />
+              <ArrayBase.Item index={index} key={index} record={item}>
+                <RecursionField
+                  schema={items}
+                  name={index}
+                  filterProperties={(schema) => {
+                    if (isIndexComponent(schema)) return false;
+                    if (isOperationComponent(schema)) return false;
+                    return true;
+                  }}
+                />
+              </ArrayBase.Item>
             );
-            return (
-              <Collapse.Panel {...props} {...panelProps} forceRender key={index} header={header()} extra={extra}>
-                <ArrayBase.Item index={index} key={index} record={item}>
-                  {content}
-                </ArrayBase.Item>
-              </Collapse.Panel>
-            );
+
+            return {
+              forceRender: true,
+              key: index,
+              label: header(),
+              extra: extra,
+              children: content,
+            };
           })}
-        </Collapse>
+        />
       );
     };
     return (
@@ -222,7 +200,7 @@ export const ArrayCollapse: ComposedArrayCollapse = observer(
           setActiveKeys(insertActiveKeys(activeKeys, index));
         }}
       >
-        {renderEmpty()}
+        {showEmpty && renderEmpty()}
         {renderItems()}
         {renderAddition()}
       </ArrayBase>

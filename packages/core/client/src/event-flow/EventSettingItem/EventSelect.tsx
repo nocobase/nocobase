@@ -7,19 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useControllableValue } from 'ahooks';
 import { Card, Space, TreeSelect } from 'antd';
-import { EventDefinition } from '../../types';
+import { EventDefinition, EventSetting } from '../types';
 
 export default function EventSelect(props: {
-  definitions: EventDefinition[];
-  value: any;
-  onChange: (v: any) => void;
+  definitions?: EventDefinition[];
+  value?: EventSetting['event'];
+  onChange?: (v: EventSetting['event']) => void;
   className?: string;
 }) {
   const { definitions, className } = props;
-  const [state, setState] = useControllableValue<String>(props, {
+  const [state, setState] = useControllableValue<EventSetting['event']>(props, {
     defaultValue: undefined,
   });
 
@@ -29,21 +29,32 @@ export default function EventSelect(props: {
     selectable: false,
     children:
       module?.events?.map((event) => ({
-        value: module.name + '.' + event.name,
+        value: `${module.name}.${event.name}${module.uid ? `.${module.uid}` : ''}`,
         title: event.title,
       })) || [],
   }));
   treeData = treeData?.filter((item) => item.children.length > 0);
 
+  const selectedEvent = useMemo(() => {
+    if (!state) return undefined;
+    return `${state.definition}.${state.event}${state.uid ? `.${state.uid}` : ''}`;
+  }, [state]);
+
   return (
     <TreeSelect
-      value={state}
+      value={selectedEvent}
       dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
       placeholder="Please select"
       allowClear
       treeDefaultExpandAll
       onChange={(value) => {
-        setState(value);
+        console.log('value', value);
+        const [definition, event, uid] = (value as any).split('.');
+        setState({
+          definition,
+          event,
+          uid,
+        });
       }}
       treeData={treeData}
       className={className}
