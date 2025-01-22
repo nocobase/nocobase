@@ -159,8 +159,8 @@ const InternalAssociationSelect = observer(
 
           {addMode === 'modalAdd' && (
             <SchemaComponentContext.Provider value={{ ...schemaComponentCtxValue, draggable: false }}>
-              <VariablePopupRecordProvider>
-                <RecordProvider isNew={true} record={null} parent={recordData}>
+              <RecordProvider isNew={true} record={null} parent={recordData}>
+                <VariablePopupRecordProvider>
                   {/* 快捷添加按钮添加的添加的是一个普通的 form 区块（非关系区块），不应该与任何字段有关联，所以在这里把字段相关的上下文给清除掉 */}
                   <ClearCollectionFieldContext>
                     <RecursionField
@@ -172,8 +172,8 @@ const InternalAssociationSelect = observer(
                       }}
                     />
                   </ClearCollectionFieldContext>
-                </RecordProvider>
-              </VariablePopupRecordProvider>
+                </VariablePopupRecordProvider>
+              </RecordProvider>
             </SchemaComponentContext.Provider>
           )}
         </Space.Compact>
