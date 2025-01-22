@@ -28,6 +28,7 @@ import { isVariable } from '../../../variables/utils/isVariable';
 import { getInnermostKeyAndValue } from '../../common/utils/uitls';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
+import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 
 export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
   addMode?: 'quickAdd' | 'modalAdd';
@@ -77,7 +78,6 @@ const InternalAssociationSelect = observer(
     const resource = api.resource(collectionField.target);
     const recordData = useCollectionRecordData();
     const schemaComponentCtxValue = useContext(SchemaComponentContext);
-
     useEffect(() => {
       const initValue = isVariable(field.value) ? undefined : field.value;
       const value = Array.isArray(initValue) ? initValue.filter(Boolean) : initValue;
@@ -159,19 +159,21 @@ const InternalAssociationSelect = observer(
 
           {addMode === 'modalAdd' && (
             <SchemaComponentContext.Provider value={{ ...schemaComponentCtxValue, draggable: false }}>
-              <RecordProvider isNew={true} record={null} parent={recordData}>
-                {/* 快捷添加按钮添加的添加的是一个普通的 form 区块（非关系区块），不应该与任何字段有关联，所以在这里把字段相关的上下文给清除掉 */}
-                <ClearCollectionFieldContext>
-                  <NocoBaseRecursionField
-                    onlyRenderProperties
-                    basePath={field.address}
-                    schema={fieldSchema}
-                    filterProperties={(s) => {
-                      return s['x-component'] === 'Action';
-                    }}
-                  />
-                </ClearCollectionFieldContext>
-              </RecordProvider>
+              <VariablePopupRecordProvider>
+                <RecordProvider isNew={true} record={null} parent={recordData}>
+                  {/* 快捷添加按钮添加的添加的是一个普通的 form 区块（非关系区块），不应该与任何字段有关联，所以在这里把字段相关的上下文给清除掉 */}
+                  <ClearCollectionFieldContext>
+                    <NocoBaseRecursionField
+                      onlyRenderProperties
+                      basePath={field.address}
+                      schema={fieldSchema}
+                      filterProperties={(s) => {
+                        return s['x-component'] === 'Action';
+                      }}
+                    />
+                  </ClearCollectionFieldContext>
+                </RecordProvider>
+              </VariablePopupRecordProvider>
             </SchemaComponentContext.Provider>
           )}
         </Space.Compact>
