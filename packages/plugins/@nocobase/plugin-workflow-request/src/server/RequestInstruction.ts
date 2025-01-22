@@ -168,7 +168,7 @@ export default class extends Instruction {
 
     processor.logger.info(`request (#${node.id}) sent to "${config.url}", waiting for response...`);
 
-    return job;
+    return null;
   }
 
   async resume(node: FlowNodeModel, job, processor: Processor) {
