@@ -102,6 +102,13 @@ class PluginCollectionTreeServer extends Plugin {
               transaction: options.transaction,
             });
           });
+
+          this.db.on(`${collection.name}.beforeSave`, async (model: Model) => {
+            const tk = collection.filterTargetKey as string;
+            if (model.get(parentForeignKey) === model.get(tk)) {
+              throw new Error('Cannot set itself as the parent node');
+            }
+          });
         });
       }
     });
