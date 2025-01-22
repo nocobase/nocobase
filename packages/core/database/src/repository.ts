@@ -420,6 +420,16 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
       rows = eagerLoadingTree.root.instances;
     } else {
+      if (opts.where) {
+        for (const key of Object.keys(opts.where)) {
+          const rawAttribute = model.rawAttributes[key];
+          if (rawAttribute) {
+            opts['where'][rawAttribute.field] = opts['where'][key];
+            delete opts['where'][key];
+          }
+        }
+      }
+
       rows = await model.findAll({
         ...opts,
         transaction,
