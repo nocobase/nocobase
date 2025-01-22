@@ -142,7 +142,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
                 <RecordIndexProvider index={record.__index || index}>
                   <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
                     <ColumnFieldProvider schema={s} basePath={basePath}>
-                      <span role="button" className={schemaToolbarBigger}>
+                      <span role="button" className={schemaToolbarBigger} key={index}>
                         <RecursionField basePath={basePath} schema={s} onlyRenderProperties />
                       </span>
                     </ColumnFieldProvider>
@@ -755,10 +755,6 @@ export const Table: any = withDynamicSchemaProps(
      * @returns
      */
     const defaultRowKey = useCallback((record: any) => {
-      if (_.isString(rowKey)) {
-        return rowKey;
-      }
-
       if (rowKey) {
         return getRowKey(record);
       }
