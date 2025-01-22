@@ -65,11 +65,12 @@ test('Collection event Add Data Trigger, determines that the trigger node single
 
   //配置判断节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
-  await page.getByRole('button', { name: 'condition', exact: true }).hover();
-  await page.getByLabel('branch').click();
+  await page.getByRole('button', { name: 'condition', exact: true }).click();
+  await page.getByText('Branch into "Yes" and "No"').click();
+  await page.getByLabel('action-Action-Submit-workflows').click();
   const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
   await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
   const conditionNode = new ConditionBranchNode(page, conditionNodeName);
@@ -85,7 +86,14 @@ test('Collection event Add Data Trigger, determines that the trigger node single
     .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
     .getByLabel('textbox')
     .press('ControlOrMeta+ArrowRight');
-  await page.keyboard.type(`=='${conditionalRightConstant}'`, { delay: 100 });
+  await page
+    .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
+    .getByLabel('textbox')
+    .press('ArrowRight');
+  await page
+    .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
+    .getByLabel('textbox')
+    .pressSequentially(`=='${conditionalRightConstant}'`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}=='${conditionalRightConstant}'`,
   );
@@ -185,11 +193,12 @@ test('Collection event Add Data Trigger, determines that the trigger node single
 
   //配置判断节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
-  await page.getByRole('button', { name: 'condition', exact: true }).hover();
-  await page.getByLabel('branch').click();
+  await page.getByRole('button', { name: 'condition', exact: true }).click();
+  await page.getByText('Branch into "Yes" and "No"').click();
+  await page.getByLabel('action-Action-Submit-workflows').click();
   const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
   await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
   const conditionNode = new ConditionBranchNode(page, conditionNodeName);
@@ -202,7 +211,14 @@ test('Collection event Add Data Trigger, determines that the trigger node single
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
   const conditionalRightConstant = faker.lorem.words();
   await page.waitForTimeout(500);
-  await page.keyboard.type(`=='${conditionalRightConstant}'`, { delay: 100 });
+  await page
+    .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
+    .getByLabel('textbox')
+    .press('ArrowRight');
+  await page
+    .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
+    .getByLabel('textbox')
+    .pressSequentially(`=='${conditionalRightConstant}'`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}=='${conditionalRightConstant}'`,
   );
@@ -302,11 +318,12 @@ test('Collection event Add Data Trigger, determines that the trigger node single
 
   //配置判断节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
-  await page.getByRole('button', { name: 'condition', exact: true }).hover();
-  await page.getByLabel('branch').click();
+  await page.getByRole('button', { name: 'condition', exact: true }).click();
+  await page.getByText('Branch into "Yes" and "No"').click();
+  await page.getByLabel('action-Action-Submit-workflows').click();
   const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
   await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
   const conditionNode = new ConditionBranchNode(page, conditionNodeName);
@@ -322,7 +339,14 @@ test('Collection event Add Data Trigger, determines that the trigger node single
     .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
     .getByLabel('textbox')
     .press('ControlOrMeta+ArrowRight');
-  await page.keyboard.type(`!='${conditionalRightConstant}'`, { delay: 100 });
+  await page
+    .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
+    .getByLabel('textbox')
+    .press('ArrowRight');
+  await page
+    .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
+    .getByLabel('textbox')
+    .pressSequentially(`!='${conditionalRightConstant}'`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!='${conditionalRightConstant}'`,
   );
@@ -422,11 +446,12 @@ test('Collection event Add Data Trigger, determines that the trigger node single
 
   //配置判断节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
   await collectionTriggerNode.addNodeButton.click();
-  await page.getByRole('button', { name: 'condition', exact: true }).hover();
-  await page.getByLabel('branch').click();
+  await page.getByRole('button', { name: 'condition', exact: true }).click();
+  await page.getByText('Branch into "Yes" and "No"').click();
+  await page.getByLabel('action-Action-Submit-workflows').click();
   const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
   await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
   const conditionNode = new ConditionBranchNode(page, conditionNodeName);
@@ -439,7 +464,14 @@ test('Collection event Add Data Trigger, determines that the trigger node single
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
   const conditionalRightConstant = faker.lorem.words();
   await page.waitForTimeout(500);
-  await page.keyboard.type(`!='${conditionalRightConstant}'`, { delay: 100 });
+  await page
+    .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
+    .getByLabel('textbox')
+    .press('ArrowRight');
+  await page
+    .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
+    .getByLabel('textbox')
+    .pressSequentially(`!='${conditionalRightConstant}'`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!='${conditionalRightConstant}'`,
   );
@@ -563,11 +595,12 @@ test('Collection event add data trigger, determine the trigger node integer vari
 
   //配置判断节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const preQueryRecordNodePom = new QueryRecordNode(page, preQueryRecordNodeTitle);
   await preQueryRecordNodePom.addNodeButton.click();
-  await page.getByRole('button', { name: 'condition', exact: true }).hover();
-  await page.getByLabel('branch').click();
+  await page.getByRole('button', { name: 'condition', exact: true }).click();
+  await page.getByText('Branch into "Yes" and "No"').click();
+  await page.getByLabel('action-Action-Submit-workflows').click();
   const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
   await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
   const conditionNode = new ConditionBranchNode(page, conditionNodeName);
@@ -579,7 +612,14 @@ test('Collection event add data trigger, determine the trigger node integer vari
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
   await page.waitForTimeout(500);
-  await page.keyboard.type('==', { delay: 50 });
+  await page
+    .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
+    .getByLabel('textbox')
+    .press('ArrowRight');
+  await page
+    .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
+    .getByLabel('textbox')
+    .pressSequentially('==', { delay: 50 });
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Node result' }).click();
   await page.getByRole('menuitemcheckbox', { name: preQueryRecordNodeTitle }).click();
@@ -714,11 +754,12 @@ test('Collection event add data trigger, determine trigger node integer variable
 
   //配置判断节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const preQueryRecordNodePom = new QueryRecordNode(page, preQueryRecordNodeTitle);
   await preQueryRecordNodePom.addNodeButton.click();
-  await page.getByRole('button', { name: 'condition', exact: true }).hover();
-  await page.getByLabel('branch').click();
+  await page.getByRole('button', { name: 'condition', exact: true }).click();
+  await page.getByText('Branch into "Yes" and "No"').click();
+  await page.getByLabel('action-Action-Submit-workflows').click();
   const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
   await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
   const conditionNode = new ConditionBranchNode(page, conditionNodeName);
@@ -730,7 +771,14 @@ test('Collection event add data trigger, determine trigger node integer variable
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
   await page.waitForTimeout(500);
-  await page.keyboard.type('==', { delay: 50 });
+  await page
+    .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
+    .getByLabel('textbox')
+    .press('ArrowRight');
+  await page
+    .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
+    .getByLabel('textbox')
+    .pressSequentially('==', { delay: 50 });
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Node result' }).click();
   await page.getByRole('menuitemcheckbox', { name: preQueryRecordNodeTitle }).click();
@@ -855,11 +903,12 @@ test('Collection event add data trigger, determine trigger node integer variable
 
   //配置判断节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const preQueryRecordNodePom = new QueryRecordNode(page, preQueryRecordNodeTitle);
   await preQueryRecordNodePom.addNodeButton.click();
-  await page.getByRole('button', { name: 'condition', exact: true }).hover();
-  await page.getByLabel('branch').click();
+  await page.getByRole('button', { name: 'condition', exact: true }).click();
+  await page.getByText('Branch into "Yes" and "No"').click();
+  await page.getByLabel('action-Action-Submit-workflows').click();
   const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
   await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
   const conditionNode = new ConditionBranchNode(page, conditionNodeName);
@@ -871,7 +920,14 @@ test('Collection event add data trigger, determine trigger node integer variable
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
   await page.waitForTimeout(500);
-  await page.keyboard.type('!=', { delay: 50 });
+  await page
+    .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
+    .getByLabel('textbox')
+    .press('ArrowRight');
+  await page
+    .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
+    .getByLabel('textbox')
+    .pressSequentially('!=', { delay: 50 });
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Node result' }).click();
   await page.getByRole('menuitemcheckbox', { name: preQueryRecordNodeTitle }).click();
@@ -999,11 +1055,12 @@ test('Collection event add data trigger, determine the trigger node integer vari
 
   //配置判断节点
   await page.goto(`admin/workflow/workflows/${workflowId}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   const preQueryRecordNodePom = new QueryRecordNode(page, preQueryRecordNodeTitle);
   await preQueryRecordNodePom.addNodeButton.click();
-  await page.getByRole('button', { name: 'condition', exact: true }).hover();
-  await page.getByLabel('branch').click();
+  await page.getByRole('button', { name: 'condition', exact: true }).click();
+  await page.getByText('Branch into "Yes" and "No"').click();
+  await page.getByLabel('action-Action-Submit-workflows').click();
   const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
   await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
   const conditionNode = new ConditionBranchNode(page, conditionNodeName);
@@ -1016,7 +1073,14 @@ test('Collection event add data trigger, determine the trigger node integer vari
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
   const conditionalRightConstant = faker.lorem.words();
   await page.waitForTimeout(500);
-  await page.keyboard.type(`!='${conditionalRightConstant}'`, { delay: 50 });
+  await page
+    .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
+    .getByLabel('textbox')
+    .press('ArrowRight');
+  await page
+    .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
+    .getByLabel('textbox')
+    .pressSequentially(`!='${conditionalRightConstant}'`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!='${conditionalRightConstant}'`,
   );

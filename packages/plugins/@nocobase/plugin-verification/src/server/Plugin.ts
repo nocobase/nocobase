@@ -18,7 +18,6 @@ import { Registry } from '@nocobase/utils';
 import { Provider, namespace } from '.';
 import initActions from './actions';
 import { CODE_STATUS_UNUSED, CODE_STATUS_USED, PROVIDER_TYPE_SMS_ALIYUN } from './constants';
-import { zhCN } from './locale';
 import initProviders from './providers';
 
 export interface Interceptor {
@@ -134,23 +133,22 @@ export default class PluginVerficationServer extends Plugin {
   async load() {
     const { app, db, options } = this;
 
-    app.i18n.addResources('zh-CN', namespace, zhCN);
-
     await this.importCollections(path.resolve(__dirname, 'collections'));
 
     await initProviders(this);
     initActions(this);
 
+    const self = this;
     // add middleware to action
-    app.resourcer.use(async (context, next) => {
+    app.resourceManager.use(async function verificationIntercept(context, next) {
       const { resourceName, actionName, values } = context.action.params;
       const key = `${resourceName}:${actionName}`;
-      const interceptor = this.interceptors.get(key);
+      const interceptor = self.interceptors.get(key);
       if (!interceptor || interceptor.manual) {
         return next();
       }
 
-      return this.intercept(context, next);
+      return self.intercept(context, next);
     });
 
     app.acl.allow('verifications', 'create', 'public');

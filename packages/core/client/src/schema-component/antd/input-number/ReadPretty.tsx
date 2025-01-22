@@ -9,10 +9,10 @@
 
 import { isValid } from '@formily/shared';
 import { toFixedByStep } from '@nocobase/utils/client';
+import BigNumber from 'bignumber.js';
 import { format } from 'd3-format';
 import * as math from 'mathjs';
 import React, { useMemo } from 'react';
-import BigNumber from 'bignumber.js';
 
 function countDecimalPlaces(value) {
   const number = Number(value);
@@ -175,7 +175,7 @@ export const ReadPretty: React.FC<InputNumberReadPrettyProps> = (props) => {
   }
 
   return (
-    <div className={'nb-read-pretty-input-number'}>
+    <div>
       {addonBefore}
       <span dangerouslySetInnerHTML={{ __html: result }} />
       {addonAfter}

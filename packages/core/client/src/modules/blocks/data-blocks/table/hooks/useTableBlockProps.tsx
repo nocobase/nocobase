@@ -10,22 +10,23 @@
 import { ArrayField } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { isEqual } from 'lodash';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useTableBlockContext } from '../../../../../block-provider/TableBlockProvider';
 import { findFilterTargets } from '../../../../../block-provider/hooks';
 import { DataBlock, useFilterBlock } from '../../../../../filter-provider/FilterProvider';
 import { mergeFilter } from '../../../../../filter-provider/utils';
 import { removeNullCondition } from '../../../../../schema-component';
-import { useCollection } from '../../../../../data-source';
 
 export const useTableBlockProps = () => {
   const field = useField<ArrayField>();
   const fieldSchema = useFieldSchema();
   const ctx = useTableBlockContext();
-  const globalSort = fieldSchema.parent?.['x-decorator-props']?.['params']?.['sort'];
   const { getDataBlocks } = useFilterBlock();
   const isLoading = ctx?.service?.loading;
-  const params = useMemo(() => ctx?.service?.params, [JSON.stringify(ctx?.service?.params)]);
+
+  const ctxRef = useRef(null);
+  ctxRef.current = ctx;
+
   useEffect(() => {
     if (!isLoading) {
       const serviceResponse = ctx?.service?.data;
@@ -56,11 +57,12 @@ export const useTableBlockProps = () => {
     loading: ctx?.service?.loading,
     showIndex: ctx.showIndex,
     dragSort: ctx.dragSort && ctx.dragSortBy,
-    rowKey: ctx.rowKey || 'id',
+    rowKey: ctx.rowKey || fieldSchema?.['x-component-props']?.rowKey || 'id',
     pagination: fieldSchema?.['x-component-props']?.pagination === false ? false : field.componentProps.pagination,
-    onRowSelectionChange: useCallback((selectedRowKeys) => {
+    onRowSelectionChange: useCallback((selectedRowKeys, selectedRowData) => {
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;
+      ctx.field.data.selectedRowData = selectedRowData;
       ctx?.field?.onRowSelect?.(selectedRowKeys);
     }, []),
     onRowDragEnd: useCallback(
@@ -78,19 +80,20 @@ export const useTableBlockProps = () => {
     ),
     onChange: useCallback(
       ({ current, pageSize }, filters, sorter) => {
+        const globalSort = fieldSchema.parent?.['x-decorator-props']?.['params']?.['sort'];
         const sort = sorter.order
           ? sorter.order === `ascend`
             ? [sorter.field]
             : [`-${sorter.field}`]
-          : globalSort || ctx.dragSortBy;
+          : globalSort || ctxRef.current.dragSortBy;
         const currentPageSize = pageSize || fieldSchema.parent?.['x-decorator-props']?.['params']?.pageSize;
-        const args = { ...params?.[0], page: current || 1, pageSize: currentPageSize };
+        const args = { ...ctxRef.current?.service?.params?.[0], page: current || 1, pageSize: currentPageSize };
         if (sort) {
           args['sort'] = sort;
         }
-        ctx.service.run(args);
+        ctxRef.current?.service.run(args);
       },
-      [globalSort, params, ctx.dragSort],
+      [fieldSchema.parent],
     ),
     onClickRow: useCallback(
       (record, setSelectedRow, selectedRow) => {
@@ -110,12 +113,8 @@ export const useTableBlockProps = () => {
         dataBlocks.forEach((block) => {
           const target = targets.find((target) => target.uid === block.uid);
           if (!target) return;
-
-          const isForeignKey = block.foreignKeyFields?.some((field) => field.name === target.field);
-          const sourceKey = getSourceKey(currentBlock, target.field);
-          const recordKey = isForeignKey ? sourceKey : ctx.rowKey;
-          const value = [record[recordKey]];
-
+          const sourceKey = getSourceKey(currentBlock, target.field) || ctx.rowKey || 'id';
+          const value = [record[sourceKey]];
           const param = block.service.params?.[0] || {};
           // 保留原有的 filter
           const storedFilter = block.service.params?.[1]?.filters || {};
@@ -165,5 +164,5 @@ export const useTableBlockProps = () => {
 
 function getSourceKey(currentBlock: DataBlock, field: string) {
   const associationField = currentBlock?.associatedFields?.find((item) => item.foreignKey === field);
-  return associationField?.sourceKey || 'id';
+  return associationField?.sourceKey || field?.split?.('.')?.[1];
 }

@@ -17,6 +17,21 @@ export default {
         result: config.path == null ? result : lodash.get(result, config.path),
       };
     },
+    test(config = {}) {
+      return {
+        status: 1,
+        result: null,
+      };
+    },
+  },
+
+  echoVariable: {
+    run({ id, config = {} }: any, job, processor) {
+      return {
+        status: 1,
+        result: config.variable ? processor.getParsedValue(config.variable, id) : null,
+      };
+    },
   },
 
   error: {
@@ -27,6 +42,11 @@ export default {
 
   pending: {
     run(node, input, processor) {
+      return {
+        status: 0,
+      };
+    },
+    test() {
       return {
         status: 0,
       };
@@ -55,6 +75,30 @@ export default {
     resume(node, input, processor) {
       throw new Error('input failed');
       return null;
+    },
+  },
+
+  asyncResume: {
+    async run(node, input, processor) {
+      const job = await processor.saveJob({
+        status: 0,
+        nodeId: node.id,
+        nodeKey: node.key,
+        upstreamId: input?.id ?? null,
+      });
+
+      setTimeout(() => {
+        job.set({
+          status: 1,
+        });
+
+        processor.options.plugin.resume(job);
+      }, 100);
+
+      return null;
+    },
+    resume(node, job, processor) {
+      return job;
     },
   },
 

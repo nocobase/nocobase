@@ -62,5 +62,7 @@ export * from './variable';
 export * from './unix-timestamp';
 export * from './nanoid-input';
 export * from './error-fallback';
+export * from './expiresRadio';
+export * from './divider';
 
 import './index.less';

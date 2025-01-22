@@ -8,6 +8,7 @@
  */
 
 import lodash from 'lodash';
+import { filterMatch } from '@nocobase/database';
 
 export default {
   name: 'dataSources.collections',
@@ -17,21 +18,38 @@ export default {
 
       const { associatedIndex: dataSourceKey } = params;
       const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
+      const plugin: any = ctx.app.pm.get('data-source-manager');
+
+      const dataSourceStatus = plugin.dataSourceStatus[dataSourceKey];
+
+      if (dataSourceStatus === 'loading-failed') {
+        const error = plugin.dataSourceErrors[dataSourceKey];
+        if (error) {
+          throw new Error(`dataSource ${dataSourceKey} loading failed: ${error.message}`);
+        }
+
+        throw new Error(`dataSource ${dataSourceKey} loading failed`);
+      }
+
+      if (['loading', 'reloading'].includes(dataSourceStatus)) {
+        const progress = plugin.dataSourceLoadingProgress[dataSourceKey];
+
+        if (progress) {
+          throw new Error(`dataSource ${dataSourceKey} is ${dataSourceStatus} (${progress.loaded}/${progress.total})`);
+        }
+
+        throw new Error(`dataSource ${dataSourceKey} is ${dataSourceStatus}`);
+      }
+
       if (!dataSource) {
         throw new Error(`dataSource ${dataSourceKey} not found`);
       }
 
-      const { paginate, filter } = ctx.action.params;
-
-      const filterTitle = lodash.get(filter, '$and.0.title.$includes')?.toLowerCase();
-      const filterName = lodash.get(filter, '$and.0.name.$includes')?.toLowerCase();
+      const { paginate, filter = {} } = ctx.action.params;
 
       const collections = lodash.sortBy(
         dataSource.collectionManager.getCollections().filter((collection) => {
-          return (
-            (!filterTitle || lodash.get(collection, 'options.title')?.toLowerCase().includes(filterTitle)) &&
-            (!filterName || collection.options.name.toLowerCase().includes(filterName))
-          );
+          return filterMatch(collection.options, filter);
         }),
         'name',
       );

@@ -8,12 +8,12 @@
  */
 
 import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
-import { createForm } from '@formily/core';
+import { createForm, Field } from '@formily/core';
 import { toJS } from '@formily/reactive';
-import { ISchema, useForm } from '@formily/react';
-import { Alert, App, Button, Dropdown, Input, Tag, Tooltip, message } from 'antd';
-import { cloneDeep, get } from 'lodash';
-import React, { useCallback, useContext, useMemo, useState } from 'react';
+import { ISchema, observer, useField, useForm } from '@formily/react';
+import { Alert, App, Button, Dropdown, Empty, Input, Space, Tag, Tooltip, message } from 'antd';
+import { cloneDeep, get, set } from 'lodash';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -21,10 +21,12 @@ import {
   FormProvider,
   SchemaComponent,
   SchemaInitializerItemType,
+  Variable,
   css,
   cx,
   useAPIClient,
   useActionContext,
+  useCancelAction,
   useCompile,
   usePlugin,
   useResourceActionContext,
@@ -32,7 +34,7 @@ import {
 import { parse, str2moment } from '@nocobase/utils/client';
 
 import WorkflowPlugin from '..';
-import { AddButton } from '../AddButton';
+import { AddButton } from '../AddNodeContext';
 import { useFlowContext } from '../FlowContext';
 import { DrawerDescription } from '../components/DrawerDescription';
 import { StatusButton } from '../components/StatusButton';
@@ -40,7 +42,7 @@ import { JobStatusOptionsMap } from '../constants';
 import { useGetAriaLabelOfAddButton } from '../hooks/useGetAriaLabelOfAddButton';
 import { lang } from '../locale';
 import useStyles from '../style';
-import { UseVariableOptions, VariableOption } from '../variable';
+import { UseVariableOptions, VariableOption, WorkflowVariableInput } from '../variable';
 
 export type NodeAvailableContext = {
   engine: WorkflowPlugin;
@@ -49,27 +51,40 @@ export type NodeAvailableContext = {
   branchIndex: number;
 };
 
+type Config = Record<string, any>;
+
+type Options = { label: string; value: any }[];
+
 export abstract class Instruction {
   title: string;
   type: string;
   group: string;
   description?: string;
   /**
-   * @experimental
+   * @deprecated migrate to `presetFieldset` instead
    */
   options?: { label: string; value: any; key: string }[];
-  fieldset: { [key: string]: ISchema };
+  fieldset: Record<string, ISchema>;
+  /**
+   * @experimental
+   */
+  presetFieldset?: Record<string, ISchema>;
+  /**
+   * To presentation if the instruction is creating a branch
+   * @experimental
+   */
+  branching?: boolean | Options | ((config: Config) => boolean | Options);
   /**
    * @experimental
    */
   view?: ISchema;
-  scope?: { [key: string]: any };
-  components?: { [key: string]: any };
+  scope?: Record<string, any>;
+  components?: Record<string, any>;
   Component?(props): JSX.Element;
   /**
    * @experimental
    */
-  createDefaultConfig?(): Record<string, any> {
+  createDefaultConfig?(): Config {
     return {};
   }
   useVariables?(node, options?: UseVariableOptions): VariableOption;
@@ -80,6 +95,7 @@ export abstract class Instruction {
    */
   isAvailable?(ctx: NodeAvailableContext): boolean;
   end?: boolean | ((node) => boolean);
+  testable?: boolean;
 }
 
 function useUpdateAction() {
@@ -143,9 +159,6 @@ export function useAvailableUpstreams(node, filter?) {
  */
 export function useUpstreamScopes(node) {
   const stack: any[] = [];
-  if (!node) {
-    return [];
-  }
 
   for (let current = node; current; current = current.upstream) {
     if (current.upstream && current.branchIndex != null) {
@@ -184,19 +197,16 @@ export function RemoveButton() {
   const current = useNodeContext();
   const { modal } = App.useApp();
 
-  if (!workflow) {
-    return null;
-  }
   const resource = api.resource('flow_nodes');
 
-  async function onRemove() {
-    async function onOk() {
-      await resource.destroy?.({
-        filterByTk: current.id,
-      });
-      refresh();
-    }
+  const onOk = useCallback(async () => {
+    await resource.destroy?.({
+      filterByTk: current.id,
+    });
+    refresh();
+  }, [current.id, refresh, resource]);
 
+  const onRemove = useCallback(async () => {
     const usingNodes = nodes.filter((node) => {
       if (node === current) {
         return false;
@@ -230,6 +240,10 @@ export function RemoveButton() {
       content: message,
       onOk,
     });
+  }, [current, modal, nodes, onOk, t]);
+
+  if (!workflow) {
+    return null;
   }
 
   return workflow.executed ? null : (
@@ -239,6 +253,7 @@ export function RemoveButton() {
       icon={<DeleteOutlined />}
       onClick={onRemove}
       className="workflow-node-remove-button"
+      size="small"
     />
   );
 }
@@ -301,6 +316,195 @@ export function JobButton() {
 
 function useFormProviderProps() {
   return { form: useForm() };
+}
+
+const useRunAction = () => {
+  const { values, query } = useForm();
+  const node = useNodeContext();
+  const api = useAPIClient();
+  const ctx = useActionContext();
+  const field = useField<Field>();
+  return {
+    async run() {
+      const template = parse(node.config);
+      const config = template(toJS(values.config));
+      const resultField = query('result').take() as Field;
+      resultField.setValue(null);
+      resultField.setFeedback({});
+
+      field.data = field.data || {};
+      field.data.loading = true;
+
+      try {
+        const {
+          data: { data },
+        } = await api.resource('flow_nodes').test({
+          values: {
+            config,
+            type: node.type,
+          },
+        });
+
+        resultField.setFeedback({
+          type: data.status > 0 ? 'success' : 'error',
+          messages: data.status > 0 ? [lang('Resolved')] : [lang('Failed')],
+        });
+        resultField.setValue(data.result);
+      } catch (err) {
+        resultField.setFeedback({
+          type: 'error',
+          messages: err.message,
+        });
+      }
+      field.data.loading = false;
+      ctx.setFormValueChanged(false);
+    },
+  };
+};
+
+const VariableKeysContext = createContext<string[]>([]);
+
+function VariableReplacer({ name, value, onChange }) {
+  return (
+    <Space>
+      <WorkflowVariableInput variableOptions={{}} value={`{{${name}}}`} disabled />
+      <Variable.Input useTypedConstant={['string', 'number', 'boolean', 'date']} value={value} onChange={onChange} />
+    </Space>
+  );
+}
+
+function TestFormFieldset({ value, onChange }) {
+  const keys = useContext(VariableKeysContext);
+
+  return keys.length ? (
+    <>
+      {keys.map((key) => (
+        <VariableReplacer
+          key={key}
+          name={key}
+          value={get(value, key)}
+          onChange={(v) => {
+            set(value, key, v);
+            onChange(toJS(value));
+          }}
+        />
+      ))}
+    </>
+  ) : (
+    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={lang('No variable')} style={{ margin: '1em' }} />
+  );
+}
+
+function TestButton() {
+  const node = useNodeContext();
+  const { values } = useForm();
+  const template = parse(values);
+  const keys = template.parameters.map((item) => item.key);
+  const form = useMemo(() => createForm(), []);
+
+  return (
+    <NodeContext.Provider value={{ ...node, config: values }}>
+      <VariableKeysContext.Provider value={keys}>
+        <SchemaComponent
+          components={{
+            Alert,
+            TestFormFieldset,
+          }}
+          scope={{
+            useCancelAction,
+            useRunAction,
+          }}
+          schema={{
+            type: 'void',
+            name: 'testButton',
+            title: '{{t("Test run")}}',
+            'x-component': 'Action',
+            'x-component-props': {
+              icon: 'CaretRightOutlined',
+              // openSize: 'small',
+            },
+            properties: {
+              modal: {
+                type: 'void',
+                'x-decorator': 'FormV2',
+                'x-decorator-props': {
+                  form,
+                },
+                'x-component': 'Action.Modal',
+                title: `{{t("Test run", { ns: "workflow" })}}`,
+                properties: {
+                  alert: {
+                    type: 'void',
+                    'x-component': 'Alert',
+                    'x-component-props': {
+                      message: `{{t("Test run will do the actual data manipulating or API calling, please use with caution.", { ns: "workflow" })}}`,
+                      type: 'warning',
+                      showIcon: true,
+                      className: css`
+                        margin-bottom: 1em;
+                      `,
+                    },
+                  },
+                  config: {
+                    type: 'object',
+                    title: '{{t("Replace variables", { ns: "workflow" })}}',
+                    'x-decorator': 'FormItem',
+                    'x-component': 'TestFormFieldset',
+                  },
+                  actions: {
+                    type: 'void',
+                    'x-component': 'ActionBar',
+                    properties: {
+                      submit: {
+                        type: 'void',
+                        title: '{{t("Run")}}',
+                        'x-component': 'Action',
+                        'x-component-props': {
+                          type: 'primary',
+                          useAction: '{{ useRunAction }}',
+                        },
+                      },
+                    },
+                  },
+                  result: {
+                    type: 'string',
+                    title: `{{t("Result", { ns: "workflow" })}}`,
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Input.JSON',
+                    'x-component-props': {
+                      autoSize: {
+                        minRows: 5,
+                        maxRows: 20,
+                      },
+                      style: {
+                        whiteSpace: 'pre',
+                        cursor: 'text',
+                      },
+                    },
+                    'x-pattern': 'disabled',
+                  },
+                  footer: {
+                    type: 'void',
+                    'x-component': 'Action.Modal.Footer',
+                    properties: {
+                      cancel: {
+                        type: 'void',
+                        title: '{{t("Close")}}',
+                        'x-component': 'Action',
+                        'x-component-props': {
+                          useAction: '{{ useCancelAction }}',
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          }}
+        />
+      </VariableKeysContext.Provider>
+    </NodeContext.Provider>
+  );
 }
 
 export function NodeDefaultView(props) {
@@ -376,19 +580,18 @@ export function NodeDefaultView(props) {
             'Node with unknown type will cause error. Please delete it or check plugin which provide this type.',
           )}
         >
-          <div
-            role="button"
-            aria-label={`_untyped-${editingTitle}`}
-            className={cx(styles.nodeCardClass, 'invalid')}
-            onClick={onOpenDrawer}
-          >
-            <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
-              <Tag color="error">{lang('Unknown node')}</Tag>
-              <span className="workflow-node-id">{data.id}</span>
+          <div role="button" aria-label={`_untyped-${editingTitle}`} className={cx(styles.nodeCardClass, 'invalid')}>
+            <div className={styles.nodeHeaderClass}>
+              <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
+                <Tag color="error">{lang('Unknown node')}</Tag>
+                <span className="workflow-node-id">{data.id}</span>
+              </div>
+              <div className="workflow-node-actions">
+                <RemoveButton />
+                <JobButton />
+              </div>
             </div>
             <Input.TextArea value={editingTitle} disabled autoSize />
-            <RemoveButton />
-            <JobButton />
           </div>
         </Tooltip>
       </div>
@@ -405,9 +608,15 @@ export function NodeDefaultView(props) {
         className={cx(styles.nodeCardClass, { configuring: editingConfig })}
         onClick={onOpenDrawer}
       >
-        <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
-          <Tag>{typeTitle}</Tag>
-          <span className="workflow-node-id">{data.id}</span>
+        <div className={styles.nodeHeaderClass}>
+          <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
+            <Tag>{typeTitle}</Tag>
+            <span className="workflow-node-id">{data.id}</span>
+          </div>
+          <div className="workflow-node-actions">
+            <RemoveButton />
+            <JobButton />
+          </div>
         </div>
         <Input.TextArea
           disabled={workflow.executed}
@@ -416,8 +625,6 @@ export function NodeDefaultView(props) {
           onBlur={(ev) => onChangeTitle(ev.target.value)}
           autoSize
         />
-        <RemoveButton />
-        <JobButton />
         <ActionContextProvider
           value={{
             visible: editingConfig,
@@ -514,25 +721,45 @@ export function NodeDefaultView(props) {
                         },
                         properties: instruction.fieldset,
                       },
-                      actions: workflow.executed
+                      footer: workflow.executed
                         ? null
                         : {
                             type: 'void',
                             'x-component': 'Action.Drawer.Footer',
                             properties: {
-                              cancel: {
-                                title: '{{t("Cancel")}}',
-                                'x-component': 'Action',
+                              actions: {
+                                type: 'void',
+                                'x-component': 'ActionBar',
                                 'x-component-props': {
-                                  useAction: '{{ cm.useCancelAction }}',
+                                  style: {
+                                    flexGrow: 1,
+                                  },
                                 },
-                              },
-                              submit: {
-                                title: '{{t("Submit")}}',
-                                'x-component': 'Action',
-                                'x-component-props': {
-                                  type: 'primary',
-                                  useAction: '{{ useUpdateAction }}',
+                                properties: {
+                                  ...(instruction.testable
+                                    ? {
+                                        test: {
+                                          type: 'void',
+                                          'x-component': observer(TestButton),
+                                          'x-align': 'left',
+                                        },
+                                      }
+                                    : {}),
+                                  cancel: {
+                                    title: '{{t("Cancel")}}',
+                                    'x-component': 'Action',
+                                    'x-component-props': {
+                                      useAction: '{{ cm.useCancelAction }}',
+                                    },
+                                  },
+                                  submit: {
+                                    title: '{{t("Submit")}}',
+                                    'x-component': 'Action',
+                                    'x-component-props': {
+                                      type: 'primary',
+                                      useAction: '{{ useUpdateAction }}',
+                                    },
+                                  },
                                 },
                               },
                             },

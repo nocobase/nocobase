@@ -46,5 +46,8 @@
   "Title": "标题",
   "Month": "月",
   "Week": "周",
-  "{{count}} more items": "{{count}} 更多事项"
+  "{{count}} more items": "{{count}} 更多事项",
+  "Background color field": "背景颜色字段",
+  "Not selected": "未选择",
+  "Default view": "默认视图"
 }

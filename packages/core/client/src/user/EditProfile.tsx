@@ -19,6 +19,7 @@ import {
   useActionContext,
   useCurrentUserContext,
   useRequest,
+  useSystemSettings,
 } from '../';
 import { useAPIClient } from '../api-client';
 
@@ -82,6 +83,7 @@ const schema: ISchema = {
           title: "{{t('Nickname')}}",
           'x-decorator': 'FormItem',
           'x-component': 'Input',
+          'x-disabled': '{{ enableEditProfile === false }}',
         },
         username: {
           type: 'string',
@@ -90,6 +92,7 @@ const schema: ISchema = {
           'x-component': 'Input',
           'x-validator': { username: true },
           required: true,
+          'x-disabled': '{{ enableEditProfile === false }}',
         },
         email: {
           type: 'string',
@@ -97,12 +100,14 @@ const schema: ISchema = {
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-validator': 'email',
+          'x-disabled': '{{ enableEditProfile === false }}',
         },
         phone: {
           type: 'string',
           title: '{{t("Phone")}}',
           'x-decorator': 'FormItem',
           'x-component': 'Input',
+          'x-disabled': '{{ enableEditProfile === false }}',
         },
         footer: {
           'x-component': 'Action.Drawer.Footer',
@@ -118,6 +123,7 @@ const schema: ISchema = {
             submit: {
               title: 'Submit',
               'x-component': 'Action',
+              'x-disabled': '{{ enableEditProfile === false }}',
               'x-component-props': {
                 type: 'primary',
                 useAction: '{{ useSaveCurrentUserValues }}',
@@ -134,8 +140,9 @@ export const useEditProfile = () => {
   const ctx = useContext(DropdownVisibleContext);
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
-
-  return useMemo<MenuProps['items'][0]>(() => {
+  const { data } = useSystemSettings();
+  const { enableEditProfile } = data?.data || {};
+  const result = useMemo<MenuProps['items'][0]>(() => {
     return {
       key: 'profile',
       eventKey: 'EditProfile',
@@ -149,7 +156,7 @@ export const useEditProfile = () => {
           <ActionContextProvider value={{ visible, setVisible }}>
             <div onClick={(e) => e.stopPropagation()}>
               <SchemaComponent
-                scope={{ useCurrentUserValues, useCloseAction, useSaveCurrentUserValues }}
+                scope={{ useCurrentUserValues, useCloseAction, useSaveCurrentUserValues, enableEditProfile }}
                 schema={schema}
               />
             </div>
@@ -158,4 +165,10 @@ export const useEditProfile = () => {
       ),
     };
   }, [visible]);
+
+  if (enableEditProfile === false) {
+    return null;
+  }
+
+  return result;
 };

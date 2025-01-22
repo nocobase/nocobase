@@ -208,6 +208,14 @@ export class Application {
     return this.getPublicPath() + pathname.replace(/^\//g, '');
   }
 
+  getHref(pathname: string) {
+    const name = this.name;
+    if (name && name !== 'main') {
+      return this.getPublicPath() + 'apps/' + name + '/' + pathname.replace(/^\//g, '');
+    }
+    return this.getPublicPath() + pathname.replace(/^\//g, '');
+  }
+
   getCollectionManager(dataSource?: string) {
     return this.dataSourceManager.getDataSource(dataSource)?.collectionManager;
   }
@@ -284,7 +292,9 @@ export class Application {
       loadFailed = true;
       const toError = (error) => {
         if (typeof error?.response?.data === 'string') {
-          return { message: error?.response?.data };
+          const tempElement = document.createElement('div');
+          tempElement.innerHTML = error?.response?.data;
+          return { message: tempElement.textContent || tempElement.innerText };
         }
         if (error?.response?.data?.error) {
           return error?.response?.data?.error;

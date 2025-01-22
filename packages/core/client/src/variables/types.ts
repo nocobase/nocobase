@@ -87,6 +87,7 @@ export interface VariablesContextType {
     localVariables?: VariableOption | VariableOption[],
   ) => Promise<CollectionFieldOptions_deprecated>;
   removeVariable: (variableName: string) => void;
+  filterVariables?: (params) => boolean; //自定义过滤变量
 }
 
 export interface VariableOption {

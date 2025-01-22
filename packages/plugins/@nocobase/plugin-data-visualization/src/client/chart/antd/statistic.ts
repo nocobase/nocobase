@@ -17,10 +17,11 @@ export class Statistic extends AntdChart {
     super({
       name: 'statistic',
       title: 'Statistic',
+      enableAdvancedConfig: true,
       Component: C,
       config: [
         {
-          property: 'field',
+          configType: 'field',
           name: 'field',
           title: 'Field',
           required: true,

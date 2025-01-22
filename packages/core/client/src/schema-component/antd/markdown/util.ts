@@ -7,19 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import _ from 'lodash';
 import { useEffect, useState } from 'react';
 
-export async function parseMarkdown(text: string) {
+export const parseMarkdown = _.memoize(async (text: string) => {
   if (!text) {
     return text;
   }
   const m = await import('./md');
   return m.default.render(text);
-}
+});
 
 export function useParseMarkdown(text: string) {
   const [html, setHtml] = useState<any>('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     setLoading(true);
     parseMarkdown(text)
@@ -29,6 +31,7 @@ export function useParseMarkdown(text: string) {
       })
       .catch((error) => console.log(error));
   }, [text]);
+
   return { html, loading };
 }
 

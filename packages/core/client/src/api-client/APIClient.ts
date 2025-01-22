@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { APIClient as APIClientSDK, getSubAppName } from '@nocobase/sdk';
+import { APIClient as APIClientSDK } from '@nocobase/sdk';
 import { Result } from 'ahooks/es/useRequest/src/types';
 import { notification } from 'antd';
 import React from 'react';
@@ -61,9 +61,21 @@ export class APIClient extends APIClientSDK {
   /** 该值会在 AntdAppProvider 中被重新赋值 */
   notification: any = notification;
 
+  cloneInstance() {
+    const api = new APIClient(this.options);
+    api.options = this.options;
+    api.services = this.services;
+    api.storage = this.storage;
+    api.app = this.app;
+    api.auth = this.auth;
+    api.storagePrefix = this.storagePrefix;
+    api.notification = this.notification;
+    return api;
+  }
+
   getHeaders() {
     const headers = super.getHeaders();
-    const appName = this.app.getName();
+    const appName = this.app?.getName();
     if (appName) {
       headers['X-App'] = appName;
     }
@@ -79,10 +91,10 @@ export class APIClient extends APIClientSDK {
   interceptors() {
     this.axios.interceptors.request.use((config) => {
       config.headers['X-With-ACL-Meta'] = true;
-      const appName = this.app ? getSubAppName(this.app.getPublicPath()) : null;
-      if (appName) {
-        config.headers['X-App'] = appName;
-      }
+      const headers = this.getHeaders();
+      Object.keys(headers).forEach((key) => {
+        config.headers[key] = config.headers[key] || headers[key];
+      });
       return config;
     });
     super.interceptors();
@@ -97,6 +109,14 @@ export class APIClient extends APIClientSDK {
         // TODO(yangqia): improve error code and message
         if (errs.find((error: { code?: string }) => error.code === 'ROLE_NOT_FOUND_ERR')) {
           this.auth.setRole(null);
+          window.location.reload();
+        }
+        if (errs.find((error: { code?: string }) => error.code === 'TOKEN_INVALID')) {
+          this.auth.setToken(null);
+        }
+        if (errs.find((error: { code?: string }) => error.code === 'ROLE_NOT_FOUND_FOR_USER')) {
+          this.auth.setRole(null);
+          window.location.reload();
         }
         throw error;
       },
@@ -105,7 +125,9 @@ export class APIClient extends APIClientSDK {
 
   toErrMessages(error) {
     if (typeof error?.response?.data === 'string') {
-      return [{ message: error?.response?.data }];
+      const tempElement = document.createElement('div');
+      tempElement.innerHTML = error?.response?.data;
+      return [{ message: tempElement.textContent || tempElement.innerText }];
     }
     return (
       error?.response?.data?.errors ||
@@ -130,9 +152,11 @@ export class APIClient extends APIClientSDK {
         }
         return response;
       },
-      (error) => {
+      async (error) => {
         if (this.silence) {
-          throw error;
+          console.error(error);
+          return;
+          // throw error;
         }
         const redirectTo = error?.response?.data?.redirectTo;
         if (redirectTo) {
@@ -175,7 +199,8 @@ export class APIClient extends APIClientSDK {
   }
 
   silent() {
-    this.silence = true;
-    return this;
+    const api = this.cloneInstance();
+    api.silence = true;
+    return api;
   }
 }

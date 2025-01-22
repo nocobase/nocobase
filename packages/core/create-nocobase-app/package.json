@@ -1,11 +1,11 @@
 {
   "name": "create-nocobase-app",
-  "version": "1.3.42-beta",
+  "version": "1.4.29",
   "main": "src/index.js",
   "license": "AGPL-3.0",
   "dependencies": {
     "@umijs/utils": "3.5.20",
-    "axios": "^0.26.1",
+    "axios": "^1.7.0",
     "chalk": "^4.1.1",
     "commander": "^9.2.0",
     "tar": "6.1.11"

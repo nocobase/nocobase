@@ -9,6 +9,7 @@
 
 import { css, cx } from '@emotion/css';
 import { ArrayField } from '@formily/core';
+import { FormLayout } from '@formily/antd-v5';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { List as AntdList, Col, PaginationProps } from 'antd';
 import React, { useCallback, useState } from 'react';
@@ -21,6 +22,7 @@ import { GridCardDesigner } from './GridCard.Designer';
 import { GridCardItem } from './GridCard.Item';
 import { useGridCardActionBarProps, useGridCardBodyHeight } from './hooks';
 import { defaultColumnCount, pageSizeOptions } from './options';
+import { getCardItemSchema } from '../../../block-provider';
 
 const rowGutter = {
   md: 12,
@@ -159,6 +161,14 @@ const InternalGridCard = (props: GridCardProps) => {
     ...pagination,
     onChange: onPaginationChange,
   };
+  const cardItemSchema = getCardItemSchema?.(fieldSchema);
+  const {
+    layout = 'vertical',
+    labelAlign = 'left',
+    labelWidth = 120,
+    labelWrap = true,
+  } = cardItemSchema?.['x-component-props'] || {};
+
   return (
     <SchemaComponentOptions
       scope={{
@@ -182,36 +192,43 @@ const InternalGridCard = (props: GridCardProps) => {
           `,
         )}
       >
-        <AntdList
-          pagination={
-            !meta || meta.count <= meta.pageSize
-              ? false
-              : {
-                  ...gridCardProps,
-                }
-          }
-          dataSource={field.value}
-          grid={{
-            ...columnCount,
-            sm: columnCount.xs,
-            xl: columnCount.lg,
-            gutter: [rowGutter, rowGutter],
-          }}
-          renderItem={(item, index) => {
-            return (
-              <Col style={{ height: '100%' }}>
-                <RecursionField
-                  key={index}
-                  basePath={field.address}
-                  name={index}
-                  onlyRenderProperties
-                  schema={getSchema(index)}
-                ></RecursionField>
-              </Col>
-            );
-          }}
-          loading={service?.loading}
-        />
+        <FormLayout
+          layout={layout}
+          labelAlign={labelAlign}
+          labelWidth={layout === 'horizontal' ? labelWidth : null}
+          labelWrap={labelWrap}
+        >
+          <AntdList
+            pagination={
+              !meta || meta.count <= meta.pageSize
+                ? false
+                : {
+                    ...gridCardProps,
+                  }
+            }
+            dataSource={field.value}
+            grid={{
+              ...columnCount,
+              sm: columnCount.xs,
+              xl: columnCount.lg,
+              gutter: [rowGutter, rowGutter],
+            }}
+            renderItem={(item, index) => {
+              return (
+                <Col style={{ height: '100%' }} className="nb-card-item-warper">
+                  <RecursionField
+                    key={index}
+                    basePath={field.address}
+                    name={index}
+                    onlyRenderProperties
+                    schema={getSchema(index)}
+                  ></RecursionField>
+                </Col>
+              );
+            }}
+            loading={service?.loading}
+          />
+        </FormLayout>
         <Designer />
       </SortableItem>
     </SchemaComponentOptions>

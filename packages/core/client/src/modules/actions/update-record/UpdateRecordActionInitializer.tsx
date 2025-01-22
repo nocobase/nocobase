@@ -25,7 +25,7 @@ export const UpdateRecordActionInitializer = (props) => {
     'x-action-settings': {
       assignedValues: {},
       onSuccess: {
-        manualClose: true,
+        manualClose: false,
         redirecting: false,
         successMessage: '{{t("Updated successfully")}}',
       },

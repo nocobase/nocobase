@@ -15,7 +15,7 @@ test.describe('where can be added', () => {
     await mockPage(emptyPageWithCalendarCollection).goto();
 
     await page.getByLabel('schema-initializer-Grid-page:').hover();
-    await page.getByRole('menuitem', { name: 'form Calendar right' }).hover();
+    await page.getByRole('menuitem', { name: 'Calendar right' }).hover();
     await page.getByRole('menuitem', { name: 'calendar', exact: true }).click();
 
     await page.getByLabel('block-item-Select-Title field').getByTestId('select-single').click();
@@ -32,7 +32,7 @@ test.describe('where can be added', () => {
     // 打开弹窗
     await page.getByLabel('action-Action.Link-View-view-').first().click();
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'form Calendar right' }).hover();
+    await page.getByRole('menuitem', { name: 'Calendar right' }).hover();
     await page.getByRole('menuitem', { name: 'Associated records' }).hover();
     await page.getByRole('menuitem', { name: 'manyToMany' }).click();
 
@@ -44,7 +44,7 @@ test.describe('where can be added', () => {
 
     // 通过 Other records 创建一个日历区块
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'form Calendar right' }).hover();
+    await page.getByRole('menuitem', { name: 'Calendar right' }).hover();
     await page.getByRole('menuitem', { name: 'Other records right' }).hover();
     await page.getByRole('menuitem', { name: 'calendar', exact: true }).click();
     await page.mouse.move(300, 0);

@@ -75,6 +75,14 @@ const commonOptions = {
         return collection.tree && treeTable;
       },
     },
+    {
+      name: 'customRequest',
+      title: '{{t("Custom request")}}',
+      Component: 'CustomRequestInitializer',
+      schema: {
+        'x-action': 'customize:table:request:global',
+      },
+    },
   ],
 };
 

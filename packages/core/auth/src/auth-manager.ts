@@ -32,6 +32,7 @@ export type AuthManagerOptions = {
 type AuthConfig = {
   auth: AuthExtend<Auth>; // The authentication class.
   title?: string; // The display name of the authentication type.
+  getPublicOptions?: (options: Record<string, any>) => Record<string, any>; // Get the public options.
 };
 
 export class AuthManager {
@@ -106,13 +107,19 @@ export class AuthManager {
    * @description Auth middleware, used to check the authentication status.
    */
   middleware() {
-    return async (ctx: Context & { auth: Auth }, next: Next) => {
+    const self = this;
+
+    return async function AuthManagerMiddleware(ctx: Context & { auth: Auth }, next: Next) {
       const token = ctx.getBearerToken();
       if (token && (await ctx.app.authManager.jwt.blacklist?.has(token))) {
-        return ctx.throw(401, ctx.t('token is not available'));
+        return ctx.throw(401, {
+          code: 'TOKEN_INVALID',
+          message: ctx.t('Token is invalid'),
+        });
       }
 
-      const name = ctx.get(this.options.authKey) || this.options.default;
+      const name = ctx.get(self.options.authKey) || self.options.default;
+
       let authenticator: Auth;
       try {
         authenticator = await ctx.app.authManager.get(name, ctx);

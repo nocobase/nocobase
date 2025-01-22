@@ -27,6 +27,7 @@ export const useActionPageStyle = createStyles(({ css, token }: any) => {
       }
       .ant-tabs-content-holder {
         padding: ${token.paddingPageVertical}px;
+        padding-bottom: 0px;
       }
     `,
   };

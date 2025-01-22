@@ -9,6 +9,7 @@
 
 import { TabsProps } from 'antd/es/tabs/index';
 import React from 'react';
+import { TFunction } from 'react-i18next';
 import { GeneralPermissions } from './permissions/GeneralPermissions';
 import { MenuItemsProvider } from './permissions/MenuItemsProvider';
 import { MenuPermissions } from './permissions/MenuPermissions';
@@ -22,11 +23,15 @@ interface PermissionsTabsProps {
   /**
    * the currently selected role
    */
-  role: Role;
+  activeRole: null | Role;
+  /**
+   * the current user's role
+   */
+  currentUserRole: null | Role;
   /**
    * translation function
    */
-  t: (key: string) => string;
+  t: TFunction;
   /**
    * used to constrain the size of the container in the Tab
    */
@@ -53,7 +58,7 @@ export class ACLSettingsUI {
     }),
     ({ activeKey, t, TabLayout }) => ({
       key: 'menu',
-      label: t('Menu'),
+      label: t('Desktop menu'),
       children: (
         <TabLayout>
           <MenuItemsProvider>

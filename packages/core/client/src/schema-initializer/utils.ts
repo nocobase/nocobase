@@ -83,13 +83,13 @@ export const useRemoveGridFormItem = () => {
   };
 };
 
-export const findTableColumn = (schema: Schema, key: string, action: string, deepth = 0) => {
+export const findTableColumn = (schema: Schema, key: string, action: string, name: string) => {
   return schema.reduceProperties((buf, s) => {
-    if (s[key] === action) {
+    if (s[key] === action && (!name || s.name === name)) {
       return s;
     }
     const c = s.reduceProperties((buf, s) => {
-      if (s[key] === action) {
+      if (s[key] === action && (!name || s.name === name)) {
         return s;
       }
       return buf;
@@ -121,6 +121,7 @@ export function useTableColumnInitializerFields() {
   const isReadPretty = isSubTable ? form.readPretty : true;
 
   return currentFields
+    .filter((v) => !v.collectionName || v.collectionName === name)
     .filter((field) => field?.interface && field?.interface !== 'subTable' && !field?.treeChildren)
     .map((field) => {
       const interfaceConfig = getInterface(field.interface);
@@ -379,6 +380,7 @@ export const useFormItemInitializerFields = (options?: any) => {
   const action = fieldSchema?.['x-action'];
 
   return currentFields
+    .filter((v) => !v.collectionName || v.collectionName === name)
     ?.filter((field) => field?.interface && !field?.treeChildren)
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
@@ -446,6 +448,7 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
   const action = fieldSchema?.['x-action'];
 
   return currentFields
+    .filter((v) => !v.collectionName || v.collectionName === name)
     ?.filter((field) => field?.interface && getInterface(field.interface)?.filterable)
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
@@ -462,7 +465,8 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
         'x-use-decorator-props': 'useFormItemProps',
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {
-          component: interfaceConfig?.filterable?.operators?.[0]?.schema?.['x-component'],
+          utc: false,
+          underFilter: true,
         },
       };
       if (isAssocField(field)) {
@@ -477,7 +481,7 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
           'x-decorator': 'FormItem',
           'x-use-decorator-props': 'useFormItemProps',
           'x-collection-field': `${name}.${field.name}`,
-          'x-component-props': field.uiSchema?.['x-component-props'],
+          'x-component-props': { ...field.uiSchema?.['x-component-props'], utc: false, underFilter: true },
         };
       }
       const resultItem = {
@@ -508,7 +512,8 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
   const form = useForm();
   const { t } = useTranslation();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
-  const interfaces = block === 'Form' ? ['m2o'] : ['o2o', 'oho', 'obo', 'm2o'];
+  const interfaces = block === 'Form' ? ['m2o', 'obo', 'oho'] : ['o2o', 'oho', 'obo', 'm2o'];
+
   const groups = fields
     ?.filter((field) => {
       return interfaces.includes(field.interface);
@@ -571,6 +576,7 @@ const associationFieldToMenu = (
       interface: field.interface,
     },
     'x-component': 'CollectionField',
+    'x-component-props': { utc: false, underFilter: true },
     'x-read-pretty': false,
     'x-decorator': 'FormItem',
     'x-collection-field': `${collectionName}.${schemaName}`,
@@ -590,8 +596,9 @@ const associationFieldToMenu = (
 export const useFilterAssociatedFormItemInitializerFields = () => {
   const { name, fields } = useCollection_deprecated();
   const { getCollectionFields } = useCollectionManager_deprecated();
+  const interfaces = ['o2o', 'oho', 'obo', 'm2o', 'm2m'];
   return fields
-    ?.filter((field) => field.target && field.uiSchema)
+    ?.filter((field) => field.target && field.uiSchema && interfaces.includes(field.interface))
     .map((field) => associationFieldToMenu(field, field.name, name, getCollectionFields, []))
     .filter(Boolean);
 };
@@ -686,7 +693,7 @@ export const useFilterInheritsFormItemInitializerFields = (options?) => {
             'x-component': 'CollectionField',
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}`,
-            'x-component-props': {},
+            'x-component-props': { utc: false, underFilter: true },
             'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
           };
           return {

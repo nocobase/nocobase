@@ -16,6 +16,7 @@ import {
   useCollectionManager_deprecated,
   useCompile,
   useDataBlockProps,
+  useDataBlockResource,
   useDataSourceHeaders,
 } from '@nocobase/client';
 import lodash from 'lodash';
@@ -107,8 +108,10 @@ export const useImportStartAction = () => {
   const { setVisible, fieldSchema } = useActionContext();
   const { setImportModalVisible, setImportStatus, setImportResult } = useImportContext();
   const { upload } = form.values;
-  const dataBlockProps = useDataBlockProps();
+  const dataBlockProps = useDataBlockProps() || ({} as any);
   const headers = useDataSourceHeaders(dataBlockProps.dataSource);
+  const newResource = useDataBlockResource();
+
   useEffect(() => {
     form.reset();
   }, []);
@@ -145,11 +148,17 @@ export const useImportStartAction = () => {
       setVisible(false);
       setImportModalVisible(true);
       setImportStatus(ImportStatus.IMPORTING);
+
       try {
-        const { data }: any = await apiClient.axios.post(`${name}:importXlsx`, formData, {
-          headers,
-          timeout: 10 * 60 * 1000,
-        });
+        const { data } = await (newResource as any).importXlsx(
+          {
+            values: formData,
+          },
+          {
+            timeout: 10 * 60 * 1000,
+          },
+        );
+
         setImportResult(data);
         form.reset();
         await service?.refresh?.();

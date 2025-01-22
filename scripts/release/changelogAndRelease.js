@@ -8,7 +8,7 @@ const axios = require('axios');
 program
   .option('-f, --from [from]')
   .option('-t, --to [to]')
-  .option('-v, --ver [ver]', '', 'beta')
+  .option('-v, --ver [ver]', '', 'rc')
   .option('--test')
   .option('--cmsURL [url]')
   .option('--cmsToken [token]');
@@ -102,7 +102,7 @@ async function parsePackage(files, pkgType, pkg) {
 }
 
 async function parsePR(number, pkgType, cwd, pkg, retries = 10) {
-  let { ver = 'beta' } = program.opts();
+  let { ver = 'rc' } = program.opts();
   // gh pr view 5112 --json author,body,files
   let res;
   try {
@@ -120,7 +120,10 @@ async function parsePR(number, pkgType, cwd, pkg, retries = 10) {
     return { number };
   }
   const { author, body, files, baseRefName, url } = JSON.parse(res);
-  if (ver === 'alpha' && baseRefName !== 'next') {
+  if (ver === 'beta' && baseRefName !== 'next') {
+    return { number };
+  }
+  if (ver === 'alpha' && baseRefName !== 'develop') {
     return { number };
   }
   const typeRegExp = /\[x\] ([^(\\\r)]+)/;
@@ -342,9 +345,9 @@ async function createRelease(cn, en, to) {
     console.log(`Release ${to} already exists`);
     return;
   }
-  let { ver = 'beta' } = program.opts();
+  let { ver = 'rc' } = program.opts();
   // gh release create -t title -n note
-  if (ver === 'alpha') {
+  if (ver === 'alpha' || ver === 'beta') {
     await execa('gh', ['release', 'create', to, '-t', to, '-n', en, '-p']);
     return;
   }
@@ -368,14 +371,36 @@ async function getExistsChangelog(from, to) {
 }
 
 async function getVersion() {
-  let { from, to, ver = 'beta' } = program.opts();
+  let { from, to, ver = 'rc' } = program.opts();
   if (!from || !to) {
     // git tag -l --sort=version:refname | grep "v*-ver" | tail -2
-    const tagPattern = `v*-${ver}`;
-    const { stdout: tags } = await execa(`git tag -l --sort=version:refname | grep "${tagPattern}" | tail -2`, {
+    let tagPattern = '';
+    switch (ver) {
+      case 'rc':
+        tagPattern = '^v[1-9]+.[0-9]+.[0-9]+$';
+        break;
+      case 'beta':
+        tagPattern = '^v[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+$';
+        break;
+      case 'alpha':
+        tagPattern = '^v[0-9]+.[0-9]+.[0-9]+-alpha.[0-9]+$';
+        break;
+    }
+    const { stdout: tags } = await execa(`git tag -l --sort=creatordate | grep -E "${tagPattern}" | tail -2`, {
       shell: true,
     });
-    [from, to] = tags.split('\n');
+    const tagsArr = tags.split('\n');
+    // 过渡处理
+    if (tagsArr.length === 1) {
+      if (ver === 'rc') {
+        tagsArr.unshift('v1.3.50-beta');
+      }
+      if (ver === 'beta') {
+        tagsArr.unshift('v1.4.0-alpha.17');
+      }
+    }
+    from = tagsArr[0];
+    to = tagsArr[1];
   }
   console.log(`From: ${from}, To: ${to}`);
   return { from, to };
@@ -398,8 +423,8 @@ async function postCMS(tag, content, contentCN) {
     },
     data: {
       slug: tag,
-      title: `Nocobase ${tag}`,
-      title_cn: `Nocobase ${tag}`,
+      title: `NocoBase ${tag}`,
+      title_cn: `NocoBase ${tag}`,
       content,
       content_cn: contentCN,
       description: `Release Note of ${tag}`,
@@ -412,7 +437,7 @@ async function postCMS(tag, content, contentCN) {
 }
 
 async function writeChangelogAndCreateRelease() {
-  let { ver = 'beta', test } = program.opts();
+  let { ver = 'rc', test } = program.opts();
   const { from, to } = await getVersion();
   let { cn, en } = await getExistsChangelog(from, to);
   let exists = false;
@@ -434,7 +459,7 @@ async function writeChangelogAndCreateRelease() {
   if (test) {
     return;
   }
-  if (ver === 'beta' && !exists) {
+  if (ver === 'rc' && !exists) {
     await writeChangelog(cn, en, from, to);
   }
   await createRelease(cn, en, to);

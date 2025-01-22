@@ -29,7 +29,6 @@ export * from './appInfo';
 export * from './application';
 export * from './async-data-provider';
 export * from './block-provider';
-export * from './china-region';
 export * from './collection-manager';
 
 export * from './common';
@@ -74,4 +73,9 @@ export { OpenModeProvider, useOpenModeContext } from './modules/popup/OpenModePr
 export { PopupContextProvider } from './modules/popup/PopupContextProvider';
 export { usePopupUtils } from './modules/popup/usePopupUtils';
 
+export { SwitchLanguage } from './i18n/SwitchLanguage';
 export { VariablePopupRecordProvider } from './modules/variable/variablesProvider/VariablePopupRecordProvider';
+
+export { useCurrentPopupRecord } from './modules/variable/variablesProvider/VariablePopupRecordProvider';
+
+export { languageCodes } from './locale';

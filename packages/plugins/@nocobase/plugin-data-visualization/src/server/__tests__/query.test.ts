@@ -13,14 +13,12 @@ import { vi } from 'vitest';
 import {
   cacheMiddleware,
   checkPermission,
-  parseBuilder,
   parseFieldAndAssociations,
   parseVariables,
   postProcess,
 } from '../actions/query';
 import { Database } from '@nocobase/database';
-
-const formatter = await import('../actions/formatter');
+import { createQueryParser } from '../query-parser';
 
 describe('query', () => {
   describe('parseBuilder', () => {
@@ -158,7 +156,8 @@ describe('query', () => {
           },
         },
       };
-      await compose([parseFieldAndAssociations, parseBuilder])(context, async () => {});
+      const queryParser = createQueryParser(db);
+      await compose([parseFieldAndAssociations, queryParser.parse()])(context, async () => {});
       expect(context.action.params.values.queryParams.attributes).toEqual([
         [db.sequelize.col('orders.price'), 'price'],
       ]);
@@ -180,7 +179,7 @@ describe('query', () => {
           },
         },
       };
-      await compose([parseFieldAndAssociations, parseBuilder])(context2, async () => {});
+      await compose([parseFieldAndAssociations, queryParser.parse()])(context2, async () => {});
       expect(context2.action.params.values.queryParams.attributes).toEqual([
         [db.sequelize.fn('sum', db.sequelize.col('orders.price')), 'price-alias'],
       ]);
@@ -204,15 +203,17 @@ describe('query', () => {
           },
         },
       };
+      const queryParser = createQueryParser(db);
       try {
-        await compose([parseFieldAndAssociations, parseBuilder])(context, async () => {});
+        await compose([parseFieldAndAssociations, queryParser.parse()])(context, async () => {});
       } catch (error) {
         expect(error.message).toBe('Invalid aggregation function: if(1=2,sleep(1),sleep(3)) and sum');
       }
     });
 
     it('should parse dimensions', async () => {
-      vi.spyOn(formatter, 'formatter').mockReturnValue('formatted-field');
+      const queryParser = createQueryParser(db);
+      vi.spyOn(queryParser.formatter, 'format').mockImplementation(() => 'formatted-field' as any);
       const dimensions = [
         {
           field: ['createdAt'],
@@ -231,7 +232,7 @@ describe('query', () => {
           },
         },
       };
-      await compose([parseFieldAndAssociations, parseBuilder])(context, async () => {});
+      await compose([parseFieldAndAssociations, queryParser.parse()])(context, async () => {});
       expect(context.action.params.values.queryParams.attributes).toEqual([['formatted-field', 'Created at']]);
       expect(context.action.params.values.queryParams.group).toEqual([]);
       const measures = [
@@ -252,7 +253,7 @@ describe('query', () => {
           },
         },
       };
-      await compose([parseFieldAndAssociations, parseBuilder])(context2, async () => {});
+      await compose([parseFieldAndAssociations, queryParser.parse()])(context2, async () => {});
       expect(context2.action.params.values.queryParams.group).toEqual(['formatted-field']);
     });
 
@@ -273,7 +274,8 @@ describe('query', () => {
           },
         },
       };
-      await compose([parseFieldAndAssociations, parseBuilder])(context, async () => {});
+      const queryParser = createQueryParser(db);
+      await compose([parseFieldAndAssociations, queryParser.parse()])(context, async () => {});
       expect(context.action.params.values.queryParams.where.createdAt).toBeDefined();
     });
 
@@ -328,7 +330,6 @@ describe('query', () => {
       await parseVariables(context, async () => {});
       const { filter } = context.action.params.values;
       const dateOn = filter.$and[0].createdAt.$dateOn;
-      console.log(dateOn);
       expect(new Date(dateOn).getTime()).toBeLessThanOrEqual(new Date().getTime());
       const userId = filter.$and[1].userId.$eq;
       expect(userId).toBe(1);

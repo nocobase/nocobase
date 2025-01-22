@@ -18,7 +18,6 @@ import lodash from 'lodash';
 import { nanoid } from 'nanoid';
 import { basename, isAbsolute, resolve } from 'path';
 import safeJsonStringify from 'safe-json-stringify';
-import semver from 'semver';
 import {
   DataTypes,
   ModelStatic,
@@ -41,7 +40,7 @@ import { referentialIntegrityCheck } from './features/referential-integrity-chec
 import { ArrayFieldRepository } from './field-repository/array-field-repository';
 import * as FieldTypes from './fields';
 import { Field, FieldContext, RelationField } from './fields';
-import { checkDatabaseVersion } from './helpers';
+import { checkDatabaseVersion, registerDialects } from './helpers';
 import { InheritedCollection } from './inherited-collection';
 import InheritanceMap from './inherited-map';
 import { InterfaceManager } from './interface-manager';
@@ -54,7 +53,7 @@ import extendOperators from './operators';
 import QueryInterface from './query-interface/query-interface';
 import buildQueryInterface from './query-interface/query-interface-builder';
 import { RelationRepository } from './relation-repository/relation-repository';
-import { Repository } from './repository';
+import { Repository, TargetKey } from './repository';
 import {
   AfterDefineCollectionListener,
   BeforeDefineCollectionListener,
@@ -85,6 +84,7 @@ import {
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
+import { BaseDialect } from './dialects/base-dialect';
 
 export type MergeOptions = merge.Options;
 
@@ -129,35 +129,9 @@ export type AddMigrationsOptions = {
 
 type OperatorFunc = (value: any, ctx?: RegisterOperatorsContext) => any;
 
-export const DialectVersionAccessors = {
-  sqlite: {
-    sql: 'select sqlite_version() as version',
-    get: (v: string) => v,
-  },
-  mysql: {
-    sql: 'select version() as version',
-    get: (v: string) => {
-      const m = /([\d+.]+)/.exec(v);
-      return m[0];
-    },
-  },
-  mariadb: {
-    sql: 'select version() as version',
-    get: (v: string) => {
-      const m = /([\d+.]+)/.exec(v);
-      return m[0];
-    },
-  },
-  postgres: {
-    sql: 'select version() as version',
-    get: (v: string) => {
-      const m = /([\d+.]+)/.exec(v);
-      return semver.minVersion(m[0]).version;
-    },
-  },
-};
-
 export class Database extends EventEmitter implements AsyncEmitter {
+  static dialects = new Map<string, typeof BaseDialect>();
+
   sequelize: Sequelize;
   migrator: Umzug;
   migrations: Migrations;
@@ -168,8 +142,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
   repositories = new Map<string, RepositoryType>();
   operators = new Map();
   collections = new Map<string, Collection>();
+  collectionsSort = new Map<string, number>();
   pendingFields = new Map<string, RelationField[]>();
   modelCollection = new Map<ModelStatic<any>, Collection>();
+  modelNameCollectionMap = new Map<string, Collection>();
   tableNameCollectionMap = new Map<string, Collection>();
   context: any = {};
   queryInterface: QueryInterface;
@@ -181,12 +157,30 @@ export class Database extends EventEmitter implements AsyncEmitter {
   delayCollectionExtend = new Map<string, { collectionOptions: CollectionOptions; mergeOptions?: any }[]>();
   logger: Logger;
   interfaceManager = new InterfaceManager(this);
-
   collectionFactory: CollectionFactory = new CollectionFactory(this);
+  dialect: BaseDialect;
+
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
+
+  static registerDialect(dialect: typeof BaseDialect) {
+    this.dialects.set(dialect.dialectName, dialect);
+  }
+
+  static getDialect(name: string) {
+    return this.dialects.get(name);
+  }
 
   constructor(options: DatabaseOptions) {
     super();
+
+    const dialectClass = Database.getDialect(options.dialect);
+
+    if (!dialectClass) {
+      throw new Error(`unsupported dialect ${options.dialect}`);
+    }
+
+    // @ts-ignore
+    this.dialect = new dialectClass();
 
     const opts = {
       sync: {
@@ -220,6 +214,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
       }
     }
 
+    // @ts-ignore
+    opts.rawTimezone = opts.timezone;
+
     if (options.dialect === 'sqlite') {
       delete opts.timezone;
     } else if (!opts.timezone) {
@@ -238,7 +235,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
       });
     }
 
+    if (options.logging && process.env['DB_SQL_BENCHMARK'] == 'true') {
+      opts.benchmark = true;
+    }
+
     this.options = opts;
+
     this.logger.debug(
       `create database instance: ${safeJsonStringify(
         // remove sensitive information
@@ -370,21 +372,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
    * @internal
    */
   sequelizeOptions(options) {
-    if (options.dialect === 'postgres') {
-      if (!options.hooks) {
-        options.hooks = {};
-      }
-
-      if (!options.hooks['afterConnect']) {
-        options.hooks['afterConnect'] = [];
-      }
-
-      options.hooks['afterConnect'].push(async (connection) => {
-        await connection.query('SET search_path TO public;');
-      });
-    }
-
-    return options;
+    return this.dialect.getSequelizeOptions(options);
   }
 
   /**
@@ -524,6 +512,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.inDialect('mysql', 'mariadb');
   }
 
+  isPostgresCompatibleDialect() {
+    return this.inDialect('postgres');
+  }
+
   /**
    * Add collection to database
    * @param options
@@ -581,6 +573,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return field;
   }
 
+  getCollectionByModelName(name: string) {
+    return this.modelNameCollectionMap.get(name);
+  }
+
   /**
    * get exists collection by its name
    * @param name
@@ -628,11 +624,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   getRepository<R extends Repository>(name: string): R;
 
-  getRepository<R extends RelationRepository>(name: string, relationId: string | number): R;
+  getRepository<R extends RelationRepository>(name: string, relationId: TargetKey): R;
 
-  getRepository<R extends ArrayFieldRepository>(name: string, relationId: string | number): R;
+  getRepository<R extends ArrayFieldRepository>(name: string, relationId: TargetKey): R;
 
-  getRepository<R extends RelationRepository>(name: string, relationId?: string | number): Repository | R {
+  getRepository<R extends RelationRepository>(name: string, relationId?: TargetKey): Repository | R {
     const [collection, relation] = name.split('.');
     if (relation) {
       return this.getRepository(collection)?.relation(relation)?.of(relationId) as R;
@@ -1033,5 +1029,6 @@ export const defineCollection = (collectionOptions: CollectionOptions) => {
 };
 
 applyMixins(Database, [AsyncEmitter]);
+registerDialects();
 
 export default Database;

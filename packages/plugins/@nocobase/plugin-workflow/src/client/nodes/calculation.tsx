@@ -32,7 +32,7 @@ export default class extends Instruction {
         options: getOptions(),
       },
       required: true,
-      default: 'math.js',
+      default: 'formula.js',
     },
     expression: {
       type: 'string',

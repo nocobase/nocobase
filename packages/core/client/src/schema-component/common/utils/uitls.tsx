@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Handlebars from 'handlebars';
+import { dayjs, getPickerFormat, Handlebars } from '@nocobase/utils/client';
 import _, { every, findIndex, some } from 'lodash';
 import { replaceVariableValue } from '../../../block-provider/hooks';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { transformVariableValue } from '../../../variables/utils/transformVariableValue';
+import { inferPickerType } from '../../antd/date-picker/util';
 import { getJsonLogic } from '../../common/utils/logic';
-
 type VariablesCtx = {
   /** 当前登录的用户 */
   $user?: Record<string, any>;
@@ -95,7 +95,6 @@ export const conditionAnalyses = async ({
   const conditions = ruleGroup[type];
 
   let results = conditions.map(async (condition) => {
-    // fix https://nocobase.height.app/T-3152
     if ('$and' in condition || '$or' in condition) {
       return await conditionAnalyses({ ruleGroup: condition, variables, localVariables });
     }
@@ -122,11 +121,20 @@ export const conditionAnalyses = async ({
       const jsonLogic = getJsonLogic();
       const [value, targetValue] = await Promise.all(parsingResult);
       const targetCollectionField = await variables.getCollectionField(targetVariableName, localVariables);
+      let currentInputValue = transformVariableValue(targetValue, { targetCollectionField });
+      const comparisonValue = transformVariableValue(value, { targetCollectionField });
+      if (
+        targetCollectionField?.type &&
+        ['datetime', 'date', 'datetimeNoTz', 'dateOnly', 'unixTimestamp'].includes(targetCollectionField.type) &&
+        currentInputValue
+      ) {
+        const picker = inferPickerType(comparisonValue);
+        const format = getPickerFormat(picker);
+        currentInputValue = dayjs(currentInputValue).format(format);
+      }
+
       return jsonLogic.apply({
-        [operator]: [
-          transformVariableValue(targetValue, { targetCollectionField }),
-          transformVariableValue(value, { targetCollectionField }),
-        ],
+        [operator]: [currentInputValue, comparisonValue],
       });
     } catch (error) {
       throw error;
@@ -146,7 +154,7 @@ export const conditionAnalyses = async ({
  * @param targetField
  * @returns
  */
-export function targetFieldToVariableString(targetField: string[], variableName = '$nForm') {
+function targetFieldToVariableString(targetField: string[], variableName = '$nForm') {
   // Action 中的联动规则虽然没有 form 上下文但是在这里也使用的是 `$nForm` 变量，这样实现更简单
   return `{{ ${variableName}.${targetField.join('.')} }}`;
 }
@@ -165,12 +173,12 @@ export async function getRenderContent(templateEngine, content, variables, local
       const renderedContent = Handlebars.compile(content);
       // 处理渲染后的内容
       const data = getVariablesData(localVariables);
-      const { $nDate } = variables.ctxRef.current;
+      const { $nDate } = variables?.ctxRef?.current || {};
       const variableDate = {};
-      Object.keys($nDate).map((v) => {
+      Object.keys($nDate || {}).map((v) => {
         variableDate[v] = $nDate[v]();
       });
-      const html = renderedContent({ ...variables.ctxRef.current, ...data, $nDate: variableDate });
+      const html = renderedContent({ ...variables?.ctxRef?.current, ...data, $nDate: variableDate });
       return await defaultParse(html);
     } catch (error) {
       console.log(error);
@@ -181,6 +189,7 @@ export async function getRenderContent(templateEngine, content, variables, local
       const html = await replaceVariableValue(content, variables, localVariables);
       return await defaultParse(html);
     } catch (error) {
+      console.log(error);
       return content;
     }
   }

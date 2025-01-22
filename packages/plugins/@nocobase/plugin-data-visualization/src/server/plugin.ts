@@ -10,7 +10,6 @@
 import { Cache } from '@nocobase/cache';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { query } from './actions/query';
-import { resolve } from 'path';
 
 export class PluginDataVisualizationServer extends Plugin {
   cache: Cache;
@@ -18,7 +17,7 @@ export class PluginDataVisualizationServer extends Plugin {
   afterAdd() {}
 
   beforeLoad() {
-    this.app.resource({
+    this.app.resourceManager.define({
       name: 'charts',
       actions: {
         query,

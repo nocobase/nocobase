@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { getLoggerFilePath } from './config';
 import { Logger, LoggerOptions } from './logger';
-import { pick } from 'lodash';
+import { pick, omit } from 'lodash';
 const defaultRequestWhitelist = [
   'action',
   'header.x-role',
@@ -21,6 +20,12 @@ const defaultRequestWhitelist = [
   'referer',
 ];
 const defaultResponseWhitelist = ['status'];
+const defaultActionBlackList = [
+  'params.values.password',
+  'params.values.confirmPassword',
+  'params.values.oldPassword',
+  'params.values.newPassword',
+];
 
 export interface RequestLoggerOptions extends LoggerOptions {
   skip?: (ctx?: any) => Promise<boolean>;
@@ -29,7 +34,7 @@ export interface RequestLoggerOptions extends LoggerOptions {
 }
 
 export const requestLogger = (appName: string, requestLogger: Logger, options?: RequestLoggerOptions) => {
-  return async (ctx, next) => {
+  return async function requestLoggerMiddleware(ctx, next) {
     const reqId = ctx.reqId;
     const path = /^\/api\/(.+):(.+)/.exec(ctx.path);
     const contextLogger = ctx.app.log.child({ reqId, module: path?.[1], submodule: path?.[2] });
@@ -60,12 +65,13 @@ export const requestLogger = (appName: string, requestLogger: Logger, options?: 
         message: `response ${ctx.url}`,
         ...requestInfo,
         res: pick(ctx.response.toJSON(), options?.responseWhitelist || defaultResponseWhitelist),
-        action: ctx.action?.toJSON?.(),
+        action: omit(ctx.action?.toJSON?.(), defaultActionBlackList),
         userId: ctx.auth?.user?.id,
         status: ctx.status,
         cost,
         app: appName,
         reqId,
+        bodySize: ctx.response.length,
       };
       if (Math.floor(status / 100) == 5) {
         requestLogger.error({ ...info, res: ctx.body?.['errors'] || ctx.body });

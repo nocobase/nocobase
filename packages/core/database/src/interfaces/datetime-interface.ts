@@ -8,7 +8,7 @@
  */
 
 import { BaseInterface } from './base-interface';
-import { getDefaultFormat, moment2str, str2moment } from '@nocobase/utils';
+import { getDefaultFormat, str2moment } from '@nocobase/utils';
 import dayjs from 'dayjs';
 import { getJsDateFromExcel } from 'excel-date-to-js';
 
@@ -31,16 +31,53 @@ function resolveTimeZoneFromCtx(ctx) {
 }
 
 export class DatetimeInterface extends BaseInterface {
+  protected parseDateString(value: string) {
+    const dateOnlyMatch = /^(\d{4})[-/]?(\d{2})[-/]?(\d{2})$/.exec(value);
+    const dateTimeMatch = /^(\d{4})(\d{2})(\d{2})\s+(\d{2}):(\d{2}):(\d{2})$/.exec(value);
+
+    if (dateTimeMatch) {
+      const [_, year, month, day, hour, minute, second] = dateTimeMatch;
+      return { year, month, day, hour, minute, second };
+    }
+
+    if (dateOnlyMatch) {
+      const [_, year, month, day] = dateOnlyMatch;
+      return { year, month, day };
+    }
+
+    return null;
+  }
+
+  protected formatDateTimeToISO(dateInfo: {
+    year: string;
+    month: string;
+    day: string;
+    hour?: string;
+    minute?: string;
+    second?: string;
+  }) {
+    const { year, month, day, hour = '00', minute = '00', second = '00' } = dateInfo;
+    const m = dayjs(`${year}-${month}-${day} ${hour}:${minute}:${second}.000`);
+    return m.toISOString();
+  }
+
   async toValue(value: any, ctx: any = {}): Promise<any> {
     if (!value) {
       return null;
     }
 
+    if (typeof value === 'number') {
+      const valueStr = value.toString();
+      const dateOnlyMatch = /^(\d{4})[-/]?(\d{2})[-/]?(\d{2})$/.exec(valueStr);
+      if (dateOnlyMatch) {
+        value = valueStr;
+      }
+    }
+
     if (typeof value === 'string') {
-      const match = /^(\d{4})[-/]?(\d{2})[-/]?(\d{2})$/.exec(value);
-      if (match) {
-        const m = dayjs(`${match[1]}-${match[2]}-${match[3]} 00:00:00.000`);
-        return m.toISOString();
+      const dateInfo = this.parseDateString(value);
+      if (dateInfo) {
+        return this.formatDateTimeToISO(dateInfo);
       }
     }
 
@@ -51,11 +88,7 @@ export class DatetimeInterface extends BaseInterface {
     } else if (isNumeric(value)) {
       return getJsDateFromExcel(value).toISOString();
     } else if (typeof value === 'string') {
-      const props = ctx.field?.options?.uiSchema?.['x-component-props'] || {};
-      const m = dayjs(value);
-      if (m.isValid()) {
-        return moment2str(m, props);
-      }
+      return value;
     }
 
     throw new Error(`Invalid date - ${value}`);

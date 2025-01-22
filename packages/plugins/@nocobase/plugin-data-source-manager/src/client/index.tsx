@@ -9,6 +9,7 @@
 
 import { Plugin } from '@nocobase/client';
 import PluginACLClient from '@nocobase/plugin-acl/client';
+import { uid } from '@nocobase/utils/client';
 import React from 'react';
 import { DatabaseConnectionProvider } from './DatabaseConnectionProvider';
 import { ThirdDataSource } from './ThridDataSource';
@@ -18,22 +19,35 @@ import { DatabaseConnectionManagerPane } from './component/DatabaseConnectionMan
 import { MainDataSourceManager } from './component/MainDataSourceManager';
 import { DataSourcePermissionManager } from './component/PermissionManager';
 import { NAMESPACE } from './locale';
+import { CollectionMainProvider } from './component/MainDataSourceManager/CollectionMainProvider';
 
 export class PluginDataSourceManagerClient extends Plugin {
   types = new Map();
+
+  extendedTabs = {};
+
+  getExtendedTabs() {
+    return this.extendedTabs;
+  }
+
+  registerPermissionTab(schema) {
+    this.extendedTabs[uid()] = schema;
+  }
+
   async load() {
     // register a configuration item in the Users & Permissions management page
-    this.app.pm.get(PluginACLClient).settingsUI.addPermissionsTab(({ t, TabLayout, role }) => ({
+    this.app.pm.get(PluginACLClient).settingsUI.addPermissionsTab(({ t, TabLayout, activeRole }) => ({
       key: 'dataSource',
       label: t('Data sources'),
       children: (
         <TabLayout>
-          <DataSourcePermissionManager role={role} />
+          <DataSourcePermissionManager role={activeRole} />
         </TabLayout>
       ),
     }));
 
     this.app.use(DatabaseConnectionProvider);
+
     this.app.pluginSettingsManager.add(NAMESPACE, {
       title: `{{t("Data sources", { ns: "${NAMESPACE}" })}}`,
       icon: 'ClusterOutlined',
@@ -62,6 +76,7 @@ export class PluginDataSourceManagerClient extends Plugin {
       sort: 100,
       skipAclConfigure: true,
       aclSnippet: 'pm.data-source-manager.data-source-main',
+      Component: CollectionMainProvider,
     });
     this.app.pluginSettingsManager.add(`${NAMESPACE}/main.collections`, {
       title: `{{t("Collections", { ns: "${NAMESPACE}" })}}`,

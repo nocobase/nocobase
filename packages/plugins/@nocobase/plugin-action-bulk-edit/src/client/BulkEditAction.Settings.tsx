@@ -18,8 +18,13 @@ import {
   useDesignable,
   useOpenModeContext,
   useSchemaToolbar,
+  SecondConFirm,
+  WorkflowConfig,
+  AfterSuccess,
+  RefreshDataBlockRequest,
 } from '@nocobase/client';
 import { ModalProps } from 'antd';
+import { isValid } from '@formily/shared';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -153,6 +158,56 @@ export const bulkEditActionSettings = new SchemaSettings({
     {
       name: 'updateMode',
       Component: UpdateMode,
+    },
+    {
+      name: 'remove',
+      sort: 100,
+      Component: RemoveButton as any,
+      useComponentProps() {
+        const { removeButtonProps } = useSchemaToolbar();
+        return removeButtonProps;
+      },
+    },
+  ],
+});
+/**
+ * 批量编辑表单的submit 按钮
+ */
+export const bulkEditFormSubmitActionSettings = new SchemaSettings({
+  name: 'actionSettings:bulkEditSubmit',
+  items: [
+    {
+      name: 'editButton',
+      Component: ActionDesigner.ButtonEditor,
+      useComponentProps() {
+        const { buttonEditorProps } = useSchemaToolbar();
+        return buttonEditorProps;
+      },
+    },
+    {
+      name: 'secondConfirmation',
+      Component: SecondConFirm,
+    },
+    {
+      name: 'workflowConfig',
+      Component: WorkflowConfig,
+      useVisible() {
+        const fieldSchema = useFieldSchema();
+        return isValid(fieldSchema?.['x-action-settings']?.triggerWorkflows);
+      },
+    },
+    {
+      name: 'afterSuccessfulSubmission',
+      Component: AfterSuccess,
+    },
+    {
+      name: 'refreshDataBlockRequest',
+      Component: RefreshDataBlockRequest,
+      useComponentProps() {
+        return {
+          isPopupAction: true,
+        };
+      },
     },
     {
       name: 'remove',

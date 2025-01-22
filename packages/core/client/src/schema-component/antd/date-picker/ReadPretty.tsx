@@ -10,11 +10,11 @@
 import { usePrefixCls } from '@formily/antd-v5/esm/__builtins__';
 import { isArr } from '@formily/shared';
 import {
+  getDefaultFormat,
   GetDefaultFormatProps,
+  str2moment,
   Str2momentOptions,
   Str2momentValue,
-  getDefaultFormat,
-  str2moment,
 } from '@nocobase/utils/client';
 import cls from 'classnames';
 import dayjs from 'dayjs';
@@ -34,16 +34,15 @@ export interface ReadPrettyDatePickerProps extends Str2momentOptions, GetDefault
   showTime?: boolean;
 }
 
-ReadPretty.DatePicker = function DatePicker(props) {
+ReadPretty.DatePicker = function DatePicker(props: any) {
+  const { value, picker = 'date' } = props;
   const prefixCls = usePrefixCls('description-date-picker', props);
-
-  if (!props.value) {
+  if (!value) {
     return <div></div>;
   }
-
   const getLabels = () => {
     const format = getDefaultFormat(props) as string;
-    const m = str2moment(props.value, props);
+    const m = str2moment(value, props);
     const labels = dayjs.isDayjs(m) ? m.format(format) : '';
     return isArr(labels) ? labels.join('~') : labels;
   };
@@ -68,6 +67,7 @@ ReadPretty.DateRangePicker = function DateRangePicker(props: DateRangePickerRead
     const labels = m.map((m) => m.format(format));
     return isArr(labels) ? labels.join('~') : labels;
   };
+
   return (
     <div className={cls(prefixCls, props.className)} style={props.style}>
       {getLabels()}

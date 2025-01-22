@@ -14,6 +14,7 @@ import { ChartDataProvider } from './ChartDataProvider';
 import { ChartRenderer, ChartRendererProvider } from '../renderer';
 import { ChartFilterBlockProvider, ChartFilterBlockDesigner } from '../filter';
 import { ChartFilterProvider } from '../filter/FilterProvider';
+import { RefreshButton } from '../initializers/RefreshAction';
 import { css } from '@emotion/css';
 
 export const useChartBlockCardProps = (props: any) => {
@@ -36,7 +37,13 @@ export const ChartV2Block: React.FC = (props) => {
       value={{ ...schemaInitializerContextData, visible: initialVisible, setVisible: setInitialVisible }}
     >
       <SchemaComponentOptions
-        components={{ ChartRenderer, ChartRendererProvider, ChartFilterBlockProvider, ChartFilterBlockDesigner }}
+        components={{
+          ChartRenderer,
+          ChartRendererProvider,
+          ChartFilterBlockProvider,
+          ChartFilterBlockDesigner,
+          RefreshButton,
+        }}
       >
         <div
           className={css`

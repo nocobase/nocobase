@@ -40,7 +40,7 @@ const collection = {
   ],
 };
 
-export const dataSourceSchema: ISchema = {
+export const dataSourceSchema = (tabs = {}): ISchema => ({
   type: 'object',
   properties: {
     block1: {
@@ -161,6 +161,7 @@ export const dataSourceSchema: ISchema = {
                                     roleCollectionsSchema,
                                   },
                                 },
+                                ...tabs,
                               },
                             },
                           },
@@ -176,4 +177,4 @@ export const dataSourceSchema: ISchema = {
       },
     },
   },
-};
+});

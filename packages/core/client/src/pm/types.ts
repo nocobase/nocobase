@@ -16,6 +16,7 @@ export interface IPluginData {
   packageName: string;
   version: string;
   enabled: boolean;
+  removable?: boolean;
   installed: boolean;
   builtIn: boolean;
   registry?: string;

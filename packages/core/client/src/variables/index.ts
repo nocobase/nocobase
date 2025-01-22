@@ -16,3 +16,4 @@ export * from './utils/isVariable';
 export * from './utils/transformVariableValue';
 
 export * from './constants';
+export type { VariablesContextType } from './types';

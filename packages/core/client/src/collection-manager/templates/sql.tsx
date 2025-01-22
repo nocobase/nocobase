@@ -83,14 +83,17 @@ export class SqlCollectionTemplate extends CollectionTemplate {
         },
       },
     },
-    ...getConfigurableProperties('category'),
     filterTargetKey: {
       title: `{{ t("Record unique key")}}`,
       type: 'single',
       description: `{{t( "If a collection lacks a primary key, you must configure a unique record key to locate row records within a block, failure to configure this will prevent the creation of data blocks for the collection.")}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Select',
+      'x-component-props': {
+        multiple: true,
+      },
       'x-reactions': ['{{useAsyncDataSource(loadFilterTargetKeys)}}'],
     },
+    ...getConfigurableProperties('category', 'description'),
   };
 }

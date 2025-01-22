@@ -9,54 +9,11 @@
 
 import { Context, Next } from '@nocobase/actions';
 import { BelongsToArrayAssociation, Field, FilterParser } from '@nocobase/database';
-import { formatter } from './formatter';
 import compose from 'koa-compose';
 import { Cache } from '@nocobase/cache';
 import { middlewares } from '@nocobase/server';
-
-type MeasureProps = {
-  field: string | string[];
-  type?: string;
-  aggregation?: string;
-  alias?: string;
-  distinct?: boolean;
-};
-
-type DimensionProps = {
-  field: string | string[];
-  type?: string;
-  alias?: string;
-  format?: string;
-};
-
-type OrderProps = {
-  field: string | string[];
-  alias?: string;
-  order?: 'asc' | 'desc';
-};
-
-type QueryParams = Partial<{
-  uid: string;
-  dataSource: string;
-  collection: string;
-  measures: MeasureProps[];
-  dimensions: DimensionProps[];
-  orders: OrderProps[];
-  filter: any;
-  limit: number;
-  sql: {
-    fields?: string;
-    clauses?: string;
-  };
-  cache: {
-    enabled: boolean;
-    ttl: number;
-  };
-  // Get the latest data from the database
-  refresh: boolean;
-}>;
-
-const AllowedAggFuncs = ['sum', 'count', 'avg', 'min', 'max'];
+import { QueryParams } from '../types';
+import { createQueryParser } from '../query-parser';
 
 const getDB = (ctx: Context, dataSource: string) => {
   const ds = ctx.app.dataSourceManager.dataSources.get(dataSource);
@@ -108,78 +65,6 @@ export const queryData = async (ctx: Context, next: Next) => {
   // return data;
 };
 
-export const parseBuilder = async (ctx: Context, next: Next) => {
-  const { dataSource, measures, dimensions, orders, include, where, limit } = ctx.action.params.values;
-  const db = getDB(ctx, dataSource) || ctx.db;
-  const { sequelize } = db;
-  const attributes = [];
-  const group = [];
-  const order = [];
-  const fieldMap = {};
-  let hasAgg = false;
-
-  measures.forEach((measure: MeasureProps & { field: string }) => {
-    const { field, aggregation, alias, distinct } = measure;
-    const attribute = [];
-    const col = sequelize.col(field);
-    if (aggregation) {
-      if (!AllowedAggFuncs.includes(aggregation)) {
-        throw new Error(`Invalid aggregation function: ${aggregation}`);
-      }
-      hasAgg = true;
-      attribute.push(sequelize.fn(aggregation, distinct ? sequelize.fn('DISTINCT', col) : col));
-    } else {
-      attribute.push(col);
-    }
-    if (alias) {
-      attribute.push(alias);
-    }
-    attributes.push(attribute.length > 1 ? attribute : attribute[0]);
-    fieldMap[alias || field] = measure;
-  });
-
-  dimensions.forEach((dimension: DimensionProps & { field: string }) => {
-    const { field, format, alias, type } = dimension;
-    const attribute = [];
-    const col = sequelize.col(field);
-    if (format) {
-      attribute.push(formatter(sequelize, type, field, format, ctx.timezone));
-    } else {
-      attribute.push(col);
-    }
-    if (alias) {
-      attribute.push(alias);
-    }
-    attributes.push(attribute.length > 1 ? attribute : attribute[0]);
-    if (hasAgg) {
-      group.push(attribute[0]);
-    }
-    fieldMap[alias || field] = dimension;
-  });
-
-  orders.forEach((item: OrderProps) => {
-    const alias = sequelize.getQueryInterface().quoteIdentifier(item.alias);
-    const name = hasAgg ? sequelize.literal(alias) : sequelize.col(item.field as string);
-    order.push([name, item.order || 'ASC']);
-  });
-
-  ctx.action.params.values = {
-    ...ctx.action.params.values,
-    queryParams: {
-      where,
-      attributes,
-      include,
-      group,
-      order,
-      limit: limit || 2000,
-      subQuery: false,
-      raw: true,
-    },
-    fieldMap,
-  };
-  await next();
-};
-
 export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
   const {
     dataSource,
@@ -211,11 +96,13 @@ export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
     const rawAttributes = collection.model.getAttributes();
     let field = rawAttributes[name]?.field || name;
     let fieldType = fields.get(name)?.type;
+    let fieldOptions = fields.get(name)?.options;
     if (target) {
       const targetField = fields.get(target) as Field;
       const targetCollection = db.getCollection(targetField.target);
       const targetFields = targetCollection.fields;
       fieldType = targetFields.get(name)?.type;
+      fieldOptions = targetFields.get(name)?.options;
       field = `${target}.${field}`;
       name = `${target}.${name}`;
       const targetType = fields.get(target)?.type;
@@ -230,6 +117,7 @@ export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
       field,
       name,
       type: fieldType,
+      options: fieldOptions,
       alias: selected.alias || name,
     };
   };
@@ -261,20 +149,26 @@ export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
     collection,
   });
   const { where, include: filterInclude } = filterParser.toSequelizeParams();
-  const parsedFilterInclude = filterInclude?.map((item) => {
-    if (fields.get(item.association)?.type === 'belongsToMany') {
-      item.through = { attributes: [] };
+  if (filterInclude) {
+    // Remove attributes from through table
+    const stack = [...filterInclude];
+    while (stack.length) {
+      const item = stack.pop();
+      if (fields.get(item.association)?.type === 'belongsToMany') {
+        item.through = { attributes: [] };
+      }
+      if (item.include) {
+        stack.push(...item.include);
+      }
     }
-    return item;
-  });
-
+  }
   ctx.action.params.values = {
     ...ctx.action.params.values,
     where,
     measures: parsedMeasures,
     dimensions: parsedDimensions,
     orders: parsedOrders,
-    include: [...include, ...(parsedFilterInclude || [])],
+    include: [...include, ...(filterInclude || [])],
   };
   await next();
 };
@@ -318,13 +212,16 @@ export const checkPermission = (ctx: Context, next: Next) => {
 };
 
 export const query = async (ctx: Context, next: Next) => {
+  const { dataSource } = ctx.action.params.values as QueryParams;
+  const db = getDB(ctx, dataSource) || ctx.db;
+  const queryParser = createQueryParser(db);
   try {
     await compose([
       checkPermission,
       cacheMiddleware,
       parseVariables,
       parseFieldAndAssociations,
-      parseBuilder,
+      queryParser.parse(),
       queryData,
       postProcess,
     ])(ctx, next);

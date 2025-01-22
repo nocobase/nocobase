@@ -7,24 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { flatten } from 'flat';
+import { isValidFilter } from '@nocobase/utils';
 import lodash from 'lodash';
 import {
   Association,
   BulkCreateOptions,
-  CountOptions as SequelizeCountOptions,
-  CreateOptions as SequelizeCreateOptions,
-  DestroyOptions as SequelizeDestroyOptions,
-  FindAndCountOptions as SequelizeAndCountOptions,
-  FindOptions as SequelizeFindOptions,
   ModelStatic,
   Op,
   Sequelize,
-  Transactionable,
+  FindAndCountOptions as SequelizeAndCountOptions,
+  CountOptions as SequelizeCountOptions,
+  CreateOptions as SequelizeCreateOptions,
+  DestroyOptions as SequelizeDestroyOptions,
+  FindOptions as SequelizeFindOptions,
   UpdateOptions as SequelizeUpdateOptions,
+  Transactionable,
   WhereOperators,
 } from 'sequelize';
-import { isValidFilter } from '@nocobase/utils';
 
 import { Collection } from './collection';
 import { Database } from './database';
@@ -38,6 +37,7 @@ import FilterParser from './filter-parser';
 import { Model } from './model';
 import operators from './operators';
 import { OptionsParser } from './options-parser';
+import { BelongsToArrayRepository } from './relation-repository/belongs-to-array-repository';
 import { BelongsToManyRepository } from './relation-repository/belongs-to-many-repository';
 import { BelongsToRepository } from './relation-repository/belongs-to-repository';
 import { HasManyRepository } from './relation-repository/hasmany-repository';
@@ -45,7 +45,7 @@ import { HasOneRepository } from './relation-repository/hasone-repository';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
-import { BelongsToArrayRepository } from './relation-repository/belongs-to-array-repository';
+import { valuesToFilter } from './utils/filter-utils';
 
 const debug = require('debug')('noco-database');
 
@@ -59,7 +59,10 @@ export interface FilterAble {
   filter: Filter;
 }
 
-export type TargetKey = string | number;
+export type BaseTargetKey = string | number;
+export type MultiTargetKey = Record<string, BaseTargetKey>;
+export type TargetKey = BaseTargetKey | MultiTargetKey;
+
 export type TK = TargetKey | TargetKey[];
 
 type FieldValue = string | number | bigint | boolean | Date | Buffer | null | FieldValue[] | FilterWithOperator;
@@ -211,7 +214,7 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
     }
   }
 
-  of(id: string | number): R {
+  of(id: TargetKey): R {
     if (!this.association) {
       return;
     }
@@ -231,10 +234,11 @@ export interface AggregateOptions {
   distinct?: boolean;
 }
 
-interface FirstOrCreateOptions extends Transactionable {
+export interface FirstOrCreateOptions extends Transactionable {
   filterKeys: string[];
   values?: Values;
   hooks?: boolean;
+  context?: any;
 }
 
 export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes> {
@@ -248,53 +252,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     this.model = collection.model;
   }
 
-  public static valuesToFilter(values: Values = {}, filterKeys: Array<string>) {
-    const removeArrayIndexInKey = (key) => {
-      const chunks = key.split('.');
-      return chunks
-        .filter((chunk) => {
-          return !chunk.match(/\d+/);
-        })
-        .join('.');
-    };
-
-    const filterAnd = [];
-    const flattedValues = flatten(values);
-    const flattedValuesObject = {};
-
-    for (const key in flattedValues) {
-      const keyWithoutArrayIndex = removeArrayIndexInKey(key);
-      if (flattedValuesObject[keyWithoutArrayIndex]) {
-        if (!Array.isArray(flattedValuesObject[keyWithoutArrayIndex])) {
-          flattedValuesObject[keyWithoutArrayIndex] = [flattedValuesObject[keyWithoutArrayIndex]];
-        }
-
-        flattedValuesObject[keyWithoutArrayIndex].push(flattedValues[key]);
-      } else {
-        flattedValuesObject[keyWithoutArrayIndex] = [flattedValues[key]];
-      }
-    }
-
-    for (const filterKey of filterKeys) {
-      const filterValue = flattedValuesObject[filterKey]
-        ? flattedValuesObject[filterKey]
-        : lodash.get(values, filterKey);
-
-      if (filterValue) {
-        filterAnd.push({
-          [filterKey]: filterValue,
-        });
-      } else {
-        filterAnd.push({
-          [filterKey]: null,
-        });
-      }
-    }
-
-    return {
-      $and: filterAnd,
-    };
-  }
+  public static valuesToFilter = valuesToFilter;
 
   /**
    * return count by filter
@@ -312,32 +270,29 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     }
 
     if (countOptions?.filterByTk) {
+      const optionParser = new OptionsParser(options, {
+        collection: this.collection,
+      });
+
       options['where'] = {
-        [Op.and]: [
-          options['where'] || {},
-          {
-            [this.collection.filterTargetKey]: options.filterByTk,
-          },
-        ],
+        [Op.and]: [options['where'] || {}, optionParser.filterByTkToWhereOption()],
       };
     }
 
     const queryOptions: any = {
       ...options,
-      distinct: Boolean(this.collection.model.primaryKeyAttribute),
+      distinct: Boolean(this.collection.model.primaryKeyAttribute) && !this.collection.isMultiFilterTargetKey(),
     };
 
     if (queryOptions.include?.length === 0) {
       delete queryOptions.include;
     }
 
-    const count = await this.collection.model.count({
+    // @ts-ignore
+    return await this.collection.model.count({
       ...queryOptions,
       transaction,
     });
-
-    // @ts-ignore
-    return count;
   }
 
   async aggregate(options: AggregateOptions & { optionsTransformer?: (options: any) => any }): Promise<any> {
@@ -504,6 +459,10 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return this.collection.model.findByPk(id);
   }
 
+  findByTargetKey(targetKey: TargetKey) {
+    return this.findOne({ filterByTk: targetKey });
+  }
+
   /**
    * Find one record from database
    *
@@ -520,23 +479,23 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    * Get the first record matching the attributes or create it.
    */
   async firstOrCreate(options: FirstOrCreateOptions) {
-    const { filterKeys, values, transaction, hooks } = options;
+    const { filterKeys, values, transaction, hooks, context } = options;
     const filter = Repository.valuesToFilter(values, filterKeys);
 
-    const instance = await this.findOne({ filter, transaction });
+    const instance = await this.findOne({ filter, transaction, context });
 
     if (instance) {
       return instance;
     }
 
-    return this.create({ values, transaction, hooks });
+    return this.create({ values, transaction, hooks, context });
   }
 
   async updateOrCreate(options: FirstOrCreateOptions) {
-    const { filterKeys, values, transaction, hooks } = options;
+    const { filterKeys, values, transaction, hooks, context } = options;
     const filter = Repository.valuesToFilter(values, filterKeys);
 
-    const instance = await this.findOne({ filter, transaction });
+    const instance = await this.findOne({ filter, transaction, context });
 
     if (instance) {
       return await this.update({
@@ -544,10 +503,11 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         values,
         transaction,
         hooks,
+        context,
       });
     }
 
-    return this.create({ values, transaction, hooks });
+    return this.create({ values, transaction, hooks, context });
   }
 
   /**
@@ -573,7 +533,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       underscored: this.collection.options.underscored,
     });
 
-    const values = guard.sanitize(options.values || {});
+    const values = (this.model as typeof Model).callSetters(guard.sanitize(options.values || {}), options);
 
     const instance = await this.model.create<any>(values, {
       ...options,
@@ -645,7 +605,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     const guard = UpdateGuard.fromOptions(this.model, { ...options, underscored: this.collection.options.underscored });
 
-    const values = guard.sanitize(options.values);
+    const values = (this.model as typeof Model).callSetters(guard.sanitize(options.values || {}), options);
 
     // NOTE:
     // 1. better to be moved to separated API like bulkUpdate/updateMany
@@ -766,16 +726,31 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       }
     }
 
-    if (filterByTk && !options.filter) {
-      return await this.model.destroy({
+    if (filterByTk && !isValidFilter(options.filter)) {
+      const where = [];
+
+      for (const tk of filterByTk) {
+        const optionParser = new OptionsParser(
+          {
+            filterByTk: tk,
+          },
+          {
+            collection: this.collection,
+          },
+        );
+
+        where.push(optionParser.filterByTkToWhereOption());
+      }
+
+      const destroyOptions = {
         ...options,
         where: {
-          [modelFilterKey]: {
-            [Op.in]: filterByTk,
-          },
+          [Op.or]: where,
         },
         transaction,
-      });
+      };
+
+      return await this.model.destroy(destroyOptions);
     }
 
     if (options.filter && isValidFilter(options.filter)) {

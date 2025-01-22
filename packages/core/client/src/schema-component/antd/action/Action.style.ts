@@ -19,6 +19,9 @@ const useStyles = genStyleHook('nb-action', (token) => {
       '&.nb-action-link': {
         margin: '-12px',
         padding: '12px',
+        '.nb-action-title': {
+          marginInlineStart: '0px',
+        },
       },
       '> .general-schema-designer': {
         position: 'absolute',
@@ -46,6 +49,13 @@ const useStyles = genStyleHook('nb-action', (token) => {
             alignSelf: 'stretch',
           },
         },
+      },
+
+      '.ant-btn-icon': {
+        marginInlineEnd: '0px !important',
+      },
+      '.nb-action-title': {
+        marginInlineStart: `${token.controlPaddingHorizontalSM}px`,
       },
     },
   };

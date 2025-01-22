@@ -58,7 +58,7 @@ test.describe('Any succeeded or failed', () => {
     const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
     //配置分支节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'parallel', exact: true }).click();
@@ -77,8 +77,9 @@ test.describe('Any succeeded or failed', () => {
     await parallelBranchNode.submitButton.click();
     // 分支1添加判断节点
     await page.getByLabel(`add-button-parallel-${parallelBranchNodeTitle}-1`).click();
-    await page.getByRole('button', { name: 'condition', exact: true }).hover();
-    await page.getByLabel('rejectOnFalse').click();
+    await page.getByRole('button', { name: 'condition', exact: true }).click();
+    await page.getByText('Continue when "Yes"').click();
+    await page.getByLabel('action-Action-Submit-workflows').click();
     const oneConditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(oneConditionNodeName);
     const oneConditionNode = new ConditionYesNode(page, oneConditionNodeName);
@@ -89,8 +90,9 @@ test.describe('Any succeeded or failed', () => {
     await oneConditionNode.submitButton.click();
     // 分支2添加判断节点
     await page.getByLabel(`add-button-parallel-${parallelBranchNodeTitle}-2`).click();
-    await page.getByRole('button', { name: 'condition', exact: true }).hover();
-    await page.getByLabel('rejectOnFalse').click();
+    await page.getByRole('button', { name: 'condition', exact: true }).click();
+    await page.getByText('Continue when "Yes"').click();
+    await page.getByLabel('action-Action-Submit-workflows').click();
     const twoConditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(twoConditionNodeName);
     const twoConditionNode = new ConditionYesNode(page, twoConditionNodeName);
@@ -179,7 +181,7 @@ test.describe('Any succeeded or failed', () => {
     const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
     //配置分支节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'parallel', exact: true }).click();
@@ -198,8 +200,9 @@ test.describe('Any succeeded or failed', () => {
     await parallelBranchNode.submitButton.click();
     // 分支1添加判断节点
     await page.getByLabel(`add-button-parallel-${parallelBranchNodeTitle}-1`).click();
-    await page.getByRole('button', { name: 'condition', exact: true }).hover();
-    await page.getByLabel('rejectOnFalse').click();
+    await page.getByRole('button', { name: 'condition', exact: true }).click();
+    await page.getByText('Continue when "Yes"').click();
+    await page.getByLabel('action-Action-Submit-workflows').click();
     const oneConditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(oneConditionNodeName);
     const oneConditionNode = new ConditionYesNode(page, oneConditionNodeName);
@@ -210,8 +213,9 @@ test.describe('Any succeeded or failed', () => {
     await oneConditionNode.submitButton.click();
     // 分支2添加判断节点
     await page.getByLabel(`add-button-parallel-${parallelBranchNodeTitle}-2`).click();
-    await page.getByRole('button', { name: 'condition', exact: true }).hover();
-    await page.getByLabel('rejectOnFalse').click();
+    await page.getByRole('button', { name: 'condition', exact: true }).click();
+    await page.getByText('Continue when "Yes"').click();
+    await page.getByLabel('action-Action-Submit-workflows').click();
     const twoConditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(twoConditionNodeName);
     const twoConditionNode = new ConditionYesNode(page, twoConditionNodeName);

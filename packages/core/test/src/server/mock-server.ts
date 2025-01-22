@@ -68,8 +68,8 @@ interface Resource {
 }
 
 interface ExtendedAgent extends SuperAgentTest {
-  login: (user: any) => ExtendedAgent;
-  loginUsingId: (userId: number) => ExtendedAgent;
+  login: (user: any, roleName?: string) => ExtendedAgent;
+  loginUsingId: (userId: number, roleName?: string) => ExtendedAgent;
   resource: (name: string, resourceOf?: any) => Resource;
 }
 
@@ -111,18 +111,21 @@ export class MockServer extends Application {
     await AppSupervisor.getInstance().destroy();
   }
 
-  agent(): ExtendedAgent {
-    const agent = supertest.agent(this.callback());
+  agent(callback?): ExtendedAgent {
+    const agent = supertest.agent(callback || this.callback());
     const prefix = this.resourcer.options.prefix;
+
     const proxy = new Proxy(agent, {
       get(target, method: string, receiver) {
         if (['login', 'loginUsingId'].includes(method)) {
-          return (userOrId: any) => {
+          return (userOrId: any, roleName?: string) => {
             return proxy
               .auth(
                 jwt.sign(
                   {
                     userId: typeof userOrId === 'number' ? userOrId : userOrId?.id,
+                    temp: true,
+                    roleName,
                   },
                   process.env.APP_KEY,
                   {

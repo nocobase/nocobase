@@ -227,6 +227,14 @@ describe('m2m array api, string targetKey', () => {
         },
       });
       expect(user2.tag_ids).toMatchObject(['a', 'c']);
+      const user3 = await db.getRepository('users').create({
+        values: {
+          id: 5,
+          username: 'e',
+          tags: { stringCode: 'a' },
+        },
+      });
+      expect(user3.tag_ids).toMatchObject(['a']);
     });
 
     it('should create target when creating belongsToArray', async () => {

@@ -8,7 +8,7 @@
  */
 
 import React, { FC, useEffect } from 'react';
-
+import { ShowTipWhenNoPages } from '../ShowTipWhenNoPages';
 import { MobileRoutesProvider, MobileTitleProvider } from './context';
 
 export interface MobileProvidersProps {
@@ -23,7 +23,9 @@ export const MobileProviders: FC<MobileProvidersProps> = ({ children }) => {
 
   return (
     <MobileTitleProvider>
-      <MobileRoutesProvider>{children}</MobileRoutesProvider>
+      <MobileRoutesProvider>
+        <ShowTipWhenNoPages>{children}</ShowTipWhenNoPages>
+      </MobileRoutesProvider>
     </MobileTitleProvider>
   );
 };

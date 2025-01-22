@@ -57,7 +57,7 @@ function getDataOptionTime(record, on, dir = 1) {
       if (!field || !record.get(field)) {
         return null;
       }
-      const second = new Date(record.get(field).getTime());
+      const second = new Date(record.get(field));
       second.setMilliseconds(0);
       return second.getTime() + offset * unit * dir;
     }
@@ -142,6 +142,7 @@ export default class ScheduleTrigger {
 
     workflows.forEach(async (workflow) => {
       const records = await this.loadRecordsToSchedule(workflow, now);
+      this.workflow.getLogger(workflow.id).info(`[Schedule on date field] ${records.length} records to schedule`);
       records.forEach((record) => {
         const nextTime = this.getRecordNextTime(workflow, record);
         this.schedule(workflow, record, nextTime, Boolean(nextTime));
@@ -157,20 +158,23 @@ export default class ScheduleTrigger {
   //     i. endsOn after now -> yes
   //     ii. endsOn before now -> no
   async loadRecordsToSchedule(
-    { config: { collection, limit, startsOn, repeat, endsOn }, allExecuted }: WorkflowModel,
+    { id, config: { collection, limit, startsOn, repeat, endsOn }, allExecuted }: WorkflowModel,
     currentDate: Date,
   ) {
     const { dataSourceManager } = this.workflow.app;
     if (limit && allExecuted >= limit) {
+      this.workflow.getLogger(id).warn(`[Schedule on date field] limit reached (all executed ${allExecuted})`);
       return [];
     }
     if (!startsOn) {
+      this.workflow.getLogger(id).warn(`[Schedule on date field] "startsOn" is not configured`);
       return [];
     }
     const timestamp = currentDate.getTime();
 
     const startTimestamp = getOnTimestampWithOffset(startsOn, currentDate);
     if (!startTimestamp) {
+      this.workflow.getLogger(id).warn(`[Schedule on date field] "startsOn.field" is not configured`);
       return [];
     }
 
@@ -216,21 +220,21 @@ export default class ScheduleTrigger {
       }
 
       if (endsOn) {
-        const now = new Date();
-        const endTimestamp = getOnTimestampWithOffset(endsOn, now);
-        if (!endTimestamp) {
-          return [];
-        }
         if (typeof endsOn === 'string') {
-          if (endTimestamp <= timestamp) {
+          if (parseDateWithoutMs(endsOn) <= timestamp) {
             return [];
           }
         } else {
-          conditions.push({
-            [endsOn.field]: {
-              [Op.gte]: new Date(endTimestamp),
-            },
-          });
+          const endTimestamp = getOnTimestampWithOffset(endsOn, currentDate);
+          if (endTimestamp) {
+            conditions.push({
+              [endsOn.field]: {
+                [Op.gte]: new Date(endTimestamp),
+              },
+            });
+          } else {
+            this.workflow.getLogger(id).warn(`[Schedule on date field] "endsOn.field" is not configured`);
+          }
         }
       }
     } else {
@@ -240,7 +244,7 @@ export default class ScheduleTrigger {
         },
       });
     }
-
+    this.workflow.getLogger(id).debug(`[Schedule on date field] conditions: `, { conditions });
     return model.findAll({
       where: {
         [Op.and]: conditions,

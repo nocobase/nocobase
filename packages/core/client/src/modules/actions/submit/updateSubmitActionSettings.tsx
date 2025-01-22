@@ -47,6 +47,10 @@ export const updateSubmitActionSettings = new SchemaSettings({
           collectionName: name,
         };
       },
+      useVisible() {
+        const fieldSchema = useFieldSchema();
+        return !fieldSchema.parent['x-initializer'].includes('bulkEditForm');
+      },
     },
     {
       name: 'secondConfirmation',
@@ -63,18 +67,22 @@ export const updateSubmitActionSettings = new SchemaSettings({
     {
       name: 'assignFieldValues',
       Component: AssignedFieldValues,
+      useVisible() {
+        const fieldSchema = useFieldSchema();
+        return !fieldSchema.parent['x-initializer'].includes('bulkEditForm');
+      },
     },
     {
       name: 'skipRequiredValidation',
       Component: SkipValidation,
+      useVisible() {
+        const fieldSchema = useFieldSchema();
+        return !fieldSchema.parent['x-initializer'].includes('bulkEditForm');
+      },
     },
     {
       name: 'afterSuccessfulSubmission',
       Component: AfterSuccess,
-      useVisible() {
-        const fieldSchema = useFieldSchema();
-        return isValid(fieldSchema?.['x-action-settings']?.onSuccess);
-      },
     },
     {
       name: 'refreshDataBlockRequest',

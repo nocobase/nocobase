@@ -15,6 +15,7 @@ import {
   useProps,
   withDynamicSchemaProps,
 } from '@nocobase/client';
+import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { MapBlockComponent } from '../components';
 import { MapBlockDrawer } from '../components/MapBlockDrawer';
@@ -23,7 +24,7 @@ export const MapBlock = withDynamicSchemaProps((props) => {
   const { context } = usePopupUtils();
 
   // only render the popup
-  if (context.currentLevel) {
+  if (context.currentLevel && !_.isNil(context.params?.filterbytk)) {
     return (
       <PopupContextProvider>
         <MapBlockDrawer />

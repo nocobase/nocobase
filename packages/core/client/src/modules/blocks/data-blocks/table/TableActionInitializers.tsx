@@ -44,6 +44,19 @@ const commonOptions = {
     },
     {
       type: 'item',
+      title: "{{t('Popup')}}",
+      name: 'popup',
+      Component: 'PopupActionInitializer',
+      componentProps: {
+        'x-component': 'Action',
+        'x-initializer': 'page:addBlock',
+      },
+      schema: {
+        'x-align': 'right',
+      },
+    },
+    {
+      type: 'item',
       title: "{{t('Delete')}}",
       name: 'delete',
       Component: 'BulkDestroyActionInitializer',
@@ -88,6 +101,14 @@ const commonOptions = {
         const collection = useCollection();
         const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
         return collection.tree && treeTable;
+      },
+    },
+    {
+      name: 'customRequest',
+      title: '{{t("Custom request")}}',
+      Component: 'CustomRequestInitializer',
+      schema: {
+        'x-action': 'customize:table:request:global',
       },
     },
   ],

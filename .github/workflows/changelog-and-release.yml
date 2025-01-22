@@ -11,26 +11,38 @@ on:
         type: choice
         description: Please choose a version
         options:
+          - rc
           - beta
           - alpha
-        default: beta
+        default: rc
   push:
     tags:
-      - 'v*-beta'
+      - 'v*'
 
 jobs:
+  get-plugins:
+    uses: nocobase/nocobase/.github/workflows/get-plugins.yml@main
+    secrets: inherit
   write-changelog-and-release:
+    needs: get-plugins
     runs-on: ubuntu-latest
     steps:
       - name: Get info
         id: get-info
+        shell: bash
         run: |
-          if [[ "${{ inputs.version }}" == "alpha" ]]; then
+          if [[ "${{ inputs.version }}" == "beta" || ${{ github.ref_name }} =~ "beta" ]]; then
             echo "branch=$(echo 'next')" >> $GITHUB_OUTPUT
-            echo "proRepos=$(echo '${{ vars.NEXT_PRO_PLUGIN_REPOS }}')" >> $GITHUB_OUTPUT
+            echo "version=$(echo 'beta')" >> $GITHUB_OUTPUT
+            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.beta-plugins }}')" >> $GITHUB_OUTPUT
+          elif [[ "${{ inputs.version }}" == "alpha" || ${{ github.ref_name }} =~ "alpha" ]]; then
+            echo "branch=$(echo 'develop')" >> $GITHUB_OUTPUT
+            echo "version=$(echo 'alpha')" >> $GITHUB_OUTPUT
+            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.alpha-plugins }}')" >> $GITHUB_OUTPUT
           else
             echo "branch=$(echo 'main')" >> $GITHUB_OUTPUT
-            echo "proRepos=$(echo '${{ vars.PRO_PLUGIN_REPOS }}')" >> $GITHUB_OUTPUT
+            echo "version=$(echo 'rc')" >> $GITHUB_OUTPUT
+            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.rc-plugins }}')" >> $GITHUB_OUTPUT
           fi
       - uses: actions/create-github-app-token@v1
         id: app-token
@@ -81,11 +93,12 @@ jobs:
       - name: Run script
         shell: bash
         run: |
-          node scripts/release/changelogAndRelease.js --ver ${{ inputs.version }} --cmsURL ${{ secrets.CMS_URL }} --cmsToken ${{ secrets.CMS_TOKEN }}
+          node scripts/release/changelogAndRelease.js --ver ${{ steps.get-info.outputs.version }} --cmsURL ${{ secrets.CMS_URL }} --cmsToken ${{ secrets.CMS_TOKEN }}
         env:
           PRO_PLUGIN_REPOS: ${{ steps.get-info.outputs.proRepos }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
       - name: Commit and push
+        if: ${{ steps.get-info.outputs.version == 'rc' }}
         run: |
           git pull origin main
           git add .

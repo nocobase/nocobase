@@ -7,22 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import { QuestionCircleOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/json-schema';
 import { useField, useFieldSchema } from '@formily/react';
+import { Tooltip } from 'antd';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApp, useSchemaToolbar } from '../../../../application';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useCollectionManager_deprecated } from '../../../../collection-manager';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { useCollection } from '../../../../data-source';
+import { fieldComponentSettingsItem } from '../../../../data-source/commonsSettingsItem';
 import { useDesignable } from '../../../../schema-component';
 import { useAssociationFieldContext } from '../../../../schema-component/antd/association-field/hooks';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
+import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
 import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
 import { isPatternDisabled } from '../../../../schema-settings/isPatternDisabled';
-import { fieldComponentSettingsItem } from '../../../../data-source/commonsSettingsItem';
-import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
 
 export const tableColumnSettings = new SchemaSettings({
   name: 'fieldSettings:TableColumn',
@@ -66,16 +68,15 @@ export const tableColumnSettings = new SchemaSettings({
                 },
               } as ISchema,
               onSubmit: ({ title }) => {
-                if (title) {
-                  field.title = title;
-                  columnSchema.title = title;
-                  dn.emit('patch', {
-                    schema: {
-                      'x-uid': columnSchema['x-uid'],
-                      title: columnSchema.title,
-                    },
-                  });
-                }
+                field.title = title;
+                columnSchema.title = title;
+                dn.emit('patch', {
+                  schema: {
+                    'x-uid': columnSchema['x-uid'],
+                    title: columnSchema.title,
+                  },
+                });
+
                 dn.refresh();
               },
             };
@@ -121,7 +122,7 @@ export const tableColumnSettings = new SchemaSettings({
                 title: t('Column width'),
                 properties: {
                   width: {
-                    default: columnSchema?.['x-component-props']?.['width'] || 200,
+                    default: columnSchema?.['x-component-props']?.['width'] || 100,
                     'x-decorator': 'FormItem',
                     'x-component': 'InputNumber',
                     'x-component-props': {},
@@ -374,6 +375,47 @@ export const tableColumnSettings = new SchemaSettings({
                 field.componentProps = field.componentProps || {};
                 field.componentProps.fixed = fixed;
                 void dn.emit('patch', {
+                  schema,
+                });
+                dn.refresh();
+              },
+            };
+          },
+        },
+        {
+          name: 'hidden',
+          type: 'switch',
+          useComponentProps() {
+            const field: any = useField();
+            const { t } = useTranslation();
+            const columnSchema = useFieldSchema();
+            const { dn } = useDesignable();
+
+            return {
+              title: (
+                <span>
+                  {t('Hide column')}
+                  <Tooltip
+                    title={t(
+                      'In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.',
+                    )}
+                  >
+                    <QuestionCircleOutlined style={{ marginLeft: 4, opacity: 0.65 }} />
+                  </Tooltip>
+                </span>
+              ),
+              checked: field.componentProps.columnHidden,
+              onChange: (v) => {
+                const schema: ISchema = {
+                  ['x-uid']: columnSchema['x-uid'],
+                };
+                columnSchema['x-component-props'] = {
+                  ...columnSchema['x-component-props'],
+                  columnHidden: v,
+                };
+                schema['x-component-props'] = columnSchema['x-component-props'];
+                field.componentProps.columnHidden = v;
+                dn.emit('patch', {
                   schema,
                 });
                 dn.refresh();

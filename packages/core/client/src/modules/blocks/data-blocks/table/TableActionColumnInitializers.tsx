@@ -51,7 +51,7 @@ export const Resizable = () => {
               'x-decorator': 'FormItem',
               'x-component': 'InputNumber',
               'x-component-props': {},
-              default: fieldSchema?.['x-component-props']?.width || 200,
+              default: fieldSchema?.['x-component-props']?.width || 100,
             },
           },
         } as ISchema

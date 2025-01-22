@@ -11,6 +11,7 @@ import { connect, mapReadPretty, observer, useField } from '@formily/react';
 import { Cascader, Select, SelectProps, Tag } from 'antd';
 import React, { useCallback, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { css } from '@emotion/css';
 import { useSelfAndChildrenCollections } from '../../../collection-manager/action-hooks';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager/hooks';
 import { useCompile } from '../../hooks';
@@ -148,6 +149,57 @@ export const DataSourceSelect = connect((props: DataSourceSelectProps) => {
   );
 });
 
+const DataSourceCollectionCascaderReadPretty = observer((props: any) => {
+  const dataSourceManager = useDataSourceManager();
+  const compile = useCompile();
+  const { value, onChange, dataSourceFilter, collectionFilter, ...others } = props;
+  const [dataSourceName, collectionName] = parseCollectionName(value);
+  const path = [dataSourceName, collectionName].filter(Boolean);
+  const dataSources = dataSourceManager.getDataSources();
+
+  const options = useMemo(() => {
+    return (dataSourceFilter ? dataSources.filter(dataSourceFilter) : dataSources).map((dataSource) => {
+      return {
+        label: compile(dataSource.displayName),
+        value: dataSource.key,
+        children: dataSource.collectionManager.collectionInstancesArr
+          .filter(collectionFilter ?? ((collection) => !collection.hidden))
+          .map((collection) => {
+            return {
+              label: compile(collection.title),
+              value: collection.name,
+            };
+          }),
+      };
+    });
+  }, [dataSources, dataSourceFilter, collectionFilter]);
+  const getDisplayValue = (value: string[], options: any[]): string[] => {
+    const displayValues: string[] = [];
+
+    let currentOptions = options;
+
+    value.forEach((val) => {
+      const option = currentOptions.find((item) => item.value === val);
+      if (option) {
+        displayValues.push(option.label as string); // 假设label为string类型
+        if (option.children) {
+          currentOptions = option.children;
+        } else {
+          currentOptions = [];
+        }
+      }
+    });
+
+    return displayValues;
+  };
+  const displayValues = getDisplayValue(path, options);
+  return (
+    <div>
+      <Tag>{displayValues.join(' / ')}</Tag>
+    </div>
+  );
+});
+
 export const DataSourceCollectionCascader = connect((props) => {
   const dataSourceManager = useDataSourceManager();
   const compile = useCompile();
@@ -183,4 +235,4 @@ export const DataSourceCollectionCascader = connect((props) => {
     [onChange],
   );
   return <Cascader showSearch {...others} options={options} value={path} onChange={handleChange} />;
-});
+}, mapReadPretty(DataSourceCollectionCascaderReadPretty));

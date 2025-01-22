@@ -82,6 +82,7 @@ export const FormFieldLinkageRuleAction = observer(
                 setDataIndex(value);
               }}
               placeholder={t('Select field')}
+              treeNodeFilterProp="title"
             />
             <Select
               // @ts-ignore
@@ -185,9 +186,45 @@ export const FormButtonLinkageRuleAction = observer(
   { displayName: 'FormButtonLinkageRuleAction' },
 );
 
+const colorSchema = {
+  type: 'string',
+  'x-decorator': 'FormItem',
+  'x-component': 'ColorPicker',
+  'x-component-props': {
+    defaultValue: '',
+  },
+};
+const textAlignSchema = {
+  type: 'string',
+  'x-decorator': 'FormItem',
+  'x-component': 'Select',
+  'x-component-props': {
+    defaultValue: '',
+  },
+  enum: [
+    {
+      label: 'left',
+      value: 'left',
+    },
+    {
+      label: 'right',
+      value: 'right',
+    },
+    {
+      label: 'center',
+      value: 'center',
+    },
+  ],
+};
+
+const schemas = new Map();
+schemas.set(ActionType.Color, colorSchema);
+schemas.set(ActionType.BackgroundColor, colorSchema);
+schemas.set(ActionType.TextAlign, textAlignSchema);
+
 export const FormStyleLinkageRuleAction = observer(
   (props: any) => {
-    const { value, options, collectionName } = props;
+    const { options, collectionName } = props;
     const { t } = useTranslation();
     const compile = useCompile();
     const remove = useContext(RemoveActionContext);
@@ -197,17 +234,10 @@ export const FormStyleLinkageRuleAction = observer(
         compile([
           { label: t('Color'), value: ActionType.Color, schema: {} },
           { label: t('Background Color'), value: ActionType.BackgroundColor, schema: {} },
+          { label: t('Text Align'), value: ActionType.TextAlign, schema: {} },
         ]),
       [compile, t],
     );
-    const schema = {
-      type: 'string',
-      'x-decorator': 'FormItem',
-      'x-component': 'ColorPicker',
-      'x-component-props': {
-        defaultValue: '',
-      },
-    };
 
     const onChange = useCallback(
       (value) => {
@@ -228,10 +258,10 @@ export const FormStyleLinkageRuleAction = observer(
             onChange={onChange}
             placeholder={t('action')}
           />
-          {[ActionType.Color, ActionType.BackgroundColor].includes(operator) && (
+          {[ActionType.Color, ActionType.BackgroundColor, ActionType.TextAlign].includes(operator) && (
             <ValueDynamicComponent
               fieldValue={fieldValue}
-              schema={schema}
+              schema={schemas.get(operator)}
               setValue={setValue}
               collectionName={collectionName}
               inputModes={['constant']}

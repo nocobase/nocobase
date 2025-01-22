@@ -45,7 +45,7 @@ const app = mockApp({
   },
   designable: true,
   apis: {
-    'mobileRoutes:list': {
+    'mobileRoutes:listAccessible': {
       data: [
         {
           id: 1,

@@ -7,7 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useCustomRequestVariableOptions } from '../hooks/useCustomRequestVariableOptions';
 import { generateNTemplate } from '../locale';
+
+const fieldNames = {
+  value: 'name',
+  label: 'title',
+};
+
+const useVariableProps = () => {
+  const scope = useCustomRequestVariableOptions();
+
+  return {
+    scope,
+    fieldNames,
+    useTypedConstant: true,
+  };
+};
 
 export const CustomRequestConfigurationFieldsSchema = {
   type: 'object',
@@ -42,14 +58,9 @@ export const CustomRequestConfigurationFieldsSchema = {
       required: true,
       title: generateNTemplate('URL'),
       'x-decorator': 'FormItem',
-      'x-component': 'Variable.RawTextArea',
+      'x-component': 'Variable.TextArea',
+      'x-use-component-props': useVariableProps,
       'x-component-props': {
-        scope: '{{useCustomRequestVariableOptions}}',
-        autoSize: true,
-        fieldNames: {
-          value: 'name',
-          label: 'title',
-        },
         placeholder: 'https://www.nocobase.com',
       },
     },
@@ -77,15 +88,8 @@ export const CustomRequestConfigurationFieldsSchema = {
               value: {
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'Variable.Input',
-                'x-component-props': {
-                  scope: '{{useCustomRequestVariableOptions}}',
-                  fieldNames: {
-                    value: 'name',
-                    label: 'title',
-                  },
-                  useTypedConstant: true,
-                },
+                'x-component': 'Variable.TextArea',
+                'x-use-component-props': useVariableProps,
               },
               remove: {
                 type: 'void',
@@ -127,15 +131,8 @@ export const CustomRequestConfigurationFieldsSchema = {
               value: {
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'Variable.Input',
-                'x-component-props': {
-                  scope: '{{useCustomRequestVariableOptions}}',
-                  fieldNames: {
-                    value: 'name',
-                    label: 'title',
-                  },
-                  useTypedConstant: true,
-                },
+                'x-component': 'Variable.TextArea',
+                'x-use-component-props': useVariableProps,
               },
               remove: {
                 type: 'void',

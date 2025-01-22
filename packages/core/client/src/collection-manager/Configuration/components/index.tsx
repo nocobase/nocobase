@@ -15,7 +15,7 @@ import { useRecord } from '../../../record-provider';
 import { useCompile } from '../../../schema-component';
 import { useCollectionManager_deprecated } from '../../hooks';
 
-const supportTypes = ['string', 'bigInt', 'integer', 'uuid', 'uid'];
+const supportTypes = ['string', 'bigInt', 'integer', 'uuid', 'uid', 'nanoid'];
 export const SourceForeignKey = observer(
   () => {
     const record = useRecord();
@@ -149,6 +149,7 @@ export const SourceKey = observer(
           defaultValue={sourceKey || options?.[0]?.value}
           onChange={props?.onChange}
           showSearch
+          filterOption={(input, option) => option?.label.toLowerCase().includes(input.toLowerCase())}
         />
       </div>
     );
@@ -171,10 +172,10 @@ export const TargetKey = observer(
         setOptions(
           getCollection(target)
             .fields?.filter((v) => {
-              if (type !== 'hasMany') {
-                return v.primaryKey || v.unique;
+              if (v.primaryKey || v.unique) {
+                return true;
               }
-              return supportTypes.includes(v.type);
+              return type === 'hasMany' && supportTypes.includes(v.type);
             })
             .map((k) => {
               return {
@@ -196,10 +197,10 @@ export const TargetKey = observer(
               setOptions(
                 getCollection(target)
                   .fields?.filter((v) => {
-                    if (type !== 'hasMany') {
-                      return v.primaryKey || v.unique;
+                    if (v.primaryKey || v.unique) {
+                      return true;
                     }
-                    return supportTypes.includes(v.type);
+                    return type === 'hasMany' && supportTypes.includes(v.type);
                   })
                   .map((k) => {
                     return {
@@ -216,6 +217,7 @@ export const TargetKey = observer(
           }}
           value={initialValue}
           disabled={disabled}
+          filterOption={(input, option) => option?.label.toLowerCase().includes(input.toLowerCase())}
         />
       </div>
     );
@@ -235,6 +237,7 @@ export const ForeignKey = observer(
     const compile = useCompile();
     const form = useForm();
     const [initialValue, setInitialValue] = useState(value || (template === 'view' ? null : field.initialValue));
+    const [initialOptions, setInitialOptions] = useState([]);
     useEffect(() => {
       const effectField = ['belongsTo'].includes(type)
         ? collectionName
@@ -254,6 +257,7 @@ export const ForeignKey = observer(
             };
           });
         setOptions(sourceOptions);
+        setInitialOptions(sourceOptions);
         if (value) {
           const option = sourceOptions.find((v) => v.value === value);
           setInitialValue(option?.label || value);
@@ -294,6 +298,15 @@ export const ForeignKey = observer(
           onChange={(value, option) => {
             props?.onChange?.(value);
             setInitialValue(option.label || value);
+          }}
+          onSearch={(value) => {
+            if (value) {
+              const targetValue = value.toLocaleLowerCase();
+              const result = options.filter((v) => v.label.toLocaleLowerCase().includes(targetValue));
+              setOptions(result);
+            } else {
+              setOptions(initialOptions);
+            }
           }}
         />
       </div>

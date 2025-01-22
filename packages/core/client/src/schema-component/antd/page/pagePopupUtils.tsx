@@ -145,7 +145,7 @@ export const usePopupUtils = (
   const collection = useCollection();
   const cm = useCollectionManager();
   const association = useAssociationName();
-  const { visible, setVisible } = useContext(PopupVisibleProviderContext) || { visible: false, setVisible: () => {} };
+  const { visible, setVisible } = useContext(PopupVisibleProviderContext) || { visible: false, setVisible: _.noop };
   const { params: popupParams } = useCurrentPopupContext();
   const service = useDataBlockRequest();
   const { isPopupVisibleControlledByURL } = usePopupSettings();
@@ -197,7 +197,7 @@ export const usePopupUtils = (
   const getNewPopupContext = useCallback(() => {
     const context = {
       dataSource: dataSourceKey,
-      collection: association ? undefined : collection.name,
+      collection: association ? undefined : collection?.name,
       association,
     };
 
@@ -246,7 +246,7 @@ export const usePopupUtils = (
         parentRecord: parentRecordData ? new CollectionRecord({ isNew: false, data: parentRecordData }) : parentRecord,
         service,
         dataSource: dataSourceKey,
-        collection: collection.name,
+        collection: collection?.name,
         association,
         sourceId,
         tableBlockContext,

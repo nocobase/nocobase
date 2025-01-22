@@ -10,8 +10,8 @@
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import _ from 'lodash';
-import React, { FC, Fragment, useRef, useState } from 'react';
-import { useDesignable } from '../../';
+import React, { FC, Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { useDesignable, usePopupSettings } from '../../';
 import { WithoutTableFieldResource } from '../../../block-provider';
 import { CollectionRecordProvider, useCollectionManager, useCollectionRecordData } from '../../../data-source';
 import { useOpenModeContext } from '../../../modules/popup/OpenModeProvider';
@@ -47,7 +47,137 @@ export interface ButtonListProps {
     label: string;
     value: string;
   };
+  onClick?: (props: { recordData: any }) => void;
 }
+
+const RenderRecord = React.memo(
+  ({
+    fieldNames,
+    isTreeCollection,
+    compile,
+    getLabelUiSchema,
+    collectionField,
+    snapshot,
+    enableLink,
+    designable,
+    insertViewer,
+    fieldSchema,
+    openPopup,
+    recordData,
+    ellipsisWithTooltipRef,
+    value,
+    setBtnHover,
+    onClick,
+  }: {
+    fieldNames: any;
+    isTreeCollection: boolean;
+    compile: (source: any, ext?: any) => any;
+    getLabelUiSchema;
+    collectionField: any;
+    snapshot: boolean;
+    enableLink: any;
+    designable: boolean;
+    insertViewer: (ss: any) => void;
+    fieldSchema;
+    openPopup;
+    recordData: any;
+    ellipsisWithTooltipRef: React.MutableRefObject<IEllipsisWithTooltipRef>;
+    value: any;
+    setBtnHover: any;
+    onClick?: (props: { recordData: any }) => void;
+  }) => {
+    const [loading, setLoading] = useState(true);
+    const [result, setResult] = useState<React.ReactNode[]>([]);
+
+    // The map method here maybe quite time-consuming, especially in table blocks.
+    // Therefore, we use an asynchronous approach to render the list,
+    // which allows us to avoid blocking the main rendering process.
+    useEffect(() => {
+      const result = toArr(value).map((record, index, arr) => {
+        const value = record?.[fieldNames?.label || 'label'];
+        const label = isTreeCollection
+          ? transformNestedData(record)
+              .map((o) => o?.[fieldNames?.label || 'label'])
+              .join(' / ')
+          : isObject(value)
+            ? JSON.stringify(value)
+            : value;
+
+        const val = toValue(compile(label), 'N/A');
+        const labelUiSchema = getLabelUiSchema(
+          record?.__collection || collectionField?.target,
+          fieldNames?.label || 'label',
+        );
+        const text = getLabelFormatValue(compile(labelUiSchema), val, true);
+
+        return (
+          <Fragment key={`${record?.id}_${index}`}>
+            <span>
+              {snapshot ? (
+                text
+              ) : enableLink !== false ? (
+                <a
+                  onMouseEnter={() => {
+                    setBtnHover(true);
+                  }}
+                  onClick={(e) => {
+                    setBtnHover(true);
+                    e.stopPropagation();
+                    e.preventDefault();
+                    if (designable) {
+                      insertViewer(schema.Viewer);
+                    }
+
+                    if (fieldSchema.properties) {
+                      onClick?.({ recordData: record });
+                      openPopup({
+                        recordData: record,
+                        parentRecordData: recordData,
+                      });
+                    }
+
+                    ellipsisWithTooltipRef?.current?.setPopoverVisible(false);
+                  }}
+                >
+                  {text}
+                </a>
+              ) : (
+                text
+              )}
+            </span>
+            {index < arr.length - 1 ? <span style={{ marginRight: 4, color: '#aaa' }}>,</span> : null}
+          </Fragment>
+        );
+      });
+      setResult(result);
+      setLoading(false);
+    }, [
+      collectionField?.target,
+      compile,
+      designable,
+      ellipsisWithTooltipRef,
+      enableLink,
+      fieldNames?.label,
+      fieldSchema?.properties,
+      getLabelUiSchema,
+      insertViewer,
+      isTreeCollection,
+      openPopup,
+      recordData,
+      setBtnHover,
+      snapshot,
+      value,
+    ]);
+
+    if (loading) {
+      return null;
+    }
+
+    return <>{result}</>;
+  },
+);
+
+RenderRecord.displayName = 'RenderRecord';
 
 const ButtonLinkList: FC<ButtonListProps> = (props) => {
   const fieldSchema = useFieldSchema();
@@ -66,63 +196,26 @@ const ButtonLinkList: FC<ButtonListProps> = (props) => {
   const { openPopup } = usePopupUtils();
   const recordData = useCollectionRecordData();
 
-  const renderRecords = () =>
-    toArr(props.value).map((record, index, arr) => {
-      const value = record?.[fieldNames?.label || 'label'];
-      const label = isTreeCollection
-        ? transformNestedData(record)
-            .map((o) => o?.[fieldNames?.label || 'label'])
-            .join(' / ')
-        : isObject(value)
-          ? JSON.stringify(value)
-          : value;
-      const val = toValue(compile(label), 'N/A');
-      const labelUiSchema = getLabelUiSchema(
-        record?.__collection || collectionField?.target,
-        fieldNames?.label || 'label',
-      );
-      const text = getLabelFormatValue(compile(labelUiSchema), val, true);
-      return (
-        <Fragment key={`${record?.id}_${index}`}>
-          <span>
-            {snapshot ? (
-              text
-            ) : enableLink !== false ? (
-              <a
-                onMouseEnter={() => {
-                  props.setBtnHover(true);
-                }}
-                onClick={(e) => {
-                  props.setBtnHover(true);
-                  e.stopPropagation();
-                  e.preventDefault();
-                  if (designable) {
-                    insertViewer(schema.Viewer);
-                  }
-
-                  // fix https://nocobase.height.app/T-4794/description
-                  if (fieldSchema.properties) {
-                    openPopup({
-                      recordData: record,
-                      parentRecordData: recordData,
-                    });
-                  }
-
-                  ellipsisWithTooltipRef?.current?.setPopoverVisible(false);
-                }}
-              >
-                {text}
-              </a>
-            ) : (
-              text
-            )}
-          </span>
-          {index < arr.length - 1 ? <span style={{ marginRight: 4, color: '#aaa' }}>,</span> : null}
-        </Fragment>
-      );
-    });
-
-  return <>{renderRecords()}</>;
+  return (
+    <RenderRecord
+      fieldNames={fieldNames}
+      isTreeCollection={isTreeCollection}
+      compile={compile}
+      getLabelUiSchema={getLabelUiSchema}
+      collectionField={collectionField}
+      snapshot={snapshot}
+      enableLink={enableLink}
+      designable={designable}
+      insertViewer={insertViewer}
+      fieldSchema={fieldSchema}
+      openPopup={openPopup}
+      recordData={recordData}
+      ellipsisWithTooltipRef={ellipsisWithTooltipRef}
+      value={props.value}
+      setBtnHover={props.setBtnHover}
+      onClick={props.onClick}
+    />
+  );
 };
 
 interface ReadPrettyInternalViewerProps {
@@ -166,12 +259,18 @@ export const ReadPrettyInternalViewer: React.FC = observer(
     const { visibleWithURL, setVisibleWithURL } = usePopupUtils();
     const [btnHover, setBtnHover] = useState(!!visibleWithURL);
     const { defaultOpenMode } = useOpenModeContext();
-    const recordData = useCollectionRecordData();
+    const parentRecordData = useCollectionRecordData();
+    const [recordData, setRecordData] = useState(null);
+    const { isPopupVisibleControlledByURL } = usePopupSettings();
+
+    const onClickItem = useCallback((props: { recordData: any }) => {
+      setRecordData(props.recordData);
+    }, []);
 
     const btnElement = (
       <EllipsisWithTooltip ellipsis={true} ref={ellipsisWithTooltipRef}>
-        <CollectionRecordProvider isNew={false} record={getSourceData(recordData, fieldSchema)}>
-          <ButtonList setBtnHover={setBtnHover} value={value} fieldNames={props.fieldNames} />
+        <CollectionRecordProvider isNew={false} record={getSourceData(parentRecordData, fieldSchema)}>
+          <ButtonList setBtnHover={setBtnHover} value={value} fieldNames={props.fieldNames} onClick={onClickItem} />
         </CollectionRecordProvider>
       </EllipsisWithTooltip>
     );
@@ -180,21 +279,43 @@ export const ReadPrettyInternalViewer: React.FC = observer(
       return btnElement;
     }
 
-    const renderWithoutTableFieldResourceProvider = () => (
-      // The recordData here is only provided when the popup is opened, not the current row record
-      <VariablePopupRecordProvider>
-        <WithoutTableFieldResource.Provider value={true}>
-          <RecursionField
-            schema={fieldSchema}
-            onlyRenderProperties
-            basePath={field.address}
-            filterProperties={(s) => {
-              return s['x-component'] === 'AssociationField.Viewer';
-            }}
-          />
-        </WithoutTableFieldResource.Provider>
-      </VariablePopupRecordProvider>
-    );
+    const renderWithoutTableFieldResourceProvider = () => {
+      if (isPopupVisibleControlledByURL()) {
+        return (
+          // The recordData here is only provided when the popup is opened, not the current row record
+          <VariablePopupRecordProvider>
+            <WithoutTableFieldResource.Provider value={true}>
+              <RecursionField
+                schema={fieldSchema}
+                onlyRenderProperties
+                basePath={field.address}
+                filterProperties={(s) => {
+                  return s['x-component'] === 'AssociationField.Viewer';
+                }}
+              />
+            </WithoutTableFieldResource.Provider>
+          </VariablePopupRecordProvider>
+        );
+      }
+
+      return (
+        <CollectionRecordProvider isNew={false} record={recordData} parentRecord={parentRecordData}>
+          {/* The recordData here is only provided when the popup is opened, not the current row record */}
+          <VariablePopupRecordProvider>
+            <WithoutTableFieldResource.Provider value={true}>
+              <RecursionField
+                schema={fieldSchema}
+                onlyRenderProperties
+                basePath={field.address}
+                filterProperties={(s) => {
+                  return s['x-component'] === 'AssociationField.Viewer';
+                }}
+              />
+            </WithoutTableFieldResource.Provider>
+          </VariablePopupRecordProvider>
+        </CollectionRecordProvider>
+      );
+    };
 
     return (
       <PopupVisibleProvider visible={false}>

@@ -40,5 +40,5 @@ function cacheSchema(collectionNameList: string[]) {
 cacheSchema(Object.values(collections).map((collection) => collection.name));
 
 function isMobile() {
-  return window.location.pathname.startsWith('/m');
+  return window.location.pathname.startsWith('/m/');
 }

@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-
 import path from 'path';
 import { PkgLog, UserConfig, getEnvDefine } from './utils';
 import { build as viteBuild } from 'vite';
@@ -45,7 +44,14 @@ export async function buildEsm(cwd: string, userConfig: UserConfig, sourcemap: b
   }
 }
 
-function build(cwd: string, entry: string, outDir: string, userConfig: UserConfig, sourcemap: boolean = false, log: PkgLog) {
+function build(
+  cwd: string,
+  entry: string,
+  outDir: string,
+  userConfig: UserConfig,
+  sourcemap: boolean = false,
+  log: PkgLog,
+) {
   const cwdWin = cwd.replaceAll(/\\/g, '/');
   const cwdUnix = cwd.replaceAll(/\//g, '\\');
   const external = function (id: string) {

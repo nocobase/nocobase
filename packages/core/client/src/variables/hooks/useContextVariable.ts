@@ -37,7 +37,7 @@ const useContextVariable = (): VariableOption => {
   return useMemo(() => {
     return {
       name: '$context',
-      ctx: contextData,
+      ctx: contextData || [],
       collectionName,
     };
   }, [collectionName, contextData]);

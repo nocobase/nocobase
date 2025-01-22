@@ -46,6 +46,7 @@ export function useAssociationFieldContext<F extends GeneralField>() {
   return useContext(AssociationFieldContext) as {
     options: any;
     field: F;
+    fieldSchema?: Schema;
     currentMode: AssociationFieldMode;
     allowMultiple?: boolean;
     allowDissociate?: boolean;
@@ -137,7 +138,7 @@ export const useFieldNames = (
   const fieldSchema = useFieldSchema();
   const fieldNames =
     fieldSchema['x-component-props']?.['field']?.['uiSchema']?.['x-component-props']?.['fieldNames'] ||
-    fieldSchema?.['x-component-props']?.['fieldNames'] ||
+    fieldSchema['x-component-props']?.['fieldNames'] ||
     props.fieldNames;
   return { label: 'label', value: 'value', ...fieldNames };
 };

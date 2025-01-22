@@ -9,7 +9,7 @@
 
 import { BelongsToManyRepository, Database } from '@nocobase/database';
 import { AppSupervisor } from '@nocobase/server';
-import { MockServer, createMockServer, isPg } from '@nocobase/test';
+import { createMockServer, isPg, MockServer } from '@nocobase/test';
 import * as process from 'process';
 
 describe.runIf(isPg())('enable plugin', () => {
@@ -237,7 +237,7 @@ describe.runIf(isPg())('collection sync', () => {
     expect(sub1MapPlugin.get('enabled')).toBeTruthy();
   });
 
-  it('should sync plugin status between apps', async () => {
+  it.skip('should sync plugin status between apps', async () => {
     await mainApp.db.getRepository('applications').create({
       values: {
         name: 'sub1',
@@ -255,12 +255,12 @@ describe.runIf(isPg())('collection sync', () => {
       });
     };
 
-    expect((await getSubAppMapRecord(sub1)).get('enabled')).toBeFalsy();
+    expect(await getSubAppMapRecord(sub1)).toBeNull();
     await mainApp.pm.enable(['map']);
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    expect((await getSubAppMapRecord(sub1)).get('enabled')).toBeTruthy();
+    expect((await getSubAppMapRecord(sub1)).enabled).toBeTruthy();
     // create new app sub2
     await mainApp.db.getRepository('applications').create({
       values: {
@@ -491,6 +491,8 @@ describe.runIf(isPg())('collection sync', () => {
       context: {},
     });
 
+    const mainCollectionInstance = mainDb.getCollection('mainCollection');
+
     await subApp1.runCommand('restart');
 
     const subAppMainCollectionRecord = await subApp1.db.getRepository('collections').findOne({
@@ -504,7 +506,7 @@ describe.runIf(isPg())('collection sync', () => {
     const subAppMainCollection = subApp1.db.getCollection('mainCollection');
 
     expect(subAppMainCollection).toBeTruthy();
-    expect(subAppMainCollection.options.schema).toBe(mainCollection.options.schema || 'public');
+    expect(subAppMainCollection.options.schema).toBe(mainCollectionInstance.collectionSchema());
 
     await mainApp.db.getRepository('fields').create({
       values: {

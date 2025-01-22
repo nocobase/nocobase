@@ -16,7 +16,7 @@ import { SchemaSettings } from '../../../../application/schema-settings/SchemaSe
 import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
-import { useCollectionField } from '../../../../data-source';
+import { useCollectionField, useDataBlockProps } from '../../../../data-source';
 import { useRecord } from '../../../../record-provider';
 import { removeNullCondition, useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
@@ -34,6 +34,7 @@ import { SchemaSettingsSortingRule } from '../../../../schema-settings/SchemaSet
 import { useIsShowMultipleSwitch } from '../../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useLocalVariables, useVariables } from '../../../../variables';
 import { useOpenModeContext } from '../../../popup/OpenModeProvider';
+import { ellipsisSettingsItem } from '../Input/inputComponentSettings';
 
 const enableLink = {
   name: 'enableLink',
@@ -72,7 +73,7 @@ const enableLink = {
   },
 };
 
-const titleField: any = {
+export const titleField: any = {
   name: 'titleField',
   type: 'select',
   useComponentProps() {
@@ -191,6 +192,9 @@ const quickCreate: any = {
               title: "{{t('Add new')}}",
               // 'x-designer': 'Action.Designer',
               'x-toolbar': 'ActionSchemaToolbar',
+              'x-toolbar-props': {
+                draggable: false,
+              },
               'x-settings': 'actionSettings:addNew',
               'x-component': 'Action',
               'x-decorator': 'ACLActionProvider',
@@ -357,7 +361,8 @@ export const selectComponentFieldSettings = new SchemaSettings({
         const isAssociationField = useIsAssociationField();
         const readPretty = useIsFieldReadPretty();
         const { fieldSchema } = useColumnSchema();
-        return isAssociationField && !fieldSchema && !readPretty;
+        const { type } = useDataBlockProps() || ({} as any);
+        return isAssociationField && !fieldSchema && !readPretty && type !== 'publicForm';
       },
     },
     {
@@ -380,6 +385,7 @@ export const selectComponentFieldSettings = new SchemaSettings({
         return useIsAssociationField() && readPretty;
       },
     },
+    ellipsisSettingsItem,
   ],
 });
 

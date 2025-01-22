@@ -10,7 +10,7 @@
 export type CollectionOptions = {
   name: string;
   repository?: string;
-  filterTargetKey?: string;
+  filterTargetKey?: string | Array<string>;
   fields: any[];
   [key: string]: any;
 };
@@ -64,6 +64,8 @@ export interface ICollection {
   getFields(): Array<IField>;
 
   getField(name: string): IField;
+
+  getFieldByField(field: string): IField;
 
   [key: string]: any;
 

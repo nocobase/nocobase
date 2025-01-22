@@ -28,6 +28,7 @@ export const useDestroyAction = () => {
   };
 };
 
+// 外部数据源删除字段
 export const useBulkDestroyAction = () => {
   const { state, setState, refresh } = useResourceActionContext();
   const { t } = useTranslation();
@@ -52,11 +53,9 @@ export const useBulkDestroyAction = () => {
 
 export const useBulkDestroyActionAndRefreshCM = () => {
   const { run } = useBulkDestroyAction();
-  // const { refreshCM } = useCollectionManager_deprecated();
   return {
     async run() {
       await run();
-      // await refreshCM();
     },
   };
 };

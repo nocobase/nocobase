@@ -8,7 +8,6 @@
  */
 
 import { createStyles } from 'antd-style';
-import { NavigationBarHeight } from '../../constants';
 
 export const useStyles = createStyles(() => ({
   mobileTabBar: {
@@ -16,7 +15,6 @@ export const useStyles = createStyles(() => ({
     bottom: 0,
     left: 0,
     right: 0,
-    height: NavigationBarHeight,
     boxSizing: 'border-box',
     borderTop: '1px solid var(--adm-color-border)',
     backgroundColor: 'var(--adm-color-background)',
@@ -33,6 +31,7 @@ export const useStyles = createStyles(() => ({
     justifyContent: 'space-around',
     flex: 1,
     alignItems: 'center',
+    overflowX: 'auto',
     '.adm-tab-bar-item': {
       maxWidth: '100%',
       '.adm-tab-bar-item-title': {

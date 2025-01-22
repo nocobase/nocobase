@@ -44,6 +44,11 @@ export default class Processor {
   /**
    * @experimental
    */
+  mainTransaction: Transaction;
+
+  /**
+   * @experimental
+   */
   nodes: FlowNodeModel[] = [];
 
   /**
@@ -105,12 +110,15 @@ export default class Processor {
   public async prepare() {
     const {
       execution,
-      transaction,
       options: { plugin },
     } = this;
     if (!execution.workflow) {
       execution.workflow = plugin.enabledCache.get(execution.workflowId);
     }
+
+    this.mainTransaction = plugin.useDataSourceTransaction('main', this.transaction);
+
+    const transaction = this.mainTransaction;
 
     const nodes = await execution.workflow.getNodes({ transaction });
 
@@ -156,7 +164,7 @@ export default class Processor {
       this.logger.debug(`config of node`, { data: node.config });
       job = await instruction(node, prevJob, this);
       if (!job) {
-        return null;
+        return this.exit();
       }
     } catch (err) {
       // for uncaught error, set to error
@@ -250,7 +258,10 @@ export default class Processor {
   public async exit(s?: number) {
     if (typeof s === 'number') {
       const status = (<typeof Processor>this.constructor).StatusMap[s] ?? Math.sign(s);
-      await this.execution.update({ status }, { transaction: this.transaction });
+      await this.execution.update({ status }, { transaction: this.mainTransaction });
+    }
+    if (this.mainTransaction && this.mainTransaction !== this.transaction) {
+      await this.mainTransaction.commit();
     }
     this.logger.info(`execution (${this.execution.id}) exiting with status ${this.execution.status}`);
     return null;
@@ -259,12 +270,10 @@ export default class Processor {
   // TODO(optimize)
   /**
    * @experimental
-   * @param {JobModel | Record<string, any>} payload
-   * @returns {JobModel}
    */
-  async saveJob(payload) {
+  async saveJob(payload: JobModel | Record<string, any>): Promise<JobModel> {
     const { database } = <typeof ExecutionModel>this.execution.constructor;
-    const { transaction } = this;
+    const { mainTransaction: transaction } = this;
     const { model } = database.getCollection('jobs');
     let job;
     if (payload instanceof model) {
@@ -377,7 +386,7 @@ export default class Processor {
   /**
    * @experimental
    */
-  public getScope(sourceNodeId: number) {
+  public getScope(sourceNodeId: number, includeSelfScope = false) {
     const node = this.nodesMap.get(sourceNodeId);
     const systemFns = {};
     const scope = {
@@ -389,9 +398,9 @@ export default class Processor {
     }
 
     const $scopes = {};
-    for (let n = this.findBranchParentNode(node); n; n = this.findBranchParentNode(n)) {
+    for (let n = includeSelfScope ? node : this.findBranchParentNode(node); n; n = this.findBranchParentNode(n)) {
       const instruction = this.options.plugin.instructions.get(n.type);
-      if (typeof instruction.getScope === 'function') {
+      if (typeof instruction?.getScope === 'function') {
         $scopes[n.id] = $scopes[n.key] = instruction.getScope(n, this.jobsMapByNodeKey[n.key], this);
       }
     }
@@ -407,9 +416,9 @@ export default class Processor {
   /**
    * @experimental
    */
-  public getParsedValue(value, sourceNodeId: number, additionalScope?: object) {
+  public getParsedValue(value, sourceNodeId: number, { additionalScope = {}, includeSelfScope = false } = {}) {
     const template = parse(value);
-    const scope = Object.assign(this.getScope(sourceNodeId), additionalScope);
+    const scope = Object.assign(this.getScope(sourceNodeId, includeSelfScope), additionalScope);
     template.parameters.forEach(({ key }) => {
       appendArrayColumn(scope, key);
     });

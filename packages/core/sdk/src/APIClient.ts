@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosRequestHeaders, AxiosResponse } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, RawAxiosRequestHeaders } from 'axios';
 import qs from 'qs';
 
 export interface ActionParams {
@@ -22,7 +22,7 @@ type ResourceActionOptions<P = any> = {
   params?: P;
 };
 
-type ResourceAction = (params?: ActionParams) => Promise<any>;
+type ResourceAction = (params?: ActionParams, opts?: any) => Promise<any>;
 
 export type IResource = {
   [key: string]: ResourceAction;
@@ -267,6 +267,7 @@ export class MemoryStorage extends Storage {
 
 interface ExtendedOptions {
   authClass?: any;
+  storageType?: 'localStorage' | 'sessionStorage' | 'memory';
   storageClass?: any;
   storagePrefix?: string;
 }
@@ -274,6 +275,7 @@ interface ExtendedOptions {
 export type APIClientOptions = AxiosInstance | (AxiosRequestConfig & ExtendedOptions);
 
 export class APIClient {
+  options?: APIClientOptions;
   axios: AxiosInstance;
   auth: Auth;
   storage: Storage;
@@ -296,14 +298,15 @@ export class APIClient {
     return headers;
   }
 
-  constructor(instance?: APIClientOptions) {
-    if (typeof instance === 'function') {
-      this.axios = instance;
+  constructor(options?: APIClientOptions) {
+    this.options = options;
+    if (typeof options === 'function') {
+      this.axios = options;
     } else {
-      const { authClass, storageClass, storagePrefix = 'NOCOBASE_', ...others } = instance || {};
+      const { authClass, storageType, storageClass, storagePrefix = 'NOCOBASE_', ...others } = options || {};
       this.storagePrefix = storagePrefix;
       this.axios = axios.create(others);
-      this.initStorage(storageClass);
+      this.initStorage(storageClass, storageType);
       if (authClass) {
         this.auth = new authClass(this);
       }
@@ -317,14 +320,20 @@ export class APIClient {
     this.interceptors();
   }
 
-  private initStorage(storage?: any) {
+  private initStorage(storage?: any, storageType = 'localStorage') {
     if (storage) {
       this.storage = new storage(this);
-    } else if (typeof localStorage !== 'undefined') {
-      this.storage = localStorage;
-    } else {
-      this.storage = new MemoryStorage();
+      return;
     }
+    if (storageType === 'localStorage' && typeof localStorage !== 'undefined') {
+      this.storage = localStorage;
+      return;
+    }
+    if (storageType === 'sessionStorage' && typeof sessionStorage !== 'undefined') {
+      this.storage = sessionStorage;
+      return;
+    }
+    this.storage = new MemoryStorage();
   }
 
   interceptors() {
@@ -347,7 +356,7 @@ export class APIClient {
     return this.axios.request<T, R, D>(config);
   }
 
-  resource(name: string, of?: any, headers?: AxiosRequestHeaders, cancel?: boolean): IResource {
+  resource(name: string, of?: any, headers?: RawAxiosRequestHeaders, cancel?: boolean): IResource {
     const target = {};
     const handler = {
       get: (_: any, actionName: string) => {
@@ -356,7 +365,7 @@ export class APIClient {
         }
 
         let url = name.split('.').join(`/${encodeURIComponent(of) || '_'}/`);
-        url += `:${actionName}`;
+        url += `:${actionName.toString()}`;
         const config: AxiosRequestConfig = { url };
         if (['get', 'list'].includes(actionName)) {
           config['method'] = 'get';

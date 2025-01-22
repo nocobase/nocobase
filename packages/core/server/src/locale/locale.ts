@@ -18,6 +18,7 @@ export interface ResourceStorer {
   getResources(lang: string): Promise<{
     [ns: string]: Record<string, string>;
   }>;
+  reset?: () => Promise<void>;
 }
 
 export class Locale {
@@ -51,7 +52,9 @@ export class Locale {
   }
 
   async reload() {
-    await this.cache.reset();
+    const storers = Array.from(this.resourceStorers.getValues());
+    const promises = storers.map((storer) => storer.reset());
+    await Promise.all([this.cache.reset(), ...promises]);
   }
 
   setLocaleFn(name: string, fn: (lang: string) => Promise<any>) {

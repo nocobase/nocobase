@@ -14,12 +14,12 @@ import { blockSchema } from './blockSchema';
 export const workbenchBlockInitializerItem: SchemaInitializerItemType = {
   type: 'item',
   name: 'workbenchBlock',
-  icon: 'FileImageOutlined',
+  icon: 'AppstoreAddOutlined',
   useComponentProps() {
     const { t } = useTranslation('@nocobase/plugin-block-workbench');
     const { insert } = useSchemaInitializer();
     return {
-      title: t('Workbench'),
+      title: t('Action panel'),
       onClick: () => {
         insert(blockSchema);
       },

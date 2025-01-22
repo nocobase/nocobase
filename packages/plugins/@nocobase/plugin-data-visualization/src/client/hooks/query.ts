@@ -11,11 +11,8 @@ import { ArrayField } from '@formily/core';
 import { ISchema, Schema, useForm } from '@formily/react';
 import {
   CollectionFieldOptions,
-  CollectionFieldOptions_deprecated,
-  CollectionManager,
   DEFAULT_DATA_SOURCE_KEY,
   useACLRoleContext,
-  useCollectionManager_deprecated,
   useDataSourceManager,
 } from '@nocobase/client';
 import { useContext, useMemo } from 'react';
@@ -134,6 +131,9 @@ export const useFormatters = (fields: FieldOption[]) => (field: any) => {
   const fieldInterface = getField(fields, selectedField)?.interface;
   switch (fieldInterface) {
     case 'datetime':
+    case 'datetimeTz':
+    case 'unixTimestamp':
+    case 'datetimeNoTz':
     case 'createdAt':
     case 'updatedAt':
       options = formatters.datetime;
@@ -240,7 +240,7 @@ export const useCollectionFieldsOptions = (dataSource: string, collectionName: s
   const fields = collectionFields.filter((v) => !excludes.includes(v.interface));
 
   const field2option = (field, depth, prefix?) => {
-    if (!field.interface || field.isForeignKey) {
+    if (!field.interface) {
       return;
     }
     const fieldInterface = fim.getFieldInterface(field.interface);
@@ -297,7 +297,7 @@ export const useCollectionFilterOptions = (dataSource: string, collection: strin
   return useMemo(() => {
     const fields = cm.getCollectionFields(collection || _collection);
     const field2option = (field, depth) => {
-      if (!field.interface || field.isForeignKey) {
+      if (!field.interface) {
         return;
       }
       const fieldInterface = fim.getFieldInterface(field.interface);

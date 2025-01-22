@@ -11,6 +11,7 @@ import { Field, GeneralField } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Col, Row } from 'antd';
 import merge from 'deepmerge';
+import { isArray } from 'lodash';
 import template from 'lodash/template';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -288,13 +289,14 @@ export const useBlockAssociationContext = () => {
   return useContext(BlockAssociationContext) || association;
 };
 
-export const useFilterByTk = () => {
+export const useFilterByTk = (blockProps?: any) => {
   const { resource, __parent } = useBlockRequestContext();
   const recordIndex = useRecordIndex();
   const recordData = useCollectionRecordData();
   const collection = useCollection_deprecated();
   const { getCollectionField } = useCollectionManager_deprecated();
-  const assoc = useBlockAssociationContext();
+  const association = useBlockAssociationContext();
+  const assoc = blockProps?.association || association;
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
 
   if (!withoutTableFieldResource) {
@@ -307,7 +309,15 @@ export const useFilterByTk = () => {
     const association = getCollectionField(assoc);
     return recordData?.[association.targetKey || 'id'];
   }
-  return recordData?.[collection.filterTargetKey || 'id'];
+  if (isArray(collection.filterTargetKey)) {
+    const filterByTk = {};
+    for (const key of collection.filterTargetKey) {
+      filterByTk[key] = recordData?.[key];
+    }
+    return filterByTk;
+  } else {
+    return recordData?.[collection.filterTargetKey || 'id'];
+  }
 };
 
 /**
@@ -335,8 +345,8 @@ export const useSourceIdFromParentRecord = () => {
  * @internal
  * @returns
  */
-export const useParamsFromRecord = () => {
-  const filterByTk = useFilterByTk();
+export const useParamsFromRecord = (props?: any) => {
+  const filterByTk = useFilterByTk(props);
   const record = useRecord();
   const { fields } = useCollection_deprecated();
   const fieldSchema = useFieldSchema();

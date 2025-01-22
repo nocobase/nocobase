@@ -29,12 +29,15 @@ import CreateInstruction from './nodes/create';
 import UpdateInstruction from './nodes/update';
 import DestroyInstruction from './nodes/destroy';
 import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './utils';
-import { NAMESPACE } from './locale';
+import { lang, NAMESPACE } from './locale';
 import { customizeSubmitToWorkflowActionSettings } from './settings/customizeSubmitToWorkflowActionSettings';
+import { VariableOption } from './variable';
 
 export default class PluginWorkflowClient extends Plugin {
   triggers = new Registry<Trigger>();
   instructions = new Registry<Instruction>();
+  systemVariables = new Registry<VariableOption>();
+
   useTriggersOptions = () => {
     const compile = useCompile();
     return Array.from(this.triggers.getEntities()).map(([value, { title, ...options }]) => ({
@@ -67,6 +70,10 @@ export default class PluginWorkflowClient extends Plugin {
     } else {
       throw new TypeError('invalid instruction type to register');
     }
+  }
+
+  registerSystemVariable(option: VariableOption) {
+    this.systemVariables.register(option.key, option);
   }
 
   async load() {
@@ -113,6 +120,12 @@ export default class PluginWorkflowClient extends Plugin {
     this.registerInstruction('create', CreateInstruction);
     this.registerInstruction('update', UpdateInstruction);
     this.registerInstruction('destroy', DestroyInstruction);
+
+    this.registerSystemVariable({
+      key: 'now',
+      label: `{{t("System time", { ns: "${NAMESPACE}" })}}`,
+      value: 'now',
+    });
   }
 }
 

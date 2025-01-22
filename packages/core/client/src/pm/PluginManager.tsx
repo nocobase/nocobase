@@ -10,7 +10,7 @@
 export * from './PluginManagerLink';
 import { PageHeader } from '@ant-design/pro-layout';
 import { useDebounce } from 'ahooks';
-import { Button, Col, Divider, Input, List, Result, Row, Space, Spin, Tabs } from 'antd';
+import { Button, Col, Divider, Input, List, Modal, Result, Row, Space, Spin, Table, Tabs } from 'antd';
 import _ from 'lodash';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -18,7 +18,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { css } from '@emotion/css';
 import { useACLRoleContext } from '../acl/ACLProvider';
-import { useRequest } from '../api-client';
+import { useAPIClient, useRequest } from '../api-client';
 import { useToken } from '../style';
 import { PluginCard } from './PluginCard';
 import { PluginAddModal } from './PluginForm/modal/PluginAddModal';
@@ -49,6 +49,107 @@ function hasIntersection(arr1: any[], arr2: any[]) {
     return false;
   }
   return arr1.some((item) => arr2.includes(item));
+}
+
+function BulkEnableButton({ plugins = [] }) {
+  const { t } = useTranslation();
+  const api = useAPIClient();
+  const [items, setItems] = useState(plugins.filter((plugin) => !plugin.enabled));
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+
+  return (
+    <>
+      <Button onClick={() => setIsModalOpen(true)}>{t('Bulk enable')}</Button>
+      <Modal
+        width={1000}
+        title={t('Bulk enable')}
+        open={isModalOpen}
+        onOk={async () => {
+          await api.request({
+            url: 'pm:enable',
+            params: {
+              filterByTk: selectedRowKeys,
+            },
+          });
+          setIsModalOpen(false);
+        }}
+        onCancel={() => {
+          setSelectedRowKeys([]);
+          setIsModalOpen(false);
+        }}
+      >
+        <Input
+          style={{ marginBottom: '1em' }}
+          placeholder={t('Search plugin...')}
+          onChange={(e) => {
+            setItems(
+              plugins.filter((plugin: { enabled: boolean; displayName: string; description: string }) => {
+                const value = e.target.value;
+                return (
+                  !plugin.enabled &&
+                  (plugin.displayName.toLowerCase().includes(value.toLowerCase()) ||
+                    plugin.description?.toLowerCase().includes(value.toLowerCase()))
+                );
+              }),
+            );
+          }}
+        />
+        <Table
+          rowSelection={{
+            type: 'checkbox',
+            selectedRowKeys,
+            onChange(selectedKeys) {
+              const names = items.map((item) => item.name);
+              setSelectedRowKeys((preSelectedRowKeys) => {
+                if (selectedKeys.length === 0) {
+                  return preSelectedRowKeys.filter((key) => !names.includes(key));
+                }
+                if (selectedKeys.length === names.length) {
+                  return _.uniq([...preSelectedRowKeys, ...selectedKeys]);
+                }
+                return preSelectedRowKeys;
+              });
+            },
+            onSelect(record) {
+              setSelectedRowKeys((preSelectedRowKeys) => {
+                if (preSelectedRowKeys.includes(record.name)) {
+                  return preSelectedRowKeys.filter((key) => key !== record.name);
+                }
+                return preSelectedRowKeys.concat(record.name);
+              });
+            },
+          }}
+          rowKey={'name'}
+          scroll={{
+            y: '60vh',
+          }}
+          size={'small'}
+          pagination={false}
+          columns={[
+            {
+              title: t('Plugin'),
+              dataIndex: 'displayName',
+              ellipsis: true,
+            },
+            {
+              title: t('Description'),
+              dataIndex: 'description',
+              ellipsis: true,
+              width: 300,
+            },
+            {
+              title: t('Package name'),
+              dataIndex: 'packageName',
+              width: 300,
+              ellipsis: true,
+            },
+          ]}
+          dataSource={items}
+        />
+      </Modal>
+    </>
+  );
 }
 
 const LocalPlugins = () => {
@@ -100,6 +201,7 @@ const LocalPlugins = () => {
     'Workflow',
     'Users & permissions',
     'Authentication',
+    'Notification',
     'System management',
     'Logging and monitoring',
     'Others',
@@ -196,8 +298,9 @@ const LocalPlugins = () => {
           </div>
           <div>
             <Space>
+              <BulkEnableButton plugins={data?.data || []} />
               <Button onClick={() => setShowAddForm(true)} type="primary">
-                {t('Add new')}
+                {t('Add & Update')}
               </Button>
             </Space>
           </div>

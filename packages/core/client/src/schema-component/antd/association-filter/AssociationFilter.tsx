@@ -11,22 +11,22 @@ import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import cls from 'classnames';
 import React from 'react';
-import { useCollection_deprecated } from '../../../collection-manager';
-import { DndContext, SortableItem } from '../../common';
-import { useDesigner } from '../../hooks';
-import { useToken } from '../__builtins__';
-import { AssociationFilterBlockDesigner } from './AssociationFilter.BlockDesigner';
-import { AssociationFilterItem } from './AssociationFilter.Item';
-import { AssociationFilterItemDesigner } from './AssociationFilter.Item.Designer';
-import { AssociationFilterProvider } from './AssociationFilterProvider';
 import { useSchemaInitializerRender } from '../../../application';
 import { Plugin } from '../../../application/Plugin';
+import { useCollection } from '../../../data-source/collection/CollectionProvider';
 import {
   associationFilterFilterBlockInitializer,
   filterCollapseItemInitializer,
   filterCollapseItemInitializer_deprecated,
 } from '../../../modules/blocks/filter-blocks/collapse/filterCollapseItemInitializer';
+import { DndContext, SortableItem } from '../../common';
+import { useDesigner } from '../../hooks';
+import { useToken } from '../__builtins__';
+import { AssociationFilterBlockDesigner } from './AssociationFilter.BlockDesigner';
 import { associationFilterInitializer } from './AssociationFilter.Initializer';
+import { AssociationFilterItem } from './AssociationFilter.Item';
+import { AssociationFilterItemDesigner } from './AssociationFilter.Item.Designer';
+import { AssociationFilterProvider } from './AssociationFilterProvider';
 import { useAssociationFilterHeight } from './hook';
 export const AssociationFilter = (props) => {
   const { token } = useToken();
@@ -106,8 +106,8 @@ AssociationFilter.BlockDesigner = AssociationFilterBlockDesigner;
 
 AssociationFilter.useAssociationField = () => {
   const fieldSchema = useFieldSchema();
-  const { getField } = useCollection_deprecated();
-  return React.useMemo(() => getField(fieldSchema.name as any), [fieldSchema.name]);
+  const collection = useCollection();
+  return React.useMemo(() => collection.getField(fieldSchema.name as any), [fieldSchema.name]);
 };
 
 export class AssociationFilterPlugin extends Plugin {

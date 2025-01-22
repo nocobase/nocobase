@@ -18,12 +18,14 @@ describe('workflow > actions > workflows', () => {
   let PostModel;
   let PostRepo;
   let WorkflowModel;
+  let ExecutionModel;
 
   beforeEach(async () => {
     app = await getApp();
     agent = app.agent();
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
+    ExecutionModel = db.getCollection('executions').model;
     PostModel = db.getCollection('posts').model;
     PostRepo = db.getCollection('posts').repository;
   });
@@ -119,7 +121,7 @@ describe('workflow > actions > workflows', () => {
   });
 
   describe('destroy', () => {
-    it('cascading destroy all revisions, nodes, executions and jobs', async () => {
+    it('cascading destroy all revisions, nodes, but not executions and jobs', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
         type: 'collection',
@@ -172,8 +174,8 @@ describe('workflow > actions > workflows', () => {
 
       const w2c = await WorkflowModel.count();
       expect(w2c).toBe(0);
-      const e2c = await workflow.countExecutions();
-      expect(e2c).toBe(0);
+      const e2c = await ExecutionModel.count();
+      expect(e2c).toBe(1);
       const n1c = await workflow.countNodes();
       expect(n1c).toBe(0);
       const n2c = await w2.countNodes();
@@ -182,7 +184,7 @@ describe('workflow > actions > workflows', () => {
       expect(p2c).toBe(1);
 
       const j2c = await JobModel.count();
-      expect(j2c).toBe(0);
+      expect(j2c).toBe(1);
     });
   });
 

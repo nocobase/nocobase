@@ -73,7 +73,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
         when: '{{isPG}}',
         fulfill: {
           state: {
-            value: "{{$deps[0].split('_')?.[0]}}",
+            value: "{{$deps[0].split('@')?.[0]}}",
           },
         },
         otherwise: {
@@ -91,7 +91,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
         when: '{{isPG}}',
         fulfill: {
           state: {
-            value: '{{$deps[0].match(/^([^_]+)_(.*)$/)?.[2]}}',
+            value: "{{$deps[0].split('@')?.[1]}}",
           },
         },
         otherwise: {
@@ -125,6 +125,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
       type: 'array',
       'x-component': PreviewFields,
       'x-hidden': '{{ !createOnly }}',
+      'x-decorator': 'FormItem',
       'x-reactions': {
         dependencies: ['name'],
         fulfill: {
@@ -133,6 +134,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
           },
         },
       },
+      description: `{{t("Fields can only be used correctly if they are defined with an interface.")}}`,
     },
     preview: {
       type: 'void',
@@ -153,6 +155,9 @@ export class ViewCollectionTemplate extends CollectionTemplate {
       description: `{{t( "If a collection lacks a primary key, you must configure a unique record key to locate row records within a block, failure to configure this will prevent the creation of data blocks for the collection.")}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Select',
+      'x-component-props': {
+        multiple: true,
+      },
       'x-reactions': ['{{useAsyncDataSource(loadFilterTargetKeys)}}'],
     },
     ...getConfigurableProperties('category', 'description'),

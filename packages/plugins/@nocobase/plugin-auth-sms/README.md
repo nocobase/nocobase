@@ -1,23 +1,30 @@
-# SMS Auth
+# NocoBase
 
-提供短信登录认证功能。
+<video width="100%" controls>
+      <source src="https://static-docs.nocobase.com/NocoBase0510.mp4" type="video/mp4">
+</video>
 
-## 依赖
 
-- `@nocobase/auth` 认证插件，提供认证相关功能，表、模型、函数复用等。
-- `@nocobase/plugin-verification` 验证码插件，提供短信发送功能。
+## What is NocoBase
 
-## 使用方法
+NocoBase is a scalability-first, open-source no-code development platform.  
+Instead of investing years of time and millions of dollars in research and development, deploy NocoBase in a few minutes and you'll have a private, controllable, and extremely scalable no-code development platform!
 
-### 新增验证码Provider
-插件设置 - Verification/验证码   
-新增一个Provider, 并设置为默认方式。
+Homepage:  
+https://www.nocobase.com/
 
-<img src="https://s2.loli.net/2023/05/16/6VKDcqW41F8P9Gu.png" width="800px" />
+Online Demo:  
+https://demo.nocobase.com/new
 
-### 新增SMS认证器
-插件设置 - Authentication/认证   
-新增，选择认证类型为SMS，新增一个Authenticator。
+Documents:  
+https://docs.nocobase.com/
 
-效果如图：   
-<img src="https://s2.loli.net/2023/05/16/GVW5mHTvBhn8Zck.png" width="400px" />
+Commericial license & plugins:  
+https://www.nocobase.com/en/commercial
+
+License agreement:   
+https://www.nocobase.com/en/agreement
+
+
+## Contact Us:  
+hello@nocobase.com

@@ -92,34 +92,38 @@ export class DataSourceModel extends Model {
     const type = this.get('type');
     const createOptions = this.get('options');
 
-    const dataSource = app.dataSourceManager.factory.create(type, {
-      ...createOptions,
-      name: dataSourceKey,
-      logger: app.logger.child({ dataSourceKey }),
-      sqlLogger: app.sqlLogger.child({ dataSourceKey }),
-    });
-
-    if (loadAtAfterStart) {
-      dataSource.on('loadMessage', ({ message }) => {
-        app.setMaintainingMessage(`${message} in data source ${this.get('displayName')}`);
-      });
-    }
-
-    const acl = dataSource.acl;
-
-    for (const [actionName, actionParams] of Object.entries(availableActions)) {
-      acl.setAvailableAction(actionName, actionParams);
-    }
-
-    acl.allow('*', '*', (ctx) => {
-      return ctx.state.currentRole === 'root';
-    });
-
-    dataSource.resourceManager.use(setCurrentRole, { tag: 'setCurrentRole', before: 'acl', after: 'auth' });
-
-    await this.loadIntoACL({ app, acl, transaction: options.transaction });
-
     try {
+      const dataSource = app.dataSourceManager.factory.create(type, {
+        ...createOptions,
+        name: dataSourceKey,
+        logger: app.logger.child({ dataSourceKey }),
+        sqlLogger: app.sqlLogger.child({ dataSourceKey }),
+      });
+
+      dataSource.on('loadingProgress', (progress) => {
+        pluginDataSourceManagerServer.dataSourceLoadingProgress[dataSourceKey] = progress;
+      });
+
+      if (loadAtAfterStart) {
+        dataSource.on('loadMessage', ({ message }) => {
+          app.setMaintainingMessage(`${message} in data source ${this.get('displayName')}`);
+        });
+      }
+
+      const acl = dataSource.acl;
+
+      for (const [actionName, actionParams] of Object.entries(availableActions)) {
+        acl.setAvailableAction(actionName, actionParams);
+      }
+
+      acl.allow('*', '*', (ctx) => {
+        return ctx.state.currentRole === 'root';
+      });
+
+      dataSource.resourceManager.use(setCurrentRole, { tag: 'setCurrentRole', before: 'acl', after: 'auth' });
+
+      await this.loadIntoACL({ app, acl, transaction: options.transaction });
+
       await app.dataSourceManager.add(dataSource, {
         localData: await this.loadLocalData(),
       });

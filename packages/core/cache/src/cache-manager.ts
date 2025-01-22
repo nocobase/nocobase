@@ -60,6 +60,9 @@ export class CacheManager {
         redis: {
           store: redisStore,
           close: async (redis: RedisStore) => {
+            if (!redis.client?.isOpen) {
+              return;
+            }
             await redis.client.quit();
           },
         },
@@ -100,7 +103,7 @@ export class CacheManager {
 
   async createCache(options: { name: string; prefix?: string; store?: string; [key: string]: any }) {
     const { name, prefix, store = this.defaultStore, ...config } = options;
-    if (!lodash.isEmpty(config)) {
+    if (!lodash.isEmpty(config) || store === 'memory') {
       const newStore = await this.createStore({ name, storeType: store, ...config });
       return this.newCache({ name, prefix, store: newStore });
     }

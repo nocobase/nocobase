@@ -10,19 +10,19 @@
 import { Context } from '@nocobase/actions';
 import { Collection } from '@nocobase/database';
 
-export const dataTemplate = async (ctx: Context, next) => {
+export async function dataTemplate(ctx: Context, next) {
   const { resourceName, actionName } = ctx.action;
-  const { isTemplate, fields } = ctx.action.params;
+  const { isTemplate, fields, appends } = ctx.action.params;
 
   await next();
 
-  if (isTemplate && actionName === 'get' && fields.length > 0) {
+  if (isTemplate && actionName === 'get') {
     ctx.body = traverseJSON(JSON.parse(JSON.stringify(ctx.body)), {
-      collection: ctx.db.getCollection(resourceName),
-      include: fields,
+      collection: ctx.getCurrentRepository().collection,
+      include: [...(fields || []), ...(appends || [])],
     });
   }
-};
+}
 
 type TraverseOptions = {
   collection: Collection;
@@ -75,6 +75,7 @@ const traverseJSON = (data, options: TraverseOptions) => {
   if (!data) {
     return data;
   }
+
   const { collection, exclude = [], include = [], excludePk = true } = options;
   const map = parseInclude(include);
   const result = {};
@@ -94,9 +95,11 @@ const traverseJSON = (data, options: TraverseOptions) => {
       result[key] = data[key];
       continue;
     }
-    if (field.options.primaryKey && excludePk) {
+
+    if (field.options.primaryKey && excludePk && !collection.isMultiFilterTargetKey()) {
       continue;
     }
+
     if (field.options.isForeignKey) {
       continue;
     }

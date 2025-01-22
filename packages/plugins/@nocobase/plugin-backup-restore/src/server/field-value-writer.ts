@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DataTypes, Field } from '@nocobase/database';
+import { Database, DataTypes, Field } from '@nocobase/database';
 import lodash from 'lodash';
+import moment from 'moment/moment';
 
-type WriterFunc = (val: any) => any;
+type WriterFunc = (val: any, database: Database) => any;
 
 const getMapFieldWriter = (field: Field) => {
   return (val) => {
@@ -28,7 +29,7 @@ const getMapFieldWriter = (field: Field) => {
 export class FieldValueWriter {
   static writers = new Map<string, WriterFunc>();
 
-  static write(field: Field, val) {
+  static write(field: Field, val, database) {
     if (val === null) return val;
 
     if (field.type == 'point' || field.type == 'lineString' || field.type == 'circle' || field.type === 'polygon') {
@@ -36,10 +37,11 @@ export class FieldValueWriter {
     }
 
     const fieldType = field.typeToString();
+
     const writer = FieldValueWriter.writers[fieldType];
 
     if (writer) {
-      val = writer(val);
+      val = writer(val, database);
     }
 
     return val;
@@ -88,4 +90,21 @@ FieldValueWriter.registerWriter([DataTypes.JSON.toString(), DataTypes.JSONB.toSt
   }
 });
 
+FieldValueWriter.registerWriter('DatetimeNoTzTypeMySQL', (val, database) => {
+  // @ts-ignore
+  const timezone = database.options.rawTimezone || '+00:00';
+
+  if (typeof val === 'string' && isIso8601(val)) {
+    const momentVal = moment(val).utcOffset(timezone);
+    val = momentVal.format('YYYY-MM-DD HH:mm:ss');
+  }
+
+  return val;
+});
+
 FieldValueWriter.registerWriter(DataTypes.BOOLEAN.toString(), (val) => Boolean(val));
+
+function isIso8601(str) {
+  const iso8601StrictRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+  return iso8601StrictRegex.test(str);
+}

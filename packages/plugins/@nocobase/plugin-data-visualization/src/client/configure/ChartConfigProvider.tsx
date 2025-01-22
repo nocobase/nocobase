@@ -42,7 +42,7 @@ export const ChartConfigProvider: React.FC = (props) => {
   return (
     <ChartConfigContext.Provider value={{ visible, setVisible, current, setCurrent }}>
       {props.children}
-      <ChartRendererProvider {...current.field?.decoratorProps}>
+      <ChartRendererProvider {...current.field?.decoratorProps} disableAutoRefresh={true}>
         <ChartConfigure insert={(schema, options) => insertAdjacent('beforeEnd', schema, options)} />
       </ChartRendererProvider>
     </ChartConfigContext.Provider>

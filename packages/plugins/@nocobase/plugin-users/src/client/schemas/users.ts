@@ -230,6 +230,9 @@ export const usersSchema: ISchema = {
                     password: {
                       'x-component': 'CollectionField',
                       'x-decorator': 'FormItem',
+                      'x-component-props': {
+                        autoComplete: 'new-password',
+                      },
                       required: true,
                     },
                     roles: {
@@ -474,6 +477,57 @@ export const usersSchema: ISchema = {
                   },
                 },
               },
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
+export const usersSettingsSchema: ISchema = {
+  type: 'object',
+  'x-decorator': 'UsersSettingsProvider',
+  properties: {
+    usersSettings: {
+      type: 'void',
+      'x-component': 'CardItem',
+      'x-decorator': 'UsersSettingsProvider',
+      properties: {
+        form: {
+          type: 'void',
+          'x-component': 'FormV2',
+          'x-use-component-props': 'useFormBlockProps',
+          properties: {
+            enableEditProfile: {
+              type: 'string',
+              'x-component': 'Checkbox',
+              'x-decorator': 'FormItem',
+              default: true,
+              'x-content': '{{t("Allow edit profile")}}',
+            },
+            enableChangePassword: {
+              type: 'string',
+              'x-component': 'Checkbox',
+              'x-decorator': 'FormItem',
+              default: true,
+              'x-content': '{{t("Allow change password")}}',
+            },
+          },
+        },
+        footer: {
+          type: 'void',
+          'x-component': 'div',
+          'x-component-props': {
+            style: {
+              float: 'right',
+            },
+          },
+          properties: {
+            submit: {
+              title: 'Submit',
+              'x-component': 'Action',
+              'x-use-component-props': 'useSubmitActionProps',
             },
           },
         },

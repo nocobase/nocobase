@@ -8,6 +8,7 @@
  */
 
 import type { SchemaKey } from '@formily/json-schema';
+import qs from 'qs';
 import type { DataSource } from '../data-source';
 import type { CollectionFieldOptions, CollectionOptions, GetCollectionFieldPredicate } from './Collection';
 
@@ -164,9 +165,21 @@ export class CollectionManager {
       return;
     }
 
+    const buildFilterByTk = (targetKey: string | string[], record: Record<string, any>) => {
+      if (Array.isArray(targetKey)) {
+        const filterByTk = {};
+        targetKey.forEach((key) => {
+          filterByTk[key] = record[key];
+        });
+        return qs.stringify(filterByTk);
+      } else {
+        return record[targetKey];
+      }
+    };
+
     if (collectionOrAssociation instanceof Collection) {
-      const key = collectionOrAssociation.filterTargetKey || collectionOrAssociation.getPrimaryKey() || 'id';
-      return collectionRecordOrAssociationRecord[key];
+      const targetKey = collectionOrAssociation.getFilterTargetKey();
+      return buildFilterByTk(targetKey, collectionRecordOrAssociationRecord);
     }
 
     if (collectionOrAssociation.includes('.')) {
@@ -190,9 +203,8 @@ export class CollectionManager {
       );
       return;
     }
-
-    const key = targetCollection?.filterTargetKey || targetCollection?.getPrimaryKey() || 'id';
-    return collectionRecordOrAssociationRecord[key];
+    const targetKey = targetCollection.getFilterTargetKey();
+    return buildFilterByTk(targetKey, collectionRecordOrAssociationRecord);
   }
 
   getSourceKeyByAssociation(associationName: string) {

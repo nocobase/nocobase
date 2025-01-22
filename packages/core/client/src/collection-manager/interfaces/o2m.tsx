@@ -8,10 +8,9 @@
  */
 
 import { ISchema } from '@formily/react';
-import { Collection } from '../../data-source';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { constraintsProps, relationshipType, reverseFieldProperties } from './properties';
-
+import { getUniqueKeyFromCollection } from './utils';
 export class O2MFieldInterface extends CollectionFieldInterface {
   name = 'o2m';
   type = 'object';
@@ -118,7 +117,7 @@ export class O2MFieldInterface extends CollectionFieldInterface {
                   type: 'string',
                   title: '{{t("Target collection")}}',
                   required: true,
-                  'x-reactions': ['{{useAsyncDataSource(loadCollections, ["file"])}}'],
+                  'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
                   'x-decorator': 'FormItem',
                   'x-component': 'Select',
                   'x-disabled': '{{ !createOnly }}',
@@ -214,8 +213,4 @@ export class O2MFieldInterface extends CollectionFieldInterface {
       // },
     ],
   };
-}
-
-export function getUniqueKeyFromCollection(collection: Collection) {
-  return collection?.filterTargetKey || collection?.getPrimaryKey() || 'id';
 }

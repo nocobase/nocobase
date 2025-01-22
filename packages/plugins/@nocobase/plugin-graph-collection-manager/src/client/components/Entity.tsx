@@ -420,7 +420,7 @@ const Entity: React.FC<{
           <Badge.Ribbon
             key={index}
             color={v.color}
-            style={{ width: '103%', height: '3px', marginTop: index * 5 - 8, borderRadius: 0 }}
+            style={{ width: '103%', height: '3px', marginTop: index * 5 - 4, borderRadius: 0 }}
             placement="start"
           />
         );

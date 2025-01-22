@@ -35,7 +35,7 @@ import {
 import { useAPIClient, useRequest } from '../../api-client';
 import { useNavigateNoUpdate } from '../../application/CustomRouterContextProvider';
 import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
-import { useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
+import { CollectionOptions, useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
 import { DataBlock, useFilterBlock } from '../../filter-provider/FilterProvider';
 import { mergeFilter, transformToFilter } from '../../filter-provider/utils';
 import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/TreeRecordProvider';
@@ -156,7 +156,6 @@ export function useCollectValuesToSubmit() {
     const waitList = Object.keys(originalAssignedValues).map(async (key) => {
       const value = originalAssignedValues[key];
       const collectionField = getField(key);
-
       if (process.env.NODE_ENV !== 'production') {
         if (!collectionField) {
           throw new Error(`field "${key}" not found in collection "${name}"`);
@@ -165,7 +164,7 @@ export function useCollectValuesToSubmit() {
 
       if (isVariable(value)) {
         const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
-        if (parsedValue) {
+        if (parsedValue !== null && parsedValue !== undefined) {
           assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
         }
       } else if (value != null && value !== '') {
@@ -224,7 +223,7 @@ export const useCreateActionProps = () => {
   return {
     async onClick() {
       const { onSuccess, skipValidator, triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
-
+      const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
       if (!skipValidator) {
         await form.submit();
       }
@@ -242,39 +241,49 @@ export const useCreateActionProps = () => {
             : undefined,
           updateAssociationValues,
         });
-        setVisible?.(false);
+        if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
+          setVisible?.(false);
+        }
         setSubmitted?.(true);
         setFormValueChanged?.(false);
         actionField.data.loading = false;
         actionField.data.data = data;
         // __parent?.service?.refresh?.();
-        if (!onSuccess?.successMessage) {
+        if (!successMessage) {
           message.success(t('Saved successfully'));
           await resetFormCorrectly(form);
+          if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+            if (isURL(redirectTo)) {
+              window.location.href = redirectTo;
+            } else {
+              navigate(redirectTo);
+            }
+          }
+
           return;
         }
-        if (onSuccess?.manualClose) {
+        if (manualClose) {
           modal.success({
-            title: compile(onSuccess?.successMessage),
+            title: compile(successMessage),
             onOk: async () => {
               await resetFormCorrectly(form);
-              if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-                if (isURL(onSuccess.redirectTo)) {
-                  window.location.href = onSuccess.redirectTo;
+              if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+                if (isURL(redirectTo)) {
+                  window.location.href = redirectTo;
                 } else {
-                  navigate(onSuccess.redirectTo);
+                  navigate(redirectTo);
                 }
               }
             },
           });
         } else {
-          message.success(compile(onSuccess?.successMessage));
+          message.success(compile(successMessage));
           await resetFormCorrectly(form);
-          if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-            if (isURL(onSuccess.redirectTo)) {
-              window.location.href = onSuccess.redirectTo;
+          if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+            if (isURL(redirectTo)) {
+              window.location.href = redirectTo;
             } else {
-              navigate(onSuccess.redirectTo);
+              navigate(redirectTo);
             }
           }
         }
@@ -312,7 +321,7 @@ export const useAssociationCreateActionProps = () => {
         triggerWorkflows,
       } = actionSchema?.['x-action-settings'] ?? {};
       const addChild = fieldSchema?.['x-component-props']?.addChild;
-
+      const { successMessage } = onSuccess || {};
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
@@ -372,10 +381,10 @@ export const useAssociationCreateActionProps = () => {
         __parent?.service?.refresh?.();
         setVisible?.(false);
         setSubmitted?.(true);
-        if (!onSuccess?.successMessage) {
+        if (!successMessage) {
           return;
         }
-        message.success(compile(onSuccess?.successMessage));
+        message.success(compile(successMessage));
       } catch (error) {
         actionField.data.data = null;
         actionField.data.loading = false;
@@ -561,6 +570,7 @@ export const useCustomizeUpdateActionProps = () => {
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
   const { name, getField } = useCollection_deprecated();
+  const { setVisible } = useActionContext();
 
   return {
     async onClick(e?, callBack?) {
@@ -570,7 +580,7 @@ export const useCustomizeUpdateActionProps = () => {
         skipValidator,
         triggerWorkflows,
       } = actionSchema?.['x-action-settings'] ?? {};
-
+      const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
@@ -604,6 +614,9 @@ export const useCustomizeUpdateActionProps = () => {
           ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
           : undefined,
       });
+      if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
+        setVisible?.(false);
+      }
       // service?.refresh?.();
       if (callBack) {
         callBack?.();
@@ -611,29 +624,29 @@ export const useCustomizeUpdateActionProps = () => {
       if (!(resource instanceof TableFieldResource)) {
         __parent?.service?.refresh?.();
       }
-      if (!onSuccess?.successMessage) {
+      if (!successMessage) {
         return;
       }
-      if (onSuccess?.manualClose) {
+      if (manualClose) {
         modal.success({
-          title: compile(onSuccess?.successMessage),
+          title: compile(successMessage),
           onOk: async () => {
-            if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-              if (isURL(onSuccess.redirectTo)) {
-                window.location.href = onSuccess.redirectTo;
+            if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+              if (isURL(redirectTo)) {
+                window.location.href = redirectTo;
               } else {
-                navigate(onSuccess.redirectTo);
+                navigate(redirectTo);
               }
             }
           },
         });
       } else {
-        message.success(compile(onSuccess?.successMessage));
-        if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-          if (isURL(onSuccess.redirectTo)) {
-            window.location.href = onSuccess.redirectTo;
+        message.success(compile(successMessage));
+        if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+          if (isURL(redirectTo)) {
+            window.location.href = redirectTo;
           } else {
-            navigate(onSuccess.redirectTo);
+            navigate(redirectTo);
           }
         }
       }
@@ -658,6 +671,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const record = useRecord();
   const { name, getField } = useCollection_deprecated();
   const localVariables = useLocalVariables();
+  const { setVisible } = useActionContext();
 
   return {
     async onClick() {
@@ -666,6 +680,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
         onSuccess,
         updateMode,
       } = actionSchema?.['x-action-settings'] ?? {};
+      const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
       actionField.data = field.data || {};
       actionField.data.loading = true;
 
@@ -690,7 +705,9 @@ export const useCustomizeBulkUpdateActionProps = () => {
         }
       });
       await Promise.all(waitList);
-
+      if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
+        setVisible?.(false);
+      }
       modal.confirm({
         title: t('Bulk update'),
         content: updateMode === 'selected' ? t('Update selected data?') : t('Update all data?'),
@@ -723,29 +740,29 @@ export const useCustomizeBulkUpdateActionProps = () => {
           if (!(resource instanceof TableFieldResource)) {
             __parent?.service?.refresh?.();
           }
-          if (!onSuccess?.successMessage) {
+          if (!successMessage) {
             return;
           }
-          if (onSuccess?.manualClose) {
+          if (manualClose) {
             modal.success({
-              title: compile(onSuccess?.successMessage),
+              title: compile(successMessage),
               onOk: async () => {
-                if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-                  if (isURL(onSuccess.redirectTo)) {
-                    window.location.href = onSuccess.redirectTo;
+                if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+                  if (isURL(redirectTo)) {
+                    window.location.href = redirectTo;
                   } else {
-                    navigate(onSuccess.redirectTo);
+                    navigate(redirectTo);
                   }
                 }
               },
             });
           } else {
-            message.success(compile(onSuccess?.successMessage));
-            if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-              if (isURL(onSuccess.redirectTo)) {
-                window.location.href = onSuccess.redirectTo;
+            message.success(compile(successMessage));
+            if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+              if (isURL(redirectTo)) {
+                window.location.href = redirectTo;
               } else {
-                navigate(onSuccess.redirectTo);
+                navigate(redirectTo);
               }
             }
           }
@@ -771,6 +788,7 @@ export const useCustomizeRequestActionProps = () => {
   const currentUserContext = useCurrentUserContext();
   const currentUser = currentUserContext?.data?.data;
   const actionField = useField();
+  const { t } = useTranslation();
   const { setVisible } = useActionContext();
   const { modal } = App.useApp();
   const { getActiveFieldsName } = useFormActiveFields() || {};
@@ -778,6 +796,7 @@ export const useCustomizeRequestActionProps = () => {
   return {
     async onClick() {
       const { skipValidator, onSuccess, requestSettings } = actionSchema?.['x-action-settings'] ?? {};
+      const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
       const xAction = actionSchema?.['x-action'];
       if (!requestSettings['url']) {
         return;
@@ -822,26 +841,36 @@ export const useCustomizeRequestActionProps = () => {
         }
         service?.refresh?.();
         if (xAction === 'customize:form:request') {
-          setVisible?.(false);
+          if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
+            setVisible?.(false);
+          }
         }
-        if (!onSuccess?.successMessage) {
-          return;
+        if (!successMessage) {
+          message.success(t('Saved successfully'));
+          await resetFormCorrectly(form);
+          if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+            if (isURL(redirectTo)) {
+              window.location.href = redirectTo;
+            } else {
+              navigate(redirectTo);
+            }
+          }
         }
-        if (onSuccess?.manualClose) {
+        if (manualClose) {
           modal.success({
-            title: compile(onSuccess?.successMessage),
+            title: compile(successMessage),
             onOk: async () => {
-              if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-                if (isURL(onSuccess.redirectTo)) {
-                  window.location.href = onSuccess.redirectTo;
+              if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+                if (isURL(redirectTo)) {
+                  window.location.href = redirectTo;
                 } else {
-                  navigate(onSuccess.redirectTo);
+                  navigate(redirectTo);
                 }
               }
             },
           });
         } else {
-          message.success(compile(onSuccess?.successMessage));
+          message.success(compile(successMessage));
         }
       } finally {
         actionField.data.loading = false;
@@ -876,7 +905,7 @@ export const useUpdateActionProps = () => {
         skipValidator,
         triggerWorkflows,
       } = actionSchema?.['x-action-settings'] ?? {};
-
+      const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
@@ -934,32 +963,39 @@ export const useUpdateActionProps = () => {
         if (callBack) {
           callBack?.();
         }
-        setVisible?.(false);
+        if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
+          setVisible?.(false);
+        }
         setFormValueChanged?.(false);
-        if (!onSuccess?.successMessage) {
+        if (!successMessage) {
           return;
         }
-        if (onSuccess?.manualClose) {
+        if (manualClose) {
           modal.success({
-            title: compile(onSuccess?.successMessage),
+            title: compile(successMessage),
             onOk: async () => {
               await form.reset();
-              if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-                if (isURL(onSuccess.redirectTo)) {
-                  window.location.href = onSuccess.redirectTo;
+              if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+                if (isURL(redirectTo)) {
+                  window.location.href = redirectTo;
                 } else {
-                  navigate(onSuccess.redirectTo);
+                  navigate(redirectTo);
                 }
               }
             },
           });
         } else {
-          message.success(compile(onSuccess?.successMessage));
-          if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-            if (isURL(onSuccess.redirectTo)) {
-              window.location.href = onSuccess.redirectTo;
+          message.success(compile(successMessage));
+          if (
+            ((redirecting && !actionAfterSuccess) ||
+              actionAfterSuccess === 'redirect' ||
+              actionAfterSuccess === 'redirect') &&
+            redirectTo
+          ) {
+            if (isURL(redirectTo)) {
+              window.location.href = redirectTo;
             } else {
-              navigate(onSuccess.redirectTo);
+              navigate(redirectTo);
             }
           }
         }
@@ -1080,13 +1116,25 @@ export const useBulkDestroyActionProps = () => {
   const { field } = useBlockRequestContext();
   const { resource, service } = useBlockRequestContext();
   const { setSubmitted } = useActionContext();
+  const collection = useCollection_deprecated();
+  const { filterTargetKey } = collection;
   return {
     async onClick(e?, callBack?) {
+      let filterByTk = field.data?.selectedRowKeys;
+      if (Array.isArray(filterTargetKey)) {
+        filterByTk = field.data.selectedRowData.map((v) => {
+          const obj = {};
+          filterTargetKey.map((j) => {
+            obj[j] = v[j];
+          });
+          return obj;
+        });
+      }
       if (!field?.data?.selectedRowKeys?.length) {
         return;
       }
       await resource.destroy({
-        filterByTk: field.data?.selectedRowKeys,
+        filterByTk,
       });
       field.data.selectedRowKeys = [];
       const currentPage = service.params[0]?.page;
@@ -1098,7 +1146,7 @@ export const useBulkDestroyActionProps = () => {
         callBack?.();
       }
       setSubmitted?.(true);
-      // service?.refresh?.();
+      service?.refresh?.();
     },
   };
 };
@@ -1235,7 +1283,7 @@ export const useOptionalFieldList = () => {
 
 const isOptionalField = (field) => {
   const optionalInterfaces = ['select', 'multipleSelect', 'checkbox', 'checkboxGroup', 'chinaRegion'];
-  return optionalInterfaces.includes(field.interface) && field.uiSchema.enum;
+  return optionalInterfaces.includes(field?.interface) && field?.uiSchema?.enum;
 };
 
 export const useAssociationFilterBlockProps = () => {
@@ -1280,7 +1328,7 @@ export const useAssociationFilterBlockProps = () => {
 
   useEffect(() => {
     // 由于选项字段不需要触发当前请求，所以请求单独在关系字段的时候触发
-    if (!isOptionalField(collectionField) && parseVariableLoading === false) {
+    if (collectionField && !isOptionalField(collectionField) && parseVariableLoading === false) {
       run();
     }
 
@@ -1294,6 +1342,50 @@ export const useAssociationFilterBlockProps = () => {
     field.componentProps?.params?.sort,
     parseVariableLoading,
   ]);
+
+  const onSelected = useCallback(
+    (value) => {
+      const { targets, uid } = findFilterTargets(fieldSchema);
+
+      getDataBlocks().forEach((block) => {
+        const target = targets.find((target) => target.uid === block.uid);
+        if (!target) return;
+
+        const key = `${uid}${fieldSchema.name}`;
+        const param = block.service.params?.[0] || {};
+
+        if (!block.service.params?.[1]?.filters) {
+          _.set(block.service.params, '[1].filters', {});
+        }
+
+        // 保留原有的 filter
+        const storedFilter = block.service.params[1].filters;
+
+        if (value.length) {
+          storedFilter[key] = {
+            [filterKey]: value,
+          };
+        } else {
+          if (block.dataLoadingMode === 'manual') {
+            return block.clearData();
+          }
+          delete storedFilter[key];
+        }
+
+        const mergedFilter = mergeFilter([...Object.values(storedFilter), block.defaultFilter]);
+
+        return block.doFilter(
+          {
+            ...param,
+            page: 1,
+            filter: mergedFilter,
+          },
+          { filters: storedFilter },
+        );
+      });
+    },
+    [fieldSchema, filterKey, getDataBlocks],
+  );
 
   if (!collectionField) {
     return {};
@@ -1335,41 +1427,6 @@ export const useAssociationFilterBlockProps = () => {
       });
     };
   }
-
-  const onSelected = (value) => {
-    const { targets, uid } = findFilterTargets(fieldSchema);
-
-    getDataBlocks().forEach((block) => {
-      const target = targets.find((target) => target.uid === block.uid);
-      if (!target) return;
-
-      const key = `${uid}${fieldSchema.name}`;
-      const param = block.service.params?.[0] || {};
-      // 保留原有的 filter
-      const storedFilter = block.service.params?.[1]?.filters || {};
-      if (value.length) {
-        storedFilter[key] = {
-          [filterKey]: value,
-        };
-      } else {
-        if (block.dataLoadingMode === 'manual') {
-          return block.clearData();
-        }
-        delete storedFilter[key];
-      }
-
-      const mergedFilter = mergeFilter([...Object.values(storedFilter), block.defaultFilter]);
-
-      return block.doFilter(
-        {
-          ...param,
-          page: 1,
-          filter: mergedFilter,
-        },
-        { filters: storedFilter },
-      );
-    });
-  };
 
   return {
     /** 渲染 Collapse 的列表数据 */
@@ -1436,89 +1493,138 @@ export function getAssociationPath(str) {
   return str;
 }
 
-export const useAssociationNames = (dataSource?: string) => {
-  let updateAssociationValues = new Set([]);
-  let appends = new Set([]);
-  const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated(dataSource);
-  const fieldSchema = useFieldSchema();
-  const _getAssociationAppends = (schema, str) => {
-    schema.reduceProperties((pre, s) => {
-      const prefix = pre || str;
-      const collectionField = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field'], dataSource);
-      const isAssociationSubfield = s.name.includes('.');
-      const isAssociationField =
-        collectionField &&
-        ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'].includes(collectionField.type);
+export const getAppends = ({
+  schema,
+  prefix: defaultPrefix,
+  updateAssociationValues,
+  appends,
+  getCollectionJoinField,
+  getCollection,
+  dataSource,
+}: {
+  schema: any;
+  prefix: string;
+  updateAssociationValues: Set<string>;
+  appends: Set<string>;
+  getCollectionJoinField: (name: string, dataSource: string) => any;
+  getCollection: (name: any, customDataSource?: string) => CollectionOptions;
+  dataSource: string;
+}) => {
+  schema.reduceProperties((pre, s) => {
+    const prefix = pre || defaultPrefix;
+    const collectionField = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field'], dataSource);
+    const isAssociationSubfield = s.name.includes('.');
+    const isAssociationField =
+      collectionField &&
+      ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'].includes(collectionField.type);
 
-      // 根据联动规则中条件的字段获取一些 appends
-      if (s['x-linkage-rules']) {
-        const collectAppends = (obj) => {
-          const type = Object.keys(obj)[0] || '$and';
-          const list = obj[type];
+    // 根据联动规则中条件的字段获取一些 appends
+    // 需要排除掉子表格和子表单中的联动规则
+    if (s['x-linkage-rules'] && !isSubMode(s)) {
+      const collectAppends = (obj) => {
+        const type = Object.keys(obj)[0] || '$and';
+        const list = obj[type];
 
-          list.forEach((item) => {
-            if ('$and' in item || '$or' in item) {
-              return collectAppends(item);
-            }
+        list.forEach((item) => {
+          if ('$and' in item || '$or' in item) {
+            return collectAppends(item);
+          }
 
-            const fieldNames = getTargetField(item);
+          const fieldNames = getTargetField(item);
 
-            // 只应该收集关系字段，只有大于 1 的时候才是关系字段
-            if (fieldNames.length > 1) {
-              appends.add(fieldNames.join('.'));
-            }
-          });
-        };
+          // 只应该收集关系字段，只有大于 1 的时候才是关系字段
+          if (fieldNames.length > 1) {
+            appends.add(fieldNames.join('.'));
+          }
+        });
+      };
 
-        const rules = s['x-linkage-rules'];
-        rules.forEach(({ condition }) => {
-          collectAppends(condition);
+      const rules = s['x-linkage-rules'];
+      rules.forEach(({ condition }) => {
+        collectAppends(condition);
+      });
+    }
+
+    const isTreeCollection =
+      isAssociationField && getCollection(collectionField.target, dataSource)?.template === 'tree';
+
+    if (collectionField && (isAssociationField || isAssociationSubfield) && s['x-component'] !== 'TableField') {
+      const fieldPath = !isAssociationField && isAssociationSubfield ? getAssociationPath(s.name) : s.name;
+      const path = prefix === '' || !prefix ? fieldPath : prefix + '.' + fieldPath;
+      if (isTreeCollection) {
+        appends.add(path);
+        appends.add(`${path}.parent` + '(recursively=true)');
+      } else {
+        if (s['x-component-props']?.sortArr) {
+          const sort = s['x-component-props']?.sortArr;
+          appends.add(`${path}(sort=${sort})`);
+        } else {
+          appends.add(path);
+        }
+      }
+      if (isSubMode(s)) {
+        updateAssociationValues.add(path);
+        const bufPrefix = prefix && prefix !== '' ? prefix + '.' + s.name : s.name;
+        getAppends({
+          schema: s,
+          prefix: bufPrefix,
+          updateAssociationValues,
+          appends,
+          getCollectionJoinField,
+          getCollection,
+          dataSource,
         });
       }
-      const isTreeCollection =
-        isAssociationField && getCollection(collectionField.target, dataSource)?.template === 'tree';
-      if (collectionField && (isAssociationField || isAssociationSubfield) && s['x-component'] !== 'TableField') {
-        const fieldPath = !isAssociationField && isAssociationSubfield ? getAssociationPath(s.name) : s.name;
-        const path = prefix === '' || !prefix ? fieldPath : prefix + '.' + fieldPath;
-        if (isTreeCollection) {
-          appends.add(path);
-          appends.add(`${path}.parent` + '(recursively=true)');
-        } else {
-          if (s['x-component-props']?.sortArr) {
-            const sort = s['x-component-props']?.sortArr;
-            appends.add(`${path}(sort=${sort})`);
-          } else {
-            appends.add(path);
-          }
-        }
-        if (['Nester', 'SubTable', 'PopoverNester'].includes(s['x-component-props']?.mode)) {
-          updateAssociationValues.add(path);
-          const bufPrefix = prefix && prefix !== '' ? prefix + '.' + s.name : s.name;
-          _getAssociationAppends(s, bufPrefix);
-        }
-      } else if (
-        ![
-          'ActionBar',
-          'Action',
-          'Action.Link',
-          'Action.Modal',
-          'Selector',
-          'Viewer',
-          'AddNewer',
-          'AssociationField.Selector',
-          'AssociationField.AddNewer',
-          'TableField',
-        ].includes(s['x-component'])
-      ) {
-        _getAssociationAppends(s, str);
-      }
-    }, str);
-  };
+    } else if (
+      ![
+        'ActionBar',
+        'Action',
+        'Action.Link',
+        'Action.Modal',
+        'Selector',
+        'Viewer',
+        'AddNewer',
+        'AssociationField.Selector',
+        'AssociationField.AddNewer',
+        'TableField',
+        'Kanban.CardViewer',
+        'Action.Container',
+      ].includes(s['x-component'])
+    ) {
+      getAppends({
+        schema: s,
+        prefix: defaultPrefix,
+        updateAssociationValues,
+        appends,
+        getCollectionJoinField,
+        getCollection,
+        dataSource,
+      });
+    }
+  }, defaultPrefix);
+};
+
+export const useAssociationNames = (dataSource?: string) => {
+  const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated(dataSource);
+  const fieldSchema = useFieldSchema();
+
   const getAssociationAppends = () => {
-    updateAssociationValues = new Set([]);
-    appends = new Set([]);
-    _getAssociationAppends(fieldSchema, '');
+    const updateAssociationValues = new Set([]);
+    let appends = new Set([]);
+
+    getAppends({
+      schema: fieldSchema,
+      prefix: '',
+      updateAssociationValues,
+      appends,
+      getCollectionJoinField,
+      getCollection,
+      dataSource,
+    });
     appends = fillParentFields(appends);
+
+    console.log('appends', appends);
+
     return { appends: [...appends], updateAssociationValues: [...updateAssociationValues] };
   };
 
@@ -1606,12 +1712,13 @@ export function useLinkActionProps(componentProps?: any) {
   const { t } = useTranslation();
   const url = componentPropsValue?.['url'];
   const searchParams = componentPropsValue?.['params'] || [];
+  const type = componentPropsValue?.['type'] || 'default';
   const openInNewWindow = fieldSchema?.['x-component-props']?.['openInNewWindow'];
   const { parseURLAndParams } = useParseURLAndParams();
   const basenameOfCurrentRouter = useRouterBasename();
 
   return {
-    type: 'default',
+    type,
     async onClick() {
       if (!url) {
         message.warning(t('Please configure the URL'));

@@ -20,7 +20,6 @@ import { CollectionFieldProvider } from '../../../data-source/collection-field/C
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useDataFormItemProps } from '../../../modules/blocks/data-blocks/form/hooks/useDataFormItemProps';
 import { GeneralSchemaDesigner } from '../../../schema-settings';
-import { useContextVariable, useVariables } from '../../../variables';
 import { BlockItem } from '../block-item';
 import { HTMLEncode } from '../input/shared';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
@@ -52,13 +51,8 @@ export const FormItem: any = withDynamicSchemaProps(
     const field = useField<Field>();
     const schema = useFieldSchema();
     const { addActiveFieldName } = useFormActiveFields() || {};
-    const { wrapperStyle } = useDataFormItemProps();
-    const variables = useVariables();
-    const contextVariable = useContextVariable();
-    useEffect(() => {
-      variables?.registerVariable(contextVariable);
-    }, [contextVariable, variables]);
-    // 需要放在注冊完变量之后
+    const { wrapperStyle }: { wrapperStyle: any } = useDataFormItemProps();
+
     useParseDefaultValue();
     useLazyLoadDisplayAssociationFieldsOfForm();
     useLinkageRulesForSubTableOrSubForm();
@@ -86,12 +80,30 @@ export const FormItem: any = withDynamicSchemaProps(
         [formItemLabelCss]: showTitle === false,
       });
     }, [showTitle]);
-
     return (
       <CollectionFieldProvider allowNull={true}>
-        <BlockItem className={'nb-form-item'}>
+        <BlockItem
+          className={cx(
+            'nb-form-item',
+            css`
+              .ant-formily-item-layout-horizontal .ant-formily-item-control {
+                max-width: ${showTitle === false || schema['x-component'] !== 'CollectionField'
+                  ? '100% !important'
+                  : null};
+              }
+            `,
+          )}
+        >
           <ACLCollectionFieldProvider>
-            <Item className={className} {...props} extra={extra} wrapperStyle={wrapperStyle} />
+            <Item
+              className={className}
+              {...props}
+              extra={extra}
+              wrapperStyle={{
+                ...(wrapperStyle.backgroundColor ? { paddingLeft: '5px', paddingRight: '5px' } : {}),
+                ...wrapperStyle,
+              }}
+            />
           </ACLCollectionFieldProvider>
         </BlockItem>
       </CollectionFieldProvider>

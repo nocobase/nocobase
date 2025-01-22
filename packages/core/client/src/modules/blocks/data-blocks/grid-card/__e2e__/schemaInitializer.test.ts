@@ -33,7 +33,7 @@ test.describe('where grid card block can be added', () => {
     // 1. 打开弹窗，通过 Associated records 创建一个列表区块
     await page.getByLabel('action-Action.Link-View').click();
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'ordered-list Grid Card right' }).hover();
+    await page.getByRole('menuitem', { name: 'Grid Card right' }).hover();
     await page.getByRole('menuitem', { name: 'Associated records right' }).hover();
     await page.getByRole('menuitem', { name: 'Roles' }).click();
     await page.mouse.move(300, 0);
@@ -46,7 +46,7 @@ test.describe('where grid card block can be added', () => {
 
     // 2. 通过 Other records 创建一个列表区块
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'ordered-list Grid Card right' }).hover();
+    await page.getByRole('menuitem', { name: 'Grid Card right' }).hover();
     await page.getByRole('menuitem', { name: 'Other records right' }).hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
     await page.mouse.move(300, 0);
@@ -182,11 +182,11 @@ test.describe('configure fields', () => {
       page.getByLabel('block-item-CollectionField-general-grid-card-general.manyToOne.nickname').first(),
     ).not.toBeVisible();
 
-    // add text
+    // add markdown
     await formItemInitializer.hover();
     await page.getByRole('menuitem', { name: 'ID', exact: true }).hover();
     await page.mouse.wheel(0, 300);
-    await page.getByRole('menuitem', { name: 'Add text' }).click();
+    await page.getByRole('menuitem', { name: 'Add Markdown' }).click();
 
     await expect(page.getByLabel('block-item-Markdown.Void-general-grid-card').first()).toBeVisible();
   });

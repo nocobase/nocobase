@@ -14,7 +14,7 @@ import { useParams } from 'react-router-dom';
 import { useRecord, useCompile, useAPIClient, useCollectionManager_deprecated } from '@nocobase/client';
 import { useRemoteCollectionContext } from '../CollectionFields';
 
-const supportTypes = ['string', 'bigInt', 'integer', 'uuid', 'uid'];
+const supportTypes = ['string', 'bigInt', 'integer', 'uuid', 'uid', 'nanoid'];
 
 export const SourceKey = observer(
   (props: any) => {
@@ -41,7 +41,7 @@ export const SourceKey = observer(
         <Select
           disabled={sourceKey}
           options={options}
-          defaultValue={options?.[0]?.value || sourceKey}
+          defaultValue={sourceKey || options?.[0]?.value}
           onChange={props?.onChange}
           showSearch
         />
@@ -161,10 +161,10 @@ export const TargetKey = observer(
         setOptions(
           getCollection(target, dataSourceKey)
             .fields?.filter((v) => {
-              if (type !== 'hasMany') {
-                return v.primaryKey || v.unique;
+              if (v.primaryKey || v.unique) {
+                return true;
               }
-              return supportTypes.includes(v.type);
+              return type === 'hasMany' && supportTypes.includes(v.type);
             })
             .map((k) => {
               return {
@@ -196,10 +196,10 @@ export const TargetKey = observer(
               setOptions(
                 data.data
                   ?.filter((v) => {
-                    if (type !== 'hasMany') {
-                      return v.primaryKey || v.unique;
+                    if (v.primaryKey || v.unique) {
+                      return true;
                     }
-                    return supportTypes.includes(v.type);
+                    return type === 'hasMany' && supportTypes.includes(v.type);
                   })
                   .map((k) => {
                     return {

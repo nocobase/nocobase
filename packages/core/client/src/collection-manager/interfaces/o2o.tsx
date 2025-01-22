@@ -9,7 +9,7 @@
 
 import { ISchema } from '@formily/react';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
-import { getUniqueKeyFromCollection } from './o2m';
+import { getUniqueKeyFromCollection } from './utils';
 import { constraintsProps, relationshipType, reverseFieldProperties } from './properties';
 
 export class O2OFieldInterface extends CollectionFieldInterface {
@@ -118,7 +118,7 @@ export class O2OFieldInterface extends CollectionFieldInterface {
                   type: 'string',
                   title: '{{t("Target collection")}}',
                   required: true,
-                  'x-reactions': ['{{useAsyncDataSource(loadCollections, ["file"])}}'],
+                  'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
                   'x-decorator': 'FormItem',
                   'x-component': 'Select',
                   'x-disabled': '{{ !createOnly }}',
@@ -306,7 +306,7 @@ export class OHOFieldInterface extends CollectionFieldInterface {
                   type: 'string',
                   title: '{{t("Target collection")}}',
                   required: true,
-                  'x-reactions': ['{{useAsyncDataSource(loadCollections, ["file"])}}'],
+                  'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
                   'x-decorator': 'FormItem',
                   'x-component': 'Select',
                   'x-disabled': '{{ !createOnly }}',

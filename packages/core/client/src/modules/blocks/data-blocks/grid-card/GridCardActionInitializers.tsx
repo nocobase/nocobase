@@ -8,7 +8,6 @@
  */
 
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
-import { useCollection } from '../../../../data-source';
 import { useActionAvailable } from '../../useActionAvailable';
 const commonOptions = {
   title: "{{t('Configure actions')}}",
@@ -71,6 +70,14 @@ const commonOptions = {
         'x-acl-action-props': {
           skipScopeCheck: true,
         },
+      },
+    },
+    {
+      name: 'customRequest',
+      title: '{{t("Custom request")}}',
+      Component: 'CustomRequestInitializer',
+      schema: {
+        'x-action': 'customize:table:request:global',
       },
     },
   ],

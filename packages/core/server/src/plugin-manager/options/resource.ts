@@ -96,7 +96,8 @@ export default {
       if (!filterByTk) {
         ctx.throw(400, 'plugin name invalid');
       }
-      app.runAsCLI(['pm', 'enable', filterByTk], { from: 'user' });
+      const keys = Array.isArray(filterByTk) ? filterByTk : [filterByTk];
+      app.runAsCLI(['pm', 'enable', ...keys], { from: 'user' });
       ctx.body = filterByTk;
       await next();
     },
@@ -123,7 +124,9 @@ export default {
     async list(ctx, next) {
       const locale = ctx.getCurrentLocale();
       const pm = ctx.app.pm as PluginManager;
-      ctx.body = await pm.list({ locale, isPreset: false });
+      // ctx.body = await pm.list({ locale, isPreset: false });
+      const plugin = pm.get('nocobase') as any;
+      ctx.body = await plugin.getAllPlugins(locale);
       await next();
     },
     async listEnabled(ctx, next) {
@@ -156,7 +159,9 @@ export default {
       if (!filterByTk) {
         ctx.throw(400, 'plugin name invalid');
       }
-      ctx.body = await pm.get(filterByTk).toJSON({ locale });
+      const plugin = pm.get('nocobase') as any;
+      ctx.body = await plugin.getPluginInfo(filterByTk, locale);
+      // ctx.body = await pm.get(filterByTk).toJSON({ locale });
       await next();
     },
   },

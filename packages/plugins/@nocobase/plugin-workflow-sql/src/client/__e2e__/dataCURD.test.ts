@@ -87,7 +87,7 @@ test.describe('select data', () => {
     const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
     //配置SQL节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'sql', exact: true }).click();
@@ -183,7 +183,7 @@ test.describe('select data', () => {
     const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
     //配置SQL节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'sql', exact: true }).click();
@@ -279,7 +279,7 @@ test.describe('select data', () => {
     const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
     //配置SQL节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'sql', exact: true }).click();
@@ -381,7 +381,7 @@ test.describe('select data', () => {
     const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
     //配置SQL节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'sql', exact: true }).click();
@@ -483,7 +483,7 @@ test.describe('select data', () => {
     const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
     //配置SQL节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'sql', exact: true }).click();
@@ -588,7 +588,7 @@ test.describe('select data', () => {
     const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
     //配置SQL节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'sql', exact: true }).click();
@@ -679,7 +679,7 @@ test.describe('insert data', () => {
     const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
     //配置SQL节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'sql', exact: true }).click();
@@ -767,7 +767,7 @@ test.describe('insert data', () => {
     const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
     //配置SQL节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'sql', exact: true }).click();
@@ -849,7 +849,7 @@ test.describe('insert data', () => {
     const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
     //配置SQL节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'sql', exact: true }).click();
@@ -969,7 +969,7 @@ test.describe('update data', () => {
     const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
     //配置SQL节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'sql', exact: true }).click();
@@ -1066,7 +1066,7 @@ test.describe('update data', () => {
     const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
     //配置SQL节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'sql', exact: true }).click();
@@ -1174,7 +1174,7 @@ test.describe('delete data', () => {
     const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
     //配置SQL节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'sql', exact: true }).click();
@@ -1271,7 +1271,7 @@ test.describe('delete data', () => {
     const triggerNodeObj = JSON.parse(JSON.stringify(triggerNode));
     //配置SQL节点
     await page.goto(`admin/workflow/workflows/${workflowId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'sql', exact: true }).click();

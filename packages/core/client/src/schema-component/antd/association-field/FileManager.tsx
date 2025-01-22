@@ -20,7 +20,7 @@ import {
   SchemaComponentOptions,
   Uploader,
   useActionContext,
-  useSchemaOptionsContext,
+  useDesignable,
 } from '../..';
 import {
   TableSelectorParamsProvider,
@@ -82,14 +82,13 @@ const useTableSelectorProps = () => {
 };
 
 function FileSelector(props) {
-  const { disabled, multiple, value, onChange, action, onSelect, quickUpload, selectFile } = props;
+  const { disabled, multiple, value, onChange, action, onSelect, quickUpload, selectFile, ...other } = props;
   const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
   const { useFileCollectionStorageRules } = useExpressionScope();
   const { t } = useTranslation();
   const rules = useFileCollectionStorageRules();
   // 兼容旧版本
   const showSelectButton = selectFile === undefined && quickUpload === undefined;
-
   return wrapSSR(
     <div className={cls(`${prefixCls}-wrapper`, `${prefixCls}-picture-card-wrapper`, 'nb-upload', hashId)}>
       <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>
@@ -122,6 +121,8 @@ function FileSelector(props) {
             onChange={onChange}
             action={action}
             rules={rules}
+            disabled={disabled}
+            {...other}
           />
         ) : null}
         {selectFile && (multiple || !value) ? (
@@ -156,6 +157,7 @@ const InternalFileManager = (props) => {
   const [selectedRows, setSelectedRows] = useState([]);
   const insertSelector = useInsertSchema('Selector');
   const fieldNames = useFieldNames(props);
+  const { designable } = useDesignable();
   const field: any = useField();
   const [options, setOptions] = useState([]);
   const { getField } = useCollection_deprecated();
@@ -166,11 +168,22 @@ const InternalFileManager = (props) => {
   const handleSelect = (ev) => {
     ev.stopPropagation();
     ev.preventDefault();
-    insertSelector(schema.Selector);
+    if (designable) {
+      insertSelector(schema.Selector);
+    } else {
+      const selectSchema = fieldSchema.reduceProperties((buf, s) => {
+        if (s['x-component'] === 'AssociationField.Selector') {
+          return s;
+        }
+        return buf;
+      }, null);
+      if (!selectSchema) {
+        fieldSchema.addProperty('selector', schema.Selector);
+      }
+    }
     setVisibleSelector(true);
     setSelectedRows([]);
   };
-
   useEffect(() => {
     if (value && Object.keys(value).length > 0) {
       const opts = (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean).map((option) => {
@@ -189,7 +202,7 @@ const InternalFileManager = (props) => {
   const pickerProps = {
     size: 'small',
     fieldNames,
-    multiple: ['o2m', 'm2m'].includes(collectionField?.interface) && multiple,
+    multiple: ['o2m', 'm2m', 'mbm'].includes(collectionField?.interface) && multiple,
     association: {
       target: collectionField?.target,
     },
@@ -216,6 +229,7 @@ const InternalFileManager = (props) => {
   return (
     <div style={{ width: '100%', overflow: 'auto' }}>
       <FileSelector
+        {...others}
         value={multiple ? options : options?.[0]}
         multiple={multiple}
         quickUpload={fieldSchema['x-component-props']?.quickUpload !== false}
@@ -268,4 +282,4 @@ const FileManageReadPretty = connect((props) => {
   );
 });
 
-export { FileManageReadPretty, InternalFileManager };
+export { FileManageReadPretty, InternalFileManager, FileSelector };

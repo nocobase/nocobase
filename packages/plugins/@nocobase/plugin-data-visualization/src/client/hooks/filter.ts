@@ -18,6 +18,7 @@ import {
   useCollectionManager_deprecated,
   useDataSourceManager,
   useVariables,
+  useLocalVariables,
 } from '@nocobase/client';
 import { flatten, parse, unflatten } from '@nocobase/utils/client';
 import { useMemoizedFn } from 'ahooks';
@@ -103,6 +104,7 @@ export const useChartFilter = () => {
   const action = fieldSchema?.['x-action'];
   const { fields: fieldProps, form } = useContext(ChartFilterContext);
   const variables = useVariables();
+  const localVariables = useLocalVariables();
 
   const getChartFilterFields = ({
     dataSource,
@@ -136,6 +138,7 @@ export const useChartFilter = () => {
           ...field.uiSchema?.['x-component-props'],
           'filter-operator': defaultOperator,
         },
+        'x-filter-operators': defaultOperator?.value,
       };
       if (field.interface === 'formula') {
         const component = getFormulaComponent(field.dataType) || 'Input';
@@ -193,6 +196,7 @@ export const useChartFilter = () => {
         'x-component-props': {
           'filter-operator': defaultOperator,
         },
+        'x-filter-operators': defaultOperator?.value,
       };
       if (defaultOperator?.noValue) {
         schema = {
@@ -418,7 +422,7 @@ export const useChartFilter = () => {
           if (['$user', '$date', '$nDate', '$nRole', '$nFilter'].some((n) => value.includes(n))) {
             return value;
           }
-          const result = variables?.parseVariable(value).then(({ value }) => value);
+          const result = variables?.parseVariable(value, localVariables).then(({ value }) => value);
           return result;
         },
       });

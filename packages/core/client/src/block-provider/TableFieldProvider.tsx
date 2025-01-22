@@ -183,9 +183,10 @@ export const useTableFieldProps = () => {
     rowKey: (record: any) => {
       return field.value?.indexOf?.(record);
     },
-    onRowSelectionChange(selectedRowKeys) {
+    onRowSelectionChange(selectedRowKeys, selectedRowData) {
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;
+      ctx.field.data.selectedRowData = selectedRowData;
     },
     onChange({ current, pageSize }) {
       ctx.service.run({ page: current, pageSize });

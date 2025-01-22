@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaExpressionScopeContext, useField, useForm } from '@formily/react';
+import { SchemaExpressionScopeContext, useField, useForm, useFieldSchema } from '@formily/react';
 import {
   SchemaInitializerItemType,
   TableFieldResource,
@@ -88,14 +88,17 @@ export const useCustomizeBulkEditActionProps = () => {
   const actionField = useField();
   const tableBlockContext = useTableBlockContext();
   const { modal } = App.useApp();
-
   const { rowKey } = tableBlockContext;
   const selectedRecordKeys =
     tableBlockContext.field?.data?.selectedRowKeys ?? expressionScope?.selectedRecordKeys ?? {};
   const { setVisible, fieldSchema: actionSchema, setSubmitted } = actionContext;
+  const fieldSchema = useFieldSchema();
   return {
     async onClick() {
-      const { onSuccess, skipValidator, updateMode } = actionSchema?.['x-action-settings'] ?? {};
+      const { updateMode } = actionSchema?.['x-action-settings'] ?? {};
+      const { onSuccess, skipValidator, triggerWorkflows } = fieldSchema?.['x-action-settings'] ?? {};
+      const { refreshDataBlockRequest } = fieldSchema?.['x-component-props'] ?? {};
+      const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
       const { filter } = __parent.service.params?.[0] ?? {};
 
       if (!skipValidator) {
@@ -122,31 +125,39 @@ export const useCustomizeBulkEditActionProps = () => {
         }
         await resource.update(updateData);
         actionField.data.loading = false;
-        if (!(resource instanceof TableFieldResource)) {
-          __parent?.__parent?.service?.refresh?.();
+
+        if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
+          setVisible?.(false);
         }
-        // __parent?.service?.refresh?.();
-        setVisible?.(false);
-        setSubmitted(true);
-        if (!onSuccess?.successMessage) {
+        if (refreshDataBlockRequest !== false) {
+          setSubmitted(true);
+        }
+        if (!successMessage) {
+          if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+            if (isURL(redirectTo)) {
+              window.location.href = redirectTo;
+            } else {
+              navigate(redirectTo);
+            }
+          }
           return;
         }
-        if (onSuccess?.manualClose) {
+        if (manualClose) {
           modal.success({
-            title: compile(onSuccess?.successMessage),
+            title: compile(successMessage),
             onOk: async () => {
               await form.reset();
-              if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-                if (isURL(onSuccess.redirectTo)) {
-                  window.location.href = onSuccess.redirectTo;
+              if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+                if (isURL(redirectTo)) {
+                  window.location.href = redirectTo;
                 } else {
-                  navigate(onSuccess.redirectTo);
+                  navigate(redirectTo);
                 }
               }
             },
           });
         } else {
-          message.success(compile(onSuccess?.successMessage));
+          message.success(compile(successMessage));
         }
       } finally {
         actionField.data.loading = false;

@@ -7,58 +7,62 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { connect, mapReadPretty } from '@formily/react';
-import React, { useMemo } from 'react';
+import { connect, mapReadPretty, useField } from '@formily/react';
+import React, { useEffect, useMemo } from 'react';
 import { DatePicker } from '../date-picker';
-import dayjs from 'dayjs';
 
 const toValue = (value: any, accuracy) => {
   if (value) {
-    return timestampToDate(value, accuracy);
+    return convertTimestampToDate(value, accuracy);
   }
   return null;
 };
 
-function timestampToDate(timestamp, accuracy = 'millisecond') {
-  if (accuracy === 'second') {
-    timestamp *= 1000; // 如果精确度是秒级，则将时间戳乘以1000转换为毫秒级
-  }
-  return dayjs(timestamp);
-}
+function convertTimestampToDate(timestamp, accuracy = 'second') {
+  // 如果是秒级时间戳，乘以1000转换为毫秒
+  const timeInMilliseconds = accuracy === 'second' ? timestamp * 1000 : timestamp;
 
-function getTimestamp(date, accuracy = 'millisecond') {
-  if (accuracy === 'second') {
-    return dayjs(date).unix();
-  } else {
-    return dayjs(date).valueOf(); // 默认返回毫秒级时间戳
-  }
-}
+  // 创建Date对象并转为UTC时间
+  const date = new Date(timeInMilliseconds);
 
+  // 检查日期是否有效
+  if (isNaN(date.getTime())) {
+    return 'Invalid timestamp';
+  }
+
+  return date.toUTCString(); // 返回 UTC 格式的日期
+}
 interface UnixTimestampProps {
-  value?: number;
-  accuracy?: 'millisecond' | 'second';
+  value?: any;
   onChange?: (value: number) => void;
+  accuracy?: 'millisecond' | 'second';
 }
 
 export const UnixTimestamp = connect(
   (props: UnixTimestampProps) => {
-    const { value, onChange, accuracy = 'second' } = props;
-    const v = useMemo(() => toValue(value, accuracy), [value, accuracy]);
+    const { value, onChange, accuracy } = props;
+    const targetValue = useMemo(() => {
+      if (typeof value === 'number') {
+        const v = toValue(value, accuracy);
+        return v;
+      }
+      return value;
+    }, [value]);
+
     return (
       <DatePicker
         {...props}
-        value={v}
+        value={targetValue}
         onChange={(v: any) => {
           if (onChange) {
-            onChange(getTimestamp(v, accuracy));
+            onChange(v);
           }
         }}
       />
     );
   },
   mapReadPretty((props) => {
-    const { value, accuracy = 'second' } = props;
-    const v = useMemo(() => toValue(value, accuracy), [value, accuracy]);
-    return <DatePicker.ReadPretty {...props} value={v} />;
+    const { value } = props;
+    return <DatePicker.ReadPretty {...props} value={value} />;
   }),
 );

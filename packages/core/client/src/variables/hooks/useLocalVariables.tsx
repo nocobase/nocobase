@@ -11,15 +11,16 @@ import { Form } from '@formily/core';
 import { useMemo } from 'react';
 import { useCollection_deprecated } from '../../collection-manager';
 import { useBlockCollection } from '../../schema-settings/VariableInput/hooks/useBlockCollection';
-import { useDatetimeVariable } from '../../schema-settings/VariableInput/hooks/useDateVariable';
-import { useCurrentFormVariable } from '../../schema-settings/VariableInput/hooks/useFormVariable';
-import { useCurrentObjectVariable } from '../../schema-settings/VariableInput/hooks/useIterationVariable';
-import { useParentObjectVariable } from '../../schema-settings/VariableInput/hooks/useParentIterationVariable';
-import { useParentPopupVariable } from '../../schema-settings/VariableInput/hooks/useParentPopupVariable';
-import { useCurrentParentRecordVariable } from '../../schema-settings/VariableInput/hooks/useParentRecordVariable';
-import { usePopupVariable } from '../../schema-settings/VariableInput/hooks/usePopupVariable';
-import { useCurrentRecordVariable } from '../../schema-settings/VariableInput/hooks/useRecordVariable';
+import { useDatetimeVariableContext } from '../../schema-settings/VariableInput/hooks/useDateVariable';
+import { useCurrentFormContext } from '../../schema-settings/VariableInput/hooks/useFormVariable';
+import { useCurrentObjectContext } from '../../schema-settings/VariableInput/hooks/useIterationVariable';
+import { useParentObjectContext } from '../../schema-settings/VariableInput/hooks/useParentIterationVariable';
+import { useParentPopupVariableContext } from '../../schema-settings/VariableInput/hooks/useParentPopupVariable';
+import { useCurrentParentRecordContext } from '../../schema-settings/VariableInput/hooks/useParentRecordVariable';
+import { usePopupVariableContext } from '../../schema-settings/VariableInput/hooks/usePopupVariable';
+import { useCurrentRecordContext } from '../../schema-settings/VariableInput/hooks/useRecordVariable';
 import { VariableOption } from '../types';
+import useContextVariable from './useContextVariable';
 
 interface Props {
   collectionName?: string;
@@ -31,29 +32,30 @@ const useLocalVariables = (props?: Props) => {
     parentObjectCtx,
     shouldDisplayParentObject,
     collectionName: collectionNameOfParentObject,
-  } = useParentObjectVariable();
-  const { currentObjectCtx, shouldDisplayCurrentObject } = useCurrentObjectVariable();
-  const { currentRecordCtx, collectionName: collectionNameOfRecord } = useCurrentRecordVariable();
+  } = useParentObjectContext();
+  const { currentObjectCtx, shouldDisplayCurrentObject } = useCurrentObjectContext();
+  const { currentRecordCtx, collectionName: collectionNameOfRecord } = useCurrentRecordContext();
   const {
     currentParentRecordCtx,
     collectionName: collectionNameOfParentRecord,
     dataSource: currentParentRecordDataSource,
-  } = useCurrentParentRecordVariable();
+  } = useCurrentParentRecordContext();
   const {
     popupRecordCtx,
     collectionName: collectionNameOfPopupRecord,
     dataSource: popupDataSource,
     defaultValue: defaultValueOfPopupRecord,
-  } = usePopupVariable();
+  } = usePopupVariableContext();
   const {
     parentPopupRecordCtx,
     collectionName: collectionNameOfParentPopupRecord,
     dataSource: parentPopupDataSource,
     defaultValue: defaultValueOfParentPopupRecord,
-  } = useParentPopupVariable();
-  const { datetimeCtx } = useDatetimeVariable();
-  const { currentFormCtx } = useCurrentFormVariable({ form: props?.currentForm });
+  } = useParentPopupVariableContext();
+  const { datetimeCtx } = useDatetimeVariableContext();
+  const { currentFormCtx } = useCurrentFormContext({ form: props?.currentForm });
   const { name: currentCollectionName } = useCollection_deprecated();
+  const contextVariable = useContextVariable();
   let { name } = useBlockCollection();
 
   if (props?.collectionName) {
@@ -94,6 +96,7 @@ const useLocalVariables = (props?: Props) => {
           name: '$nRecord',
           ctx: currentRecordCtx,
           collectionName: collectionNameOfRecord,
+          dataSource: currentParentRecordDataSource,
         },
         {
           name: '$nParentRecord',
@@ -132,6 +135,7 @@ const useLocalVariables = (props?: Props) => {
           name: '$date',
           ctx: datetimeCtx,
         },
+        contextVariable,
         shouldDisplayCurrentObject && {
           name: '$iteration',
           ctx: currentObjectCtx,
@@ -165,6 +169,7 @@ const useLocalVariables = (props?: Props) => {
     shouldDisplayParentObject,
     parentObjectCtx,
     collectionNameOfParentObject,
+    contextVariable,
   ]); // 尽量保持返回的值不变，这样可以减少接口的请求次数，因为关系字段会缓存到变量的 ctx 中
 };
 

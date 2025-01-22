@@ -292,12 +292,12 @@ export const useTableSelectorProps = () => {
   useEffect(() => {
     if (!ctx?.service?.loading) {
       const data = ctx?.service?.data?.data.map((v) => {
-        return _.omit(v, collectionField?.foreignKey);
+        return v;
       });
       field.value = data;
       field?.setInitialValue?.(data);
       field.data = field.data || {};
-      field.data.selectedRowKeys = ctx?.field?.data?.selectedRowKeys;
+      field.data.selectedRowKeys = [];
       field.componentProps.pagination = field.componentProps.pagination || {};
       field.componentProps.pagination.pageSize = ctx?.service?.data?.meta?.pageSize;
       field.componentProps.pagination.total = ctx?.service?.data?.meta?.count;
@@ -319,9 +319,10 @@ export const useTableSelectorProps = () => {
     dragSort: false,
     rowKey: ctx.rowKey || 'id',
     pagination: fieldSchema?.['x-component-props']?.pagination === false ? false : field.componentProps.pagination,
-    onRowSelectionChange(selectedRowKeys, selectedRows) {
+    onRowSelectionChange(selectedRowKeys, selectedRowData) {
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;
+      ctx.field.data.selectedRowData = selectedRowData;
     },
     async onRowDragEnd({ from, to }) {
       await ctx.resource.move({

@@ -339,7 +339,7 @@ export class Restorer extends AppMigrator {
           .map((val, index) => [columns[index], val])
           .reduce((carry, [column, val]) => {
             const field = fieldAttributes[column];
-            carry[column] = field ? FieldValueWriter.write(field, val) : val;
+            carry[column] = field ? FieldValueWriter.write(field, val, app.db) : val;
 
             return carry;
           }, {}),

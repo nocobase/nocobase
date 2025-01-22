@@ -8,7 +8,6 @@
  */
 
 import { Chart, ChartProps, ChartType, RenderProps } from '../chart';
-import configs from './configs';
 import { getAntChart } from './AntChart';
 
 export class G2PlotChart extends Chart {
@@ -16,10 +15,10 @@ export class G2PlotChart extends Chart {
     super({
       name,
       title,
+      enableAdvancedConfig: true,
       Component: getAntChart(Component),
       config: ['xField', 'yField', 'seriesField', 'size', ...(config || [])],
     });
-    this.addConfigs(configs);
   }
 
   init: ChartType['init'] = (fields, { measures, dimensions }) => {

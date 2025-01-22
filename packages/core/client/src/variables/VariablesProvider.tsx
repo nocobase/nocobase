@@ -50,7 +50,11 @@ const getFieldPath = (variablePath: string, variablesStore: Record<string, Varia
   };
 };
 
-const VariablesProvider = ({ children }) => {
+/**
+ * @internal
+ * Note: There can only be one VariablesProvider in the entire context. It cannot be used in plugins.
+ */
+const VariablesProvider = ({ children, filterVariables }: any) => {
   const ctxRef = useRef<Record<string, any>>({});
   const api = useAPIClient();
   const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated();
@@ -95,7 +99,7 @@ const VariablesProvider = ({ children }) => {
       const { fieldPath: fieldPathOfVariable } = getFieldPath(variablePath, _variableToCollectionName);
       const collectionNameOfVariable =
         list.length === 1
-          ? variableOption.collectionName
+          ? variableOption?.collectionName
           : getCollectionJoinField(fieldPathOfVariable, dataSource)?.target;
 
       if (!(variableName in current)) {
@@ -105,7 +109,7 @@ const VariablesProvider = ({ children }) => {
       for (let index = 0; index < list.length; index++) {
         if (current == null) {
           return {
-            value: current === undefined ? variableOption.defaultValue : current,
+            value: current === undefined ? variableOption?.defaultValue : current,
             dataSource,
             collectionName: collectionNameOfVariable,
           };
@@ -115,7 +119,7 @@ const VariablesProvider = ({ children }) => {
         const currentVariablePath = list.slice(0, index + 1).join('.');
         const { fieldPath } = getFieldPath(currentVariablePath, _variableToCollectionName);
         const associationField: CollectionFieldOptions_deprecated = getCollectionJoinField(fieldPath, dataSource);
-        const collectionPrimaryKey = getCollection(collectionName)?.getPrimaryKey();
+        const collectionPrimaryKey = getCollection(collectionName, dataSource)?.getPrimaryKey();
         if (Array.isArray(current)) {
           const result = current.map((item) => {
             if (
@@ -341,6 +345,7 @@ const VariablesProvider = ({ children }) => {
         getVariable,
         getCollectionField,
         removeVariable,
+        filterVariables,
       }) as VariablesContextType,
     [getCollectionField, getVariable, parseVariable, registerVariable, removeVariable, setCtx],
   );

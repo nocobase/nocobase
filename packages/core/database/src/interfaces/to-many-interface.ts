@@ -15,9 +15,11 @@ export class ToManyInterface extends BaseInterface {
       return null;
     }
 
+    str = `${str}`.trim();
+
     const items = str.split(',');
 
-    const { filterKey, targetCollection, transaction } = ctx;
+    const { filterKey, targetCollection, transaction, field } = ctx;
 
     const targetInstances = await targetCollection.repository.find({
       filter: {
@@ -28,13 +30,25 @@ export class ToManyInterface extends BaseInterface {
 
     // check if all items are found
     items.forEach((item) => {
-      if (!targetInstances.find((targetInstance) => targetInstance[filterKey] === item)) {
+      if (!targetInstances.find((targetInstance) => targetInstance[filterKey] == item)) {
         throw new Error(`"${item}" not found in ${targetCollection.model.name} ${filterKey}`);
       }
     });
 
     const primaryKeyAttribute = targetCollection.model.primaryKeyAttribute;
+    const targetKey = field.options.targetKey;
 
-    return targetInstances.map((targetInstance) => targetInstance[primaryKeyAttribute]);
+    const values = targetInstances.map((targetInstance) => {
+      const result = {
+        [targetKey]: targetInstance[targetKey],
+      };
+
+      if (targetKey !== primaryKeyAttribute) {
+        result[primaryKeyAttribute] = targetInstance[primaryKeyAttribute];
+      }
+
+      return result;
+    });
+    return values;
   }
 }

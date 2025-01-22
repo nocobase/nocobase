@@ -12,7 +12,7 @@ import { CloseOutlined } from '@ant-design/icons';
 
 import { css, cx } from '@nocobase/client';
 
-import { AddButton } from './AddButton';
+import { AddButton } from './AddNodeContext';
 import { useGetAriaLabelOfAddButton } from './hooks/useGetAriaLabelOfAddButton';
 import { Node } from './nodes';
 import useStyles from './style';

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { assign, MergeStrategies, requireModule } from '@nocobase/utils';
+import { assign, MergeStrategies, requireModule, wrapMiddlewareWithLogging } from '@nocobase/utils';
 import compose from 'koa-compose';
 import _ from 'lodash';
 import Middleware, { MiddlewareType } from './middleware';
@@ -375,9 +375,7 @@ export class Action {
       this.getHandler(),
     ].filter(Boolean);
 
-    // handlers = handlers.map((handler) => prePerfHooksWrap(handler));
-
-    return handlers;
+    return handlers.map((fn) => wrapMiddlewareWithLogging(fn));
   }
 
   /**

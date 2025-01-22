@@ -13,7 +13,7 @@ export interface CollectionRecordOptions<DataType = {}, ParentDataType = {}> {
   parentRecord?: CollectionRecord<ParentDataType>;
 }
 
-export class CollectionRecord<DataType = {}, ParentDataType = {}> {
+export class CollectionRecord<DataType = any, ParentDataType = {}> {
   public data?: DataType;
   public parentRecord?: CollectionRecord<ParentDataType>;
   public isNew?: boolean;

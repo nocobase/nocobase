@@ -32,7 +32,7 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
   Page: typeof MobileTabBarPage;
   Link: typeof MobileTabBarLink;
 } = ({ enableTabBar = true }) => {
-  const { styles } = useStyles();
+  const { styles } = useStyles() as any;
   const { designable } = useDesignable();
   const { routeList, activeTabBarItem, resource, refresh } = useMobileRoutes();
   const validRouteList = routeList.filter((item) => item.schemaUid || isInnerLink(item.options?.url));
@@ -69,9 +69,9 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
               styles.mobileTabBarList,
               css({
                 maxWidth: designable ? 'calc(100% - 58px)' : '100%',
-                '.nb-block-item': {
-                  maxWidth: `${100 / routeList.length}%`,
-                },
+                // '.nb-block-item': {
+                //   maxWidth: `${100 / routeList.length}%`,
+                // },
               }),
             )}
           >
@@ -82,7 +82,6 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
         </DndContext>
         <MobileTabBarInitializer />
       </div>
-
       <SafeArea position="bottom" />
     </div>
   );

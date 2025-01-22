@@ -20,6 +20,7 @@ import {
 import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
+import { SchemaSettingsLayoutItem } from '../../../../schema-settings/SchemaSettingsLayoutItem';
 
 export const createFormBlockSettings = new SchemaSettings({
   name: 'blockSettings:createForm',
@@ -47,7 +48,8 @@ export const createFormBlockSettings = new SchemaSettings({
       Component: SchemaSettingsDataTemplates,
       useVisible() {
         const { action } = useFormBlockContext();
-        return !action;
+        const schema = useFieldSchema();
+        return !action && schema?.['x-acl-action'].includes('create');
       },
       useComponentProps() {
         const { name } = useCollection_deprecated();
@@ -75,6 +77,10 @@ export const createFormBlockSettings = new SchemaSettings({
           resourceName: defaultResource,
         };
       },
+    },
+    {
+      name: 'setBlockLayout',
+      Component: SchemaSettingsLayoutItem,
     },
     {
       name: 'divider2',

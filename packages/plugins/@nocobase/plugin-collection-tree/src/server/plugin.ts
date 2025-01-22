@@ -50,7 +50,7 @@ class PluginCollectionTreeServer extends Plugin {
           //afterCreate
           this.db.on(`${collection.name}.afterCreate`, async (model: Model, options) => {
             const { transaction } = options;
-            const tk = collection.filterTargetKey;
+            const tk = collection.filterTargetKey as string;
             let path = `/${model.get(tk)}`;
             path = await this.getTreePath(model, path, collection, name, transaction);
             const rootPk = path.split('/')[1];
@@ -77,7 +77,7 @@ class PluginCollectionTreeServer extends Plugin {
 
           // after remove
           this.db.on(`${collection.name}.afterBulkUpdate`, async (options) => {
-            const tk = collection.filterTargetKey;
+            const tk = collection.filterTargetKey as string;
             if (!(options.where && options.where[tk])) {
               return;
             }
@@ -94,7 +94,7 @@ class PluginCollectionTreeServer extends Plugin {
 
           //afterDestroy
           this.db.on(`${collection.name}.afterDestroy`, async (model: Model, options: DestroyOptions) => {
-            const tk = collection.filterTargetKey;
+            const tk = collection.filterTargetKey as string;
             await this.app.db.getRepository(name).destroy({
               filter: {
                 nodePk: model.get(tk),
@@ -145,7 +145,7 @@ class PluginCollectionTreeServer extends Plugin {
     pathCollectionName: string,
     transaction?: Transaction,
   ) {
-    const tk = collection.filterTargetKey;
+    const tk = collection.filterTargetKey as string;
     const parentForeignKey = collection.treeParentField?.foreignKey || 'parentId';
     if (model.get(parentForeignKey) && model.get(parentForeignKey) !== null) {
       const parent = await this.app.db.getRepository(collection.name).findOne({
@@ -183,7 +183,7 @@ class PluginCollectionTreeServer extends Plugin {
     pathCollectionName: string,
     transaction: Transaction,
   ) {
-    const tk = collection.filterTargetKey;
+    const tk = collection.filterTargetKey as string;
     let path = `/${model.get(tk)}`;
     path = await this.getTreePath(model, path, collection, pathCollectionName, transaction);
     const collectionTreePath = this.db.getCollection(pathCollectionName);

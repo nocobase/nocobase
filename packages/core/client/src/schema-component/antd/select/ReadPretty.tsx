@@ -11,10 +11,10 @@ import { isArrayField } from '@formily/core';
 import { observer, useField } from '@formily/react';
 import { isValid } from '@formily/shared';
 import { Tag } from 'antd';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useCollectionField } from '../../../data-source/collection-field/CollectionFieldProvider';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 import { FieldNames, defaultFieldNames, getCurrentOptions } from './utils';
-import { useCollectionField } from '../../../data-source/collection-field/CollectionFieldProvider';
 
 export interface SelectReadPrettyProps {
   value: any;
@@ -29,30 +29,51 @@ export interface SelectReadPrettyProps {
 
 export const ReadPretty = observer(
   (props: SelectReadPrettyProps) => {
-    const fieldNames = { ...defaultFieldNames, ...props.fieldNames };
+    const [loading, setLoading] = useState(true);
+    const [content, setContent] = useState<React.ReactNode[]>([]);
     const field = useField<any>();
     const collectionField = useCollectionField();
-    const dataSource = field.dataSource || props.options || collectionField?.uiSchema.enum || [];
-    const currentOptions = getCurrentOptions(field.value, dataSource, fieldNames);
 
-    if (!isValid(props.value) && !currentOptions.length) {
-      return <div />;
-    }
-    if (isArrayField(field) && field?.value?.length === 0) {
-      return <div />;
+    // The map method here maybe quite time-consuming, especially in table blocks.
+    // Therefore, we use an asynchronous approach to render the list,
+    // which allows us to avoid blocking the main rendering process.
+    useEffect(() => {
+      const fieldNames = { ...defaultFieldNames, ...props.fieldNames };
+      const dataSource = field.dataSource || props.options || collectionField?.uiSchema.enum || [];
+      const currentOptions = getCurrentOptions(field.value, dataSource, fieldNames);
+
+      if (!isValid(props.value) && !currentOptions.length) {
+        return;
+      }
+
+      if (isArrayField(field) && field?.value?.length === 0) {
+        return;
+      }
+
+      const content =
+        field.value !== null &&
+        currentOptions.map((option, index) => (
+          <Tag key={index} color={option[fieldNames.color]} icon={option.icon}>
+            {option[fieldNames.label]}
+          </Tag>
+        ));
+      setContent(content);
+      setLoading(false);
+    }, [
+      collectionField?.uiSchema.enum,
+      field,
+      field.dataSource,
+      field.value,
+      props.fieldNames,
+      props.options,
+      props.value,
+    ]);
+
+    if (loading) {
+      return null;
     }
 
-    return (
-      <div>
-        <EllipsisWithTooltip ellipsis={props.ellipsis}>
-          {currentOptions.map((option, key) => (
-            <Tag key={key} color={option[fieldNames.color]} icon={option.icon}>
-              {option[fieldNames.label]}
-            </Tag>
-          ))}
-        </EllipsisWithTooltip>
-      </div>
-    );
+    return <EllipsisWithTooltip ellipsis={props.ellipsis}>{content}</EllipsisWithTooltip>;
   },
-  { displayName: 'ReadPretty' },
+  { displayName: 'SelectReadPretty' },
 );

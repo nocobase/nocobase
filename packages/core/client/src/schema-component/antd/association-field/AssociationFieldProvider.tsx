@@ -9,7 +9,9 @@
 
 import { Field } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
+import _ from 'lodash';
 import React, { useEffect, useMemo, useState } from 'react';
+import { useAPIClient, useRequest } from '../../../api-client';
 import { useCollectionManager } from '../../../data-source/collection';
 import { markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
 import { useSchemaComponentContext } from '../../hooks';
@@ -20,6 +22,7 @@ export const AssociationFieldProvider = observer(
     const field = useField<Field>();
     const cm = useCollectionManager();
     const fieldSchema = useFieldSchema();
+    const api = useAPIClient();
 
     // 这里有点奇怪，在 Table 切换显示的组件时，这个组件并不会触发重新渲染，所以增加这个 Hooks 让其重新渲染
     useSchemaComponentContext();
@@ -43,15 +46,54 @@ export const AssociationFieldProvider = observer(
       [fieldSchema['x-component-props']?.mode],
     );
 
-    const fieldValue = useMemo(() => JSON.stringify(field.value), [field.value]);
-
     const [loading, setLoading] = useState(!field.readPretty);
+
+    const { loading: rLoading, run } = useRequest(
+      () => {
+        const targetKey = collectionField.targetKey;
+        if (!fieldSchema.default) {
+          return Promise.reject(null);
+        }
+        if (!['Picker', 'Select'].includes(currentMode)) {
+          return Promise.reject(null);
+        }
+        if (!_.isObject(fieldSchema.default)) {
+          return Promise.reject(null);
+        }
+        const ids = Array.isArray(fieldSchema.default)
+          ? fieldSchema.default.map((item) => item[targetKey])
+          : fieldSchema.default[targetKey];
+        if (_.isUndefined(ids) || _.isNil(ids) || _.isNaN(ids)) {
+          return Promise.reject(null);
+        }
+        return api.request({
+          resource: collectionField.target,
+          action: Array.isArray(ids) ? 'list' : 'get',
+          params: {
+            filter: {
+              [targetKey]: ids,
+            },
+          },
+        });
+      },
+      {
+        manual: true,
+        onSuccess(res) {
+          field.initialValue = res?.data?.data;
+          // field.value = res?.data?.data;
+        },
+      },
+    );
 
     useEffect(() => {
       setLoading(true);
       if (!collectionField) {
         setLoading(false);
         return;
+      }
+      // TODO：这个判断不严谨
+      if (['Picker', 'Select'].includes(currentMode) && fieldSchema.default) {
+        run();
       }
       // 如果是表单模板数据，使用子表单和子表格组件时，过滤掉关系 ID
       if (field.value && field.form['__template'] && ['Nester', 'SubTable', 'PopoverNester'].includes(currentMode)) {
@@ -92,17 +134,17 @@ export const AssociationFieldProvider = observer(
       if (currentMode === 'SubTable') {
         field.value = [];
       }
-      setLoading(false);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentMode, collectionField, fieldValue]);
 
-    if (loading) {
+      setLoading(false);
+    }, [currentMode, collectionField, field]);
+
+    if (loading || rLoading) {
       return null;
     }
 
     return collectionField ? (
       <AssociationFieldContext.Provider
-        value={{ options: collectionField, field, allowMultiple, allowDissociate, currentMode }}
+        value={{ options: collectionField, field, fieldSchema, allowMultiple, allowDissociate, currentMode }}
       >
         {props.children}
       </AssociationFieldContext.Provider>
