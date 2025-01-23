@@ -188,7 +188,7 @@ export class CollectionRepository extends Repository {
 
     await this.create({
       values: {
-        ...options,
+        ...lodash.omit(options, 'schema'),
         fields,
         from: 'db2cm',
       },
