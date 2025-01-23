@@ -172,6 +172,7 @@ export const boolean = [
     schema: {
       'x-component': 'Select',
       'x-component-props': {
+        multiple: false,
         options: [
           {
             label: '{{t("Yes")}}',
@@ -192,6 +193,7 @@ export const boolean = [
     schema: {
       'x-component': 'Select',
       'x-component-props': {
+        multiple: false,
         options: [
           {
             label: '{{t("Yes")}}',
