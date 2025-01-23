@@ -29,7 +29,9 @@ async function create(ctx: Context, next: Next) {
     return ctx.throw(400, 'Invalid verificator');
   }
   const verificator = await ctx.db.getRepository('verificators').findOne({
-    filterByTk: verificatorName,
+    filter: {
+      name: verificatorName,
+    },
   });
   if (!verificator) {
     return ctx.throw(400, 'Invalid verificator');
@@ -42,23 +44,10 @@ async function create(ctx: Context, next: Next) {
   }) as SMSOTPVerification;
   const provider = await verification.getProvider();
   if (!provider) {
-    console.error(`[verification] no provider for action (${actionName}) provided`);
-    return ctx.throw(500);
+    ctx.log.error(`[verification] no provider for action (${actionName}) provided`);
+    return ctx.throw(500, 'Invalid provider');
   }
-
-  let boundInfo: { uuid: string };
-  if (action.getBoundInfoFromCtx) {
-    boundInfo = await action.getBoundInfoFromCtx(ctx);
-  } else {
-    let userId: number;
-    if (action.getUserIdFromCtx) {
-      userId = await action.getUserIdFromCtx(ctx);
-    } else {
-      userId = ctx.auth.user.id;
-    }
-    boundInfo = await verification.getBoundInfo(userId);
-  }
-  await verification.validateBoundInfo?.(boundInfo);
+  const { boundInfo } = await verificationManager.getAndValidateBoundInfo(ctx, action, verification);
   const { uuid: receiver } = boundInfo;
   const record = await ctx.db.getRepository('otpRecords').findOne({
     filter: {
@@ -66,7 +55,7 @@ async function create(ctx: Context, next: Next) {
       receiver,
       status: CODE_STATUS_UNUSED,
       expiresAt: {
-        $gt: new Date(),
+        $dateAfter: new Date(),
       },
     },
   });

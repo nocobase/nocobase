@@ -22,7 +22,8 @@ export default {
     const plugin = ctx.app.pm.get('verification') as PluginVerificationServer;
     const verificationTypes = plugin.verificationManager.getVerificationTypesByScene(scene);
     if (!verificationTypes.length) {
-      return { verificators: [], availableTypes: [] };
+      ctx.body = { verificators: [], availableTypes: [] };
+      return next();
     }
     const verificators = await ctx.db.getRepository('verificators').find({
       filter: {

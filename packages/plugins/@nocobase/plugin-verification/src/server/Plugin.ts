@@ -35,6 +35,7 @@ export default class PluginVerficationServer extends Plugin {
     );
 
     this.app.acl.allow('verificators', 'listByUser', 'loggedIn');
+    this.app.acl.allow('verificators', 'listForVerify', 'loggedIn');
     this.app.acl.allow('verificators', 'bind', 'loggedIn');
     this.app.acl.allow('verificators', 'unbind', 'loggedIn');
     this.app.acl.allow('smsOTP', 'create', 'loggedIn');
@@ -62,7 +63,11 @@ export default class PluginVerficationServer extends Plugin {
         return ctx.action.params.values || {};
       },
     });
-    this.verificationManager.registerAction('verificators:unbind', {});
+    this.verificationManager.registerScene('unbind-verificator', {
+      actions: {
+        'verificators:unbind': {},
+      },
+    });
     this.smsOTPProviderManager.registerProvider(PROVIDER_TYPE_SMS_ALIYUN, {
       title: tval('Aliyun SMS', { ns: namespace }),
       provider: smsAliyun,

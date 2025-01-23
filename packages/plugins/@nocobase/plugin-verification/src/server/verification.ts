@@ -58,7 +58,10 @@ export abstract class Verification implements IVerification {
     });
   }
 
-  async getPublicBoundInfo(userId: number): Promise<any> {
+  async getPublicBoundInfo(userId: number): Promise<{
+    bound: boolean;
+    publicInfo?: any;
+  }> {
     const boundInfo = await this.getBoundInfo(userId);
     return {
       bound: boundInfo ? true : false,

@@ -17,6 +17,9 @@ export class OTPVerification extends Verification {
   async verify({ resource, action, boundInfo, verifyParams }): Promise<any> {
     const { uuid: receiver } = boundInfo;
     const code = verifyParams.code;
+    if (!code) {
+      return this.ctx.throw(400, 'Verification code is invalid');
+    }
     const VerificationRepo = this.ctx.db.getRepository('otpRecords');
     const item = await VerificationRepo.findOne({
       filter: {

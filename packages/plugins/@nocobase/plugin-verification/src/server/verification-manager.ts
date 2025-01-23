@@ -11,7 +11,7 @@ import { Registry } from '@nocobase/utils';
 import { Verification, VerificationExtend } from './verification';
 import { Context, Next } from '@nocobase/actions';
 import PluginVerficationServer from './Plugin';
-import { Database } from '@nocobase/database';
+import { Database, Model } from '@nocobase/database';
 
 export type VerificationTypeOptions = {
   title: string;
@@ -28,14 +28,22 @@ export interface ActionOptions {
   getBoundInfoFromCtx?(ctx: Context): any | Promise<any>;
   getVerifyParams?(ctx: Context): any | Promise<any>;
   onVerifySuccess?(ctx: Context, userId: number, verifyResult: any): any | Promise<any>;
-  onVerifyFail?(ctx: Context, err: Error, userId: number, verifyResult: any): any | Promise<any>;
+  onVerifyFail?(ctx: Context, err: Error, userId: number): any | Promise<any>;
+}
+
+export interface SceneOptions {
+  actions: {
+    [key: string]: ActionOptions;
+  };
+  getVerificators?(ctx: Context): Promise<string[]>;
 }
 
 export class VerificationManager {
   db: Database;
   verificationTypes = new Registry<VerificationTypeOptions>();
+  scenes = new Registry<SceneOptions>();
   sceneRules = new Array<SceneRule>();
-  actions = new Registry<ActionOptions>();
+  actions = new Registry<ActionOptions & { scene?: string }>();
 
   constructor({ db }) {
     this.db = db;
@@ -60,6 +68,17 @@ export class VerificationManager {
     this.actions.register(action, options);
   }
 
+  registerScene(scene: string, options: SceneOptions) {
+    this.scenes.register(scene, options);
+    const { actions } = options;
+    for (const [action, actionOptions] of Object.entries(actions)) {
+      this.actions.register(action, {
+        ...actionOptions,
+        scene,
+      });
+    }
+  }
+
   getVerificationTypesByScene(scene: string) {
     const verificationTypes = [];
     for (const [type, options] of this.verificationTypes.getEntities()) {
@@ -81,7 +100,9 @@ export class VerificationManager {
 
   async getVerificator(verificatorName: string) {
     return await this.db.getRepository('verificators').findOne({
-      filterByTk: verificatorName,
+      filter: {
+        name: verificatorName,
+      },
     });
   }
 
@@ -102,6 +123,63 @@ export class VerificationManager {
     });
   }
 
+  async getAndValidateBoundInfo(ctx: Context, action: ActionOptions, verification: Verification) {
+    let userId: number;
+    let boundInfo: { uuid: string };
+    if (action.getBoundInfoFromCtx) {
+      boundInfo = await action.getBoundInfoFromCtx(ctx);
+    } else {
+      if (action.getUserIdFromCtx) {
+        userId = await action.getUserIdFromCtx(ctx);
+      } else {
+        userId = ctx.auth?.user?.id;
+      }
+      if (!userId) {
+        ctx.throw(400, 'Invalid user id');
+      }
+      boundInfo = await verification.getBoundInfo(userId);
+    }
+    await verification.validateBoundInfo(boundInfo);
+    return { boundInfo, userId };
+  }
+
+  private async validateAndGetVerificator(ctx: Context, scene: string, verificatorName: string) {
+    let verificator: Model;
+    if (!verificatorName) {
+      return null;
+    }
+    if (scene) {
+      const sceneOptions = this.scenes.get(scene);
+      if (sceneOptions.getVerificators) {
+        const verificators = await sceneOptions.getVerificators(ctx);
+        if (!verificators.includes(verificatorName)) {
+          return null;
+        }
+        verificator = await this.getVerificator(verificatorName);
+        if (!verificator) {
+          return null;
+        }
+      } else {
+        const verificationTypes = this.getVerificationTypesByScene(scene);
+        const verificators = await this.db.getRepository('verificators').find({
+          filter: {
+            verificationType: verificationTypes.map((item) => item.type),
+          },
+        });
+        verificator = verificators.find((item: { name: string }) => item.name === verificatorName);
+        if (!verificator) {
+          return null;
+        }
+      }
+    } else {
+      verificator = await this.getVerificator(verificatorName);
+      if (!verificator) {
+        return null;
+      }
+    }
+    return verificator;
+  }
+
   // verify manually
   async verify(ctx: Context, next: Next) {
     const { resourceName, actionName } = ctx.action;
@@ -110,13 +188,8 @@ export class VerificationManager {
     if (!action) {
       ctx.throw(400, 'Invalid action');
     }
-    const verificatorName = ctx.action.params.values?.verificator;
-    if (!verificatorName) {
-      ctx.throw(400, 'Invalid verificator');
-    }
-    const verificator = await ctx.db.getRepository('verificators').findOne({
-      filterByTk: verificatorName,
-    });
+    const { verificator: verificatorName } = ctx.action.params.values || {};
+    const verificator = await this.validateAndGetVerificator(ctx, action.scene, verificatorName);
     if (!verificator) {
       ctx.throw(400, 'Invalid verificator');
     }
@@ -124,41 +197,30 @@ export class VerificationManager {
     if (!verifyParams) {
       ctx.throw(400, 'Invalid verify params');
     }
-
     const plugin = ctx.app.pm.get('verification') as PluginVerficationServer;
     const verificationManager = plugin.verificationManager;
     const Verification = verificationManager.getVerification(verificator.verificationType);
     const verification = new Verification({ ctx, verificator, options: verificator.options });
-    let userId: number;
-    let boundInfo: string;
-    if (action.getBoundInfoFromCtx) {
-      boundInfo = await action.getBoundInfoFromCtx(ctx);
-    } else {
-      if (action.getUserIdFromCtx) {
-        userId = await action.getUserIdFromCtx(ctx);
-      } else {
-        userId = ctx.auth.user?.id;
-      }
-      if (!userId) {
-        ctx.throw(400, 'Invalid user info');
-      }
-      boundInfo = await verification.getBoundInfo(userId);
-    }
-    await verification.validateBoundInfo(boundInfo);
-    const verifyResult = await verification.verify({
-      resource: resourceName,
-      action: actionName,
-      boundInfo,
-      verifyParams,
-    });
+    const { boundInfo, userId } = await this.getAndValidateBoundInfo(ctx, action, verification);
     try {
-      await next();
-      await action.onVerifySuccess?.(ctx, userId, verifyResult);
+      const verifyResult = await verification.verify({
+        resource: resourceName,
+        action: actionName,
+        boundInfo,
+        verifyParams,
+      });
+      try {
+        await action.onVerifySuccess?.(ctx, userId, verifyResult);
+        await next();
+      } catch (err) {
+        ctx.log.error(err, { module: 'verification', method: 'verify' });
+        throw err;
+      } finally {
+        await verification.onActionComplete({ verifyResult });
+      }
     } catch (err) {
-      await action.onVerifyFail?.(ctx, err, userId, verifyResult);
+      await action.onVerifyFail?.(ctx, err, userId);
       throw err;
-    } finally {
-      await verification.onActionComplete({ verifyResult });
     }
   }
 
