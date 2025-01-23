@@ -403,6 +403,7 @@ const Verification: React.FC = () => {
       <ActionContextProvider value={{ visible, setVisible }}>
         <div onClick={(e) => e.stopPropagation()}>
           <SchemaComponent
+            scope={{ t }}
             components={{ Verificators }}
             schema={{
               type: 'object',
@@ -446,7 +447,7 @@ export const VerificationMenuProvider: React.FC = (props) => {
   const verificationItem = useVerificationMenu();
 
   useEffect(() => {
-    addMenuItem(verificationItem, { after: 'role' });
+    addMenuItem(verificationItem, { after: 'divider_3' });
   }, [addMenuItem, verificationItem]);
   return <>{props.children}</>;
 };

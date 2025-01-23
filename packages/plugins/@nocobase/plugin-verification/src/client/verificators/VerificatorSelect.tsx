@@ -30,7 +30,6 @@ const ReadPretty: React.FC = () => {
 export const VerificatorSelect = connect((props) => {
   const { t } = useVerificationTranslation();
   const { scene, value, title, onChange } = props;
-  console.log(value);
   let { multiple } = props;
   multiple = multiple ? 'multiple' : undefined;
   const api = useAPIClient();
@@ -52,7 +51,7 @@ export const VerificatorSelect = connect((props) => {
       label={title || t('Verificators')}
       extra={
         <>
-          {t('The following types of verifications are available: ')}
+          {t('The following types of verificators are available:')}
           {availableTypes.map((item: { title: string }) => Schema.compile(item.title, { t })).join(', ')}
           {'. '}
           {t('Go to')} <Link to="/admin/settings/verification">{t('create verificators')}</Link>
