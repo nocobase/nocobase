@@ -47,7 +47,10 @@ export default class extends Migration {
           {
             options: {
               ...item.options,
-              verificator: defaultVerificator.name,
+              public: {
+                ...item.options?.public,
+                verificator: defaultVerificator.name,
+              },
             },
           },
           { transaction },

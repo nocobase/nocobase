@@ -101,8 +101,8 @@ describe('providers to verificators', () => {
     expect(authenticator.options).toMatchObject({
       public: {
         allowSignUp: true,
+        verificator: verificators.find((item) => item.title === 'Test1').name,
       },
-      verificator: verificators.find((item) => item.title === 'Test1').name,
     });
   });
 });
