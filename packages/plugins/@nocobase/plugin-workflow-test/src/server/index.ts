@@ -81,7 +81,7 @@ export async function getApp(options: MockServerOptions = {}): Promise<MockServe
   });
   await anotherDB.sync();
 
-  another.acl.allow('*', '*');
+  another.acl.allow('*', '*', 'loggedIn');
 
   return app;
 }

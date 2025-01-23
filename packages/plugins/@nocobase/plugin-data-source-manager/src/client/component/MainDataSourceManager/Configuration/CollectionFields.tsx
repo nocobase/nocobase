@@ -207,7 +207,7 @@ const CurrentFields = (props) => {
           setState((state) => {
             return {
               ...state,
-              selectedRowKeys,
+              [props.type]: selectedRowKeys,
             };
           });
         },
@@ -483,6 +483,7 @@ const CollectionFieldsInternal = () => {
                   fields={record.fields}
                   collectionResource={collectionResource}
                   refreshAsync={refreshAsync}
+                  type={record.key}
                 />
               ),
           }}

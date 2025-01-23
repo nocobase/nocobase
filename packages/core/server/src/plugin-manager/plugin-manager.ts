@@ -141,15 +141,12 @@ export class PluginManager {
    * @internal
    */
   static async getPackageName(name: string) {
-    const prefixes = this.getPluginPkgPrefix();
-    for (const prefix of prefixes) {
-      const pkg = resolve(process.env.NODE_MODULES_PATH, `${prefix}${name}`, 'package.json');
-      const exists = await fs.exists(pkg);
-      if (exists) {
-        return `${prefix}${name}`;
-      }
+    const { packageName } = await this.parseName(name);
+    const packageFile = resolve(process.env.NODE_MODULES_PATH, packageName, 'package.json');
+    if (!(await fs.exists(packageFile))) {
+      return null;
     }
-    throw new Error(`${name} plugin does not exist`);
+    return packageName;
   }
 
   /**
@@ -266,11 +263,11 @@ export class PluginManager {
     return this.app.pm.pluginAliases.keys();
   }
 
-  get(name: string | typeof Plugin) {
+  get<T extends Plugin>(name: string | typeof Plugin | (new () => T)): T {
     if (typeof name === 'string') {
-      return this.app.pm.pluginAliases.get(name);
+      return this.app.pm.pluginAliases.get(name) as any;
     }
-    return this.app.pm.pluginInstances.get(name);
+    return this.app.pm.pluginInstances.get(name as any) as any;
   }
 
   has(name: string | typeof Plugin) {
@@ -280,7 +277,7 @@ export class PluginManager {
     return this.app.pm.pluginInstances.has(name);
   }
 
-  del(name: string | typeof Plugin) {
+  del(name: any) {
     const instance = this.get(name);
     if (instance) {
       this.app.pm.pluginAliases.delete(instance.name);
@@ -329,7 +326,9 @@ export class PluginManager {
     try {
       if (typeof plugin === 'string' && options.name && !options.packageName) {
         const packageName = await PluginManager.getPackageName(options.name);
-        options['packageName'] = packageName;
+        if (packageName) {
+          options['packageName'] = packageName;
+        }
       }
 
       if (options.packageName) {
@@ -338,13 +337,15 @@ export class PluginManager {
         options['version'] = packageJson.version;
       }
     } catch (error) {
+      this.app.log.error(error);
       console.error(error);
       // empty
     }
-    this.app.log.trace(`add plugin [${options.name}]`, {
+    this.app.log.trace(`adding plugin [${options.name}]`, {
       method: 'add',
       submodule: 'plugin-manager',
       name: options.name,
+      options,
     });
     let P: any;
     try {
@@ -364,6 +365,12 @@ export class PluginManager {
       this.pluginAliases.set(options.packageName, instance);
     }
     await instance.afterAdd();
+    this.app.log.trace(`added plugin [${options.name}]`, {
+      method: 'add',
+      submodule: 'plugin-manager',
+      name: instance.name,
+      options: instance.options,
+    });
   }
 
   /**

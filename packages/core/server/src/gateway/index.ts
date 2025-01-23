@@ -18,7 +18,7 @@ import fs from 'fs';
 import http, { IncomingMessage, ServerResponse } from 'http';
 import compose from 'koa-compose';
 import { promisify } from 'node:util';
-import { resolve } from 'path';
+import { isAbsolute, resolve } from 'path';
 import qs from 'qs';
 import handler from 'serve-handler';
 import { parse } from 'url';
@@ -55,6 +55,16 @@ export interface AppSelectorMiddlewareContext {
   resolvedAppName: string | null;
 }
 
+function getSocketPath() {
+  const { SOCKET_PATH } = process.env;
+
+  if (isAbsolute(SOCKET_PATH)) {
+    return SOCKET_PATH;
+  }
+
+  return resolve(process.cwd(), SOCKET_PATH);
+}
+
 export class Gateway extends EventEmitter {
   private static instance: Gateway;
   /**
@@ -73,9 +83,7 @@ export class Gateway extends EventEmitter {
   private constructor() {
     super();
     this.reset();
-    if (process.env.SOCKET_PATH) {
-      this.socketPath = resolve(process.cwd(), process.env.SOCKET_PATH);
-    }
+    this.socketPath = getSocketPath();
   }
 
   public static getInstance(options: any = {}): Gateway {
@@ -87,7 +95,7 @@ export class Gateway extends EventEmitter {
   }
 
   static async getIPCSocketClient() {
-    const socketPath = resolve(process.cwd(), process.env.SOCKET_PATH || 'storage/gateway.sock');
+    const socketPath = getSocketPath();
     try {
       return await IPCSocketClient.getConnection(socketPath);
     } catch (error) {
@@ -230,7 +238,14 @@ export class Gateway extends EventEmitter {
       });
     }
 
-    const handleApp = await this.getRequestHandleAppName(req as IncomingRequest);
+    let handleApp = 'main';
+    try {
+      handleApp = await this.getRequestHandleAppName(req as IncomingRequest);
+    } catch (error) {
+      console.log(error);
+      this.responseErrorWithCode('APP_INITIALIZING', res, { appName: handleApp });
+      return;
+    }
     const hasApp = AppSupervisor.getInstance().hasApp(handleApp);
 
     if (!hasApp) {

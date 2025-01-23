@@ -9,6 +9,7 @@
 
 import { Context, Next } from '@nocobase/actions';
 import { SQLCollection, SQLModel } from '../sql-collection';
+import { checkSQL } from '../utils';
 
 const updateCollection = async (ctx: Context, transaction: any) => {
   const { filterByTk, values } = ctx.action.params;
@@ -19,14 +20,24 @@ const updateCollection = async (ctx: Context, transaction: any) => {
     },
     transaction,
   });
+
   const existFields = await collection.getFields({ transaction });
+
   const deletedFields = existFields.filter((field: any) => !values.fields?.find((f: any) => f.name === field.name));
+
   for (const field of deletedFields) {
     await field.destroy({ transaction });
   }
+
   const upRes = await repo.update({
     filterByTk,
-    values,
+    values: {
+      ...values,
+      fields: values.fields?.map((f: any) => {
+        delete f.key;
+        return f;
+      }),
+    },
     updateAssociationValues: ['fields'],
     transaction,
   });
@@ -38,13 +49,14 @@ export default {
   name: 'sqlCollection',
   actions: {
     execute: async (ctx: Context, next: Next) => {
-      let { sql } = ctx.action.params.values || {};
+      const { sql } = ctx.action.params.values || {};
       if (!sql) {
         ctx.throw(400, ctx.t('Please enter a SQL statement'));
       }
-      sql = sql.trim().split(';').shift();
-      if (!/^select/i.test(sql) && !/^with([\s\S]+)select([\s\S]+)/i.test(sql)) {
-        ctx.throw(400, ctx.t('Only supports SELECT statements or WITH clauses'));
+      try {
+        checkSQL(sql);
+      } catch (e) {
+        ctx.throw(400, ctx.t(e.message));
       }
       const tmpCollection = new SQLCollection({ name: 'tmp', sql }, { database: ctx.db });
       const model = tmpCollection.model as typeof SQLModel;

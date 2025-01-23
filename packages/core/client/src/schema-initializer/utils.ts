@@ -516,7 +516,7 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
   const form = useForm();
   const { t } = useTranslation();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
-  const interfaces = block === 'Form' ? ['m2o'] : ['o2o', 'oho', 'obo', 'm2o'];
+  const interfaces = block === 'Form' ? ['m2o', 'obo', 'oho'] : ['o2o', 'oho', 'obo', 'm2o'];
 
   const groups = fields
     ?.filter((field) => {

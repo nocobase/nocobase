@@ -12,10 +12,10 @@ import { DatePicker as AntdDatePicker, DatePickerProps as AntdDatePickerProps, S
 import { RangePickerProps } from 'antd/es/date-picker';
 import dayjs from 'dayjs';
 import React, { useState } from 'react';
-import { getPickerFormat } from '@nocobase/utils/client';
+import { getPickerFormat, getDateTimeFormat } from '@nocobase/utils/client';
 import { useTranslation } from 'react-i18next';
 import { ReadPretty, ReadPrettyComposed } from './ReadPretty';
-import { getDateRanges, mapDatePicker, mapRangePicker, inferPickerType } from './util';
+import { getDateRanges, mapDatePicker, mapRangePicker, inferPickerType, isMobile } from './util';
 import { useCompile } from '../../';
 
 interface IDatePickerProps {
@@ -63,7 +63,7 @@ export const DatePicker: ComposedDatePicker = (props: any) => {
 DatePicker.ReadPretty = ReadPretty.DatePicker;
 
 DatePicker.RangePicker = function RangePicker(props: any) {
-  const { value, picker = 'date', format } = props;
+  const { value, picker = 'date', format, showTime, timeFormat } = props;
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const field: any = useField();
@@ -94,17 +94,16 @@ DatePicker.RangePicker = function RangePicker(props: any) {
   ];
 
   const targetPicker = value ? inferPickerType(value?.[0]) : picker;
-  const targetFormat = getPickerFormat(targetPicker) || format;
+  const targetDateFormat = getPickerFormat(targetPicker) || format;
   const newProps: any = {
     utc,
     presets,
     ...props,
-    format: targetFormat,
+    format: getDateTimeFormat(targetPicker, targetDateFormat, showTime, timeFormat),
     picker: targetPicker,
-    showTime: props.showTime ? { defaultValue: [dayjs('00:00:00', 'HH:mm:ss'), dayjs('00:00:00', 'HH:mm:ss')] } : false,
+    showTime: showTime ? { defaultValue: [dayjs('00:00:00', 'HH:mm:ss'), dayjs('23:59:59', 'HH:mm:ss')] } : false,
   };
   const [stateProps, setStateProps] = useState(newProps);
-
   if (isFilterAction) {
     return (
       <Space.Compact>
@@ -136,17 +135,19 @@ DatePicker.RangePicker = function RangePicker(props: any) {
           ])}
           onChange={(value) => {
             const format = getPickerFormat(value);
+            const dateTimeFormat = getDateTimeFormat(value, format, showTime, timeFormat);
+
             field.setComponentProps({
               picker: value,
               format,
             });
             newProps.picker = value;
-            newProps.format = format;
+            newProps.format = dateTimeFormat;
             setStateProps(newProps);
             fieldSchema['x-component-props'] = {
               ...props,
               picker: value,
-              format,
+              format: dateTimeFormat,
             };
             field.value = undefined;
           }}
@@ -159,19 +160,21 @@ DatePicker.RangePicker = function RangePicker(props: any) {
 };
 
 DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
-  const { picker = 'date', format } = props;
+  const { picker = 'date', format, showTime, timeFormat } = props;
+  const isMobileMedia = isMobile();
   const { utc = true } = useDatePickerContext();
   const value = Array.isArray(props.value) ? props.value[0] : props.value;
   const compile = useCompile();
   const fieldSchema = useFieldSchema();
   const targetPicker = value ? inferPickerType(value) : picker;
-  const targetFormat = getPickerFormat(targetPicker) || format;
+  const targetDateFormat = getPickerFormat(targetPicker) || format;
   const newProps = {
     utc,
+    inputReadOnly: isMobileMedia,
     ...props,
     underFilter: true,
-    showTime: props.showTime ? { defaultValue: dayjs('00:00:00', 'HH:mm:ss') } : false,
-    format: targetFormat,
+    showTime: showTime ? { defaultValue: dayjs('00:00:00', 'HH:mm:ss') } : false,
+    format: getDateTimeFormat(targetPicker, targetDateFormat, showTime, timeFormat),
     picker: targetPicker,
     onChange: (val) => {
       props.onChange(undefined);
@@ -212,17 +215,19 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
         ])}
         onChange={(value) => {
           const format = getPickerFormat(value);
+          const dateTimeFormat = getDateTimeFormat(value, format, showTime, timeFormat);
+
           field.setComponentProps({
             picker: value,
             format,
           });
           newProps.picker = value;
-          newProps.format = format;
+          newProps.format = dateTimeFormat;
           setStateProps(newProps);
           fieldSchema['x-component-props'] = {
             ...props,
             picker: value,
-            format,
+            format: dateTimeFormat,
           };
           field.value = null;
         }}

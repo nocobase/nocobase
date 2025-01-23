@@ -8,8 +8,8 @@
  */
 
 import { InstallOptions, Plugin } from '@nocobase/server';
-import path, { resolve } from 'path';
 import { compact, compactDark, dark, defaultTheme } from './builtinThemes';
+import { updateTheme } from './actions/update-user-theme';
 
 export class PluginThemeEditorServer extends Plugin {
   theme: any;
@@ -19,17 +19,10 @@ export class PluginThemeEditorServer extends Plugin {
   async beforeLoad() {}
 
   async load() {
-    await this.importCollections(path.resolve(__dirname, './collections'));
-    this.db.addMigrations({
-      namespace: 'theme-editor',
-      directory: resolve(__dirname, './migrations'),
-      context: {
-        plugin: this,
-      },
-    });
+    this.app.resourceManager.registerActionHandler('users:updateTheme', updateTheme);
+    this.app.acl.allow('users', 'updateTheme', 'loggedIn');
 
     this.app.acl.allow('themeConfig', 'list', 'public');
-
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.themeConfig`,
       actions: ['themeConfig:*'],

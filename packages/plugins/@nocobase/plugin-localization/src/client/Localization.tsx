@@ -72,6 +72,9 @@ const useDestroyTranslationAction = () => {
   const { translationId: filterByTk } = useRecord();
   return {
     async run() {
+      if (!filterByTk) {
+        return;
+      }
       await api.resource('localizationTranslations').destroy({ filterByTk });
       refresh();
     },

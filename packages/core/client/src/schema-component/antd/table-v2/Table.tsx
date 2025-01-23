@@ -142,7 +142,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
                 <RecordIndexProvider index={record.__index || index}>
                   <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
                     <ColumnFieldProvider schema={s} basePath={basePath}>
-                      <span role="button" className={schemaToolbarBigger}>
+                      <span role="button" className={schemaToolbarBigger} key={index}>
                         <RecursionField basePath={basePath} schema={s} onlyRenderProperties />
                       </span>
                     </ColumnFieldProvider>
@@ -210,7 +210,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
                       deleteCount: deleteCount,
                     });
                     field.value.splice(fieldIndex, deleteCount);
-                    field.setInitialValue(field.value);
+                    field.setInitialValue([...field.value]);
                     return field.onInput(field.value);
                   });
                 }}
@@ -499,7 +499,12 @@ const InternalBodyCellComponent = (props) => {
   const isIndex = props.className?.includes('selection-column');
   const { record, schema, rowIndex, isSubTable, ...others } = props;
   const { valueMap } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
-  const style = useMemo(() => Object.assign({ ...props.style }, valueMap), [props.style, valueMap]);
+  const isReadPrettyMode =
+    !!schema?.properties && Object.values(schema.properties).some((item) => item['x-read-pretty'] === true);
+  const mergedStyle = useMemo(
+    () => Object.assign({ ...props.style }, isReadPrettyMode ? valueMap : {}),
+    [isReadPrettyMode, props.style, valueMap],
+  );
   const skeletonStyle = {
     height: '1em',
     backgroundColor: 'rgba(0, 0, 0, 0.06)',
@@ -507,7 +512,7 @@ const InternalBodyCellComponent = (props) => {
   };
 
   return (
-    <td {...others} className={classNames(props.className, cellClass)} style={style}>
+    <td {...others} className={classNames(props.className, cellClass)} style={mergedStyle}>
       {/* Lazy rendering cannot be used in sub-tables. */}
       {isSubTable || inView || isIndex ? props.children : <div style={skeletonStyle} />}
     </td>

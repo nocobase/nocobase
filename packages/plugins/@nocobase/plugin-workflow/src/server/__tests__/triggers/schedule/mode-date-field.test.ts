@@ -10,6 +10,7 @@
 import { MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
+import dayjs from 'dayjs';
 
 async function sleepToEvenSecond() {
   const now = new Date();
@@ -122,6 +123,40 @@ describe('workflow > triggers > schedule > date field mode', () => {
       expect(executions.length).toBe(0);
     });
 
+    it('starts on date field without timezone', async () => {
+      const postsCollection = db.getCollection('posts');
+      postsCollection.addField('date', {
+        type: 'datetimeNoTz',
+      });
+      await db.sync();
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'schedule',
+        config: {
+          mode: 1,
+          collection: 'posts',
+          startsOn: {
+            field: 'date',
+          },
+        },
+      });
+
+      await sleepToEvenSecond();
+      const startTime = new Date();
+      startTime.setMilliseconds(0);
+
+      const post = await PostRepo.create({
+        values: { title: 't1', date: dayjs(startTime).format('YYYY-MM-DD HH:mm:ss') },
+      });
+
+      await sleep(2000);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      const d0 = Date.parse(executions[0].context.date);
+      expect(d0).toBe(startTime.getTime());
+    });
+
     it('starts on post.createdAt and repeat by cron', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
@@ -146,6 +181,39 @@ describe('workflow > triggers > schedule > date field mode', () => {
       // immediately trigger 1st time
       // sleep 1.5s at 2s trigger 2nd time
       // sleep 3.5s at 4s trigger 3rd time
+
+      const executions = await workflow.getExecutions({ order: [['createdAt', 'ASC']] });
+      expect(executions.length).toBe(3);
+      const d0 = Date.parse(executions[0].context.date);
+      expect(d0).toBe(startTime.getTime());
+      const d1 = Date.parse(executions[1].context.date);
+      expect(d1 - 2000).toBe(startTime.getTime());
+      const d2 = Date.parse(executions[2].context.date);
+      expect(d2 - 4000).toBe(startTime.getTime());
+    });
+
+    it('starts on post.createdAt and repeat by cron with endsOn by collection field but no field configured', async () => {
+      await sleepToEvenSecond();
+      const startTime = new Date();
+      startTime.setMilliseconds(0);
+
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'schedule',
+        config: {
+          mode: 1,
+          collection: 'posts',
+          startsOn: {
+            field: 'createdAt',
+          },
+          repeat: '*/2 * * * * *',
+          endsOn: {},
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(5000);
 
       const executions = await workflow.getExecutions({ order: [['createdAt', 'ASC']] });
       expect(executions.length).toBe(3);

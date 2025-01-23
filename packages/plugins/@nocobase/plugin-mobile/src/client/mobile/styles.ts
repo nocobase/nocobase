@@ -46,11 +46,11 @@ export const useStyles = createStyles(({ token, css }) => {
       .nb-action-panel {
         padding-top: 10px;
       }
-      .nb-action-panel .ant-avatar-circle {
-        width: 48px !important;
-        height: 48px !important;
-        line-height: 48px !important;
-      }
+      // .nb-action-panel .ant-avatar-circle {
+      //   width: 48px !important;
+      //   height: 48px !important;
+      //   line-height: 48px !important;
+      // }
       .nb-chart-block .ant-card .ant-card-body {
         padding-bottom: 0px;
         padding-top: 0px;

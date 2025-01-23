@@ -7,24 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { flatten } from 'flat';
+import { isValidFilter } from '@nocobase/utils';
 import lodash from 'lodash';
 import {
   Association,
   BulkCreateOptions,
-  CountOptions as SequelizeCountOptions,
-  CreateOptions as SequelizeCreateOptions,
-  DestroyOptions as SequelizeDestroyOptions,
-  FindAndCountOptions as SequelizeAndCountOptions,
-  FindOptions as SequelizeFindOptions,
   ModelStatic,
   Op,
   Sequelize,
-  Transactionable,
+  FindAndCountOptions as SequelizeAndCountOptions,
+  CountOptions as SequelizeCountOptions,
+  CreateOptions as SequelizeCreateOptions,
+  DestroyOptions as SequelizeDestroyOptions,
+  FindOptions as SequelizeFindOptions,
   UpdateOptions as SequelizeUpdateOptions,
+  Transactionable,
+  Utils,
   WhereOperators,
 } from 'sequelize';
-import { isValidFilter } from '@nocobase/utils';
 
 import { Collection } from './collection';
 import { Database } from './database';
@@ -38,6 +38,7 @@ import FilterParser from './filter-parser';
 import { Model } from './model';
 import operators from './operators';
 import { OptionsParser } from './options-parser';
+import { BelongsToArrayRepository } from './relation-repository/belongs-to-array-repository';
 import { BelongsToManyRepository } from './relation-repository/belongs-to-many-repository';
 import { BelongsToRepository } from './relation-repository/belongs-to-repository';
 import { HasManyRepository } from './relation-repository/hasmany-repository';
@@ -45,7 +46,6 @@ import { HasOneRepository } from './relation-repository/hasone-repository';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
-import { BelongsToArrayRepository } from './relation-repository/belongs-to-array-repository';
 import { valuesToFilter } from './utils/filter-utils';
 
 const debug = require('debug')('noco-database');
@@ -239,6 +239,7 @@ export interface FirstOrCreateOptions extends Transactionable {
   filterKeys: string[];
   values?: Values;
   hooks?: boolean;
+  context?: any;
 }
 
 export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes> {
@@ -420,6 +421,10 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
       rows = eagerLoadingTree.root.instances;
     } else {
+      if (opts.where && model.primaryKeyAttributes.length === 0) {
+        opts.where = Utils.mapWhereFieldNames(opts.where, model);
+      }
+
       rows = await model.findAll({
         ...opts,
         transaction,
@@ -479,23 +484,23 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    * Get the first record matching the attributes or create it.
    */
   async firstOrCreate(options: FirstOrCreateOptions) {
-    const { filterKeys, values, transaction, hooks } = options;
+    const { filterKeys, values, transaction, hooks, context } = options;
     const filter = Repository.valuesToFilter(values, filterKeys);
 
-    const instance = await this.findOne({ filter, transaction });
+    const instance = await this.findOne({ filter, transaction, context });
 
     if (instance) {
       return instance;
     }
 
-    return this.create({ values, transaction, hooks });
+    return this.create({ values, transaction, hooks, context });
   }
 
   async updateOrCreate(options: FirstOrCreateOptions) {
-    const { filterKeys, values, transaction, hooks } = options;
+    const { filterKeys, values, transaction, hooks, context } = options;
     const filter = Repository.valuesToFilter(values, filterKeys);
 
-    const instance = await this.findOne({ filter, transaction });
+    const instance = await this.findOne({ filter, transaction, context });
 
     if (instance) {
       return await this.update({
@@ -503,10 +508,11 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         values,
         transaction,
         hooks,
+        context,
       });
     }
 
-    return this.create({ values, transaction, hooks });
+    return this.create({ values, transaction, hooks, context });
   }
 
   /**
@@ -725,7 +731,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       }
     }
 
-    if (filterByTk && !options.filter) {
+    if (filterByTk && !isValidFilter(options.filter)) {
       const where = [];
 
       for (const tk of filterByTk) {

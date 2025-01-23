@@ -35,7 +35,7 @@ export default {
             ...field.options,
           };
         }),
-        'sort',
+        '__sort',
       );
 
       results.push(obj);

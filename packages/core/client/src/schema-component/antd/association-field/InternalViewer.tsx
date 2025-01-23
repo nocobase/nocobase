@@ -10,8 +10,8 @@
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import _ from 'lodash';
-import React, { FC, Fragment, useEffect, useRef, useState } from 'react';
-import { useDesignable } from '../../';
+import React, { FC, Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { useDesignable, usePopupSettings } from '../../';
 import { WithoutTableFieldResource } from '../../../block-provider';
 import { CollectionRecordProvider, useCollectionManager, useCollectionRecordData } from '../../../data-source';
 import { useOpenModeContext } from '../../../modules/popup/OpenModeProvider';
@@ -47,6 +47,7 @@ export interface ButtonListProps {
     label: string;
     value: string;
   };
+  onClick?: (props: { recordData: any }) => void;
 }
 
 const RenderRecord = React.memo(
@@ -66,6 +67,7 @@ const RenderRecord = React.memo(
     ellipsisWithTooltipRef,
     value,
     setBtnHover,
+    onClick,
   }: {
     fieldNames: any;
     isTreeCollection: boolean;
@@ -82,6 +84,7 @@ const RenderRecord = React.memo(
     ellipsisWithTooltipRef: React.MutableRefObject<IEllipsisWithTooltipRef>;
     value: any;
     setBtnHover: any;
+    onClick?: (props: { recordData: any }) => void;
   }) => {
     const [loading, setLoading] = useState(true);
     const [result, setResult] = useState<React.ReactNode[]>([]);
@@ -126,6 +129,7 @@ const RenderRecord = React.memo(
                     }
 
                     if (fieldSchema.properties) {
+                      onClick?.({ recordData: record });
                       openPopup({
                         recordData: record,
                         parentRecordData: recordData,
@@ -209,6 +213,7 @@ const ButtonLinkList: FC<ButtonListProps> = (props) => {
       ellipsisWithTooltipRef={ellipsisWithTooltipRef}
       value={props.value}
       setBtnHover={props.setBtnHover}
+      onClick={props.onClick}
     />
   );
 };
@@ -254,12 +259,18 @@ export const ReadPrettyInternalViewer: React.FC = observer(
     const { visibleWithURL, setVisibleWithURL } = usePopupUtils();
     const [btnHover, setBtnHover] = useState(!!visibleWithURL);
     const { defaultOpenMode } = useOpenModeContext();
-    const recordData = useCollectionRecordData();
+    const parentRecordData = useCollectionRecordData();
+    const [recordData, setRecordData] = useState(null);
+    const { isPopupVisibleControlledByURL } = usePopupSettings();
+
+    const onClickItem = useCallback((props: { recordData: any }) => {
+      setRecordData(props.recordData);
+    }, []);
 
     const btnElement = (
       <EllipsisWithTooltip ellipsis={true} ref={ellipsisWithTooltipRef}>
-        <CollectionRecordProvider isNew={false} record={getSourceData(recordData, fieldSchema)}>
-          <ButtonList setBtnHover={setBtnHover} value={value} fieldNames={props.fieldNames} />
+        <CollectionRecordProvider isNew={false} record={getSourceData(parentRecordData, fieldSchema)}>
+          <ButtonList setBtnHover={setBtnHover} value={value} fieldNames={props.fieldNames} onClick={onClickItem} />
         </CollectionRecordProvider>
       </EllipsisWithTooltip>
     );
@@ -268,21 +279,43 @@ export const ReadPrettyInternalViewer: React.FC = observer(
       return btnElement;
     }
 
-    const renderWithoutTableFieldResourceProvider = () => (
-      // The recordData here is only provided when the popup is opened, not the current row record
-      <VariablePopupRecordProvider>
-        <WithoutTableFieldResource.Provider value={true}>
-          <RecursionField
-            schema={fieldSchema}
-            onlyRenderProperties
-            basePath={field.address}
-            filterProperties={(s) => {
-              return s['x-component'] === 'AssociationField.Viewer';
-            }}
-          />
-        </WithoutTableFieldResource.Provider>
-      </VariablePopupRecordProvider>
-    );
+    const renderWithoutTableFieldResourceProvider = () => {
+      if (isPopupVisibleControlledByURL()) {
+        return (
+          // The recordData here is only provided when the popup is opened, not the current row record
+          <VariablePopupRecordProvider>
+            <WithoutTableFieldResource.Provider value={true}>
+              <RecursionField
+                schema={fieldSchema}
+                onlyRenderProperties
+                basePath={field.address}
+                filterProperties={(s) => {
+                  return s['x-component'] === 'AssociationField.Viewer';
+                }}
+              />
+            </WithoutTableFieldResource.Provider>
+          </VariablePopupRecordProvider>
+        );
+      }
+
+      return (
+        <CollectionRecordProvider isNew={false} record={recordData} parentRecord={parentRecordData}>
+          {/* The recordData here is only provided when the popup is opened, not the current row record */}
+          <VariablePopupRecordProvider>
+            <WithoutTableFieldResource.Provider value={true}>
+              <RecursionField
+                schema={fieldSchema}
+                onlyRenderProperties
+                basePath={field.address}
+                filterProperties={(s) => {
+                  return s['x-component'] === 'AssociationField.Viewer';
+                }}
+              />
+            </WithoutTableFieldResource.Provider>
+          </VariablePopupRecordProvider>
+        </CollectionRecordProvider>
+      );
+    };
 
     return (
       <PopupVisibleProvider visible={false}>

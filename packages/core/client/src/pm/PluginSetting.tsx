@@ -196,7 +196,10 @@ export const AdminSettingsLayout = () => {
                   <Menu
                     style={{ marginLeft: -theme.margin }}
                     onClick={({ key }) => {
-                      navigate(replaceRouteParams(app.pluginSettingsManager.getRoutePath(key), params));
+                      const targetPath = replaceRouteParams(app.pluginSettingsManager.getRoutePath(key), params);
+                      if (location.pathname !== targetPath) {
+                        navigate(targetPath);
+                      }
                     }}
                     selectedKeys={[currentSetting?.name]}
                     mode="horizontal"
