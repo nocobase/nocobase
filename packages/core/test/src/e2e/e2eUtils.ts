@@ -799,7 +799,7 @@ const createPage = async (options?: CreatePageOptions) => {
 
     const data = await result.json();
     routeId = data.data?.id;
-    schemaUid = newPageSchema?.['x-uid'] || pageSchemaUid;
+    schemaUid = menuSchemaUid;
   }
 
   if (type === 'link') {
