@@ -73,6 +73,9 @@ describe('schemaToRoutes', () => {
         menuSchemaUid: 'page-1',
         schemaUid: 'page-schema-1',
         hideInMenu: false,
+        displayTitle: true,
+        enableHeader: true,
+        enableTabs: undefined,
         children: [],
       },
     ]);
