@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.4.30](https://github.com/nocobase/nocobase/compare/v1.4.29...v1.4.30) - 2025-01-23
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix an issue with displaying N/A for association fields in Table ([#6109](https://github.com/nocobase/nocobase/pull/6109)) by @zhangzhonghe
+
+- **[Collection: Tree]** Disallow setting a node of tree collection as its own parent ([#6122](https://github.com/nocobase/nocobase/pull/6122)) by @2013xile
+
+- **[Workflow: HTTP request node]** Fix request node pending in loop ([#6120](https://github.com/nocobase/nocobase/pull/6120)) by @mytharcher
+
+- **[Workflow: test kit]** To fix mock datasource test cases depend on ACL ([#6116](https://github.com/nocobase/nocobase/pull/6116)) by @mytharcher
+
+- **[Backup manager]** Fixed an issue where some backup files could not be properly extracted and restored by @gchust
+
+## [v1.4.29](https://github.com/nocobase/nocobase/compare/v1.4.28...v1.4.29) - 2025-01-21
+
+### 🎉 New Features
+
+- **[Block: Action panel]** Support configuring  the number of icons per row in the mobile  action penal ([#6106](https://github.com/nocobase/nocobase/pull/6106)) by @katherinehhh
+
+## [v1.4.28](https://github.com/nocobase/nocobase/compare/v1.4.27...v1.4.28) - 2025-01-21
+
+### 🐛 Bug Fixes
+
+- **[client]** The default value of the assocation field has not been updated ([#6103](https://github.com/nocobase/nocobase/pull/6103)) by @chenos
+
+- **[Action: Batch edit]** Remove form data template from bulk edit action form  settings ([#6098](https://github.com/nocobase/nocobase/pull/6098)) by @katherinehhh
+
+- **[Verification]** Fix provider ID could be edit ([#6097](https://github.com/nocobase/nocobase/pull/6097)) by @mytharcher
+
 ## [v1.4.27](https://github.com/nocobase/nocobase/compare/v1.4.26...v1.4.27) - 2025-01-18
 
 ### 🐛 Bug Fixes

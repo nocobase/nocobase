@@ -110,22 +110,22 @@ const ResponsiveSpace = () => {
         size={gap}
         align="start"
         className={css`
-          .ant-space-item {
-            width: ${isUnderMobile ? itemWidth + 'px' : '100%'}
-            display: flex;
-            .ant-nb-action {
-              padding: ${isUnderMobile ? '4px 0px' : null};
-            }
-            .nb-action-panel-container {
-              width: ${itemWidth}px !important;
-            }
-            .ant-avatar-circle {
-              width: ${avatarSize}px !important;
-              height: ${avatarSize}px !important;
-              line-height: ${avatarSize}px !important;
-            }
-          }
-        `}
+           .ant-space-item {
+             width: ${isUnderMobile ? itemWidth + 'px' : '100%'}
+             display: flex;
+             .ant-nb-action {
+               padding: ${isUnderMobile ? '4px 0px' : null};
+             }
+             .nb-action-panel-container {
+               width: ${itemWidth}px !important;
+             }
+             .ant-avatar-circle {
+               width: ${avatarSize}px !important;
+               height: ${avatarSize}px !important;
+               line-height: ${avatarSize}px !important;
+             }
+           }
+         `}
       >
         {fieldSchema.mapProperties((s, key) => (
           <div

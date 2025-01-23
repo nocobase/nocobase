@@ -31,8 +31,8 @@
   "Data operation nodes in workflow will run in a same transaction until any interruption. Any failure will cause data rollback, and will also rollback the history of the execution.":
     "工作流中的节点将在同一个事务中运行。任何失败都会导致数据回滚，同时也会回滚相应的执行历史。",
   "Auto delete history when execution is on end status": "执行结束后自动删除对应状态的历史记录",
-  "Maximum number of loop calls": "最大循环调用次数",
-  "If the number of loop calls is too large, there will be performance issues.": "如果循环调用次数过大，会有性能问题",
+  "Maximum number of cycling triggers": "最大循环触发次数",
+  "The triggers of same workflow by some node (create, update and sub-flow etc.) more than this number will be ignored. Large number may cause performance issues. Please use with caution.": "由某个节点（创建、更新和子流程等）触发同一个工作流超过这个次数时将被忽略。设置过高的次数可能会导致性能问题，请谨慎使用。",
   "Trigger": "触发器",
   "Unknown trigger": "未知触发器",
   "Workflow with unknown type will cause error. Please delete it or check plugin which provide this type.": "未知类型的工作流会导致错误，请删除或检查提供该类型的插件。",

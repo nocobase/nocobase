@@ -5,6 +5,36 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.4.30](https://github.com/nocobase/nocobase/compare/v1.4.29...v1.4.30) - 2025-01-23
+
+### 🐛 修复
+
+- **[client]** 修复表格中关系字段显示 N/A 的问题 ([#6109](https://github.com/nocobase/nocobase/pull/6109)) by @zhangzhonghe
+
+- **[数据表：树]** 禁止将树表节点自身设置为其父节点 ([#6122](https://github.com/nocobase/nocobase/pull/6122)) by @2013xile
+
+- **[工作流：HTTP 请求节点]** 修复请求节点在循环调用中状态为等待的问题 ([#6120](https://github.com/nocobase/nocobase/pull/6120)) by @mytharcher
+
+- **[工作流：测试工具包]** 修复依赖权限控制的多数据源测试用例 ([#6116](https://github.com/nocobase/nocobase/pull/6116)) by @mytharcher
+
+- **[备份管理器]** 修复部分备份文件无法被正确解压还原的问题 by @gchust
+
+## [v1.4.29](https://github.com/nocobase/nocobase/compare/v1.4.28...v1.4.29) - 2025-01-21
+
+### 🎉 新特性
+
+- **[区块：操作面板]** 支持配置移动端操作面板每行显示的图标数量 ([#6106](https://github.com/nocobase/nocobase/pull/6106)) by @katherinehhh
+
+## [v1.4.28](https://github.com/nocobase/nocobase/compare/v1.4.27...v1.4.28) - 2025-01-21
+
+### 🐛 修复
+
+- **[client]** 关系字段设置的默认值没有更新 ([#6103](https://github.com/nocobase/nocobase/pull/6103)) by @chenos
+
+- **[操作：批量编辑]** 移除批量编辑表单中的表单数据模板配置项 ([#6098](https://github.com/nocobase/nocobase/pull/6098)) by @katherinehhh
+
+- **[验证码]** 修复提供商 ID 可以被修改的问题 ([#6097](https://github.com/nocobase/nocobase/pull/6097)) by @mytharcher
+
 ## [v1.4.27](https://github.com/nocobase/nocobase/compare/v1.4.26...v1.4.27) - 2025-01-18
 
 ### 🐛 修复
