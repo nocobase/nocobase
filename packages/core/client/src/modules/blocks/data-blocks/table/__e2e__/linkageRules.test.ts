@@ -18,6 +18,6 @@ test('linkage rules', async ({ page, mockPage }) => {
   await page.getByText('Add new').click();
   await page.getByTestId('select-data-picker').click();
   await expect(
-    page.getByTestId('drawer-AssociationField.Selector-t_3pmvgy00kxz-Select record').getByRole('textbox'),
+    page.getByTestId('drawer-AssociationField.Selector-collection3-Select record').getByRole('textbox'),
   ).not.toBeDisabled();
 });

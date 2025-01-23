@@ -8702,7 +8702,7 @@ export const subTableLinkageRules = {
           name: 'manyToMany',
           type: 'belongsToMany',
           interface: 'm2m',
-          target: 'collection3s',
+          target: 'collection3',
           targetKey: 'id',
         },
         {
@@ -8727,6 +8727,7 @@ export const subTableLinkageRules = {
     type: 'void',
     'x-component': 'Page',
     'x-app-version': '1.4.0-alpha.2',
+    'x-index': 1,
     properties: {
       w8odriar0fx: {
         _isJSONSchemaObject: true,
@@ -8735,22 +8736,23 @@ export const subTableLinkageRules = {
         'x-component': 'Grid',
         'x-initializer': 'page:addBlock',
         'x-app-version': '1.4.0-alpha.2',
+        'x-index': 1,
         properties: {
-          mwlgbbtshin: {
+          '9mn12l8qk3r': {
             _isJSONSchemaObject: true,
             version: '2.0',
             type: 'void',
             'x-component': 'Grid.Row',
-            'x-app-version': '1.4.0-alpha.2',
+            'x-app-version': '1.4.30',
             properties: {
-              '8ynn4206h34': {
+              gdis5heg9mx: {
                 _isJSONSchemaObject: true,
                 version: '2.0',
                 type: 'void',
                 'x-component': 'Grid.Col',
-                'x-app-version': '1.4.0-alpha.2',
+                'x-app-version': '1.4.30',
                 properties: {
-                  mu5jt0kcboy: {
+                  y39h574el5n: {
                     _isJSONSchemaObject: true,
                     version: '2.0',
                     type: 'void',
@@ -8767,15 +8769,15 @@ export const subTableLinkageRules = {
                     'x-toolbar': 'BlockSchemaToolbar',
                     'x-settings': 'blockSettings:createForm',
                     'x-component': 'CardItem',
-                    'x-app-version': '1.4.0-alpha.2',
+                    'x-app-version': '1.4.30',
                     properties: {
-                      h1hq3tt652b: {
+                      '5pmngglyxio': {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
                         'x-component': 'FormV2',
                         'x-use-component-props': 'useCreateFormBlockProps',
-                        'x-app-version': '1.4.0-alpha.2',
+                        'x-app-version': '1.4.30',
                         properties: {
                           grid: {
                             _isJSONSchemaObject: true,
@@ -8783,24 +8785,24 @@ export const subTableLinkageRules = {
                             type: 'void',
                             'x-component': 'Grid',
                             'x-initializer': 'form:configureFields',
-                            'x-app-version': '1.4.0-alpha.2',
+                            'x-app-version': '1.4.30',
                             properties: {
-                              '5da1gzl23cu': {
+                              pnizc73vd6o: {
                                 _isJSONSchemaObject: true,
                                 version: '2.0',
                                 type: 'void',
                                 'x-component': 'Grid.Row',
-                                'x-app-version': '1.4.0-alpha.2',
+                                'x-app-version': '1.4.30',
                                 properties: {
-                                  k52w3z0wu6h: {
+                                  a1wbkt2egco: {
                                     _isJSONSchemaObject: true,
                                     version: '2.0',
                                     type: 'void',
                                     'x-component': 'Grid.Col',
-                                    'x-app-version': '1.4.0-alpha.2',
+                                    'x-app-version': '1.4.30',
                                     properties: {
                                       manyToMany: {
-                                        'x-uid': 'x5zyuok7av9',
+                                        'x-uid': 'g7p9ry97ker',
                                         _isJSONSchemaObject: true,
                                         version: '2.0',
                                         type: 'string',
@@ -8811,12 +8813,12 @@ export const subTableLinkageRules = {
                                         'x-collection-field': 'collection1.manyToMany',
                                         'x-component-props': {
                                           fieldNames: {
-                                            value: 'id',
                                             label: 'id',
+                                            value: 'id',
                                           },
                                           mode: 'SubTable',
                                         },
-                                        'x-app-version': '1.4.0-alpha.2',
+                                        'x-app-version': '1.4.30',
                                         default: null,
                                         'x-linkage-rules': [
                                           {
@@ -8832,71 +8834,7 @@ export const subTableLinkageRules = {
                                           },
                                         ],
                                         properties: {
-                                          vrkv4jzit4h: {
-                                            _isJSONSchemaObject: true,
-                                            version: '2.0',
-                                            type: 'void',
-                                            'x-component': 'AssociationField.Nester',
-                                            'x-index': 1,
-                                            'x-app-version': '1.4.0-alpha.2',
-                                            properties: {
-                                              grid: {
-                                                _isJSONSchemaObject: true,
-                                                version: '2.0',
-                                                type: 'void',
-                                                'x-component': 'Grid',
-                                                'x-initializer': 'form:configureFields',
-                                                'x-app-version': '1.4.0-alpha.2',
-                                                properties: {
-                                                  uubjjosxdz1: {
-                                                    _isJSONSchemaObject: true,
-                                                    version: '2.0',
-                                                    type: 'void',
-                                                    'x-component': 'Grid.Row',
-                                                    'x-app-version': '1.4.0-alpha.2',
-                                                    properties: {
-                                                      d9uw2h6rscl: {
-                                                        _isJSONSchemaObject: true,
-                                                        version: '2.0',
-                                                        type: 'void',
-                                                        'x-component': 'Grid.Col',
-                                                        'x-app-version': '1.4.0-alpha.2',
-                                                        properties: {
-                                                          singleLineText: {
-                                                            _isJSONSchemaObject: true,
-                                                            version: '2.0',
-                                                            type: 'string',
-                                                            'x-toolbar': 'FormItemSchemaToolbar',
-                                                            'x-settings': 'fieldSettings:FormItem',
-                                                            'x-component': 'CollectionField',
-                                                            'x-decorator': 'FormItem',
-                                                            'x-collection-field': 't_an1l9v3mhet.singleLineText',
-                                                            'x-component-props': {},
-                                                            'x-app-version': '1.4.0-alpha.2',
-                                                            'x-uid': 'uglafqok6sg',
-                                                            'x-async': false,
-                                                            'x-index': 1,
-                                                          },
-                                                        },
-                                                        'x-uid': '1fnw74k2ecc',
-                                                        'x-async': false,
-                                                        'x-index': 1,
-                                                      },
-                                                    },
-                                                    'x-uid': 'kp98heavift',
-                                                    'x-async': false,
-                                                    'x-index': 1,
-                                                  },
-                                                },
-                                                'x-uid': 'xqdnxqrfesy',
-                                                'x-async': false,
-                                                'x-index': 1,
-                                              },
-                                            },
-                                            'x-uid': 'zkx9pr5bc7w',
-                                            'x-async': false,
-                                          },
-                                          zx5euqoh0vc: {
+                                          o3qcjhecdlo: {
                                             _isJSONSchemaObject: true,
                                             version: '2.0',
                                             type: 'void',
@@ -8905,10 +8843,10 @@ export const subTableLinkageRules = {
                                             'x-initializer-props': {
                                               action: false,
                                             },
-                                            'x-index': 2,
-                                            'x-app-version': '1.4.0-alpha.2',
+                                            'x-index': 1,
+                                            'x-app-version': '1.4.30',
                                             properties: {
-                                              gu5lapoqe0i: {
+                                              y63w2f1hrax: {
                                                 _isJSONSchemaObject: true,
                                                 version: '2.0',
                                                 type: 'void',
@@ -8916,13 +8854,13 @@ export const subTableLinkageRules = {
                                                 'x-toolbar': 'TableColumnSchemaToolbar',
                                                 'x-settings': 'fieldSettings:TableColumn',
                                                 'x-component': 'TableV2.Column',
-                                                'x-app-version': '1.4.0-alpha.2',
+                                                'x-app-version': '1.4.30',
                                                 properties: {
                                                   manyToMany: {
-                                                    'x-uid': 'bfd2sj8bntg',
+                                                    'x-uid': '7y1cq78xa6x',
                                                     _isJSONSchemaObject: true,
                                                     version: '2.0',
-                                                    'x-collection-field': 't_an1l9v3mhet.manyToMany',
+                                                    'x-collection-field': 'collection2.manyToMany',
                                                     'x-component': 'CollectionField',
                                                     'x-component-props': {
                                                       fieldNames: {
@@ -8939,10 +8877,9 @@ export const subTableLinkageRules = {
                                                         display: 'none',
                                                       },
                                                     },
-                                                    'x-use-decorator-props': 'useSubTableFormItemProps',
-                                                    'x-app-version': '1.4.0-alpha.2',
+                                                    'x-app-version': '1.4.30',
                                                     properties: {
-                                                      '3eahe76nrn7': {
+                                                      ube58vjj300: {
                                                         _isJSONSchemaObject: true,
                                                         version: '2.0',
                                                         type: 'void',
@@ -8952,7 +8889,7 @@ export const subTableLinkageRules = {
                                                           className: 'nb-record-picker-selector',
                                                         },
                                                         'x-index': 1,
-                                                        'x-app-version': '1.4.0-alpha.2',
+                                                        'x-app-version': '1.4.30',
                                                         properties: {
                                                           grid: {
                                                             _isJSONSchemaObject: true,
@@ -8960,23 +8897,23 @@ export const subTableLinkageRules = {
                                                             type: 'void',
                                                             'x-component': 'Grid',
                                                             'x-initializer': 'popup:tableSelector:addBlock',
-                                                            'x-app-version': '1.4.0-alpha.2',
+                                                            'x-app-version': '1.4.30',
                                                             properties: {
-                                                              '938a5xr15zs': {
+                                                              j3twr0dskm5: {
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid.Row',
-                                                                'x-app-version': '1.4.0-alpha.2',
+                                                                'x-app-version': '1.4.30',
                                                                 properties: {
-                                                                  '1y9nuo4wo1f': {
+                                                                  hnpuy24xv2w: {
                                                                     _isJSONSchemaObject: true,
                                                                     version: '2.0',
                                                                     type: 'void',
                                                                     'x-component': 'Grid.Col',
-                                                                    'x-app-version': '1.4.0-alpha.2',
+                                                                    'x-app-version': '1.4.30',
                                                                     properties: {
-                                                                      '6d2frspdmy5': {
+                                                                      ibb7t79b30o: {
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
@@ -8985,22 +8922,22 @@ export const subTableLinkageRules = {
                                                                           'useFilterFormBlockDecoratorProps',
                                                                         'x-decorator-props': {
                                                                           dataSource: 'main',
-                                                                          collection: 't_3pmvgy00kxz',
+                                                                          collection: 'collection3',
                                                                         },
                                                                         'x-toolbar': 'BlockSchemaToolbar',
                                                                         'x-settings': 'blockSettings:filterForm',
                                                                         'x-component': 'CardItem',
                                                                         'x-filter-targets': [],
-                                                                        'x-app-version': '1.4.0-alpha.2',
+                                                                        'x-app-version': '1.4.30',
                                                                         properties: {
-                                                                          fsv1sfwiaya: {
+                                                                          '78t3oxrrgjw': {
                                                                             _isJSONSchemaObject: true,
                                                                             version: '2.0',
                                                                             type: 'void',
                                                                             'x-component': 'FormV2',
                                                                             'x-use-component-props':
                                                                               'useFilterFormBlockProps',
-                                                                            'x-app-version': '1.4.0-alpha.2',
+                                                                            'x-app-version': '1.4.30',
                                                                             properties: {
                                                                               grid: {
                                                                                 _isJSONSchemaObject: true,
@@ -9009,22 +8946,21 @@ export const subTableLinkageRules = {
                                                                                 'x-component': 'Grid',
                                                                                 'x-initializer':
                                                                                   'filterForm:configureFields',
-                                                                                'x-app-version': '1.4.0-alpha.2',
+                                                                                'x-app-version': '1.4.30',
                                                                                 properties: {
-                                                                                  '2o2rsiujxg7': {
+                                                                                  '4iwr1ecvrk2': {
                                                                                     _isJSONSchemaObject: true,
                                                                                     version: '2.0',
                                                                                     type: 'void',
                                                                                     'x-component': 'Grid.Row',
-                                                                                    'x-app-version': '1.4.0-alpha.2',
+                                                                                    'x-app-version': '1.4.30',
                                                                                     properties: {
-                                                                                      wcdp5wwyh98: {
+                                                                                      txbjwktdsw2: {
                                                                                         _isJSONSchemaObject: true,
                                                                                         version: '2.0',
                                                                                         type: 'void',
                                                                                         'x-component': 'Grid.Col',
-                                                                                        'x-app-version':
-                                                                                          '1.4.0-alpha.2',
+                                                                                        'x-app-version': '1.4.30',
                                                                                         properties: {
                                                                                           singleLineText: {
                                                                                             _isJSONSchemaObject: true,
@@ -9041,33 +8977,32 @@ export const subTableLinkageRules = {
                                                                                             'x-use-decorator-props':
                                                                                               'useFormItemProps',
                                                                                             'x-collection-field':
-                                                                                              't_3pmvgy00kxz.singleLineText',
+                                                                                              'collection3.singleLineText',
                                                                                             'x-component-props': {
                                                                                               utc: false,
                                                                                               underFilter: true,
                                                                                             },
-                                                                                            'x-app-version':
-                                                                                              '1.4.0-alpha.2',
-                                                                                            'x-uid': 'my1fiypdia8',
+                                                                                            'x-app-version': '1.4.30',
+                                                                                            'x-uid': '8n98emo4bul',
                                                                                             'x-async': false,
                                                                                             'x-index': 1,
                                                                                           },
                                                                                         },
-                                                                                        'x-uid': 'i0kifm6yedk',
+                                                                                        'x-uid': 'jhyq7js69mq',
                                                                                         'x-async': false,
                                                                                         'x-index': 1,
                                                                                       },
                                                                                     },
-                                                                                    'x-uid': 'dcahjqsy91u',
+                                                                                    'x-uid': 'gzt99p515bl',
                                                                                     'x-async': false,
                                                                                     'x-index': 1,
                                                                                   },
                                                                                 },
-                                                                                'x-uid': '1cj8rvsn1sr',
+                                                                                'x-uid': 'v66mxmusgg3',
                                                                                 'x-async': false,
                                                                                 'x-index': 1,
                                                                               },
-                                                                              tp4c2u6ydko: {
+                                                                              rc7wwrfaepk: {
                                                                                 _isJSONSchemaObject: true,
                                                                                 version: '2.0',
                                                                                 type: 'void',
@@ -9080,33 +9015,33 @@ export const subTableLinkageRules = {
                                                                                     float: 'right',
                                                                                   },
                                                                                 },
-                                                                                'x-app-version': '1.4.0-alpha.2',
-                                                                                'x-uid': 'rnd15e1cq82',
+                                                                                'x-app-version': '1.4.30',
+                                                                                'x-uid': 'mnbgi1qs904',
                                                                                 'x-async': false,
                                                                                 'x-index': 2,
                                                                               },
                                                                             },
-                                                                            'x-uid': 'svx1l2w427y',
+                                                                            'x-uid': '8bmuukycdk3',
                                                                             'x-async': false,
                                                                             'x-index': 1,
                                                                           },
                                                                         },
-                                                                        'x-uid': 'e3q3y5ihdk0',
+                                                                        'x-uid': '20fn8d2oa9m',
                                                                         'x-async': false,
                                                                         'x-index': 1,
                                                                       },
                                                                     },
-                                                                    'x-uid': 'i97utj0o96s',
+                                                                    'x-uid': 'dfjh0jd36zn',
                                                                     'x-async': false,
                                                                     'x-index': 1,
                                                                   },
                                                                 },
-                                                                'x-uid': 'h6fnh2v9am5',
+                                                                'x-uid': '5yskpcvgzo6',
                                                                 'x-async': false,
                                                                 'x-index': 1,
                                                               },
                                                             },
-                                                            'x-uid': '2v98025xs3p',
+                                                            'x-uid': 'vlxhgd15094',
                                                             'x-async': false,
                                                             'x-index': 1,
                                                           },
@@ -9115,7 +9050,7 @@ export const subTableLinkageRules = {
                                                             version: '2.0',
                                                             'x-component': 'Action.Container.Footer',
                                                             'x-component-props': {},
-                                                            'x-app-version': '1.4.0-alpha.2',
+                                                            'x-app-version': '1.4.30',
                                                             properties: {
                                                               actions: {
                                                                 _isJSONSchemaObject: true,
@@ -9123,7 +9058,7 @@ export const subTableLinkageRules = {
                                                                 type: 'void',
                                                                 'x-component': 'ActionBar',
                                                                 'x-component-props': {},
-                                                                'x-app-version': '1.4.0-alpha.2',
+                                                                'x-app-version': '1.4.30',
                                                                 properties: {
                                                                   submit: {
                                                                     _isJSONSchemaObject: true,
@@ -9138,23 +9073,23 @@ export const subTableLinkageRules = {
                                                                       type: 'primary',
                                                                       htmlType: 'submit',
                                                                     },
-                                                                    'x-app-version': '1.4.0-alpha.2',
-                                                                    'x-uid': 'jpb7kfmr6ei',
+                                                                    'x-app-version': '1.4.30',
+                                                                    'x-uid': 'crmin5h15fl',
                                                                     'x-async': false,
                                                                     'x-index': 1,
                                                                   },
                                                                 },
-                                                                'x-uid': 'f8wpc0wjhg2',
+                                                                'x-uid': 'qb5ytzc65va',
                                                                 'x-async': false,
                                                                 'x-index': 1,
                                                               },
                                                             },
-                                                            'x-uid': '0ajhhov7m2q',
+                                                            'x-uid': '4v6bewewfpz',
                                                             'x-async': false,
                                                             'x-index': 2,
                                                           },
                                                         },
-                                                        'x-uid': 'ens17ye6b4z',
+                                                        'x-uid': 'de83n28qz8k',
                                                         'x-async': false,
                                                       },
                                                     },
@@ -9162,11 +9097,11 @@ export const subTableLinkageRules = {
                                                     'x-index': 1,
                                                   },
                                                 },
-                                                'x-uid': '3e7l2qq36at',
+                                                'x-uid': 'f5icd0gzkh9',
                                                 'x-async': false,
-                                                'x-index': 3,
+                                                'x-index': 1,
                                               },
-                                              '0atm7ny49t0': {
+                                              nklog6a4gzm: {
                                                 _isJSONSchemaObject: true,
                                                 version: '2.0',
                                                 type: 'void',
@@ -9174,12 +9109,12 @@ export const subTableLinkageRules = {
                                                 'x-toolbar': 'TableColumnSchemaToolbar',
                                                 'x-settings': 'fieldSettings:TableColumn',
                                                 'x-component': 'TableV2.Column',
-                                                'x-app-version': '1.4.0-alpha.2',
+                                                'x-app-version': '1.4.30',
                                                 properties: {
                                                   singleLineText: {
                                                     _isJSONSchemaObject: true,
                                                     version: '2.0',
-                                                    'x-collection-field': 't_an1l9v3mhet.singleLineText',
+                                                    'x-collection-field': 'collection2.singleLineText',
                                                     'x-component': 'CollectionField',
                                                     'x-component-props': {
                                                       ellipsis: true,
@@ -9190,19 +9125,18 @@ export const subTableLinkageRules = {
                                                         display: 'none',
                                                       },
                                                     },
-                                                    'x-use-decorator-props': 'useSubTableFormItemProps',
-                                                    'x-app-version': '1.4.0-alpha.2',
-                                                    'x-uid': 'xw218vaxarw',
+                                                    'x-app-version': '1.4.30',
+                                                    'x-uid': 'jf7br426xbi',
                                                     'x-async': false,
                                                     'x-index': 1,
                                                   },
                                                 },
-                                                'x-uid': '3t7yljdj30g',
+                                                'x-uid': 'h2bfuft16e4',
                                                 'x-async': false,
-                                                'x-index': 4,
+                                                'x-index': 2,
                                               },
                                             },
-                                            'x-uid': '9t2plx8wlu9',
+                                            'x-uid': 'mhkztghm6mf',
                                             'x-async': false,
                                           },
                                         },
@@ -9210,21 +9144,21 @@ export const subTableLinkageRules = {
                                         'x-index': 1,
                                       },
                                     },
-                                    'x-uid': 'uivnczul8ds',
+                                    'x-uid': 'x63q5i1qfcs',
                                     'x-async': false,
                                     'x-index': 1,
                                   },
                                 },
-                                'x-uid': 'y71816ls7oh',
+                                'x-uid': '3e993koh0hf',
                                 'x-async': false,
                                 'x-index': 1,
                               },
                             },
-                            'x-uid': '5jw0wd4ffq3',
+                            'x-uid': 'bgguat3qw3l',
                             'x-async': false,
                             'x-index': 1,
                           },
-                          '9xcv5mbr774': {
+                          '7ep15tqi252': {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
@@ -9233,39 +9167,37 @@ export const subTableLinkageRules = {
                             'x-component-props': {
                               layout: 'one-column',
                             },
-                            'x-app-version': '1.4.0-alpha.2',
-                            'x-uid': '07iwd1qvy8n',
+                            'x-app-version': '1.4.30',
+                            'x-uid': '2glco96x6t4',
                             'x-async': false,
                             'x-index': 2,
                           },
                         },
-                        'x-uid': '9vza1p2nrpw',
+                        'x-uid': '2zm95rp9wl4',
                         'x-async': false,
                         'x-index': 1,
                       },
                     },
-                    'x-uid': '83evmrf9yyq',
+                    'x-uid': 'suynqot1a08',
                     'x-async': false,
                     'x-index': 1,
                   },
                 },
-                'x-uid': 'lx4mv9bfieq',
+                'x-uid': 'jfa41aikubo',
                 'x-async': false,
                 'x-index': 1,
               },
             },
-            'x-uid': '0eoj7kpp7u7',
+            'x-uid': 'eaw2pioddrg',
             'x-async': false,
-            'x-index': 1,
+            'x-index': 2,
           },
         },
-        'x-uid': 'w7uye840qc3',
+        'x-uid': '0f1w4u9shko',
         'x-async': false,
-        'x-index': 1,
       },
     },
-    'x-uid': 'z9zmqq3syx9',
+    'x-uid': 'w3bigfwo8ws',
     'x-async': true,
-    'x-index': 1,
   },
 };
