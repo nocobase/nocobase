@@ -421,7 +421,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
       rows = eagerLoadingTree.root.instances;
     } else {
-      if (opts.where) {
+      if (opts.where && model.primaryKeyAttributes.length === 0) {
         opts.where = Utils.mapWhereFieldNames(opts.where, model);
       }
 
