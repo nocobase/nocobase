@@ -24,7 +24,7 @@ const isSubFormOrSubTableField = (fieldSchema: Schema) => {
       return true;
     }
 
-    if (fieldSchema['x-component']?.startsWith('Form')) {
+    if (fieldSchema['x-component'] === 'FormV2') {
       return false;
     }
 
