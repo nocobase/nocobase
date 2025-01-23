@@ -39,6 +39,7 @@ export const AdminSettingsForm: React.FC = () => {
           provider: {
             title: tval('Provider', { ns: NAMESPACE }),
             type: 'string',
+            required: true,
             'x-decorator': 'FormItem',
             'x-component': 'RemoteSelect',
             'x-component-props': {
