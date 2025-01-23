@@ -206,6 +206,7 @@ export class VerificationManager {
       const verifyResult = await verification.verify({
         resource: resourceName,
         action: actionName,
+        userId,
         boundInfo,
         verifyParams,
       });
@@ -216,7 +217,7 @@ export class VerificationManager {
         ctx.log.error(err, { module: 'verification', method: 'verify' });
         throw err;
       } finally {
-        await verification.onActionComplete({ verifyResult });
+        await verification.onActionComplete({ userId, verifyResult });
       }
     } catch (err) {
       await action.onVerifyFail?.(ctx, err, userId);

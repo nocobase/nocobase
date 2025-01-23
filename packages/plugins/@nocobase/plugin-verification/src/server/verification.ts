@@ -11,8 +11,14 @@ import { Context } from '@nocobase/actions';
 import { Model } from '@nocobase/database';
 
 export interface IVerification {
-  verify(options: { resource: string; action: string; boundInfo: any; verifyParams?: any }): Promise<any>;
-  onActionComplete?(options: { verifyResult: any }): Promise<any>;
+  verify(options: {
+    resource: string;
+    action: string;
+    userId: number;
+    boundInfo: any;
+    verifyParams?: any;
+  }): Promise<any>;
+  onActionComplete?(options: { userId: number; verifyResult: any }): Promise<any>;
   getBoundInfo?(userId: number): Promise<any>;
   getPublicBoundInfo?(userId: number): Promise<{
     bound: boolean;
@@ -43,8 +49,8 @@ export abstract class Verification implements IVerification {
     return this.ctx.db.getRepository('usersVerificators');
   }
 
-  abstract verify({ resource, action, boundInfo, verifyParams }): Promise<any>;
-  async onActionComplete(options: { verifyResult: any }): Promise<any> {}
+  abstract verify({ resource, action, userId, boundInfo, verifyParams }): Promise<any>;
+  async onActionComplete(options: { userId: number; verifyResult: any }): Promise<any> {}
   async bind(userId: number, resource?: string, action?: string): Promise<{ uuid: string; meta?: any }> {
     throw new Error('Not implemented');
   }
