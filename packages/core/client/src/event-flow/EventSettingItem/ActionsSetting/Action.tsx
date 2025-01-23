@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ArrayField as ArrayFieldModel, VoidField } from '@formily/core';
+import { ArrayField as ArrayFieldModel, VoidField, ObjectField as ObjectFieldModel } from '@formily/core';
 import { ArrayField, ObjectField, observer, useField } from '@formily/react';
-import { Space, TreeSelect } from 'antd';
-import React, { useCallback, useMemo } from 'react';
+import { Button, Cascader, Input, Space, TreeSelect } from 'antd';
+import React, { useCallback, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import {
@@ -20,40 +20,64 @@ import {
 } from './LinkageRuleAction';
 import { RemoveActionContext } from './context';
 import { useControllableValue } from 'ahooks';
+import { CloseCircleOutlined } from '@ant-design/icons';
+import { useActionOptions } from './hooks/useActionOptions';
 
-const ActionSelect = (props) => {
-  const { t } = useTranslation();
-  const { definitions, className } = props;
-  const [state, setState] = useControllableValue<String>(props, {
-    defaultValue: undefined,
-  });
-  let treeData = definitions?.map((module) => ({
-    value: module.name,
-    title: module.title + ' - ' + module.uid,
-    selectable: false,
-    children:
-      module?.events?.map((event) => ({
-        value: module.name + '.' + event.name,
-        title: event.title,
-      })) || [],
-  }));
-  treeData = treeData?.filter((item) => item.children.length > 0);
-
+const ActionParams = observer((props) => {
+  const field = useField<ArrayFieldModel>();
   return (
-    <TreeSelect
-      value={state}
-      dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
-      placeholder="Please select"
-      allowClear
-      treeDefaultExpandAll
-      onChange={(value) => {
-        setState(value);
-      }}
-      treeData={treeData}
-      className={className}
-    />
+    <div>
+      {field?.value?.map((item, index) => (
+        <div key={index}>
+          <Input />
+        </div>
+      ))}
+    </div>
   );
-};
+});
+
+export const ActionRow = observer(
+  (props: any): any => {
+    const { onRemove } = props;
+    const options = useActionOptions();
+    const field = useField<any>();
+    const onClick = useCallback(() => {
+      console.log('field2', field);
+      // const f = field.query('.params').take() as ObjectFieldModel;
+      // field.val = field.data || {};
+      // field.data.params = field.data.params || [];
+      // field.data.params.push({});
+      // const items = f.value || [];
+      // items.push({});
+      // f.value = items;
+      // f.initialValue = items;
+    }, [field]);
+    return (
+      <div>
+        <Space>
+          <Cascader
+            // value={state}
+            options={options}
+            onChange={(value) => {
+              console.log('value', value);
+              // setState(value);
+            }}
+          ></Cascader>
+          <div>
+            <ArrayField name={'params'} component={[ActionParams, {}]} disabled={false} />
+            <Button onClick={onClick}>添加参数</Button>
+          </div>
+          {!props.disabled && (
+            <a role="button" aria-label="icon-close">
+              <CloseCircleOutlined onClick={onRemove} style={{ color: '#bfbfbf' }} />
+            </a>
+          )}
+        </Space>
+      </div>
+    );
+  },
+  { displayName: 'ActionRow' },
+);
 
 export const Action = observer(
   (props: any): any => {
@@ -67,13 +91,16 @@ export const Action = observer(
       field: FormFieldLinkageRuleAction,
       style: FormStyleLinkageRuleAction,
     };
+
+    // console.log('field?.value', field.value);
+
     return field?.value?.map((item, index) => {
       return (
         <RemoveActionContext.Provider key={index} value={() => field.remove(index)}>
-          <ObjectField name={index} component={[ActionSelect, { ...props, options: linkageOptions }]} />
+          <ObjectField name={index} component={[ActionRow]} />
         </RemoveActionContext.Provider>
       );
     });
   },
-  { displayName: 'LinkageRuleActions' },
+  { displayName: 'Action' },
 );

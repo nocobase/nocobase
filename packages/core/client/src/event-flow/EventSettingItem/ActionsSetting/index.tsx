@@ -20,7 +20,7 @@ import { SubFormProvider } from '../../../schema-component/antd/association-fiel
 import { DynamicComponentProps } from '../../../schema-component/antd/filter/DynamicComponent';
 import { FilterContext } from '../../../schema-component/antd/filter/context';
 import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
-import { Actions } from './Actions';
+import { ActionsField } from './Actions';
 import { FormProvider, createSchemaField } from '@formily/react';
 import { ArrayCollapse } from '../components/LinkageHeader';
 import { Filter } from '../Filter';
@@ -126,7 +126,6 @@ export const ActionsSetting = withDynamicSchemaProps(
                                 getAllCollectionsInheritChain,
                               })}
                               returnScope={(scope) => {
-                                // console.log('scope', [...scope, ...variableOptions]);
                                 return uniqBy([...scope, ...variableOptions], 'key');
                               }}
                             />
@@ -140,7 +139,7 @@ export const ActionsSetting = withDynamicSchemaProps(
                     },
                     actions: {
                       type: 'void',
-                      'x-component': (_props) => <Actions {..._props} {...props} />,
+                      'x-component': ActionsField,
                     },
                   },
                 },

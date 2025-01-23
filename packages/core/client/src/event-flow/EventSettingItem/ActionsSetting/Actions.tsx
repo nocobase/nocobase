@@ -8,13 +8,15 @@
  */
 
 import { ArrayField as ArrayFieldModel, VoidField } from '@formily/core';
-import { ArrayField, ObjectField, observer, useField } from '@formily/react';
-import { Space } from 'antd';
+import { ArrayField, ObjectField, observer, useField, Field } from '@formily/react';
+import { Space, Button, Cascader } from 'antd';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
-import { Action } from './Action';
 import { ArrayBase } from '@formily/antd-v5';
+import { useActionOptions } from './hooks/useActionOptions';
+import { CloseCircleOutlined } from '@ant-design/icons';
+import { ActionParamsField } from './ActionParams';
 
 interface LinkageRuleActionGroupProps {
   type: 'button' | 'field' | 'style';
@@ -22,34 +24,48 @@ interface LinkageRuleActionGroupProps {
   collectionName: string;
 }
 
-export const Actions = withDynamicSchemaProps(
-  (props: LinkageRuleActionGroupProps) => {
-    const { t } = useTranslation();
-    const field = useField<VoidField>();
-    const { category, elementType, linkageOptions, collectionName } = props;
-
-    const components = useMemo(
-      () => [Action, { category, elementType, linkageOptions, collectionName }],
-      [collectionName, linkageOptions, category, elementType],
-    );
-    const spaceStyle = useMemo(() => ({ marginTop: 8, marginBottom: 8 }), []);
-    const style = useMemo(() => ({ marginLeft: 10 }), []);
-    const onClick = useCallback(() => {
-      const f = field.query('.actions').take() as ArrayFieldModel;
-      const items = f.value || [];
-      items.push({});
-      f.value = items;
-      f.initialValue = items;
-    }, [field]);
-
+const Action = observer(
+  (props: any): any => {
+    const { onRemove } = props;
+    const options = useActionOptions();
+    const field = useField<any>();
+    field.onFieldChange = (field) => {
+      console.log('field', field);
+    };
     return (
-      <div style={style}>
-        <ArrayField name={'actions'} component={components} disabled={false} />
-        <Space size={16} style={spaceStyle}>
-          <a onClick={onClick}>{t('添加动作')}</a>
-        </Space>
-      </div>
+      <Space align="start">
+        <Field name="action" component={[Cascader, { options, placeholder: '选择动作' }]} />
+        <ArrayField name={'params'} component={[ActionParamsField, { action: field.value.action?.value }]} />
+        {!props.disabled && (
+          <a role="button" aria-label="icon-close">
+            <CloseCircleOutlined onClick={onRemove} style={{ color: '#bfbfbf' }} />
+          </a>
+        )}
+      </Space>
     );
   },
+  { displayName: 'ActionRow' },
+);
+
+const Actions = withDynamicSchemaProps(
+  observer((props: LinkageRuleActionGroupProps) => {
+    const { t } = useTranslation();
+    const field = useField<ArrayFieldModel>();
+    return (
+      <Space style={{ paddingLeft: 10 }} direction="vertical">
+        {field?.value?.map((item, index) => {
+          return <ObjectField key={index} name={index} component={[Action, { onRemove: () => field.remove(index) }]} />;
+        })}
+        <a onClick={() => field.push({})}>{t('添加动作')}</a>
+      </Space>
+    );
+  }),
   { displayName: 'Actions' },
+);
+
+export const ActionsField = withDynamicSchemaProps(
+  observer((props: LinkageRuleActionGroupProps) => {
+    return <ArrayField name={'actions'} component={[Actions]} />;
+  }),
+  { displayName: 'ActionsField' },
 );
