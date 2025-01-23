@@ -22,6 +22,7 @@ import {
   FindOptions as SequelizeFindOptions,
   UpdateOptions as SequelizeUpdateOptions,
   Transactionable,
+  Utils,
   WhereOperators,
 } from 'sequelize';
 
@@ -420,6 +421,10 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
       rows = eagerLoadingTree.root.instances;
     } else {
+      if (opts.where && model.primaryKeyAttributes.length === 0) {
+        opts.where = Utils.mapWhereFieldNames(opts.where, model);
+      }
+
       rows = await model.findAll({
         ...opts,
         transaction,
