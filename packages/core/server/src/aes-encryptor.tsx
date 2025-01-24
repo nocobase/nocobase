@@ -8,10 +8,11 @@
  */
 
 import crypto from 'crypto';
-import fs from 'fs/promises';
+import fs from 'fs-extra';
 import path from 'path';
+import Application from './application';
 
-class AesEncryptor {
+export class AesEncryptor {
   private key: Buffer;
 
   constructor(key: Buffer) {
@@ -70,6 +71,29 @@ class AesEncryptor {
         throw new Error(`Failed to load key: ${error.message}`);
       }
     }
+  }
+
+  static async getKeyPath(appName: string) {
+    const appKeyPath = path.resolve(process.cwd(), 'storage', 'apps', appName, 'aes_key.dat');
+    const appKeyExists = await fs.exists(appKeyPath);
+    if (appKeyExists) {
+      return appKeyPath;
+    }
+    const envKeyPath = path.resolve(process.cwd(), 'storage', 'environment-variables', appName, 'aes_key.dat');
+    const envKeyExists = await fs.exists(envKeyPath);
+    if (envKeyExists) {
+      return envKeyPath;
+    }
+    return appKeyPath;
+  }
+
+  static async create(app: Application) {
+    let key: any = process.env.APP_AES_SECRET_KEY;
+    if (!key) {
+      const keyPath = await this.getKeyPath(app.name);
+      key = await AesEncryptor.getOrGenerateKey(keyPath);
+    }
+    return new AesEncryptor(key);
   }
 }
 

@@ -73,10 +73,11 @@ import { createPubSubManager, PubSubManager, PubSubManagerOptions } from './pub-
 import { SyncMessageManager } from './sync-message-manager';
 
 import packageJson from '../package.json';
-import { ServiceContainer } from './service-container';
 import { availableActions } from './acl/available-action';
+import AesEncryptor from './aes-encryptor';
 import { AuditManager } from './audit-manager';
 import { Environment } from './environment';
+import { ServiceContainer } from './service-container';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -437,6 +438,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._dataSourceManager;
   }
 
+  protected _aesEncryptor: AesEncryptor;
+
+  get aesEncryptor() {
+    return this._aesEncryptor;
+  }
+
   /**
    * @internal
    */
@@ -622,6 +629,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         await oldDb.close();
       }
     }
+
+    this._aesEncryptor = await AesEncryptor.create(this);
 
     if (this.cacheManager) {
       await this.cacheManager.close();

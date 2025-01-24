@@ -8,12 +8,14 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import path from 'path';
-import AesEncryptor from './AesEncryptor';
 
 export class PluginEnvironmentVariablesServer extends Plugin {
-  aesEncryptor: AesEncryptor;
   updated = false;
+
+  get aesEncryptor() {
+    return this.app.aesEncryptor;
+  }
+
   async handleSyncMessage(message) {
     const { type, name, value } = message;
     if (type === 'updated') {
@@ -27,20 +29,9 @@ export class PluginEnvironmentVariablesServer extends Plugin {
   }
 
   async load() {
-    this.createAesEncryptor();
     this.registerACL();
     this.onEnvironmentSaved();
     await this.loadVariables();
-  }
-
-  async createAesEncryptor() {
-    let key: any = process.env.ENV_VARS_AES_SECRET_KEY;
-    if (!key) {
-      key = await AesEncryptor.getOrGenerateKey(
-        path.resolve(process.cwd(), 'storage', this.name, this.app.name, 'aes_key.dat'),
-      );
-    }
-    this.aesEncryptor = new AesEncryptor(key);
   }
 
   registerACL() {
