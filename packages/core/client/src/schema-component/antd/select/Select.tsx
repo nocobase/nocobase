@@ -17,6 +17,7 @@ import React from 'react';
 import { ReadPretty } from './ReadPretty';
 import { FieldNames, defaultFieldNames, getCurrentOptions } from './utils';
 import { BaseOptionType, DefaultOptionType } from 'antd/es/select';
+import { useCompile } from '../../';
 
 export type SelectProps<
   ValueType = any,
@@ -120,6 +121,7 @@ const filterOption = (input, option) => (option?.label ?? '').toLowerCase().incl
 const InternalSelect = connect(
   (props: SelectProps) => {
     const { objectValue, loading, value, rawOptions, defaultValue, ...others } = props;
+    const compile = useCompile();
     let mode: any = props.multiple ? 'multiple' : props.mode;
     if (mode && !['multiple', 'tags'].includes(mode)) {
       mode = undefined;
@@ -172,7 +174,7 @@ const InternalSelect = connect(
             </Tag>
           );
         }}
-        {...others}
+        {...compile(others)}
         onChange={(changed) => {
           props.onChange?.(changed === undefined ? null : changed);
         }}
