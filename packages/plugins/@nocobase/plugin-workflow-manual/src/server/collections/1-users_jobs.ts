@@ -14,7 +14,7 @@ export default defineCollection({
   dumpRules: {
     group: 'log',
   },
-  migrationRules: ['schema-only', 'skip'],
+  migrationRules: ['schema-only'],
   shared: true,
   fields: [
     {
