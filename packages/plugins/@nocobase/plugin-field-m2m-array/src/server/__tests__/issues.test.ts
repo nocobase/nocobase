@@ -113,7 +113,7 @@ describe('m2m array api, bigInt targetKey', () => {
     expect(res.status).toBe(200);
   });
 
-  test('update m2m array field in single realtion collection', async () => {
+  test('update m2m array field in single relation collection', async () => {
     await db.getRepository('collections').create({
       values: {
         name: 'tags',
