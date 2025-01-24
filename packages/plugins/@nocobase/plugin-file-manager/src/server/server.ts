@@ -253,7 +253,7 @@ export class PluginFileManagerServer extends Plugin {
 
     initActions(this);
 
-    this.app.acl.allow('attachments', ['upload', 'create', 'destroy'], 'loggedIn');
+    this.app.acl.allow('attachments', ['upload', 'create'], 'loggedIn');
     this.app.acl.allow('storages', 'getRules', 'loggedIn');
 
     // this.app.resourcer.use(uploadMiddleware);
