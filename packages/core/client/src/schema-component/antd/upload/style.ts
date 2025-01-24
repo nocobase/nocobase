@@ -47,7 +47,22 @@ export const useStyles = genStyleHook('upload', (token) => {
         },
         [`${componentCls}-list-item-thumbnail`]: {
           img: {
+            objectFit: 'coer !important',
+          },
+          '.object-fit-cover': {
             objectFit: 'cover !important',
+          },
+          '.object-fit-contain': {
+            objectFit: 'contain !important',
+          },
+          '.object-fit-fill': {
+            objectFit: 'fill !important',
+          },
+          '.object-fit-none': {
+            objectFit: 'none !important',
+          },
+          '.object-fit-scale-down': {
+            objectFit: 'scale-down !important',
           },
         },
         [`${componentCls}-list-item-actions`]: {

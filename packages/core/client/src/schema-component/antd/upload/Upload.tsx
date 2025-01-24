@@ -170,7 +170,7 @@ function InternalUpload(props: UploadProps) {
   return <AntdUpload {...useUploadProps(rest)} onChange={onFileChange} />;
 }
 
-function ReadPretty({ value, onChange, disabled, multiple, size }: UploadProps) {
+function ReadPretty({ value, onChange, disabled, multiple, size, objectFit }: UploadProps) {
   const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
   const useUploadStyleVal = (useUploadStyle as any).default ? (useUploadStyle as any).default : useUploadStyle;
   // 加载 antd 的样式
@@ -186,7 +186,14 @@ function ReadPretty({ value, onChange, disabled, multiple, size }: UploadProps) 
       )}
     >
       <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>
-        <AttachmentList disabled={disabled} readPretty multiple={multiple} value={value} onChange={onChange} />
+        <AttachmentList
+          disabled={disabled}
+          readPretty
+          multiple={multiple}
+          value={value}
+          onChange={onChange}
+          objectFit={objectFit}
+        />
       </div>
     </div>,
   );
@@ -209,15 +216,21 @@ function useSizeHint(size: number) {
   return s !== 0 ? t('File size should not exceed {{size}}.', { size: sizeString }) : '';
 }
 
-function DefaultThumbnailPreviewer({ file }) {
+function DefaultThumbnailPreviewer({ file, objectFit }) {
   const { componentCls: prefixCls } = useStyles();
   const { getThumbnailURL = getThumbnailPlaceholderURL } = attachmentFileTypes.getTypeByFile(file) ?? {};
   const imageUrl = getThumbnailURL(file);
-  return <img src={imageUrl} alt={file.title} className={`${prefixCls}-list-item-image`} />;
+  return (
+    <img
+      src={imageUrl}
+      alt={file.title}
+      className={`${prefixCls}-list-item-image object-fit-${objectFit ?? 'cover'}`}
+    />
+  );
 }
 
 function AttachmentListItem(props) {
-  const { file, disabled, onPreview, onDelete: propsOnDelete, readPretty } = props;
+  const { file, disabled, onPreview, onDelete: propsOnDelete, readPretty, objectFit } = props;
   const { componentCls: prefixCls } = useStyles();
   const { t } = useTranslation();
   const handleClick = useCallback(
@@ -239,7 +252,7 @@ function AttachmentListItem(props) {
 
   const item = [
     <span key="thumbnail" className={`${prefixCls}-list-item-thumbnail`}>
-      <ThumbnailPreviewer file={file} />
+      <ThumbnailPreviewer file={file} objectFit={objectFit} />
     </span>,
     <span key="title" className={`${prefixCls}-list-item-name`} title={file.title}>
       {file.status === 'uploading' ? t('Uploading') : file.title}
@@ -303,7 +316,7 @@ function Previewer({ index, onSwitchIndex, list }) {
 }
 
 export function AttachmentList(props) {
-  const { disabled, multiple, value, onChange, readPretty } = props;
+  const { disabled, multiple, value, onChange, readPretty, objectFit } = props;
   const [fileList, setFileList] = useState<any[]>([]);
   const [preview, setPreview] = useState<number>(null);
 
@@ -341,6 +354,7 @@ export function AttachmentList(props) {
           onPreview={onPreview}
           onDelete={onDelete}
           readPretty={readPretty}
+          objectFit={objectFit}
         />
       ))}
       <Previewer index={preview} onSwitchIndex={setPreview} list={fileList} />
