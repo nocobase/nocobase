@@ -94,7 +94,7 @@ const MobileDateTimePicker = connect(
           />
         </div>
         <DatePicker
-          {...others}
+          {...rest}
           cancelText={t('Cancel')}
           confirmText={t('Confirm')}
           visible={visible}
@@ -104,8 +104,8 @@ const MobileDateTimePicker = connect(
           }}
           precision={showTime && picker === 'date' ? getPrecision(timeFormat) : picker === 'date' ? 'day' : picker}
           renderLabel={labelRenderer}
-          min={others.min || new Date(1000, 0, 1)}
-          max={others.max || new Date(9999, 11, 31)}
+          min={rest.min || new Date(1000, 0, 1)}
+          max={rest.max || new Date(9999, 11, 31)}
           onConfirm={(val) => {
             handleConfirm(val);
           }}
