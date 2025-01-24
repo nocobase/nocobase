@@ -207,7 +207,7 @@ export default class ScheduleTrigger {
           const modExp = fn(
             'MOD',
             literal(
-              `${Math.round(timestamp / 1000)} - ${db.sequelize.getQueryInterface().quoteIdentifiers(tsFn(field))}`,
+              `${Math.round(timestamp / 1000)} - ${tsFn(db.sequelize.getQueryInterface().quoteIdentifiers(field))}`,
             ),
             Math.round(repeat / 1000),
           );
