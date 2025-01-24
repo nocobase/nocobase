@@ -15,6 +15,21 @@ export class PluginMobileServer extends Plugin {
     this.registerActionHandlers();
     this.bindNewMenuToRoles();
     this.setACL();
+
+    this.app.db.on('mobileRoutes.afterUpdate', async (instance: Model, { transaction }) => {
+      if (instance.changed('enableTabs')) {
+        const repository = this.app.db.getRepository('mobileRoutes');
+        await repository.update({
+          filter: {
+            parentId: instance.id,
+          },
+          values: {
+            hidden: !instance.enableTabs,
+          },
+          transaction,
+        });
+      }
+    });
   }
 
   setACL() {

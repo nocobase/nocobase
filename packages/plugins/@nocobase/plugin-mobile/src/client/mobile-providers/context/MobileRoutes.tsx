@@ -25,6 +25,9 @@ export interface MobileRouteItem {
   icon?: string;
   parentId?: number;
   children?: MobileRouteItem[];
+  hideInMenu?: boolean;
+  enableTabs?: boolean;
+  hidden?: boolean;
 }
 
 export const MobileRoutesContext = createContext<MobileRoutesContextValue>(null);
@@ -107,7 +110,12 @@ export const MobileRoutesProvider: FC<{
     runAsync: refresh,
     loading,
   } = useRequest<{ data: MobileRouteItem[] }>(
-    () => resource[action]({ tree: true, sort: 'sort' }).then((res) => res.data),
+    () =>
+      resource[action](
+        action === 'listAccessible'
+          ? { tree: true, sort: 'sort' }
+          : { tree: true, sort: 'sort', paginate: false, filter: { hidden: { $ne: true } } },
+      ).then((res) => res.data),
     {
       manual,
     },
