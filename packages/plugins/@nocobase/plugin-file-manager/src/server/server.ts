@@ -12,14 +12,14 @@ import { Registry } from '@nocobase/utils';
 
 import { basename, resolve } from 'path';
 
-import { Transactionable } from '@nocobase/database';
+import { Model, Transactionable } from '@nocobase/database';
 import fs from 'fs';
 import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
 import { FileModel } from './FileModel';
 import initActions from './actions';
 import { getFileData } from './actions/attachments';
 import { AttachmentInterface } from './interfaces/attachment-interface';
-import { IStorage, StorageModel } from './storages';
+import { AttachmentModel, IStorage, StorageModel } from './storages';
 import StorageTypeAliOss from './storages/ali-oss';
 import StorageTypeLocal from './storages/local';
 import StorageTypeS3 from './storages/s3';
@@ -28,6 +28,16 @@ import StorageTypeTxCos from './storages/tx-cos';
 export type * from './storages';
 
 const DEFAULT_STORAGE_TYPE = STORAGE_TYPE_LOCAL;
+
+class FileDeleteError extends Error {
+  data: Model;
+
+  constructor(message: string, data: Model) {
+    super(message);
+    this.name = 'FileDeleteError';
+    this.data = data;
+  }
+}
 
 export type FileRecordOptions = {
   collectionName: string;
@@ -45,6 +55,23 @@ export type UploadFileOptions = {
 export class PluginFileManagerServer extends Plugin {
   storageTypes = new Registry<IStorage>();
   storagesCache = new Map<number, StorageModel>();
+
+  afterDestroy = async (record: Model, options) => {
+    const { collection } = record.constructor as typeof Model;
+    if (collection?.options?.template !== 'file' && collection.name !== 'attachments') {
+      return;
+    }
+
+    const storage = this.storagesCache.get(record.get('storageId'));
+    if (storage?.paranoid) {
+      return;
+    }
+    const storageConfig = this.storageTypes.get(storage.type);
+    const result = await storageConfig.delete(storage, [record as unknown as AttachmentModel]);
+    if (!result[0]) {
+      throw new FileDeleteError('Failed to delete file', record);
+    }
+  };
 
   registerStorageType(type: string, options: IStorage) {
     this.storageTypes.register(type, options);
@@ -184,6 +211,8 @@ export class PluginFileManagerServer extends Plugin {
   }
 
   async load() {
+    this.db.on('afterDestroy', this.afterDestroy);
+
     this.storageTypes.register(STORAGE_TYPE_LOCAL, new StorageTypeLocal());
     this.storageTypes.register(STORAGE_TYPE_ALI_OSS, new StorageTypeAliOss());
     this.storageTypes.register(STORAGE_TYPE_S3, new StorageTypeS3());
@@ -230,8 +259,7 @@ export class PluginFileManagerServer extends Plugin {
 
     initActions(this);
 
-    this.app.acl.allow('attachments', 'upload', 'loggedIn');
-    this.app.acl.allow('attachments', 'create', 'loggedIn');
+    this.app.acl.allow('attachments', ['upload', 'create'], 'loggedIn');
     this.app.acl.allow('storages', 'getBasicInfo', 'loggedIn');
 
     // this.app.resourcer.use(uploadMiddleware);

@@ -48,7 +48,8 @@ const MobileDateTimePicker = connect(
       timeFormat = 'HH:mm',
       showTime = false,
       picker,
-      ...others
+      disabled,
+      ...rest
     } = props;
     const [visible, setVisible] = useState(false);
 
@@ -81,12 +82,13 @@ const MobileDateTimePicker = connect(
 
     return (
       <>
-        <div contentEditable="false" onClick={() => setVisible(true)}>
+        <div contentEditable="false" onClick={() => !disabled && setVisible(true)}>
           <NBDatePicker
             onClick={() => setVisible(true)}
             value={value}
             picker={picker}
-            {...others}
+            disabled={disabled}
+            {...rest}
             popupStyle={{ display: 'none' }}
             style={{ pointerEvents: 'none', width: '100%' }}
           />
