@@ -779,6 +779,7 @@ const createPage = async (options?: CreatePageOptions) => {
         schemaUid: newPageSchema?.['x-uid'] || pageSchemaUid,
         menuSchemaUid,
         hideInMenu: false,
+        enableTabs: !!newPageSchema?.['x-component-props']?.enablePageTabs,
         children: newPageSchema
           ? schemaToRoutes(newPageSchema)
           : [
