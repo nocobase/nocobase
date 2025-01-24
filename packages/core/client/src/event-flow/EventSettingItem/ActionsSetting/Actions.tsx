@@ -17,6 +17,7 @@ import { ArrayBase } from '@formily/antd-v5';
 import { useActionOptions } from './hooks/useActionOptions';
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { ActionParamsField } from './ActionParams';
+import { ActionSelect } from './ActionSelect';
 
 interface LinkageRuleActionGroupProps {
   type: 'button' | 'field' | 'style';
@@ -27,15 +28,18 @@ interface LinkageRuleActionGroupProps {
 const Action = observer(
   (props: any): any => {
     const { onRemove } = props;
-    const options = useActionOptions();
     const field = useField<any>();
     field.onFieldChange = (field) => {
       console.log('field', field);
     };
+
     return (
       <Space align="start">
-        <Field name="action" component={[Cascader, { options, placeholder: '选择动作' }]} />
-        <ArrayField name={'params'} component={[ActionParamsField, { action: field.value.action?.value }]} />
+        <Field name="action" component={[ActionSelect]} />
+        <ArrayField
+          name={'params'}
+          component={[ActionParamsField, { action: field.value.action?.value, parentPath: field.path }]}
+        />
         {!props.disabled && (
           <a role="button" aria-label="icon-close">
             <CloseCircleOutlined onClick={onRemove} style={{ color: '#bfbfbf' }} />

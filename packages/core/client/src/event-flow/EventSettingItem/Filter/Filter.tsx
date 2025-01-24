@@ -68,7 +68,6 @@ export const Filter: any = withDynamicSchemaProps(
             collectionName,
           }}
         >
-          {index}
           <FilterGroup {...props} bordered={false} />
         </FilterContext.Provider>
       </div>

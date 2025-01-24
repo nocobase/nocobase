@@ -8,7 +8,7 @@
  */
 
 import { ArrayField as ArrayFieldModel, VoidField, ObjectField as ObjectFieldModel } from '@formily/core';
-import { ArrayField, ObjectField, observer, useField } from '@formily/react';
+import { ArrayField, Field, ObjectField, observer, useField } from '@formily/react';
 import { Button, Cascader, Input, Space, TreeSelect } from 'antd';
 import React, { useCallback, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -55,14 +55,7 @@ export const ActionRow = observer(
     return (
       <div>
         <Space>
-          <Cascader
-            // value={state}
-            options={options}
-            onChange={(value) => {
-              console.log('value', value);
-              // setState(value);
-            }}
-          ></Cascader>
+          <Field name="action" component={[Cascader, { options }]} />
           <div>
             <ArrayField name={'params'} component={[ActionParams, {}]} disabled={false} />
             <Button onClick={onClick}>添加参数</Button>

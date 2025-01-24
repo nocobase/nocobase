@@ -71,5 +71,15 @@ export interface EventSetting {
   /** 标识同一类型组件的不同实例 */
   uid?: string;
   condition: string;
-  actions: string[];
+  actions: Array<EventActionSetting>;
+}
+export interface EventActionSetting {
+  definition: string;
+  event: string;
+  uid?: string;
+  params?: Array<EventActionSettingParams>;
+}
+export interface EventActionSettingParams {
+  name: string;
+  value: string;
 }
