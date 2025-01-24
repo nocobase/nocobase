@@ -186,9 +186,15 @@ export class CollectionRepository extends Repository {
       });
     }
 
+    const collectionOptions = options;
+
+    if (collectionOptions.schema && collectionOptions.schema == this.database.options.schema) {
+      delete collectionOptions.schema;
+    }
+
     await this.create({
       values: {
-        ...lodash.omit(options, 'schema'),
+        ...collectionOptions,
         fields,
         from: 'db2cm',
       },

@@ -23,8 +23,12 @@ export default class extends Migration {
     });
 
     for (const collection of collections) {
-      collection.set('schema', undefined);
-      await collection.save();
+      const collectionSchema = collection.get('schema');
+      const dbSchema = this.context.db.options.schema;
+      if (collectionSchema && collectionSchema == dbSchema) {
+        collection.set('schema', undefined);
+        await collection.save();
+      }
     }
   }
 }
