@@ -30,15 +30,13 @@ export const VariablePopupRecordProvider: FC<{
   const recordData = useCollectionRecordData();
   const collection = useCollection();
   const parent = useCurrentPopupRecord();
-  //支持添加按钮中的关系数据的添加表单获取上级弹窗记录（上级弹窗中的表单）
-  const parentForm = useForm();
-  const parentFormValues = parentForm.values;
+
   return (
     <CurrentParentPopupRecordContext.Provider
       value={{
         name: '$nParentPopupRecord',
         title: t('Parent popup record'),
-        value: props.parent?.recordData || parent?.value || parentFormValues,
+        value: props.parent?.recordData || parent?.value,
         collection: props.parent?.collection || parent?.collection,
       }}
     >
