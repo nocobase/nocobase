@@ -12,7 +12,7 @@
 export default {
   name: 'mobileRoutes',
   dumpRules: 'required',
-  title: 'mobileRoutes',
+  migrationRules: ['overwrite', 'schema-only'],
   inherit: false,
   hidden: false,
   description: null,
