@@ -73,6 +73,59 @@ function collectCollectionFields(properties: Record<string, any>): string[] {
   );
 }
 
+const NestedGridComponents = ['Grid', 'Grid.Row', 'Grid.Col'];
+type GridItemInfo = {
+  schema: Schema;
+  path: Array<{ schema: Schema; type: string; key: string }>;
+  key: string;
+};
+/**
+ * Collects all grid items from a schema's properties recursively
+ * @param schema The schema to collect items from
+ * @param itemsMap Map to store collected items with their paths
+ * @param parentPath Array of parent grid components
+ * @param schemaKey Current schema's key in its parent
+ */
+function collectGridItems(
+  schema: Schema,
+  itemsMap: Map<string, GridItemInfo>,
+  parentPath: Array<{ schema: Schema; type: string; key: string }> = [],
+  schemaKey?: string,
+) {
+  const properties = schema.properties || {};
+  const component = schema['x-component'];
+
+  // If current schema is a grid component, add it to the path
+  if (NestedGridComponents.includes(component)) {
+    parentPath = [
+      ...parentPath,
+      {
+        schema,
+        type: component,
+        key: schemaKey || '',
+      },
+    ];
+  }
+
+  for (const [key, property] of Object.entries(properties)) {
+    if (!property) continue;
+
+    const propertyComponent = property['x-component'];
+
+    if (NestedGridComponents.includes(propertyComponent)) {
+      // Recursively collect items from nested grid structures
+      collectGridItems(property, itemsMap, parentPath, key);
+    } else if (property['x-uid']) {
+      // Store non-grid items with their full path context and key
+      itemsMap.set(property['x-uid'], {
+        schema: property,
+        path: parentPath,
+        key,
+      });
+    }
+  }
+}
+
 function mergeSchema(template, schema, rootTemplate) {
   if (template['properties'] && !schema['properties']) {
     schema['properties'] = {};
@@ -96,6 +149,60 @@ function mergeSchema(template, schema, rootTemplate) {
         if (keyName === 'properties') {
           const sourceKeys = Object.keys(sourceValue);
           let targetKeys = Object.keys(objectValue || {});
+
+          // 处理Grid的拖动后行列改变的情况
+          if (
+            NestedGridComponents.includes(source['x-component']) &&
+            NestedGridComponents.includes(object['x-component'])
+          ) {
+            const tItemsMap = new Map<string, GridItemInfo>();
+            const sItemsMap = new Map<string, GridItemInfo>();
+
+            // Collect items from both template and source
+            collectGridItems(object, tItemsMap);
+            collectGridItems(source, sItemsMap);
+
+            // Match and merge items based on template UIDs
+            for (const [uid, sourceItem] of sItemsMap.entries()) {
+              if (!sourceItem.schema['x-template-uid']) continue;
+
+              const templateItem = tItemsMap.get(sourceItem.schema['x-template-uid']);
+              if (templateItem) {
+                // Merge the schemas
+                const mergedSchema = mergeSchema(templateItem.schema, sourceItem.schema, rootTemplate);
+
+                sourceItem.path[sourceItem.path.length - 1].schema.properties[sourceItem.key] = mergedSchema;
+                sourceItem.schema = mergedSchema;
+
+                // Remove matched item from template map
+                tItemsMap.delete(sourceItem.schema['x-template-uid']);
+              }
+            }
+
+            // Add remaining unmatched template items to appropriate locations
+            const remainingTemplateItems = {} as Schema;
+            for (const [_uid, item] of tItemsMap.entries()) {
+              let current = remainingTemplateItems;
+              // Create path if it doesn't exist
+              for (const pathItem of item.path.slice(1)) {
+                if (!current.properties) {
+                  current.properties = {};
+                }
+                if (!current.properties[pathItem.key]) {
+                  current.properties[pathItem.key] = {
+                    ...pathItem.schema,
+                    properties: {},
+                  };
+                }
+                current = current.properties[pathItem.key];
+              }
+              current.properties = current.properties || {};
+              current.properties[item.key] = item.schema;
+            }
+            objectValue = remainingTemplateItems.properties;
+            targetKeys = Object.keys(remainingTemplateItems.properties || {});
+          }
+
           // remove duplicate configureActions keys and configureFields keys
           if (/:configure.*Actions/.test(object['x-initializer'])) {
             for (const skey of sourceKeys) {
@@ -187,52 +294,6 @@ function mergeSchema(template, schema, rootTemplate) {
                 syncUniqueFieldTemplateInfo(sourceValue, skey, removedTargetKeys, objectValue);
               }
             }
-          }
-
-          // 处理Grid的拖动后行列改变的情况
-          if (source['x-component'] === 'Grid' && object['x-component'] === 'Grid') {
-            const tItemsMap = new Map();
-
-            for (const [rowKey, row] of Object.entries(object['properties'] || {})) {
-              for (const [colKey, col] of Object.entries(row['properties'] || {})) {
-                for (const [itemKey, item] of Object.entries(col['properties'] || {})) {
-                  if (item['x-uid']) {
-                    tItemsMap.set(item['x-uid'], { schema: item, row, col, rowKey, colKey, itemKey });
-                  }
-                }
-              }
-            }
-
-            for (const row of Object.values(source['properties'] || {})) {
-              for (const col of Object.values(row['properties'] || {})) {
-                for (const [schemaKey, schema] of Object.entries(col['properties'] || {})) {
-                  if (schema['x-template-uid']) {
-                    const matchedItem = tItemsMap.get(schema['x-template-uid']);
-                    if (matchedItem) {
-                      col['properties'][schemaKey] = mergeSchema(matchedItem.schema || {}, schema || {}, rootTemplate);
-                      tItemsMap.delete(schema['x-template-uid']);
-                    }
-                  }
-                }
-              }
-            }
-
-            const targetProperties = {};
-            for (const [itemId, item] of tItemsMap) {
-              targetProperties[item.rowKey] = targetProperties[item.rowKey] || {
-                ...item.row,
-                properties: {},
-              };
-              targetProperties[item.rowKey]['properties'][item.colKey] = targetProperties[item.rowKey]['properties'][
-                item.colKey
-              ] || {
-                ...item.col,
-                properties: {},
-              };
-              targetProperties[item.rowKey]['properties'][item.colKey]['properties'][item.itemKey] = item.schema;
-            }
-            targetKeys = Object.keys(targetProperties);
-            objectValue = targetProperties;
           }
 
           const keys = _.union(targetKeys, sourceKeys);
