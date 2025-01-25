@@ -34,29 +34,6 @@ export async function getNewFullBlock(db: Database, transaction: Transaction, bl
   return newSchema;
 }
 
-function syncUniqueFieldTemplateInfo(sourceValue: any, skey: string, removedTargetKeys: string[], objectValue: any) {
-  if (removedTargetKeys.length > 0) {
-    sourceValue[skey]['x-template-uid'] = objectValue[removedTargetKeys[0]]['x-uid'];
-    const sourceSchema = sourceValue[skey];
-    const removedSchema = objectValue[removedTargetKeys[0]];
-    _.mergeWith(sourceSchema, removedSchema, function mergeTemplateUid(sSchema, rSchema, key) {
-      if (key === 'properties' && sSchema) {
-        const sKeys = Object.keys(sSchema || {});
-        const rKeys = Object.keys(rSchema || {});
-        sKeys.forEach((skey, keyIndex) => {
-          if (sSchema[skey]['x-component'] === 'Grid.Row' || sSchema[skey]['x-component'] === 'Grid.Col') {
-            mergeTemplateUid(sSchema[skey]?.['properties'], rSchema?.[rKeys[keyIndex]]?.['properties'], 'properties');
-          } else {
-            sSchema[skey]['x-template-uid'] = rSchema?.[rKeys[keyIndex]]?.['x-uid'];
-            mergeTemplateUid(sSchema[skey]?.['properties'], rSchema?.[rKeys[keyIndex]]?.['properties'], 'properties');
-          }
-        });
-      }
-      return sSchema;
-    });
-  }
-}
-
 function collectCollectionFields(properties: Record<string, any>): string[] {
   return _.reduce(
     Object.values(properties || {}),
@@ -71,6 +48,28 @@ function collectCollectionFields(properties: Record<string, any>): string[] {
     },
     [],
   );
+}
+
+function getNewObjectValue(itemsMap: Map<string, GridItemInfo>) {
+  const remainingTemplateItems = { properties: {} } as Schema;
+  for (const [_uid, item] of itemsMap.entries()) {
+    let current = remainingTemplateItems;
+    for (const pathItem of item.path.slice(1)) {
+      if (!current.properties) {
+        current.properties = {};
+      }
+      if (!current.properties[pathItem.key]) {
+        current.properties[pathItem.key] = {
+          ...pathItem.schema,
+          properties: {},
+        };
+      }
+      current = current.properties[pathItem.key];
+    }
+    current.properties = current.properties || {};
+    current.properties[item.key] = item.schema;
+  }
+  return remainingTemplateItems.properties;
 }
 
 const NestedGridComponents = ['Grid', 'Grid.Row', 'Grid.Col'];
@@ -179,28 +178,8 @@ function mergeSchema(template, schema, rootTemplate) {
               }
             }
 
-            // Add remaining unmatched template items to appropriate locations
-            const remainingTemplateItems = {} as Schema;
-            for (const [_uid, item] of tItemsMap.entries()) {
-              let current = remainingTemplateItems;
-              // Create path if it doesn't exist
-              for (const pathItem of item.path.slice(1)) {
-                if (!current.properties) {
-                  current.properties = {};
-                }
-                if (!current.properties[pathItem.key]) {
-                  current.properties[pathItem.key] = {
-                    ...pathItem.schema,
-                    properties: {},
-                  };
-                }
-                current = current.properties[pathItem.key];
-              }
-              current.properties = current.properties || {};
-              current.properties[item.key] = item.schema;
-            }
-            objectValue = remainingTemplateItems.properties;
-            targetKeys = Object.keys(remainingTemplateItems.properties || {});
+            objectValue = getNewObjectValue(tItemsMap);
+            targetKeys = Object.keys(objectValue);
           }
 
           // remove duplicate configureActions keys and configureFields keys
@@ -216,7 +195,9 @@ function mergeSchema(template, schema, rootTemplate) {
                     const targetUseComponentProps = objectValue[key]?.['x-use-component-props'];
                     return sourceUseComponentProps === targetUseComponentProps;
                   });
-                  syncUniqueFieldTemplateInfo(sourceValue, skey, removedTargetKeys, objectValue);
+                  if (removedTargetKeys.length > 0) {
+                    sourceValue[skey]['x-template-uid'] = objectValue[removedTargetKeys[0]]['x-uid'];
+                  }
                 }
               }
 
@@ -236,7 +217,9 @@ function mergeSchema(template, schema, rootTemplate) {
                     targetKeys,
                     (key) => objectValue[key]?.['x-settings'] === `actionSettings:${targetActionName}`,
                   );
-                  syncUniqueFieldTemplateInfo(sourceValue, skey, removedTargetKeys, objectValue);
+                  if (removedTargetKeys.length > 0) {
+                    sourceValue[skey]['x-template-uid'] = objectValue[removedTargetKeys[0]]['x-uid'];
+                  }
                 }
               }
             }
@@ -247,19 +230,19 @@ function mergeSchema(template, schema, rootTemplate) {
           for (const skey of sourceKeys) {
             if (object['x-initializer'] === 'table:configureColumns') {
               if (sourceValue[skey]['x-settings'] === 'fieldSettings:TableColumn') {
-                const xColField = _.get(
-                  Object.values(sourceValue[skey]?.['properties'] || {})[0],
-                  'x-collection-field',
-                );
+                const sourceColFieldSchema = Object.values(sourceValue[skey]?.['properties'] || {})[0];
+                const xColField = _.get(sourceColFieldSchema, 'x-collection-field');
                 if (xColField) {
+                  let targetColFieldSchema = null;
                   const removedTargetKeys = _.remove(targetKeys, (key) => {
-                    const targetColField = _.get(
-                      Object.values(objectValue[key]?.['properties'] || {})[0],
-                      'x-collection-field',
-                    );
+                    targetColFieldSchema = Object.values(objectValue[key]?.['properties'] || {})[0];
+                    const targetColField = _.get(targetColFieldSchema, 'x-collection-field');
                     return xColField === targetColField;
                   });
-                  syncUniqueFieldTemplateInfo(sourceValue, skey, removedTargetKeys, objectValue);
+                  if (removedTargetKeys.length > 0) {
+                    sourceValue[skey]['x-template-uid'] = objectValue[removedTargetKeys[0]]['x-uid'];
+                    sourceColFieldSchema['x-template-uid'] = targetColFieldSchema?.['x-uid'];
+                  }
                 }
               }
               // find the x-initializer: "table:configureItemActions"
@@ -267,21 +250,37 @@ function mergeSchema(template, schema, rootTemplate) {
                 const removedTargetKeys = _.remove(targetKeys, (key) => {
                   return objectValue[key]?.['x-initializer'] === 'table:configureItemActions';
                 });
-                syncUniqueFieldTemplateInfo(sourceValue, skey, removedTargetKeys, objectValue);
+                if (removedTargetKeys.length > 0) {
+                  sourceValue[skey]['x-template-uid'] = objectValue[removedTargetKeys[0]]['x-uid'];
+                }
               }
             }
           }
 
           // 还有些fields情况
           // *:configureFields
-          for (const skey of sourceKeys) {
-            if (/:configureFields/.test(source['x-initializer'])) {
-              const xColFields = collectCollectionFields(sourceValue[skey]?.['properties'] || {});
-              const removedTargetKeys = _.remove(targetKeys, (key) => {
-                const targetXColFields = collectCollectionFields(objectValue[key]?.['properties'] || {});
-                return !!_.find(xColFields, (field) => targetXColFields.includes(field));
-              });
-              syncUniqueFieldTemplateInfo(sourceValue, skey, removedTargetKeys, objectValue);
+          if (/:configureFields/.test(source['x-initializer'])) {
+            const targetFieldsMap = new Map<string, GridItemInfo>();
+            collectGridItems(object, targetFieldsMap);
+            const targetFields = Array.from(targetFieldsMap.values());
+
+            for (const skey of sourceKeys) {
+              const sourceFieldsMap = new Map<string, GridItemInfo>();
+              collectGridItems(sourceValue[skey], sourceFieldsMap);
+
+              for (const [uid, sourceItem] of sourceFieldsMap.entries()) {
+                const xColField = _.get(sourceItem.schema, 'x-collection-field');
+                if (!xColField) continue;
+                // find the target fields with the same x-collection-field
+                const targetItem = _.find(targetFields, (field) => field.schema['x-collection-field'] === xColField);
+                if (targetItem) {
+                  targetFieldsMap.delete(targetItem.schema['x-uid']);
+                  sourceItem.schema['x-template-uid'] = targetItem.schema['x-uid'];
+                }
+              }
+              // 剩余的fields
+              objectValue = getNewObjectValue(targetFieldsMap);
+              targetKeys = Object.keys(objectValue);
             }
           }
 
@@ -291,7 +290,9 @@ function mergeSchema(template, schema, rootTemplate) {
                 const removedTargetKeys = _.remove(targetKeys, (key) => {
                   return objectValue[key]?.['x-settings'] === 'actionSettings:delete';
                 });
-                syncUniqueFieldTemplateInfo(sourceValue, skey, removedTargetKeys, objectValue);
+                if (removedTargetKeys.length > 0) {
+                  sourceValue[skey]['x-template-uid'] = objectValue[removedTargetKeys[0]]['x-uid'];
+                }
               }
             }
           }
