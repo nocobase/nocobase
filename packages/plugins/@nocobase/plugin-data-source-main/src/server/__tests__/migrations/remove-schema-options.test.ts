@@ -22,7 +22,7 @@ describe.runIf(process.env.DB_DIALECT === 'postgres')('remove schema options', (
       values: {
         name: 'test',
         from: 'db2cm',
-        schema: 'test_schema',
+        schema: 'some_schema',
       },
     });
 
