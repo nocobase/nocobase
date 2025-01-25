@@ -188,7 +188,7 @@ export class CollectionRepository extends Repository {
 
     const collectionOptions = options;
 
-    if (collectionOptions.schema && collectionOptions.schema == this.database.options.schema) {
+    if (collectionOptions.schema && collectionOptions.schema == (this.database.options.schema || 'public')) {
       delete collectionOptions.schema;
     }
 

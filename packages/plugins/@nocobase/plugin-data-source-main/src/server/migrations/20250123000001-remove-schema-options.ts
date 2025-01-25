@@ -24,7 +24,7 @@ export default class extends Migration {
 
     for (const collection of collections) {
       const collectionSchema = collection.get('schema');
-      const dbSchema = this.context.db.options.schema;
+      const dbSchema = this.context.db.options.schema || 'public';
       if (collectionSchema && collectionSchema == dbSchema) {
         collection.set('schema', undefined);
         await collection.save();
