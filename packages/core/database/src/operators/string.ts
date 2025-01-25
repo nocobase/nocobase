@@ -60,7 +60,20 @@ function getFieldExpression(value, ctx, operator) {
 
     return Sequelize.literal(`CAST(${quotedField} AS TEXT) ${operator} ${ctx.db.sequelize.escape(value)}`);
   }
-  return { [operator]: value };
+
+  // For MySQL and other databases, return the operator directly
+  const op =
+    operator === 'LIKE'
+      ? Op.like
+      : operator === 'NOT LIKE'
+        ? Op.notLike
+        : operator === 'ILIKE'
+          ? Op.like
+          : operator === 'NOT ILIKE'
+            ? Op.notLike
+            : Op.like;
+
+  return { [op]: value };
 }
 
 export default {
