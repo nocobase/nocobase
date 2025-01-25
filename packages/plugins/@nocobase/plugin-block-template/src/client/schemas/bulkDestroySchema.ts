@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ExclamationCircleFilled } from '@ant-design/icons';
-import React from 'react';
+import { useMemo } from 'react';
 import { tStr } from '../locale';
+import { createForm } from '@formily/core';
 
 export const bulkDestroySchema = {
   name: 'bulkDestroySchema',
@@ -24,6 +24,11 @@ export const bulkDestroySchema = {
     modal: {
       type: 'void',
       'x-component': 'Action.Modal',
+      'x-decorator': 'FormV2',
+      'x-use-decorator-props': function useCreateFormProps() {
+        const form = useMemo(() => createForm(), []);
+        return { form };
+      },
       title: '{{t("Delete")}}',
       properties: {
         keepBlocks: {
