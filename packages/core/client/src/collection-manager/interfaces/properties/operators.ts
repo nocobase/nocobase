@@ -164,8 +164,49 @@ export const time = [
 ];
 
 export const boolean = [
-  { label: '{{t("Yes")}}', value: '$isTruly', selected: true, noValue: true },
-  { label: '{{t("No")}}', value: '$isFalsy', noValue: true },
+  {
+    label: '{{t("Yes")}}',
+    value: '$isTruly',
+    selected: true,
+    noValue: true,
+    schema: {
+      'x-component': 'Select',
+      'x-component-props': {
+        multiple: false,
+        options: [
+          {
+            label: '{{t("Yes")}}',
+            value: true,
+          },
+          {
+            label: '{{t("No")}}',
+            value: false,
+          },
+        ],
+      },
+    },
+  },
+  {
+    label: '{{t("No")}}',
+    value: '$isFalsy',
+    noValue: true,
+    schema: {
+      'x-component': 'Select',
+      'x-component-props': {
+        multiple: false,
+        options: [
+          {
+            label: '{{t("Yes")}}',
+            value: true,
+          },
+          {
+            label: '{{t("No")}}',
+            value: false,
+          },
+        ],
+      },
+    },
+  },
 ];
 
 export const tableoid = [

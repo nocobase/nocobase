@@ -7,14 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { omit } from 'lodash';
+import _ from 'lodash';
 import { Transactionable } from 'sequelize/types';
 import { Collection } from '../collection';
 import { transactionWrapperBuilder } from '../decorators/transaction-decorator';
 import { FindOptions } from '../repository';
-import { MultipleRelationRepository } from './multiple-relation-repository';
+import { MultipleRelationRepository } from '../relation-repository/multiple-relation-repository';
 import Database from '../database';
 import { Model } from '../model';
+import { UpdateAssociationOptions } from '../update-associations';
 
 const transaction = transactionWrapperBuilder(function () {
   return this.collection.model.sequelize.transaction();
@@ -68,6 +69,21 @@ export class BelongsToArrayAssociation {
       on: this.db.sequelize.literal(`${left}=any(${right})`),
     };
   }
+
+  async update(instance: Model, value: any, options: UpdateAssociationOptions = {}) {
+    // @ts-ignore
+    await instance.update(
+      {
+        [this.as]: value,
+      },
+      {
+        values: {
+          [this.as]: value,
+        },
+        transaction: options?.transaction,
+      },
+    );
+  }
 }
 
 export class BelongsToArrayRepository extends MultipleRelationRepository {
@@ -101,7 +117,7 @@ export class BelongsToArrayRepository extends MultipleRelationRepository {
     }
 
     const findOptions = {
-      ...omit(options, ['filterByTk', 'where', 'values', 'attributes']),
+      ..._.omit(options, ['filterByTk', 'where', 'values', 'attributes']),
       filter: {
         $and: [options.filter || {}, addFilter],
       },

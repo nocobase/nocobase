@@ -11,7 +11,7 @@ import { COLLECTION_NAME } from '../constant';
 
 export default {
   name: COLLECTION_NAME.logs,
-  migrationRules: ['schema-only', 'skip'],
+  migrationRules: ['schema-only'],
   title: 'MessageLogs',
   fields: [
     {

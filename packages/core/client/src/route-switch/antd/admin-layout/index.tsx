@@ -37,7 +37,6 @@ import {
   RemoteSchemaTemplateManagerPlugin,
   RemoteSchemaTemplateManagerProvider,
   SchemaComponent,
-  useACLRoleContext,
   useAdminSchemaUid,
   useDocumentTitle,
   useRequest,
@@ -58,32 +57,21 @@ import { Plugin } from '../../../application/Plugin';
 import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
 import { Help } from '../../../user/Help';
 import { KeepAlive } from './KeepAlive';
+import { convertRoutesToSchema, NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 
-export { KeepAlive };
+export { KeepAlive, NocoBaseDesktopRouteType };
 
-const filterByACL = (schema, options) => {
-  const { allowAll, allowMenuItemIds = [] } = options;
-  if (allowAll) {
-    return schema;
-  }
-  const filterSchema = (s) => {
-    if (!s) {
-      return;
-    }
-    for (const key in s.properties) {
-      if (Object.prototype.hasOwnProperty.call(s.properties, key)) {
-        const element = s.properties[key];
-        if (element['x-uid'] && !allowMenuItemIds.includes(element['x-uid'])) {
-          delete s.properties[key];
-        }
-        if (element['x-uid']) {
-          filterSchema(element);
-        }
-      }
-    }
-  };
-  filterSchema(schema);
-  return schema;
+const RouteContext = createContext<NocoBaseDesktopRoute | null>(null);
+RouteContext.displayName = 'RouteContext';
+
+const CurrentRouteProvider: FC<{ uid: string }> = ({ children, uid }) => {
+  const { allAccessRoutes } = useAllAccessDesktopRoutes();
+  const routeNode = useMemo(() => getRouteNodeBySchemaUid(uid, allAccessRoutes), [uid, allAccessRoutes]);
+  return <RouteContext.Provider value={routeNode}>{children}</RouteContext.Provider>;
+};
+
+export const useCurrentRoute = () => {
+  return useContext(RouteContext) || {};
 };
 
 const useMenuProps = () => {
@@ -97,6 +85,20 @@ const useMenuProps = () => {
 const MenuSchemaRequestContext = createContext(null);
 MenuSchemaRequestContext.displayName = 'MenuSchemaRequestContext';
 
+const emptyArray = [];
+const AllAccessDesktopRoutesContext = createContext<{
+  allAccessRoutes: NocoBaseDesktopRoute[];
+  refresh: () => void;
+}>({
+  allAccessRoutes: emptyArray,
+  refresh: () => {},
+});
+AllAccessDesktopRoutesContext.displayName = 'AllAccessDesktopRoutesContext';
+
+export const useAllAccessDesktopRoutes = () => {
+  return useContext(AllAccessDesktopRoutesContext);
+};
+
 const MenuSchemaRequestProvider: FC = ({ children }) => {
   const { t } = useMenuTranslation();
   const { setTitle: _setTitle } = useDocumentTitle();
@@ -106,19 +108,19 @@ const MenuSchemaRequestProvider: FC = ({ children }) => {
   const isMatchAdminName = useMatchAdminName();
   const currentPageUid = useCurrentPageUid();
   const isDynamicPage = !!currentPageUid;
-  const ctx = useACLRoleContext();
   const adminSchemaUid = useAdminSchemaUid();
 
-  const { data } = useRequest<{
+  const { data, refresh } = useRequest<{
     data: any;
   }>(
     {
-      url: `/uiSchemas:getJsonSchema/${adminSchemaUid}`,
+      url: `/desktopRoutes:listAccessible`,
+      params: { tree: true, sort: 'sort' },
     },
     {
       refreshDeps: [adminSchemaUid],
       onSuccess(data) {
-        const schema = filterByACL(data?.data, ctx);
+        const schema = convertRoutesToSchema(data?.data);
         // url 为 `/admin` 的情况
         if (isMatchAdmin) {
           const s = findMenuItem(schema);
@@ -157,7 +159,24 @@ const MenuSchemaRequestProvider: FC = ({ children }) => {
     },
   );
 
-  return <MenuSchemaRequestContext.Provider value={data?.data}>{children}</MenuSchemaRequestContext.Provider>;
+  const menuSchema = useMemo(() => {
+    if (data?.data) {
+      return convertRoutesToSchema(data?.data);
+    }
+  }, [data?.data]);
+
+  const allAccessRoutesValue = useMemo(() => {
+    return {
+      allAccessRoutes: data?.data || emptyArray,
+      refresh,
+    };
+  }, [data?.data, refresh]);
+
+  return (
+    <AllAccessDesktopRoutesContext.Provider value={allAccessRoutesValue}>
+      <MenuSchemaRequestContext.Provider value={menuSchema}>{children}</MenuSchemaRequestContext.Provider>
+    </AllAccessDesktopRoutesContext.Provider>
+  );
 };
 
 const MenuEditor = (props) => {
@@ -170,7 +189,6 @@ const MenuEditor = (props) => {
   const isMatchAdminName = useMatchAdminName();
   const currentPageUid = useCurrentPageUid();
   const { sideMenuRef } = props;
-  const ctx = useACLRoleContext();
   const [current, setCurrent] = useState(null);
   const menuSchema = useContext(MenuSchemaRequestContext);
 
@@ -203,7 +221,7 @@ const MenuEditor = (props) => {
   }, [current?.root?.properties, currentPageUid, menuSchema?.properties, isInSettingsPage, sideMenuRef]);
 
   const schema = useMemo(() => {
-    const s = filterByACL(menuSchema, ctx);
+    const s = menuSchema;
     if (s?.['x-component-props']) {
       s['x-component-props']['useProps'] = useMenuProps;
     }
@@ -413,15 +431,19 @@ const pageContentStyle: React.CSSProperties = {
 };
 
 export const LayoutContent = () => {
+  const currentPageUid = useCurrentPageUid();
+
   /* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */
   return (
-    <Layout.Content className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
-      <header className={layoutContentHeaderClass}></header>
-      <div style={pageContentStyle}>
-        <Outlet />
-      </div>
-      {/* {service.contentLoading ? render() : <Outlet />} */}
-    </Layout.Content>
+    <CurrentRouteProvider uid={currentPageUid}>
+      <Layout.Content className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
+        <header className={layoutContentHeaderClass}></header>
+        <div style={pageContentStyle}>
+          <Outlet />
+        </div>
+        {/* {service.contentLoading ? render() : <Outlet />} */}
+      </Layout.Content>
+    </CurrentRouteProvider>
   );
 };
 
@@ -554,4 +576,20 @@ export class AdminLayoutPlugin extends Plugin {
   async load() {
     this.app.addComponents({ AdminLayout, AdminDynamicPage });
   }
+}
+
+function getRouteNodeBySchemaUid(schemaUid: string, treeArray: any[]) {
+  for (const node of treeArray) {
+    if (schemaUid === node.schemaUid || schemaUid === node.menuSchemaUid) {
+      return node;
+    }
+
+    if (node.children?.length) {
+      const result = getRouteNodeBySchemaUid(schemaUid, node.children);
+      if (result) {
+        return result;
+      }
+    }
+  }
+  return null;
 }

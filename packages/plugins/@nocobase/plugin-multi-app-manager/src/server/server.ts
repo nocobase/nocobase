@@ -30,6 +30,10 @@ const defaultSubAppUpgradeHandle: SubAppUpgradeHandler = async (mainApp: Applica
     findOptions['filter'] = {
       name: appSupervisor.singleAppName,
     };
+  } else {
+    findOptions['filter'] = {
+      'options.autoStart': true,
+    };
   }
 
   const instances = await repository.find(findOptions);

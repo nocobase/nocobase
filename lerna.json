@@ -1,10 +1,8 @@
 {
-  "version": "1.6.0-alpha.17",
+  "version": "1.6.0-alpha.18",
   "npmClient": "yarn",
   "useWorkspaces": true,
-  "npmClientArgs": [
-    "--ignore-engines"
-  ],
+  "npmClientArgs": ["--ignore-engines"],
   "command": {
     "version": {
       "forcePublish": true,
