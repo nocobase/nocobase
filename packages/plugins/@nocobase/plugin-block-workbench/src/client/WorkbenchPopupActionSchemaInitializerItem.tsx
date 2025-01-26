@@ -13,10 +13,10 @@ import {
   SchemaSettings,
   useSchemaInitializer,
   useOpenModeContext,
+  ModalActionSchemaInitializerItem,
 } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ModalActionSchemaInitializerItem } from './ModalActionSchemaInitializerItem';
 
 export const workbenchActionSettingsPopup = new SchemaSettings({
   name: 'workbench:actionSettings:popup',

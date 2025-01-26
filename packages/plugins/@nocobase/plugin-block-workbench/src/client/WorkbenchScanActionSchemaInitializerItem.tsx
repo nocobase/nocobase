@@ -13,10 +13,10 @@ import {
   SchemaSettings,
   useSchemaInitializer,
   useSchemaInitializerItem,
+  ModalActionSchemaInitializerItem,
 } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ModalActionSchemaInitializerItem } from './ModalActionSchemaInitializerItem';
 
 export const workbenchActionSettingsScanQrCode = new SchemaSettings({
   name: 'workbench:actionSettings:scanQrCode',
