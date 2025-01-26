@@ -39,13 +39,23 @@ export const useCompile = ({ noCache }: Props = { noCache: false }) => {
 
     // source is Component Object, for example: { 'x-component': "Cascader", type: "array", title: "所属地区(行政区划)" }
     if (source && typeof source === 'object' && !isValidElement(source)) {
-      cacheKey = JSON.stringify(source);
-      shouldCompile = hasVariable(cacheKey);
+      try {
+        cacheKey = JSON.stringify(source);
+        shouldCompile = hasVariable(cacheKey);
+      } catch (err) {
+        console.error(err);
+        shouldCompile = false;
+      }
     }
 
     // source is Array, for example: [{ 'title': "{{ ('Admin')}}", name: 'admin' }, { 'title': "{{ ('Root')}}", name: 'root' }]
     if (Array.isArray(source)) {
-      shouldCompile = hasVariable(JSON.stringify(source));
+      try {
+        shouldCompile = hasVariable(JSON.stringify(source));
+      } catch (err) {
+        console.error(err);
+        shouldCompile = false;
+      }
     }
 
     if (shouldCompile) {
