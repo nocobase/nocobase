@@ -179,6 +179,7 @@ function mergeSchema(template, schema, rootTemplate) {
             }
 
             objectValue = getNewObjectValue(tItemsMap);
+            object['properties'] = objectValue;
             targetKeys = Object.keys(objectValue);
           }
 
@@ -280,6 +281,7 @@ function mergeSchema(template, schema, rootTemplate) {
               }
               // 剩余的fields
               objectValue = getNewObjectValue(targetFieldsMap);
+              object['properties'] = objectValue;
               targetKeys = Object.keys(objectValue);
             }
           }

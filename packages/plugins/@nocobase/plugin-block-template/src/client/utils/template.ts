@@ -374,6 +374,7 @@ export function mergeSchema(
             }
 
             objectValue = getNewObjectValue(tItemsMap);
+            object['properties'] = objectValue;
             targetKeys = Object.keys(objectValue);
           }
 
@@ -484,6 +485,7 @@ export function mergeSchema(
               }
               // 剩余的fields
               objectValue = getNewObjectValue(targetFieldsMap);
+              object['properties'] = objectValue;
               targetKeys = Object.keys(objectValue);
             }
           }
