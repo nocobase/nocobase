@@ -13,7 +13,11 @@ export default class extends Migration {
   appVersion = '<1.6.0';
   async up() {
     const uiSchemas: any = this.db.getRepository('uiSchemas');
-    const desktopRoutes: any = this.db.getRepository('desktopRoutes');
+    const desktopRoutes = this.db.getRepository('desktopRoutes');
+    const count = await desktopRoutes.count();
+    if (count > 0) {
+      return;
+    }
     const mobileRoutes: any = this.db.getRepository('mobileRoutes');
     const rolesRepository = this.db.getRepository('roles');
     const menuSchema = await uiSchemas.getJsonSchema('nocobase-admin-menu');

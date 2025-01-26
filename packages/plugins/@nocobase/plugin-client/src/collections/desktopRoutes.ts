@@ -10,7 +10,7 @@
 export default {
   name: 'desktopRoutes',
   dumpRules: 'required',
-  title: 'desktopRoutes',
+  migrationRules: ['overwrite', 'schema-only'],
   inherit: false,
   hidden: false,
   description: null,

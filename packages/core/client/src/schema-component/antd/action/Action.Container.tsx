@@ -13,17 +13,18 @@ import { useActionContext } from '.';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { useOpenModeContext } from '../../../modules/popup/OpenModeProvider';
 import { ComposedActionDrawer } from './types';
+import { ActionDrawer } from './Action.Drawer';
 
 const PopupLevelContext = React.createContext(0);
 
 export const ActionContainer: ComposedActionDrawer = observer(
   (props: any) => {
-    const { getComponentByOpenMode, defaultOpenMode } = useOpenModeContext();
+    const { getComponentByOpenMode, defaultOpenMode } = useOpenModeContext() || {};
     const { openMode = defaultOpenMode } = useActionContext();
     const popupLevel = React.useContext(PopupLevelContext);
     const currentLevel = popupLevel + 1;
 
-    const Component = getComponentByOpenMode(openMode);
+    const Component = getComponentByOpenMode(openMode) || ActionDrawer;
 
     return (
       <PopupLevelContext.Provider value={currentLevel}>
