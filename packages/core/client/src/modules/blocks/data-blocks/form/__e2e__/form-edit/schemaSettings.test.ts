@@ -31,8 +31,8 @@ test.describe('edit form block schema settings', () => {
 
     // 打开编辑弹窗
     await clickOption(page, 'Edit block title');
-    await page.getByRole('textbox').click();
-    await page.getByRole('textbox').fill('Block title 123');
+    await page.getByLabel('block-title').click();
+    await page.getByLabel('block-title').fill('Block title 123');
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     const runExpect = async () => {
@@ -43,7 +43,7 @@ test.describe('edit form block schema settings', () => {
 
       // 再次打开编辑弹窗时，显示的是上次设置的值
       await clickOption(page, 'Edit block title');
-      await expect(page.getByRole('textbox')).toHaveValue('Block title 123');
+      await expect(page.getByLabel('block-title')).toHaveValue('Block title 123');
     };
 
     await runExpect();
@@ -152,16 +152,20 @@ test.describe('edit form block schema settings', () => {
   });
   // https://nocobase.height.app/T-3825
   test('Unsaved changes warning display', async ({ page, mockPage, mockRecord }) => {
-    await mockPage(T3825).goto();
+    const nocoPage = await mockPage(T3825).waitForInit();
     await mockRecord('general', { number: 9, formula: 10 });
+    await nocoPage.goto();
+
     await expect(page.getByLabel('block-item-CardItem-general-')).toBeVisible();
     //没有改动时不显示提示
     await page.getByLabel('action-Action.Link-Edit record-update-general-table-').click();
     await page.getByLabel('drawer-Action.Container-general-Edit record-mask').click();
-    await expect(page.getByLabel('action-Action-Add new-create-')).toBeVisible();
+    await expect(page.getByText('Unsaved changes')).not.toBeVisible();
+
     //有改动时显示提示
+    // TODO: 不知道为什么，这里需要等待一下，点击后才能打开弹窗
+    await page.waitForTimeout(1000);
     await page.getByLabel('action-Action.Link-Edit record-update-general-table-').click();
-    await page.getByRole('spinbutton').fill('');
     await page.getByRole('spinbutton').fill('10');
     await expect(page.getByLabel('block-item-CollectionField-general-form-general.formula-formula')).toHaveText(
       'formula:11',
@@ -179,7 +183,7 @@ test.describe('actions schema settings', () => {
       page,
       showMenu: async () => {
         await page.getByRole('button', { name: 'Submit' }).hover();
-        await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-users' }).hover();
+        await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-users' }).click();
       },
       supportedOptions: ['Edit button', 'Delete'],
     });

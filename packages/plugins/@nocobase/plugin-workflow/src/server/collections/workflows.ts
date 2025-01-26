@@ -12,8 +12,10 @@ import { CollectionOptions } from '@nocobase/database';
 export default function () {
   return {
     dumpRules: 'required',
+    migrationRules: ['overwrite', 'schema-only'],
     name: 'workflows',
     shared: true,
+    repository: 'WorkflowRepository',
     fields: [
       {
         name: 'key',
@@ -71,7 +73,6 @@ export default function () {
       {
         type: 'boolean',
         name: 'current',
-        defaultValue: false,
       },
       {
         type: 'boolean',

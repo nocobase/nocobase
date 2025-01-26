@@ -14,11 +14,13 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 import {
   css,
-  useCollection,
+  SchemaInitializerItem,
   useCollectionRecordData,
   useCompile,
   useOpenModeContext,
   usePlugin,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
 } from '@nocobase/client';
 
 import {
@@ -44,6 +46,7 @@ import WorkflowPlugin, {
 import { NAMESPACE, useLang } from '../locale';
 import { FormBlockProvider } from './instruction/FormBlockProvider';
 import { ManualFormType, manualFormTypes } from './instruction/SchemaConfig';
+import { TableOutlined } from '@ant-design/icons';
 
 export const nodeCollection = {
   title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,
@@ -127,6 +130,15 @@ export const todoCollection = {
             resource: 'users',
           },
         },
+      },
+    },
+    {
+      type: 'string',
+      name: 'title',
+      uiSchema: {
+        type: 'string',
+        title: `{{t("Task title", { ns: "${NAMESPACE}" })}}`,
+        'x-component': 'Input',
       },
     },
     {
@@ -232,9 +244,94 @@ function UserJobStatusColumn(props) {
   return props.children;
 }
 
-export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } = () => {
+const tableColumns = {
+  title: {
+    type: 'void',
+    'x-decorator': 'TableV2.Column.Decorator',
+    'x-component': 'TableV2.Column',
+    'x-component-props': {
+      width: null,
+    },
+    title: `{{t("Task title", { ns: "${NAMESPACE}" })}}`,
+    properties: {
+      title: {
+        'x-component': 'CollectionField',
+        'x-read-pretty': true,
+      },
+    },
+  },
+  workflow: {
+    type: 'void',
+    'x-decorator': 'TableV2.Column.Decorator',
+    'x-component': 'TableV2.Column',
+    'x-component-props': {
+      width: null,
+    },
+    title: `{{t("Workflow", { ns: "workflow" })}}`,
+    properties: {
+      workflow: {
+        'x-component': 'WorkflowColumn',
+        'x-read-pretty': true,
+      },
+    },
+  },
+  status: {
+    type: 'void',
+    'x-decorator': 'TableV2.Column.Decorator',
+    'x-component': 'TableV2.Column',
+    'x-component-props': {
+      width: 100,
+    },
+    title: `{{t("Status", { ns: "workflow" })}}`,
+    properties: {
+      status: {
+        type: 'number',
+        'x-decorator': 'UserJobStatusColumn',
+        'x-component': 'CollectionField',
+        'x-read-pretty': true,
+      },
+    },
+  },
+  user: {
+    type: 'void',
+    'x-decorator': 'TableV2.Column.Decorator',
+    'x-component': 'TableV2.Column',
+    'x-component-props': {
+      width: 140,
+    },
+    title: `{{t("Assignee", { ns: "${NAMESPACE}" })}}`,
+    properties: {
+      user: {
+        'x-component': 'UserColumn',
+        'x-read-pretty': true,
+      },
+    },
+  },
+  createdAt: {
+    type: 'void',
+    'x-decorator': 'TableV2.Column.Decorator',
+    'x-component': 'TableV2.Column',
+    'x-component-props': {
+      width: 160,
+    },
+    properties: {
+      createdAt: {
+        type: 'string',
+        'x-component': 'CollectionField',
+        'x-read-pretty': true,
+      },
+    },
+  },
+};
+
+export const WorkflowTodo: React.FC<{ columns?: string[] }> & {
+  Initializer: React.FC;
+  Drawer: React.FC;
+  Decorator: React.FC;
+  TaskBlock: React.FC;
+} = (props) => {
+  const { columns = Object.keys(tableColumns) } = props;
   const { defaultOpenMode } = useOpenModeContext();
-  const collection = useCollection();
 
   return (
     <SchemaComponent
@@ -301,86 +398,13 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
                 },
                 title: '{{t("Actions")}}',
                 properties: {
-                  view: getWorkflowTodoViewActionSchema({ defaultOpenMode, collectionName: collection.name }),
+                  view: getWorkflowTodoViewActionSchema({ defaultOpenMode, collectionName: 'users_jobs' }),
                 },
               },
-              node: {
-                type: 'void',
-                'x-decorator': 'TableV2.Column.Decorator',
-                'x-component': 'TableV2.Column',
-                'x-component-props': {
-                  width: null,
-                },
-                title: `{{t("Task node", { ns: "${NAMESPACE}" })}}`,
-                properties: {
-                  node: {
-                    'x-component': 'NodeColumn',
-                    'x-read-pretty': true,
-                  },
-                },
-              },
-              workflow: {
-                type: 'void',
-                'x-decorator': 'TableV2.Column.Decorator',
-                'x-component': 'TableV2.Column',
-                'x-component-props': {
-                  width: null,
-                },
-                title: `{{t("Workflow", { ns: "workflow" })}}`,
-                properties: {
-                  workflow: {
-                    'x-component': 'WorkflowColumn',
-                    'x-read-pretty': true,
-                  },
-                },
-              },
-              status: {
-                type: 'void',
-                'x-decorator': 'TableV2.Column.Decorator',
-                'x-component': 'TableV2.Column',
-                'x-component-props': {
-                  width: 100,
-                },
-                title: `{{t("Status", { ns: "workflow" })}}`,
-                properties: {
-                  status: {
-                    type: 'number',
-                    'x-decorator': 'UserJobStatusColumn',
-                    'x-component': 'CollectionField',
-                    'x-read-pretty': true,
-                  },
-                },
-              },
-              user: {
-                type: 'void',
-                'x-decorator': 'TableV2.Column.Decorator',
-                'x-component': 'TableV2.Column',
-                'x-component-props': {
-                  width: 140,
-                },
-                title: `{{t("Assignee", { ns: "${NAMESPACE}" })}}`,
-                properties: {
-                  user: {
-                    'x-component': 'UserColumn',
-                    'x-read-pretty': true,
-                  },
-                },
-              },
-              createdAt: {
-                type: 'void',
-                'x-decorator': 'TableV2.Column.Decorator',
-                'x-component': 'TableV2.Column',
-                'x-component-props': {
-                  width: 160,
-                },
-                properties: {
-                  createdAt: {
-                    type: 'string',
-                    'x-component': 'CollectionField',
-                    'x-read-pretty': true,
-                  },
-                },
-              },
+              ...columns.reduce((schema, key) => {
+                schema[key] = tableColumns[key];
+                return schema;
+              }, {}),
             },
           },
         },
@@ -410,6 +434,7 @@ export function getWorkflowTodoViewActionSchema({ defaultOpenMode, collectionNam
     },
     properties: {
       drawer: {
+        type: 'void',
         'x-component': WorkflowTodo.Drawer,
       },
     },
@@ -671,7 +696,8 @@ function Drawer() {
   );
 }
 
-function Decorator({ params = {}, children }) {
+function Decorator(props) {
+  const { params = {}, children } = props;
   const blockProps = {
     collection: 'users_jobs',
     resource: 'users_jobs',
@@ -680,6 +706,9 @@ function Decorator({ params = {}, children }) {
       pageSize: 20,
       sort: ['-createdAt'],
       ...params,
+      filter: {
+        ...params.filter,
+      },
       appends: ['user', 'node', 'workflow', 'execution.status'],
       except: ['node.config', 'workflow.config', 'workflow.options'],
     },
@@ -695,5 +724,77 @@ function Decorator({ params = {}, children }) {
   );
 }
 
+function Initializer() {
+  const itemConfig = useSchemaInitializerItem();
+  const { insert } = useSchemaInitializer();
+  return (
+    <SchemaInitializerItem
+      icon={<TableOutlined />}
+      {...itemConfig}
+      onClick={() => {
+        insert({
+          type: 'void',
+          'x-decorator': 'WorkflowTodo.Decorator',
+          'x-decorator-props': {},
+          'x-component': 'CardItem',
+          'x-toolbar': 'BlockSchemaToolbar',
+          'x-settings': 'blockSettings:table',
+          properties: {
+            todos: {
+              type: 'void',
+              'x-component': 'WorkflowTodo',
+            },
+          },
+        });
+      }}
+    />
+  );
+}
+
+WorkflowTodo.Initializer = Initializer;
 WorkflowTodo.Drawer = Drawer;
 WorkflowTodo.Decorator = Decorator;
+WorkflowTodo.TaskBlock = TaskBlock;
+
+function TaskBlock() {
+  const { data: user } = useCurrentUserContext();
+  return (
+    <SchemaComponent
+      components={{
+        WorkflowTodo,
+      }}
+      schema={{
+        name: 'todos',
+        type: 'void',
+        'x-decorator': 'WorkflowTodo.Decorator',
+        'x-decorator-props': {
+          params: {
+            filter: {
+              userId: user?.data?.id,
+            },
+            appends: [
+              'job.id',
+              'job.status',
+              'job.result',
+              'workflow.id',
+              'workflow.title',
+              'workflow.enabled',
+              'execution.id',
+              'execution.status',
+            ],
+          },
+        },
+        'x-component': 'CardItem',
+        properties: {
+          todos: {
+            type: 'void',
+            'x-component': 'WorkflowTodo',
+            'x-component-props': {
+              columns: ['title', 'workflow', 'node', 'status', 'createdAt'],
+            },
+          },
+        },
+      }}
+    />
+  );
+}

@@ -7,17 +7,29 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/client';
+import { Plugin, lazy, useLazy } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 import { ComponentType } from 'react';
 import { presetAuthType } from '../preset';
-import { AuthProvider } from './AuthProvider';
-import { Authenticator as AuthenticatorType } from './authenticator';
-import { Options, SignInForm, SignUpForm } from './basic';
+import type { Authenticator as AuthenticatorType } from './authenticator';
+import { authCheckMiddleware } from './interceptors';
 import { NAMESPACE } from './locale';
-import { AuthLayout, SignInPage, SignUpPage } from './pages';
-import { Authenticator } from './settings/Authenticator';
-export { AuthenticatorsContextProvider, AuthLayout } from './pages/AuthLayout';
+// import { AuthProvider } from './AuthProvider';
+const { AuthProvider } = lazy(() => import('./AuthProvider'), 'AuthProvider');
+// import { Options, SignInForm, SignUpForm } from './basic';
+const { Options, SignInForm, SignUpForm } = lazy(() => import('./basic'), 'Options', 'SignInForm', 'SignUpForm');
+// import { AuthLayout, SignInPage, SignUpPage } from './pages';
+const { AuthLayout, SignInPage, SignUpPage } = lazy(() => import('./pages'), 'AuthLayout', 'SignInPage', 'SignUpPage');
+// import { Authenticator } from './settings/Authenticator';
+const { Authenticator } = lazy(() => import('./settings/Authenticator'), 'Authenticator');
+const { TokenPolicySettings } = lazy(() => import('./settings/token-policy'), 'TokenPolicySettings');
+
+const { AuthenticatorsContextProvider, AuthLayout: ExportAuthLayout } = lazy(
+  () => import('./pages'),
+  'AuthenticatorsContextProvider',
+  'AuthLayout',
+);
+export { ExportAuthLayout as AuthLayout, AuthenticatorsContextProvider };
 
 export type AuthOptions = {
   components: Partial<{
@@ -70,11 +82,26 @@ export class PluginAuthClient extends Plugin {
         AdminSettingsForm: Options,
       },
     });
+    this.app.pluginSettingsManager.add(`security.token-policy`, {
+      title: `{{t("Token policy", { ns: "${NAMESPACE}" })}}`,
+      Component: TokenPolicySettings,
+      aclSnippet: `pm.security.token-policy`,
+      icon: 'ApiOutlined',
+      sort: 0,
+    });
+    const [fulfilled, rejected] = authCheckMiddleware({ app: this.app });
+    this.app.apiClient.axios.interceptors.response.use(fulfilled, rejected);
   }
 }
 
 export { AuthenticatorsContext, useAuthenticator } from './authenticator';
 export type { Authenticator } from './authenticator';
-export { useSignIn } from './basic';
+// export { useSignIn } from './basic';
+const useSignIn = function (name: string) {
+  const useSignIn = useLazy<typeof import('./basic').useSignIn>(() => import('./basic'), 'useSignIn');
+  return useSignIn(name);
+};
+
+export { useSignIn };
 
 export default PluginAuthClient;

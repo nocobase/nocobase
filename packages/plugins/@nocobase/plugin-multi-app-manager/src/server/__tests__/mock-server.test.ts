@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMockServer, MockServer } from '@nocobase/test';
 import { AppSupervisor } from '@nocobase/server';
+import { createMockServer, MockServer } from '@nocobase/test';
 
 describe('sub app', async () => {
   let app: MockServer;
@@ -16,13 +16,13 @@ describe('sub app', async () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['multi-app-manager', 'client', 'ui-schema-storage', 'system-settings'],
+      plugins: ['multi-app-manager', 'client', 'ui-schema-storage', 'system-settings', 'field-sort'],
     });
     await app.db.getRepository('applications').create({
       values: {
         name: 'test_sub',
         options: {
-          plugins: ['client', 'ui-schema-storage', 'system-settings'],
+          plugins: ['client', 'ui-schema-storage', 'system-settings', 'field-sort'],
         },
       },
       context: {
@@ -34,6 +34,10 @@ describe('sub app', async () => {
   });
 
   afterEach(async () => {
+    const subApp = await AppSupervisor.getInstance().getApp('test_sub');
+    await subApp.db.clean({ drop: true });
+    await subApp.destroy();
+    await app.db.clean({ drop: true });
     await app.destroy();
   });
 

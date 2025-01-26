@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { screen, userEvent, waitFor } from '@nocobase/test/client';
+import { screen, sleep, userEvent, waitFor } from '@nocobase/test/client';
 
-import React from 'react';
 import { Action, Form, FormItem, Input, SchemaInitializerActionModal } from '@nocobase/client';
+import React from 'react';
 
 import { createApp } from '../fixures/createApp';
 import { createAndHover } from './fixtures/createAppAndHover';
@@ -53,6 +53,9 @@ describe('SchemaInitializerDivider', () => {
 
     expect(screen.getByText('button text')).toBeInTheDocument();
     await userEvent.click(screen.getByText('button text'));
+
+    // wait for modal content to be rendered
+    await sleep(300);
 
     await waitFor(() => {
       expect(screen.queryByText('Modal title')).toBeInTheDocument();
@@ -109,6 +112,9 @@ describe('SchemaInitializerDivider', () => {
 
     expect(screen.getByText('button text')).toBeInTheDocument();
     await userEvent.click(screen.getByText('button text'));
+
+    // wait for modal content to be rendered
+    await sleep(300);
 
     await waitFor(() => {
       expect(screen.queryByText('Modal title')).toBeInTheDocument();

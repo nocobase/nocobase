@@ -30,6 +30,10 @@ const defaultSubAppUpgradeHandle: SubAppUpgradeHandler = async (mainApp: Applica
     findOptions['filter'] = {
       name: appSupervisor.singleAppName,
     };
+  } else {
+    findOptions['filter'] = {
+      'options.autoStart': true,
+    };
   }
 
   const instances = await repository.find(findOptions);
@@ -134,6 +138,10 @@ const defaultAppOptionsFactory = (appName: string, mainApp: Application) => {
     resourcer: {
       prefix: process.env.API_BASE_PATH,
     },
+    cacheManager: {
+      ...mainApp.options.cacheManager,
+      prefix: appName,
+    },
   };
 };
 
@@ -153,6 +161,38 @@ export class PluginMultiAppManagerServer extends Plugin {
     }
 
     return lodash.cloneDeep(lodash.omit(oldConfig, ['migrator']));
+  }
+
+  async handleSyncMessage(message) {
+    const { type } = message;
+
+    if (type === 'subAppStarted') {
+      const { appName } = message;
+      const model = await this.app.db.getRepository('applications').findOne({
+        filter: {
+          name: appName,
+        },
+      });
+
+      if (!model) {
+        return;
+      }
+
+      if (AppSupervisor.getInstance().hasApp(appName)) {
+        return;
+      }
+
+      const subApp = model.registerToSupervisor(this.app, {
+        appOptionsFactory: this.appOptionsFactory,
+      });
+
+      subApp.runCommand('start', '--quickstart');
+    }
+
+    if (type === 'removeApp') {
+      const { appName } = message;
+      await AppSupervisor.getInstance().removeApp(appName);
+    }
   }
 
   setSubAppUpgradeHandler(handler: SubAppUpgradeHandler) {
@@ -198,6 +238,13 @@ export class PluginMultiAppManagerServer extends Plugin {
           appOptionsFactory: this.appOptionsFactory,
         });
 
+        subApp.on('afterStart', async () => {
+          this.sendSyncMessage({
+            type: 'subAppStarted',
+            appName: name,
+          });
+        });
+
         const quickstart = async () => {
           // create database
           await this.appDbCreator(subApp, {
@@ -217,8 +264,18 @@ export class PluginMultiAppManagerServer extends Plugin {
       },
     );
 
-    this.db.on('applications.afterDestroy', async (model: ApplicationModel) => {
+    this.db.on('applications.afterDestroy', async (model: ApplicationModel, options) => {
       await AppSupervisor.getInstance().removeApp(model.get('name') as string);
+
+      this.sendSyncMessage(
+        {
+          type: 'removeApp',
+          appName: model.get('name'),
+        },
+        {
+          transaction: options.transaction,
+        },
+      );
     });
 
     const self = this;
@@ -262,6 +319,13 @@ export class PluginMultiAppManagerServer extends Plugin {
 
       const subApp = applicationRecord.registerToSupervisor(mainApp, {
         appOptionsFactory: self.appOptionsFactory,
+      });
+
+      subApp.on('afterStart', async () => {
+        this.sendSyncMessage({
+          type: 'subAppStarted',
+          appName: name,
+        });
       });
 
       // must skip load on upgrade

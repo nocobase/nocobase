@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { createConsoleLogger, createLogger, Logger, LoggerOptions } from '@nocobase/logger';
 import { ToposortOptions } from '@nocobase/utils';
 import { DataSource } from './data-source';
 import { DataSourceFactory } from './data-source-factory';
-import { createConsoleLogger, createLogger, Logger, LoggerOptions } from '@nocobase/logger';
 
 type DataSourceHook = (dataSource: DataSource) => void;
 
@@ -24,13 +24,14 @@ export class DataSourceManager {
   /**
    * @internal
    */
-  factory: DataSourceFactory = new DataSourceFactory();
+  factory: DataSourceFactory;
   protected middlewares = [];
   private onceHooks: Array<DataSourceHook> = [];
   private beforeAddHooks: Array<DataSourceHook> = [];
 
   constructor(public options: DataSourceManagerOptions = {}) {
     this.dataSources = new Map();
+    this.factory = new DataSourceFactory(this);
     this.middlewares = [];
 
     if (options.app) {

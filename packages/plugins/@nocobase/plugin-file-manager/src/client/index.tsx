@@ -16,8 +16,11 @@ import { AttachmentFieldInterface } from './interfaces/attachment';
 import { FileCollectionTemplate } from './templates';
 import { useAttachmentFieldProps, useFileCollectionStorageRules } from './hooks';
 import { FileSizeField } from './FileSizeField';
+import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
 
 export class PluginFileManagerClient extends Plugin {
+  // refer by plugin-field-attachment-url
+  static buildInStorage = [STORAGE_TYPE_LOCAL, STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS];
   storageTypes = new Map();
 
   async load() {
@@ -64,6 +67,10 @@ export class PluginFileManagerClient extends Plugin {
 
   registerStorageType(name: string, options) {
     this.storageTypes.set(name, options);
+  }
+
+  getStorageType(name: string) {
+    return this.storageTypes.get(name);
   }
 }
 

@@ -95,6 +95,7 @@ export const useCurrentRecordContext = () => {
     collectionName: realCollectionName,
     /** 块类型 */
     blockType,
+    dataSource: collection?.dataSource,
   };
 };
 
@@ -105,7 +106,8 @@ export const useCurrentRecordContext = () => {
  */
 export const useCurrentRecordVariable = (props: Props = {}) => {
   const { t } = useTranslation();
-  const { currentRecordCtx, shouldDisplayCurrentRecord, collectionName, blockType } = useCurrentRecordContext();
+  const { currentRecordCtx, shouldDisplayCurrentRecord, collectionName, blockType, dataSource } =
+    useCurrentRecordContext();
   const currentRecordSettings = useBaseVariable({
     collectionField: props.collectionField,
     uiSchema: props.schema,
@@ -116,6 +118,7 @@ export const useCurrentRecordVariable = (props: Props = {}) => {
     targetFieldSchema: props.targetFieldSchema,
     deprecated: blockType === 'form',
     tooltip: blockType === 'form' ? t('This variable has been deprecated and can be replaced with "Current form"') : '',
+    dataSource,
   });
 
   return {

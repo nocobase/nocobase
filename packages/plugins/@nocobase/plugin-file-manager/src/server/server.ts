@@ -10,7 +10,7 @@
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
-import { basename, resolve } from 'path';
+import { basename } from 'path';
 
 import { Model, Transactionable } from '@nocobase/database';
 import fs from 'fs';
@@ -89,6 +89,10 @@ export class PluginFileManagerServer extends Plugin {
     return await collectionRepository.create({ values: { ...data, ...values }, transaction });
   }
 
+  parseStorage(instance) {
+    return this.app.environment.renderJsonTemplate(instance.toJSON());
+  }
+
   async uploadFile(options: UploadFileOptions) {
     const { storageName, filePath, documentRoot } = options;
     const storageRepository = this.db.getRepository('storages');
@@ -115,6 +119,8 @@ export class PluginFileManagerServer extends Plugin {
     if (!storageInstance) {
       throw new Error('[file-manager] no linked or default storage provided');
     }
+
+    storageInstance = this.parseStorage(storageInstance);
 
     if (documentRoot) {
       storageInstance.options['documentRoot'] = documentRoot;
@@ -154,7 +160,7 @@ export class PluginFileManagerServer extends Plugin {
     });
     this.storagesCache = new Map();
     for (const storage of storages) {
-      this.storagesCache.set(storage.get('id'), storage.toJSON());
+      this.storagesCache.set(storage.get('id'), this.parseStorage(storage));
     }
     this.db['_fileStorages'] = this.storagesCache;
   }
@@ -183,17 +189,17 @@ export class PluginFileManagerServer extends Plugin {
     }
   }
 
-  async onSync(message) {
+  async handleSyncMessage(message) {
     if (message.type === 'storageChange') {
       const storage = await this.db.getRepository('storages').findOne({
         filterByTk: message.storageId,
       });
       if (storage) {
-        this.storagesCache.set(storage.id, storage.toJSON());
+        this.storagesCache.set(storage.id, this.parseStorage(storage));
       }
     }
     if (message.type === 'storageRemove') {
-      const id = Number.parseInt(message.storageId, 10);
+      const id = message.storageId;
       this.storagesCache.delete(id);
     }
   }
@@ -218,24 +224,26 @@ export class PluginFileManagerServer extends Plugin {
     this.storageTypes.register(STORAGE_TYPE_S3, new StorageTypeS3());
     this.storageTypes.register(STORAGE_TYPE_TX_COS, new StorageTypeTxCos());
 
-    await this.db.import({
-      directory: resolve(__dirname, './collections'),
-    });
-
     const Storage = this.db.getModel('storages');
-    Storage.afterSave((m) => {
+    Storage.afterSave((m, { transaction }) => {
       this.storagesCache.set(m.id, m.toJSON());
-      this.sync({
-        type: 'storageChange',
-        storageId: `${m.id}`,
-      });
+      this.sendSyncMessage(
+        {
+          type: 'storageChange',
+          storageId: m.id,
+        },
+        { transaction },
+      );
     });
-    Storage.afterDestroy((m) => {
+    Storage.afterDestroy((m, { transaction }) => {
       this.storagesCache.delete(m.id);
-      this.sync({
-        type: 'storageRemove',
-        storageId: `${m.id}`,
-      });
+      this.sendSyncMessage(
+        {
+          type: 'storageRemove',
+          storageId: m.id,
+        },
+        { transaction },
+      );
     });
 
     this.app.acl.registerSnippet({
@@ -243,18 +251,12 @@ export class PluginFileManagerServer extends Plugin {
       actions: ['storages:*'],
     });
 
-    this.db.addMigrations({
-      namespace: 'file-manager',
-      directory: resolve(__dirname, 'migrations'),
-      context: {
-        plugin: this,
-      },
-    });
-
     initActions(this);
 
-    this.app.acl.allow('attachments', ['upload', 'create', 'destroy'], 'loggedIn');
-    this.app.acl.allow('storages', 'getRules', 'loggedIn');
+    this.app.acl.allow('attachments', ['upload', 'create'], 'loggedIn');
+    this.app.acl.allow('storages', 'getBasicInfo', 'loggedIn');
+
+    this.app.acl.appendStrategyResource('attachments');
 
     // this.app.resourcer.use(uploadMiddleware);
     // this.app.resourcer.use(createAction);

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, RawAxiosRequestHeaders } from 'axios';
+import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse, RawAxiosRequestHeaders } from 'axios';
 import qs from 'qs';
 
 export interface ActionParams {
@@ -166,6 +166,12 @@ export class Auth {
    */
   setToken(token: string) {
     this.setOption('token', token);
+
+    if (this.api['app']) {
+      this.api['app'].eventBus.dispatchEvent(
+        new CustomEvent('auth:tokenChanged', { detail: { token, authenticator: this.authenticator } }),
+      );
+    }
   }
 
   /**
@@ -210,8 +216,8 @@ export class Auth {
       },
     });
     const data = response?.data?.data;
-    this.setToken(data?.token);
     this.setAuthenticator(authenticator);
+    this.setToken(data?.token);
     return response;
   }
 
@@ -348,7 +354,12 @@ export class APIClient {
     });
   }
 
-  request<T = any, R = AxiosResponse<T>, D = any>(config: AxiosRequestConfig<D> | ResourceActionOptions): Promise<R> {
+  request<T = any, R = AxiosResponse<T>, D = any>(
+    config: (AxiosRequestConfig<D> | ResourceActionOptions) & {
+      skipNotify?: boolean | ((error: any) => boolean);
+      skipAuth?: boolean;
+    },
+  ): Promise<R> {
     const { resource, resourceOf, action, params, headers } = config as any;
     if (resource) {
       return this.resource(resource, resourceOf, headers)[action](params);

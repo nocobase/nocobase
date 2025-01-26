@@ -12,10 +12,15 @@ import { uid } from '@formily/shared';
 import { MenuProps } from 'antd';
 import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActionContextProvider, DropdownVisibleContext, SchemaComponent, useActionContext } from '../';
-import { useAPIClient } from '../api-client';
 import { useNavigate } from 'react-router-dom';
-import { useSystemSettings } from '../';
+import {
+  ActionContextProvider,
+  DropdownVisibleContext,
+  SchemaComponent,
+  useActionContext,
+  useSystemSettings,
+} from '../';
+import { useAPIClient } from '../api-client';
 
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
@@ -23,9 +28,7 @@ const useCloseAction = () => {
   return {
     async run() {
       setVisible(false);
-      form.submit((values) => {
-        console.log(values);
-      });
+      await form.reset();
     },
   };
 };
@@ -55,7 +58,7 @@ const schema: ISchema = {
       'x-decorator': 'Form',
       'x-component': 'Action.Drawer',
       'x-component-props': {
-        zIndex: 10000,
+        zIndex: 2000,
       },
       type: 'void',
       title: '{{t("Change password")}}',
@@ -73,6 +76,7 @@ const schema: ISchema = {
           required: true,
           'x-component': 'Password',
           'x-decorator': 'FormItem',
+          'x-validator': { password: true },
           'x-component-props': { checkStrength: true, style: {} },
           'x-reactions': [
             {
@@ -133,7 +137,7 @@ export const useChangePassword = () => {
   const ctx = useContext(DropdownVisibleContext);
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
-  const { data } = useSystemSettings();
+  const { data } = useSystemSettings() || {};
   const { enableChangePassword } = data?.data || {};
 
   const result = useMemo<MenuProps['items'][0]>(() => {

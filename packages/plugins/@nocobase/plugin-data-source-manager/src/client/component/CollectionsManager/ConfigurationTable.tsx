@@ -7,34 +7,34 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useForm, useField } from '@formily/react';
+import { useField, useForm } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
-import React, { useContext, useMemo, useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router-dom';
 import {
-  useAPIClient,
-  useCurrentAppInfo,
-  useRecord,
-  SchemaComponent,
-  SchemaComponentContext,
-  useCompile,
-  CollectionCategoriesContext,
-  useCollectionManager_deprecated,
-  useCancelAction,
   AddSubFieldAction,
+  CollectionCategoriesContext,
   EditSubFieldAction,
   FieldSummary,
-  TemplateSummary,
   ResourceActionContext,
+  SchemaComponent,
+  SchemaComponentContext,
+  TemplateSummary,
+  useAPIClient,
+  useCancelAction,
+  useCollectionManager_deprecated,
+  useCompile,
+  useCurrentAppInfo,
   useDataSourceManager,
+  useRecord,
 } from '@nocobase/client';
 import { getPickerFormat } from '@nocobase/utils/client';
 import { message } from 'antd';
-import { getCollectionSchema } from './schema/collections';
-import { CollectionFields } from './CollectionFields';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useParams } from 'react-router-dom';
 import { DataSourceContext } from '../../DatabaseConnectionProvider';
+import { CollectionFields } from './CollectionFields';
+import { getCollectionSchema } from './schema/collections';
 
 /**
  * @param service
@@ -91,7 +91,9 @@ export const ConfigurationTable = () => {
   const { interfaces } = useCollectionManager_deprecated();
   const {
     data: { database },
-  } = useCurrentAppInfo();
+  } = useCurrentAppInfo() || {
+    data: { database: {} as any },
+  };
   const ds = useDataSourceManager();
   const ctx = useContext(SchemaComponentContext);
   const { name } = useParams();
@@ -184,8 +186,10 @@ export const ConfigurationTable = () => {
       });
     });
   };
+  const schemaComponentContext = useMemo(() => ({ ...ctx, designable: false, dataSourceData }), [ctx, dataSourceData]);
+
   return (
-    <SchemaComponentContext.Provider value={{ ...ctx, designable: false, dataSourceData }}>
+    <SchemaComponentContext.Provider value={schemaComponentContext}>
       <SchemaComponent
         schema={collectionSchema}
         components={{

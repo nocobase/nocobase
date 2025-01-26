@@ -8,8 +8,6 @@
  */
 
 import { ISchema } from '@formily/react';
-import { useActionContext, useCollectionRecord, useRecord, useRequest } from '@nocobase/client';
-import { useEffect } from 'react';
 import { uid } from '@formily/shared';
 
 export const userCollection = {
@@ -159,13 +157,7 @@ export const usersSchema: ISchema = {
           properties: {
             filter: {
               type: 'void',
-              title: '{{ t("Filter") }}',
-              'x-action': 'filter',
-              'x-component': 'Filter.Action',
-              'x-use-component-props': 'useFilterActionProps',
-              'x-component-props': {
-                icon: 'FilterOutlined',
-              },
+              'x-component': 'FilterAction',
               'x-align': 'left',
             },
             refresh: {
@@ -206,58 +198,9 @@ export const usersSchema: ISchema = {
                   'x-decorator': 'FormV2',
                   title: '{{t("Add user")}}',
                   properties: {
-                    nickname: {
-                      'x-component': 'CollectionField',
-                      'x-decorator': 'FormItem',
-                    },
-                    username: {
-                      'x-component': 'CollectionField',
-                      'x-decorator': 'FormItem',
-                    },
-                    email: {
-                      title: '{{t("Email")}}',
-                      'x-component': 'Input',
-                      'x-validator': 'email',
-                      'x-decorator': 'FormItem',
-                      required: false,
-                    },
-                    phone: {
-                      title: '{{t("Phone")}}',
-                      'x-component': 'Input',
-                      'x-decorator': 'FormItem',
-                      required: false,
-                    },
-                    password: {
-                      'x-component': 'CollectionField',
-                      'x-decorator': 'FormItem',
-                      'x-component-props': {
-                        autoComplete: 'new-password',
-                      },
-                      required: true,
-                    },
-                    roles: {
-                      'x-component': 'CollectionField',
-                      'x-collection-field': 'users.roles',
-                      'x-decorator': 'FormItem',
-                    },
-                    footer: {
+                    form: {
                       type: 'void',
-                      'x-component': 'Action.Drawer.Footer',
-                      properties: {
-                        cancel: {
-                          title: '{{t("Cancel")}}',
-                          'x-component': 'Action',
-                          'x-use-component-props': 'useCancelActionProps',
-                        },
-                        submit: {
-                          title: '{{t("Submit")}}',
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            type: 'primary',
-                          },
-                          'x-use-component-props': 'useSubmitActionProps',
-                        },
-                      },
+                      'x-component': 'ProfileCreateForm',
                     },
                   },
                 },
@@ -320,7 +263,6 @@ export const usersSchema: ISchema = {
               title: '{{t("Roles")}}',
               properties: {
                 roles: {
-                  type: 'array',
                   'x-component': 'CollectionField',
                   'x-component-props': {
                     mode: 'Tag',
@@ -358,54 +300,11 @@ export const usersSchema: ISchema = {
                         drawer: {
                           type: 'void',
                           'x-component': 'Action.Drawer',
-                          'x-decorator': 'FormV2',
-                          'x-use-decorator-props': 'useEditFormProps',
                           title: '{{t("Edit profile")}}',
                           properties: {
-                            nickname: {
-                              'x-component': 'CollectionField',
-                              'x-decorator': 'FormItem',
-                            },
-                            username: {
-                              'x-component': 'CollectionField',
-                              'x-decorator': 'FormItem',
-                            },
-                            email: {
-                              title: '{{t("Email")}}',
-                              'x-component': 'Input',
-                              'x-validator': 'email',
-                              'x-decorator': 'FormItem',
-                              required: false,
-                            },
-                            phone: {
-                              title: '{{t("Phone")}}',
-                              'x-component': 'Input',
-                              'x-decorator': 'FormItem',
-                              required: false,
-                            },
-                            roles: {
-                              'x-component': 'CollectionField',
-                              'x-decorator': 'FormItem',
-                              'x-collection-field': 'users.roles',
-                            },
-                            footer: {
+                            form: {
                               type: 'void',
-                              'x-component': 'Action.Drawer.Footer',
-                              properties: {
-                                cancel: {
-                                  title: '{{t("Cancel")}}',
-                                  'x-component': 'Action',
-                                  'x-use-component-props': 'useCancelActionProps',
-                                },
-                                submit: {
-                                  title: '{{t("Submit")}}',
-                                  'x-component': 'Action',
-                                  'x-component-props': {
-                                    type: 'primary',
-                                  },
-                                  'x-use-component-props': 'useSubmitActionProps',
-                                },
-                              },
+                              'x-component': 'ProfileEditForm',
                             },
                           },
                         },
@@ -428,6 +327,12 @@ export const usersSchema: ISchema = {
                           'x-use-decorator-props': 'useEditFormProps',
                           title: '{{t("Change password")}}',
                           properties: {
+                            username: {
+                              'x-component': 'CollectionField',
+                              'x-component-props': {
+                                hidden: true,
+                              },
+                            },
                             password: {
                               'x-component': 'CollectionField',
                               'x-component-props': {
@@ -513,19 +418,8 @@ export const usersSettingsSchema: ISchema = {
               default: true,
               'x-content': '{{t("Allow change password")}}',
             },
-          },
-        },
-        footer: {
-          type: 'void',
-          'x-component': 'div',
-          'x-component-props': {
-            style: {
-              float: 'right',
-            },
-          },
-          properties: {
             submit: {
-              title: 'Submit',
+              title: '{{t("Save")}}',
               'x-component': 'Action',
               'x-use-component-props': 'useSubmitActionProps',
             },

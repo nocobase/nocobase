@@ -19,6 +19,7 @@ import bodyParser from 'koa-bodyparser';
 import { createHistogram, RecordableHistogram } from 'perf_hooks';
 import Application, { ApplicationOptions } from './application';
 import { dataWrapping } from './middlewares/data-wrapping';
+import { extractClientIp } from './middlewares/extract-client-ip';
 
 import { i18n } from './middlewares/i18n';
 
@@ -46,6 +47,8 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
     },
     { tag: 'generateReqId' },
   );
+
+  app.use(app.auditManager.middleware(), { tag: 'audit', after: 'generateReqId' });
 
   app.use(requestLogger(app.name, app.requestLogger, options.logger?.request), { tag: 'logger' });
 
@@ -91,6 +94,8 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
   }
 
   app.use(app.dataSourceManager.middleware(), { tag: 'dataSource', after: 'dataWrapping' });
+
+  app.use(extractClientIp(), { tag: 'extractClientIp', before: 'cors' });
 }
 
 export const createAppProxy = (app: Application) => {

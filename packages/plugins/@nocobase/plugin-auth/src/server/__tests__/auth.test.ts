@@ -19,7 +19,7 @@ describe('auth', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['users', 'auth'],
+      plugins: ['field-sort', 'users', 'auth'],
     });
     db = app.db;
 

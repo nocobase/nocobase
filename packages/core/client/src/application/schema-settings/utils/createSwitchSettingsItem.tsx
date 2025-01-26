@@ -8,14 +8,13 @@
  */
 
 import _ from 'lodash';
-import { useFieldSchema } from '@formily/react';
 import { TFunction, useTranslation } from 'react-i18next';
 
-import { SchemaSettingsItemType } from '../types';
-import { getNewSchema, useHookDefault, useSchemaByType } from './util';
+import { useColumnSchema } from '../../../schema-component';
 import { useCompile } from '../../../schema-component/hooks/useCompile';
 import { useDesignable } from '../../../schema-component/hooks/useDesignable';
-import { useColumnSchema } from '../../../schema-component';
+import { SchemaSettingsItemType } from '../types';
+import { getNewSchema, useHookDefault, useSchemaByType } from './util';
 
 export interface CreateSwitchSchemaSettingsItemProps {
   name: string;
@@ -24,6 +23,7 @@ export interface CreateSwitchSchemaSettingsItemProps {
   defaultValue?: boolean;
   useDefaultValue?: () => boolean;
   useVisible?: () => boolean;
+  useComponentProps?: () => any;
   /**
    * @default 'common'
    */
@@ -45,6 +45,7 @@ export function createSwitchSettingsItem(options: CreateSwitchSchemaSettingsItem
     type = 'common',
     defaultValue: propsDefaultValue,
     useDefaultValue = useHookDefault,
+    useComponentProps: useComponentPropsFromProps,
   } = options;
   return {
     name,
@@ -57,11 +58,16 @@ export function createSwitchSettingsItem(options: CreateSwitchSchemaSettingsItem
       const compile = useCompile();
       const { t } = useTranslation();
       const { fieldSchema: tableColumnSchema } = useColumnSchema() || {};
+      const dynamicComponentProps = useComponentPropsFromProps?.();
 
       return {
         title: typeof title === 'function' ? title(t) : compile(title),
-        checked: !!_.get(fieldSchema, schemaKey, defaultValue),
+        checked:
+          dynamicComponentProps?.checked === undefined
+            ? !!_.get(fieldSchema, schemaKey, defaultValue)
+            : dynamicComponentProps?.checked,
         onChange(v) {
+          dynamicComponentProps?.onChange?.(v);
           const newSchema = getNewSchema({ fieldSchema, schemaKey, value: v });
           if (tableColumnSchema) {
             dn.emit('patch', {

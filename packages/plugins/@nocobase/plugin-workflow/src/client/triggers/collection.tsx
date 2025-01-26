@@ -15,6 +15,7 @@ import { appends, collection, filter } from '../schemas/collection';
 import { getCollectionFieldOptions, useGetCollectionFields } from '../variable';
 import { useWorkflowAnyExecuted } from '../hooks';
 import { Trigger } from '.';
+import { TriggerCollectionRecordSelect } from '../components/TriggerCollectionRecordSelect';
 
 const COLLECTION_TRIGGER_MODE = {
   CREATED: 1,
@@ -190,7 +191,22 @@ export default class extends Trigger {
   };
   components = {
     FieldsSelect,
+    TriggerCollectionRecordSelect,
   };
+  triggerFieldset = {
+    data: {
+      type: 'object',
+      title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("Choose a record or primary key of a record in the collection to trigger.", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'TriggerCollectionRecordSelect',
+      default: null,
+      required: true,
+    },
+  };
+  validate(values) {
+    return values.collection && values.mode;
+  }
   useVariables = useVariables;
   useInitializers(config): SchemaInitializerItemType | null {
     if (!config.collection) {

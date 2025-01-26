@@ -18,7 +18,7 @@ describe('sql collection', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['data-source-main', 'error-handler', 'collection-sql'],
+      plugins: ['field-sort', 'data-source-main', 'error-handler', 'collection-sql'],
     });
     db = app.db;
     db.options.underscored = false;

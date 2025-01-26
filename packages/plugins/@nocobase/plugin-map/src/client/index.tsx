@@ -13,7 +13,10 @@ import { MapBlockOptions } from './block';
 import { mapActionInitializers, mapActionInitializers_deprecated } from './block/MapActionInitializers';
 import { mapBlockSettings } from './block/MapBlock.Settings';
 import { useMapBlockProps } from './block/MapBlockProvider';
-import { Configuration, Map } from './components';
+// import { Configuration, Map } from './components';
+import { lazy } from '@nocobase/client';
+const { Configuration, Map } = lazy(() => import('./components'), 'Configuration', 'Map');
+
 import { fields } from './fields';
 import { fieldSettingsComponentMap } from './fields/fieldSettingsComponentMap';
 import { NAMESPACE, generateNTemplate } from './locale';
@@ -52,7 +55,7 @@ export class PluginMapClient extends Plugin {
       Component: 'MapBlockInitializer',
     });
     this.app.pluginSettingsManager.add(NAMESPACE, {
-      title: `{{t("Map Manager", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Map manager", { ns: "${NAMESPACE}" })}}`,
       icon: 'EnvironmentOutlined',
       Component: Configuration,
       aclSnippet: 'pm.map.configuration',

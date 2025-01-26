@@ -16,12 +16,23 @@
   "Duplicate": "复制",
   "Duplicate to new workflow": "复制为新工作流",
   "Delete a main version will cause all other revisions to be deleted too.": "删除主版本将导致其他版本一并被删除。",
+  "Execute manually": "手动执行",
+  "The trigger is not configured correctly, please check the trigger configuration.": "触发器配置不正确，请检查触发器配置。",
+  "This type of trigger has not been supported to be executed manually.": "该类型的触发器暂未支持手动执行。",
+  "Trigger variables need to be filled for executing.": "执行需要填写触发器变量。",
+  "A new version will be created automatically after execution if current version is not executed.": "如果当前版本还未执行过，将在执行后自动创建一个新版本。",
+  "This will perform all the actions configured in the workflow. Are you sure you want to continue?": "将按照工作流中配置的所有操作执行，确定继续吗？",
+  "Automatically create a new version after execution": "执行后自动创建新版本",
+  "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>": "工作流已执行，结果状态为 <1>{{statusText}}</1><2>查看执行详情</2>",
+
   "Loading": "加载中",
   "Load failed": "加载失败",
   "Use transaction": "启用事务",
   "Data operation nodes in workflow will run in a same transaction until any interruption. Any failure will cause data rollback, and will also rollback the history of the execution.":
     "工作流中的节点将在同一个事务中运行。任何失败都会导致数据回滚，同时也会回滚相应的执行历史。",
   "Auto delete history when execution is on end status": "执行结束后自动删除对应状态的历史记录",
+  "Maximum number of cycling triggers": "最大循环触发次数",
+  "The triggers of same workflow by some node (create, update and sub-flow etc.) more than this number will be ignored. Large number may cause performance issues. Please use with caution.": "由某个节点（创建、更新和子流程等）触发同一个工作流超过这个次数时将被忽略。设置过高的次数可能会导致性能问题，请谨慎使用。",
   "Trigger": "触发器",
   "Unknown trigger": "未知触发器",
   "Workflow with unknown type will cause error. Please delete it or check plugin which provide this type.": "未知类型的工作流会导致错误，请删除或检查提供该类型的插件。",
@@ -64,6 +75,8 @@
   "Preload associations": "预加载关联数据",
   "Please select the associated fields that need to be accessed in subsequent nodes. With more than two levels of to-many associations may cause performance issue, please use with caution.":
     "请选中需要在后续节点中被访问的关系字段。超过两层的对多关联可能会导致性能问题，请谨慎使用。",
+  "Choose a record or primary key of a record in the collection to trigger.": "选择数据表中的一行记录或者记录的主键来触发。",
+
   "Schedule event": "定时任务",
   "Triggered according to preset time conditions. Suitable for one-time or periodic tasks, such as sending notifications and cleaning data on a schedule.": "按预设的时间条件定时触发。适用于一次性或周期性的任务，如定时发送通知、清理数据等。",
   "Trigger mode": "触发模式",
@@ -92,6 +105,9 @@
   "By field": "数据表字段",
   "By custom date": "自定义时间",
   "Advanced": "高级模式",
+  "Execute on": "执行时间",
+  "Current time": "当前时间",
+
   "End": "结束",
   "Node result": "节点数据",
   "Variable key of node": "节点变量标识",
@@ -213,5 +229,7 @@
   "Add node": "添加节点",
   "Move all downstream nodes to": "将所有下游节点移至",
   "After end of branches": "分支结束后",
-  "Inside of branch": "分支内"
+  "Inside of branch": "分支内",
+
+  "Workflow todos": "流程待办"
 }

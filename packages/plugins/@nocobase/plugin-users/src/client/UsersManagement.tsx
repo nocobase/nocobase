@@ -7,26 +7,29 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { css } from '@emotion/css';
+import { createForm } from '@formily/core';
+import { useForm } from '@formily/react';
 import {
   SchemaComponent,
   SchemaComponentContext,
+  useAPIClient,
   useActionContext,
   useCollection,
   useCollectionRecordData,
   useDataBlockRequest,
   useDataBlockResource,
-  useSchemaComponentContext,
   useRequest,
-  useAPIClient,
+  RemoteSchemaComponent,
+  useCollectionManager,
+  ExtendCollectionsProvider,
+  useSchemaComponentContext,
 } from '@nocobase/client';
-import React, { createContext, useEffect, useMemo, useContext } from 'react';
 import { App, Tabs, message } from 'antd';
-import { useForm } from '@formily/react';
-import { createForm } from '@formily/core';
-import { css } from '@emotion/css';
-import { usersSchema, usersSettingsSchema } from './schemas/users';
+import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useUsersTranslation } from './locale';
 import { PasswordField } from './PasswordField';
+import { usersSchema, usersSettingsSchema } from './schemas/users';
 
 const useCancelActionProps = () => {
   const { setVisible } = useActionContext();
@@ -50,6 +53,7 @@ const useSubmitActionProps = () => {
   const collection = useCollection();
 
   return {
+    htmlType: 'submit',
     type: 'primary',
     async onClick() {
       await form.submit();
@@ -84,17 +88,58 @@ const useEditFormProps = () => {
   };
 };
 
-const UsersManagementTab: React.FC = () => {
-  const { t } = useUsersTranslation();
+const ProfileCreateForm = () => {
+  return <RemoteSchemaComponent uid="nocobase-admin-profile-create-form" noForm={true} />;
+};
+
+const ProfileEditForm = () => {
+  const cm = useCollectionManager();
+  const userCollection = cm.getCollection('users');
+  const collection = {
+    ...userCollection,
+    name: 'users',
+    fields: userCollection.fields.filter((field) => field.name !== 'password'),
+  };
+  return (
+    <ExtendCollectionsProvider collections={[collection]}>
+      <RemoteSchemaComponent uid="nocobase-admin-profile-edit-form" noForm={true} scope={{ useCancelActionProps }} />
+    </ExtendCollectionsProvider>
+  );
+};
+
+const FilterAction = () => {
   const scCtx = useSchemaComponentContext();
   return (
     <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
       <SchemaComponent
-        schema={usersSchema}
-        scope={{ t, useCancelActionProps, useSubmitActionProps, useEditFormProps }}
-        components={{ PasswordField }}
+        schema={{
+          type: 'void',
+          properties: {
+            filter: {
+              type: 'void',
+              title: '{{ t("Filter") }}',
+              'x-action': 'filter',
+              'x-component': 'Filter.Action',
+              'x-use-component-props': 'useFilterActionProps',
+              'x-component-props': {
+                icon: 'FilterOutlined',
+              },
+            },
+          },
+        }}
       />
     </SchemaComponentContext.Provider>
+  );
+};
+
+const UsersManagementTab: React.FC = () => {
+  const { t } = useUsersTranslation();
+  return (
+    <SchemaComponent
+      schema={usersSchema}
+      scope={{ t, useCancelActionProps, useSubmitActionProps, useEditFormProps }}
+      components={{ PasswordField, ProfileEditForm, ProfileCreateForm, FilterAction }}
+    />
   );
 };
 const UsersSettingsContext = createContext<any>({});
@@ -108,7 +153,6 @@ const UsersSettingsProvider = (props) => {
 
 const UsersSettingsTab: React.FC = () => {
   const { t } = useUsersTranslation();
-  const scCtx = useSchemaComponentContext();
   const form = useForm();
   const useFormBlockProps = () => {
     const result = useContext(UsersSettingsContext);
@@ -139,13 +183,11 @@ const UsersSettingsTab: React.FC = () => {
     };
   };
   return (
-    <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
-      <SchemaComponent
-        schema={usersSettingsSchema}
-        scope={{ t, useFormBlockProps, useSubmitActionProps }}
-        components={{ UsersSettingsProvider }}
-      />
-    </SchemaComponentContext.Provider>
+    <SchemaComponent
+      schema={usersSettingsSchema}
+      scope={{ t, useFormBlockProps, useSubmitActionProps }}
+      components={{ UsersSettingsProvider }}
+    />
   );
 };
 

@@ -11,11 +11,18 @@ import { Plugin, createStyles, defaultTheme, useCurrentUserSettingsMenu, useGlob
 import { ConfigProvider } from 'antd';
 import _ from 'lodash';
 import React, { useEffect, useMemo } from 'react';
-import InitializeTheme from './components/InitializeTheme';
-import { ThemeEditorProvider } from './components/ThemeEditorProvider';
-import ThemeList from './components/ThemeList';
-import { ThemeListProvider } from './components/ThemeListProvider';
-import CustomTheme from './components/theme-editor';
+// import InitializeTheme from './components/InitializeTheme';
+// import { ThemeEditorProvider } from './components/ThemeEditorProvider';
+// import ThemeList from './components/ThemeList';
+// import { ThemeListProvider } from './components/ThemeListProvider';
+// import CustomTheme from './components/theme-editor';
+import { lazy } from '@nocobase/client';
+const InitializeTheme = lazy(() => import('./components/InitializeTheme'));
+const { ThemeEditorProvider } = lazy(() => import('./components/ThemeEditorProvider'), 'ThemeEditorProvider');
+const ThemeList = lazy(() => import('./components/ThemeList'));
+const { ThemeListProvider } = lazy(() => import('./components/ThemeListProvider'), 'ThemeListProvider');
+const CustomTheme = lazy(() => import('./components/theme-editor'));
+
 import { useThemeSettings } from './hooks/useThemeSettings';
 import { NAMESPACE } from './locale';
 

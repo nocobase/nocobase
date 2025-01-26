@@ -8,11 +8,12 @@
  */
 
 import { Field } from '@formily/core';
-import { useField, useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema, useForm } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useColumnSchema } from '../../../../schema-component/antd/table/Table.Column.Decorator';
 import { useDesignable } from '../../../../schema-component/hooks/useDesignable';
+import { showFileName } from './fileManagerComponentFieldSettings';
 
 export const previewComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:Preview',
@@ -55,5 +56,6 @@ export const previewComponentFieldSettings = new SchemaSettings({
         };
       },
     },
+    showFileName,
   ],
 });

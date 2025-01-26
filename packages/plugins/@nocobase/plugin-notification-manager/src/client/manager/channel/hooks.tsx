@@ -16,9 +16,9 @@ import {
   useBlockRequestContext,
   useCollection,
   useCollectionRecordData,
-  useDataBlockRequest,
-  useDestroyActionProps,
+  useDataBlockRequestGetter,
   useDataBlockResource,
+  useDestroyActionProps,
   usePlugin,
 } from '@nocobase/client';
 import { App as AntdApp } from 'antd';
@@ -158,7 +158,7 @@ export function useDeleteActionProps(): ActionProps {
   const { message } = AntdApp.useApp();
   const record = useCollectionRecordData();
   const resource = useDataBlockResource();
-  const { runAsync } = useDataBlockRequest();
+  const { getDataBlockRequest } = useDataBlockRequestGetter();
   const collection = useCollection();
   return {
     confirm: {
@@ -169,7 +169,7 @@ export function useDeleteActionProps(): ActionProps {
       await resource.destroy({
         filterByTk: record[collection.filterTargetKey],
       });
-      await runAsync();
+      await getDataBlockRequest()?.runAsync();
       message.success(t('Deleted successfully!'));
     },
   };

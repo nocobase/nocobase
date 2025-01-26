@@ -11,12 +11,17 @@ import React from 'react';
 import { useFieldSchema } from '@formily/react';
 import { isValid } from '@formily/shared';
 
-import { Plugin, useCompile, WorkflowConfig } from '@nocobase/client';
+import { PagePopups, Plugin, useCompile, WorkflowConfig } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 
-import { ExecutionPage } from './ExecutionPage';
-import { WorkflowPage } from './WorkflowPage';
-import { WorkflowPane } from './WorkflowPane';
+// import { ExecutionPage } from './ExecutionPage';
+// import { WorkflowPage } from './WorkflowPage';
+// import { WorkflowPane } from './WorkflowPane';
+import { lazy } from '@nocobase/client';
+const { ExecutionPage } = lazy(() => import('./ExecutionPage'), 'ExecutionPage');
+const { WorkflowPage } = lazy(() => import('./WorkflowPage'), 'WorkflowPage');
+const { WorkflowPane } = lazy(() => import('./WorkflowPane'), 'WorkflowPane');
+
 import { Trigger } from './triggers';
 import CollectionTrigger from './triggers/collection';
 import ScheduleTrigger from './triggers/schedule';
@@ -32,20 +37,25 @@ import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './utils';
 import { lang, NAMESPACE } from './locale';
 import { customizeSubmitToWorkflowActionSettings } from './settings/customizeSubmitToWorkflowActionSettings';
 import { VariableOption } from './variable';
+import { WorkflowTasks, TasksProvider, TaskTypeOptions } from './WorkflowTasks';
 
 export default class PluginWorkflowClient extends Plugin {
   triggers = new Registry<Trigger>();
   instructions = new Registry<Instruction>();
   systemVariables = new Registry<VariableOption>();
 
+  taskTypes = new Registry<TaskTypeOptions>();
+
   useTriggersOptions = () => {
     const compile = useCompile();
-    return Array.from(this.triggers.getEntities()).map(([value, { title, ...options }]) => ({
-      value,
-      label: compile(title),
-      color: 'gold',
-      options,
-    }));
+    return Array.from(this.triggers.getEntities())
+      .map(([value, { title, ...options }]) => ({
+        value,
+        label: compile(title),
+        color: 'gold',
+        options,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
   };
 
   isWorkflowSync(workflow) {
@@ -76,20 +86,29 @@ export default class PluginWorkflowClient extends Plugin {
     this.systemVariables.register(option.key, option);
   }
 
+  registerTaskType(key: string, option: TaskTypeOptions) {
+    this.taskTypes.register(key, option);
+  }
+
   async load() {
-    this.app.router.add('admin.workflow.workflows.id', {
+    this.router.add('admin.workflow.workflows.id', {
       path: getWorkflowDetailPath(':id'),
-      element: <WorkflowPage />,
+      Component: WorkflowPage,
     });
 
-    this.app.router.add('admin.workflow.executions.id', {
+    this.router.add('admin.workflow.executions.id', {
       path: getWorkflowExecutionsPath(':id'),
-      element: <ExecutionPage />,
+      Component: ExecutionPage,
     });
 
-    this.app.addComponents({
-      WorkflowPage,
-      ExecutionPage,
+    this.router.add('admin.workflow.tasks', {
+      path: '/admin/workflow/tasks/:taskType?',
+      Component: WorkflowTasks,
+    });
+
+    this.router.add('admin.workflow.tasks.popup', {
+      path: '/admin/workflow/tasks/:taskType/popups/*',
+      Component: PagePopups,
     });
 
     this.app.pluginSettingsManager.add(NAMESPACE, {
@@ -98,6 +117,8 @@ export default class PluginWorkflowClient extends Plugin {
       Component: WorkflowPane,
       aclSnippet: 'pm.workflow.workflows',
     });
+
+    this.app.use(TasksProvider);
 
     this.app.schemaSettingsManager.add(customizeSubmitToWorkflowActionSettings);
 

@@ -125,7 +125,12 @@ export async function createMiddleware(ctx: Context, next: Next) {
   const StorageRepo = ctx.db.getRepository('storages');
   const storage = await StorageRepo.findOne({ filter: storageName ? { name: storageName } : { default: true } });
 
-  ctx.storage = storage;
+  const plugin = ctx.app.pm.get(Plugin);
+  ctx.storage = plugin.parseStorage(storage);
 
-  await multipart(ctx, next);
+  if (ctx?.request.is('multipart/*')) {
+    await multipart(ctx, next);
+  } else {
+    await next();
+  }
 }

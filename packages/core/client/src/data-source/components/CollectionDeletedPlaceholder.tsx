@@ -16,7 +16,6 @@ import { useDataSourceManager } from '../data-source';
 import { DEFAULT_DATA_SOURCE_KEY } from '../../data-source/data-source/DataSourceManager';
 import { useCollection } from '../collection';
 import { BlockItemCard } from '../../schema-component/antd/block-item/BlockItemCard';
-import { AnyKindOfDictionary } from 'lodash';
 
 export interface CollectionDeletedPlaceholderProps {
   type: 'Collection' | 'Field' | 'Data Source' | 'Block template';
@@ -99,6 +98,7 @@ export const CollectionDeletedPlaceholder: FC<CollectionDeletedPlaceholderProps>
                   ...confirm,
                   onOk() {
                     dn.remove(null, { removeParentsIfNoChildren: true, breakRemoveOn: { 'x-component': 'Grid' } });
+                    dn.refresh({ refreshParentSchema: true });
                   },
                 })
               }

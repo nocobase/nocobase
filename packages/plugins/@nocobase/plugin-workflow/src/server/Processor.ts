@@ -112,13 +112,15 @@ export default class Processor {
       execution,
       options: { plugin },
     } = this;
-    if (!execution.workflow) {
-      execution.workflow = plugin.enabledCache.get(execution.workflowId);
-    }
 
     this.mainTransaction = plugin.useDataSourceTransaction('main', this.transaction);
 
     const transaction = this.mainTransaction;
+
+    if (!execution.workflow) {
+      execution.workflow =
+        plugin.enabledCache.get(execution.workflowId) || (await execution.getWorkflow({ transaction }));
+    }
 
     const nodes = await execution.workflow.getNodes({ transaction });
 
@@ -410,6 +412,7 @@ export default class Processor {
       $jobsMapByNodeKey: this.jobsMapByNodeKey,
       $system: systemFns,
       $scopes,
+      $env: this.options.plugin.app.environment.getVariables(),
     };
   }
 

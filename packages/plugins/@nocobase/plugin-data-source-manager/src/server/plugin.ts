@@ -17,12 +17,12 @@ import rolesConnectionResourcesResourcer from './resourcers/data-sources-resourc
 import databaseConnectionsRolesResourcer from './resourcers/data-sources-roles';
 import { rolesRemoteCollectionsResourcer } from './resourcers/roles-data-sources-collections';
 
+import { LoadingProgress } from '@nocobase/data-source-manager';
 import lodash from 'lodash';
 import { DataSourcesRolesResourcesModel } from './models/connections-roles-resources';
 import { DataSourcesRolesResourcesActionModel } from './models/connections-roles-resources-action';
 import { DataSourceModel } from './models/data-source';
 import { DataSourcesRolesModel } from './models/data-sources-roles-model';
-import { LoadingProgress } from '@nocobase/data-source-manager';
 
 type DataSourceState = 'loading' | 'loaded' | 'loading-failed' | 'reloading' | 'reloading-failed';
 
@@ -37,9 +37,103 @@ export class PluginDataSourceManagerServer extends Plugin {
     [dataSourceKey: string]: DataSourceState;
   } = {};
 
+  async handleSyncMessage(message) {
+    const { type } = message;
+    if (type === 'syncRole') {
+      const { roleName, dataSourceKey } = message;
+      const dataSource = this.app.dataSourceManager.dataSources.get(dataSourceKey);
+
+      const dataSourceRole: DataSourcesRolesModel = await this.app.db.getRepository('dataSourcesRoles').findOne({
+        filter: {
+          dataSourceKey,
+          roleName,
+        },
+      });
+
+      await dataSourceRole.writeToAcl({
+        acl: dataSource.acl,
+      });
+    }
+
+    if (type === 'syncRoleResource') {
+      const { roleName, dataSourceKey, resourceName } = message;
+      const dataSource = this.app.dataSourceManager.dataSources.get(dataSourceKey);
+
+      const dataSourceRoleResource: DataSourcesRolesResourcesModel = await this.app.db
+        .getRepository('dataSourcesRolesResources')
+        .findOne({
+          filter: {
+            dataSourceKey,
+            roleName,
+            name: resourceName,
+          },
+        });
+
+      await dataSourceRoleResource.writeToACL({
+        acl: dataSource.acl,
+      });
+    }
+    if (type === 'loadDataSource') {
+      const { dataSourceKey } = message;
+      const dataSourceModel = await this.app.db.getRepository('dataSources').findOne({
+        filter: {
+          key: dataSourceKey,
+        },
+      });
+
+      if (!dataSourceModel) {
+        return;
+      }
+
+      await dataSourceModel.loadIntoApplication({
+        app: this.app,
+      });
+    }
+
+    if (type === 'loadDataSourceField') {
+      const { key } = message;
+      const fieldModel = await this.app.db.getRepository('dataSourcesFields').findOne({
+        filter: {
+          key,
+        },
+      });
+
+      fieldModel.load({
+        app: this.app,
+      });
+    }
+    if (type === 'removeDataSourceCollection') {
+      const { dataSourceKey, collectionName } = message;
+      const dataSource = this.app.dataSourceManager.dataSources.get(dataSourceKey);
+      dataSource.collectionManager.removeCollection(collectionName);
+    }
+
+    if (type === 'removeDataSourceField') {
+      const { key } = message;
+      const fieldModel = await this.app.db.getRepository('dataSourcesFields').findOne({
+        filter: {
+          key,
+        },
+      });
+
+      fieldModel.unload({
+        app: this.app,
+      });
+    }
+
+    if (type === 'removeDataSource') {
+      const { dataSourceKey } = message;
+      this.app.dataSourceManager.dataSources.delete(dataSourceKey);
+    }
+  }
+
   public dataSourceLoadingProgress: {
     [dataSourceKey: string]: LoadingProgress;
   } = {};
+
+  renderJsonTemplate(template) {
+    return this.app.environment.renderJsonTemplate(template);
+  }
 
   async beforeLoad() {
     this.app.db.registerModels({
@@ -97,7 +191,7 @@ export class PluginDataSourceManagerServer extends Plugin {
         }
 
         try {
-          await klass.testConnection(dataSourceOptions);
+          await klass.testConnection(this.renderJsonTemplate(dataSourceOptions || {}));
         } catch (error) {
           throw new Error(`Test connection failed: ${error.message}`);
         }
@@ -109,6 +203,16 @@ export class PluginDataSourceManagerServer extends Plugin {
         model.loadIntoApplication({
           app: this.app,
         });
+
+        this.sendSyncMessage(
+          {
+            type: 'loadDataSource',
+            dataSourceKey: model.get('key'),
+          },
+          {
+            transaction: options.transaction,
+          },
+        );
       }
     });
 
@@ -273,6 +377,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       }
     });
 
+    const self = this;
     this.app.actions({
       async ['dataSources:listEnabled'](ctx, next) {
         const dataSources = await ctx.db.getRepository('dataSources').find({
@@ -297,7 +402,7 @@ export class PluginDataSourceManagerServer extends Plugin {
         const klass = ctx.app.dataSourceManager.factory.getClass(type);
 
         try {
-          await klass.testConnection(options);
+          await klass.testConnection(self.renderJsonTemplate(options));
         } catch (error) {
           throw new Error(`Test connection failed: ${error.message}`);
         }
@@ -311,6 +416,7 @@ export class PluginDataSourceManagerServer extends Plugin {
 
       async ['dataSources:refresh'](ctx, next) {
         const { filterByTk, clientStatus } = ctx.action.params;
+
         const dataSourceModel: DataSourceModel = await ctx.db.getRepository('dataSources').findOne({
           filter: {
             key: filterByTk,
@@ -325,6 +431,12 @@ export class PluginDataSourceManagerServer extends Plugin {
         ) {
           dataSourceModel.loadIntoApplication({
             app: ctx.app,
+            refresh: true,
+          });
+
+          ctx.app.syncMessageManager.publish(self.name, {
+            type: 'loadDataSource',
+            dataSourceKey: dataSourceModel.get('key'),
           });
         }
 
@@ -361,23 +473,54 @@ export class PluginDataSourceManagerServer extends Plugin {
       }
     });
 
-    this.app.db.on('dataSourcesCollections.afterDestroy', async (model: DataSourcesCollectionModel) => {
+    this.app.db.on('dataSourcesCollections.afterDestroy', async (model: DataSourcesCollectionModel, options) => {
       const dataSource = this.app.dataSourceManager.dataSources.get(model.get('dataSourceKey'));
       if (dataSource) {
         dataSource.collectionManager.removeCollection(model.get('name'));
       }
+
+      this.sendSyncMessage(
+        {
+          type: 'removeDataSourceCollection',
+          dataSourceKey: model.get('dataSourceKey'),
+          collectionName: model.get('name'),
+        },
+        {
+          transaction: options.transaction,
+        },
+      );
     });
 
-    this.app.db.on('dataSourcesFields.afterSaveWithAssociations', async (model: DataSourcesFieldModel) => {
+    this.app.db.on('dataSourcesFields.afterSaveWithAssociations', async (model: DataSourcesFieldModel, options) => {
       model.load({
         app: this.app,
       });
+
+      this.sendSyncMessage(
+        {
+          type: 'loadDataSourceField',
+          key: model.get('key'),
+        },
+        {
+          transaction: options.transaction,
+        },
+      );
     });
 
-    this.app.db.on('dataSourcesFields.afterDestroy', async (model: DataSourcesFieldModel) => {
+    this.app.db.on('dataSourcesFields.afterDestroy', async (model: DataSourcesFieldModel, options) => {
       model.unload({
         app: this.app,
       });
+
+      this.sendSyncMessage(
+        {
+          type: 'removeDataSourceField',
+          key: model.get('key'),
+        },
+        {
+          transaction: options.transaction,
+        },
+      );
     });
 
     this.app.db.on(
@@ -390,8 +533,18 @@ export class PluginDataSourceManagerServer extends Plugin {
       },
     );
 
-    this.app.db.on('dataSources.afterDestroy', async (model: DataSourceModel) => {
+    this.app.db.on('dataSources.afterDestroy', async (model: DataSourceModel, options) => {
       this.app.dataSourceManager.dataSources.delete(model.get('key'));
+
+      this.sendSyncMessage(
+        {
+          type: 'removeDataSource',
+          dataSourceKey: model.get('key'),
+        },
+        {
+          transaction: options.transaction,
+        },
+      );
     });
 
     this.app.on('afterStart', async (app: Application) => {
@@ -423,6 +576,19 @@ export class PluginDataSourceManagerServer extends Plugin {
           acl: dataSource.acl,
           transaction: transaction,
         });
+
+        // sync roles resources between nodes
+        this.sendSyncMessage(
+          {
+            type: 'syncRoleResource',
+            roleName: model.get('roleName'),
+            dataSourceKey: model.get('dataSourceKey'),
+            resourceName: model.get('name'),
+          },
+          {
+            transaction,
+          },
+        );
       },
     );
 
@@ -440,6 +606,18 @@ export class PluginDataSourceManagerServer extends Plugin {
           acl: dataSource.acl,
           transaction: transaction,
         });
+
+        this.sendSyncMessage(
+          {
+            type: 'syncRoleResource',
+            roleName: resource.get('roleName'),
+            dataSourceKey: resource.get('dataSourceKey'),
+            resourceName: resource.get('name'),
+          },
+          {
+            transaction,
+          },
+        );
       },
     );
 
@@ -451,6 +629,18 @@ export class PluginDataSourceManagerServer extends Plugin {
       if (role) {
         role.revokeResource(model.get('name'));
       }
+
+      this.sendSyncMessage(
+        {
+          type: 'syncRoleResource',
+          roleName,
+          dataSourceKey: model.get('dataSourceKey'),
+          resourceName: model.get('name'),
+        },
+        {
+          transaction: options.transaction,
+        },
+      );
     });
 
     this.app.db.on('dataSourcesRoles.afterSave', async (model: DataSourcesRolesModel, options) => {
@@ -473,6 +663,18 @@ export class PluginDataSourceManagerServer extends Plugin {
         hooks: false,
         transaction,
       });
+
+      // sync role between nodes
+      this.sendSyncMessage(
+        {
+          type: 'syncRole',
+          roleName: model.get('roleName'),
+          dataSourceKey: model.get('dataSourceKey'),
+        },
+        {
+          transaction,
+        },
+      );
     });
 
     this.app.on('acl:writeResources', async ({ roleName, transaction }) => {
@@ -492,7 +694,6 @@ export class PluginDataSourceManagerServer extends Plugin {
       });
     });
 
-    const self = this;
     // add global roles check
     this.app.resourceManager.use(async function appendDataToRolesCheck(ctx, next) {
       const action = ctx.action;

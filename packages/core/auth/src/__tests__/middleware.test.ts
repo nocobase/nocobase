@@ -8,8 +8,9 @@
  */
 
 import { Database } from '@nocobase/database';
-import { MockServer, mockServer } from '@nocobase/test';
+import { MockServer, createMockServer } from '@nocobase/test';
 import { vi } from 'vitest';
+import { AuthErrorCode } from '../auth';
 
 describe('middleware', () => {
   let app: MockServer;
@@ -17,14 +18,13 @@ describe('middleware', () => {
   let agent;
 
   beforeEach(async () => {
-    app = mockServer({
+    app = await createMockServer({
       registerActions: true,
       acl: true,
-      plugins: ['users', 'auth', 'acl', 'data-source-manager'],
+      plugins: ['users', 'auth', 'acl', 'field-sort', 'data-source-manager', 'error-handler'],
     });
 
     // app.plugin(ApiKeysPlugin);
-    await app.loadAndInstall({ clean: true });
     db = app.db;
     agent = app.agent();
   });
@@ -71,7 +71,15 @@ describe('middleware', () => {
       hasFn.mockImplementation(() => true);
       const res = await agent.resource('auth').check();
       expect(res.status).toBe(401);
-      expect(res.text).toContain('Token is invalid');
+      expect(res.body.errors.some((error) => error.code === AuthErrorCode.BLOCKED_TOKEN)).toBe(true);
+    });
+
+    it('should throw 401 when token in empty', async () => {
+      const visitorAgent = app.agent();
+      hasFn.mockImplementation(() => true);
+      const res = await visitorAgent.resource('auth').check();
+      expect(res.status).toBe(401);
+      expect(res.body.errors.some((error) => error.code === AuthErrorCode.EMPTY_TOKEN)).toBe(true);
     });
   });
 });

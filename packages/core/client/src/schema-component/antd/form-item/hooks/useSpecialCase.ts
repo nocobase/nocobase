@@ -10,14 +10,16 @@
 import { Field } from '@formily/core';
 import { Schema, useFieldSchema, useForm } from '@formily/react';
 import _ from 'lodash';
-import { useCallback, useEffect, useMemo } from 'react';
 import {
   CollectionFieldOptions_deprecated,
   useCollectionManager_deprecated,
   useCollection_deprecated,
 } from '../../../../collection-manager';
 import { markRecordAsNew } from '../../../../data-source/collection-record/isNewRecord';
+import { isVariable } from '../../../../variables/utils/isVariable';
 import { isSubMode } from '../../association-field/util';
+
+import { useCallback, useEffect, useMemo } from 'react';
 
 /**
  * #### 处理 `子表单` 和 `子表格` 中的特殊情况
@@ -187,20 +189,22 @@ export function isFromDatabase(value: Record<string, any>) {
  * 3. 如果子表格中没有设置默认值，就会再把子表格重置为空。
  * @param param0
  */
-export const useSubTableSpecialCase = ({ field }) => {
+export const useSubTableSpecialCase = ({ rootField, rootSchema }) => {
+  const { hasUsedVariable } = useHasUsedVariable();
+
   useEffect(() => {
-    if (_.isEmpty(field.value)) {
-      const emptyValue = field.value;
+    if (_.isEmpty(rootField.value) && hasUsedVariable('$context', rootSchema)) {
+      const emptyValue = rootField.value;
       const newValue = [markRecordAsNew({})];
-      field.value = newValue;
+      rootField.value = newValue;
       // 因为默认值的解析是异步的，所以下面的代码会优先于默认值的设置，这样就防止了设置完默认值后又被清空的问题
       setTimeout(() => {
-        if (JSON.stringify(field.value) === JSON.stringify(newValue)) {
-          field.value = emptyValue;
+        if (JSON.stringify(rootField.value) === JSON.stringify(newValue)) {
+          rootField.value = emptyValue;
         }
       });
     }
-  }, []);
+  }, [rootField, rootSchema, hasUsedVariable]);
 };
 
 /**
@@ -227,4 +231,49 @@ export function isSubset(subset: any[], superset: any[]): boolean {
 
   // All elements match, it's a subset
   return true;
+}
+
+/**
+ * Recursively checks a schema and its properties for usage of a variable name
+ * @param schema The Schema object to check
+ * @param variableName The variable name to search for
+ * @returns True if the variable is used in the schema or its properties
+ */
+const checkSchema = (schema: Schema, variableName: string): boolean => {
+  // Check if current node is a FormItem and has a default value containing the variable
+  if (schema['x-decorator'] === 'FormItem') {
+    const defaultValue = schema.default;
+    if (
+      defaultValue &&
+      typeof defaultValue === 'string' &&
+      isVariable(defaultValue) &&
+      defaultValue.includes(variableName)
+    ) {
+      return true;
+    }
+  }
+
+  // Recursively check all child properties
+  let hasVariable = false;
+  schema.mapProperties((childSchema) => {
+    if (checkSchema(childSchema, variableName)) {
+      hasVariable = true;
+    }
+  });
+
+  return hasVariable;
+};
+
+export function useHasUsedVariable() {
+  /**
+   * Checks if a variable name is used anywhere in a schema
+   * @param variableName The variable name to search for
+   * @param rootSchema The root Schema object to check
+   * @returns True if the variable is used in the schema
+   */
+  const hasUsedVariable = useCallback((variableName: string, rootSchema: Schema): boolean => {
+    return checkSchema(rootSchema, variableName);
+  }, []);
+
+  return { hasUsedVariable };
 }

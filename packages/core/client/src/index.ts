@@ -41,6 +41,7 @@ export * from './global-theme';
 export * from './hooks';
 export * from './i18n';
 export * from './icon';
+export * from './lazy-helper';
 export { default as locale } from './locale';
 export * from './nocobase-buildin-plugin';
 export * from './plugin-manager';
@@ -60,22 +61,34 @@ export * from './user';
 export * from './variables';
 
 export { withDynamicSchemaProps } from './hoc/withDynamicSchemaProps';
-
+export { withSkeletonComponent } from './hoc/withSkeletonComponent';
+export { SwitchLanguage } from './i18n/SwitchLanguage';
 export { SchemaSettingsActionLinkItem } from './modules/actions/link/customizeLinkActionSettings';
-export { useURLAndHTMLSchema } from './modules/actions/link/useURLAndHTMLSchema';
+export { getVariableComponentWithScope, useURLAndHTMLSchema } from './modules/actions/link/useURLAndHTMLSchema';
 export * from './modules/blocks/BlockSchemaToolbar';
 export * from './modules/blocks/data-blocks/form';
 export * from './modules/blocks/data-blocks/table';
 export * from './modules/blocks/data-blocks/table-selector';
 export * from './modules/blocks/index';
 export * from './modules/blocks/useParentRecordCommon';
+export { getGroupMenuSchema } from './modules/menu/GroupItem';
+export { getLinkMenuSchema } from './modules/menu/LinkMenuItem';
+export { getPageMenuSchema } from './modules/menu/PageMenuItem';
 export { OpenModeProvider, useOpenModeContext } from './modules/popup/OpenModeProvider';
 export { PopupContextProvider } from './modules/popup/PopupContextProvider';
 export { usePopupUtils } from './modules/popup/usePopupUtils';
-
-export { SwitchLanguage } from './i18n/SwitchLanguage';
 export { VariablePopupRecordProvider } from './modules/variable/variablesProvider/VariablePopupRecordProvider';
 
 export { useCurrentPopupRecord } from './modules/variable/variablesProvider/VariablePopupRecordProvider';
+export { showFileName } from './modules/fields/component/FileManager/fileManagerComponentFieldSettings';
 
 export { languageCodes } from './locale';
+
+// Override Formily API
+export {
+  CollectionFieldUISchemaProvider,
+  IsInNocoBaseRecursionFieldContext,
+  NocoBaseRecursionField,
+  RefreshComponentProvider,
+  useRefreshFieldSchema,
+} from './formily/NocoBaseRecursionField';

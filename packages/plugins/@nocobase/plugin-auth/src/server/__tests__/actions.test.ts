@@ -19,7 +19,7 @@ describe('actions', () => {
 
     beforeAll(async () => {
       app = await createMockServer({
-        plugins: ['auth'],
+        plugins: ['field-sort', 'auth'],
       });
       db = app.db;
       repo = db.getRepository('authenticators');
@@ -110,7 +110,7 @@ describe('actions', () => {
       process.env.INIT_ROOT_PASSWORD = '123456';
       process.env.INIT_ROOT_NICKNAME = 'Test';
       app = await createMockServer({
-        plugins: ['auth', 'users', 'system-settings'],
+        plugins: ['field-sort', 'auth', 'users', 'system-settings'],
       });
       db = app.db;
       agent = app.agent();
@@ -222,7 +222,7 @@ describe('actions', () => {
           password: '12345',
         },
       });
-      const userAgent = await agent.login(user);
+      const userAgent = await agent.loginWithJti(user, null);
 
       // Should check password consistency
       const res = await userAgent.post('/auth:changePassword').set({ 'X-Authenticator': 'basic' }).send({
@@ -442,7 +442,7 @@ describe('actions', () => {
           password: '12345',
         },
       });
-      const userAgent = await agent.login(user);
+      const userAgent = await agent.loginWithJti(user, null);
       const res = await userAgent.post('/auth:check').set({ 'X-Authenticator': 'basic' }).send();
       expect(res.statusCode).toEqual(200);
       expect(res.body.data.id).toBeDefined();
@@ -453,8 +453,8 @@ describe('actions', () => {
       });
       expect(res2.statusCode).toEqual(200);
       const res3 = await userAgent.post('/auth:check').set({ 'X-Authenticator': 'basic' }).send();
-      expect(res3.statusCode).toEqual(200);
-      expect(res3.body.data.id).toBeUndefined();
+      expect(res3.statusCode).toEqual(401);
+      expect(res3.text).toBe('User password changed, please signin again.');
     });
   });
 });

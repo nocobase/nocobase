@@ -7,12 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createStyles } from 'antd-style';
-
-export const useStyles = createStyles(() => {
-  return {
-    arrayCollapseItem: {
-      marginBottom: '10px',
-    },
-  };
-});
+export const arrayCollapseItemStyle = {
+  marginBottom: 10,
+};

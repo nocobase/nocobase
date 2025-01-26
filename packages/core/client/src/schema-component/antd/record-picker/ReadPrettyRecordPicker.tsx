@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer, RecursionField, useFieldSchema } from '@formily/react';
+import { observer, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import React, { Fragment, useRef, useState } from 'react';
 import { WithoutTableFieldResource } from '../../../block-provider';
@@ -16,6 +16,7 @@ import { BlockAssociationContext } from '../../../block-provider/BlockProvider';
 import { CollectionProvider_deprecated } from '../../../collection-manager';
 import { useCollectionManager } from '../../../data-source/collection/CollectionManagerProvider';
 import { useCollection } from '../../../data-source/collection/CollectionProvider';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
@@ -94,7 +95,7 @@ export const ReadPrettyRecordPicker: React.FC = observer(
     const renderWithoutTableFieldResourceProvider = () => (
       <WithoutTableFieldResource.Provider value={true}>
         <FormProvider>
-          <RecursionField
+          <NocoBaseRecursionField
             schema={fieldSchema}
             onlyRenderProperties
             filterProperties={(s) => {

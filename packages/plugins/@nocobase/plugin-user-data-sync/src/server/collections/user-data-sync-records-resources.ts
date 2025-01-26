@@ -11,6 +11,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'userDataSyncRecordsResources',
+  migrationRules: ['schema-only', 'overwrite'],
   fields: [
     {
       name: 'recordId',

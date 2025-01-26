@@ -11,7 +11,7 @@ import { Space, Tabs, TabsProps } from 'antd-mobile';
 import React, { FC, useCallback } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
-import { DndContext, DndContextProps, Icon, SortableItem } from '@nocobase/client';
+import { DndContext, DndContextProps, Icon, SortableItem, useCompile } from '@nocobase/client';
 import { useMobileRoutes } from '../../../../mobile-providers';
 import { useMobilePage } from '../../context';
 import { MobilePageTabInitializer } from './initializer';
@@ -20,10 +20,13 @@ import { useStyles } from './styles';
 
 export const MobilePageTabs: FC = () => {
   const { activeTabBarItem, resource, refresh } = useMobileRoutes();
-  const { displayTabs = false } = useMobilePage();
+  const { displayTabs: _displayTabs } = useMobilePage();
+  const displayTabs = activeTabBarItem?.enableTabs === undefined ? _displayTabs : activeTabBarItem.enableTabs;
+
+  const compile = useCompile();
 
   const navigate = useNavigate();
-  const { styles } = useStyles();
+  const { componentCls, hashId } = useStyles();
   const { tabSchemaUid } = useParams<{ tabSchemaUid: string }>();
   const [activeKey, setActiveKey] = React.useState<string>(() => {
     return tabSchemaUid || activeTabBarItem?.children?.[0]?.schemaUid;
@@ -52,28 +55,31 @@ export const MobilePageTabs: FC = () => {
   if (!displayTabs) return null;
 
   return (
-    <div className={styles.mobilePageTabs} data-testid="mobile-page-tabs">
+    <div className={`${componentCls} ${hashId}`} data-testid="mobile-page-tabs">
       <DndContext onDragEnd={handleDragEnd}>
-        <Tabs activeKey={activeKey} onChange={handleChange} className={styles.mobilePageTabsList}>
-          {activeTabBarItem.children?.map((item) => (
-            <Tabs.Tab
-              data-testid={`mobile-page-tabs-${item.title}`}
-              title={
-                <SortableItem id={item.id as any}>
-                  <MobilePageTabsSettings tab={item} />
-                  {item.icon ? (
-                    <Space>
-                      <Icon type={item.icon} />
-                      {item.title}
-                    </Space>
-                  ) : (
-                    item.title
-                  )}
-                </SortableItem>
-              }
-              key={String(item.schemaUid)}
-            ></Tabs.Tab>
-          ))}
+        <Tabs activeKey={activeKey} onChange={handleChange} className="nb-mobile-page-tabs-list">
+          {activeTabBarItem.children?.map((item) => {
+            if (item.hideInMenu) return null;
+            return (
+              <Tabs.Tab
+                data-testid={`mobile-page-tabs-${item.title}`}
+                title={
+                  <SortableItem id={item.id as any}>
+                    <MobilePageTabsSettings tab={item} />
+                    {item.icon ? (
+                      <Space>
+                        <Icon type={item.icon} />
+                        {compile(item.title)}
+                      </Space>
+                    ) : (
+                      compile(item.title)
+                    )}
+                  </SortableItem>
+                }
+                key={String(item.schemaUid)}
+              ></Tabs.Tab>
+            );
+          })}
         </Tabs>
       </DndContext>
       <div>

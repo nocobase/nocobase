@@ -11,14 +11,14 @@ import { ApiOutlined, SettingOutlined } from '@ant-design/icons';
 import { Button, Dropdown, Tooltip } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router-dom';
-import { useApp } from '../application';
+import { Link } from 'react-router-dom';
+import { useApp, useNavigateNoUpdate } from '../application';
 import { useCompile } from '../schema-component';
 import { useToken } from '../style';
 
 export const PluginManagerLink = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const { token } = useToken();
   return (
     <Tooltip title={t('Plugin manager')}>
@@ -47,8 +47,11 @@ export const SettingsCenterDropdown = () => {
         return {
           key: setting.name,
           icon: setting.icon,
-          label: setting.link ? <div onClick={() => window.open(setting.link)}>{compile(setting.title)}</div> :
+          label: setting.link ? (
+            <div onClick={() => window.open(setting.link)}>{compile(setting.title)}</div>
+          ) : (
             <Link to={setting.path}>{compile(setting.title)}</Link>
+          ),
         };
       });
   }, [app, t]);

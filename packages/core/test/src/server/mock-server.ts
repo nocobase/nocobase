@@ -9,9 +9,15 @@
 
 import { mockDatabase } from '@nocobase/database';
 import { Application, ApplicationOptions, AppSupervisor, Gateway, PluginManager } from '@nocobase/server';
+import { uid } from '@nocobase/utils';
 import jwt from 'jsonwebtoken';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
+import { MemoryPubSubAdapter } from './memory-pub-sub-adapter';
+import { MockDataSource } from './mock-data-source';
+import path from 'path';
+import process from 'node:process';
+import { promises as fs } from 'fs';
 
 interface ActionParams {
   filterByTk?: any;
@@ -70,10 +76,15 @@ interface Resource {
 interface ExtendedAgent extends SuperAgentTest {
   login: (user: any, roleName?: string) => ExtendedAgent;
   loginUsingId: (userId: number, roleName?: string) => ExtendedAgent;
+  loginWithJti: (user: any, roleName?: string) => Promise<ExtendedAgent>;
   resource: (name: string, resourceOf?: any) => Resource;
 }
 
 export class MockServer extends Application {
+  registerMockDataSource() {
+    this.dataSourceManager.factory.register('mock', MockDataSource);
+  }
+
   async loadAndInstall(options: any = {}) {
     await this.load({ method: 'install' });
 
@@ -114,7 +125,7 @@ export class MockServer extends Application {
   agent(callback?): ExtendedAgent {
     const agent = supertest.agent(callback || this.callback());
     const prefix = this.resourcer.options.prefix;
-
+    const authManager = this.authManager;
     const proxy = new Proxy(agent, {
       get(target, method: string, receiver) {
         if (['login', 'loginUsingId'].includes(method)) {
@@ -130,6 +141,32 @@ export class MockServer extends Application {
                   process.env.APP_KEY,
                   {
                     expiresIn: '1d',
+                  },
+                ),
+                { type: 'bearer' },
+              )
+              .set('X-Authenticator', 'basic');
+          };
+        }
+        if (method === 'loginWithJti') {
+          return async (userOrId: any, roleName?: string) => {
+            const userId = typeof userOrId === 'number' ? userOrId : userOrId?.id;
+            const tokenInfo = await authManager.tokenController.add({ userId });
+            const expiresIn = (await authManager.tokenController.getConfig()).tokenExpirationTime;
+
+            return proxy
+              .auth(
+                jwt.sign(
+                  {
+                    userId,
+                    temp: true,
+                    roleName,
+                    signInTime: Date.now(),
+                  },
+                  process.env.APP_KEY,
+                  {
+                    jwtid: tokenInfo.jti,
+                    expiresIn,
                   },
                 ),
                 { type: 'bearer' },
@@ -231,10 +268,25 @@ export function mockServer(options: ApplicationOptions = {}) {
     PluginManager.findPackagePatched = true;
   }
 
-  const app = new MockServer({
+  const mockServerOptions = {
     acl: false,
+    syncMessageManager: {
+      debounce: 500,
+    },
     ...options,
-  });
+  };
+
+  const app = new MockServer(mockServerOptions);
+
+  const basename = app.options.pubSubManager?.channelPrefix;
+
+  if (basename) {
+    app.pubSubManager.setAdapter(
+      MemoryPubSubAdapter.create(basename, {
+        debounce: 500,
+      }),
+    );
+  }
 
   return app;
 }
@@ -247,16 +299,76 @@ export async function startMockServer(options: ApplicationOptions = {}) {
 
 type BeforeInstallFn = (app) => Promise<void>;
 
-export async function createMockServer(
-  options: ApplicationOptions & {
-    version?: string;
-    beforeInstall?: BeforeInstallFn;
-    skipInstall?: boolean;
-    skipStart?: boolean;
-  } = {},
-) {
+export type MockServerOptions = ApplicationOptions & {
+  version?: string;
+  beforeInstall?: BeforeInstallFn;
+  skipInstall?: boolean;
+  skipStart?: boolean;
+};
+
+export type MockClusterOptions = MockServerOptions & {
+  number?: number;
+  clusterName?: string;
+  appName?: string;
+};
+
+export type MockCluster = {
+  nodes: MockServer[];
+  destroy: () => Promise<void>;
+};
+
+export async function createMockCluster({
+  number = 2,
+  clusterName = `cluster_${uid()}`,
+  appName = `app_${uid()}`,
+  ...options
+}: MockClusterOptions = {}): Promise<MockCluster> {
+  const nodes: MockServer[] = [];
+  let dbOptions;
+
+  for (let i = 0; i < number; i++) {
+    if (dbOptions) {
+      options['database'] = {
+        ...dbOptions,
+      };
+    }
+
+    const app: MockServer = await createMockServer({
+      ...options,
+      skipSupervisor: true,
+      name: clusterName + '_' + appName,
+      pubSubManager: {
+        channelPrefix: clusterName,
+      },
+    });
+
+    if (!dbOptions) {
+      dbOptions = app.db.options;
+    }
+
+    nodes.push(app);
+  }
+  return {
+    nodes,
+    async destroy() {
+      for (const node of nodes) {
+        await node.destroy();
+      }
+    },
+  };
+}
+
+export async function createMockServer(options: MockServerOptions = {}): Promise<MockServer> {
+  // clean cache directory
+  const cachePath = path.join(process.cwd(), 'storage', 'cache');
+  try {
+    await fs.rm(cachePath, { recursive: true, force: true });
+    await fs.mkdir(cachePath, { recursive: true });
+  } catch (e) {
+    // ignore errors
+  }
   const { version, beforeInstall, skipInstall, skipStart, ...others } = options;
-  const app: any = mockServer(others);
+  const app: MockServer = mockServer(others);
   if (!skipInstall) {
     if (beforeInstall) {
       await beforeInstall(app);

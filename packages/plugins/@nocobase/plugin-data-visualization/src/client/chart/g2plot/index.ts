@@ -7,10 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Area, Column, Line, Scatter, Bar } from '@ant-design/plots';
 import { Pie } from './pie';
 import { DualAxes } from './dualAxes';
 import { G2PlotChart } from './g2plot';
+
+import { lazy } from '@nocobase/client';
+// import { Area, Column, Line, Scatter, Bar } from '@ant-design/plots';
+const { Area, Column, Line, Scatter, Bar } = lazy(
+  () => import('@ant-design/plots'),
+  'Area',
+  'Column',
+  'Line',
+  'Scatter',
+  'Bar',
+);
 
 export default [
   new G2PlotChart({

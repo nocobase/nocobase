@@ -12,6 +12,7 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   name: 'mobileRoutes',
   dumpRules: 'required',
+  migrationRules: ['overwrite', 'schema-only'],
   title: 'mobileRoutes',
   inherit: false,
   hidden: false,
@@ -201,10 +202,11 @@ export default defineCollection({
       collectionName: 'mobileRoutes',
       parentKey: null,
       reverseKey: null,
+      translation: true,
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
-        title: 'title',
+        title: '{{t("Title")}}',
       },
     },
     {
@@ -219,7 +221,7 @@ export default defineCollection({
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
-        title: 'icon',
+        title: '{{t("Icon")}}',
       },
     },
     {
@@ -234,7 +236,7 @@ export default defineCollection({
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
-        title: 'schemaUid',
+        title: '{{t("Schema UID")}}',
       },
     },
     {
@@ -249,7 +251,7 @@ export default defineCollection({
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
-        title: 'type',
+        title: '{{t("Type")}}',
       },
     },
     {
@@ -271,7 +273,7 @@ export default defineCollection({
           },
         },
         default: null,
-        title: 'options',
+        title: '{{t("Options")}}',
       },
     },
     {
@@ -283,6 +285,7 @@ export default defineCollection({
       collectionName: 'mobileRoutes',
       parentKey: null,
       reverseKey: null,
+      scopeKey: 'parentId',
       uiSchema: {
         type: 'number',
         'x-component': 'InputNumber',
@@ -291,7 +294,7 @@ export default defineCollection({
           step: '1',
         },
         'x-validator': 'integer',
-        title: 'sort',
+        title: '{{t("Sort")}}',
       },
     },
     {
@@ -300,6 +303,36 @@ export default defineCollection({
       through: 'rolesMobileRoutes',
       target: 'roles',
       onDelete: 'CASCADE',
+    },
+    {
+      type: 'boolean',
+      name: 'hideInMenu',
+      interface: 'checkbox',
+      uiSchema: {
+        type: 'boolean',
+        'x-component': 'Checkbox',
+        title: '{{t("Hide in menu")}}',
+      },
+    },
+    {
+      type: 'boolean',
+      name: 'enableTabs',
+      interface: 'checkbox',
+      uiSchema: {
+        type: 'boolean',
+        'x-component': 'Checkbox',
+        title: '{{t("Enable tabs")}}',
+      },
+    },
+    {
+      type: 'boolean',
+      name: 'hidden',
+      interface: 'checkbox',
+      uiSchema: {
+        type: 'boolean',
+        'x-component': 'Checkbox',
+        title: '{{t("Hidden")}}',
+      },
     },
   ],
   category: [],

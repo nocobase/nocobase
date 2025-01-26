@@ -11,7 +11,7 @@ import { expect, test } from '@nocobase/test/e2e';
 import { formFieldDependsOnSubtableFieldsWithLinkageRules } from './template';
 
 test.describe('linkage rules', () => {
-  test.skip('form field depends on subtable fields with linkage rules', async ({ page, mockPage, mockRecord }) => {
+  test('form field depends on subtable fields with linkage rules', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(formFieldDependsOnSubtableFieldsWithLinkageRules).waitForInit();
     const record = await mockRecord('test');
     await nocoPage.goto();

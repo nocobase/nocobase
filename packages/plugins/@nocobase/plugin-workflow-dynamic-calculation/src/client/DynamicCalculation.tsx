@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { FunctionOutlined } from '@ant-design/icons';
 
 import { SchemaInitializerItemType, Variable, useCollectionManager_deprecated } from '@nocobase/client';
 import {
@@ -47,6 +48,7 @@ export default class extends Instruction {
   type = 'dynamic-calculation';
   group = 'calculation';
   description = `{{t("Calculate an expression based on a calculation engine and obtain a value as the result. Variables in the upstream nodes can be used in the expression. The expression is dynamic one from an expression collections.", { ns: "${NAMESPACE}" })}}`;
+  icon = (<FunctionOutlined />);
   fieldset = {
     expression: {
       type: 'string',

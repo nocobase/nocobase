@@ -9,11 +9,11 @@
 
 import { Field, GeneralField } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
+import { useUpdate } from 'ahooks';
 import { Col, Row } from 'antd';
-import merge from 'deepmerge';
 import { isArray } from 'lodash';
 import template from 'lodash/template';
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   DataBlockProvider,
@@ -35,6 +35,7 @@ import {
   useCollectionManager_deprecated,
   useCollection_deprecated,
 } from '../collection-manager';
+import { RefreshComponentProvider } from '../formily/NocoBaseRecursionField';
 import { useSourceId } from '../modules/blocks/useSourceId';
 import { RecordProvider, useRecordIndex } from '../record-provider';
 import { useAssociationNames } from './hooks';
@@ -57,7 +58,6 @@ export const BlockRequestContext_deprecated = createContext<{
   field?: GeneralField;
   service?: any;
   resource?: any;
-  allowedActions?: any;
   __parent?: any;
   updateAssociationValues?: any[];
 }>({});
@@ -98,34 +98,25 @@ export const MaybeCollectionProvider = (props) => {
 export const BlockRequestProvider_deprecated = (props) => {
   const field = useField<Field>();
   const resource = useDataBlockResource();
-  const [allowedActions, setAllowedActions] = useState({});
   const service = useDataBlockRequest();
   const record = useCollectionRecord();
   const parentRecord = useCollectionParentRecord();
 
-  // Infinite scroll support
-  const serviceAllowedActions = (service?.data as any)?.meta?.allowedActions;
-  useEffect(() => {
-    if (!serviceAllowedActions) return;
-    setAllowedActions((last) => {
-      return merge(last, serviceAllowedActions ?? {});
-    });
-  }, [serviceAllowedActions]);
-
   const __parent = useBlockRequestContext();
+  const value = useMemo(() => {
+    return {
+      block: props.block,
+      props,
+      field,
+      service,
+      resource,
+      __parent,
+      updateAssociationValues: props?.updateAssociationValues || [],
+    };
+  }, [__parent, field, props, resource, service]);
+
   return (
-    <BlockRequestContext_deprecated.Provider
-      value={{
-        allowedActions,
-        block: props.block,
-        props,
-        field,
-        service,
-        resource,
-        __parent,
-        updateAssociationValues: props?.updateAssociationValues || [],
-      }}
-    >
+    <BlockRequestContext_deprecated.Provider value={value}>
       {/* 用于兼容旧版 record.__parent 的写法 */}
       <RecordProvider isNew={record?.isNew} record={record?.data} parent={parentRecord?.data}>
         {props.children}
@@ -255,6 +246,7 @@ export const BlockProvider = (props: {
 }) => {
   const { name, dataSource, useParams, parentRecord } = props;
   const parentRecordFromHook = useCompatDataBlockParentRecord(props);
+  const refresh = useUpdate();
 
   // 新版（1.0）已弃用 useParams，这里之所以继续保留是为了兼容旧版的 UISchema
   const paramsFromHook = useParams?.();
@@ -273,7 +265,7 @@ export const BlockProvider = (props: {
     <BlockContext.Provider value={blockValue}>
       <DataBlockProvider {...(props as any)} params={params} parentRecord={parentRecord || parentRecordFromHook}>
         <BlockRequestProvider_deprecated {...props} updateAssociationValues={updateAssociationValues} params={params}>
-          {props.children}
+          <RefreshComponentProvider refresh={refresh}>{props.children}</RefreshComponentProvider>
         </BlockRequestProvider_deprecated>
       </DataBlockProvider>
     </BlockContext.Provider>

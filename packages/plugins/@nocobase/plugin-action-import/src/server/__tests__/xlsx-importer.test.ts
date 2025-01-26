@@ -26,6 +26,93 @@ describe('xlsx importer', () => {
     await app.destroy();
   });
 
+  describe('validate empty data', () => {
+    let User;
+
+    beforeEach(async () => {
+      User = app.db.collection({
+        name: 'users',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
+      });
+      await app.db.sync();
+    });
+
+    it('should throw error when file only has header row', async () => {
+      const templateCreator = new TemplateCreator({
+        collection: User,
+        columns: [
+          {
+            dataIndex: ['name'],
+            defaultTitle: 'Name',
+          },
+        ],
+      });
+
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+      // template already has header row, no need to add data
+
+      const importer = new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: User,
+        columns: [
+          {
+            dataIndex: ['name'],
+            defaultTitle: 'Name',
+          },
+        ],
+        workbook: template,
+      });
+
+      await expect(importer.validate()).rejects.toThrow('No data to import');
+    });
+
+    it('should pass validation when file has header and data rows', async () => {
+      const templateCreator = new TemplateCreator({
+        collection: User,
+        columns: [
+          {
+            dataIndex: ['name'],
+            defaultTitle: 'Name',
+          },
+        ],
+      });
+
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+      const worksheet = template.Sheets[template.SheetNames[0]];
+
+      XLSX.utils.sheet_add_aoa(worksheet, [['Test Data 1'], ['Test Data 2']], {
+        origin: 'A2',
+      });
+
+      const importer = new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: User,
+        columns: [
+          {
+            dataIndex: ['name'],
+            defaultTitle: 'Name',
+          },
+        ],
+        workbook: template,
+      });
+
+      let error;
+
+      try {
+        await importer.validate();
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).toBeUndefined();
+    });
+  });
+
   describe('import with date field', () => {
     let User;
 
@@ -96,7 +183,7 @@ describe('xlsx importer', () => {
         columns,
       });
 
-      const template = await templateCreator.run();
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
 
       const worksheet = template.Sheets[template.SheetNames[0]];
 
@@ -142,7 +229,7 @@ describe('xlsx importer', () => {
         columns,
       });
 
-      const template = await templateCreator.run();
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
 
       const worksheet = template.Sheets[template.SheetNames[0]];
 
@@ -188,7 +275,7 @@ describe('xlsx importer', () => {
         columns,
       });
 
-      const template = await templateCreator.run();
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
 
       const worksheet = template.Sheets[template.SheetNames[0]];
 
@@ -234,7 +321,7 @@ describe('xlsx importer', () => {
         columns,
       });
 
-      const template = await templateCreator.run();
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
 
       const worksheet = template.Sheets[template.SheetNames[0]];
 
@@ -336,7 +423,7 @@ describe('xlsx importer', () => {
         columns,
       });
 
-      const template = await templateCreator.run();
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
 
       const worksheet = template.Sheets[template.SheetNames[0]];
 
@@ -378,7 +465,7 @@ describe('xlsx importer', () => {
         columns,
       });
 
-      const template = await templateCreator.run();
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
 
       const worksheet = template.Sheets[template.SheetNames[0]];
 
@@ -420,7 +507,7 @@ describe('xlsx importer', () => {
         columns,
       });
 
-      const template = await templateCreator.run();
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
 
       const worksheet = template.Sheets[template.SheetNames[0]];
 
@@ -524,7 +611,7 @@ describe('xlsx importer', () => {
         columns,
       });
 
-      const template = await templateCreator.run();
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
 
       const worksheet = template.Sheets[template.SheetNames[0]];
 
@@ -566,7 +653,7 @@ describe('xlsx importer', () => {
         columns,
       });
 
-      const template = await templateCreator.run();
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
 
       const worksheet = template.Sheets[template.SheetNames[0]];
 
@@ -686,7 +773,7 @@ describe('xlsx importer', () => {
         columns,
       });
 
-      const template = await templateCreator.run();
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
 
       const worksheet = template.Sheets[template.SheetNames[0]];
 
@@ -737,7 +824,7 @@ describe('xlsx importer', () => {
         columns,
       });
 
-      const template = await templateCreator.run();
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
 
       const worksheet = template.Sheets[template.SheetNames[0]];
 
@@ -780,7 +867,7 @@ describe('xlsx importer', () => {
         columns,
       });
 
-      const template = await templateCreator.run();
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
 
       const worksheet = template.Sheets[template.SheetNames[0]];
 
@@ -839,7 +926,7 @@ describe('xlsx importer', () => {
       ],
     });
 
-    const template = await templateCreator.run();
+    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
 
     const worksheet = template.Sheets[template.SheetNames[0]];
 
@@ -872,7 +959,6 @@ describe('xlsx importer', () => {
     }
 
     expect(error).toBeTruthy();
-    console.log(error.message);
   });
 
   it('should report validation error message on unique validation', async () => {
@@ -907,7 +993,7 @@ describe('xlsx importer', () => {
       ],
     });
 
-    const template = await templateCreator.run();
+    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
 
     const worksheet = template.Sheets[template.SheetNames[0]];
     XLSX.utils.sheet_add_aoa(
@@ -946,7 +1032,6 @@ describe('xlsx importer', () => {
     }
 
     expect(error).toBeTruthy();
-    console.log(error.message);
   });
 
   it('should import china region field', async () => {
@@ -980,7 +1065,7 @@ describe('xlsx importer', () => {
       columns,
     });
 
-    const template = await templateCreator.run();
+    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
 
     const worksheet = template.Sheets[template.SheetNames[0]];
 
@@ -1078,7 +1163,7 @@ describe('xlsx importer', () => {
       columns,
     });
 
-    const template = await templateCreator.run();
+    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
 
     const worksheet = template.Sheets[template.SheetNames[0]];
 
@@ -1168,7 +1253,7 @@ describe('xlsx importer', () => {
       ],
     });
 
-    const template = await templateCreator.run();
+    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
 
     const worksheet = template.Sheets[template.SheetNames[0]];
 
@@ -1269,7 +1354,7 @@ describe('xlsx importer', () => {
       ],
     });
 
-    const template = await templateCreator.run();
+    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
 
     const worksheet = template.Sheets[template.SheetNames[0]];
 
@@ -1372,7 +1457,7 @@ describe('xlsx importer', () => {
 
     let error;
     try {
-      importer.getData();
+      await importer.validate();
     } catch (e) {
       error = e;
     }
@@ -1409,7 +1494,7 @@ describe('xlsx importer', () => {
       ],
     });
 
-    const template = await templateCreator.run();
+    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
 
     const importer = new XlsxImporter({
       collectionManager: app.mainDataSource.collectionManager,
@@ -1427,9 +1512,15 @@ describe('xlsx importer', () => {
       workbook: template,
     });
 
+    // insert a row for test
+    const worksheet = template.Sheets[template.SheetNames[0]];
+    XLSX.utils.sheet_add_aoa(worksheet, [['User1', 'test@test.com']], {
+      origin: 'A2',
+    });
+
     let error;
     try {
-      importer.getData();
+      await importer.getData();
     } catch (e) {
       error = e;
     }
@@ -1567,7 +1658,7 @@ describe('xlsx importer', () => {
       columns: importColumns,
     });
 
-    const template = await templateCreator.run();
+    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
 
     const worksheet = template.Sheets[template.SheetNames[0]];
 
@@ -1629,7 +1720,7 @@ describe('xlsx importer', () => {
       ],
     });
 
-    const template = await templateCreator.run();
+    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
 
     const worksheet = template.Sheets[template.SheetNames[0]];
 
@@ -1698,7 +1789,7 @@ describe('xlsx importer', () => {
       ],
     });
 
-    const template = await templateCreator.run();
+    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
 
     const worksheet = template.Sheets[template.SheetNames[0]];
 
@@ -1738,6 +1829,251 @@ describe('xlsx importer', () => {
 
     expect(await User.repository.count()).toBe(0);
     expect(error).toBeTruthy();
+  });
+
+  it('should import data with multiline explain and field descriptions', async () => {
+    const User = app.db.collection({
+      name: 'users',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'string',
+          name: 'email',
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    const templateCreator = new TemplateCreator({
+      collection: User,
+      explain: '这是第一行说明\n这是第二行说明',
+      columns: [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+          description: '请输入用户姓名',
+        },
+        {
+          dataIndex: ['email'],
+          defaultTitle: '邮箱',
+          description: '请输入有效的邮箱地址',
+        },
+      ],
+    });
+
+    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+
+    const headerRowIndex = templateCreator.getHeaderRowIndex();
+
+    console.log({ headerRowIndex });
+    const worksheet = template.Sheets[template.SheetNames[0]];
+
+    XLSX.utils.sheet_add_aoa(
+      worksheet,
+      [
+        ['User1', 'test@test.com'],
+        ['User2', 'test2@test.com'],
+      ],
+      {
+        origin: `A${headerRowIndex + 1}`,
+      },
+    );
+
+    const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: User,
+      columns: [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+          description: '请输入用户姓名',
+        },
+        {
+          dataIndex: ['email'],
+          defaultTitle: '邮箱',
+          description: '请输入有效的邮箱地址',
+        },
+      ],
+      workbook: template,
+    });
+
+    await importer.run();
+
+    expect(await User.repository.count()).toBe(2);
+
+    const users = await User.repository.find();
+    expect(users[0].get('name')).toBe('User1');
+    expect(users[0].get('email')).toBe('test@test.com');
+    expect(users[1].get('name')).toBe('User2');
+    expect(users[1].get('email')).toBe('test2@test.com');
+  });
+
+  describe('template creator', () => {
+    it('should create template with explain and field descriptions', async () => {
+      const User = app.db.collection({
+        name: 'users',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'string',
+            name: 'email',
+          },
+        ],
+      });
+
+      const templateCreator = new TemplateCreator({
+        collection: User,
+        explain: '这是导入说明\n第二行说明',
+        columns: [
+          {
+            dataIndex: ['name'],
+            defaultTitle: '姓名',
+            description: '请输入用户姓名',
+          },
+          {
+            dataIndex: ['email'],
+            defaultTitle: '邮箱',
+            description: '请输入有效的邮箱地址',
+          },
+        ],
+      });
+
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+      const worksheet = template.Sheets[template.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as string[][];
+
+      // 验证说明文本
+      expect(data[0][0]).toBe('这是导入说明');
+      expect(data[1][0]).toBe('第二行说明');
+      // 验证空行
+      expect(data[2][0]).toBe('');
+      // 验证字段描述
+      expect(data[3][0]).toBe('姓名：请输入用户姓名');
+      expect(data[4][0]).toBe('邮箱：请输入有效的邮箱地址');
+      // 验证表头
+      expect(data[5]).toEqual(['姓名', '邮箱']);
+    });
+
+    it('should create template with only field descriptions', async () => {
+      const User = app.db.collection({
+        name: 'users',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
+      });
+
+      const templateCreator = new TemplateCreator({
+        collection: User,
+        columns: [
+          {
+            dataIndex: ['name'],
+            defaultTitle: '姓名',
+            description: '请输入用户姓名',
+          },
+        ],
+      });
+
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+      const worksheet = template.Sheets[template.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as string[][];
+
+      // 验证字段描述
+      expect(data[0][0]).toBe('姓名：请输入用户姓名');
+      // 验证表头
+      expect(data[1]).toEqual(['姓名']);
+    });
+
+    it('should create template with only explain', async () => {
+      const User = app.db.collection({
+        name: 'users',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
+      });
+
+      const templateCreator = new TemplateCreator({
+        collection: User,
+        explain: '这是导入说明',
+        columns: [
+          {
+            dataIndex: ['name'],
+            defaultTitle: '姓名',
+          },
+        ],
+      });
+
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+      const worksheet = template.Sheets[template.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as string[][];
+
+      // 验证说明文本
+      expect(data[0][0]).toBe('这是导入说明');
+      // 验证表头
+      expect(data[1]).toEqual(['姓名']);
+    });
+  });
+
+  it('should import data with single column', async () => {
+    const User = app.db.collection({
+      name: 'users',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    const templateCreator = new TemplateCreator({
+      collection: User,
+      columns: [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+      ],
+    });
+
+    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+    const worksheet = template.Sheets[template.SheetNames[0]];
+
+    XLSX.utils.sheet_add_aoa(worksheet, [['User1'], ['User2']], {
+      origin: 'A2',
+    });
+
+    const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: User,
+      columns: [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+      ],
+      workbook: template,
+    });
+
+    await importer.run();
+
+    expect(await User.repository.count()).toBe(2);
+    const users = await User.repository.find();
+    expect(users[0].get('name')).toBe('User1');
+    expect(users[1].get('name')).toBe('User2');
   });
 
   it('should import with associations by target key', async () => {
@@ -1791,7 +2127,7 @@ describe('xlsx importer', () => {
       ],
     });
 
-    const template = await templateCreator.run();
+    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
 
     const worksheet = template.Sheets[template.SheetNames[0]];
 
