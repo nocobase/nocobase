@@ -11,6 +11,17 @@ import { Application } from '@nocobase/client';
 import type { AxiosResponse } from 'axios';
 import debounce from 'lodash/debounce';
 
+const AuthErrorCode = {
+  EMPTY_TOKEN: 'EMPTY_TOKEN' as const,
+  EXPIRED_TOKEN: 'EXPIRED_TOKEN' as const,
+  INVALID_TOKEN: 'INVALID_TOKEN' as const,
+  TOKEN_RENEW_FAILED: 'TOKEN_RENEW_FAILED' as const,
+  BLOCKED_TOKEN: 'BLOCKED_TOKEN' as const,
+  EXPIRED_SESSION: 'EXPIRED_SESSION' as const,
+  NOT_EXIST_USER: 'NOT_EXIST_USER' as const,
+  SKIP_TOKEN_RENEW: 'SKIP_TOKEN_RENEW' as const,
+};
+
 function removeBasename(pathname, basename) {
   // Escape special characters in basename for use in regex
   const escapedBasename = basename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -39,15 +50,23 @@ export function authCheckMiddleware({ app }: { app: Application }) {
   };
   const errHandler = (error) => {
     const newToken = error.response.headers['x-new-token'];
+
     if (newToken) {
       app.apiClient.auth.setToken(newToken);
     }
     if (error.status === 401 && !error.config?.skipAuth) {
+      app.apiClient.auth.setToken('');
       const errors = error?.response?.data?.errors;
       const firstError = Array.isArray(errors) ? errors[0] : null;
       if (!firstError) {
         throw error;
       }
+
+      // if the code
+      if (firstError?.code === AuthErrorCode.SKIP_TOKEN_RENEW) {
+        throw error;
+      }
+
       if (firstError?.code === 'USER_HAS_NO_ROLES_ERR') {
         app.error = firstError;
         throw error;

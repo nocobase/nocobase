@@ -154,12 +154,37 @@ export class BaseAuth extends Auth {
       }
 
       try {
+        this.ctx.logger.info('token renewing', {
+          method: 'auth.check',
+          url: this.ctx.originalUrl,
+          ctx: JSON.stringify(this.ctx),
+        });
+        const isStreamRequest = this.ctx.req.headers['accept'] === 'text/event-stream';
+
+        if (isStreamRequest) {
+          this.ctx.throw(401, {
+            message: 'Stream api not allow renew token',
+            code: AuthErrorCode.SKIP_TOKEN_RENEW,
+          });
+        }
+
         const renewedResult = await this.tokenController.renew(jti);
+        this.ctx.logger.info('token renewed', {
+          method: 'auth.check',
+          url: this.ctx.originalUrl,
+          ctx: JSON.stringify(this.ctx),
+        });
         const expiresIn = Math.floor(tokenPolicy.tokenExpirationTime / 1000);
         const newToken = this.jwt.sign({ userId, roleName, temp, signInTime }, { jwtid: renewedResult.jti, expiresIn });
         this.ctx.res.setHeader('x-new-token', newToken);
         return user;
       } catch (err) {
+        this.ctx.logger.info('token renew failed', {
+          method: 'auth.check',
+          url: this.ctx.originalUrl,
+          err,
+          ctx: JSON.stringify(this.ctx),
+        });
         const options =
           err instanceof AuthError
             ? { type: err.code, message: err.message }
