@@ -127,7 +127,7 @@ export const ArrayCollapse: ComposedArrayCollapse = observer(
             const panelProps = field.query(`${field.address}.${index}`).get('componentProps');
             const props: CollapsePanelProps = items['x-component-props'];
             const header = () => {
-              const header = `${panelProps?.header || props.header || field.title}`;
+              const header = `${panelProps?.header || props?.header || field?.title}`;
               const path = field.address.concat(index);
               const errors = field.form.queryFeedbacks({
                 type: 'error',

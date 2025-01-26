@@ -29,6 +29,9 @@ import { useFilterOptions } from './hooks/useFilterOptions';
 import { EventDefinition, EventSetting } from '../../types';
 import { useVariableOptions } from './hooks/useVariableOptions';
 import { uniqBy } from 'lodash';
+import { AddBtn, DeleteBtn } from './AddBtn';
+import { ActionSelect } from './ActionSelect';
+import { ActionParamSelect } from './ActionParamSelect';
 
 export interface Props {
   dynamicComponent: any;
@@ -137,9 +140,90 @@ export const ActionsSetting = withDynamicSchemaProps(
                       'x-component': 'h4',
                       'x-content': '{{ t("动作") }}',
                     },
-                    actions: {
+                    actionsBlock: {
                       type: 'void',
-                      'x-component': ActionsField,
+                      properties: {
+                        actions: {
+                          type: 'array',
+                          'x-component': 'ArrayItems',
+                          items: {
+                            type: 'object',
+                            'x-component': 'Space',
+                            properties: {
+                              action: {
+                                type: 'string',
+                                'x-component': ActionSelect,
+                              },
+
+                              params: {
+                                type: 'array',
+                                'x-component': 'ArrayItems',
+                                items: {
+                                  type: 'object',
+                                  'x-component': 'Space',
+                                  'x-component-props': {
+                                    direction: 'vertical',
+                                    style: {
+                                      marginBottom: '10px',
+                                    },
+                                  },
+                                  properties: {
+                                    key: {
+                                      type: 'string',
+                                      'x-component': ActionParamSelect,
+                                      'x-reactions': {
+                                        dependencies: ['...action'],
+                                        fulfill: {
+                                          schema: {
+                                            'x-component-props': {
+                                              action: '{{$deps[0]}}',
+                                            },
+                                          },
+                                        },
+                                      },
+                                    },
+                                    value: {
+                                      type: 'string',
+                                      'x-component': 'Input',
+                                      'x-reactions': {
+                                        dependencies: ['...action'],
+                                        fulfill: {
+                                          schema: {
+                                            'x-component-props': {
+                                              action: '{{$deps[0]}}',
+                                            },
+                                          },
+                                        },
+                                      },
+                                    },
+                                    delete: {
+                                      type: 'void',
+                                      'x-component': DeleteBtn,
+                                    },
+                                  },
+                                },
+                              },
+                              add: {
+                                type: 'void',
+                                'x-component': AddBtn,
+                                'x-component-props': {
+                                  addKey: '.params',
+                                  text: '{{ t("添加参数") }}',
+                                },
+                              },
+                            },
+                          },
+                        },
+                        add: {
+                          type: 'void',
+                          'x-component': AddBtn,
+                          'x-component-props': {
+                            addKey: '.actions',
+                            text: '{{ t("添加动作") }}',
+                          },
+                        },
+                      },
+                      // 'x-component': ActionsField,
                     },
                   },
                 },
@@ -147,18 +231,6 @@ export const ActionsSetting = withDynamicSchemaProps(
                   type: 'void',
                   'x-component': 'ArrayCollapse.Remove',
                 },
-                // moveUp: {
-                //   type: 'void',
-                //   'x-component': 'ArrayCollapse.MoveUp',
-                // },
-                // moveDown: {
-                //   type: 'void',
-                //   'x-component': 'ArrayCollapse.MoveDown',
-                // },
-                // copy: {
-                //   type: 'void',
-                //   'x-component': 'ArrayCollapse.Copy',
-                // },
               },
             },
             properties: {
