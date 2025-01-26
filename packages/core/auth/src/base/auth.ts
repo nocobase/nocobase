@@ -100,6 +100,15 @@ export class BaseAuth extends Auth {
 
     const { userId, roleName, iat, temp, jti, exp, signInTime } = payload ?? {};
 
+    const tokenPolicy = await this.tokenController.getConfig();
+
+    if (!signInTime || Date.now() - signInTime > tokenPolicy.sessionExpirationTime) {
+      this.ctx.throw(401, {
+        message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
+        code: AuthErrorCode.EXPIRED_SESSION,
+      });
+    }
+
     const blocked = await this.jwt.blacklist.has(jti ?? token);
     if (blocked) {
       this.ctx.throw(401, {
@@ -138,14 +147,6 @@ export class BaseAuth extends Auth {
     }
 
     if (tokenStatus === 'expired') {
-      const tokenPolicy = await this.tokenController.getConfig();
-      if (!signInTime || Date.now() - signInTime > tokenPolicy.sessionExpirationTime) {
-        this.ctx.throw(401, {
-          message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
-          code: AuthErrorCode.EXPIRED_SESSION,
-        });
-      }
-
       if (tokenPolicy.expiredTokenRenewLimit > 0 && Date.now() - exp * 1000 > tokenPolicy.expiredTokenRenewLimit) {
         this.ctx.throw(401, {
           message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
