@@ -1560,7 +1560,7 @@ export const getAppends = ({
       }
     } else if (
       ![
-        'ActionBar',
+        // 'ActionBar',
         'Action',
         'Action.Link',
         'Action.Modal',
