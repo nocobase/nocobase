@@ -27,13 +27,9 @@ export default class extends Trigger {
     const self = this;
 
     async function triggerWorkflowActionMiddleware(context: Context, next: Next) {
-      const { resourceName, actionName } = context.action;
-
-      if (resourceName === 'workflows' && actionName === 'trigger') {
-        return self.workflowTriggerAction(context, next);
-      }
-
       await next();
+
+      const { actionName } = context.action;
 
       if (!['create', 'update'].includes(actionName)) {
         return;
@@ -43,22 +39,6 @@ export default class extends Trigger {
     }
 
     workflow.app.dataSourceManager.use(triggerWorkflowActionMiddleware);
-  }
-
-  /**
-   * @deprecated
-   */
-  async workflowTriggerAction(context: Context, next: Next) {
-    const { triggerWorkflows } = context.action.params;
-
-    if (!triggerWorkflows) {
-      return context.throw(400);
-    }
-
-    context.status = 202;
-    await next();
-
-    return this.collectionTriggerAction(context);
   }
 
   private async collectionTriggerAction(context: Context) {

@@ -23,9 +23,6 @@ export const UpdateSubmitActionInitializer = (props) => {
       type: 'primary',
       htmlType: 'submit',
     },
-    'x-action-settings': {
-      triggerWorkflows: [],
-    },
   };
   return <ActionInitializerItem {...props} schema={schema} />;
 };

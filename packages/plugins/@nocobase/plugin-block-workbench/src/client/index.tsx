@@ -87,3 +87,5 @@ export class PluginBlockWorkbenchClient extends Plugin {
 }
 
 export default PluginBlockWorkbenchClient;
+
+export { ModalActionSchemaInitializerItem } from './ModalActionSchemaInitializerItem';

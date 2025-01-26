@@ -18,7 +18,6 @@ import {
   ButtonEditor,
   RemoveButton,
   SecondConFirm,
-  WorkflowConfig,
   RefreshDataBlockRequest,
 } from '../../../schema-component/antd/action/Action.Designer';
 import { SchemaSettingsLinkageRules } from '../../../schema-settings';
@@ -57,14 +56,6 @@ export const customizeUpdateRecordActionSettings = new SchemaSettings({
     {
       name: 'afterSuccessfulSubmission',
       Component: AfterSuccess,
-    },
-    {
-      name: 'workflowConfig',
-      Component: WorkflowConfig,
-      useVisible() {
-        const fieldSchema = useFieldSchema();
-        return isValid(fieldSchema?.['x-action-settings']?.triggerWorkflows);
-      },
     },
     {
       name: 'refreshDataBlockRequest',

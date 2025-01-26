@@ -102,9 +102,9 @@ export async function sync(context: Context, next) {
  * @deprecated
  * Keep for action trigger compatibility
  */
-export async function trigger(context: Context, next) {
-  return next();
-}
+// export async function trigger(context: Context, next) {
+//   return next();
+// }
 
 export async function execute(context: Context, next) {
   const plugin = context.app.pm.get(Plugin) as Plugin;
