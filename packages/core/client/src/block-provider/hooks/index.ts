@@ -1577,7 +1577,7 @@ export const getAppends = ({
       }
     } else if (
       ![
-        'ActionBar',
+        // 'ActionBar',
         'Action',
         'Action.Link',
         'Action.Modal',
@@ -1622,8 +1622,6 @@ export const useAssociationNames = (dataSource?: string) => {
       dataSource,
     });
     appends = fillParentFields(appends);
-
-    console.log('appends', appends);
 
     return { appends: [...appends], updateAssociationValues: [...updateAssociationValues] };
   };
