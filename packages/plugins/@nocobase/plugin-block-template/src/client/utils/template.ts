@@ -378,6 +378,23 @@ export function mergeSchema(
             targetKeys = Object.keys(objectValue);
           }
 
+          // AssociationField.Nester
+          if (
+            objectValue?.['x-component'] === 'AssociationField.Nester' &&
+            sourceValue?.['x-component'] === 'AssociationField.Nester'
+          ) {
+            sourceValue['x-template-uid'] = objectValue['x-uid'];
+            sourceValue['properties'] = mergeSchema(
+              objectValue['properties'],
+              sourceValue['properties'],
+              rootId,
+              templateschemacache,
+              templateInfos,
+            );
+            objectValue = {};
+            object['properties'] = objectValue;
+          }
+
           // remove duplicate configureActions keys and configureFields keys
           if (/:configure.*Actions/.test(object['x-initializer'])) {
             // "x-settings": "actionSettings:bulkDelete"

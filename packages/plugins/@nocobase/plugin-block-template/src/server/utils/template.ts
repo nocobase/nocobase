@@ -34,22 +34,6 @@ export async function getNewFullBlock(db: Database, transaction: Transaction, bl
   return newSchema;
 }
 
-function collectCollectionFields(properties: Record<string, any>): string[] {
-  return _.reduce(
-    Object.values(properties || {}),
-    (result: string[], property) => {
-      const xColField = _.get(property, 'x-collection-field');
-      if (xColField) {
-        result.push(xColField);
-      } else if (property['properties']) {
-        result.push(...collectCollectionFields(property['properties']));
-      }
-      return result;
-    },
-    [],
-  );
-}
-
 function getNewObjectValue(itemsMap: Map<string, GridItemInfo>) {
   const remainingTemplateItems = { properties: {} } as Schema;
   for (const [_uid, item] of itemsMap.entries()) {
@@ -181,6 +165,17 @@ function mergeSchema(template, schema, rootTemplate) {
             objectValue = getNewObjectValue(tItemsMap);
             object['properties'] = objectValue;
             targetKeys = Object.keys(objectValue);
+          }
+
+          // AssociationField.Nester
+          if (
+            objectValue?.['x-component'] === 'AssociationField.Nester' &&
+            sourceValue?.['x-component'] === 'AssociationField.Nester'
+          ) {
+            sourceValue['x-template-uid'] = objectValue['x-uid'];
+            sourceValue['properties'] = mergeSchema(objectValue['properties'], sourceValue['properties'], rootTemplate);
+            objectValue = {};
+            object['properties'] = objectValue;
           }
 
           // remove duplicate configureActions keys and configureFields keys
