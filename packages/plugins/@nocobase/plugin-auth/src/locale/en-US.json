@@ -32,7 +32,7 @@
   "Password is not allowed to be changed": "Password is not allowed to be changed",
   "Token policy": "Token policy",
   "Token validity period": "Token validity period",
-  "Session validity period": "Session validity",
+  "Session validity period": "Session validity period",
   "Expired token refresh limit": "Expired token refresh limit",
   "Token validity period must be less than session validity period!": "Token validity period must be less than session validity period!",
   "Seconds": "Seconds",
