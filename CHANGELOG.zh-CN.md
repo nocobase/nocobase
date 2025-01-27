@@ -5,6 +5,12 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.4.32](https://github.com/nocobase/nocobase/compare/v1.4.31...v1.4.32) - 2025-01-27
+
+### 🐛 修复
+
+- **[actions]** 修复“移动”操作以触发工作流 ([#6144](https://github.com/nocobase/nocobase/pull/6144)) by @mytharcher
+
 ## [v1.4.31](https://github.com/nocobase/nocobase/compare/v1.4.30...v1.4.31) - 2025-01-26
 
 ### 🚀 优化
