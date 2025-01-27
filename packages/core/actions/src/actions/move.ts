@@ -8,6 +8,7 @@
  */
 
 import { Model, Op } from 'sequelize';
+import { pick } from 'lodash';
 
 import { BelongsToManyRepository, Collection, HasManyRepository, SortField, TargetKey } from '@nocobase/database';
 import { Context } from '..';
@@ -164,9 +165,9 @@ export class SortAbleCollection {
     });
 
     await this.collection.repository.update({
-      filterByTk: this.collection.isMultiFilterTargetKey()
+      filterByTk: (this.collection.isMultiFilterTargetKey()
         ? pick(sourceInstance, this.collection.filterTargetKey)
-        : sourceInstance.get(<string>this.collection.filterTargetKey),
+        : sourceInstance.get(<string>this.collection.filterTargetKey)) as TargetKey,
       values: {
         [fieldName]: targetSort,
       },
