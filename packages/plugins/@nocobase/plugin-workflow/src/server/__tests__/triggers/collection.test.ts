@@ -164,6 +164,36 @@ describe('workflow > triggers > collection', () => {
   });
 
   describe('config.mode', () => {
+    it('update by move action', async () => {
+      db.getCollection('posts').addField('sort', {
+        type: 'sort',
+        name: 'sort',
+      });
+      await db.sync();
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+      const p2 = await PostRepo.create({ values: { title: 't2' } });
+
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 2,
+          collection: 'posts',
+        },
+      });
+
+      const response = await agent.resource('posts').move({
+        sourceId: p1.id,
+        targetId: p2.id,
+      });
+
+      await sleep(500);
+
+      const e1s = await workflow.getExecutions();
+      expect(e1s.length).toBe(1);
+      expect(e1s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+
     it('mode in "update or create" could trigger on each', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
