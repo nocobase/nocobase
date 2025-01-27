@@ -8,6 +8,7 @@
  */
 
 import { Model, Op } from 'sequelize';
+import { pick } from 'lodash';
 
 import { BelongsToManyRepository, Collection, HasManyRepository, SortField, TargetKey } from '@nocobase/database';
 import { Context } from '..';
@@ -75,12 +76,15 @@ export class SortAbleCollection {
 
   // insert source position to target position
   async move(sourceInstanceId: TargetKey, targetInstanceId: TargetKey, options: MoveOptions = {}) {
-    const sourceInstance = await this.collection.repository.findByTargetKey(sourceInstanceId);
+    let sourceInstance = await this.collection.repository.findByTargetKey(sourceInstanceId);
     const targetInstance = await this.collection.repository.findByTargetKey(targetInstanceId);
 
     if (this.scopeKey && sourceInstance.get(this.scopeKey) !== targetInstance.get(this.scopeKey)) {
-      await sourceInstance.update({
-        [this.scopeKey]: targetInstance.get(this.scopeKey),
+      [sourceInstance] = await this.collection.repository.update({
+        filterByTk: sourceInstanceId,
+        values: {
+          [this.scopeKey]: targetInstance.get(this.scopeKey),
+        },
       });
     }
 
@@ -88,18 +92,17 @@ export class SortAbleCollection {
   }
 
   async changeScope(sourceInstanceId: TargetKey, targetScope: any, method?: string) {
-    const sourceInstance = await this.collection.repository.findByTargetKey(sourceInstanceId);
+    let sourceInstance = await this.collection.repository.findByTargetKey(sourceInstanceId);
     const targetScopeValue = targetScope[this.scopeKey];
 
     if (targetScopeValue && sourceInstance.get(this.scopeKey) !== targetScopeValue) {
-      await sourceInstance.update(
-        {
+      [sourceInstance] = await this.collection.repository.update({
+        filterByTk: sourceInstanceId,
+        values: {
           [this.scopeKey]: targetScopeValue,
         },
-        {
-          silent: false,
-        },
-      );
+        silent: false,
+      });
 
       if (method === 'prepend') {
         await this.sticky(sourceInstanceId);
@@ -108,15 +111,13 @@ export class SortAbleCollection {
   }
 
   async sticky(sourceInstanceId: TargetKey) {
-    const sourceInstance = await this.collection.repository.findByTargetKey(sourceInstanceId);
-    await sourceInstance.update(
-      {
+    await this.collection.repository.update({
+      filterByTk: sourceInstanceId,
+      values: {
         [this.field.get('name')]: 0,
       },
-      {
-        silent: true,
-      },
-    );
+      silent: true,
+    });
   }
 
   async sameScopeMove(sourceInstance: Model, targetInstance: Model, options: MoveOptions) {
@@ -163,13 +164,14 @@ export class SortAbleCollection {
       silent: true,
     });
 
-    await sourceInstance.update(
-      {
+    await this.collection.repository.update({
+      filterByTk: (this.collection.isMultiFilterTargetKey()
+        ? pick(sourceInstance, this.collection.filterTargetKey)
+        : sourceInstance.get(<string>this.collection.filterTargetKey)) as TargetKey,
+      values: {
         [fieldName]: targetSort,
       },
-      {
-        silent: true,
-      },
-    );
+      silent: true,
+    });
   }
 }
