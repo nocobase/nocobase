@@ -13,6 +13,7 @@ import { Outlet, useParams } from 'react-router-dom';
 import { Button as MobileButton, Dialog as MobileDialog } from 'antd-mobile';
 import { MobilePicker } from './components/MobilePicker';
 import { MobileDateTimePicker } from './components/MobileDatePicker';
+import { useField } from '@formily/react';
 
 const AssociationFieldMobile = (props) => {
   return <AssociationField {...props} popupMatchSelectWidth={true} />;
@@ -42,6 +43,11 @@ const mobileComponents = {
   Button: MobileButton,
   Select: (props) => {
     const { designable } = useDesignable();
+    const field = useField();
+    const isReadPretty = field?.pattern === 'readPretty' || field?.readPretty;
+    if (isReadPretty) {
+      return <Select.ReadPretty {...props} />;
+    }
     if (designable !== false) {
       return <Select {...props} popupMatchSelectWidth={true} />;
     } else {
