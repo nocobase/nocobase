@@ -157,6 +157,7 @@ function ExecuteActionButton() {
           scope={{
             useCancelAction,
             useExecuteConfirmAction,
+            ...trigger.scope,
           }}
           schema={{
             name: `trigger-modal-${workflow.type}-${workflow.id}`,
