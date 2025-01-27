@@ -16,6 +16,7 @@ import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
   CurrentUser,
+  Icon,
   NavigateIfNotSignIn,
   PinnedPluginList,
   RemoteCollectionManagerProvider,
@@ -242,10 +243,9 @@ const NocoBaseLogo = () => {
 export const InternalAdminLayout = () => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
 
-  console.log(convertRoutesToLayout(allAccessRoutes));
-
   return (
     <ProLayout
+      layout="mix"
       route={{
         path: '/',
         routes: convertRoutesToLayout(allAccessRoutes),
@@ -333,7 +333,7 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[]) {
   return routes.map((item) => {
     return {
       name: item.title,
-      icon: item.icon,
+      icon: <Icon type={item.icon} />,
       path: `/${item.schemaUid}`,
       routes: convertRoutesToLayout(item.children),
     };
