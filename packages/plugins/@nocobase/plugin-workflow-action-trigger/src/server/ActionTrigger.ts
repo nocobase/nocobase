@@ -9,7 +9,7 @@
 
 import { get, pick } from 'lodash';
 import { BelongsTo, HasOne } from 'sequelize';
-import { Model, modelAssociationByKey } from '@nocobase/database';
+import { Collection, Model, modelAssociationByKey } from '@nocobase/database';
 import Application, { DefaultContext } from '@nocobase/server';
 import { Context as ActionContext, Next } from '@nocobase/actions';
 
@@ -41,6 +41,19 @@ export default class extends Trigger {
     workflow.app.dataSourceManager.use(triggerWorkflowActionMiddleware);
   }
 
+  getTargetCollection(collection: Collection, association: string) {
+    if (!association) {
+      return collection;
+    }
+
+    let targetCollection = collection;
+    for (const key of association.split('.')) {
+      targetCollection = collection.db.getCollection(targetCollection.getField(key).target);
+    }
+
+    return targetCollection;
+  }
+
   private async collectionTriggerAction(context: Context) {
     const {
       resourceName,
@@ -51,10 +64,6 @@ export default class extends Trigger {
     const collection = context.app.dataSourceManager.dataSources
       .get(dataSourceHeader)
       .collectionManager.getCollection(resourceName);
-
-    if (!collection) {
-      return;
-    }
 
     const fullCollectionName = joinCollectionName(dataSourceHeader, collection.name);
     const { currentUser, currentRole } = context.state;
@@ -72,9 +81,8 @@ export default class extends Trigger {
     const globalWorkflows = new Map();
     const localWorkflows = new Map();
     workflows.forEach((item) => {
-      if (resourceName === 'workflows' && actionName === 'trigger') {
-        localWorkflows.set(item.key, item);
-      } else if (item.config.collection === fullCollectionName) {
+      const targetCollection = this.getTargetCollection(collection, triggersKeysMap.get(item.key));
+      if (item.config.collection === joinCollectionName(dataSourceHeader, targetCollection.name)) {
         if (item.config.global) {
           if (item.config.actions?.includes(actionName)) {
             globalWorkflows.set(item.key, item);
