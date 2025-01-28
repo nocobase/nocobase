@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { pick } from 'lodash';
 import { BelongsToManyRepository, Collection, HasManyRepository, TargetKey, Model, Op } from '@nocobase/database';
 import { Context } from '@nocobase/actions';
-import { pick } from 'lodash';
 
 import { SortField } from './sort-field';
 
