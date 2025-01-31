@@ -245,10 +245,39 @@ export const InternalAdminLayout = () => {
 
   return (
     <ProLayout
-      layout="mix"
+      className={css`
+        .anticon-menu {
+          color: #fff;
+        }
+      `}
       route={{
         path: '/',
-        routes: convertRoutesToLayout(allAccessRoutes),
+        children: convertRoutesToLayout(allAccessRoutes),
+      }}
+      actionsRender={(props) => {
+        if (props.isMobile) return [];
+        if (typeof window === 'undefined') return [];
+        return [<PinnedPluginList key="pinned-plugin-list" />, <Help key="help" />, <CurrentUser key="current-user" />];
+      }}
+      logo={<NocoBaseLogo />}
+      title={''}
+      layout="mix"
+      splitMenus
+      token={{
+        header: {
+          colorBgHeader: '#001529',
+          colorTextMenu: '#eee',
+          colorTextMenuSelected: '#fff',
+          colorTextMenuActive: '#fff',
+          colorBgMenuItemHover: '#001529',
+          colorBgMenuItemSelected: '#001529',
+        },
+        sider: {
+          colorTextMenuSecondary: '#fff',
+        },
+        colorTextAppListIcon: '#fff',
+        colorTextAppListIconHover: '#fff',
+        colorBgAppListIconHover: '#fff',
       }}
     >
       <Layout.Header>
@@ -331,10 +360,19 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[]) {
   if (!routes) return;
 
   return routes.map((item) => {
+    if (item.type === 'link') {
+      return {
+        name: item.title,
+        icon: <Icon type={item.icon} />,
+        path: `/admin/${item.schemaUid}`,
+        routes: convertRoutesToLayout(item.children),
+      };
+    }
+
     return {
       name: item.title,
       icon: <Icon type={item.icon} />,
-      path: `/${item.schemaUid}`,
+      path: `/admin/${item.schemaUid}`,
       routes: convertRoutesToLayout(item.children),
     };
   });
