@@ -25,17 +25,17 @@ import { FormProvider, createSchemaField } from '@formily/react';
 import { ArrayCollapse } from '../components/LinkageHeader';
 import { Filter } from '../Filter';
 import { ArrayBase, Select, DatePicker, Editable, Input, ArrayItems, FormItem } from '@formily/antd-v5';
-import { useFilterOptions } from './hooks/useFilterOptions';
+import { useFilterOptions } from '../hooks/useFilterOptions';
 import { EventDefinition, EventSetting } from '../../types';
-import { useVariableOptions } from './hooks/useVariableOptions';
+import { useVariableOptions } from '../hooks/useVariableOptions';
 import { uniqBy } from 'lodash';
 import { AddBtn, DeleteBtn } from './AddBtn';
-import { ActionSelect } from './ActionSelect';
-import { ActionParamSelect } from './ActionParamSelect';
+import { ActionSelect } from '../components/ActionSelect';
+import { ActionParamSelect } from '../components/ActionParamSelect';
 import { Space } from 'antd';
 import { useFormBlockContext } from '../../../block-provider';
-import ConditionSelect from './ConditionSelect';
-import { actionsSchema } from './schemas/actions';
+import ConditionSelect from '../components/ConditionSelect';
+import { actionsSchema } from '../schemas/actions';
 
 const SchemaField = createSchemaField({
   components: {
@@ -71,12 +71,10 @@ export const ActionsSetting = withDynamicSchemaProps(
     const array = ArrayBase.useArray();
     const recordValues = ArrayBase.useRecord();
     const index = ArrayBase.useIndex();
-    const { definitions, options, defaultValues, collectionName, variables, localVariables, record, dynamicComponent } =
-      props;
+    const { options, defaultValues, collectionName, variables, localVariables, record, dynamicComponent } = props;
     const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
     const parentRecordData = useCollectionParentRecordData();
     const { form } = useFormBlockContext();
-    const filterOptions = useFilterOptions(recordValues);
     const variableOptions = useVariableOptions();
     console.log('variableOptions', variableOptions);
     const components = useMemo(
@@ -131,6 +129,14 @@ export const ActionsSetting = withDynamicSchemaProps(
                     },
                     condition: {
                       'x-component': 'ConditionSelect',
+                      'x-reactions': {
+                        dependencies: ['...event'],
+                        fulfill: {
+                          state: {
+                            'componentProps.options3': '{{$deps[0]}}',
+                          },
+                        },
+                      },
                     },
                     actionsTitle: {
                       'x-component': 'h4',
@@ -173,7 +179,6 @@ export const ActionsSetting = withDynamicSchemaProps(
         props,
         record,
         variables,
-        filterOptions,
       ],
     );
     const value = useMemo(

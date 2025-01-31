@@ -43,6 +43,8 @@ export const useEvent = () => {
     definitions: eventFlowPlugin?.definitions,
     // 定义事件
     define,
+    // 移除事件
+    removeDefinition: eventFlowPlugin?.removeDefinition,
     // 运行时事件注册
     register,
     // 触发事件

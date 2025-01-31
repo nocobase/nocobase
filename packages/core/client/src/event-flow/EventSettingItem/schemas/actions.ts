@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { ActionParamValueInput } from '../components/ActionParamValueInput';
+
 const actionParamsSchema = {
   type: 'void',
   properties: {
@@ -22,7 +24,7 @@ const actionParamsSchema = {
           },
         },
         properties: {
-          key: {
+          name: {
             type: 'string',
             'x-component': 'ActionParamSelect',
             'x-reactions': {
@@ -36,7 +38,21 @@ const actionParamsSchema = {
               },
             },
           },
-          value: { type: 'string', 'x-component': 'Input' },
+          value: {
+            type: 'string',
+            'x-component': 'ActionParamValueInput',
+            'x-reactions': {
+              dependencies: ['...action', '.name'],
+              fulfill: {
+                schema: {
+                  'x-component-props': {
+                    action: '{{$deps[0]}}',
+                    paramName: '{{$deps[1]}}',
+                  },
+                },
+              },
+            },
+          },
           removeBtn: {
             type: 'void',
             'x-component': 'ArrayItems.Remove',
@@ -62,6 +78,11 @@ export const actionsSchema = {
     actions: {
       type: 'array',
       'x-component': 'ArrayItems',
+      'x-component-props': {
+        style: {
+          marginLeft: 12,
+        },
+      },
       items: {
         type: 'object',
         'x-component': 'Space',

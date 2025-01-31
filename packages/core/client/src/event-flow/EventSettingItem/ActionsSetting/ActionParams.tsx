@@ -12,7 +12,7 @@ import { Button, Input, Space } from 'antd';
 import React, { useCallback } from 'react';
 import { ArrayField as ArrayFieldModel } from '@formily/core';
 import { CloseCircleOutlined } from '@ant-design/icons';
-import { ActionParamSelect } from './ActionParamSelect';
+import { ActionParamSelect } from '../components/ActionParamSelect';
 import { VariableInput, getShouldChange } from '../../../schema-settings';
 import { CollectionField } from '../../../data-source/collection-field';
 

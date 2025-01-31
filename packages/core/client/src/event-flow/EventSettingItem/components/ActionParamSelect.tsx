@@ -22,5 +22,6 @@ export function ActionParamSelect(props: { action: EventActionSetting }) {
     value: params[key]?.name || key,
     ...params[key],
   }));
+  console.log('ActionParamSelect', props);
   return <Select options={options} {...rest} style={{ minWidth: 150 }}></Select>;
 }

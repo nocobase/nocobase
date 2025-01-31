@@ -9,8 +9,8 @@
 
 import { useCompile } from '@nocobase/client';
 import { useMemo } from 'react';
-import { useEvent } from '../../../hooks/useEvent';
-import { EventParam } from '../../../types';
+import { useEvent } from '../../hooks/useEvent';
+import { EventParam } from '../../types';
 
 export const useVariableOptions = () => {
   const { definitions } = useEvent();

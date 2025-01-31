@@ -39,8 +39,13 @@ export class EventFlowPlugin extends Plugin {
     // this.app.addProviders()
     // this.app.router.add()
   }
+
+  static isEqual(a: EventDefinition, b: EventDefinition) {
+    return a.name === b.name && a.uid === b.uid;
+  }
+
   // 定义事件
-  define(definition: EventDefinition[] | EventDefinition) {
+  define(definition: EventDefinition | EventDefinition[]) {
     if (!definition) {
       return;
     }
@@ -50,6 +55,17 @@ export class EventFlowPlugin extends Plugin {
       this.definitions.push(definition);
     }
     this.definitions = uniqBy(this.definitions, (item) => item.name + item.uid);
+  }
+  // 移除定义事件
+  removeDefinition(definition: EventDefinition | EventDefinition[]) {
+    if (!definition) {
+      return;
+    }
+    if (Array.isArray(definition)) {
+      this.definitions = this.definitions.filter((item) => !definition.some((d) => EventFlowPlugin.isEqual(item, d)));
+    } else {
+      this.definitions = this.definitions.filter((item) => !EventFlowPlugin.isEqual(item, definition));
+    }
   }
   // 运行时注册事件
   register(events: EventSetting[]) {

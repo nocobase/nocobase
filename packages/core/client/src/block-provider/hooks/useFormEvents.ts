@@ -11,7 +11,7 @@ import { useEvent } from '../../event-flow';
 import { useCollection } from '../../data-source/collection/CollectionProvider';
 
 export function useFormEvents({ form }) {
-  const { define, emit } = useEvent();
+  const { define, emit, removeDefinition } = useEvent();
   const collection = useCollection();
   const fields = collection?.fields || [];
   const fieldsMap = fields.reduce((acc, field) => {
@@ -121,6 +121,8 @@ export function useFormEvents({ form }) {
       });
     }
   });
+
+  // TODO remove define
 
   define(inter);
 }

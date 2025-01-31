@@ -20,8 +20,9 @@ import {
   useLocalVariables,
   useFormBlockType,
   useRecord,
+  Filter,
 } from '@nocobase/client';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { ISchema, useField } from '@formily/react';
 import { SchemaSettingsKey, useEvent } from '..';
 import { useFieldSchema } from '@formily/react';
@@ -30,8 +31,13 @@ import { ActionsSetting } from './ActionsSetting';
 import EventSelect from './EventSelect';
 import { ArrayCollapse } from './components/LinkageHeader';
 import { css } from '@emotion/css';
-import { useFilterOptions } from './hooks/useFilterOptions';
 import { FormItem, FormLayout } from '@formily/antd-v5';
+import { rulesSchema } from './schemas/rules';
+import { ActionSelect } from './components/ActionSelect';
+import { ActionParamSelect } from './components/ActionParamSelect';
+import ConditionSelect from './components/ConditionSelect';
+import { Space } from 'antd';
+import { ActionParamValueInput } from './components/ActionParamValueInput';
 
 // packages/core/client/src/schema-settings/SchemaSettings.tsx
 export const EventSettingItem = (props) => {
@@ -51,13 +57,29 @@ export const EventSettingItem = (props) => {
   const variables = useVariables();
   const localVariables = useLocalVariables();
   const { type: formBlockType } = useFormBlockType();
-  const record = useRecord();
+
   return (
     <SchemaSettingsModalItem
       title={'Event Setting'}
-      components={{ ArrayCollapse, ActionsSetting, EventSelect, FormLayout }}
-      initialValues={{}}
-      scope={{}}
+      components={{
+        ArrayCollapse,
+        // ActionsSetting,
+        EventSelect,
+        // FormLayout,
+        // Filter,
+        Space,
+        ActionParamSelect,
+        ActionSelect,
+        ConditionSelect,
+        ActionParamValueInput,
+      }}
+      initialValues={{ events: schema[SchemaSettingsKey] }}
+      scope={{
+        emptyParams: (field, target) => {
+          const params = field.query('.params').take(1);
+          params.value = [];
+        },
+      }}
       width={1000}
       schema={
         {
@@ -78,59 +100,42 @@ export const EventSettingItem = (props) => {
               items: {
                 type: 'object',
                 'x-component': 'ArrayCollapse.CollapsePanel',
-                'x-component-props': {
-                  // extra: <EnableLinkage />,
-                },
                 properties: {
-                  layout: {
-                    type: 'void',
-                    'x-component': 'FormLayout',
+                  eventTitle: {
+                    'x-component': 'h4',
+                    'x-content': '{{ t("触发事件") }}',
+                  },
+                  event: {
+                    'x-component': EventSelect,
                     'x-component-props': {
-                      labelStyle: {
-                        marginTop: '4px',
-                      },
-                      labelCol: 8,
-                      wrapperCol: 16,
-                    },
-                    properties: {
-                      eventTitle: {
-                        'x-component': 'h4',
-                        'x-content': '{{ t("触发事件") }}',
-                      },
-                      event: {
-                        'x-component': EventSelect,
-                        'x-component-props': {
-                          definitions,
-                          className: css`
-                            margin-bottom: 12px;
-                          `,
-                        },
-                      },
-                      actionTitle: {
-                        'x-component': 'h4',
-                        'x-content': '{{ t("执行动作") }}',
-                      },
-                      actions: {
-                        type: 'void',
-                        'x-component': ActionsSetting,
-                        'x-use-component-props': () => {
-                          return {
-                            definitions,
-                            options,
-                            linkageOptions,
-                            category: 'default',
-                            elementType: 'field',
-                            collectionName,
-                            // form,
-                            variables,
-                            localVariables,
-                            record,
-                            formBlockType,
-                          };
-                        },
-                      },
+                      definitions,
+                      className: css`
+                        margin-bottom: 12px;
+                      `,
                     },
                   },
+                  actionTitle: {
+                    'x-component': 'h4',
+                    'x-content': '{{ t("执行规则") }}',
+                  },
+                  actionsBlock: rulesSchema,
+                  // actionsBlock: {
+                  // type: 'void',
+                  // 'x-component': ActionsSetting,
+                  // 'x-use-component-props': () => {
+                  //   return {
+                  //     options,
+                  //     linkageOptions,
+                  //     category: 'default',
+                  //     elementType: 'field',
+                  //     collectionName,
+                  //     // form,
+                  //     variables,
+                  //     localVariables,
+                  //     formBlockType,
+                  //   };
+                  // },
+                  // },
                   remove: {
                     type: 'void',
                     'x-component': 'ArrayCollapse.Remove',
@@ -140,7 +145,7 @@ export const EventSettingItem = (props) => {
               properties: {
                 add: {
                   type: 'void',
-                  title: '{{ t("Add events") }}',
+                  title: '{{ t("添加事件") }}',
                   'x-component': 'ArrayCollapse.Addition',
                 },
               },
@@ -150,15 +155,15 @@ export const EventSettingItem = (props) => {
       }
       onSubmit={({ events }) => {
         console.log('todo onSubmit', JSON.parse(JSON.stringify(events)));
-        // fieldSchema[SchemaSettingsKey] = events;
-        // dn.emit('patch', {
-        //   schema: {
-        //     'x-uid': fieldSchema['x-uid'],
-        //     [SchemaSettingsKey]: events,
-        //   },
-        // });
+        fieldSchema[SchemaSettingsKey] = events;
+        dn.emit('patch', {
+          schema: {
+            'x-uid': fieldSchema['x-uid'],
+            [SchemaSettingsKey]: events,
+          },
+        });
         // register(events);
-        // dn.refresh();
+        dn.refresh();
       }}
     />
   );

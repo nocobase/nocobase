@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useEvent } from '../../../hooks/useEvent';
+import { useEvent } from '../../hooks/useEvent';
 
 export function useActionOptions() {
   const { definitions } = useEvent();

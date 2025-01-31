@@ -10,7 +10,7 @@
 import { observer } from '@formily/react';
 import { Cascader } from 'antd';
 import React from 'react';
-import { useActionOptions } from './hooks/useActionOptions';
+import { useActionOptions } from '../hooks/useActionOptions';
 import { EventActionSetting } from '../../types';
 
 export const ActionSelect = observer((props: any) => {

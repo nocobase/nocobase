@@ -7,29 +7,35 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { Filter, useFilterOptions } from '../Filter';
+import React, { useEffect } from 'react';
+import { Filter } from '../Filter';
+import { useFilterOptions } from '../hooks/useFilterOptions';
 import { ArrayBase } from '@formily/antd-v5';
 import { css } from '@emotion/css';
 import { getShouldChange } from '../../../schema-settings/VariableInput';
 import { DynamicComponentProps } from '../../../schema-component/antd/filter/DynamicComponent';
 import { VariableInput } from '../../../schema-settings/VariableInput';
 import { uniqBy } from 'lodash';
-import { useVariableOptions } from './hooks/useVariableOptions';
+import { useVariableOptions } from '../hooks/useVariableOptions';
+import { EventSetting } from '../../types';
+import { useField } from '@formily/react';
+import { ObjectField } from '@formily/core';
+import { useUpdateEffect } from 'ahooks';
 
-export default function ConditionSelect(props: any) {
-  const recordValues = ArrayBase.useRecord();
-  const filterOptions = useFilterOptions(recordValues);
+export default function ConditionSelect(props: { event?: EventSetting['event']; onChange?: any }) {
+  const filterOptions = useFilterOptions(props.event);
   const variableOptions = useVariableOptions();
   console.log('filterOptions', filterOptions, props);
+  const field = useField<ObjectField>();
+  useUpdateEffect(() => {
+    // 当 event 变化时，清空 condition
+    // TODO: 条件判定进行清空
+    field.value = {};
+  }, [JSON.stringify(props.event)]);
 
   return (
     <Filter
-      className={css`
-        position: relative;
-        width: 100%;
-        margin-left: 10px;
-      `}
+      options={filterOptions}
       dynamicComponent={(props: DynamicComponentProps) => {
         const { collectionField } = props;
         return (

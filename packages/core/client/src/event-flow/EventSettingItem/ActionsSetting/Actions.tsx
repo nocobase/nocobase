@@ -17,7 +17,7 @@ import { ArrayBase } from '@formily/antd-v5';
 import { useActionOptions } from './hooks/useActionOptions';
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { ActionParamsField } from './ActionParams';
-import { ActionSelect } from './ActionSelect';
+import { ActionSelect } from '../components/ActionSelect';
 
 interface LinkageRuleActionGroupProps {
   type: 'button' | 'field' | 'style';
