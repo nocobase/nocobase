@@ -22,5 +22,5 @@ export function ActionParamSelect(props: { action: EventActionSetting }) {
     value: params[key]?.name || key,
     ...params[key],
   }));
-  return <Select options={options} {...rest}></Select>;
+  return <Select options={options} {...rest} style={{ minWidth: 150 }}></Select>;
 }

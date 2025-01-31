@@ -47,12 +47,11 @@ export const EventSettingItem = (props) => {
   const collectionName = 't_aierml1wni1';
   const options = useLinkageCollectionFilterOptions(collectionName);
   const linkageOptions = useLinkageCollectionFieldOptions(collectionName, readPretty);
-  const { form } = useFormBlockContext();
+  const ff = useFormBlockContext();
   const variables = useVariables();
   const localVariables = useLocalVariables();
   const { type: formBlockType } = useFormBlockType();
   const record = useRecord();
-
   return (
     <SchemaSettingsModalItem
       title={'Event Setting'}
@@ -122,7 +121,7 @@ export const EventSettingItem = (props) => {
                             category: 'default',
                             elementType: 'field',
                             collectionName,
-                            form,
+                            // form,
                             variables,
                             localVariables,
                             record,

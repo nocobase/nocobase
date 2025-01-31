@@ -30,5 +30,14 @@ export const ActionSelect = observer((props: any) => {
     }
   };
   const _value = value ? [value.definition, `${value.definition}.${value.event}.${value.uid}`] : [];
-  return <Cascader placeholder="请选择动作" options={options} onChange={_onChange} value={_value} {...rest} />;
+  return (
+    <Cascader
+      placeholder="请选择动作"
+      options={options}
+      onChange={_onChange}
+      value={_value}
+      style={{ minWidth: 300 }}
+      {...rest}
+    />
+  );
 });

@@ -75,7 +75,7 @@ export interface EventSetting {
 }
 export interface EventActionSetting {
   definition: string;
-  event: string;
+  action: string;
   uid?: string;
   params?: Array<EventActionSettingParams>;
 }

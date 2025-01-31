@@ -42,14 +42,14 @@ export function useSubmitEvents() {
       {
         name: 'afterSubmit',
         title: '表单提交后',
-        params: {
-          values: {
-            title: '表单值',
-            type: 'object',
-            description: '表单提交后的值',
-            properties: fieldsMap,
-          },
-        },
+        // params: {
+        //   values: {
+        //     title: '表单值',
+        //     type: 'object',
+        //     description: '表单提交后的值',
+        //     properties: fieldsMap,
+        //   },
+        // },
       },
     ],
   });

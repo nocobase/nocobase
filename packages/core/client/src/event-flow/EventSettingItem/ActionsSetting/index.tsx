@@ -8,7 +8,7 @@
  */
 
 import { css } from '@emotion/css';
-import { observer, useFieldSchema } from '@formily/react';
+import { observer, useField, useFieldSchema, useForm } from '@formily/react';
 import React, { useMemo } from 'react';
 import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { useCollectionParentRecordData } from '../../../data-source/collection-record/CollectionRecordProvider';
@@ -24,7 +24,7 @@ import { ActionsField } from './Actions';
 import { FormProvider, createSchemaField } from '@formily/react';
 import { ArrayCollapse } from '../components/LinkageHeader';
 import { Filter } from '../Filter';
-import { ArrayBase } from '@formily/antd-v5';
+import { ArrayBase, Select, DatePicker, Editable, Input, ArrayItems, FormItem } from '@formily/antd-v5';
 import { useFilterOptions } from './hooks/useFilterOptions';
 import { EventDefinition, EventSetting } from '../../types';
 import { useVariableOptions } from './hooks/useVariableOptions';
@@ -32,7 +32,34 @@ import { uniqBy } from 'lodash';
 import { AddBtn, DeleteBtn } from './AddBtn';
 import { ActionSelect } from './ActionSelect';
 import { ActionParamSelect } from './ActionParamSelect';
+import { Space } from 'antd';
+import { useFormBlockContext } from '../../../block-provider';
+import ConditionSelect from './ConditionSelect';
+import { actionsSchema } from './schemas/actions';
 
+const SchemaField = createSchemaField({
+  components: {
+    FormItem,
+    DatePicker,
+    Editable,
+    Space, // 使用antd包内的Space组件，包含Compact
+    Compact: Space.Compact,
+    Input,
+    Select,
+    ArrayItems,
+    ArrayCollapse,
+    Filter,
+    ActionSelect,
+    ActionParamSelect,
+    ConditionSelect,
+  },
+  scope: {
+    emptyParams(field, target) {
+      const params = field.query('.params').take(1);
+      params.value = [];
+    },
+  },
+});
 export interface Props {
   dynamicComponent: any;
   definitions: EventDefinition[];
@@ -44,25 +71,26 @@ export const ActionsSetting = withDynamicSchemaProps(
     const array = ArrayBase.useArray();
     const recordValues = ArrayBase.useRecord();
     const index = ArrayBase.useIndex();
-    const {
-      definitions,
-      options,
-      defaultValues,
-      collectionName,
-      form,
-      variables,
-      localVariables,
-      record,
-      dynamicComponent,
-    } = props;
+    const { definitions, options, defaultValues, collectionName, variables, localVariables, record, dynamicComponent } =
+      props;
     const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
     const parentRecordData = useCollectionParentRecordData();
-
+    const { form } = useFormBlockContext();
     const filterOptions = useFilterOptions(recordValues);
     const variableOptions = useVariableOptions();
     console.log('variableOptions', variableOptions);
+    const components = useMemo(
+      () => ({
+        ArrayCollapse,
+        Filter,
+        Space,
+        ActionParamSelect,
+        ActionSelect,
+        ConditionSelect,
+      }),
+      [],
+    );
 
-    const components = useMemo(() => ({ ArrayCollapse, Filter }), []);
     const schema = useMemo(
       () => ({
         type: 'object',
@@ -102,129 +130,13 @@ export const ActionsSetting = withDynamicSchemaProps(
                       'x-content': '{{ t("Condition") }}',
                     },
                     condition: {
-                      'x-component': 'Filter',
-                      'x-use-component-props': () => {
-                        return {
-                          options: filterOptions,
-                          className: css`
-                            position: relative;
-                            width: 100%;
-                            margin-left: 10px;
-                          `,
-                        };
-                      },
-                      'x-component-props': {
-                        collectionName,
-                        dynamicComponent: (props: DynamicComponentProps) => {
-                          const { collectionField } = props;
-                          return (
-                            <VariableInput
-                              {...props}
-                              form={form}
-                              record={record}
-                              shouldChange={getShouldChange({
-                                collectionField,
-                                variables,
-                                localVariables,
-                                getAllCollectionsInheritChain,
-                              })}
-                              returnScope={(scope) => {
-                                return uniqBy([...scope, ...variableOptions], 'key');
-                              }}
-                            />
-                          );
-                        },
-                      },
+                      'x-component': 'ConditionSelect',
                     },
                     actionsTitle: {
                       'x-component': 'h4',
                       'x-content': '{{ t("动作") }}',
                     },
-                    actionsBlock: {
-                      type: 'void',
-                      properties: {
-                        actions: {
-                          type: 'array',
-                          'x-component': 'ArrayItems',
-                          items: {
-                            type: 'object',
-                            'x-component': 'Space',
-                            properties: {
-                              action: {
-                                type: 'string',
-                                'x-component': ActionSelect,
-                              },
-
-                              params: {
-                                type: 'array',
-                                'x-component': 'ArrayItems',
-                                items: {
-                                  type: 'object',
-                                  'x-component': 'Space',
-                                  'x-component-props': {
-                                    direction: 'vertical',
-                                    style: {
-                                      marginBottom: '10px',
-                                    },
-                                  },
-                                  properties: {
-                                    key: {
-                                      type: 'string',
-                                      'x-component': ActionParamSelect,
-                                      'x-reactions': {
-                                        dependencies: ['...action'],
-                                        fulfill: {
-                                          schema: {
-                                            'x-component-props': {
-                                              action: '{{$deps[0]}}',
-                                            },
-                                          },
-                                        },
-                                      },
-                                    },
-                                    value: {
-                                      type: 'string',
-                                      'x-component': 'Input',
-                                      'x-reactions': {
-                                        dependencies: ['...action'],
-                                        fulfill: {
-                                          schema: {
-                                            'x-component-props': {
-                                              action: '{{$deps[0]}}',
-                                            },
-                                          },
-                                        },
-                                      },
-                                    },
-                                    delete: {
-                                      type: 'void',
-                                      'x-component': DeleteBtn,
-                                    },
-                                  },
-                                },
-                              },
-                              add: {
-                                type: 'void',
-                                'x-component': AddBtn,
-                                'x-component-props': {
-                                  addKey: '.params',
-                                  text: '{{ t("添加参数") }}',
-                                },
-                              },
-                            },
-                          },
-                        },
-                        add: {
-                          type: 'void',
-                          'x-component': AddBtn,
-                          'x-component-props': {
-                            addKey: '.actions',
-                            text: '{{ t("添加动作") }}',
-                          },
-                        },
-                      },
-                      // 'x-component': ActionsField,
-                    },
+                    actionsBlock: actionsSchema,
                   },
                 },
                 remove: {
@@ -236,7 +148,7 @@ export const ActionsSetting = withDynamicSchemaProps(
             properties: {
               add: {
                 type: 'void',
-                title: '{{ t("Add actions") }}',
+                title: '{{ t("添加规则") }}',
                 'x-component': 'ArrayCollapse.Addition',
                 'x-reactions': {
                   dependencies: ['rules'],
@@ -269,7 +181,18 @@ export const ActionsSetting = withDynamicSchemaProps(
       [dynamicComponent, fieldSchema, options],
     );
 
-    return <SchemaComponent components={components} schema={schema} />;
+    return (
+      <SchemaComponent
+        components={components}
+        schema={schema}
+        scope={{
+          emptyParams: (field, target) => {
+            const params = field.query('.params').take(1);
+            params.value = [];
+          },
+        }}
+      />
+    );
 
     // return (
     //   // 这里使用 SubFormProvider 包裹，是为了让子表格的联动规则中 “当前对象” 的配置显示正确

@@ -44,7 +44,7 @@ export default function EventSelect(props: {
     <TreeSelect
       value={selectedEvent}
       dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
-      placeholder="Please select"
+      placeholder="选择事件"
       allowClear
       treeDefaultExpandAll
       onChange={(value) => {
