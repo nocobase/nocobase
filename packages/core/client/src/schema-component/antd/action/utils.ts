@@ -133,7 +133,7 @@ export const linkageAction = async ({
       if (await conditionAnalyses({ ruleGroup: condition, variables, localVariables })) {
         disableResult.push(false);
       } else {
-        disableResult.push(field.disabled);
+        disableResult.push(!!field.componentProps?.['disabled']);
       }
       field.stateOfLinkageRules = {
         ...field.stateOfLinkageRules,
