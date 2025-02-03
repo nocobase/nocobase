@@ -17,7 +17,6 @@ import {
 import { App as AntdApp } from 'antd';
 import { useForm } from '@formily/react';
 import { useT } from '../locale';
-import PluginBlockTemplateClient from '..';
 
 export function useDeleteAction() {
   const { message } = AntdApp.useApp();
@@ -27,7 +26,6 @@ export function useDeleteAction() {
   const collection = useCollection();
   const t = useT();
   const form = useForm();
-  const plugin = usePlugin(PluginBlockTemplateClient);
 
   return {
     async run() {
@@ -40,10 +38,6 @@ export function useDeleteAction() {
         filterByTk: record[collection.filterTargetKey],
         removeSchema: !keepBlocks,
       });
-      for (const key in plugin.templateschemacache) {
-        plugin.clearTemplateCache(key);
-      }
-      plugin.loadingPromises.clear();
 
       // Calculate pagination after deletion
       const currentPage = data?.['meta']?.page || 1;

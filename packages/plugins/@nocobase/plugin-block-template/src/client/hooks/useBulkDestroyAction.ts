@@ -12,7 +12,6 @@ import { useField } from '@formily/react';
 import { App } from 'antd';
 import { useT } from '../locale';
 import { useForm } from '@formily/react';
-import PluginBlockTemplateClient from '..';
 import { useTableBlockProps } from '@nocobase/client';
 
 export const useBulkDestroyAction = () => {
@@ -23,7 +22,6 @@ export const useBulkDestroyAction = () => {
   const t = useT();
   const form = useForm();
   const { message } = App.useApp();
-  const plugin = usePlugin(PluginBlockTemplateClient);
   const { onRowSelectionChange } = useTableBlockProps();
 
   return {
@@ -42,12 +40,6 @@ export const useBulkDestroyAction = () => {
           removeSchema: !form.values.keepBlocks,
         },
       });
-
-      // Clear template cache
-      for (const key in plugin.templateschemacache) {
-        plugin.clearTemplateCache(key);
-      }
-      plugin.loadingPromises.clear();
 
       // Reset selection
       onRowSelectionChange([], []);

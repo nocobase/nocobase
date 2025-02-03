@@ -13,14 +13,12 @@ import { useT } from '../locale';
 import { useParams } from 'react-router';
 import { Link } from 'react-router-dom';
 import { Breadcrumb, Spin, theme } from 'antd';
-import PluginBlockTemplateClient from '..';
 import { BlockTemplateInfoContext } from './BlockTemplateInfoContext';
 
 export const BlockTemplatePage = () => {
   const params = useParams();
   const { token } = theme.useToken();
   const t = useT();
-  const plugin = usePlugin(PluginBlockTemplateClient);
   const { data, loading } = useRequest<any>({
     url: `blockTemplates:get/${params.key}`,
   });
@@ -31,26 +29,6 @@ export const BlockTemplatePage = () => {
   }
 
   const schemaUid = data?.data?.uid;
-
-  const refreshTemplateSchemaCache = ({ data }) => {
-    const getUids = (schema) => {
-      const uids = [];
-      if (schema['x-uid']) {
-        uids.push(schema['x-uid']);
-      }
-      if (schema.properties) {
-        for (const key in schema.properties) {
-          uids.push(...getUids(schema.properties[key]));
-        }
-      }
-      return uids;
-    };
-    const uids = getUids(data);
-    uids.forEach((uid) => {
-      plugin.clearTemplateCache(uid);
-    });
-    plugin.loadingPromises.clear();
-  };
 
   return (
     <div>
@@ -77,7 +55,7 @@ export const BlockTemplatePage = () => {
       </div>
       <div style={{ marginTop: token.marginXL }}>
         <BlockTemplateInfoContext.Provider value={data?.data}>
-          <RemoteSchemaComponent onSuccess={refreshTemplateSchemaCache} uid={schemaUid} />
+          <RemoteSchemaComponent uid={schemaUid} />
         </BlockTemplateInfoContext.Provider>
       </div>
     </div>

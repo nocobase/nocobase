@@ -140,36 +140,6 @@ function convertTemplateToBlock(data, templateKey?: string) {
   return schemas;
 }
 
-function saveSchemasToCache(schemas: ISchema[], template: ISchema, setTemplateCache: (schema: ISchema) => void) {
-  const findTemplateSchema = (uid: string, tpl: ISchema) => {
-    if (tpl['x-uid'] === uid) {
-      return tpl;
-    }
-    if (tpl.properties) {
-      for (const key in tpl.properties) {
-        const t = findTemplateSchema(uid, tpl.properties[key]);
-        if (t) {
-          return t;
-        }
-      }
-    }
-  };
-  const saveSchemaToCache = (schema: ISchema) => {
-    if (schema['x-template-root-uid']) {
-      setTemplateCache(findTemplateSchema(schema['x-template-root-uid'], template));
-    } else {
-      if (schema.properties) {
-        for (const key in schema.properties) {
-          saveSchemaToCache(schema.properties[key]);
-        }
-      }
-    }
-  };
-  for (const schema of schemas) {
-    saveSchemaToCache(schema);
-  }
-}
-
 const SearchInput = ({ value: outValue, onChange }) => {
   const [value, setValue] = useState<string>(outValue);
   const inputRef = useRef<any>('');
@@ -259,7 +229,7 @@ export const TemplateBlockInitializer = () => {
 
     const template = data?.data;
     const schemas = convertTemplateToBlock(template, item.key);
-    saveSchemasToCache(schemas, template, plugin.setTemplateCache);
+    plugin.setTemplateCache(template);
     correctIdReferences(schemas);
     for (const schema of schemas) {
       await new Promise((resolve) => {
