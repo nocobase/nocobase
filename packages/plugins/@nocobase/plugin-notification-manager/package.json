@@ -6,7 +6,7 @@
   "description.zh-CN": "提供统一的管理服务，涵盖渠道配置、日志记录等功能，支持多种通知渠道的配置，包括站内信和电子邮件等。",
   "homepage": "https://docs.nocobase.com/handbook/notification-manager",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/notification-manager",
-  "version": "1.4.28",
+  "version": "1.4.34",
   "main": "dist/server/index.js",
   "devDependencies": {
     "@ant-design/icons": "5.x",
