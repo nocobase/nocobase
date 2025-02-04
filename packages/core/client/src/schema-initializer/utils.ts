@@ -177,7 +177,7 @@ export function useTableColumnInitializerFields() {
 }
 
 export function useAssociatedTableColumnInitializerFields() {
-  const { name, fields } = useCollection_deprecated();
+  const { fields } = useCollection_deprecated();
   const { t } = useTranslation();
   const { getInterface, getCollectionFields, getCollection } = useCollectionManager_deprecated();
   const groups = fields

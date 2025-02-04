@@ -150,7 +150,7 @@ const field2option = (field, depth, nonfilterable, dataSourceManager, collection
   return option;
 };
 
-const getOptions = _.memoize((fields, depth, nonfilterable, dataSourceManager, collectionManager) => {
+const getOptions = (fields, depth, nonfilterable, dataSourceManager, collectionManager) => {
   const options = [];
   fields.forEach((field) => {
     const option = field2option(field, depth, nonfilterable, dataSourceManager, collectionManager);
@@ -159,7 +159,7 @@ const getOptions = _.memoize((fields, depth, nonfilterable, dataSourceManager, c
     }
   });
   return options;
-});
+};
 
 export const useFilterFieldOptions = (fields) => {
   const fieldSchema = useFieldSchema();
@@ -192,6 +192,7 @@ export const removeNullCondition = (filter, customFlat = flat) => {
 export const useFilterActionProps = () => {
   const collection = useCollection();
   const options = useFilterOptions(collection?.name);
+  console.log(options);
   const props = useDataBlockProps();
   return useFilterFieldProps({ options, params: props?.params });
 };

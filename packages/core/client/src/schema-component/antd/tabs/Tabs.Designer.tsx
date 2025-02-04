@@ -60,7 +60,6 @@ export const TabsDesigner = () => {
               ['x-component-props']: props,
             },
           });
-          dn.refresh();
         }}
       />
       <SchemaSettingsDivider />

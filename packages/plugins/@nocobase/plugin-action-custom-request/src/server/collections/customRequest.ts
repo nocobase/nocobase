@@ -13,7 +13,7 @@ export default defineCollection({
   dumpRules: 'required',
   name: 'customRequests',
   autoGenId: false,
-  migrationRules: ['overwrite', 'skip'],
+  migrationRules: ['overwrite', 'schema-only'],
   fields: [
     {
       type: 'uid',

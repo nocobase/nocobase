@@ -17,7 +17,7 @@ describe('middleware', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['localization', 'client', 'ui-schema-storage', 'system-settings'],
+      plugins: ['localization', 'client', 'ui-schema-storage', 'system-settings', 'field-sort'],
     });
     await app.localeManager.load();
     agent = app.agent();

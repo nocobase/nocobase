@@ -13,7 +13,7 @@ import { ModelStatic } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
 import { Model } from './model';
-import { BelongsToArrayAssociation } from './relation-repository/belongs-to-array-repository';
+import { BelongsToArrayAssociation } from './belongs-to-array/belongs-to-array-repository';
 
 const debug = require('debug')('noco-database');
 

@@ -13,7 +13,7 @@ export default {
   dumpRules: {
     group: 'required',
   },
-  migrationRules: ['overwrite', 'skip'],
+  migrationRules: ['overwrite', 'schema-only'],
   shared: true,
   name: 'collectionCategories',
   autoGenId: true,

@@ -14,7 +14,7 @@ export default defineCollection({
   dumpRules: {
     group: 'third-party',
   },
-  migrationRules: ['overwrite', 'skip'],
+  migrationRules: ['overwrite', 'schema-only'],
   name: MapConfigurationCollectionName,
   shared: true,
   fields: [
