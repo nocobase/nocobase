@@ -24,6 +24,7 @@ import { uid } from '@nocobase/utils/client';
 import PluginBlockTemplateClient from '..';
 import { useT } from '../locale';
 import PluginMobileClient from '@nocobase/plugin-mobile/client';
+import { findBlockRootSchema } from '../utils/schema';
 
 export function convertTplBlock(tpl, virtual = false, isRoot = true, newRootId?: string, templateKey?: string) {
   if (!newRootId) {
@@ -229,7 +230,7 @@ export const TemplateBlockInitializer = () => {
 
     const template = data?.data;
     const schemas = convertTemplateToBlock(template, item.key);
-    plugin.setTemplateCache(template);
+    plugin.setTemplateCache(findBlockRootSchema(template['properties']?.['blocks']));
     correctIdReferences(schemas);
     for (const schema of schemas) {
       await new Promise((resolve) => {

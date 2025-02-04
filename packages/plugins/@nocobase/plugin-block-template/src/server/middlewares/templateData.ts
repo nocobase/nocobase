@@ -51,8 +51,12 @@ async function fillTemplateData(
   blockTemplateRepository: Repository,
 ) {
   const [uids, keys] = collectBlockTemplateData(schema);
-  schema['x-template-schemas'] = {};
-  schema['x-template-infos'] = {};
+  if (uids.size > 0) {
+    schema['x-template-schemas'] = {};
+  }
+  if (keys.size > 0) {
+    schema['x-template-infos'] = {};
+  }
   const chunkSize = 5;
   const uidChunks = _.chunk(Array.from(uids), chunkSize);
   for (const uidChunk of uidChunks) {

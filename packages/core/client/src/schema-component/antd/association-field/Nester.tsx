@@ -255,7 +255,7 @@ const ToManyNester = observer(
             return (
               <React.Fragment key={index}>
                 <div style={{ textAlign: 'right' }}>
-                  {!field.readPretty && allowed && !fieldSchema['x-template-uid'] && (
+                  {!field.readPretty && allowed && (!fieldSchema['x-template-uid'] || index > 0) && (
                     <Tooltip key={'remove'} title={t('Remove')}>
                       <CloseOutlined
                         style={{ zIndex: 1000, color: '#a8a3a3' }}
