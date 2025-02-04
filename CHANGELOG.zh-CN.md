@@ -5,6 +5,24 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.4.34](https://github.com/nocobase/nocobase/compare/v1.4.33...v1.4.34) - 2025-02-02
+
+### 🐛 修复
+
+- **[client]** 选择数据后无法提交 ([#6148](https://github.com/nocobase/nocobase/pull/6148)) by @zhangzhonghe
+
+## [v1.4.33](https://github.com/nocobase/nocobase/compare/v1.4.32...v1.4.33) - 2025-01-28
+
+### 🐛 修复
+
+- **[认证：OIDC]** 设置 state cookie 的 `same-site` 策略为 `lax` by @2013xile
+
+## [v1.4.32](https://github.com/nocobase/nocobase/compare/v1.4.31...v1.4.32) - 2025-01-27
+
+### 🐛 修复
+
+- **[actions]** 修复“移动”操作以触发工作流 ([#6144](https://github.com/nocobase/nocobase/pull/6144)) by @mytharcher
+
 ## [v1.4.31](https://github.com/nocobase/nocobase/compare/v1.4.30...v1.4.31) - 2025-01-26
 
 ### 🚀 优化
