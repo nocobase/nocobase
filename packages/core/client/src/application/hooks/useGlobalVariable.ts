@@ -13,7 +13,6 @@ import { useApp } from './';
 
 export const useGlobalVariable = (key: string) => {
   const app = useApp();
-
   const variable = useMemo(() => {
     return app.getGlobalVar(key);
   }, [app, key]);
@@ -28,4 +27,31 @@ export const useGlobalVariable = (key: string) => {
   }
 
   return variable;
+};
+
+export const useGlobalVariables = () => {
+  const app = useApp();
+
+  const result = useMemo(() => {
+    const variables = app.getGlobalVars();
+    const uniqueValues = new Set();
+
+    Object.entries(variables).forEach(([key, value]) => {
+      if (!value) return;
+
+      if (isFunction(value)) {
+        try {
+          uniqueValues.add(value());
+        } catch (error) {
+          console.error(`Error calling global variable function for key: ${key}`, error);
+        }
+      } else {
+        uniqueValues.add(value);
+      }
+    });
+
+    return [...uniqueValues];
+  }, [app]);
+
+  return result as any;
 };

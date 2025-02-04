@@ -313,6 +313,12 @@ export class Application {
       await this.pm.load();
     } catch (error) {
       this.hasLoadError = true;
+
+      //not trigger infinite reload when blocked ip
+      if (error?.response?.data?.errors?.[0]?.code === 'BLOCKED_IP') {
+        this.hasLoadError = false;
+      }
+
       if (this.ws.enabled) {
         await new Promise((resolve) => {
           setTimeout(() => resolve(null), 1000);
@@ -481,5 +487,8 @@ export class Application {
 
   getGlobalVar(key) {
     return get(this.globalVars, key);
+  }
+  getGlobalVars() {
+    return this.globalVars;
   }
 }
