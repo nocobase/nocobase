@@ -176,6 +176,13 @@ export function AssignedFieldValues() {
     'x-component': 'Grid',
     'x-initializer': 'assignFieldValuesForm:configureFields',
   };
+  if (fieldSchema['x-template-uid']) {
+    initialSchema['x-template-root-ref'] = {
+      'x-template-uid': fieldSchema['x-template-uid'],
+      'x-path': 'x-action-settings.schemaUid',
+    };
+  }
+
   const tips = {
     'customize:update': t(
       'After clicking the custom button, the following fields of the current record will be saved according to the following form.',

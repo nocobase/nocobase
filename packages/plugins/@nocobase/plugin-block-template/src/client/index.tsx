@@ -50,7 +50,7 @@ export class PluginBlockTemplateClient extends Plugin {
         delete s['x-template-schemas'];
       }
 
-      if (s['x-template-root-uid'] && s['version']) {
+      if (s['x-template-root-uid']) {
         const sc = getFullSchema(s, this.templateschemacache, this.templateInfos);
         this.pageBlocks[sc['x-uid']] = sc;
         return sc;

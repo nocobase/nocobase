@@ -22,6 +22,9 @@ export async function templateDataMiddleware(ctx: Context, next) {
     const schemaRepository = ctx.db.getRepository<UiSchemaRepository>('uiSchemas');
     const blockTemplateRepository = ctx.db.getRepository('blockTemplates');
 
+    // convert x-template-root-ref to x-template-root-uid
+    await convertTemplateRootRefToUid(schema, schemaRepository);
+
     // Fill template data, log error if any occurs
     await fillTemplateData(schema, schemaRepository, blockTemplateRepository).catch((e) => {
       ctx.logger.error(e);
@@ -29,20 +32,15 @@ export async function templateDataMiddleware(ctx: Context, next) {
   }
 }
 
-function collectBlockTemplateData(schema: Schema, data: [Set<string>, Set<string>] = [new Set(), new Set()]) {
-  if (schema?.['x-template-root-uid']) {
-    data[0].add(schema['x-template-root-uid']);
+async function convertTemplateRootRefToUid(schema: Schema, schemaRepository: UiSchemaRepository) {
+  if (schema?.['x-template-root-ref']) {
+    const rootParentUid = schema['x-template-root-ref']['x-template-uid'];
+    const rootParentSchema = await schemaRepository.getJsonSchema(rootParentUid, { readFromCache: true });
+    const templateRootUid = _.get(rootParentSchema, schema['x-template-root-ref']['x-path']);
+    if (templateRootUid) {
+      schema['x-template-root-uid'] = templateRootUid;
+    }
   }
-  if (schema?.['x-block-template-key']) {
-    data[1].add(schema['x-block-template-key']);
-  }
-  if (!schema?.properties) {
-    return data;
-  }
-  for (const property of Object.values(schema.properties)) {
-    collectBlockTemplateData(property, data);
-  }
-  return data;
 }
 
 async function fillTemplateData(
@@ -77,4 +75,20 @@ async function fillTemplateData(
   for (const template of templates) {
     schema['x-template-infos'][template.key] = template;
   }
+}
+
+function collectBlockTemplateData(schema: Schema, data: [Set<string>, Set<string>] = [new Set(), new Set()]) {
+  if (schema?.['x-template-root-uid']) {
+    data[0].add(schema['x-template-root-uid']);
+  }
+  if (schema?.['x-block-template-key']) {
+    data[1].add(schema['x-block-template-key']);
+  }
+  if (!schema?.properties) {
+    return data;
+  }
+  for (const property of Object.values(schema.properties)) {
+    collectBlockTemplateData(property, data);
+  }
+  return data;
 }

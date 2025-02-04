@@ -77,6 +77,12 @@ export function convertTplBlock(tpl, virtual = false, isRoot = true, newRootId?:
     if (tpl['x-component'] === 'CustomRequestAction') {
       newSchema['x-custom-request-id'] = tpl['x-custom-request-id'] || tpl['x-uid'];
     }
+    if (tpl['x-component'] === 'Action' && _.get(tpl, 'x-action-settings.schemaUid')){
+      newSchema['x-action-settings'] = {
+        schemaUid: '',
+      };
+    }
+
     // filter should be in tpl
     if (_.get(tpl, 'x-filter-targets')) {
       newSchema['x-filter-targets'] = tpl['x-filter-targets'];
