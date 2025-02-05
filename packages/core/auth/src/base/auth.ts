@@ -162,7 +162,7 @@ export class BaseAuth extends Auth {
         this.ctx.logger.info('token renewing', {
           method: 'auth.check',
           url: this.ctx.originalUrl,
-          ctx: JSON.stringify(this.ctx),
+          headers: JSON.stringify(this.ctx?.req?.headers),
         });
         const isStreamRequest = this.ctx.req.headers['accept'] === 'text/event-stream';
 
@@ -177,7 +177,7 @@ export class BaseAuth extends Auth {
         this.ctx.logger.info('token renewed', {
           method: 'auth.check',
           url: this.ctx.originalUrl,
-          ctx: JSON.stringify(this.ctx),
+          headers: JSON.stringify(this.ctx?.req?.headers),
         });
         const expiresIn = Math.floor(tokenPolicy.tokenExpirationTime / 1000);
         const newToken = this.jwt.sign({ userId, roleName, temp, signInTime }, { jwtid: renewedResult.jti, expiresIn });
@@ -188,7 +188,7 @@ export class BaseAuth extends Auth {
           method: 'auth.check',
           url: this.ctx.originalUrl,
           err,
-          ctx: JSON.stringify(this.ctx),
+          headers: JSON.stringify(this.ctx?.req?.headers),
         });
         const options =
           err instanceof AuthError

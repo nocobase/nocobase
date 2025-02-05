@@ -55,6 +55,12 @@ export function authCheckMiddleware({ app }: { app: Application }) {
       app.apiClient.auth.setToken(newToken);
     }
     if (error.status === 401 && !error.config?.skipAuth) {
+      const requestToken = error?.config?.headers.Authorization?.replace(/^Bearer\s+/gi, '');
+      const currentToken = app.apiClient.auth.getToken();
+      if (currentToken && currentToken !== requestToken) {
+        error.config.skipNotify = true;
+        return app.apiClient.request(error.config);
+      }
       app.apiClient.auth.setToken('');
       const errors = error?.response?.data?.errors;
       const firstError = Array.isArray(errors) ? errors[0] : null;
