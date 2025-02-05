@@ -75,7 +75,7 @@ export function authCheckMiddleware({ app }: { app: Application }) {
       const { pathname, search } = state.location;
       const basename = app.router.basename;
 
-      if (pathname !== app.getHref('signin') || ![AuthErrorCode.SKIP_TOKEN_RENEW].includes(firstError?.code)) {
+      if (pathname !== app.getHref('signin')) {
         const redirectPath = removeBasename(pathname, basename);
 
         debouncedRedirect(() => {
