@@ -40,6 +40,7 @@ import { menuItemInitializer } from '../../../modules/menu/menuItemInitializer';
 import { Help } from '../../../user/Help';
 import { KeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
+import { MenuSchemaToolbar } from './menuItemSettings';
 
 export { KeepAlive, NocoBaseDesktopRouteType };
 
@@ -56,21 +57,13 @@ export const useCurrentRoute = () => {
   return useContext(RouteContext) || {};
 };
 
-const useMenuProps = () => {
-  const currentPageUid = useCurrentPageUid();
-  return {
-    selectedUid: currentPageUid,
-    defaultSelectedUid: currentPageUid,
-  };
-};
-
 const emptyArray = [];
 const AllAccessDesktopRoutesContext = createContext<{
   allAccessRoutes: NocoBaseDesktopRoute[];
   refresh: () => void;
 }>({
   allAccessRoutes: emptyArray,
-  refresh: () => {},
+  refresh: () => { },
 });
 AllAccessDesktopRoutesContext.displayName = 'AllAccessDesktopRoutesContext';
 
@@ -244,7 +237,21 @@ const NocoBaseLogo = () => {
 };
 
 const MenuItem: FC<{ item: any }> = (props) => {
-  return <>{props.children}</>;
+  const { item } = props;
+
+  // "Add menu item" does not need SchemaToolbar
+  if (!item._route) {
+    return <>{props.children}</>;
+  }
+
+  return (
+    <div>
+      <RouteContext.Provider value={item._route}>
+        {props.children}
+        <MenuSchemaToolbar />
+      </RouteContext.Provider>
+    </div>
+  );
 };
 
 export const InternalAdminLayout = () => {
@@ -395,6 +402,7 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializ
           icon: <Icon type={item.icon} />,
           path: `/admin/${item.schemaUid}`,
           routes: convertRoutesToLayout(item.children, { renderInitializer, designable }),
+          _route: item,
         };
       }
 
@@ -403,6 +411,7 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializ
         icon: <Icon type={item.icon} />,
         path: `/admin/${item.schemaUid}`,
         routes: convertRoutesToLayout(item.children, { renderInitializer, designable }),
+        _route: item,
       };
     }),
   );

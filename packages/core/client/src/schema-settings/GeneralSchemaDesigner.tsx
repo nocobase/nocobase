@@ -18,13 +18,14 @@ import React, {
   //@ts-ignore
   startTransition,
   useCallback,
+  useContext,
   useEffect,
   useMemo,
   useRef,
   useState,
-  useContext,
 } from 'react';
 import { useTranslation } from 'react-i18next';
+import { SchemaComponentContext } from '../';
 import { SchemaInitializer, SchemaSettings, SchemaToolbarProvider, useSchemaInitializerRender } from '../application';
 import { useSchemaSettingsRender } from '../application/schema-settings/hooks/useSchemaSettingsRender';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
@@ -34,7 +35,6 @@ import { DragHandler, useCompile, useDesignable, useGridContext, useGridRowConte
 import { gridRowColWrap } from '../schema-initializer/utils';
 import { SchemaSettingsDropdown } from './SchemaSettings';
 import { useGetAriaLabelOfDesigner } from './hooks/useGetAriaLabelOfDesigner';
-import { SchemaComponentContext } from '../';
 import { useStyles } from './styles';
 
 const titleCss = css`
@@ -329,11 +329,6 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = React.memo((props) => {
         toolbarElement.classList.add(hiddenClassName);
         props.onVisibleChange?.(false);
       }
-    }
-
-    const style = window.getComputedStyle(parentElement);
-    if (style.position === 'static') {
-      parentElement.style.position = 'relative';
     }
 
     parentElement.addEventListener('mouseenter', show);
