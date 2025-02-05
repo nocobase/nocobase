@@ -109,6 +109,10 @@ export class BaseAuth extends Auth {
       });
     }
 
+    if (tokenStatus === 'valid' && Date.now() - iat * 1000 > tokenPolicy.tokenExpirationTime) {
+      tokenStatus = 'expired';
+    }
+
     const blocked = await this.jwt.blacklist.has(jti ?? token);
     if (blocked) {
       this.ctx.throw(401, {
