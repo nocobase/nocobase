@@ -23,7 +23,9 @@ import {
   RemoteSchemaComponent,
   RemoteSchemaTemplateManagerPlugin,
   RemoteSchemaTemplateManagerProvider,
+  useDesignable,
   useRequest,
+  useSchemaInitializerRender,
   useSystemSettings,
   useToken,
 } from '../../../';
@@ -34,6 +36,7 @@ import {
   useCurrentPageUid,
 } from '../../../application/CustomRouterContextProvider';
 import { Plugin } from '../../../application/Plugin';
+import { menuItemInitializer } from '../../../modules/menu/menuItemInitializer';
 import { Help } from '../../../user/Help';
 import { KeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
@@ -240,8 +243,14 @@ const NocoBaseLogo = () => {
   return <div className={className1}>{result?.loading ? null : logo}</div>;
 };
 
+const MenuItem: FC<{ item: any }> = (props) => {
+  return <>{props.children}</>;
+};
+
 export const InternalAdminLayout = () => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
+  const { render: renderInitializer } = useSchemaInitializerRender(menuItemInitializer);
+  const { designable } = useDesignable();
 
   return (
     <ProLayout
@@ -252,7 +261,7 @@ export const InternalAdminLayout = () => {
       `}
       route={{
         path: '/',
-        children: convertRoutesToLayout(allAccessRoutes),
+        children: convertRoutesToLayout(allAccessRoutes, { renderInitializer, designable }),
       }}
       actionsRender={(props) => {
         if (props.isMobile) return [];
@@ -278,6 +287,9 @@ export const InternalAdminLayout = () => {
         colorTextAppListIcon: '#fff',
         colorTextAppListIconHover: '#fff',
         colorBgAppListIconHover: '#fff',
+      }}
+      menuItemRender={(item, dom) => {
+        return <MenuItem item={item}>{dom}</MenuItem>;
       }}
     >
       <Layout.Header>
@@ -356,24 +368,42 @@ function getRouteNodeBySchemaUid(schemaUid: string, treeArray: any[]) {
   return null;
 }
 
-function convertRoutesToLayout(routes: NocoBaseDesktopRoute[]) {
+function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializer, designable }: any) {
   if (!routes) return;
 
-  return routes.map((item) => {
-    if (item.type === 'link') {
+  const result = [];
+
+  // add a designer button
+  if (designable) {
+    result.push({
+      key: 'x-designer-button',
+      name: renderInitializer({
+        style: { background: 'none' },
+        'data-testid': 'schema-initializer-Menu-header',
+      }),
+      path: '/',
+      disabled: true,
+      icon: <Icon type="setting" />,
+    });
+  }
+
+  return result.concat(
+    routes.map((item) => {
+      if (item.type === 'link') {
+        return {
+          name: item.title,
+          icon: <Icon type={item.icon} />,
+          path: `/admin/${item.schemaUid}`,
+          routes: convertRoutesToLayout(item.children, { renderInitializer, designable }),
+        };
+      }
+
       return {
         name: item.title,
         icon: <Icon type={item.icon} />,
         path: `/admin/${item.schemaUid}`,
-        routes: convertRoutesToLayout(item.children),
+        routes: convertRoutesToLayout(item.children, { renderInitializer, designable }),
       };
-    }
-
-    return {
-      name: item.title,
-      icon: <Icon type={item.icon} />,
-      path: `/admin/${item.schemaUid}`,
-      routes: convertRoutesToLayout(item.children),
-    };
-  });
+    }),
+  );
 }
