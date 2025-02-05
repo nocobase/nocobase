@@ -75,6 +75,33 @@ const EditMenuItem = () => {
   />
 }
 
+const HiddenMenuItem = () => {
+  const { t } = useTranslation();
+  const currentRoute = useCurrentRoute();
+  const { updateRoute } = useNocoBaseRoutes();
+
+  return <SchemaSettingsSwitchItem
+    title={t('Hidden')}
+    checked={currentRoute.hideInMenu}
+    onChange={(value) => {
+      Modal.confirm({
+        title: t('Are you sure you want to hide this menu?'),
+        icon: <ExclamationCircleFilled />,
+        content: t(
+          'After hiding, this menu will no longer appear in the menu bar. To show it again, you need to go to the route management page to configure it.',
+        ),
+        async onOk() {
+          if (currentRoute.id !== undefined) {
+            await updateRoute(currentRoute.id, {
+              hideInMenu: !!value,
+            });
+          }
+        },
+      });
+    }}
+  />
+}
+
 export const menuItemSettings = new SchemaSettings({
   name: 'menuSettings:menuItem',
   items: [
@@ -84,32 +111,7 @@ export const menuItemSettings = new SchemaSettings({
     },
     {
       name: 'hidden',
-      Component: () => {
-        const { t } = useTranslation();
-        const currentRoute = useCurrentRoute();
-        const { updateRoute } = useNocoBaseRoutes();
-
-        return <SchemaSettingsSwitchItem
-          title={t('Hidden')}
-          checked={currentRoute.hideInMenu}
-          onChange={(value) => {
-            Modal.confirm({
-              title: t('Are you sure you want to hide this menu?'),
-              icon: <ExclamationCircleFilled />,
-              content: t(
-                'After hiding, this menu will no longer appear in the menu bar. To show it again, you need to go to the route management page to configure it.',
-              ),
-              async onOk() {
-                if (currentRoute.id !== undefined) {
-                  await updateRoute(currentRoute.id, {
-                    hideInMenu: !!value,
-                  });
-                }
-              },
-            });
-          }}
-        />
-      },
+      Component: HiddenMenuItem,
     },
   ],
 });
