@@ -26,7 +26,11 @@ import {
 } from '../../../data-source/collection-record/CollectionRecordProvider';
 import { isNewRecord, markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
 import { FlagProvider } from '../../../flag-provider';
-import { NocoBaseRecursionField, RefreshComponentProvider } from '../../../formily/NocoBaseRecursionField';
+import {
+  NocoBaseRecursionField,
+  RefreshComponentProvider,
+  useRefreshComponent,
+} from '../../../formily/NocoBaseRecursionField';
 import { RecordIndexProvider, RecordProvider } from '../../../record-provider';
 import { isPatternDisabled, isSystemField } from '../../../schema-settings';
 import {
@@ -116,6 +120,12 @@ const ToManyNester = observer(
     const recordData = useCollectionRecordData();
     const collection = useCollection();
     const update = useUpdate();
+    const refreshComponent = useRefreshComponent();
+
+    const refresh = useCallback(() => {
+      update();
+      refreshComponent?.();
+    }, [update, refreshComponent]);
 
     if (!Array.isArray(field.value)) {
       field.value = [];
@@ -156,7 +166,7 @@ const ToManyNester = observer(
           }
         `}
       >
-        <RefreshComponentProvider refresh={update}>
+        <RefreshComponentProvider refresh={refresh}>
           {field.value.map((value, index) => {
             let allowed = allowDissociate;
             if (!allowDissociate) {

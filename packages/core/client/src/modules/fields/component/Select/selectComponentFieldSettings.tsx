@@ -191,6 +191,9 @@ const quickCreate: any = {
               title: "{{t('Add new')}}",
               // 'x-designer': 'Action.Designer',
               'x-toolbar': 'ActionSchemaToolbar',
+              'x-toolbar-props': {
+                draggable: false,
+              },
               'x-settings': 'actionSettings:addNew',
               'x-component': 'Action',
               'x-decorator': 'ACLActionProvider',
@@ -440,7 +443,13 @@ export const filterSelectComponentFieldSettings = new SchemaSettings({
         return isSelectFieldMode && !isFieldReadPretty;
       },
     },
-    getAllowMultiple({ title: 'Allow multiple selection' }),
+    {
+      ...getAllowMultiple({ title: 'Allow multiple selection' }),
+      useVisible() {
+        const field = useField();
+        return field.componentProps.multiple !== false;
+      },
+    },
     {
       ...titleField,
       useVisible: useIsAssociationField,

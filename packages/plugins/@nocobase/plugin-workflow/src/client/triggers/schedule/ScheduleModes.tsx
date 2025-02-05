@@ -7,9 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { NAMESPACE } from '../../locale';
+import React from 'react';
+import { DatePicker } from 'antd';
+import { NAMESPACE, lang } from '../../locale';
 import { appends, collection } from '../../schemas/collection';
 import { SCHEDULE_MODE } from './constants';
+import { dayjs } from '@nocobase/utils/client';
 
 export const ScheduleModes = {
   [SCHEDULE_MODE.STATIC]: {
@@ -73,12 +76,27 @@ export const ScheduleModes = {
         type: 'string',
         title: `{{t('Execute on', { ns: "${NAMESPACE}" })}}`,
         'x-decorator': 'FormItem',
-        'x-component': 'DatePicker',
+        'x-component': 'WorkflowVariableWrapper',
         'x-component-props': {
-          showTime: true,
-          placeholder: `{{t('Current time', { ns: "${NAMESPACE}" })}}`,
+          // showTime: true,
+          // placeholder: `{{t('Current time', { ns: "${NAMESPACE}" })}}`,
+          nullable: false,
+          changeOnSelect: true,
+          render(props) {
+            return (
+              <DatePicker
+                showTime
+                placeholder={lang('Current time')}
+                {...props}
+                value={dayjs(props.value || new Date())}
+              />
+            );
+          },
         },
       },
+    },
+    validate(config) {
+      return Boolean(config.startsOn);
     },
   },
   [SCHEDULE_MODE.DATE_FIELD]: {
@@ -180,7 +198,7 @@ export const ScheduleModes = {
       data: {
         type: 'object',
         title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
-        description: `{{t("Choose a record of the collection to trigger.", { ns: "${NAMESPACE}" })}}`,
+        description: `{{t("Choose a record or an ID reference of the collection to trigger.", { ns: "${NAMESPACE}" })}}`,
         'x-decorator': 'FormItem',
         'x-component': 'TriggerCollectionRecordSelect',
         default: null,

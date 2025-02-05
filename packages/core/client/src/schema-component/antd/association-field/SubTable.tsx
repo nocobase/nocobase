@@ -87,7 +87,7 @@ const tableClassName = css`
 export const SubTable: any = observer(
   (props: any) => {
     const { openSize } = props;
-    const { field, options: collectionField } = useAssociationFieldContext<ArrayField>();
+    const { field, options: collectionField, fieldSchema: schema } = useAssociationFieldContext<ArrayField>();
     const { t } = useTranslation();
     const [visibleSelector, setVisibleSelector] = useState(false);
     const [selectedRows, setSelectedRows] = useState([]);
@@ -98,7 +98,9 @@ export const SubTable: any = observer(
     const recordV2 = useCollectionRecord();
     const collection = useCollection();
     const { allowSelectExistingRecord, allowAddnew, allowDisassociation } = field.componentProps;
-    useSubTableSpecialCase({ field });
+
+    useSubTableSpecialCase({ rootField: field, rootSchema: schema });
+
     const move = (fromIndex: number, toIndex: number) => {
       if (toIndex === undefined) return;
       if (!isArr(field.value)) return;
@@ -151,7 +153,11 @@ export const SubTable: any = observer(
       const { selectedRows, setSelectedRows } = useContext(RecordPickerContext);
       return {
         onClick() {
-          selectedRows.map((v) => field.value.push(markRecordAsNew(v)));
+          if (!Array.isArray(field.value)) {
+            field.value = [];
+          }
+
+          selectedRows.forEach((v) => field.value.push(markRecordAsNew(v)));
           field.onInput(field.value);
           field.initialValue = field.value;
           setSelectedRows([]);
@@ -226,7 +232,8 @@ export const SubTable: any = observer(
                   showIndex
                   dragSort={false}
                   showDel={
-                    allowAddnew !== false || allowSelectExistingRecord !== false || allowDisassociation !== false
+                    field.editable &&
+                    (allowAddnew !== false || allowSelectExistingRecord !== false || allowDisassociation !== false)
                       ? (record) => {
                           if (!field.editable) {
                             return false;

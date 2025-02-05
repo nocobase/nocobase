@@ -150,9 +150,9 @@ export const calendarBlockSettings = new SchemaSettings({
           title: t('Default view'),
           value: field['decoratorProps']['defaultView'] || 'month',
           options: [
-            { value: 'month', label: '月' },
-            { value: 'week', label: '周' },
-            { value: 'day', label: '天' },
+            { value: 'month', label: t('Month') },
+            { value: 'week', label: t('Week') },
+            { value: 'day', label: t('Day') },
           ],
           onChange: (v) => {
             field.decoratorProps.defaultView = v;

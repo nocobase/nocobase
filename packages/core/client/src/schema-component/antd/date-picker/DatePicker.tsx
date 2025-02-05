@@ -15,7 +15,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getPickerFormat, getDateTimeFormat } from '@nocobase/utils/client';
 import { useTranslation } from 'react-i18next';
 import { ReadPretty, ReadPrettyComposed } from './ReadPretty';
-import { getDateRanges, mapDatePicker, mapRangePicker, inferPickerType } from './util';
+import { getDateRanges, mapDatePicker, mapRangePicker, inferPickerType, isMobile } from './util';
 import { useCompile } from '../../';
 import { useVariables, useLocalVariables, isVariable } from '../../../variables';
 import { autorun } from '@formily/reactive';
@@ -205,10 +205,9 @@ DatePicker.RangePicker = function RangePicker(props: any) {
     ...props,
     format: getDateTimeFormat(targetPicker, targetDateFormat, showTime, timeFormat),
     picker: targetPicker,
-    showTime: showTime ? { defaultValue: [dayjs('00:00:00', 'HH:mm:ss'), dayjs('00:00:00', 'HH:mm:ss')] } : false,
+    showTime: showTime ? { defaultValue: [dayjs('00:00:00', 'HH:mm:ss'), dayjs('23:59:59', 'HH:mm:ss')] } : false,
   };
   const [stateProps, setStateProps] = useState(newProps);
-
   if (isFilterAction) {
     return (
       <Space.Compact>
@@ -265,6 +264,7 @@ DatePicker.RangePicker = function RangePicker(props: any) {
 
 DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
   const { picker = 'date', format, showTime, timeFormat } = props;
+  const isMobileMedia = isMobile();
   const { utc = true } = useDatePickerContext();
   const value = Array.isArray(props.value) ? props.value[0] : props.value;
   const compile = useCompile();
@@ -273,6 +273,7 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
   const targetDateFormat = getPickerFormat(targetPicker) || format;
   const newProps = {
     utc,
+    inputReadOnly: isMobileMedia,
     ...props,
     underFilter: true,
     showTime: showTime ? { defaultValue: dayjs('00:00:00', 'HH:mm:ss') } : false,

@@ -168,6 +168,18 @@ const workflowFieldset = {
           multiple: true,
         },
       },
+      stackLimit: {
+        type: 'number',
+        title: `{{ t("Maximum number of cycling triggers", { ns: "${NAMESPACE}" }) }}`,
+        description: `{{ t("The triggers of same workflow by some node (create, update and sub-flow etc.) more than this number will be ignored. Large number may cause performance issues. Please use with caution.", { ns: "${NAMESPACE}" }) }}`,
+        'x-decorator': 'FormItem',
+        default: 1,
+        'x-component': 'InputNumber',
+        'x-component-props': {
+          min: 1,
+          precision: 0,
+        },
+      },
     },
   },
 };

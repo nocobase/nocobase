@@ -306,15 +306,15 @@ export const TriggerConfig = () => {
               name: `workflow-trigger-${workflow.id}`,
               type: 'void',
               properties: {
-                config: {
-                  type: 'void',
-                  'x-content': detailText,
-                  'x-component': Button,
-                  'x-component-props': {
-                    type: 'link',
-                    className: 'workflow-node-config-button',
-                  },
-                },
+                // config: {
+                //   type: 'void',
+                //   'x-content': detailText,
+                //   'x-component': Button,
+                //   'x-component-props': {
+                //     type: 'link',
+                //     className: 'workflow-node-config-button',
+                //   },
+                // },
                 drawer: {
                   type: 'void',
                   title: titleText,

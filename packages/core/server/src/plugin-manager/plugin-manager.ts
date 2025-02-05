@@ -263,11 +263,11 @@ export class PluginManager {
     return this.app.pm.pluginAliases.keys();
   }
 
-  get(name: string | typeof Plugin) {
+  get<T extends Plugin>(name: string | typeof Plugin | (new () => T)): T {
     if (typeof name === 'string') {
-      return this.app.pm.pluginAliases.get(name);
+      return this.app.pm.pluginAliases.get(name) as any;
     }
-    return this.app.pm.pluginInstances.get(name);
+    return this.app.pm.pluginInstances.get(name as any) as any;
   }
 
   has(name: string | typeof Plugin) {
@@ -277,7 +277,7 @@ export class PluginManager {
     return this.app.pm.pluginInstances.has(name);
   }
 
-  del(name: string | typeof Plugin) {
+  del(name: any) {
     const instance = this.get(name);
     if (instance) {
       this.app.pm.pluginAliases.delete(instance.name);
@@ -394,16 +394,21 @@ export class PluginManager {
     const packageNames: string[] = items.map((item) => item.packageName);
     const source = [];
     for (const packageName of packageNames) {
-      const dirname = await getPluginBasePath(packageName);
-      const directory = join(dirname, 'server/commands/*.' + (basename(dirname) === 'src' ? 'ts' : 'js'));
+      try {
+        const dirname = await getPluginBasePath(packageName);
+        const directory = join(dirname, 'server/commands/*.' + (basename(dirname) === 'src' ? '{ts,js}' : 'js'));
 
-      source.push(directory.replaceAll(sep, '/'));
+        source.push(directory.replaceAll(sep, '/'));
+      } catch (error) {
+        this.app.log.error(error);
+        continue;
+      }
     }
     for (const plugin of this.options.plugins || []) {
       if (typeof plugin === 'string') {
         const { packageName } = await PluginManager.parseName(plugin);
         const dirname = await getPluginBasePath(packageName);
-        const directory = join(dirname, 'server/commands/*.' + (basename(dirname) === 'src' ? 'ts' : 'js'));
+        const directory = join(dirname, 'server/commands/*.' + (basename(dirname) === 'src' ? '{ts,js}' : 'js'));
         source.push(directory.replaceAll(sep, '/'));
       }
     }
@@ -411,6 +416,7 @@ export class PluginManager {
       ignore: ['**/*.d.ts'],
       cwd: process.env.NODE_MODULES_PATH,
     });
+
     for (const file of files) {
       const callback = await importModule(file);
       callback(this.app);

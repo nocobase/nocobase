@@ -228,6 +228,9 @@ export const usersSchema: ISchema = {
                     password: {
                       'x-component': 'CollectionField',
                       'x-decorator': 'FormItem',
+                      'x-component-props': {
+                        autoComplete: 'new-password',
+                      },
                       required: true,
                     },
                     roles: {

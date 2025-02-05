@@ -14,6 +14,7 @@ import { observer, useForm } from '@formily/react';
 import {
   ActionContextProvider,
   css,
+  cx,
   SchemaComponent,
   useActionContext,
   useAPIClient,
@@ -68,6 +69,7 @@ export function AddButton(props: AddButtonProps) {
             'aria-label': item.type,
             key: item.type,
             label: item.title,
+            icon: item.icon,
           })),
         };
       })
@@ -89,7 +91,7 @@ export function AddButton(props: AddButtonProps) {
   }
 
   return (
-    <div className={styles.addButtonClass}>
+    <div className={cx(styles.addButtonClass, 'workflow-add-node-button')}>
       <Dropdown
         menu={{
           items: groups,
@@ -100,6 +102,10 @@ export function AddButton(props: AddButtonProps) {
           .ant-dropdown-menu-root {
             max-height: 30em;
             overflow-y: auto;
+          }
+          .ant-dropdown-menu-item-group-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
           }
         `}
       >

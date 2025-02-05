@@ -19,7 +19,7 @@ export class ToManyInterface extends BaseInterface {
 
     const items = str.split(',');
 
-    const { filterKey, targetCollection, transaction } = ctx;
+    const { filterKey, targetCollection, transaction, field } = ctx;
 
     const targetInstances = await targetCollection.repository.find({
       filter: {
@@ -36,7 +36,19 @@ export class ToManyInterface extends BaseInterface {
     });
 
     const primaryKeyAttribute = targetCollection.model.primaryKeyAttribute;
+    const targetKey = field.options.targetKey;
 
-    return targetInstances.map((targetInstance) => targetInstance[primaryKeyAttribute]);
+    const values = targetInstances.map((targetInstance) => {
+      const result = {
+        [targetKey]: targetInstance[targetKey],
+      };
+
+      if (targetKey !== primaryKeyAttribute) {
+        result[primaryKeyAttribute] = targetInstance[primaryKeyAttribute];
+      }
+
+      return result;
+    });
+    return values;
   }
 }

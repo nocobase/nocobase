@@ -22,6 +22,7 @@ import {
   FindOptions as SequelizeFindOptions,
   UpdateOptions as SequelizeUpdateOptions,
   Transactionable,
+  Utils,
   WhereOperators,
 } from 'sequelize';
 
@@ -37,7 +38,7 @@ import FilterParser from './filter-parser';
 import { Model } from './model';
 import operators from './operators';
 import { OptionsParser } from './options-parser';
-import { BelongsToArrayRepository } from './relation-repository/belongs-to-array-repository';
+import { BelongsToArrayRepository } from './belongs-to-array/belongs-to-array-repository';
 import { BelongsToManyRepository } from './relation-repository/belongs-to-many-repository';
 import { BelongsToRepository } from './relation-repository/belongs-to-repository';
 import { HasManyRepository } from './relation-repository/hasmany-repository';
@@ -420,6 +421,10 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
       rows = eagerLoadingTree.root.instances;
     } else {
+      if (opts.where && model.primaryKeyAttributes.length === 0) {
+        opts.where = Utils.mapWhereFieldNames(opts.where, model);
+      }
+
       rows = await model.findAll({
         ...opts,
         transaction,
@@ -726,7 +731,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       }
     }
 
-    if (filterByTk && !options.filter) {
+    if (filterByTk && !isValidFilter(options.filter)) {
       const where = [];
 
       for (const tk of filterByTk) {
