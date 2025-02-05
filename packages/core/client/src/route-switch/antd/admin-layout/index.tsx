@@ -402,6 +402,7 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializ
           icon: <Icon type={item.icon} />,
           path: `/admin/${item.schemaUid}`,
           routes: convertRoutesToLayout(item.children, { renderInitializer, designable }),
+          hideInMenu: item.hideInMenu,
           _route: item,
         };
       }
@@ -411,6 +412,7 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializ
         icon: <Icon type={item.icon} />,
         path: `/admin/${item.schemaUid}`,
         routes: convertRoutesToLayout(item.children, { renderInitializer, designable }),
+        hideInMenu: item.hideInMenu,
         _route: item,
       };
     }),

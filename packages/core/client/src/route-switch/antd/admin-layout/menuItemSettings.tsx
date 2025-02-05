@@ -1,10 +1,12 @@
+import { ExclamationCircleFilled } from "@ant-design/icons";
 import { ISchema } from "@formily/react";
+import { Modal } from 'antd';
 import React, { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { NocoBaseDesktopRouteType, useCurrentRoute, useNocoBaseRoutes, useURLAndHTMLSchema } from "../../..";
 import { SchemaSettings } from "../../../application/schema-settings/SchemaSettings";
 import { SchemaToolbar } from "../../../schema-settings/GeneralSchemaDesigner";
-import { SchemaSettingsModalItem } from "../../../schema-settings/SchemaSettings";
+import { SchemaSettingsModalItem, SchemaSettingsSwitchItem } from "../../../schema-settings/SchemaSettings";
 
 const EditMenuItem = () => {
   const { t } = useTranslation();
@@ -79,6 +81,35 @@ export const menuItemSettings = new SchemaSettings({
     {
       name: 'edit',
       Component: EditMenuItem,
+    },
+    {
+      name: 'hidden',
+      Component: () => {
+        const { t } = useTranslation();
+        const currentRoute = useCurrentRoute();
+        const { updateRoute } = useNocoBaseRoutes();
+
+        return <SchemaSettingsSwitchItem
+          title={t('Hidden')}
+          checked={currentRoute.hideInMenu}
+          onChange={(value) => {
+            Modal.confirm({
+              title: t('Are you sure you want to hide this menu?'),
+              icon: <ExclamationCircleFilled />,
+              content: t(
+                'After hiding, this menu will no longer appear in the menu bar. To show it again, you need to go to the route management page to configure it.',
+              ),
+              async onOk() {
+                if (currentRoute.id !== undefined) {
+                  await updateRoute(currentRoute.id, {
+                    hideInMenu: !!value,
+                  });
+                }
+              },
+            });
+          }}
+        />
+      },
     },
   ],
 });
