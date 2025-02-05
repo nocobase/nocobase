@@ -1,12 +1,32 @@
 import { ExclamationCircleFilled } from "@ant-design/icons";
+import { TreeSelect } from '@formily/antd-v5';
+import { Field, onFieldChange } from '@formily/core';
 import { ISchema } from "@formily/react";
 import { Modal } from 'antd';
 import React, { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { NocoBaseDesktopRouteType, useCurrentRoute, useNocoBaseRoutes, useURLAndHTMLSchema } from "../../..";
+import { isVariable, NocoBaseDesktopRouteType, useAllAccessDesktopRoutes, useCompile, useCurrentRoute, useNocoBaseRoutes, useURLAndHTMLSchema } from "../../..";
 import { SchemaSettings } from "../../../application/schema-settings/SchemaSettings";
 import { SchemaToolbar } from "../../../schema-settings/GeneralSchemaDesigner";
 import { SchemaSettingsModalItem, SchemaSettingsSwitchItem } from "../../../schema-settings/SchemaSettings";
+import { NocoBaseDesktopRoute } from "./convertRoutesToSchema";
+
+const components = { TreeSelect };
+
+const toItems = (routes: NocoBaseDesktopRoute[], { t, compile }) => {
+  const items = [];
+  for (const route of routes) {
+    const item = {
+      label: isVariable(route.title) ? compile(route.title) : t(route.title),
+      value: `${route.id}||${route.type}`,
+    };
+    if (route.children?.length > 0) {
+      item['children'] = toItems(route.children, { t, compile });
+    }
+    items.push(item);
+  }
+  return items;
+};
 
 const EditMenuItem = () => {
   const { t } = useTranslation();
@@ -102,6 +122,98 @@ const HiddenMenuItem = () => {
   />
 }
 
+const MoveToMenuItem = () => {
+  const { t } = useTranslation();
+  const effects = useCallback(
+    (form) => {
+      onFieldChange('target', (field: Field) => {
+        const [, type] = field?.value?.split?.('||') || [];
+        field.query('position').take((f: Field) => {
+          f.dataSource =
+            type === NocoBaseDesktopRouteType.group
+              ? [
+                { label: t('Before'), value: 'beforeBegin' },
+                { label: t('After'), value: 'afterEnd' },
+                { label: t('Inner'), value: 'beforeEnd' },
+              ]
+              : [
+                { label: t('Before'), value: 'beforeBegin' },
+                { label: t('After'), value: 'afterEnd' },
+              ];
+        });
+      });
+    },
+    [t],
+  );
+  const compile = useCompile();
+  const { allAccessRoutes } = useAllAccessDesktopRoutes();
+  const items = useMemo(() => toItems(allAccessRoutes, { t, compile }), []);
+  const modalSchema = useMemo(() => {
+    return {
+      type: 'object',
+      title: t('Move to'),
+      properties: {
+        target: {
+          title: t('Target'),
+          enum: items,
+          required: true,
+          'x-decorator': 'FormItem',
+          'x-component': 'TreeSelect',
+          'x-component-props': {},
+        },
+        position: {
+          title: t('Position'),
+          required: true,
+          enum: [
+            { label: t('Before'), value: 'beforeBegin' },
+            { label: t('After'), value: 'afterEnd' },
+          ],
+          default: 'afterEnd',
+          'x-component': 'Radio.Group',
+          'x-decorator': 'FormItem',
+        },
+      },
+    } as ISchema;
+  }, [items, t]);
+
+  const { moveRoute } = useNocoBaseRoutes();
+  const currentRoute = useCurrentRoute();
+  const onMoveToSubmit: (values: any) => void = useCallback(
+    async ({ target, position }) => {
+      const [targetId] = target?.split?.('||') || [];
+      if (!targetId) {
+        return;
+      }
+
+      if (targetId === undefined || !currentRoute) {
+        return;
+      }
+
+      const positionToMethod = {
+        beforeBegin: 'prepend',
+        afterEnd: 'insertAfter',
+      };
+
+      await moveRoute({
+        sourceId: currentRoute.id as any,
+        targetId: targetId,
+        sortField: 'sort',
+        method: positionToMethod[position],
+      });
+    },
+    [],
+  );
+
+  return <SchemaSettingsModalItem
+    title={t('Move to')}
+    eventKey="move-to"
+    components={components}
+    effects={effects}
+    schema={modalSchema}
+    onSubmit={onMoveToSubmit}
+  />
+}
+
 export const menuItemSettings = new SchemaSettings({
   name: 'menuSettings:menuItem',
   items: [
@@ -112,6 +224,10 @@ export const menuItemSettings = new SchemaSettings({
     {
       name: 'hidden',
       Component: HiddenMenuItem,
+    },
+    {
+      name: 'moveTo',
+      Component: MoveToMenuItem,
     },
   ],
 });
