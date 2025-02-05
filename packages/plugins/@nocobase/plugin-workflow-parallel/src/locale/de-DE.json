@@ -1,0 +1,11 @@
+{
+    "Parallel branch": "Parallel branch",
+    "Run multiple branch processes in parallel.": "Run multiple branch processes in parallel.",
+    "Add branch": "Add branch",
+    "All succeeded": "All succeeded",
+    "Any succeeded": "Any succeeded",
+    "Any succeeded or failed": "Any succeeded or failed",
+    "Continue after all branches succeeded": "Continue after all branches succeeded",
+    "Continue after any branch succeeded": "Continue after any branch succeeded",
+    "Continue after any branch succeeded, or exit after any branch failed.": "Continue after any branch succeeded, or exit after any branch failed."
+}
