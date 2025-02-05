@@ -164,7 +164,7 @@ export class BaseAuth extends Auth {
 
         if (isStreamRequest) {
           this.ctx.throw(401, {
-            message: 'Stream api not allow renew token',
+            message: 'Stream api not allow renew token.',
             code: AuthErrorCode.SKIP_TOKEN_RENEW,
           });
         }
@@ -188,12 +188,12 @@ export class BaseAuth extends Auth {
         });
         const options =
           err instanceof AuthError
-            ? { type: err.code, message: err.message }
-            : { message: err.message, type: AuthErrorCode.INVALID_TOKEN };
+            ? { code: err.code, message: err.message }
+            : { message: err.message, code: err.code ?? AuthErrorCode.INVALID_TOKEN };
 
         this.ctx.throw(401, {
           message: this.ctx.t(options.message, { ns: localeNamespace }),
-          code: options.type,
+          code: options.code,
         });
       }
     }
