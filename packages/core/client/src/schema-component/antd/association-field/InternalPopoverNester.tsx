@@ -11,7 +11,6 @@ import { EditOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer, useFieldSchema } from '@formily/react';
 import React, { useCallback, useContext, useMemo, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { ActionContext, ActionContextProvider } from '../action/context';
 import { useGetAriaLabelOfPopover } from '../action/hooks/useGetAriaLabelOfPopover';
 import { useSetAriaLabelForPopover } from '../action/hooks/useSetAriaLabelForPopover';
@@ -41,9 +40,8 @@ export const InternalPopoverNester = observer(
     }) => React.ReactElement;
     children?: React.ReactElement;
   }) => {
-    const { options } = useAssociationFieldContext();
+    const { field } = useAssociationFieldContext();
     const [visible, setVisible] = useState(false);
-    const { t } = useTranslation();
     const schema = useFieldSchema();
     schema['x-component-props'].enableLink = false;
     const ref = useRef();
@@ -81,7 +79,7 @@ export const InternalPopoverNester = observer(
           placement="topLeft"
           open={visible}
           onOpenChange={handleOpenChange}
-          title={t(options?.uiSchema?.rawTitle)}
+          title={field?.title || ''}
         >
           <span style={{ cursor: 'pointer', display: 'flex' }}>
             <div
