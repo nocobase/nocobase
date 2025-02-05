@@ -223,15 +223,18 @@ const VariablesProvider = ({ children, filterVariables }: any) => {
     [setCtx],
   );
 
-  const getVariable = useCallback((variableName: string): VariableOption => {
-    if (!ctxRef.current[variableName]) {
-      return null;
-    }
+  const getVariable = useCallback(
+    (variableName: string): VariableOption => {
+      if (!ctxRef.current[variableName] && !builtinVariables.find((v) => v.name === variableName)) {
+        return null;
+      }
 
-    return {
-      ...variablesStore[variableName],
-    };
-  }, []);
+      return {
+        ...variablesStore[variableName],
+      };
+    },
+    [builtinVariables],
+  );
 
   const removeVariable = useCallback(
     (variableName: string) => {
@@ -338,7 +341,6 @@ const VariablesProvider = ({ children, filterVariables }: any) => {
       }) as VariablesContextType,
     [getCollectionField, getVariable, parseVariable, registerVariable, removeVariable, setCtx],
   );
-
   return <VariablesContext.Provider value={value}>{children}</VariablesContext.Provider>;
 };
 

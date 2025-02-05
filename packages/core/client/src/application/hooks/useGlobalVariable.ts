@@ -10,6 +10,7 @@
 import { isFunction } from 'lodash';
 import { useMemo } from 'react';
 import { useApp } from './';
+import { VariableOption } from '../../variables/types';
 
 export const useGlobalVariable = (key: string) => {
   const app = useApp();
@@ -54,4 +55,20 @@ export const useGlobalVariables = () => {
   }, [app]);
 
   return result as any;
+};
+
+//获取全局变量的值
+export const useGlobalVariablesCtx = () => {
+  const app = useApp();
+  const variablesCtx = app.getGlobalVarsCtx();
+  const uniqueValues = new Set();
+  Object.entries(variablesCtx).forEach(([key, value]) => {
+    if (!value) return;
+    uniqueValues.add({
+      name: key,
+      ctx: value,
+    });
+  });
+
+  return [...uniqueValues] as VariableOption[];
 };
