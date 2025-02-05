@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useRequest, RemoteSchemaComponent, usePlugin } from '@nocobase/client';
+import { useRequest, RemoteSchemaComponent } from '@nocobase/client';
 import React from 'react';
 import { useT } from '../locale';
 import { useParams } from 'react-router';
@@ -53,7 +53,7 @@ export const BlockTemplatePage = () => {
           ]}
         />
       </div>
-      <div style={{ marginTop: token.marginXL }}>
+      <div style={{ marginTop: token.marginXL, position: 'relative', zIndex: 0 /** create a new z-index context */ }}>
         <BlockTemplateInfoContext.Provider value={data?.data}>
           <RemoteSchemaComponent uid={schemaUid} />
         </BlockTemplateInfoContext.Provider>
