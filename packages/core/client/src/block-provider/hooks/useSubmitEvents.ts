@@ -55,10 +55,22 @@ export function useSubmitEvents() {
   });
   return {
     emitBeforeSubmit: async (values: any) => {
-      await emit({ name: 'formSubmit', eventName: 'beforeSubmit', params: { values } });
+      await emit({
+        event: {
+          definition: 'formSubmit',
+          event: 'beforeSubmit',
+        },
+        params: { values },
+      });
     },
     emitAfterSubmit: async (values: any) => {
-      await emit({ name: 'formSubmit', eventName: 'afterSubmit', params: { values } });
+      await emit({
+        event: {
+          definition: 'formSubmit',
+          event: 'afterSubmit',
+        },
+        params: { values },
+      });
     },
   };
 }

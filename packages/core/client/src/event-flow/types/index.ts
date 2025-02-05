@@ -52,6 +52,8 @@ export interface EventDefinition {
   name: string;
   /** 标识同一类型组件的不同实例 */
   uid?: string;
+  /** 标识所属页面 */
+  pageUid?: string;
   title: string;
   description?: string;
   events?: EventEvent[];
@@ -69,7 +71,7 @@ export interface EventSetting {
     uid?: string;
   };
   /** 标识同一类型组件的不同实例 */
-  uid?: string;
+  // uid?: string;
   condition: string;
   actions: Array<EventActionSetting>;
 }

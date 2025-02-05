@@ -27,7 +27,6 @@ import { ISchema, useField } from '@formily/react';
 import { SchemaSettingsKey, useEvent } from '..';
 import { useFieldSchema } from '@formily/react';
 import { useLinkageCollectionFieldOptions } from './ActionsSetting/action-hooks';
-import { ActionsSetting } from './ActionsSetting';
 import EventSelect from './EventSelect';
 import { ArrayCollapse } from './components/LinkageHeader';
 import { css } from '@emotion/css';
@@ -43,20 +42,11 @@ import { ActionParamValueInput } from './components/ActionParamValueInput';
 export const EventSettingItem = (props) => {
   // const field = useField();
   const filed = useField();
-  const schema = useFieldSchema();
   const { patch } = useDesignable();
   const app = useApp();
   const { definitions, register } = useEvent();
   const { dn } = useDesignable();
   const fieldSchema = useFieldSchema();
-  const { readPretty, Component, afterSubmit } = props;
-  const collectionName = 't_aierml1wni1';
-  const options = useLinkageCollectionFilterOptions(collectionName);
-  const linkageOptions = useLinkageCollectionFieldOptions(collectionName, readPretty);
-  const ff = useFormBlockContext();
-  const variables = useVariables();
-  const localVariables = useLocalVariables();
-  const { type: formBlockType } = useFormBlockType();
 
   return (
     <SchemaSettingsModalItem
@@ -73,7 +63,7 @@ export const EventSettingItem = (props) => {
         ConditionSelect,
         ActionParamValueInput,
       }}
-      initialValues={{ events: schema[SchemaSettingsKey] }}
+      initialValues={{ events: fieldSchema[SchemaSettingsKey] }}
       scope={{
         emptyParams: (field, target) => {
           const params = field.query('.params').take(1);

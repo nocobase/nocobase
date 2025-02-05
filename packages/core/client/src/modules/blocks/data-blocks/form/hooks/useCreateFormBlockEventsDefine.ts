@@ -52,7 +52,13 @@ export function useCreateFormBlockEventsDefine() {
     console.log('type', type, payload, args);
     // 表格重置后代表着添加成功
     if (type === 'onFormReset') {
-      emit(inter.name, 'onSubmit', payload);
+      emit({
+        event: {
+          definition: inter.name,
+          event: 'onSubmit',
+        },
+        params: payload,
+      });
     }
   });
 

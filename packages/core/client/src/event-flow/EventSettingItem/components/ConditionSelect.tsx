@@ -25,7 +25,6 @@ import { useUpdateEffect } from 'ahooks';
 export default function ConditionSelect(props: { event?: EventSetting['event']; onChange?: any }) {
   const filterOptions = useFilterOptions(props.event);
   const variableOptions = useVariableOptions();
-  console.log('filterOptions', filterOptions, props);
   const field = useField<ObjectField>();
   useUpdateEffect(() => {
     // 当 event 变化时，清空 condition

@@ -27,26 +27,22 @@ export const ActionParamValueInput = (props) => {
   //   return <CollectionField value={value} onChange={onChange} />;
   // }, []);
 
-  console.log('ActionParamValueInput props', props);
-
   return (
-    <div>
-      <VariableInput
-        {...props}
-        // form={form}
-        // record={record}
-        shouldChange={getShouldChange({
-          // collectionField,
-          // variables,
-          // localVariables,
-          // getAllCollectionsInheritChain,
-        })}
-        renderSchemaComponent={renderSchemaComponent}
-        // returnScope={(scope) => {
-        //   return uniqBy([...scope, ...variableOptions], 'key');
-        // }}
-        style={{ minWidth: 200 }}
-      />
-    </div>
+    <VariableInput
+      {...props}
+      // form={form}
+      // record={record}
+      shouldChange={getShouldChange({
+        // collectionField,
+        // variables,
+        // localVariables,
+        // getAllCollectionsInheritChain,
+      })}
+      renderSchemaComponent={renderSchemaComponent}
+      // returnScope={(scope) => {
+      //   return uniqBy([...scope, ...variableOptions], 'key');
+      // }}
+      style={{ minWidth: 200 }}
+    />
   );
 };

@@ -11,7 +11,7 @@ import { useEvent } from '../../event-flow';
 import { useCollection } from '../../data-source/collection/CollectionProvider';
 
 export function useFormEvents({ form }) {
-  const { define, emit, removeDefinition } = useEvent();
+  const { define, emit } = useEvent();
   const collection = useCollection();
   const fields = collection?.fields || [];
   const fieldsMap = fields.reduce((acc, field) => {
@@ -107,12 +107,12 @@ export function useFormEvents({ form }) {
   };
 
   form.subscribe(({ type, payload, ...args }) => {
-    // console.log('type', type, payload, args);
-    // 表格重置后代表着添加成功
     if (type === 'onFieldInputValueChange') {
       emit({
-        name: inter.name,
-        eventName: 'valueChange',
+        event: {
+          definition: inter.name,
+          event: 'valueChange',
+        },
         params: {
           // fieldName: payload?.props?.name,
           // fieldValue: payload?.inputValue,
