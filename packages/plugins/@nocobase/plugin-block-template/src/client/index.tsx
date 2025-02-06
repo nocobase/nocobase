@@ -50,7 +50,9 @@ export class PluginBlockTemplateClient extends Plugin {
         delete s['x-template-schemas'];
       }
 
-      if (s['x-template-root-uid']) {
+      // add version check here is to avoid modifying the template schema before insertAdjacent api
+      // otherwise, the template root schema will be a full copy of the original schema
+      if (s['x-template-root-uid'] && (s['version'] || s['x-template-root-ref'])) {
         const sc = getFullSchema(s, this.templateschemacache, this.templateInfos);
         this.pageBlocks[sc['x-uid']] = sc;
         return sc;
