@@ -76,8 +76,10 @@ export const allowSelectExistingRecord = {
   name: 'allowSelectExistingRecord',
   type: 'switch',
   useVisible() {
+    const fieldSchema = useFieldSchema();
+    const { multiple } = fieldSchema['x-component-props'];
     const readPretty = useIsFieldReadPretty();
-    return !readPretty;
+    return !readPretty && multiple !== false;
   },
   useComponentProps() {
     const { t } = useTranslation();
