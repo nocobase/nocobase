@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { PopupContextProvider } from '@nocobase/client';
+import { PopupContextProvider, withSkeletonComponent } from '@nocobase/client';
 import React, { useMemo } from 'react';
 import { useMapTranslation } from '../locale';
 import { AMapBlock } from './AMap';
@@ -18,21 +18,26 @@ const MapBlocks = {
   google: GoogleMapsBlock,
 };
 
-export const MapBlockComponent: React.FC<any> = (props) => {
-  const { t } = useMapTranslation();
-  const { mapType } = props;
+export const MapBlockComponent: React.FC<any> = withSkeletonComponent(
+  (props) => {
+    const { t } = useMapTranslation();
+    const { mapType } = props;
 
-  const Component = useMemo(() => {
-    return MapBlocks[mapType];
-  }, [mapType]);
+    const Component = useMemo(() => {
+      return MapBlocks[mapType];
+    }, [mapType]);
 
-  if (!Component) {
-    return <div>{t(`The ${mapType} cannot found`)}</div>;
-  }
+    if (!Component) {
+      return <div>{t(`The ${mapType} cannot found`)}</div>;
+    }
 
-  return (
-    <PopupContextProvider>
-      <Component {...props} />
-    </PopupContextProvider>
-  );
-};
+    return (
+      <PopupContextProvider>
+        <Component {...props} />
+      </PopupContextProvider>
+    );
+  },
+  {
+    displayName: 'MapBlockComponent',
+  },
+);

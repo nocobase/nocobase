@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { APIClient, useAPIClient, useRequest } from '@nocobase/client';
+import { APIClient, LOADING_DELAY, useAPIClient, useRequest } from '@nocobase/client';
 import { Spin } from 'antd';
 import React, { createContext, FC, useContext, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -130,7 +130,7 @@ export const MobileRoutesProvider: FC<{
   if (loading) {
     return (
       <div data-testid="mobile-loading" style={{ textAlign: 'center', margin: '20px 0' }}>
-        <Spin />
+        <Spin delay={LOADING_DELAY} />
       </div>
     );
   }

@@ -34,7 +34,7 @@ import { SchemaSettingsSortingRule } from '../../../../schema-settings/SchemaSet
 import { useIsShowMultipleSwitch } from '../../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useLocalVariables, useVariables } from '../../../../variables';
 import { useOpenModeContext } from '../../../popup/OpenModeProvider';
-import { ellipsisSettingsItem } from '../Input/inputComponentSettings';
+import { ellipsisSettingsItem, enableLinkSettingsItem, openModeSettingsItem } from '../Input/inputComponentSettings';
 
 const enableLink = {
   name: 'enableLink',
@@ -67,7 +67,6 @@ const enableLink = {
             },
           },
         });
-        dn.refresh();
       },
     };
   },
@@ -386,6 +385,29 @@ export const selectComponentFieldSettings = new SchemaSettings({
       },
     },
     ellipsisSettingsItem,
+    {
+      ...enableLinkSettingsItem,
+      useVisible() {
+        const collectionField = useCollectionField();
+        const readPretty = useIsFieldReadPretty();
+        return !useIsAssociationField() && readPretty && collectionField.interface !== 'multipleSelect';
+      },
+    },
+    {
+      ...openModeSettingsItem,
+      useVisible() {
+        const field = useField();
+        const isAssociationField = useIsAssociationField();
+        const { fieldSchema: columnSchema } = useColumnSchema();
+        const schema = useFieldSchema();
+        const fieldSchema = columnSchema || schema;
+        return (
+          (fieldSchema?.['x-read-pretty'] || field.readPretty) &&
+          (fieldSchema?.['x-component-props']?.enableLink ||
+            (isAssociationField && fieldSchema?.['x-component-props']?.enableLink !== false))
+        );
+      },
+    },
   ],
 });
 
@@ -421,7 +443,13 @@ export const filterSelectComponentFieldSettings = new SchemaSettings({
         return isSelectFieldMode && !isFieldReadPretty;
       },
     },
-    getAllowMultiple({ title: 'Allow multiple selection' }),
+    {
+      ...getAllowMultiple({ title: 'Allow multiple selection' }),
+      useVisible() {
+        const field = useField();
+        return field.componentProps.multiple !== false;
+      },
+    },
     {
       ...titleField,
       useVisible: useIsAssociationField,

@@ -11,6 +11,8 @@ import actions, { Context, utils } from '@nocobase/actions';
 import { Op, Repository } from '@nocobase/database';
 
 import Plugin from '../Plugin';
+import Processor from '../Processor';
+import WorkflowRepository from '../repositories/WorkflowRepository';
 
 export async function update(context: Context, next) {
   const repository = utils.getRepositoryFromParams(context) as Repository;
@@ -63,87 +65,14 @@ export async function destroy(context: Context, next) {
 }
 
 export async function revision(context: Context, next) {
-  const plugin = context.app.getPlugin(Plugin);
-  const repository = utils.getRepositoryFromParams(context);
+  const repository = utils.getRepositoryFromParams(context) as WorkflowRepository;
   const { filterByTk, filter = {}, values = {} } = context.action.params;
 
-  context.body = await context.db.sequelize.transaction(async (transaction) => {
-    const origin = await repository.findOne({
-      filterByTk,
-      filter,
-      appends: ['nodes'],
-      context,
-      transaction,
-    });
-
-    const trigger = plugin.triggers.get(origin.type);
-
-    const revisionData = filter.key
-      ? {
-          key: filter.key,
-          title: origin.title,
-          triggerTitle: origin.triggerTitle,
-          allExecuted: origin.allExecuted,
-        }
-      : values;
-
-    const instance = await repository.create({
-      values: {
-        title: `${origin.title} copy`,
-        description: origin.description,
-        ...revisionData,
-        sync: origin.sync,
-        type: origin.type,
-        config:
-          typeof trigger.duplicateConfig === 'function'
-            ? await trigger.duplicateConfig(origin, { transaction })
-            : origin.config,
-      },
-      transaction,
-    });
-
-    const originalNodesMap = new Map();
-    origin.nodes.forEach((node) => {
-      originalNodesMap.set(node.id, node);
-    });
-
-    const oldToNew = new Map();
-    const newToOld = new Map();
-    for await (const node of origin.nodes) {
-      const instruction = plugin.instructions.get(node.type);
-      const newNode = await instance.createNode(
-        {
-          type: node.type,
-          key: node.key,
-          config:
-            typeof instruction.duplicateConfig === 'function'
-              ? await instruction.duplicateConfig(node, { transaction })
-              : node.config,
-          title: node.title,
-          branchIndex: node.branchIndex,
-        },
-        { transaction },
-      );
-      // NOTE: keep original node references for later replacement
-      oldToNew.set(node.id, newNode);
-      newToOld.set(newNode.id, node);
-    }
-
-    for await (const [oldId, newNode] of oldToNew.entries()) {
-      const oldNode = originalNodesMap.get(oldId);
-      const newUpstream = oldNode.upstreamId ? oldToNew.get(oldNode.upstreamId) : null;
-      const newDownstream = oldNode.downstreamId ? oldToNew.get(oldNode.downstreamId) : null;
-
-      await newNode.update(
-        {
-          upstreamId: newUpstream?.id ?? null,
-          downstreamId: newDownstream?.id ?? null,
-        },
-        { transaction },
-      );
-    }
-
-    return instance;
+  context.body = await repository.revision({
+    filterByTk,
+    filter,
+    values,
+    context,
   });
 
   await next();
@@ -169,6 +98,65 @@ export async function sync(context: Context, next) {
   await next();
 }
 
+/**
+ * @deprecated
+ * Keep for action trigger compatibility
+ */
 export async function trigger(context: Context, next) {
+  return next();
+}
+
+export async function execute(context: Context, next) {
+  const plugin = context.app.pm.get(Plugin) as Plugin;
+  const { filterByTk, values, autoRevision } = context.action.params;
+  if (!values) {
+    return context.throw(400, 'values is required');
+  }
+  if (!filterByTk) {
+    return context.throw(400, 'filterByTk is required');
+  }
+  const id = Number.parseInt(filterByTk, 10);
+  if (Number.isNaN(id)) {
+    return context.throw(400, 'filterByTk is invalid');
+  }
+  const repository = utils.getRepositoryFromParams(context) as WorkflowRepository;
+  const workflow = plugin.enabledCache.get(id) || (await repository.findOne({ filterByTk }));
+  if (!workflow) {
+    return context.throw(404, 'workflow not found');
+  }
+  const { executed } = workflow;
+  let processor;
+  try {
+    processor = (await plugin.execute(workflow, values, { manually: true })) as Processor;
+    if (!processor) {
+      return context.throw(400, 'workflow not triggered');
+    }
+  } catch (ex) {
+    return context.throw(400, ex.message);
+  }
+  context.action.mergeParams({
+    filter: { key: workflow.key },
+  });
+  let newVersion;
+  if (!executed && autoRevision) {
+    newVersion = await repository.revision({
+      filterByTk: workflow.id,
+      filter: { key: workflow.key },
+      values: {
+        current: workflow.current,
+        enabled: workflow.enabled,
+      },
+      context,
+    });
+  }
+
+  context.body = {
+    execution: {
+      id: processor.execution.id,
+      status: processor.execution.status,
+    },
+    newVersionId: newVersion?.id,
+  };
+
   return next();
 }

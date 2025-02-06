@@ -19,6 +19,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { css } from '@emotion/css';
 import { useACLRoleContext } from '../acl/ACLProvider';
 import { useAPIClient, useRequest } from '../api-client';
+import { useDocumentTitle } from '../document-title';
 import { useToken } from '../style';
 import { PluginCard } from './PluginCard';
 import { PluginAddModal } from './PluginForm/modal/PluginAddModal';
@@ -360,12 +361,14 @@ export const PluginManager = () => {
   const { t } = useTranslation();
   const { snippets = [] } = useACLRoleContext();
   const { styles } = useStyles();
+  const { setTitle: setDocumentTitle } = useDocumentTitle();
 
   useEffect(() => {
     const { tabName } = params;
     if (!tabName) {
       navigate(`/admin/pm/list/local/`, { replace: true });
     }
+    setDocumentTitle(t('Plugin manager'));
   }, []);
 
   return snippets.includes('pm') ? (

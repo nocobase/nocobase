@@ -9,6 +9,7 @@
 
 import React, { FC } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useForm } from '@formily/react';
 import { useCollectionRecordData } from '../../../data-source/collection-record/CollectionRecordProvider';
 import { Collection } from '../../../data-source/collection/Collection';
 import { useCollection } from '../../../data-source/collection/CollectionProvider';
@@ -24,7 +25,7 @@ export const VariablePopupRecordProvider: FC<{
     recordData?: Record<string, any>;
     collection?: Collection;
   };
-}> = (props) => {
+}> = React.memo((props) => {
   const { t } = useTranslation();
   const recordData = useCollectionRecordData();
   const collection = useCollection();
@@ -51,7 +52,9 @@ export const VariablePopupRecordProvider: FC<{
       </CurrentPopupRecordContext.Provider>
     </CurrentParentPopupRecordContext.Provider>
   );
-};
+});
+
+VariablePopupRecordProvider.displayName = 'VariablePopupRecordProvider';
 
 export const useCurrentPopupRecord = () => {
   return React.useContext(CurrentPopupRecordContext);

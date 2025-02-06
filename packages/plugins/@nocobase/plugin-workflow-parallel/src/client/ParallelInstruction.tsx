@@ -9,7 +9,7 @@
 
 import React, { useState } from 'react';
 import { Button, Tooltip } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { ApartmentOutlined, PlusOutlined } from '@ant-design/icons';
 
 import { css } from '@nocobase/client';
 
@@ -30,6 +30,7 @@ export default class extends Instruction {
   type = 'parallel';
   group = 'control';
   description = `{{t("Run multiple branch processes in parallel.", { ns: "${NAMESPACE}" })}}`;
+  icon = (<ApartmentOutlined style={{}} />);
   fieldset = {
     mode: {
       type: 'string',

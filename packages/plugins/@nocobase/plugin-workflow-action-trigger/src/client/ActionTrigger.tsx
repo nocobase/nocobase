@@ -9,7 +9,13 @@
 
 import { useForm } from '@formily/react';
 
-import { SchemaInitializerItemType, parseCollectionName, useCollectionDataSource, useCompile } from '@nocobase/client';
+import {
+  SchemaInitializerItemType,
+  parseCollectionName,
+  useCollectionDataSource,
+  useCompile,
+  RemoteSelect,
+} from '@nocobase/client';
 import {
   Trigger,
   CollectionBlockInitializer,
@@ -18,8 +24,11 @@ import {
   CheckboxGroupWithTooltip,
   RadioWithTooltip,
   useGetCollectionFields,
+  TriggerCollectionRecordSelect,
+  WorkflowVariableWrapper,
 } from '@nocobase/plugin-workflow/client';
 import { NAMESPACE, useLang } from '../locale';
+import React from 'react';
 
 const COLLECTION_TRIGGER_ACTION = {
   CREATE: 'create',
@@ -35,8 +44,8 @@ function useVariables(config, options) {
   const getMainCollectionFields = useGetCollectionFields();
 
   const langTriggerData = useLang('Trigger data');
-  const langUserSubmittedForm = useLang('User submitted action');
-  const langRoleSubmittedForm = useLang('Role of user submitted action');
+  const langUserSubmittedForm = useLang('User acted');
+  const langRoleSubmittedForm = useLang('Role of user acted');
   const result = [
     ...getCollectionFieldOptions({
       // depth,
@@ -194,6 +203,108 @@ export default class extends Trigger {
       ],
     },
   };
+  triggerFieldset = {
+    data: {
+      type: 'object',
+      title: `{{t("Trigger data", { ns: "workflow" })}}`,
+      description: `{{t("Choose a record or primary key of a record in the collection to trigger.", { ns: "workflow" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'TriggerCollectionRecordSelect',
+      default: null,
+      required: true,
+    },
+    userId: {
+      type: 'number',
+      title: `{{t("User acted", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'WorkflowVariableWrapper',
+      'x-component-props': {
+        nullable: false,
+        changeOnSelect: true,
+        variableOptions: {
+          types: [
+            (field) => {
+              if (field.isForeignKey || field.type === 'context') {
+                return field.target === 'users';
+              }
+              return field.collectionName === 'users' && field.name === 'id';
+            },
+          ],
+        },
+        render(props) {
+          return (
+            <RemoteSelect
+              fieldNames={{ label: 'nickname', value: 'id' }}
+              service={{ resource: 'users' }}
+              manual={false}
+              {...props}
+            />
+          );
+        },
+      },
+      // properties: {
+      //   remoteSelect: {
+      //     'x-component': 'RemoteSelect',
+      //     'x-component-props': {
+      //       fieldNames: {
+      //         label: 'nickname',
+      //         value: 'id',
+      //       },
+      //       service: {
+      //         resource: 'users',
+      //       },
+      //       manual: false,
+      //     },
+      //   },
+      // },
+      default: null,
+      required: true,
+    },
+    roleName: {
+      type: 'string',
+      title: `{{t("Role of user acted", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'WorkflowVariableWrapper',
+      'x-component-props': {
+        nullable: false,
+        changeOnSelect: true,
+        variableOptions: {
+          types: [
+            (field) => {
+              if (field.isForeignKey) {
+                return field.target === 'roles';
+              }
+              return field.collectionName === 'roles' && field.name === 'name';
+            },
+          ],
+        },
+        render(props) {
+          return (
+            <RemoteSelect
+              fieldNames={{ label: 'title', value: 'name' }}
+              service={{ resource: 'roles' }}
+              manual={false}
+              {...props}
+            />
+          );
+        },
+      },
+      // 'x-component-props': {
+      //   fieldNames: {
+      //     label: 'title',
+      //     value: 'name',
+      //   },
+      //   service: {
+      //     resource: 'roles',
+      //   },
+      //   manual: false,
+      // },
+      default: null,
+    },
+  };
+  validate(values) {
+    return values.collection;
+  }
   scope = {
     useCollectionDataSource,
     useWorkflowAnyExecuted,
@@ -201,6 +312,8 @@ export default class extends Trigger {
   components = {
     RadioWithTooltip,
     CheckboxGroupWithTooltip,
+    TriggerCollectionRecordSelect,
+    WorkflowVariableWrapper,
   };
   isActionTriggerable = (config, context) => {
     return !config.global && ['submit', 'customize:save', 'customize:update'].includes(context.buttonAction);

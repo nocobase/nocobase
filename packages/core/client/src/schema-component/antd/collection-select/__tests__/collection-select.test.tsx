@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { renderReadPrettyApp, renderAppOptions, screen, userEvent, waitFor } from '@nocobase/test/client';
-import { FormItem, CollectionSelect } from '@nocobase/client';
+import { CollectionSelect, FormItem } from '@nocobase/client';
+import { renderAppOptions, renderReadPrettyApp, screen, userEvent, waitFor } from '@nocobase/test/client';
 
 describe('CollectionSelect', () => {
   it('should works', async () => {
@@ -50,7 +50,7 @@ describe('CollectionSelect', () => {
         >
           <div
             aria-label="block-item-demo title"
-            class="nb-sortable-designer nb-block-item nb-form-item css-1elzyjx acss-gw2dva"
+            class="nb-block-item nb-form-item css-1elzyjx ant-nb-block-item css-dev-only-do-not-override-11aiz3o"
             role="button"
           >
             <div
@@ -187,7 +187,7 @@ describe('CollectionSelect', () => {
         >
           <div
             aria-label="block-item-demo title"
-            class="nb-sortable-designer nb-block-item nb-form-item css-1elzyjx acss-gw2dva"
+            class="nb-block-item nb-form-item css-1elzyjx ant-nb-block-item css-dev-only-do-not-override-11aiz3o"
             role="button"
           >
             <div

@@ -9,9 +9,7 @@
 
 import { Model } from '@nocobase/database';
 import PluginUISchemaStorageServer from '@nocobase/plugin-ui-schema-storage';
-import { InstallOptions, OFFICIAL_PLUGIN_PREFIX, Plugin } from '@nocobase/server';
-import deepmerge from 'deepmerge';
-import { resolve } from 'path';
+import { InstallOptions, Plugin } from '@nocobase/server';
 import localization from './actions/localization';
 import localizationTexts from './actions/localizationTexts';
 import Resources from './resources';
@@ -46,8 +44,16 @@ export class PluginLocalizationServer extends Plugin {
             text: title,
           },
         })
-        .then((res) => this.resources.updateCacheTexts([res]))
-        .catch((err) => {});
+        .then((res) => {
+          this.resources.updateCacheTexts([res]);
+          this.sendSyncMessage({
+            type: 'updateCacheTexts',
+            texts: [res],
+          });
+        })
+        .catch((err) => {
+          this.log.error(err);
+        });
     });
   }
 
@@ -56,14 +62,12 @@ export class PluginLocalizationServer extends Plugin {
   beforeLoad() {}
 
   async load() {
-    await this.importCollections(resolve(__dirname, 'collections'));
-
-    this.app.resource({
+    this.app.resourceManager.define({
       name: 'localizationTexts',
       actions: localizationTexts,
     });
 
-    this.app.resource({
+    this.app.resourceManager.define({
       name: 'localization',
       actions: localization,
     });
@@ -103,8 +107,19 @@ export class PluginLocalizationServer extends Plugin {
             transaction: options?.transaction,
           },
         )
-        .then((newTexts) => this.resources.updateCacheTexts(newTexts, options?.transaction))
-        .catch((err) => {});
+        .then((newTexts) => {
+          this.resources.updateCacheTexts(newTexts, options?.transaction);
+          this.sendSyncMessage(
+            {
+              type: 'updateCacheTexts',
+              texts: newTexts,
+            },
+            { transaction: options?.transaction },
+          );
+        })
+        .catch((err) => {
+          this.log.error(err);
+        });
     });
 
     const cache = await this.app.cacheManager.createCache({
@@ -120,6 +135,14 @@ export class PluginLocalizationServer extends Plugin {
       getResources: (lang: string) => this.resources.getResources(lang),
       reset: () => this.resources.reset(),
     });
+  }
+
+  async handleSyncMessage(message: any): Promise<void> {
+    switch (message.type) {
+      case 'updateCacheTexts':
+        await this.resources.updateCacheTexts(message.texts);
+        return;
+    }
   }
 
   async install(options?: InstallOptions) {}

@@ -86,7 +86,7 @@ test.describe('add blocks to the popup', () => {
 
     // 通过 Association records 创建关系区块
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Table right' }).hover();
     await page.getByRole('menuitem', { name: 'Associated records' }).hover();
     await page.getByRole('menuitem', { name: 'manyToMany' }).click();
     await page.mouse.move(-300, 0);
@@ -134,7 +134,7 @@ test.describe('add blocks to the popup', () => {
 
     // 通过 Association records 创建一个关系区块
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Table right' }).hover();
     await page.getByRole('menuitem', { name: 'Associated records' }).hover();
     await page.getByRole('menuitem', { name: 'Roles' }).click();
     await page

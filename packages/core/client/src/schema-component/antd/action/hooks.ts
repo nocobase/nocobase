@@ -9,7 +9,7 @@
 
 import { useFieldSchema, useForm } from '@formily/react';
 import { App } from 'antd';
-import { useContext } from 'react';
+import { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useIsDetailBlock } from '../../../block-provider/FormBlockProvider';
 import { ActionContext } from './context';
@@ -22,25 +22,29 @@ export const useActionContext = () => {
 
   return {
     ...ctx,
-    setVisible(visible: boolean, confirm = false) {
-      if (!visible) {
-        if (confirm && ctx.formValueChanged) {
-          modal.confirm({
-            title: t('Unsaved changes'),
-            content: t("Are you sure you don't want to save?"),
-            async onOk() {
-              ctx.setFormValueChanged(false);
-              ctx.setVisible?.(false);
-              form?.reset?.();
-            },
-          });
+    setVisible: useCallback(
+      (visible: boolean, confirm = false) => {
+        if (!visible) {
+          if (confirm && ctx.formValueChanged) {
+            modal.confirm({
+              title: t('Unsaved changes'),
+              content: t("Are you sure you don't want to save?"),
+              async onOk() {
+                ctx.setFormValueChanged(false);
+                ctx.setVisible?.(false);
+                form?.reset?.();
+              },
+            });
+          } else {
+            ctx.setVisible?.(false);
+          }
         } else {
-          ctx?.setVisible?.(false);
+          ctx.setVisible?.(visible);
         }
-      } else {
-        ctx?.setVisible?.(visible);
-      }
-    },
+      },
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [modal, t, ctx.formValueChanged, ctx.setVisible, ctx.setFormValueChanged],
+    ),
   };
 };
 
@@ -61,5 +65,5 @@ export const useLinkageAction = () => {
   const fieldSchema = useFieldSchema();
   const isRecordAction = useIsDetailBlock();
   const isAction = ['Action.Link', 'Action'].includes(fieldSchema['x-component']);
-  return isAction && isRecordAction;
+  return isAction && isRecordAction && fieldSchema['x-action'];
 };

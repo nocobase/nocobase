@@ -12,7 +12,7 @@ import { RemoteSelect, Variable } from '@nocobase/client';
 import { useWorkflowVariableOptions } from '@nocobase/plugin-workflow/client';
 
 function isUserKeyField(field) {
-  if (field.isForeignKey) {
+  if (field.isForeignKey || field.type === 'context') {
     return field.target === 'users';
   }
   return field.collectionName === 'users' && field.name === 'id';

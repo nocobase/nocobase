@@ -74,10 +74,26 @@ test.describe('form item & view form', () => {
       },
       supportedOptions: ['oneToMany', 'manyToOne', 'manyToMany', 'oneToOneBelongsTo', 'oneToOneHasOne'],
       expectValue: async () => {
-        await expect(page.getByText(record.oneToMany.map((item: any) => item.id).join(','))).toBeVisible();
-        await expect(page.getByText(record.manyToOne.id)).toBeVisible();
-        await expect(page.getByText(record.manyToMany.map((item: any) => item.id).join(','))).toBeVisible();
-        await expect(page.getByText(record.oneToOneBelongsTo.id)).toBeVisible();
+        await expect(
+          page
+            .getByLabel('block-item-CollectionField-general-form-general.oneToMany-oneToMany')
+            .getByText(record.oneToMany.map((item: any) => item.id).join(',')),
+        ).toBeVisible();
+        await expect(
+          page
+            .getByLabel('block-item-CollectionField-general-form-general.manyToOne-manyToOne')
+            .getByText(record.manyToOne.id),
+        ).toBeVisible();
+        await expect(
+          page
+            .getByLabel('block-item-CollectionField-general-form-general.manyToMany-manyToMany')
+            .getByText(record.manyToMany.map((item: any) => item.id).join(',')),
+        ).toBeVisible();
+        await expect(
+          page
+            .getByLabel('block-item-CollectionField-general-form-general.oneToOneBelongsTo-')
+            .getByText(record.oneToOneBelongsTo.id),
+        ).toBeVisible();
       },
     });
   });

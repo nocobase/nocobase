@@ -63,7 +63,6 @@ const useParseDefaultValue = () => {
   );
 
   useEffect(() => {
-    // fix https://github.com/nocobase/nocobase/issues/4868
     // fix https://tasks.aliyun.nocobase.com/admin/ugmnj2ycfgg/popups/1qlw5c38t3b/puid/dz42x7ffr7i/filterbytk/182
     // to clear the default value of the field
     if (type === 'update' && fieldSchema.default && field.form === form) {
@@ -129,10 +128,8 @@ const useParseDefaultValue = () => {
         });
 
         if (value == null || value === '') {
-          // fix https://nocobase.height.app/T-4350/description
           // 如果 field.mounted 为 false，说明 field 已经被卸载了，不需要再设置默认值
           if (field.mounted) {
-            // fix https://nocobase.height.app/T-2805
             field.setInitialValue(null);
             await field.reset({ forceClear: true });
           }

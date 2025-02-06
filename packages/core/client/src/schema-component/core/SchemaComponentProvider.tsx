@@ -10,9 +10,9 @@
 import { createForm } from '@formily/core';
 import { FormProvider, Schema } from '@formily/react';
 import { uid } from '@formily/shared';
+import _ from 'lodash';
 import React, { useCallback, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useUpdate } from 'ahooks';
 import { SchemaComponentContext } from '../context';
 import { ISchemaComponentProvider } from '../types';
 import { SchemaComponentOptions, useSchemaOptionsContext } from './SchemaComponentOptions';
@@ -56,8 +56,7 @@ export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (prop
   const { designable, onDesignableChange, components, children } = props;
   const ctx = useContext(SchemaComponentContext);
   const ctxOptions = useSchemaOptionsContext();
-  const refresh = useUpdate();
-  const [formId, setFormId] = useState(uid());
+  const [formId, setFormId] = useState(() => uid());
   const form = useMemo(() => props.form || createForm(), [formId]);
   const { t } = useTranslation();
 
@@ -84,17 +83,23 @@ export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (prop
     setFormId(uid());
   }, []);
 
+  const value = useMemo(
+    () => ({
+      scope,
+      components,
+      reset,
+      /**
+       * @deprecated
+       */
+      refresh: _.noop,
+      designable: designableValue,
+      setDesignable,
+    }),
+    [components, designableValue, reset, scope, setDesignable],
+  );
+
   return (
-    <SchemaComponentContext.Provider
-      value={{
-        scope,
-        components,
-        reset,
-        refresh,
-        designable: designableValue,
-        setDesignable,
-      }}
-    >
+    <SchemaComponentContext.Provider value={value}>
       <FormProvider form={form}>
         <SchemaComponentOptions inherit scope={scope} components={components}>
           {children}

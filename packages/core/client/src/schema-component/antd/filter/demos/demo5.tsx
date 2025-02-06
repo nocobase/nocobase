@@ -7,6 +7,7 @@ import {
   SchemaComponent,
   SchemaComponentProvider,
 } from '@nocobase/client';
+import { createMemoryHistory } from 'history';
 import React from 'react';
 import { Router } from 'react-router-dom';
 
@@ -104,8 +105,9 @@ const schema: ISchema = {
 };
 
 export default () => {
+  const history = createMemoryHistory();
   return (
-    <Router location={window.location} navigator={null}>
+    <Router location={history.location} navigator={history}>
       <CustomRouterContextProvider>
         <SchemaComponentProvider components={{ FilterAction, Filter, Input }} scope={{ options }}>
           <SchemaComponent schema={schema} />

@@ -10,7 +10,7 @@
 import { registerActions } from '@nocobase/actions';
 import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocobase/auth';
 import { Cache, CacheManager, CacheManagerOptions } from '@nocobase/cache';
-import { DataSourceManager, SequelizeDataSource } from '@nocobase/data-source-manager';
+import { DataSourceManager, SequelizeCollectionManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import {
   createLogger,
@@ -25,6 +25,7 @@ import {
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import { Telemetry, TelemetryOptions } from '@nocobase/telemetry';
 
+import { LockManager, LockManagerOptions } from '@nocobase/lock-manager';
 import {
   applyMixins,
   AsyncEmitter,
@@ -68,9 +69,13 @@ import { dataTemplate } from './middlewares/data-template';
 import validateFilterParams from './middlewares/validate-filter-params';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-import { SyncManager } from './sync-manager';
+import { createPubSubManager, PubSubManager, PubSubManagerOptions } from './pub-sub-manager';
+import { SyncMessageManager } from './sync-message-manager';
 
 import packageJson from '../package.json';
+import { ServiceContainer } from './service-container';
+import { availableActions } from './acl/available-action';
+import { AuditManager } from './audit-manager';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -106,6 +111,8 @@ export interface ApplicationOptions {
    */
   resourcer?: ResourceManagerOptions;
   resourceManager?: ResourceManagerOptions;
+  pubSubManager?: PubSubManagerOptions;
+  syncMessageManager?: any;
   bodyParser?: any;
   cors?: any;
   dataWrapping?: boolean;
@@ -120,6 +127,9 @@ export interface ApplicationOptions {
   pmSock?: string;
   name?: string;
   authManager?: AuthManagerOptions;
+  auditManager?: AuditManager;
+  lockManager?: LockManagerOptions;
+
   /**
    * @internal
    */
@@ -225,7 +235,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   /**
    * @internal
    */
-  public syncManager: SyncManager;
+  public pubSubManager: PubSubManager;
+  public syncMessageManager: SyncMessageManager;
   public requestLogger: Logger;
   protected plugins = new Map<string, Plugin>();
   protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
@@ -234,6 +245,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   private _maintainingCommandStatus: MaintainingCommandStatus;
   private _maintainingStatusBeforeCommand: MaintainingCommandStatus | null;
   private _actionCommand: Command;
+
+  public container = new ServiceContainer();
+  public lockManager: LockManager;
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -372,6 +386,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get authManager() {
     return this._authManager;
+  }
+
+  protected _auditManager: AuditManager;
+  get auditManager() {
+    return this._auditManager;
   }
 
   protected _locales: Locale;
@@ -541,6 +560,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     if (this.cacheManager) {
       await this.cacheManager.close();
+    }
+
+    if (this.pubSubManager) {
+      await this.pubSubManager.close();
     }
 
     if (this.telemetry.started) {
@@ -753,9 +776,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     try {
       const commandName = options?.from === 'user' ? argv[0] : argv[2];
+
       if (!this.cli.hasCommand(commandName)) {
         await this.pm.loadCommands();
       }
+
       const command = await this.cli.parseAsync(argv, options);
 
       this.setMaintaining({
@@ -1158,7 +1183,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._cli = this.createCLI();
     this._i18n = createI18n(options);
-    this.syncManager = new SyncManager(this);
+    this.pubSubManager = createPubSubManager(this, options.pubSubManager);
+    this.syncMessageManager = new SyncMessageManager(this, options.syncMessageManager);
+    this.lockManager = new LockManager({
+      defaultAdapter: process.env.LOCK_ADAPTER_DEFAULT,
+      ...options.lockManager,
+    });
     this.context.db = this.db;
 
     /**
@@ -1190,9 +1220,19 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       ...(this.options.authManager || {}),
     });
 
+    this._auditManager = new AuditManager();
+
     this.resourceManager.define({
       name: 'auth',
       actions: authActions,
+    });
+
+    this._dataSourceManager.afterAddDataSource((dataSource) => {
+      if (dataSource.collectionManager instanceof SequelizeCollectionManager) {
+        for (const [actionName, actionParams] of Object.entries(availableActions)) {
+          dataSource.acl.setAvailableAction(actionName, actionParams);
+        }
+      }
     });
 
     this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth' });

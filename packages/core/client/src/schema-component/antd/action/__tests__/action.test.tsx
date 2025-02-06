@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { fireEvent, render, screen, userEvent, waitFor } from '@nocobase/test/client';
+import { fireEvent, render, screen, sleep, userEvent, waitFor } from '@nocobase/test/client';
 import React from 'react';
 import App1 from '../demos/demo1';
 import App2 from '../demos/demo2';
@@ -61,6 +61,8 @@ describe('Action.Drawer without Action', () => {
     const { getByText } = render(<App2 />);
     await waitFor(async () => {
       await userEvent.click(getByText('Open'));
+      // wait for the drawer to open
+      await sleep(300);
       // drawer
       expect(document.querySelector('.ant-drawer')).toBeInTheDocument();
       // mask

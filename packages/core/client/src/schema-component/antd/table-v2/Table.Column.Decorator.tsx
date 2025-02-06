@@ -8,7 +8,7 @@
  */
 
 import { useField, useFieldSchema } from '@formily/react';
-import React, { useLayoutEffect, useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   CollectionFieldContext,
   SortableItem,
@@ -78,7 +78,7 @@ export const TableColumnDecorator = (props) => {
   const { isInSubTable } = useFlag() || {};
   const { token } = useToken();
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (field.title) {
       return;
     }

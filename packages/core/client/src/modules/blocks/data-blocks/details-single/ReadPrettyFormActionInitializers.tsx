@@ -8,7 +8,7 @@
  */
 
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
-import { useCollection } from '../../../../data-source';
+import { useCollection, useDataBlockProps } from '../../../../data-source';
 import { useActionAvailable } from '../../useActionAvailable';
 
 const commonOptions = {
@@ -40,6 +40,30 @@ const commonOptions = {
         'x-decorator': 'ACLActionProvider',
       },
       useVisible: () => useActionAvailable('destroy'),
+    },
+    {
+      type: 'item',
+      title: '{{t("Disassociate")}}',
+      name: 'disassociate',
+      Component: 'DisassociateActionInitializer',
+      schema: {
+        'x-component': 'Action',
+        'x-action': 'disassociate',
+        'x-acl-action': 'update',
+        'x-decorator': 'ACLActionProvider',
+      },
+      useVisible() {
+        const props = useDataBlockProps();
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions, availableActions } = collection?.options || {};
+        if (availableActions) {
+          return !!props?.association && availableActions.includes?.('update');
+        }
+        if (unavailableActions) {
+          return !!props?.association && !unavailableActions?.includes?.('update');
+        }
+        return true;
+      },
     },
     {
       name: 'popup',

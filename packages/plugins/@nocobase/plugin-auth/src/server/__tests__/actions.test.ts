@@ -19,7 +19,7 @@ describe('actions', () => {
 
     beforeAll(async () => {
       app = await createMockServer({
-        plugins: ['auth'],
+        plugins: ['field-sort', 'auth'],
       });
       db = app.db;
       repo = db.getRepository('authenticators');
@@ -110,7 +110,7 @@ describe('actions', () => {
       process.env.INIT_ROOT_PASSWORD = '123456';
       process.env.INIT_ROOT_NICKNAME = 'Test';
       app = await createMockServer({
-        plugins: ['auth', 'users', 'system-settings'],
+        plugins: ['field-sort', 'auth', 'users', 'system-settings'],
       });
       db = app.db;
       agent = app.agent();

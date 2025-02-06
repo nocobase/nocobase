@@ -8,3 +8,4 @@
  */
 
 export { PluginErrorHandlerServer as default } from './server';
+export { ErrorHandler } from './error-handler';

@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { theme } from 'antd';
 import { useFieldSchema } from '@formily/react';
-import { useDataBlockHeight } from '../../hooks/useBlockSize';
+import { theme } from 'antd';
 import { useDesignable } from '../../';
-import { useDataBlockRequest } from '../../../data-source';
-import { useFormDataTemplates } from './Templates';
 import { useBlockHeightProps } from '../../../block-provider/hooks/useBlockHeightProps';
+import { useDataBlockRequestData } from '../../../data-source';
+import { useDataBlockHeight } from '../../hooks/useBlockSize';
+import { useFormDataTemplates } from './Templates';
 
 export const useFormBlockHeight = () => {
   const height = useDataBlockHeight();
@@ -35,7 +35,7 @@ export const useFormBlockHeight = () => {
   const actionBarHeight =
     hasFormActions || designable ? token.controlHeight + (isFormBlock ? 1 : 2) * token.marginLG : token.marginLG;
   const blockTitleHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
-  const { data } = useDataBlockRequest() || {};
+  const data = useDataBlockRequestData();
   const { count, pageSize } = (data as any)?.meta || ({} as any);
   const hasPagination = count > pageSize;
   const paginationHeight = hasPagination ? token.controlHeightSM + 1 * token.paddingLG : 0;

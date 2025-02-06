@@ -7,26 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { css } from '@emotion/css';
+import { createForm } from '@formily/core';
+import { useForm } from '@formily/react';
 import {
   SchemaComponent,
   SchemaComponentContext,
+  useAPIClient,
   useActionContext,
   useCollection,
   useCollectionRecordData,
   useDataBlockRequest,
   useDataBlockResource,
-  useSchemaComponentContext,
   useRequest,
-  useAPIClient,
+  useSchemaComponentContext,
 } from '@nocobase/client';
-import React, { createContext, useEffect, useMemo, useContext } from 'react';
 import { App, Tabs, message } from 'antd';
-import { useForm } from '@formily/react';
-import { createForm } from '@formily/core';
-import { css } from '@emotion/css';
-import { usersSchema, usersSettingsSchema } from './schemas/users';
+import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useUsersTranslation } from './locale';
 import { PasswordField } from './PasswordField';
+import { usersSchema, usersSettingsSchema } from './schemas/users';
 
 const useCancelActionProps = () => {
   const { setVisible } = useActionContext();

@@ -108,6 +108,7 @@ export class PluginManager {
 
     for (const plugin of this.pluginInstances.values()) {
       await plugin.load();
+      this.app.eventBus.dispatchEvent(new CustomEvent(`plugin:${plugin.options.name}:loaded`, { detail: plugin }));
     }
   }
 }

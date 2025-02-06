@@ -23,6 +23,9 @@ import {
   ACLCustomContext,
   VariablesProvider,
   GlobalThemeProvider,
+  AssociationField,
+  Action,
+  DatePicker,
 } from '@nocobase/client';
 import { css } from '@emotion/css';
 import { isDesktop } from 'react-device-detect';
@@ -32,6 +35,10 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import { useParams } from 'react-router';
 import { usePublicSubmitActionProps } from '../hooks';
 import { UnEnabledFormPlaceholder, UnFoundFormPlaceholder } from './UnEnabledFormPlaceholder';
+
+import { Button as MobileButton, Dialog as MobileDialog } from 'antd-mobile';
+import { MobilePicker } from './components/MobilePicker';
+import { MobileDateTimePicker } from './components/MobileDatePicker';
 class PublicDataSource extends DataSource {
   async getDataSource() {
     return {};
@@ -111,10 +118,43 @@ const PublicFormMessageProvider = ({ children }) => {
     </PublicFormMessageContext.Provider>
   );
 };
+function isMobile() {
+  return window.matchMedia('(max-width: 768px)').matches;
+}
 
+const AssociationFieldMobile = (props) => {
+  return <AssociationField {...props} popupMatchSelectWidth={true} />;
+};
+
+AssociationFieldMobile.SubTable = AssociationField.SubTable;
+AssociationFieldMobile.Nester = AssociationField.Nester;
+AssociationFieldMobile.AddNewer = Action.Container;
+AssociationFieldMobile.Selector = Action.Container;
+AssociationFieldMobile.Viewer = Action.Container;
+AssociationFieldMobile.InternalSelect = AssociationField.InternalSelect;
+AssociationFieldMobile.ReadPretty = AssociationField.ReadPretty;
+AssociationFieldMobile.FileSelector = AssociationField.FileSelector;
+
+const DatePickerMobile = (props) => {
+  return <MobileDateTimePicker {...props} />;
+};
+DatePickerMobile.FilterWithPicker = DatePicker.FilterWithPicker;
+DatePickerMobile.RangePicker = DatePicker.RangePicker;
+
+const mobileComponents = {
+  Button: MobileButton,
+  Select: (props) => {
+    return <MobilePicker {...props} />;
+  },
+  DatePicker: DatePickerMobile,
+  UnixTimestamp: MobileDateTimePicker,
+  Modal: MobileDialog,
+  AssociationField: AssociationFieldMobile,
+};
 function InternalPublicForm() {
   const params = useParams();
   const apiClient = useAPIClient();
+  const isMobileMedia = isMobile();
   const { error, data, loading, run } = useRequest<any>(
     {
       url: `publicForms:getMeta/${params.name}`,
@@ -190,6 +230,7 @@ function InternalPublicForm() {
   if (!data?.data) {
     return <UnEnabledFormPlaceholder />;
   }
+  const components = isMobileMedia ? mobileComponents : {};
   return (
     <ACLCustomContext.Provider value={{ allowAll: true }}>
       <PublicAPIClientProvider>
@@ -202,7 +243,12 @@ function InternalPublicForm() {
           }}
         >
           <div
-            style={{ maxWidth: 800, margin: '0 auto' }}
+            style={{
+              maxWidth: 800,
+              margin: '0 auto',
+              position: 'relative',
+              zIndex: 0 /** create a new z-index context */,
+            }}
             className={css`
               @media (min-width: 1025px) {
                 padding-top: 10vh;
@@ -218,7 +264,7 @@ function InternalPublicForm() {
                     scope={{
                       useCreateActionProps: usePublicSubmitActionProps,
                     }}
-                    components={{ PublicFormMessageProvider: PublicFormMessageProvider }}
+                    components={{ PublicFormMessageProvider: PublicFormMessageProvider, ...components }}
                   />
                 </SchemaComponentContext.Provider>
               </VariablesProvider>

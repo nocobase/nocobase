@@ -7,20 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BelongsToRepository, MockDatabase, Op } from '@nocobase/database';
+import { BelongsToRepository, MockDatabase } from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { MockServer } from '@nocobase/test';
 
 import { EXECUTION_STATUS } from '../../constants';
+import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
+import PluginWorkflowServer from '../../Plugin';
 
 describe('workflow > triggers > collection', () => {
   let app: MockServer;
   let db: MockDatabase;
+  let plugin: PluginWorkflowServer;
   let CategoryRepo;
   let PostRepo;
   let CommentRepo;
   let TagRepo;
   let WorkflowModel;
+  let agent;
 
   beforeEach(async () => {
     app = await getApp({
@@ -28,11 +32,15 @@ describe('workflow > triggers > collection', () => {
     });
 
     db = app.db;
+    plugin = app.pm.get(PluginWorkflowServer) as PluginWorkflowServer;
     WorkflowModel = db.getCollection('workflows').model;
     CategoryRepo = db.getCollection('categories').repository;
     PostRepo = db.getCollection('posts').repository;
     CommentRepo = db.getCollection('comments').repository;
     TagRepo = db.getCollection('tags').repository;
+
+    const user = await app.db.getRepository('users').findOne();
+    agent = app.agent().login(user);
   });
 
   afterEach(() => app.destroy());
@@ -156,6 +164,36 @@ describe('workflow > triggers > collection', () => {
   });
 
   describe('config.mode', () => {
+    it('update by move action', async () => {
+      db.getCollection('posts').addField('sort', {
+        type: 'sort',
+        name: 'sort',
+      });
+      await db.sync();
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+      const p2 = await PostRepo.create({ values: { title: 't2' } });
+
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 2,
+          collection: 'posts',
+        },
+      });
+
+      const response = await agent.resource('posts').move({
+        sourceId: p1.id,
+        targetId: p2.id,
+      });
+
+      await sleep(500);
+
+      const e1s = await workflow.getExecutions();
+      expect(e1s.length).toBe(1);
+      expect(e1s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+
     it('mode in "update or create" could trigger on each', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
@@ -694,6 +732,40 @@ describe('workflow > triggers > collection', () => {
     });
   });
 
+  describe('execute', () => {
+    it('disabled could be executed', async () => {
+      const workflow = await WorkflowModel.create({
+        type: 'collection',
+        sync: true,
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+      const e1s = await workflow.getExecutions();
+      expect(e1s.length).toBe(0);
+
+      const {
+        status,
+        body: { data },
+      } = await agent.resource('workflows').execute({
+        filterByTk: workflow.id,
+        values: {
+          data: p1.toJSON(),
+        },
+      });
+
+      expect(status).toBe(200);
+
+      const e2s = await workflow.getExecutions();
+      expect(e2s.length).toBe(1);
+      expect(e2s[0].toJSON()).toMatchObject(data.execution);
+      expect(data.execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+  });
+
   describe('cycling trigger', () => {
     it('trigger should not be triggered more than once in same execution', async () => {
       const workflow = await WorkflowModel.create({
@@ -799,6 +871,128 @@ describe('workflow > triggers > collection', () => {
       expect(e2s.length).toBe(1);
       expect(e2s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
     });
+
+    it('stack limit for same execution', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+        options: {
+          stackLimit: 3,
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'create',
+        config: {
+          collection: 'posts',
+          params: {
+            values: {
+              title: 't2',
+            },
+          },
+        },
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const posts = await PostRepo.find();
+      expect(posts.length).toBe(4);
+
+      const e1s = await workflow.getExecutions();
+      expect(e1s.length).toBe(3);
+      expect(e1s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e1s[1].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e1s[2].status).toBe(EXECUTION_STATUS.RESOLVED);
+
+      // NOTE: second trigger to ensure no skipped event
+      const p3 = await PostRepo.create({ values: { title: 't3' } });
+
+      await sleep(500);
+
+      const posts2 = await PostRepo.find();
+      expect(posts2.length).toBe(8);
+
+      const e2s = await workflow.getExecutions({ order: [['createdAt', 'DESC']] });
+      expect(e2s.length).toBe(6);
+      expect(e2s[3].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e2s[4].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e2s[5].status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+
+    it('stack limit for multiple cycling trigger', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+        options: {
+          stackLimit: 3,
+        },
+      });
+
+      const n1 = await w1.createNode({
+        type: 'create',
+        config: {
+          collection: 'categories',
+          params: {
+            values: {
+              title: 'c1',
+            },
+          },
+        },
+      });
+
+      const w2 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'categories',
+        },
+        options: {
+          stackLimit: 3,
+        },
+      });
+
+      const n2 = await w2.createNode({
+        type: 'create',
+        config: {
+          collection: 'posts',
+          params: {
+            values: {
+              title: 't2',
+            },
+          },
+        },
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const posts = await PostRepo.find();
+      expect(posts.length).toBe(4);
+
+      const e1s = await w1.getExecutions();
+      expect(e1s.length).toBe(3);
+      expect(e1s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e1s[1].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e1s[2].status).toBe(EXECUTION_STATUS.RESOLVED);
+
+      const e2s = await w2.getExecutions();
+      expect(e2s.length).toBe(3);
+      expect(e2s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e2s[1].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e2s[2].status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
   });
 
   describe('sync', () => {
@@ -834,8 +1028,7 @@ describe('workflow > triggers > collection', () => {
   describe('multiple data source', () => {
     let anotherDB: MockDatabase;
     beforeEach(async () => {
-      // @ts-ignore
-      anotherDB = app.dataSourceManager.dataSources.get('another').collectionManager.db;
+      anotherDB = (app.dataSourceManager.dataSources.get('another').collectionManager as SequelizeCollectionManager).db;
     });
 
     it('collection trigger on another', async () => {
@@ -890,9 +1083,6 @@ describe('workflow > triggers > collection', () => {
       const e1s = await w1.getExecutions();
       expect(e1s.length).toBe(1);
 
-      const user = await app.db.getRepository('users').findOne();
-      const agent = app.agent().login(user);
-
       const { body } = await agent.resource('workflows').revision({
         filterByTk: w1.id,
         filter: {
@@ -921,6 +1111,37 @@ describe('workflow > triggers > collection', () => {
         },
       });
       expect(e3s.length).toBe(1);
+    });
+
+    it.skip('sync event on another', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        sync: true,
+        config: {
+          mode: 1,
+          collection: 'another:posts',
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      const e1s = await workflow.getExecutions();
+      expect(e1s.length).toBe(0);
+
+      const AnotherPostRepo = anotherDB.getRepository('posts');
+      const anotherPost = await AnotherPostRepo.create({ values: { title: 't2' } });
+
+      const e2s = await workflow.getExecutions();
+      expect(e2s.length).toBe(1);
+      expect(e2s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e2s[0].context.data.title).toBe('t2');
+
+      const p1s = await PostRepo.find();
+      expect(p1s.length).toBe(1);
+
+      const p2s = await AnotherPostRepo.find();
+      expect(p2s.length).toBe(1);
     });
   });
 });

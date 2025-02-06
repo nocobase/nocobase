@@ -9,7 +9,7 @@
 
 import { ArrayField } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
-import { BlockProvider, FixedBlockWrapper, useBlockRequestContext, withDynamicSchemaProps } from '@nocobase/client';
+import { BlockProvider, useBlockRequestContext, withDynamicSchemaProps } from '@nocobase/client';
 import React, { createContext, useContext, useEffect } from 'react';
 import { useCalendarBlockParams } from '../hooks/useCalendarBlockParams';
 
@@ -22,21 +22,19 @@ const InternalCalendarBlockProvider = (props) => {
   const { resource, service } = useBlockRequestContext();
 
   return (
-    <FixedBlockWrapper>
-      <CalendarBlockContext.Provider
-        value={{
-          field,
-          service,
-          resource,
-          fieldNames,
-          showLunar,
-          defaultView,
-          fixedBlock: field?.decoratorProps?.fixedBlock,
-        }}
-      >
-        {props.children}
-      </CalendarBlockContext.Provider>
-    </FixedBlockWrapper>
+    <CalendarBlockContext.Provider
+      value={{
+        field,
+        service,
+        resource,
+        fieldNames,
+        showLunar,
+        defaultView,
+        fixedBlock: field?.decoratorProps?.fixedBlock,
+      }}
+    >
+      {props.children}
+    </CalendarBlockContext.Provider>
   );
 };
 

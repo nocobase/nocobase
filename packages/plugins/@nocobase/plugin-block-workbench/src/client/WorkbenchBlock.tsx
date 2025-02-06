@@ -7,20 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RecursionField, observer, useFieldSchema } from '@formily/react';
+import { css } from '@emotion/css';
+import { observer, useFieldSchema } from '@formily/react';
 import {
   CollectionContext,
   DataSourceContext,
   DndContext,
+  Icon,
+  NocoBaseRecursionField,
+  useBlockHeight,
   useDesignable,
   useSchemaInitializerRender,
   withDynamicSchemaProps,
-  Icon,
-  useBlockHeight,
   useOpenModeContext,
   useBlockHeightProps,
 } from '@nocobase/client';
-import { css } from '@emotion/css';
 import { Space, List, Avatar, theme } from 'antd';
 import React, { createContext, useEffect, useState, useRef, useMemo, useLayoutEffect } from 'react';
 import { WorkbenchLayout } from './workbenchBlockSettings';
@@ -137,7 +138,7 @@ const ResponsiveSpace = () => {
               }
             }
           >
-            <RecursionField name={key} schema={s} key={key} />
+            <NocoBaseRecursionField name={key} schema={s} key={key} />
           </div>
         ))}
       </Space>
@@ -183,7 +184,7 @@ const InternalIcons = () => {
                 >
                   <List.Item.Meta
                     avatar={<Avatar style={{ backgroundColor }} icon={<Icon type={icon} />} />}
-                    title={<RecursionField name={key} schema={s} key={key} />}
+                    title={<NocoBaseRecursionField name={key} schema={s} key={key} />}
                   ></List.Item.Meta>
                 </List.Item>
               );

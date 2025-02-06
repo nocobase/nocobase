@@ -14,9 +14,14 @@ import { isValid } from '@formily/shared';
 import { Plugin, useCompile, WorkflowConfig } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 
-import { ExecutionPage } from './ExecutionPage';
-import { WorkflowPage } from './WorkflowPage';
-import { WorkflowPane } from './WorkflowPane';
+// import { ExecutionPage } from './ExecutionPage';
+// import { WorkflowPage } from './WorkflowPage';
+// import { WorkflowPane } from './WorkflowPane';
+import { lazy } from '@nocobase/client';
+const { ExecutionPage } = lazy(() => import('./ExecutionPage'), 'ExecutionPage');
+const { WorkflowPage } = lazy(() => import('./WorkflowPage'), 'WorkflowPage');
+const { WorkflowPane } = lazy(() => import('./WorkflowPane'), 'WorkflowPane');
+
 import { Trigger } from './triggers';
 import CollectionTrigger from './triggers/collection';
 import ScheduleTrigger from './triggers/schedule';
@@ -40,12 +45,14 @@ export default class PluginWorkflowClient extends Plugin {
 
   useTriggersOptions = () => {
     const compile = useCompile();
-    return Array.from(this.triggers.getEntities()).map(([value, { title, ...options }]) => ({
-      value,
-      label: compile(title),
-      color: 'gold',
-      options,
-    }));
+    return Array.from(this.triggers.getEntities())
+      .map(([value, { title, ...options }]) => ({
+        value,
+        label: compile(title),
+        color: 'gold',
+        options,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
   };
 
   isWorkflowSync(workflow) {
@@ -85,11 +92,6 @@ export default class PluginWorkflowClient extends Plugin {
     this.app.router.add('admin.workflow.executions.id', {
       path: getWorkflowExecutionsPath(':id'),
       element: <ExecutionPage />,
-    });
-
-    this.app.addComponents({
-      WorkflowPage,
-      ExecutionPage,
     });
 
     this.app.pluginSettingsManager.add(NAMESPACE, {

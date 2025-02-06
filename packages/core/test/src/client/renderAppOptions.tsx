@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { render } from '@testing-library/react';
+import { render } from '.';
 import { GetAppComponentOptions, addXReadPrettyToEachLayer, getAppComponent } from '../web';
 import { WaitApp } from './utils';
 
