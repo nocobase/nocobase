@@ -13,7 +13,7 @@ import { issuedTokensCollectionName } from '../../constants';
 
 export default defineCollection({
   name: issuedTokensCollectionName,
-  migrationRules: ['schema-only', 'skip'],
+  migrationRules: ['schema-only'],
   autoGenId: false,
   createdAt: true,
   updatedAt: true,

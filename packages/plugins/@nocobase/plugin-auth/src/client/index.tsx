@@ -96,7 +96,12 @@ export class PluginAuthClient extends Plugin {
       sort: 0,
     });
     const [fulfilled, rejected] = authCheckMiddleware({ app: this.app });
-    this.app.apiClient.axios.interceptors.response.use(fulfilled, rejected);
+    this.app.apiClient.axios.interceptors.response['handlers'].unshift({
+      fulfilled,
+      rejected,
+      synchronous: false,
+      runWhen: null,
+    });
   }
 }
 

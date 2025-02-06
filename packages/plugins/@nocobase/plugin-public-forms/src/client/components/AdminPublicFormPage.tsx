@@ -202,7 +202,14 @@ export function AdminPublicFormPage() {
           </Dropdown>
         </Space>
       </div>
-      <div style={{ maxWidth: 800, margin: '100px auto' }}>
+      <div
+        style={{
+          maxWidth: 800,
+          margin: '100px auto',
+          position: 'relative',
+          zIndex: 0 /** create a new z-index context */,
+        }}
+      >
         <VariablesProvider
           filterVariables={(v) => {
             return !['$user', '$nRole', '$nToken', '$nURLSearchParams'].includes(v.key);

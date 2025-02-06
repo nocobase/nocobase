@@ -9,7 +9,6 @@
 
 import { Context, Next } from '@nocobase/actions';
 import { Registry } from '@nocobase/utils';
-import { ACL } from '@nocobase/acl';
 import { Auth, AuthExtend } from './auth';
 import { JwtOptions, JwtService } from './base/jwt-service';
 import { ITokenBlacklistService } from './base/token-blacklist-service';
