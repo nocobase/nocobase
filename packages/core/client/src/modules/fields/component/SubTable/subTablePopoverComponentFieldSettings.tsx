@@ -15,7 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useCollectionManager_deprecated, useSortFields } from '../../../../collection-manager';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
-import { useCollectionManager, useRerenderDataBlock } from '../../../../data-source';
+import { useCollectionManager, useRerenderDataBlock, useCollectionField } from '../../../../data-source';
 import { FlagProvider } from '../../../../flag-provider/FlagProvider';
 import { withDynamicSchemaProps } from '../../../../hoc/withDynamicSchemaProps';
 import {
@@ -79,7 +79,8 @@ export const allowSelectExistingRecord = {
     const fieldSchema = useFieldSchema();
     const { multiple } = fieldSchema['x-component-props'];
     const readPretty = useIsFieldReadPretty();
-    return !readPretty && multiple !== false;
+    const collectionField = useCollectionField();
+    return !readPretty && multiple !== false && ['hasMany', 'belongsToMany'].includes(collectionField?.type);
   },
   useComponentProps() {
     const { t } = useTranslation();
