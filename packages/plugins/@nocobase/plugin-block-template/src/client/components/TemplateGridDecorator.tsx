@@ -21,7 +21,7 @@ export const TemplateGridDecorator = observer((props: any) => {
   const field = useField();
   const update = useUpdate();
   const preInitializerDisplay = useRef('block');
-  const preBlockSchemaUid = useRef(fieldSchema['x-uid']);
+  const preBlockSchemaUid = useRef(findBlockRootSchema(fieldSchema)?.['x-uid']);
   const api = useAPIClient();
   const template = useBlockTemplateInfo();
 
