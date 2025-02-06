@@ -289,7 +289,7 @@ export function getFullSchema(
     }
   } else {
     const target = _.cloneDeep(templateschemacache[templateRootId]);
-    const result = mergeSchema(target, schema, rootId, templateschemacache, templateInfos);
+    const result = mergeSchema(target || {}, schema, rootId, templateschemacache, templateInfos);
     ret = result;
   }
   addToolbarClass(ret);
@@ -358,7 +358,7 @@ export function mergeSchema(
               if (templateItem) {
                 // Merge the schemas
                 const mergedSchema = mergeSchema(
-                  templateItem.schema,
+                  templateItem.schema || {},
                   sourceItem.schema,
                   sourceItem.schema['x-template-root-uid'] || rootId,
                   templateschemacache,
@@ -378,21 +378,29 @@ export function mergeSchema(
             targetKeys = Object.keys(objectValue);
           }
 
-          // AssociationField.Nester
-          if (
-            objectValue?.['x-component'] === 'AssociationField.Nester' &&
-            sourceValue?.['x-component'] === 'AssociationField.Nester'
-          ) {
-            sourceValue['x-template-uid'] = objectValue['x-uid'];
-            sourceValue['properties'] = mergeSchema(
-              objectValue['properties'],
-              sourceValue['properties'],
-              rootId,
-              templateschemacache,
-              templateInfos,
-            );
-            objectValue = {};
-            object['properties'] = objectValue;
+          // AssociationField.*
+          if (object['x-component'] === 'CollectionField') {
+            for (const skey of sourceKeys) {
+              const assFieldCom = sourceValue[skey]?.['x-component'];
+              if (
+                ['AssociationField.Selector', 'AssociationField.Nester', 'AssociationField.SubTable'].includes(
+                  assFieldCom,
+                )
+              ) {
+                const tkey = targetKeys.find((k) => objectValue[k]['x-component'] === assFieldCom);
+                if (tkey) {
+                  sourceValue[skey]['x-template-uid'] = objectValue[tkey]['x-uid'];
+                  sourceValue[skey]['properties'] = mergeSchema(
+                    objectValue[tkey]['properties'] || {},
+                    sourceValue[skey]['properties'],
+                    rootId,
+                    templateschemacache,
+                    templateInfos,
+                  );
+                  targetKeys = targetKeys.filter((k) => k !== tkey);
+                }
+              }
+            }
           }
 
           // remove duplicate configureActions keys and configureFields keys
@@ -498,6 +506,13 @@ export function mergeSchema(
                 if (targetItem) {
                   targetFieldsMap.delete(targetItem.schema['x-uid']);
                   sourceItem.schema['x-template-uid'] = targetItem.schema['x-uid'];
+                  sourceItem.schema = mergeSchema(
+                    targetItem.schema || {},
+                    sourceItem.schema,
+                    sourceItem.schema['x-template-root-uid'] || rootId,
+                    templateschemacache,
+                    templateInfos,
+                  );
                 }
               }
               // 剩余的fields
