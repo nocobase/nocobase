@@ -183,7 +183,7 @@ describe('workflow > instructions > manual', () => {
       expect(job.result).toEqual({ f1: { a: 2 }, _: 'resolve' });
     });
 
-    it('values rejected will not be overrided by action assigned', async () => {
+    it('values rejected will be overrided by action assigned', async () => {
       const n1 = await workflow.createNode({
         type: 'manual',
         config: {
@@ -230,7 +230,7 @@ describe('workflow > instructions > manual', () => {
       expect(execution.status).toBe(EXECUTION_STATUS.REJECTED);
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.REJECTED);
-      expect(job.result).toEqual({ f1: { a: 1 }, _: 'reject' });
+      expect(job.result).toEqual({ f1: { a: 2 }, _: 'reject' });
     });
 
     it('values saved as pending will not be overrided by action assigned', async () => {
