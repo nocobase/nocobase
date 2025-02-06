@@ -18,6 +18,7 @@ const useStyles = createStyles(({ token, css }) => {
       padding: 0;
       width: 100%;
       border-left: 2px solid ${token.colorBorderSecondary};
+      overflow-x: auto;
       .ganttheader: {
         border-bottom: 1px solid ${token.colorBorderSecondary};
         font-weight: 700;
@@ -30,6 +31,7 @@ const useStyles = createStyles(({ token, css }) => {
       margin: 0;
       padding: 0;
       overflow: hidden;
+      margin-bottom: -5px;
     `,
     wrapper: css`
       display: flex;
