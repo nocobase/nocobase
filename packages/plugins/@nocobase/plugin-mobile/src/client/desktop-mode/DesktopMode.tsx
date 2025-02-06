@@ -7,23 +7,27 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC } from 'react';
 import { Layout } from 'antd';
+import React, { FC } from 'react';
 import { isDesktop } from 'react-device-detect';
 
-import { DesktopModeHeader } from './Header';
-import { DesktopModeContent } from './Content';
-import { SizeContextProvider } from './sizeContext';
+import { useUIConfigurationPermissions } from '@nocobase/client';
 import { PageBackgroundColor } from '../constants';
+import { DesktopModeContent } from './Content';
+import { DesktopModeHeader } from './Header';
+import { SizeContextProvider } from './sizeContext';
 
 interface DesktopModeProps {
   children?: React.ReactNode;
 }
 
 export const DesktopMode: FC<DesktopModeProps> = ({ children }) => {
-  if (!isDesktop) {
+  const { allowConfigUI } = useUIConfigurationPermissions();
+
+  if (!isDesktop || !allowConfigUI) {
     return <>{children}</>;
   }
+
   return (
     <SizeContextProvider>
       <Layout style={{ height: '100%', background: PageBackgroundColor }}>
