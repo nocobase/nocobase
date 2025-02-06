@@ -95,7 +95,7 @@ Except for Third-Party Open Source Software, the Company owns all copyrights, tr
 6.9 If there are other agreements in the contract for the above rights, the contract agreement shall prevail.
 
 ====================================
-1. Obligations of Commercial License
+7. Obligations of Commercial License
 ====================================
 
 7.1 It is not allowed to remove or change all intellectual property statements about NocoBase in the code.
