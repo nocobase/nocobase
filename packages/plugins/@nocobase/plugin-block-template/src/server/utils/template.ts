@@ -179,11 +179,7 @@ function mergeSchema(template, schema, rootTemplate) {
                 const tkey = targetKeys.find((k) => objectValue[k]['x-component'] === assFieldCom);
                 if (tkey) {
                   sourceValue[skey]['x-template-uid'] = objectValue[tkey]['x-uid'];
-                  sourceValue[skey]['properties'] = mergeSchema(
-                    objectValue[tkey]['properties'] || {},
-                    sourceValue[skey]['properties'],
-                    rootTemplate,
-                  );
+                  sourceValue[skey] = mergeSchema(objectValue[tkey] || {}, sourceValue[skey], rootTemplate);
                   targetKeys = targetKeys.filter((k) => k !== tkey);
                 }
               }

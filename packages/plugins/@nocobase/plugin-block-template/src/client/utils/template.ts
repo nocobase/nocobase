@@ -390,9 +390,9 @@ export function mergeSchema(
                 const tkey = targetKeys.find((k) => objectValue[k]['x-component'] === assFieldCom);
                 if (tkey) {
                   sourceValue[skey]['x-template-uid'] = objectValue[tkey]['x-uid'];
-                  sourceValue[skey]['properties'] = mergeSchema(
-                    objectValue[tkey]['properties'] || {},
-                    sourceValue[skey]['properties'],
+                  sourceValue[skey] = mergeSchema(
+                    objectValue[tkey] || {},
+                    sourceValue[skey],
                     rootId,
                     templateschemacache,
                     templateInfos,
