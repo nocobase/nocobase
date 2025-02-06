@@ -95,7 +95,7 @@ const InternalSortableItem = observer(
     const data = useMemo(() => {
       return {
         insertAdjacent: 'afterEnd',
-        schema: schema,
+        schema,
         removeParentsIfNoChildren: removeParentsIfNoChildren ?? true,
       };
     }, [schema, removeParentsIfNoChildren]);

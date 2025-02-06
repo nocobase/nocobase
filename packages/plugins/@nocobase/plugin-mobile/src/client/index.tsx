@@ -259,7 +259,7 @@ export class PluginMobileClient extends Plugin {
 
       return {
         key: 'mobile-menu',
-        label: t('Mobile menu', {
+        label: t('Mobile routes', {
           ns: pkg.name,
         }),
         children: (

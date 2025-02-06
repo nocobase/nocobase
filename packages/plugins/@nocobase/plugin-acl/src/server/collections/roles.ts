@@ -13,7 +13,7 @@ export default defineCollection({
   origin: '@nocobase/plugin-acl',
   dumpRules: 'required',
   description: 'Role data',
-  migrationRules: ['overwrite', 'skip'],
+  migrationRules: ['overwrite', 'schema-only'],
   name: 'roles',
   title: '{{t("Roles")}}',
   autoGenId: false,

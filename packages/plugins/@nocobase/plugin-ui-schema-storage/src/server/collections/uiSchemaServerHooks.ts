@@ -11,7 +11,7 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default {
   dumpRules: 'required',
-  migrationRules: ['overwrite', 'skip'],
+  migrationRules: ['overwrite', 'schema-only'],
   name: 'uiSchemaServerHooks',
   model: 'ServerHookModel',
   // autoGenId: false,

@@ -138,7 +138,7 @@ describe('destroy action with acl', () => {
 
     const a1 = await A.repository.findOne({ filter: { title: 'a1' } });
 
-    const response = await app.agent().resource('a.bs', a1.get('id')).list();
+    const response = await app.agent().login(1).resource('a.bs', a1.get('id')).list();
     expect(response.statusCode).toEqual(200);
   });
 
@@ -175,6 +175,7 @@ describe('destroy action with acl', () => {
 
     const response = await app
       .agent()
+      .login(1)
       .resource('posts')
       .destroy({
         filterByTk: p1.get('id'),

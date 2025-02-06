@@ -8,19 +8,30 @@
  */
 const _ = require('lodash');
 const { Command } = require('commander');
-const { isDev, run, postCheck, downloadPro, promptForTs } = require('../util');
+const { run, postCheck, downloadPro, promptForTs } = require('../util');
 const { existsSync, rmSync } = require('fs');
-const { resolve } = require('path');
+const { resolve, isAbsolute } = require('path');
 const chalk = require('chalk');
 const chokidar = require('chokidar');
 
+function getSocketPath() {
+  const { SOCKET_PATH } = process.env;
+
+  if (isAbsolute(SOCKET_PATH)) {
+    return SOCKET_PATH;
+  }
+
+  return resolve(process.cwd(), SOCKET_PATH);
+}
+
 function deleteSockFiles() {
-  const { SOCKET_PATH, PM2_HOME } = process.env;
+  const { PM2_HOME } = process.env;
   if (existsSync(PM2_HOME)) {
     rmSync(PM2_HOME, { recursive: true });
   }
-  if (existsSync(SOCKET_PATH)) {
-    rmSync(SOCKET_PATH);
+  const socketPath = getSocketPath();
+  if (existsSync(socketPath)) {
+    rmSync(socketPath);
   }
 }
 

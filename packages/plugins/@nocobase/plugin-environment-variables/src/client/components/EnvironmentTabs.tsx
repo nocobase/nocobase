@@ -6,7 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { DownOutlined, PlusOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
+import { DeleteOutlined, DownOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import {
   Checkbox,
   FormButtonGroup,
@@ -18,16 +18,9 @@ import {
   Reset,
   Submit,
 } from '@formily/antd-v5';
-import { useField } from '@formily/react';
 import { registerValidateRules } from '@formily/core';
-import { createSchemaField } from '@formily/react';
-import {
-  SchemaComponentOptions,
-  useAPIClient,
-  SchemaComponent,
-  useFilterFieldProps,
-  useFilterFieldOptions,
-} from '@nocobase/client';
+import { createSchemaField, useField } from '@formily/react';
+import { SchemaComponent, SchemaComponentOptions, useAPIClient } from '@nocobase/client';
 import { Alert, App, Button, Card, Dropdown, Flex, Space, Table, Tag } from 'antd';
 import React, { useContext, useState } from 'react';
 import { VAR_NAME_RE } from '../../re';
@@ -391,7 +384,7 @@ export function EnvironmentTabs() {
           style={{ marginBottom: '1.2em', alignItems: 'center' }}
           description={
             <div>
-              {t('Environment variables have been updated. A restart is required for the changes to take effect.')}{' '}
+              {t('Variables and secrets have been updated. A restart is required for the changes to take effect.')}{' '}
             </div>
           }
           action={

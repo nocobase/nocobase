@@ -83,7 +83,14 @@ export const ScheduleModes = {
           nullable: false,
           changeOnSelect: true,
           render(props) {
-            return <DatePicker showTime placeholder={lang('Current time')} {...props} value={dayjs(props.value)} />;
+            return (
+              <DatePicker
+                showTime
+                placeholder={lang('Current time')}
+                {...props}
+                value={dayjs(props.value || new Date())}
+              />
+            );
           },
         },
       },

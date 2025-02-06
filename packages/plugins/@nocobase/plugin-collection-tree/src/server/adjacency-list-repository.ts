@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import lodash from 'lodash';
-import { CountOptions, FindOptions, Repository, FindAndCountOptions, Transactionable, Model } from '@nocobase/database';
+import { CountOptions, FindAndCountOptions, FindOptions, Model, Repository, Transactionable } from '@nocobase/database';
 import { isValidFilter } from '@nocobase/utils';
+import lodash from 'lodash';
 import { TreeCollection } from './tree-collection';
 
 export class AdjacencyListRepository extends Repository {
@@ -207,7 +207,8 @@ export class AdjacencyListRepository extends Repository {
   }
 
   async count(countOptions?: CountOptions & { raw?: boolean; tree?: boolean }): Promise<number> {
-    if (countOptions.raw || !countOptions.tree) {
+    countOptions = countOptions || {};
+    if (countOptions?.raw || !countOptions?.tree) {
       return await super.count(countOptions);
     }
     if (!isValidFilter(countOptions.filter) && !countOptions.filterByTk) {
