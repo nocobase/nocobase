@@ -102,7 +102,7 @@ export class BaseAuth extends Auth {
 
     const tokenPolicy = await this.tokenController.getConfig();
 
-    if (!signInTime || Date.now() - signInTime > tokenPolicy.sessionExpirationTime) {
+    if (signInTime && Date.now() - signInTime > tokenPolicy.sessionExpirationTime) {
       this.ctx.throw(401, {
         message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
         code: AuthErrorCode.EXPIRED_SESSION,

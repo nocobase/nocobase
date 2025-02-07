@@ -47,8 +47,8 @@ describe('middleware', () => {
     });
 
     const userPlugin = app.getPlugin('users') as UsersPlugin;
-    adminAgent = app.agent().login(admin);
-    memberAgent = app.agent().login(member);
+    adminAgent = await app.agent().loginWithJti(admin);
+    memberAgent = await app.agent().loginWithJti(member);
 
     await db.getRepository('collections').create({
       values: {
@@ -135,7 +135,7 @@ describe('middleware', () => {
         },
       },
     });
-    const response = await app.agent().login(member).resource('posts').create({
+    const response = await (await app.agent().loginWithJti(member)).resource('posts').create({
       values: {},
     });
 

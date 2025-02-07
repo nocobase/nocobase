@@ -77,7 +77,7 @@ describe('own test', () => {
 
     pluginUser = app.getPlugin('users');
 
-    adminAgent = app.agent().login(admin);
+    adminAgent = app.agent().loginWithJti(admin);
 
     user = await db.getRepository('users').create({
       values: {
@@ -86,7 +86,7 @@ describe('own test', () => {
       },
     });
 
-    userAgent = app.agent().login(user);
+    userAgent = app.agent().loginWithJti(user);
   });
 
   it('should list without createBy', async () => {

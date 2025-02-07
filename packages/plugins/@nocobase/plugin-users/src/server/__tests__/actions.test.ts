@@ -36,7 +36,7 @@ describe('actions', () => {
     });
 
     agent = app.agent();
-    adminAgent = app.agent().login(adminUser);
+    adminAgent = await app.agent().loginWithJti(adminUser);
   });
 
   afterEach(async () => {

@@ -40,7 +40,7 @@ describe('external data source', () => {
         username: process.env.INIT_ROOT_USERNAME,
       },
     });
-    adminAgent = app.agent().login(adminUser);
+    adminAgent = await app.agent().loginWithJti(adminUser);
   });
 
   it('should check permission for external data source', async () => {

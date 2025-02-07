@@ -256,11 +256,15 @@ describe('actions', () => {
           password: '12345',
         },
       });
-      const res3 = await agent.login(user1).post('/auth:changePassword').set({ 'X-Authenticator': 'basic' }).send({
-        oldPassword: '12345',
-        newPassword: '123456',
-        confirmPassword: '123456',
-      });
+      const res3 = await agent
+        .loginWithJti(user1)
+        .post('/auth:changePassword')
+        .set({ 'X-Authenticator': 'basic' })
+        .send({
+          oldPassword: '12345',
+          newPassword: '123456',
+          confirmPassword: '123456',
+        });
       expect(res3.statusCode).toEqual(200);
     });
 
@@ -278,7 +282,7 @@ describe('actions', () => {
           password: '12345',
         },
       });
-      const userAgent = await agent.login(user);
+      const userAgent = await agent.loginWithJti(user);
 
       const res = await userAgent.post('/auth:changePassword').set({ 'X-Authenticator': 'basic' }).send({
         oldPassword: '12345',
