@@ -114,7 +114,7 @@ describe('association test', () => {
       },
     });
 
-    const userAgent = app.agent().login(user);
+    const userAgent = await app.agent().loginWithJti(user);
 
     const postCommentsResp = await userAgent.resource('posts.userComments', post.get('id')).list({});
     expect(postCommentsResp.statusCode).toEqual(200);
@@ -168,9 +168,9 @@ describe.skip('association field acl', () => {
     });
 
     const userPlugin = app.getPlugin('users') as UsersPlugin;
-    userAgent = app.agent().login(user);
+    userAgent = await app.agent().loginWithJti(user);
 
-    adminAgent = app.agent().login(admin);
+    adminAgent = await app.agent().loginWithJti(admin);
 
     await db.getRepository('collections').create({
       values: {

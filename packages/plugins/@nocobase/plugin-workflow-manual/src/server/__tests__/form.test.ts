@@ -44,7 +44,7 @@ describe('workflow > instructions > manual', () => {
       { id: 3, nickname: 'b' },
     ]);
 
-    userAgents = users.map((user) => app.agent().login(user));
+    userAgents = await Promise.all(users.map((user) => app.agent().loginWithJti(user)));
 
     workflow = await WorkflowModel.create({
       enabled: true,

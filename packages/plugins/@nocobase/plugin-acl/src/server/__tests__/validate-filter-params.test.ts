@@ -41,7 +41,7 @@ describe('acl', () => {
       },
     });
 
-    adminAgent = app.agent().login(admin);
+    adminAgent = await app.agent().loginWithJti(admin);
     uiSchemaRepository = db.getRepository('uiSchemas');
     await db.getRepository('collections').create({
       context: {},
