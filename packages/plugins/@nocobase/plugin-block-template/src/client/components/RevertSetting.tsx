@@ -155,9 +155,10 @@ export const RevertSetting = () => {
               ...templateSchema['x-decorator-props'],
               key: uid(),
             };
+            form.clearFormGraph('*', false);
+            blockForm?.clearFormGraph('*', false);
             form.reset();
-            form.clearFormGraph();
-            blockForm?.clearFormGraph();
+            blockForm?.reset();
             message.success(t('Reset successfully'), 0.2);
           },
         });
