@@ -402,7 +402,7 @@ describe('data source with acl', () => {
 
     // call roles check
     // @ts-ignore
-    const checkRep = await app.agent().loginWithJti(testUser).resource('roles').check({});
+    const checkRep = await (await app.agent().loginWithJti(testUser)).resource('roles').check({});
     expect(checkRep.status).toBe(200);
 
     const checkData = checkRep.body;
