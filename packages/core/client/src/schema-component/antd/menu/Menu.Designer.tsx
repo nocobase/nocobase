@@ -190,7 +190,6 @@ const InsertMenuItems = (props) => {
             children: [
               {
                 type: NocoBaseDesktopRouteType.tabs,
-                title: '{{t("Unnamed")}}',
                 schemaUid: tabSchemaUid,
                 tabSchemaName,
                 hidden: true,
