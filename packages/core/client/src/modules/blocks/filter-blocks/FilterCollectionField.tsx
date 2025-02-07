@@ -55,9 +55,9 @@ export const FilterCollectionFieldInternalField: React.FC = (props: Props) => {
   const { uiSchema: uiSchemaOrigin, defaultValue, interface: collectionInterface } = useCollectionField();
   const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue();
   const targetInterface = getInterface(collectionInterface);
-  const operator = targetInterface?.filterable?.operators?.find(
-    (v, index) => v.value === fieldSchema['x-filter-operator'] || index === 0,
-  );
+  const operator =
+    targetInterface?.filterable?.operators?.find((v, index) => v.value === fieldSchema?.['x-filter-operator']) ||
+    targetInterface?.filterable?.operators?.[0];
   const Component = useComponent(
     operator?.schema?.['x-component'] ||
       fieldSchema['x-component-props']?.['component'] ||

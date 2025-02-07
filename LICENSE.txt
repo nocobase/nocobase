@@ -1,4 +1,4 @@
-Updated Date: October 15, 2024
+Updated Date: February 6, 2025
 
 NocoBase License Agreement
 
@@ -78,7 +78,7 @@ Except for Third-Party Open Source Software, the Company owns all copyrights, tr
 
 6.1 Obtain a permanent commercial license of the Software.
 
-6.2 Get 12 months of upgrade and exclusive technical support.
+6.2 Get software upgrades and exclusive technical support during the upgrade validity period.
 
 6.3 The licensed Software can be used for commercial purposes with no restrictions on the number of applications and users.
 
@@ -108,11 +108,13 @@ Except for Third-Party Open Source Software, the Company owns all copyrights, tr
 
 7.5 It is not allowed for the User with a Standard Edition license to sell Upper Layer Application to clients without a Commercial license.
 
-7.6 It is not allowed to publicly sell plugins developed for Software outside of the Marketplace.
+7.6 It is not allowed for the User with a Professional or Enterprise Edition license to sell Upper Layer Application to clients without a Commercial license with access to further development and configuration.
 
-7.7 If there is a violation of the above obligations or the terms of this Agreement, the rights owned by the User will be immediately terminated, the paid fees will not be refunded, and the Company reserves the right to pursue the User's legal responsibility.
+7.7 It is not allowed to publicly sell plugins developed for Software outside of the Marketplace.
 
-7.8 If there are other agreements in the contract for the above obligations, the contract agreement shall prevail.
+7.8 If there is a violation of the above obligations or the terms of this Agreement, the rights owned by the User will be immediately terminated, the paid fees will not be refunded, and the Company reserves the right to pursue the User's legal responsibility.
+
+7.9 If there are other agreements in the contract for the above obligations, the contract agreement shall prevail.
 
 ======================================
 8. Rights of Commercial Plugin License
@@ -120,7 +122,7 @@ Except for Third-Party Open Source Software, the Company owns all copyrights, tr
 
 8.1 Obtain a permanent Commercial Plugin License for the Commercial Plugin.
 
-8.2 Receive 12 months of upgrades and exclusive technical support.
+8.2 Get plugins upgrades and exclusive technical support during the upgrade validity period.
 
 8.3 Can be used for commercial purposes without restrictions on the number of applications or users.
 

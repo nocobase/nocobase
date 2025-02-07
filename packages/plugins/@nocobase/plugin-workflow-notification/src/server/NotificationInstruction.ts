@@ -14,7 +14,13 @@ import { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plu
 export default class extends Instruction {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const options = processor.getParsedValue(node.config, node.id);
-    const sendParams = { channelName: options.channelName, message: options, triggerFrom: 'workflow' };
+    const scope = processor.getScope(node.id);
+    const sendParams = {
+      channelName: options.channelName,
+      message: { ...options, content: node.config.content },
+      triggerFrom: 'workflow',
+      data: scope,
+    };
     const notificationServer = this.workflow.pm.get(NotificationsServerPlugin) as NotificationsServerPlugin;
 
     const { workflow } = processor.execution;
