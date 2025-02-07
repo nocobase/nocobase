@@ -164,7 +164,7 @@ export class BaseAuth extends Auth {
           url: this.ctx.originalUrl,
           headers: JSON.stringify(this.ctx?.req?.headers),
         });
-        const isStreamRequest = this.ctx.req.headers['accept'] === 'text/event-stream';
+        const isStreamRequest = this.ctx?.req?.headers?.accept === 'text/event-stream';
 
         if (isStreamRequest) {
           this.ctx.throw(401, {

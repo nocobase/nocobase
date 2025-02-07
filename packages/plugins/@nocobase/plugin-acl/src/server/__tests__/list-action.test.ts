@@ -220,9 +220,7 @@ describe('list action with acl', () => {
     // );
 
     // @ts-ignore
-    const response = await await app
-      .agent()
-      .loginWithJti(users[0].id, 'user')
+    const response = await (await app.agent().loginWithJti(users[0].id, 'user'))
       .set('X-With-ACL-Meta', true)
       .resource('posts')
       .list();
@@ -393,7 +391,7 @@ describe('list association action with acl', () => {
       },
     });
 
-    const userAgent = await app.agent().loginWithJti(user, 'newRole').set('X-With-ACL-Meta', true);
+    const userAgent = await (await app.agent().loginWithJti(user, 'newRole')).set('X-With-ACL-Meta', true);
 
     const createResp = await userAgent.resource('posts').create({
       values: {
