@@ -264,8 +264,8 @@ export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
       method,
       refreshAfterMove = true,
     }: {
-      sourceId: string;
-      targetId?: string;
+      sourceId: string | number;
+      targetId?: string | number;
       targetScope?: any;
       sortField?: string;
       sticky?: boolean;

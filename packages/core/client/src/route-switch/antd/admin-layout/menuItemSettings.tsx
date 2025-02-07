@@ -2,13 +2,17 @@ import { ExclamationCircleFilled } from "@ant-design/icons";
 import { TreeSelect } from '@formily/antd-v5';
 import { Field, onFieldChange } from '@formily/core';
 import { ISchema } from "@formily/react";
+import { uid } from "@formily/shared";
 import { Modal } from 'antd';
 import React, { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { isVariable, NocoBaseDesktopRouteType, useAllAccessDesktopRoutes, useCompile, useCurrentRoute, useNocoBaseRoutes, useURLAndHTMLSchema } from "../../..";
+import { isVariable, NocoBaseDesktopRouteType, useAllAccessDesktopRoutes, useCompile, useCurrentRoute, useDesignable, useNocoBaseRoutes, useURLAndHTMLSchema } from "../../..";
+import {
+  getPageMenuSchema
+} from '../../../';
 import { SchemaSettings } from "../../../application/schema-settings/SchemaSettings";
 import { SchemaToolbar } from "../../../schema-settings/GeneralSchemaDesigner";
-import { SchemaSettingsModalItem, SchemaSettingsSwitchItem } from "../../../schema-settings/SchemaSettings";
+import { SchemaSettingsModalItem, SchemaSettingsSubMenu, SchemaSettingsSwitchItem } from "../../../schema-settings/SchemaSettings";
 import { NocoBaseDesktopRoute } from "./convertRoutesToSchema";
 
 const components = { TreeSelect };
@@ -26,6 +30,235 @@ const toItems = (routes: NocoBaseDesktopRoute[], { t, compile }) => {
     items.push(item);
   }
   return items;
+};
+
+const insertPositionToMethod = {
+  beforeBegin: 'prepend',
+  afterEnd: 'insertAfter',
+};
+
+const InsertMenuItems = (props) => {
+  const { eventKey, title, insertPosition } = props;
+  const { t } = useTranslation();
+  const { dn } = useDesignable();
+  const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
+  const currentRoute = useCurrentRoute();
+  const isSubMenu = currentRoute?.type === NocoBaseDesktopRouteType.group;
+  const { createRoute, moveRoute } = useNocoBaseRoutes();
+
+  if (!isSubMenu && insertPosition === 'beforeEnd') {
+    return null;
+  }
+
+  return (
+    <SchemaSettingsSubMenu eventKey={eventKey} title={title}>
+      <SchemaSettingsModalItem
+        eventKey={`${insertPosition}group`}
+        title={t('Group')}
+        schema={
+          {
+            type: 'object',
+            title: t('Add group'),
+            properties: {
+              title: {
+                'x-decorator': 'FormItem',
+                'x-component': 'Input',
+                title: t('Menu item title'),
+                required: true,
+                'x-component-props': {},
+              },
+              icon: {
+                title: t('Icon'),
+                'x-component': 'IconPicker',
+                'x-decorator': 'FormItem',
+              },
+            },
+          } as ISchema
+        }
+        onSubmit={async ({ title, icon }) => {
+          const schemaUid = uid();
+          const parentId = insertPosition === 'beforeEnd' ? currentRoute?.id : currentRoute?.parentId;
+
+          // 1. 先创建一个路由
+          const { data } = await createRoute({
+            type: NocoBaseDesktopRouteType.group,
+            title,
+            icon,
+            // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
+            parentId: parentId || undefined,
+            schemaUid,
+          });
+
+          if (insertPositionToMethod[insertPosition]) {
+            // 2. 然后再把路由移动到对应的位置
+            await moveRoute({
+              sourceId: data?.data?.id,
+              targetId: currentRoute?.id as any,
+              sortField: 'sort',
+              method: insertPositionToMethod[insertPosition],
+            });
+          }
+
+          // 3. 插入一个对应的 Schema
+          // TODO: group 不需要插入 Schema
+          dn.insertAdjacent(insertPosition, {
+            type: 'void',
+            title,
+            'x-component': 'Menu.SubMenu',
+            'x-decorator': 'ACLMenuItemProvider',
+            'x-component-props': {
+              icon,
+            },
+            'x-uid': schemaUid,
+          });
+        }}
+      />
+
+      <SchemaSettingsModalItem
+        eventKey={`${insertPosition}page`}
+        title={t('Page')}
+        schema={
+          {
+            type: 'object',
+            title: t('Add page'),
+            properties: {
+              title: {
+                'x-decorator': 'FormItem',
+                'x-component': 'Input',
+                title: t('Menu item title'),
+                required: true,
+                'x-component-props': {},
+              },
+              icon: {
+                title: t('Icon'),
+                'x-component': 'IconPicker',
+                'x-decorator': 'FormItem',
+              },
+            },
+          } as ISchema
+        }
+        onSubmit={async ({ title, icon }) => {
+          const menuSchemaUid = uid();
+          const pageSchemaUid = uid();
+          const tabSchemaUid = uid();
+          const tabSchemaName = uid();
+          const parentId = insertPosition === 'beforeEnd' ? currentRoute?.id : currentRoute?.parentId;
+
+
+          // 1. 先创建一个路由
+          const { data } = await createRoute({
+            type: NocoBaseDesktopRouteType.page,
+            title,
+            icon,
+            // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
+            parentId: parentId || undefined,
+            schemaUid: pageSchemaUid,
+            menuSchemaUid,
+            enableTabs: false,
+            children: [
+              {
+                type: NocoBaseDesktopRouteType.tabs,
+                title: '{{t("Unnamed")}}',
+                schemaUid: tabSchemaUid,
+                tabSchemaName,
+                hidden: true,
+              },
+            ],
+          });
+
+          // 2. 然后再把路由移动到对应的位置
+          await moveRoute({
+            sourceId: data?.data?.id,
+            targetId: currentRoute?.id,
+            sortField: 'sort',
+            method: insertPositionToMethod[insertPosition],
+          });
+
+          // 3. 插入一个对应的 Schema
+          dn.insertAdjacent(
+            insertPosition,
+            getPageMenuSchema({
+              title,
+              icon,
+              pageSchemaUid,
+              menuSchemaUid,
+              tabSchemaUid,
+              tabSchemaName,
+            }),
+          );
+        }}
+      />
+      <SchemaSettingsModalItem
+        eventKey={`${insertPosition}link`}
+        title={t('Link')}
+        schema={
+          {
+            type: 'object',
+            title: t('Add link'),
+            properties: {
+              title: {
+                title: t('Menu item title'),
+                required: true,
+                'x-component': 'Input',
+                'x-decorator': 'FormItem',
+              },
+              icon: {
+                title: t('Icon'),
+                'x-component': 'IconPicker',
+                'x-decorator': 'FormItem',
+              },
+              href: urlSchema,
+              params: paramsSchema,
+            },
+          } as ISchema
+        }
+        onSubmit={async ({ title, icon, href, params }) => {
+          const schemaUid = uid();
+          const parentId = insertPosition === 'beforeEnd' ? currentRoute?.id : currentRoute?.parentId;
+
+          // 1. 先创建一个路由
+          const { data } = await createRoute(
+            {
+              type: NocoBaseDesktopRouteType.link,
+              title,
+              icon,
+              // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
+              parentId: parentId || undefined,
+              schemaUid,
+              options: {
+                href,
+                params,
+              },
+            },
+            false,
+          );
+
+          // 2. 然后再把路由移动到对应的位置
+          await moveRoute({
+            sourceId: data?.data?.id,
+            targetId: currentRoute?.id,
+            sortField: 'sort',
+            method: insertPositionToMethod[insertPosition],
+          });
+
+          // 3. 插入一个对应的 Schema
+          // TODO: link 不需要插入 Schema
+          dn.insertAdjacent(insertPosition, {
+            type: 'void',
+            title,
+            'x-component': 'Menu.URL',
+            'x-decorator': 'ACLMenuItemProvider',
+            'x-component-props': {
+              icon,
+              href,
+              params,
+            },
+            'x-uid': schemaUid,
+          });
+        }}
+      />
+    </SchemaSettingsSubMenu>
+  );
 };
 
 const EditMenuItem = () => {
@@ -228,6 +461,31 @@ export const menuItemSettings = new SchemaSettings({
     {
       name: 'moveTo',
       Component: MoveToMenuItem,
+    },
+    {
+      name: 'divider',
+      type: 'divider',
+    },
+    {
+      name: 'insertbeforeBegin',
+      Component: () => {
+        const { t } = useTranslation();
+        return <InsertMenuItems eventKey={'insertbeforeBegin'} title={t('Insert before')} insertPosition={'beforeBegin'} />;
+      },
+    },
+    {
+      name: 'insertafterEnd',
+      Component: () => {
+        const { t } = useTranslation();
+        return <InsertMenuItems eventKey={'insertafterEnd'} title={t('Insert after')} insertPosition={'afterEnd'} />;
+      },
+    },
+    {
+      name: 'insertbeforeEnd',
+      Component: () => {
+        const { t } = useTranslation();
+        return <InsertMenuItems eventKey={'insertbeforeEnd'} title={t('Insert inner')} insertPosition={'beforeEnd'} />;
+      },
     },
   ],
 });
