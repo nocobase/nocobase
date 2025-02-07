@@ -137,6 +137,7 @@ export class MockServer extends Application {
                     userId: typeof userOrId === 'number' ? userOrId : userOrId?.id,
                     temp: true,
                     roleName,
+                    signInTime: Date.now(),
                   },
                   process.env.APP_KEY,
                   {
