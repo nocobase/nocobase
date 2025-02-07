@@ -17,11 +17,13 @@ import { useMobilePage } from '../../context';
 import { MobilePageTabInitializer } from './initializer';
 import { MobilePageTabsSettings } from './settings';
 import { useStyles } from './styles';
+import { useRouteTranslation } from '../../../../locale';
 
 export const MobilePageTabs: FC = () => {
   const { activeTabBarItem, resource, refresh } = useMobileRoutes();
   const { displayTabs: _displayTabs } = useMobilePage();
   const displayTabs = activeTabBarItem?.enableTabs === undefined ? _displayTabs : activeTabBarItem.enableTabs;
+  const { t } = useRouteTranslation();
 
   const compile = useCompile();
 
@@ -69,10 +71,10 @@ export const MobilePageTabs: FC = () => {
                     {item.icon ? (
                       <Space>
                         <Icon type={item.icon} />
-                        {compile(item.title)}
+                        {t(compile(item.title))}
                       </Space>
                     ) : (
-                      compile(item.title)
+                      t(compile(item.title))
                     )}
                   </SortableItem>
                 }

@@ -237,6 +237,7 @@ const PageContent = memo((props: PageContentProps) => {
 const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ className, activeKey }) => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
+  const { t: routeT } = useTranslation('lm-desktop-routes');
   const { token } = useToken();
   const basenameOfCurrentRouter = useRouterBasename();
   const navigate = useNavigateNoUpdate();
@@ -348,7 +349,7 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
               className={classNames('nb-action-link', 'designerCss', className)}
             >
               {schema['x-icon'] && <Icon style={{ marginRight: 8 }} type={schema['x-icon']} />}
-              <span>{(tabRoute.title && compile(t(tabRoute.title))) || t('Unnamed')}</span>
+              <span>{(tabRoute.title && routeT(compile(tabRoute.title))) || t('Unnamed')}</span>
               <PageTabDesigner schema={schema} />
             </SortableItem>
           ),
