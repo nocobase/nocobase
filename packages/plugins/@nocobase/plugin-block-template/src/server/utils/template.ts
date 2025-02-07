@@ -167,14 +167,18 @@ function mergeSchema(template, schema, rootTemplate) {
             targetKeys = Object.keys(objectValue);
           }
 
-          // AssociationField.Selector
+          // merge some popups
           if (object['x-component'] === 'CollectionField') {
             for (const skey of sourceKeys) {
               const assFieldCom = sourceValue[skey]?.['x-component'];
               if (
-                ['AssociationField.Selector', 'AssociationField.Nester', 'AssociationField.SubTable'].includes(
-                  assFieldCom,
-                )
+                [
+                  'Action.Container',
+                  'AssociationField.Viewer',
+                  'AssociationField.Selector',
+                  'AssociationField.Nester',
+                  'AssociationField.SubTable',
+                ].includes(assFieldCom)
               ) {
                 const tkey = targetKeys.find((k) => objectValue[k]['x-component'] === assFieldCom);
                 if (tkey) {
