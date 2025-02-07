@@ -277,6 +277,7 @@ export function getFullSchema(
 ): any {
   const rootId = schema['x-uid'];
   const templateRootId = schema['x-template-root-uid'];
+  const templateKey = schema['x-block-template-key'];
   let ret = schema;
 
   if (!templateRootId) {
@@ -289,7 +290,7 @@ export function getFullSchema(
     }
   } else {
     const target = _.cloneDeep(templateschemacache[templateRootId]);
-    const result = mergeSchema(target || {}, schema, rootId, templateschemacache, templateInfos);
+    const result = mergeSchema(target || {}, schema, rootId, templateschemacache, templateInfos, templateKey);
     ret = result;
   }
   addToolbarClass(ret);
@@ -307,12 +308,13 @@ export function getFullSchema(
  * @param templateInfos The template info cache
  * @returns The merged schema
  */
-export function mergeSchema(
+function mergeSchema(
   target: any,
   source: any,
   rootId: string,
   templateschemacache: Record<string, any>,
   templateInfos: Map<string, any>,
+  templateKey?: string,
 ): any {
   if (target['properties'] && !source['properties']) {
     source['properties'] = {};
@@ -363,6 +365,7 @@ export function mergeSchema(
                   sourceItem.schema['x-template-root-uid'] || rootId,
                   templateschemacache,
                   templateInfos,
+                  templateKey,
                 );
 
                 sourceItem.path[sourceItem.path.length - 1].schema.properties[sourceItem.key] = mergedSchema;
@@ -396,6 +399,7 @@ export function mergeSchema(
                     rootId,
                     templateschemacache,
                     templateInfos,
+                    templateKey,
                   );
                   targetKeys = targetKeys.filter((k) => k !== tkey);
                 }
@@ -512,6 +516,7 @@ export function mergeSchema(
                     sourceItem.schema['x-template-root-uid'] || rootId,
                     templateschemacache,
                     templateInfos,
+                    templateKey,
                   );
                 }
               }
@@ -542,13 +547,7 @@ export function mergeSchema(
           if (newKeys.length > 0) {
             const newProperties = _.cloneDeep(_.pick(objectValue, newKeys));
             for (const key of newKeys) {
-              const newSchema = convertTplBlock(
-                newProperties[key],
-                true,
-                false,
-                rootId,
-                _.get(source, 'x-block-template-key'),
-              );
+              const newSchema = convertTplBlock(newProperties[key], true, false, rootId, templateKey);
               newSchema['name'] = key;
               sourceValue[key] = newSchema;
             }
@@ -566,6 +565,7 @@ export function mergeSchema(
               rootId,
               templateschemacache,
               templateInfos,
+              templateKey,
             );
             if (properties[k]['x-template-root-uid']) {
               properties[k] = getFullSchema(properties[k], templateschemacache, templateInfos);
@@ -588,7 +588,7 @@ export function mergeSchema(
           return properties;
         }
 
-        return mergeSchema(objectValue || {}, sourceValue, rootId, templateschemacache, templateInfos);
+        return mergeSchema(objectValue || {}, sourceValue, rootId, templateschemacache, templateInfos, templateKey);
       }
       return sourceValue;
     },
