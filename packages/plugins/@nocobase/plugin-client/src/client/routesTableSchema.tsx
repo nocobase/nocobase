@@ -11,6 +11,7 @@
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { useField, useForm } from '@formily/react';
 import {
+  CollectionField,
   css,
   getGroupMenuSchema,
   getLinkMenuSchema,
@@ -236,13 +237,13 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                         'x-component': 'IconPicker',
                         'x-reactions': isMobile
                           ? {
-                              dependencies: ['type'],
-                              fulfill: {
-                                state: {
-                                  required: '{{$deps[0] !== "tabs"}}',
-                                },
+                            dependencies: ['type'],
+                            fulfill: {
+                              state: {
+                                required: '{{$deps[0] !== "tabs"}}',
                               },
-                            }
+                            },
+                          }
                           : undefined,
                       },
                       // 由于历史原因，桌面端使用的是 'href' 作为 key，移动端使用的是 'url' 作为 key
@@ -487,7 +488,17 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
             properties: {
               title: {
                 type: 'string',
-                'x-component': 'CollectionField',
+                'x-component': function Com(props) {
+                  const record = useCollectionRecordData();
+                  const { t } = useTranslation();
+                  let value = props.value;
+
+                  if (record.type === NocoBaseDesktopRouteType.tabs && _.isNil(props.value)) {
+                    value = t('Unnamed');
+                  }
+
+                  return <CollectionField {...props} value={value} />;
+                },
                 'x-read-pretty': true,
                 'x-component-props': {
                   ellipsis: true,
@@ -564,9 +575,8 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                   }
 
                   if (recordData.type === NocoBaseDesktopRouteType.page) {
-                    const path = `${basenameOfCurrentRouter.slice(0, -1)}${basename}/${
-                      isMobile ? recordData.schemaUid : recordData.menuSchemaUid
-                    }`;
+                    const path = `${basenameOfCurrentRouter.slice(0, -1)}${basename}/${isMobile ? recordData.schemaUid : recordData.menuSchemaUid
+                      }`;
                     // 在点击 Access 按钮时，会用到
                     recordData._path = path;
 
@@ -686,13 +696,13 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                             'x-component': 'IconPicker',
                             'x-reactions': isMobile
                               ? {
-                                  dependencies: ['type'],
-                                  fulfill: {
-                                    state: {
-                                      required: '{{$deps[0] !== "tabs"}}',
-                                    },
+                                dependencies: ['type'],
+                                fulfill: {
+                                  state: {
+                                    required: '{{$deps[0] !== "tabs"}}',
                                   },
-                                }
+                                },
+                              }
                               : undefined,
                           },
                           // 由于历史原因，桌面端使用的是 'href' 作为 key，移动端使用的是 'url' 作为 key
@@ -975,13 +985,13 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                             'x-component': 'IconPicker',
                             'x-reactions': isMobile
                               ? {
-                                  dependencies: ['type'],
-                                  fulfill: {
-                                    state: {
-                                      required: '{{$deps[0] !== "tabs"}}',
-                                    },
+                                dependencies: ['type'],
+                                fulfill: {
+                                  state: {
+                                    required: '{{$deps[0] !== "tabs"}}',
                                   },
-                                }
+                                },
+                              }
                               : undefined,
                           },
                           // 由于历史原因，桌面端使用的是 'href' 作为 key，移动端使用的是 'url' 作为 key
@@ -1257,13 +1267,13 @@ function useCreateRouteSchema(isMobile: boolean) {
         [NocoBaseDesktopRouteType.page]: isMobile
           ? getMobilePageSchema(pageSchemaUid, tabSchemaUid).schema
           : getPageMenuSchema({
-              title,
-              icon,
-              pageSchemaUid,
-              tabSchemaUid,
-              menuSchemaUid,
-              tabSchemaName,
-            }),
+            title,
+            icon,
+            pageSchemaUid,
+            tabSchemaUid,
+            menuSchemaUid,
+            tabSchemaName,
+          }),
         [NocoBaseDesktopRouteType.group]: getGroupMenuSchema({ title, icon, schemaUid: menuSchemaUid }),
         [NocoBaseDesktopRouteType.link]: getLinkMenuSchema({ title, icon, schemaUid: menuSchemaUid, href, params }),
       };
