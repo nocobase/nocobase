@@ -419,18 +419,14 @@ describe('data source with acl', () => {
     });
 
     // update strategy
-    const updateRes = await app
-      .agent()
-      .login(adminUser)
-      .resource('dataSources.roles', 'main')
-      .update({
-        filterByTk: 'admin',
-        values: {
-          strategy: {
-            actions: [],
-          },
+    const updateRes = await (await app.agent().login(adminUser)).resource('dataSources.roles', 'main').update({
+      filterByTk: 'admin',
+      values: {
+        strategy: {
+          actions: [],
         },
-      });
+      },
+    });
 
     // get role
     const adminRoleResp = await (await app.agent().login(adminUser)).resource('dataSources.roles', 'main').get({
@@ -441,16 +437,12 @@ describe('data source with acl', () => {
     expect(data.data.strategy.actions).toHaveLength(0);
 
     // update role
-    const updateRoleRes = await app
-      .agent()
-      .login(adminUser)
-      .resource('roles')
-      .update({
-        filterByTk: 'admin',
-        values: {
-          snippets: ['pm.*'],
-        },
-      });
+    const updateRoleRes = await (await app.agent().login(adminUser)).resource('roles').update({
+      filterByTk: 'admin',
+      values: {
+        snippets: ['pm.*'],
+      },
+    });
 
     expect(updateRoleRes.status).toBe(200);
 
