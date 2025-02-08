@@ -51,44 +51,44 @@ const useGetColor = (field) => {
   };
 };
 export class PluginCalendarClient extends Plugin {
-  titleFields: { [T: string]: { CustomLabel: Function } } = {
+  titleFieldInterfaces: { [T: string]: { CustomLabel: Function } } = {
     input: { CustomLabel },
     select: { CustomLabel },
     phone: { CustomLabel },
     email: { CustomLabel },
     radioGroup: { CustomLabel },
   };
-  colorFields: {
+  colorFieldInterfaces: {
     [T: string]: { useGetColor: (field: any) => ColorFunctions };
   } = {
     select: { useGetColor },
   };
 
-  dateTimeFields = ['date', 'datetime', 'dateOnly', 'datetimeNoTz', 'unixTimestamp', 'createdAt', 'updatedAt'];
+  dateTimeFieldInterfaces = ['date', 'datetime', 'dateOnly', 'datetimeNoTz', 'unixTimestamp', 'createdAt', 'updatedAt'];
 
-  registerTitleFields(key, options) {
-    this.titleFields[key] = options;
+  registerTitleFieldInterface(key, options) {
+    this.titleFieldInterfaces[key] = options;
   }
-  getTitleFields(key: string) {
+  getTitleFieldInterface(key: string) {
     if (key) {
-      return this.titleFields[key];
+      return this.titleFieldInterfaces[key];
     } else {
-      return this.titleFields;
+      return this.titleFieldInterfaces;
     }
   }
-  registerDateTimeFields(data: any) {
+  registerDateTimeFieldInterface(data: any) {
     if (Array.isArray(data)) {
-      const result = this.dateTimeFields.concat(data);
-      this.dateTimeFields = result;
+      const result = this.dateTimeFieldInterfaces.concat(data);
+      this.dateTimeFieldInterfaces = result;
     } else {
-      this.dateTimeFields.push(data);
+      this.dateTimeFieldInterfaces.push(data);
     }
   }
   registerColorFieldInterface(type, option) {
-    this.colorFields[type] = option;
+    this.colorFieldInterfaces[type] = option;
   }
   getColorFieldInterface(type: string) {
-    return this.colorFields[type];
+    return this.colorFieldInterfaces[type];
   }
   async load() {
     this.app.dataSourceManager.addCollectionTemplates([CalendarCollectionTemplate]);

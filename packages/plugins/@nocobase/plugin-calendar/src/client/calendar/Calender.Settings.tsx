@@ -77,14 +77,14 @@ export const calendarBlockSettings = new SchemaSettings({
         const { name } = useCollection();
         const app = useApp();
         const plugin = app.pm.get('calendar') as any;
-        const { titleFields } = plugin;
+        const { titleFieldInterfaces } = plugin;
 
         const field = useField();
         const { dn } = useDesignable();
         return {
           title: t('Title field'),
           value: fieldNames.title,
-          options: getCollectionFieldsOptions(name, null, Object.keys(titleFields)),
+          options: getCollectionFieldsOptions(name, null, Object.keys(titleFieldInterfaces)),
           onChange: (title) => {
             const fieldNames = field.decoratorProps.fieldNames || {};
             fieldNames['title'] = title;
@@ -118,8 +118,8 @@ export const calendarBlockSettings = new SchemaSettings({
         const { dn } = useDesignable();
         const app = useApp();
         const plugin = app.pm.get('calendar') as any;
-        const { colorFields } = plugin;
-        const fliedList = getCollectionFieldsOptions(name, null, Object.keys(colorFields));
+        const { colorFieldInterfaces } = plugin;
+        const fliedList = getCollectionFieldsOptions(name, null, Object.keys(colorFieldInterfaces));
         const filteredItems = [{ label: t('Not selected'), value: '' }, ...fliedList];
 
         return {

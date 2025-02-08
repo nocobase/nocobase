@@ -71,18 +71,18 @@ export const useCreateCalendarBlock = () => {
   const { theme } = useGlobalTheme();
   const app = useApp();
   const plugin = app.pm.get('calendar') as any;
-  const { titleFields, dateTimeFields } = plugin;
+  const { titleFieldInterfaces, dateTimeFieldInterfaces } = plugin;
 
   const createCalendarBlock = async ({ item }) => {
     const titleFieldsOptions = getCollectionFieldsOptions(
       item.name,
       null,
-      Object.keys(titleFields).map((v) => v || v),
+      Object.keys(titleFieldInterfaces).map((v) => v || v),
       {
         dataSource: item.dataSource,
       },
     );
-    const dateFieldsOptions = getCollectionFieldsOptions(item.name, null, dateTimeFields, {
+    const dateFieldsOptions = getCollectionFieldsOptions(item.name, null, dateTimeFieldInterfaces, {
       association: ['o2o', 'obo', 'oho', 'm2o'],
       dataSource: item.dataSource,
     });

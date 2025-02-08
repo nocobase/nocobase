@@ -67,7 +67,7 @@ class PluginKanbanClient extends Plugin {
     radioGroup: { useGetGroupOptions: useDefaultGroupFieldsOptions },
   };
 
-  registerGroupFieldType(key, options) {
+  registerGroupFieldInterface(key, options) {
     this.groupFields[key] = options;
   }
 
