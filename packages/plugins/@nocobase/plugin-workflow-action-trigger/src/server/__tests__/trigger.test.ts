@@ -42,7 +42,7 @@ describe('workflow > action-trigger', () => {
     UserRepo = db.getCollection('users').repository;
 
     root = await UserRepo.findOne({});
-    rootAgent = await app.agent().loginWithJti(root);
+    rootAgent = await app.agent().login(root);
 
     users = await UserRepo.create({
       values: [
@@ -51,7 +51,7 @@ describe('workflow > action-trigger', () => {
       ],
     });
 
-    userAgents = await Promise.all(users.map((user) => app.agent().loginWithJti(user)));
+    userAgents = await Promise.all(users.map((user) => app.agent().login(user)));
   });
 
   afterEach(() => app.destroy());
@@ -812,8 +812,9 @@ describe('workflow > action-trigger', () => {
       //     values: { title: 't2' },
       //     triggerWorkflows: `${workflow.key}`,
       //   });
-      const res2 = await agent
-        .login(users[0])
+      const res2 = await (
+        await agent.login(users[0])
+      )
         .set('x-data-source', 'another')
         .post('/api/posts:create')
         .query({ triggerWorkflows: `${workflow.key}` })

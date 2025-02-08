@@ -74,9 +74,8 @@ interface Resource {
 }
 
 interface ExtendedAgent extends SuperAgentTest {
-  login: (user: any, roleName?: string) => ExtendedAgent;
-  loginUsingId: (userId: number, roleName?: string) => ExtendedAgent;
-  loginWithJti: (user: any, roleName?: string) => Promise<ExtendedAgent>;
+  login: (user: any, roleName?: string) => Promise<ExtendedAgent>;
+  loginUsingId: (userId: number, roleName?: string) => Promise<ExtendedAgent>;
   resource: (name: string, resourceOf?: any) => Resource;
 }
 
@@ -129,27 +128,6 @@ export class MockServer extends Application {
     const proxy = new Proxy(agent, {
       get(target, method: string, receiver) {
         if (['login', 'loginUsingId'].includes(method)) {
-          return (userOrId: any, roleName?: string) => {
-            return proxy
-              .auth(
-                jwt.sign(
-                  {
-                    userId: typeof userOrId === 'number' ? userOrId : userOrId?.id,
-                    temp: true,
-                    roleName,
-                    signInTime: Date.now(),
-                  },
-                  process.env.APP_KEY,
-                  {
-                    expiresIn: '1d',
-                  },
-                ),
-                { type: 'bearer' },
-              )
-              .set('X-Authenticator', 'basic');
-          };
-        }
-        if (method === 'loginWithJti') {
           return async (userOrId: any, roleName?: string) => {
             const userId = typeof userOrId === 'number' ? userOrId : userOrId?.id;
             const tokenInfo = await authManager.tokenController.add({ userId });

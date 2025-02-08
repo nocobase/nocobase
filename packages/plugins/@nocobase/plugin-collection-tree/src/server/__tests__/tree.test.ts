@@ -42,7 +42,7 @@ describe('tree', () => {
     });
 
     const userPlugin = app.getPlugin('users');
-    const agent = await app.agent().loginWithJti(user);
+    const agent = await app.agent().login(user);
     agent.set('X-With-ACL-Meta', 'true');
     app.acl.allow('table_a', ['*']);
     app.acl.allow('collections', ['*']);
