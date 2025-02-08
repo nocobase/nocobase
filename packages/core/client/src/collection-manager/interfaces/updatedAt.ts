@@ -20,8 +20,6 @@ export class UpdatedAtFieldInterface extends CollectionFieldInterface {
   default = {
     type: 'date',
     field: 'updatedAt',
-    interface: 'updatedAt',
-    name: 'updatedAt',
     uiSchema: {
       type: 'datetime',
       title: '{{t("Last updated at")}}',
@@ -38,9 +36,6 @@ export class UpdatedAtFieldInterface extends CollectionFieldInterface {
   };
   filterable = {
     operators: operators.datetime,
-  };
-  presetField = {
-    order: 3,
   };
   titleUsable = true;
 }

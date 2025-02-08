@@ -20,8 +20,6 @@ export class CreatedAtFieldInterface extends CollectionFieldInterface {
   default = {
     type: 'date',
     field: 'createdAt',
-    interface: 'createdAt',
-    name: 'createdAt',
     uiSchema: {
       type: 'datetime',
       title: '{{t("Created at")}}',
@@ -40,7 +38,4 @@ export class CreatedAtFieldInterface extends CollectionFieldInterface {
     operators: operators.datetime,
   };
   titleUsable = true;
-  presetField = {
-    order: 2,
-  };
 }
