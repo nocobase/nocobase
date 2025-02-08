@@ -123,8 +123,8 @@ export class PluginLocalizationServer extends Plugin {
     this.sourceManager.registerSource('db', {
       title: tval('Collections & Fields', { ns: pkg.name }),
       namespace: NAMESPACE_COLLECTIONS,
-      sync: async () => {
-        const db = this.db;
+      sync: async (ctx) => {
+        const db = ctx.db;
         const result = {};
         const collections = Array.from(db.collections.values());
         for (const collection of collections) {
