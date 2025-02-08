@@ -71,7 +71,7 @@ class PluginKanbanClient extends Plugin {
     this.groupFields[key] = options;
   }
 
-  getGroupFieldType(key) {
+  getGroupFieldInterface(key) {
     if (key) {
       return this.groupFields[key];
     }
