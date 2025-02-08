@@ -22,15 +22,7 @@ const sync = async (ctx: Context, next: Next) => {
     ctx.throw(400, ctx.t('Please provide synchronization source.'));
   }
 
-  let resources: { [module: string]: any } = { client: {} };
-  const sources = Array.from(plugin.sourceManager.sources.getKeys());
-  const syncSources = sources.filter((source) => types.includes(source));
-  const promises = syncSources.map((source) => plugin.sourceManager.sources.get(source).sync(ctx));
-  const results = await Promise.all(promises);
-  resources = results.reduce((result, resource) => {
-    return { ...result, ...resource };
-  }, resources);
-
+  const resources = await plugin.sourceManager.sync(ctx, types);
   let textValues = [];
   Object.entries(resources).forEach(([module, resource]) => {
     Object.keys(resource).forEach((text) => {

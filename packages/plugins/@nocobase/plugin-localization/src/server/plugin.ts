@@ -15,8 +15,9 @@ import Resources from './resources';
 import { getTextsFromDBRecord } from './utils';
 import { NAMESPACE_COLLECTIONS } from './constants';
 import { SourceManager } from './source-manager';
-import pkg from '../../package.json';
 import { tval } from '@nocobase/utils';
+// @ts-ignore
+import pkg from '../../package.json';
 
 export class PluginLocalizationServer extends Plugin {
   resources: Resources;
@@ -51,27 +52,7 @@ export class PluginLocalizationServer extends Plugin {
   }
 
   afterAdd() {
-    this.app.on('afterLoad', () => {
-      const sources = this.sourceManager.sources;
-      for (const source of sources.getValues()) {
-        if (!source.collections) {
-          continue;
-        }
-        for (const { collection, fields } of source.collections) {
-          this.db.on(`${collection}.afterSave`, async (instance: Model, options) => {
-            const texts = [];
-            const changedFields = fields.filter((field) => instance['_changed'].has(field));
-            if (!changedFields.length) {
-              return;
-            }
-            changedFields.forEach((field) => {
-              texts.push({ text: instance.get(field), module: `resources.${source.namespace}` });
-            });
-            await this.addNewTexts(texts, options);
-          });
-        }
-      }
-    });
+    this.app.on('afterLoad', () => this.sourceManager.handleTextsSaved(this.db, this.addNewTexts));
   }
 
   beforeLoad() {}
