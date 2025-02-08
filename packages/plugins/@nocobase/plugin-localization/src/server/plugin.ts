@@ -23,7 +23,7 @@ export class PluginLocalizationServer extends Plugin {
   resources: Resources;
   sourceManager = new SourceManager();
 
-  async addNewTexts(texts: { text: string; module: string }[], options?: any) {
+  addNewTexts = async (texts: { text: string; module: string }[], options?: any) => {
     texts = await this.resources.filterExists(texts, options?.transaction);
     this.db
       .getModel('localizationTexts')
@@ -49,7 +49,7 @@ export class PluginLocalizationServer extends Plugin {
       .catch((err) => {
         this.log.error(err);
       });
-  }
+  };
 
   afterAdd() {
     this.app.on('afterLoad', () => this.sourceManager.handleTextsSaved(this.db, this.addNewTexts));
