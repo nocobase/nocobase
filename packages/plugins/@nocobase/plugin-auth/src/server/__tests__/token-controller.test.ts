@@ -24,6 +24,9 @@ class MockContext {
   constructor({ app }: { app: MockServer }) {
     this.app = app;
   }
+  get logger() {
+    return this.app.logger;
+  }
   res = {
     setHeader: (key: string, value: string) => {
       this.header.set(key, value);

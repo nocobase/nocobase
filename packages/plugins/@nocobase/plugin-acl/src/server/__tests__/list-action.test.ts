@@ -30,7 +30,7 @@ describe('list action with acl', () => {
         { id: 3, nickname: 'a', roles: [{ name: 'user' }] },
       ],
     });
-    userAgent = app.agent().login(users[0], 'user');
+    userAgent = await app.agent().loginWithJti(users[0], 'user');
 
     Post = app.db.collection({
       name: 'posts',
@@ -220,7 +220,10 @@ describe('list action with acl', () => {
     // );
 
     // @ts-ignore
-    const response = await app.agent().login(users[0].id, 'user').set('X-With-ACL-Meta', true).resource('posts').list();
+    const response = await (await app.agent().loginWithJti(users[0].id, 'user'))
+      .set('X-With-ACL-Meta', true)
+      .resource('posts')
+      .list();
     const data = response.body;
     expect(data.meta.allowedActions.view).toEqual(expect.arrayContaining([1, 2, 3]));
     expect(data.meta.allowedActions.update).toEqual(expect.arrayContaining([1, 2]));
@@ -388,7 +391,7 @@ describe('list association action with acl', () => {
       },
     });
 
-    const userAgent = app.agent().login(user, 'newRole').set('X-With-ACL-Meta', true);
+    const userAgent = await (await app.agent().loginWithJti(user, 'newRole')).set('X-With-ACL-Meta', true);
 
     const createResp = await userAgent.resource('posts').create({
       values: {
