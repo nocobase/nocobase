@@ -14,7 +14,7 @@ import { BlockTemplateList, BlockTemplatePage } from './components';
 import { ISchema, Schema } from '@formily/json-schema';
 import * as _ from 'lodash';
 import { associationRecordSettingItem, revertSettingItem, formSettingItem } from './settings';
-import { collectAllTemplateUids, getFullSchema } from './utils/template';
+import { getFullSchema } from './utils/template';
 import { registerTemplateBlockInterceptors } from './utils/interceptors';
 import { TemplateGridDecorator } from './components/TemplateGridDecorator';
 import PluginMobileClient from '@nocobase/plugin-mobile/client';

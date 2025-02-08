@@ -32,27 +32,27 @@ export function convertTplBlock(tpl, virtual = false, isRoot = true, newRootId?:
   }
   // 如果是Grid, Grid.Row, Grid.Col, 则复制一份
   if (tpl['x-component'] === 'Grid' || tpl['x-component'] === 'Grid.Row' || tpl['x-component'] === 'Grid.Col') {
-    // const newTpl = cloneDeep(tpl);
-    // TODO: 这么做内部的一些引用会丢失， 准备维护一个key的映射表，然后再遍历一次，替换掉引用
-    const newTpl = _.cloneDeep({
+    const newSchema = _.cloneDeep({
       ...tpl,
-      'x-virtual': virtual,
       'x-uid': uid(), // 生成一个新的uid
       properties: {},
     });
-    if (newTpl['x-decorator'] === 'TemplateGridDecorator') {
-      delete newTpl['x-decorator'];
+    if (virtual) {
+      newSchema['x-virtual'] = true;
+    }
+    if (newSchema['x-decorator'] === 'TemplateGridDecorator') {
+      delete newSchema['x-decorator'];
     }
     for (const key in tpl.properties) {
       const t = convertTplBlock(tpl.properties[key], virtual, isRoot, newRootId, templateKey);
       if (isRoot) {
-        newRootId = uid(); // 多个Grid.Row的时候，每个Grid.Row都要生成一个新的uid
+        newRootId = uid(); // 多个区块支持，每个Grid.Row都要生成一个新的uid
       }
       if (t) {
-        newTpl.properties[key] = t;
+        newSchema.properties[key] = t;
       }
     }
-    return newTpl;
+    return newSchema;
   } else {
     const newSchema = {
       // ...tpl,
@@ -62,10 +62,11 @@ export function convertTplBlock(tpl, virtual = false, isRoot = true, newRootId?:
       // name: tpl.name,
       'x-uid': `${newRootId}-${tpl['x-uid']}`,
       'x-template-uid': tpl['x-uid'],
-      'x-virtual': virtual,
       properties: {},
     };
-
+    if (virtual) {
+      newSchema['x-virtual'] = true;
+    }
     if (isRoot) {
       newSchema['x-template-root-uid'] = tpl['x-uid'];
       newSchema['x-uid'] = newRootId;

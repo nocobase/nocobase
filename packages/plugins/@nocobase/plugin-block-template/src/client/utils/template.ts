@@ -12,28 +12,6 @@ import * as _ from 'lodash';
 import { convertTplBlock } from '../initializers';
 
 /**
- * Collects all template UIDs from a schema and its nested properties
- * @param schema The schema to collect template UIDs from
- * @param uids Set to store unique template UIDs
- * @returns Set of template UIDs
- */
-export function collectAllTemplateUids(schema: ISchema, uids = new Set<string>()): Set<string> {
-  if (!schema) return uids;
-
-  if (schema['x-template-root-uid']) {
-    uids.add(schema['x-template-root-uid']);
-  }
-
-  if (schema.properties) {
-    for (const key in schema.properties) {
-      collectAllTemplateUids(schema.properties[key], uids);
-    }
-  }
-
-  return uids;
-}
-
-/**
  * Find a schema in the cache by its UID
  * @param cache The cache object containing schemas
  * @param uid The UID to search for
@@ -600,37 +578,16 @@ function mergeSchema(
 }
 
 /**
- * Set x-virtual to true for all virtual schemas
+ * Set x-virtual to false for all virtual schemas
  * @param schema The schema to set
  */
 export function setToTrueSchema(schema: any) {
   if (schema['x-virtual']) {
-    schema['x-virtual'] = false;
+    delete schema['x-virtual'];
   }
   if (schema.properties) {
     for (const key in schema.properties) {
       setToTrueSchema(schema.properties[key]);
     }
   }
-}
-
-/**
- * Collects all collection fields from a property and its nested properties
- * @param properties The properties object to collect fields from
- * @returns Array of collection field names
- */
-function collectCollectionFields(properties: Record<string, any>): string[] {
-  return _.reduce(
-    Object.values(properties || {}),
-    (result: string[], property) => {
-      const xColField = _.get(property, 'x-collection-field');
-      if (xColField) {
-        result.push(xColField);
-      } else if (property['properties']) {
-        result.push(...collectCollectionFields(property['properties']));
-      }
-      return result;
-    },
-    [],
-  );
 }
