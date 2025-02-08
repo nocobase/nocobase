@@ -3,8 +3,8 @@ import { TreeSelect } from '@formily/antd-v5';
 import { Field, onFieldChange } from '@formily/core';
 import { ISchema } from "@formily/react";
 import { uid } from "@formily/shared";
-import { Modal } from 'antd';
-import React, { useCallback, useMemo } from "react";
+import { App, Modal } from 'antd';
+import React, { FC, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { isVariable, NocoBaseDesktopRouteType, useAllAccessDesktopRoutes, useCompile, useCurrentRoute, useDesignable, useNocoBaseRoutes, useURLAndHTMLSchema } from "../../..";
 import {
@@ -12,7 +12,7 @@ import {
 } from '../../../';
 import { SchemaSettings } from "../../../application/schema-settings/SchemaSettings";
 import { SchemaToolbar } from "../../../schema-settings/GeneralSchemaDesigner";
-import { SchemaSettingsModalItem, SchemaSettingsSubMenu, SchemaSettingsSwitchItem } from "../../../schema-settings/SchemaSettings";
+import { SchemaSettingsItem, SchemaSettingsModalItem, SchemaSettingsSubMenu, SchemaSettingsSwitchItem } from "../../../schema-settings/SchemaSettings";
 import { NocoBaseDesktopRoute } from "./convertRoutesToSchema";
 
 const components = { TreeSelect };
@@ -35,6 +35,32 @@ const toItems = (routes: NocoBaseDesktopRoute[], { t, compile }) => {
 const insertPositionToMethod = {
   beforeBegin: 'prepend',
   afterEnd: 'insertAfter',
+};
+
+export const RemoveRoute: FC = () => {
+  const { t } = useTranslation();
+  const { modal } = App.useApp();
+  const { deleteRoute } = useNocoBaseRoutes();
+  const currentRoute = useCurrentRoute();
+
+  return (
+    <SchemaSettingsItem
+      title="Delete"
+      eventKey="remove"
+      onClick={() => {
+        modal.confirm({
+          title: t('Delete menu item'),
+          content: t('Are you sure you want to delete it?'),
+          onOk: () => {
+            // 删除对应菜单的路由
+            currentRoute?.id != null && deleteRoute(currentRoute.id);
+          },
+        });
+      }}
+    >
+      {t('Delete')}
+    </SchemaSettingsItem>
+  );
 };
 
 const InsertMenuItems = (props) => {
@@ -486,6 +512,15 @@ export const menuItemSettings = new SchemaSettings({
         const { t } = useTranslation();
         return <InsertMenuItems eventKey={'insertbeforeEnd'} title={t('Insert inner')} insertPosition={'beforeEnd'} />;
       },
+    },
+    {
+      name: 'divider',
+      type: 'divider',
+    },
+    {
+      name: 'delete',
+      sort: 100,
+      Component: RemoveRoute,
     },
   ],
 });
