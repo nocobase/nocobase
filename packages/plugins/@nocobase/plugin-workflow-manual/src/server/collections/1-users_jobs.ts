@@ -14,7 +14,7 @@ export default defineCollection({
   dumpRules: {
     group: 'log',
   },
-  migrationRules: ['schema-only', 'skip'],
+  migrationRules: ['schema-only'],
   shared: true,
   fields: [
     {
@@ -36,6 +36,10 @@ export default defineCollection({
       target: 'users',
       foreignKey: 'userId',
       primaryKey: false,
+    },
+    {
+      type: 'string',
+      name: 'title',
     },
     {
       type: 'belongsTo',

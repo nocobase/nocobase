@@ -10,12 +10,13 @@
 import { MockServer, waitSecond } from '@nocobase/test';
 import { Dumper } from '../dumper';
 import createApp from './index';
-
+let adminAgent;
 describe('backup files', () => {
   let app: MockServer;
 
   beforeEach(async () => {
     app = await createApp();
+    adminAgent = await app.agent().loginWithJti(1);
   });
 
   afterEach(async () => {
@@ -23,12 +24,9 @@ describe('backup files', () => {
   });
 
   it('should create dump file', async () => {
-    const createResponse = await app
-      .agent()
-      .resource('backupFiles')
-      .create({
-        dataTypes: ['meta', 'config', 'business'],
-      });
+    const createResponse = await adminAgent.resource('backupFiles').create({
+      dataTypes: ['meta', 'config', 'business'],
+    });
 
     expect(createResponse.status).toBe(200);
 
@@ -61,7 +59,7 @@ describe('backup files', () => {
       await waitSecond(1000);
       const fileName = Dumper.generateFileName();
       await dumper.writeLockFile(fileName);
-      const listResponse = await app.agent().resource('backupFiles').list();
+      const listResponse = await adminAgent.resource('backupFiles').list();
 
       expect(listResponse.status).toBe(200);
 
@@ -72,7 +70,7 @@ describe('backup files', () => {
     });
 
     it('should list backup file', async () => {
-      const listResponse = await app.agent().resource('backupFiles').list();
+      const listResponse = await adminAgent.resource('backupFiles').list();
 
       expect(listResponse.status).toBe(200);
 
@@ -83,7 +81,7 @@ describe('backup files', () => {
     });
 
     it('should get backup file', async () => {
-      const getResponse = await app.agent().resource('backupFiles').get({
+      const getResponse = await adminAgent.resource('backupFiles').get({
         filterByTk: dumpKey,
       });
 
@@ -95,27 +93,24 @@ describe('backup files', () => {
     });
 
     it('should restore from file name', async () => {
-      const restoreResponse = await app
-        .agent()
-        .resource('backupFiles')
-        .restore({
-          values: {
-            filterByTk: dumpKey,
-            dataTypes: ['meta', 'config', 'business'],
-          },
-        });
+      const restoreResponse = await adminAgent.resource('backupFiles').restore({
+        values: {
+          filterByTk: dumpKey,
+          dataTypes: ['meta', 'config', 'business'],
+        },
+      });
 
       expect(restoreResponse.status).toBe(200);
     });
 
     it('should destroy dump file', async () => {
-      const destroyResponse = await app.agent().resource('backupFiles').destroy({
+      const destroyResponse = await adminAgent.resource('backupFiles').destroy({
         filterByTk: dumpKey,
       });
 
       expect(destroyResponse.status).toBe(200);
 
-      const getResponse = await app.agent().resource('backupFiles').get({
+      const getResponse = await adminAgent.resource('backupFiles').get({
         filterByTk: dumpKey,
       });
 
@@ -124,7 +119,7 @@ describe('backup files', () => {
 
     it('should restore from upload file', async () => {
       const filePath = dumper.backUpFilePath(dumpKey);
-      const packageInfoResponse = await app.agent().post('/backupFiles:upload').attach('file', filePath);
+      const packageInfoResponse = await adminAgent.post('/backupFiles:upload').attach('file', filePath);
 
       expect(packageInfoResponse.status).toBe(200);
       const data = packageInfoResponse.body.data;
@@ -132,15 +127,12 @@ describe('backup files', () => {
       expect(data['key']).toBeTruthy();
       expect(data['meta']).toBeTruthy();
 
-      const restoreResponse = await app
-        .agent()
-        .resource('backupFiles')
-        .restore({
-          values: {
-            key: data['key'],
-            dataTypes: ['meta', 'config', 'business'],
-          },
-        });
+      const restoreResponse = await adminAgent.resource('backupFiles').restore({
+        values: {
+          key: data['key'],
+          dataTypes: ['meta', 'config', 'business'],
+        },
+      });
 
       expect(restoreResponse.status).toBe(200);
     });
@@ -162,7 +154,7 @@ describe('backup files', () => {
       context: {},
     });
 
-    const response = await app.agent().get('/backupFiles:dumpableCollections');
+    const response = await adminAgent.get('/backupFiles:dumpableCollections');
 
     expect(response.status).toBe(200);
 

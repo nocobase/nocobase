@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
 
@@ -7,9 +16,15 @@ describe('get action with acl', () => {
   let Post;
 
   let Comment;
+  let userAgent;
 
   beforeEach(async () => {
     app = await prepareApp();
+    const UserRepo = app.db.getCollection('users').repository;
+    const users = await UserRepo.create({
+      values: [{ nickname: 'a', roles: [{ name: 'test' }] }],
+    });
+    userAgent = await app.agent().loginWithJti(users[0]);
 
     Post = app.db.collection({
       name: 'posts',
@@ -72,13 +87,10 @@ describe('get action with acl', () => {
       },
     );
 
-    const response = await (app as any)
-      .agent()
-      .resource('posts')
-      .get({
-        filterByTk: p1.get('id'),
-        fields: ['comments'],
-      });
+    const response = await userAgent.resource('posts').get({
+      filterByTk: p1.get('id'),
+      fields: ['comments'],
+    });
 
     expect(response.status).toBe(200);
 

@@ -14,7 +14,7 @@ export default defineCollection({
   dumpRules: {
     group: 'required',
   },
-  migrationRules: ['overwrite', 'skip'],
+  migrationRules: ['overwrite', 'schema-only'],
   name: 'localizationTranslations',
   model: 'LocalizationTranslationModel',
   createdBy: true,

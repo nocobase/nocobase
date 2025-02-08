@@ -8,12 +8,14 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import path from 'path';
-import AesEncryptor from './AesEncryptor';
 
 export class PluginEnvironmentVariablesServer extends Plugin {
-  aesEncryptor: AesEncryptor;
   updated = false;
+
+  get aesEncryptor() {
+    return this.app.aesEncryptor;
+  }
+
   async handleSyncMessage(message) {
     const { type, name, value } = message;
     if (type === 'updated') {
@@ -27,20 +29,9 @@ export class PluginEnvironmentVariablesServer extends Plugin {
   }
 
   async load() {
-    this.createAesEncryptor();
     this.registerACL();
     this.onEnvironmentSaved();
     await this.loadVariables();
-  }
-
-  async createAesEncryptor() {
-    let key: any = process.env.ENV_VARS_AES_SECRET_KEY;
-    if (!key) {
-      key = await AesEncryptor.getOrGenerateKey(
-        path.resolve(process.cwd(), 'storage', this.name, this.app.name, 'aes_key.dat'),
-      );
-    }
-    this.aesEncryptor = new AesEncryptor(key);
   }
 
   registerACL() {
@@ -60,7 +51,53 @@ export class PluginEnvironmentVariablesServer extends Plugin {
     return items.map(({ name, type }) => ({ name, type }));
   }
 
+  public validateTexts(texts: Array<{ text: string; secret: boolean }>) {
+    if (!Array.isArray(texts)) {
+      throw new Error('texts parameter must be an array');
+    }
+
+    for (const item of texts) {
+      if (!item || typeof item !== 'object') {
+        throw new Error('Each item in texts must be an object');
+      }
+
+      if (typeof item.text !== 'string' || !item.text.trim()) {
+        throw new Error('text property must be a non-empty string');
+      }
+
+      if (typeof item.secret !== 'boolean') {
+        throw new Error('secret property must be a boolean');
+      }
+
+      // Check each line for empty values
+      const lines = item.text
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('#'));
+
+      for (const line of lines) {
+        const equalIndex = line.indexOf('=');
+        if (equalIndex === -1) {
+          throw new Error(`Invalid environment variable format: ${line}`);
+        }
+
+        const key = line.slice(0, equalIndex).trim();
+        const value = line.slice(equalIndex + 1).trim();
+
+        if (!key) {
+          throw new Error(`Environment variable name cannot be empty`);
+        }
+
+        if (!value) {
+          throw new Error(`Environment variable "${key}" must have a value`);
+        }
+      }
+    }
+  }
+
   async setEnvironmentVariablesByText(texts: Array<{ text: string; secret: boolean }>) {
+    this.validateTexts(texts);
+
     /*
     text format:
     KEY1=VALUE1
@@ -88,9 +125,13 @@ export class PluginEnvironmentVariablesServer extends Plugin {
         const key = line.slice(0, equalIndex).trim();
         const value = line.slice(equalIndex + 1).trim();
 
-        if (!key || !value) {
-          this.app.log.warn(`Empty key or value found: ${line}`);
+        if (!key) {
+          this.app.log.warn(`Empty key found: ${line}`);
           continue;
+        }
+
+        if (!value) {
+          throw new Error(`Empty value is not allowed for key: ${key}`);
         }
 
         await repository.create({

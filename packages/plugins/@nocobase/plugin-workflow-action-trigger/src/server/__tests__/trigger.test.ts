@@ -31,6 +31,7 @@ describe('workflow > action-trigger', () => {
   beforeEach(async () => {
     app = await getApp({
       plugins: ['users', 'auth', 'acl', 'data-source-manager', 'system-settings', Plugin],
+      acl: true,
     });
     await app.pm.get('auth').install();
     agent = app.agent();
@@ -41,7 +42,7 @@ describe('workflow > action-trigger', () => {
     UserRepo = db.getCollection('users').repository;
 
     root = await UserRepo.findOne({});
-    rootAgent = app.agent().login(root);
+    rootAgent = await app.agent().loginWithJti(root);
 
     users = await UserRepo.create({
       values: [
@@ -50,7 +51,7 @@ describe('workflow > action-trigger', () => {
       ],
     });
 
-    userAgents = users.map((user) => app.agent().login(user));
+    userAgents = await Promise.all(users.map((user) => app.agent().loginWithJti(user)));
   });
 
   afterEach(() => app.destroy());

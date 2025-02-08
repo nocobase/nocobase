@@ -47,7 +47,7 @@ describe('workflow > actions > executions', () => {
         { id: 3, nickname: 'b' },
       ],
     });
-    userAgents = users.map((user) => app.agent().login(user));
+    userAgents = await Promise.all(users.map((user) => app.agent().loginWithJti(user)));
   });
 
   afterEach(async () => await app.destroy());

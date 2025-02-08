@@ -55,9 +55,9 @@ describe('configuration', () => {
     });
 
     const userPlugin = app.getPlugin('users') as UsersPlugin;
-    adminAgent = app.agent().login(admin);
+    adminAgent = await app.agent().loginWithJti(admin);
 
-    userAgent = app.agent().login(user);
+    userAgent = await app.agent().loginWithJti(user);
 
     guestAgent = app.agent();
   });
@@ -68,8 +68,8 @@ describe('configuration', () => {
   });
 
   it('should not create/list collections', async () => {
-    expect((await guestAgent.resource('collections').create()).statusCode).toEqual(403);
-    expect((await guestAgent.resource('collections').list()).statusCode).toEqual(403);
+    expect((await guestAgent.resource('collections').create()).statusCode).toEqual(401);
+    expect((await guestAgent.resource('collections').list()).statusCode).toEqual(401);
   });
 
   it('should allow when role has allowConfigure with true value', async () => {

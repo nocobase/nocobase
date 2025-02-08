@@ -208,7 +208,7 @@ export default class DateFieldScheduleTrigger {
           const modExp = fn(
             'MOD',
             literal(
-              `${Math.round(timestamp / 1000)} - ${db.sequelize.getQueryInterface().quoteIdentifiers(tsFn(field))}`,
+              `${Math.round(timestamp / 1000)} - ${tsFn(db.sequelize.getQueryInterface().quoteIdentifiers(field))}`,
             ),
             Math.round(repeat / 1000),
           );
@@ -436,5 +436,14 @@ export default class DateFieldScheduleTrigger {
     }
 
     return this.workflow.trigger(workflow, { ...values, data, date: values?.date ?? new Date() }, options);
+  }
+
+  validateContext(values) {
+    if (!values?.data) {
+      return {
+        data: 'Data is required',
+      };
+    }
+    return null;
   }
 }

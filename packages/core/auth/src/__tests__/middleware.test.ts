@@ -9,7 +9,9 @@
 
 import { Database } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 import { vi } from 'vitest';
+import { AuthErrorCode } from '../auth';
 
 describe('middleware', () => {
   let app: MockServer;
@@ -20,7 +22,7 @@ describe('middleware', () => {
     app = await createMockServer({
       registerActions: true,
       acl: true,
-      plugins: ['users', 'auth', 'acl', 'field-sort', 'data-source-manager'],
+      plugins: ['users', 'auth', 'acl', 'field-sort', 'data-source-manager', 'error-handler'],
     });
 
     // app.plugin(ApiKeysPlugin);
@@ -36,7 +38,7 @@ describe('middleware', () => {
     const hasFn = vi.fn();
     const addFn = vi.fn();
     beforeEach(async () => {
-      await agent.login(1);
+      await agent.loginWithJti(1);
       app.authManager.setTokenBlacklistService({
         has: hasFn,
         add: addFn,
@@ -51,16 +53,18 @@ describe('middleware', () => {
     it('basic', async () => {
       const res = await agent.resource('auth').check();
       const token = res.request.header['Authorization'].replace('Bearer ', '');
+      const { jti } = jwt.decode(token) as JwtPayload;
       expect(res.status).toBe(200);
-      expect(hasFn).toHaveBeenCalledWith(token);
+      expect(hasFn).toHaveBeenCalledWith(jti);
     });
 
     it('signOut should add token to blacklist', async () => {
       // signOut will add token
       const res = await agent.resource('auth').signOut();
       const token = res.request.header['Authorization'].replace('Bearer ', '');
+      const { jti } = jwt.decode(token) as JwtPayload;
       expect(addFn).toHaveBeenCalledWith({
-        token,
+        token: jti,
         // Date or String is ok
         expiration: expect.any(String),
       });
@@ -70,7 +74,15 @@ describe('middleware', () => {
       hasFn.mockImplementation(() => true);
       const res = await agent.resource('auth').check();
       expect(res.status).toBe(401);
-      expect(res.text).toContain('Token is invalid');
+      expect(res.body.errors.some((error) => error.code === AuthErrorCode.BLOCKED_TOKEN)).toBe(true);
+    });
+
+    it('should throw 401 when token in empty', async () => {
+      const visitorAgent = app.agent();
+      hasFn.mockImplementation(() => true);
+      const res = await visitorAgent.resource('auth').check();
+      expect(res.status).toBe(401);
+      expect(res.body.errors.some((error) => error.code === AuthErrorCode.EMPTY_TOKEN)).toBe(true);
     });
   });
 });

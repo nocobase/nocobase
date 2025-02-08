@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaInitializerItemType } from '@nocobase/client';
-import { useMobileRoutes, MobileRouteItem } from '@nocobase/plugin-mobile/client';
 import { uid } from '@formily/shared';
+import { SchemaInitializerItemType } from '@nocobase/client';
+import { MobileRouteItem, useMobileRoutes } from '@nocobase/plugin-mobile/client';
 import { Toast } from 'antd-mobile';
 import { useLocalTranslation } from '../../../locale';
 export const messageSchemaInitializerItem: SchemaInitializerItemType = {
@@ -39,6 +39,7 @@ export const messageSchemaInitializerItem: SchemaInitializerItemType = {
             type: 'page',
             title: t('Message'),
             icon: 'mailoutlined',
+            schemaUid: 'in-app-message',
             options: {
               url: `/page/in-app-message`,
               schema: {
@@ -50,6 +51,7 @@ export const messageSchemaInitializerItem: SchemaInitializerItemType = {
                 type: 'page',
                 title: t('Message'),
                 icon: 'mailoutlined',
+                schemaUid: 'in-app-message/messages',
                 options: {
                   url: `/page/in-app-message/messages`,
                   itemSchema: {

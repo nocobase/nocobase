@@ -13,12 +13,13 @@ import { useUpdate } from 'ahooks';
 import { Col, Row } from 'antd';
 import { isArray } from 'lodash';
 import template from 'lodash/template';
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useCallback, useContext, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   DataBlockProvider,
   TableFieldResource,
   WithoutTableFieldResource,
+  useCollectionManager,
   useCollectionParentRecord,
   useCollectionRecord,
   useCollectionRecordData,
@@ -34,7 +35,7 @@ import {
   useCollectionManager_deprecated,
   useCollection_deprecated,
 } from '../collection-manager';
-import { RefreshComponentProvider } from '../formily/NocoBaseRecursionField';
+import { RefreshComponentProvider, useRefreshComponent } from '../formily/NocoBaseRecursionField';
 import { useSourceId } from '../modules/blocks/useSourceId';
 import { RecordProvider, useRecordIndex } from '../record-provider';
 import { useAssociationNames } from './hooks';
@@ -245,7 +246,13 @@ export const BlockProvider = (props: {
 }) => {
   const { name, dataSource, useParams, parentRecord } = props;
   const parentRecordFromHook = useCompatDataBlockParentRecord(props);
-  const refresh = useUpdate();
+  const refreshComponent = useRefreshComponent();
+  const _refresh = useUpdate();
+
+  const refresh = useCallback(() => {
+    _refresh();
+    refreshComponent?.();
+  }, [_refresh, refreshComponent]);
 
   // 新版（1.0）已弃用 useParams，这里之所以继续保留是为了兼容旧版的 UISchema
   const paramsFromHook = useParams?.();
@@ -281,14 +288,15 @@ export const useBlockAssociationContext = () => {
   return useContext(BlockAssociationContext) || association;
 };
 
-export const useFilterByTk = () => {
+export const useFilterByTk = (blockProps?: any) => {
   const { resource, __parent } = useBlockRequestContext();
   const recordIndex = useRecordIndex();
   const recordData = useCollectionRecordData();
   const collection = useCollection_deprecated();
-  const { getCollectionField } = useCollectionManager_deprecated();
-  const assoc = useBlockAssociationContext();
+  const association = useBlockAssociationContext();
+  const assoc = blockProps?.association || association;
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
+  const cm = useCollectionManager();
 
   if (!withoutTableFieldResource) {
     if (resource instanceof TableFieldResource || __parent?.block === 'TableField') {
@@ -297,8 +305,8 @@ export const useFilterByTk = () => {
   }
 
   if (assoc) {
-    const association = getCollectionField(assoc);
-    return recordData?.[association.targetKey || 'id'];
+    const association = cm.getCollectionField(assoc);
+    return recordData?.[association.targetKey || association.sourceKey || 'id'];
   }
   if (isArray(collection.filterTargetKey)) {
     const filterByTk = {};
@@ -336,8 +344,8 @@ export const useSourceIdFromParentRecord = () => {
  * @internal
  * @returns
  */
-export const useParamsFromRecord = () => {
-  const filterByTk = useFilterByTk();
+export const useParamsFromRecord = (props?: any) => {
+  const filterByTk = useFilterByTk(props);
   const record = useRecord();
   const { fields } = useCollection_deprecated();
   const fieldSchema = useFieldSchema();

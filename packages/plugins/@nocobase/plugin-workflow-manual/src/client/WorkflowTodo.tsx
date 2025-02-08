@@ -133,6 +133,15 @@ export const todoCollection = {
       },
     },
     {
+      type: 'string',
+      name: 'title',
+      uiSchema: {
+        type: 'string',
+        title: `{{t("Task title", { ns: "${NAMESPACE}" })}}`,
+        'x-component': 'Input',
+      },
+    },
+    {
       type: 'belongsTo',
       name: 'node',
       target: 'flow_nodes',
@@ -236,6 +245,21 @@ function UserJobStatusColumn(props) {
 }
 
 const tableColumns = {
+  title: {
+    type: 'void',
+    'x-decorator': 'TableV2.Column.Decorator',
+    'x-component': 'TableV2.Column',
+    'x-component-props': {
+      width: null,
+    },
+    title: `{{t("Task title", { ns: "${NAMESPACE}" })}}`,
+    properties: {
+      title: {
+        'x-component': 'CollectionField',
+        'x-read-pretty': true,
+      },
+    },
+  },
   workflow: {
     type: 'void',
     'x-decorator': 'TableV2.Column.Decorator',
@@ -247,21 +271,6 @@ const tableColumns = {
     properties: {
       workflow: {
         'x-component': 'WorkflowColumn',
-        'x-read-pretty': true,
-      },
-    },
-  },
-  node: {
-    type: 'void',
-    'x-decorator': 'TableV2.Column.Decorator',
-    'x-component': 'TableV2.Column',
-    'x-component-props': {
-      width: null,
-    },
-    title: `{{t("Task node", { ns: "${NAMESPACE}" })}}`,
-    properties: {
-      node: {
-        'x-component': 'NodeColumn',
         'x-read-pretty': true,
       },
     },
@@ -764,8 +773,6 @@ function TaskBlock() {
               userId: user?.data?.id,
             },
             appends: [
-              'node.id',
-              'node.title',
               'job.id',
               'job.status',
               'job.result',
@@ -783,7 +790,7 @@ function TaskBlock() {
             type: 'void',
             'x-component': 'WorkflowTodo',
             'x-component-props': {
-              columns: ['workflow', 'node', 'status', 'createdAt'],
+              columns: ['title', 'workflow', 'node', 'status', 'createdAt'],
             },
           },
         },

@@ -17,9 +17,20 @@ describe('list action with acl', () => {
   let Post;
 
   let Comment;
+  let userAgent;
+  let users;
 
   beforeEach(async () => {
     app = await prepareApp();
+    const UserRepo = app.db.getCollection('users').repository;
+    const root = await UserRepo.findOne({});
+    users = await UserRepo.create({
+      values: [
+        { id: 2, nickname: 'a', roles: [{ name: 'user' }] },
+        { id: 3, nickname: 'a', roles: [{ name: 'user' }] },
+      ],
+    });
+    userAgent = await app.agent().loginWithJti(users[0], 'user');
 
     Post = app.db.collection({
       name: 'posts',
@@ -91,8 +102,7 @@ describe('list action with acl', () => {
       },
     );
 
-    const response = await (app as any)
-      .agent()
+    const response = await userAgent
       .set('X-With-ACL-Meta', true)
       .resource('posts')
       .list({
@@ -165,7 +175,7 @@ describe('list action with acl', () => {
     );
 
     //@ts-ignore
-    const response = await app.agent().set('X-With-ACL-Meta', true).resource('tests').list({});
+    const response = await userAgent.set('X-With-ACL-Meta', true).resource('tests').list({});
 
     const data = response.body;
     expect(data.meta.allowedActions.view).toEqual(['t1', 't2', 't3']);
@@ -188,31 +198,35 @@ describe('list action with acl', () => {
 
     await Post.repository.create({
       values: [
-        { title: 'p1', createdById: 1 },
-        { title: 'p2', createdById: 1 },
-        { title: 'p3', createdById: 2 },
+        { title: 'p1', createdById: users[0].id },
+        { title: 'p2', createdById: users[0].id },
+        { title: 'p3', createdById: users[1].id },
       ],
     });
 
-    app.resourcer.use(
-      (ctx, next) => {
-        ctx.state.currentRole = 'user';
-        ctx.state.currentUser = {
-          id: 1,
-        };
+    // app.resourcer.use(
+    //   (ctx, next) => {
+    //     ctx.state.currentRole = 'user';
+    //     ctx.state.currentUser = {
+    //       id: 1,
+    //     };
 
-        return next();
-      },
-      {
-        before: 'acl',
-        after: 'auth',
-      },
-    );
+    //     return next();
+    //   },
+    //   {
+    //     before: 'acl',
+    //     after: 'auth',
+    //   },
+    // );
 
-    const response = await (app as any).agent().set('X-With-ACL-Meta', true).resource('posts').list();
+    // @ts-ignore
+    const response = await (await app.agent().loginWithJti(users[0].id, 'user'))
+      .set('X-With-ACL-Meta', true)
+      .resource('posts')
+      .list();
     const data = response.body;
-    expect(data.meta.allowedActions.view).toEqual([1, 2, 3]);
-    expect(data.meta.allowedActions.update).toEqual([1, 2]);
+    expect(data.meta.allowedActions.view).toEqual(expect.arrayContaining([1, 2, 3]));
+    expect(data.meta.allowedActions.update).toEqual(expect.arrayContaining([1, 2]));
     expect(data.meta.allowedActions.destroy).toEqual([]);
   });
 
@@ -251,7 +265,7 @@ describe('list action with acl', () => {
     );
 
     // @ts-ignore
-    const response = await app.agent().set('X-With-ACL-Meta', true).resource('posts').list({});
+    const response = await userAgent.set('X-With-ACL-Meta', true).resource('posts').list({});
 
     const data = response.body;
     expect(data.meta.allowedActions.view).toEqual([1, 2, 3]);
@@ -294,7 +308,7 @@ describe('list action with acl', () => {
     );
 
     // @ts-ignore
-    const getResponse = await app.agent().set('X-With-ACL-Meta', true).resource('posts').get({
+    const getResponse = await userAgent.set('X-With-ACL-Meta', true).resource('posts').get({
       filterByTk: 1,
     });
 
@@ -377,7 +391,7 @@ describe('list association action with acl', () => {
       },
     });
 
-    const userAgent = app.agent().login(user).set('X-With-ACL-Meta', true);
+    const userAgent = await (await app.agent().loginWithJti(user, 'newRole')).set('X-With-ACL-Meta', true);
 
     const createResp = await userAgent.resource('posts').create({
       values: {

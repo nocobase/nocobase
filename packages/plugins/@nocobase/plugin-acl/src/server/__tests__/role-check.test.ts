@@ -44,7 +44,7 @@ describe('role check action', () => {
       },
     });
 
-    const agent = app.agent().login(user);
+    const agent = await app.agent().loginWithJti(user);
 
     // @ts-ignore
     const response = await agent.resource('roles').check();
@@ -92,7 +92,7 @@ describe('role check action', () => {
       },
     });
 
-    const agent: any = app.agent().login(user);
+    const agent: any = await app.agent().loginWithJti(user);
 
     const checkResp1 = await agent.resource('roles').check();
     const actions = checkResp1.body.data.actions;

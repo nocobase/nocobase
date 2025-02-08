@@ -14,7 +14,14 @@ import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializerItem, useSchemaInitializer } from '../../application';
 import { useGlobalTheme } from '../../global-theme';
-import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../schema-component';
+import { NocoBaseDesktopRouteType } from '../../route-switch/antd/admin-layout/convertRoutesToSchema';
+import {
+  FormDialog,
+  SchemaComponent,
+  SchemaComponentOptions,
+  useNocoBaseRoutes,
+  useParentRoute,
+} from '../../schema-component';
 import { useStyles } from '../../schema-component/antd/menu/MenuItemInitializers';
 
 export const PageMenuItem = () => {
@@ -23,6 +30,8 @@ export const PageMenuItem = () => {
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
   const { componentCls, hashId } = useStyles();
+  const parentRoute = useParentRoute();
+  const { createRoute } = useNocoBaseRoutes();
 
   const handleClick = useCallback(async () => {
     const values = await FormDialog(
@@ -57,40 +66,74 @@ export const PageMenuItem = () => {
       initialValues: {},
     });
     const { title, icon } = values;
-    insert({
-      type: 'void',
-      title,
-      'x-component': 'Menu.Item',
-      'x-decorator': 'ACLMenuItemProvider',
-      'x-component-props': {
-        icon,
-      },
-      'x-server-hooks': [
+    const menuSchemaUid = uid();
+    const pageSchemaUid = uid();
+    const tabSchemaUid = uid();
+    const tabSchemaName = uid();
+
+    // 创建一个路由到 desktopRoutes 表中
+    const {
+      data: { data: route },
+    } = await createRoute({
+      type: NocoBaseDesktopRouteType.page,
+      title: values.title,
+      icon: values.icon,
+      parentId: parentRoute?.id,
+      schemaUid: pageSchemaUid,
+      menuSchemaUid,
+      enableTabs: false,
+      children: [
         {
-          type: 'onSelfCreate',
-          method: 'bindMenuToRole',
-        },
-        {
-          type: 'onSelfSave',
-          method: 'extractTextToLocale',
+          type: NocoBaseDesktopRouteType.tabs,
+          title: '{{t("Unnamed")}}',
+          schemaUid: tabSchemaUid,
+          tabSchemaName,
+          hidden: true,
         },
       ],
-      properties: {
-        page: {
-          type: 'void',
-          'x-component': 'Page',
-          'x-async': true,
-          properties: {
-            [uid()]: {
-              type: 'void',
-              'x-component': 'Grid',
-              'x-initializer': 'page:addBlock',
-              properties: {},
-            },
-          },
-        },
-      },
     });
-  }, [insert, options.components, options.scope, t, theme]);
+
+    // 同时插入一个对应的 Schema
+    insert(getPageMenuSchema({ title, icon, pageSchemaUid, tabSchemaUid, menuSchemaUid, tabSchemaName, route }));
+  }, [createRoute, insert, options?.components, options?.scope, parentRoute?.id, t, theme]);
   return <SchemaInitializerItem title={t('Page')} onClick={handleClick} className={`${componentCls} ${hashId}`} />;
 };
+
+export function getPageMenuSchema({
+  title,
+  icon,
+  pageSchemaUid,
+  tabSchemaUid,
+  menuSchemaUid,
+  tabSchemaName,
+  route = undefined,
+}) {
+  return {
+    type: 'void',
+    title,
+    'x-component': 'Menu.Item',
+    'x-decorator': 'ACLMenuItemProvider',
+    'x-component-props': {
+      icon,
+    },
+    properties: {
+      page: {
+        type: 'void',
+        'x-component': 'Page',
+        'x-async': true,
+        properties: {
+          [tabSchemaName]: {
+            type: 'void',
+            'x-component': 'Grid',
+            'x-initializer': 'page:addBlock',
+            properties: {},
+            'x-uid': tabSchemaUid,
+          },
+        },
+        'x-uid': pageSchemaUid,
+      },
+    },
+    'x-uid': menuSchemaUid,
+    __route__: route,
+  };
+}
