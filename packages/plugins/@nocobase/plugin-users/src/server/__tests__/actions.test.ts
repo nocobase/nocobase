@@ -36,7 +36,7 @@ describe('actions', () => {
     });
 
     agent = app.agent();
-    adminAgent = app.agent().login(adminUser);
+    adminAgent = await app.agent().login(adminUser);
   });
 
   afterEach(async () => {

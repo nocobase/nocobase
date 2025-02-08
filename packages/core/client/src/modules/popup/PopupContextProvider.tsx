@@ -23,6 +23,7 @@ export const PopupContextProvider: React.FC<{
 }> = (props) => {
   const { visible: visibleFromProps, setVisible: setVisibleFromProps } = props;
   const [visible, setVisible] = useState(false);
+  const [formValueChanged, setFormValueChanged] = useState(false);
   const { visible: visibleWithURL, setVisible: setVisibleWithURL } = useContext(PopupVisibleProviderContext) || {
     visible: false,
     setVisible: () => {},
@@ -46,6 +47,8 @@ export const PopupContextProvider: React.FC<{
         setVisible={_setVisible}
         openMode={openMode}
         openSize={openSize}
+        formValueChanged={formValueChanged}
+        setFormValueChanged={setFormValueChanged}
       >
         {props.children}
       </ActionContextProvider>

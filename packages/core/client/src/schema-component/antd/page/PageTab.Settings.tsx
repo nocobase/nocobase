@@ -7,12 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { App } from 'antd';
-import { useTranslation } from 'react-i18next';
+import { ExclamationCircleFilled } from '@ant-design/icons';
 import { ISchema } from '@formily/json-schema';
-import { useDesignable } from '../../hooks';
-import { useSchemaToolbar } from '../../../application/schema-toolbar';
+import { App, Modal } from 'antd';
+import _ from 'lodash';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
+import { useSchemaToolbar } from '../../../application/schema-toolbar';
+import { useDesignable } from '../../hooks';
+import { useNocoBaseRoutes } from '../menu/Menu';
 
 /**
  * @deprecated
@@ -27,6 +31,8 @@ export const pageTabSettings = new SchemaSettings({
         const { t } = useTranslation();
         const { schema } = useSchemaToolbar<{ schema: ISchema }>();
         const { dn } = useDesignable();
+        const { updateRoute } = useNocoBaseRoutes();
+
         return {
           title: t('Edit'),
           schema: {
@@ -59,7 +65,51 @@ export const pageTabSettings = new SchemaSettings({
                 'x-icon': icon,
               },
             });
-            dn.refresh();
+
+            // 更新路由
+            updateRoute(schema['__route__'].id, {
+              title,
+              icon,
+            });
+          },
+        };
+      },
+    },
+    {
+      name: 'hidden',
+      type: 'switch',
+      useComponentProps() {
+        const { t } = useTranslation();
+        const { schema } = useSchemaToolbar<{ schema: ISchema }>();
+        const { updateRoute } = useNocoBaseRoutes();
+        const { dn } = useDesignable();
+
+        return {
+          title: t('Hidden'),
+          checked: schema['x-component-props']?.hidden,
+          onChange: (v) => {
+            Modal.confirm({
+              title: '确定要隐藏该菜单吗？',
+              icon: <ExclamationCircleFilled />,
+              content: '隐藏后，该菜单将不再显示在菜单栏中。如需再次显示，需要去路由管理页面设置。',
+              async onOk() {
+                _.set(schema, 'x-component-props.hidden', !!v);
+
+                // 更新菜单对应的路由
+                if (schema['__route__']?.id) {
+                  await updateRoute(schema['__route__'].id, {
+                    hideInMenu: !!v,
+                  });
+                }
+
+                dn.emit('patch', {
+                  schema: {
+                    'x-uid': schema['x-uid'],
+                    'x-component-props': schema['x-component-props'],
+                  },
+                });
+              },
+            });
           },
         };
       },

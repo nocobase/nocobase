@@ -5,6 +5,277 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.5.3](https://github.com/nocobase/nocobase/compare/v1.5.2...v1.5.3) - 2025-02-07
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - The popup opened by clicking the belongsToArray field is fetching incorrect data ([#6173](https://github.com/nocobase/nocobase/pull/6173)) by @zhangzhonghe
+
+  - time field operator set to "between" in filter form, but component didn't change to time range picker ([#6170](https://github.com/nocobase/nocobase/pull/6170)) by @katherinehhh
+
+  - Kanban and calendar block popup edit form didn't show "Unsaved changes" ([#6172](https://github.com/nocobase/nocobase/pull/6172)) by @katherinehhh
+
+## [v1.5.2](https://github.com/nocobase/nocobase/compare/v1.5.1...v1.5.2) - 2025-02-06
+
+### 🚀 Improvements
+
+- **[Mobile]** Hide mobile config page header when no config permission ([#6171](https://github.com/nocobase/nocobase/pull/6171)) by @zhangzhonghe
+
+### 🐛 Bug Fixes
+
+- **[Workflow: notification node]** Ensured notifications are sent correctly when user input contains Handlebars-like syntax. ([#6164](https://github.com/nocobase/nocobase/pull/6164)) by @sheldon66
+
+- **[Workflow: Manual node]** Fix form values not parsed in terminal button submitting ([#6160](https://github.com/nocobase/nocobase/pull/6160)) by @mytharcher
+
+## [v1.5.1](https://github.com/nocobase/nocobase/compare/v1.5.0...v1.5.1) - 2025-02-06
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Incorrect translation for title of `Sub-form(Popover)` ([#6159](https://github.com/nocobase/nocobase/pull/6159)) by @gchust
+
+  - When the subform field is set to 'Hidden (reserved value)', its default value variables fail to function properly ([#6165](https://github.com/nocobase/nocobase/pull/6165)) by @zhangzhonghe
+
+## [v1.5.0](https://github.com/nocobase/nocobase/compare/v1.4.34...v1.5.0) - 2025-02-05
+
+## Core Optimizations
+
+### Enable Links in Single-line Text Fields
+
+The open mode supports drawer, dialog and page.
+
+![20250207212903](https://static-docs.nocobase.com/20250207212903.png)
+
+### Association Block Supports Associate/Disassociate Actions
+
+You can now perform association and disassociation actions directly in the association block.
+
+![20250207211837](https://static-docs.nocobase.com/20250207211837.png)
+
+### Debugging Workflow
+
+You can now directly trigger workflows during configuration to debug them.
+
+<video width="100%" controls>
+      <source src="https://static-docs.nocobase.com/20250207213343_rec_.mp4" type="video/mp4">
+</video>
+
+### Improved Mobile Interaction for Date Components
+
+Enhanced interaction experience for date-related components on mobile devices.
+
+![0084553986f6b3de21ca62f22d09a91a.png](https://static-docs.nocobase.com/0084553986f6b3de21ca62f22d09a91a.png)
+
+### Frontend Performance Optimizations
+
+* Optimized initial screen load speed.
+* Changed the frontend build tool to **rspack**.
+* Reduced the bundle size of entry files for various plugin packages.
+* Enhanced rendering performance for large data tables.
+* Reduced stuttering during menu transitions.
+* Introduced on-demand loading methods with the new `lazy` and `useLazy` libraries.
+
+Below is a brief introduction to using `lazy` and `useLazy`:
+
+```ts
+import { lazy, useLazy } from '@nocobase/client';
+
+// Export a single component:
+const { RolesManagement } = lazy(() => import('./RolesManagement'), 'RolesManagement');
+
+// Export multiple components:
+const { AuthLayout, SignInPage, SignUpPage } = lazy(() => import('./pages'), 'AuthLayout', 'SignInPage', 'SignUpPage');
+
+// Export a default component:
+const ThemeList = lazy(() => import('./components/ThemeList'));
+
+// Return a hook:
+const useReactToPrint = useLazy<typeof import('react-to-print').useReactToPrint>(
+  () => import('react-to-print'),
+  'useReactToPrint',
+);
+  
+// Return a library:
+const parseExpression = useLazy<typeof import('cron-parser').parseExpression>(
+  () => import('cron-parser'),
+  'parseExpression',
+);
+```
+
+---
+
+## New Plugins
+
+### Import Pro
+
+Supports asynchronous import operations that run on a separate thread. This feature enables the import of large volumes of data with enhanced performance.
+
+![20250119221221](https://static-docs.nocobase.com/20250119221221.png)
+
+Reference: [Import Pro](https://docs.nocobase.com/handbook/action-import-pro)
+
+### Export Pro
+
+Enables asynchronous export operations that run on a separate thread, supporting large-scale data exports as well as attachment exports.
+
+![20250119221237](https://static-docs.nocobase.com/20250119221237.png)
+
+Reference: [Export Pro](https://docs.nocobase.com/handbook/action-export-pro)
+
+### Template Print
+
+The Template Printing plugin allows you to edit template files using Word, Excel, or PowerPoint (supporting the `.docx`, `.xlsx`, and `.pptx` formats). By setting placeholders and logical structures within the template, you can dynamically generate files in predetermined formats such as `.docx`, `.xlsx`, `.pptx`, and even `.pdf`. This functionality is widely applicable for creating various business documents, including quotes, invoices, contracts, and more.
+
+**Main Features**
+
+* **Multi-format Support**: Compatible with Word, Excel, and PowerPoint templates to meet diverse document generation needs.
+* **Dynamic Data Filling**: Automatically populates document content based on defined placeholders and logic.
+* **Flexible Template Management**: Easily add, edit, delete, and categorize templates for better maintenance and usage.
+* **Rich Template Syntax**: Supports basic replacement, array access, loops, conditional output, and other template syntax for complex document generation.
+* **Formatter Support**: Provides conditional outputs, date formatting, number formatting, and more to enhance document clarity and professionalism.
+* **Efficient Output Options**: Supports direct PDF generation for easy sharing and printing.
+
+![20250119221258](https://static-docs.nocobase.com/20250119221258.png)
+
+Reference: [Template Print](https://docs.nocobase.com/handbook/action-template-print)
+
+### Audit Logger
+
+This plugin records and tracks user activities as well as resource operation histories within the system.
+
+![20250119221319](https://static-docs.nocobase.com/20250119221319.png)
+
+Reference: [Audit Logger](https://docs.nocobase.com/handbook/audit-logger)
+
+### Workflow: Subflow
+
+This feature allows one workflow to call another process. You can use variables from the current workflow as input for the subflow, and then use the subflow’s output as variables in subsequent nodes.
+
+![20250119221334](https://static-docs.nocobase.com/20250119221334.png)
+
+Reference: [Workflow: Subflow](https://docs.nocobase.com/handbook/workflow-subflow)
+
+### Email Manager
+
+Integrate your Google or Microsoft email accounts into NocoBase to send, receive, view, and manage emails. Additionally, emails can be embedded directly into pages.
+
+![20250119221346](https://static-docs.nocobase.com/20250119221346.png)
+
+Reference: [Email Manager](https://docs.nocobase.com/handbook/email-manager/usage-admin)
+
+### File Storage: S3 (Pro)
+
+Supports file storage types that are compatible with the S3 protocol, including Amazon S3, Alibaba Cloud OSS, Tencent Cloud COS, MinIO, and more. This plugin also supports direct file uploads and private access.
+
+![20250119221404](https://static-docs.nocobase.com/20250119221404.png)
+
+Reference: [File Storage: S3(Pro)](https://docs.nocobase.com/handbook/file-manager/storage/s3-pro)
+
+## [v1.4.34](https://github.com/nocobase/nocobase/compare/v1.4.33...v1.4.34) - 2025-02-02
+
+### 🐛 Bug Fixes
+
+- **[client]** Unable to submit when selecting data ([#6148](https://github.com/nocobase/nocobase/pull/6148)) by @zhangzhonghe
+
+## [v1.4.33](https://github.com/nocobase/nocobase/compare/v1.4.32...v1.4.33) - 2025-01-28
+
+### 🐛 Bug Fixes
+
+- **[Auth: OIDC]** Set the `same-site` policy of state cookie to `lax` by @2013xile
+
+## [v1.4.32](https://github.com/nocobase/nocobase/compare/v1.4.31...v1.4.32) - 2025-01-27
+
+### 🐛 Bug Fixes
+
+- **[actions]** Fix "move" action to trigger workflow ([#6144](https://github.com/nocobase/nocobase/pull/6144)) by @mytharcher
+
+## [v1.4.31](https://github.com/nocobase/nocobase/compare/v1.4.30...v1.4.31) - 2025-01-26
+
+### 🚀 Improvements
+
+- **[client]** optimize filter component in filter form to match filterable settings ([#6110](https://github.com/nocobase/nocobase/pull/6110)) by @katherinehhh
+
+- **[File manager]** Allow to delete files when file (attachment) record is deleted ([#6127](https://github.com/nocobase/nocobase/pull/6127)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[database]**
+  - fix filter by uuid field ([#6138](https://github.com/nocobase/nocobase/pull/6138)) by @chareice
+
+  - Fix update collection that without primary keys ([#6124](https://github.com/nocobase/nocobase/pull/6124)) by @chareice
+
+- **[client]**
+  - The data source management page is reporting an error ([#6141](https://github.com/nocobase/nocobase/pull/6141)) by @zhangzhonghe
+
+  - When the linkage rule's conditions involve association fields that are not displayed, the button's linkage rule becomes ineffective ([#6140](https://github.com/nocobase/nocobase/pull/6140)) by @zhangzhonghe
+
+  - Fix  incorrect variable display in association field quick-add form ([#6119](https://github.com/nocobase/nocobase/pull/6119)) by @katherinehhh
+
+  - The content is not displayed in the quick add popup ([#6123](https://github.com/nocobase/nocobase/pull/6123)) by @zhangzhonghe
+
+  - Fix the issue where association field blocks do not request data ([#6125](https://github.com/nocobase/nocobase/pull/6125)) by @zhangzhonghe
+
+  - Fix linkage rules in subtable/subform affecting blocks in association field popups ([#5543](https://github.com/nocobase/nocobase/pull/5543)) by @katherinehhh
+
+- **[Collection field: administrative divisions of China]** fix acl permission with chinaRegion ([#6137](https://github.com/nocobase/nocobase/pull/6137)) by @chareice
+
+- **[Workflow]** Fix incorrectly generated SQL ([#6128](https://github.com/nocobase/nocobase/pull/6128)) by @mytharcher
+
+- **[Collection field: Many to many (array)]** Fix the issue where updating many to many (array) fields in a subform is not working ([#6136](https://github.com/nocobase/nocobase/pull/6136)) by @2013xile
+
+- **[Mobile]** Fix select in read-only mode clickable and text overflow issue on mobile ([#6130](https://github.com/nocobase/nocobase/pull/6130)) by @katherinehhh
+
+## [v1.4.30](https://github.com/nocobase/nocobase/compare/v1.4.29...v1.4.30) - 2025-01-23
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix an issue with displaying N/A for association fields in Table ([#6109](https://github.com/nocobase/nocobase/pull/6109)) by @zhangzhonghe
+
+- **[Collection: Tree]** Disallow setting a node of tree collection as its own parent ([#6122](https://github.com/nocobase/nocobase/pull/6122)) by @2013xile
+
+- **[Workflow: HTTP request node]** Fix request node pending in loop ([#6120](https://github.com/nocobase/nocobase/pull/6120)) by @mytharcher
+
+- **[Workflow: test kit]** To fix mock datasource test cases depend on ACL ([#6116](https://github.com/nocobase/nocobase/pull/6116)) by @mytharcher
+
+- **[Backup manager]** Fixed an issue where some backup files could not be properly extracted and restored by @gchust
+
+## [v1.4.29](https://github.com/nocobase/nocobase/compare/v1.4.28...v1.4.29) - 2025-01-21
+
+### 🎉 New Features
+
+- **[Block: Action panel]** Support configuring  the number of icons per row in the mobile  action penal ([#6106](https://github.com/nocobase/nocobase/pull/6106)) by @katherinehhh
+
+## [v1.4.28](https://github.com/nocobase/nocobase/compare/v1.4.27...v1.4.28) - 2025-01-21
+
+### 🐛 Bug Fixes
+
+- **[client]** The default value of the assocation field has not been updated ([#6103](https://github.com/nocobase/nocobase/pull/6103)) by @chenos
+
+- **[Action: Batch edit]** Remove form data template from bulk edit action form  settings ([#6098](https://github.com/nocobase/nocobase/pull/6098)) by @katherinehhh
+
+- **[Verification]** Fix provider ID could be edit ([#6097](https://github.com/nocobase/nocobase/pull/6097)) by @mytharcher
+
+## [v1.4.27](https://github.com/nocobase/nocobase/compare/v1.4.26...v1.4.27) - 2025-01-18
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix the issue where block data is empty in the popup window on the embedded page ([#6086](https://github.com/nocobase/nocobase/pull/6086)) by @zhangzhonghe
+
+- **[Workflow]** Fix dispatch not process in preparing phase ([#6087](https://github.com/nocobase/nocobase/pull/6087)) by @mytharcher
+
+## [v1.4.26](https://github.com/nocobase/nocobase/compare/v1.4.25...v1.4.26) - 2025-01-16
+
+### 🚀 Improvements
+
+- **[client]** Allows to add descriptions for SQL collections ([#6081](https://github.com/nocobase/nocobase/pull/6081)) by @2013xile
+
+- **[resourcer]** Allow empty object as values in action ([#6070](https://github.com/nocobase/nocobase/pull/6070)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[Localization]** Avoid API request when attempting to delete an empty translation ([#6078](https://github.com/nocobase/nocobase/pull/6078)) by @2013xile
+
 ## [v1.4.25](https://github.com/nocobase/nocobase/compare/v1.4.24...v1.4.25) - 2025-01-15
 
 ### 🚀 Improvements

@@ -240,12 +240,27 @@ function getSubscriber(
           field.value = lastState.value;
         }
       } else {
-        field[fieldName] = lastState?.value;
-        requestAnimationFrame(() => {
-          field.setState((state) => {
-            state[fieldName] = lastState?.value;
+        // 为了让字段的默认值中的变量能正常工作，需要保证字段被隐藏时，字段组件依然会被渲染
+        if (fieldName === 'display' && lastState?.value === 'hidden') {
+          field.display = 'visible';
+          field.data = field.data || {};
+          // 在 FormItem 中使用这个属性来判断字段是否被隐藏
+          field.data.hidden = true;
+
+          requestAnimationFrame(() => {
+            field.setState((state) => {
+              state.display = 'visible';
+            });
           });
-        });
+        } else {
+          field[fieldName] = lastState?.value;
+          requestAnimationFrame(() => {
+            field.setState((state) => {
+              state[fieldName] = lastState?.value;
+            });
+          });
+        }
+
         //字段隐藏时清空数据
         if (fieldName === 'display' && lastState?.value === 'none') {
           field.value = null;

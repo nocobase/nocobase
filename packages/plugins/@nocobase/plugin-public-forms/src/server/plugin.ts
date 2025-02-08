@@ -170,7 +170,7 @@ export class PluginPublicFormsServer extends Plugin {
     } else if (
       (actionName === 'list' && ctx.PublicForm['targetCollections'].includes(resourceName)) ||
       (collection.options.template === 'file' && actionName === 'create') ||
-      (resourceName === 'storages' && actionName === 'getRules') ||
+      (resourceName === 'storages' && actionName === 'getBasicInfo') ||
       (resourceName === 'map-configuration' && actionName === 'get')
     ) {
       ctx.permission = {

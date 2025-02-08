@@ -15,38 +15,42 @@ import { observer, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { each } from '@formily/shared';
 import { useUpdate } from 'ahooks';
-import { Button, Card, Divider, Tooltip, Space } from 'antd';
-import React, { useCallback, useContext, useState, useMemo } from 'react';
+import { Button, Card, Divider, Space, Tooltip } from 'antd';
+import React, { useCallback, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FormActiveFieldsProvider } from '../../../block-provider/hooks/useFormActiveFields';
-import { useCollection, CollectionProvider } from '../../../data-source';
+import {
+  FormProvider,
+  RecordPickerContext,
+  RecordPickerProvider,
+  SchemaComponentOptions,
+  useActionContext,
+} from '../..';
 import { useCreateActionProps } from '../../../block-provider/hooks';
+import { FormActiveFieldsProvider } from '../../../block-provider/hooks/useFormActiveFields';
+import { TableSelectorParamsProvider } from '../../../block-provider/TableSelectorProvider';
+import { CollectionProvider, useCollection } from '../../../data-source';
 import {
   useCollectionRecord,
   useCollectionRecordData,
 } from '../../../data-source/collection-record/CollectionRecordProvider';
 import { isNewRecord, markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
 import { FlagProvider } from '../../../flag-provider';
-import { NocoBaseRecursionField, RefreshComponentProvider } from '../../../formily/NocoBaseRecursionField';
+import {
+  NocoBaseRecursionField,
+  RefreshComponentProvider,
+  useRefreshComponent,
+} from '../../../formily/NocoBaseRecursionField';
 import { RecordIndexProvider, RecordProvider } from '../../../record-provider';
 import { isPatternDisabled, isSystemField } from '../../../schema-settings';
-import { TableSelectorParamsProvider } from '../../../block-provider/TableSelectorProvider';
 import {
   DefaultValueProvider,
   IsAllowToSetDefaultValueParams,
   interfacesOfUnsupportedDefaultValue,
 } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
+import { useCompile } from '../../hooks';
+import { Action, ActionContextProvider } from '../action';
 import { AssociationFieldContext } from './context';
 import { SubFormProvider, useAssociationFieldContext, useFieldNames } from './hooks';
-import { Action, ActionContextProvider } from '../action';
-import { useCompile } from '../../hooks';
-import {
-  FormProvider,
-  RecordPickerProvider,
-  SchemaComponentOptions,
-  useActionContext,
-  RecordPickerContext,
-} from '../..';
 import { useTableSelectorProps } from './InternalPicker';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
 
@@ -136,6 +140,13 @@ const ToManyNester = observer(
     const recordData = useCollectionRecordData();
     const collection = useCollection();
     const update = useUpdate();
+
+    const refreshComponent = useRefreshComponent();
+    const refresh = useCallback(() => {
+      update();
+      refreshComponent?.();
+    }, [update, refreshComponent]);
+
     const [visibleSelector, setVisibleSelector] = useState(false);
     const [selectedRows, setSelectedRows] = useState([]);
     const fieldNames = useFieldNames(props);
@@ -235,7 +246,7 @@ const ToManyNester = observer(
           }
         `}
       >
-        <RefreshComponentProvider refresh={update}>
+        <RefreshComponentProvider refresh={refresh}>
           {field.value.map((value, index) => {
             let allowed = allowDissociate;
             if (!allowDissociate) {
@@ -311,7 +322,7 @@ const ToManyNester = observer(
                 }
               />
             )}
-            {field.editable && allowSelectExistingRecord && currentMode === 'Nester' && (
+            {field.editable && allowSelectExistingRecord && currentMode === 'Nester' && allowMultiple && (
               <Action.Link
                 useAction={useNesterSelectProps}
                 title={

@@ -39,7 +39,7 @@ export function selectQuery(
 
   // Add WHERE to sub or main query
   if (Object.prototype.hasOwnProperty.call(options, 'where')) {
-    options.where = this.getWhereConditions(options.where, tableName, model, options);
+    options.where = this.getWhereConditions(options.where, model.name, model, options);
     if (options.where) {
       queryItems.push(` WHERE ${options.where}`);
     }
@@ -48,8 +48,8 @@ export function selectQuery(
   // Add GROUP BY to sub or main query
   if (options.group) {
     options.group = Array.isArray(options.group)
-      ? options.group.map((t) => this.aliasGrouping(t, model, tableName, options)).join(', ')
-      : this.aliasGrouping(options.group, model, tableName, options);
+      ? options.group.map((t) => this.aliasGrouping(t, model, model.name, options)).join(', ')
+      : this.aliasGrouping(options.group, model, model.name, options);
 
     if (options.group) {
       queryItems.push(` GROUP BY ${options.group}`);

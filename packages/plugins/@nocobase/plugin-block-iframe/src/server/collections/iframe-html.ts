@@ -13,7 +13,7 @@ export default {
   namespace: 'iframe-block.iframe-html-storage',
   dumpRules: 'required',
   name: 'iframeHtml',
-  migrationRules: ['overwrite', 'skip'],
+  migrationRules: ['overwrite', 'schema-only'],
   createdBy: true,
   updatedBy: true,
   shared: true,

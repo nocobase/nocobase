@@ -117,7 +117,7 @@ describe('data source with acl', () => {
       },
     });
 
-    const adminAgent: any = app.agent().login(adminUser).set('x-data-source', 'mockInstance1');
+    const adminAgent: any = (await app.agent().login(adminUser)).set('x-data-source', 'mockInstance1');
     const listRes = await adminAgent.resource('api/posts').list();
     expect(listRes.status).toBe(200);
     expect(middlewareFn).toBeCalledTimes(1);
@@ -130,7 +130,7 @@ describe('data source with acl', () => {
       },
     });
 
-    const adminAgent: any = app.agent().login(adminUser).set('x-data-source', 'mockInstance1');
+    const adminAgent: any = (await app.agent().login(adminUser)).set('x-data-source', 'mockInstance1');
     const postRes = await adminAgent.resource('api/posts').list({});
     expect(postRes.status).toBe(200);
   });
@@ -142,7 +142,7 @@ describe('data source with acl', () => {
       },
     });
 
-    const adminAgent: any = app.agent().login(adminUser);
+    const adminAgent: any = await app.agent().login(adminUser);
 
     await adminAgent.resource('dataSources.roles', 'mockInstance1').update({
       filterByTk: 'member',
@@ -195,9 +195,9 @@ describe('data source with acl', () => {
       context: {},
     });
 
-    const adminAgent: any = app.agent().login(adminUser);
+    const adminAgent: any = await app.agent().login(adminUser);
 
-    const testUserAgent: any = app.agent().login(testUser);
+    const testUserAgent: any = await app.agent().login(testUser);
 
     const listRes = await testUserAgent.resource('posts').list({});
     expect(listRes.status).toBe(403);
@@ -251,10 +251,11 @@ describe('data source with acl', () => {
       },
     });
 
-    const adminAgent: any = app.agent().login(adminUser);
+    const adminAgent: any = await app.agent().login(adminUser);
 
     // should get permission error
-    const testUserAgent = getDataSourceAgent(app.agent().login(testUser), 'mockInstance1');
+    const testAgent = await app.agent().login(testUser);
+    const testUserAgent = getDataSourceAgent(testAgent, 'mockInstance1');
 
     // @ts-ignore
     const listRes = await testUserAgent.resource('api/posts').list({});
@@ -312,10 +313,10 @@ describe('data source with acl', () => {
       },
     });
 
-    const adminAgent: any = app.agent().login(adminUser);
+    const adminAgent: any = await app.agent().login(adminUser);
 
     // should get permission error
-    const testUserAgent = getDataSourceAgent(app.agent().login(testUser), 'mockInstance1');
+    const testUserAgent = getDataSourceAgent(await app.agent().login(testUser), 'mockInstance1');
 
     const createResourceResp = await adminAgent.resource('dataSources.rolesResourcesScopes', 'mockInstance1').create({
       values: {
@@ -401,7 +402,7 @@ describe('data source with acl', () => {
 
     // call roles check
     // @ts-ignore
-    const checkRep = await app.agent().login(testUser).resource('roles').check({});
+    const checkRep = await (await app.agent().login(testUser)).resource('roles').check({});
     expect(checkRep.status).toBe(200);
 
     const checkData = checkRep.body;
@@ -418,21 +419,17 @@ describe('data source with acl', () => {
     });
 
     // update strategy
-    const updateRes = await app
-      .agent()
-      .login(adminUser)
-      .resource('dataSources.roles', 'main')
-      .update({
-        filterByTk: 'admin',
-        values: {
-          strategy: {
-            actions: [],
-          },
+    const updateRes = await (await app.agent().login(adminUser)).resource('dataSources.roles', 'main').update({
+      filterByTk: 'admin',
+      values: {
+        strategy: {
+          actions: [],
         },
-      });
+      },
+    });
 
     // get role
-    const adminRoleResp = await app.agent().login(adminUser).resource('dataSources.roles', 'main').get({
+    const adminRoleResp = await (await app.agent().login(adminUser)).resource('dataSources.roles', 'main').get({
       filterByTk: 'admin',
     });
 
@@ -440,20 +437,16 @@ describe('data source with acl', () => {
     expect(data.data.strategy.actions).toHaveLength(0);
 
     // update role
-    const updateRoleRes = await app
-      .agent()
-      .login(adminUser)
-      .resource('roles')
-      .update({
-        filterByTk: 'admin',
-        values: {
-          snippets: ['pm.*'],
-        },
-      });
+    const updateRoleRes = await (await app.agent().login(adminUser)).resource('roles').update({
+      filterByTk: 'admin',
+      values: {
+        snippets: ['pm.*'],
+      },
+    });
 
     expect(updateRoleRes.status).toBe(200);
 
-    const adminRoleResp2 = await app.agent().login(adminUser).resource('dataSources.roles', 'main').get({
+    const adminRoleResp2 = await (await app.agent().login(adminUser)).resource('dataSources.roles', 'main').get({
       filterByTk: 'admin',
     });
 

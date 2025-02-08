@@ -13,7 +13,7 @@ export default defineCollection({
   dumpRules: {
     group: 'log',
   },
-  migrationRules: ['schema-only', 'skip'],
+  migrationRules: ['schema-only'],
   name: 'verifications',
   shared: true,
   fields: [

@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMockServer, MockServer } from '@nocobase/test';
 import { AppSupervisor } from '@nocobase/server';
+import { createMockServer, MockServer } from '@nocobase/test';
 
 describe('sub app', async () => {
   let app: MockServer;
@@ -22,7 +22,7 @@ describe('sub app', async () => {
       values: {
         name: 'test_sub',
         options: {
-          plugins: ['client', 'ui-schema-storage', 'system-settings'],
+          plugins: ['client', 'ui-schema-storage', 'system-settings', 'field-sort'],
         },
       },
       context: {

@@ -70,6 +70,18 @@ export class APIClient extends APIClientSDK {
     api.auth = this.auth;
     api.storagePrefix = this.storagePrefix;
     api.notification = this.notification;
+    const handlers = [];
+    for (const handler of this.axios.interceptors.response['handlers']) {
+      if (handler.rejected['_name'] === 'handleNotificationError') {
+        handlers.push({
+          ...handler,
+          rejected: api.handleNotificationError.bind(api),
+        });
+      } else {
+        handlers.push(handler);
+      }
+    }
+    api.axios.interceptors.response['handlers'] = handlers;
     return api;
   }
 
@@ -136,66 +148,71 @@ export class APIClient extends APIClientSDK {
     );
   }
 
-  useNotificationMiddleware() {
-    this.axios.interceptors.response.use(
-      (response) => {
-        if (response.data?.messages?.length) {
-          const messages = response.data.messages.filter((item) => {
-            const lastTime = errorCache.get(typeof item === 'string' ? item : item.message);
-            if (lastTime && new Date().getTime() - lastTime < 500) {
-              return false;
-            }
-            errorCache.set(item.message, new Date().getTime());
-            return true;
-          });
-          notify('success', messages, this.notification);
-        }
-        return response;
-      },
-      async (error) => {
-        if (this.silence) {
-          console.error(error);
-          return;
-          // throw error;
-        }
-        const redirectTo = error?.response?.data?.redirectTo;
-        if (redirectTo) {
-          return (window.location.href = redirectTo);
-        }
-        if (error?.response?.data?.type === 'application/json') {
-          handleErrorMessage(error, this.notification);
-        } else {
-          if (errorCache.size > 10) {
-            errorCache.clear();
-          }
-          const maintaining = !!error?.response?.data?.error?.maintaining;
-          if (this.app.maintaining !== maintaining) {
-            this.app.maintaining = maintaining;
-          }
-          if (this.app.maintaining) {
-            this.app.error = error?.response?.data?.error;
-            throw error;
-          } else if (this.app.error) {
-            this.app.error = null;
-          }
-          let errs = this.toErrMessages(error);
-          errs = errs.filter((error) => {
-            const lastTime = errorCache.get(error.message);
-            if (lastTime && new Date().getTime() - lastTime < 500) {
-              return false;
-            }
-            errorCache.set(error.message, new Date().getTime());
-            return true;
-          });
-          if (errs.length === 0) {
-            throw error;
-          }
-
-          notify('error', errs, this.notification);
-        }
+  async handleNotificationError(error) {
+    if (this.silence) {
+      // console.error(error);
+      // return;
+      throw error;
+    }
+    const skipNotify: boolean | ((error: any) => boolean) = error.config?.skipNotify;
+    if (skipNotify && ((typeof skipNotify === 'function' && skipNotify(error)) || skipNotify === true)) {
+      throw error;
+    }
+    const redirectTo = error?.response?.data?.redirectTo;
+    if (redirectTo) {
+      return (window.location.href = redirectTo);
+    }
+    if (error?.response?.data?.type === 'application/json') {
+      handleErrorMessage(error, this.notification);
+    } else {
+      if (errorCache.size > 10) {
+        errorCache.clear();
+      }
+      const maintaining = !!error?.response?.data?.error?.maintaining;
+      if (this.app.maintaining !== maintaining) {
+        this.app.maintaining = maintaining;
+      }
+      if (this.app.maintaining) {
+        this.app.error = error?.response?.data?.error;
         throw error;
-      },
-    );
+      } else if (this.app.error) {
+        this.app.error = null;
+      }
+      let errs = this.toErrMessages(error);
+      errs = errs.filter((error) => {
+        const lastTime = errorCache.get(error.message);
+        if (lastTime && new Date().getTime() - lastTime < 500) {
+          return false;
+        }
+        errorCache.set(error.message, new Date().getTime());
+        return true;
+      });
+      if (errs.length === 0) {
+        throw error;
+      }
+
+      notify('error', errs, this.notification);
+    }
+    throw error;
+  }
+
+  useNotificationMiddleware() {
+    const errorHandler = this.handleNotificationError.bind(this);
+    errorHandler['_name'] = 'handleNotificationError';
+    this.axios.interceptors.response.use((response) => {
+      if (response.data?.messages?.length) {
+        const messages = response.data.messages.filter((item) => {
+          const lastTime = errorCache.get(typeof item === 'string' ? item : item.message);
+          if (lastTime && new Date().getTime() - lastTime < 500) {
+            return false;
+          }
+          errorCache.set(item.message, new Date().getTime());
+          return true;
+        });
+        notify('success', messages, this.notification);
+      }
+      return response;
+    }, errorHandler);
   }
 
   silent() {

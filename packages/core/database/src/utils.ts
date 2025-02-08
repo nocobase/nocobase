@@ -116,3 +116,15 @@ export function percent2float(value: string) {
   const v = parseInt('1' + '0'.repeat(repeat));
   return (parseFloat(value) * v) / (100 * v);
 }
+
+export function isUndefinedOrNull(value: any) {
+  return typeof value === 'undefined' || value === null;
+}
+
+export function isStringOrNumber(value: any) {
+  return typeof value === 'string' || typeof value === 'number';
+}
+
+export function getKeysByPrefix(keys: string[], prefix: string) {
+  return keys.filter((key) => key.startsWith(`${prefix}.`)).map((key) => key.substring(prefix.length + 1));
+}

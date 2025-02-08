@@ -9,28 +9,38 @@
 
 /* eslint-disable react-hooks/rules-of-hooks */
 import { Field } from '@formily/core';
-import { useField, useFieldSchema } from '@formily/react';
+import { Schema, useField, useFieldSchema } from '@formily/react';
 import { useEffect } from 'react';
-import { useFlag } from '../../../../flag-provider';
 import { bindLinkageRulesToFiled } from '../../../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 import { forEachLinkageRule } from '../../../../schema-settings/LinkageRules/forEachLinkageRule';
 import useLocalVariables from '../../../../variables/hooks/useLocalVariables';
 import useVariables from '../../../../variables/hooks/useVariables';
 import { useSubFormValue } from '../../association-field/hooks';
 import { useApp } from '../../../../application';
+import { isSubMode } from '../../association-field/util';
+
+const isSubFormOrSubTableField = (fieldSchema: Schema) => {
+  while (fieldSchema) {
+    if (isSubMode(fieldSchema)) {
+      return true;
+    }
+
+    if (fieldSchema['x-component'] === 'FormV2') {
+      return false;
+    }
+
+    fieldSchema = fieldSchema.parent;
+  }
+
+  return false;
+};
 
 /**
  * used to bind the linkage rules of the sub-table or sub-form with the current field
  */
 export const useLinkageRulesForSubTableOrSubForm = () => {
-  const { isInSubForm, isInSubTable } = useFlag();
-
-  if (!isInSubForm && !isInSubTable) {
-    return;
-  }
-
-  const field = useField<Field>();
   const fieldSchema = useFieldSchema();
+  const field = useField<Field>();
   const { fieldSchema: schemaOfSubTableOrSubForm, formValue } = useSubFormValue();
   const localVariables = useLocalVariables();
   const variables = useVariables();
@@ -39,6 +49,10 @@ export const useLinkageRulesForSubTableOrSubForm = () => {
   const app = useApp();
 
   useEffect(() => {
+    if (!isSubFormOrSubTableField(fieldSchema)) {
+      return;
+    }
+
     if (!(field.onUnmount as any).__rested) {
       const _onUnmount = field.onUnmount;
       field.onUnmount = () => {

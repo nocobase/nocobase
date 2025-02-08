@@ -54,7 +54,7 @@ export class PluginAsyncExportServer extends Plugin {
     const asyncTaskManager = this.app.container.get<AsyncTasksManager>('AsyncTaskManager');
 
     this.app.on(`ws:message:request:async-tasks:list`, async (message) => {
-      const { tags } = message;
+      const { tags, clientId } = message;
 
       this.app.logger.info(`Received request for async tasks with tags: ${JSON.stringify(tags)}`);
 
@@ -68,9 +68,8 @@ export class PluginAsyncExportServer extends Plugin {
 
         this.app.logger.info(`Found ${tasks.length} tasks for userId: ${userId}`);
 
-        this.app.emit('ws:sendToTag', {
-          tagKey: 'userId',
-          tagValue: userId,
+        this.app.emit('ws:sendToClient', {
+          clientId,
           message: {
             type: 'async-tasks',
             payload: tasks.map((task) => task.toJSON()),

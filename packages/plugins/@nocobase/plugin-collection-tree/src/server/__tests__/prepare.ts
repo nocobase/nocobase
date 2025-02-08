@@ -14,6 +14,7 @@ export async function prepareApp(): Promise<MockServer> {
     registerActions: true,
     acl: true,
     plugins: [
+      'auth',
       'acl',
       'error-handler',
       'field-sort',

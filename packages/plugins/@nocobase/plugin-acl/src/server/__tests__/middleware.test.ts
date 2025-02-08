@@ -19,7 +19,9 @@ describe('middleware', () => {
   let db: Database;
   let acl: ACL;
   let admin;
+  let member;
   let adminAgent;
+  let memberAgent;
 
   beforeEach(async () => {
     app = await prepareApp();
@@ -38,9 +40,15 @@ describe('middleware', () => {
         roles: ['admin'],
       },
     });
+    member = await UserRepo.create({
+      values: {
+        roles: ['member'],
+      },
+    });
 
     const userPlugin = app.getPlugin('users') as UsersPlugin;
-    adminAgent = app.agent().login(admin);
+    adminAgent = await app.agent().login(admin);
+    memberAgent = await app.agent().login(member);
 
     await db.getRepository('collections').create({
       values: {
@@ -119,7 +127,15 @@ describe('middleware', () => {
   });
 
   it('should throw 403 when no permission', async () => {
-    const response = await app.agent().resource('posts').create({
+    await db.getRepository('roles').update({
+      filterByTk: 'member',
+      values: {
+        strategy: {
+          actions: ['view'],
+        },
+      },
+    });
+    const response = await (await app.agent().login(member)).resource('posts').create({
       values: {},
     });
 
