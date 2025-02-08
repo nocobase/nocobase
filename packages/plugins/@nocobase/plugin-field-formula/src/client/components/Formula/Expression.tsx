@@ -14,11 +14,11 @@ export const Expression = (props) => {
   const { value = '', useCurrentFields, onChange } = props;
   const app = useApp();
   const plugin = app.pm.get('field-formula') as any;
-  const { expressionSupportFields } = plugin;
+  const { expressionFields } = plugin;
   const compile = useCompile();
   const { interfaces } = useCollectionManager_deprecated();
 
-  const fields = (useCurrentFields?.() ?? []).filter((field) => expressionSupportFields.includes(field.interface));
+  const fields = (useCurrentFields?.() ?? []).filter((field) => expressionFields.includes(field.interface));
 
   const options = fields.map((field) => ({
     label: compile(field.uiSchema.title),
