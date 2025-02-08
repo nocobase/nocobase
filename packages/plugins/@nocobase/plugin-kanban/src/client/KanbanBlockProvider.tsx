@@ -132,7 +132,7 @@ export const useKanbanBlockProps = () => {
   const primaryKey = useCollection()?.getPrimaryKey();
   const app = useApp();
   const plugin = app.pm.get('kanban') as any;
-  const targetGroupField = plugin.getGroupFieldType(ctx.groupField.interface);
+  const targetGroupField = plugin.getGroupFieldInterface(ctx.groupField.interface);
   const { options } = targetGroupField?.useGetGroupOptions(ctx.groupField) || { options: [] };
   useEffect(() => {
     const data = toColumns(ctx.groupField, ctx?.service?.data?.data, primaryKey, options);
