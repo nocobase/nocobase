@@ -16,7 +16,7 @@ describe('backup files', () => {
 
   beforeEach(async () => {
     app = await createApp();
-    adminAgent = await app.agent().loginWithJti(1);
+    adminAgent = await app.agent().login(1);
   });
 
   afterEach(async () => {

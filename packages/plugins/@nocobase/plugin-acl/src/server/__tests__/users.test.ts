@@ -36,7 +36,7 @@ describe('actions', () => {
     });
 
     agent = app.agent();
-    adminAgent = await app.agent().loginWithJti(adminUser);
+    adminAgent = await app.agent().login(adminUser);
   });
 
   afterEach(async () => {
@@ -166,7 +166,7 @@ describe('actions', () => {
     });
 
     // list with user
-    const userAgent: any = (await app.agent().loginWithJti(testUser)).set('x-role', 'testRole');
+    const userAgent: any = (await app.agent().login(testUser)).set('x-role', 'testRole');
 
     const listResp = await userAgent.resource('items').list({});
     expect(listResp.status).toBe(200);
