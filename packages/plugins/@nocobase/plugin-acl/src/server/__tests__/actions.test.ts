@@ -138,7 +138,7 @@ describe('destroy action with acl', () => {
 
     const a1 = await A.repository.findOne({ filter: { title: 'a1' } });
 
-    const response = await (await await app.agent().loginWithJti(1)).resource('a.bs', a1.get('id')).list();
+    const response = await (await await app.agent().login(1)).resource('a.bs', a1.get('id')).list();
     expect(response.statusCode).toEqual(200);
   });
 

@@ -38,7 +38,7 @@ describe('middleware', () => {
     const hasFn = vi.fn();
     const addFn = vi.fn();
     beforeEach(async () => {
-      await agent.loginWithJti(1);
+      await agent.login(1);
       app.authManager.setTokenBlacklistService({
         has: hasFn,
         add: addFn,

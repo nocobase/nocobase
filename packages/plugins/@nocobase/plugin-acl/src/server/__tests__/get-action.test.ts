@@ -24,7 +24,7 @@ describe('get action with acl', () => {
     const users = await UserRepo.create({
       values: [{ nickname: 'a', roles: [{ name: 'test' }] }],
     });
-    userAgent = await app.agent().loginWithJti(users[0]);
+    userAgent = await app.agent().login(users[0]);
 
     Post = app.db.collection({
       name: 'posts',

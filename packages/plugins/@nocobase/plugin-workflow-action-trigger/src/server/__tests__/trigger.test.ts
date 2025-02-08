@@ -42,7 +42,7 @@ describe('workflow > action-trigger', () => {
     UserRepo = db.getCollection('users').repository;
 
     root = await UserRepo.findOne({});
-    rootAgent = await app.agent().loginWithJti(root);
+    rootAgent = await app.agent().login(root);
 
     users = await UserRepo.create({
       values: [
@@ -51,7 +51,7 @@ describe('workflow > action-trigger', () => {
       ],
     });
 
-    userAgents = await Promise.all(users.map((user) => app.agent().loginWithJti(user)));
+    userAgents = await Promise.all(users.map((user) => app.agent().login(user)));
   });
 
   afterEach(() => app.destroy());
