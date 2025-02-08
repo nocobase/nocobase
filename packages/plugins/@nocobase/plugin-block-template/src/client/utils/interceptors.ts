@@ -19,7 +19,7 @@ import { findSchemaCache, findFirstVirtualSchema, convertToCreateSchema, setToTr
 export function registerTemplateBlockInterceptors(apiClient: any, pageBlocks: Record<string, any>) {
   apiClient.axios.interceptors.request.use(async (config: AxiosRequestConfig) => {
     // Handle schema patching
-    if (config.url?.includes('uiSchemas:patch')) {
+    if (config.url?.includes('uiSchemas:patch') || config.url?.includes('uiSchemas:initializeActionContext')) {
       const xUid = config.data?.['x-uid'];
       const currentSchema = findSchemaCache(pageBlocks, xUid);
       const virtualSchema = findFirstVirtualSchema(currentSchema, xUid);
