@@ -9,106 +9,23 @@
 
 import { observer, useForm } from '@formily/react';
 import { Table, Tag } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager_deprecated } from '../../';
-import { useCompile } from '../../../';
+import { useCompile, useApp } from '../../../';
 
-const getDefaultCollectionFields = (presetFields, values) => {
+const getDefaultCollectionFields = (presetFields, values, collectionPresetFields) => {
   if (values?.template === 'view' || values?.template === 'sql') {
     return values.fields;
   }
-  const defaults = values.fields
-    ? [...values.fields].filter((v) => {
-        return !['id', 'createdBy', 'updatedAt', 'createdAt', 'updatedBy'].includes(v.name);
-      })
-    : [];
-  if (presetFields.find((v) => v.name === 'id')) {
-    defaults.push({
-      name: 'id',
-      type: 'bigInt',
-      autoIncrement: true,
-      primaryKey: true,
-      allowNull: false,
-      uiSchema: { type: 'number', title: '{{t("ID")}}', 'x-component': 'InputNumber', 'x-read-pretty': true },
-      interface: 'integer',
-    });
-  }
-  if (presetFields.find((v) => v.name === 'createdAt')) {
-    defaults.push({
-      name: 'createdAt',
-      interface: 'createdAt',
-      type: 'date',
-      field: 'createdAt',
-      uiSchema: {
-        type: 'datetime',
-        title: '{{t("Created at")}}',
-        'x-component': 'DatePicker',
-        'x-component-props': {},
-        'x-read-pretty': true,
-      },
-    });
-  }
-  if (presetFields.find((v) => v.name === 'createdBy')) {
-    defaults.push({
-      name: 'createdBy',
-      interface: 'createdBy',
-      type: 'belongsTo',
-      target: 'users',
-      foreignKey: 'createdById',
-      uiSchema: {
-        type: 'object',
-        title: '{{t("Created by")}}',
-        'x-component': 'AssociationField',
-        'x-component-props': {
-          fieldNames: {
-            value: 'id',
-            label: 'nickname',
-          },
-        },
-        'x-read-pretty': true,
-      },
-    });
-  }
-  if (presetFields.find((v) => v.name === 'updatedAt')) {
-    defaults.push({
-      type: 'date',
-      field: 'updatedAt',
-      name: 'updatedAt',
-      interface: 'updatedAt',
-      uiSchema: {
-        type: 'string',
-        title: '{{t("Last updated at")}}',
-        'x-component': 'DatePicker',
-        'x-component-props': {},
-        'x-read-pretty': true,
-      },
-    });
-  }
-  if (presetFields.find((v) => v.name === 'updatedBy')) {
-    defaults.push({
-      type: 'belongsTo',
-      target: 'users',
-      foreignKey: 'updatedById',
-      name: 'updatedBy',
-      interface: 'updatedBy',
-      uiSchema: {
-        type: 'object',
-        title: '{{t("Last updated by")}}',
-        'x-component': 'AssociationField',
-        'x-component-props': {
-          fieldNames: {
-            value: 'id',
-            label: 'nickname',
-          },
-        },
-        'x-read-pretty': true,
-      },
-    });
-  }
-  // 其他
-  return defaults;
+  const fields = values.fields || [];
+  presetFields.map((v) => {
+    const item = collectionPresetFields.find((i) => i.value.name === v);
+    fields.push(item.value);
+  });
+  return fields;
 };
+
 export const PresetFields = observer(
   (props: any) => {
     const { getInterface } = useCollectionManager_deprecated();
@@ -116,11 +33,26 @@ export const PresetFields = observer(
     const compile = useCompile();
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
     const { t } = useTranslation();
+    const app = useApp();
+    const mainDataSourcePlugin: any = app.pm.get('data-source-main');
+    const collectionPresetFields = mainDataSourcePlugin.getCollectionPresetFields();
+
+    const presetFieldsDataSource = useMemo(() => {
+      return collectionPresetFields.map((v) => {
+        return {
+          field: v.value.uiSchema.title,
+          interface: v.value.interface,
+          description: v.description,
+          name: v.value.name,
+        };
+      });
+    }, []);
     const column = [
       {
         title: t('Field'),
         dataIndex: 'field',
         key: 'field',
+        render: (value) => compile(value),
       },
       {
         title: t('Interface'),
@@ -132,61 +64,19 @@ export const PresetFields = observer(
         title: t('Description'),
         dataIndex: 'description',
         key: 'description',
-      },
-    ];
-    const dataSource = [
-      {
-        field: t('ID'),
-        interface: 'integer',
-        description: t('Primary key, unique identifier, self growth'),
-        name: 'id',
-      },
-      {
-        field: t('Created at'),
-        interface: 'createdAt',
-        description: t('Store the creation time of each record'),
-        name: 'createdAt',
-      },
-      {
-        field: t('Last updated at'),
-        interface: 'updatedAt',
-        description: t('Store the last update time of each record'),
-        name: 'updatedAt',
-      },
-      {
-        field: t('Created by'),
-        interface: 'createdBy',
-        description: t('Store the creation user of each record'),
-        name: 'createdBy',
-      },
-
-      {
-        field: t('Last updated by'),
-        interface: 'updatedBy',
-        description: t('Store the last update user of each record'),
-        name: 'updatedBy',
+        render: (value) => compile(value),
       },
     ];
     useEffect(() => {
-      const config = {
-        autoGenId: false,
-        createdAt: true,
-        createdBy: true,
-        updatedAt: true,
-        updatedBy: true,
-      };
-      const initialValue = ['id', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy'];
+      const initialValue = presetFieldsDataSource.map((v) => v.name);
       setSelectedRowKeys(initialValue);
-      form.setValues({ ...form.values, ...config });
-    }, []);
+      form.setValues({ ...form.values, autoGenId: false });
+    }, [presetFieldsDataSource]);
     useEffect(() => {
       const fields = getDefaultCollectionFields(
-        selectedRowKeys.map((v) => {
-          return {
-            name: v,
-          };
-        }),
+        selectedRowKeys.map((v) => v),
         form.values,
+        collectionPresetFields,
       );
       form.setValuesIn('fields', fields);
     }, [selectedRowKeys]);
@@ -197,7 +87,7 @@ export const PresetFields = observer(
         rowKey="name"
         bordered
         scroll={{ x: 600 }}
-        dataSource={dataSource}
+        dataSource={presetFieldsDataSource}
         columns={column}
         rowSelection={{
           type: 'checkbox',
@@ -207,20 +97,13 @@ export const PresetFields = observer(
             disabled: props?.disabled || props?.presetFieldsDisabledIncludes?.includes?.(record.name),
           }),
           onChange: (_, selectedRows) => {
-            const fields = getDefaultCollectionFields(selectedRows, form.values);
-            const config = {
-              autoGenId: false,
-              createdAt: !!fields.find((v) => v.name === 'createdAt'),
-              createdBy: !!fields.find((v) => v.name === 'createdBy'),
-              updatedAt: !!fields.find((v) => v.name === 'updatedAt'),
-              updatedBy: !!fields.find((v) => v.name === 'updatedBy'),
-            };
+            const fields = getDefaultCollectionFields(selectedRows, form.values, collectionPresetFields);
             setSelectedRowKeys(
               fields?.map?.((v) => {
                 return v.name;
               }),
             );
-            form.setValues({ ...form.values, fields, ...config });
+            form.setValues({ ...form.values, fields, autoGenId: false });
           },
         }}
       />
