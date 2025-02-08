@@ -812,8 +812,9 @@ describe('workflow > action-trigger', () => {
       //     values: { title: 't2' },
       //     triggerWorkflows: `${workflow.key}`,
       //   });
-      const res2 = await agent
-        .login(users[0])
+      const res2 = await (
+        await agent.login(users[0])
+      )
         .set('x-data-source', 'another')
         .post('/api/posts:create')
         .query({ triggerWorkflows: `${workflow.key}` })
