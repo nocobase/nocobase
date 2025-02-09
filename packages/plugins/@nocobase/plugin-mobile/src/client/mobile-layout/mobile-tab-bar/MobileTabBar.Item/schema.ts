@@ -8,7 +8,7 @@
  */
 
 import { upperFirst } from 'lodash';
-import { merge, tval } from '@nocobase/utils/client';
+import { merge } from '@nocobase/utils/client';
 import { ISchema } from '@nocobase/client';
 import { MobileRouteItem } from '../../../mobile-providers';
 
@@ -24,7 +24,7 @@ export function getMobileTabBarItemSchema(routeItem: MobileRouteItem) {
       showBackground: true,
     },
     'x-component-props': {
-      title: tval(routeItem.title),
+      title: routeItem.title,
       icon: routeItem.icon,
       schemaUid: routeItem.schemaUid,
       ...(routeItem.options || {}),

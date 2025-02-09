@@ -77,7 +77,7 @@ describe('MobileTabBar.Item', () => {
           "showBackground": true
         },
         "x-component-props": {
-          "title": "{{t(\\"Link\\")}}",
+          "title": "Link",
           "icon": "AppstoreOutlined",
           "url": "https://github.com"
         }
