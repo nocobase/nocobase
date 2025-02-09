@@ -43,7 +43,7 @@ describe('inapp message channels', () => {
       ],
     });
 
-    userAgents = await Promise.all(users.map((user) => app.agent().loginWithJti(user)));
+    userAgents = await Promise.all(users.map((user) => app.agent().login(user)));
     currUserAgent = userAgents[0];
     currUserId = users[0].id;
   });

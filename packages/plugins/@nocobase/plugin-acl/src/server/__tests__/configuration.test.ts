@@ -55,9 +55,9 @@ describe('configuration', () => {
     });
 
     const userPlugin = app.getPlugin('users') as UsersPlugin;
-    adminAgent = await app.agent().loginWithJti(admin);
+    adminAgent = await app.agent().login(admin);
 
-    userAgent = await app.agent().loginWithJti(user);
+    userAgent = await app.agent().login(user);
 
     guestAgent = app.agent();
   });

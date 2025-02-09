@@ -27,7 +27,7 @@ describe('workflow > actions > executions', () => {
       plugins: ['users', 'acl', 'auth', 'data-source-manager'],
       acl: true,
     });
-    agent = app.agent().loginUsingId(1);
+    agent = await app.agent().loginUsingId(1);
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
     PostRepo = db.getCollection('posts').repository;
@@ -47,7 +47,7 @@ describe('workflow > actions > executions', () => {
         { id: 3, nickname: 'b' },
       ],
     });
-    userAgents = await Promise.all(users.map((user) => app.agent().loginWithJti(user)));
+    userAgents = await Promise.all(users.map((user) => app.agent().login(user)));
   });
 
   afterEach(async () => await app.destroy());
