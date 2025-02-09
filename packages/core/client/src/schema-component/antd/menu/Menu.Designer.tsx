@@ -190,7 +190,6 @@ const InsertMenuItems = (props) => {
             children: [
               {
                 type: NocoBaseDesktopRouteType.tabs,
-                title: '{{t("Unnamed")}}',
                 schemaUid: tabSchemaUid,
                 tabSchemaName,
                 hidden: true,
@@ -199,12 +198,14 @@ const InsertMenuItems = (props) => {
           });
 
           // 2. 然后再把路由移动到对应的位置
-          await moveRoute({
-            sourceId: data?.data?.id,
-            targetId: route?.id,
-            sortField: 'sort',
-            method: insertPositionToMethod[insertPosition],
-          });
+          if (insertPositionToMethod[insertPosition]) {
+            await moveRoute({
+              sourceId: data?.data?.id,
+              targetId: route?.id,
+              sortField: 'sort',
+              method: insertPositionToMethod[insertPosition],
+            });
+          }
 
           // 3. 插入一个对应的 Schema
           dn.insertAdjacent(
@@ -267,12 +268,14 @@ const InsertMenuItems = (props) => {
           );
 
           // 2. 然后再把路由移动到对应的位置
-          await moveRoute({
-            sourceId: data?.data?.id,
-            targetId: route?.id,
-            sortField: 'sort',
-            method: insertPositionToMethod[insertPosition],
-          });
+          if (insertPositionToMethod[insertPosition]) {
+            await moveRoute({
+              sourceId: data?.data?.id,
+              targetId: route?.id,
+              sortField: 'sort',
+              method: insertPositionToMethod[insertPosition],
+            });
+          }
 
           // 3. 插入一个对应的 Schema
           dn.insertAdjacent(insertPosition, {

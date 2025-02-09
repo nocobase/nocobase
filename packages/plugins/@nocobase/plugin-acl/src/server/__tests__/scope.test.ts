@@ -35,7 +35,7 @@ describe('scope api', () => {
     });
 
     const userPlugin = app.getPlugin('users') as UsersPlugin;
-    adminAgent = app.agent().login(admin);
+    adminAgent = await app.agent().login(admin);
   });
 
   it('should create scope of resource', async () => {

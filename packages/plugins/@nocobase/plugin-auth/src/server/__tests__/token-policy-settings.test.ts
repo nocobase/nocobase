@@ -80,7 +80,7 @@ describe('auth', () => {
         username: 'admin',
       },
     });
-    adminAgent = await app.agent().loginWithJti(user, 'admin');
+    adminAgent = await app.agent().login(user, 'admin');
 
     class MockBaseAuth extends BaseAuth {
       async validate() {

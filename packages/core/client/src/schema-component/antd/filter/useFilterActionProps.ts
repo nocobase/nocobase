@@ -192,7 +192,6 @@ export const removeNullCondition = (filter, customFlat = flat) => {
 export const useFilterActionProps = () => {
   const collection = useCollection();
   const options = useFilterOptions(collection?.name);
-  console.log(options);
   const props = useDataBlockProps();
   return useFilterFieldProps({ options, params: props?.params });
 };
