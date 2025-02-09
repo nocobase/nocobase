@@ -19,6 +19,7 @@ import { isInnerLink } from '../../utils';
 import { MobileTabBarInitializer } from './initializer';
 import { getMobileTabBarItemSchema, MobileTabBarItem } from './MobileTabBar.Item';
 import { MobileTabBarLink, MobileTabBarPage } from './types';
+import { useRouteTranslation } from '../../locale';
 
 export interface MobileTabBarProps {
   /**
@@ -32,6 +33,7 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
   Page: typeof MobileTabBarPage;
   Link: typeof MobileTabBarLink;
 } = ({ enableTabBar = true }) => {
+  const { t } = useRouteTranslation();
   const { componentCls, hashId } = useStyles();
   const { designable } = useDesignable();
   const { routeList, activeTabBarItem, resource, refresh } = useMobileRoutes();
@@ -72,7 +74,7 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
           >
             {routeList.map((item) => {
               if (item.hideInMenu) return null;
-              return <SchemaComponent key={item.id} schema={getMobileTabBarItemSchema(item)} />;
+              return <SchemaComponent key={item.id} schema={getMobileTabBarItemSchema(item)} scope={{ t }} />;
             })}
           </div>
         </DndContext>

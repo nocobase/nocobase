@@ -77,7 +77,7 @@ describe('MobileTabBar.Item', () => {
           "showBackground": true
         },
         "x-component-props": {
-          "title": "{{t(\\"Link\\", {\\"ns\\":\\"lm-mobile-routes\\"})}}",
+          "title": "{{t(\\"Link\\")}}",
           "icon": "AppstoreOutlined",
           "url": "https://github.com"
         }
