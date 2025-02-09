@@ -25,6 +25,7 @@ export class PluginBlockTemplateClient extends Plugin {
   templateInfos = new Map();
   templateschemacache = {};
   pageBlocks = {};
+  savedSchemaUids = new Set<string>();
 
   async afterAdd() {
     // await this.app.pm.add()
@@ -53,7 +54,7 @@ export class PluginBlockTemplateClient extends Plugin {
       // add version check here is to avoid modifying the template schema before insertAdjacent api
       // otherwise, the template root schema will be a full copy of the original schema
       if (s['x-template-root-uid'] && (s['version'] || s['x-template-root-ref'])) {
-        const sc = getFullSchema(s, this.templateschemacache, this.templateInfos);
+        const sc = getFullSchema(s, this.templateschemacache, this.templateInfos, this.savedSchemaUids);
         this.pageBlocks[sc['x-uid']] = sc;
         return sc;
       }
@@ -61,7 +62,7 @@ export class PluginBlockTemplateClient extends Plugin {
     });
 
     // Register axios interceptors for template block operations
-    registerTemplateBlockInterceptors(this.app.apiClient, this.pageBlocks);
+    registerTemplateBlockInterceptors(this.app.apiClient, this.pageBlocks, this.savedSchemaUids);
 
     this.app.addComponents({ TemplateGridDecorator });
 

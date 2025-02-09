@@ -45,13 +45,14 @@ export function findSchemaCache(cache: Record<string, any>, uid: string): any {
  * @returns Object containing schema and insertion details, or null if not found
  */
 export function findFirstVirtualSchema(
-  schema: any,
+  schema: ISchema,
   uid: string,
+  wrap?: ISchema,
 ): { schema: any; insertTarget: string; insertPosition: string } | null {
   // Helper function to find next non-virtual node
-  const findNextNonVirtualNode = (properties: any[], startIndex: number): string | null => {
+  const findNextNonVirtualNode = (properties: any[], startIndex: number) => {
     for (let i = startIndex + 1; i < properties.length; i++) {
-      if (!properties[i]['x-virtual']) {
+      if (!properties[i]['x-virtual'] && properties[i]['x-uid'] !== wrap?.['x-uid']) {
         return properties[i]['x-uid'];
       }
     }
@@ -74,7 +75,7 @@ export function findFirstVirtualSchema(
   });
   for (let i = 0; i < properties.length; i++) {
     const property = properties[i];
-    const result = findFirstVirtualSchema(property, uid);
+    const result = findFirstVirtualSchema(property, uid, wrap);
     if (result) {
       let insertPosition = result.insertPosition;
       let insertTarget = result.insertTarget;
@@ -104,19 +105,30 @@ export function findFirstVirtualSchema(
  * @param schema The schema to convert
  * @returns The converted schema
  */
-export function convertToCreateSchema(schema: any): any {
-  const getNewSchema = (schema: any): any => {
-    const newSchema = {
+export function convertToCreateSchema(schema: ISchema, skipUids: string[] = []): any {
+  const getNewSchema = (schema: ISchema): ISchema => {
+    if (skipUids.includes(schema['x-uid'])) {
+      return null;
+    }
+    let newSchema: ISchema = {
       type: schema.type,
       name: schema.name,
       'x-uid': schema['x-uid'],
       'x-template-uid': schema['x-template-uid'],
       'x-template-root-uid': schema['x-template-root-uid'],
     };
+    if (!schema['x-template-uid']) {
+      newSchema = { ..._.omit(schema, ['properties']) };
+    }
+    delete newSchema['x-virtual'];
+
     if (schema.properties) {
       newSchema['properties'] = {};
       for (const key in schema.properties) {
-        newSchema['properties'][key] = getNewSchema(schema.properties[key]);
+        const newProperty = getNewSchema(schema.properties[key]);
+        if (newProperty) {
+          newSchema['properties'][key] = newProperty;
+        }
       }
     }
     return newSchema;
@@ -166,13 +178,17 @@ export function addToolbarClass(schema) {
   }
 }
 
-export function syncExtraTemplateInfo(schema: any, templateInfos: Map<string, any>) {
+export function syncExtraTemplateInfo(schema: any, templateInfos: Map<string, any>, savedSchemaUids: Set<string>) {
   if (schema['x-block-template-key']) {
     schema['x-template-title'] = templateInfos.get(schema['x-block-template-key'])?.title;
   }
+  if (savedSchemaUids.has(schema['x-uid'])) {
+    delete schema['x-virtual'];
+    savedSchemaUids.delete(schema['x-uid']);
+  }
   if (schema.properties) {
     for (const key in schema.properties) {
-      syncExtraTemplateInfo(schema.properties[key], templateInfos);
+      syncExtraTemplateInfo(schema.properties[key], templateInfos, savedSchemaUids);
     }
   }
 }
@@ -263,6 +279,7 @@ export function getFullSchema(
   schema: any,
   templateschemacache: Record<string, any>,
   templateInfos: Map<string, any>,
+  savedSchemaUids: Set<string> = new Set(),
 ): any {
   const rootId = schema['x-uid'];
   const templateRootId = schema['x-template-root-uid'];
@@ -272,7 +289,7 @@ export function getFullSchema(
   if (!templateRootId) {
     for (const key in schema.properties) {
       const property = schema.properties[key];
-      schema.properties[key] = getFullSchema(property, templateschemacache, templateInfos);
+      schema.properties[key] = getFullSchema(property, templateschemacache, templateInfos, savedSchemaUids);
       if (schema.properties[key]['x-component'] === undefined) {
         delete schema.properties[key]; // 说明已经从模板中删除了
       }
@@ -283,7 +300,7 @@ export function getFullSchema(
     ret = result;
   }
   addToolbarClass(ret);
-  syncExtraTemplateInfo(ret, templateInfos);
+  syncExtraTemplateInfo(ret, templateInfos, savedSchemaUids);
   cleanSchema(ret);
   return ret;
 }

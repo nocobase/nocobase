@@ -11,20 +11,15 @@ import { Context } from '@nocobase/actions';
 import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 
 export async function saveSchema(ctx: Context, next) {
-  const { resourceIndex, values, removeParentsIfNoChildren, breakRemoveOn, position } = ctx.action.params;
+  const { filterByTk, values, removeParentsIfNoChildren, breakRemoveOn, position } = ctx.action.params;
 
   const repository = ctx.db.getRepository<UiSchemaRepository>('uiSchemas');
+  const schema = values.schema;
 
-  const { schema, wrap = null } = values.schema ? values : { schema: values, wrap: null };
-
-  // insertAdjacent 和 patch 均无法更新父节点对应的key， 会造成节点信息存储到错误的节点上
-  // 因此先删除该节点，再插入新节点
-  await repository.remove(schema['x-uid']);
-
-  ctx.body = await repository.insertAdjacent(position, resourceIndex, schema, {
+  ctx.body = await repository.insertAdjacent(position, filterByTk, schema, {
     removeParentsIfNoChildren,
     breakRemoveOn,
-    wrap,
+    wrap: null,
   });
 
   await next();

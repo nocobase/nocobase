@@ -8,7 +8,9 @@
  */
 
 import { AxiosRequestConfig } from 'axios';
-import { findSchemaCache, findFirstVirtualSchema, convertToCreateSchema, setToTrueSchema } from './template';
+import { findSchemaCache, findFirstVirtualSchema, convertToCreateSchema } from './template';
+import { ISchema } from '@nocobase/client';
+import _ from 'lodash';
 
 /**
  * Register template block related interceptors for axios
@@ -16,7 +18,41 @@ import { findSchemaCache, findFirstVirtualSchema, convertToCreateSchema, setToTr
  * @param apiClient The API client instance
  * @param pageBlocks The template blocks cache
  */
-export function registerTemplateBlockInterceptors(apiClient: any, pageBlocks: Record<string, any>) {
+export function registerTemplateBlockInterceptors(
+  apiClient: any,
+  pageBlocks: Record<string, any>,
+  savedSchemaUids: Set<string>,
+) {
+  const setToTrueSchema = (uid: string) => {
+    const cacheSchema = findSchemaCache(pageBlocks, uid);
+    const deleteVirtual = (schema: ISchema) => {
+      if (schema['x-virtual']) {
+        savedSchemaUids.add(schema['x-uid']);
+      }
+      if (schema.properties) {
+        for (const key in schema.properties) {
+          deleteVirtual(schema.properties[key]);
+        }
+      }
+    };
+    const findSchemaByUid = (schema: ISchema, uid: string) => {
+      if (schema['x-uid'] === uid) {
+        return schema;
+      }
+      if (schema.properties) {
+        for (const key in schema.properties) {
+          const result = findSchemaByUid(schema.properties[key], uid);
+          if (result) {
+            return result;
+          }
+        }
+      }
+      return null;
+    };
+    const schema = findSchemaByUid(cacheSchema, uid);
+    deleteVirtual(schema);
+  };
+
   apiClient.axios.interceptors.request.use(async (config: AxiosRequestConfig) => {
     // Handle schema patching
     if (config.url?.includes('uiSchemas:patch') || config.url?.includes('uiSchemas:initializeActionContext')) {
@@ -24,7 +60,6 @@ export function registerTemplateBlockInterceptors(apiClient: any, pageBlocks: Re
       const currentSchema = findSchemaCache(pageBlocks, xUid);
       const virtualSchema = findFirstVirtualSchema(currentSchema, xUid);
       if (virtualSchema) {
-        setToTrueSchema(virtualSchema.schema);
         const newSchema = convertToCreateSchema(virtualSchema.schema);
         await apiClient.request({
           url: `/blockTemplates:saveSchema/${virtualSchema.insertTarget}?position=${virtualSchema.insertPosition}`,
@@ -33,6 +68,7 @@ export function registerTemplateBlockInterceptors(apiClient: any, pageBlocks: Re
             schema: newSchema,
           },
         });
+        setToTrueSchema(virtualSchema.schema['x-uid']);
       }
     }
 
@@ -43,7 +79,6 @@ export function registerTemplateBlockInterceptors(apiClient: any, pageBlocks: Re
         const currentSchema = findSchemaCache(pageBlocks, schema['x-uid']);
         const virtualSchema = findFirstVirtualSchema(currentSchema, schema['x-uid']);
         if (virtualSchema) {
-          setToTrueSchema(virtualSchema.schema);
           await apiClient.request({
             url: `/blockTemplates:saveSchema/${virtualSchema.insertTarget}?position=${virtualSchema.insertPosition}`,
             method: 'post',
@@ -51,40 +86,44 @@ export function registerTemplateBlockInterceptors(apiClient: any, pageBlocks: Re
               schema: convertToCreateSchema(virtualSchema.schema),
             },
           });
+          setToTrueSchema(virtualSchema.schema['x-uid']);
         }
       }
     }
 
     if (config.url?.includes('uiSchemas:insertAdjacent')) {
       const uidWithQuery = config.url.split('/').pop();
+      const wrap = config.data?.wrap;
+      const schema = config.data?.schema;
       const uid = uidWithQuery?.split('?')[0];
-      const schemaId = config.data?.schema['x-uid'] || config.data?.schema;
+      const schemaId = schema['x-uid'] || schema;
       const currentSchema = findSchemaCache(pageBlocks, uid);
-      const virtualSchema = findFirstVirtualSchema(currentSchema, uid);
+      const virtualSchema = findFirstVirtualSchema(currentSchema, uid, wrap);
+
       if (virtualSchema) {
-        setToTrueSchema(virtualSchema.schema);
         await apiClient.request({
           url: `/blockTemplates:saveSchema/${virtualSchema.insertTarget}?position=${virtualSchema.insertPosition}`,
           method: 'post',
           data: {
-            schema: convertToCreateSchema(virtualSchema.schema),
+            schema: convertToCreateSchema(virtualSchema.schema, [schemaId, wrap?.['x-uid']].filter(Boolean)),
           },
         });
+        setToTrueSchema(virtualSchema.schema['x-uid']);
       }
       const cs = findSchemaCache(pageBlocks, schemaId);
-      const vs = findFirstVirtualSchema(cs, schemaId);
-      if (vs) {
-        setToTrueSchema(vs.schema);
-        if (config.data?.wrap) {
-          setToTrueSchema(config.data.wrap);
-        }
+      const vs = findFirstVirtualSchema(cs, schemaId, wrap);
+      if (vs && vs.insertTarget) {
         await apiClient.request({
           url: `/blockTemplates:saveSchema/${vs.insertTarget}?position=${vs.insertPosition}`,
           method: 'post',
           data: {
-            schema: convertToCreateSchema(vs.schema),
+            schema: convertToCreateSchema(vs.schema, [schemaId, wrap?.['x-uid']].filter(Boolean)),
           },
         });
+        setToTrueSchema(vs.schema['x-uid']);
+        if (wrap) {
+          setToTrueSchema(wrap['x-uid']);
+        }
       }
     }
 

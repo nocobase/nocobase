@@ -135,7 +135,7 @@ export const RevertSetting = () => {
                 ret = mergedSchema;
               }
               addToolbarClass(ret);
-              syncExtraTemplateInfo(ret, plugin.templateInfos);
+              syncExtraTemplateInfo(ret, plugin.templateInfos, plugin.savedSchemaUids);
               return ret;
             };
             refresh({ refreshParentSchema: true });
