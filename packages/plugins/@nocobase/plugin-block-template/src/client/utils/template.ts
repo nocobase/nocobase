@@ -48,13 +48,23 @@ export function findFirstVirtualSchema(
   schema: any,
   uid: string,
 ): { schema: any; insertTarget: string; insertPosition: string } | null {
+  // Helper function to find next non-virtual node
+  const findNextNonVirtualNode = (properties: any[], startIndex: number): string | null => {
+    for (let i = startIndex + 1; i < properties.length; i++) {
+      if (!properties[i]['x-virtual']) {
+        return properties[i]['x-uid'];
+      }
+    }
+    return null;
+  };
+
   if (!schema) {
     return null;
   }
   if (schema['x-uid'] === uid && schema['x-virtual']) {
     return {
       schema,
-      insertTarget: schema['x-uid'],
+      insertTarget: null,
       insertPosition: 'afterBegin',
     };
   }
@@ -69,12 +79,13 @@ export function findFirstVirtualSchema(
       let insertPosition = result.insertPosition;
       let insertTarget = result.insertTarget;
       if (!schema['x-virtual'] && property['x-virtual']) {
-        if (i === properties.length - 1) {
+        const nextNonVirtualNode = findNextNonVirtualNode(properties, i);
+        if (!nextNonVirtualNode) {
           insertPosition = 'beforeEnd';
           insertTarget = schema['x-uid'];
         } else {
           insertPosition = 'beforeBegin';
-          insertTarget = properties[i + 1]['x-uid'];
+          insertTarget = nextNonVirtualNode;
         }
       }
       return {

@@ -13,15 +13,6 @@ import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import { getNewFullBlock } from '../utils';
 import { QueryTypes } from 'sequelize';
 
-export async function link(ctx: Context, next) {
-  const { values } = ctx.action.params;
-  const repository = ctx.db.getRepository('blockTemplateLinks');
-  await repository.create({
-    values,
-  });
-  await next();
-}
-
 export async function destroy(ctx: Context, next) {
   const { filterByTk, removeSchema = false } = ctx.action.params;
   const repository: Repository = ctx.db.getRepository('blockTemplates');

@@ -8,7 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import { destroy, link } from './actions';
+import { destroy, link, saveSchema } from './actions';
 import { templateDataMiddleware } from './middlewares/templateData';
 
 export class PluginBlockTemplateServer extends Plugin {
@@ -16,6 +16,7 @@ export class PluginBlockTemplateServer extends Plugin {
     this.app.acl.allow('blockTemplates', '*', 'loggedIn');
     this.app.resourceManager.registerActionHandler('blockTemplates:destroy', destroy);
     this.app.resourceManager.registerActionHandler('blockTemplates:link', link);
+    this.app.resourceManager.registerActionHandler('blockTemplates:saveSchema', saveSchema);
     this.app.use(templateDataMiddleware);
   }
 

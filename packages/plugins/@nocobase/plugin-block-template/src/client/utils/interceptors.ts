@@ -27,7 +27,7 @@ export function registerTemplateBlockInterceptors(apiClient: any, pageBlocks: Re
         setToTrueSchema(virtualSchema.schema);
         const newSchema = convertToCreateSchema(virtualSchema.schema);
         await apiClient.request({
-          url: `/uiSchemas:insertAdjacent/${virtualSchema.insertTarget}?position=${virtualSchema.insertPosition}`,
+          url: `/blockTemplates:saveSchema/${virtualSchema.insertTarget}?position=${virtualSchema.insertPosition}`,
           method: 'post',
           data: {
             schema: newSchema,
@@ -45,7 +45,7 @@ export function registerTemplateBlockInterceptors(apiClient: any, pageBlocks: Re
         if (virtualSchema) {
           setToTrueSchema(virtualSchema.schema);
           await apiClient.request({
-            url: `/uiSchemas:insertAdjacent/${virtualSchema.insertTarget}?position=${virtualSchema.insertPosition}`,
+            url: `/blockTemplates:saveSchema/${virtualSchema.insertTarget}?position=${virtualSchema.insertPosition}`,
             method: 'post',
             data: {
               schema: convertToCreateSchema(virtualSchema.schema),
@@ -64,7 +64,7 @@ export function registerTemplateBlockInterceptors(apiClient: any, pageBlocks: Re
       if (virtualSchema) {
         setToTrueSchema(virtualSchema.schema);
         await apiClient.request({
-          url: `/uiSchemas:insertAdjacent/${virtualSchema.insertTarget}?position=${virtualSchema.insertPosition}`,
+          url: `/blockTemplates:saveSchema/${virtualSchema.insertTarget}?position=${virtualSchema.insertPosition}`,
           method: 'post',
           data: {
             schema: convertToCreateSchema(virtualSchema.schema),
@@ -79,7 +79,7 @@ export function registerTemplateBlockInterceptors(apiClient: any, pageBlocks: Re
           setToTrueSchema(config.data.wrap);
         }
         await apiClient.request({
-          url: `/uiSchemas:insertAdjacent/${vs.insertTarget}?position=${vs.insertPosition}`,
+          url: `/blockTemplates:saveSchema/${vs.insertTarget}?position=${vs.insertPosition}`,
           method: 'post',
           data: {
             schema: convertToCreateSchema(vs.schema),

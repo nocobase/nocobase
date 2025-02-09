@@ -7,6 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './destroy';
-export * from './link';
-export * from './saveSchema';
+import { Context } from '@nocobase/actions';
+
+export async function link(ctx: Context, next) {
+  const { values } = ctx.action.params;
+  const repository = ctx.db.getRepository('blockTemplateLinks');
+  await repository.create({
+    values,
+  });
+  await next();
+}
