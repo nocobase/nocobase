@@ -243,7 +243,12 @@ function InternalPublicForm() {
           }}
         >
           <div
-            style={{ maxWidth: 800, margin: '0 auto' }}
+            style={{
+              maxWidth: 800,
+              margin: '0 auto',
+              position: 'relative',
+              zIndex: 0 /** create a new z-index context */,
+            }}
             className={css`
               @media (min-width: 1025px) {
                 padding-top: 10vh;

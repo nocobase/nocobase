@@ -5,6 +5,181 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.5.3](https://github.com/nocobase/nocobase/compare/v1.5.2...v1.5.3) - 2025-02-07
+
+### 🐛 修复
+
+- **[client]**
+  - 点击 belongsToArray 字段打开的弹窗，获取的数据错误 ([#6173](https://github.com/nocobase/nocobase/pull/6173)) by @zhangzhonghe
+
+  - 筛选表单时间字段运算符设置成“介于”，组件未变成时间范围选择器 ([#6170](https://github.com/nocobase/nocobase/pull/6170)) by @katherinehhh
+
+  - 看板、日历区块的弹窗编辑表单未显示 "Unsaved changes" ([#6172](https://github.com/nocobase/nocobase/pull/6172)) by @katherinehhh
+
+## [v1.5.2](https://github.com/nocobase/nocobase/compare/v1.5.1...v1.5.2) - 2025-02-06
+
+### 🚀 优化
+
+- **[移动端]** 当没有配置权限时，隐藏移动端配置页 header ([#6171](https://github.com/nocobase/nocobase/pull/6171)) by @zhangzhonghe
+
+### 🐛 修复
+
+- **[工作流：通知节点]** 确保当用户输入包含 handlebars 语法时，通知能够正确发送。 ([#6164](https://github.com/nocobase/nocobase/pull/6164)) by @sheldon66
+
+- **[工作流：人工处理节点]** 修复人工节点使用终止按钮提交表单数据未被解析的问题 ([#6160](https://github.com/nocobase/nocobase/pull/6160)) by @mytharcher
+
+## [v1.5.1](https://github.com/nocobase/nocobase/compare/v1.5.0...v1.5.1) - 2025-02-06
+
+### 🐛 修复
+
+- **[client]**
+  - `子表单(弹窗)`标题翻译不正确 ([#6159](https://github.com/nocobase/nocobase/pull/6159)) by @gchust
+
+  - 子表单字段设置为“隐藏保留值”时，其默认值变量不能正常工作 ([#6165](https://github.com/nocobase/nocobase/pull/6165)) by @zhangzhonghe
+
+## [v1.5.0](https://github.com/nocobase/nocobase/compare/v1.4.34...v1.5.0) - 2025-02-05
+
+## 内核优化
+
+### 文本字段支持启用链接
+
+打开方式支持抽屉、对话框和页面三种方式。
+
+![20250207212903](https://static-docs.nocobase.com/20250207212903.png)
+
+### 关系区块支持关联和解除关联操作
+
+![20250207211837](https://static-docs.nocobase.com/20250207211837.png)
+
+### 支持调试工作流
+
+可以在配置工作流时直接触发工作流进行调试。
+
+<video width="100%" controls>
+      <source src="https://static-docs.nocobase.com/20250207213343_rec_.mp4" type="video/mp4">
+</video>
+
+### 优化移动端日期相关组件交互体验
+
+![0084553986f6b3de21ca62f22d09a91a.png](https://static-docs.nocobase.com/0084553986f6b3de21ca62f22d09a91a.png)
+
+### 前端性能优化
+
+- 优化首屏加载速度
+- 前端构建工具更改为 rspack
+- 优化各插件包入口文件大小
+- 提升大数据表格渲染性能
+- 优化菜单切换时的卡顿现象
+- 新增 lazy 和 useLazy 前端库按需加载的方法
+
+`lazy` 和 `useLazy` 用法介绍
+
+```ts
+import {lazy, useLazy} from '@nocobase/client';
+
+// 导出一个组件
+const { RolesManagement } = lazy(() => import('./RolesManagement'), 'RolesManagement');
+
+// 导出多个组件
+const { AuthLayout, SignInPage, SignUpPage } = lazy(() => import('./pages'), 'AuthLayout', 'SignInPage', 'SignUpPage');
+
+// 导出默认组件
+const ThemeList = lazy(() => import('./components/ThemeList'));
+
+// 返回hook
+const useReactToPrint = useLazy<typeof import('react-to-print').useReactToPrint>(
+  () => import('react-to-print'),
+  'useReactToPrint',
+);
+  
+// 返回library
+const parseExpression = useLazy<typeof import('cron-parser').parseExpression>(
+  () => import('cron-parser'),
+  'parseExpression',
+);
+```
+
+## 新插件
+
+### 导入 Pro
+
+支持异步导入操作，独立线程执行，支持大量数据导入。
+
+![20250119221221](https://static-docs.nocobase.com/20250119221221.png)
+
+参考文档：
+
+- [导入 Pro](https://docs-cn.nocobase.com/handbook/action-import-pro)
+
+### 导出 Pro
+
+支持异步导出操作，独立线程执行，支持大量数据导出，支持附件导出。
+
+![20250119221237](https://static-docs.nocobase.com/20250119221237.png)
+
+参考文档：
+
+- [导出 Pro](https://docs-cn.nocobase.com/handbook/action-export-pro)
+
+### 模板打印
+
+模板打印插件支持使用 Word、Excel 和 PowerPoint 编辑模板文件（支持 `.docx`、`.xlsx`、`.pptx` 格式），在模板中设置占位符和逻辑结构，从而动态生成预定格式的文件，如 `.docx`、`.xlsx`、`.pptx` 以及 `.pdf` 文件。可以广泛应用于生成各类业务文档，例如报价单、发票、合同等。
+
+主要功能
+
+* **多格式支持**：兼容 Word、Excel 和 PowerPoint 模板，满足不同文档生成需求。
+* **动态数据填充**：通过占位符和逻辑结构，自动填充和生成文档内容。
+* **灵活的模板管理**：支持添加、编辑、删除和分类管理模板，便于维护和使用。
+* **丰富的模板语法**：支持基本替换、数组访问、循环、条件输出等多种模板语法，满足复杂文档生成需求。
+* **格式化器支持**：提供条件输出、日期格式化、数字格式化等功能，提升文档的可读性和专业性。
+* **高效的输出格式**：支持直接生成 PDF 文件，方便分享和打印。
+
+![20250119221258](https://static-docs.nocobase.com/20250119221258.png)
+
+参考文档：
+
+- [模板打印](https://docs-cn.nocobase.com/handbook/action-template-print)
+
+### 审计日志
+
+用于记录和追踪系统内的用户活动和资源操作历史。
+
+![20250119221319](https://static-docs.nocobase.com/20250119221319.png)
+
+参考文档：
+
+- [审计日志](https://docs-cn.nocobase.com/handbook/audit-logger)
+
+### 工作流：子流程
+
+用于在一个工作流中调用其他的流程，可以使用当前流程的变量作为子流程的输入，并使用子流程的输出作为当前流程的变量在后续节点中使用。
+
+![20250119221334](https://static-docs.nocobase.com/20250119221334.png)
+
+参考文档：
+
+- [工作流：子流程](https://docs-cn.nocobase.com/handbook/workflow-subflow)
+
+### 邮件管理
+
+允许将对谷歌、微软邮件账户接入到NocoBase中，进行邮件的收发、查看、管理等操作。也可以将邮件集成到页面中。
+
+![20250119221346](https://static-docs.nocobase.com/20250119221346.png)
+
+参考文档：
+
+- [邮件管理](https://docs-cn.nocobase.com/handbook/email-manager/usage-admin)
+
+### 文件存储：S3(Pro)
+
+支持兼容 S3 协议的文件存储类型，例如亚马逊 S3、阿里云 OSS、腾讯云 COS、MinIO 等。支持文件直传、私有访问。
+
+![20250119221404](https://static-docs.nocobase.com/20250119221404.png)
+
+参考文档：
+
+- [文件存储：S3(Pro)](https://docs-cn.nocobase.com/handbook/file-manager/storage/s3-pro)
+
 ## [v1.4.34](https://github.com/nocobase/nocobase/compare/v1.4.33...v1.4.34) - 2025-02-02
 
 ### 🐛 修复
