@@ -203,7 +203,7 @@ type ComposedMenu = React.FC<any> & {
   Designer?: React.FC<any>;
 };
 
-const ParentRouteContext = createContext<NocoBaseDesktopRoute>(null);
+export const ParentRouteContext = createContext<NocoBaseDesktopRoute>(null);
 ParentRouteContext.displayName = 'ParentRouteContext';
 
 export const useParentRoute = () => {

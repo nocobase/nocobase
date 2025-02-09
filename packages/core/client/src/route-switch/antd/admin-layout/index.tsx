@@ -18,6 +18,7 @@ import {
   CurrentUser,
   Icon,
   NavigateIfNotSignIn,
+  ParentRouteContext,
   PinnedPluginList,
   RemoteCollectionManagerProvider,
   RemoteSchemaComponent,
@@ -240,18 +241,29 @@ const MenuItem: FC<{ item: any }> = (props) => {
   const { item } = props;
 
   // "Add menu item" does not need SchemaToolbar
-  if (!item._route) {
-    return <>{props.children}</>;
+  if (item.key === 'x-designer-button') {
+    return (
+      <ParentRouteContext.Provider value={item._parentRoute}>
+        <RouteContext.Provider value={item._route}>
+          {props.children}
+        </RouteContext.Provider>
+      </ParentRouteContext.Provider>
+    )
   }
+
+  // 如果点击的是一个 group，直接跳转到第一个子页面
+  const path = item.redirect || item.path;
 
   return (
     <div>
-      <RouteContext.Provider value={item._route}>
-        <Link to={item.path}>
-          {props.children}
-        </Link>
-        <MenuSchemaToolbar />
-      </RouteContext.Provider>
+      <ParentRouteContext.Provider value={item._parentRoute}>
+        <RouteContext.Provider value={item._route}>
+          <Link to={path}>
+            {props.children}
+          </Link>
+          <MenuSchemaToolbar />
+        </RouteContext.Provider>
+      </ParentRouteContext.Provider>
     </div>
   );
 };
@@ -379,7 +391,7 @@ function getRouteNodeBySchemaUid(schemaUid: string, treeArray: any[]) {
   return null;
 }
 
-function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializer, designable, unshiftInitializerButton = true }: any) {
+function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializer, designable, parentRoute, unshiftInitializerButton = true }: any) {
   if (!routes) return;
 
   const initializerButton = {
@@ -401,6 +413,7 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializ
         path: `/admin/${item.schemaUid}`,
         hideInMenu: item.hideInMenu,
         _route: item,
+        _parentRoute: parentRoute,
       };
     }
 
@@ -409,23 +422,26 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializ
         name: item.title,
         icon: <Icon type={item.icon} />,
         path: `/admin/${item.schemaUid}`,
+        redirect: `/admin/${item.schemaUid}`,
         hideInMenu: item.hideInMenu,
         _route: item,
+        _parentRoute: parentRoute,
       }
     }
 
     if (item.type === NocoBaseDesktopRouteType.group) {
-      const children = convertRoutesToLayout(item.children, { renderInitializer, designable, unshiftInitializerButton: false }) || [];
+      const children = convertRoutesToLayout(item.children, { renderInitializer, designable, parentRoute: item, unshiftInitializerButton: false }) || [];
 
       // add a designer button
       if (designable) {
-        children.push(initializerButton);
+        children.push({ ...initializerButton, _parentRoute: item });
       }
 
       return {
         name: item.title,
         icon: <Icon type={item.icon} />,
-        path: `/admin/${item.schemaUid}`,
+        path: `/admin/${item.id}`,
+        redirect: children[0]?.path,
         routes: children,
         hideInMenu: item.hideInMenu,
         _route: item,
@@ -434,7 +450,7 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializ
   })
 
   if (unshiftInitializerButton && designable) {
-    result.unshift(initializerButton);
+    result.unshift({ ...initializerButton });
   }
 
   return result;
