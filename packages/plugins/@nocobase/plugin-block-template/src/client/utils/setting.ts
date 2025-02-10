@@ -57,7 +57,7 @@ export const hideDeleteSettingItem = (settingItem: SchemaSettingsItemType) => {
 };
 
 export const hideBlocksFromTemplate = (initializers: string[], app: Application) => {
-  const hiddenBlocks = ['ChartV2BlockInitializer']; // the blocks that should be hidden from template
+  const hiddenBlocks = ['ChartV2BlockInitializer', 'WorkflowTodo.Initializer', 'ApprovalBlock.BlockInitializer']; // the blocks that should be hidden from template
   for (const initializerName of initializers) {
     const initializer = app.schemaInitializerManager.get(initializerName);
     if (initializer && initializer.items) {
