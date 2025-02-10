@@ -19,7 +19,12 @@ import { registerTemplateBlockInterceptors } from './utils/interceptors';
 import { TemplateGridDecorator } from './components/TemplateGridDecorator';
 import PluginMobileClient from '@nocobase/plugin-mobile/client';
 import { BlockTemplateMobilePage } from './components/BlockTemplateMobilePage';
-import { hideBlocksFromTemplate, hideConvertToBlockSettingItem, hideDeleteSettingItem } from './utils/setting';
+import {
+  hideBlocksFromTemplate,
+  hideConnectDataBlocksFromTemplate,
+  hideConvertToBlockSettingItem,
+  hideDeleteSettingItem,
+} from './utils/setting';
 
 export class PluginBlockTemplateClient extends Plugin {
   templateInfos = new Map();
@@ -139,6 +144,8 @@ export class PluginBlockTemplateClient extends Plugin {
               hideConvertToBlockSettingItem(schemaSetting.items[i], schemaSetting.items[i + 1]);
               // hide delete setting item
               hideDeleteSettingItem(schemaSetting.items[i]);
+              // hide connect data blocks setting item from template configure page
+              hideConnectDataBlocksFromTemplate(schemaSetting.items[i]);
             }
           }
         }

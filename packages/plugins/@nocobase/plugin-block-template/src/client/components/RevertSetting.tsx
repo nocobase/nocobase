@@ -104,6 +104,11 @@ export const RevertSetting = () => {
                 templateSchema['x-use-component-props'] = 'useUpdateActionProps';
               }
             }
+            // patch filter block
+            // remove this when multiple blocks template supported
+            if (fieldSchema['x-filter-targets']) {
+              templateSchema['x-filter-targets'] = fieldSchema['x-filter-targets'];
+            }
 
             const newSchema = convertTplBlock(
               templateSchema,

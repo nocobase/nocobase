@@ -14,6 +14,7 @@ import {
   SchemaSettingsFormItemTemplate,
   SchemaSettingsItemType,
   SchemaSettingsTemplate,
+  SchemaSettingsConnectDataBlocks,
   usePlugin,
 } from '@nocobase/client';
 
@@ -67,11 +68,21 @@ export const hideBlocksFromTemplate = (initializers: string[], app: Application)
             const visible = child.useVisible || (() => true);
             child.useVisible = function useVisible() {
               const plugin = usePlugin(PluginBlockTemplateClient);
-              return visible() && plugin && !plugin?.isInBlockTemplateConfigPage();
+              return visible() && !plugin?.isInBlockTemplateConfigPage();
             };
           }
         }
       }
     }
+  }
+};
+
+export const hideConnectDataBlocksFromTemplate = (settingItem: SchemaSettingsItemType) => {
+  if (settingItem['Component'] === SchemaSettingsConnectDataBlocks) {
+    const visible = settingItem['useVisible'] || (() => true);
+    settingItem['useVisible'] = function useVisible() {
+      const plugin = usePlugin(PluginBlockTemplateClient);
+      return visible() && !plugin?.isInBlockTemplateConfigPage();
+    };
   }
 };
