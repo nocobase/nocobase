@@ -15,7 +15,7 @@ class PluginDataSourceMainClient extends Plugin {
   addCollectionPresetField(config) {
     this.collectionPresetFields.push(config);
   }
-  getCollectionPresetField(name) {
+  removeCollectionPresetField(name) {
     this.collectionPresetFields = reject(this.collectionPresetFields, (v) => v.value.name === name);
   }
   getCollectionPresetFields() {
