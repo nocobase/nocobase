@@ -12,6 +12,9 @@ import * as _ from 'lodash';
 import { convertTplBlock } from '../initializers';
 
 export function findSchemaByUid(schema: Schema, uid: string) {
+  if (!schema) {
+    return null;
+  }
   if (schema['x-uid'] === uid) {
     return schema;
   }
