@@ -1067,7 +1067,7 @@ export const Table: any = withDynamicSchemaProps(
       const scroll = useMemo(() => {
         return {
           x: 'max-content',
-          y: dataSource.length > 0 ? tableHeight : undefined,
+          y: tableHeight,
         };
       }, [tableHeight, dataSource]);
 
