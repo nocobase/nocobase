@@ -9,3 +9,4 @@
 
 export * from './TemplateBlockInitializer';
 export * from './templateBlockInitializerItem';
+export * from './templateAddBlockInitializer';

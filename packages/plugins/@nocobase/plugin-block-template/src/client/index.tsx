@@ -8,7 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import { templateBlockInitializerItem } from './initializers';
+import { templateBlockInitializerItem, registerCustomAddBlockInitializer } from './initializers';
 import { NAMESPACE } from './constants';
 import { BlockTemplateList, BlockTemplatePage } from './components';
 import { ISchema, Schema } from '@formily/json-schema';
@@ -125,6 +125,9 @@ export class PluginBlockTemplateClient extends Plugin {
     const interval = setInterval(() => {
       if (!this.app.loading) {
         clearInterval(interval);
+
+        // register template add block initializer
+        registerCustomAddBlockInitializer(this.app);
 
         // add template settings
         const schemaSettings = this.app.schemaSettingsManager.getAll();
