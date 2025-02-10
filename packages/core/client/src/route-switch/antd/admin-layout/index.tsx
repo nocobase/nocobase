@@ -237,8 +237,25 @@ const NocoBaseLogo = () => {
   return <div className={className1}>{result?.loading ? null : logo}</div>;
 };
 
+const GroupItem: FC<{ item: any }> = (props) => {
+  const { item } = props;
+
+  return (
+    <ParentRouteContext.Provider value={item._parentRoute}>
+      <RouteContext.Provider value={item._route}>
+        {props.children}
+        <MenuSchemaToolbar />
+      </RouteContext.Provider>
+    </ParentRouteContext.Provider>
+  );
+};
+
 const MenuItem: FC<{ item: any }> = (props) => {
   const { item } = props;
+
+  if (item._hidden) {
+    return null;
+  }
 
   // "Add menu item" does not need SchemaToolbar
   if (item.key === 'x-designer-button') {
@@ -313,6 +330,9 @@ export const InternalAdminLayout = () => {
       }}
       menuItemRender={(item, dom) => {
         return <MenuItem item={item}>{dom}</MenuItem>;
+      }}
+      subMenuItemRender={(item, dom) => {
+        return <GroupItem item={item}>{dom}</GroupItem>;
       }}
     >
       <Layout.Header>
@@ -391,7 +411,7 @@ function getRouteNodeBySchemaUid(schemaUid: string, treeArray: any[]) {
   return null;
 }
 
-function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializer, designable, parentRoute, unshiftInitializerButton = true }: any) {
+function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializer, designable, parentRoute, depth = 0 }: any) {
   if (!routes) return;
 
   const initializerButton = {
@@ -430,10 +450,10 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializ
     }
 
     if (item.type === NocoBaseDesktopRouteType.group) {
-      const children = convertRoutesToLayout(item.children, { renderInitializer, designable, parentRoute: item, unshiftInitializerButton: false }) || [];
+      const children = convertRoutesToLayout(item.children, { renderInitializer, designable, parentRoute: item, depth: depth + 1 }) || [];
 
       // add a designer button
-      if (designable) {
+      if (designable && depth === 0) {
         children.push({ ...initializerButton, _parentRoute: item });
       }
 
@@ -441,15 +461,15 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializ
         name: item.title,
         icon: <Icon type={item.icon} />,
         path: `/admin/${item.id}`,
-        redirect: children[0]?.path,
-        routes: children,
+        redirect: children[0]?.key === 'x-designer-button' ? undefined : children[0]?.path,
+        routes: children.length === 0 ? [{ path: '/', name: ' ', disabled: true, _hidden: true }] : children,
         hideInMenu: item.hideInMenu,
         _route: item,
       };
     }
   })
 
-  if (unshiftInitializerButton && designable) {
+  if (designable && depth === 0) {
     result.unshift({ ...initializerButton });
   }
 
