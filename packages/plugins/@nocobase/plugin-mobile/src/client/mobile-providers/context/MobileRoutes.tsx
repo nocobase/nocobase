@@ -15,6 +15,7 @@ import { useLocation } from 'react-router-dom';
 import type { IResource } from '@nocobase/sdk';
 
 import { useMobileTitle } from './MobileTitle';
+import { useRouteTranslation } from '../../locale';
 
 export interface MobileRouteItem {
   id: number;
@@ -82,11 +83,12 @@ function useActiveTabBar(routeList: MobileRouteItem[]) {
 
 function useTitle(activeTabBar: MobileRouteItem) {
   const context = useMobileTitle();
+  const { t } = useRouteTranslation();
   useEffect(() => {
     if (!context) return;
     if (activeTabBar) {
       context.setTitle(activeTabBar.title);
-      document.title = activeTabBar.title;
+      document.title = t(activeTabBar.title);
     }
   }, [activeTabBar, context]);
 }

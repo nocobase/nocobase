@@ -9,7 +9,7 @@
 
 import { SyncOutlined } from '@ant-design/icons';
 import { Form, createForm } from '@formily/core';
-import { Field, useField, useForm } from '@formily/react';
+import { Field, useField, useForm, Schema } from '@formily/react';
 import {
   FormProvider,
   Input,
@@ -21,6 +21,7 @@ import {
   useAPIClient,
   useActionContext,
   useRecord,
+  useRequest,
   useResourceActionContext,
   useResourceContext,
 } from '@nocobase/client';
@@ -111,9 +112,9 @@ const Sync = () => {
   const { t } = useLocalTranslation();
   const { refresh } = useResourceActionContext();
   const api = useAPIClient();
-  const [loading, setLoading] = useState(false);
-  const plainOptions = ['local', 'menu', 'db'];
-  const [checkedList, setCheckedList] = useState<any[]>(plainOptions);
+  const [syncing, setSyncing] = useState(false);
+  const [plainOptions, setPlainOptions] = useState([]);
+  const [checkedList, setCheckedList] = useState<any[]>([]);
   const [indeterminate, setIndeterminate] = useState(false);
   const [checkAll, setCheckAll] = useState(true);
   const onChange = (list: any[]) => {
@@ -128,6 +129,30 @@ const Sync = () => {
     setCheckAll(e.target.checked);
   };
 
+  const { data, loading } = useRequest<
+    {
+      name: string;
+      title: string;
+    }[]
+  >(
+    () =>
+      api
+        .resource('localization')
+        .getSources()
+        .then((res) => res?.data?.data),
+    {
+      onSuccess: (data) => {
+        const plainOptions = data.map((item: { name: string }) => item.name);
+        setPlainOptions(plainOptions);
+        setCheckedList(plainOptions);
+      },
+    },
+  );
+
+  if (loading) {
+    return null;
+  }
+
   return (
     <StablePopover
       placement="bottomRight"
@@ -139,15 +164,11 @@ const Sync = () => {
           <Divider style={{ margin: '5px 0' }} />
           <Checkbox.Group onChange={onChange} value={checkedList}>
             <Col>
-              <Row>
-                <Checkbox value="local">{t('System & Plugins')}</Checkbox>
-              </Row>
-              <Row>
-                <Checkbox value="db">{t('Collections & Fields')}</Checkbox>
-              </Row>
-              <Row>
-                <Checkbox value="menu">{t('Menu')}</Checkbox>
-              </Row>
+              {(data || []).map((item: { name: string; title: string }) => (
+                <Row key={item.name}>
+                  <Checkbox value={item.name}>{Schema.compile(item.title, { t })}</Checkbox>
+                </Row>
+              ))}
             </Col>
           </Checkbox.Group>
         </>
@@ -155,18 +176,18 @@ const Sync = () => {
     >
       <Button
         icon={<SyncOutlined />}
-        loading={loading}
+        loading={syncing}
         onClick={async () => {
           if (!checkedList.length) {
             return message.error(t('Please select the resources you want to synchronize'));
           }
-          setLoading(true);
+          setSyncing(true);
           await api.resource('localization').sync({
             values: {
               types: checkedList,
             },
           });
-          setLoading(false);
+          setSyncing(false);
           refresh();
         }}
       >
@@ -180,14 +201,15 @@ const useModules = () => {
   const { t: lang } = useLocalTranslation();
   const t = useMemoizedFn(lang);
   const { data } = useResourceActionContext();
-  return useMemo(
+  const modules = useMemo(
     () =>
       data?.meta?.modules?.map((module) => ({
         value: module.value,
-        label: t(module.label),
+        label: Schema.compile(module.label, { t }),
       })) || [],
     [data?.meta?.modules, t],
   );
+  return modules;
 };
 
 const Filter = () => {
@@ -267,6 +289,12 @@ const Filter = () => {
   );
 };
 
+const ModuleTitle = () => {
+  const { t } = useLocalTranslation();
+  const { moduleTitle } = useRecord();
+  return <Tag>{Schema.compile(moduleTitle, { t })}</Tag>;
+};
+
 export const Localization = () => {
   const { t } = useLocalTranslation();
   const api = useAPIClient();
@@ -285,7 +313,7 @@ export const Localization = () => {
     <Card bordered={false}>
       <SchemaComponent
         schema={localizationSchema}
-        components={{ TranslationField, CurrentLang, Sync, Filter }}
+        components={{ TranslationField, CurrentLang, Sync, Filter, ModuleTitle }}
         scope={{
           t,
           useDestroyTranslationAction,
