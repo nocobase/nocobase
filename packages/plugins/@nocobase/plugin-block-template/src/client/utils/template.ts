@@ -11,6 +11,41 @@ import { ISchema, Schema } from '@formily/json-schema';
 import * as _ from 'lodash';
 import { convertTplBlock } from '../initializers';
 
+export function findSchemaByUid(schema: Schema, uid: string) {
+  if (schema['x-uid'] === uid) {
+    return schema;
+  }
+  if (schema.properties) {
+    for (const key in schema.properties) {
+      const result = findSchemaByUid(schema.properties[key], uid);
+      if (result) {
+        return result;
+      }
+    }
+  }
+  return null;
+}
+
+export function collectSchemaFirstVirtualUids(schema: Schema) {
+  const uids = new Set<string>();
+  const collectUids = (schema: Schema) => {
+    if (!schema) {
+      return;
+    }
+    if (schema['x-virtual']) {
+      uids.add(schema['x-uid']);
+      return;
+    }
+    if (schema.properties) {
+      for (const key in schema.properties) {
+        collectUids(schema.properties[key]);
+      }
+    }
+  };
+  collectUids(schema);
+  return uids;
+}
+
 /**
  * Find a schema in the cache by its UID
  * @param cache The cache object containing schemas

@@ -8,7 +8,13 @@
  */
 
 import { AxiosRequestConfig } from 'axios';
-import { findSchemaCache, findFirstVirtualSchema, convertToCreateSchema } from './template';
+import {
+  findSchemaCache,
+  findFirstVirtualSchema,
+  convertToCreateSchema,
+  collectSchemaFirstVirtualUids,
+  findSchemaByUid,
+} from './template';
 import { ISchema } from '@nocobase/client';
 import _ from 'lodash';
 
@@ -35,20 +41,6 @@ export function registerTemplateBlockInterceptors(
         }
       }
     };
-    const findSchemaByUid = (schema: ISchema, uid: string) => {
-      if (schema['x-uid'] === uid) {
-        return schema;
-      }
-      if (schema.properties) {
-        for (const key in schema.properties) {
-          const result = findSchemaByUid(schema.properties[key], uid);
-          if (result) {
-            return result;
-          }
-        }
-      }
-      return null;
-    };
     const schema = findSchemaByUid(cacheSchema, uid);
     deleteVirtual(schema);
   };
@@ -57,18 +49,22 @@ export function registerTemplateBlockInterceptors(
     // Handle schema patching
     if (config.url?.includes('uiSchemas:patch') || config.url?.includes('uiSchemas:initializeActionContext')) {
       const xUid = config.data?.['x-uid'];
-      const currentSchema = findSchemaCache(pageBlocks, xUid);
-      const virtualSchema = findFirstVirtualSchema(currentSchema, xUid);
-      if (virtualSchema) {
-        const newSchema = convertToCreateSchema(virtualSchema.schema);
-        await apiClient.request({
-          url: `/blockTemplates:saveSchema/${virtualSchema.insertTarget}?position=${virtualSchema.insertPosition}`,
-          method: 'post',
-          data: {
-            schema: newSchema,
-          },
-        });
-        setToTrueSchema(virtualSchema.schema['x-uid']);
+      const currentPageSchema = findSchemaCache(pageBlocks, xUid);
+      const currentSchema = findSchemaByUid(currentPageSchema, xUid);
+      const uids = collectSchemaFirstVirtualUids(currentSchema);
+      for (const uid of uids) {
+        const virtualSchema = findFirstVirtualSchema(currentPageSchema, uid);
+        if (virtualSchema) {
+          const newSchema = convertToCreateSchema(virtualSchema.schema);
+          await apiClient.request({
+            url: `/blockTemplates:saveSchema/${virtualSchema.insertTarget}?position=${virtualSchema.insertPosition}`,
+            method: 'post',
+            data: {
+              schema: newSchema,
+            },
+          });
+          setToTrueSchema(virtualSchema.schema['x-uid']);
+        }
       }
     }
 
