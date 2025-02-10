@@ -11,7 +11,7 @@ import ProLayout from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
 import { ConfigProvider, Divider, Layout } from 'antd';
 import React, { createContext, FC, useContext, useEffect, useMemo, useRef } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
@@ -35,6 +35,7 @@ import {
   CurrentTabUidProvider,
   IsSubPageClosedByPageMenuProvider,
   useCurrentPageUid,
+  useLocationNoUpdate,
 } from '../../../application/CustomRouterContextProvider';
 import { Plugin } from '../../../application/Plugin';
 import { menuItemInitializer } from '../../../modules/menu/menuItemInitializer';
@@ -72,7 +73,7 @@ export const useAllAccessDesktopRoutes = () => {
   return useContext(AllAccessDesktopRoutesContext);
 };
 
-const MenuSchemaRequestProvider: FC = ({ children }) => {
+const RoutesRequestProvider: FC = ({ children }) => {
   const { data, refresh } = useRequest<{
     data: any;
   }>({
@@ -377,6 +378,36 @@ export const InternalAdminLayout = () => {
   );
 };
 
+function getDefaultPageUid(routes: NocoBaseDesktopRoute[]) {
+  // Find the first route of type "page"
+  for (const route of routes) {
+    if (route.type === NocoBaseDesktopRouteType.page) {
+      return route.schemaUid;
+    }
+
+    if (route.children?.length) {
+      const result = getDefaultPageUid(route.children);
+      if (result) {
+        return result;
+      }
+    }
+  }
+}
+
+const NavigateToDefaultPage: FC = (props) => {
+  const { allAccessRoutes } = useAllAccessDesktopRoutes();
+  const location = useLocationNoUpdate();
+
+  const defaultPageUid = getDefaultPageUid(allAccessRoutes);
+
+  return (
+    <>
+      {props.children}
+      {defaultPageUid && location.pathname === '/admin' && <Navigate replace to={`/admin/${defaultPageUid}`} />}
+    </>
+  )
+};
+
 export const AdminProvider = (props) => {
   return (
     <CurrentPageUidProvider>
@@ -384,13 +415,15 @@ export const AdminProvider = (props) => {
         <IsSubPageClosedByPageMenuProvider>
           <NavigateIfNotSignIn>
             <ACLRolesCheckProvider>
-              <MenuSchemaRequestProvider>
-                <RemoteCollectionManagerProvider>
-                  <CurrentAppInfoProvider>
-                    <RemoteSchemaTemplateManagerProvider>{props.children}</RemoteSchemaTemplateManagerProvider>
-                  </CurrentAppInfoProvider>
-                </RemoteCollectionManagerProvider>
-              </MenuSchemaRequestProvider>
+              <RoutesRequestProvider>
+                <NavigateToDefaultPage>
+                  <RemoteCollectionManagerProvider>
+                    <CurrentAppInfoProvider>
+                      <RemoteSchemaTemplateManagerProvider>{props.children}</RemoteSchemaTemplateManagerProvider>
+                    </CurrentAppInfoProvider>
+                  </RemoteCollectionManagerProvider>
+                </NavigateToDefaultPage>
+              </RoutesRequestProvider>
             </ACLRolesCheckProvider>
           </NavigateIfNotSignIn>
         </IsSubPageClosedByPageMenuProvider>
