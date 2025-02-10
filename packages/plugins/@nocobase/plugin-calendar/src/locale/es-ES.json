@@ -60,6 +60,6 @@ export default {
   "Monthly": "Mensual",
   "Yearly": "Anual",
   "Repeats": "se repite",
-  "Background color field": "Campo de color de fondo",
+  "Category field": "Campo de Categoria",
   "Not selected": "No seleccionado",
 };

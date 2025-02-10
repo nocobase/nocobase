@@ -30,9 +30,9 @@ export const getDatePickerLabels = (props): string => {
   return isArr(labels) ? labels.join('~') : labels;
 };
 
-export const getLabelFormatValue = (labelUiSchema: ISchema, value: any, isTag = false, CustomLabel?: any): any => {
-  if (CustomLabel) {
-    return <CustomLabel value={value} />;
+export const getLabelFormatValue = (labelUiSchema: ISchema, value: any, isTag = false, TitleRenderer?: any): any => {
+  if (TitleRenderer) {
+    return <TitleRenderer value={value} />;
   }
   if (Array.isArray(labelUiSchema?.enum) && value) {
     const opt: any = labelUiSchema.enum.find((option: any) => option.value === value);

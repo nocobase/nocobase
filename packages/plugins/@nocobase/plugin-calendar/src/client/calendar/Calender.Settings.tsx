@@ -123,7 +123,7 @@ export const calendarBlockSettings = new SchemaSettings({
         const filteredItems = [{ label: t('Not selected'), value: '' }, ...fliedList];
 
         return {
-          title: t('Background color field'),
+          title: t('Category field'),
           value: fieldNames.colorFieldName || '',
           options: filteredItems,
           onChange: (colorFieldName: string) => {
