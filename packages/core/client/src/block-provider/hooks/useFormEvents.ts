@@ -92,15 +92,33 @@ export function useFormEvents({ form }) {
           },
         },
         fn: (params) => {
-          form.setFieldState(params.fieldName, params.fieldState);
+          console.log('设置字段状态', params);
+          // form.setFieldState(params.fieldName, params.fieldState);
         },
       },
       {
         name: 'setValues',
         title: '设置表单值',
         description: '设置表单值',
+        params: {
+          name: {
+            name: 'name',
+            title: '字段名',
+            type: 'string',
+            description: '字段名',
+          },
+          value: {
+            name: 'value',
+            title: '字段值',
+            type: 'string',
+          },
+        },
         fn: (params) => {
-          form.setValues(params.values);
+          console.log('设置表单值', params);
+          form.setValues({
+            ...form.values,
+            [params.name]: params.value,
+          });
         },
       },
     ],
@@ -114,8 +132,8 @@ export function useFormEvents({ form }) {
           event: 'valueChange',
         },
         params: {
-          // fieldName: payload?.props?.name,
-          // fieldValue: payload?.inputValue,
+          fieldName: payload?.props?.name,
+          fieldValue: payload?.inputValue,
           values: form.values, // 用全量值代替某个值的改变，不太好传递动态的值类型
         },
       });

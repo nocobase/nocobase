@@ -12,10 +12,14 @@ import { EventActionSetting } from '../../types';
 import { useEvent } from '../../hooks/useEvent';
 import React from 'react';
 
-export function ActionParamSelect(props: { action: EventActionSetting }) {
+export function ActionParamSelect(props: { action: EventActionSetting['action'] }) {
   const { action, ...rest } = props;
   const { definitions } = useEvent();
-  const params = definitions.find((x) => x.uid === action?.uid)?.actions?.find((x) => x.name === action.event)?.params;
+  const definition = definitions.find(
+    (x) => x.name === action?.definition && x.blockUid === action?.blockUid && x.pageUid === action?.pageUid,
+  );
+  const actionDef = definition?.actions?.find((x) => x.name === action.action);
+  const params = actionDef?.params;
   const options = Object.keys(params || {}).map((key) => ({
     name: key,
     label: params[key]?.title,

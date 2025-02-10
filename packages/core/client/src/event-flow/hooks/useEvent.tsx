@@ -9,20 +9,32 @@
 
 import { EventDefinition, EventSetting } from '../types';
 import { useFieldSchema } from '@formily/react';
-import { getPageSchema, useApp, usePlugin, useSchemaSettings } from '@nocobase/client';
-import React from 'react';
+import { getPageSchema, useApp, useLocalVariables, usePlugin, useVariables, useSchemaSettings } from '@nocobase/client';
+import React, { useContext } from 'react';
 import { ISchema, useField } from '@formily/react';
 import { EventFlowPlugin } from '..';
 import { useMemoizedFn } from 'ahooks';
+import { eventContext } from '../EventSettingItem/components/EventProvider';
 
 export const useEvent = () => {
   const fieldSchema = useFieldSchema();
-  const uid = fieldSchema?.['x-uid'];
-  const pageUid = getPageSchema(fieldSchema)?.['x-uid'];
+  const context = useContext(eventContext);
+  const pageUid = context.pageUid || getPageSchema(fieldSchema)?.['x-uid'];
+  const blockUid = fieldSchema?.['x-uid'];
   const eventFlowPlugin: EventFlowPlugin = usePlugin(EventFlowPlugin.name) as any;
+  const variables = useVariables();
+  const localVariables = useLocalVariables({ currentForm: null });
 
   const define = useMemoizedFn((definition: EventDefinition[] | EventDefinition) => {
-    eventFlowPlugin?.define(definition, fieldSchema);
+    if (!definition) {
+      return;
+    }
+    const definitions = Array.isArray(definition) ? definition : [definition];
+    definitions.forEach((item) => {
+      item.pageUid = pageUid;
+      item.blockUid = blockUid;
+    });
+    eventFlowPlugin?.define(definitions);
   });
 
   const register = useMemoizedFn((events: EventSetting[]) => {
@@ -33,14 +45,19 @@ export const useEvent = () => {
     await eventFlowPlugin?.emit({
       event: {
         ...p.event,
-        uid: uid,
+        pageUid,
+        blockUid,
       },
       params: p.params,
+      variables,
+      localVariables,
     });
   });
 
+  console.log('event pageUid', pageUid);
+
   return {
-    definitions: eventFlowPlugin?.definitions.filter((item) => item.pageUid === pageUid || !item.pageUid || !pageUid),
+    definitions: eventFlowPlugin?.definitions.filter((item) => item.pageUid === pageUid || !item.pageUid),
     // 定义事件
     define,
     // 移除事件

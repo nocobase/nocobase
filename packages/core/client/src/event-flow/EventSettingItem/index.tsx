@@ -21,13 +21,14 @@ import {
   useFormBlockType,
   useRecord,
   Filter,
+  getPageSchema,
 } from '@nocobase/client';
 import React, { useEffect, useMemo } from 'react';
 import { ISchema, useField } from '@formily/react';
 import { SchemaSettingsKey, useEvent } from '..';
 import { useFieldSchema } from '@formily/react';
 import { useLinkageCollectionFieldOptions } from './ActionsSetting/action-hooks';
-import EventSelect from './EventSelect';
+import EventSelect from './components/EventSelect';
 import { ArrayCollapse } from './components/LinkageHeader';
 import { css } from '@emotion/css';
 import { FormItem, FormLayout } from '@formily/antd-v5';
@@ -37,6 +38,7 @@ import { ActionParamSelect } from './components/ActionParamSelect';
 import ConditionSelect from './components/ConditionSelect';
 import { Space } from 'antd';
 import { ActionParamValueInput } from './components/ActionParamValueInput';
+import { EventProvider } from './components/EventProvider';
 
 // packages/core/client/src/schema-settings/SchemaSettings.tsx
 export const EventSettingItem = (props) => {
@@ -47,6 +49,7 @@ export const EventSettingItem = (props) => {
   const { definitions, register } = useEvent();
   const { dn } = useDesignable();
   const fieldSchema = useFieldSchema();
+  const pageUid = getPageSchema(fieldSchema)?.['x-uid'];
 
   return (
     <SchemaSettingsModalItem
@@ -80,7 +83,10 @@ export const EventSettingItem = (props) => {
               type: 'array',
               // default: defaultValues,
               'x-component': 'ArrayCollapse',
-              'x-decorator': 'FormItem',
+              'x-decorator': EventProvider,
+              'x-decorator-props': {
+                pageUid,
+              },
               'x-component-props': {
                 accordion: true,
                 titleRender: (item: any, index: number) => {
@@ -101,6 +107,7 @@ export const EventSettingItem = (props) => {
                       definitions,
                       className: css`
                         margin-bottom: 12px;
+                        width: 100%;
                       `,
                     },
                   },
@@ -109,23 +116,6 @@ export const EventSettingItem = (props) => {
                     'x-content': '{{ t("执行规则") }}',
                   },
                   actionsBlock: rulesSchema,
-                  // actionsBlock: {
-                  // type: 'void',
-                  // 'x-component': ActionsSetting,
-                  // 'x-use-component-props': () => {
-                  //   return {
-                  //     options,
-                  //     linkageOptions,
-                  //     category: 'default',
-                  //     elementType: 'field',
-                  //     collectionName,
-                  //     // form,
-                  //     variables,
-                  //     localVariables,
-                  //     formBlockType,
-                  //   };
-                  // },
-                  // },
                   remove: {
                     type: 'void',
                     'x-component': 'ArrayCollapse.Remove',

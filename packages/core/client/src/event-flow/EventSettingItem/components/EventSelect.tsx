@@ -10,7 +10,7 @@
 import React, { useMemo } from 'react';
 import { useControllableValue } from 'ahooks';
 import { Card, Space, TreeSelect } from 'antd';
-import { EventDefinition, EventSetting } from '../types';
+import { EventDefinition, EventSetting } from '../../types';
 
 export default function EventSelect(props: {
   definitions?: EventDefinition[];
@@ -25,11 +25,11 @@ export default function EventSelect(props: {
 
   let treeData = definitions?.map((module) => ({
     value: module.name,
-    title: module.title + ' - ' + module.uid,
+    title: module.title + ' - ' + module.blockUid,
     selectable: false,
     children:
       module?.events?.map((event) => ({
-        value: `${module.name}.${event.name}${module.uid ? `.${module.uid}` : ''}`,
+        value: `${module.pageUid || ''}.${module.blockUid || ''}.${module.name}.${event.name}`,
         title: event.title,
       })) || [],
   }));
@@ -37,7 +37,7 @@ export default function EventSelect(props: {
 
   const selectedEvent = useMemo(() => {
     if (!state) return undefined;
-    return `${state.definition}.${state.event}${state.uid ? `.${state.uid}` : ''}`;
+    return `${state.pageUid || ''}.${state.blockUid || ''}.${state.definition}.${state.event}`;
   }, [state]);
 
   return (
@@ -48,12 +48,16 @@ export default function EventSelect(props: {
       allowClear
       treeDefaultExpandAll
       onChange={(value) => {
-        console.log('value', value);
-        const [definition, event, uid] = (value as any).split('.');
+        if (!value) {
+          setState(undefined);
+          return;
+        }
+        const [pageUid, blockUid, definition, event] = value?.split('.') || [];
         setState({
+          pageUid,
+          blockUid,
           definition,
           event,
-          uid,
         });
       }}
       treeData={treeData}

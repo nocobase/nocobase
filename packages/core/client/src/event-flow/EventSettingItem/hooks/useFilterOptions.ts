@@ -9,56 +9,58 @@
 
 import { useDataSourceManager } from '../../../data-source/data-source';
 import { useEvent } from '../../hooks/useEvent';
-import { EventParam, EventSetting, EventDefinition } from '../../types';
+import { EventParam, EventSetting, EventDefinition, EventParamKey, StateParamKey, SystemParamKey } from '../../types';
 
-const useCurrentEventParams: (event?: EventSetting['event']) => {
-  [key: string]: EventParam;
-} = (event) => {
+const useCurrentEventParams = (event?: EventSetting['event']) => {
   const { definitions } = useEvent();
-  const definition = definitions?.find((d) => d.name === event?.definition && d.uid === event.uid);
+  const definition = definitions?.find(
+    (d) => d.name === event?.definition && d.pageUid === event.pageUid && d.blockUid === event.blockUid,
+  );
   const eventParams = definition?.events?.find((e) => e.name === event?.event)?.params;
   return eventParams;
 };
 
-const useStateDefine = ({ definitions }: { definitions: EventDefinition[] }) => {
-  const stateDefine = definitions.filter((item) => item.uid && item.states);
+const useStateDefine = () => {
+  const { definitions } = useEvent();
   const stateDefineOptions = {};
-  stateDefine.forEach((definition) => {
-    stateDefineOptions[definition.uid] = {
-      name: definition.uid,
-      title: `${definition.title}-${definition.uid}`,
-      type: 'object',
-      properties: definition.states,
-    };
-  });
+  definitions
+    .filter((item) => item.states && item.blockUid) // 必须为区块的数据
+    .forEach((definition) => {
+      stateDefineOptions[definition.blockUid] = {
+        name: definition.blockUid,
+        title: `${definition.title}-${definition.blockUid}`,
+        type: 'object',
+        properties: definition.states,
+      };
+    });
 
   return { stateDefineOptions };
 };
 
 export const useFilterOptions = (event?: EventSetting['event']) => {
-  const currentEventParamsDefine = useCurrentEventParams(event);
-  const { definitions } = useEvent();
-  const { stateDefineOptions } = useStateDefine({ definitions });
+  const currentEventParamsDefine: EventParam[] = useCurrentEventParams(event);
+  const { stateDefineOptions } = useStateDefine();
+  console.log('useFilterOptions', event, currentEventParamsDefine, stateDefineOptions);
 
   const options: EventParam[] = [
     {
-      name: '_eventParams',
+      name: EventParamKey,
       title: '事件参数',
       type: 'object',
       properties: currentEventParamsDefine,
     },
     {
-      name: '_state',
+      name: StateParamKey,
       title: '组件数据',
       type: 'object',
       properties: stateDefineOptions,
     },
-    // {
-    //   name: '_system',
-    //   title: '系统参数',
-    //   type: 'object',
-    //   properties: {},
-    // },
+    {
+      name: SystemParamKey,
+      title: '应用数据',
+      type: 'object',
+      properties: {},
+    },
   ];
   const dm = useDataSourceManager();
 

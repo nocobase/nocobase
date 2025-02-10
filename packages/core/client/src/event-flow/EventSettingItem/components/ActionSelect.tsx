@@ -9,33 +9,52 @@
 
 import { observer } from '@formily/react';
 import { Cascader } from 'antd';
-import React from 'react';
-import { useActionOptions } from '../hooks/useActionOptions';
+import React, { useMemo } from 'react';
 import { EventActionSetting } from '../../types';
+import { useEvent } from '../../hooks/useEvent';
+import { useControllableValue } from 'ahooks';
 
 export const ActionSelect = observer((props: any) => {
-  const options = useActionOptions();
+  const { definitions } = useEvent();
+  const [state, setState] = useControllableValue<EventActionSetting['action']>(props, {
+    defaultValue: undefined,
+  });
+
+  let treeData = definitions?.map((definition) => ({
+    value: `${definition.name}.${definition.blockUid}`,
+    label: definition.title + '-' + definition.blockUid,
+    children:
+      definition?.actions?.map((action) => ({
+        value: `${definition.pageUid || ''}.${definition.blockUid || ''}.${definition.name}.${action.name}`,
+        label: action.title,
+      })) || [],
+  }));
+  treeData = treeData?.filter((item) => item.children.length > 0);
+
   const { onChange, value, ...rest } = props;
-  const _onChange = (value: any, selectedOptions: any) => {
-    const v = value[1];
-    if (v) {
-      const res: EventActionSetting = {
-        definition: v.split('.')[0],
-        event: v.split('.')[1],
-        uid: v.split('.')[2],
-      };
-      onChange?.(res);
-    } else {
-      onChange?.(undefined);
-    }
-  };
-  const _value = value ? [value.definition, `${value.definition}.${value.event}.${value.uid}`] : [];
+
+  const selectedAction = useMemo(() => {
+    if (!state) return undefined;
+    return [
+      `${state.definition}.${state.blockUid}`,
+      `${state.pageUid || ''}.${state.blockUid || ''}.${state.definition}.${state.action}`,
+    ];
+  }, [state]);
+
   return (
     <Cascader
       placeholder="请选择动作"
-      options={options}
-      onChange={_onChange}
-      value={_value}
+      options={treeData}
+      onChange={(value: any, selectedOptions: any) => {
+        const v = value[1];
+        if (v) {
+          const [pageUid, blockUid, definition, action] = v.split('.');
+          setState({ pageUid, blockUid, definition, action });
+        } else {
+          setState(undefined);
+        }
+      }}
+      value={selectedAction}
       style={{ minWidth: 300 }}
       {...rest}
     />
