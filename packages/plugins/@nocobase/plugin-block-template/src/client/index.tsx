@@ -8,7 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import { templateBlockInitializerItem, registerCustomAddBlockInitializer } from './initializers';
+import { templateBlockInitializerItem } from './initializers';
 import { NAMESPACE } from './constants';
 import { BlockTemplateList, BlockTemplatePage } from './components';
 import { ISchema, Schema } from '@formily/json-schema';
@@ -19,13 +19,20 @@ import { registerTemplateBlockInterceptors } from './utils/interceptors';
 import { TemplateGridDecorator } from './components/TemplateGridDecorator';
 import PluginMobileClient from '@nocobase/plugin-mobile/client';
 import { BlockTemplateMobilePage } from './components/BlockTemplateMobilePage';
-import { hideConvertToBlockSettingItem, hideDeleteSettingItem } from './utils/setting';
+import { hideBlocksFromTemplate, hideConvertToBlockSettingItem, hideDeleteSettingItem } from './utils/setting';
 
 export class PluginBlockTemplateClient extends Plugin {
   templateInfos = new Map();
   templateschemacache = {};
   pageBlocks = {};
   savedSchemaUids = new Set<string>();
+  injectInitializers = [
+    'page:addBlock',
+    'popup:common:addBlock',
+    'popup:addNew:addBlock',
+    'mobile:addBlock',
+    'mobile:popup:common:addBlock',
+  ];
 
   async afterAdd() {
     // await this.app.pm.add()
@@ -66,19 +73,9 @@ export class PluginBlockTemplateClient extends Plugin {
 
     this.app.addComponents({ TemplateGridDecorator });
 
-    this.app.schemaInitializerManager.addItem('page:addBlock', 'templates', templateBlockInitializerItem);
-
-    this.app.schemaInitializerManager.addItem('popup:common:addBlock', 'templates', templateBlockInitializerItem);
-
-    this.app.schemaInitializerManager.addItem('popup:addNew:addBlock', 'templates', templateBlockInitializerItem);
-
-    this.app.schemaInitializerManager.addItem('mobile:addBlock', 'templates', templateBlockInitializerItem);
-
-    this.app.schemaInitializerManager.addItem(
-      'mobile:popup:common:addBlock',
-      'templates',
-      templateBlockInitializerItem,
-    );
+    for (const initializer of this.injectInitializers) {
+      this.app.schemaInitializerManager.addItem(initializer, 'templates', templateBlockInitializerItem);
+    }
 
     this.#afterAllPluginsLoaded();
     this.app.pluginSettingsManager.add('block-templates', {
@@ -126,9 +123,7 @@ export class PluginBlockTemplateClient extends Plugin {
       if (!this.app.loading) {
         clearInterval(interval);
 
-        // register template add block initializer
-        registerCustomAddBlockInitializer(this.app);
-
+        hideBlocksFromTemplate(this.injectInitializers, this.app);
         // add template settings
         const schemaSettings = this.app.schemaSettingsManager.getAll();
         for (const key in schemaSettings) {

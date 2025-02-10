@@ -7,8 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { PluginBlockTemplateClient } from '..';
 import { useIsInTemplate } from '../hooks/useIsInTemplate';
-import { SchemaSettingsFormItemTemplate, SchemaSettingsItemType, SchemaSettingsTemplate } from '@nocobase/client';
+import {
+  Application,
+  SchemaSettingsFormItemTemplate,
+  SchemaSettingsItemType,
+  SchemaSettingsTemplate,
+  usePlugin,
+} from '@nocobase/client';
 
 export const hideConvertToBlockSettingItem = (
   settingItem: SchemaSettingsItemType,
@@ -45,6 +52,26 @@ export const hideDeleteSettingItem = (settingItem: SchemaSettingsItemType) => {
   if (children) {
     for (const item of children) {
       hideDeleteSettingItem(item);
+    }
+  }
+};
+
+export const hideBlocksFromTemplate = (initializers: string[], app: Application) => {
+  const hiddenBlocks = ['ChartV2BlockInitializer']; // the blocks that should be hidden from template
+  for (const initializerName of initializers) {
+    const initializer = app.schemaInitializerManager.get(initializerName);
+    if (initializer && initializer.items) {
+      for (const item of initializer.items) {
+        for (const child of item.children || []) {
+          if (hiddenBlocks.includes(child.Component)) {
+            const visible = child.useVisible || (() => true);
+            child.useVisible = function useVisible() {
+              const plugin = usePlugin(PluginBlockTemplateClient);
+              return visible() && plugin && !plugin?.isInBlockTemplateConfigPage();
+            };
+          }
+        }
+      }
     }
   }
 };

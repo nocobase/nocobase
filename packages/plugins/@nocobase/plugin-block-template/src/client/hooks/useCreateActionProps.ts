@@ -57,7 +57,7 @@ export const useCreateActionProps = () => {
                 type: 'void',
                 'x-decorator': 'TemplateGridDecorator',
                 'x-component': 'Grid',
-                'x-initializer': isMobile ? 'templateMobile:addBlock' : 'template:addBlock',
+                'x-initializer': isMobile ? 'mobile:addBlock' : 'page:addBlock',
                 'x-uid': uid(),
                 'x-async': false,
                 'x-index': 1,
