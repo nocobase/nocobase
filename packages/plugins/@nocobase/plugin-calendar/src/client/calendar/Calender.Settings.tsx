@@ -105,7 +105,7 @@ export const calendarBlockSettings = new SchemaSettings({
       },
     },
     {
-      name: 'colorField',
+      name: 'categoryField',
       Component: SchemaSettingsSelectItem,
       useComponentProps() {
         const { t } = useTranslation();
@@ -118,8 +118,8 @@ export const calendarBlockSettings = new SchemaSettings({
         const { dn } = useDesignable();
         const app = useApp();
         const plugin = app.pm.get('calendar') as any;
-        const { colorFieldInterfaces } = plugin;
-        const fliedList = getCollectionFieldsOptions(name, null, Object.keys(colorFieldInterfaces));
+        const { categoryFieldInterfaces } = plugin;
+        const fliedList = getCollectionFieldsOptions(name, null, Object.keys(categoryFieldInterfaces));
         const filteredItems = [{ label: t('Not selected'), value: '' }, ...fliedList];
 
         return {

@@ -64,7 +64,7 @@ export class PluginCalendarClient extends Plugin {
     email: { TitleRenderer },
     radioGroup: { TitleRenderer },
   };
-  colorFieldInterfaces: {
+  categoryFieldInterfaces: {
     [T: string]: { useGetColor: (field: any) => ColorFunctions };
   } = {
     select: { useGetColor },
@@ -90,11 +90,11 @@ export class PluginCalendarClient extends Plugin {
       this.dateTimeFieldInterfaces.push(data);
     }
   }
-  registerColorFieldInterface(type, option) {
-    this.colorFieldInterfaces[type] = option;
+  registerCategoryFieldInterface(type, option) {
+    this.categoryFieldInterfaces[type] = option;
   }
-  getColorFieldInterface(type: string) {
-    return this.colorFieldInterfaces[type];
+  getCategoryFieldInterface(type: string) {
+    return this.categoryFieldInterfaces[type];
   }
   async load() {
     this.app.dataSourceManager.addCollectionTemplates([CalendarCollectionTemplate]);
