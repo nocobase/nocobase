@@ -235,7 +235,7 @@ function getSubscriber({
         if (fieldName === 'display' && lastState?.value === 'hidden') {
           field.display = 'visible';
           field.data = field.data || {};
-          // 在 FormItem 中使用这个属性来判断字段是否被隐藏
+          // 在 FormItem 中有使用这个属性来判断字段是否被隐藏
           field.data.hidden = true;
 
           requestAnimationFrame(() => {
@@ -245,6 +245,9 @@ function getSubscriber({
           });
         } else {
           field[fieldName] = lastState?.value;
+          field.data = field.data || {};
+          // 在 FormItem 中有使用这个属性来判断字段是否被隐藏
+          field.data.hidden = false;
           requestAnimationFrame(() => {
             field.setState((state) => {
               state[fieldName] = lastState?.value;
