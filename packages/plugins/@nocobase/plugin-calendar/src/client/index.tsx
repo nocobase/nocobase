@@ -27,7 +27,7 @@ import {
   useCreateCalendarBlock,
 } from './schema-initializer/items';
 
-const CustomLabel = ({ value }) => {
+const TitleRenderer = ({ value }) => {
   return value || 'N/A';
 };
 interface ColorFunctions {
@@ -42,21 +42,27 @@ const useGetColor = (field) => {
     loading: false,
     getFontColor(value) {
       const option = field.uiSchema.enum.find((item) => item.value === value);
-      return token[`${option.color}7`];
+      if (option) {
+        return token[`${option.color}7`];
+      }
+      return null;
     },
     getBackgroundColor(value) {
       const option = field.uiSchema.enum.find((item) => item.value === value);
-      return token[`${option.color}1`];
+      if (option) {
+        return token[`${option.color}1`];
+      }
+      return null;
     },
   };
 };
 export class PluginCalendarClient extends Plugin {
-  titleFieldInterfaces: { [T: string]: { CustomLabel: Function } } = {
-    input: { CustomLabel },
-    select: { CustomLabel },
-    phone: { CustomLabel },
-    email: { CustomLabel },
-    radioGroup: { CustomLabel },
+  titleFieldInterfaces: { [T: string]: { TitleRenderer: Function } } = {
+    input: { TitleRenderer },
+    select: { TitleRenderer },
+    phone: { TitleRenderer },
+    email: { TitleRenderer },
+    radioGroup: { TitleRenderer },
   };
   colorFieldInterfaces: {
     [T: string]: { useGetColor: (field: any) => ColorFunctions };
