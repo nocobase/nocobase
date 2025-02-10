@@ -614,7 +614,7 @@ const _test = base.extend<ExtendUtils>({
     const page = await getPage(browser);
 
     const deletePage = async (pageName: string) => {
-      await page.getByText(pageName, { exact: true }).hover();
+      await page.getByLabel(pageName, { exact: true }).hover();
       await page.getByRole('button', { name: 'designer-schema-settings-' }).hover();
       await page.getByRole('menuitem', { name: 'Delete', exact: true }).click();
       await page.getByRole('button', { name: 'OK', exact: true }).click();

@@ -85,7 +85,6 @@ export const PageMenuItem = () => {
       children: [
         {
           type: NocoBaseDesktopRouteType.tabs,
-          title: '{{t("Unnamed")}}',
           schemaUid: tabSchemaUid,
           tabSchemaName,
           hidden: true,
