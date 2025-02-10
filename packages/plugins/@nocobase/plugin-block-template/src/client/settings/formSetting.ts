@@ -38,7 +38,7 @@ async function schemaPatch(
 
   const comKey = Object.keys(currentSchema.properties)[0];
   const actionKey = Object.keys(currentSchema['properties'][comKey]['properties']).find((key) => {
-    return currentSchema['properties'][comKey]['properties'][key]['x-initializer'].includes('configureActions');
+    return currentSchema['properties'][comKey]['properties'][key]['x-initializer']?.includes('configureActions');
   });
   const newActionBarSchemas = {};
 
@@ -69,13 +69,13 @@ async function schemaPatch(
     };
     const actionBarSchema = currentSchema['properties'][comKey]['properties'][actionKey];
     for (const key in actionBarSchema.properties) {
-      if (actionBarSchema.properties[key]['x-settings'].includes('createSubmit')) {
+      if (actionBarSchema.properties[key]['x-settings']?.includes('createSubmit')) {
         newActionBarSchemas[key] = {};
         newActionBarSchemas[key]['x-settings'] = 'actionSettings:updateSubmit';
         newActionBarSchemas[key]['x-use-component-props'] = 'useUpdateActionProps';
         newActionBarSchemas[key]['x-uid'] = actionBarSchema.properties[key]['x-uid'];
       }
-      if (actionBarSchema.properties[key]['x-settings'].includes('actionSettings:popup')) {
+      if (actionBarSchema.properties[key]['x-settings']?.includes('actionSettings:popup')) {
         actionBarSchema.properties[key]['x-hidden'] = false;
       }
     }
@@ -106,13 +106,13 @@ async function schemaPatch(
     };
     const actionBarSchema = currentSchema['properties'][comKey]['properties'][actionKey];
     for (const key in actionBarSchema.properties) {
-      if (actionBarSchema.properties[key]['x-settings'].includes('updateSubmit')) {
+      if (actionBarSchema.properties[key]['x-settings']?.includes('updateSubmit')) {
         newActionBarSchemas[key] = {};
         newActionBarSchemas[key]['x-settings'] = 'actionSettings:createSubmit';
         newActionBarSchemas[key]['x-use-component-props'] = 'useCreateActionProps';
         newActionBarSchemas[key]['x-uid'] = actionBarSchema.properties[key]['x-uid'];
       }
-      if (actionBarSchema.properties[key]['x-settings'].includes('actionSettings:popup')) {
+      if (actionBarSchema.properties[key]['x-settings']?.includes('actionSettings:popup')) {
         actionBarSchema.properties[key]['x-hidden'] = true;
       }
     }
