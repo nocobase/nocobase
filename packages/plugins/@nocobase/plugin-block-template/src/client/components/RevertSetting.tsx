@@ -97,7 +97,14 @@ export const RevertSetting = () => {
             const isRoot = rootSchema === fieldSchema;
             if (isRoot) {
               plugin.setTemplateCache(templateSchema);
+            } else {
+              // patch the edit form button schema, keep same as the form
+              if (fieldSchema['x-settings']?.includes('updateSubmit')) {
+                templateSchema['x-settings'] = 'actionSettings:updateSubmit';
+                templateSchema['x-use-component-props'] = 'useUpdateActionProps';
+              }
             }
+
             const newSchema = convertTplBlock(
               templateSchema,
               false,
