@@ -209,6 +209,11 @@ export interface SchemaToolbarProps {
   spaceWrapperStyle?: React.CSSProperties;
   spaceClassName?: string;
   spaceStyle?: React.CSSProperties;
+  /**
+   * The HTML element that listens for mouse enter/leave events.
+   * Parent element is used by default.
+   */
+  container?: HTMLElement;
   onVisibleChange?: (nextVisible: boolean) => void;
 }
 
@@ -227,6 +232,7 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = React.memo((props) => {
     spaceStyle,
     toolbarClassName,
     toolbarStyle = {},
+    container,
   } = {
     ...props,
     ...(fieldSchema?.['x-toolbar-props'] || {}),
@@ -313,7 +319,10 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = React.memo((props) => {
     while (parentElement && parentElement.clientHeight === 0) {
       parentElement = parentElement.parentElement;
     }
-    if (!parentElement) {
+
+    const el = container || parentElement;
+
+    if (!el) {
       return;
     }
 
@@ -336,13 +345,13 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = React.memo((props) => {
     //   parentElement.style.position = 'relative';
     // }
 
-    parentElement.addEventListener('mouseenter', show);
-    parentElement.addEventListener('mouseleave', hide);
+    el.addEventListener('mouseenter', show);
+    el.addEventListener('mouseleave', hide);
     return () => {
-      parentElement.removeEventListener('mouseenter', show);
-      parentElement.removeEventListener('mouseleave', hide);
+      el.removeEventListener('mouseenter', show);
+      el.removeEventListener('mouseleave', hide);
     };
-  }, [props.onVisibleChange]);
+  }, [props.onVisibleChange, container]);
 
   const containerStyle = useMemo(
     () => ({

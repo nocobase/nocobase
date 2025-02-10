@@ -525,6 +525,6 @@ export const menuItemSettings = new SchemaSettings({
   ],
 });
 
-export const MenuSchemaToolbar = () => {
-  return <SchemaToolbar settings={menuItemSettings} showBorder={false} />;
+export const MenuSchemaToolbar: FC<{ container?: HTMLElement }> = (props) => {
+  return <SchemaToolbar settings={menuItemSettings} showBorder={false} container={props.container} />;
 }

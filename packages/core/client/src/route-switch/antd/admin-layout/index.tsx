@@ -10,7 +10,7 @@
 import ProLayout from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
 import { ConfigProvider, Divider, Layout } from 'antd';
-import React, { createContext, FC, useContext, useMemo } from 'react';
+import React, { createContext, FC, useContext, useEffect, useMemo, useRef } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
@@ -237,14 +237,35 @@ const NocoBaseLogo = () => {
   return <div className={className1}>{result?.loading ? null : logo}</div>;
 };
 
+/**
+ * Fix the issue where SchemaToolbar cannot be displayed normally in Group
+ * @returns
+ */
+const MenuSchemaToolbarWithContainer = () => {
+  const divRef = useRef(null);
+  const [container, setContainer] = React.useState<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setContainer(divRef.current.parentElement.parentElement);
+  }, []);
+
+  return (
+    <>
+      <MenuSchemaToolbar container={container} />
+      <div ref={divRef}></div>
+    </>
+  )
+}
+
 const GroupItem: FC<{ item: any }> = (props) => {
   const { item } = props;
+  const { designable } = useDesignable();
 
   return (
     <ParentRouteContext.Provider value={item._parentRoute}>
       <RouteContext.Provider value={item._route}>
         {props.children}
-        <MenuSchemaToolbar />
+        {designable && <MenuSchemaToolbarWithContainer />}
       </RouteContext.Provider>
     </ParentRouteContext.Provider>
   );
