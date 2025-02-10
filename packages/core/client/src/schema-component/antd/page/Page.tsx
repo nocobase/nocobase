@@ -21,7 +21,6 @@ import { useTranslation } from 'react-i18next';
 import { NavigateFunction, Outlet, useOutletContext } from 'react-router-dom';
 import { FormDialog } from '..';
 import { antTableCell } from '../../../acl/style';
-import { useRequest } from '../../../api-client';
 import {
   CurrentTabUidContext,
   useCurrentSearchParams,
@@ -392,25 +391,12 @@ const NocoBasePageHeader = React.memo(({ activeKey, className }: { activeKey: st
   const hidePageTitle = fieldSchema['x-component-props']?.hidePageTitle;
 
   useEffect(() => {
-    if (fieldSchema.title) {
-      const title = t(fieldSchema.title);
+    const title = t(fieldSchema.title) || t(currentRoute?.title);
+    if (title) {
       setDocumentTitle(title);
       setPageTitle(title);
     }
-  }, [fieldSchema.title, pageTitle, setDocumentTitle, t]);
-
-  useRequest(
-    {
-      url: `/uiSchemas:getParentJsonSchema/${fieldSchema['x-uid']}`,
-    },
-    {
-      ready: !hidePageTitle && !fieldSchema.title,
-      onSuccess(data) {
-        setPageTitle(data.data.title);
-        setDocumentTitle(data.data.title);
-      },
-    },
-  );
+  }, [fieldSchema.title, pageTitle, setDocumentTitle, t, currentRoute?.title]);
 
   return (
     <>
