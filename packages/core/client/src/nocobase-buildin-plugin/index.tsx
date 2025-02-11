@@ -11,6 +11,7 @@ import { DisconnectOutlined, LoadingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
 import { getSubAppName } from '@nocobase/sdk';
+import { tval } from '@nocobase/utils/client';
 import { Button, Modal, Result, Spin } from 'antd';
 import React, { FC } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
@@ -32,7 +33,6 @@ import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
 import { SystemSettingsPlugin } from '../system-settings';
 import { CurrentUserProvider, CurrentUserSettingsMenuProvider } from '../user';
 import { LocalePlugin } from './plugins/LocalePlugin';
-import { tval } from '@nocobase/utils/client';
 
 const AppSpin = () => {
   return (
@@ -251,7 +251,7 @@ const AppMaintainingDialog: FC<{ app: Application; error: Error }> = observer(
   { displayName: 'AppMaintainingDialog' },
 );
 
-const AppNotFound = () => {
+export const AppNotFound = () => {
   const navigate = useNavigate();
   return (
     <Result

@@ -14,6 +14,7 @@ import React, { createContext, FC, useContext, useEffect, useMemo, useRef } from
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
+  AppNotFound,
   CurrentAppInfoProvider,
   CurrentUser,
   Icon,
@@ -111,8 +112,27 @@ const sideClass = css`
   }
 `;
 
+const noAccessPermission = (currentPageUid: string, allAccessRoutes: NocoBaseDesktopRoute[]) => {
+  if (!currentPageUid) {
+    return false;
+  }
+
+  const routeNode = getRouteNodeBySchemaUid(currentPageUid, allAccessRoutes);
+  if (!routeNode) {
+    return true;
+  }
+
+  return false;
+}
+
 export const AdminDynamicPage = () => {
   const currentPageUid = useCurrentPageUid();
+  const { allAccessRoutes } = useAllAccessDesktopRoutes();
+
+  // 404 page
+  if (noAccessPermission(currentPageUid, allAccessRoutes)) {
+    return <AppNotFound />;
+  }
 
   return (
     <KeepAlive uid={currentPageUid}>{(uid) => <RemoteSchemaComponent onlyRenderProperties uid={uid} />}</KeepAlive>
