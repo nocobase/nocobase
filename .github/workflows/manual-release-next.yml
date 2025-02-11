@@ -125,7 +125,7 @@ jobs:
         env:
           PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.beta-plugins }}
           CUSTOM_PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.custom-plugins }}
-          VERSION: ${{ inputs.version && '--version ${{ inputs.version }}' || '' }}
+          VERSION: ${{ inputs.version && '--version inputs.version' || '' }}
           IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
           ADD_MINOR: ${{ inputs.add_minor && '--add-minor' || '' }}
       - name: Push and merge into next
