@@ -46,6 +46,8 @@ export const useCreateActionProps = () => {
                   'x-component-props': {
                     style: {
                       padding: '10px',
+                      maxHeight: '100%',
+                      overflow: 'scroll',
                     },
                   },
                 }

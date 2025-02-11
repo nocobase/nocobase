@@ -164,7 +164,7 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
     const decorator = fieldSchema['x-decorator'];
     const decoratorProps = fieldSchema['x-decorator-props'];
     const options = [t('None')];
-    const currentCollectionName = decoratorProps?.collection || decoratorProps?.association.split('.')?.pop();
+    const currentCollectionName = decoratorProps?.collection || decoratorProps?.association?.split('.')?.pop();
     if (decorator === 'DetailsBlockProvider' && currentPopupRecord?.collection?.name === currentCollectionName) {
       options.push(t('Current'));
     }
@@ -197,7 +197,7 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
     const api = useAPIClient();
     const decorator = fieldSchema['x-decorator'];
     const decoratorProps = fieldSchema['x-decorator-props'];
-    const currentCollectionName = decoratorProps?.collection || decoratorProps?.association.split('.')?.pop();
+    const currentCollectionName = decoratorProps?.collection || decoratorProps?.association?.split('.')?.pop();
     if (decorator === 'DetailsBlockProvider' && currentPopupRecord?.collection?.name === currentCollectionName) {
       options.push(t('Current'));
       if (decoratorProps.action === 'get') {
