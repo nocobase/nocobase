@@ -21,7 +21,6 @@ import { useTranslation } from 'react-i18next';
 import { NavigateFunction, Outlet, useOutletContext } from 'react-router-dom';
 import { FormDialog } from '..';
 import { antTableCell } from '../../../acl/style';
-import { useRequest } from '../../../api-client';
 import {
   CurrentTabUidContext,
   useCurrentSearchParams,
@@ -50,6 +49,10 @@ interface PageProps {
   currentTabUid: string;
   className?: string;
 }
+
+const useRouteTranslation = () => {
+  return useTranslation('lm-desktop-routes');
+};
 
 const InternalPage = React.memo((props: PageProps) => {
   const fieldSchema = useFieldSchema();
@@ -237,6 +240,7 @@ const PageContent = memo((props: PageContentProps) => {
 const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ className, activeKey }) => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
+  const { t: routeT } = useRouteTranslation();
   const { token } = useToken();
   const basenameOfCurrentRouter = useRouterBasename();
   const navigate = useNavigateNoUpdate();
@@ -348,7 +352,7 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
               className={classNames('nb-action-link', 'designerCss', className)}
             >
               {schema['x-icon'] && <Icon style={{ marginRight: 8 }} type={schema['x-icon']} />}
-              <span>{(tabRoute.title && compile(t(tabRoute.title))) || t('Unnamed')}</span>
+              <span>{(tabRoute.title && routeT(compile(tabRoute.title))) || t('Unnamed')}</span>
               <PageTabDesigner schema={schema} />
             </SortableItem>
           ),
@@ -384,6 +388,7 @@ const NocoBasePageHeader = React.memo(({ activeKey, className }: { activeKey: st
   const fieldSchema = useFieldSchema();
   const { setTitle: setDocumentTitle } = useDocumentTitle();
   const { t } = useTranslation();
+  const { t: routeT } = useRouteTranslation();
   const [pageTitle, setPageTitle] = useState(() => t(fieldSchema.title));
 
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
@@ -392,25 +397,12 @@ const NocoBasePageHeader = React.memo(({ activeKey, className }: { activeKey: st
   const hidePageTitle = fieldSchema['x-component-props']?.hidePageTitle;
 
   useEffect(() => {
-    if (fieldSchema.title) {
-      const title = t(fieldSchema.title);
+    const title = t(fieldSchema.title) || t(currentRoute?.title);
+    if (title) {
       setDocumentTitle(title);
       setPageTitle(title);
     }
-  }, [fieldSchema.title, pageTitle, setDocumentTitle, t]);
-
-  useRequest(
-    {
-      url: `/uiSchemas:getParentJsonSchema/${fieldSchema['x-uid']}`,
-    },
-    {
-      ready: !hidePageTitle && !fieldSchema.title,
-      onSuccess(data) {
-        setPageTitle(data.data.title);
-        setDocumentTitle(data.data.title);
-      },
-    },
-  );
+  }, [fieldSchema.title, pageTitle, setDocumentTitle, t, currentRoute?.title]);
 
   return (
     <>
@@ -420,7 +412,7 @@ const NocoBasePageHeader = React.memo(({ activeKey, className }: { activeKey: st
           className={classNames('pageHeaderCss', pageTitle || enablePageTabs ? '' : 'height0')}
           ghost={false}
           // 如果标题为空的时候会导致 PageHeader 不渲染，所以这里设置一个空白字符，然后再设置高度为 0
-          title={hidePageTitle ? ' ' : pageTitle || ' '}
+          title={hidePageTitle ? ' ' : (!fieldSchema.title && pageTitle ? routeT(pageTitle) : pageTitle) || ' '}
           footer={<NocoBasePageHeaderTabs className={className} activeKey={activeKey} />}
         />
       )}

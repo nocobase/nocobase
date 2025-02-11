@@ -26,16 +26,18 @@ DocumentTitleContext.displayName = 'DocumentTitleContext';
 export const DocumentTitleProvider: React.FC<{ addonBefore?: string; addonAfter?: string }> = React.memo((props) => {
   const { addonBefore, addonAfter } = props;
   const { t } = useTranslation();
+  const { t: routeT } = useTranslation('lm-desktop-routes');
+  const { t: titleT } = useTranslation('lm-collections');
   const titleRef = React.useRef('');
 
   const getTitle = useCallback(() => titleRef.current, []);
   const setTitle = useCallback(
     (title) => {
-      document.title = titleRef.current = `${addonBefore ? ` - ${t(addonBefore)}` : ''}${t(title || '')}${
-        addonAfter ? ` - ${t(addonAfter)}` : ''
+      document.title = titleRef.current = `${addonBefore ? ` - ${t(addonBefore)}` : ''}${routeT(title || '')}${
+        addonAfter ? ` - ${titleT(addonAfter)}` : ''
       }`;
     },
-    [addonAfter, addonBefore, t],
+    [addonAfter, addonBefore, t, routeT, titleT],
   );
 
   const value = useMemo(() => {

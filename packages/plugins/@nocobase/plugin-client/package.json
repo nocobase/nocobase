@@ -4,7 +4,7 @@
   "displayName.zh-CN": "WEB 客户端",
   "description": "Provides a client interface for the NocoBase server",
   "description.zh-CN": "为 NocoBase 服务端提供客户端界面",
-  "version": "1.6.0-alpha.23",
+  "version": "1.6.0-alpha.24",
   "main": "./dist/server/index.js",
   "license": "AGPL-3.0",
   "devDependencies": {
@@ -16,6 +16,7 @@
   "peerDependencies": {
     "@nocobase/client": "1.x",
     "@nocobase/database": "1.x",
+    "@nocobase/plugin-localization": "1.x",
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x",
     "@nocobase/utils": "1.x"

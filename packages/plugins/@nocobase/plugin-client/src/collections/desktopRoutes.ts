@@ -199,7 +199,6 @@ export default {
       collectionName: 'desktopRoutes',
       parentKey: null,
       reverseKey: null,
-      translation: true,
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
