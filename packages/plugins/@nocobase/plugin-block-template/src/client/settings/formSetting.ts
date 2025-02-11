@@ -25,7 +25,7 @@ async function schemaPatch(
   currentSchema: Schema,
   options: {
     api: APIClient;
-    // collectionName: string;
+    collectionName: string;
     // dataSource: string;
     option: string;
     t: (key: string) => string;
@@ -44,8 +44,10 @@ async function schemaPatch(
 
   if (option === t('Edit')) {
     schema['x-decorator-props'] = {
-      action: 'get',
       ...currentSchema['x-decorator-props'],
+      action: 'get',
+      collection: options.collectionName,
+      association: null,
     };
     schema['x-data-templates'] = {
       ...currentSchema['x-data-templates'],
@@ -82,7 +84,7 @@ async function schemaPatch(
   } else {
     schema['x-decorator-props'] = {
       ...currentSchema['x-decorator-props'],
-      action: undefined,
+      action: null,
     };
     schema['x-data-templates'] = {
       ...currentSchema['x-data-templates'],
@@ -151,6 +153,8 @@ export const formSettingItem: SchemaSettingsItemType = {
     const currentOption =
       fieldSchema['x-use-decorator-props'] === 'useEditFormBlockDecoratorProps' ? t('Edit') : t('Add new');
     const options = [t('Add new'), t('Edit')];
+    const currentPopupRecord = useCurrentPopupRecord();
+    const currentCollectionName = fieldSchema['x-decorator-props']?.collection || currentPopupRecord?.collection?.name;
 
     return {
       title: t('Form type'),
@@ -159,7 +163,7 @@ export const formSettingItem: SchemaSettingsItemType = {
       onChange: async (option) => {
         const schema = await schemaPatch(fieldSchema, {
           api,
-          // collectionName: currentCollectionName,
+          collectionName: currentCollectionName,
           // dataSource: decoratorProps.dataSource,
           option,
           t,

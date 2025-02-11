@@ -12,10 +12,8 @@ import {
   SchemaSettingsItemType,
   useAPIClient,
   useCollection,
-  useCollectionManager,
   useCurrentPopupRecord,
   useDesignable,
-  useLocalVariables,
 } from '@nocobase/client';
 import { useT } from '../locale';
 import { useField, useFieldSchema } from '@formily/react';
@@ -113,8 +111,20 @@ async function schemaPatch(
         schema['x-decorator-props']['association'] = option;
       }
     }
+    if (currentSchema['x-use-decorator-props'] === 'useCreateFormBlockDecoratorProps') {
+      schema['x-decorator-props']['action'] = null;
+    }
   }
   return schema;
+}
+
+function showAssociationOptions(fieldSchema: Schema) {
+  const decorator = fieldSchema['x-decorator'];
+  const useDecoratorProps = fieldSchema['x-use-decorator-props'];
+  if (decorator === 'FormBlockProvider' && useDecoratorProps === 'useUpdateFormBlockDecoratorProps') {
+    return false;
+  }
+  return true;
 }
 
 export const associationRecordSettingItem: SchemaSettingsItemType = {
@@ -125,6 +135,12 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
     const currentCollection = useCollection();
     const t = useT();
     const currentPopupRecord = useCurrentPopupRecord();
+    const isInTemplate = useIsInTemplate();
+
+    if (!isInTemplate) {
+      return false;
+    }
+
     const decorator = fieldSchema['x-decorator'];
     const decoratorProps = fieldSchema['x-decorator-props'];
     const options = [t('None')];
@@ -138,12 +154,11 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
       ?.filter((field) => ['linkTo', 'subTable', 'o2m', 'm2m', 'obo', 'oho', 'o2o', 'm2o'].includes(field.interface))
       .filter((field) => field.target === currentCollectionName);
 
-    if (associationFields?.length && currentPopupRecord?.value && decorator !== 'FormBlockProvider') {
+    if (associationFields?.length && currentPopupRecord?.value && showAssociationOptions(fieldSchema)) {
       const associationOptions = associationFields.map((field) => `${field.collectionName}.${field.name}`);
       options.push(...associationOptions);
     }
-    const isInTemplate = useIsInTemplate();
-    if (!isInTemplate || !currentCollection || options.length === 1) {
+    if (!currentCollection || options.length === 1) {
       return false;
     }
     if (_.get(fieldSchema, 'x-decorator-props.collection') || _.get(fieldSchema, 'x-decorator-props.association')) {
