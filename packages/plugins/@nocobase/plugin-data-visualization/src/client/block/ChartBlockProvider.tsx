@@ -18,9 +18,7 @@ export const ChartBlockProvider: React.FC = (props) => {
   const localVariables = useLocalVariables();
   const popupRecordVariable = localVariables?.find((variable) => variable.name === '$nPopupRecord');
   const popupCtxReady =
-    _.isEmpty(currentPopupContext) ||
-    !popupRecordVariable.collectionName ||
-    (popupRecordVariable && popupRecordVariable.ctx);
+    _.isEmpty(currentPopupContext) || !popupRecordVariable?.collectionName || popupRecordVariable?.ctx;
 
   if (!popupCtxReady) {
     return null;
