@@ -85,6 +85,64 @@ describe('inapp message channels', () => {
       const myMessages = await userAgents[0].resource('myInAppMessages').list();
       expect(myMessages.body.data.messages.length).toBe(4);
     });
+
+    test('user can get own channel latestMesageTitle and latestMesageTimestamp', async () => {
+      defineMyInAppChannels({ app });
+      defineMyInAppMessages({ app, addClient: () => null, removeClient: () => null });
+      const channelsRes = await channelsRepo.create({
+        values: [
+          {
+            title: '测试渠道',
+            notificationType: 'in-app-message',
+          },
+        ],
+      });
+      const now = Date.now();
+      await messagesRepo.create({
+        values: [
+          {
+            channelName: channelsRes[0].name,
+            userId: users[0].id,
+            status: 'unread',
+            title: 'user-0',
+            content: 'unread',
+            receiveTimestamp: now,
+            options: {
+              url: '/admin/pages',
+            },
+          },
+          {
+            channelName: channelsRes[0].name,
+            userId: users[1].id,
+            status: 'unread',
+            title: 'user-1',
+            content: 'unread',
+            receiveTimestamp: now + 1000,
+            options: {
+              url: '/admin/pages',
+            },
+          },
+          {
+            channelName: channelsRes[0].name,
+            userId: users[1].id,
+            status: 'read',
+            title: 'user-1',
+            content: 'read',
+            receiveTimestamp: now + 1001,
+            options: {
+              url: '/admin/pages',
+            },
+          },
+        ],
+      });
+
+      const res = await userAgents[0].resource('myInAppChannels').list();
+      expect(res.body.data.length).toBe(1);
+      expect(res.body.data[0].latestMsgTitle).toBe('user-0');
+      expect(res.body.data[0].unreadMsgCnt).toBe(1);
+      expect(res.body.data[0].latestMsgReceiveTimestamp).toBe(now);
+    });
+
     test('filter channel by status', async () => {
       const channels = await channelsRepo.create({
         values: [

@@ -10,7 +10,7 @@ https://github.com/user-attachments/assets/a50c100a-4561-4e06-b2d2-d48098659ec0
 
 ## Release Notes
 
-Our [blog](https://www.nocobase.com/en/blog/tags/release-notes) is regularly updated with release notes and provides a weekly summary.
+Our [blog](https://www.nocobase.com/en/blog/timeline) is regularly updated with release notes and provides a weekly summary.
 
 ## What is NocoBase
 
