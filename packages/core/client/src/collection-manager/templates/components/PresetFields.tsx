@@ -21,7 +21,7 @@ const getDefaultCollectionFields = (presetFields, values, collectionPresetFields
   const fields = values.fields || [];
   presetFields.map((v) => {
     const item = collectionPresetFields.find((i) => i.value.name === v);
-    fields.push(item.value);
+    item && fields.push(item.value);
   });
   return fields;
 };
