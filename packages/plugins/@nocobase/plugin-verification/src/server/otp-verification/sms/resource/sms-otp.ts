@@ -69,27 +69,26 @@ async function create(ctx: Context, next: Next) {
   }
 
   const code = (<number>await asyncRandomInt(999999)).toString(10).padStart(6, '0');
-  // try {
-  //   await provider.send(receiver, { code });
-  //   console.log('verification code sent');
-  // } catch (error) {
-  //   switch (error.name) {
-  //     case 'InvalidReceiver':
-  //       // TODO: message should consider email and other providers, maybe use "receiver"
-  //       return ctx.throw(400, {
-  //         code: 'InvalidReceiver',
-  //         message: ctx.t('Not a valid cellphone number, please re-enter', { ns: namespace }),
-  //       });
-  //     case 'RateLimit':
-  //       return ctx.throw(429, ctx.t('You are trying so frequently, please slow down', { ns: namespace }));
-  //     default:
-  //       console.error(error);
-  //       return ctx.throw(
-  //         500,
-  //         ctx.t('Verification send failed, please try later or contact to administrator', { ns: namespace }),
-  //       );
-  //   }
-  // }
+  try {
+    await provider.send(receiver, { code });
+  } catch (error) {
+    switch (error.name) {
+      case 'InvalidReceiver':
+        // TODO: message should consider email and other providers, maybe use "receiver"
+        return ctx.throw(400, {
+          code: 'InvalidReceiver',
+          message: ctx.t('Not a valid cellphone number, please re-enter', { ns: namespace }),
+        });
+      case 'RateLimit':
+        return ctx.throw(429, ctx.t('You are trying so frequently, please slow down', { ns: namespace }));
+      default:
+        console.error(error);
+        return ctx.throw(
+          500,
+          ctx.t('Verification send failed, please try later or contact to administrator', { ns: namespace }),
+        );
+    }
+  }
 
   const result = await ctx.db.getRepository('otpRecords').create({
     values: {
