@@ -98,9 +98,7 @@ describe('transform-menu-schema-to-routes', () => {
         { id: 3, type: 'tabs', parentId: 1 },
       ];
 
-      const menuUiSchemas = [
-        { 'x-uid': 'page-1' },
-      ];
+      const menuUiSchemas = [{ 'x-uid': 'page-1' }];
 
       const { needRemoveIds, needAddIds } = getIds(desktopRoutes, menuUiSchemas);
       expect(needRemoveIds).toContain(2);

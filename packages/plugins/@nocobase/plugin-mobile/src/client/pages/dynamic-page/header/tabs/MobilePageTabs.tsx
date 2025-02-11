@@ -18,12 +18,13 @@ import { useMobilePage } from '../../context';
 import { MobilePageTabInitializer } from './initializer';
 import { MobilePageTabsSettings } from './settings';
 import { useStyles } from './styles';
+import { useRouteTranslation } from '../../../../locale';
 
 export const MobilePageTabs: FC = () => {
   const { activeTabBarItem, resource, refresh } = useMobileRoutes();
   const { displayTabs: _displayTabs } = useMobilePage();
   const displayTabs = activeTabBarItem?.enableTabs === undefined ? _displayTabs : activeTabBarItem.enableTabs;
-
+  const { t: routeT } = useRouteTranslation();
   const compile = useCompile();
   const { t } = useTranslation();
 
@@ -62,7 +63,7 @@ export const MobilePageTabs: FC = () => {
         <Tabs activeKey={activeKey} onChange={handleChange} className="nb-mobile-page-tabs-list">
           {activeTabBarItem.children?.map((item) => {
             if (item.hideInMenu) return null;
-            const title = item.title ? compile(item.title) : t('Unnamed');
+            const title = item.title ? routeT(compile(item.title)) : t('Unnamed');
             return (
               <Tabs.Tab
                 data-testid={`mobile-page-tabs-${title}`}

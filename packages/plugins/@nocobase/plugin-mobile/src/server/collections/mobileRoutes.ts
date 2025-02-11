@@ -202,7 +202,6 @@ export default defineCollection({
       collectionName: 'mobileRoutes',
       parentKey: null,
       reverseKey: null,
-      translation: true,
       uiSchema: {
         type: 'string',
         'x-component': 'Input',

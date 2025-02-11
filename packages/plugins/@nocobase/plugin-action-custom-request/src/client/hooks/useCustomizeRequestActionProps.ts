@@ -55,7 +55,7 @@ export const useCustomizeRequestActionProps = () => {
               // id: record[getPrimaryKey()],
               // appends: result.params[0]?.appends,
               dataSourceKey,
-              data: recordData,
+              data: recordData || form.values,
             },
             $nForm: blockType === 'form' ? form.values : undefined,
           },
