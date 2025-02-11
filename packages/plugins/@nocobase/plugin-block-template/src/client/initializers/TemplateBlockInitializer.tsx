@@ -18,7 +18,7 @@ import {
 } from '@nocobase/client';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { CopyOutlined, LoadingOutlined } from '@ant-design/icons';
-import { Input, Divider, Empty } from 'antd';
+import { Input, Divider, Empty, theme } from 'antd';
 import * as _ from 'lodash';
 import { uid } from '@nocobase/utils/client';
 import PluginBlockTemplateClient from '..';
@@ -78,7 +78,7 @@ export function convertTplBlock(tpl, virtual = false, isRoot = true, newRootId?:
     if (tpl['x-component'] === 'CustomRequestAction') {
       newSchema['x-custom-request-id'] = tpl['x-custom-request-id'] || tpl['x-uid'];
     }
-    if (tpl['x-component'] === 'Action' && _.get(tpl, 'x-action-settings.schemaUid')){
+    if (tpl['x-component'] === 'Action' && _.get(tpl, 'x-action-settings.schemaUid')) {
       newSchema['x-action-settings'] = {
         schemaUid: '',
       };
@@ -225,6 +225,7 @@ export const TemplateBlockInitializer = () => {
   const blockTemplatesResource = useResource('blockTemplates');
   const [searchValue, setSearchValue] = useState('');
   const t = useT();
+  const { token } = theme.useToken();
   const isMobile = useMemo(() => {
     return window.location.pathname.startsWith(mobilePlugin.mobileBasename);
   }, [mobilePlugin]);
@@ -350,13 +351,16 @@ export const TemplateBlockInitializer = () => {
   }
 
   return (
-    <SchemaInitializerItem
-      closeInitializerMenuWhenClick={true}
-      title={'{{t("Templates")}}'}
-      icon={<CopyOutlined />}
-      items={menuItems}
-      name={'templates'}
-      onClick={handleClick}
-    />
+    <div>
+      <SchemaInitializerItem
+        closeInitializerMenuWhenClick={true}
+        title={'{{t("Templates")}}'}
+        icon={<CopyOutlined />}
+        items={menuItems}
+        name={'templates'}
+        onClick={handleClick}
+      />
+      <Divider style={{ margin: 0, marginTop: token.marginSM, marginBottom: token.marginSM }} />
+    </div>
   );
 };
