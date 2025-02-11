@@ -16,11 +16,13 @@ import _ from 'lodash';
 export const ChartBlockProvider: React.FC = (props) => {
   const currentPopupContext = useCurrentPopupContext();
   const localVariables = useLocalVariables();
-  const popUpCtxReady =
+  const popupRecordVariable = localVariables?.find((variable) => variable.name === '$nPopupRecord');
+  const popupCtxReady =
     _.isEmpty(currentPopupContext) ||
-    localVariables?.some((variable) => variable.name === '$nPopupRecord' && variable.ctx);
+    !popupRecordVariable.collectionName ||
+    (popupRecordVariable && popupRecordVariable.ctx);
 
-  if (!popUpCtxReady) {
+  if (!popupCtxReady) {
     return null;
   }
 
