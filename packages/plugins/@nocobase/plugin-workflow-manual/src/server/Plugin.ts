@@ -12,16 +12,13 @@ import actions from '@nocobase/actions';
 import { HandlerType } from '@nocobase/resourcer';
 import WorkflowPlugin, { JOB_STATUS } from '@nocobase/plugin-workflow';
 
-import path from 'path';
-import { submit } from './actions';
+import * as jobActions from './actions';
 
 import ManualInstruction from './ManualInstruction';
 
 export default class extends Plugin {
   async load() {
-    await this.importCollections(path.resolve(__dirname, 'collections'));
-
-    this.app.resource({
+    this.app.resourceManager.define({
       name: 'users_jobs',
       actions: {
         list: {
@@ -40,11 +37,11 @@ export default class extends Plugin {
           },
           handler: actions.list as HandlerType,
         },
-        submit,
+        ...jobActions,
       },
     });
 
-    this.app.acl.allow('users_jobs', ['list', 'get', 'submit'], 'loggedIn');
+    this.app.acl.allow('users_jobs', ['list', 'get', 'submit', 'countMine'], 'loggedIn');
 
     const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
     workflowPlugin.registerInstruction('manual', ManualInstruction);

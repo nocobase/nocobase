@@ -9,7 +9,6 @@
 
 import { Logger, LoggerOptions } from '@nocobase/logger';
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { resolve } from 'path';
 import { listByCurrentRole } from './actions/listByCurrentRole';
 import { send } from './actions/send';
 
@@ -32,9 +31,7 @@ export class PluginActionCustomRequestServer extends Plugin {
   }
 
   async load() {
-    await this.importCollections(resolve(__dirname, 'collections'));
-
-    this.app.resource({
+    this.app.resourceManager.define({
       name: 'customRequests',
       actions: {
         send: send.bind(this),

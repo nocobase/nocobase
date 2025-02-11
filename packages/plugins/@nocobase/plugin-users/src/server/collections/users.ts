@@ -14,6 +14,7 @@ export default defineCollection({
   dumpRules: {
     group: 'user',
   },
+  migrationRules: ['schema-only', 'overwrite'],
   name: 'users',
   title: '{{t("Users")}}',
   sortable: 'sort',
@@ -89,6 +90,7 @@ export default defineCollection({
         type: 'string',
         title: '{{t("Password")}}',
         'x-component': 'Password',
+        'x-validator': { password: true },
       },
     },
     {

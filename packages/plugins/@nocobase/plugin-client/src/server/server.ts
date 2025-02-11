@@ -7,12 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Model } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
+import * as process from 'node:process';
 import { resolve } from 'path';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
-import * as process from 'node:process';
+import PluginLocalizationServer from '@nocobase/plugin-localization';
+import { tval } from '@nocobase/utils';
 
 async function getLang(ctx) {
   const SystemSetting = ctx.db.getRepository('systemSettings');
@@ -66,17 +69,17 @@ export class PluginClientServer extends Plugin {
     this.app.acl.allow('app', 'getInfo');
     this.app.acl.registerSnippet({
       name: 'app',
-      actions: ['app:restart', 'app:clearCache'],
+      actions: ['app:restart', 'app:refresh', 'app:clearCache'],
     });
     const dialect = this.app.db.sequelize.getDialect();
 
-    this.app.resource({
+    this.app.resourceManager.define({
       name: 'app',
       actions: {
         async getInfo(ctx, next) {
           const SystemSetting = ctx.db.getRepository('systemSettings');
           const systemSetting = await SystemSetting.findOne();
-          const enabledLanguages: string[] = systemSetting.get('enabledLanguages') || [];
+          const enabledLanguages: string[] = systemSetting?.get('enabledLanguages') || [];
           const currentUser = ctx.state.currentUser;
           let lang = enabledLanguages?.[0] || process.env.APP_LANG || 'en-US';
           if (enabledLanguages.includes(currentUser?.appLang)) {
@@ -125,10 +128,141 @@ export class PluginClientServer extends Plugin {
           ctx.app.runAsCLI(['restart'], { from: 'user' });
           await next();
         },
+        async refresh(ctx, next) {
+          ctx.app.runCommand('refresh');
+          await next();
+        },
       },
     });
 
-    this.app.auditManager.registerActions(['app:restart', 'app:clearCache']);
+    this.app.auditManager.registerActions(['app:restart', 'app:refresh', 'app:clearCache']);
+
+    this.registerActionHandlers();
+    this.bindNewMenuToRoles();
+    this.setACL();
+    this.registerLocalizationSource();
+
+    this.app.db.on('desktopRoutes.afterUpdate', async (instance: Model, { transaction }) => {
+      if (instance.changed('enableTabs')) {
+        const repository = this.app.db.getRepository('desktopRoutes');
+        await repository.update({
+          filter: {
+            parentId: instance.id,
+          },
+          values: {
+            hidden: !instance.enableTabs,
+          },
+          transaction,
+        });
+      }
+    });
+  }
+
+  setACL() {
+    this.app.acl.registerSnippet({
+      name: `ui.desktopRoutes`,
+      actions: ['desktopRoutes:create', 'desktopRoutes:update', 'desktopRoutes:move', 'desktopRoutes:destroy'],
+    });
+
+    this.app.acl.registerSnippet({
+      name: `pm.desktopRoutes`,
+      actions: ['desktopRoutes:list', 'roles.desktopRoutes:*'],
+    });
+
+    this.app.acl.allow('desktopRoutes', 'listAccessible', 'loggedIn');
+  }
+
+  /**
+   * used to implement: roles with permission (allowNewMenu is true) can directly access the newly created menu
+   */
+  bindNewMenuToRoles() {
+    this.app.db.on('roles.beforeCreate', async (instance: Model) => {
+      instance.set(
+        'allowNewMenu',
+        instance.allowNewMenu === undefined ? ['admin', 'member'].includes(instance.name) : !!instance.allowNewMenu,
+      );
+    });
+    this.app.db.on('desktopRoutes.afterCreate', async (instance: Model, { transaction }) => {
+      const addNewMenuRoles = await this.app.db.getRepository('roles').find({
+        filter: {
+          allowNewMenu: true,
+        },
+        transaction,
+      });
+
+      // @ts-ignore
+      await this.app.db.getRepository('desktopRoutes.roles', instance.id).add({
+        tk: addNewMenuRoles.map((role) => role.name),
+        transaction,
+      });
+    });
+  }
+
+  registerActionHandlers() {
+    this.app.resourceManager.registerActionHandler('desktopRoutes:listAccessible', async (ctx, next) => {
+      const desktopRoutesRepository = ctx.db.getRepository('desktopRoutes');
+      const rolesRepository = ctx.db.getRepository('roles');
+
+      if (ctx.state.currentRole === 'root') {
+        ctx.body = await desktopRoutesRepository.find({
+          tree: true,
+          ...ctx.query,
+        });
+        return await next();
+      }
+
+      const role = await rolesRepository.findOne({
+        filterByTk: ctx.state.currentRole,
+        appends: ['desktopRoutes'],
+      });
+
+      const desktopRoutesId = role
+        .get('desktopRoutes')
+        // hidden 为 true 的节点不会显示在权限配置表格中，所以无法被配置，需要被过滤掉
+        .filter((item) => !item.hidden)
+        .map((item) => item.id);
+
+      ctx.body = await desktopRoutesRepository.find({
+        tree: true,
+        ...ctx.query,
+        filter: {
+          id: desktopRoutesId,
+        },
+      });
+
+      await next();
+    });
+  }
+
+  registerLocalizationSource() {
+    const localizationPlugin = this.app.pm.get('localization') as PluginLocalizationServer;
+    if (!localizationPlugin) {
+      return;
+    }
+    localizationPlugin.sourceManager.registerSource('desktop-routes', {
+      title: tval('Desktop routes'),
+      sync: async (ctx) => {
+        const desktopRoutes = await ctx.db.getRepository('desktopRoutes').find({
+          raw: true,
+        });
+        const resources = {};
+        desktopRoutes.forEach((route: { title?: string }) => {
+          if (route.title) {
+            resources[route.title] = '';
+          }
+        });
+        return {
+          'lm-desktop-routes': resources,
+        };
+      },
+      namespace: 'lm-desktop-routes',
+      collections: [
+        {
+          collection: 'desktopRoutes',
+          fields: ['title'],
+        },
+      ],
+    });
   }
 }
 

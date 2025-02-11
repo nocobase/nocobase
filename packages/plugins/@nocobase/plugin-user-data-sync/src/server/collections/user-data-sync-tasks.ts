@@ -13,6 +13,7 @@ export default defineCollection({
   dumpRules: {
     group: 'third-party',
   },
+  migrationRules: ['schema-only', 'overwrite'],
   name: 'userDataSyncTasks',
   title: '{{t("Sync Tasks")}}',
   sortable: 'sort',

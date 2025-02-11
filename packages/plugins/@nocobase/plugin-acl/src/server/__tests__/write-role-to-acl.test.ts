@@ -40,7 +40,7 @@ describe('write role to acl', () => {
       },
     });
 
-    const agent = app.agent().login(user);
+    const agent = await app.agent().login(user);
 
     // @ts-ignore
     const response = await agent.resource('roles').check();

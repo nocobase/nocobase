@@ -30,6 +30,10 @@ const defaultSubAppUpgradeHandle: SubAppUpgradeHandler = async (mainApp: Applica
     findOptions['filter'] = {
       name: appSupervisor.singleAppName,
     };
+  } else {
+    findOptions['filter'] = {
+      'options.autoStart': true,
+    };
   }
 
   const instances = await repository.find(findOptions);
@@ -133,6 +137,10 @@ const defaultAppOptionsFactory = (appName: string, mainApp: Application) => {
     plugins: ['nocobase'],
     resourcer: {
       prefix: process.env.API_BASE_PATH,
+    },
+    cacheManager: {
+      ...mainApp.options.cacheManager,
+      prefix: appName,
     },
   };
 };

@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC } from 'react';
-import { Icon } from '@nocobase/client';
+import { Icon, useCompile } from '@nocobase/client';
 import { Badge } from 'antd-mobile';
 import classnames from 'classnames';
+import React, { FC } from 'react';
+import { useRouteTranslation } from '../../../locale';
 
 export interface MobileTabBarItemProps {
   // 图标
@@ -38,6 +39,8 @@ function getIcon(item: MobileTabBarItemProps, selected?: boolean) {
 export const MobileTabBarItem: FC<MobileTabBarItemProps> = (props) => {
   const { title, onClick, selected, badge } = props;
   const icon = getIcon(props, selected);
+  const { t } = useRouteTranslation();
+  const compile = useCompile();
   return (
     <div
       onClick={onClick}
@@ -56,7 +59,7 @@ export const MobileTabBarItem: FC<MobileTabBarItemProps> = (props) => {
         })}
         style={{ fontSize: '12px' }}
       >
-        {title}
+        {t(compile(title))}
       </span>
     </div>
   );

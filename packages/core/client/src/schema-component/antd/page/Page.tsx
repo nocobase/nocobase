@@ -12,6 +12,7 @@ import { PageHeader as AntdPageHeader } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
 import { Schema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
+import { uid } from '@formily/shared';
 import { Button, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -20,7 +21,6 @@ import { useTranslation } from 'react-i18next';
 import { NavigateFunction, Outlet, useOutletContext } from 'react-router-dom';
 import { FormDialog } from '..';
 import { antTableCell } from '../../../acl/style';
-import { useRequest } from '../../../api-client';
 import {
   CurrentTabUidContext,
   useCurrentSearchParams,
@@ -31,14 +31,16 @@ import {
 import { useDocumentTitle } from '../../../document-title';
 import { useGlobalTheme } from '../../../global-theme';
 import { Icon } from '../../../icon';
+import { NocoBaseDesktopRouteType, useCurrentRoute } from '../../../route-switch/antd/admin-layout';
 import { KeepAliveProvider, useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
 import { DndContext } from '../../common';
 import { SortableItem } from '../../common/sortable-item';
 import { SchemaComponent, SchemaComponentOptions } from '../../core';
-import { useDesignable } from '../../hooks';
+import { useCompile, useDesignable } from '../../hooks';
 import { useToken } from '../__builtins__';
 import { ErrorFallback } from '../error-fallback';
+import { useMenuDragEnd, useNocoBaseRoutes } from '../menu/Menu';
 import { useStyles } from './Page.style';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 import { PopupRouteContextResetter } from './PopupRouteContextResetter';
@@ -48,17 +50,27 @@ interface PageProps {
   className?: string;
 }
 
+const useRouteTranslation = () => {
+  return useTranslation('lm-desktop-routes');
+};
+
 const InternalPage = React.memo((props: PageProps) => {
   const fieldSchema = useFieldSchema();
   const currentTabUid = props.currentTabUid;
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
-  const enablePageTabs = fieldSchema['x-component-props']?.enablePageTabs;
   const searchParams = useCurrentSearchParams();
   const loading = false;
+  const currentRoute = useCurrentRoute();
+  const enablePageTabs = currentRoute.enableTabs;
+  const defaultActiveKey = useMemo(
+    () => getDefaultActiveKey(currentRoute?.children?.[0]?.schemaUid, fieldSchema),
+    [currentRoute?.children, fieldSchema],
+  );
+
   const activeKey = useMemo(
     // 处理 searchParams 是为了兼容旧版的 tab 参数
-    () => currentTabUid || searchParams.get('tab') || Object.keys(fieldSchema.properties || {}).shift(),
-    [fieldSchema.properties, searchParams, currentTabUid],
+    () => currentTabUid || searchParams.get('tab') || defaultActiveKey,
+    [currentTabUid, searchParams, defaultActiveKey],
   );
 
   const outletContext = useMemo(
@@ -228,6 +240,7 @@ const PageContent = memo((props: PageContentProps) => {
 const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ className, activeKey }) => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
+  const { t: routeT } = useRouteTranslation();
   const { token } = useToken();
   const basenameOfCurrentRouter = useRouterBasename();
   const navigate = useNavigateNoUpdate();
@@ -241,6 +254,9 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
   const { getAriaLabel } = useGetAriaLabelOfSchemaInitializer();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
+  const currentRoute = useCurrentRoute();
+  const { createRoute } = useNocoBaseRoutes();
+  const compile = useCompile();
 
   const tabBarExtraContent = useMemo(() => {
     return (
@@ -283,14 +299,19 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
               initialValues: {},
             });
             const { title, icon } = values;
-            dn.insertBeforeEnd({
-              type: 'void',
-              title,
-              'x-icon': icon,
-              'x-component': 'Grid',
-              'x-initializer': 'page:addBlock',
-              properties: {},
+            const schemaUid = uid();
+            const tabSchemaName = uid();
+
+            await createRoute({
+              type: NocoBaseDesktopRouteType.tabs,
+              schemaUid,
+              title: title || '{{t("Unnamed")}}',
+              icon,
+              parentId: currentRoute.id,
+              tabSchemaName,
             });
+
+            dn.insertBeforeEnd(getTabSchema({ title, icon, schemaUid, tabSchemaName }));
           }}
         >
           {t('Add tab')}
@@ -299,7 +320,7 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
     );
   }, [dn, getAriaLabel, options?.components, options?.scope, t, theme]);
 
-  const enablePageTabs = fieldSchema['x-component-props']?.enablePageTabs;
+  const enablePageTabs = currentRoute.enableTabs;
 
   // 这里的样式是为了保证页面 tabs 标签下面的分割线和页面内容对齐（页面内边距可以通过主题编辑器调节）
   const tabBarStyle = useMemo(
@@ -313,26 +334,44 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
   );
 
   const items = useMemo(() => {
-    return fieldSchema.mapProperties((schema) => {
-      return {
-        label: (
-          <SortableItem
-            id={schema.name as string}
-            schema={schema}
-            className={classNames('nb-action-link', 'designerCss', className)}
-          >
-            {schema['x-icon'] && <Icon style={{ marginRight: 8 }} type={schema['x-icon']} />}
-            <span>{schema.title || t('Unnamed')}</span>
-            <PageTabDesigner schema={schema} />
-          </SortableItem>
-        ),
-        key: schema.name as string,
-      };
-    });
-  }, [fieldSchema, className, t, fieldSchema.mapProperties((schema) => schema.title || t('Unnamed')).join()]);
+    return fieldSchema
+      .mapProperties((schema) => {
+        const tabRoute = currentRoute?.children?.find((route) => route.schemaUid === schema['x-uid']);
+        if (!tabRoute || tabRoute.hideInMenu) {
+          return null;
+        }
+
+        // 将 tabRoute 挂载到 schema 上，以方便获取
+        (schema as any).__route__ = tabRoute;
+
+        return {
+          label: (
+            <SortableItem
+              id={schema.name as string}
+              schema={schema}
+              className={classNames('nb-action-link', 'designerCss', className)}
+            >
+              {schema['x-icon'] && <Icon style={{ marginRight: 8 }} type={schema['x-icon']} />}
+              <span>{(tabRoute.title && routeT(compile(tabRoute.title))) || t('Unnamed')}</span>
+              <PageTabDesigner schema={schema} />
+            </SortableItem>
+          ),
+          key: schema.name as string,
+        };
+      })
+      .filter(Boolean);
+  }, [
+    fieldSchema,
+    className,
+    t,
+    fieldSchema.mapProperties((schema) => schema.title || t('Unnamed')).join(),
+    currentRoute,
+  ]);
+
+  const { onDragEnd } = useMenuDragEnd();
 
   return enablePageTabs ? (
-    <DndContext>
+    <DndContext onDragEnd={onDragEnd}>
       <Tabs
         size={'small'}
         activeKey={activeKey}
@@ -349,32 +388,21 @@ const NocoBasePageHeader = React.memo(({ activeKey, className }: { activeKey: st
   const fieldSchema = useFieldSchema();
   const { setTitle: setDocumentTitle } = useDocumentTitle();
   const { t } = useTranslation();
+  const { t: routeT } = useRouteTranslation();
   const [pageTitle, setPageTitle] = useState(() => t(fieldSchema.title));
 
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
-  const enablePageTabs = fieldSchema['x-component-props']?.enablePageTabs;
+  const currentRoute = useCurrentRoute();
+  const enablePageTabs = currentRoute.enableTabs;
   const hidePageTitle = fieldSchema['x-component-props']?.hidePageTitle;
 
   useEffect(() => {
-    if (fieldSchema.title) {
-      const title = t(fieldSchema.title);
+    const title = t(fieldSchema.title) || t(currentRoute?.title);
+    if (title) {
       setDocumentTitle(title);
       setPageTitle(title);
     }
-  }, [fieldSchema.title, pageTitle, setDocumentTitle, t]);
-
-  useRequest(
-    {
-      url: `/uiSchemas:getParentJsonSchema/${fieldSchema['x-uid']}`,
-    },
-    {
-      ready: !hidePageTitle && !fieldSchema.title,
-      onSuccess(data) {
-        setPageTitle(data.data.title);
-        setDocumentTitle(data.data.title);
-      },
-    },
-  );
+  }, [fieldSchema.title, pageTitle, setDocumentTitle, t, currentRoute?.title]);
 
   return (
     <>
@@ -384,7 +412,7 @@ const NocoBasePageHeader = React.memo(({ activeKey, className }: { activeKey: st
           className={classNames('pageHeaderCss', pageTitle || enablePageTabs ? '' : 'height0')}
           ghost={false}
           // 如果标题为空的时候会导致 PageHeader 不渲染，所以这里设置一个空白字符，然后再设置高度为 0
-          title={hidePageTitle ? ' ' : pageTitle || ' '}
+          title={hidePageTitle ? ' ' : (!fieldSchema.title && pageTitle ? routeT(pageTitle) : pageTitle) || ' '}
           footer={<NocoBasePageHeaderTabs className={className} activeKey={activeKey} />}
         />
       )}
@@ -430,4 +458,41 @@ export function isTabPage(pathname: string) {
 
   const list = pathname.split('/');
   return list[list.length - 2] === 'tabs';
+}
+
+export function getTabSchema({
+  title,
+  icon,
+  schemaUid,
+  tabSchemaName,
+}: {
+  title: string;
+  icon: string;
+  schemaUid: string;
+  tabSchemaName: string;
+}) {
+  return {
+    type: 'void',
+    name: tabSchemaName,
+    title,
+    'x-icon': icon,
+    'x-component': 'Grid',
+    'x-initializer': 'page:addBlock',
+    properties: {},
+    'x-uid': schemaUid,
+  };
+}
+
+function getDefaultActiveKey(defaultTabSchemaUid: string, fieldSchema: Schema) {
+  if (!fieldSchema.properties) {
+    return '';
+  }
+
+  const tabSchemaList = Object.values(fieldSchema.properties);
+
+  for (const tabSchema of tabSchemaList) {
+    if (tabSchema['x-uid'] === defaultTabSchemaUid) {
+      return tabSchema.name as string;
+    }
+  }
 }

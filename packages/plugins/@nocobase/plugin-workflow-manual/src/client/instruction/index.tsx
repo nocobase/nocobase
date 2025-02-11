@@ -17,6 +17,7 @@ import {
   getCollectionFieldOptions,
   CollectionBlockInitializer,
   Instruction,
+  WorkflowVariableTextArea,
 } from '@nocobase/plugin-workflow/client';
 
 import { SchemaConfig, SchemaConfigButton } from './SchemaConfig';
@@ -73,6 +74,42 @@ function useVariables({ key, title, config }, { types, fieldNames = defaultField
     : null;
 }
 
+function useInitializers(node): SchemaInitializerItemType | null {
+  const { getCollection } = useCollectionManager_deprecated();
+  const formKeys = Object.keys(node.config.forms ?? {});
+  if (!formKeys.length || node.config.mode) {
+    return null;
+  }
+
+  const forms = formKeys
+    .map((formKey) => {
+      const form = node.config.forms[formKey];
+      const { fields = [] } = getCollection(form.collection);
+
+      return fields.length
+        ? ({
+            name: form.title ?? formKey,
+            type: 'item',
+            title: form.title ?? formKey,
+            Component: CollectionBlockInitializer,
+            collection: form.collection,
+            dataPath: `$jobsMapByNodeKey.${node.key}.${formKey}`,
+          } as SchemaInitializerItemType)
+        : null;
+    })
+    .filter(Boolean);
+
+  return forms.length
+    ? {
+        name: `#${node.id}`,
+        key: 'forms',
+        type: 'subMenu',
+        title: node.title,
+        children: forms,
+      }
+    : null;
+}
+
 export default class extends Instruction {
   title = `{{t("Manual", { ns: "${NAMESPACE}" })}}`;
   type = 'manual';
@@ -106,6 +143,13 @@ export default class extends Instruction {
         },
       },
     },
+    title: {
+      type: 'string',
+      title: `{{t("Task title", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'WorkflowVariableTextArea',
+      description: `{{t("Title of each task item. Default to node title.", { ns: "${NAMESPACE}" })}}`,
+    },
     schema: {
       type: 'void',
       title: `{{t("User interface", { ns: "${NAMESPACE}" })}}`,
@@ -129,44 +173,10 @@ export default class extends Instruction {
     SchemaConfig,
     ModeConfig,
     AssigneesSelect,
+    WorkflowVariableTextArea,
   };
   useVariables = useVariables;
-  useInitializers(node): SchemaInitializerItemType | null {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { getCollection } = useCollectionManager_deprecated();
-    const formKeys = Object.keys(node.config.forms ?? {});
-    if (!formKeys.length || node.config.mode) {
-      return null;
-    }
-
-    const forms = formKeys
-      .map((formKey) => {
-        const form = node.config.forms[formKey];
-        const { fields = [] } = getCollection(form.collection);
-
-        return fields.length
-          ? ({
-              name: form.title ?? formKey,
-              type: 'item',
-              title: form.title ?? formKey,
-              Component: CollectionBlockInitializer,
-              collection: form.collection,
-              dataPath: `$jobsMapByNodeKey.${node.key}.${formKey}`,
-            } as SchemaInitializerItemType)
-          : null;
-      })
-      .filter(Boolean);
-
-    return forms.length
-      ? {
-          name: `#${node.id}`,
-          key: 'forms',
-          type: 'subMenu',
-          title: node.title,
-          children: forms,
-        }
-      : null;
-  }
+  useInitializers = useInitializers;
   isAvailable({ engine, workflow, upstream, branchIndex }) {
     return !engine.isWorkflowSync(workflow);
   }

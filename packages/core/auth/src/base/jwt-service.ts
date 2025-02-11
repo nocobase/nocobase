@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import jwt, { SignOptions } from 'jsonwebtoken';
+import jwt, { JwtPayload, SignOptions } from 'jsonwebtoken';
 import { ITokenBlacklistService } from './token-blacklist-service';
-
 export interface JwtOptions {
   secret: string;
   expiresIn?: string;
@@ -50,9 +49,9 @@ export class JwtService {
   }
 
   /* istanbul ignore next -- @preserve */
-  decode(token: string): Promise<any> {
+  decode(token: string): Promise<JwtPayload> {
     return new Promise((resolve, reject) => {
-      jwt.verify(token, this.secret(), (err: any, decoded: any) => {
+      jwt.verify(token, this.secret(), (err, decoded: JwtPayload) => {
         if (err) {
           return reject(err);
         }
@@ -70,9 +69,9 @@ export class JwtService {
       return null;
     }
     try {
-      const { exp } = await this.decode(token);
+      const { exp, jti } = await this.decode(token);
       return this.blacklist.add({
-        token,
+        token: jti ?? token,
         expiration: new Date(exp * 1000).toString(),
       });
     } catch {

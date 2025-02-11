@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-file-manager",
-  "version": "1.6.0-beta.1",
+  "version": "1.6.0-beta.5",
   "displayName": "File manager",
   "displayName.zh-CN": "文件管理器",
   "description": "Provides files storage services with files collection template and attachment field.",
@@ -10,7 +10,7 @@
   "homepage": "https://docs.nocobase.com/handbook/file-manager",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/file-manager",
   "devDependencies": {
-    "@aws-sdk/client-s3": "^3.245.0",
+    "@aws-sdk/client-s3": "3.245.0",
     "@formily/antd-v5": "1.x",
     "@formily/core": "2.x",
     "@formily/react": "2.x",

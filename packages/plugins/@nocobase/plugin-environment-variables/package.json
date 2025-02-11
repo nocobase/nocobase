@@ -1,0 +1,19 @@
+{
+  "name": "@nocobase/plugin-environment-variables",
+  "version": "1.6.0-beta.5",
+  "main": "dist/server/index.js",
+  "peerDependencies": {
+    "@nocobase/client": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
+  },
+  "displayName": "Variables and secrets",
+  "displayName.zh-CN": "变量和密钥",
+  "description": "Centralized management of environment variables and secrets, used for sensitive data storage, configuration data reuse, multi-environment isolation, and more.",
+  "description.zh-CN": "集中管理环境变量和密钥，用于敏感数据存储、配置数据重用、多环境隔离等。",
+  "homepage": "https://docs.nocobase.com/handbook/environment-variables",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/environment-variables",
+  "keywords": [
+    "System management"
+  ]
+}

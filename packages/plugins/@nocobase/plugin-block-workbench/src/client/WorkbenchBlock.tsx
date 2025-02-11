@@ -19,10 +19,10 @@ import {
   useDesignable,
   useSchemaInitializerRender,
   withDynamicSchemaProps,
-  useOpenModeContext,
   useBlockHeightProps,
+  useOpenModeContext,
 } from '@nocobase/client';
-import { Space, List, Avatar, theme } from 'antd';
+import { Avatar, List, Space, theme } from 'antd';
 import React, { createContext, useEffect, useState, useRef, useMemo, useLayoutEffect } from 'react';
 import { WorkbenchLayout } from './workbenchBlockSettings';
 
@@ -34,6 +34,7 @@ const ConfigureActionsButton = observer(
   },
   { displayName: 'WorkbenchConfigureActionsButton' },
 );
+
 function isMobile() {
   return window.matchMedia('(max-width: 768px)').matches;
 }
@@ -109,22 +110,22 @@ const ResponsiveSpace = () => {
         size={gap}
         align="start"
         className={css`
-          .ant-space-item {
-            width: ${isUnderMobile ? itemWidth + 'px' : '100%'}
-            display: flex;
-            .ant-nb-action {
-              padding: ${isUnderMobile ? '4px 0px' : null};
-            }
-            .nb-action-panel-container {
-              width: ${itemWidth}px !important;
-            }
-            .ant-avatar-circle {
-              width: ${avatarSize}px !important;
-              height: ${avatarSize}px !important;
-              line-height: ${avatarSize}px !important;
-            }
-          }
-        `}
+           .ant-space-item {
+             width: ${isUnderMobile ? itemWidth + 'px' : '100%'}
+             display: flex;
+             .ant-nb-action {
+               padding: ${isUnderMobile ? '4px 0px' : null};
+             }
+             .nb-action-panel-container {
+               width: ${itemWidth}px !important;
+             }
+             .ant-avatar-circle {
+               width: ${avatarSize}px !important;
+               height: ${avatarSize}px !important;
+               line-height: ${avatarSize}px !important;
+             }
+           }
+         `}
       >
         {fieldSchema.mapProperties((s, key) => (
           <div
@@ -138,7 +139,7 @@ const ResponsiveSpace = () => {
               }
             }
           >
-            <NocoBaseRecursionField name={key} schema={s} key={key} />
+            <NocoBaseRecursionField name={key} schema={s} />
           </div>
         ))}
       </Space>
@@ -148,10 +149,9 @@ const ResponsiveSpace = () => {
 
 const InternalIcons = () => {
   const fieldSchema = useFieldSchema();
-  const { designable } = useDesignable();
   const { layout = WorkbenchLayout.Grid } = fieldSchema.parent['x-component-props'] || {};
   return (
-    <div style={{ marginBottom: designable ? '1rem' : 0 }} className="nb-action-panel-warp">
+    <div className="nb-action-panel-warp">
       <DndContext>
         {layout === WorkbenchLayout.Grid ? (
           <ResponsiveSpace />

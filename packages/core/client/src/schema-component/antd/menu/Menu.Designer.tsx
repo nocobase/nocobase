@@ -7,15 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { ExclamationCircleFilled } from '@ant-design/icons';
 import { TreeSelect } from '@formily/antd-v5';
 import { Field, onFieldChange } from '@formily/core';
 import { ISchema, Schema, useField, useFieldSchema } from '@formily/react';
+import { uid } from '@formily/shared';
+import { Modal } from 'antd';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { findByUid } from '.';
-import { createDesignable, useCompile } from '../..';
+import { createDesignable, useCompile, useNocoBaseRoutes } from '../..';
 import {
   GeneralSchemaDesigner,
+  getPageMenuSchema,
+  isVariable,
   SchemaSettingsDivider,
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
@@ -25,18 +30,24 @@ import {
   useDesignable,
   useURLAndHTMLSchema,
 } from '../../../';
+import { NocoBaseDesktopRouteType } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 
-const toItems = (properties = {}) => {
+const insertPositionToMethod = {
+  beforeBegin: 'prepend',
+  afterEnd: 'insertAfter',
+};
+
+const toItems = (properties = {}, { t, compile }) => {
   const items = [];
   for (const key in properties) {
     if (Object.prototype.hasOwnProperty.call(properties, key)) {
       const element = properties[key];
       const item = {
-        label: element.title,
+        label: isVariable(element.title) ? compile(element.title) : t(element.title),
         value: `${element['x-uid']}||${element['x-component']}`,
       };
       if (element.properties) {
-        const children = toItems(element.properties);
+        const children = toItems(element.properties, { t, compile });
         if (children?.length) {
           item['children'] = children;
         }
@@ -64,19 +75,12 @@ const InsertMenuItems = (props) => {
   const fieldSchema = useFieldSchema();
   const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
   const isSubMenu = fieldSchema['x-component'] === 'Menu.SubMenu';
+  const { createRoute, moveRoute } = useNocoBaseRoutes();
+
   if (!isSubMenu && insertPosition === 'beforeEnd') {
     return null;
   }
-  const serverHooks = [
-    {
-      type: 'onSelfCreate',
-      method: 'bindMenuToRole',
-    },
-    {
-      type: 'onSelfSave',
-      method: 'extractTextToLocale',
-    },
-  ];
+
   return (
     <SchemaSettingsSubMenu eventKey={eventKey} title={title}>
       <SchemaSettingsModalItem
@@ -103,7 +107,32 @@ const InsertMenuItems = (props) => {
             },
           } as ISchema
         }
-        onSubmit={({ title, icon }) => {
+        onSubmit={async ({ title, icon }) => {
+          const route = fieldSchema['__route__'];
+          const parentRoute = fieldSchema.parent?.['__route__'];
+          const schemaUid = uid();
+
+          // 1. 先创建一个路由
+          const { data } = await createRoute({
+            type: NocoBaseDesktopRouteType.group,
+            title,
+            icon,
+            // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
+            parentId: insertPosition === 'beforeEnd' ? route?.id : parentRoute?.id,
+            schemaUid,
+          });
+
+          if (insertPositionToMethod[insertPosition]) {
+            // 2. 然后再把路由移动到对应的位置
+            await moveRoute({
+              sourceId: data?.data?.id,
+              targetId: route?.id,
+              sortField: 'sort',
+              method: insertPositionToMethod[insertPosition],
+            });
+          }
+
+          // 3. 插入一个对应的 Schema
           dn.insertAdjacent(insertPosition, {
             type: 'void',
             title,
@@ -112,7 +141,7 @@ const InsertMenuItems = (props) => {
             'x-component-props': {
               icon,
             },
-            'x-server-hooks': serverHooks,
+            'x-uid': schemaUid,
           });
         }}
       />
@@ -140,32 +169,56 @@ const InsertMenuItems = (props) => {
             },
           } as ISchema
         }
-        onSubmit={({ title, icon }) => {
-          dn.insertAdjacent(insertPosition, {
-            type: 'void',
+        onSubmit={async ({ title, icon }) => {
+          const route = fieldSchema['__route__'];
+          const parentRoute = fieldSchema.parent?.['__route__'];
+          const menuSchemaUid = uid();
+          const pageSchemaUid = uid();
+          const tabSchemaUid = uid();
+          const tabSchemaName = uid();
+
+          // 1. 先创建一个路由
+          const { data } = await createRoute({
+            type: NocoBaseDesktopRouteType.page,
             title,
-            'x-component': 'Menu.Item',
-            'x-decorator': 'ACLMenuItemProvider',
-            'x-component-props': {
-              icon,
-            },
-            'x-server-hooks': serverHooks,
-            properties: {
-              page: {
-                type: 'void',
-                'x-component': 'Page',
-                'x-async': true,
-                properties: {
-                  grid: {
-                    type: 'void',
-                    'x-component': 'Grid',
-                    'x-initializer': 'page:addBlock',
-                    properties: {},
-                  },
-                },
+            icon,
+            // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
+            parentId: insertPosition === 'beforeEnd' ? route?.id : parentRoute?.id,
+            schemaUid: pageSchemaUid,
+            menuSchemaUid,
+            enableTabs: false,
+            children: [
+              {
+                type: NocoBaseDesktopRouteType.tabs,
+                schemaUid: tabSchemaUid,
+                tabSchemaName,
+                hidden: true,
               },
-            },
+            ],
           });
+
+          // 2. 然后再把路由移动到对应的位置
+          if (insertPositionToMethod[insertPosition]) {
+            await moveRoute({
+              sourceId: data?.data?.id,
+              targetId: route?.id,
+              sortField: 'sort',
+              method: insertPositionToMethod[insertPosition],
+            });
+          }
+
+          // 3. 插入一个对应的 Schema
+          dn.insertAdjacent(
+            insertPosition,
+            getPageMenuSchema({
+              title,
+              icon,
+              pageSchemaUid,
+              menuSchemaUid,
+              tabSchemaUid,
+              tabSchemaName,
+            }),
+          );
         }}
       />
       <SchemaSettingsModalItem
@@ -192,7 +245,39 @@ const InsertMenuItems = (props) => {
             },
           } as ISchema
         }
-        onSubmit={({ title, icon, href, params }) => {
+        onSubmit={async ({ title, icon, href, params }) => {
+          const route = fieldSchema['__route__'];
+          const parentRoute = fieldSchema.parent?.['__route__'];
+          const schemaUid = uid();
+
+          // 1. 先创建一个路由
+          const { data } = await createRoute(
+            {
+              type: NocoBaseDesktopRouteType.link,
+              title,
+              icon,
+              // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
+              parentId: insertPosition === 'beforeEnd' ? route?.id : parentRoute?.id,
+              schemaUid,
+              options: {
+                href,
+                params,
+              },
+            },
+            false,
+          );
+
+          // 2. 然后再把路由移动到对应的位置
+          if (insertPositionToMethod[insertPosition]) {
+            await moveRoute({
+              sourceId: data?.data?.id,
+              targetId: route?.id,
+              sortField: 'sort',
+              method: insertPositionToMethod[insertPosition],
+            });
+          }
+
+          // 3. 插入一个对应的 Schema
           dn.insertAdjacent(insertPosition, {
             type: 'void',
             title,
@@ -203,7 +288,7 @@ const InsertMenuItems = (props) => {
               href,
               params,
             },
-            'x-server-hooks': serverHooks,
+            'x-uid': schemaUid,
           });
         }}
       />
@@ -214,6 +299,7 @@ const InsertMenuItems = (props) => {
 const components = { TreeSelect };
 
 export const MenuDesigner = () => {
+  const { updateRoute, deleteRoute } = useNocoBaseRoutes();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();
@@ -226,7 +312,7 @@ export const MenuDesigner = () => {
     () => compile(menuSchema?.['x-component-props']?.['onSelect']),
     [menuSchema?.['x-component-props']?.['onSelect']],
   );
-  const items = useMemo(() => toItems(menuSchema?.properties), [menuSchema?.properties]);
+  const items = useMemo(() => toItems(menuSchema?.properties, { t, compile }), [menuSchema?.properties, t, compile]);
   const effects = useCallback(
     (form) => {
       onFieldChange('target', (field: Field) => {
@@ -309,6 +395,21 @@ export const MenuDesigner = () => {
       dn.emit('patch', {
         schema,
       });
+
+      // 更新菜单对应的路由
+      if (fieldSchema['__route__']?.id) {
+        updateRoute(fieldSchema['__route__'].id, {
+          title,
+          icon,
+          options:
+            href || params
+              ? {
+                  href,
+                  params,
+                }
+              : undefined,
+        });
+      }
     },
     [fieldSchema, field, dn, refresh, onSelect],
   );
@@ -341,8 +442,10 @@ export const MenuDesigner = () => {
     } as ISchema;
   }, [items, t]);
 
+  const { moveRoute } = useNocoBaseRoutes();
+
   const onMoveToSubmit: (values: any) => void = useCallback(
-    ({ target, position }) => {
+    async ({ target, position }) => {
       const [uid] = target?.split?.('||') || [];
       if (!uid) {
         return;
@@ -354,17 +457,34 @@ export const MenuDesigner = () => {
         refresh,
         current,
       });
+
+      const positionToMethod = {
+        beforeBegin: 'prepend',
+        afterEnd: 'insertAfter',
+      };
+
+      await moveRoute({
+        sourceId: (fieldSchema as any).__route__.id,
+        targetId: current.__route__.id,
+        sortField: 'sort',
+        method: positionToMethod[position],
+      });
+
       dn.loadAPIClientEvents();
       dn.insertAdjacent(position, fieldSchema);
     },
-    [fieldSchema, menuSchema, t, api, refresh],
+    [menuSchema, t, api, refresh, moveRoute, fieldSchema],
   );
 
   const removeConfirmTitle = useMemo(() => {
     return {
       title: t('Delete menu item'),
+      onOk: () => {
+        // 删除对应菜单的路由
+        fieldSchema['__route__']?.id && deleteRoute(fieldSchema['__route__'].id);
+      },
     };
-  }, [t]);
+  }, [fieldSchema, deleteRoute, t]);
   return (
     <GeneralSchemaDesigner>
       <SchemaSettingsModalItem
@@ -378,12 +498,29 @@ export const MenuDesigner = () => {
         title={t('Hidden')}
         checked={fieldSchema['x-component-props']?.hidden}
         onChange={(v) => {
-          fieldSchema['x-component-props'].hidden = !!v;
-          field.componentProps.hidden = !!v;
-          dn.emit('patch', {
-            schema: {
-              'x-uid': fieldSchema['x-uid'],
-              'x-component-props': fieldSchema['x-component-props'],
+          Modal.confirm({
+            title: t('Are you sure you want to hide this menu?'),
+            icon: <ExclamationCircleFilled />,
+            content: t(
+              'After hiding, this menu will no longer appear in the menu bar. To show it again, you need to go to the route management page to configure it.',
+            ),
+            async onOk() {
+              fieldSchema['x-component-props'].hidden = !!v;
+              field.componentProps.hidden = !!v;
+
+              // 更新菜单对应的路由
+              if (fieldSchema['__route__']?.id) {
+                await updateRoute(fieldSchema['__route__'].id, {
+                  hideInMenu: !!v,
+                });
+              }
+
+              dn.emit('patch', {
+                schema: {
+                  'x-uid': fieldSchema['x-uid'],
+                  'x-component-props': fieldSchema['x-component-props'],
+                },
+              });
             },
           });
         }}

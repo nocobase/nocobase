@@ -84,10 +84,9 @@ export async function submit(context: Context, next) {
 
   userJob.set({
     status: actionItem.status,
-    result:
-      actionItem.status > JOB_STATUS.PENDING
-        ? { [formKey]: Object.assign(values.result[formKey], presetValues), _: actionKey }
-        : Object.assign(userJob.result ?? {}, values.result),
+    result: actionItem.status
+      ? { [formKey]: Object.assign(values.result[formKey], presetValues), _: actionKey }
+      : Object.assign(userJob.result ?? {}, values.result),
   });
 
   const handler = instruction.formTypes.get(forms[formKey].type);
@@ -111,4 +110,28 @@ export async function submit(context: Context, next) {
   processor.logger.info(`manual node (${userJob.nodeId}) action trigger execution (${userJob.execution.id}) to resume`);
 
   plugin.resume(userJob.job);
+}
+
+export async function countMine(context: Context, next) {
+  const repository = utils.getRepositoryFromParams(context);
+  const { currentUser } = context.state;
+
+  const count = await repository.count({
+    filter: {
+      $and: [
+        {
+          'workflow.enabled': true,
+        },
+        context.action.params.filter ?? {},
+        {
+          userId: currentUser.id,
+        },
+      ],
+    },
+    context,
+  });
+
+  context.body = count;
+
+  await next();
 }

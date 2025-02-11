@@ -175,4 +175,27 @@ ActionDrawer.Footer = observer(
   { displayName: 'ActionDrawer.Footer' },
 );
 
+ActionDrawer.FootBar = observer(
+  () => {
+    const field = useField();
+    const schema = useFieldSchema();
+    return (
+      <div
+        className="ant-drawer-footer"
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          right: 0,
+          left: 0,
+        }}
+      >
+        <div className="footer">
+          <MemoizeRecursionField basePath={field.address} schema={schema} onlyRenderProperties />
+        </div>
+      </div>
+    );
+  },
+  { displayName: 'ActionDrawer.FootBar' },
+);
+
 export default ActionDrawer;

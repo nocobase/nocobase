@@ -65,7 +65,7 @@ export class PluginPublicFormsServer extends Plugin {
             passwordRequired: true,
           };
         }
-        if (instance.get('password') !== password) {
+        if (this.app.environment.renderJsonTemplate(instance.get('password')) !== password) {
           throw new PasswordError('Please enter your password');
         }
       }

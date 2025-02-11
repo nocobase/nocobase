@@ -23,7 +23,7 @@ describe('actions', () => {
     process.env.INIT_ROOT_PASSWORD = '123456';
     process.env.INIT_ROOT_NICKNAME = 'Test';
     app = await createMockServer({
-      plugins: ['field-sort', 'auth', 'users', 'acl', 'data-source-manager', 'system-settings'],
+      plugins: ['field-sort', 'auth', 'users', 'acl', 'data-source-manager', 'system-settings', 'ui-schema-storage'],
     });
     db = app.db;
 
@@ -36,7 +36,7 @@ describe('actions', () => {
     });
 
     agent = app.agent();
-    adminAgent = app.agent().login(adminUser);
+    adminAgent = await app.agent().login(adminUser);
   });
 
   afterEach(async () => {
@@ -49,6 +49,7 @@ describe('actions', () => {
       filterByTk: adminUser.id,
       values: {
         nickname: 'a',
+        username: 'A',
       },
     });
     expect(res1.status).toBe(401);
@@ -57,6 +58,7 @@ describe('actions', () => {
       filterByTk: adminUser.id,
       values: {
         nickname: 'a',
+        username: 'A',
       },
     });
     expect(res2.status).toBe(200);

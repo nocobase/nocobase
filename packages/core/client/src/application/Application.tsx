@@ -99,6 +99,7 @@ export class Application {
   public schemaSettingsManager: SchemaSettingsManager;
   public dataSourceManager: DataSourceManager;
   public name: string;
+  public globalVars: Record<string, any> = {};
 
   loading = true;
   maintained = false;
@@ -312,6 +313,12 @@ export class Application {
       await this.pm.load();
     } catch (error) {
       this.hasLoadError = true;
+
+      //not trigger infinite reload when blocked ip
+      if (error?.response?.data?.errors?.[0]?.code === 'BLOCKED_IP') {
+        this.hasLoadError = false;
+      }
+
       if (this.ws.enabled) {
         await new Promise((resolve) => {
           setTimeout(() => resolve(null), 1000);
@@ -472,5 +479,13 @@ export class Application {
       fieldName,
       componentOption,
     );
+  }
+
+  addGlobalVar(key: string, value: any) {
+    set(this.globalVars, key, value);
+  }
+
+  getGlobalVar(key) {
+    return get(this.globalVars, key);
   }
 }
