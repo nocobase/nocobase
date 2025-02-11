@@ -40,31 +40,40 @@ async function schemaPatch(
 
   if (decoratorName === 'DetailsBlockProvider') {
     const comKey = Object.keys(currentSchema.properties)[0];
+    let paginationSchema: any = _.get(currentSchema, `properties.${comKey}.properties.pagination`);
+    if (paginationSchema) {
+      paginationSchema = paginationSchema.toJSON();
+    }
     if (option === t('Current')) {
       schema['x-decorator-props'] = {
         action: 'get',
         collection: collectionName,
         association: null,
         dataSource: currentSchema['x-decorator-props'].dataSource,
+        readPretty: true,
       };
-      schema['x-acl-action'] = currentSchema['x-acl-action'].replace(':list', ':get');
+      schema['x-acl-action'] = currentSchema['x-acl-action'].replace(':view', ':get');
       schema['x-settings'] = 'blockSettings:details';
       schema['x-use-decorator-props'] = 'useDetailsDecoratorProps';
     } else {
       if (!_.get(currentSchema, `properties.${comKey}.properties.pagination`)) {
+        const properties = _.get(currentSchema, `properties.${comKey}.properties`);
+        const maxIndex = _.max(Object.values(properties).map((property) => property['x-index']));
+        paginationSchema = {
+          type: 'void',
+          name: 'pagination',
+          'x-uid': uid(),
+          'x-index': maxIndex + 1,
+          version: currentSchema['version'],
+          'x-app-version': currentSchema['x-app-version'],
+          'x-component': 'Pagination',
+          'x-use-component-props': 'useDetailsPaginationProps',
+        };
         await api.request({
           url: `/uiSchemas:insertAdjacent/${currentSchema.properties[comKey]['x-uid']}?position=beforeEnd`,
           method: 'post',
           data: {
-            schema: {
-              type: 'void',
-              name: 'pagination',
-              'x-uid': uid(),
-              'x-index': 2,
-              version: currentSchema['version'],
-              'x-app-version': currentSchema['x-app-version'],
-              'x-component': 'Pagination',
-            },
+            schema: paginationSchema,
           },
         });
       }
@@ -73,8 +82,12 @@ async function schemaPatch(
         collection: collectionName,
         association: null,
         dataSource: currentSchema['x-decorator-props'].dataSource,
+        readPretty: true,
+        params: {
+          pageSize: 1,
+        },
       };
-      schema['x-acl-action'] = currentSchema['x-acl-action'].replace(':get', ':list');
+      schema['x-acl-action'] = currentSchema['x-acl-action'].replace(':get', ':view');
       schema['x-settings'] = 'blockSettings:detailsWithPagination';
       schema['x-use-decorator-props'] = 'useDetailsWithPaginationDecoratorProps';
       if (option !== t('None')) {
@@ -83,14 +96,21 @@ async function schemaPatch(
       }
     }
 
-    _.merge(schema, {
-      properties: {
-        [comKey]: {
-          'x-uid': currentSchema.properties[comKey]['x-uid'],
-          'x-use-component-props': 'useDetailsProps',
+    if (paginationSchema) {
+      _.merge(schema, {
+        properties: {
+          [comKey]: {
+            'x-uid': currentSchema.properties[comKey]['x-uid'],
+            'x-use-component-props': option !== t('Current') ? 'useDetailsWithPaginationProps' : 'useDetailsProps',
+            properties: {
+              pagination: {
+                ...paginationSchema,
+              },
+            },
+          },
         },
-      },
-    });
+      });
+    }
   } else {
     if (option === t('Current')) {
       schema['x-decorator-props'] = {
@@ -144,7 +164,7 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
     const decorator = fieldSchema['x-decorator'];
     const decoratorProps = fieldSchema['x-decorator-props'];
     const options = [t('None')];
-    const currentCollectionName = decoratorProps?.collection || decoratorProps?.association;
+    const currentCollectionName = decoratorProps?.collection || decoratorProps?.association.split('.')?.pop();
     if (decorator === 'DetailsBlockProvider' && currentPopupRecord?.collection?.name === currentCollectionName) {
       options.push(t('Current'));
     }
@@ -177,7 +197,7 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
     const api = useAPIClient();
     const decorator = fieldSchema['x-decorator'];
     const decoratorProps = fieldSchema['x-decorator-props'];
-    const currentCollectionName = decoratorProps?.collection || decoratorProps?.association;
+    const currentCollectionName = decoratorProps?.collection || decoratorProps?.association.split('.')?.pop();
     if (decorator === 'DetailsBlockProvider' && currentPopupRecord?.collection?.name === currentCollectionName) {
       options.push(t('Current'));
       if (decoratorProps.action === 'get') {
@@ -211,16 +231,27 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
           option,
           t,
         });
-        _.merge(fieldSchema, schema);
         field.decoratorProps = {
           ...fieldSchema['x-decorator-props'],
           ...schema['x-decorator-props'],
           key: uid(),
         };
-        const schemaJSON = fieldSchema.toJSON();
+        field.componentProps = {
+          ...fieldSchema['x-component-props'],
+          ...schema['x-component-props'],
+          key: uid(),
+        };
+        field.parent.componentProps = {
+          ...fieldSchema.parent?.['x-component-props'],
+          key: uid(),
+        };
+        field.parent.decoratorProps = {
+          ...fieldSchema.parent?.['x-decorator-props'],
+          key: uid(),
+        };
+        const schemaJSON = _.merge(fieldSchema.toJSON(), schema);
         fieldSchema.toJSON = () => {
-          const ret = _.merge(schemaJSON, schema);
-          return ret;
+          return schemaJSON;
         };
         await api.request({
           url: `/uiSchemas:patch`,
@@ -229,10 +260,11 @@ export const associationRecordSettingItem: SchemaSettingsItemType = {
             ...schema,
           },
         });
-
         refresh({
           refreshParentSchema: true,
         });
+        field.form.reset();
+        field.form.clearFormGraph(field.address, true);
       },
     };
   },
