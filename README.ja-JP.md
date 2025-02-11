@@ -9,7 +9,7 @@ https://github.com/user-attachments/assets/cf08bfe5-e6e6-453c-8b96-350a6a8bed17
 
 ## リリースノート
 
-リリースノートは[ブログ](https://www.nocobase.com/en/blog/tags/release-notes)で随時更新され、週ごとにまとめて公開しています。
+リリースノートは[ブログ](https://www.nocobase.com/ja/blog/timeline)で随時更新され、週ごとにまとめて公開しています。
 
 ## NocoBaseはなに？
 
