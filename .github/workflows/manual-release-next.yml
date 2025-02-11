@@ -13,54 +13,57 @@ on:
       add_minor:
         description: 'add minor number'
         type: boolean
+      version:
+        description: 'specific a version'
+        type: 'string'
 
 jobs:
   get-plugins:
     uses: nocobase/nocobase/.github/workflows/get-plugins.yml@main
     secrets: inherit
-  pre-merge-next-into-develop:
-    needs: get-plugins
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        repo:
-          - 'nocobase'
-          - 'pro-plugins'
-          - ${{ fromJSON(needs.get-plugins.outputs.beta-plugins) }}
-          - ${{ fromJSON(needs.get-plugins.outputs.custom-plugins) }}
-    steps:
-      - uses: actions/create-github-app-token@v1
-        id: app-token
-        with:
-          app-id: ${{ vars.NOCOBASE_APP_ID }}
-          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
-          repositories: nocobase,pro-plugins,${{ join(fromJSON(needs.get-plugins.outputs.beta-plugins), ',') }},${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ',') }}
-          skip-token-revoke: true
-      - name: Get GitHub App User ID
-        id: get-user-id
-        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          # ref: 'main'
-          repository: nocobase/${{ matrix.repo }}
-          fetch-depth: 0
-          token: ${{ steps.app-token.outputs.token }}
-      - name: next -> develop (nocobase/${{ matrix.repo }})
-        run: |
-          git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
-          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
-          git checkout next
-          git pull origin next
-          git checkout develop
-          git merge next
-          git push origin develop --tags --atomic
+  # pre-merge-next-into-develop:
+  #   needs: get-plugins
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       repo:
+  #         - 'nocobase'
+  #         - 'pro-plugins'
+  #         - ${{ fromJSON(needs.get-plugins.outputs.beta-plugins) }}
+  #         - ${{ fromJSON(needs.get-plugins.outputs.custom-plugins) }}
+  #   steps:
+  #     - uses: actions/create-github-app-token@v1
+  #       id: app-token
+  #       with:
+  #         app-id: ${{ vars.NOCOBASE_APP_ID }}
+  #         private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+  #         repositories: nocobase,pro-plugins,${{ join(fromJSON(needs.get-plugins.outputs.beta-plugins), ',') }},${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ',') }}
+  #         skip-token-revoke: true
+  #     - name: Get GitHub App User ID
+  #       id: get-user-id
+  #       run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+  #       env:
+  #         GH_TOKEN: ${{ steps.app-token.outputs.token }}
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         # ref: 'main'
+  #         repository: nocobase/${{ matrix.repo }}
+  #         fetch-depth: 0
+  #         token: ${{ steps.app-token.outputs.token }}
+  #     - name: next -> develop (nocobase/${{ matrix.repo }})
+  #       run: |
+  #         git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
+  #         git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
+  #         git checkout next
+  #         git pull origin next
+  #         git checkout develop
+  #         git merge next
+  #         git push origin develop --tags --atomic
   update-version:
     needs:
       - get-plugins
-      - pre-merge-next-into-develop
+      # - pre-merge-next-into-develop
     runs-on: ubuntu-latest
     steps:
       - uses: actions/create-github-app-token@v1
@@ -118,30 +121,31 @@ jobs:
           git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
           git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
           echo "packages/pro-plugins" >> .git/info/exclude
-          bash release.sh $IS_FEAT $ADD_MINOR
+          bash release.sh $VERSION $IS_FEAT $ADD_MINOR
         env:
           PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.beta-plugins }}
           CUSTOM_PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.custom-plugins }}
+          VERSION: ${{ inputs.version && '--version ${{ inputs.version }}' || '' }}
           IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
           ADD_MINOR: ${{ inputs.add_minor && '--add-minor' || '' }}
-      - name: Push and merge into next
-        run: |
-          for repo in ${{ join(fromJSON(needs.get-plugins.outputs.beta-plugins), ' ') }} ${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ' ') }}
-          do
-            cd ./packages/pro-plugins/@nocobase/$repo
-            git push origin next --atomic --tags
-            git checkout develop
-            git merge -X ours next --no-edit
-            git push origin develop --tags --atomic
-            cd ../../../../
-          done
-          cd ./packages/pro-plugins
-          git push origin next --atomic --tags
-          git checkout develop
-          git merge -X ours next --no-edit
-          git push origin develop --tags --atomic
-          cd ../../
-          git push origin next --atomic --tags
-          git checkout develop
-          git merge -X ours next --no-edit
-          git push origin develop --tags --atomic
+      # - name: Push and merge into next
+      #   run: |
+      #     for repo in ${{ join(fromJSON(needs.get-plugins.outputs.beta-plugins), ' ') }} ${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ' ') }}
+      #     do
+      #       cd ./packages/pro-plugins/@nocobase/$repo
+      #       git push origin next --atomic --tags
+      #       git checkout develop
+      #       git merge -X ours next --no-edit
+      #       git push origin develop --tags --atomic
+      #       cd ../../../../
+      #     done
+      #     cd ./packages/pro-plugins
+      #     git push origin next --atomic --tags
+      #     git checkout develop
+      #     git merge -X ours next --no-edit
+      #     git push origin develop --tags --atomic
+      #     cd ../../
+      #     git push origin next --atomic --tags
+      #     git checkout develop
+      #     git merge -X ours next --no-edit
+      #     git push origin develop --tags --atomic
