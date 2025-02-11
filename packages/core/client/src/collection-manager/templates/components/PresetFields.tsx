@@ -18,7 +18,11 @@ const getDefaultCollectionFields = (presetFields, values, collectionPresetFields
   if (values?.template === 'view' || values?.template === 'sql') {
     return values.fields;
   }
-  const fields = values.fields || [];
+  const fields =
+    values.fields?.filter((v) => {
+      const item = collectionPresetFields.find((i) => i.value.name === v.name);
+      return !item;
+    }) || [];
   presetFields.map((v) => {
     const item = collectionPresetFields.find((i) => i.value.name === v);
     item && fields.push(item.value);
@@ -96,13 +100,9 @@ export const PresetFields = observer(
             name: record.name,
             disabled: props?.disabled || props?.presetFieldsDisabledIncludes?.includes?.(record.name),
           }),
-          onChange: (_, selectedRows) => {
-            const fields = getDefaultCollectionFields(selectedRows, form.values, collectionPresetFields);
-            setSelectedRowKeys(
-              fields?.map?.((v) => {
-                return v.name;
-              }),
-            );
+          onChange: (selectedKeys, selectedRows) => {
+            const fields = getDefaultCollectionFields(selectedKeys, form.values, collectionPresetFields);
+            setSelectedRowKeys(selectedKeys);
             form.setValues({ ...form.values, fields, autoGenId: false });
           },
         }}
