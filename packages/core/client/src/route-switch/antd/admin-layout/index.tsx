@@ -504,7 +504,7 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializ
       return {
         name: item.title,
         icon: <Icon type={item.icon} />,
-        path: `/admin/${item.schemaUid}`,
+        path: item.options?.url,
         hideInMenu: item.hideInMenu,
         _route: item,
         _parentRoute: parentRoute,
