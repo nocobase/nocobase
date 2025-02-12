@@ -23,6 +23,7 @@ import {
   useCollectionManager,
   useCollectionRecordData,
   useDataBlockProps,
+  useDataBlockRequest,
 } from '../data-source';
 import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
@@ -182,7 +183,8 @@ const getIgnoreScope = (options: any = {}) => {
 
 const useAllowedActions = () => {
   const service = useResourceActionContext();
-  return service?.data?.meta?.allowedActions;
+  const dataBlockRequest: any = useDataBlockRequest();
+  return service?.data?.meta?.allowedActions || dataBlockRequest?.data?.meta?.allowedActions;
 };
 
 const useResourceName = () => {
