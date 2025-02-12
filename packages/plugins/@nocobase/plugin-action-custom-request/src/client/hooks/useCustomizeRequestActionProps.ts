@@ -44,6 +44,11 @@ export const useCustomizeRequestActionProps = () => {
         await form.submit();
       }
 
+      let currentRecordData = { ...recordData };
+      if (xAction === 'customize:form:request') {
+        currentRecordData = form.values;
+      }
+
       actionField.data ??= {};
       actionField.data.loading = true;
       try {
@@ -55,7 +60,7 @@ export const useCustomizeRequestActionProps = () => {
               // id: record[getPrimaryKey()],
               // appends: result.params[0]?.appends,
               dataSourceKey,
-              data: recordData || form.values,
+              data: currentRecordData,
             },
             $nForm: blockType === 'form' ? form.values : undefined,
           },
