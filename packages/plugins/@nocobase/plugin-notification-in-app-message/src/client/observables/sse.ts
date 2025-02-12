@@ -72,7 +72,7 @@ export const startMsgSSEStreamWithRetry: () => () => void = () => {
     try {
       await createMsgSSEConnection(clientId);
     } catch (error) {
-      console.error('Error during stream:', error.message);
+      console.log(`sse connection for clientId ${clientId} failed, retrying...`, error);
       const nextDelay = retryTimes < 6 ? 1000 * Math.pow(2, retryTimes) : 60000;
       retryTimes++;
       setTimeout(() => {
