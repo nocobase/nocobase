@@ -101,11 +101,18 @@ export const TemplateGridDecorator = observer((props: any) => {
   const updateTemplateConfigured = useCallback(
     (configured: boolean) => {
       if (template && template.configured !== configured) {
+        const values = { configured };
+        if (!configured) {
+          values['dataSource'] = null;
+          values['collection'] = null;
+          values['componentType'] = null;
+          values['menuName'] = null;
+        }
         api.resource('blockTemplates').update({
           filter: {
             key: template.key,
           },
-          values: { configured },
+          values,
         });
         template.configured = configured;
         if (!configured && preBlockSchemaUid.current) {
