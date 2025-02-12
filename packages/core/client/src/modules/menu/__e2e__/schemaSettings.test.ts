@@ -67,7 +67,7 @@ test.describe('single page menu schema settings', () => {
       page,
       showMenu: async () => {
         await page.locator('.ant-layout-header').getByText('single page', { exact: true }).hover();
-        await page.getByRole('button', { name: 'designer-schema-settings-' }).hover();
+        await page.getByRole('button', { name: 'designer-schema-settings-' }).click();
       },
       supportedOptions: ['Edit', 'Move to', 'Insert before', 'Insert after', 'Delete'],
     });

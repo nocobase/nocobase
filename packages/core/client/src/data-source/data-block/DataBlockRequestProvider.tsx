@@ -118,7 +118,11 @@ export const BlockRequestContextProvider: FC<{ recordRequest: UseRequestResult<a
   const deferredPageActive = useDeferredValue(pageActive);
   const blockProps = useDataBlockProps();
 
-  if (deferredPageActive && !prevPageActiveRef.current && blockProps.dataLoadingMode === 'auto') {
+  if (
+    deferredPageActive &&
+    !prevPageActiveRef.current &&
+    (_.isNil(blockProps.dataLoadingMode) || blockProps.dataLoadingMode === 'auto')
+  ) {
     props.recordRequest?.refresh();
   }
 
