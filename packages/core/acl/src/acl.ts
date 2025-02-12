@@ -19,6 +19,7 @@ import { AllowManager, ConditionFunc } from './allow-manager';
 import FixedParamsManager, { Merger } from './fixed-params-manager';
 import SnippetManager, { SnippetOptions } from './snippet-manager';
 import { NoPermissionError } from './errors/no-permission-error';
+import { GlobalRoleName } from './constants';
 
 interface CanResult {
   role: string;
@@ -166,7 +167,20 @@ export class ACL extends EventEmitter {
   }
 
   getRole(name: string): ACLRole {
+    if (name === GlobalRoleName) {
+      return this.getGlobalRole();
+    }
     return this.roles.get(name);
+  }
+
+  private getGlobalRole() {
+    const globalRole = new ACLRole(this, GlobalRoleName);
+
+    for (const role of this.roles.values()) {
+      globalRole.merge(role);
+    }
+
+    return globalRole;
   }
 
   removeRole(name: string) {

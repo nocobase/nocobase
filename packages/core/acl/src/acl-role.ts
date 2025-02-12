@@ -211,4 +211,27 @@ export class ACLRole {
       action,
     };
   }
+
+  public merge(role: ACLRole) {
+    for (const [resourceName, resource] of role.resources.entries()) {
+      let currentResource = this.resources.get(resourceName);
+
+      if (!currentResource) {
+        currentResource = new ACLResource({ role: this, name: resourceName });
+        this.resources.set(resourceName, currentResource);
+      }
+
+      for (const [actionName, actionParams] of Object.entries(resource.getActions())) {
+        const existingAction = currentResource.getAction(actionName) || {};
+
+        const safeActionParams = (actionParams ?? {}) as RoleActionParams;
+
+        currentResource.setAction(actionName, {
+          ...existingAction,
+          ...safeActionParams,
+          fields: Array.from(new Set([...(existingAction.fields || []), ...(safeActionParams.fields || [])])),
+        });
+      }
+    }
+  }
 }

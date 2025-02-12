@@ -439,4 +439,31 @@ describe('acl', () => {
 
     expect(acl.can({ role: 'admin', resource: 'users', action: 'create' })).toBeTruthy();
   });
+
+  it('should return global-role with merged permissions', () => {
+    acl.define({
+      role: 'admin',
+      actions: {
+        'posts:edit': { own: true },
+        'posts:delete': { own: true },
+      },
+    });
+
+    acl.define({
+      role: 'editor',
+      actions: {
+        'posts:read': { fields: ['title', 'content'] },
+        'comments:write': { own: true },
+      },
+    });
+
+    const globalRole = acl.getRole('global-role');
+    expect(globalRole).not.toBeNull();
+    expect(globalRole.getResource('posts').getAction('edit').own).toBe(true);
+    expect(globalRole.getResource('posts').getAction('delete').own).toBe(true);
+    expect(globalRole.getResource('comments').getAction('write').own).toBe(true);
+
+    expect(globalRole.getResource('posts').getAction('read').fields).toContain('title');
+    expect(globalRole.getResource('posts').getAction('read').fields).toContain('content');
+  });
 });
