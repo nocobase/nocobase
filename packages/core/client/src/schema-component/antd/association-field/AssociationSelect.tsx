@@ -96,8 +96,8 @@ const InternalAssociationSelect = observer(
             isEqual(fieldPath?.indexes, field?.indexes) &&
             fieldPath?.props?.name !== field.props.name
           ) {
-            field.setValue(undefined);
-            setInnerValue(undefined);
+            field.setValue(null);
+            setInnerValue(null);
           }
         });
       });
