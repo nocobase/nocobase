@@ -44,6 +44,22 @@ export default defineCollection({
       defaultValue: false,
     },
     {
+      type: 'string',
+      name: 'collection',
+    },
+    {
+      type: 'string',
+      name: 'dataSource',
+    },
+    {
+      type: 'string',
+      name: 'componentType',
+    },
+    {
+      type: 'string',
+      name: 'menuName',
+    },
+    {
       type: 'hasMany',
       name: 'links',
       target: 'blockTemplateLinks',

@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useContext, useEffect, useRef } from 'react';
-import { observer, useFieldSchema, useField, useFormEffects } from '@formily/react';
+import { observer, useFieldSchema, useField, useFormEffects, useForm } from '@formily/react';
 import { onFieldReact } from '@formily/core';
 import { useUpdate } from 'ahooks';
 import { SchemaComponentOnChangeContext, useAPIClient } from '@nocobase/client';
@@ -24,8 +24,31 @@ export const TemplateGridDecorator = observer((props: any) => {
   const preBlockSchemaUid = useRef(findBlockRootSchema(fieldSchema)?.['x-uid']);
   const api = useAPIClient();
   const template = useBlockTemplateInfo();
+  const form = useForm();
 
   const { onChange: onChangeFromContext } = useContext(SchemaComponentOnChangeContext);
+
+  useEffect(() => {
+    const dispose = form.subscribe(({ type, payload }) => {
+      if (type === 'blockAdded') {
+        api.resource('blockTemplates').update({
+          filter: {
+            key: template.key,
+          },
+          values: {
+            collection: payload.collection,
+            dataSource: payload.dataSource,
+            componentType: payload.componentType,
+            menuName: payload.menuName,
+          },
+        });
+      }
+    });
+
+    return () => {
+      form.unsubscribe(dispose);
+    };
+  }, [form]);
 
   fieldSchema['x-initializer-props'] = {
     style: {
