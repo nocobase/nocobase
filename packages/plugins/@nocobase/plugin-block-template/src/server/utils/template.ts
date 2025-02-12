@@ -219,6 +219,7 @@ function mergeSchema(template, schema, rootTemplate) {
                   'print',
                   'stepsFormNext',
                   'stepsFormPrevious',
+                  'disassociate',
                 ].find((name) => name === actionName);
                 if (targetActionName) {
                   const removedTargetKeys = _.remove(

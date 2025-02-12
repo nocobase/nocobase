@@ -462,6 +462,7 @@ function mergeSchema(
             // "x-settings": "actionSettings:refresh"
             // "x-settings": "actionSettings:delete"
             // "x-settings": "actionSettings:print"
+            // "x-settings": "actionSettings:disassociate"
             // filterForm:configureActions && x-use-component-props: useFilterBlockActionProps
             // filterForm:configureActions && x-use-component-props: useResetBlockActionProps
             // actionSettings:stepsFormNext
@@ -493,6 +494,7 @@ function mergeSchema(
                   'print',
                   'stepsFormNext',
                   'stepsFormPrevious',
+                  'disassociate',
                 ].find((name) => name === actionName);
                 if (targetActionName) {
                   const removedTargetKeys = _.remove(
