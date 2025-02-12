@@ -24,11 +24,21 @@ import {
   useCollectionRecordData,
   SchemaComponentContext,
 } from '../../../';
+import { Action } from '../action';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { getInnermostKeyAndValue } from '../../common/utils/uitls';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
 import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
+
+export const AssociationFieldAddNewer = (props) => {
+  const schemaComponentCtxValue = useContext(SchemaComponentContext);
+  return (
+    <SchemaComponentContext.Provider value={{ ...schemaComponentCtxValue, draggable: true }}>
+      <Action.Container {...props} />
+    </SchemaComponentContext.Provider>
+  );
+};
 
 export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
   addMode?: 'quickAdd' | 'modalAdd';
@@ -141,6 +151,7 @@ const InternalAssociationSelect = observer(
         </div>
       );
     };
+    console.log(fieldSchema);
     return (
       <div key={fieldSchema.name}>
         <Space.Compact style={{ display: 'flex' }}>
