@@ -19,7 +19,6 @@ import { ActionContextProps } from './types';
 export const ActionContext = createContext<ActionContextProps>({});
 ActionContext.displayName = 'ActionContext';
 
-let loading = false;
 export const ActionContextProvider: React.FC<ActionContextProps & { value?: ActionContextProps }> = React.memo(
   (props) => {
     const [submitted, setSubmitted] = useState(false); //是否有提交记录
@@ -30,21 +29,18 @@ export const ActionContextProvider: React.FC<ActionContextProps & { value?: Acti
 
     useEffect(() => {
       const run = async () => {
-        if (visible === false && service && !loading && (submitted || isSubPageClosedByPageMenu)) {
+        if (visible === false && service && !service.loading && (submitted || isSubPageClosedByPageMenu)) {
           // Prevent multiple requests from being triggered
-          loading = true;
+          service.loading = true;
           await service.refreshAsync();
-          loading = false;
+          service.loading = false;
 
+          setSubmitted(false);
           setParentSubmitted?.(true); //传递给上一层
         }
       };
 
       run();
-
-      return () => {
-        setSubmitted(false);
-      };
     }, [visible, service?.refresh, setParentSubmitted, isSubPageClosedByPageMenu]);
 
     const value = useMemo(() => ({ ...props, ...props?.value, submitted, setSubmitted }), [props, submitted]);
