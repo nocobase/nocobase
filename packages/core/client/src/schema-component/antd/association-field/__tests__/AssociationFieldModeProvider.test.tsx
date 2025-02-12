@@ -18,6 +18,7 @@ import {
 
 vi.mock('../AssociationSelect', () => ({
   AssociationSelect: () => <div>Association Select</div>,
+  AssociationFieldAddNewer: vi.fn(() => <div> AssociationFieldAddNewer</div>),
 }));
 
 vi.mock('../InternalPicker', () => ({
