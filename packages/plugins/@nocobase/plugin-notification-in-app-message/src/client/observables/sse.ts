@@ -53,6 +53,7 @@ export const startMsgSSEStreamWithRetry: () => () => void = () => {
       responseType: 'stream',
       adapter: 'fetch',
     });
+    if (!res?.data) return;
     const stream = res.data;
     const reader = stream.pipeThrough(new TextDecoderStream()).getReader();
     retryTimes = 0;
