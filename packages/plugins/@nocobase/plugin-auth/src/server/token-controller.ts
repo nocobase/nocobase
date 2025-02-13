@@ -21,7 +21,12 @@ import { randomUUID } from 'crypto';
 import ms from 'ms';
 import Application from '@nocobase/server';
 import Database, { Repository } from '@nocobase/database';
-import { issuedTokensCollectionName, tokenPolicyCollectionName, tokenPolicyRecordKey } from '../constants';
+import {
+  issuedTokensCollectionName,
+  tokenPolicyCollectionName,
+  tokenPolicyRecordKey,
+  RENEWED_JTI_CACHE_MS,
+} from '../constants';
 
 type TokenControlService = ITokenControlService;
 
@@ -119,7 +124,7 @@ export class TokenController implements TokenControlService {
     );
 
     if (count === 1) {
-      await this.cache.set(`jti-renewed-cahce:${jti}`, { jti: newId, issuedTime }, 20000);
+      await this.cache.set(`jti-renewed-cahce:${jti}`, { jti: newId, issuedTime }, RENEWED_JTI_CACHE_MS);
       this.logger.info('jti renewed', { oldJti: jti, newJti: newId, issuedTime });
       return { jti: newId, issuedTime };
     } else {
