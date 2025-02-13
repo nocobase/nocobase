@@ -9,7 +9,7 @@
 
 import ProLayout from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
-import { ConfigProvider, Divider, Layout } from 'antd';
+import { ConfigProvider, Divider } from 'antd';
 import React, { createContext, FC, useContext, useEffect, useMemo, useRef } from 'react';
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import {
@@ -121,7 +121,7 @@ export const AdminDynamicPage = () => {
   }
 
   return (
-    <KeepAlive uid={currentPageUid}>{(uid) => <RemoteSchemaComponent onlyRenderProperties uid={uid} />}</KeepAlive>
+    <KeepAlive uid={currentPageUid}>{(uid) => <RemoteSchemaComponent uid={uid} />}</KeepAlive>
   );
 };
 
@@ -217,13 +217,11 @@ export const LayoutContent = () => {
   /* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */
   return (
     <CurrentRouteProvider uid={currentPageUid}>
-      <Layout.Content className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
-        <header className={layoutContentHeaderClass}></header>
+      <div className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
         <div style={pageContentStyle}>
           <Outlet />
         </div>
-        {/* {service.contentLoading ? render() : <Outlet />} */}
-      </Layout.Content>
+      </div>
     </CurrentRouteProvider>
   );
 };

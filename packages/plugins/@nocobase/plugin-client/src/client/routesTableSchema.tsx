@@ -13,8 +13,6 @@ import { useField, useForm } from '@formily/react';
 import {
   CollectionField,
   css,
-  getGroupMenuSchema,
-  getLinkMenuSchema,
   getPageMenuSchema,
   getTabSchema,
   getVariableComponentWithScope,
@@ -26,6 +24,7 @@ import {
   useCollectionRecordData,
   useDataBlockRequestData,
   useDataBlockRequestGetter,
+  useInsertPageSchema,
   useNocoBaseRoutes,
   useRequest,
   useRouterBasename,
@@ -237,13 +236,13 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                         'x-component': 'IconPicker',
                         'x-reactions': isMobile
                           ? {
-                              dependencies: ['type'],
-                              fulfill: {
-                                state: {
-                                  required: '{{$deps[0] !== "tabs"}}',
-                                },
+                            dependencies: ['type'],
+                            fulfill: {
+                              state: {
+                                required: '{{$deps[0] !== "tabs"}}',
                               },
-                            }
+                            },
+                          }
                           : undefined,
                       },
                       // 由于历史原因，桌面端使用的是 'href' 作为 key，移动端使用的是 'url' 作为 key
@@ -575,9 +574,8 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                   }
 
                   if (recordData.type === NocoBaseDesktopRouteType.page) {
-                    const path = `${basenameOfCurrentRouter.slice(0, -1)}${basename}/${
-                      isMobile ? recordData.schemaUid : recordData.menuSchemaUid
-                    }`;
+                    const path = `${basenameOfCurrentRouter.slice(0, -1)}${basename}/${isMobile ? recordData.schemaUid : recordData.menuSchemaUid
+                      }`;
                     // 在点击 Access 按钮时，会用到
                     recordData._path = path;
 
@@ -697,13 +695,13 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                             'x-component': 'IconPicker',
                             'x-reactions': isMobile
                               ? {
-                                  dependencies: ['type'],
-                                  fulfill: {
-                                    state: {
-                                      required: '{{$deps[0] !== "tabs"}}',
-                                    },
+                                dependencies: ['type'],
+                                fulfill: {
+                                  state: {
+                                    required: '{{$deps[0] !== "tabs"}}',
                                   },
-                                }
+                                },
+                              }
                               : undefined,
                           },
                           // 由于历史原因，桌面端使用的是 'href' 作为 key，移动端使用的是 'url' 作为 key
@@ -986,13 +984,13 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                             'x-component': 'IconPicker',
                             'x-reactions': isMobile
                               ? {
-                                  dependencies: ['type'],
-                                  fulfill: {
-                                    state: {
-                                      required: '{{$deps[0] !== "tabs"}}',
-                                    },
+                                dependencies: ['type'],
+                                fulfill: {
+                                  state: {
+                                    required: '{{$deps[0] !== "tabs"}}',
                                   },
-                                }
+                                },
+                              }
                               : undefined,
                           },
                           // 由于历史原因，桌面端使用的是 'href' 作为 key，移动端使用的是 'url' 作为 key
@@ -1244,22 +1242,15 @@ function useCreateRouteSchema(isMobile: boolean) {
   const collectionName = 'uiSchemas';
   const api = useAPIClient();
   const resource = useMemo(() => api.resource(collectionName), [api, collectionName]);
+  const insertPageSchema = useInsertPageSchema();
 
   const createRouteSchema = useCallback(
     async ({
-      title,
-      icon,
       type,
-      href,
-      params,
     }: {
-      title: string;
-      icon: string;
       type: NocoBaseDesktopRouteType;
-      href?: string;
-      params?: Record<string, any>;
     }) => {
-      const menuSchemaUid = uid();
+      const menuSchemaUid = isMobile ? undefined : uid();
       const pageSchemaUid = uid();
       const tabSchemaName = uid();
       const tabSchemaUid = type === NocoBaseDesktopRouteType.page ? uid() : undefined;
@@ -1268,16 +1259,15 @@ function useCreateRouteSchema(isMobile: boolean) {
         [NocoBaseDesktopRouteType.page]: isMobile
           ? getMobilePageSchema(pageSchemaUid, tabSchemaUid).schema
           : getPageMenuSchema({
-              title,
-              icon,
-              pageSchemaUid,
-              tabSchemaUid,
-              menuSchemaUid,
-              tabSchemaName,
-            }),
-        [NocoBaseDesktopRouteType.group]: getGroupMenuSchema({ title, icon, schemaUid: menuSchemaUid }),
-        [NocoBaseDesktopRouteType.link]: getLinkMenuSchema({ title, icon, schemaUid: menuSchemaUid, href, params }),
+            pageSchemaUid,
+            tabSchemaUid,
+            tabSchemaName,
+          }),
       };
+
+      if (!typeToSchema[type]) {
+        return {};
+      }
 
       if (isMobile) {
         await resource['insertAdjacent']({
@@ -1288,17 +1278,12 @@ function useCreateRouteSchema(isMobile: boolean) {
           },
         });
       } else {
-        await resource['insertAdjacent/nocobase-admin-menu']({
-          position: 'beforeEnd',
-          values: {
-            schema: typeToSchema[type],
-          },
-        });
+        await insertPageSchema(typeToSchema[type]);
       }
 
       return { menuSchemaUid, pageSchemaUid, tabSchemaUid, tabSchemaName };
     },
-    [isMobile, resource],
+    [isMobile, resource, insertPageSchema],
   );
 
   /**

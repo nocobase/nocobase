@@ -6,11 +6,12 @@ import { uid } from "@formily/shared";
 import { App, Modal } from 'antd';
 import React, { FC, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { isVariable, NocoBaseDesktopRouteType, useAllAccessDesktopRoutes, useCompile, useCurrentRoute, useDesignable, useNocoBaseRoutes, useURLAndHTMLSchema } from "../../..";
+import { isVariable, NocoBaseDesktopRouteType, useAllAccessDesktopRoutes, useCompile, useCurrentRoute, useNocoBaseRoutes, useURLAndHTMLSchema } from "../../..";
 import {
   getPageMenuSchema
 } from '../../../';
 import { SchemaSettings } from "../../../application/schema-settings/SchemaSettings";
+import { useInsertPageSchema } from "../../../modules/menu/PageMenuItem";
 import { SchemaToolbar } from "../../../schema-settings/GeneralSchemaDesigner";
 import { SchemaSettingsItem, SchemaSettingsModalItem, SchemaSettingsSubMenu, SchemaSettingsSwitchItem } from "../../../schema-settings/SchemaSettings";
 import { NocoBaseDesktopRoute } from "./convertRoutesToSchema";
@@ -66,11 +67,11 @@ export const RemoveRoute: FC = () => {
 const InsertMenuItems = (props) => {
   const { eventKey, title, insertPosition } = props;
   const { t } = useTranslation();
-  const { dn } = useDesignable();
   const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
   const currentRoute = useCurrentRoute();
   const isSubMenu = currentRoute?.type === NocoBaseDesktopRouteType.group;
   const { createRoute, moveRoute } = useNocoBaseRoutes();
+  const insertPageSchema = useInsertPageSchema();
 
   if (!isSubMenu && insertPosition === 'beforeEnd') {
     return null;
@@ -124,19 +125,6 @@ const InsertMenuItems = (props) => {
               method: insertPositionToMethod[insertPosition],
             });
           }
-
-          // 3. 插入一个对应的 Schema
-          // TODO: group 不需要插入 Schema
-          dn.insertAdjacent(insertPosition, {
-            type: 'void',
-            title,
-            'x-component': 'Menu.SubMenu',
-            'x-decorator': 'ACLMenuItemProvider',
-            'x-component-props': {
-              icon,
-            },
-            'x-uid': schemaUid,
-          });
         }}
       />
 
@@ -202,17 +190,7 @@ const InsertMenuItems = (props) => {
           }
 
           // 3. 插入一个对应的 Schema
-          dn.insertAdjacent(
-            insertPosition,
-            getPageMenuSchema({
-              title,
-              icon,
-              pageSchemaUid,
-              menuSchemaUid,
-              tabSchemaUid,
-              tabSchemaName,
-            }),
-          );
+          insertPageSchema(getPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }));
         }}
       />
       <SchemaSettingsModalItem
@@ -269,21 +247,6 @@ const InsertMenuItems = (props) => {
               method: insertPositionToMethod[insertPosition],
             });
           }
-
-          // 3. 插入一个对应的 Schema
-          // TODO: link 不需要插入 Schema
-          dn.insertAdjacent(insertPosition, {
-            type: 'void',
-            title,
-            'x-component': 'Menu.URL',
-            'x-decorator': 'ACLMenuItemProvider',
-            'x-component-props': {
-              icon,
-              href,
-              params,
-            },
-            'x-uid': schemaUid,
-          });
         }}
       />
     </SchemaSettingsSubMenu>
