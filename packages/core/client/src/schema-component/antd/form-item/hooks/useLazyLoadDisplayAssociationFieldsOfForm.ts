@@ -13,6 +13,7 @@ import { untracked } from '@formily/reactive';
 import { nextTick } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { useEffect, useMemo, useRef } from 'react';
+import { useFormBlockType } from '../../../../block-provider';
 import { useAssociationNames } from '../../../../block-provider/hooks';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
 import { useCollectionRecordData } from '../../../../data-source/collection-record/CollectionRecordProvider';
@@ -39,6 +40,7 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
   const { formValue: subFormValue } = useSubFormValue();
   const { isInSubForm, isInSubTable } = useFlag() || {};
   const { getAssociationAppends } = useAssociationNames();
+  const { type } = useFormBlockType() || {};
 
   const schemaName = fieldSchema.name.toString();
 
@@ -57,7 +59,11 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
 
   const shouldNotLazyLoad = useMemo(() => {
     return (
-      !isDisplayField(schemaName) || !variables || name === 'fields' || !collectionFieldRef.current || hasPreloadData
+      !isDisplayField(schemaName) ||
+      !variables ||
+      name === 'fields' ||
+      !collectionFieldRef.current ||
+      (hasPreloadData && type !== 'update')
     );
   }, [schemaName, variables, name, collectionFieldRef.current, hasPreloadData]);
 
