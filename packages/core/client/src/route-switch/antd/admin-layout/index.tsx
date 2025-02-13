@@ -90,29 +90,13 @@ const RoutesRequestProvider: FC = ({ children }) => {
   }, [data?.data, refresh]);
 
   if (loading) return null;
-  
+
   return (
     <AllAccessDesktopRoutesContext.Provider value={allAccessRoutesValue}>
       {children}
     </AllAccessDesktopRoutesContext.Provider>
   );
 };
-
-const sideClass = css`
-  height: 100%;
-  /* position: fixed; */
-  position: relative;
-  left: 0;
-  top: 0;
-  background: rgba(0, 0, 0, 0);
-  z-index: 100;
-  .ant-layout-sider-children {
-    top: var(--nb-header-height);
-    position: fixed;
-    width: 200px;
-    height: calc(100vh - var(--nb-header-height));
-  }
-`;
 
 const noAccessPermission = (currentPageUid: string, allAccessRoutes: NocoBaseDesktopRoute[]) => {
   if (!currentPageUid) {
@@ -350,7 +334,14 @@ export const InternalAdminLayout = () => {
       actionsRender={(props) => {
         if (props.isMobile) return [];
         if (typeof window === 'undefined') return [];
-        return [<PinnedPluginList key="pinned-plugin-list" />, <Help key="help" />, <CurrentUser key="current-user" />];
+        return [
+          <PinnedPluginList key="pinned-plugin-list" />,
+          <ConfigProvider theme={theme}>
+            <Divider type="vertical" />
+          </ConfigProvider>,
+          <Help key="help" />,
+          <CurrentUser key="current-user" />,
+        ];
       }}
       logo={<NocoBaseLogo />}
       title={''}
@@ -379,22 +370,6 @@ export const InternalAdminLayout = () => {
         return <GroupItem item={item}>{dom}</GroupItem>;
       }}
     >
-      <Layout.Header>
-        <div style={style1}>
-          <div style={style2}>
-            <NocoBaseLogo />
-            <div className={className4}></div>
-          </div>
-          <div className={className5}>
-            <PinnedPluginList />
-            <ConfigProvider theme={theme}>
-              <Divider type="vertical" />
-            </ConfigProvider>
-            <Help />
-            <CurrentUser />
-          </div>
-        </div>
-      </Layout.Header>
       <LayoutContent />
     </ProLayout>
   );
