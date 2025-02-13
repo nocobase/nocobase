@@ -187,7 +187,10 @@ export class BaseAuth extends Auth {
           headers: JSON.stringify(this.ctx?.req?.headers),
         });
         const expiresIn = Math.floor(tokenPolicy.tokenExpirationTime / 1000);
-        const newToken = this.jwt.sign({ userId, roleName, temp, signInTime }, { jwtid: renewedResult.jti, expiresIn });
+        const newToken = this.jwt.sign(
+          { userId, roleName, temp, signInTime, iat: Math.floor(renewedResult.issuedTime / 1000) },
+          { jwtid: renewedResult.jti, expiresIn },
+        );
         this.ctx.res.setHeader('x-new-token', newToken);
         return user;
       } catch (err) {
