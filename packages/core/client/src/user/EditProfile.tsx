@@ -10,7 +10,7 @@
 import { useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { MenuProps } from 'antd';
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActionContextProvider,
@@ -23,8 +23,11 @@ import {
   useCollectionManager,
   useCurrentUserContext,
   useSystemSettings,
+  zIndexContext,
+  useZIndexContext,
 } from '../';
 import { useAPIClient } from '../api-client';
+import { SchemaSettingsItem } from '../schema-settings';
 
 const useUpdateProfileActionProps = () => {
   const ctx = useCurrentUserContext();
@@ -70,9 +73,9 @@ const useUpdateProfileActionProps = () => {
 };
 
 const useEditProfileFormBlockDecoratorProps = () => {
-  const { data } = useCurrentUserContext();
+  const { data } = useCurrentUserContext() || {};
   return {
-    filterByTk: data.data?.id,
+    filterByTk: data?.data?.id,
   };
 };
 
@@ -169,4 +172,63 @@ export const useEditProfile = () => {
   }
 
   return result;
+};
+
+export const EditProfile = () => {
+  const ctx = useContext(DropdownVisibleContext);
+  const [visible, setVisible] = useState(false);
+  const { t } = useTranslation();
+  const { data } = useSystemSettings() || {};
+  const { enableEditProfile } = data?.data ?? {};
+  const parentZIndex = useZIndexContext();
+  const zIndex = parentZIndex + 10;
+
+  // 避免重复渲染的 click 处理
+  const handleClick = useCallback(
+    (e) => {
+      e.stopPropagation();
+      ctx?.setVisible?.(false);
+      setVisible((prev) => (prev ? prev : true)); // 只有 `visible` 变化时才触发更新
+    },
+    [ctx],
+  );
+
+  // 避免 `SchemaComponent` 结构重新创建
+  const schemaComponent = useMemo(() => {
+    return (
+      <SchemaComponent
+        components={{ ProfileEditForm }}
+        schema={{
+          type: 'object',
+          properties: {
+            [uid()]: {
+              'x-component': 'Action.Drawer',
+              'x-component-props': { zIndex },
+              type: 'void',
+              title: '{{t("Edit profile")}}',
+              properties: {
+                form: {
+                  type: 'void',
+                  'x-component': 'ProfileEditForm',
+                },
+              },
+            },
+          },
+        }}
+      />
+    );
+  }, [zIndex]);
+  if (enableEditProfile === false) {
+    return null;
+  }
+  return (
+    <zIndexContext.Provider value={zIndex}>
+      <SchemaSettingsItem eventKey="EditProfile" title="EditProfile">
+        <div onClick={handleClick}>{t('Edit profile')}</div>
+      </SchemaSettingsItem>
+      <ActionContextProvider value={{ visible, setVisible }}>
+        {visible && <div onClick={(e) => e.stopPropagation()}>{schemaComponent}</div>}
+      </ActionContextProvider>
+    </zIndexContext.Provider>
+  );
 };
