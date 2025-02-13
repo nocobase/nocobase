@@ -16,6 +16,7 @@ import {
   ISchema,
   useResource,
   registerInitializerMenusGenerator,
+  useSchemaInitializer,
 } from '@nocobase/client';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { CopyOutlined, LoadingOutlined } from '@ant-design/icons';
@@ -281,7 +282,7 @@ const SearchInput = ({ value: outValue, onChange }) => {
 
 export const TemplateBlockInitializer = () => {
   const api = useAPIClient();
-  const { insertAfterEnd, insertBeforeEnd } = useDesignable();
+  const { insert } = useSchemaInitializer();
   const plugin = usePlugin(PluginBlockTemplateClient);
   const mobilePlugin = usePlugin(PluginMobileClient);
   const blockTemplatesResource = useResource('blockTemplates');
@@ -292,9 +293,8 @@ export const TemplateBlockInitializer = () => {
     return window.location.pathname.startsWith(mobilePlugin.mobileBasename);
   }, [mobilePlugin]);
   const fieldSchema = useFieldSchema();
-  const insert = fieldSchema?.['x-component'] === 'Grid' ? insertBeforeEnd : insertAfterEnd;
 
-  const handleClick = async ({ item }, options?: any) => {
+  const handleClick = async ({ item }, options?: any, insertAdjacent?: any) => {
     const { uid } = item;
     const { data } = await api.request({
       url: `uiSchemas:getProperties/${uid}`,
@@ -305,7 +305,7 @@ export const TemplateBlockInitializer = () => {
     plugin.setTemplateCache(findBlockRootSchema(template['properties']?.['blocks']));
     correctIdReferences(schemas);
     for (const schema of schemas) {
-      insert(schema);
+      insertAdjacent ? insertAdjacent(schema) : insert(schema);
     }
     // server hook only support root node, so we do the link from client
     const links = [];
@@ -426,14 +426,14 @@ export const TemplateBlockInitializer = () => {
             name: m.key,
             item: m,
             title: m.title,
-            onClick: ({ item }) => {
+            schemaInsertor: (insert, { item, fromOthersInPopup }) => {
               const options = { dataSourceName };
               if (field) {
                 options['association'] = `${collection?.name}.${field.target}`;
               } else {
                 options['collectionName'] = collectionName;
               }
-              handleClick(item, options);
+              return handleClick(item, options, insert);
             },
           };
         });
