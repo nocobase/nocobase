@@ -31,7 +31,7 @@ import {
 import { useDocumentTitle } from '../../../document-title';
 import { useGlobalTheme } from '../../../global-theme';
 import { Icon } from '../../../icon';
-import { NocoBaseDesktopRouteType, useCurrentRoute } from '../../../route-switch/antd/admin-layout';
+import { NocoBaseDesktopRouteType, NocoBaseRouteContext, useCurrentRoute } from '../../../route-switch/antd/admin-layout';
 import { KeepAliveProvider, useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
 import { DndContext } from '../../common';
@@ -334,31 +334,28 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
   );
 
   const items = useMemo(() => {
-    return fieldSchema
-      .mapProperties((schema) => {
-        const tabRoute = currentRoute?.children?.find((route) => route.schemaUid === schema['x-uid']);
-        if (!tabRoute || tabRoute.hideInMenu) {
-          return null;
-        }
+    return currentRoute?.children.map((tabRoute) => {
+      if (!tabRoute || tabRoute.hideInMenu) {
+        return null;
+      }
 
-        // 将 tabRoute 挂载到 schema 上，以方便获取
-        (schema as any).__route__ = tabRoute;
-
-        return {
-          label: (
+      return {
+        label: (
+          <NocoBaseRouteContext.Provider value={tabRoute}>
+            {/* TODO: 单独为 tab 写一个拖动 */}
             <SortableItem
-              id={schema.name as string}
-              schema={schema}
+              id={tabRoute.schemaUid}
               className={classNames('nb-action-link', 'designerCss', className)}
             >
-              {schema['x-icon'] && <Icon style={{ marginRight: 8 }} type={schema['x-icon']} />}
+              {tabRoute.icon && <Icon style={{ marginRight: 8 }} type={tabRoute.icon} />}
               <span>{(tabRoute.title && routeT(compile(tabRoute.title))) || t('Unnamed')}</span>
-              <PageTabDesigner schema={schema} />
+              <PageTabDesigner />
             </SortableItem>
-          ),
-          key: schema.name as string,
-        };
-      })
+          </NocoBaseRouteContext.Provider>
+        ),
+        key: tabRoute.schemaUid, // TODO: 兼容旧版 tab 路由
+      };
+    })
       .filter(Boolean);
   }, [
     fieldSchema,

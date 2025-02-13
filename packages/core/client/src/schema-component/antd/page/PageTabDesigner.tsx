@@ -31,29 +31,26 @@ export const PageDesigner = ({ title }) => {
   );
 };
 
-export const PageTabDesigner = ({ schema }) => {
+export const PageTabDesigner = () => {
   const { designable } = useDesignable();
   const { getAriaLabel } = useGetAriaLabelOfDesigner();
   const fieldSchema = useFieldSchema();
-  const { render } = useSchemaSettingsRender(
-    fieldSchema['x-settings'] || 'PageTabSettings',
-    fieldSchema['x-settings-props'],
-  );
+  const { render } = useSchemaSettingsRender('PageTabSettings');
+
   if (!designable) {
     return null;
   }
+
   return (
-    <SchemaToolbarProvider schema={schema}>
-      <div className={'general-schema-designer'}>
-        <div className={'general-schema-designer-icons'}>
-          <Space size={3} align={'center'}>
-            <DragHandler>
-              <DragOutlined style={{ marginRight: 0 }} role="button" aria-label={getAriaLabel('drag-handler', 'tab')} />
-            </DragHandler>
-            {render()}
-          </Space>
-        </div>
+    <div className={'general-schema-designer'}>
+      <div className={'general-schema-designer-icons'}>
+        <Space size={3} align={'center'}>
+          <DragHandler>
+            <DragOutlined style={{ marginRight: 0 }} role="button" aria-label={getAriaLabel('drag-handler', 'tab')} />
+          </DragHandler>
+          {render()}
+        </Space>
       </div>
-    </SchemaToolbarProvider>
+    </div>
   );
 };

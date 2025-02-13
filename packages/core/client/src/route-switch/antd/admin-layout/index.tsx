@@ -47,17 +47,17 @@ import { MenuSchemaToolbar } from './menuItemSettings';
 
 export { KeepAlive, NocoBaseDesktopRouteType };
 
-const RouteContext = createContext<NocoBaseDesktopRoute | null>(null);
-RouteContext.displayName = 'RouteContext';
+export const NocoBaseRouteContext = createContext<NocoBaseDesktopRoute | null>(null);
+NocoBaseRouteContext.displayName = 'NocoBaseRouteContext';
 
 const CurrentRouteProvider: FC<{ uid: string }> = ({ children, uid }) => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const routeNode = useMemo(() => findRouteBySchemaUid(uid, allAccessRoutes), [uid, allAccessRoutes]);
-  return <RouteContext.Provider value={routeNode}>{children}</RouteContext.Provider>;
+  return <NocoBaseRouteContext.Provider value={routeNode}>{children}</NocoBaseRouteContext.Provider>;
 };
 
 export const useCurrentRoute = () => {
-  return useContext(RouteContext) || {};
+  return useContext(NocoBaseRouteContext) || {};
 };
 
 const emptyArray = [];
@@ -268,10 +268,10 @@ const GroupItem: FC<{ item: any }> = (props) => {
 
   return (
     <ParentRouteContext.Provider value={item._parentRoute}>
-      <RouteContext.Provider value={item._route}>
+      <NocoBaseRouteContext.Provider value={item._route}>
         {props.children}
         {designable && <MenuSchemaToolbarWithContainer />}
-      </RouteContext.Provider>
+      </NocoBaseRouteContext.Provider>
     </ParentRouteContext.Provider>
   );
 };
@@ -287,9 +287,9 @@ const MenuItem: FC<{ item: any }> = (props) => {
   if (item.key === 'x-designer-button') {
     return (
       <ParentRouteContext.Provider value={item._parentRoute}>
-        <RouteContext.Provider value={item._route}>
+        <NocoBaseRouteContext.Provider value={item._route}>
           {props.children}
-        </RouteContext.Provider>
+        </NocoBaseRouteContext.Provider>
       </ParentRouteContext.Provider>
     )
   }
@@ -300,12 +300,12 @@ const MenuItem: FC<{ item: any }> = (props) => {
   return (
     <div>
       <ParentRouteContext.Provider value={item._parentRoute}>
-        <RouteContext.Provider value={item._route}>
+        <NocoBaseRouteContext.Provider value={item._route}>
           <Link to={path}>
             {props.children}
           </Link>
           <MenuSchemaToolbar />
-        </RouteContext.Provider>
+        </NocoBaseRouteContext.Provider>
       </ParentRouteContext.Provider>
     </div>
   );

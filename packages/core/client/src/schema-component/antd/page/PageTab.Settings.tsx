@@ -10,11 +10,11 @@
 import { ExclamationCircleFilled } from '@ant-design/icons';
 import { ISchema } from '@formily/json-schema';
 import { App, Modal } from 'antd';
-import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { useSchemaToolbar } from '../../../application/schema-toolbar';
+import { useCurrentRoute } from '../../../route-switch';
 import { useDesignable } from '../../hooks';
 import { useNocoBaseRoutes } from '../menu/Menu';
 
@@ -29,9 +29,8 @@ export const pageTabSettings = new SchemaSettings({
       type: 'modal',
       useComponentProps() {
         const { t } = useTranslation();
-        const { schema } = useSchemaToolbar<{ schema: ISchema }>();
-        const { dn } = useDesignable();
         const { updateRoute } = useNocoBaseRoutes();
+        const currentRoute = useCurrentRoute();
 
         return {
           title: t('Edit'),
@@ -54,20 +53,10 @@ export const pageTabSettings = new SchemaSettings({
               },
             },
           } as ISchema,
-          initialValues: { title: schema.title, icon: schema['x-icon'] },
+          initialValues: { title: currentRoute.title, icon: currentRoute.icon },
           onSubmit: ({ title, icon }) => {
-            schema.title = title;
-            schema['x-icon'] = icon;
-            dn.emit('patch', {
-              schema: {
-                ['x-uid']: schema['x-uid'],
-                title,
-                'x-icon': icon,
-              },
-            });
-
             // 更新路由
-            updateRoute(schema['__route__'].id, {
+            updateRoute(currentRoute.id, {
               title,
               icon,
             });
@@ -80,33 +69,21 @@ export const pageTabSettings = new SchemaSettings({
       type: 'switch',
       useComponentProps() {
         const { t } = useTranslation();
-        const { schema } = useSchemaToolbar<{ schema: ISchema }>();
         const { updateRoute } = useNocoBaseRoutes();
-        const { dn } = useDesignable();
+        const currentRoute = useCurrentRoute();
 
         return {
           title: t('Hidden'),
-          checked: schema['x-component-props']?.hidden,
+          checked: currentRoute.hideInMenu,
           onChange: (v) => {
             Modal.confirm({
-              title: '确定要隐藏该菜单吗？',
+              title: t('Are you sure you want to hide this tab?'),
               icon: <ExclamationCircleFilled />,
-              content: '隐藏后，该菜单将不再显示在菜单栏中。如需再次显示，需要去路由管理页面设置。',
+              content: t('After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.'),
               async onOk() {
-                _.set(schema, 'x-component-props.hidden', !!v);
-
-                // 更新菜单对应的路由
-                if (schema['__route__']?.id) {
-                  await updateRoute(schema['__route__'].id, {
-                    hideInMenu: !!v,
-                  });
-                }
-
-                dn.emit('patch', {
-                  schema: {
-                    'x-uid': schema['x-uid'],
-                    'x-component-props': schema['x-component-props'],
-                  },
+                // Update the route corresponding to the menu
+                await updateRoute(currentRoute.id, {
+                  hideInMenu: !!v,
                 });
               },
             });
