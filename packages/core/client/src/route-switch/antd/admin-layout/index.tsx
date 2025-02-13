@@ -52,7 +52,7 @@ RouteContext.displayName = 'RouteContext';
 
 const CurrentRouteProvider: FC<{ uid: string }> = ({ children, uid }) => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
-  const routeNode = useMemo(() => getRouteNodeBySchemaUid(uid, allAccessRoutes), [uid, allAccessRoutes]);
+  const routeNode = useMemo(() => findRouteBySchemaUid(uid, allAccessRoutes), [uid, allAccessRoutes]);
   return <RouteContext.Provider value={routeNode}>{children}</RouteContext.Provider>;
 };
 
@@ -75,7 +75,7 @@ export const useAllAccessDesktopRoutes = () => {
 };
 
 const RoutesRequestProvider: FC = ({ children }) => {
-  const { data, refresh } = useRequest<{
+  const { data, refresh, loading } = useRequest<{
     data: any;
   }>({
     url: `/desktopRoutes:listAccessible`,
@@ -89,6 +89,8 @@ const RoutesRequestProvider: FC = ({ children }) => {
     };
   }, [data?.data, refresh]);
 
+  if (loading) return null;
+  
   return (
     <AllAccessDesktopRoutesContext.Provider value={allAccessRoutesValue}>
       {children}
@@ -117,7 +119,7 @@ const noAccessPermission = (currentPageUid: string, allAccessRoutes: NocoBaseDes
     return false;
   }
 
-  const routeNode = getRouteNodeBySchemaUid(currentPageUid, allAccessRoutes);
+  const routeNode = findRouteBySchemaUid(currentPageUid, allAccessRoutes);
   if (!routeNode) {
     return true;
   }
@@ -428,6 +430,40 @@ const NavigateToDefaultPage: FC = (props) => {
   )
 };
 
+const findRouteByMenuSchemaUid = (schemaUid: string, routes: NocoBaseDesktopRoute[]) => {
+  if (!routes) return;
+
+  for (const route of routes) {
+    if (route.menuSchemaUid === schemaUid) {
+      return route;
+    }
+
+    if (route.children?.length) {
+      const result = findRouteByMenuSchemaUid(schemaUid, route.children);
+      if (result) {
+        return result;
+      }
+    }
+  }
+}
+
+/**
+ * Compatibility with legacy page routes
+ * @param props
+ * @returns
+ */
+const LegacyRouteCompat: FC = (props) => {
+  const currentPageUid = useCurrentPageUid();
+  const { allAccessRoutes } = useAllAccessDesktopRoutes();
+  const route = findRouteByMenuSchemaUid(currentPageUid, allAccessRoutes);
+
+  if (route) {
+    return <Navigate to={`/admin/${route.schemaUid}`} />;
+  }
+
+  return <>{props.children}</>;
+}
+
 export const AdminProvider = (props) => {
   return (
     <CurrentPageUidProvider>
@@ -437,11 +473,13 @@ export const AdminProvider = (props) => {
             <ACLRolesCheckProvider>
               <RoutesRequestProvider>
                 <NavigateToDefaultPage>
-                  <RemoteCollectionManagerProvider>
-                    <CurrentAppInfoProvider>
-                      <RemoteSchemaTemplateManagerProvider>{props.children}</RemoteSchemaTemplateManagerProvider>
-                    </CurrentAppInfoProvider>
-                  </RemoteCollectionManagerProvider>
+                  <LegacyRouteCompat>
+                    <RemoteCollectionManagerProvider>
+                      <CurrentAppInfoProvider>
+                        <RemoteSchemaTemplateManagerProvider>{props.children}</RemoteSchemaTemplateManagerProvider>
+                      </CurrentAppInfoProvider>
+                    </RemoteCollectionManagerProvider>
+                  </LegacyRouteCompat>
                 </NavigateToDefaultPage>
               </RoutesRequestProvider>
             </ACLRolesCheckProvider>
@@ -469,14 +507,14 @@ export class AdminLayoutPlugin extends Plugin {
   }
 }
 
-function getRouteNodeBySchemaUid(schemaUid: string, treeArray: any[]) {
+function findRouteBySchemaUid(schemaUid: string, treeArray: any[]) {
   for (const node of treeArray) {
     if (schemaUid === node.schemaUid || schemaUid === node.menuSchemaUid) {
       return node;
     }
 
     if (node.children?.length) {
-      const result = getRouteNodeBySchemaUid(schemaUid, node.children);
+      const result = findRouteBySchemaUid(schemaUid, node.children);
       if (result) {
         return result;
       }
