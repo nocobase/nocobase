@@ -28,7 +28,14 @@ import PluginMobileClient from '@nocobase/plugin-mobile/client';
 import { findBlockRootSchema } from '../utils/schema';
 import { useFieldSchema } from '@formily/react';
 
-export function convertTplBlock(tpl, virtual = false, isRoot = true, newRootId?: string, templateKey?: string) {
+export function convertTplBlock(
+  tpl,
+  virtual = false,
+  isRoot = true,
+  newRootId?: string,
+  templateKey?: string,
+  options?: any,
+) {
   if (!newRootId) {
     newRootId = uid();
   }
@@ -46,7 +53,7 @@ export function convertTplBlock(tpl, virtual = false, isRoot = true, newRootId?:
       delete newSchema['x-decorator'];
     }
     for (const key in tpl.properties) {
-      const t = convertTplBlock(tpl.properties[key], virtual, isRoot, newRootId, templateKey);
+      const t = convertTplBlock(tpl.properties[key], virtual, isRoot, newRootId, templateKey, options);
       if (isRoot) {
         newRootId = uid(); // 多个区块支持，每个Grid.Row都要生成一个新的uid
       }
@@ -73,6 +80,15 @@ export function convertTplBlock(tpl, virtual = false, isRoot = true, newRootId?:
       newSchema['x-template-root-uid'] = tpl['x-uid'];
       newSchema['x-uid'] = newRootId;
       newSchema['x-template-version'] = '1.0';
+      blockKeepProps.forEach((prop) => {
+        if (tpl[prop]) {
+          newSchema[prop] = tpl[prop];
+        }
+      });
+      // set decorator props here!!
+      if (options) {
+        schemaPatch(newSchema, options);
+      }
     }
     if (templateKey) {
       newSchema['x-block-template-key'] = templateKey;
@@ -95,6 +111,46 @@ export function convertTplBlock(tpl, virtual = false, isRoot = true, newRootId?:
     }
     return newSchema;
   }
+}
+
+export const blockKeepProps = [
+  'x-decorator',
+  'x-decorator-props',
+  'x-acl-action',
+  'x-settings',
+  'x-use-decorator-props',
+];
+
+function schemaPatch(currentSchema: ISchema, options?: any) {
+  const { collectionName, dataSourceName, association, currentRecord } = options;
+
+  const decoratorName = currentSchema['x-decorator'];
+  if (decoratorName === 'DetailsBlockProvider') {
+    currentSchema['x-decorator-props'] = {
+      action: 'list',
+      collection: collectionName,
+      association: association,
+      dataSource: dataSourceName,
+      readPretty: true,
+      params: {
+        pageSize: 1,
+      },
+    };
+    currentSchema['x-acl-action'] = currentSchema['x-acl-action'].replace(':get', ':view');
+    currentSchema['x-settings'] = 'blockSettings:detailsWithPagination';
+    currentSchema['x-use-decorator-props'] = 'useDetailsWithPaginationDecoratorProps';
+  } else {
+    currentSchema['x-decorator-props'] = {
+      action: 'list',
+      collection: collectionName,
+      association: association,
+      dataSource: dataSourceName,
+    };
+    if (currentSchema['x-use-decorator-props'] === 'useCreateFormBlockDecoratorProps') {
+      currentSchema['x-decorator-props']['action'] = null;
+    }
+  }
+  return currentSchema;
 }
 
 function getSchemaUidMaps(schema, idMap = {}) {
@@ -133,7 +189,7 @@ function correctIdReferences(schemas) {
   }
 }
 
-function convertTemplateToBlock(data, templateKey?: string) {
+function convertTemplateToBlock(data, templateKey?: string, options?: any) {
   // debugger;
   let tpls = data?.properties; // Grid开始的区块
   tpls = _.get(Object.values(tpls), '0.properties'); // Grid.Row开始的区块
@@ -141,7 +197,7 @@ function convertTemplateToBlock(data, templateKey?: string) {
   // 遍历 tpl的所有属性，每一个属性其实是一个区块
   for (const key in tpls) {
     const tpl = tpls[key];
-    const schema = convertTplBlock(tpl, false, true, undefined, templateKey);
+    const schema = convertTplBlock(tpl, false, true, undefined, templateKey, options);
     if (schema) {
       schemas.push(schema);
     }
@@ -234,14 +290,14 @@ export const TemplateBlockInitializer = () => {
   const fieldSchema = useFieldSchema();
   const insert = fieldSchema?.['x-component'] === 'Grid' ? insertBeforeEnd : insertAfterEnd;
 
-  const handleClick = async ({ item }) => {
+  const handleClick = async ({ item }, options?: any) => {
     const { uid } = item;
     const { data } = await api.request({
       url: `uiSchemas:getProperties/${uid}`,
     });
 
     const template = data?.data;
-    const schemas = convertTemplateToBlock(template, item.key);
+    const schemas = convertTemplateToBlock(template, item.key, options);
     plugin.setTemplateCache(findBlockRootSchema(template['properties']?.['blocks']));
     correctIdReferences(schemas);
     for (const schema of schemas) {
@@ -367,7 +423,13 @@ export const TemplateBlockInitializer = () => {
             item: m,
             title: m.title,
             onClick: ({ item }) => {
-              handleClick(item);
+              const options = { dataSourceName };
+              if (field) {
+                options['association'] = `${collection?.name}.${field.target}`;
+              } else {
+                options['collectionName'] = collectionName;
+              }
+              handleClick(item, options);
             },
           };
         });

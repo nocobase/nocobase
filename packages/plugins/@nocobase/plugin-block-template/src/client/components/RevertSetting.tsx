@@ -12,7 +12,7 @@ import { useFieldSchema, useForm, useField } from '@formily/react';
 import { App } from 'antd';
 import React from 'react';
 import _ from 'lodash';
-import { convertTplBlock } from '../initializers/TemplateBlockInitializer';
+import { blockKeepProps, convertTplBlock } from '../initializers/TemplateBlockInitializer';
 import { Schema } from '@formily/json-schema';
 import { useT } from '../locale';
 import PluginBlockTemplateClient from '..';
@@ -118,6 +118,11 @@ export const RevertSetting = () => {
               rootSchema['x-block-template-key'],
             );
             newSchema['x-index'] = fieldSchema['x-index'];
+            for (const p of blockKeepProps) {
+              if (fieldSchema[p]) {
+                newSchema[p] = fieldSchema[p];
+              }
+            }
 
             // remove old schema
             const position = findInsertPosition(fieldSchema.parent, fieldSchema['x-uid']);
@@ -164,9 +169,16 @@ export const RevertSetting = () => {
             }
             // set decoratorProps, otherwise title will not be refreshed
             field['decoratorProps'] = {
+              ...field['decoratorProps'],
               ...templateSchema['x-decorator-props'],
               key: uid(),
             };
+            if (field.parent?.['decoratorProps']) {
+              field.parent['decoratorProps'] = {
+                ...field.parent['decoratorProps'],
+                key: uid(),
+              };
+            }
             form.clearFormGraph('*', false);
             blockForm?.clearFormGraph('*', false);
             form.reset();
