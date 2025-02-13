@@ -81,8 +81,8 @@ export function convertTplBlock(
       newSchema['x-uid'] = newRootId;
       newSchema['x-template-version'] = '1.0';
       blockKeepProps.forEach((prop) => {
-        if (tpl[prop]) {
-          newSchema[prop] = tpl[prop];
+        if (_.hasIn(tpl, prop)) {
+          _.set(newSchema, prop, _.get(tpl, prop));
         }
       });
       // set decorator props here!!
@@ -115,7 +115,11 @@ export function convertTplBlock(
 
 export const blockKeepProps = [
   'x-decorator',
-  'x-decorator-props',
+  'x-decorator-props.collection',
+  'x-decorator-props.association',
+  'x-decorator-props.dataSource',
+  'x-decorator-props.action',
+  'x-decorator-props.params',
   'x-acl-action',
   'x-settings',
   'x-use-decorator-props',

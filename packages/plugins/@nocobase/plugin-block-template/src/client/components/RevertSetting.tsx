@@ -119,8 +119,8 @@ export const RevertSetting = () => {
             );
             newSchema['x-index'] = fieldSchema['x-index'];
             for (const p of blockKeepProps) {
-              if (fieldSchema[p]) {
-                newSchema[p] = fieldSchema[p];
+              if (_.hasIn(fieldSchema, p)) {
+                _.set(newSchema, p, _.get(fieldSchema, p));
               }
             }
 
