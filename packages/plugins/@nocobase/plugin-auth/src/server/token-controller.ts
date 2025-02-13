@@ -41,7 +41,6 @@ export class TokenController implements TokenControlService {
   async setTokenInfo(id: string, value: TokenInfo): Promise<void> {
     const repo = this.app.db.getRepository<Repository<TokenInfo>>(issuedTokensCollectionName);
     await repo.updateOrCreate({ filterKeys: ['id'], values: value });
-    await this.cache.set(`${JTICACHEKEY}:${id}`, value);
     return;
   }
 

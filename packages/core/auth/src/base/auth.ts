@@ -173,6 +173,13 @@ export class BaseAuth extends Auth {
           });
         }
 
+        if (!jti) {
+          this.ctx.throw(401, {
+            message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
+            code: AuthErrorCode.INVALID_TOKEN,
+          });
+        }
+
         const renewedResult = await this.tokenController.renew(jti);
         this.ctx.logger.info('token renewed', {
           method: 'auth.check',
