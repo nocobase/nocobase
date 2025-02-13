@@ -179,10 +179,11 @@ export const RevertSetting = () => {
                 key: uid(),
               };
             }
-            form.clearFormGraph('*', false);
-            blockForm?.clearFormGraph('*', false);
             form.reset();
             blockForm?.reset();
+            form.clearFormGraph('*', false);
+            blockForm?.clearFormGraph('*', false);
+
             message.success(t('Reset successfully'), 0.2);
           },
         });

@@ -395,10 +395,10 @@ export const TemplateBlockInitializer = () => {
   ];
 
   useEffect(() => {
-    filteredData?.forEach((item) => {
+    data?.data?.forEach((item) => {
       plugin.templateInfos.set(item.key, item);
     });
-  }, [filteredData, plugin.templateInfos]);
+  }, [data?.data, plugin.templateInfos]);
 
   useEffect(() => {
     const generator = ({ collection, item, index, field, componentName, dataSource, keyPrefix, name }) => {
