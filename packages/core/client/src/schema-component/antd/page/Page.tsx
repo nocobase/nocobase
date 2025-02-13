@@ -480,6 +480,7 @@ export function getTabSchema({
     'x-initializer': 'page:addBlock',
     properties: {},
     'x-uid': schemaUid,
+    'x-async': true,
   };
 }
 
