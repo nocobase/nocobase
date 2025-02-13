@@ -15,6 +15,7 @@ import {
   usePlugin,
   ISchema,
   useResource,
+  registerInitializerMenusGenerator,
 } from '@nocobase/client';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { CopyOutlined, LoadingOutlined } from '@ant-design/icons';
@@ -25,6 +26,7 @@ import PluginBlockTemplateClient from '..';
 import { useT } from '../locale';
 import PluginMobileClient from '@nocobase/plugin-mobile/client';
 import { findBlockRootSchema } from '../utils/schema';
+import { useFieldSchema } from '@formily/react';
 
 export function convertTplBlock(tpl, virtual = false, isRoot = true, newRootId?: string, templateKey?: string) {
   if (!newRootId) {
@@ -219,7 +221,7 @@ const SearchInput = ({ value: outValue, onChange }) => {
 
 export const TemplateBlockInitializer = () => {
   const api = useAPIClient();
-  const { insertAdjacent } = useDesignable();
+  const { insertAfterEnd, insertBeforeEnd } = useDesignable();
   const plugin = usePlugin(PluginBlockTemplateClient);
   const mobilePlugin = usePlugin(PluginMobileClient);
   const blockTemplatesResource = useResource('blockTemplates');
@@ -229,9 +231,11 @@ export const TemplateBlockInitializer = () => {
   const isMobile = useMemo(() => {
     return window.location.pathname.startsWith(mobilePlugin.mobileBasename);
   }, [mobilePlugin]);
+  const fieldSchema = useFieldSchema();
+  const insert = fieldSchema?.['x-component'] === 'Grid' ? insertBeforeEnd : insertAfterEnd;
 
   const handleClick = async ({ item }) => {
-    const { value: uid } = item;
+    const { uid } = item;
     const { data } = await api.request({
       url: `uiSchemas:getProperties/${uid}`,
     });
@@ -241,11 +245,7 @@ export const TemplateBlockInitializer = () => {
     plugin.setTemplateCache(findBlockRootSchema(template['properties']?.['blocks']));
     correctIdReferences(schemas);
     for (const schema of schemas) {
-      await new Promise((resolve) => {
-        insertAdjacent('beforeEnd', schema, {
-          onSuccess: resolve,
-        });
-      });
+      insert(schema);
     }
     // server hook only support root node, so we do the link from client
     const links = [];
@@ -278,6 +278,9 @@ export const TemplateBlockInitializer = () => {
       description: string;
       uid: string;
       configured: boolean;
+      componentType: string;
+      collection: string;
+      dataSource: string;
     }[];
   }>(
     {
@@ -296,9 +299,9 @@ export const TemplateBlockInitializer = () => {
     },
   );
 
-  const filteredData = data?.data?.filter(
-    (item) => !searchValue || item.title.toLowerCase().includes(searchValue.toLowerCase()),
-  );
+  const filteredData = data?.data
+    ?.filter((item) => !item.dataSource)
+    .filter((item) => !searchValue || item.title.toLowerCase().includes(searchValue.toLowerCase()));
 
   const menuItems = [
     {
@@ -317,9 +320,8 @@ export const TemplateBlockInitializer = () => {
     },
     ...(filteredData?.length
       ? filteredData.map((item) => ({
-          key: item.key,
           label: item.title,
-          value: item.uid,
+          ...item,
         }))
       : [
           {
@@ -342,6 +344,48 @@ export const TemplateBlockInitializer = () => {
     });
   }, [filteredData, plugin.templateInfos]);
 
+  useEffect(() => {
+    const generator = ({ collection, item, index, field, componentName, dataSource, keyPrefix, name }) => {
+      let collectionName = collection?.name || item?.options?.name;
+      const dataSourceName = dataSource || item?.options?.dataSource || collection?.dataSource;
+      if (field) {
+        // association field
+        collectionName = field?.target;
+      }
+      const isForm = name === 'createForm' || name === 'editForm';
+      const children = data?.data
+        ?.filter(
+          (d) =>
+            (d.componentType === componentName || name === d['menuName'] || (isForm && d['menuName'] === 'form')) &&
+            d.collection === collectionName &&
+            d.dataSource === dataSourceName,
+        )
+        .map((m) => {
+          return {
+            type: 'item',
+            name: m.key,
+            item: m,
+            title: m.title,
+            onClick: ({ item }) => {
+              handleClick(item);
+            },
+          };
+        });
+
+      if (!children?.length) {
+        return null;
+      }
+      return {
+        key: `${keyPrefix}_${collectionName}_templates_subMenu_${index}`,
+        type: 'subMenu',
+        name: 'block_template',
+        title: t('Block template'),
+        children,
+      };
+    };
+    registerInitializerMenusGenerator('block_template', generator);
+  }, [data?.data]);
+
   if (loading) {
     return (
       <div>
@@ -351,16 +395,13 @@ export const TemplateBlockInitializer = () => {
   }
 
   return (
-    <div>
-      <SchemaInitializerItem
-        closeInitializerMenuWhenClick={true}
-        title={'{{t("Templates")}}'}
-        icon={<CopyOutlined />}
-        items={menuItems}
-        name={'templates'}
-        onClick={handleClick}
-      />
-      <Divider style={{ margin: 0, marginTop: token.marginSM, marginBottom: token.marginSM }} />
-    </div>
+    <SchemaInitializerItem
+      closeInitializerMenuWhenClick={true}
+      title={'{{t("Block template")}}'}
+      icon={<CopyOutlined style={{ marginRight: 0 }} />}
+      items={menuItems}
+      name={'templates'}
+      onClick={handleClick}
+    />
   );
 };

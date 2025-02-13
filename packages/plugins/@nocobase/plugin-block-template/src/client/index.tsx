@@ -79,7 +79,7 @@ export class PluginBlockTemplateClient extends Plugin {
     this.app.addComponents({ TemplateGridDecorator });
 
     for (const initializer of this.injectInitializers) {
-      this.app.schemaInitializerManager.addItem(initializer, 'templates', templateBlockInitializerItem);
+      this.app.schemaInitializerManager.addItem(initializer, 'otherBlocks.templates', templateBlockInitializerItem);
     }
 
     this.#afterAllPluginsLoaded();
@@ -135,9 +135,9 @@ export class PluginBlockTemplateClient extends Plugin {
           const schemaSetting = this.app.schemaSettingsManager.get(key);
           // if not filter out fieldSettings:component:, we will show two revert setting item
           if (schemaSetting && !key.startsWith('fieldSettings:component:')) {
-            schemaSetting.add('template-associationRecordSetting', associationRecordSettingItem);
+            // schemaSetting.add('template-associationRecordSetting', associationRecordSettingItem);
             schemaSetting.add('template-revertSettingItem', revertSettingItem);
-            schemaSetting.add('template-formSettingItem', formSettingItem);
+            // schemaSetting.add('template-formSettingItem', formSettingItem);
 
             for (let i = 0; i < schemaSetting.items.length; i++) {
               // hide convert to block setting item

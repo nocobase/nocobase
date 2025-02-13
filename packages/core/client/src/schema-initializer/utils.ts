@@ -834,10 +834,60 @@ export const useRecordCollectionDataSourceItems = (
     .filter((template) => {
       return ['FormItem', 'ReadPrettyFormItem'].includes(componentName) || template.resourceName === resourceName;
     });
-  if (!templates.length) {
+  // const extralCollectionMenuItems = initializerMenusGenerators.map((generator) => generator({ collection, field, componentName })).filter(Boolean);
+  const extralCollectionMenuItems = Array.from(initializerMenusGenerators.values())
+    .map((generator) => generator({ collection, componentName }))
+    .filter(Boolean);
+  if (!templates.length && !extralCollectionMenuItems.length) {
     return [];
   }
   const index = 0;
+  const deprecatedTemplatesMenuItems = [];
+  if (templates.length) {
+    deprecatedTemplatesMenuItems.push(
+      {
+        type: 'divider',
+      },
+      {
+        key: `${collectionName || componentName}_table_subMenu_${index}_copy`,
+        type: 'subMenu',
+        name: 'copy',
+        title: t('Duplicate template'),
+        children: templates.map((template) => {
+          const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
+            ? `${template?.name} ${t('(Fields only)')}`
+            : template?.name;
+          return {
+            type: 'item',
+            mode: 'copy',
+            name: collection.name,
+            template,
+            item,
+            title: templateName || t('Untitled'),
+          };
+        }),
+      },
+      {
+        key: `${collectionName || componentName}_table_subMenu_${index}_ref`,
+        type: 'subMenu',
+        name: 'ref',
+        title: t('Reference template'),
+        children: templates.map((template) => {
+          const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
+            ? `${template?.name} ${t('(Fields only)')}`
+            : template?.name;
+          return {
+            type: 'item',
+            mode: 'reference',
+            name: collection.name,
+            template,
+            item,
+            title: templateName || t('Untitled'),
+          };
+        }),
+      },
+    );
+  }
   return [
     {
       key: `${collectionName || componentName}_table_blank`,
@@ -846,47 +896,8 @@ export const useRecordCollectionDataSourceItems = (
       title: t('Blank block'),
       item,
     },
-    {
-      type: 'divider',
-    },
-    {
-      key: `${collectionName || componentName}_table_subMenu_${index}_copy`,
-      type: 'subMenu',
-      name: 'copy',
-      title: t('Duplicate template'),
-      children: templates.map((template) => {
-        const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
-          ? `${template?.name} ${t('(Fields only)')}`
-          : template?.name;
-        return {
-          type: 'item',
-          mode: 'copy',
-          name: collection.name,
-          template,
-          item,
-          title: templateName || t('Untitled'),
-        };
-      }),
-    },
-    {
-      key: `${collectionName || componentName}_table_subMenu_${index}_ref`,
-      type: 'subMenu',
-      name: 'ref',
-      title: t('Reference template'),
-      children: templates.map((template) => {
-        const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
-          ? `${template?.name} ${t('(Fields only)')}`
-          : template?.name;
-        return {
-          type: 'item',
-          mode: 'reference',
-          name: collection.name,
-          template,
-          item,
-          title: templateName || t('Untitled'),
-        };
-      }),
-    },
+    ...extralCollectionMenuItems,
+    ...deprecatedTemplatesMenuItems,
   ];
 };
 
@@ -933,6 +944,7 @@ export const useCollectionDataSourceItems = ({
     filterCollections: filter,
     showAssociationFields,
     componentNamePrefix,
+    name,
   });
   const association = useAssociationName();
 
@@ -1511,7 +1523,12 @@ const getChildren = ({
 
         return componentName && template.componentName === componentName;
       });
-      if (!templates.length) {
+      const extralCollectionMenuItems = Array.from(initializerMenusGenerators.values())
+        .map((generator) => {
+          return generator({ item, index, componentName });
+        })
+        .filter(Boolean);
+      if (!templates.length && !extralCollectionMenuItems.length) {
         return {
           type: 'item',
           name: item.name,
@@ -1519,19 +1536,9 @@ const getChildren = ({
           dataSource,
         };
       }
-      return {
-        key: `${componentName}_table_subMenu_${index}`,
-        type: 'subMenu',
-        name: `${item.name}_${index}`,
-        title,
-        dataSource,
-        children: [
-          {
-            type: 'item',
-            name: item.name,
-            dataSource,
-            title: t('Blank block'),
-          },
+      const deprecatedTemplatesMenuItems = [];
+      if (templates.length) {
+        deprecatedTemplatesMenuItems.push(
           {
             type: 'divider',
           },
@@ -1581,6 +1588,23 @@ const getChildren = ({
               };
             }),
           },
+        );
+      }
+      return {
+        key: `${componentName}_table_subMenu_${index}`,
+        type: 'subMenu',
+        name: `${item.name}_${index}`,
+        title,
+        dataSource,
+        children: [
+          {
+            type: 'item',
+            name: item.name,
+            dataSource,
+            title: t('Blank block'),
+          },
+          ...extralCollectionMenuItems,
+          ...deprecatedTemplatesMenuItems,
         ],
       };
     });
@@ -1708,11 +1732,13 @@ function useAssociationFields({
   filterCollections,
   showAssociationFields,
   componentNamePrefix,
+  name,
 }: {
   componentName: string;
   filterCollections: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
   componentNamePrefix: string;
   showAssociationFields?: boolean;
+  name: string;
 }) {
   const fieldSchema = useFieldSchema();
   const { getCollectionFields } = useCollectionManager_deprecated();
@@ -1760,7 +1786,11 @@ function useAssociationFields({
 
           return template.componentName === componentName;
         });
-        if (!templates.length) {
+        const keyPrefix = `associationFiled_table_subMenu`;
+        const extralCollectionMenuItems = Array.from(initializerMenusGenerators.values())
+          .map((generator) => generator({ collection, index, field, componentName, keyPrefix, name }))
+          .filter(Boolean);
+        if (!templates.length && !extralCollectionMenuItems.length) {
           return {
             type: 'item',
             name: `${field.collectionName}.${field.name}`,
@@ -1770,21 +1800,9 @@ function useAssociationFields({
             associationField: field,
           };
         }
-        return {
-          key: `associationFiled_${componentName}_table_subMenu_${index}`,
-          type: 'subMenu',
-          name: `${field.target}_${index}`,
-          title,
-          dataSource,
-          children: [
-            {
-              type: 'item',
-              name: `${field.collectionName}.${field.name}`,
-              collectionName: field.target,
-              dataSource,
-              title: t('Blank block'),
-              associationField: field,
-            },
+        const deprecatedTemplatesMenuItems = [];
+        if (templates.length) {
+          deprecatedTemplatesMenuItems.push(
             {
               type: 'divider',
             },
@@ -1838,6 +1856,25 @@ function useAssociationFields({
                 };
               }),
             },
+          );
+        }
+        return {
+          key: `associationFiled_${componentName}_table_subMenu_${index}`,
+          type: 'subMenu',
+          name: `${field.target}_${index}`,
+          title,
+          dataSource,
+          children: [
+            {
+              type: 'item',
+              name: `${field.collectionName}.${field.name}`,
+              collectionName: field.target,
+              dataSource,
+              title: t('Blank block'),
+              associationField: field,
+            },
+            ...extralCollectionMenuItems,
+            ...deprecatedTemplatesMenuItems,
           ],
         };
       });
@@ -1854,4 +1891,14 @@ function useAssociationFields({
     t,
     componentNamePrefix,
   ]);
+}
+
+const initializerMenusGenerators = new Map<string, (options: any) => SchemaInitializerItemType>();
+
+export function registerInitializerMenusGenerator(key: string, generator: (options: any) => SchemaInitializerItemType) {
+  initializerMenusGenerators.set(key, generator);
+}
+
+export function unregisterInitializerMenusGenerator(key: string) {
+  initializerMenusGenerators.delete(key);
 }
