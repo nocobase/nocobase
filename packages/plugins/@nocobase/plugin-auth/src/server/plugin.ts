@@ -127,6 +127,7 @@ export class PluginAuthServer extends Plugin {
         db: this.app.db,
         cache: this.app.cache,
         logger: this.app.logger,
+        log: this.app.log,
       } as any);
 
       const user = await auth.check();
