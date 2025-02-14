@@ -46,7 +46,6 @@ const useStyles = createStyles(({ css, token }) => {
 });
 
 const CustomThemeProvider = React.memo((props) => {
-  const { addMenuItem } = useCurrentUserSettingsMenu();
   const [open, setOpen] = React.useState(false);
   const { theme, setTheme } = useGlobalTheme();
   const { styles } = useStyles();

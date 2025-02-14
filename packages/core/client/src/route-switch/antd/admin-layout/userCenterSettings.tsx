@@ -19,6 +19,7 @@ import { useNavigateNoUpdate } from '../../../application/CustomRouterContextPro
 import { EditProfile } from '../../../user/EditProfile';
 import { ChangePassword } from '../../../user/ChangePassword';
 import { SwitchRole } from '../../../user/SwitchRole';
+import { LanguageSettings } from '../../../user/LanguageSettings';
 
 const NickName = () => {
   const { data } = useCurrentUserContext();
@@ -131,6 +132,11 @@ const userCenterSettings = new SchemaSettings({
       name: 'switchRole',
       Component: SwitchRole,
       sort: 300,
+    },
+    {
+      name: 'langue',
+      Component: LanguageSettings,
+      sort: 350,
     },
     {
       name: 'divider4',
