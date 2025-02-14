@@ -25,7 +25,6 @@ export interface CardItemProps extends CardProps {
 
 export const CardItem: FC<CardItemProps> = (props) => {
   const { children, name, heightMode, ...restProps } = props;
-  console.log(restProps);
   const template = useSchemaTemplate();
   const fieldSchema = useFieldSchema();
   const templateKey = fieldSchema?.['x-template-key'];
