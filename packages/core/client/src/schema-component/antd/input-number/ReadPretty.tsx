@@ -13,14 +13,19 @@ import BigNumber from 'bignumber.js';
 import { format } from 'd3-format';
 import * as math from 'mathjs';
 import React, { useMemo } from 'react';
+import { toString } from 'lodash';
 import { withPopupWrapper } from '../../common/withPopupWrapper';
 
 function countDecimalPlaces(value) {
-  const number = Number(value);
-  if (!Number.isFinite(number)) return 0;
+  const strValue = toString(value);
 
-  const decimalPart = String(number).split('.')[1];
-  return decimalPart ? decimalPart.length : 0;
+  // 检查是否包含小数点
+  if (!strValue.includes('.')) return 0;
+
+  // 获取小数部分并去除末尾的零
+  const decimalPart = strValue.split('.')[1].replace(/0+$/, '');
+
+  return decimalPart.length;
 }
 const separators = {
   '0,0.00': { thousands: ',', decimal: '.' },
@@ -137,10 +142,10 @@ export function formatNumber(props) {
   //单位换算
   const unitData = formatUnitConversion(value, unitConversionType, unitConversion);
   //精度换算
-  const preciationData = toFixedByStep(unitData, step);
+  const precisionData = toFixedByStep(unitData, step);
   let result;
   //分隔符换算
-  result = formatNumberWithSeparator(preciationData, separator, countDecimalPlaces(step), formatStyle);
+  result = formatNumberWithSeparator(precisionData, separator, countDecimalPlaces(step), formatStyle);
   if (formatStyle === 'scientifix') {
     //科学计数显示
     result = scientificNotation(Number(unitData), countDecimalPlaces(step), separators?.[separator]?.['decimal']);
@@ -170,7 +175,6 @@ export const ReadPretty: React.FC<InputNumberReadPrettyProps> = withPopupWrapper
   const result = useMemo(() => {
     return formatNumber({ step, formatStyle, value, unitConversion, unitConversionType, separator });
   }, [step, formatStyle, value, unitConversion, unitConversionType, separator]);
-
   if (!isValid(result)) {
     return null;
   }
