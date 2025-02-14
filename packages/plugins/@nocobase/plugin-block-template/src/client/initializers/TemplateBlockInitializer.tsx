@@ -127,6 +127,7 @@ export const blockKeepProps = [
   'x-acl-action',
   'x-settings',
   'x-use-decorator-props',
+  'x-is-current',
 ];
 
 export function formSchemaPatch(currentSchema: ISchema, options?: any) {
@@ -177,7 +178,7 @@ function detailsSchemaPatch(currentSchema: ISchema, options?: any) {
   const { collectionName, dataSourceName, association, currentRecord } = options;
   currentSchema['x-decorator-props'] = {
     action: 'list',
-    collection: collectionName,
+    collection: association ? null : collectionName,
     association: association,
     dataSource: dataSourceName,
     readPretty: true,
@@ -194,6 +195,7 @@ function detailsSchemaPatch(currentSchema: ISchema, options?: any) {
     currentSchema['x-acl-action'] = `${association || collectionName}:get`;
     currentSchema['x-settings'] = 'blockSettings:details';
     currentSchema['x-use-decorator-props'] = 'useDetailsDecoratorProps';
+    currentSchema['x-is-current'] = true;
   }
 }
 
@@ -463,7 +465,7 @@ export const TemplateBlockInitializer = () => {
   }, [data?.data, plugin.templateInfos]);
 
   useEffect(() => {
-    const generator = ({ collection, item, index, field, componentName, dataSource, keyPrefix, name }) => {
+    const generator = ({ collection, association, item, index, field, componentName, dataSource, keyPrefix, name }) => {
       let collectionName = collection?.name || item?.options?.name;
       const dataSourceName = dataSource || item?.options?.dataSource || collection?.dataSource;
 
@@ -499,6 +501,9 @@ export const TemplateBlockInitializer = () => {
             title: m.title,
             schemaInsertor: (insert, { item, fromOthersInPopup, name }) => {
               const options = { dataSourceName };
+              if (association) {
+                options['association'] = association;
+              }
               if (field) {
                 options['association'] = `${collection?.name}.${field.name}`;
               } else {

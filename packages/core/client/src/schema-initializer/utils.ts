@@ -1525,7 +1525,7 @@ const getChildren = ({
       });
       const extralCollectionMenuItems = Array.from(initializerMenusGenerators.values())
         .map((generator) => {
-          return generator({ item, index, componentName });
+          return generator({ item, index, componentName, association });
         })
         .filter(Boolean);
       if (!templates.length && !extralCollectionMenuItems.length) {
