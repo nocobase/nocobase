@@ -18,7 +18,7 @@ test.describe('SchemaSettings of Picker', () => {
       page,
       showMenu: async () => {
         await page.getByLabel('block-item-CollectionField-').hover();
-        await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FormItem-users-users.').hover();
+        await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FormItem-users-users.').click();
       },
       supportedOptions: ['Popup size', 'Allow add new data', 'Title field', 'Allow multiple', 'Field component'],
     });
