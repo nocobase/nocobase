@@ -173,24 +173,36 @@ export function formSchemaPatch(currentSchema: ISchema, options?: any) {
   }
 }
 
+function detailsSchemaPatch(currentSchema: ISchema, options?: any) {
+  const { collectionName, dataSourceName, association, currentRecord } = options;
+  currentSchema['x-decorator-props'] = {
+    action: 'list',
+    collection: collectionName,
+    association: association,
+    dataSource: dataSourceName,
+    readPretty: true,
+    params: {
+      pageSize: 1,
+    },
+  };
+  currentSchema['x-acl-action'] = `${association || collectionName}:view`; //currentSchema['x-acl-action'].replace(':get', ':view');
+  currentSchema['x-settings'] = 'blockSettings:detailsWithPagination';
+  currentSchema['x-use-decorator-props'] = 'useDetailsWithPaginationDecoratorProps';
+
+  if (currentRecord) {
+    currentSchema['x-decorator-props']['action'] = 'get';
+    currentSchema['x-acl-action'] = `${association || collectionName}:get`;
+    currentSchema['x-settings'] = 'blockSettings:details';
+    currentSchema['x-use-decorator-props'] = 'useDetailsDecoratorProps';
+  }
+}
+
 function schemaPatch(currentSchema: ISchema, options?: any) {
   const { collectionName, dataSourceName, association, currentRecord } = options;
 
   const decoratorName = currentSchema['x-decorator'];
   if (decoratorName === 'DetailsBlockProvider') {
-    currentSchema['x-decorator-props'] = {
-      action: 'list',
-      collection: collectionName,
-      association: association,
-      dataSource: dataSourceName,
-      readPretty: true,
-      params: {
-        pageSize: 1,
-      },
-    };
-    currentSchema['x-acl-action'] = `${association || collectionName}:view`; //currentSchema['x-acl-action'].replace(':get', ':view');
-    currentSchema['x-settings'] = 'blockSettings:detailsWithPagination';
-    currentSchema['x-use-decorator-props'] = 'useDetailsWithPaginationDecoratorProps';
+    detailsSchemaPatch(currentSchema, options);
   } else if (decoratorName === 'FormBlockProvider') {
     formSchemaPatch(currentSchema, options);
   } else {
@@ -458,11 +470,14 @@ export const TemplateBlockInitializer = () => {
         // association field
         collectionName = field?.target;
       }
-      const isForm = name === 'createForm' || name === 'editForm';
+      // const isForm = name === 'createForm' || name === 'editForm';
+      const isDetails = name === 'details' || componentName === 'ReadPrettyFormItem';
       const children = data?.data
         ?.filter(
           (d) =>
-            (d.componentType === componentName || name === d['menuName'] || (isForm && d['menuName'] === 'form')) &&
+            (d.componentType === componentName ||
+              name === d['menuName'] ||
+              (isDetails && d['menuName'] === 'details')) &&
             d.collection === collectionName &&
             d.dataSource === dataSourceName,
         )
@@ -479,6 +494,7 @@ export const TemplateBlockInitializer = () => {
               } else {
                 options['collectionName'] = collectionName;
               }
+              options['currentRecord'] = name === 'currentRecord';
               if (name === 'editForm') {
                 options['currentRecord'] = true;
               }
