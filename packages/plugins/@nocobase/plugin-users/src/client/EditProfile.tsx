@@ -9,8 +9,7 @@
 
 import { useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { MenuProps } from 'antd';
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActionContextProvider,
@@ -23,8 +22,12 @@ import {
   useCollectionManager,
   useCurrentUserContext,
   useSystemSettings,
-} from '../';
-import { useAPIClient } from '../api-client';
+  zIndexContext,
+  useZIndexContext,
+  SchemaComponentContext,
+  useAPIClient,
+  SchemaSettingsItem,
+} from '@nocobase/client';
 
 const useUpdateProfileActionProps = () => {
   const ctx = useCurrentUserContext();
@@ -116,57 +119,63 @@ const ProfileEditForm = () => {
   );
 };
 
-export const useEditProfile = () => {
+export const EditProfile = () => {
   const ctx = useContext(DropdownVisibleContext);
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
   const { data } = useSystemSettings() || {};
-  const { enableEditProfile } = data?.data || {};
-  const result = useMemo<MenuProps['items'][0]>(() => {
-    return {
-      key: 'profile',
-      eventKey: 'EditProfile',
-      onClick: () => {
-        ctx?.setVisible(false);
-        setVisible(true);
-      },
-      label: (
-        <div>
-          {t('Edit profile')}
-          <ActionContextProvider value={{ visible, setVisible }}>
-            <div onClick={(e) => e.stopPropagation()}>
-              <SchemaComponent
-                components={{ ProfileEditForm }}
-                schema={{
-                  type: 'object',
-                  properties: {
-                    [uid()]: {
-                      'x-component': 'Action.Drawer',
-                      'x-component-props': {
-                        zIndex: 2000,
-                      },
-                      type: 'void',
-                      title: '{{t("Edit profile")}}',
-                      properties: {
-                        form: {
-                          type: 'void',
-                          'x-component': 'ProfileEditForm',
-                        },
-                      },
-                    },
-                  },
-                }}
-              />
-            </div>
-          </ActionContextProvider>
-        </div>
-      ),
-    };
-  }, [visible]);
+  const { enableEditProfile } = data?.data ?? {};
+  const parentZIndex = useZIndexContext();
+  const zIndex = parentZIndex + 10;
 
+  // 避免重复渲染的 click 处理
+  const handleClick = useCallback(
+    (e) => {
+      e.stopPropagation();
+      ctx?.setVisible?.(false);
+      setVisible((prev) => (prev ? prev : true)); // 只有 `visible` 变化时才触发更新
+    },
+    [ctx],
+  );
+
+  // 避免 `SchemaComponent` 结构重新创建
+  const schemaComponent = useMemo(() => {
+    return (
+      <SchemaComponentContext.Provider value={{ designable: false }}>
+        <SchemaComponent
+          components={{ ProfileEditForm }}
+          schema={{
+            type: 'object',
+            properties: {
+              [uid()]: {
+                'x-component': 'Action.Drawer',
+                'x-component-props': { zIndex },
+                type: 'void',
+                title: '{{t("Edit profile")}}',
+                properties: {
+                  form: {
+                    type: 'void',
+                    'x-component': 'ProfileEditForm',
+                  },
+                },
+              },
+            },
+          }}
+        />
+      </SchemaComponentContext.Provider>
+    );
+  }, [zIndex]);
   if (enableEditProfile === false) {
     return null;
   }
-
-  return result;
+  return (
+    <zIndexContext.Provider value={zIndex}>
+      <SchemaSettingsItem eventKey="EditProfile" title="EditProfile">
+        <div onClick={handleClick}>{t('Edit profile')}</div>
+      </SchemaSettingsItem>
+      <ActionContextProvider value={{ visible, setVisible }}>
+        {visible && <div onClick={(e) => e.stopPropagation()}>{schemaComponent}</div>}
+      </ActionContextProvider>
+    </zIndexContext.Provider>
+  );
 };

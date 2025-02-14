@@ -12,7 +12,7 @@ import { ACLSettingsUI } from './ACLSettingsUI';
 // import { RolesManagement } from './RolesManagement';
 const { RolesManagement } = lazy(() => import('./RolesManagement'), 'RolesManagement');
 import { RolesManager } from './roles-manager';
-
+import { SwitchRole } from './SwitchRole';
 export class PluginACLClient extends Plugin {
   rolesManager = new RolesManager();
   settingsUI = new ACLSettingsUI();
@@ -24,6 +24,18 @@ export class PluginACLClient extends Plugin {
       Component: RolesManagement,
       aclSnippet: 'pm.acl.roles',
       sort: 3,
+    });
+
+    // 个人中心注册 切换角色
+    this.app.addUserCenterSettingsItem('divider_switchRole', {
+      name: 'divider_switchRole',
+      type: 'divider',
+      sort: 200,
+    });
+    this.app.addUserCenterSettingsItem('switchRole', {
+      name: 'switchRole',
+      Component: SwitchRole,
+      sort: 300,
     });
   }
 }

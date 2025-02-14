@@ -12,49 +12,9 @@ import { useTranslation } from 'react-i18next';
 import { App } from 'antd';
 import { UserCenterButton } from './UserCenterButton';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
-import { useCurrentUserContext } from '../../../user/CurrentUserProvider';
 import { SchemaSettingsItem } from '../../../schema-settings';
-import { useToken, useAPIClient } from '../../../';
-import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
-import { EditProfile } from '../../../user/EditProfile';
-import { ChangePassword } from '../../../user/ChangePassword';
-import { SwitchRole } from '../../../user/SwitchRole';
+import { useAPIClient } from '../../../';
 import { LanguageSettings } from '../../../user/LanguageSettings';
-
-const NickName = () => {
-  const { data } = useCurrentUserContext();
-  const { token } = useToken();
-  return (
-    <SchemaSettingsItem disabled={true} eventKey="nickname" title="nickname">
-      <span aria-disabled="false" style={{ cursor: 'text', color: token.colorTextDescription }}>
-        {data?.data?.nickname || data?.data?.username || data?.data?.email}
-      </span>
-    </SchemaSettingsItem>
-  );
-};
-
-const SignOut = () => {
-  const { t } = useTranslation();
-  const navigate = useNavigateNoUpdate();
-  const api = useAPIClient();
-  return (
-    <SchemaSettingsItem
-      title="signOut"
-      disabled={true}
-      eventKey="signOut"
-      onClick={async () => {
-        const { data } = await api.auth.signOut();
-        if (data?.data?.redirect) {
-          window.location.href = data.data.redirect;
-        } else {
-          navigate(`/signin?redirect=${encodeURIComponent('')}`);
-        }
-      }}
-    >
-      {t('Sign out')}
-    </SchemaSettingsItem>
-  );
-};
 
 const ClearCache = () => {
   const { t } = useTranslation();
@@ -104,36 +64,6 @@ const userCenterSettings = new SchemaSettings({
   Component: UserCenterButton,
   items: [
     {
-      name: 'nickname',
-      Component: NickName,
-      sort: 10,
-    },
-    {
-      name: 'divider1',
-      type: 'divider',
-      sort: 30,
-    },
-    {
-      name: 'editProfile',
-      Component: EditProfile,
-      sort: 50,
-    },
-    {
-      name: 'changePassword',
-      Component: ChangePassword,
-      sort: 100,
-    },
-    {
-      name: 'divider3',
-      type: 'divider',
-      sort: 200,
-    },
-    {
-      name: 'switchRole',
-      Component: SwitchRole,
-      sort: 300,
-    },
-    {
       name: 'langue',
       Component: LanguageSettings,
       sort: 350,
@@ -152,16 +82,6 @@ const userCenterSettings = new SchemaSettings({
       name: 'restartApplication',
       Component: RestartApplication,
       sort: 510,
-    },
-    {
-      name: 'divider2',
-      type: 'divider',
-      sort: 900,
-    },
-    {
-      name: 'signOut',
-      sort: 1000,
-      Component: SignOut,
     },
   ],
 });
