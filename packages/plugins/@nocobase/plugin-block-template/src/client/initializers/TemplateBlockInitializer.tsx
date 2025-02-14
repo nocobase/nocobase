@@ -166,7 +166,6 @@ export function formSchemaPatch(currentSchema: ISchema, options?: any) {
     }
   } else {
     currentSchema['x-decorator-props'] = {
-      action: 'list',
       collection: collectionName,
       association: association,
       dataSource: dataSourceName,
