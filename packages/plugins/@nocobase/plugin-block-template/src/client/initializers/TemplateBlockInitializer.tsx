@@ -490,7 +490,7 @@ export const TemplateBlockInitializer = () => {
             schemaInsertor: (insert, { item, fromOthersInPopup, name }) => {
               const options = { dataSourceName };
               if (field) {
-                options['association'] = `${collection?.name}.${field.target}`;
+                options['association'] = `${collection?.name}.${field.name}`;
               } else {
                 options['collectionName'] = collectionName;
               }
