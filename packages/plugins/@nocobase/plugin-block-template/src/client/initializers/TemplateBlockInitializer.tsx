@@ -467,6 +467,10 @@ export const TemplateBlockInitializer = () => {
       let collectionName = collection?.name || item?.options?.name;
       const dataSourceName = dataSource || item?.options?.dataSource || collection?.dataSource;
 
+      if (componentName?.startsWith('mobile-')) {
+        componentName = componentName.replace('mobile-', '');
+      }
+
       if (plugin.isInBlockTemplateConfigPage()) {
         // hide menu in template config page
         return null;
