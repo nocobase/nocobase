@@ -68,7 +68,7 @@ test.describe('table block schema settings', () => {
       await nocoPage.goto();
 
       await page.getByLabel('block-item-CardItem-general-table').hover();
-      await page.getByLabel('designer-schema-settings-CardItem-TableBlockDesigner-general').hover();
+      await page.getByLabel('designer-schema-settings-CardItem-TableBlockDesigner-general').click();
 
       // 默认是关闭状态
       await expect(

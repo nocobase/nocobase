@@ -82,7 +82,7 @@ test.describe('form item & view form', () => {
         await page.getByLabel(`block-item-CollectionField-general-form-general.singleLineText-singleLineText`).hover();
         await page
           .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.singleLineText`)
-          .hover();
+          .click();
       },
       supportedOptions: ['Edit field title', 'Display title', 'Delete', 'Edit tooltip'],
       unsupportedOptions: ['Set default value'],
@@ -101,7 +101,7 @@ test.describe('table column & sub-table in edit form', () => {
       showMenu: async () => {
         await page.getByLabel('action-Action.Link-Edit record-update-subTable-table-0').click();
         await page.getByRole('button', { name: 'singleLineText', exact: true }).hover();
-        await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.Column.Designer-general').hover();
+        await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.Column.Designer-general').click();
       },
       supportedOptions: ['Custom column title', 'Column width', 'Required', 'Pattern', 'Set default value', 'Delete'],
     });

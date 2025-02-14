@@ -53,7 +53,7 @@ test.describe('actions schema settings', () => {
   test.describe('add new', () => {
     const showMenu = async (page: Page) => {
       await page.getByRole('button', { name: 'Add new' }).hover();
-      await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-general' }).hover();
+      await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-general' }).click();
     };
 
     test('supported options', async ({ page, mockPage }) => {
@@ -176,7 +176,7 @@ test.describe('actions schema settings', () => {
         page,
         showMenu: async () => {
           await page.getByRole('button', { name: 'Delete' }).hover();
-          await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-general' }).hover();
+          await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-general' }).click();
         },
         supportedOptions: ['Edit button', 'Delete'],
       });
@@ -272,7 +272,7 @@ test.describe('actions schema settings', () => {
         page,
         showMenu: async () => {
           await page.getByRole('button', { name: 'Refresh' }).hover();
-          await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-general' }).hover();
+          await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-general' }).click();
         },
         supportedOptions: ['Edit button', 'Delete'],
       });

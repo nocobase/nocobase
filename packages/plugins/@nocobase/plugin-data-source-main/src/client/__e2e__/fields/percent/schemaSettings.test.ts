@@ -28,7 +28,7 @@ test.describe('form item & create form', () => {
         await page.getByLabel(`block-item-CollectionField-general-form-general.percent-percent`).hover();
         await page
           .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.percent`)
-          .hover();
+          .click();
       },
       supportedOptions: [
         'Edit field title',
@@ -169,7 +169,7 @@ test.describe('form item & edit form', () => {
         await page.getByLabel(`block-item-CollectionField-general-form-general.percent-percent`).hover();
         await page
           .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.percent`)
-          .hover();
+          .click();
       },
       supportedOptions: [
         'Edit field title',
@@ -281,7 +281,7 @@ test.describe('form item & view form', () => {
         await page.getByLabel(`block-item-CollectionField-general-form-general.percent-percent`).hover();
         await page
           .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.percent`)
-          .hover();
+          .click();
       },
       supportedOptions: ['Edit field title', 'Display title', 'Delete', 'Edit tooltip'],
       unsupportedOptions: ['Set default value'],

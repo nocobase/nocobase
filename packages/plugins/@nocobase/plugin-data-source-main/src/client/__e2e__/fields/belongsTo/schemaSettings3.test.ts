@@ -30,7 +30,7 @@ test.describe('form item & view form', () => {
           .hover();
         await page
           .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.oneToOneBelongsTo`)
-          .hover();
+          .click();
       },
       supportedOptions: [
         'Edit field title',

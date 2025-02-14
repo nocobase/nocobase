@@ -35,7 +35,7 @@ test.describe('form item & view form', () => {
           .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.attachment`, {
             exact: true,
           })
-          .hover();
+          .click();
       },
       supportedOptions: ['Edit field title', 'Display title', 'Delete', 'Edit tooltip', 'Size'],
       unsupportedOptions: ['Set default value'],

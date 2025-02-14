@@ -27,7 +27,7 @@ test.describe('form item & create form', () => {
         await page.getByLabel(`block-item-CollectionField-general-form-general.attachment-attachment`).hover();
         await page
           .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.attachment`)
-          .hover();
+          .click();
       },
       supportedOptions: ['Edit field title', 'Display title', 'Edit description', 'Required', 'Pattern', 'Delete'],
     });
@@ -87,7 +87,7 @@ test.describe('form item & edit form', () => {
           .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.attachment`, {
             exact: true,
           })
-          .hover();
+          .click();
       },
       supportedOptions: ['Edit field title', 'Display title', 'Edit description', 'Required', 'Pattern', 'Delete'],
       unsupportedOptions: ['Set default value'],

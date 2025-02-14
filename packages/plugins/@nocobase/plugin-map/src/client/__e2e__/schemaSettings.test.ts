@@ -44,7 +44,7 @@ test.describe('schema settings', () => {
       page,
       showMenu: async () => {
         await page.getByLabel('block-item-CardItem-map-map').hover();
-        await page.getByLabel('designer-schema-settings-CardItem-blockSettings:map-map').hover();
+        await page.getByLabel('designer-schema-settings-CardItem-blockSettings:map-map').click();
       },
       supportedOptions: [
         'Edit block title',

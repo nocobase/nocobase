@@ -39,7 +39,7 @@ test('supports options', async ({ page, mockPage }) => {
     page,
     showMenu: async () => {
       await page.getByLabel('block-item-CollectionField-').hover();
-      await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FormItem-test1-test1.o2m').hover();
+      await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FormItem-test1-test1.o2m').click();
       await page.getByText('Field componentSub-table').click();
       await page.getByRole('option', { name: 'Select' }).click();
     },

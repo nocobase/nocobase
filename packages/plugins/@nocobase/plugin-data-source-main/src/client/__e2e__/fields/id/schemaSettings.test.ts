@@ -26,7 +26,7 @@ test.describe('form item & create form', () => {
       showMenu: async () => {
         await page.getByRole('button', { name: 'Add new' }).click();
         await page.getByLabel(`block-item-CollectionField-general-form-general.id-`).hover();
-        await page.getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.id`).hover();
+        await page.getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.id`).click();
       },
       supportedOptions: ['Edit field title', 'Display title', 'Edit tooltip', 'Pattern', 'Delete'],
     });
@@ -53,7 +53,7 @@ test.describe('form item & edit form', () => {
       showMenu: async () => {
         await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
         await page.getByLabel(`block-item-CollectionField-general-form-general.id-`).hover();
-        await page.getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.id`).hover();
+        await page.getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.id`).click();
       },
       supportedOptions: ['Edit field title', 'Display title', 'Edit tooltip', 'Pattern', 'Delete'],
     });
@@ -91,7 +91,7 @@ test.describe('form item & view form', () => {
       showMenu: async () => {
         await page.getByLabel('action-Action.Link-View record-view-general-table-0').click();
         await page.getByLabel(`block-item-CollectionField-general-form-general.id-`).hover();
-        await page.getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.id`).hover();
+        await page.getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.id`).click();
       },
       supportedOptions: ['Edit field title', 'Display title', 'Delete', 'Edit tooltip'],
       unsupportedOptions: ['Set default value'],

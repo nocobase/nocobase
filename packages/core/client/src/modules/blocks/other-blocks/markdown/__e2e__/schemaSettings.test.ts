@@ -17,7 +17,7 @@ test.describe('markdown block schema settings', () => {
       page,
       showMenu: async () => {
         await page.getByLabel('block-item-Markdown.Void-markdown').hover();
-        await page.getByLabel('designer-schema-settings-Markdown.Void-Markdown.Void.Designer').hover();
+        await page.getByLabel('designer-schema-settings-Markdown.Void-Markdown.Void.Designer').click();
       },
       supportedOptions: ['Edit markdown', 'Delete'],
     });

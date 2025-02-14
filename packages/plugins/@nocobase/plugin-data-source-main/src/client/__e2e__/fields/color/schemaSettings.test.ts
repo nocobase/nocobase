@@ -29,7 +29,7 @@ test.describe('form item & edit form', () => {
         await page.getByLabel(`block-item-CollectionField-general-form-general.color-color`).hover();
         await page
           .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.color`)
-          .hover();
+          .click();
       },
       supportedOptions: ['Edit field title', 'Display title', 'Edit description', 'Required', 'Pattern', 'Delete'],
     });

@@ -23,7 +23,7 @@ test.describe('form item & view form', () => {
         await page.getByLabel(`block-item-CollectionField-general-form-general.password-password`).hover();
         await page
           .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.password`)
-          .hover();
+          .click();
       },
       supportedOptions: ['Edit field title', 'Display title', 'Delete', 'Edit tooltip'],
       unsupportedOptions: ['Set default value'],

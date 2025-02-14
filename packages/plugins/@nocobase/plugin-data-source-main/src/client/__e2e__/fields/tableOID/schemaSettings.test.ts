@@ -28,7 +28,7 @@ test.describe('form item & create form', () => {
         await page.getByLabel(`block-item-CollectionField-general-form-general.tableoid-`).hover();
         await page
           .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.tableoid`)
-          .hover();
+          .click();
       },
       supportedOptions: ['Edit field title', 'Display title', 'Edit tooltip', 'Pattern', 'Delete'],
     });
@@ -59,7 +59,7 @@ test.describe('form item & edit form', () => {
         await page.getByLabel(`block-item-CollectionField-general-form-general.tableoid-`).hover();
         await page
           .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.tableoid`)
-          .hover();
+          .click();
       },
       supportedOptions: ['Edit field title', 'Display title', 'Edit tooltip', 'Pattern', 'Delete'],
     });
@@ -99,7 +99,7 @@ test.describe('form item & view form', () => {
         await page.getByLabel(`block-item-CollectionField-general-form-general.tableoid-`).hover();
         await page
           .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.tableoid`)
-          .hover();
+          .click();
       },
       supportedOptions: ['Edit field title', 'Display title', 'Delete', 'Edit tooltip'],
       unsupportedOptions: ['Set default value'],

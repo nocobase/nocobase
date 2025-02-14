@@ -17,7 +17,7 @@ test.describe('list block schema settings', () => {
       page,
       showMenu: async () => {
         await page.getByLabel('block-item-CardItem-general-list').hover();
-        await page.getByLabel('designer-schema-settings-CardItem-List.Designer-general').hover();
+        await page.getByLabel('designer-schema-settings-CardItem-List.Designer-general').click();
       },
       supportedOptions: [
         'Edit block title',

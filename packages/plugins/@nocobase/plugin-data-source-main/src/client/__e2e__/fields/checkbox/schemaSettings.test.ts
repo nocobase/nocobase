@@ -30,7 +30,7 @@ test.describe('form item & create form', () => {
           .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.checkbox`, {
             exact: true,
           })
-          .hover();
+          .click();
       },
       supportedOptions: [
         'Edit field title',
@@ -146,7 +146,7 @@ test.describe('form item & edit form', () => {
           .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.checkbox`, {
             exact: true,
           })
-          .hover();
+          .click();
       },
       supportedOptions: ['Edit field title', 'Display title', 'Edit description', 'Required', 'Pattern', 'Delete'],
     });
@@ -224,7 +224,7 @@ test.describe('form item & view form', () => {
           .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.checkbox`, {
             exact: true,
           })
-          .hover();
+          .click();
       },
       supportedOptions: ['Edit field title', 'Display title', 'Delete', 'Edit tooltip'],
       unsupportedOptions: ['Set default value'],
