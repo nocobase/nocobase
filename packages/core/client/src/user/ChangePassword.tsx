@@ -10,17 +10,21 @@
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { MenuProps } from 'antd';
-import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { useAPIClient } from '../api-client';
+import React, { useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import {
   ActionContextProvider,
   DropdownVisibleContext,
   SchemaComponent,
   useActionContext,
   useSystemSettings,
+  zIndexContext,
+  useZIndexContext,
+  SchemaComponentContext,
 } from '../';
-import { useAPIClient } from '../api-client';
+import { SchemaSettingsItem } from '../schema-settings';
 
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
@@ -165,4 +169,46 @@ export const useChangePassword = () => {
   }
 
   return result;
+};
+
+export const ChangePassword = () => {
+  const ctx = useContext(DropdownVisibleContext);
+  const [visible, setVisible] = useState(false);
+  const { t } = useTranslation();
+  const { data } = useSystemSettings() || {};
+  const { enableChangePassword } = data?.data || {};
+  const parentZIndex = useZIndexContext();
+  const zIndex = parentZIndex + 10;
+
+  // 避免重复渲染的 click 处理
+  const handleClick = useCallback(
+    (e) => {
+      e.stopPropagation();
+      ctx?.setVisible?.(false);
+      setVisible((prev) => (prev ? prev : true)); // 只有 `visible` 变化时才触发更新
+    },
+    [ctx],
+  );
+
+  const schemaComponent = useMemo(() => {
+    return (
+      <SchemaComponentContext.Provider value={{ designable: false }}>
+        <SchemaComponent scope={{ useCloseAction, useSaveCurrentUserValues }} schema={schema} />
+      </SchemaComponentContext.Provider>
+    );
+  }, [zIndex]);
+
+  if (enableChangePassword === false) {
+    return null;
+  }
+  return (
+    <zIndexContext.Provider value={zIndex}>
+      <SchemaSettingsItem eventKey="changePassword" title="changePassword">
+        <div onClick={handleClick}>{t('Change password')}</div>
+      </SchemaSettingsItem>
+      <ActionContextProvider value={{ visible, setVisible }}>
+        {visible && <div onClick={(e) => e.stopPropagation()}>{schemaComponent}</div>}
+      </ActionContextProvider>
+    </zIndexContext.Provider>
+  );
 };

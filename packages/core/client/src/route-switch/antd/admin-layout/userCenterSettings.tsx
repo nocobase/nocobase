@@ -16,6 +16,7 @@ import { SchemaSettingsItem, SchemaSettingsModalItem } from '../../../schema-set
 import { useToken, useAPIClient, ActionContextProvider, DropdownVisibleContext, useSystemSettings } from '../../../';
 import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import { EditProfile } from '../../../user/EditProfile';
+import { ChangePassword } from '../../../user/ChangePassword';
 const NickName = (props) => {
   const { data } = useCurrentUserContext();
   const { token } = useToken();
@@ -69,6 +70,11 @@ const userCenterSettings = new SchemaSettings({
       name: 'editProfile',
       Component: EditProfile,
       sort: 50,
+    },
+    {
+      name: 'changePassword',
+      Component: ChangePassword,
+      sort: 100,
     },
     {
       name: 'divider2',
