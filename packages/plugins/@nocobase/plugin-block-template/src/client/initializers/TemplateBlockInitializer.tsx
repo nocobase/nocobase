@@ -466,6 +466,12 @@ export const TemplateBlockInitializer = () => {
     const generator = ({ collection, item, index, field, componentName, dataSource, keyPrefix, name }) => {
       let collectionName = collection?.name || item?.options?.name;
       const dataSourceName = dataSource || item?.options?.dataSource || collection?.dataSource;
+
+      if (plugin.isInBlockTemplateConfigPage()) {
+        // hide menu in template config page
+        return null;
+      }
+
       if (field) {
         // association field
         collectionName = field?.target;
@@ -514,10 +520,8 @@ export const TemplateBlockInitializer = () => {
         children,
       };
     };
-    if (!plugin.isInBlockTemplateConfigPage()) {
-      registerInitializerMenusGenerator('block_template', generator);
-    }
-  }, [data?.data]);
+    registerInitializerMenusGenerator('block_template', generator);
+  }, [data?.data, plugin.isInBlockTemplateConfigPage]);
 
   if (loading) {
     return (
