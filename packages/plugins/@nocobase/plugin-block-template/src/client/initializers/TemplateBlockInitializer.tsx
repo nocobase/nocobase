@@ -514,7 +514,9 @@ export const TemplateBlockInitializer = () => {
         children,
       };
     };
-    registerInitializerMenusGenerator('block_template', generator);
+    if (!plugin.isInBlockTemplateConfigPage()) {
+      registerInitializerMenusGenerator('block_template', generator);
+    }
   }, [data?.data]);
 
   if (loading) {
