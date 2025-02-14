@@ -114,7 +114,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
                 variables,
                 localVariables,
               },
-              app.operators,
+              app.jsonLogic,
             );
           });
         });

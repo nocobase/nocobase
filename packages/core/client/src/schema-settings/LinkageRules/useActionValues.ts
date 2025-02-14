@@ -39,7 +39,7 @@ export function useSatisfiedActionValues({
 
   const compute = useCallback(() => {
     if (styleRules && formValues) {
-      getSatisfiedValueMap({ rules: styleRules, variables, localVariables }, app.operators)
+      getSatisfiedValueMap({ rules: styleRules, variables, localVariables }, app.jsonLogic)
         .then((valueMap) => {
           if (!isEmpty(valueMap)) {
             setValueMap(valueMap);

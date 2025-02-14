@@ -187,7 +187,7 @@ const WithForm = (props: WithFormProps) => {
                     rule,
                     variables,
                   },
-                  app.operators,
+                  app.jsonLogic,
                 ),
               );
             });

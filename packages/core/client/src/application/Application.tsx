@@ -101,7 +101,7 @@ export class Application {
   public dataSourceManager: DataSourceManager;
   public name: string;
   public globalVars: Record<string, any> = {};
-  public operators: Record<string, any> = {};
+  public jsonLogic: Record<string, any> = {};
   loading = true;
   maintained = false;
   maintaining = false;
@@ -156,7 +156,7 @@ export class Application {
       this.apiClient.auth.locale = lng;
     });
     this.initListeners();
-    this.operators = getOperators();
+    this.jsonLogic = getOperators();
   }
 
   private initListeners() {
@@ -492,9 +492,9 @@ export class Application {
   }
 
   registerOperators(key, operator) {
-    this.operators[key] = operator;
+    this.jsonLogic[key] = operator;
   }
   getOperator(key) {
-    return this.operators[key];
+    return this.jsonLogic[key];
   }
 }

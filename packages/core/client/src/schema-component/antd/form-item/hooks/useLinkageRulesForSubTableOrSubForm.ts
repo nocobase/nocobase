@@ -90,7 +90,7 @@ export const useLinkageRulesForSubTableOrSubForm = () => {
               variables,
               variableNameOfLeftCondition: '$iteration',
             },
-            app.operators,
+            app.jsonLogic,
           ),
         );
       }

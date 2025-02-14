@@ -90,7 +90,7 @@ const InternalCreateRecordAction = (props: any, ref) => {
               variables,
               localVariables,
             },
-            app.operators,
+            app.jsonLogic,
           );
         });
       });
@@ -209,7 +209,7 @@ export const CreateAction = observer(
                 variables,
                 localVariables,
               },
-              app.operators,
+              app.jsonLogic,
             );
           });
         });

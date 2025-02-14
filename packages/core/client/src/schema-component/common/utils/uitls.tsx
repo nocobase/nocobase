@@ -92,14 +92,14 @@ export const conditionAnalyses = async (
      */
     variableNameOfLeftCondition?: string;
   },
-  operators: any,
+  jsonLogic: any,
 ) => {
   const type = Object.keys(ruleGroup)[0] || '$and';
   const conditions = ruleGroup[type];
 
   let results = conditions.map(async (condition) => {
     if ('$and' in condition || '$or' in condition) {
-      return await conditionAnalyses({ ruleGroup: condition, variables, localVariables }, operators);
+      return await conditionAnalyses({ ruleGroup: condition, variables, localVariables }, jsonLogic);
     }
 
     const logicCalculation = getInnermostKeyAndValue(condition);
@@ -121,7 +121,6 @@ export const conditionAnalyses = async (
       : [logicCalculation?.value, targetValue];
 
     try {
-      const jsonLogic = operators;
       const [value, targetValue] = await Promise.all(parsingResult);
       const targetCollectionField = await variables.getCollectionField(targetVariableName, localVariables);
       let currentInputValue = transformVariableValue(targetValue, { targetCollectionField });

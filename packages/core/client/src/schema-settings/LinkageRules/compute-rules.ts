@@ -25,13 +25,13 @@ const getActionValue = (operator, value) => {
   }
 };
 
-const getSatisfiedActions = async ({ rules, variables, localVariables }, operators) => {
+const getSatisfiedActions = async ({ rules, variables, localVariables }, jsonLogic) => {
   const satisfiedRules = (
     await Promise.all(
       rules
         .filter((k) => !k.disabled)
         .map(async (rule) => {
-          if (await conditionAnalyses({ ruleGroup: rule.condition, variables, localVariables }, operators)) {
+          if (await conditionAnalyses({ ruleGroup: rule.condition, variables, localVariables }, jsonLogic)) {
             return rule;
           } else return null;
         }),
@@ -40,15 +40,15 @@ const getSatisfiedActions = async ({ rules, variables, localVariables }, operato
   return satisfiedRules.map((rule) => rule.actions).flat();
 };
 
-const getSatisfiedValues = async ({ rules, variables, localVariables }, operators) => {
-  return (await getSatisfiedActions({ rules, variables, localVariables }, operators)).map((action) => ({
+const getSatisfiedValues = async ({ rules, variables, localVariables }, jsonLogic) => {
+  return (await getSatisfiedActions({ rules, variables, localVariables }, jsonLogic)).map((action) => ({
     ...action,
     value: getActionValue(action.operator, action.value),
   }));
 };
 
-export const getSatisfiedValueMap = async ({ rules, variables, localVariables }, operators) => {
-  const values = await getSatisfiedValues({ rules, variables, localVariables }, operators);
+export const getSatisfiedValueMap = async ({ rules, variables, localVariables }, jsonLogic) => {
+  const values = await getSatisfiedValues({ rules, variables, localVariables }, jsonLogic);
   const valueMap = values.reduce((a, v) => ({ ...a, [v.operator]: v.value }), {});
   return valueMap;
 };

@@ -63,7 +63,7 @@ export function bindLinkageRulesToFiled(
      */
     variableNameOfLeftCondition?: string;
   },
-  operators: any,
+  jsonLogic: any,
 ) {
   field['initStateOfLinkageRules'] = {
     display: field.initStateOfLinkageRules?.display || getTempFieldState(true, field.display),
@@ -92,7 +92,7 @@ export function bindLinkageRulesToFiled(
         .join(',');
       return result;
     },
-    getSubscriber({ action, field, rule, variables, localVariables, variableNameOfLeftCondition }, operators),
+    getSubscriber({ action, field, rule, variables, localVariables, variableNameOfLeftCondition }, jsonLogic),
     { fireImmediately: true, equals: _.isEqual },
   );
 }
@@ -199,7 +199,7 @@ function getSubscriber(
      */
     variableNameOfLeftCondition?: string;
   },
-  operators,
+  jsonLogic,
 ): (value: string, oldValue: string) => void {
   return () => {
     // 当条件改变触发 reaction 时，会同步收集字段状态，并保存到 field.stateOfLinkageRules 中
@@ -213,7 +213,7 @@ function getSubscriber(
         localVariables,
         variableNameOfLeftCondition,
       },
-      operators,
+      jsonLogic,
     );
 
     // 当条件改变时，有可能会触发多个 reaction，所以这里需要延迟一下，确保所有的 reaction 都执行完毕后，
@@ -297,7 +297,7 @@ function getFieldNameByOperator(operator: ActionType) {
 
 export const collectFieldStateOfLinkageRules = (
   { operator, value, field, condition, variables, localVariables, variableNameOfLeftCondition }: Props,
-  operators: any,
+  jsonLogic: any,
 ) => {
   const requiredResult = field?.stateOfLinkageRules?.required || [field?.initStateOfLinkageRules?.required];
   const displayResult = field?.stateOfLinkageRules?.display || [field?.initStateOfLinkageRules?.display];
@@ -308,14 +308,14 @@ export const collectFieldStateOfLinkageRules = (
 
   switch (operator) {
     case ActionType.Required:
-      requiredResult.push(getTempFieldState(conditionAnalyses(paramsToGetConditionResult, operators), true));
+      requiredResult.push(getTempFieldState(conditionAnalyses(paramsToGetConditionResult, jsonLogic), true));
       field.stateOfLinkageRules = {
         ...field.stateOfLinkageRules,
         required: requiredResult,
       };
       break;
     case ActionType.InRequired:
-      requiredResult.push(getTempFieldState(conditionAnalyses(paramsToGetConditionResult, operators), false));
+      requiredResult.push(getTempFieldState(conditionAnalyses(paramsToGetConditionResult, jsonLogic), false));
       field.stateOfLinkageRules = {
         ...field.stateOfLinkageRules,
         required: requiredResult,
@@ -324,7 +324,7 @@ export const collectFieldStateOfLinkageRules = (
     case ActionType.Visible:
     case ActionType.None:
     case ActionType.Hidden:
-      displayResult.push(getTempFieldState(conditionAnalyses(paramsToGetConditionResult, operators), operator));
+      displayResult.push(getTempFieldState(conditionAnalyses(paramsToGetConditionResult, jsonLogic), operator));
       field.stateOfLinkageRules = {
         ...field.stateOfLinkageRules,
         display: displayResult,
@@ -333,7 +333,7 @@ export const collectFieldStateOfLinkageRules = (
     case ActionType.Editable:
     case ActionType.ReadOnly:
     case ActionType.ReadPretty:
-      patternResult.push(getTempFieldState(conditionAnalyses(paramsToGetConditionResult, operators), operator));
+      patternResult.push(getTempFieldState(conditionAnalyses(paramsToGetConditionResult, jsonLogic), operator));
       field.stateOfLinkageRules = {
         ...field.stateOfLinkageRules,
         pattern: patternResult,
@@ -368,7 +368,7 @@ export const collectFieldStateOfLinkageRules = (
         if (isConditionEmpty(condition)) {
           valueResult.push(getTempFieldState(true, getValue()));
         } else {
-          valueResult.push(getTempFieldState(conditionAnalyses(paramsToGetConditionResult, operators), getValue()));
+          valueResult.push(getTempFieldState(conditionAnalyses(paramsToGetConditionResult, jsonLogic), getValue()));
         }
         field.stateOfLinkageRules = {
           ...field.stateOfLinkageRules,
