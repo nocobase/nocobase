@@ -89,9 +89,6 @@ export function convertTplBlock(
         }
       });
       // set decorator props here!!
-      if (options) {
-        schemaPatch(newSchema, options);
-      }
     }
     if (templateKey) {
       newSchema['x-block-template-key'] = templateKey;
@@ -112,6 +109,10 @@ export function convertTplBlock(
     for (const key in tpl.properties) {
       newSchema.properties[key] = convertTplBlock(tpl.properties[key], virtual, false, newRootId, templateKey);
     }
+    if (isRoot && options) {
+      schemaPatch(newSchema, options);
+    }
+
     return newSchema;
   }
 }
