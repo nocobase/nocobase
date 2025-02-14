@@ -27,7 +27,6 @@ import { Outlet } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
-  CurrentUser,
   findByUid,
   findMenuItem,
   NavigateIfNotSignIn,

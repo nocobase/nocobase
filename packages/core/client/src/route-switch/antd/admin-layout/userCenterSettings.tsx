@@ -7,17 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useContext, useMemo } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { App } from 'antd';
 import { UserCenterButton } from './UserCenterButton';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { useCurrentUserContext } from '../../../user/CurrentUserProvider';
-import { SchemaSettingsItem, SchemaSettingsModalItem } from '../../../schema-settings';
-import { useToken, useAPIClient, ActionContextProvider, DropdownVisibleContext, useSystemSettings } from '../../../';
+import { SchemaSettingsItem } from '../../../schema-settings';
+import { useToken, useAPIClient } from '../../../';
 import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import { EditProfile } from '../../../user/EditProfile';
 import { ChangePassword } from '../../../user/ChangePassword';
-const NickName = (props) => {
+import { SwitchRole } from '../../../user/SwitchRole';
+
+const NickName = () => {
   const { data } = useCurrentUserContext();
   const { token } = useToken();
   return (
@@ -52,6 +55,49 @@ const SignOut = () => {
   );
 };
 
+const ClearCache = () => {
+  const { t } = useTranslation();
+  const api = useAPIClient();
+  return (
+    <SchemaSettingsItem
+      eventKey="cache"
+      title="cache"
+      onClick={async () => {
+        await api.resource('app').clearCache();
+        window.location.reload();
+      }}
+    >
+      {t('Clear cache')}
+    </SchemaSettingsItem>
+  );
+};
+
+const RestartApplication = () => {
+  const { t } = useTranslation();
+  const api = useAPIClient();
+  const { modal } = App.useApp();
+  return (
+    <SchemaSettingsItem
+      eventKey="restartApplication"
+      title="restartApplication"
+      onClick={async () => {
+        modal.confirm({
+          title: t('Restart application'),
+          // content: t('The will interrupt service, it may take a few seconds to restart. Are you sure to continue?'),
+          okText: t('Restart'),
+          okButtonProps: {
+            danger: true,
+          },
+          onOk: async () => {
+            await api.resource('app').restart();
+          },
+        });
+      }}
+    >
+      {t('Restart application')}
+    </SchemaSettingsItem>
+  );
+};
 const userCenterSettings = new SchemaSettings({
   name: 'userCenterSettings',
   Component: UserCenterButton,
@@ -75,6 +121,31 @@ const userCenterSettings = new SchemaSettings({
       name: 'changePassword',
       Component: ChangePassword,
       sort: 100,
+    },
+    {
+      name: 'divider3',
+      type: 'divider',
+      sort: 200,
+    },
+    {
+      name: 'switchRole',
+      Component: SwitchRole,
+      sort: 300,
+    },
+    {
+      name: 'divider4',
+      type: 'divider',
+      sort: 400,
+    },
+    {
+      name: 'cache',
+      Component: ClearCache,
+      sort: 500,
+    },
+    {
+      name: 'restartApplication',
+      Component: RestartApplication,
+      sort: 510,
     },
     {
       name: 'divider2',

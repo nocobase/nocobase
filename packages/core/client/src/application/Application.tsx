@@ -488,4 +488,7 @@ export class Application {
   getGlobalVar(key) {
     return get(this.globalVars, key);
   }
+  addUserCenterSettingsItem(name, item) {
+    this.schemaSettingsManager.addItem('userCenterSettings', name, item);
+  }
 }
