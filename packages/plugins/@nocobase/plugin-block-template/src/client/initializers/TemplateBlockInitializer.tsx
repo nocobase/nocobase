@@ -11,7 +11,6 @@ import {
   SchemaInitializerItem,
   useRequest,
   useAPIClient,
-  useDesignable,
   usePlugin,
   ISchema,
   useResource,
@@ -77,6 +76,9 @@ export function convertTplBlock(
     if (virtual) {
       newSchema['x-virtual'] = true;
     }
+    if (tpl['x-settings']) {
+      newSchema['x-settings'] = tpl['x-settings'];
+    }
     if (isRoot) {
       newSchema['x-template-root-uid'] = tpl['x-uid'];
       newSchema['x-uid'] = newRootId;
@@ -126,6 +128,51 @@ export const blockKeepProps = [
   'x-use-decorator-props',
 ];
 
+export function formSchemaPatch(currentSchema: ISchema, options?: any) {
+  const { collectionName, dataSourceName, association, currentRecord } = options;
+
+  if (currentRecord) {
+    currentSchema['x-decorator-props'] = {
+      action: 'get',
+      collection: collectionName,
+      association: association,
+      dataSource: dataSourceName,
+    };
+    currentSchema['x-data-templates'] = {
+      display: false,
+    };
+    currentSchema['x-acl-action'] = `${association || collectionName}:update`;
+    currentSchema['x-settings'] = 'blockSettings:editForm';
+    currentSchema['x-use-decorator-props'] = 'useEditFormBlockDecoratorProps';
+
+    const comKey = Object.keys(currentSchema.properties)[0];
+    if (comKey) {
+      const actionKey = Object.keys(currentSchema['properties'][comKey]['properties']).find((key) => {
+        return key !== 'grid';
+      });
+      if (actionKey) {
+        _.set(currentSchema, `properties.${comKey}.x-use-component-props`, 'useEditFormBlockProps');
+        _.set(currentSchema, `properties.${comKey}.properties.${actionKey}.x-initializer`, 'editForm:configureActions');
+
+        const actionBarSchema = _.get(currentSchema, `properties.${comKey}.properties.${actionKey}.properties`, {});
+        for (const key in actionBarSchema) {
+          if (actionBarSchema[key]['x-settings']?.includes('createSubmit')) {
+            actionBarSchema[key]['x-settings'] = 'actionSettings:updateSubmit';
+            actionBarSchema[key]['x-use-component-props'] = 'useUpdateActionProps';
+          }
+        }
+      }
+    }
+  } else {
+    currentSchema['x-decorator-props'] = {
+      action: 'list',
+      collection: collectionName,
+      association: association,
+      dataSource: dataSourceName,
+    };
+  }
+}
+
 function schemaPatch(currentSchema: ISchema, options?: any) {
   const { collectionName, dataSourceName, association, currentRecord } = options;
 
@@ -141,9 +188,11 @@ function schemaPatch(currentSchema: ISchema, options?: any) {
         pageSize: 1,
       },
     };
-    currentSchema['x-acl-action'] = currentSchema['x-acl-action'].replace(':get', ':view');
+    currentSchema['x-acl-action'] = `${association || collectionName}:view`; //currentSchema['x-acl-action'].replace(':get', ':view');
     currentSchema['x-settings'] = 'blockSettings:detailsWithPagination';
     currentSchema['x-use-decorator-props'] = 'useDetailsWithPaginationDecoratorProps';
+  } else if (decoratorName === 'FormBlockProvider') {
+    formSchemaPatch(currentSchema, options);
   } else {
     currentSchema['x-decorator-props'] = {
       action: 'list',
@@ -151,9 +200,6 @@ function schemaPatch(currentSchema: ISchema, options?: any) {
       association: association,
       dataSource: dataSourceName,
     };
-    if (currentSchema['x-use-decorator-props'] === 'useCreateFormBlockDecoratorProps') {
-      currentSchema['x-decorator-props']['action'] = null;
-    }
   }
   return currentSchema;
 }
@@ -426,12 +472,15 @@ export const TemplateBlockInitializer = () => {
             name: m.key,
             item: m,
             title: m.title,
-            schemaInsertor: (insert, { item, fromOthersInPopup }) => {
+            schemaInsertor: (insert, { item, fromOthersInPopup, name }) => {
               const options = { dataSourceName };
               if (field) {
                 options['association'] = `${collection?.name}.${field.target}`;
               } else {
                 options['collectionName'] = collectionName;
+              }
+              if (name === 'editForm') {
+                options['currentRecord'] = true;
               }
               return handleClick(item, options, insert);
             },

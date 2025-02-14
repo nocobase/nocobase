@@ -353,7 +353,7 @@ export const DataBlockInitializer: FC<DataBlockInitializerProps> = (props) => {
         const s = await getTemplateSchemaByMode(item);
         templateWrap ? insert(templateWrap(s, { item, fromOthersInPopup })) : insert(s);
       } else if (item.schemaInsertor) {
-        await item.schemaInsertor(insert, { item, fromOthersInPopup });
+        await item.schemaInsertor(insert, { item, name, fromOthersInPopup });
       } else {
         if (onCreateBlockSchema) {
           onCreateBlockSchema({ item, fromOthersInPopup });

@@ -12,7 +12,7 @@ import { useFieldSchema, useForm, useField } from '@formily/react';
 import { App } from 'antd';
 import React from 'react';
 import _ from 'lodash';
-import { blockKeepProps, convertTplBlock } from '../initializers/TemplateBlockInitializer';
+import { blockKeepProps, convertTplBlock, formSchemaPatch } from '../initializers/TemplateBlockInitializer';
 import { Schema } from '@formily/json-schema';
 import { useT } from '../locale';
 import PluginBlockTemplateClient from '..';
@@ -123,7 +123,17 @@ export const RevertSetting = () => {
                 _.set(newSchema, p, _.get(fieldSchema, p));
               }
             }
-
+            if (
+              fieldSchema['x-decorator'] === 'FormBlockProvider' &&
+              fieldSchema['x-use-decorator-props'] === 'useEditFormBlockDecoratorProps'
+            ) {
+              formSchemaPatch(newSchema, {
+                collectionName: fieldSchema['x-decorator-props']['collection'],
+                dataSourceName: fieldSchema['x-decorator-props']['dataSource'],
+                association: fieldSchema['x-decorator-props']['association'],
+                currentRecord: true,
+              });
+            }
             // remove old schema
             const position = findInsertPosition(fieldSchema.parent, fieldSchema['x-uid']);
 
