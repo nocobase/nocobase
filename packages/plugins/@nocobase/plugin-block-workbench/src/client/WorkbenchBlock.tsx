@@ -38,6 +38,8 @@ function isMobile() {
   return window.matchMedia('(max-width: 768px)').matches;
 }
 
+const gap = 8;
+
 const ResponsiveSpace = () => {
   const fieldSchema = useFieldSchema();
   const isMobileMedia = isMobile();
@@ -46,7 +48,6 @@ const ResponsiveSpace = () => {
   const isUnderMobile = isMobileMedia || underMobileCtx;
   const containerRef = useRef(null); // 引用容器
   const [containerWidth, setContainerWidth] = useState(0); // 容器宽度
-  const gap = 8;
   // 使用 ResizeObserver 动态获取容器宽度
   useEffect(() => {
     const handleResize = () => {
@@ -202,22 +203,24 @@ export const WorkbenchBlock: any = withDynamicSchemaProps(
   (props) => {
     const fieldSchema = useFieldSchema();
     const { layout = 'grid' } = fieldSchema['x-component-props'] || {};
+    const { title } = fieldSchema['x-decorator-props'] || {};
     const targetHeight = useBlockHeight();
     const { token } = theme.useToken();
     const { designable } = useDesignable();
-    const { heightProps } = useBlockHeightProps() || {};
-    const { titleHeight } = heightProps || {};
+    const titleHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
     const internalHeight = 2 * token.paddingLG + token.controlHeight + token.marginLG + titleHeight;
+    const warperHeight =
+      targetHeight - (designable ? internalHeight : 2 * token.paddingLG + token.marginLG + titleHeight);
+    const targetWarperHeight = warperHeight > 0 ? warperHeight + 'px' : '100%';
     return (
-      <div className="nb-action-penal-container">
+      <div
+        className="nb-action-penal-container"
+        style={{ height: targetHeight ? targetHeight - 2 * token.paddingLG - gap - titleHeight : '100%' }}
+      >
         <div
           className={css`
             .nb-action-panel-warp {
-              height: ${targetHeight
-                ? targetHeight -
-                  (designable ? internalHeight : 2 * token.paddingLG + token.marginLG + titleHeight) +
-                  'px'
-                : '100%'};
+              height: ${targetHeight ? targetWarperHeight : '100%'};
               overflow-y: auto;
               margin-left: -24px;
               margin-right: -24px;

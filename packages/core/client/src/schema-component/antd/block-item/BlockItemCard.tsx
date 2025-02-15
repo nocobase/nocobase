@@ -11,10 +11,10 @@ import { Card, CardProps } from 'antd';
 import React, { useMemo } from 'react';
 import { useToken } from '../../../style';
 
-export const BlockItemCard = React.forwardRef<HTMLDivElement, CardProps>(({ children, ...props }, ref) => {
+export const BlockItemCard = React.forwardRef<HTMLDivElement, CardProps>(({ children, ...props }: any, ref) => {
   const { token } = useToken();
   const style = useMemo(() => {
-    return { marginBottom: token.marginBlock };
+    return { marginBottom: token.marginBlock, height: props.height || '100%' };
   }, [token.marginBlock]);
 
   return (
