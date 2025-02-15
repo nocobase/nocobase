@@ -509,7 +509,7 @@ export const TemplateBlockInitializer = () => {
               } else {
                 options['collectionName'] = collectionName;
               }
-              options['currentRecord'] = name === 'currentRecord';
+              options['currentRecord'] = name === 'currentRecord' && isDetails;
               if (name === 'editForm') {
                 options['currentRecord'] = true;
               }
