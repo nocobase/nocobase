@@ -10,12 +10,24 @@
 import { Plugin } from '@nocobase/client';
 import { reject, orderBy } from 'lodash';
 
+type PresetFieldConfig = {
+  order: number; // 定义字段的顺序。
+  description: string; // 字段描述
+  value: {
+    name: string;
+    interface: string;
+    type: string;
+    uiSchema: Record<string, any>;
+    field?: string;
+    [T: string]: any;
+  };
+};
 class PluginDataSourceMainClient extends Plugin {
   collectionPresetFields: { order: number; value: any }[] = [];
-  addCollectionPresetField(config) {
+  addCollectionPresetField(config: PresetFieldConfig) {
     this.collectionPresetFields.push(config);
   }
-  removeCollectionPresetField(name) {
+  removeCollectionPresetField(name: string) {
     this.collectionPresetFields = reject(this.collectionPresetFields, (v) => v.value.name === name);
   }
   getCollectionPresetFields() {
