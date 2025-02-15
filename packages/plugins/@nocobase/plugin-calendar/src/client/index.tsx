@@ -64,7 +64,7 @@ export class PluginCalendarClient extends Plugin {
     email: { TitleRenderer },
     radioGroup: { TitleRenderer },
   };
-  categoryFieldInterfaces: {
+  colorFieldInterfaces: {
     [T: string]: { useGetColor: (field: any) => ColorFunctions };
   } = {
     select: { useGetColor },
@@ -72,7 +72,7 @@ export class PluginCalendarClient extends Plugin {
 
   dateTimeFieldInterfaces = ['date', 'datetime', 'dateOnly', 'datetimeNoTz', 'unixTimestamp', 'createdAt', 'updatedAt'];
 
-  registerTitleFieldInterface(key, options) {
+  registerTitleFieldInterface(key: string, options) {
     this.titleFieldInterfaces[key] = options;
   }
   getTitleFieldInterface(key: string) {
@@ -82,7 +82,7 @@ export class PluginCalendarClient extends Plugin {
       return this.titleFieldInterfaces;
     }
   }
-  registerDateTimeFieldInterface(data: any) {
+  registerDateTimeFieldInterface(data: string | string[]) {
     if (Array.isArray(data)) {
       const result = this.dateTimeFieldInterfaces.concat(data);
       this.dateTimeFieldInterfaces = result;
@@ -90,11 +90,11 @@ export class PluginCalendarClient extends Plugin {
       this.dateTimeFieldInterfaces.push(data);
     }
   }
-  registerCategoryFieldInterface(type, option) {
-    this.categoryFieldInterfaces[type] = option;
+  registerColorFieldInterface(type, option) {
+    this.colorFieldInterfaces[type] = option;
   }
-  getCategoryFieldInterface(type: string) {
-    return this.categoryFieldInterfaces[type];
+  getColorFieldInterface(type: string) {
+    return this.colorFieldInterfaces[type];
   }
   async load() {
     this.app.dataSourceManager.addCollectionTemplates([CalendarCollectionTemplate]);

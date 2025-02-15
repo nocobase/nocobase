@@ -89,10 +89,10 @@ export const useCalendarBlockProps = () => {
   const app = useApp();
   const plugin = app.pm.get('calendar') as any;
   const collection = useCollection();
-  const categoryCollectionField = collection.getField(ctx.fieldNames.colorFieldName);
-  const pluginColorField = plugin.getCategoryFieldInterface(categoryCollectionField?.interface) || {};
+  const colorCollectionField = collection.getField(ctx.fieldNames.colorFieldName);
+  const pluginColorField = plugin.getColorFieldInterface(colorCollectionField?.interface) || {};
   const useGetColor = pluginColorField.useGetColor || useDefaultGetColor;
-  const { getFontColor, getBackgroundColor } = useGetColor(categoryCollectionField) || {};
+  const { getFontColor, getBackgroundColor } = useGetColor(colorCollectionField) || {};
 
   useEffect(() => {
     if (!ctx?.service?.loading) {
