@@ -146,6 +146,7 @@ export function formSchemaPatch(currentSchema: ISchema, options?: any) {
     currentSchema['x-acl-action'] = `${association || collectionName}:update`;
     currentSchema['x-settings'] = 'blockSettings:editForm';
     currentSchema['x-use-decorator-props'] = 'useEditFormBlockDecoratorProps';
+    currentSchema['x-is-current'] = true;
 
     const comKey = Object.keys(currentSchema.properties)[0];
     if (comKey) {
