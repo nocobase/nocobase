@@ -32,8 +32,8 @@ const TitleRenderer = ({ value }) => {
 };
 interface ColorFunctions {
   loading: boolean;
-  getFontColor: (value) => string;
-  getBackgroundColor: (value) => string;
+  getFontColor: (value: any) => string; // 返回字体颜色
+  getBackgroundColor: (value: any) => string; // 返回背景颜色
 }
 
 const useGetColor = (field) => {
