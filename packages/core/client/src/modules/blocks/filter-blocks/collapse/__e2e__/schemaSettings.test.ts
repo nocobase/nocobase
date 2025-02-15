@@ -41,7 +41,7 @@ test.describe('collapse schema settings', () => {
 
       // 将上面的 Collapse 连接到下面的 Table
       await page.getByLabel('block-item-CardItem-general-filter-collapse').hover();
-      await page.getByLabel('designer-schema-settings-CardItem-AssociationFilter.BlockDesigner-general').hover();
+      await page.getByLabel('designer-schema-settings-CardItem-AssociationFilter.BlockDesigner-general').click();
       await page.getByRole('menuitem', { name: 'Connect data blocks' }).hover();
       await page.getByRole('menuitem', { name: 'General' }).click();
 
