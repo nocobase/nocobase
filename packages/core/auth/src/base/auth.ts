@@ -173,6 +173,13 @@ export class BaseAuth extends Auth {
           });
         }
 
+        if (!jti) {
+          this.ctx.throw(401, {
+            message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
+            code: AuthErrorCode.INVALID_TOKEN,
+          });
+        }
+
         const renewedResult = await this.tokenController.renew(jti);
         this.ctx.logger.info('token renewed', {
           method: 'auth.check',
@@ -180,7 +187,10 @@ export class BaseAuth extends Auth {
           headers: JSON.stringify(this.ctx?.req?.headers),
         });
         const expiresIn = Math.floor(tokenPolicy.tokenExpirationTime / 1000);
-        const newToken = this.jwt.sign({ userId, roleName, temp, signInTime }, { jwtid: renewedResult.jti, expiresIn });
+        const newToken = this.jwt.sign(
+          { userId, roleName, temp, signInTime, iat: Math.floor(renewedResult.issuedTime / 1000) },
+          { jwtid: renewedResult.jti, expiresIn },
+        );
         this.ctx.res.setHeader('x-new-token', newToken);
         return user;
       } catch (err) {

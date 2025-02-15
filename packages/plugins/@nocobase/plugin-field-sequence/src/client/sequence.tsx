@@ -121,9 +121,11 @@ const RuleTypes = {
           number: t('Number', { ns: NAMESPACE }),
           lowercase: t('Lowercase letters', { ns: NAMESPACE }),
           uppercase: t('Uppercase letters', { ns: NAMESPACE }),
-          symbol: t('Symbols', { ns: NAMESPACE })
+          symbol: t('Symbols', { ns: NAMESPACE }),
         };
-        return <code>{value?.map(charset => charsetLabels[charset]).join(', ') || t('Number', { ns: NAMESPACE })}</code>;
+        return (
+          <code>{value?.map((charset) => charsetLabels[charset]).join(', ') || t('Number', { ns: NAMESPACE })}</code>
+        );
       },
     },
     fieldset: {
@@ -154,14 +156,14 @@ const RuleTypes = {
           { value: 'number', label: `{{t("Number", { ns: "${NAMESPACE}" })}}` },
           { value: 'lowercase', label: `{{t("Lowercase letters", { ns: "${NAMESPACE}" })}}` },
           { value: 'uppercase', label: `{{t("Uppercase letters", { ns: "${NAMESPACE}" })}}` },
-          { value: 'symbol', label: `{{t("Symbols", { ns: "${NAMESPACE}" })}}` }
+          { value: 'symbol', label: `{{t("Symbols", { ns: "${NAMESPACE}" })}}` },
         ],
         required: true,
         default: ['number'],
         'x-validator': {
           minItems: 1,
-          message: `{{t("At least one character set should be selected", { ns: "${NAMESPACE}" })}}`
-        }
+          message: `{{t("At least one character set should be selected", { ns: "${NAMESPACE}" })}}`,
+        },
       },
     },
     defaults: {
