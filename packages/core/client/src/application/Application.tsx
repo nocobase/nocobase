@@ -495,11 +495,4 @@ export class Application {
   getGlobalVar(key) {
     return get(this.globalVars, key);
   }
-
-  registerOperators(key, operator) {
-    this.jsonLogic[key] = operator;
-  }
-  getOperator(key) {
-    return this.jsonLogic[key];
-  }
 }
