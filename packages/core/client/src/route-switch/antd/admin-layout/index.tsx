@@ -319,6 +319,10 @@ export const InternalAdminLayout = () => {
 
   return (
     <ProLayout
+      contentStyle={{
+        paddingBlock: 0,
+        paddingInline: 0,
+      }}
       className={css`
         .anticon-menu {
           color: #fff;
