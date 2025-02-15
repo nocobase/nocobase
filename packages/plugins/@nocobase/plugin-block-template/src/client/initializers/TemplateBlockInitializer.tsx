@@ -175,7 +175,7 @@ export function formSchemaPatch(currentSchema: ISchema, options?: any) {
 }
 
 function detailsSchemaPatch(currentSchema: ISchema, options?: any) {
-  const { collectionName, dataSourceName, association, currentRecord } = options;
+  const { collectionName, dataSourceName, association, currentRecord, associationType } = options;
   currentSchema['x-decorator-props'] = {
     action: 'list',
     collection: association ? null : collectionName,
@@ -189,6 +189,11 @@ function detailsSchemaPatch(currentSchema: ISchema, options?: any) {
   currentSchema['x-acl-action'] = `${association || collectionName}:view`; //currentSchema['x-acl-action'].replace(':get', ':view');
   currentSchema['x-settings'] = 'blockSettings:detailsWithPagination';
   currentSchema['x-use-decorator-props'] = 'useDetailsWithPaginationDecoratorProps';
+
+  if (associationType === 'hasOne' || associationType === 'belongsTo') {
+    currentSchema['x-acl-action'] = `${association || collectionName}:get`;
+    currentSchema['x-decorator-props']['action'] = 'get';
+  }
 
   if (currentRecord) {
     currentSchema['x-decorator-props']['action'] = 'get';
@@ -506,6 +511,7 @@ export const TemplateBlockInitializer = () => {
               }
               if (field) {
                 options['association'] = `${collection?.name}.${field.name}`;
+                options['associationType'] = field.type;
               } else {
                 options['collectionName'] = collectionName;
               }
