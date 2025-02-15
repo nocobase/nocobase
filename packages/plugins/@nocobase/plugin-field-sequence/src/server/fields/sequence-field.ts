@@ -301,7 +301,7 @@ const CHAR_SETS = {
   lowercase: 'abcdefghijklmnopqrstuvwxyz',
   uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
   // 符号只保留常用且安全的符号，有需要的可以自己加比如[]{}|;:,.<>放在链接或者文件名里容易出问题的字符
-  symbol: '!@#$%^&*_-+'
+  symbol: '!@#$%^&*_-+',
 } as const;
 
 interface RandomCharOptions {
@@ -317,21 +317,16 @@ sequencePatterns.register('randomChar', {
     if (!options?.charsets || options.charsets.length === 0) {
       return 'At least one character set should be selected';
     }
-    if (options.charsets.some(charset => !CHAR_SETS[charset])) {
+    if (options.charsets.some((charset) => !CHAR_SETS[charset])) {
       return 'Invalid charset selected';
     }
     return null;
   },
-  
-  generate(instance: any, options: RandomCharOptions) {
-    const { 
-      length = 6, 
-      charsets = ['number']
-    } = options;
 
-    const chars = [...new Set(
-      charsets.reduce((acc, charset) => acc + CHAR_SETS[charset], '')
-    )];
+  generate(instance: any, options: RandomCharOptions) {
+    const { length = 6, charsets = ['number'] } = options;
+
+    const chars = [...new Set(charsets.reduce((acc, charset) => acc + CHAR_SETS[charset], ''))];
 
     const getRandomChar = () => {
       const randomIndex = Math.floor(Math.random() * chars.length);
@@ -352,20 +347,27 @@ sequencePatterns.register('randomChar', {
   },
 
   getMatcher(options: RandomCharOptions) {
-    const pattern = [...new Set(
-      (options.charsets || ['number']).reduce((acc, charset) => {
-        switch (charset) {
-          case 'number': return acc + '0-9';
-          case 'lowercase': return acc + 'a-z';
-          case 'uppercase': return acc + 'A-Z';
-          case 'symbol': return acc + CHAR_SETS.symbol.replace('-', '').replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') + '-';
-          default: return acc;
-        }
-      }, '')
-    )].join('');
+    const pattern = [
+      ...new Set(
+        (options.charsets || ['number']).reduce((acc, charset) => {
+          switch (charset) {
+            case 'number':
+              return acc + '0-9';
+            case 'lowercase':
+              return acc + 'a-z';
+            case 'uppercase':
+              return acc + 'A-Z';
+            case 'symbol':
+              return acc + CHAR_SETS.symbol.replace('-', '').replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') + '-';
+            default:
+              return acc;
+          }
+        }, ''),
+      ),
+    ].join('');
 
     return `[${pattern}]{${options.length || 6}}`;
-  }
+  },
 });
 
 interface PatternConfig {
