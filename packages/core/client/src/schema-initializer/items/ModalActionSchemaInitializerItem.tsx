@@ -20,7 +20,7 @@ import { uid } from '@nocobase/utils/client';
 import React, { useMemo, useState } from 'react';
 
 export function ModalActionSchemaInitializerItem(props) {
-  const { modalSchema = {}, ...otherProps } = props;
+  const { modalSchema = {}, components = {}, ...otherProps } = props;
   const { properties, ...others } = modalSchema;
   const [visible, setVisible] = useState(false);
   const { setVisible: setSchemaInitializerVisible } = useSchemaInitializer();
@@ -92,7 +92,7 @@ export function ModalActionSchemaInitializerItem(props) {
         }}
       />
       <ActionContextProvider value={{ visible, setVisible }}>
-        <SchemaComponent components={{ Action }} schema={schema} />
+        <SchemaComponent components={{ Action, ...components }} schema={schema} />
       </ActionContextProvider>
     </>
   );

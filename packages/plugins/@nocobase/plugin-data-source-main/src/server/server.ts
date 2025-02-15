@@ -377,7 +377,24 @@ export class PluginDataSourceMainServer extends Plugin {
       }
       await next();
     });
-
+    this.app.resourceManager.use(async function pushUISchemaWhenUpdateCollectionField(ctx, next) {
+      const { resourceName, actionName } = ctx.action;
+      if (resourceName === 'collections' && actionName === 'create') {
+        const { values } = ctx.action.params;
+        const keys = Object.keys(values);
+        const presetKeys = ['createdAt', 'createdBy', 'updatedAt', 'updatedBy'];
+        for (const presetKey of presetKeys) {
+          if (keys.includes(presetKey)) {
+            continue;
+          }
+          values[presetKey] = !!values.fields?.find((v) => v.name === presetKey);
+        }
+        ctx.action.mergeParams({
+          values,
+        });
+      }
+      await next();
+    });
     this.app.acl.allow('collections', 'list', 'loggedIn');
     this.app.acl.allow('collections', 'listMeta', 'loggedIn');
     this.app.acl.allow('collectionCategories', 'list', 'loggedIn');
