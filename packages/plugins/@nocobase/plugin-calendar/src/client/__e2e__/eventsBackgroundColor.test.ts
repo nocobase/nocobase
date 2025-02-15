@@ -23,6 +23,8 @@ test.describe('Color field', () => {
 
     // 2. Switch to the single select option
     await page.getByRole('option', { name: 'Single select' }).click();
+    await page.getByLabel('block-item-CardItem-calendar-').hover();
+    await page.getByLabel('designer-schema-settings-CardItem-blockSettings:calendar-calendar').hover();
     await expect(page.getByRole('menuitem', { name: 'Color field Single select' })).toBeVisible();
     await page.mouse.move(-300, 0);
 
