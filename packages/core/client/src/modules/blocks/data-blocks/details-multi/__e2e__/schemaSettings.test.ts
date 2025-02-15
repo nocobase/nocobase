@@ -77,7 +77,7 @@ test.describe('actions schema settings', () => {
       page,
       showMenu: async () => {
         await page.getByRole('button', { name: 'Edit' }).hover();
-        await page.getByRole('button', { name: 'designer-schema-settings-Action' }).click();
+        await page.getByRole('button', { name: 'designer-schema-settings-Action' }).hover();
       },
       supportedOptions: ['Edit button', 'Linkage rules', 'Open mode', 'Popup size', 'Delete'],
     });

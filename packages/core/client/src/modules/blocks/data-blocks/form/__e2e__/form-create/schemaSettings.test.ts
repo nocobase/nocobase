@@ -1052,7 +1052,7 @@ test.describe('actions schema settings', () => {
         page,
         showMenu: async () => {
           await page.getByRole('button', { name: 'Save record' }).hover();
-          await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-users' }).click();
+          await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-users' }).hover();
         },
         supportedOptions: [
           'Edit button',

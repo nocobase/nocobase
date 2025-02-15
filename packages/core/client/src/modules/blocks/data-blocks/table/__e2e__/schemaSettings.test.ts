@@ -53,7 +53,7 @@ test.describe('actions schema settings', () => {
   test.describe('add new', () => {
     const showMenu = async (page: Page) => {
       await page.getByRole('button', { name: 'Add new' }).hover();
-      await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-general' }).click();
+      await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-general' }).hover();
     };
 
     test('supported options', async ({ page, mockPage }) => {
@@ -176,7 +176,7 @@ test.describe('actions schema settings', () => {
         page,
         showMenu: async () => {
           await page.getByRole('button', { name: 'Delete' }).hover();
-          await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-general' }).click();
+          await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-general' }).hover();
         },
         supportedOptions: ['Edit button', 'Delete'],
       });
