@@ -33,7 +33,7 @@ export class PluginFieldFormulaClient extends Plugin {
     'select',
     'multipleSelect',
   ];
-  registerExpressionFieldInterfaces(data: any) {
+  registerExpressionFieldInterfaces(data: string | string[]) {
     if (Array.isArray(data)) {
       const result = this.expressionFields.concat(data);
       this.expressionFields = result;
