@@ -56,8 +56,11 @@ const useGetColor = (field) => {
     },
   };
 };
+
+type TitleRendererProps = { value: any };
+
 export class PluginCalendarClient extends Plugin {
-  titleFieldInterfaces: { [T: string]: { TitleRenderer: Function } } = {
+  titleFieldInterfaces: { [T: string]: { TitleRenderer: React.FC<TitleRendererProps> } } = {
     input: { TitleRenderer },
     select: { TitleRenderer },
     phone: { TitleRenderer },
@@ -72,7 +75,7 @@ export class PluginCalendarClient extends Plugin {
 
   dateTimeFieldInterfaces = ['date', 'datetime', 'dateOnly', 'datetimeNoTz', 'unixTimestamp', 'createdAt', 'updatedAt'];
 
-  registerTitleFieldInterface(key: string, options) {
+  registerTitleFieldInterface(key: string, options: { TitleRenderer: React.FC<TitleRendererProps> }) {
     this.titleFieldInterfaces[key] = options;
   }
   getTitleFieldInterface(key: string) {
@@ -90,7 +93,7 @@ export class PluginCalendarClient extends Plugin {
       this.dateTimeFieldInterfaces.push(data);
     }
   }
-  registerColorFieldInterface(type, option) {
+  registerColorFieldInterface(type, option: { useGetColor: (field: any) => ColorFunctions }) {
     this.colorFieldInterfaces[type] = option;
   }
   getColorFieldInterface(type: string) {
