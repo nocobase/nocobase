@@ -56,19 +56,23 @@ type CollectionField = {
   [key: string]: any; // 扩展字段
 };
 
+type Option = { color: string; label: string; value: string };
+type GroupOptions = { options: Option[]; loading?: boolean };
+type GetGroupOptions = (collectionField: string) => GroupOptions;
+
 type UseGetGroupOptions = (collectionField: CollectionField) => { options: GroupOption[] };
 
 const useDefaultGroupFieldsOptions = (collectionField) => {
   return { options: collectionField.uiSchema.enum };
 };
 class PluginKanbanClient extends Plugin {
-  groupFields: { [T: string]: { useGetGroupOptions: UseGetGroupOptions } } = {
+  groupFields: { [T: string]: { useGetGroupOptions: GetGroupOptions } } = {
     select: { useGetGroupOptions: useDefaultGroupFieldsOptions },
     radioGroup: { useGetGroupOptions: useDefaultGroupFieldsOptions },
   };
 
-  registerGroupFieldInterface(key, options) {
-    this.groupFields[key] = options;
+  registerGroupFieldInterface(interfaceName: string, options: { useGetGroupOptions: GetGroupOptions }) {
+    this.groupFields[interfaceName] = options;
   }
 
   getGroupFieldInterface(key) {
