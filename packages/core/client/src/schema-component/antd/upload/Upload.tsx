@@ -41,6 +41,9 @@ attachmentFileTypes.add({
     return matchMimetype(file, 'image/*');
   },
   getThumbnailURL(file) {
+    if (file.preview) {
+      return file.preview;
+    }
     if (file.url) {
       return `${file.url}${file.thumbnailRule || ''}`;
     }
