@@ -8,7 +8,6 @@
  */
 
 import { DragOutlined } from '@ant-design/icons';
-import { useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import React from 'react';
 import { DragHandler, useDesignable } from '../..';
@@ -34,7 +33,6 @@ export const PageDesigner = ({ title }) => {
 export const PageTabDesigner = () => {
   const { designable } = useDesignable();
   const { getAriaLabel } = useGetAriaLabelOfDesigner();
-  const fieldSchema = useFieldSchema();
   const { render } = useSchemaSettingsRender('PageTabSettings');
 
   if (!designable) {

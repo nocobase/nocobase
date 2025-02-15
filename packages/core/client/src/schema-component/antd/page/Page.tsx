@@ -339,13 +339,16 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
         return null;
       }
 
+      // fake schema used to pass routing information to SortableItem
+      const fakeSchema: any = { __route__: tabRoute };
+
       return {
         label: (
           <NocoBaseRouteContext.Provider value={tabRoute}>
-            {/* TODO: 单独为 tab 写一个拖动 */}
             <SortableItem
               id={tabRoute.schemaUid}
               className={classNames('nb-action-link', 'designerCss', className)}
+              schema={fakeSchema}
             >
               {tabRoute.icon && <Icon style={{ marginRight: 8 }} type={tabRoute.icon} />}
               <span>{(tabRoute.title && routeT(compile(tabRoute.title))) || t('Unnamed')}</span>
