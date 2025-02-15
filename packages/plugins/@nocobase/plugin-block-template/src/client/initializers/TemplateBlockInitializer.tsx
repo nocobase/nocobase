@@ -27,7 +27,8 @@ import { useT } from '../locale';
 import PluginMobileClient from '@nocobase/plugin-mobile/client';
 import { findBlockRootSchema } from '../utils/schema';
 import { useFieldSchema } from '@formily/react';
-
+import { useBlockTemplates } from '../components/BlockTemplateProvider';
+import { useMemoizedFn } from 'ahooks';
 export function convertTplBlock(
   tpl,
   virtual = false,
@@ -206,7 +207,7 @@ function detailsSchemaPatch(currentSchema: ISchema, options?: any) {
 }
 
 function schemaPatch(currentSchema: ISchema, options?: any) {
-  const { collectionName, dataSourceName, association, currentRecord } = options;
+  const { collectionName, dataSourceName, association } = options;
 
   const decoratorName = currentSchema['x-decorator'];
   if (decoratorName === 'DetailsBlockProvider') {
@@ -250,7 +251,7 @@ function correctIdReference(schema, idMaps) {
   }
 }
 
-function correctIdReferences(schemas) {
+export function correctIdReferences(schemas) {
   const idMaps = {};
   for (const schema of schemas) {
     _.merge(idMaps, getSchemaUidMaps(schema));
@@ -260,7 +261,7 @@ function correctIdReferences(schemas) {
   }
 }
 
-function convertTemplateToBlock(data, templateKey?: string, options?: any) {
+export function convertTemplateToBlock(data, templateKey?: string, options?: any) {
   // debugger;
   let tpls = data?.properties; // Grid开始的区块
   tpls = _.get(Object.values(tpls), '0.properties'); // Grid.Row开始的区块
@@ -347,85 +348,13 @@ const SearchInput = ({ value: outValue, onChange }) => {
 };
 
 export const TemplateBlockInitializer = () => {
-  const api = useAPIClient();
   const { insert } = useSchemaInitializer();
   const plugin = usePlugin(PluginBlockTemplateClient);
-  const mobilePlugin = usePlugin(PluginMobileClient);
-  const blockTemplatesResource = useResource('blockTemplates');
   const [searchValue, setSearchValue] = useState('');
   const t = useT();
-  const { token } = theme.useToken();
-  const isMobile = useMemo(() => {
-    return window.location.pathname.startsWith(mobilePlugin.mobileBasename);
-  }, [mobilePlugin]);
-  const fieldSchema = useFieldSchema();
+  const { templates, handleTemplateClick, loading } = useBlockTemplates();
 
-  const handleClick = async ({ item }, options?: any, insertAdjacent?: any) => {
-    const { uid } = item;
-    const { data } = await api.request({
-      url: `uiSchemas:getProperties/${uid}`,
-    });
-
-    const template = data?.data;
-    const schemas = convertTemplateToBlock(template, item.key, options);
-    plugin.setTemplateCache(findBlockRootSchema(template['properties']?.['blocks']));
-    correctIdReferences(schemas);
-    for (const schema of schemas) {
-      insertAdjacent ? insertAdjacent(schema) : insert(schema);
-    }
-    // server hook only support root node, so we do the link from client
-    const links = [];
-    const fillLink = (schema: ISchema) => {
-      if (schema['x-template-root-uid']) {
-        links.push({
-          templateKey: item.key,
-          templateBlockUid: schema['x-template-root-uid'],
-          blockUid: schema['x-uid'],
-        });
-      }
-      if (schema.properties) {
-        for (const key in schema.properties) {
-          fillLink(schema.properties[key]);
-        }
-      }
-    };
-    for (const schema of schemas) {
-      fillLink(schema);
-    }
-    blockTemplatesResource.link({
-      values: links,
-    });
-  };
-
-  const { data, loading } = useRequest<{
-    data: {
-      key: string;
-      title: string;
-      description: string;
-      uid: string;
-      configured: boolean;
-      componentType: string;
-      collection: string;
-      dataSource: string;
-    }[];
-  }>(
-    {
-      url: 'blockTemplates:list',
-      method: 'get',
-      params: {
-        filter: {
-          configured: true,
-          type: isMobile ? 'Mobile' : { $ne: 'Mobile' },
-        },
-        paginate: false,
-      },
-    },
-    {
-      uid: 'blockTemplates',
-    },
-  );
-
-  const filteredData = data?.data
+  const filteredData = templates
     ?.filter((item) => !item.dataSource)
     .filter((item) => !searchValue || item.title.toLowerCase().includes(searchValue.toLowerCase()));
 
@@ -465,10 +394,10 @@ export const TemplateBlockInitializer = () => {
   ];
 
   useEffect(() => {
-    data?.data?.forEach((item) => {
+    templates?.forEach((item) => {
       plugin.templateInfos.set(item.key, item);
     });
-  }, [data?.data, plugin.templateInfos]);
+  }, [templates, plugin.templateInfos]);
 
   useEffect(() => {
     const generator = ({ collection, association, item, index, field, componentName, dataSource, keyPrefix, name }) => {
@@ -490,7 +419,7 @@ export const TemplateBlockInitializer = () => {
       }
       // const isForm = name === 'createForm' || name === 'editForm';
       const isDetails = name === 'details' || componentName === 'ReadPrettyFormItem';
-      const children = data?.data
+      const children = templates
         ?.filter(
           (d) =>
             (d.componentType === componentName ||
@@ -505,7 +434,7 @@ export const TemplateBlockInitializer = () => {
             name: m.key,
             item: m,
             title: m.title,
-            schemaInsertor: (insert, { item, fromOthersInPopup, name }) => {
+            schemaInsertor: (insert, { item, name }) => {
               const options = { dataSourceName };
               if (association) {
                 options['association'] = association;
@@ -520,7 +449,7 @@ export const TemplateBlockInitializer = () => {
               if (name === 'editForm') {
                 options['currentRecord'] = true;
               }
-              return handleClick(item, options, insert);
+              return handleTemplateClick(item, options, insert);
             },
           };
         });
@@ -537,7 +466,11 @@ export const TemplateBlockInitializer = () => {
       };
     };
     registerInitializerMenusGenerator('block_template', generator);
-  }, [data?.data, plugin.isInBlockTemplateConfigPage]);
+  }, [templates, plugin.isInBlockTemplateConfigPage, handleTemplateClick, t, plugin]);
+
+  const onClick = useMemoizedFn((item) => {
+    handleTemplateClick(item, {}, insert);
+  });
 
   if (loading) {
     return (
@@ -554,7 +487,7 @@ export const TemplateBlockInitializer = () => {
       icon={<CopyOutlined style={{ marginRight: 0 }} />}
       items={menuItems}
       name={'templates'}
-      onClick={handleClick}
+      onClick={onClick}
     />
   );
 };

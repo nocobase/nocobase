@@ -13,7 +13,7 @@ import { NAMESPACE } from './constants';
 import { BlockTemplateList, BlockTemplatePage } from './components';
 import { ISchema, Schema } from '@formily/json-schema';
 import * as _ from 'lodash';
-import { associationRecordSettingItem, revertSettingItem, formSettingItem } from './settings';
+import { revertSettingItem } from './settings';
 import { getFullSchema } from './utils/template';
 import { registerTemplateBlockInterceptors } from './utils/interceptors';
 import { TemplateGridDecorator } from './components/TemplateGridDecorator';
@@ -25,6 +25,7 @@ import {
   hideConvertToBlockSettingItem,
   hideDeleteSettingItem,
 } from './utils/setting';
+import { BlockTemplateProvider } from './components/BlockTemplateProvider';
 
 export class PluginBlockTemplateClient extends Plugin {
   templateInfos = new Map();
@@ -77,6 +78,7 @@ export class PluginBlockTemplateClient extends Plugin {
     registerTemplateBlockInterceptors(this.app.apiClient, this.pageBlocks, this.savedSchemaUids);
 
     this.app.addComponents({ TemplateGridDecorator });
+    this.app.addProviders([BlockTemplateProvider]);
 
     for (const initializer of this.injectInitializers) {
       this.app.schemaInitializerManager.addItem(initializer, 'otherBlocks.templates', templateBlockInitializerItem);
