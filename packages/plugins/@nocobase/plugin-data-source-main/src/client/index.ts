@@ -27,8 +27,8 @@ class PluginDataSourceMainClient extends Plugin {
   addCollectionPresetField(config: PresetFieldConfig) {
     this.collectionPresetFields.push(config);
   }
-  removeCollectionPresetField(name: string) {
-    this.collectionPresetFields = reject(this.collectionPresetFields, (v) => v.value.name === name);
+  removeCollectionPresetField(fieldName: string) {
+    this.collectionPresetFields = reject(this.collectionPresetFields, (v) => v.value.name === fieldName);
   }
   getCollectionPresetFields() {
     return orderBy(this.collectionPresetFields, ['order'], ['asc']);
