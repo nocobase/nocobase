@@ -33,6 +33,8 @@ test.describe('Color field', () => {
     await page.getByLabel('designer-schema-settings-CardItem-blockSettings:calendar-calendar').hover();
     await page.getByRole('menuitem', { name: 'Color field Single select' }).click();
     await page.getByRole('option', { name: 'Radio group' }).click();
+    await page.getByLabel('block-item-CardItem-calendar-').hover();
+    await page.getByLabel('designer-schema-settings-CardItem-blockSettings:calendar-calendar').hover();
     await expect(page.getByRole('menuitem', { name: 'Color field Radio group' })).toBeVisible();
   });
 });
