@@ -71,7 +71,7 @@ class PluginDataSourceMainClient extends Plugin {
     });
     this.addCollectionPresetField({
       order: 3,
-      description: '{{t("Store the last update time of each record") }}',
+      description: '{{t("Store the creation user of each record") }}',
       value: {
         name: 'createdBy',
         interface: 'createdBy',
