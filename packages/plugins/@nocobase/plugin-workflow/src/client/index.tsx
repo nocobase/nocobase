@@ -7,11 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { useFieldSchema } from '@formily/react';
-import { isValid } from '@formily/shared';
-
-import { PagePopups, Plugin, useCompile, WorkflowConfig } from '@nocobase/client';
+import { PagePopups, Plugin, useCompile } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 
 // import { ExecutionPage } from './ExecutionPage';
@@ -35,9 +31,13 @@ import UpdateInstruction from './nodes/update';
 import DestroyInstruction from './nodes/destroy';
 import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './utils';
 import { lang, NAMESPACE } from './locale';
-import { customizeSubmitToWorkflowActionSettings } from './settings/customizeSubmitToWorkflowActionSettings';
 import { VariableOption } from './variable';
 import { WorkflowTasks, TasksProvider, TaskTypeOptions } from './WorkflowTasks';
+import { BindWorkflowConfig } from './settings/BindWorkflowConfig';
+
+const workflowConfigSettings = {
+  Component: BindWorkflowConfig,
+};
 
 export default class PluginWorkflowClient extends Plugin {
   triggers = new Registry<Trigger>();
@@ -120,15 +120,13 @@ export default class PluginWorkflowClient extends Plugin {
 
     this.app.use(TasksProvider);
 
-    this.app.schemaSettingsManager.add(customizeSubmitToWorkflowActionSettings);
-
-    this.app.schemaSettingsManager.addItem('actionSettings:delete', 'workflowConfig', {
-      Component: WorkflowConfig,
-      useVisible() {
-        const fieldSchema = useFieldSchema();
-        return isValid(fieldSchema?.['x-action-settings']?.triggerWorkflows);
-      },
-    });
+    this.app.schemaSettingsManager.addItem('actionSettings:submit', 'workflowConfig', workflowConfigSettings);
+    this.app.schemaSettingsManager.addItem('actionSettings:createSubmit', 'workflowConfig', workflowConfigSettings);
+    this.app.schemaSettingsManager.addItem('actionSettings:updateSubmit', 'workflowConfig', workflowConfigSettings);
+    this.app.schemaSettingsManager.addItem('actionSettings:saveRecord', 'workflowConfig', workflowConfigSettings);
+    this.app.schemaSettingsManager.addItem('actionSettings:updateRecord', 'workflowConfig', workflowConfigSettings);
+    this.app.schemaSettingsManager.addItem('actionSettings:delete', 'workflowConfig', workflowConfigSettings);
+    this.app.schemaSettingsManager.addItem('actionSettings:bulkEditSubmit', 'workflowConfig', workflowConfigSettings);
 
     this.registerTrigger('collection', CollectionTrigger);
     this.registerTrigger('schedule', ScheduleTrigger);
@@ -162,3 +160,4 @@ export * from './hooks';
 export { default as useStyles } from './style';
 export * from './variable';
 export * from './ExecutionContextProvider';
+export * from './settings/BindWorkflowConfig';
