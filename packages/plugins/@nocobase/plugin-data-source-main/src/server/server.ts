@@ -381,11 +381,13 @@ export class PluginDataSourceMainServer extends Plugin {
       const { resourceName, actionName } = ctx.action;
       if (resourceName === 'collections' && actionName === 'create') {
         const { values } = ctx.action.params;
-        if (values.fields) {
-          values['createdAt'] = !!values.fields.find((v) => v.name === 'createdAt');
-          values['createdBy'] = !!values.fields.find((v) => v.name === 'createdBy');
-          values['updatedAt'] = !!values.fields.find((v) => v.name === 'updatedAt');
-          values['updatedBy'] = !!values.fields.find((v) => v.name === 'updatedBy');
+        const keys = Object.keys(values);
+        const presetKeys = ['createdAt', 'createdBy', 'updatedAt', 'updatedBy'];
+        for (const presetKey of presetKeys) {
+          if (keys.includes(presetKey)) {
+            continue;
+          }
+          values[presetKey] = !!values.fields?.find((v) => v.name === presetKey);
         }
         ctx.action.mergeParams({
           values,
