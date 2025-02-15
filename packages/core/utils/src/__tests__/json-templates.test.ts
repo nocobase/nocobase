@@ -25,3 +25,17 @@ describe('json-templates', () => {
     });
   });
 });
+
+describe('json-templates filters', () => {
+  it('format filters', async () => {
+    const template = {
+      today: '{{now | date_format: "YYYY-MM-DD"}}',
+    };
+    const result = parse(template)({
+      now: new Date('2025-01-01: 12:00:00'),
+    });
+    expect(result).toEqual({
+      today: '2025-01-01',
+    });
+  });
+});

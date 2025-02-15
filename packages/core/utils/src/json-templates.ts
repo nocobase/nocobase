@@ -13,6 +13,8 @@
 // Created by Curran Kelleher and Chrostophe Serafin.
 // Contributions from Paul Brewer and Javier Blanco Martinez.
 import { get } from 'lodash';
+import liquidjsEngine from './liquidjs';
+import engine from './liquidjs';
 
 // An enhanced version of `typeof` that handles arrays and dates as well.
 function type(value) {
@@ -39,7 +41,6 @@ function Parameter(match) {
   if (i !== -1) {
     param = {
       key: matchValue.substr(0, i),
-      defaultValue: matchValue.substr(i + 1),
     };
   } else {
     param = { key: matchValue };
@@ -82,43 +83,14 @@ export function parse(value) {
 const parseString = (() => {
   // This regular expression detects instances of the
   // template parameter syntax such as {{foo}} or {{foo:someDefault}}.
-  const regex = /{{(\w|:|[\s-+.,@/()?=*_$])+}}/g;
+  const regex = /{{(\w|:|[\s-+.,@/()?=*_$|])+}}/g;
 
   return (str) => {
-    let parameters = [];
-    let templateFn = (context) => str;
-
+    const templateFn = (context) => {
+      return engine.parseAndRenderSync(str, context);
+    };
+    const parameters = liquidjsEngine.fullVariablesSync(str).map((variable) => ({ key: variable }));
     const matches = str.match(regex);
-    if (matches) {
-      parameters = matches.map(Parameter);
-      templateFn = (context) => {
-        context = context || {};
-        return matches.reduce((result, match, i) => {
-          const parameter = parameters[i];
-          let value = get(context, parameter.key);
-
-          if (typeof value === 'undefined') {
-            value = parameter.defaultValue;
-          }
-
-          if (typeof value === 'function') {
-            value = value();
-          }
-
-          // Accommodate non-string as original values.
-          if (matches.length === 1 && str.startsWith('{{') && str.endsWith('}}')) {
-            return value;
-          }
-
-          // Treat Date value inside string to ISO string.
-          if (value instanceof Date) {
-            value = value.toISOString();
-          }
-
-          return result.replace(match, value == null ? '' : value);
-        }, str);
-      };
-    }
 
     return Template(templateFn, parameters);
   };
