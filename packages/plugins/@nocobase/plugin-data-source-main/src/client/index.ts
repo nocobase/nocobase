@@ -71,7 +71,7 @@ class PluginDataSourceMainClient extends Plugin {
     });
     this.addCollectionPresetField({
       order: 3,
-      description: '{{t("Primary key, unique identifier, self growth") }}',
+      description: '{{t("Store the last update time of each record") }}',
       value: {
         name: 'createdBy',
         interface: 'createdBy',
