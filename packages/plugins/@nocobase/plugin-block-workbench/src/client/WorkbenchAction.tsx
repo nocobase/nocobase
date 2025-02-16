@@ -8,7 +8,7 @@
  */
 
 import { useFieldSchema } from '@formily/react';
-import { Action, Icon, useComponent, withDynamicSchemaProps } from '@nocobase/client';
+import { Action, Icon, useCompile, useComponent, withDynamicSchemaProps } from '@nocobase/client';
 import { Avatar } from 'antd';
 import { createStyles } from 'antd-style';
 import React, { useContext } from 'react';
@@ -36,13 +36,15 @@ function Button() {
   const backgroundColor = fieldSchema['x-component-props']?.['iconColor'];
   const { layout } = useContext(WorkbenchBlockContext);
   const { styles, cx } = useStyles();
+  const compile = useCompile();
+  const title = compile(fieldSchema.title);
   return layout === WorkbenchLayout.Grid ? (
-    <div title={fieldSchema.title} style={{ width: '100%', overflow: 'hidden' }} className="nb-action-panel-container">
+    <div title={title} style={{ width: '100%', overflow: 'hidden' }} className="nb-action-panel-container">
       <Avatar style={{ backgroundColor }} size={54} icon={<Icon type={icon} />} />
-      <div className={cx(styles.title)}>{fieldSchema.title}</div>
+      <div className={cx(styles.title)}>{title}</div>
     </div>
   ) : (
-    <span>{fieldSchema.title}</span>
+    <span>{title}</span>
   );
 }
 

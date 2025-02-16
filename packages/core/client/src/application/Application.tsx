@@ -44,7 +44,13 @@ import type { CollectionFieldInterfaceFactory } from '../data-source';
 import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import type { Plugin } from './Plugin';
+import { getOperators } from './globalOperators';
 import type { RequireJS } from './utils/requirejs';
+
+type JsonLogic = {
+  addOperation: (name: string, fn?: any) => void;
+  rmOperation: (name: string) => void;
+};
 
 declare global {
   interface Window {
@@ -100,7 +106,7 @@ export class Application {
   public dataSourceManager: DataSourceManager;
   public name: string;
   public globalVars: Record<string, any> = {};
-
+  public jsonLogic: JsonLogic;
   loading = true;
   maintained = false;
   maintaining = false;
@@ -155,6 +161,7 @@ export class Application {
       this.apiClient.auth.locale = lng;
     });
     this.initListeners();
+    this.jsonLogic = getOperators();
   }
 
   private initListeners() {
