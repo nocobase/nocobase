@@ -101,7 +101,7 @@ export const mapBlockSettings = new SchemaSettings({
         const { dn } = useDesignable();
         const { service } = useMapBlockContext();
         const { name } = useCollection();
-        const mapFieldOptions = getCollectionFieldsOptions(name, ['point', 'lineString', 'polygon'], {
+        const mapFieldOptions = getCollectionFieldsOptions(name, ['point', 'lineString', 'polygon'], null, {
           association: ['o2o', 'obo', 'oho', 'o2m', 'm2o', 'm2m'],
         });
         return {
@@ -164,7 +164,7 @@ export const mapBlockSettings = new SchemaSettings({
         const { getCollectionFieldsOptions } = useCollectionManager_deprecated();
         const { name } = useCollection();
         const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
-        const mapFieldOptions = getCollectionFieldsOptions(name, ['point', 'lineString', 'polygon'], {
+        const mapFieldOptions = getCollectionFieldsOptions(name, ['point', 'lineString', 'polygon'], null, {
           association: ['o2o', 'obo', 'oho', 'o2m', 'm2o', 'm2m'],
         });
         const isPointField = findNestedOption(fieldNames.field, mapFieldOptions)?.type === 'point';

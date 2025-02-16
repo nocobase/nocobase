@@ -14,8 +14,8 @@ import { useLocation } from 'react-router-dom';
 
 import type { IResource } from '@nocobase/sdk';
 
-import { useMobileTitle } from './MobileTitle';
 import { useRouteTranslation } from '../../locale';
+import { useMobileTitle } from './MobileTitle';
 
 export interface MobileRouteItem {
   id: number;
@@ -115,7 +115,7 @@ export const MobileRoutesProvider: FC<{
     () =>
       resource[action](
         action === 'listAccessible'
-          ? { tree: true, sort: 'sort' }
+          ? { tree: true, sort: 'sort', paginate: false }
           : { tree: true, sort: 'sort', paginate: false, filter: { hidden: { $ne: true } } },
       ).then((res) => res.data),
     {

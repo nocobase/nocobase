@@ -59,7 +59,7 @@ export const SchemaSettingsBlockHeightItem = function BlockTitleItem() {
               },
               'x-validator': [
                 {
-                  minimum: 200,
+                  minimum: 40,
                 },
               ],
               'x-reactions': {

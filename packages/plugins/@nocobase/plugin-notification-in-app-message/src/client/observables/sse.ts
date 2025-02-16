@@ -54,6 +54,7 @@ export const startMsgSSEStreamWithRetry: () => () => void = () => {
       },
       responseType: 'stream',
       adapter: 'fetch',
+      skipNotify: (error) => (!error || !error.message ? true : false),
     });
     if (!res?.data) return;
     const stream = res.data;
