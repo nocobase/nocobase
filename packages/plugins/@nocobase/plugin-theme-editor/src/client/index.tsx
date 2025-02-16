@@ -7,7 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, createStyles, defaultTheme, useCurrentUserSettingsMenu, useGlobalTheme } from '@nocobase/client';
+import {
+  Plugin,
+  createStyles,
+  defaultTheme,
+  useCurrentUserSettingsMenu,
+  useGlobalTheme,
+  useACLContext,
+} from '@nocobase/client';
 import { ConfigProvider } from 'antd';
 import _ from 'lodash';
 import React, { useEffect, useMemo } from 'react';
@@ -23,7 +30,6 @@ const ThemeList = lazy(() => import('./components/ThemeList'));
 const { ThemeListProvider } = lazy(() => import('./components/ThemeListProvider'), 'ThemeListProvider');
 const CustomTheme = lazy(() => import('./components/theme-editor'));
 
-import { useThemeSettings } from './hooks/useThemeSettings';
 import { NAMESPACE } from './locale';
 import { ThemeSettings } from './components/ThemeSettings';
 
@@ -99,6 +105,9 @@ export class PluginThemeEditorClient extends Plugin {
       name: 'theme',
       Component: ThemeSettings,
       sort: 310,
+      useVisible: () => {
+        return this.app.pluginSettingsManager.get('theme-editor');
+      },
     });
   }
 }
