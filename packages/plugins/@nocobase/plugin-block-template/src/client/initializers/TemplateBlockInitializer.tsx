@@ -192,16 +192,14 @@ function detailsSchemaPatch(currentSchema: ISchema, options?: any) {
   currentSchema['x-settings'] = 'blockSettings:detailsWithPagination';
   currentSchema['x-use-decorator-props'] = 'useDetailsWithPaginationDecoratorProps';
 
-  if (associationType === 'hasOne' || associationType === 'belongsTo') {
+  if (currentRecord || associationType === 'hasOne' || associationType === 'belongsTo') {
     currentSchema['x-acl-action'] = `${association || collectionName}:get`;
     currentSchema['x-decorator-props']['action'] = 'get';
+    currentSchema['x-settings'] = 'blockSettings:details';
+    currentSchema['x-use-decorator-props'] = 'useDetailsDecoratorProps';
   }
 
   if (currentRecord) {
-    currentSchema['x-decorator-props']['action'] = 'get';
-    currentSchema['x-acl-action'] = `${association || collectionName}:get`;
-    currentSchema['x-settings'] = 'blockSettings:details';
-    currentSchema['x-use-decorator-props'] = 'useDetailsDecoratorProps';
     currentSchema['x-is-current'] = true;
   }
 }
