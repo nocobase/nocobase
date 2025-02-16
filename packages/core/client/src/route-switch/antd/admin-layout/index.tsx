@@ -9,14 +9,12 @@
 
 import ProLayout from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
-import { ConfigProvider, Divider } from 'antd';
 import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   AppNotFound,
   CurrentAppInfoProvider,
-  CurrentUser,
   DndContext,
   Icon,
   NavigateIfNotSignIn,
@@ -44,7 +42,6 @@ import {
 } from '../../../application/CustomRouterContextProvider';
 import { Plugin } from '../../../application/Plugin';
 import { menuItemInitializer } from '../../../modules/menu/menuItemInitializer';
-import { Help } from '../../../user/Help';
 import { KeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar } from './menuItemSettings';
@@ -210,11 +207,6 @@ const className5 = css`
   height: 100%;
   z-index: 10;
 `;
-const theme = {
-  token: {
-    colorSplit: 'rgba(255, 255, 255, 0.1)',
-  },
-};
 
 const pageContentStyle: React.CSSProperties = {
   flex: 1,
@@ -387,9 +379,12 @@ export const InternalAdminLayout = () => {
           paddingInline: 0,
         }}
         className={css`
-        .anticon-menu {
-          color: #fff;
-        }
+          .anticon-menu {
+            color: #fff;
+          }
+          .ant-pro-top-nav-header-main {
+            padding-inline-start: 0;
+          }
       `}
         location={location}
         route={{
@@ -397,16 +392,9 @@ export const InternalAdminLayout = () => {
           children: convertRoutesToLayout(allAccessRoutes, { renderInitializer, designable }),
         }}
         actionsRender={(props) => {
-          if (props.isMobile) return [];
-          if (typeof window === 'undefined') return [];
-          return [
-            <PinnedPluginList key="pinned-plugin-list" />,
-            <ConfigProvider theme={theme}>
-              <Divider type="vertical" />
-            </ConfigProvider>,
-            <Help key="help" />,
-            <CurrentUser key="current-user" />,
-          ];
+          if (props.isMobile) return null;
+          if (typeof window === 'undefined') return null;
+          return <PinnedPluginList key="pinned-plugin-list" />;
         }}
         logo={<NocoBaseLogo />}
         title={''}
@@ -420,6 +408,7 @@ export const InternalAdminLayout = () => {
             colorTextMenuActive: '#fff',
             colorBgMenuItemHover: '#001529',
             colorBgMenuItemSelected: '#001529',
+            heightLayoutHeader: 46,
           },
           sider: {
             colorTextMenuSecondary: '#fff',
