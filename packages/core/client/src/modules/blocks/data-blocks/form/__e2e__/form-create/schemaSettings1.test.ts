@@ -173,7 +173,7 @@ test.describe('creation form block schema settings', () => {
 
     async function showSettingsMenu(page) {
       await page.getByLabel('block-item-CardItem-general-form').hover();
-      await page.getByLabel('designer-schema-settings-CardItem-FormV2.Designer-general').hover();
+      await page.getByLabel('designer-schema-settings-CardItem-FormV2.Designer-general').click();
     }
   });
 
@@ -424,7 +424,7 @@ test.describe('creation form block schema settings', () => {
     await page
       .getByLabel('block-item-CardItem-users-form')
       .getByLabel('designer-schema-settings-CardItem-FormV2.Designer-users')
-      .hover();
+      .click();
     await page.getByRole('menuitem', { name: 'Save as block template' }).click();
     await page.getByLabel('Save as template').getByRole('textbox').fill('Users_Form');
     await page.getByRole('button', { name: 'OK', exact: true }).click();
