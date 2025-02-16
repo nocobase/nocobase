@@ -8,7 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import { reject, orderBy } from 'lodash';
+import { orderBy, reject } from 'lodash';
 
 type PresetFieldConfig = {
   order: number; // 定义字段的顺序。
@@ -35,7 +35,7 @@ class PluginDataSourceMainClient extends Plugin {
   }
   async load() {
     this.addCollectionPresetField({
-      order: 1,
+      order: 100,
       description: '{{t("Primary key, unique identifier, self growth") }}',
       value: {
         name: 'id',
@@ -53,7 +53,7 @@ class PluginDataSourceMainClient extends Plugin {
       },
     });
     this.addCollectionPresetField({
-      order: 2,
+      order: 200,
       description: '{{t("Store the creation time of each record")}}',
       value: {
         name: 'createdAt',
@@ -70,7 +70,7 @@ class PluginDataSourceMainClient extends Plugin {
       },
     });
     this.addCollectionPresetField({
-      order: 3,
+      order: 300,
       description: '{{t("Store the creation user of each record") }}',
       value: {
         name: 'createdBy',
@@ -93,7 +93,7 @@ class PluginDataSourceMainClient extends Plugin {
       },
     });
     this.addCollectionPresetField({
-      order: 4,
+      order: 400,
       description: '{{t("Store the last update time of each record")}}',
       value: {
         type: 'date',
@@ -110,7 +110,7 @@ class PluginDataSourceMainClient extends Plugin {
       },
     });
     this.addCollectionPresetField({
-      order: 5,
+      order: 500,
       description: '{{t("Store the last update user of each record")}}',
       value: {
         type: 'belongsTo',
