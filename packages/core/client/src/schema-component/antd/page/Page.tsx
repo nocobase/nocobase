@@ -31,12 +31,13 @@ import {
 import { useDocumentTitle } from '../../../document-title';
 import { useGlobalTheme } from '../../../global-theme';
 import { Icon } from '../../../icon';
+import { AppNotFound } from '../../../nocobase-buildin-plugin';
 import { NocoBaseDesktopRouteType, NocoBaseRouteContext, useCurrentRoute } from '../../../route-switch/antd/admin-layout';
 import { KeepAliveProvider, useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
 import { DndContext } from '../../common';
 import { SortableItem } from '../../common/sortable-item';
-import { SchemaComponent, SchemaComponentOptions } from '../../core';
+import { RemoteSchemaComponent, SchemaComponent, SchemaComponentOptions } from '../../core';
 import { useCompile, useDesignable } from '../../hooks';
 import { useToken } from '../__builtins__';
 import { ErrorFallback } from '../error-fallback';
@@ -170,23 +171,13 @@ const displayNone = {
 };
 
 // Add a TabPane component to manage caching, implementing an effect similar to Vue's keep-alive
-const TabPane = React.memo(({ schema, active: tabActive }: { schema: Schema; active: boolean }) => {
+const TabPane = React.memo(({ active: tabActive, uid }: { active: boolean; uid: string }) => {
   const mountedRef = useRef(false);
   const { active: pageActive } = useKeepAlive();
 
   if (tabActive && !mountedRef.current) {
     mountedRef.current = true;
   }
-
-  const newSchema = useMemo(
-    () =>
-      new Schema({
-        properties: {
-          [schema.name]: schema,
-        },
-      }),
-    [schema],
-  );
 
   if (!mountedRef.current) {
     return null;
@@ -195,7 +186,7 @@ const TabPane = React.memo(({ schema, active: tabActive }: { schema: Schema; act
   return (
     <div style={tabActive ? displayBlock : displayNone}>
       <KeepAliveProvider active={pageActive && tabActive}>
-        <SchemaComponent distributed schema={newSchema} />
+        <RemoteSchemaComponent uid={uid} />
       </KeepAliveProvider>
     </div>
   );
@@ -211,20 +202,36 @@ interface PageContentProps {
 
 const InternalPageContent = (props: PageContentProps) => {
   const { loading, disablePageHeader, enablePageTabs, fieldSchema, activeKey } = props;
+  const currentRoute = useCurrentRoute();
+
+  const noTabs = currentRoute?.children?.length === 0 || currentRoute?.children?.length === undefined;
+
+  if (noTabs) {
+    return <AppNotFound />;
+  }
 
   if (!disablePageHeader && enablePageTabs) {
     return (
       <>
-        {fieldSchema.mapProperties((schema) => (
-          <TabPane key={schema.name} schema={schema} active={schema.name === activeKey} />
-        ))}
+        {
+          currentRoute.children.map((tabRoute) => {
+            return (
+              <NocoBaseRouteContext.Provider value={tabRoute} key={tabRoute.schemaUid}>
+                <TabPane active={tabRoute.schemaUid === activeKey} uid={tabRoute.schemaUid} />
+              </NocoBaseRouteContext.Provider>
+            );
+          })
+        }
       </>
     );
   }
 
+
   return (
     <div className={className1}>
-      <SchemaComponent schema={fieldSchema} distributed />
+      <NocoBaseRouteContext.Provider value={currentRoute?.children?.[0]}>
+        <RemoteSchemaComponent uid={currentRoute?.children?.[0].schemaUid} />
+      </NocoBaseRouteContext.Provider>
     </div>
   );
 };
