@@ -378,6 +378,7 @@ export const InternalAdminLayout = () => {
           paddingBlock: 0,
           paddingInline: 0,
         }}
+        siderWidth={200}
         className={css`
           .anticon-menu {
             color: #fff;
