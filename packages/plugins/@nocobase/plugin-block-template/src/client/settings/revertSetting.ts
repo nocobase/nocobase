@@ -17,5 +17,10 @@ export const revertSettingItem = {
   name: 'template-revert',
   title: tStr('Revert to template'),
   Component: RevertSetting,
-  useVisible: useIsInTemplate,
+  useVisible: () => {
+    const fieldSchema = useFieldSchema();
+    const isInTemplate = useIsInTemplate(false);
+    // in steps form, the schema is not the one saved in server side, so we need to hide the revert setting item
+    return isInTemplate && fieldSchema['x-settings'] !== 'settings:stepsFormStepTitleSettings';
+  },
 };
