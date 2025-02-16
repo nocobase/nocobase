@@ -28,6 +28,6 @@ export const useKanbanBlockHeight = () => {
 
   const blockTitleHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
 
-  const footerheight = token.controlPaddingHorizontal + token.margin + token.paddingLG - token.marginXS;
-  return height - actionBarHeight - kanbanHeaderHeight - footerheight - blockTitleHeaderHeight;
+  const footerHeight = token.controlPaddingHorizontal + token.margin + token.paddingLG - token.marginXS;
+  return height - actionBarHeight - kanbanHeaderHeight - footerHeight - blockTitleHeaderHeight;
 };
