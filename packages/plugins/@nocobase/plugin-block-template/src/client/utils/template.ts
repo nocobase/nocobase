@@ -590,19 +590,32 @@ function mergeSchema(
             }
           }
 
-          const keys = _.union(targetKeys, sourceKeys);
-
           // Find keys that exist in targetKeys but not in sourceKeys, indicating new fields
           const newKeys = _.difference(targetKeys, sourceKeys);
           if (newKeys.length > 0) {
             const newProperties = _.cloneDeep(_.pick(objectValue, newKeys));
             for (const key of newKeys) {
               const newSchema = convertTplBlock(newProperties[key], true, false, rootId, templateKey);
-              newSchema['name'] = key;
-              sourceValue[key] = newSchema;
+              const newUid = newSchema['x-uid'];
+              const sourceKey = _.findKey(sourceValue, (value) => value['x-uid'] === newUid);
+              if (sourceKey) {
+                sourceValue[sourceKey] = mergeSchema(
+                  newProperties[key] || {},
+                  sourceValue[sourceKey],
+                  rootId,
+                  templateschemacache,
+                  templateInfos,
+                  templateKey,
+                );
+              } else {
+                newSchema['name'] = key;
+                sourceValue[key] = newSchema;
+              }
             }
           }
           const properties = {};
+
+          const keys = Object.keys(sourceValue);
           for (let i = 0; i < keys.length; i++) {
             const k = keys[i];
             // const sourceProperty = sourceValue?.[k] || {};
