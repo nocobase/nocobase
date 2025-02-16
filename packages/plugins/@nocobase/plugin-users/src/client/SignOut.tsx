@@ -18,7 +18,6 @@ export const SignOut = () => {
   return (
     <SchemaSettingsItem
       title="signOut"
-      disabled={true}
       eventKey="signOut"
       onClick={async () => {
         const { data } = await api.auth.signOut();

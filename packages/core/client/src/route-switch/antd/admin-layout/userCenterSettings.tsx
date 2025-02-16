@@ -14,7 +14,7 @@ import { UserCenterButton } from './UserCenterButton';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { SchemaSettingsItem } from '../../../schema-settings';
 import { useAPIClient, useACLRoleContext } from '../../../';
-import { LanguageSettings } from '../../../user/LanguageSettings';
+import { LanguageSettings } from './LanguageSettings';
 
 const ClearCache = () => {
   const { t } = useTranslation();
