@@ -116,7 +116,7 @@ export const AdminDynamicPage = () => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
 
   // 404 page
-  if (noAccessPermission(currentPageUid, allAccessRoutes)) {
+  if (noAccessPermission(currentPageUid, allAccessRoutes) && !isGroup(currentPageUid, allAccessRoutes)) {
     return <AppNotFound />;
   }
 
@@ -563,4 +563,25 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializ
   }
 
   return result;
+}
+
+function isGroup(groupId: string, allAccessRoutes: NocoBaseDesktopRoute[]) {
+  const route = findRouteById(groupId, allAccessRoutes);
+  return route?.type === NocoBaseDesktopRouteType.group
+}
+
+function findRouteById(id: string, treeArray: any[]) {
+  for (const node of treeArray) {
+    if (Number(id) === Number(node.id)) {
+      return node;
+    }
+
+    if (node.children?.length) {
+      const result = findRouteById(id, node.children);
+      if (result) {
+        return result;
+      }
+    }
+  }
+  return null;
 }

@@ -72,8 +72,8 @@ const InternalPage = React.memo((props: PageProps) => {
   );
 
   const outletContext = useMemo(
-    () => ({ loading, disablePageHeader, enablePageTabs, fieldSchema, tabUid: currentTabUid }),
-    [currentTabUid, disablePageHeader, enablePageTabs, fieldSchema, loading],
+    () => ({ loading, disablePageHeader, enablePageTabs, tabUid: currentTabUid }),
+    [currentTabUid, disablePageHeader, enablePageTabs, loading],
   );
 
   return (
@@ -132,14 +132,13 @@ export const Page = React.memo((props: PageProps) => {
 Page.displayName = 'NocoBasePage';
 
 export const PageTabs = () => {
-  const { loading, disablePageHeader, enablePageTabs, fieldSchema, tabUid } = useOutletContext<any>();
+  const { loading, disablePageHeader, enablePageTabs, tabUid } = useOutletContext<any>();
   return (
     <CurrentTabUidContext.Provider value={tabUid}>
       <PageContent
         loading={loading}
         disablePageHeader={disablePageHeader}
         enablePageTabs={enablePageTabs}
-        fieldSchema={fieldSchema}
         activeKey={tabUid}
       />
       {/* used to match the route with name "admin.page.tab.popup" */}
