@@ -13,7 +13,7 @@ import { App } from 'antd';
 import { UserCenterButton } from './UserCenterButton';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { SchemaSettingsItem } from '../../../schema-settings';
-import { useAPIClient } from '../../../';
+import { useAPIClient, useACLRoleContext } from '../../../';
 import { LanguageSettings } from '../../../user/LanguageSettings';
 
 const ClearCache = () => {
@@ -71,17 +71,32 @@ const userCenterSettings = new SchemaSettings({
     {
       name: 'divider4',
       type: 'divider',
-      sort: 400,
+      sort: 499,
+      useVisible: () => {
+        const { allowAll, snippets } = useACLRoleContext();
+        const appAllowed = allowAll || snippets?.includes('app');
+        return appAllowed;
+      },
     },
     {
       name: 'cache',
       Component: ClearCache,
       sort: 500,
+      useVisible: () => {
+        const { allowAll, snippets } = useACLRoleContext();
+        const appAllowed = allowAll || snippets?.includes('app');
+        return appAllowed;
+      },
     },
     {
       name: 'restartApplication',
       Component: RestartApplication,
       sort: 510,
+      useVisible: () => {
+        const { allowAll, snippets } = useACLRoleContext();
+        const appAllowed = allowAll || snippets?.includes('app');
+        return appAllowed;
+      },
     },
   ],
 });

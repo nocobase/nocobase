@@ -103,8 +103,8 @@ export class PluginThemeEditorClient extends Plugin {
     // 个人中心注册 Theme 菜单项
     this.app.addUserCenterSettingsItem('theme', {
       name: 'theme',
-      Component: ThemeSettings,
       sort: 310,
+      Component: ThemeSettings,
       useVisible: () => {
         return this.app.pluginSettingsManager.get('theme-editor');
       },
