@@ -79,6 +79,7 @@ export const useAllAccessDesktopRoutes = () => {
 };
 
 const RoutesRequestProvider: FC = ({ children }) => {
+  const mountedRef = useRef(false);
   const { data, refresh, loading } = useRequest<{
     data: any;
   }>({
@@ -93,7 +94,12 @@ const RoutesRequestProvider: FC = ({ children }) => {
     };
   }, [data?.data, refresh]);
 
-  if (loading) return null;
+  // Only valid on first load
+  if (loading && !mountedRef.current) {
+    return null;
+  } else {
+    mountedRef.current = true;
+  };
 
   return (
     <AllAccessDesktopRoutesContext.Provider value={allAccessRoutesValue}>
@@ -270,11 +276,19 @@ const GroupItem: FC<{ item: any }> = (props) => {
   const { item } = props;
   const { designable } = useDesignable();
 
+  // fake schema used to pass routing information to SortableItem
+  const fakeSchema: any = { __route__: item._route };
+
   return (
     <ParentRouteContext.Provider value={item._parentRoute}>
       <NocoBaseRouteContext.Provider value={item._route}>
-        {props.children}
-        {designable && <MenuSchemaToolbarWithContainer />}
+        <SortableItem
+          id={item._route.id}
+          schema={fakeSchema}
+        >
+          {props.children}
+          {designable && <MenuSchemaToolbarWithContainer />}
+        </SortableItem>
       </NocoBaseRouteContext.Provider>
     </ParentRouteContext.Provider>
   );
@@ -363,72 +377,67 @@ export const InternalAdminLayout = () => {
   const { render: renderInitializer } = useSchemaInitializerRender(menuItemInitializer);
   const { designable } = useDesignable();
   const location = useLocation();
+  const { onDragEnd } = useMenuDragEnd();
 
   return (
-    <ProLayout
-      contentStyle={{
-        paddingBlock: 0,
-        paddingInline: 0,
-      }}
-      className={css`
+    <DndContext onDragEnd={onDragEnd}>
+      <ProLayout
+        contentStyle={{
+          paddingBlock: 0,
+          paddingInline: 0,
+        }}
+        className={css`
         .anticon-menu {
           color: #fff;
         }
       `}
-      location={location}
-      route={{
-        path: '/',
-        children: convertRoutesToLayout(allAccessRoutes, { renderInitializer, designable }),
-      }}
-      actionsRender={(props) => {
-        if (props.isMobile) return [];
-        if (typeof window === 'undefined') return [];
-        return [
-          <PinnedPluginList key="pinned-plugin-list" />,
-          <ConfigProvider theme={theme}>
-            <Divider type="vertical" />
-          </ConfigProvider>,
-          <Help key="help" />,
-          <CurrentUser key="current-user" />,
-        ];
-      }}
-      logo={<NocoBaseLogo />}
-      title={''}
-      layout="mix"
-      splitMenus
-      token={{
-        header: {
-          colorBgHeader: '#001529',
-          colorTextMenu: '#eee',
-          colorTextMenuSelected: '#fff',
-          colorTextMenuActive: '#fff',
-          colorBgMenuItemHover: '#001529',
-          colorBgMenuItemSelected: '#001529',
-        },
-        sider: {
-          colorTextMenuSecondary: '#fff',
-        },
-        colorTextAppListIcon: '#fff',
-        colorTextAppListIconHover: '#fff',
-        colorBgAppListIconHover: '#fff',
-      }}
-      menuRender={(props, defaultDom) => {
-        const { onDragEnd } = useMenuDragEnd();
-        return <DndContext onDragEnd={onDragEnd}>{defaultDom}</DndContext>;
-      }}
-      headerContentRender={(props, defaultDom) => {
-        const { onDragEnd } = useMenuDragEnd();
-        return <DndContext onDragEnd={onDragEnd}>{defaultDom}</DndContext>;
-      }}
-      menuItemRender={(item, dom) => {
-        return <MenuItem item={item}>{dom}</MenuItem>;
-      }}
-      subMenuItemRender={(item, dom) => {
-        return <GroupItem item={item}>{dom}</GroupItem>;
-      }}
-    >
-      <LayoutContent />
-    </ProLayout>
+        location={location}
+        route={{
+          path: '/',
+          children: convertRoutesToLayout(allAccessRoutes, { renderInitializer, designable }),
+        }}
+        actionsRender={(props) => {
+          if (props.isMobile) return [];
+          if (typeof window === 'undefined') return [];
+          return [
+            <PinnedPluginList key="pinned-plugin-list" />,
+            <ConfigProvider theme={theme}>
+              <Divider type="vertical" />
+            </ConfigProvider>,
+            <Help key="help" />,
+            <CurrentUser key="current-user" />,
+          ];
+        }}
+        logo={<NocoBaseLogo />}
+        title={''}
+        layout="mix"
+        splitMenus
+        token={{
+          header: {
+            colorBgHeader: '#001529',
+            colorTextMenu: '#eee',
+            colorTextMenuSelected: '#fff',
+            colorTextMenuActive: '#fff',
+            colorBgMenuItemHover: '#001529',
+            colorBgMenuItemSelected: '#001529',
+          },
+          sider: {
+            colorTextMenuSecondary: '#fff',
+          },
+          colorTextAppListIcon: '#fff',
+          colorTextAppListIconHover: '#fff',
+          colorBgAppListIconHover: '#fff',
+        }}
+        menuItemRender={(item, dom) => {
+          return <MenuItem item={item}>{dom}</MenuItem>;
+        }}
+        subMenuItemRender={(item, dom) => {
+          return <GroupItem item={item}>{dom}</GroupItem>;
+        }}
+      >
+        <LayoutContent />
+      </ProLayout>
+    </DndContext>
   );
 };
 
