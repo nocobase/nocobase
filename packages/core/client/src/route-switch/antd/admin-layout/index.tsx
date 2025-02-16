@@ -10,7 +10,7 @@
 import ProLayout from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
 import { ConfigProvider, Divider } from 'antd';
-import React, { createContext, FC, useContext, useEffect, useMemo, useRef } from 'react';
+import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
@@ -26,6 +26,7 @@ import {
   RemoteSchemaTemplateManagerPlugin,
   RemoteSchemaTemplateManagerProvider,
   useDesignable,
+  useParseURLAndParams,
   useRequest,
   useSchemaInitializerRender,
   useSystemSettings,
@@ -278,6 +279,23 @@ const GroupItem: FC<{ item: any }> = (props) => {
 
 const MenuItem: FC<{ item: any }> = (props) => {
   const { item } = props;
+  const { parseURLAndParams } = useParseURLAndParams();
+
+  const handleClickLink = useCallback(async (event: React.MouseEvent) => {
+    const href = item._route.options?.href;
+    const params = item._route.options?.params;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    try {
+      const url = await parseURLAndParams(href, params || []);
+      window.open(url, '_blank');
+    } catch (err) {
+      console.error(err);
+      window.open(href, '_blank');
+    }
+  }, [parseURLAndParams, item]);
 
   if (item._hidden) {
     return null;
@@ -291,6 +309,19 @@ const MenuItem: FC<{ item: any }> = (props) => {
           {props.children}
         </NocoBaseRouteContext.Provider>
       </ParentRouteContext.Provider>
+    )
+  }
+
+  if (item._route?.type === NocoBaseDesktopRouteType.link) {
+    return (
+      <div onClick={handleClickLink}>
+        <ParentRouteContext.Provider value={item._parentRoute}>
+          <NocoBaseRouteContext.Provider value={item._route}>
+            {props.children}
+            <MenuSchemaToolbar />
+          </NocoBaseRouteContext.Provider>
+        </ParentRouteContext.Provider>
+      </div>
     )
   }
 
@@ -519,7 +550,7 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializ
       return {
         name: item.title,
         icon: <Icon type={item.icon} />,
-        path: item.options?.url,
+        path: '/',
         hideInMenu: item.hideInMenu,
         _route: item,
         _parentRoute: parentRoute,
