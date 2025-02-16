@@ -20,6 +20,7 @@ const schema = {
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'TextAreaWithGlobalScope',
+      required: true,
     },
     accessKeySecret: {
       title: `{{t("Access Key Secret", { ns: "${NAMESPACE}" })}}`,
@@ -27,24 +28,28 @@ const schema = {
       'x-decorator': 'FormItem',
       'x-component': 'TextAreaWithGlobalScope',
       'x-component-props': { password: true },
+      required: true,
     },
     endpoint: {
       title: `{{t("Endpoint", { ns: "${NAMESPACE}" })}}`,
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'TextAreaWithGlobalScope',
+      required: true,
     },
     sign: {
       title: `{{t("Sign", { ns: "${NAMESPACE}" })}}`,
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'TextAreaWithGlobalScope',
+      required: true,
     },
     template: {
       title: `{{t("Template code", { ns: "${NAMESPACE}" })}}`,
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'TextAreaWithGlobalScope',
+      required: true,
     },
   },
 } as ISchema;

@@ -20,6 +20,7 @@ const schema = {
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'TextAreaWithGlobalScope',
+      required: true,
     },
     secretKey: {
       title: `{{t("Secret Key", { ns: "${NAMESPACE}" })}}`,
@@ -27,12 +28,14 @@ const schema = {
       'x-decorator': 'FormItem',
       'x-component': 'TextAreaWithGlobalScope',
       'x-component-props': { password: true },
+      required: true,
     },
     region: {
       title: `{{t("Region", { ns: "${NAMESPACE}" })}}`,
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'TextAreaWithGlobalScope',
+      required: true,
     },
     endpoint: {
       title: `{{t("Endpoint", { ns: "${NAMESPACE}" })}}`,
@@ -52,12 +55,14 @@ const schema = {
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'TextAreaWithGlobalScope',
+      required: true,
     },
     TemplateId: {
       title: `{{t("Template Id", { ns: "${NAMESPACE}" })}}`,
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'TextAreaWithGlobalScope',
+      required: true,
     },
   },
 } as ISchema;
