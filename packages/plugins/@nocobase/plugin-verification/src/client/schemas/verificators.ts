@@ -19,6 +19,18 @@ export const createVerificatorSchema = {
       'x-decorator': 'FormV2',
       'x-use-decorator-props': 'useCreateFormProps',
       properties: {
+        name: {
+          type: 'string',
+          'x-decorator': 'FormItem',
+          title: '{{ t("UID") }}',
+          'x-component': 'Input',
+          'x-validator': (value: string) => {
+            if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
+              return 'a-z, A-Z, 0-9, _, -';
+            }
+            return '';
+          },
+        },
         title: {
           type: 'string',
           'x-decorator': 'FormItem',
@@ -123,6 +135,18 @@ export const verficatorsSchema: ISchema = {
             },
           },
           properties: {
+            column1: {
+              type: 'void',
+              title: '{{ t("UID") }}',
+              'x-component': 'TableV2.Column',
+              properties: {
+                name: {
+                  type: 'string',
+                  'x-component': 'Input',
+                  'x-read-pretty': true,
+                },
+              },
+            },
             column2: {
               type: 'void',
               title: '{{ t("Title") }}',
