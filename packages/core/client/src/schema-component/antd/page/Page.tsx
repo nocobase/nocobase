@@ -11,7 +11,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { PageHeader as AntdPageHeader } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
-import { Schema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
+import { SchemaOptionsContext, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Button, Tabs } from 'antd';
 import classNames from 'classnames';
@@ -63,10 +63,7 @@ const InternalPage = React.memo((props: PageProps) => {
   const loading = false;
   const currentRoute = useCurrentRouteData();
   const enablePageTabs = currentRoute.enableTabs;
-  const defaultActiveKey = useMemo(
-    () => getDefaultActiveKey(currentRoute?.children?.[0]?.schemaUid, fieldSchema),
-    [currentRoute?.children, fieldSchema],
-  );
+  const defaultActiveKey = currentRoute?.children?.[0]?.schemaUid;
 
   const activeKey = useMemo(
     // 处理 searchParams 是为了兼容旧版的 tab 参数
@@ -93,7 +90,6 @@ const InternalPage = React.memo((props: PageProps) => {
                 loading={loading}
                 disablePageHeader={disablePageHeader}
                 enablePageTabs={enablePageTabs}
-                fieldSchema={fieldSchema}
                 activeKey={activeKey}
               />
               {/* Used to match the route with name "admin.page.popup" */}
@@ -196,17 +192,16 @@ interface PageContentProps {
   loading: boolean;
   disablePageHeader: any;
   enablePageTabs: any;
-  fieldSchema: Schema<any, any, any, any, any, any, any, any, any>;
   activeKey: string;
 }
 
 const InternalPageContent = (props: PageContentProps) => {
-  const { loading, disablePageHeader, enablePageTabs, fieldSchema, activeKey } = props;
+  const { loading, disablePageHeader, enablePageTabs, activeKey } = props;
   const currentRoute = useCurrentRouteData();
 
   const noTabs = currentRoute?.children?.length === 0 || currentRoute?.children?.length === undefined;
 
-  if (noTabs) {
+  if (noTabs || !activeKey) {
     return <AppNotFound />;
   }
 
@@ -489,18 +484,4 @@ export function getTabSchema({
     'x-uid': schemaUid,
     'x-async': true,
   };
-}
-
-function getDefaultActiveKey(defaultTabSchemaUid: string, fieldSchema: Schema) {
-  if (!fieldSchema.properties) {
-    return '';
-  }
-
-  const tabSchemaList = Object.values(fieldSchema.properties);
-
-  for (const tabSchema of tabSchemaList) {
-    if (tabSchema['x-uid'] === defaultTabSchemaUid) {
-      return tabSchema.name as string;
-    }
-  }
 }
