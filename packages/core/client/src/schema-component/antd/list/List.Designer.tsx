@@ -61,7 +61,7 @@ export const ListDesigner = () => {
   });
   const { componentNamePrefix } = useBlockTemplateContext();
   const RevertSetting =
-    app.schemaSettingsManager.getAll()['blockSettings:list']?.get('template-revertSettingItem')?.Component || null;
+    app.schemaSettingsManager.getAll()['blockSettings:list']?.get('template-revertSettingItem')?.['Component'] || null;
   let designerTitle = title;
   if (fieldSchema['x-template-uid']) {
     designerTitle = `${compile(title)} [${t('Template')}: ${compile(fieldSchema['x-template-title'])}]`;

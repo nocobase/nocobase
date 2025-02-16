@@ -44,6 +44,9 @@ const findInsertPosition = (parentSchema, uid) => {
 };
 
 const findParentRootTemplateSchema = (fieldSchema) => {
+  if (!fieldSchema) {
+    return null;
+  }
   if (fieldSchema['x-template-root-uid']) {
     return fieldSchema;
   } else {
@@ -114,8 +117,8 @@ export const RevertSetting = () => {
               templateSchema,
               false,
               isRoot,
-              rootSchema['x-uid'],
-              rootSchema['x-block-template-key'],
+              rootSchema?.['x-uid'],
+              rootSchema?.['x-block-template-key'],
             );
             newSchema['x-index'] = fieldSchema['x-index'];
             for (const p of blockKeepProps) {

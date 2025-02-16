@@ -170,14 +170,15 @@ export const BlockTemplateProvider = ({ children }) => {
               }
               if (field) {
                 options['association'] = `${collection?.name}.${field.name}`;
+                options['associationType'] = field.type;
               } else {
                 options['collectionName'] = collectionName;
               }
-              options['currentRecord'] = name === 'currentRecord';
+              options['currentRecord'] = name === 'currentRecord' && isDetails;
               if (name === 'editForm') {
                 options['currentRecord'] = true;
               }
-              return handleTemplateClick({ item }, options, insert);
+              return handleTemplateClick(item, options, insert);
             },
           };
         });

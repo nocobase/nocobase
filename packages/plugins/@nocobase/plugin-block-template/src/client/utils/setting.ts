@@ -41,7 +41,11 @@ export const hideConvertToBlockSettingItem = (
 };
 
 export const hideDeleteSettingItem = (settingItem: SchemaSettingsItemType) => {
-  if (settingItem['name'] === 'delete' || settingItem['name'] === 'remove') {
+  if (
+    settingItem['name'] === 'delete' ||
+    settingItem['name'] === 'remove' ||
+    settingItem['name'] === 'SchemaSettingDeleteItem'
+  ) {
     const visible = settingItem['useVisible'] || (() => true);
     settingItem['useVisible'] = function useVisible() {
       const isInTemplate = useIsInTemplate(false);

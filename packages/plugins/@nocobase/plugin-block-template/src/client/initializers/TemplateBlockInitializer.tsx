@@ -7,26 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  SchemaInitializerItem,
-  useRequest,
-  useAPIClient,
-  usePlugin,
-  ISchema,
-  useResource,
-  registerInitializerMenusGenerator,
-  useSchemaInitializer,
-} from '@nocobase/client';
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { SchemaInitializerItem, usePlugin, ISchema, useSchemaInitializer } from '@nocobase/client';
+import React, { useState, useRef, useEffect } from 'react';
 import { CopyOutlined, LoadingOutlined } from '@ant-design/icons';
-import { Input, Divider, Empty, theme } from 'antd';
+import { Input, Divider, Empty } from 'antd';
 import * as _ from 'lodash';
 import { uid } from '@nocobase/utils/client';
 import PluginBlockTemplateClient from '..';
 import { useT } from '../locale';
-import PluginMobileClient from '@nocobase/plugin-mobile/client';
-import { findBlockRootSchema } from '../utils/schema';
-import { useFieldSchema } from '@formily/react';
 import { useBlockTemplates } from '../components/BlockTemplateProvider';
 import { useMemoizedFn } from 'ahooks';
 export function convertTplBlock(
@@ -396,75 +384,6 @@ export const TemplateBlockInitializer = () => {
       plugin.templateInfos.set(item.key, item);
     });
   }, [templates, plugin.templateInfos]);
-
-  useEffect(() => {
-    const generator = ({ collection, association, item, index, field, componentName, dataSource, keyPrefix, name }) => {
-      let collectionName = collection?.name || item?.options?.name;
-      const dataSourceName = dataSource || item?.options?.dataSource || collection?.dataSource;
-
-      if (componentName?.startsWith('mobile-')) {
-        componentName = componentName.replace('mobile-', '');
-      }
-
-      if (plugin.isInBlockTemplateConfigPage()) {
-        // hide menu in template config page
-        return null;
-      }
-
-      if (field) {
-        // association field
-        collectionName = field?.target;
-      }
-      // const isForm = name === 'createForm' || name === 'editForm';
-      const isDetails = name === 'details' || componentName === 'ReadPrettyFormItem';
-      const children = templates
-        ?.filter(
-          (d) =>
-            (d.componentType === componentName ||
-              name === d['menuName'] ||
-              (isDetails && d['menuName'] === 'details')) &&
-            d.collection === collectionName &&
-            d.dataSource === dataSourceName,
-        )
-        .map((m) => {
-          return {
-            type: 'item',
-            name: m.key,
-            item: m,
-            title: m.title,
-            schemaInsertor: (insert, { item, name }) => {
-              const options = { dataSourceName };
-              if (association) {
-                options['association'] = association;
-              }
-              if (field) {
-                options['association'] = `${collection?.name}.${field.name}`;
-                options['associationType'] = field.type;
-              } else {
-                options['collectionName'] = collectionName;
-              }
-              options['currentRecord'] = name === 'currentRecord' && isDetails;
-              if (name === 'editForm') {
-                options['currentRecord'] = true;
-              }
-              return handleTemplateClick(item, options, insert);
-            },
-          };
-        });
-
-      if (!children?.length) {
-        return null;
-      }
-      return {
-        key: `${keyPrefix}_${collectionName}_templates_subMenu_${index}`,
-        type: 'subMenu',
-        name: 'block_template',
-        title: t('Block template'),
-        children,
-      };
-    };
-    registerInitializerMenusGenerator('block_template', generator);
-  }, [templates, plugin.isInBlockTemplateConfigPage, handleTemplateClick, t, plugin]);
 
   const onClick = useMemoizedFn((item) => {
     handleTemplateClick(item, {}, insert);
