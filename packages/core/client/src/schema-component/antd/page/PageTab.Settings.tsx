@@ -14,7 +14,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { useSchemaToolbar } from '../../../application/schema-toolbar';
-import { useCurrentRoute } from '../../../route-switch';
+import { useCurrentRouteData } from '../../../route-switch';
 import { useDesignable } from '../../hooks';
 import { useNocoBaseRoutes } from '../menu/Menu';
 
@@ -30,7 +30,7 @@ export const pageTabSettings = new SchemaSettings({
       useComponentProps() {
         const { t } = useTranslation();
         const { updateRoute } = useNocoBaseRoutes();
-        const currentRoute = useCurrentRoute();
+        const currentRoute = useCurrentRouteData();
 
         return {
           title: t('Edit'),
@@ -70,7 +70,7 @@ export const pageTabSettings = new SchemaSettings({
       useComponentProps() {
         const { t } = useTranslation();
         const { updateRoute } = useNocoBaseRoutes();
-        const currentRoute = useCurrentRoute();
+        const currentRoute = useCurrentRouteData();
 
         return {
           title: t('Hidden'),

@@ -6,7 +6,7 @@ import { uid } from "@formily/shared";
 import { App, Modal } from 'antd';
 import React, { FC, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { isVariable, NocoBaseDesktopRouteType, useAllAccessDesktopRoutes, useCompile, useCurrentRoute, useNocoBaseRoutes, useURLAndHTMLSchema } from "../../..";
+import { isVariable, NocoBaseDesktopRouteType, useAllAccessDesktopRoutes, useCompile, useCurrentRouteData, useNocoBaseRoutes, useURLAndHTMLSchema } from "../../..";
 import {
   getPageMenuSchema
 } from '../../../';
@@ -42,7 +42,7 @@ export const RemoveRoute: FC = () => {
   const { t } = useTranslation();
   const { modal } = App.useApp();
   const { deleteRoute } = useNocoBaseRoutes();
-  const currentRoute = useCurrentRoute();
+  const currentRoute = useCurrentRouteData();
 
   return (
     <SchemaSettingsItem
@@ -68,7 +68,7 @@ const InsertMenuItems = (props) => {
   const { eventKey, title, insertPosition } = props;
   const { t } = useTranslation();
   const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
-  const currentRoute = useCurrentRoute();
+  const currentRoute = useCurrentRouteData();
   const isSubMenu = currentRoute?.type === NocoBaseDesktopRouteType.group;
   const { createRoute, moveRoute } = useNocoBaseRoutes();
   const insertPageSchema = useInsertPageSchema();
@@ -275,7 +275,7 @@ const EditMenuItem = () => {
       },
     };
   }, [t]);
-  const currentRoute = useCurrentRoute();
+  const currentRoute = useCurrentRouteData();
   const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
   const initialValues = useMemo(() => {
     return {
@@ -322,7 +322,7 @@ const EditMenuItem = () => {
 
 const HiddenMenuItem = () => {
   const { t } = useTranslation();
-  const currentRoute = useCurrentRoute();
+  const currentRoute = useCurrentRouteData();
   const { updateRoute } = useNocoBaseRoutes();
 
   return <SchemaSettingsSwitchItem
@@ -402,7 +402,7 @@ const MoveToMenuItem = () => {
   }, [items, t]);
 
   const { moveRoute } = useNocoBaseRoutes();
-  const currentRoute = useCurrentRoute();
+  const currentRoute = useCurrentRouteData();
   const onMoveToSubmit: (values: any) => void = useCallback(
     async ({ target, position }) => {
       const [targetId] = target?.split?.('||') || [];

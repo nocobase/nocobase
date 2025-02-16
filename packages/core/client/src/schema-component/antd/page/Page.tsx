@@ -32,7 +32,7 @@ import { useDocumentTitle } from '../../../document-title';
 import { useGlobalTheme } from '../../../global-theme';
 import { Icon } from '../../../icon';
 import { AppNotFound } from '../../../nocobase-buildin-plugin';
-import { NocoBaseDesktopRouteType, NocoBaseRouteContext, useCurrentRoute } from '../../../route-switch/antd/admin-layout';
+import { NocoBaseDesktopRouteType, NocoBaseRouteContext, useCurrentRouteData } from '../../../route-switch/antd/admin-layout';
 import { KeepAliveProvider, useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
 import { DndContext } from '../../common';
@@ -61,7 +61,7 @@ const InternalPage = React.memo((props: PageProps) => {
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
   const searchParams = useCurrentSearchParams();
   const loading = false;
-  const currentRoute = useCurrentRoute();
+  const currentRoute = useCurrentRouteData();
   const enablePageTabs = currentRoute.enableTabs;
   const defaultActiveKey = useMemo(
     () => getDefaultActiveKey(currentRoute?.children?.[0]?.schemaUid, fieldSchema),
@@ -202,7 +202,7 @@ interface PageContentProps {
 
 const InternalPageContent = (props: PageContentProps) => {
   const { loading, disablePageHeader, enablePageTabs, fieldSchema, activeKey } = props;
-  const currentRoute = useCurrentRoute();
+  const currentRoute = useCurrentRouteData();
 
   const noTabs = currentRoute?.children?.length === 0 || currentRoute?.children?.length === undefined;
 
@@ -261,7 +261,7 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
   const { getAriaLabel } = useGetAriaLabelOfSchemaInitializer();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
-  const currentRoute = useCurrentRoute();
+  const currentRoute = useCurrentRouteData();
   const { createRoute } = useNocoBaseRoutes();
   const compile = useCompile();
 
@@ -399,7 +399,7 @@ const NocoBasePageHeader = React.memo(({ activeKey, className }: { activeKey: st
   const [pageTitle, setPageTitle] = useState(() => t(fieldSchema.title));
 
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
-  const currentRoute = useCurrentRoute();
+  const currentRoute = useCurrentRouteData();
   const enablePageTabs = currentRoute.enableTabs;
   const hidePageTitle = fieldSchema['x-component-props']?.hidePageTitle;
 

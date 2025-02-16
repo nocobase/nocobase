@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { useDesignable, useNocoBaseRoutes } from '../..';
 import { SchemaSettings } from '../../../application/schema-settings';
 import { useSchemaToolbar } from '../../../application/schema-toolbar';
-import { useCurrentRoute } from '../../../route-switch';
+import { useCurrentRouteData } from '../../../route-switch';
 
 function useNotDisableHeader() {
   const fieldSchema = useFieldSchema();
@@ -133,7 +133,7 @@ export const pageSettings = new SchemaSettings({
         const { dn } = useDesignable();
         const { t } = useTranslation();
         const fieldSchema = useFieldSchema();
-        const currentRoute = useCurrentRoute();
+        const currentRoute = useCurrentRouteData();
         const { updateRoute } = useNocoBaseRoutes();
         return {
           title: t('Enable page tabs'),
