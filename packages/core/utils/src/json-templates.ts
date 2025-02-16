@@ -83,14 +83,12 @@ export function parse(value) {
 const parseString = (() => {
   // This regular expression detects instances of the
   // template parameter syntax such as {{foo}} or {{foo:someDefault}}.
-  const regex = /{{(\w|:|[\s-+.,@/()?=*_$|])+}}/g;
 
   return (str) => {
     const templateFn = (context) => {
       return engine.parseAndRenderSync(str, context);
     };
     const parameters = liquidjsEngine.fullVariablesSync(str).map((variable) => ({ key: variable }));
-    const matches = str.match(regex);
 
     return Template(templateFn, parameters);
   };

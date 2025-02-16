@@ -30,12 +30,17 @@ describe('json-templates filters', () => {
   it('format filters', async () => {
     const template = {
       today: '{{now | date_format: "YYYY-MM-DD"}}',
+      yesterday: '{{now | date_subtract: 1, "day" | date_format: "YYYY-MM-DD"}}',
     };
-    const result = parse(template)({
+
+    const compiledFn = parse(template);
+    compiledFn.parameters.some((parameter) => parameter.key === 'now');
+    const result = compiledFn({
       now: new Date('2025-01-01: 12:00:00'),
     });
     expect(result).toEqual({
       today: '2025-01-01',
+      yesterday: '2024-12-31',
     });
   });
 });

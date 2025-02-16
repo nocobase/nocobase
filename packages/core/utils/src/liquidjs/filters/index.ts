@@ -11,6 +11,6 @@ import { Liquid } from 'liquidjs';
 import { dateFormat, dateAdd, dateSubtract } from './date';
 export function registerFilters(liquid: Liquid) {
   liquid.registerFilter('date_format', dateFormat);
-  liquid.registerFilter('date_add', dateFormat);
-  liquid.registerFilter('date_subtract', dateFormat);
+  liquid.registerFilter('date_add', dateAdd);
+  liquid.registerFilter('date_subtract', dateSubtract);
 }
