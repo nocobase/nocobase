@@ -119,7 +119,7 @@ export const useIsDetailBlock = () => {
 
 export const FormBlockProvider = withDynamicSchemaProps((props) => {
   const parentRecordData = useCollectionParentRecordData();
-  const { parentRecord } = props;
+  const { parentRecord, action } = props;
   const record = useCollectionRecordData();
   const { association } = props;
   const cm = useCollectionManager();
@@ -129,12 +129,11 @@ export const FormBlockProvider = withDynamicSchemaProps((props) => {
 
   const refresh = useUpdate();
 
-  if (!designable && __collection) {
+  if (!designable && __collection && action) {
     if (__collection !== collection) {
       return null;
     }
   }
-
   return (
     <TemplateBlockProvider onTemplateLoaded={refresh}>
       <BlockProvider

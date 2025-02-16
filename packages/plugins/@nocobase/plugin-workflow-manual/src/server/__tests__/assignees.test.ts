@@ -44,7 +44,7 @@ describe('workflow > instructions > manual > assignees', () => {
       { id: 3, nickname: 'b' },
     ]);
 
-    userAgents = users.map((user) => app.agent().login(user));
+    userAgents = await Promise.all(users.map((user) => app.agent().login(user)));
 
     workflow = await WorkflowModel.create({
       enabled: true,

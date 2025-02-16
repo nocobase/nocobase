@@ -102,7 +102,7 @@ export class BaseAuth extends Auth {
 
     const tokenPolicy = await this.tokenController.getConfig();
 
-    if (!signInTime || Date.now() - signInTime > tokenPolicy.sessionExpirationTime) {
+    if (signInTime && Date.now() - signInTime > tokenPolicy.sessionExpirationTime) {
       this.ctx.throw(401, {
         message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
         code: AuthErrorCode.EXPIRED_SESSION,
@@ -164,12 +164,19 @@ export class BaseAuth extends Auth {
           url: this.ctx.originalUrl,
           headers: JSON.stringify(this.ctx?.req?.headers),
         });
-        const isStreamRequest = this.ctx.req.headers['accept'] === 'text/event-stream';
+        const isStreamRequest = this.ctx?.req?.headers?.accept === 'text/event-stream';
 
         if (isStreamRequest) {
           this.ctx.throw(401, {
             message: 'Stream api not allow renew token.',
             code: AuthErrorCode.SKIP_TOKEN_RENEW,
+          });
+        }
+
+        if (!jti) {
+          this.ctx.throw(401, {
+            message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
+            code: AuthErrorCode.INVALID_TOKEN,
           });
         }
 
@@ -180,7 +187,10 @@ export class BaseAuth extends Auth {
           headers: JSON.stringify(this.ctx?.req?.headers),
         });
         const expiresIn = Math.floor(tokenPolicy.tokenExpirationTime / 1000);
-        const newToken = this.jwt.sign({ userId, roleName, temp, signInTime }, { jwtid: renewedResult.jti, expiresIn });
+        const newToken = this.jwt.sign(
+          { userId, roleName, temp, signInTime, iat: Math.floor(renewedResult.issuedTime / 1000) },
+          { jwtid: renewedResult.jti, expiresIn },
+        );
         this.ctx.res.setHeader('x-new-token', newToken);
         return user;
       } catch (err) {

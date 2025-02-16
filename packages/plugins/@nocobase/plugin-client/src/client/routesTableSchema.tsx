@@ -11,6 +11,7 @@
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { useField, useForm } from '@formily/react';
 import {
+  CollectionField,
   css,
   getGroupMenuSchema,
   getLinkMenuSchema,
@@ -426,7 +427,6 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                       schemaUid: tabSchemaUid,
                                       parentId: res?.data?.data?.id,
                                       type: NocoBaseDesktopRouteType.tabs,
-                                      title: '{{t("Unnamed")}}',
                                       tabSchemaName,
                                       hidden: true,
                                     });
@@ -488,7 +488,17 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
             properties: {
               title: {
                 type: 'string',
-                'x-component': 'CollectionField',
+                'x-component': function Com(props) {
+                  const record = useCollectionRecordData();
+                  const { t } = useTranslation();
+                  let value = props.value;
+
+                  if (record.type === NocoBaseDesktopRouteType.tabs && _.isNil(props.value)) {
+                    value = t('Unnamed');
+                  }
+
+                  return <CollectionField {...props} value={value} />;
+                },
                 'x-read-pretty': true,
                 'x-component-props': {
                   ellipsis: true,
@@ -889,7 +899,6 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                           await createRoute({
                                             parentId: res?.data?.data?.id,
                                             type: NocoBaseDesktopRouteType.tabs,
-                                            title: '{{t("Unnamed")}}',
                                             schemaUid: tabSchemaUid,
                                             tabSchemaName,
                                             hidden: true,

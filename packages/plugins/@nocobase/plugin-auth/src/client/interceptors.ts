@@ -42,25 +42,25 @@ const debouncedRedirect = debounce(
 export function authCheckMiddleware({ app }: { app: Application }) {
   const axios = app.apiClient.axios;
   const resHandler = (res: AxiosResponse) => {
-    const newToken = res.headers['x-new-token'];
+    const newToken = res?.headers?.['x-new-token'];
     if (newToken) {
       app.apiClient.auth.setToken(newToken);
     }
     return res;
   };
   const errHandler = (error) => {
-    const newToken = error.response.headers['x-new-token'];
+    const newToken = error?.response?.headers?.['x-new-token'];
 
     if (newToken) {
       app.apiClient.auth.setToken(newToken);
     }
     if (error.status === 401 && !error.config?.skipAuth) {
-      const requestToken = error?.config?.headers.Authorization?.replace(/^Bearer\s+/gi, '');
+      const requestToken = error?.config?.headers?.Authorization?.replace(/^Bearer\s+/gi, '');
       const currentToken = app.apiClient.auth.getToken();
-      if (currentToken && currentToken !== requestToken) {
-        error.config.skipNotify = true;
-        return app.apiClient.request(error.config);
-      }
+      // if (currentToken && currentToken !== requestToken) {
+      //   error.config.skipNotify = true;
+      //   return app.apiClient.request(error.config);
+      // }
       app.apiClient.auth.setToken('');
       const errors = error?.response?.data?.errors;
       const firstError = Array.isArray(errors) ? errors[0] : null;

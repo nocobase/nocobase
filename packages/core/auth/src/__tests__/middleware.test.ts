@@ -9,6 +9,7 @@
 
 import { Database } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 import { vi } from 'vitest';
 import { AuthErrorCode } from '../auth';
 
@@ -52,16 +53,18 @@ describe('middleware', () => {
     it('basic', async () => {
       const res = await agent.resource('auth').check();
       const token = res.request.header['Authorization'].replace('Bearer ', '');
+      const { jti } = jwt.decode(token) as JwtPayload;
       expect(res.status).toBe(200);
-      expect(hasFn).toHaveBeenCalledWith(token);
+      expect(hasFn).toHaveBeenCalledWith(jti);
     });
 
     it('signOut should add token to blacklist', async () => {
       // signOut will add token
       const res = await agent.resource('auth').signOut();
       const token = res.request.header['Authorization'].replace('Bearer ', '');
+      const { jti } = jwt.decode(token) as JwtPayload;
       expect(addFn).toHaveBeenCalledWith({
-        token,
+        token: jti,
         // Date or String is ok
         expiration: expect.any(String),
       });

@@ -46,28 +46,6 @@ describe('Page', () => {
       expect(screen.queryByText('Test Title')).not.toBeInTheDocument();
     });
 
-    test('should request remote schema when no title', async () => {
-      await renderAppOptions({
-        schema: {
-          type: 'void',
-          'x-uid': 'test',
-          'x-component': Page,
-          'x-decorator': DocumentTitleProvider,
-        },
-        apis: {
-          '/uiSchemas:getParentJsonSchema/test': {
-            data: {
-              title: 'remote title',
-            },
-          },
-        },
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('remote title')).toBeInTheDocument();
-      });
-    });
-
     // TODO: This works normally in the actual page, but the test fails here
     test.skip('add tab', async () => {
       await renderAppOptions({

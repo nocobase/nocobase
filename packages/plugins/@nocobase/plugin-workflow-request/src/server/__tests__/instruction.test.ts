@@ -524,6 +524,7 @@ describe('workflow > instructions > request', () => {
       const token = jwt.sign(
         {
           userId: user.id,
+          signInTime: Date.now(),
         },
         process.env.APP_KEY,
         {

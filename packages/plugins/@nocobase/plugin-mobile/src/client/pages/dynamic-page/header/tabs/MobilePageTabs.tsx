@@ -12,18 +12,21 @@ import React, { FC, useCallback } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { DndContext, DndContextProps, Icon, SortableItem, useCompile } from '@nocobase/client';
+import { useTranslation } from 'react-i18next';
 import { useMobileRoutes } from '../../../../mobile-providers';
 import { useMobilePage } from '../../context';
 import { MobilePageTabInitializer } from './initializer';
 import { MobilePageTabsSettings } from './settings';
 import { useStyles } from './styles';
+import { useRouteTranslation } from '../../../../locale';
 
 export const MobilePageTabs: FC = () => {
   const { activeTabBarItem, resource, refresh } = useMobileRoutes();
   const { displayTabs: _displayTabs } = useMobilePage();
   const displayTabs = activeTabBarItem?.enableTabs === undefined ? _displayTabs : activeTabBarItem.enableTabs;
-
+  const { t: routeT } = useRouteTranslation();
   const compile = useCompile();
+  const { t } = useTranslation();
 
   const navigate = useNavigate();
   const { componentCls, hashId } = useStyles();
@@ -60,19 +63,20 @@ export const MobilePageTabs: FC = () => {
         <Tabs activeKey={activeKey} onChange={handleChange} className="nb-mobile-page-tabs-list">
           {activeTabBarItem.children?.map((item) => {
             if (item.hideInMenu) return null;
+            const title = item.title ? routeT(compile(item.title)) : t('Unnamed');
             return (
               <Tabs.Tab
-                data-testid={`mobile-page-tabs-${item.title}`}
+                data-testid={`mobile-page-tabs-${title}`}
                 title={
                   <SortableItem id={item.id as any}>
                     <MobilePageTabsSettings tab={item} />
                     {item.icon ? (
                       <Space>
                         <Icon type={item.icon} />
-                        {compile(item.title)}
+                        {title}
                       </Space>
                     ) : (
-                      compile(item.title)
+                      title
                     )}
                   </SortableItem>
                 }

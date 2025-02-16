@@ -45,7 +45,7 @@ describe('role api', () => {
       });
 
       const userPlugin = app.getPlugin('users') as UsersPlugin;
-      adminAgent = app.agent().login(admin);
+      adminAgent = await app.agent().login(admin);
     });
 
     it('should have permission to users collection with strategy', async () => {
@@ -64,7 +64,7 @@ describe('role api', () => {
         },
       });
 
-      const userAgent = app.agent().login(user1);
+      const userAgent = await app.agent().login(user1);
 
       const response = await userAgent.resource('users').list();
       expect(response.statusCode).toBe(200);

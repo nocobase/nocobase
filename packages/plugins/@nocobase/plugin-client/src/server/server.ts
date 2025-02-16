@@ -14,6 +14,8 @@ import { resolve } from 'path';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
+import PluginLocalizationServer from '@nocobase/plugin-localization';
+import { tval } from '@nocobase/utils';
 
 async function getLang(ctx) {
   const SystemSetting = ctx.db.getRepository('systemSettings');
@@ -138,6 +140,7 @@ export class PluginClientServer extends Plugin {
     this.registerActionHandlers();
     this.bindNewMenuToRoles();
     this.setACL();
+    this.registerLocalizationSource();
 
     this.app.db.on('desktopRoutes.afterUpdate', async (instance: Model, { transaction }) => {
       if (instance.changed('enableTabs')) {
@@ -228,6 +231,37 @@ export class PluginClientServer extends Plugin {
       });
 
       await next();
+    });
+  }
+
+  registerLocalizationSource() {
+    const localizationPlugin = this.app.pm.get('localization') as PluginLocalizationServer;
+    if (!localizationPlugin) {
+      return;
+    }
+    localizationPlugin.sourceManager.registerSource('desktop-routes', {
+      title: tval('Desktop routes'),
+      sync: async (ctx) => {
+        const desktopRoutes = await ctx.db.getRepository('desktopRoutes').find({
+          raw: true,
+        });
+        const resources = {};
+        desktopRoutes.forEach((route: { title?: string }) => {
+          if (route.title) {
+            resources[route.title] = '';
+          }
+        });
+        return {
+          'lm-desktop-routes': resources,
+        };
+      },
+      namespace: 'lm-desktop-routes',
+      collections: [
+        {
+          collection: 'desktopRoutes',
+          fields: ['title'],
+        },
+      ],
     });
   }
 }

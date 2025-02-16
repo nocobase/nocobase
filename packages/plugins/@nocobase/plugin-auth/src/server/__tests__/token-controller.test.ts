@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AuthErrorCode, BaseAuth } from '@nocobase/auth';
+import { BaseAuth } from '@nocobase/auth';
 import { Database, Model } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
 import { AuthErrorType } from '@nocobase/auth';
+import { RENEWED_JTI_CACHE_MS } from '../../constants';
 function sleep(ms) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
@@ -23,6 +24,9 @@ class MockContext {
   public app: MockServer;
   constructor({ app }: { app: MockServer }) {
     this.app = app;
+  }
+  get logger() {
+    return this.app.logger;
   }
   res = {
     setHeader: (key: string, value: string) => {
@@ -158,19 +162,47 @@ describe('auth', () => {
     expect(checkedUser.id).toEqual(user.id);
   });
 
-  it('when call renew token with same jti multiple times, only one resolved', async () => {
+  it('when call renew token with same jti multiple times within 10s, the result is same', async () => {
     const tokenInfo = await auth.tokenController.add({ userId: 1 });
     const renewTasks = Array(15)
       .fill(null)
       .map(() => auth.tokenController.renew(tokenInfo.jti));
-    const allSettled = await Promise.allSettled(renewTasks);
-    const successTasks = allSettled.filter((result) => result.status === 'fulfilled');
-    expect(successTasks).toHaveLength(1);
-    const failedTasks = allSettled.filter(
-      (result) => result.status === 'rejected' && result.reason.code === AuthErrorCode.TOKEN_RENEW_FAILED,
-    );
-    expect(failedTasks).toHaveLength(14);
+    const results = await Promise.all(renewTasks);
+    expect(
+      results.every((result) => result.jti === results[0].jti && result.issuedTime === results[0].issuedTime),
+    ).toBe(true);
   });
+
+  it('after JTI is renewed for 10s, any further renewal should fail.', async () => {
+    const tokenInfo = await auth.tokenController.add({ userId: 1 });
+    await auth.tokenController.renew(tokenInfo.jti);
+    const renewedIntervals = [
+      RENEWED_JTI_CACHE_MS - 1000,
+      RENEWED_JTI_CACHE_MS - 2000,
+      RENEWED_JTI_CACHE_MS + 1000,
+      RENEWED_JTI_CACHE_MS + 2000,
+    ];
+    const renewTasks = renewedIntervals.map(async (interval) => {
+      try {
+        await sleep(interval);
+        const result = await auth.tokenController.renew(tokenInfo.jti);
+        return [interval, 'resolved', result];
+      } catch (e) {
+        return [interval, 'rejected', e];
+      }
+    });
+    const results = await Promise.all(renewTasks);
+    expect(
+      results.every(([interval, status, result]) => {
+        if (interval < RENEWED_JTI_CACHE_MS) {
+          return status === 'resolved';
+        } else {
+          return status === 'rejected';
+        }
+      }),
+    ).toBe(true);
+  });
+
   it('use token policy tokenExpirationTime as token expirein', async () => {
     const config = await auth.tokenController.getConfig();
     const { token } = await auth.signIn();

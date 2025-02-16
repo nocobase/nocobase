@@ -19,7 +19,6 @@ import {
   useOpenModeContext,
   useSchemaToolbar,
   SecondConFirm,
-  WorkflowConfig,
   AfterSuccess,
   RefreshDataBlockRequest,
 } from '@nocobase/client';
@@ -187,14 +186,6 @@ export const bulkEditFormSubmitActionSettings = new SchemaSettings({
     {
       name: 'secondConfirmation',
       Component: SecondConFirm,
-    },
-    {
-      name: 'workflowConfig',
-      Component: WorkflowConfig,
-      useVisible() {
-        const fieldSchema = useFieldSchema();
-        return isValid(fieldSchema?.['x-action-settings']?.triggerWorkflows);
-      },
     },
     {
       name: 'afterSuccessfulSubmission',
