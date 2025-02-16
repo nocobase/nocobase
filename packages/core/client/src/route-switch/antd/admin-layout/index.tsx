@@ -17,6 +17,7 @@ import {
   AppNotFound,
   CurrentAppInfoProvider,
   CurrentUser,
+  DndContext,
   Icon,
   NavigateIfNotSignIn,
   ParentRouteContext,
@@ -25,7 +26,9 @@ import {
   RemoteSchemaComponent,
   RemoteSchemaTemplateManagerPlugin,
   RemoteSchemaTemplateManagerProvider,
+  SortableItem,
   useDesignable,
+  useMenuDragEnd,
   useParseURLAndParams,
   useRequest,
   useSchemaInitializerRender,
@@ -301,6 +304,8 @@ const MenuItem: FC<{ item: any }> = (props) => {
     return null;
   }
 
+  const fakeSchema: any = { __route__: item._route };
+
   // "Add menu item" does not need SchemaToolbar
   if (item.key === 'x-designer-button') {
     return (
@@ -313,12 +318,18 @@ const MenuItem: FC<{ item: any }> = (props) => {
   }
 
   if (item._route?.type === NocoBaseDesktopRouteType.link) {
+    // fake schema used to pass routing information to SortableItem
     return (
       <div onClick={handleClickLink}>
         <ParentRouteContext.Provider value={item._parentRoute}>
           <NocoBaseRouteContext.Provider value={item._route}>
-            {props.children}
-            <MenuSchemaToolbar />
+            <SortableItem
+              id={item._route.id}
+              schema={fakeSchema}
+            >
+              {props.children}
+              <MenuSchemaToolbar />
+            </SortableItem>
           </NocoBaseRouteContext.Provider>
         </ParentRouteContext.Provider>
       </div>
@@ -332,10 +343,15 @@ const MenuItem: FC<{ item: any }> = (props) => {
     <div>
       <ParentRouteContext.Provider value={item._parentRoute}>
         <NocoBaseRouteContext.Provider value={item._route}>
-          <Link to={path}>
-            {props.children}
-          </Link>
-          <MenuSchemaToolbar />
+          <SortableItem
+            id={item._route.id}
+            schema={fakeSchema}
+          >
+            <Link to={path}>
+              {props.children}
+            </Link>
+            <MenuSchemaToolbar />
+          </SortableItem>
         </NocoBaseRouteContext.Provider>
       </ParentRouteContext.Provider>
     </div>
@@ -395,6 +411,14 @@ export const InternalAdminLayout = () => {
         colorTextAppListIcon: '#fff',
         colorTextAppListIconHover: '#fff',
         colorBgAppListIconHover: '#fff',
+      }}
+      menuRender={(props, defaultDom) => {
+        const { onDragEnd } = useMenuDragEnd();
+        return <DndContext onDragEnd={onDragEnd}>{defaultDom}</DndContext>;
+      }}
+      headerContentRender={(props, defaultDom) => {
+        const { onDragEnd } = useMenuDragEnd();
+        return <DndContext onDragEnd={onDragEnd}>{defaultDom}</DndContext>;
       }}
       menuItemRender={(item, dom) => {
         return <MenuItem item={item}>{dom}</MenuItem>;

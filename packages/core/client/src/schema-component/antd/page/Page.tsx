@@ -347,7 +347,7 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
         label: (
           <NocoBaseRouteContext.Provider value={tabRoute}>
             <SortableItem
-              id={tabRoute.schemaUid}
+              id={String(tabRoute.id)}
               className={classNames('nb-action-link', 'designerCss', className)}
               schema={fakeSchema}
             >
