@@ -17,6 +17,8 @@ import PluginBlockTemplateClient from '..';
 import { useT } from '../locale';
 import { useBlockTemplates } from '../components/BlockTemplateProvider';
 import { useMemoizedFn } from 'ahooks';
+import { findBlockRootSchema } from '../utils/schema';
+
 export function convertTplBlock(
   tpl,
   virtual = false,
@@ -257,7 +259,7 @@ export function convertTemplateToBlock(data, templateKey?: string, options?: any
     const tpl = tpls[key];
     const schema = convertTplBlock(tpl, false, true, undefined, templateKey, options);
     if (schema) {
-      schemas.push(schema);
+      schemas.push(findBlockRootSchema(schema));
     }
   }
 
