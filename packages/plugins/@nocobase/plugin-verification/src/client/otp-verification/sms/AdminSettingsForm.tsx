@@ -43,6 +43,7 @@ export const AdminSettingsForm: React.FC = () => {
             'x-decorator': 'FormItem',
             'x-component': 'RemoteSelect',
             'x-component-props': {
+              manual: false,
               fieldNames: {
                 label: 'title',
                 value: 'name',
