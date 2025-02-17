@@ -780,6 +780,60 @@ describe('workflow > instructions > loop', () => {
         expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
         expect(jobs[0].result).toEqual({ looped: 2 });
       });
+
+      it('exit as continue with async node inside', async () => {
+        const n1 = await workflow.createNode({
+          type: 'loop',
+          config: {
+            target: 2,
+            exit: EXIT.CONTINUE,
+          },
+        });
+
+        const n2 = await workflow.createNode({
+          type: 'pending',
+          upstreamId: n1.id,
+          branchIndex: 0,
+        });
+
+        const post = await PostRepo.create({ values: { title: 't1' } });
+
+        await sleep(500);
+
+        const [e1] = await workflow.getExecutions();
+        expect(e1.status).toBe(EXECUTION_STATUS.STARTED);
+        const j1s = await e1.getJobs({ order: [['id', 'ASC']] });
+
+        expect(j1s.length).toBe(2);
+
+        j1s[1].set('status', JOB_STATUS.RESOLVED);
+        plugin.resume(j1s[1]);
+
+        await sleep(500);
+
+        const [e2] = await workflow.getExecutions();
+        expect(e2.status).toBe(EXECUTION_STATUS.STARTED);
+        const j2s = await e2.getJobs({ order: [['id', 'ASC']] });
+
+        expect(j2s.length).toBe(3);
+        expect(j2s[0].result).toEqual({ looped: 1 });
+        expect(j2s[1].status).toBe(JOB_STATUS.RESOLVED);
+        expect(j2s[2].status).toBe(JOB_STATUS.PENDING);
+
+        j2s[2].set('status', JOB_STATUS.RESOLVED);
+        plugin.resume(j2s[2]);
+
+        await sleep(500);
+
+        const [e3] = await workflow.getExecutions();
+        expect(e3.status).toBe(EXECUTION_STATUS.RESOLVED);
+        const j3s = await e3.getJobs({ order: [['id', 'ASC']] });
+
+        expect(j3s.length).toBe(3);
+        expect(j3s[0].result).toEqual({ looped: 2 });
+        expect(j3s[1].status).toBe(JOB_STATUS.RESOLVED);
+        expect(j3s[2].status).toBe(JOB_STATUS.RESOLVED);
+      });
     });
   });
 
