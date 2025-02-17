@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import ProLayout from '@ant-design/pro-layout';
+import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
-import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
+import { Menu } from 'antd';
+import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
@@ -44,7 +45,7 @@ import { Plugin } from '../../../application/Plugin';
 import { menuItemInitializer } from '../../../modules/menu/menuItemInitializer';
 import { KeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
-import { MenuSchemaToolbar } from './menuItemSettings';
+import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 
 export { KeepAlive, NocoBaseDesktopRouteType };
 
@@ -286,9 +287,20 @@ const GroupItem: FC<{ item: any }> = (props) => {
   );
 };
 
-const MenuItem: FC<{ item: any }> = (props) => {
+const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean; } }> = (props) => {
   const { item } = props;
   const { parseURLAndParams } = useParseURLAndParams();
+  const divRef = useRef(null);
+
+  useEffect(() => {
+    if (divRef.current) {
+      // 顶部 Add menu item 按钮放置在右侧
+      divRef.current.parentElement.parentElement.style.order = 999;
+
+      divRef.current.parentElement.parentElement.style.paddingLeft = 0;
+      divRef.current.parentElement.parentElement.style.padding = 0;
+    }
+  }, []);
 
   const handleClickLink = useCallback(async (event: React.MouseEvent) => {
     const href = item._route.options?.href;
@@ -315,11 +327,15 @@ const MenuItem: FC<{ item: any }> = (props) => {
   // "Add menu item" does not need SchemaToolbar
   if (item.key === 'x-designer-button') {
     return (
-      <ParentRouteContext.Provider value={item._parentRoute}>
-        <NocoBaseRouteContext.Provider value={item._route}>
-          {props.children}
-        </NocoBaseRouteContext.Provider>
-      </ParentRouteContext.Provider>
+      <div ref={divRef}>
+        <ResetThemeTokenAndKeepAlgorithm>
+          <ParentRouteContext.Provider value={item._parentRoute}>
+            <NocoBaseRouteContext.Provider value={item._route}>
+              {props.children}
+            </NocoBaseRouteContext.Provider>
+          </ParentRouteContext.Provider>
+        </ResetThemeTokenAndKeepAlgorithm>
+      </div>
     )
   }
 
@@ -364,9 +380,13 @@ const MenuItem: FC<{ item: any }> = (props) => {
   );
 };
 
-const resetHeaderStyle = css`
+const resetStyle = css`
   .ant-pro-top-nav-header-main {
     padding-inline-start: 0;
+  }
+
+  .ant-layout-sider-children {
+    margin-inline-end: 0 !important;
   }
 `;
 
@@ -377,11 +397,11 @@ const contentStyle = {
 
 const actionsRender = (props) => {
   if (props.isMobile) return null;
-  return <PinnedPluginList key="pinned-plugin-list" />;
+  return <PinnedPluginList />;
 };
 
-const menuItemRender = (item, dom) => {
-  return <MenuItem item={item}>{dom}</MenuItem>;
+const menuItemRender = (item, dom, options) => {
+  return <MenuItem item={item} options={options}>{dom}</MenuItem>;
 };
 
 const subMenuItemRender = (item, dom) => {
@@ -395,12 +415,13 @@ export const InternalAdminLayout = () => {
   const location = useLocation();
   const { onDragEnd } = useMenuDragEnd();
   const { token } = useToken();
+  const [isMobile, setIsMobile] = useState(false);
   const route = useMemo(() => {
     return {
       path: '/',
-      children: convertRoutesToLayout(allAccessRoutes, { renderInitializer, designable }),
+      children: convertRoutesToLayout(allAccessRoutes, { renderInitializer, designable, isMobile }),
     }
-  }, [allAccessRoutes, renderInitializer, designable]);
+  }, [allAccessRoutes, renderInitializer, designable, isMobile]);
   const layoutToken = useMemo(() => {
     return {
       header: {
@@ -411,13 +432,12 @@ export const InternalAdminLayout = () => {
         colorBgMenuItemHover: token.colorBgHeaderMenuHover,
         colorBgMenuItemSelected: token.colorBgHeaderMenuActive,
         heightLayoutHeader: 46,
+        colorHeaderTitle: token.colorTextHeaderMenu,
       },
       sider: {
-        colorMenuBackground: '#fff',
+        colorMenuBackground: token.colorBgContainer,
       },
-      colorTextAppListIcon: '#fff',
-      colorTextAppListIconHover: '#fff',
-      colorBgAppListIconHover: '#fff',
+      bgLayout: token.colorBgLayout,
     }
   }, [token]);
 
@@ -425,8 +445,8 @@ export const InternalAdminLayout = () => {
     <DndContext onDragEnd={onDragEnd}>
       <ProLayout
         contentStyle={contentStyle}
-        siderWidth={199} // Actual display width is 200px
-        className={resetHeaderStyle}
+        siderWidth={200}
+        className={resetStyle}
         location={location}
         route={route}
         actionsRender={actionsRender}
@@ -438,8 +458,20 @@ export const InternalAdminLayout = () => {
         menuItemRender={menuItemRender}
         subMenuItemRender={subMenuItemRender}
       >
-        <LayoutContent />
+        <RouteContext.Consumer>
+          {(value: RouteContextType) => {
+            const { isMobile: _isMobile } = value;
+
+            if (_isMobile !== isMobile) {
+              setIsMobile(_isMobile);
+            }
+
+            return <LayoutContent />;
+          }}
+        </RouteContext.Consumer>
       </ProLayout>
+      {/* 这里是为了加载 Menu 的样式，除此之外没什么用 */}
+      <Menu />
     </DndContext>
   );
 };
@@ -567,7 +599,7 @@ function findRouteBySchemaUid(schemaUid: string, treeArray: any[]) {
   return null;
 }
 
-function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializer, designable, parentRoute, depth = 0 }: any) {
+function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializer, designable, parentRoute, isMobile, depth = 0 }: any) {
   if (!routes) return;
 
   const initializerButton = {
@@ -626,7 +658,7 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializ
   })
 
   if (designable && depth === 0) {
-    result.unshift({ ...initializerButton });
+    isMobile ? result.push({ ...initializerButton }) : result.unshift({ ...initializerButton });
   }
 
   return result;

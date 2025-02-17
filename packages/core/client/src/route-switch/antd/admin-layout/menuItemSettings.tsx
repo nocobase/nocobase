@@ -3,10 +3,10 @@ import { TreeSelect } from '@formily/antd-v5';
 import { Field, onFieldChange } from '@formily/core';
 import { ISchema } from "@formily/react";
 import { uid } from "@formily/shared";
-import { App, Modal } from 'antd';
+import { App, ConfigProvider, Modal } from 'antd';
 import React, { FC, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { isVariable, NocoBaseDesktopRouteType, useAllAccessDesktopRoutes, useCompile, useCurrentRouteData, useNocoBaseRoutes, useURLAndHTMLSchema } from "../../..";
+import { isVariable, NocoBaseDesktopRouteType, useAllAccessDesktopRoutes, useCompile, useCurrentRouteData, useNocoBaseRoutes, useToken, useURLAndHTMLSchema } from "../../..";
 import {
   getPageMenuSchema
 } from '../../../';
@@ -492,5 +492,27 @@ export const menuItemSettings = new SchemaSettings({
 });
 
 export const MenuSchemaToolbar: FC<{ container?: HTMLElement }> = (props) => {
-  return <SchemaToolbar settings={menuItemSettings} showBorder={false} container={props.container} />;
+  return (
+    <ResetThemeTokenAndKeepAlgorithm>
+      <SchemaToolbar settings={menuItemSettings} showBorder={false} container={props.container} />
+    </ResetThemeTokenAndKeepAlgorithm>
+  )
 }
+
+/**
+ * 重置主题，避免被 ProLayout 的主题影响
+ * @param props
+ * @returns
+ */
+export const ResetThemeTokenAndKeepAlgorithm: FC = (props) => {
+  const { theme } = useToken() as any;
+
+  return (
+    <ConfigProvider theme={{
+      inherit: false,
+      algorithm: theme.derivatives,
+    }}>
+      {props.children}
+    </ConfigProvider>
+  );
+};

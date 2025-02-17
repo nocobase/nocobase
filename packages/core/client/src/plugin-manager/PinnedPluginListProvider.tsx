@@ -28,7 +28,8 @@ export const PinnedPluginListProvider: React.FC<{ items: any }> = (props) => {
 };
 
 const pinnedPluginListClassName = css`
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
 
   .ant-btn {
     border: 0;
