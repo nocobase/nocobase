@@ -97,7 +97,12 @@ export default class extends Instruction {
     const { result, status } = job;
     // NOTE: if loop has been done (resolved / rejected), do not care newly executed branch jobs.
     if (status !== JOB_STATUS.PENDING) {
-      return processor.exit();
+      processor.logger.warn(`loop (${job.nodeId}) has been done, ignore newly resumed event`);
+      return null;
+    }
+
+    if (branchJob.id !== job.id && branchJob.status === JOB_STATUS.PENDING) {
+      return null;
     }
 
     const nextIndex = result.looped + 1;
