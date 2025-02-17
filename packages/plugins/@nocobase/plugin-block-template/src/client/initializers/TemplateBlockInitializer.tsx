@@ -212,6 +212,7 @@ function nestedSchemaPatch(currentSchema: ISchema) {
           if (settings === 'blockSettings:editForm' || settings === 'blockSettings:details') {
             schema['x-decorator-props'].association = parentAssociation;
             schema['x-is-current'] = true;
+            schema['x-acl-action'] = `${parentAssociation}:${schema['x-acl-action']?.split(':')[1]}`;
           }
         }
       }
