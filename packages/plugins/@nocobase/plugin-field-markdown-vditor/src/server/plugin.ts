@@ -21,11 +21,11 @@ export class PluginFieldMarkdownVditorServer extends Plugin {
   }
 
   async copyVditorDist() {
-    const vditor = path.dirname(require.resolve('vditor'));
     const dist = path.resolve(__dirname, '../../dist/client/vditor/dist');
     if (await fs.exists(dist)) {
       return;
     }
+    const vditor = path.dirname(require.resolve('vditor'));
     await fs.copy(vditor, dist);
   }
 
