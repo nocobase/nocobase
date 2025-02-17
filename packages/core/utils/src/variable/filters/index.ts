@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Liquid } from 'liquidjs';
 import { dateFormat, dateAdd, dateSubtract } from './date';
-export function registerFilters(liquid: Liquid) {
-  liquid.registerFilter('date_format', dateFormat);
-  liquid.registerFilter('date_add', dateAdd);
-  liquid.registerFilter('date_subtract', dateSubtract);
-}
+
+export const variableFilters = [
+  { name: 'date_format', label: 'format', filterFn: dateFormat, category: 'date' },
+  { name: 'date_add', label: 'add', filterFn: dateAdd, category: 'date' },
+  { name: 'date_subtract', label: 'add', filterFn: dateSubtract, category: 'date' },
+];

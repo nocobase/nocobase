@@ -7,11 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Liquid } from 'liquidjs';
-import { variableFilters } from '../variable';
-const engine = new Liquid();
-
-variableFilters.forEach(({ name, filterFn }) => {
-  engine.registerFilter(name, filterFn);
-});
-export default engine;
+export { variableFilters } from './filters';
