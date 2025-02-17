@@ -364,39 +364,52 @@ const MenuItem: FC<{ item: any }> = (props) => {
   );
 };
 
+const resetHeaderStyle = css`
+  .ant-pro-top-nav-header-main {
+    padding-inline-start: 0;
+  }
+`;
+
+const contentStyle = {
+  paddingBlock: 0,
+  paddingInline: 0,
+};
+
+const actionsRender = (props) => {
+  if (props.isMobile) return null;
+  return <PinnedPluginList key="pinned-plugin-list" />;
+};
+
+const menuItemRender = (item, dom) => {
+  return <MenuItem item={item}>{dom}</MenuItem>;
+};
+
+const subMenuItemRender = (item, dom) => {
+  return <GroupItem item={item}>{dom}</GroupItem>;
+};
+
 export const InternalAdminLayout = () => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const { render: renderInitializer } = useSchemaInitializerRender(menuItemInitializer);
   const { designable } = useDesignable();
   const location = useLocation();
   const { onDragEnd } = useMenuDragEnd();
+  const route = useMemo(() => {
+    return {
+      path: '/',
+      children: convertRoutesToLayout(allAccessRoutes, { renderInitializer, designable }),
+    }
+  }, [allAccessRoutes, renderInitializer, designable]);
 
   return (
     <DndContext onDragEnd={onDragEnd}>
       <ProLayout
-        contentStyle={{
-          paddingBlock: 0,
-          paddingInline: 0,
-        }}
+        contentStyle={contentStyle}
         siderWidth={200}
-        className={css`
-          .anticon-menu {
-            color: #fff;
-          }
-          .ant-pro-top-nav-header-main {
-            padding-inline-start: 0;
-          }
-      `}
+        className={resetHeaderStyle}
         location={location}
-        route={{
-          path: '/',
-          children: convertRoutesToLayout(allAccessRoutes, { renderInitializer, designable }),
-        }}
-        actionsRender={(props) => {
-          if (props.isMobile) return null;
-          if (typeof window === 'undefined') return null;
-          return <PinnedPluginList key="pinned-plugin-list" />;
-        }}
+        route={route}
+        actionsRender={actionsRender}
         logo={<NocoBaseLogo />}
         title={''}
         layout="mix"
@@ -412,18 +425,14 @@ export const InternalAdminLayout = () => {
             heightLayoutHeader: 46,
           },
           sider: {
-            colorTextMenuSecondary: '#fff',
+            colorMenuBackground: '#fff',
           },
           colorTextAppListIcon: '#fff',
           colorTextAppListIconHover: '#fff',
           colorBgAppListIconHover: '#fff',
         }}
-        menuItemRender={(item, dom) => {
-          return <MenuItem item={item}>{dom}</MenuItem>;
-        }}
-        subMenuItemRender={(item, dom) => {
-          return <GroupItem item={item}>{dom}</GroupItem>;
-        }}
+        menuItemRender={menuItemRender}
+        subMenuItemRender={subMenuItemRender}
       >
         <LayoutContent />
       </ProLayout>
