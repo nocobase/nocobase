@@ -109,7 +109,7 @@ function collectGridItems(
   }
 }
 
-function mergeSchema(template, schema, rootTemplate) {
+export function mergeSchema(template, schema, rootTemplate) {
   if (template['properties'] && !schema['properties']) {
     schema['properties'] = {};
   }
@@ -366,7 +366,7 @@ function mergeSchema(template, schema, rootTemplate) {
   );
 }
 
-function cleanSchema(schema?: Schema, templateId?: string) {
+export function cleanSchema(schema?: Schema, templateId?: string) {
   const properties = schema?.properties || {};
   if (schema) {
     delete schema['x-template-root-uid'];
