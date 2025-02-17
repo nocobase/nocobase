@@ -25,11 +25,13 @@ export const ActionContextProvider: React.FC<ActionContextProps & { value?: Acti
     const { visible } = { ...props, ...props.value };
     const { setSubmitted: setParentSubmitted } = { ...props, ...props.value };
     const service = useBlockServiceInActionButton();
-    const isSubPageClosedByPageMenu = useIsSubPageClosedByPageMenu(useFieldSchema());
+    const { isSubPageClosedByPageMenu, reset } = useIsSubPageClosedByPageMenu(useFieldSchema());
 
     useEffect(() => {
       const run = async () => {
-        if (visible === false && service && !service.loading && (submitted || isSubPageClosedByPageMenu)) {
+        if (visible === false && service && !service.loading && (submitted || isSubPageClosedByPageMenu())) {
+          reset();
+
           // Prevent multiple requests from being triggered
           service.loading = true;
           await service.refreshAsync();
@@ -41,7 +43,7 @@ export const ActionContextProvider: React.FC<ActionContextProps & { value?: Acti
       };
 
       run();
-    }, [visible, service?.refresh, setParentSubmitted, isSubPageClosedByPageMenu]);
+    }, [visible, service, setParentSubmitted, isSubPageClosedByPageMenu, submitted, reset]);
 
     const value = useMemo(() => ({ ...props, ...props?.value, submitted, setSubmitted }), [props, submitted]);
 

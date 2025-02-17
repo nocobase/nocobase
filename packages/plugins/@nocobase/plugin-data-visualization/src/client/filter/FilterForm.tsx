@@ -52,6 +52,8 @@ export const ChartFilterForm: React.FC = memo((props) => {
             setField(name, {
               title: field.title,
               operator: field.componentProps['filter-operator'],
+              dataSource: field.componentProps['data-source'],
+              collectionField: field.componentProps['collection-field'],
             });
 
             // parse field title
