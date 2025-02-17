@@ -649,7 +649,7 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializ
         name: item.title,
         icon: <Icon type={item.icon} />,
         path: `/admin/${item.id}`,
-        redirect: children[0]?.key === 'x-designer-button' ? undefined : `/admin/${findFirstPageRoute(item.children)?.schemaUid}`,
+        redirect: children[0]?.key === 'x-designer-button' ? undefined : `/admin/${findFirstPageRoute(item.children)?.schemaUid || ''}`,
         routes: children.length === 0 ? [{ path: '/', name: ' ', disabled: true, _hidden: true }] : children,
         hideInMenu: item.hideInMenu,
         _route: item,
@@ -686,6 +686,8 @@ function findRouteById(id: string, treeArray: any[]) {
 }
 
 function findFirstPageRoute(routes: NocoBaseDesktopRoute[]) {
+  if (!routes) return;
+
   for (const route of routes) {
     if (route.type === NocoBaseDesktopRouteType.page) {
       return route;
