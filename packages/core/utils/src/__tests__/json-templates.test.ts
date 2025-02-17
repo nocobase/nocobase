@@ -27,7 +27,7 @@ describe('json-templates', () => {
 });
 
 describe('json-templates filters', () => {
-  it('format filters', async () => {
+  it('date filters', async () => {
     const template = {
       today: '{{now | date_format: "YYYY-MM-DD"}}',
       yesterday: '{{now | date_subtract: 1, "day" | date_format: "YYYY-MM-DD"}}',
@@ -41,6 +41,37 @@ describe('json-templates filters', () => {
     expect(result).toEqual({
       today: '2025-01-01',
       yesterday: '2024-12-31',
+    });
+  });
+
+  it('multiple level accessiong', async () => {
+    const template = {
+      user: '{{user.name}}',
+      firstOfArray1: '{{array.0}}',
+      firstOfArray2: '{{array[0]}}',
+    };
+    const result = parse(template)({
+      user: { name: 'john' },
+      array: ['first', 'second'],
+    });
+    expect(result).toEqual({
+      user: 'john',
+      firstOfArray1: 'first',
+      firstOfArray2: 'first',
+    });
+  });
+
+  it('when key is undefined, ignore it', async () => {
+    const template = {
+      key1: '{{current.key1}}',
+      key2: '{{current.key2}}',
+    };
+    const result = parse(template)({
+      current: { key1: 'value1', key2: undefined },
+    });
+    expect(result).toEqual({
+      key1: 'value1',
+      key2: '',
     });
   });
 });
