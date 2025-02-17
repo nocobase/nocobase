@@ -269,7 +269,7 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
   const value = Array.isArray(props.value) ? props.value[0] : props.value;
   const compile = useCompile();
   const fieldSchema = useFieldSchema();
-  const targetPicker = value ? inferPickerType(value) : picker;
+  const targetPicker = value ? inferPickerType(value, picker) : picker;
   const targetDateFormat = getPickerFormat(targetPicker) || format;
   const newProps = {
     utc,
