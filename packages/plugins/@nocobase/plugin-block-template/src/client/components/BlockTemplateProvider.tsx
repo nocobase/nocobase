@@ -165,7 +165,7 @@ export const BlockTemplateProvider = ({ children }) => {
             title: m.title,
             schemaInsertor: (insert, { item, fromOthersInPopup, name }) => {
               const options = { dataSourceName };
-              if (association) {
+              if (association && (name === 'editForm' || name === 'currentRecord')) {
                 options['association'] = association;
               }
               if (field) {

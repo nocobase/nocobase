@@ -74,19 +74,24 @@ export function convertTplBlock(
       newSchema['x-template-root-uid'] = tpl['x-uid'];
       newSchema['x-uid'] = newRootId;
       newSchema['x-template-version'] = '1.0';
-      blockKeepProps.forEach((prop) => {
-        if (_.hasIn(tpl, prop)) {
-          _.set(newSchema, prop, _.get(tpl, prop));
-        }
-      });
-      // set decorator props here!!
     }
+
+    blockKeepProps.forEach((prop) => {
+      if (_.hasIn(tpl, prop)) {
+        _.set(newSchema, prop, _.get(tpl, prop));
+      }
+    });
+
     if (templateKey) {
       newSchema['x-block-template-key'] = templateKey;
     }
+
+    // custom request action will saved in other schema
     if (tpl['x-component'] === 'CustomRequestAction') {
       newSchema['x-custom-request-id'] = tpl['x-custom-request-id'] || tpl['x-uid'];
     }
+
+    // association field will saved in other schema
     if (tpl['x-component'] === 'Action' && _.get(tpl, 'x-action-settings.schemaUid')) {
       newSchema['x-action-settings'] = {
         schemaUid: '',
@@ -194,6 +199,47 @@ function detailsSchemaPatch(currentSchema: ISchema, options?: any) {
   }
 }
 
+function nestedSchemaPatch(currentSchema: ISchema) {
+  // Handle child blocks recursively
+  if (currentSchema.properties && currentSchema['x-decorator-props']?.association) {
+    const processChildBlock = (schema: ISchema, parentAssociation?: string) => {
+      const decoratorName = schema['x-decorator'];
+
+      // If this is a DetailsBlockProvider or FormBlockProvider
+      if (decoratorName === 'DetailsBlockProvider' || decoratorName === 'FormBlockProvider') {
+        if (!schema['x-decorator-props']?.association && parentAssociation) {
+          const settings = schema['x-settings'];
+          if (settings === 'blockSettings:editForm' || settings === 'blockSettings:details') {
+            schema['x-decorator-props'].association = parentAssociation;
+            schema['x-is-current'] = true;
+          }
+        }
+      }
+
+      const decoratorProps = schema['x-decorator-props'];
+      if (decoratorProps && decoratorProps.collection && !decoratorProps.association) {
+        // the association is not set in parent datablock provider, so we don't need to process down
+        return;
+      }
+
+      // Get the current block's association for its children
+      const currentAssociation = decoratorProps?.association || parentAssociation;
+
+      // Process children recursively
+      if (schema.properties) {
+        Object.values(schema.properties).forEach((childSchema) => {
+          processChildBlock(childSchema, currentAssociation);
+        });
+      }
+    };
+
+    // Start processing from the root's immediate children
+    Object.values(currentSchema.properties).forEach((childSchema) => {
+      processChildBlock(childSchema, currentSchema['x-decorator-props']?.association);
+    });
+  }
+}
+
 function schemaPatch(currentSchema: ISchema, options?: any) {
   const { collectionName, dataSourceName, association } = options;
 
@@ -202,7 +248,7 @@ function schemaPatch(currentSchema: ISchema, options?: any) {
     detailsSchemaPatch(currentSchema, options);
   } else if (decoratorName === 'FormBlockProvider') {
     formSchemaPatch(currentSchema, options);
-  } else {
+  } else if (decoratorName) {
     currentSchema['x-decorator-props'] = {
       action: 'list',
       collection: collectionName,
@@ -210,6 +256,8 @@ function schemaPatch(currentSchema: ISchema, options?: any) {
       dataSource: dataSourceName,
     };
   }
+
+  nestedSchemaPatch(currentSchema);
   return currentSchema;
 }
 
