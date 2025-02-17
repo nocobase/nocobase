@@ -8,13 +8,26 @@
  */
 
 import { Plugin } from '@nocobase/server';
+import fs from 'fs-extra';
+import path from 'path';
 
 export class PluginFieldMarkdownVditorServer extends Plugin {
   async afterAdd() {}
 
   async beforeLoad() {}
 
-  async load() {}
+  async load() {
+    await this.copyVditorDist();
+  }
+
+  async copyVditorDist() {
+    const vditor = path.dirname(require.resolve('vditor'));
+    const dist = path.resolve(__dirname, '../../dist/client/vditor/dist');
+    if (await fs.exists(dist)) {
+      return;
+    }
+    await fs.copy(vditor, dist);
+  }
 
   async install() {}
 
