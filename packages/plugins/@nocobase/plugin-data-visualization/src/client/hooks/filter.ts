@@ -137,6 +137,8 @@ export const useChartFilter = () => {
         'x-component-props': {
           ...field.uiSchema?.['x-component-props'],
           'filter-operator': defaultOperator,
+          'data-source': dataSource,
+          'collection-field': `${fieldName}.${field.name}`,
         },
         'x-filter-operators': defaultOperator?.value,
       };
@@ -195,6 +197,8 @@ export const useChartFilter = () => {
         title,
         'x-component-props': {
           'filter-operator': defaultOperator,
+          'data-source': dataSource,
+          'collection-field': `${fieldName}.${child.name}`,
         },
         'x-filter-operators': defaultOperator?.value,
       };
@@ -319,8 +323,12 @@ export const useChartFilter = () => {
       .filter(([_, props]) => props)
       .forEach(([name, props]) => {
         const { operator } = props || {};
-        const { dataSource, fieldName: _fieldName } = parseFilterFieldName(name);
-        let fieldName = _fieldName;
+        let { dataSource, collectionField: fieldName } = props || {};
+        if (!fieldName) {
+          const parsed = parseFilterFieldName(name);
+          dataSource = parsed.dataSource;
+          fieldName = parsed.fieldName;
+        }
         const ds = dm.getDataSource(dataSource);
         const cm = ds.collectionManager;
         const field = cm.getCollectionField(fieldName);
