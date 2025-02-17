@@ -297,9 +297,10 @@ function mergeSchema(template, schema, rootTemplate) {
 
           if (object['x-decorator'] === 'DndContext') {
             for (const skey of sourceKeys) {
-              if (sourceValue[skey]['x-settings'] === 'actionSettings:delete') {
+              const actionSettings = sourceValue[skey]['x-settings'];
+              if (['actionSettings:disassociate', 'actionSettings:delete'].includes(actionSettings)) {
                 const removedTargetKeys = _.remove(targetKeys, (key) => {
-                  return objectValue[key]?.['x-settings'] === 'actionSettings:delete';
+                  return objectValue[key]?.['x-settings'] === actionSettings;
                 });
                 if (removedTargetKeys.length > 0) {
                   sourceValue[skey]['x-template-uid'] = objectValue[removedTargetKeys[0]]['x-uid'];
