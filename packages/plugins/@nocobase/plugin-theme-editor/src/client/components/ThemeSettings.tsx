@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SelectWithTitle, SchemaSettingsSelectItem } from '@nocobase/client';
+import { SchemaSettingsSelectItem } from '@nocobase/client';
 import { error } from '@nocobase/utils/client';
-import { MenuProps } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useThemeId } from '../components/InitializeTheme';
 import { useThemeListContext } from '../components/ThemeListProvider';
