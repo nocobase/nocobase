@@ -394,18 +394,38 @@ export const InternalAdminLayout = () => {
   const { designable } = useDesignable();
   const location = useLocation();
   const { onDragEnd } = useMenuDragEnd();
+  const { token } = useToken();
   const route = useMemo(() => {
     return {
       path: '/',
       children: convertRoutesToLayout(allAccessRoutes, { renderInitializer, designable }),
     }
   }, [allAccessRoutes, renderInitializer, designable]);
+  const layoutToken = useMemo(() => {
+    return {
+      header: {
+        colorBgHeader: token.colorBgHeader,
+        colorTextMenu: token.colorTextHeaderMenu,
+        colorTextMenuSelected: token.colorTextHeaderMenuActive,
+        colorTextMenuActive: token.colorTextHeaderMenuActive,
+        colorBgMenuItemHover: token.colorBgHeaderMenuHover,
+        colorBgMenuItemSelected: token.colorBgHeaderMenuActive,
+        heightLayoutHeader: 46,
+      },
+      sider: {
+        colorMenuBackground: '#fff',
+      },
+      colorTextAppListIcon: '#fff',
+      colorTextAppListIconHover: '#fff',
+      colorBgAppListIconHover: '#fff',
+    }
+  }, [token]);
 
   return (
     <DndContext onDragEnd={onDragEnd}>
       <ProLayout
         contentStyle={contentStyle}
-        siderWidth={200}
+        siderWidth={199} // Actual display width is 200px
         className={resetHeaderStyle}
         location={location}
         route={route}
@@ -414,23 +434,7 @@ export const InternalAdminLayout = () => {
         title={''}
         layout="mix"
         splitMenus
-        token={{
-          header: {
-            colorBgHeader: '#001529',
-            colorTextMenu: '#eee',
-            colorTextMenuSelected: '#fff',
-            colorTextMenuActive: '#fff',
-            colorBgMenuItemHover: '#001529',
-            colorBgMenuItemSelected: '#001529',
-            heightLayoutHeader: 46,
-          },
-          sider: {
-            colorMenuBackground: '#fff',
-          },
-          colorTextAppListIcon: '#fff',
-          colorTextAppListIconHover: '#fff',
-          colorBgAppListIconHover: '#fff',
-        }}
+        token={layoutToken}
         menuItemRender={menuItemRender}
         subMenuItemRender={subMenuItemRender}
       >
