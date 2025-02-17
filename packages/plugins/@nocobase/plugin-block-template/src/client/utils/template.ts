@@ -484,7 +484,7 @@ function mergeSchema(
                 }
               }
 
-              if (sourceValue[skey]?.['x-settings']?.includes('actionSettings')) {
+              if (sourceValue[skey]?.['x-component'] && sourceValue[skey]?.['x-settings']?.includes('actionSettings')) {
                 const actionName = sourceValue[skey]['x-settings'].split(':')[1];
                 const targetActionName = [
                   'bulkDelete',
@@ -513,7 +513,7 @@ function mergeSchema(
           // table:configureColumns
           for (const skey of sourceKeys) {
             if (object['x-initializer'] === 'table:configureColumns') {
-              if (sourceValue[skey]['x-settings'] === 'fieldSettings:TableColumn') {
+              if (sourceValue[skey]['x-component'] && sourceValue[skey]['x-settings'] === 'fieldSettings:TableColumn') {
                 const sourceColFieldSchema = Object.values(sourceValue[skey]?.['properties'] || {})[0];
                 const xColField = _.get(sourceColFieldSchema, 'x-collection-field');
                 if (xColField) {
@@ -580,7 +580,10 @@ function mergeSchema(
           if (target['x-decorator'] === 'DndContext') {
             for (const skey of sourceKeys) {
               const actionSettings = sourceValue[skey]['x-settings'];
-              if (['actionSettings:disassociate', 'actionSettings:delete'].includes(actionSettings)) {
+              if (
+                sourceValue[skey]['x-component'] &&
+                ['actionSettings:disassociate', 'actionSettings:delete'].includes(actionSettings)
+              ) {
                 const removedTargetKeys = _.remove(targetKeys, (key) => {
                   return objectValue[key]?.['x-settings'] === actionSettings;
                 });
