@@ -13,6 +13,7 @@ export class SnowflakeIdField extends Field {
     this.listener = async (instance) => {
       const value = instance.get(name);
 
+      console.log({ value });
       if (!value && autoFill !== false) {
         instance.set(name, Snowflake.generate());
       }

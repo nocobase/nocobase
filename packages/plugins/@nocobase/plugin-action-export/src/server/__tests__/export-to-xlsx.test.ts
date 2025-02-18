@@ -985,7 +985,9 @@ describe('export to xlsx', () => {
       };
     });
 
-    await User.model.bulkCreate(values);
+    await User.repository.createMany({
+      records: values,
+    });
 
     const exporter = new XlsxExporter({
       collectionManager: app.mainDataSource.collectionManager,
