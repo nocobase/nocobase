@@ -4,6 +4,7 @@ import { Field, onFieldChange } from '@formily/core';
 import { ISchema } from "@formily/react";
 import { uid } from "@formily/shared";
 import { App, ConfigProvider, Modal } from 'antd';
+import { SiderContext } from "antd/es/layout/Sider";
 import React, { FC, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { css, isVariable, NocoBaseDesktopRouteType, useAllAccessDesktopRoutes, useCompile, useCurrentRouteData, useNocoBaseRoutes, useToken, useURLAndHTMLSchema } from "../../..";
@@ -497,10 +498,14 @@ const iconStyle = css`
   }
 `;
 
+const siderContextValue = { siderCollapsed: false };
 export const MenuSchemaToolbar: FC<{ container?: HTMLElement }> = (props) => {
   return (
     <ResetThemeTokenAndKeepAlgorithm>
-      <SchemaToolbar spaceClassName={iconStyle} settings={menuItemSettings} showBorder={false} container={props.container} />
+      {/* 避免 Sider 的状态影响到 SchemaToolbar。否则会导致在折叠状态下，SchemaToolbar 的样式异常 */}
+      <SiderContext.Provider value={siderContextValue}>
+        <SchemaToolbar spaceClassName={iconStyle} settings={menuItemSettings} showBorder={false} container={props.container} />
+      </SiderContext.Provider>
     </ResetThemeTokenAndKeepAlgorithm>
   )
 }
