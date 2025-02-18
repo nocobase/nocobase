@@ -391,6 +391,17 @@ const resetStyle = css`
   .ant-layout-header.ant-pro-layout-header {
     border-block-end: none !important;
   }
+
+  // 固定菜单中图标和标题的距离，防止当切换到紧凑模式后，图标和标题之间的距离过近
+  .ant-menu-title-content .ant-pro-base-menu-inline-item-title,
+  .ant-menu-title-content .ant-pro-base-menu-horizontal-item-title {
+    gap: 8px;
+  }
+
+  // 修复紧凑模式下且菜单收起时，菜单的高度不够的问题
+  .ant-pro-base-menu-vertical-collapsed .ant-pro-base-menu-vertical-menu-item {
+    height: auto;
+  }
 `;
 
 const contentStyle = {
