@@ -25,7 +25,7 @@ import {
   hideConvertToBlockSettingItem,
   hideDeleteSettingItem,
 } from './utils/setting';
-import { BlockTemplateProvider } from './components/BlockTemplateProvider';
+import { BlockTemplateMenusProvider } from './components/BlockTemplateMenusProvider';
 import { disabledDeleteSettingItem } from './settings/disabledDeleteSetting';
 
 export class PluginBlockTemplateClient extends Plugin {
@@ -79,7 +79,7 @@ export class PluginBlockTemplateClient extends Plugin {
     registerTemplateBlockInterceptors(this.app.apiClient, this.pageBlocks, this.savedSchemaUids);
 
     this.app.addComponents({ TemplateGridDecorator });
-    this.app.addProviders([BlockTemplateProvider]);
+    this.app.addProviders([BlockTemplateMenusProvider]);
 
     for (const initializer of this.injectInitializers) {
       this.app.schemaInitializerManager.addItem(initializer, 'otherBlocks.templates', templateBlockInitializerItem);

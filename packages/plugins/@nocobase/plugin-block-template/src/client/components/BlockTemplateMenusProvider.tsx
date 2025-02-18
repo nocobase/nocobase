@@ -30,17 +30,17 @@ interface BlockTemplateContextProps {
   handleTemplateClick: (item: any, options?: any, insert?: any) => Promise<void>;
 }
 
-const BlockTemplateContext = createContext<BlockTemplateContextProps>({
+const BlockTemplateMenusContext = createContext<BlockTemplateContextProps>({
   loading: false,
   templates: [],
   handleTemplateClick: async () => {},
 });
 
-export const useBlockTemplates = () => {
-  return useContext(BlockTemplateContext);
+export const useBlockTemplateMenus = () => {
+  return useContext(BlockTemplateMenusContext);
 };
 
-export const BlockTemplateProvider = ({ children }) => {
+export const BlockTemplateMenusProvider = ({ children }) => {
   const api = useAPIClient();
   const plugin = usePlugin(PluginBlockTemplateClient);
   const mobilePlugin = usePlugin(PluginMobileClient);
@@ -199,7 +199,7 @@ export const BlockTemplateProvider = ({ children }) => {
   }, [data?.data, plugin.isInBlockTemplateConfigPage, handleTemplateClick, t, plugin]);
 
   return (
-    <BlockTemplateContext.Provider
+    <BlockTemplateMenusContext.Provider
       value={{
         loading,
         templates: data?.data || [],
@@ -207,8 +207,8 @@ export const BlockTemplateProvider = ({ children }) => {
       }}
     >
       {children}
-    </BlockTemplateContext.Provider>
+    </BlockTemplateMenusContext.Provider>
   );
 };
 
-BlockTemplateProvider.displayName = 'BlockTemplateProvider';
+BlockTemplateMenusProvider.displayName = 'BlockTemplateMenusProvider';

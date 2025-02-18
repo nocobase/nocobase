@@ -15,7 +15,7 @@ import * as _ from 'lodash';
 import { uid } from '@nocobase/utils/client';
 import PluginBlockTemplateClient from '..';
 import { useT } from '../locale';
-import { useBlockTemplates } from '../components/BlockTemplateProvider';
+import { useBlockTemplateMenus } from '../components/BlockTemplateMenusProvider';
 import { useMemoizedFn } from 'ahooks';
 import { findBlockRootSchema } from '../utils/schema';
 
@@ -389,7 +389,7 @@ export const TemplateBlockInitializer = () => {
   const plugin = usePlugin(PluginBlockTemplateClient);
   const [searchValue, setSearchValue] = useState('');
   const t = useT();
-  const { templates, handleTemplateClick, loading } = useBlockTemplates();
+  const { templates, handleTemplateClick, loading } = useBlockTemplateMenus();
 
   const filteredData = templates
     ?.filter((item) => !item.dataSource)
