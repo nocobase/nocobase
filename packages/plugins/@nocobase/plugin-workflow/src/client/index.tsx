@@ -39,7 +39,7 @@ import { customizeSubmitToWorkflowActionSettings } from './settings/customizeSub
 import { VariableOption } from './variable';
 
 type InstructionGroup = {
-  key: string;
+  key?: string;
   label: string;
 };
 
