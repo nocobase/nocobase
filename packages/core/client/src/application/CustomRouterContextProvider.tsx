@@ -9,7 +9,7 @@
 
 import { Schema } from '@formily/json-schema';
 import _ from 'lodash';
-import React, { FC, useEffect, useMemo, useRef, useState } from 'react';
+import React, { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Location,
   NavigateFunction,
@@ -62,11 +62,13 @@ const RouterBasenameContext = React.createContext<string>('');
 RouterBasenameContext.displayName = 'RouterBasenameContext';
 
 const IsSubPageClosedByPageMenuContext = React.createContext<{
-  isSubPageClosedByPageMenu: boolean;
+  isSubPageClosedByPageMenu: () => boolean;
   setFieldSchema: React.Dispatch<React.SetStateAction<Schema>>;
+  reset: () => void;
 }>({
-  isSubPageClosedByPageMenu: false,
-  setFieldSchema: () => {},
+  isSubPageClosedByPageMenu: () => false,
+  setFieldSchema: () => { },
+  reset: () => { },
 });
 IsSubPageClosedByPageMenuContext.displayName = 'IsSubPageClosedByPageMenuContext';
 
@@ -75,7 +77,7 @@ export const IsSubPageClosedByPageMenuProvider: FC = ({ children }) => {
   const prevParamsRef = useRef<any>({});
   const [fieldSchema, setFieldSchema] = useState<Schema>(null);
 
-  const isSubPageClosedByPageMenu = useMemo(() => {
+  const isSubPageClosedByPageMenu = useCallback(() => {
     const result =
       _.isEmpty(params['*']) &&
       fieldSchema?.['x-component-props']?.openMode === 'page' &&
@@ -86,7 +88,11 @@ export const IsSubPageClosedByPageMenuProvider: FC = ({ children }) => {
     return result;
   }, [fieldSchema, params]);
 
-  const value = useMemo(() => ({ isSubPageClosedByPageMenu, setFieldSchema }), [isSubPageClosedByPageMenu]);
+  const reset = useCallback(() => {
+    prevParamsRef.current = {};
+  }, []);
+
+  const value = useMemo(() => ({ isSubPageClosedByPageMenu, setFieldSchema, reset }), [isSubPageClosedByPageMenu, reset]);
 
   return (
     <IsSubPageClosedByPageMenuContext.Provider value={value}>{children}</IsSubPageClosedByPageMenuContext.Provider>
@@ -242,13 +248,13 @@ export const useRouterBasename = () => {
  * @returns
  */
 export const useIsSubPageClosedByPageMenu = (fieldSchema: Schema) => {
-  const { isSubPageClosedByPageMenu, setFieldSchema } = React.useContext(IsSubPageClosedByPageMenuContext);
+  const { isSubPageClosedByPageMenu, setFieldSchema, reset } = React.useContext(IsSubPageClosedByPageMenuContext);
 
   useEffect(() => {
     setFieldSchema(fieldSchema);
   }, [fieldSchema, setFieldSchema]);
 
-  return isSubPageClosedByPageMenu;
+  return { isSubPageClosedByPageMenu, reset };
 };
 
 export const CustomRouterContextProvider: FC = ({ children }) => {

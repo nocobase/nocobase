@@ -46,6 +46,12 @@ export default {
         status: 0,
       };
     },
+    resume(node, job) {
+      if (node.config.status != null) {
+        job.set('status', node.config.status);
+      }
+      return job;
+    },
     test() {
       return {
         status: 0,
