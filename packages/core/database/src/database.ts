@@ -470,6 +470,21 @@ export class Database extends EventEmitter implements AsyncEmitter {
       }
     });
 
+    this.on('beforeDefineCollection', async (options) => {
+      if (options.autoGenId !== false) {
+        options.autoGenId = false;
+        const fields = options.fields || [];
+
+        fields.push({
+          name: 'id',
+          type: 'snowflakeId',
+          primaryKey: true,
+        });
+
+        options.fields = fields;
+      }
+    });
+
     this.on('afterDefineCollection', async (collection: Collection) => {
       const options = collection.options;
       if (options.origin) {
