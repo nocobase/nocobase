@@ -388,6 +388,10 @@ const resetStyle = css`
   .ant-layout-sider-children {
     margin-inline-end: 0 !important;
   }
+
+  .ant-layout-header.ant-pro-layout-header {
+    border-block-end: none !important;
+  }
 `;
 
 const contentStyle = {
