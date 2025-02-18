@@ -34,7 +34,7 @@ export const useGlobalVariables = () => {
   const app = useApp();
 
   const result = useMemo(() => {
-    const variables = app.getGlobalVars();
+    const variables = app?.getGlobalVars?.() || {};
     const uniqueValues = new Set();
 
     Object.entries(variables).forEach(([key, value]) => {
@@ -60,7 +60,7 @@ export const useGlobalVariables = () => {
 //获取全局变量的值
 export const useGlobalVariablesCtx = () => {
   const app = useApp();
-  const variablesCtx = app.getGlobalVarsCtx();
+  const variablesCtx = app.getGlobalVarsCtx?.() || {};
   const uniqueValues = new Set();
   Object.entries(variablesCtx).forEach(([key, value]) => {
     if (!value) return;
