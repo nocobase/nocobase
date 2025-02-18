@@ -350,7 +350,7 @@ export const Calendar: any = withDynamicSchemaProps(
           const backgroundColor = getBackgroundColor?.(event.colorFieldValue);
           const style = {};
           if (fontColor) {
-            style['fontColor'] = fontColor;
+            style['color'] = fontColor;
           }
           if (backgroundColor) {
             style['backgroundColor'] = backgroundColor;
