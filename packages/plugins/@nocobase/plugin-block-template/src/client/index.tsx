@@ -13,7 +13,7 @@ import { NAMESPACE } from './constants';
 import { BlockTemplateList, BlockTemplatePage } from './components';
 import { ISchema, Schema } from '@formily/json-schema';
 import * as _ from 'lodash';
-import { revertSettingItem } from './settings';
+import { revertSettingItem } from './settings/revertSetting';
 import { getFullSchema } from './utils/template';
 import { registerTemplateBlockInterceptors } from './utils/interceptors';
 import { TemplateGridDecorator } from './components/TemplateGridDecorator';
@@ -137,9 +137,7 @@ export class PluginBlockTemplateClient extends Plugin {
           const schemaSetting = this.app.schemaSettingsManager.get(key);
           // if not filter out fieldSettings:component:, we will show two revert setting item
           if (schemaSetting && !key.startsWith('fieldSettings:component:')) {
-            // schemaSetting.add('template-associationRecordSetting', associationRecordSettingItem);
             schemaSetting.add('template-revertSettingItem', revertSettingItem);
-            // schemaSetting.add('template-formSettingItem', formSettingItem);
 
             for (let i = 0; i < schemaSetting.items.length; i++) {
               // hide convert to block setting item
