@@ -434,6 +434,8 @@ export const InternalAdminLayout = () => {
   const { onDragEnd } = useMenuDragEnd();
   const { token } = useToken();
   const [isMobile, setIsMobile] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const doNotChangeCollapsedRef = useRef(false);
   const route = useMemo(() => {
     return {
       path: '/',
@@ -464,6 +466,21 @@ export const InternalAdminLayout = () => {
     }
   }, [token]);
 
+
+  const onCollapse = useCallback((collapsed: boolean) => {
+    if (doNotChangeCollapsedRef.current) {
+      return;
+    }
+    setCollapsed(collapsed);
+  }, []);
+
+  const onPageChange = useCallback(() => {
+    doNotChangeCollapsedRef.current = true;
+    setTimeout(() => {
+      doNotChangeCollapsedRef.current = false;
+    })
+  }, []);
+
   return (
     <DndContext onDragEnd={onDragEnd}>
       <ProLayout
@@ -481,6 +498,9 @@ export const InternalAdminLayout = () => {
         menuItemRender={menuItemRender}
         subMenuItemRender={subMenuItemRender}
         collapsedButtonRender={collapsedButtonRender}
+        onCollapse={onCollapse}
+        collapsed={collapsed}
+        onPageChange={onPageChange}
       >
         <RouteContext.Consumer>
           {(value: RouteContextType) => {
