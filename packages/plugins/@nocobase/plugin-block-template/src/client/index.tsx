@@ -150,7 +150,15 @@ export class PluginBlockTemplateClient extends Plugin {
               // hide delete setting item
               hideDeleteSettingItem(schemaSetting.items[i], schemaSetting.items[i - 1]);
             }
-            schemaSetting.add('template-revertSettingItem', revertSettingItem);
+            const deleteItemIndex = schemaSetting.items.findIndex((item, index) => {
+              const nextItem = schemaSetting.items[index + 1];
+              return item['type'] === 'divider' && (nextItem?.name === 'delete' || nextItem?.name === 'remove');
+            });
+            if (deleteItemIndex !== -1) {
+              schemaSetting.items.splice(deleteItemIndex, 0, revertSettingItem);
+            } else {
+              schemaSetting.add('template-revertSettingItem', revertSettingItem);
+            }
             schemaSetting.add('template-disabledDeleteItem', disabledDeleteSettingItem);
           }
         }

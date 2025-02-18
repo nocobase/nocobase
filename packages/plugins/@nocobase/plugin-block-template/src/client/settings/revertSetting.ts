@@ -14,7 +14,7 @@ import { tStr } from '../locale';
 import { useIsInTemplate } from '../hooks/useIsInTemplate';
 
 export const revertSettingItem = {
-  name: 'template-revert',
+  name: 'template-revertSettingItem',
   title: tStr('Revert to template'),
   Component: RevertSetting,
   useVisible: () => {
