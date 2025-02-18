@@ -14,6 +14,7 @@ import {
   registerInitializerMenusGenerator,
   useResource,
   ISchema,
+  SchemaInitializerItemType,
 } from '@nocobase/client';
 import React, { createContext, useContext, useEffect } from 'react';
 import PluginBlockTemplateClient from '..';
@@ -181,19 +182,22 @@ export const BlockTemplateMenusProvider = ({ children }) => {
               }
               return handleTemplateClick(item, options, insert);
             },
-          };
+          } as SchemaInitializerItemType;
         });
 
       if (!children?.length) {
         return null;
       }
-      return {
-        key: `${keyPrefix}_${collectionName}_templates_subMenu_${index}`,
-        type: 'subMenu',
-        name: 'block_template',
-        title: t('Block template'),
-        children,
-      };
+      return [
+        {
+          type: 'divider',
+        },
+        {
+          type: 'itemGroup',
+          title: t('Block template'),
+          children,
+        },
+      ] as SchemaInitializerItemType[];
     };
     registerInitializerMenusGenerator('block_template', generator);
   }, [data?.data, plugin.isInBlockTemplateConfigPage, handleTemplateClick, t, plugin]);

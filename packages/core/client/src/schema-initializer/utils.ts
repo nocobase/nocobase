@@ -841,7 +841,8 @@ export const useRecordCollectionDataSourceItems = (
   // const extralCollectionMenuItems = initializerMenusGenerators.map((generator) => generator({ collection, field, componentName })).filter(Boolean);
   const extralCollectionMenuItems = Array.from(initializerMenusGenerators.values())
     .map((generator) => generator({ collection, componentName }))
-    .filter(Boolean);
+    .filter(Boolean)
+    .flat();
   if (!templates.length && !extralCollectionMenuItems.length) {
     return [];
   }
@@ -1531,7 +1532,8 @@ const getChildren = ({
         .map((generator) => {
           return generator({ item, index, componentName, association });
         })
-        .filter(Boolean);
+        .filter(Boolean)
+        .flat();
       if (!templates.length && !extralCollectionMenuItems.length) {
         return {
           type: 'item',
@@ -1793,7 +1795,8 @@ function useAssociationFields({
         const keyPrefix = `associationFiled_table_subMenu`;
         const extralCollectionMenuItems = Array.from(initializerMenusGenerators.values())
           .map((generator) => generator({ collection, index, field, componentName, keyPrefix, name }))
-          .filter(Boolean);
+          .filter(Boolean)
+          .flat();
         if (!templates.length && !extralCollectionMenuItems.length) {
           return {
             type: 'item',
@@ -1897,8 +1900,14 @@ function useAssociationFields({
   ]);
 }
 
-const initializerMenusGenerators = new Map<string, (options: any) => SchemaInitializerItemType>();
+const initializerMenusGenerators = new Map<
+  string,
+  (options: any) => SchemaInitializerItemType | SchemaInitializerItemType[]
+>();
 
-export function registerInitializerMenusGenerator(key: string, generator: (options: any) => SchemaInitializerItemType) {
+export function registerInitializerMenusGenerator(
+  key: string,
+  generator: (options: any) => SchemaInitializerItemType | SchemaInitializerItemType[],
+) {
   initializerMenusGenerators.set(key, generator);
 }
