@@ -9,13 +9,21 @@
 
 import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
+import { uid } from '@formily/shared';
 import { createMemoryHistory } from 'history';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Router } from 'react-router-dom';
 import { SchemaInitializerItem, useSchemaInitializer } from '../../application';
 import { useGlobalTheme } from '../../global-theme';
-import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../schema-component';
+import { NocoBaseDesktopRouteType } from '../../route-switch/antd/admin-layout/convertRoutesToSchema';
+import {
+  FormDialog,
+  SchemaComponent,
+  SchemaComponentOptions,
+  useNocoBaseRoutes,
+  useParentRoute,
+} from '../../schema-component';
 import { useStyles } from '../../schema-component/antd/menu/MenuItemInitializers';
 import { useURLAndHTMLSchema } from '../actions/link/useURLAndHTMLSchema';
 
@@ -26,6 +34,8 @@ export const LinkMenuItem = () => {
   const { theme } = useGlobalTheme();
   const { componentCls, hashId } = useStyles();
   const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
+  const parentRoute = useParentRoute();
+  const { createRoute } = useNocoBaseRoutes();
 
   const handleClick = useCallback(async () => {
     const values = await FormDialog(
@@ -65,28 +75,40 @@ export const LinkMenuItem = () => {
       initialValues: {},
     });
     const { title, href, params, icon } = values;
-    insert({
-      type: 'void',
-      title,
-      'x-component': 'Menu.URL',
-      'x-decorator': 'ACLMenuItemProvider',
-      'x-component-props': {
-        icon,
+    const schemaUid = uid();
+
+    // 创建一个路由到 desktopRoutes 表中
+    const { data } = await createRoute({
+      type: NocoBaseDesktopRouteType.link,
+      title: values.title,
+      icon: values.icon,
+      parentId: parentRoute?.id,
+      schemaUid,
+      options: {
         href,
         params,
       },
-      'x-server-hooks': [
-        {
-          type: 'onSelfCreate',
-          method: 'bindMenuToRole',
-        },
-        {
-          type: 'onSelfSave',
-          method: 'extractTextToLocale',
-        },
-      ],
     });
+
+    // 同时插入一个对应的 Schema
+    insert(getLinkMenuSchema({ title, icon, schemaUid, href, params, route: data?.data }));
   }, [insert, options.components, options.scope, t, theme]);
 
   return <SchemaInitializerItem title={t('Link')} onClick={handleClick} className={`${componentCls} ${hashId}`} />;
 };
+
+export function getLinkMenuSchema({ title, icon, schemaUid, href, params, route = undefined }) {
+  return {
+    type: 'void',
+    title,
+    'x-component': 'Menu.URL',
+    'x-decorator': 'ACLMenuItemProvider',
+    'x-component-props': {
+      icon,
+      href,
+      params,
+    },
+    'x-uid': schemaUid,
+    __route__: route,
+  };
+}

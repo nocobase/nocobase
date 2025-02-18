@@ -20,12 +20,12 @@ export class PluginFieldSortServer extends Plugin {
     const { lockManager } = this.app;
     class SortFieldClass extends SortField {}
     SortFieldClass.lockManager = lockManager;
-    this.app.db.registerFieldTypes({
-      sort: SortFieldClass,
-    });
 
     this.app.dataSourceManager.beforeAddDataSource((dataSource: DataSource) => {
       if (dataSource.collectionManager instanceof SequelizeCollectionManager) {
+        dataSource.collectionManager.db.registerFieldTypes({
+          sort: SortFieldClass,
+        });
         dataSource.resourceManager.registerActionHandlers({ move });
       }
     });

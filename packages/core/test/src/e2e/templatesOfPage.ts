@@ -12515,7 +12515,7 @@ export const oneFilterFormBlockWithAllAssociationFieldsV1333Beta: PageConfig = {
                                         'x-use-decorator-props': 'useFormItemProps',
                                         'x-collection-field': 'general.oneToOneBelongsTo',
                                         'x-component-props': {
-                                          multiple: false,
+                                          multiple: true,
                                           fieldNames: {
                                             label: 'id',
                                             value: 'id',
@@ -12562,7 +12562,7 @@ export const oneFilterFormBlockWithAllAssociationFieldsV1333Beta: PageConfig = {
                                         'x-use-decorator-props': 'useFormItemProps',
                                         'x-collection-field': 'general.oneToOneHasOne',
                                         'x-component-props': {
-                                          multiple: false,
+                                          multiple: true,
                                           fieldNames: {
                                             label: 'id',
                                             value: 'id',
@@ -12656,7 +12656,7 @@ export const oneFilterFormBlockWithAllAssociationFieldsV1333Beta: PageConfig = {
                                         'x-use-decorator-props': 'useFormItemProps',
                                         'x-collection-field': 'general.manyToOne',
                                         'x-component-props': {
-                                          multiple: false,
+                                          multiple: true,
                                           fieldNames: {
                                             label: 'id',
                                             value: 'id',

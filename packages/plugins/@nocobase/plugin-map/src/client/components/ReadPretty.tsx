@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useField, useFieldSchema, useForm } from '@formily/react';
-import { EllipsisWithTooltip, useCollection, useFieldTitle } from '@nocobase/client';
+import { useFieldSchema } from '@formily/react';
+import { EllipsisWithTooltip, useCollection, useFieldTitle, useFlag } from '@nocobase/client';
 import React from 'react';
 import { MapComponent } from './MapComponent';
 
@@ -18,10 +18,10 @@ const ReadPretty = (props) => {
   const collection = useCollection();
   const collectionField = collection.getField(fieldSchema.name);
   const mapType = props.mapType || collectionField?.uiSchema['x-component-props']?.mapType;
-  const form = useForm();
-  const field = useField();
+  const { isInSubTable } = useFlag();
+  const displayText = fieldSchema?.parent?.['x-component'] === 'TableV2.Column' || isInSubTable;
   useFieldTitle();
-  if (!form.readPretty || field.readPretty) {
+  if (displayText) {
     return (
       <div>
         <EllipsisWithTooltip ellipsis={true}>

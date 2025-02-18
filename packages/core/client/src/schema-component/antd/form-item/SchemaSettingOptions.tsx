@@ -521,6 +521,7 @@ export const EditOperator = () => {
           componentProps = {
             ...fieldSchema['x-component-props'],
             component: operator.schema['x-component'],
+            ...field.componentProps,
             ...operator.schema?.['x-component-props'],
           };
         } else if (fieldSchema['x-component-props']?.component) {

@@ -46,6 +46,12 @@ export default {
         status: 0,
       };
     },
+    resume(node, job) {
+      if (node.config.status != null) {
+        job.set('status', node.config.status);
+      }
+      return job;
+    },
     test() {
       return {
         status: 0,
@@ -75,6 +81,30 @@ export default {
     resume(node, input, processor) {
       throw new Error('input failed');
       return null;
+    },
+  },
+
+  asyncResume: {
+    async run(node, input, processor) {
+      const job = await processor.saveJob({
+        status: 0,
+        nodeId: node.id,
+        nodeKey: node.key,
+        upstreamId: input?.id ?? null,
+      });
+
+      setTimeout(() => {
+        job.set({
+          status: 1,
+        });
+
+        processor.options.plugin.resume(job);
+      }, 100);
+
+      return null;
+    },
+    resume(node, job, processor) {
+      return job;
     },
   },
 

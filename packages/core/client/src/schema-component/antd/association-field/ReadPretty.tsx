@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer } from '@formily/react';
+import { observer, useField } from '@formily/react';
 import React from 'react';
 import { AssociationFieldProvider } from './AssociationFieldProvider';
 import { FileManageReadPretty } from './FileManager';
@@ -32,9 +32,15 @@ const ReadPrettyAssociationField = (props: any) => {
 
 export const ReadPretty = observer(
   (props) => {
+    // Using props.value directly causes issues - UI won't update when field.value or field.initialValue changes
+    const field: any = useField();
+    // Don't inline this - we need to access field.initialValue separately to ensure proper dependency tracking
+    const defaultValue = field.initialValue;
+    const value = field.value || defaultValue;
+
     return (
       <AssociationFieldProvider>
-        <ReadPrettyAssociationField {...props} />
+        <ReadPrettyAssociationField {...props} value={value} />
       </AssociationFieldProvider>
     );
   },

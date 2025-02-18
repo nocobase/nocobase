@@ -8,10 +8,8 @@
  */
 
 import React from 'react';
-import { ISchema, useForm } from '@formily/react';
-import { useActionContext, useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
-import { message } from 'antd';
-import { useTranslation } from 'react-i18next';
+import { ISchema } from '@formily/react';
+import { useRecord } from '@nocobase/client';
 import { NAMESPACE } from '../locale';
 // import { triggers } from '../triggers';
 import { executionSchema } from './executions';
@@ -168,6 +166,18 @@ const workflowFieldset = {
           multiple: true,
         },
       },
+      stackLimit: {
+        type: 'number',
+        title: `{{ t("Maximum number of cycling triggers", { ns: "${NAMESPACE}" }) }}`,
+        description: `{{ t("The triggers of same workflow by some node (create, update and sub-flow etc.) more than this number will be ignored. Large number may cause performance issues. Please use with caution.", { ns: "${NAMESPACE}" }) }}`,
+        'x-decorator': 'FormItem',
+        default: 1,
+        'x-component': 'InputNumber',
+        'x-component-props': {
+          min: 1,
+          precision: 0,
+        },
+      },
     },
   },
 };
@@ -241,20 +251,9 @@ export const workflowSchema: ISchema = {
               'x-component': 'Action',
               'x-component-props': {
                 icon: 'SyncOutlined',
-                useAction() {
-                  const { t } = useTranslation();
-                  const { resource } = useResourceContext();
-                  const service = useResourceActionContext();
-                  return {
-                    async run() {
-                      await resource.sync();
-                      await service?.refresh();
-                      message.success(t('Operation succeeded'));
-                    },
-                  };
-                },
+                useAction: '{{ useSyncAction }}',
               },
-              'x-reactions': ['{{useWorkflowSyncAction}}'],
+              'x-reactions': ['{{useWorkflowSyncReaction}}'],
             },
             delete: {
               type: 'void',
@@ -499,22 +498,7 @@ export const workflowSchema: ISchema = {
                                   'x-component': 'Action',
                                   'x-component-props': {
                                     type: 'primary',
-                                    useAction() {
-                                      const { t } = useTranslation();
-                                      const { refresh } = useResourceActionContext();
-                                      const { resource, targetKey } = useResourceContext();
-                                      const { setVisible } = useActionContext();
-                                      const { [targetKey]: filterByTk } = useRecord();
-                                      const { values } = useForm();
-                                      return {
-                                        async run() {
-                                          await resource.revision({ filterByTk, values });
-                                          message.success(t('Operation succeeded'));
-                                          refresh();
-                                          setVisible(false);
-                                        },
-                                      };
-                                    },
+                                    useAction: '{{ useRevisionAction }}',
                                   },
                                 },
                                 cancel: {

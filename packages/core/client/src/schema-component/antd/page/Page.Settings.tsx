@@ -9,9 +9,10 @@
 
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
-import { useDesignable } from '../..';
+import { useDesignable, useNocoBaseRoutes } from '../..';
 import { SchemaSettings } from '../../../application/schema-settings';
 import { useSchemaToolbar } from '../../../application/schema-toolbar';
+import { useCurrentRoute } from '../../../route-switch';
 
 function useNotDisableHeader() {
   const fieldSchema = useFieldSchema();
@@ -132,19 +133,16 @@ export const pageSettings = new SchemaSettings({
         const { dn } = useDesignable();
         const { t } = useTranslation();
         const fieldSchema = useFieldSchema();
+        const currentRoute = useCurrentRoute();
+        const { updateRoute } = useNocoBaseRoutes();
         return {
           title: t('Enable page tabs'),
-          checked: fieldSchema['x-component-props']?.enablePageTabs,
-          onChange(v) {
-            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-            fieldSchema['x-component-props']['enablePageTabs'] = v;
-            dn.emit('patch', {
-              schema: {
-                ['x-uid']: fieldSchema['x-uid'],
-                ['x-component-props']: fieldSchema['x-component-props'],
-              },
+          checked: currentRoute.enableTabs,
+          async onChange(v) {
+            // 更新路由
+            await updateRoute(currentRoute.id, {
+              enableTabs: v,
             });
-            dn.refresh();
           },
         };
       },

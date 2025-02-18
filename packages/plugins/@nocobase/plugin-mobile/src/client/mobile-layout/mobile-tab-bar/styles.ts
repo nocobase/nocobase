@@ -8,7 +8,6 @@
  */
 
 import { genStyleHook } from '@nocobase/client';
-import { NavigationBarHeight } from '../../constants';
 
 export const useStyles = genStyleHook('nb-mobile-tab-bar', (token) => {
   const { componentCls } = token;
@@ -19,9 +18,7 @@ export const useStyles = genStyleHook('nb-mobile-tab-bar', (token) => {
       bottom: 0,
       left: 0,
       right: 0,
-      height: NavigationBarHeight,
       boxSizing: 'border-box',
-      padding: '2px 0px',
       borderTop: '1px solid var(--adm-color-border)',
       backgroundColor: 'var(--adm-color-background)',
 

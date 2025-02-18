@@ -55,7 +55,7 @@ export class PluginMapClient extends Plugin {
       Component: 'MapBlockInitializer',
     });
     this.app.pluginSettingsManager.add(NAMESPACE, {
-      title: `{{t("Map Manager", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Map manager", { ns: "${NAMESPACE}" })}}`,
       icon: 'EnvironmentOutlined',
       Component: Configuration,
       aclSnippet: 'pm.map.configuration',

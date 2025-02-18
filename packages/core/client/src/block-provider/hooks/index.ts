@@ -1560,7 +1560,7 @@ export const getAppends = ({
       }
     } else if (
       ![
-        'ActionBar',
+        // 'ActionBar',
         'Action',
         'Action.Link',
         'Action.Modal',
@@ -1571,6 +1571,7 @@ export const getAppends = ({
         'AssociationField.AddNewer',
         'TableField',
         'Kanban.CardViewer',
+        'Action.Container',
       ].includes(s['x-component'])
     ) {
       getAppends({

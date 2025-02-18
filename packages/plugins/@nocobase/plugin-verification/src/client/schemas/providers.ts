@@ -278,6 +278,7 @@ export default {
                         id: {
                           'x-component': 'CollectionField',
                           'x-decorator': 'FormItem',
+                          'x-disabled': true,
                         },
                         title: {
                           'x-component': 'CollectionField',

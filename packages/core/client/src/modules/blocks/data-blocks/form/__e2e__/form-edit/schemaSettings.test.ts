@@ -31,8 +31,8 @@ test.describe('edit form block schema settings', () => {
 
     // 打开编辑弹窗
     await clickOption(page, 'Edit block title');
-    await page.getByRole('textbox').click();
-    await page.getByRole('textbox').fill('Block title 123');
+    await page.getByLabel('block-title').click();
+    await page.getByLabel('block-title').fill('Block title 123');
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     const runExpect = async () => {
@@ -43,7 +43,7 @@ test.describe('edit form block schema settings', () => {
 
       // 再次打开编辑弹窗时，显示的是上次设置的值
       await clickOption(page, 'Edit block title');
-      await expect(page.getByRole('textbox')).toHaveValue('Block title 123');
+      await expect(page.getByLabel('block-title')).toHaveValue('Block title 123');
     };
 
     await runExpect();

@@ -19,7 +19,6 @@ import {
   RemoveButton,
   SecondConFirm,
   SkipValidation,
-  WorkflowConfig,
 } from '../../../schema-component/antd/action/Action.Designer';
 import { SaveMode } from './createSubmitActionSettings';
 import { SchemaSettingsLinkageRules } from '../../../schema-settings';
@@ -47,26 +46,30 @@ export const updateSubmitActionSettings = new SchemaSettings({
           collectionName: name,
         };
       },
+      useVisible() {
+        const fieldSchema = useFieldSchema();
+        return !fieldSchema.parent['x-initializer'].includes('bulkEditForm');
+      },
     },
     {
       name: 'secondConfirmation',
       Component: SecondConFirm,
     },
     {
-      name: 'workflowConfig',
-      Component: WorkflowConfig,
-      useVisible() {
-        const fieldSchema = useFieldSchema();
-        return isValid(fieldSchema?.['x-action-settings']?.triggerWorkflows);
-      },
-    },
-    {
       name: 'assignFieldValues',
       Component: AssignedFieldValues,
+      useVisible() {
+        const fieldSchema = useFieldSchema();
+        return !fieldSchema.parent['x-initializer'].includes('bulkEditForm');
+      },
     },
     {
       name: 'skipRequiredValidation',
       Component: SkipValidation,
+      useVisible() {
+        const fieldSchema = useFieldSchema();
+        return !fieldSchema.parent['x-initializer'].includes('bulkEditForm');
+      },
     },
     {
       name: 'afterSuccessfulSubmission',
@@ -107,14 +110,6 @@ export const submitActionSettings = new SchemaSettings({
     {
       name: 'secondConfirmation',
       Component: SecondConFirm,
-    },
-    {
-      name: 'workflowConfig',
-      Component: WorkflowConfig,
-      useVisible() {
-        const fieldSchema = useFieldSchema();
-        return isValid(fieldSchema?.['x-action-settings']?.triggerWorkflows);
-      },
     },
     {
       name: 'saveMode',

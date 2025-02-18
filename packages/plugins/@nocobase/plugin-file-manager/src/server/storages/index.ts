@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { StorageEngine } from 'multer';
 import Application from '@nocobase/server';
+import { StorageEngine } from 'multer';
 
 export interface StorageModel {
   id?: number;
@@ -40,6 +40,8 @@ export interface IStorage {
 
 export abstract class StorageType implements IStorage {
   abstract make(storage: StorageModel): StorageEngine;
-  abstract defaults(): StorageModel;
   abstract delete(storage: StorageModel, records: AttachmentModel[]): Promise<[number, AttachmentModel[]]>;
+  defaults(): StorageModel {
+    return {} as any;
+  }
 }

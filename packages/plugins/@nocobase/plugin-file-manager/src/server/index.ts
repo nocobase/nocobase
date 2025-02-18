@@ -7,5 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { StorageEngine } from 'multer';
+
 export * from '../constants';
-export { default } from './server';
+export { AttachmentModel, default, IStorage, PluginFileManagerServer, StorageModel } from './server';
+
+export { StorageType } from './storages';
+
+export { StorageEngine };

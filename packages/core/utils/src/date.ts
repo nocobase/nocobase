@@ -229,7 +229,7 @@ export const getPickerFormat = (picker) => {
 export const getDateTimeFormat = (picker, format, showTime, timeFormat) => {
   if (picker === 'date') {
     if (showTime) {
-      return format + timeFormat || 'HH:mm:ss';
+      return `${format} ${timeFormat || 'HH:mm:ss'}`;
     }
     return format;
   }

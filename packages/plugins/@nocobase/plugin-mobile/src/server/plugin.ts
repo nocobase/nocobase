@@ -9,12 +9,30 @@
 
 import { Model } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
+import PluginLocalizationServer from '@nocobase/plugin-localization';
+import { tval } from '@nocobase/utils';
 
 export class PluginMobileServer extends Plugin {
   async load() {
     this.registerActionHandlers();
     this.bindNewMenuToRoles();
     this.setACL();
+    this.registerLocalizationSource();
+
+    this.app.db.on('mobileRoutes.afterUpdate', async (instance: Model, { transaction }) => {
+      if (instance.changed('enableTabs')) {
+        const repository = this.app.db.getRepository('mobileRoutes');
+        await repository.update({
+          filter: {
+            parentId: instance.id,
+          },
+          values: {
+            hidden: !instance.enableTabs,
+          },
+          transaction,
+        });
+      }
+    });
   }
 
   setACL() {
@@ -83,6 +101,37 @@ export class PluginMobileServer extends Plugin {
       });
 
       await next();
+    });
+  }
+
+  registerLocalizationSource() {
+    const localizationPlugin = this.app.pm.get('localization') as PluginLocalizationServer;
+    if (!localizationPlugin) {
+      return;
+    }
+    localizationPlugin.sourceManager.registerSource('mobile-routes', {
+      title: tval('Mobile routes'),
+      sync: async (ctx) => {
+        const mobileRoutes = await ctx.db.getRepository('mobileRoutes').find({
+          raw: true,
+        });
+        const resources = {};
+        mobileRoutes.forEach((route: { title?: string }) => {
+          if (route.title) {
+            resources[route.title] = '';
+          }
+        });
+        return {
+          'lm-mobile-routes': resources,
+        };
+      },
+      namespace: 'lm-mobile-routes',
+      collections: [
+        {
+          collection: 'mobileRoutes',
+          fields: ['title'],
+        },
+      ],
     });
   }
 }

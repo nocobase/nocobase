@@ -33,16 +33,23 @@ export function CustomSchemaSettingsBlockTitleItem() {
               'x-decorator': 'FormItem',
               'x-component': 'Input',
             },
+            description: {
+              title: t('Description'),
+              type: 'string',
+              default: fieldSchema?.['x-component-props']?.['description'],
+              'x-decorator': 'FormItem',
+              'x-component': 'Markdown',
+            },
           },
         } as ISchema
       }
-      onSubmit={({ title }) => {
-        console.log('titleSchemaTest', fieldSchema, field);
-
+      onSubmit={({ title, description }) => {
         const componentProps = fieldSchema['x-decorator-props'] || {};
         componentProps.title = title;
+        componentProps.description = description;
         fieldSchema['x-decorator-props'] = componentProps;
         field.decoratorProps.title = title;
+        field.decoratorProps.description = description;
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],

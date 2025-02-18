@@ -160,14 +160,15 @@ export default class extends Instruction {
       })
       .finally(() => {
         processor.logger.debug(`request (#${node.id}) ended, resume workflow...`);
-        setImmediate(() => {
+        setTimeout(() => {
+          job.execution = processor.execution;
           this.workflow.resume(job);
         });
       });
 
     processor.logger.info(`request (#${node.id}) sent to "${config.url}", waiting for response...`);
 
-    return processor.exit();
+    return null;
   }
 
   async resume(node: FlowNodeModel, job, processor: Processor) {

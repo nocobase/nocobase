@@ -22,18 +22,7 @@ import { Model } from './model';
 import { UpdateGuard } from './update-guard';
 import { TargetKey } from './repository';
 import Database from './database';
-
-function isUndefinedOrNull(value: any) {
-  return typeof value === 'undefined' || value === null;
-}
-
-function isStringOrNumber(value: any) {
-  return typeof value === 'string' || typeof value === 'number';
-}
-
-function getKeysByPrefix(keys: string[], prefix: string) {
-  return keys.filter((key) => key.startsWith(`${prefix}.`)).map((key) => key.substring(prefix.length + 1));
-}
+import { getKeysByPrefix, isStringOrNumber, isUndefinedOrNull } from './utils';
 
 export function modelAssociations(instance: Model) {
   return (<typeof Model>instance.constructor).associations;
@@ -51,7 +40,12 @@ export function belongsToManyAssociations(instance: Model): Array<BelongsToMany>
     });
 }
 
-export function modelAssociationByKey(instance: Model, key: string): Association {
+export function modelAssociationByKey(
+  instance: Model,
+  key: string,
+): Association & {
+  update?: (instance: Model, value: any, options: UpdateAssociationOptions) => Promise<any>;
+} {
   return modelAssociations(instance)[key] as Association;
 }
 
@@ -71,7 +65,7 @@ interface UpdateOptions extends Transactionable {
   sourceModel?: Model;
 }
 
-interface UpdateAssociationOptions extends Transactionable, Hookable {
+export interface UpdateAssociationOptions extends Transactionable, Hookable {
   updateAssociationValues?: string[];
   sourceModel?: Model;
   context?: any;
@@ -241,6 +235,10 @@ export async function updateAssociation(
 
   if (options.associationContext && isReverseAssociationPair(association, options.associationContext)) {
     return false;
+  }
+
+  if (association.update) {
+    return association.update(instance, value, options);
   }
 
   switch (association.associationType) {

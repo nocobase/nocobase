@@ -15,6 +15,7 @@ import { CreateAction } from '../../../../schema-initializer/components';
 import { ActionContextProvider, useActionContext } from '../../action';
 import { useAssociationFieldContext, useInsertSchema } from '../hooks';
 import schema from '../schema';
+import { TabsContextProvider } from '../../tabs/context';
 
 export const CreateRecordAction = observer(
   (props) => {
@@ -39,14 +40,16 @@ export const CreateRecordAction = observer(
         <CreateAction {...props} onClick={(arg) => addbuttonClick(arg)} />
         <ActionContextProvider value={{ ...ctx, visible: visibleAddNewer, setVisible: setVisibleAddNewer }}>
           <CollectionProvider_deprecated name={currentCollection} dataSource={currentDataSource}>
-            <NocoBaseRecursionField
-              onlyRenderProperties
-              basePath={field.address}
-              schema={fieldSchema}
-              filterProperties={(s) => {
-                return s['x-component'] === 'AssociationField.AddNewer';
-              }}
-            />
+            <TabsContextProvider>
+              <NocoBaseRecursionField
+                onlyRenderProperties
+                basePath={field.address}
+                schema={fieldSchema}
+                filterProperties={(s) => {
+                  return s['x-component'] === 'AssociationField.AddNewer';
+                }}
+              />
+            </TabsContextProvider>
           </CollectionProvider_deprecated>
         </ActionContextProvider>
       </CollectionProvider_deprecated>

@@ -11,7 +11,9 @@ import { onFieldValueChange } from '@formily/core';
 import { uid } from '@formily/shared';
 import { useForm, useField, useFormEffects } from '@formily/react';
 import { ArrayItems } from '@formily/antd-v5';
+import { GlobalOutlined } from '@ant-design/icons';
 
+import { SchemaComponent, css } from '@nocobase/client';
 import {
   Instruction,
   WorkflowVariableJSON,
@@ -21,7 +23,6 @@ import {
 } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE, useLang } from '../locale';
-import { SchemaComponent, css } from '@nocobase/client';
 
 const BodySchema = {
   'application/json': {
@@ -155,6 +156,7 @@ export default class extends Instruction {
   type = 'request';
   group = 'extended';
   description = `{{t("Send HTTP request to a URL. You can use the variables in the upstream nodes as request headers, parameters and request body.", { ns: "${NAMESPACE}" })}}`;
+  icon = (<GlobalOutlined />);
   fieldset = {
     method: {
       type: 'string',

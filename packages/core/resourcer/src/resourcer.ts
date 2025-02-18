@@ -377,7 +377,7 @@ export class ResourceManager {
           ctx.action.mergeParams({
             ...query,
             ...params,
-            ...(_.isEmpty(ctx.request.body) ? {} : { values: ctx.request.body }),
+            values: ctx.request.body,
           });
         }
         return compose(ctx.action.getHandlers())(ctx, next);

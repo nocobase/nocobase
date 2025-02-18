@@ -25,6 +25,7 @@ export interface ManualConfig {
   forms: { [key: string]: FormType };
   assignees?: (number | string)[];
   mode?: number;
+  title?: string;
 }
 
 const MULTIPLE_ASSIGNED_MODE = {
@@ -115,7 +116,7 @@ export default class extends Instruction {
     if (!assignees.length) {
       return job;
     }
-
+    const title = config.title ? processor.getParsedValue(config.title, node.id) : node.title;
     // NOTE: batch create users jobs
     const UserJobModel = this.workflow.app.db.getModel('users_jobs');
     await UserJobModel.bulkCreate(
@@ -126,9 +127,10 @@ export default class extends Instruction {
         executionId: job.executionId,
         workflowId: node.workflowId,
         status: JOB_STATUS.PENDING,
+        title,
       })),
       {
-        // transaction: processor.transaction,
+        transaction: processor.mainTransaction,
       },
     );
 
@@ -138,21 +140,29 @@ export default class extends Instruction {
   async resume(node, job, processor: Processor) {
     // NOTE: check all users jobs related if all done then continue as parallel
     const { mode } = node.config as ManualConfig;
-    const assignees = [...new Set(processor.getParsedValue(node.config.assignees, node.id).flat().filter(Boolean))];
 
-    const UserJobModel = this.workflow.app.db.getModel('users_jobs');
-    const distribution = await UserJobModel.count({
+    const UserJobRepo = this.workflow.app.db.getRepository('users_jobs');
+    const jobs = await UserJobRepo.find({
       where: {
         jobId: job.id,
       },
-      group: ['status'],
-      // transaction: processor.transaction,
+      transaction: processor.mainTransaction,
     });
+    const assignees = [];
+    const distributionMap = jobs.reduce((result, item) => {
+      if (result[item.status] == null) {
+        result[item.status] = 0;
+      }
+      result[item.status] += 1;
+      assignees.push(item.userId);
+      return result;
+    }, {});
+    const distribution = Object.keys(distributionMap).map((status) => ({
+      status: Number.parseInt(status, 10),
+      count: distributionMap[status],
+    }));
 
-    const submitted = distribution.reduce(
-      (count, item) => (item.status !== JOB_STATUS.PENDING ? count + item.count : count),
-      0,
-    );
+    const submitted = jobs.reduce((count, item) => (item.status !== JOB_STATUS.PENDING ? count + 1 : count), 0);
     const status = job.status || (getMode(mode).getStatus(distribution, assignees) ?? JOB_STATUS.PENDING);
     const result = mode ? (submitted || 0) / assignees.length : job.latestUserJob?.result ?? job.result;
     processor.logger.debug(`manual resume job and next status: ${status}`);

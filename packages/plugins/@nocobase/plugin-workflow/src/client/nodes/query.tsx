@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React from 'react';
+import { FileSearchOutlined } from '@ant-design/icons';
 import { ArrayItems } from '@formily/antd-v5';
 
 import {
@@ -62,6 +64,7 @@ export default class extends Instruction {
   type = 'query';
   group = 'collection';
   description = `{{t("Query records from a collection. You can use variables from upstream nodes as query conditions.", { ns: "${NAMESPACE}" })}}`;
+  icon = (<FileSearchOutlined style={{}} />);
   fieldset = {
     collection: {
       ...collection,

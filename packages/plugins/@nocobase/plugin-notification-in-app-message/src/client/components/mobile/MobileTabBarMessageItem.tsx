@@ -21,7 +21,6 @@ const InnerMobileTabBarMessageItem = (props) => {
   };
   useEffect(() => {
     startMsgSSEStreamWithRetry();
-    updateUnreadMsgsCount();
   }, []);
   const selected = props.url && location.pathname.startsWith(props.url);
 

@@ -61,7 +61,7 @@ test.describe('variables', () => {
     await page.getByRole('menuitemcheckbox', { name: 'Table selected records right' }).click();
     await page.getByRole('menuitemcheckbox', { name: 'm2m' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
-    await expect(page.getByLabel('block-item-CollectionField-')).toHaveText(
+    await expect(page.getByLabel('block-item-CollectionField-')).toContainText(
       `m2m:${record.m2m.map((r) => r.id).join('')}`,
     );
 

@@ -11,24 +11,25 @@ import { Plugin, lazy, useLazy } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 import { ComponentType } from 'react';
 import { presetAuthType } from '../preset';
+import type { Authenticator as AuthenticatorType } from './authenticator';
+import { authCheckMiddleware } from './interceptors';
+import { NAMESPACE } from './locale';
 // import { AuthProvider } from './AuthProvider';
 const { AuthProvider } = lazy(() => import('./AuthProvider'), 'AuthProvider');
-import type { Authenticator as AuthenticatorType } from './authenticator';
 // import { Options, SignInForm, SignUpForm } from './basic';
 const { Options, SignInForm, SignUpForm } = lazy(() => import('./basic'), 'Options', 'SignInForm', 'SignUpForm');
-import { NAMESPACE } from './locale';
 // import { AuthLayout, SignInPage, SignUpPage } from './pages';
 const { AuthLayout, SignInPage, SignUpPage } = lazy(() => import('./pages'), 'AuthLayout', 'SignInPage', 'SignUpPage');
 // import { Authenticator } from './settings/Authenticator';
 const { Authenticator } = lazy(() => import('./settings/Authenticator'), 'Authenticator');
+const { TokenPolicySettings } = lazy(() => import('./settings/token-policy'), 'TokenPolicySettings');
 
-// export { AuthenticatorsContextProvider, AuthLayout } from './pages/AuthLayout';
 const { AuthenticatorsContextProvider, AuthLayout: ExportAuthLayout } = lazy(
   () => import('./pages'),
   'AuthenticatorsContextProvider',
   'AuthLayout',
 );
-export { AuthenticatorsContextProvider, ExportAuthLayout as AuthLayout };
+export { ExportAuthLayout as AuthLayout, AuthenticatorsContextProvider };
 
 export type AuthOptions = {
   components: Partial<{
@@ -80,6 +81,20 @@ export class PluginAuthClient extends Plugin {
         SignUpForm: SignUpForm,
         AdminSettingsForm: Options,
       },
+    });
+    this.app.pluginSettingsManager.add(`security.token-policy`, {
+      title: `{{t("Token policy", { ns: "${NAMESPACE}" })}}`,
+      Component: TokenPolicySettings,
+      aclSnippet: `pm.security.token-policy`,
+      icon: 'ApiOutlined',
+      sort: 0,
+    });
+    const [fulfilled, rejected] = authCheckMiddleware({ app: this.app });
+    this.app.apiClient.axios.interceptors.response['handlers'].unshift({
+      fulfilled,
+      rejected,
+      synchronous: false,
+      runWhen: null,
     });
   }
 }

@@ -17,7 +17,12 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { SchemaComponent, useDesignable, useSchemaInitializerRender } from '../../../';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { FilterBlockProvider } from '../../../filter-provider/FilterProvider';
-import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
+import {
+  NocoBaseRecursionField,
+  RefreshComponentProvider,
+  useRefreshComponent,
+  useRefreshFieldSchema,
+} from '../../../formily/NocoBaseRecursionField';
 import { DndContext, DndContextProps } from '../../common/dnd-context';
 import { useToken } from '../__builtins__';
 import useStyles from './Grid.style';
@@ -373,47 +378,56 @@ export const Grid: any = observer(
       };
     }, [fieldSchema, render, InitializerComponent, showDivider]);
 
+    const refreshFieldSchema = useRefreshFieldSchema();
+    const refreshComponent = useRefreshComponent();
+    const refresh = useCallback(() => {
+      refreshFieldSchema?.();
+      refreshComponent?.();
+    }, [refreshComponent, refreshFieldSchema]);
+
     return (
-      <FilterBlockProvider>
-        <GridContext.Provider value={gridContextValue}>
-          <div className={cls('nb-grid-container')}>
-            <div className={cls(`nb-grid ${componentCls} ${hashId}`)} ref={gridRef}>
-              <div className="nb-grid-warp">
-                <DndWrapper dndContext={props.dndContext}>
-                  {showDivider ? (
-                    <RowDivider
-                      rows={rows}
-                      first
-                      id={`${addr}_0`}
-                      data={getRowDividerData(fieldSchema, 'afterBegin')}
-                    />
-                  ) : null}
-                  {rows.map((schema, index) => {
-                    return (
-                      <React.Fragment key={index}>
-                        {distributedValue ? (
-                          <SchemaComponent name={schema.name} schema={schema} distributed />
-                        ) : (
-                          <NocoBaseRecursionField name={schema.name} schema={schema} isUseFormilyField />
-                        )}
-                        {showDivider ? (
-                          <RowDivider
-                            rows={rows}
-                            index={index}
-                            id={`${addr}_${index + 1}`}
-                            data={getRowDividerData(schema, 'afterEnd')}
-                          />
-                        ) : null}
-                      </React.Fragment>
-                    );
-                  })}
-                </DndWrapper>
-                {render()}
+      <RefreshComponentProvider refresh={refresh}>
+        <FilterBlockProvider>
+          <GridContext.Provider value={gridContextValue}>
+            <div className={cls('nb-grid-container')}>
+              <div className={cls(`nb-grid ${componentCls} ${hashId}`)} ref={gridRef}>
+                <div className="nb-grid-warp">
+                  <DndWrapper dndContext={props.dndContext}>
+                    {showDivider ? (
+                      <RowDivider
+                        rows={rows}
+                        first
+                        id={`${addr}_0`}
+                        data={getRowDividerData(fieldSchema, 'afterBegin')}
+                      />
+                    ) : null}
+                    {rows.map((schema, index) => {
+                      return (
+                        <React.Fragment key={index}>
+                          {distributedValue ? (
+                            <SchemaComponent name={schema.name} schema={schema} distributed />
+                          ) : (
+                            <NocoBaseRecursionField name={schema.name} schema={schema} isUseFormilyField />
+                          )}
+                          {showDivider ? (
+                            <RowDivider
+                              rows={rows}
+                              index={index}
+                              id={`${addr}_${index + 1}`}
+                              data={getRowDividerData(schema, 'afterEnd')}
+                            />
+                          ) : null}
+                        </React.Fragment>
+                      );
+                    })}
+                  </DndWrapper>
+                  {render()}
+                </div>
               </div>
             </div>
-          </div>
-        </GridContext.Provider>
-      </FilterBlockProvider>
+          </GridContext.Provider>
+        </FilterBlockProvider>
+      </RefreshComponentProvider>
     );
   },
   { displayName: 'Grid' },

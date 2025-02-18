@@ -99,7 +99,7 @@ test.describe('field data entry', () => {
     await page.getByLabel(`designer-schema-settings-CardItem-SimpleDesigner-${randomValue}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
     const blockTitle = 'Form' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
+    await page.getByLabel('block-title').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
       .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
@@ -238,7 +238,7 @@ test.describe('field data entry', () => {
     await page.getByLabel(`designer-schema-settings-CardItem-SimpleDesigner-${randomValue}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
     const blockTitle = 'Form' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
+    await page.getByLabel('block-title').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
       .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
@@ -377,7 +377,7 @@ test.describe('field data entry', () => {
     await page.getByLabel(`designer-schema-settings-CardItem-SimpleDesigner-${randomValue}`).hover();
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
     const blockTitle = 'Form' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
+    await page.getByLabel('block-title').fill(blockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page
       .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)

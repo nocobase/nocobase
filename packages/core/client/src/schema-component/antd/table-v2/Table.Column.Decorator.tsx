@@ -17,7 +17,9 @@ import {
   useCompile,
   useDesigner,
   useFlag,
+  useSchemaComponentContext,
 } from '../../../';
+import { useToken } from '../__builtins__';
 import { designerCss } from './Table.Column.ActionBar';
 import { isCollectionFieldComponent } from './utils';
 
@@ -71,8 +73,11 @@ export const TableColumnDecorator = (props) => {
   const Designer = useDesigner();
   const field = useField();
   const { fieldSchema, uiSchema, collectionField } = useColumnSchema();
+  const { designable } = useSchemaComponentContext();
   const compile = useCompile();
   const { isInSubTable } = useFlag() || {};
+  const { token } = useToken();
+
   useEffect(() => {
     if (field.title) {
       return;
@@ -84,11 +89,24 @@ export const TableColumnDecorator = (props) => {
       field.title = uiSchema?.title;
     }
   }, [uiSchema?.title]);
+
+  if (!designable || Designer.isNullComponent) {
+    return (
+      <CollectionFieldContext.Provider value={collectionField}>
+        <Designer fieldSchema={fieldSchema} uiSchema={uiSchema} collectionField={collectionField} />
+        <span role="button">
+          {fieldSchema?.required && <span className="ant-formily-item-asterisk">*</span>}
+          <span>{field?.title || compile(uiSchema?.title)}</span>
+        </span>
+      </CollectionFieldContext.Provider>
+    );
+  }
+
   return (
     <SortableItem
       className={designerCss({
-        margin: isInSubTable ? '-12px -8px' : '-18px -16px',
-        padding: isInSubTable ? '12px 8px' : '18px 16px',
+        margin: `-${token.margin}px -${token.marginXS}px`,
+        padding: `${token.margin}px ${token.marginXS}px`,
       })}
     >
       <CollectionFieldContext.Provider value={collectionField}>

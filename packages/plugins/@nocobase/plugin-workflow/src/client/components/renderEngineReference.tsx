@@ -31,7 +31,7 @@ export const renderEngineReference = (key: string) => {
       >
         {i18n.t('Syntax references')}
       </span>
-      <a href={engine.link} target="_blank" rel="noreferrer">
+      <a href={i18n.t(engine.link)} target="_blank" rel="noreferrer">
         {engine.label}
       </a>
     </>

@@ -7,8 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BaseAuth } from '../base/auth';
 import { vi } from 'vitest';
+import { BaseAuth } from '../base/auth';
+import { AuthErrorCode } from '../auth';
+import jwt from 'jsonwebtoken';
 
 describe('base-auth', () => {
   it('should validate username', () => {
@@ -29,20 +31,25 @@ describe('base-auth', () => {
     expect(auth.validateUsername('01234567890123456789012345678901234567890123456789a')).toBe(false);
   });
 
-  it('check: should return null when no token', async () => {
+  it('check: should return user null when no token', async () => {
     const auth = new BaseAuth({
       userCollection: {},
       ctx: {
+        t: (s) => s,
         getBearerToken: () => null,
+        throw: (httpCode, err) => {
+          throw new Error(err.message);
+        },
       },
     } as any);
 
-    expect(await auth.check()).toBe(null);
+    expect(auth.check()).rejects.toThrow('Unauthenticated. Please sign in to continue.');
   });
 
   it('check: should set roleName to headers', async () => {
     const ctx = {
       getBearerToken: () => 'token',
+      t: (s) => s,
       headers: {},
       logger: {
         error: (...args) => console.log(args),
@@ -50,9 +57,24 @@ describe('base-auth', () => {
       app: {
         authManager: {
           jwt: {
-            decode: () => ({ userId: 1, roleName: 'admin' }),
+            decode: () => ({ userId: 1, roleName: 'admin', signInTime: Date.now() }),
+            blacklist: {
+              has: () => false,
+            },
+          },
+          tokenController: {
+            check: () => ({ status: 'valid' }),
+            removeLoginExpiredTokens: async () => null,
+            getConfig: async () => ({
+              tokenExpirationTime: '30m',
+              sessionExpirationTime: '1d',
+              expiredTokenRenewLimit: '15m',
+            }),
           },
         },
+      },
+      cache: {
+        wrap: async (key, fn) => fn(),
       },
     };
     const auth = new BaseAuth({
@@ -70,6 +92,7 @@ describe('base-auth', () => {
 
   it('check: should return user', async () => {
     const ctx = {
+      t: (s) => s,
       getBearerToken: () => 'token',
       headers: {},
       logger: {
@@ -78,7 +101,19 @@ describe('base-auth', () => {
       app: {
         authManager: {
           jwt: {
-            decode: () => ({ userId: 1, roleName: 'admin' }),
+            decode: () => ({ userId: 1, roleName: 'admin', signInTime: Date.now() }),
+            blacklist: {
+              has: () => false,
+            },
+          },
+          tokenController: {
+            check: () => ({ status: 'valid' }),
+            removeLoginExpiredTokens: () => null,
+            getConfig: async () => ({
+              tokenExpirationTime: '30m',
+              sessionExpirationTime: '1d',
+              expiredTokenRenewLimit: '15m',
+            }),
           },
         },
       },
@@ -99,16 +134,22 @@ describe('base-auth', () => {
 
   it('signIn: should throw 401', async () => {
     const ctx = {
-      throw: vi.fn().mockImplementation((status, message) => {
-        throw new Error(message);
-      }),
+      t: (s) => s,
+      throw: (httpCode, error) => {
+        throw new Error(error.code);
+      },
     };
 
     const auth = new BaseAuth({
       userCollection: {},
       ctx,
     } as any);
-    await expect(auth.signIn()).rejects.toThrowError('Unauthorized');
+    try {
+      await auth.signIn();
+    } catch (e) {
+      expect(e.message).toBe(AuthErrorCode.NOT_EXIST_USER);
+    }
+    await expect(auth.signIn()).rejects.toThrow();
   });
 
   it('signIn: should return user and token', async () => {
@@ -127,6 +168,15 @@ describe('base-auth', () => {
           jwt: {
             sign: () => 'token',
           },
+          tokenController: {
+            add: () => 'access',
+            getConfig: async () => ({
+              tokenExpirationTime: '30m',
+              sessionExpirationTime: '1d',
+              expiredTokenRenewLimit: '15m',
+            }),
+            removeLoginExpiredTokens: () => null,
+          },
         },
       },
     };
@@ -139,5 +189,25 @@ describe('base-auth', () => {
     const res = await auth.signIn();
     expect(res.token).toBe('token');
     expect(res.user).toEqual({ id: 1 });
+  });
+
+  it('should throw invalid error', async () => {
+    const ctx = {
+      t: (s) => s,
+      getBearerToken: () => 'token',
+      throw: (httpCode, error) => {
+        throw new Error(error.code);
+      },
+    };
+
+    const auth = new BaseAuth({
+      userCollection: {},
+      ctx,
+    } as any);
+    try {
+      await auth.validate();
+    } catch (e) {
+      expect(e.message).toBe(AuthErrorCode.INVALID_TOKEN);
+    }
   });
 });

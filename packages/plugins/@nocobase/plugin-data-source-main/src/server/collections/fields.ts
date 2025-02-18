@@ -11,6 +11,7 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default {
   dumpRules: 'required',
+  migrationRules: ['overwrite', 'schema-only'],
   shared: true,
   name: 'fields',
   autoGenId: false,

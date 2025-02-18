@@ -260,6 +260,7 @@ describe('multiple apps', () => {
       values: {
         name: subAppName,
         options: {
+          autoStart: true,
           plugins: [],
         },
       },
@@ -281,6 +282,39 @@ describe('multiple apps', () => {
     await app.runCommand('upgrade');
 
     expect(jestFn).toBeCalled();
+
+    // sub app should remove after upgrade
+    expect(AppSupervisor.getInstance().hasApp(subAppName)).toBeTruthy();
+  });
+
+  it('should not upgrade sub apps when main app upgrade', async () => {
+    const subAppName = `t_${uid()}`;
+
+    await app.db.getRepository('applications').create({
+      values: {
+        name: subAppName,
+        options: {
+          plugins: [],
+        },
+      },
+      context: {
+        waitSubAppInstall: true,
+      },
+    });
+
+    await AppSupervisor.getInstance().removeApp(subAppName);
+
+    const jestFn = vi.fn();
+
+    AppSupervisor.getInstance().on('afterAppAdded', (subApp) => {
+      subApp.on('afterUpgrade', () => {
+        jestFn();
+      });
+    });
+
+    await app.runCommand('upgrade');
+
+    expect(jestFn).not.toBeCalled();
 
     // sub app should remove after upgrade
     expect(AppSupervisor.getInstance().hasApp(subAppName)).toBeFalsy();

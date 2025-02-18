@@ -40,7 +40,7 @@ describe('workflow > triggers > collection', () => {
     TagRepo = db.getCollection('tags').repository;
 
     const user = await app.db.getRepository('users').findOne();
-    agent = app.agent().login(user);
+    agent = await app.agent().login(user);
   });
 
   afterEach(() => app.destroy());
@@ -164,6 +164,36 @@ describe('workflow > triggers > collection', () => {
   });
 
   describe('config.mode', () => {
+    it('update by move action', async () => {
+      db.getCollection('posts').addField('sort', {
+        type: 'sort',
+        name: 'sort',
+      });
+      await db.sync();
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+      const p2 = await PostRepo.create({ values: { title: 't2' } });
+
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 2,
+          collection: 'posts',
+        },
+      });
+
+      const response = await agent.resource('posts').move({
+        sourceId: p1.id,
+        targetId: p2.id,
+      });
+
+      await sleep(500);
+
+      const e1s = await workflow.getExecutions();
+      expect(e1s.length).toBe(1);
+      expect(e1s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+
     it('mode in "update or create" could trigger on each', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
@@ -840,6 +870,128 @@ describe('workflow > triggers > collection', () => {
       const e2s = await w2.getExecutions();
       expect(e2s.length).toBe(1);
       expect(e2s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+
+    it('stack limit for same execution', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+        options: {
+          stackLimit: 3,
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'create',
+        config: {
+          collection: 'posts',
+          params: {
+            values: {
+              title: 't2',
+            },
+          },
+        },
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const posts = await PostRepo.find();
+      expect(posts.length).toBe(4);
+
+      const e1s = await workflow.getExecutions();
+      expect(e1s.length).toBe(3);
+      expect(e1s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e1s[1].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e1s[2].status).toBe(EXECUTION_STATUS.RESOLVED);
+
+      // NOTE: second trigger to ensure no skipped event
+      const p3 = await PostRepo.create({ values: { title: 't3' } });
+
+      await sleep(500);
+
+      const posts2 = await PostRepo.find();
+      expect(posts2.length).toBe(8);
+
+      const e2s = await workflow.getExecutions({ order: [['createdAt', 'DESC']] });
+      expect(e2s.length).toBe(6);
+      expect(e2s[3].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e2s[4].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e2s[5].status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+
+    it('stack limit for multiple cycling trigger', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+        options: {
+          stackLimit: 3,
+        },
+      });
+
+      const n1 = await w1.createNode({
+        type: 'create',
+        config: {
+          collection: 'categories',
+          params: {
+            values: {
+              title: 'c1',
+            },
+          },
+        },
+      });
+
+      const w2 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'categories',
+        },
+        options: {
+          stackLimit: 3,
+        },
+      });
+
+      const n2 = await w2.createNode({
+        type: 'create',
+        config: {
+          collection: 'posts',
+          params: {
+            values: {
+              title: 't2',
+            },
+          },
+        },
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const posts = await PostRepo.find();
+      expect(posts.length).toBe(4);
+
+      const e1s = await w1.getExecutions();
+      expect(e1s.length).toBe(3);
+      expect(e1s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e1s[1].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e1s[2].status).toBe(EXECUTION_STATUS.RESOLVED);
+
+      const e2s = await w2.getExecutions();
+      expect(e2s.length).toBe(3);
+      expect(e2s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e2s[1].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e2s[2].status).toBe(EXECUTION_STATUS.RESOLVED);
     });
   });
 

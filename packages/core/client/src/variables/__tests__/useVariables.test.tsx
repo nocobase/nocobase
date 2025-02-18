@@ -85,6 +85,18 @@ apiClient.auth.role = 'root';
 // 用于解析 `$nToken` 的值
 apiClient.auth.token = 'token';
 
+mockRequest.onPost('/auth:check').reply(() => {
+  return [
+    200,
+    {
+      data: {
+        id: 0,
+        nickname: 'from request',
+      },
+    },
+  ];
+});
+
 mockRequest.onGet('/auth:check').reply(() => {
   return [
     200,
@@ -330,6 +342,14 @@ describe('useVariables', () => {
       expect(await result.current.parseVariable('{{ $user.belongsToField }}').then(({ value }) => value)).toEqual({
         id: 0,
         name: '$user.belongsToField',
+      });
+    });
+
+    await waitFor(async () => {
+      // After lazy loading the association field value, the original $user variable value should not contain the association field value
+      expect(await result.current.parseVariable('{{ $user }}').then(({ value }) => value)).toEqual({
+        id: 0,
+        nickname: 'from request',
       });
     });
   });

@@ -13,7 +13,6 @@ import { ACLCollectionProvider } from '../../acl/ACLProvider';
 import { UseRequestOptions, UseRequestService } from '../../api-client';
 import { DataBlockCollector, FilterParam } from '../../filter-provider/FilterProvider';
 import { withDynamicSchemaProps } from '../../hoc/withDynamicSchemaProps';
-import { KeepAliveContextCleaner } from '../../route-switch/antd/admin-layout/KeepAlive';
 import { Designable, useDesignable } from '../../schema-component';
 import {
   AssociationProvider,
@@ -192,12 +191,9 @@ export const DataBlockProvider: FC<Partial<AllDataBlockProps>> = withDynamicSche
             <ACLCollectionProvider>
               <DataBlockResourceProvider>
                 <BlockRequestProvider>
-                  {/* Must be placed inside BlockRequestProvider because BlockRequestProvider uses KeepAliveContext */}
-                  <KeepAliveContextCleaner>
-                    <DataBlockCollector params={props.params}>
-                      <RerenderDataBlockProvider>{children}</RerenderDataBlockProvider>
-                    </DataBlockCollector>
-                  </KeepAliveContextCleaner>
+                  <DataBlockCollector params={props.params}>
+                    <RerenderDataBlockProvider>{children}</RerenderDataBlockProvider>
+                  </DataBlockCollector>
                 </BlockRequestProvider>
               </DataBlockResourceProvider>
             </ACLCollectionProvider>

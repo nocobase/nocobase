@@ -137,6 +137,9 @@ const EditOperator = () => {
   const operator = fieldSchema['x-component-props']?.['filter-operator'];
 
   const setOperatorComponent = (operator: any, component: any, props = {}) => {
+    if (component === 'DatePicker.FilterWithPicker') {
+      component = 'DatePicker';
+    }
     const componentProps = field.componentProps || {};
     field.component = component;
     field.componentProps = {
@@ -150,6 +153,7 @@ const EditOperator = () => {
       'filter-operator': operator,
       ...props,
     };
+    fieldSchema['x-filter-operator'] = operator?.value;
     dn.emit('patch', {
       schema: {
         'x-uid': fieldSchema['x-uid'],
@@ -159,6 +163,7 @@ const EditOperator = () => {
           'filter-operator': operator,
           ...props,
         },
+        'x-filter-operator': operator?.value,
       },
     });
   };

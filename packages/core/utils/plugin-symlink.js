@@ -6,7 +6,12 @@ async function getStoragePluginNames(target) {
   const items = await readdir(target);
   for (const item of items) {
     if (item.startsWith('@')) {
-      const children = await getStoragePluginNames(resolve(target, item));
+      const dirPath = resolve(target, item);
+      const s = await stat(dirPath);
+      if (!s.isDirectory()) {
+        continue;
+      }
+      const children = await getStoragePluginNames(dirPath);
       plugins.push(
         ...children.map((child) => {
           return `${item}/${child}`;

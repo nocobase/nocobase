@@ -21,11 +21,11 @@ export default defineConfig({
   links: [{ rel: 'stylesheet', href: `${appPublicPath}global.css` }],
   headScripts: [
     {
-      src: `${appPublicPath}browser-checker.js`,
-    },
-    {
       content: isDevCmd
-        ? ''
+        ? `
+          window['__nocobase_public_path__'] = "${process.env.APP_PUBLIC_PATH || '/'}";
+          window['__nocobase_dev_public_path__'] = "/";
+        `
         : `
         window['__webpack_public_path__'] = '{{env.APP_PUBLIC_PATH}}';
         window['__nocobase_public_path__'] = '{{env.APP_PUBLIC_PATH}}';
@@ -35,6 +35,9 @@ export default defineConfig({
         window['__nocobase_ws_url__'] = '{{env.WS_URL}}';
         window['__nocobase_ws_path__'] = '{{env.WS_PATH}}';
       `,
+    },
+    {
+      src: `${appPublicPath}browser-checker.js?v=1`,
     },
   ],
   cacheDirectoryPath: process.env.APP_CLIENT_CACHE_DIR || `node_modules/.cache`,

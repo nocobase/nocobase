@@ -48,7 +48,8 @@ const MobileDateTimePicker = connect(
       timeFormat = 'HH:mm',
       showTime = false,
       picker,
-      ...others
+      disabled,
+      ...rest
     } = props;
     const [visible, setVisible] = useState(false);
 
@@ -81,18 +82,19 @@ const MobileDateTimePicker = connect(
 
     return (
       <>
-        <div contentEditable="false" onClick={() => setVisible(true)}>
+        <div contentEditable="false" onClick={() => !disabled && setVisible(true)}>
           <NBDatePicker
             onClick={() => setVisible(true)}
             value={value}
             picker={picker}
-            {...others}
+            disabled={disabled}
+            {...rest}
             popupStyle={{ display: 'none' }}
             style={{ pointerEvents: 'none', width: '100%' }}
           />
         </div>
         <DatePicker
-          {...others}
+          {...rest}
           cancelText={t('Cancel')}
           confirmText={t('Confirm')}
           visible={visible}
@@ -102,8 +104,8 @@ const MobileDateTimePicker = connect(
           }}
           precision={showTime && picker === 'date' ? getPrecision(timeFormat) : picker === 'date' ? 'day' : picker}
           renderLabel={labelRenderer}
-          min={others.min || new Date(1000, 0, 1)}
-          max={others.max || new Date(9999, 11, 31)}
+          min={rest.min || new Date(1000, 0, 1)}
+          max={rest.max || new Date(9999, 11, 31)}
           onConfirm={(val) => {
             handleConfirm(val);
           }}

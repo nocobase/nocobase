@@ -49,11 +49,11 @@ export const useStyles = genStyleHook('nb-mobile', (token) => {
         paddingTop: '8px',
         paddingBottom: '8px',
       },
-      '.nb-action-panel .ant-avatar-circle': {
-        width: '48px !important',
-        height: '48px !important',
-        lineHeight: '48px !important',
-      },
+      // '.nb-action-panel .ant-avatar-circle': {
+      //   width: '48px !important',
+      //   height: '48px !important',
+      //   lineHeight: '48px !important',
+      // },
       '.nb-chart-block .ant-card .ant-card-body': {
         paddingBottom: '0px',
         paddingTop: '0px',

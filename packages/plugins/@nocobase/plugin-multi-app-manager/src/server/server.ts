@@ -30,6 +30,10 @@ const defaultSubAppUpgradeHandle: SubAppUpgradeHandler = async (mainApp: Applica
     findOptions['filter'] = {
       name: appSupervisor.singleAppName,
     };
+  } else {
+    findOptions['filter'] = {
+      'options.autoStart': true,
+    };
   }
 
   const instances = await repository.find(findOptions);
@@ -207,6 +211,12 @@ export class PluginMultiAppManagerServer extends Plugin {
     this.db.registerModels({
       ApplicationModel,
     });
+  }
+
+  async beforeEnable() {
+    if (this.app.name !== 'main') {
+      throw new Error('@nocobase/plugin-multi-app-manager can only be enabled in the main app');
+    }
   }
 
   async load() {

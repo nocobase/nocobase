@@ -29,5 +29,20 @@
   "Sign up settings": "注册设置",
   "Sign up form": "注册表单",
   "At least one of the username or email fields is required": "至少需要设置用户名或邮箱中的一个字段为必填字段",
-  "Password is not allowed to be changed": "密码不允许修改"
+  "Password is not allowed to be changed": "密码不允许修改",
+  "Token policy": "Token 策略",
+  "Token validity period": "Token 有效期",
+  "Session validity period": "会话有效期",
+  "Expired token refresh limit": "过期 Token 刷新时限",
+  "Token validity period must be less than session validity period!": "Token 有效期必须小于会话有效期！",
+  "Seconds": "秒",
+  "Minutes": "分钟",
+  "Hours": "小时",
+  "Days": "天",
+  "Saved successfully!": "保存成功！",
+  "The maximum valid time for each user login. During the session validity, the Token will be automatically updated. After the timeout, the user is required to log in again.": "用户每次登录的最长有效时间，在会话有效期内，Token 会自动更新，超时后要求用户重新登录。",
+  "The validity period of each issued API Token. After the Token expires, if it is within the session validity period and has not exceeded the refresh limit, the server will automatically issue a new Token to maintain the user session, otherwise the user is required to log in again. (Each Token can only be refreshed once)": "每次签发的 API Token 的有效期。Token 过期后，如果处于会话有效期内，并且没有超过刷新时限，服务端将自动签发新 Token 以保持用户会话，否则要求用户重新登录。（每个 Token 只能被刷新一次）",
+  "The maximum time limit allowed for refreshing a Token after it expires. After this time limit, the token cannot be automatically renewed, and the user needs to log in again.": "Token 过期后允许刷新的最大时限，超过此时限后，Token 无法自动更新，用户需重新登录。",
+  "Your session has expired. Please sign in again.": "您的会话已过期，请重新登录。",
+  "Unauthenticated. Please sign in to continue.": "未认证。请登录以继续。"
 }

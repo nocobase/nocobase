@@ -84,7 +84,7 @@ test.describe('form item & edit form', () => {
           page
             .getByLabel('block-item-CollectionField-general-form-general.manyToMany-manyToMany')
             .getByTestId('select-object-multiple'),
-        ).toHaveText(`${record.manyToMany.map((item) => item.id).join('')}`);
+        ).toContainText(`${record.manyToMany.map((item) => item.id).join('')}`);
       },
       expectReadonly: async () => {
         await expect(

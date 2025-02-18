@@ -10,7 +10,7 @@
 import { css } from '@emotion/css';
 import { createForm, Form, onFormValuesChange } from '@formily/core';
 import { uid } from '@formily/shared';
-import { SchemaComponent, useAPIClient, useRequest } from '@nocobase/client';
+import { SchemaComponent, useAPIClient, useCompile, useRequest } from '@nocobase/client';
 import { RolesManagerContext } from '@nocobase/plugin-acl/client';
 import { useMemoizedFn } from 'ahooks';
 import { Checkbox, message, Table } from 'antd';
@@ -36,14 +36,14 @@ const style = css`
   }
 `;
 
-const translateTitle = (menus: any[], t) => {
+const translateTitle = (menus: any[], t, compile) => {
   return menus.map((menu) => {
-    const title = t(menu.title);
+    const title = menu.title.match(/^\s*\{\{\s*.+?\s*\}\}\s*$/) ? compile(menu.title) : t(menu.title);
     if (menu.children) {
       return {
         ...menu,
         title,
-        children: translateTitle(menu.children, t),
+        children: translateTitle(menu.children, t, compile),
       };
     }
     return {
@@ -98,6 +98,7 @@ export const MenuPermissions: React.FC<{
   const { t } = useTranslation();
   const allIDList = findIDList(items);
   const [IDList, setIDList] = useState([]);
+  const compile = useCompile();
   const { loading, refresh } = useRequest(
     {
       resource: 'roles.mobileRoutes',
@@ -105,6 +106,9 @@ export const MenuPermissions: React.FC<{
       action: 'list',
       params: {
         paginate: false,
+        filter: {
+          hidden: { $ne: true },
+        },
       },
     },
     {
@@ -205,10 +209,10 @@ export const MenuPermissions: React.FC<{
           },
           properties: {
             allowNewMobileMenu: {
-              title: t('Menu permissions'),
+              title: t('Route permissions'),
               'x-decorator': 'FormItem',
               'x-component': 'Checkbox',
-              'x-content': t('New menu items are allowed to be accessed by default.'),
+              'x-content': t('New routes are allowed to be accessed by default'),
             },
           },
         }}
@@ -219,12 +223,12 @@ export const MenuPermissions: React.FC<{
         rowKey={'id'}
         pagination={false}
         expandable={{
-          defaultExpandAllRows: true,
+          defaultExpandAllRows: false,
         }}
         columns={[
           {
             dataIndex: 'title',
-            title: t('Menu item title'),
+            title: t('Route name'),
           },
           {
             dataIndex: 'accessible',
@@ -255,7 +259,7 @@ export const MenuPermissions: React.FC<{
             },
           },
         ]}
-        dataSource={translateTitle(items, t)}
+        dataSource={translateTitle(items, t, compile)}
       />
     </>
   );

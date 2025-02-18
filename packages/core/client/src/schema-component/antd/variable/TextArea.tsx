@@ -171,7 +171,6 @@ function getSingleEndRange(nodes: ChildNode[], index: number, offset: number): [
     let realIndex = 0;
     let textOffset = 0;
     for (let i = 0; i < index + 1; i++) {
-      // console.log(i, realIndex, textOffset);
       if (nodes[i]?.nodeName === '#text') {
         if (i !== index && nodes[i + 1] && nodes[i + 1]?.nodeName !== '#text') {
           realIndex += 1;
@@ -223,7 +222,7 @@ function useVariablesFromValue(value: string, delimiters: [string, string] = ['{
 
 export function TextArea(props) {
   const { wrapSSR, hashId, componentCls } = useStyles();
-  const { scope, onChange, changeOnSelect, style, fieldNames, delimiters = ['{{', '}}'] } = props;
+  const { scope, onChange, changeOnSelect, style, fieldNames, delimiters = ['{{', '}}'], addonBefore } = props;
   const value = typeof props.value === 'string' ? props.value : props.value == null ? '' : props.value.toString();
   const variables = useVariablesFromValue(value, delimiters);
   const inputRef = useRef<HTMLDivElement>(null);
@@ -397,7 +396,6 @@ export function TextArea(props) {
     },
     [onChange, delimitersString],
   );
-
   const disabled = props.disabled || form.disabled;
   return wrapSSR(
     <Space.Compact
@@ -410,6 +408,8 @@ export function TextArea(props) {
             flex-grow: 1;
             min-width: 200px;
             word-break: break-all;
+            border-top-left-radius: ${addonBefore ? '0px' : '6px'};
+            border-bottom-left-radius: ${addonBefore ? '0px' : '6px'};
           }
           .ant-input-disabled {
             .ant-tag {
@@ -424,6 +424,19 @@ export function TextArea(props) {
         `,
       )}
     >
+      {addonBefore && (
+        <div
+          className={css`
+            background: rgba(0, 0, 0, 0.02);
+            border: 1px solid rgb(217, 217, 217);
+            padding: 0px 11px;
+            border-radius: 6px 0px 0px 6px;
+            border-right: 0px;
+          `}
+        >
+          {addonBefore}
+        </div>
+      )}
       <div
         role="button"
         aria-label="textbox"

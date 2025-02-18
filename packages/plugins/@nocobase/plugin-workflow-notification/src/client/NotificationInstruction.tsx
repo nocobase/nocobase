@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import React from 'react';
+import { NotificationOutlined } from '@ant-design/icons';
 import { Instruction, useWorkflowVariableOptions } from '@nocobase/plugin-workflow/client';
 import { MessageConfigForm } from '@nocobase/plugin-notification-manager/client';
 
@@ -22,6 +23,7 @@ export default class extends Instruction {
   type = 'notification';
   group = 'extended';
   description = `{{t("Send notification. You can use the variables in the upstream nodes as content and ohter config.", { ns: "${NAMESPACE}" })}}`;
+  icon = (<NotificationOutlined />);
   fieldset = {
     message: {
       type: 'void',

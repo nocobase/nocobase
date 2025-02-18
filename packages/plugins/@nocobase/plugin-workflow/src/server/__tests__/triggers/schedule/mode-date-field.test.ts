@@ -192,6 +192,39 @@ describe('workflow > triggers > schedule > date field mode', () => {
       expect(d2 - 4000).toBe(startTime.getTime());
     });
 
+    it('starts on post.createdAt and repeat by cron with endsOn by collection field but no field configured', async () => {
+      await sleepToEvenSecond();
+      const startTime = new Date();
+      startTime.setMilliseconds(0);
+
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'schedule',
+        config: {
+          mode: 1,
+          collection: 'posts',
+          startsOn: {
+            field: 'createdAt',
+          },
+          repeat: '*/2 * * * * *',
+          endsOn: {},
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(5000);
+
+      const executions = await workflow.getExecutions({ order: [['createdAt', 'ASC']] });
+      expect(executions.length).toBe(3);
+      const d0 = Date.parse(executions[0].context.date);
+      expect(d0).toBe(startTime.getTime());
+      const d1 = Date.parse(executions[1].context.date);
+      expect(d1 - 2000).toBe(startTime.getTime());
+      const d2 = Date.parse(executions[2].context.date);
+      expect(d2 - 4000).toBe(startTime.getTime());
+    });
+
     it('starts on post.createdAt and repeat by cron with endsOn at certain time', async () => {
       await sleepToEvenSecond();
       const startTime = new Date();

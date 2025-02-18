@@ -14,6 +14,7 @@ export default defineCollection({
   dumpRules: {
     group: 'user',
   },
+  migrationRules: ['schema-only', 'overwrite'],
   name: 'users',
   title: '{{t("Users")}}',
   sortable: 'sort',

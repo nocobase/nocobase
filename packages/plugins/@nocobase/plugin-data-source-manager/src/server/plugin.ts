@@ -17,12 +17,12 @@ import rolesConnectionResourcesResourcer from './resourcers/data-sources-resourc
 import databaseConnectionsRolesResourcer from './resourcers/data-sources-roles';
 import { rolesRemoteCollectionsResourcer } from './resourcers/roles-data-sources-collections';
 
+import { LoadingProgress } from '@nocobase/data-source-manager';
 import lodash from 'lodash';
 import { DataSourcesRolesResourcesModel } from './models/connections-roles-resources';
 import { DataSourcesRolesResourcesActionModel } from './models/connections-roles-resources-action';
 import { DataSourceModel } from './models/data-source';
 import { DataSourcesRolesModel } from './models/data-sources-roles-model';
-import { LoadingProgress } from '@nocobase/data-source-manager';
 
 type DataSourceState = 'loading' | 'loaded' | 'loading-failed' | 'reloading' | 'reloading-failed';
 
@@ -131,6 +131,10 @@ export class PluginDataSourceManagerServer extends Plugin {
     [dataSourceKey: string]: LoadingProgress;
   } = {};
 
+  renderJsonTemplate(template) {
+    return this.app.environment.renderJsonTemplate(template);
+  }
+
   async beforeLoad() {
     this.app.db.registerModels({
       DataSourcesCollectionModel,
@@ -187,7 +191,7 @@ export class PluginDataSourceManagerServer extends Plugin {
         }
 
         try {
-          await klass.testConnection(dataSourceOptions);
+          await klass.testConnection(this.renderJsonTemplate(dataSourceOptions || {}));
         } catch (error) {
           throw new Error(`Test connection failed: ${error.message}`);
         }
@@ -398,7 +402,7 @@ export class PluginDataSourceManagerServer extends Plugin {
         const klass = ctx.app.dataSourceManager.factory.getClass(type);
 
         try {
-          await klass.testConnection(options);
+          await klass.testConnection(self.renderJsonTemplate(options));
         } catch (error) {
           throw new Error(`Test connection failed: ${error.message}`);
         }

@@ -9,116 +9,214 @@
 
 import { createForm, Form, onFormValuesChange } from '@formily/core';
 import { uid } from '@formily/shared';
-import { SchemaComponent, useAPIClient, useRequest } from '@nocobase/client';
+import { css, SchemaComponent, useAPIClient, useCompile, useRequest } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Checkbox, message, Table } from 'antd';
 import { uniq } from 'lodash';
-import React, { useContext, useMemo, useState } from 'react';
+import React, { createContext, FC, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RolesManagerContext } from '../RolesManagerProvider';
-import { useMenuItems } from './MenuItemsProvider';
-import { useStyles } from './style';
 
-const findUids = (items) => {
+interface MenuItem {
+  title: string;
+  id: number;
+  children?: MenuItem[];
+  parent?: MenuItem;
+}
+
+const toItems = (items, parent?: MenuItem): MenuItem[] => {
   if (!Array.isArray(items)) {
     return [];
   }
-  const uids = [];
+
+  return items.map((item) => {
+    const children = toItems(item.children, item);
+    const hideChildren = children.length === 0;
+
+    return {
+      title: item.title,
+      id: item.id,
+      children: hideChildren ? null : children,
+      hideChildren,
+      firstTabId: children[0]?.id,
+      parent,
+    };
+  });
+};
+
+const getAllChildrenId = (items) => {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+  const IDList = [];
   for (const item of items) {
-    uids.push(item.uid);
-    uids.push(...findUids(item.children));
+    IDList.push(item.id);
+    IDList.push(...getAllChildrenId(item.children));
   }
-  return uids;
+  return IDList;
 };
-const getParentUids = (tree, func, path = []) => {
-  if (!tree) return [];
-  for (const data of tree) {
-    path.push(data.uid);
-    if (func(data)) return path;
-    if (data.children) {
-      const findChildren = getParentUids(data.children, func, path);
-      if (findChildren.length) return findChildren;
+
+const style = css`
+  .ant-table-cell {
+    > .ant-space-horizontal {
+      .ant-space-item-split:has(+ .ant-space-item:empty) {
+        display: none;
+      }
     }
-    path.pop();
   }
-  return [];
+`;
+
+const translateTitle = (menus: any[], t, compile) => {
+  return menus.map((menu) => {
+    const title = menu.title?.match(/^\s*\{\{\s*.+?\s*\}\}\s*$/) ? compile(menu.title) : t(menu.title);
+    if (menu.children) {
+      return {
+        ...menu,
+        title,
+        children: translateTitle(menu.children, t, compile),
+      };
+    }
+    return {
+      ...menu,
+      title,
+    };
+  });
 };
-const getChildrenUids = (data = [], arr = []) => {
-  for (const item of data) {
-    arr.push(item.uid);
-    if (item.children && item.children.length) getChildrenUids(item.children, arr);
+
+const DesktopRoutesContext = createContext<{ routeList: any[] }>({ routeList: [] });
+
+const useDesktopRoutes = () => {
+  return useContext(DesktopRoutesContext);
+};
+
+const DesktopRoutesProvider: FC<{
+  refreshRef?: any;
+}> = ({ children, refreshRef }) => {
+  const api = useAPIClient();
+  const resource = useMemo(() => api.resource('desktopRoutes'), [api]);
+  const { data, runAsync: refresh } = useRequest<{ data: any[] }>(
+    () =>
+      resource
+        .list({
+          tree: true,
+          sort: 'sort',
+          paginate: false,
+          filter: {
+            hidden: { $ne: true },
+          },
+        })
+        .then((res) => res.data),
+    {
+      manual: true,
+    },
+  );
+
+  if (refreshRef) {
+    refreshRef.current = refresh;
   }
-  return arr;
+
+  const routeList = useMemo(() => data?.data || [], [data]);
+
+  const value = useMemo(() => ({ routeList }), [routeList]);
+
+  return <DesktopRoutesContext.Provider value={value}>{children}</DesktopRoutesContext.Provider>;
+};
+
+export const DesktopAllRoutesProvider: React.FC<{ active: boolean }> = ({ children, active }) => {
+  const refreshRef = React.useRef(() => {});
+
+  useEffect(() => {
+    if (active) {
+      refreshRef.current?.();
+    }
+  }, [active]);
+
+  return <DesktopRoutesProvider refreshRef={refreshRef}>{children}</DesktopRoutesProvider>;
 };
 
 export const MenuPermissions: React.FC<{
   active: boolean;
 }> = ({ active }) => {
-  const { styles } = useStyles();
+  const { routeList } = useDesktopRoutes();
+  const items = toItems(routeList);
   const { role, setRole } = useContext(RolesManagerContext);
   const api = useAPIClient();
-  const { items } = useMenuItems();
   const { t } = useTranslation();
-  const allUids = findUids(items);
-  const [uids, setUids] = useState([]);
+  const allIDList = getAllChildrenId(items);
+  const [IDList, setIDList] = useState([]);
   const { loading, refresh } = useRequest(
     {
-      resource: 'roles.menuUiSchemas',
+      resource: 'roles.desktopRoutes',
       resourceOf: role.name,
       action: 'list',
       params: {
         paginate: false,
+        filter: {
+          hidden: { $ne: true },
+        },
       },
     },
     {
       ready: !!role && active,
       refreshDeps: [role?.name],
       onSuccess(data) {
-        setUids(data?.data?.map((schema) => schema['x-uid']) || []);
+        setIDList(data?.data?.map((item) => item['id']) || []);
       },
     },
   );
-  const resource = api.resource('roles.menuUiSchemas', role.name);
-  const allChecked = allUids.length === uids.length;
+  const resource = api.resource('roles.desktopRoutes', role.name);
+  const allChecked = allIDList.length === IDList.length;
 
-  const handleChange = async (checked, schema) => {
-    const parentUids = getParentUids(items, (data) => data.uid === schema.uid);
-    const childrenUids = getChildrenUids(schema?.children, []);
+  const handleChange = async (checked, menuItem) => {
+    // 处理取消选中
     if (checked) {
-      const totalUids = childrenUids.concat(schema.uid);
-      const newUids = uids.filter((v) => !totalUids.includes(v));
-      setUids([...newUids]);
+      let newIDList = IDList.filter((id) => id !== menuItem.id);
+      const shouldRemove = [menuItem.id];
+
+      if (menuItem.parent) {
+        const selectedChildren = menuItem.parent.children.filter((item) => newIDList.includes(item.id));
+        if (selectedChildren.length === 0) {
+          newIDList = newIDList.filter((id) => id !== menuItem.parent.id);
+          shouldRemove.push(menuItem.parent.id);
+        }
+      }
+
+      if (menuItem.children) {
+        newIDList = newIDList.filter((id) => !getAllChildrenId(menuItem.children).includes(id));
+        shouldRemove.push(...getAllChildrenId(menuItem.children));
+      }
+
+      setIDList(newIDList);
       await resource.remove({
-        values: totalUids,
+        values: shouldRemove,
       });
+
+      // 处理选中
     } else {
-      const totalUids = childrenUids.concat(parentUids);
-      setUids((prev) => {
-        return uniq([...prev, ...totalUids]);
-      });
+      const newIDList = [...IDList, menuItem.id];
+      const shouldAdd = [menuItem.id];
+
+      if (menuItem.parent) {
+        if (!newIDList.includes(menuItem.parent.id)) {
+          newIDList.push(menuItem.parent.id);
+          shouldAdd.push(menuItem.parent.id);
+        }
+      }
+
+      if (menuItem.children) {
+        const childrenIDList = getAllChildrenId(menuItem.children);
+        newIDList.push(...childrenIDList);
+        shouldAdd.push(...childrenIDList);
+      }
+
+      setIDList(uniq(newIDList));
       await resource.add({
-        values: totalUids,
+        values: shouldAdd,
       });
     }
     message.success(t('Saved successfully'));
   };
 
-  const translateTitle = (menus: any[]) => {
-    return menus.map((menu) => {
-      const title = t(menu.title);
-      if (menu.children) {
-        return {
-          ...menu,
-          title,
-          children: translateTitle(menu.children),
-        };
-      }
-      return {
-        ...menu,
-        title,
-      };
-    });
-  };
   const update = useMemoizedFn(async (form: Form) => {
     await api.resource('roles').update({
       filterByTk: role.name,
@@ -137,6 +235,9 @@ export const MenuPermissions: React.FC<{
       },
     });
   }, [role, update]);
+
+  const compile = useCompile();
+
   return (
     <>
       <SchemaComponent
@@ -149,27 +250,26 @@ export const MenuPermissions: React.FC<{
           },
           properties: {
             allowNewMenu: {
-              title: t('Menu permissions'),
+              title: t('Route permissions'),
               'x-decorator': 'FormItem',
               'x-component': 'Checkbox',
-              'x-content': t('New menu items are allowed to be accessed by default.'),
+              'x-content': t('New routes are allowed to be accessed by default'),
             },
           },
         }}
       />
-
       <Table
-        className={styles}
+        className={style}
         loading={loading}
-        rowKey={'uid'}
+        rowKey={'id'}
         pagination={false}
         expandable={{
-          defaultExpandAllRows: true,
+          defaultExpandAllRows: false,
         }}
         columns={[
           {
             dataIndex: 'title',
-            title: t('Menu item title'),
+            title: t('Route name'),
           },
           {
             dataIndex: 'accessible',
@@ -184,7 +284,7 @@ export const MenuPermissions: React.FC<{
                       });
                     } else {
                       await resource.set({
-                        values: allUids,
+                        values: allIDList,
                       });
                     }
                     refresh();
@@ -195,12 +295,12 @@ export const MenuPermissions: React.FC<{
               </>
             ),
             render: (_, schema) => {
-              const checked = uids.includes(schema.uid);
+              const checked = IDList.includes(schema.id);
               return <Checkbox checked={checked} onChange={() => handleChange(checked, schema)} />;
             },
           },
         ]}
-        dataSource={translateTitle(items)}
+        dataSource={translateTitle(items, t, compile)}
       />
     </>
   );

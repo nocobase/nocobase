@@ -51,7 +51,7 @@ export const FormItem: any = withDynamicSchemaProps(
     const field = useField<Field>();
     const schema = useFieldSchema();
     const { addActiveFieldName } = useFormActiveFields() || {};
-    const { wrapperStyle } = useDataFormItemProps();
+    const { wrapperStyle }: { wrapperStyle: any } = useDataFormItemProps();
 
     useParseDefaultValue();
     useLazyLoadDisplayAssociationFieldsOfForm();
@@ -80,6 +80,12 @@ export const FormItem: any = withDynamicSchemaProps(
         [formItemLabelCss]: showTitle === false,
       });
     }, [showTitle]);
+
+    // 联动规则中的“隐藏保留值”的效果
+    if (field.data?.hidden) {
+      return null;
+    }
+
     return (
       <CollectionFieldProvider allowNull={true}>
         <BlockItem
@@ -95,7 +101,15 @@ export const FormItem: any = withDynamicSchemaProps(
           )}
         >
           <ACLCollectionFieldProvider>
-            <Item className={className} {...props} extra={extra} wrapperStyle={wrapperStyle} />
+            <Item
+              className={className}
+              {...props}
+              extra={extra}
+              wrapperStyle={{
+                ...(wrapperStyle.backgroundColor ? { paddingLeft: '5px', paddingRight: '5px' } : {}),
+                ...wrapperStyle,
+              }}
+            />
           </ACLCollectionFieldProvider>
         </BlockItem>
       </CollectionFieldProvider>

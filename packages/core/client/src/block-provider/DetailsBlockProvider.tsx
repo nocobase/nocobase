@@ -13,12 +13,13 @@ import { useUpdate } from 'ahooks';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollectionManager_deprecated } from '../collection-manager';
-import { useCollectionRecordData } from '../data-source';
+import { useCollection, useCollectionRecordData } from '../data-source';
 import { useCollectionParentRecord } from '../data-source/collection-record/CollectionRecordProvider';
 import { withDynamicSchemaProps } from '../hoc/withDynamicSchemaProps';
 import { useDetailsWithPaginationBlockParams } from '../modules/blocks/data-blocks/details-multi/hooks/useDetailsWithPaginationBlockParams';
 import { RecordProvider } from '../record-provider';
 import { useDesignable } from '../schema-component';
+import { CurrentRecordContextProvider } from '../schema-settings/VariableInput/hooks/useRecordVariable';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
 
@@ -38,6 +39,7 @@ const InternalDetailsBlockProvider = (props) => {
       }),
     [readPretty],
   );
+  const collection = useCollection();
   const { resource, service } = useBlockRequestContext();
   const parentRecord = useCollectionParentRecord();
   const currentRecord = (action === 'list' ? service?.data?.data?.[0] : service?.data?.data) || {};
@@ -59,13 +61,15 @@ const InternalDetailsBlockProvider = (props) => {
   field.loaded = true;
 
   return (
-    <DetailsBlockContext.Provider value={detailsBLockValue}>
-      <div ref={formBlockRef}>
-        <RecordProvider isNew={false} record={currentRecord} parent={parentRecord?.data}>
-          {props.children}
-        </RecordProvider>
-      </div>
-    </DetailsBlockContext.Provider>
+    <CurrentRecordContextProvider recordData={currentRecord} collectionName={collection?.name}>
+      <DetailsBlockContext.Provider value={detailsBLockValue}>
+        <div ref={formBlockRef}>
+          <RecordProvider isNew={false} record={currentRecord} parent={parentRecord?.data}>
+            {props.children}
+          </RecordProvider>
+        </div>
+      </DetailsBlockContext.Provider>
+    </CurrentRecordContextProvider>
   );
 };
 

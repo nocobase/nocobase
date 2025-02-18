@@ -29,5 +29,21 @@
   "Sign up settings": "Sign up settings",
   "Sign up form": "Sign up form",
   "At least one of the username or email fields is required": "At least one of the username or email fields is required",
-  "Password is not allowed to be changed": "Password is not allowed to be changed"
+  "Password is not allowed to be changed": "Password is not allowed to be changed",
+  "Token policy": "Token policy",
+  "Token validity period": "Token validity period",
+  "Session validity period": "Session validity period",
+  "Expired token refresh limit": "Expired token refresh limit",
+  "Token validity period must be less than session validity period!": "Token validity period must be less than session validity period!",
+  "Seconds": "Seconds",
+  "Minutes": "Minutes",
+  "Hours": "Hours",
+  "Days": "Days",
+  "Saved successfully!": "Saved successfully!",
+  "The maximum valid time for each user login. During the session validity, the Token will be automatically updated. After the timeout, the user is required to log in again.": "The maximum valid time for each user login. During the session validity, the Token will be automatically updated. After the timeout, the user is required to log in again.",
+  "The validity period of each issued API Token. After the Token expires, if it is within the session validity period and has not exceeded the refresh limit, the server will automatically issue a new Token to maintain the user session, otherwise the user is required to log in again. (Each Token can only be refreshed once)": "The validity period of each issued API Token. After the Token expires, if it is within the session validity period and has not exceeded the refresh limit, the server will automatically issue a new Token to maintain the user session, otherwise the user is required to log in again. (Each Token can only be refreshed once)",
+  "The maximum time limit allowed for refreshing a Token after it expires. After this time limit, the token cannot be automatically renewed, and the user needs to log in again.": "The maximum time limit allowed for refreshing a Token after it expires. After this time limit, the token cannot be automatically renewed, and the user needs to log in again.",
+  "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.",
+  "Your session has expired. Please sign in again.": "Your session has expired. Please sign in again.",
+  "Unauthenticated. Please sign in to continue.": "Unauthenticated. Please sign in to continue."
 }

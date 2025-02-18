@@ -65,7 +65,7 @@ const mobileComponents = {
   Select: (props) => {
     const { designable } = useDesignable();
     if (designable !== false) {
-      return <Select {...props} />;
+      return <Select {...props} popupMatchSelectWidth={true} />;
     } else {
       return <MobilePicker {...props} />;
     }

@@ -23,6 +23,7 @@ import {
   useCollectionManager,
   useCollectionRecordData,
   useDataBlockProps,
+  useDataBlockRequest,
 } from '../data-source';
 import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
@@ -182,7 +183,8 @@ const getIgnoreScope = (options: any = {}) => {
 
 const useAllowedActions = () => {
   const service = useResourceActionContext();
-  return service?.data?.meta?.allowedActions;
+  const dataBlockRequest: any = useDataBlockRequest();
+  return service?.data?.meta?.allowedActions || dataBlockRequest?.data?.meta?.allowedActions;
 };
 
 const useResourceName = () => {
@@ -408,16 +410,6 @@ export const ACLCollectionFieldProvider = (props) => {
 };
 
 export const ACLMenuItemProvider = (props) => {
-  const { allowAll, allowMenuItemIds = [], snippets } = useACLRoleContext();
-  const fieldSchema = useFieldSchema();
-  if (allowAll || snippets.includes('ui.*')) {
-    return <>{props.children}</>;
-  }
-  if (!fieldSchema['x-uid']) {
-    return <>{props.children}</>;
-  }
-  if (allowMenuItemIds.includes(fieldSchema['x-uid'])) {
-    return <>{props.children}</>;
-  }
-  return null;
+  // 这里的权限控制已经在后端处理了
+  return <>{props.children}</>;
 };

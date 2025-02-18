@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React from 'react';
+import { MailOutlined } from '@ant-design/icons';
 import { ArrayItems } from '@formily/antd-v5';
 
 import { SchemaComponentContext, css } from '@nocobase/client';
@@ -32,6 +34,7 @@ export default class extends Instruction {
   type = 'mailer';
   group = 'extended';
   description = `{{t("Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.", { ns: "${NAMESPACE}" })}}`;
+  icon = (<MailOutlined style={{}} />);
   fieldset = {
     provider: {
       type: 'object',

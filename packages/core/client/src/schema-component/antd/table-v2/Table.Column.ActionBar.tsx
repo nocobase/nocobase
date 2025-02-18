@@ -10,8 +10,9 @@
 import { css } from '@emotion/css';
 import { observer } from '@formily/react';
 import React from 'react';
-import { SortableItem, useDesigner } from '../..';
+import { SortableItem, useDesigner, useSchemaComponentContext } from '../..';
 import { useFlag } from '../../../flag-provider/hooks/useFlag';
+import { useToken } from '../__builtins__';
 
 export const designerCss = ({ margin = '-18px -16px', padding = '18px 16px' } = {}) => css`
   position: relative;
@@ -53,14 +54,21 @@ export const designerCss = ({ margin = '-18px -16px', padding = '18px 16px' } = 
 `;
 
 export const TableColumnActionBar = observer(
-  (props) => {
+  (props: any) => {
     const Designer = useDesigner();
     const { isInSubTable } = useFlag() || {};
+    const { designable } = useSchemaComponentContext();
+    const { token } = useToken();
+
+    if (!designable || Designer.isNullComponent) {
+      return props.children;
+    }
+
     return (
       <SortableItem
         className={designerCss({
-          margin: isInSubTable ? '-12px -8px' : '-18px -16px',
-          padding: isInSubTable ? '12px 8px' : '18px 16px',
+          margin: `-${token.margin}px -${token.marginXS}px`,
+          padding: `${token.margin}px ${token.marginXS}px`,
         })}
       >
         <Designer />

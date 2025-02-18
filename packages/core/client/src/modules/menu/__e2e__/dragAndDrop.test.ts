@@ -23,6 +23,7 @@ test('single page', async ({ page, mockPage }) => {
   await page.getByLabel('block-item-TreeSelect-Target').locator('.ant-select').click();
   await page.locator('.ant-select-dropdown').getByText(pageTitle2).click();
   await page.getByRole('button', { name: 'OK', exact: true }).click();
+  await page.waitForTimeout(500);
   const page1 = await page.getByRole('menu').getByText(pageTitle1).boundingBox();
   const page2 = await page.getByRole('menu').getByText(pageTitle2).boundingBox();
   //拖拽菜单排序符合预期

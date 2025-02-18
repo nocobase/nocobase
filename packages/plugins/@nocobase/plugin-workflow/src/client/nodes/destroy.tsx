@@ -7,6 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React from 'react';
+import { DeleteOutlined } from '@ant-design/icons';
+
 import { useCollectionDataSource } from '@nocobase/client';
 import { isValidFilter } from '@nocobase/utils/client';
 
@@ -20,6 +23,7 @@ export default class extends Instruction {
   type = 'destroy';
   group = 'collection';
   description = `{{t("Delete records of a collection. Could use variables in workflow context as filter. All records match the filter will be deleted.", { ns: "${NAMESPACE}" })}}`;
+  icon = (<DeleteOutlined style={{}} />);
   fieldset = {
     collection: {
       ...collection,

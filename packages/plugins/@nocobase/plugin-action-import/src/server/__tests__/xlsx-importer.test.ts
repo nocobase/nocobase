@@ -101,7 +101,15 @@ describe('xlsx importer', () => {
         workbook: template,
       });
 
-      await expect(importer.validate()).resolves.toBeUndefined();
+      let error;
+
+      try {
+        await importer.validate();
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).toBeUndefined();
     });
   });
 
@@ -2066,5 +2074,85 @@ describe('xlsx importer', () => {
     const users = await User.repository.find();
     expect(users[0].get('name')).toBe('User1');
     expect(users[1].get('name')).toBe('User2');
+  });
+
+  it('should import with associations by target key', async () => {
+    const Post = app.db.collection({
+      name: 'posts',
+      fields: [
+        {
+          name: 'title',
+          type: 'string',
+        },
+        {
+          name: 'tags',
+          type: 'belongsToMany',
+          through: 'post_tag',
+          targetKey: 'name',
+          interface: 'm2m',
+        },
+      ],
+    });
+
+    const Tag = app.db.collection({
+      name: 'tags',
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+          unique: true,
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    await Tag.repository.create({
+      values: {
+        name: 't1',
+      },
+    });
+
+    const templateCreator = new TemplateCreator({
+      collection: Post,
+      columns: [
+        {
+          dataIndex: ['title'],
+          defaultTitle: '标题',
+        },
+        {
+          dataIndex: ['tags', 'name'],
+          defaultTitle: 'TagsName',
+        },
+      ],
+    });
+
+    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+
+    const worksheet = template.Sheets[template.SheetNames[0]];
+
+    XLSX.utils.sheet_add_aoa(worksheet, [['Post1', 't1']], {
+      origin: 'A2',
+    });
+
+    const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: Post,
+      columns: [
+        {
+          dataIndex: ['title'],
+          defaultTitle: '标题',
+        },
+        {
+          dataIndex: ['tags', 'name'],
+          defaultTitle: 'TagsName',
+        },
+      ],
+      workbook: template,
+    });
+
+    await importer.run();
+
+    expect(await Post.repository.count()).toBe(1);
   });
 });

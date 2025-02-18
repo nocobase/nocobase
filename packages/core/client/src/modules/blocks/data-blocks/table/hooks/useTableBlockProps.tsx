@@ -66,6 +66,7 @@ export const useTableBlockProps = () => {
   }, [field, service?.data, service?.loading, tableBlockContextBasicValue.field?.data?.selectedRowKeys]);
 
   return {
+    optimizeTextCellRender: true,
     value: data,
     childrenColumnName: tableBlockContextBasicValue.childrenColumnName,
     loading: service?.loading,
