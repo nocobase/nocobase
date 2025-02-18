@@ -88,7 +88,7 @@ export class PluginBlockTemplateClient extends Plugin {
     this.#afterAllPluginsLoaded();
     this.app.pluginSettingsManager.add('block-templates', {
       title: `{{t("Block templates", { ns: "${NAMESPACE}" })}}`,
-      icon: 'TableOutlined',
+      icon: 'ProfileOutlined',
       Component: BlockTemplateList,
     });
 
