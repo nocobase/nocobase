@@ -412,6 +412,10 @@ const subMenuItemRender = (item, dom) => {
   return <GroupItem item={item}>{dom}</GroupItem>;
 };
 
+const collapsedButtonRender = (collapsed, dom) => {
+  return <div style={{ zIndex: 999 }}>{dom}</div>;
+};
+
 export const InternalAdminLayout = () => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const { render: renderInitializer } = useSchemaInitializerRender(menuItemInitializer);
@@ -461,6 +465,7 @@ export const InternalAdminLayout = () => {
         token={layoutToken}
         menuItemRender={menuItemRender}
         subMenuItemRender={subMenuItemRender}
+        collapsedButtonRender={collapsedButtonRender}
       >
         <RouteContext.Consumer>
           {(value: RouteContextType) => {
