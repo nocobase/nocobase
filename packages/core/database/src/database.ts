@@ -475,7 +475,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
         options.autoGenId = false;
         const fields = options.fields || [];
 
-        fields.push({
+        fields.unshift({
           name: 'id',
           type: 'snowflakeId',
           primaryKey: true,

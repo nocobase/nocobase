@@ -23,11 +23,13 @@ export class SnowflakeIdField extends Field {
     super.bind();
     // https://sequelize.org/docs/v6/other-topics/hooks/
     this.on('beforeValidate', this.listener);
+    this.on('beforeSave', this.listener);
   }
 
   unbind() {
     super.unbind();
     this.off('beforeValidate', this.listener);
+    this.off('beforeSave', this.listener);
   }
 }
 
