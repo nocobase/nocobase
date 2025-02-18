@@ -15,3 +15,4 @@ export * from './ConfigureLink';
 export * from './RevertSetting';
 export * from './BlockTemplateInfoContext';
 export * from './TemplateGridDecorator';
+export * from './DisabledDeleteItem';

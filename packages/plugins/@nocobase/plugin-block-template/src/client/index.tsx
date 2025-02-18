@@ -26,6 +26,7 @@ import {
   hideDeleteSettingItem,
 } from './utils/setting';
 import { BlockTemplateProvider } from './components/BlockTemplateProvider';
+import { disabledDeleteSettingItem } from './settings/disabledDeleteSetting';
 
 export class PluginBlockTemplateClient extends Plugin {
   templateInfos = new Map();
@@ -137,16 +138,20 @@ export class PluginBlockTemplateClient extends Plugin {
           const schemaSetting = this.app.schemaSettingsManager.get(key);
           // if not filter out fieldSettings:component:, we will show two revert setting item
           if (schemaSetting && !key.startsWith('fieldSettings:component:')) {
-            schemaSetting.add('template-revertSettingItem', revertSettingItem);
-
             for (let i = 0; i < schemaSetting.items.length; i++) {
               // hide convert to block setting item
-              hideConvertToBlockSettingItem(schemaSetting.items[i], schemaSetting.items[i + 1]);
-              // hide delete setting item
-              hideDeleteSettingItem(schemaSetting.items[i]);
+              hideConvertToBlockSettingItem(
+                schemaSetting.items[i],
+                schemaSetting.items[i - 1],
+                schemaSetting.items[i + 1],
+              );
               // hide connect data blocks setting item from template configure page
               hideConnectDataBlocksFromTemplate(schemaSetting.items[i]);
+              // hide delete setting item
+              hideDeleteSettingItem(schemaSetting.items[i], schemaSetting.items[i - 1]);
             }
+            schemaSetting.add('template-revertSettingItem', revertSettingItem);
+            schemaSetting.add('template-disabledDeleteItem', disabledDeleteSettingItem);
           }
         }
       }

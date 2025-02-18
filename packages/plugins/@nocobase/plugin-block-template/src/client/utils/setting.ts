@@ -20,6 +20,7 @@ import {
 
 export const hideConvertToBlockSettingItem = (
   settingItem: SchemaSettingsItemType,
+  preSettingItem: SchemaSettingsItemType,
   nextSettingItem: SchemaSettingsItemType,
 ) => {
   if (
@@ -34,13 +35,16 @@ export const hideConvertToBlockSettingItem = (
 
     // hide covert to block setting item
     settingItem['useVisible'] = () => false;
+    if (preSettingItem?.['type'] === 'divider') {
+      preSettingItem['useVisible'] = () => false;
+    }
     if (nextSettingItem?.['type'] === 'divider') {
       nextSettingItem['useVisible'] = () => false;
     }
   }
 };
 
-export const hideDeleteSettingItem = (settingItem: SchemaSettingsItemType) => {
+export const hideDeleteSettingItem = (settingItem: SchemaSettingsItemType, preSettingItem: SchemaSettingsItemType) => {
   if (
     settingItem['name'] === 'delete' ||
     settingItem['name'] === 'remove' ||
@@ -51,12 +55,19 @@ export const hideDeleteSettingItem = (settingItem: SchemaSettingsItemType) => {
       const isInTemplate = useIsInTemplate(false);
       return !isInTemplate && visible();
     };
+    if (preSettingItem?.['type'] === 'divider') {
+      preSettingItem['useVisible'] = function useVisible() {
+        const isInTemplate = useIsInTemplate(false);
+        return !isInTemplate && visible();
+      };
+    }
   }
   // recursive for nested items
   const children = settingItem['items'] || settingItem['children'];
   if (children) {
-    for (const item of children) {
-      hideDeleteSettingItem(item);
+    for (let index = 0; index < children.length; index++) {
+      const item = children[index];
+      hideDeleteSettingItem(item, children[index - 1]);
     }
   }
 };
