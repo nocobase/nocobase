@@ -6,7 +6,7 @@ import { uid } from "@formily/shared";
 import { App, ConfigProvider, Modal } from 'antd';
 import React, { FC, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { isVariable, NocoBaseDesktopRouteType, useAllAccessDesktopRoutes, useCompile, useCurrentRouteData, useNocoBaseRoutes, useToken, useURLAndHTMLSchema } from "../../..";
+import { css, isVariable, NocoBaseDesktopRouteType, useAllAccessDesktopRoutes, useCompile, useCurrentRouteData, useNocoBaseRoutes, useToken, useURLAndHTMLSchema } from "../../..";
 import {
   getPageMenuSchema
 } from '../../../';
@@ -491,10 +491,16 @@ export const menuItemSettings = new SchemaSettings({
   ],
 });
 
+const iconStyle = css`
+  .anticon {
+    line-height: 16px !important;
+  }
+`;
+
 export const MenuSchemaToolbar: FC<{ container?: HTMLElement }> = (props) => {
   return (
     <ResetThemeTokenAndKeepAlgorithm>
-      <SchemaToolbar settings={menuItemSettings} showBorder={false} container={props.container} />
+      <SchemaToolbar spaceClassName={iconStyle} settings={menuItemSettings} showBorder={false} container={props.container} />
     </ResetThemeTokenAndKeepAlgorithm>
   )
 }
