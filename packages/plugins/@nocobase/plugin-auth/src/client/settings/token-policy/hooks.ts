@@ -12,6 +12,7 @@ import { App as AntdApp } from 'antd';
 import { useForm } from '@formily/react';
 import { createForm } from '@formily/core';
 import { useAPIClient } from '@nocobase/client';
+import ms from 'ms';
 import { tokenPolicyCollectionName, tokenPolicyRecordKey } from '../../../constants';
 import { useAuthTranslation } from '../../locale';
 
@@ -41,6 +42,21 @@ export const useSubmitActionProps = () => {
   return {
     type: 'primary',
     async onClick() {
+      form.clearErrors('*');
+      const { tokenExpirationTime, sessionExpirationTime, expiredTokenRenewLimit } = form.values;
+      if (ms(tokenExpirationTime) >= ms(sessionExpirationTime)) {
+        form.setFieldState('tokenExpirationTime', (state) => {
+          state.feedbacks = [
+            {
+              type: 'error',
+              code: 'ValidateError',
+              messages: [t('Token validity period must be less than session validity period!')],
+            },
+          ];
+        });
+
+        return;
+      }
       await form.submit();
       const res = await apiClient.resource(tokenPolicyCollectionName).update({
         values: { config: form.values },

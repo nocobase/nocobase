@@ -14,6 +14,7 @@ import { useLocation } from 'react-router-dom';
 
 import type { IResource } from '@nocobase/sdk';
 
+import { useRouteTranslation } from '../../locale';
 import { useMobileTitle } from './MobileTitle';
 
 export interface MobileRouteItem {
@@ -82,11 +83,12 @@ function useActiveTabBar(routeList: MobileRouteItem[]) {
 
 function useTitle(activeTabBar: MobileRouteItem) {
   const context = useMobileTitle();
+  const { t } = useRouteTranslation();
   useEffect(() => {
     if (!context) return;
     if (activeTabBar) {
       context.setTitle(activeTabBar.title);
-      document.title = activeTabBar.title;
+      document.title = t(activeTabBar.title);
     }
   }, [activeTabBar, context]);
 }
@@ -113,7 +115,7 @@ export const MobileRoutesProvider: FC<{
     () =>
       resource[action](
         action === 'listAccessible'
-          ? { tree: true, sort: 'sort' }
+          ? { tree: true, sort: 'sort', paginate: false }
           : { tree: true, sort: 'sort', paginate: false, filter: { hidden: { $ne: true } } },
       ).then((res) => res.data),
     {

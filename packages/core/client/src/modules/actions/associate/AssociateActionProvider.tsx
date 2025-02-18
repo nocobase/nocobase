@@ -9,8 +9,14 @@
 
 import React, { useState, useContext } from 'react';
 import { RecordPickerProvider, RecordPickerContext } from '../../../schema-component/antd/record-picker';
-import { SchemaComponentOptions, useActionContext, useBlockRequestContext, useCollection } from '../../../';
-import { useField } from '@formily/react';
+import {
+  SchemaComponentOptions,
+  useActionContext,
+  useBlockRequestContext,
+  useCollection,
+  ActionContextProvider,
+  useOpenModeContext,
+} from '../../../';
 import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
@@ -36,7 +42,8 @@ export const AssociateActionProvider = (props) => {
   const [selectedRows, setSelectedRows] = useState([]);
   const collection = useCollection();
   const { resource, service, block, __parent } = useBlockRequestContext();
-
+  const actionCtx = useActionContext();
+  const { isMobile } = useOpenModeContext() || {};
   const pickerProps = {
     size: 'small',
     onChange: props?.onChange,
@@ -73,11 +80,19 @@ export const AssociateActionProvider = (props) => {
     }
     return {};
   };
+
   return (
-    <RecordPickerProvider {...pickerProps}>
-      <SchemaComponentOptions scope={{ useTableSelectorProps, usePickActionProps }}>
-        <TableSelectorParamsProvider params={{ filter: getFilter() }}>{props.children}</TableSelectorParamsProvider>
-      </SchemaComponentOptions>
-    </RecordPickerProvider>
+    <ActionContextProvider
+      value={{
+        ...actionCtx,
+        openMode: isMobile ? 'drawer' : actionCtx.openMode,
+      }}
+    >
+      <RecordPickerProvider {...pickerProps}>
+        <SchemaComponentOptions scope={{ useTableSelectorProps, usePickActionProps }}>
+          <TableSelectorParamsProvider params={{ filter: getFilter() }}>{props.children}</TableSelectorParamsProvider>
+        </SchemaComponentOptions>
+      </RecordPickerProvider>
+    </ActionContextProvider>
   );
 };

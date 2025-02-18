@@ -68,7 +68,7 @@ const style = css`
 
 const translateTitle = (menus: any[], t, compile) => {
   return menus.map((menu) => {
-    const title = menu.title.match(/^\s*\{\{\s*.+?\s*\}\}\s*$/) ? compile(menu.title) : t(menu.title);
+    const title = menu.title?.match(/^\s*\{\{\s*.+?\s*\}\}\s*$/) ? compile(menu.title) : t(menu.title);
     if (menu.children) {
       return {
         ...menu,

@@ -28,7 +28,7 @@ const schema: ISchema & { properties: Properties } = {
   properties: {
     sessionExpirationTime: {
       type: 'string',
-      title: "{{t('Session validity')}}",
+      title: "{{t('Session validity period')}}",
       'x-decorator': 'FormItem',
       'x-component': componentsNameMap.InputTime,
       required: true,

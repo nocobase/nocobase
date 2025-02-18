@@ -12,14 +12,15 @@ import { useField, useFieldSchema } from '@formily/react';
 import {
   BlockProvider,
   useACLRoleContext,
+  useAPIClient,
   useBlockRequestContext,
   useCollection,
   useCollection_deprecated,
+  useApp,
 } from '@nocobase/client';
 import { Spin } from 'antd';
 import { isEqual } from 'lodash';
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { toColumns } from './Kanban';
 
 export const KanbanBlockContext = createContext<any>({});
 KanbanBlockContext.displayName = 'KanbanBlockContext';
@@ -93,20 +94,54 @@ const useDisableCardDrag = () => {
   return !result;
 };
 
+export const toColumns = (groupCollectionField: any, dataSource: Array<any> = [], primaryKey, options) => {
+  const columns = {
+    __unknown__: {
+      id: '__unknown__',
+      title: 'Unknown',
+      color: 'default',
+      cards: [],
+    },
+  };
+  options?.forEach((item) => {
+    columns[item.value] = {
+      id: item.value,
+      title: item.label,
+      color: item.color,
+      cards: [],
+    };
+  });
+  dataSource.forEach((ds) => {
+    const value = ds[groupCollectionField.name];
+    if (value && columns[value]) {
+      columns[value].cards.push({ ...ds, id: ds[primaryKey] });
+    } else {
+      columns.__unknown__.cards.push(ds);
+    }
+  });
+  if (columns.__unknown__.cards.length === 0) {
+    delete columns.__unknown__;
+  }
+  return Object.values(columns);
+};
+
 export const useKanbanBlockProps = () => {
   const field = useField<ArrayField>();
   const ctx = useKanbanBlockContext();
   const [dataSource, setDataSource] = useState([]);
   const primaryKey = useCollection()?.getPrimaryKey();
-
+  const app = useApp();
+  const plugin = app.pm.get('kanban') as any;
+  const targetGroupField = plugin.getGroupFieldInterface(ctx.groupField.interface);
+  const { options } = targetGroupField?.useGetGroupOptions(ctx.groupField) || { options: [] };
   useEffect(() => {
-    const data = toColumns(ctx.groupField, ctx?.service?.data?.data, primaryKey);
+    const data = toColumns(ctx.groupField, ctx?.service?.data?.data, primaryKey, options);
     if (isEqual(field.value, data) && dataSource === field.value) {
       return;
     }
     field.value = data;
     setDataSource(field.value);
-  }, [ctx?.service?.loading]);
+  }, [ctx?.service?.loading, options]);
 
   const disableCardDrag = useDisableCardDrag();
 

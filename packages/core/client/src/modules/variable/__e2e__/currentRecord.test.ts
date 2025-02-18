@@ -18,7 +18,7 @@ test.describe('variable: Current Record', () => {
     await page.getByLabel('block-item-CollectionField-users-form-users.roles-Roles').hover();
     await page
       .getByRole('button', { name: 'designer-schema-settings-CollectionField-fieldSettings:FormItem-users-users.' })
-      .hover();
+      .click();
     await page.getByRole('menuitem', { name: 'Linkage rules' }).click();
     await page.getByRole('button', { name: 'plus Add linkage rule' }).click();
     await page.getByText('Add condition', { exact: true }).click();

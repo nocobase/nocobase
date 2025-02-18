@@ -47,6 +47,7 @@ interface DepCompatible {
 
 interface IPluginDetailData {
   packageJson: PackageJSON;
+  homepage?: string;
   depsCompatible: DepCompatible[] | false;
   lastUpdated: string;
 }
@@ -149,12 +150,12 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
               </div>
             </Col>
           )}
-          {data?.data?.packageJson.homepage && (
+          {data?.data?.homepage && (
             <Col span={24}>
               <div className={styles.PluginDetailBaseInfo}>
                 <Typography.Text type="secondary">{t('Homepage')}</Typography.Text>
-                <a href={data?.data?.packageJson.homepage} target="_blank" rel="noreferrer">
-                  {data?.data?.packageJson.homepage}
+                <a href={data?.data?.homepage} target="_blank" rel="noreferrer">
+                  {data?.data?.homepage}
                 </a>
               </div>
             </Col>

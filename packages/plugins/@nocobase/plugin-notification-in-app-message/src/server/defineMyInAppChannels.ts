@@ -55,6 +55,7 @@ export default function defineMyInAppChannels({ app }: { app: Application }) {
                                 FROM ${messagesTableName} AS messages
                                 WHERE
                                     messages.${messagesFieldName.channelName} = ${channelsTableAliasName}.${channelsFieldName.name}
+                                    AND messages.${messagesFieldName.userId} = ${userId}
                                 ORDER BY messages.${messagesFieldName.receiveTimestamp} DESC
                                 LIMIT 1
                             )`;
@@ -118,6 +119,7 @@ export default function defineMyInAppChannels({ app }: { app: Application }) {
                               FROM ${messagesTableName} AS messages
                               WHERE
                                   messages.${messagesFieldName.channelName} = ${channelsTableAliasName}.${channelsFieldName.name}
+                                  AND messages.${messagesFieldName.userId} = ${userId}
                               ORDER BY messages.${messagesFieldName.receiveTimestamp} DESC
                               LIMIT 1
                   )`),

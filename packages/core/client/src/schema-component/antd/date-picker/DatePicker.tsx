@@ -289,7 +289,7 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
   const field: any = useField();
   const [stateProps, setStateProps] = useState(newProps);
   return (
-    <Space.Compact>
+    <Space.Compact style={{ width: '100%' }}>
       <Select
         // @ts-ignore
         role="button"

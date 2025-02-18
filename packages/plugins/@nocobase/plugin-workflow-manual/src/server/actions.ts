@@ -84,10 +84,9 @@ export async function submit(context: Context, next) {
 
   userJob.set({
     status: actionItem.status,
-    result:
-      actionItem.status > JOB_STATUS.PENDING
-        ? { [formKey]: Object.assign(values.result[formKey], presetValues), _: actionKey }
-        : Object.assign(userJob.result ?? {}, values.result),
+    result: actionItem.status
+      ? { [formKey]: Object.assign(values.result[formKey], presetValues), _: actionKey }
+      : Object.assign(userJob.result ?? {}, values.result),
   });
 
   const handler = instruction.formTypes.get(forms[formKey].type);

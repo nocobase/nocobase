@@ -69,7 +69,6 @@ export const mobileTabBarSchemaInitializerItem: SchemaInitializerItemActionModal
           values: {
             type: 'tabs',
             parentId,
-            title: 'Unnamed',
             schemaUid: firstTabUid,
             hidden: true,
           } as MobileRouteItem,

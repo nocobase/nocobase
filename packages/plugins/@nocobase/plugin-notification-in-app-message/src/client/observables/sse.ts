@@ -39,9 +39,11 @@ export const startMsgSSEStreamWithRetry: () => () => void = () => {
 
   const clientId = uid();
   const createMsgSSEConnection = async (clientId: string) => {
+    await updateUnreadMsgsCount();
     const apiClient = getAPIClient();
     const res = await apiClient.silent().request({
       url: 'myInAppMessages:sse',
+      skipAuth: true,
       method: 'get',
       signal: controller.signal,
       headers: {
@@ -52,7 +54,9 @@ export const startMsgSSEStreamWithRetry: () => () => void = () => {
       },
       responseType: 'stream',
       adapter: 'fetch',
+      skipNotify: (error) => (!error || !error.message ? true : false),
     });
+    if (!res?.data) return;
     const stream = res.data;
     const reader = stream.pipeThrough(new TextDecoderStream()).getReader();
     retryTimes = 0;
@@ -72,7 +76,7 @@ export const startMsgSSEStreamWithRetry: () => () => void = () => {
     try {
       await createMsgSSEConnection(clientId);
     } catch (error) {
-      console.error('Error during stream:', error.message);
+      console.log(`sse connection for clientId ${clientId} failed, retrying...`, error);
       const nextDelay = retryTimes < 6 ? 1000 * Math.pow(2, retryTimes) : 60000;
       retryTimes++;
       setTimeout(() => {

@@ -8,7 +8,10 @@
  */
 
 import { expect, test } from '@nocobase/test/e2e';
-import { formFieldDependsOnSubtableFieldsWithLinkageRules } from './template';
+import {
+  formFieldDependsOnSubtableFieldsWithLinkageRules,
+  whenSetToHideRetainedValueItShouldNotImpactTheFieldSDefaultValueVariables,
+} from './template';
 
 test.describe('linkage rules', () => {
   test('form field depends on subtable fields with linkage rules', async ({ page, mockPage, mockRecord }) => {
@@ -53,6 +56,30 @@ test.describe('linkage rules', () => {
     await expect(
       page.getByLabel('block-item-CollectionField-test-form-test.result-result').getByRole('spinbutton'),
     ).toHaveValue(String(calcResult(record) + 10 * 10));
+  });
+
+  test("When set to 'Hide retained value', it should not impact the field's default value variables", async ({
+    page,
+    mockPage,
+  }) => {
+    await mockPage(whenSetToHideRetainedValueItShouldNotImpactTheFieldSDefaultValueVariables).goto();
+
+    // 1. 给 Nickname 字段输入一个值，子表单中被隐藏的字段 title 的值应该为 Nickname 字段的值（因为其设置了默认值，其中使用了“当前表单”变量中 Nickname 字段的值）
+    await page
+      .getByRole('button', { name: 'block-item-CollectionField-users-form-users.nickname-Nickname' })
+      .getByRole('textbox')
+      .fill('123456789');
+
+    // 2. 点击提交后，Roles 表格区块中应该显示刚才创建的 Role
+
+    // 等待默认值生效
+    await page.waitForTimeout(1000);
+
+    await page.getByRole('button', { name: 'action-Action-Submit-submit-' }).click();
+    await page.getByRole('button', { name: 'action-Action-Refresh-refresh' }).click();
+    await expect(
+      page.getByRole('button', { name: 'block-item-CardItem-roles-' }).getByRole('row', { name: '123456789' }),
+    ).toBeVisible();
   });
 });
 

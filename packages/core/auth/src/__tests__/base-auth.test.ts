@@ -10,6 +10,7 @@
 import { vi } from 'vitest';
 import { BaseAuth } from '../base/auth';
 import { AuthErrorCode } from '../auth';
+import jwt from 'jsonwebtoken';
 
 describe('base-auth', () => {
   it('should validate username', () => {
@@ -56,7 +57,7 @@ describe('base-auth', () => {
       app: {
         authManager: {
           jwt: {
-            decode: () => ({ userId: 1, roleName: 'admin' }),
+            decode: () => ({ userId: 1, roleName: 'admin', signInTime: Date.now() }),
             blacklist: {
               has: () => false,
             },
@@ -64,6 +65,11 @@ describe('base-auth', () => {
           tokenController: {
             check: () => ({ status: 'valid' }),
             removeLoginExpiredTokens: async () => null,
+            getConfig: async () => ({
+              tokenExpirationTime: '30m',
+              sessionExpirationTime: '1d',
+              expiredTokenRenewLimit: '15m',
+            }),
           },
         },
       },
@@ -95,7 +101,7 @@ describe('base-auth', () => {
       app: {
         authManager: {
           jwt: {
-            decode: () => ({ userId: 1, roleName: 'admin' }),
+            decode: () => ({ userId: 1, roleName: 'admin', signInTime: Date.now() }),
             blacklist: {
               has: () => false,
             },
@@ -103,6 +109,11 @@ describe('base-auth', () => {
           tokenController: {
             check: () => ({ status: 'valid' }),
             removeLoginExpiredTokens: () => null,
+            getConfig: async () => ({
+              tokenExpirationTime: '30m',
+              sessionExpirationTime: '1d',
+              expiredTokenRenewLimit: '15m',
+            }),
           },
         },
       },
@@ -159,7 +170,7 @@ describe('base-auth', () => {
           },
           tokenController: {
             add: () => 'access',
-            getConfig: () => ({
+            getConfig: async () => ({
               tokenExpirationTime: '30m',
               sessionExpirationTime: '1d',
               expiredTokenRenewLimit: '15m',

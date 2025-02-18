@@ -35,24 +35,30 @@ export default class extends Migration {
           // 2. 将旧版的权限配置，转换为新版的权限配置
 
           const roles = await rolesRepository.find({
-            appends: ['desktopRoutes', 'menuUiSchemas'],
+            appends: ['menuUiSchemas'],
             transaction,
           });
+          const allDesktopRoutes = await desktopRoutes.find({ transaction });
 
           for (const role of roles) {
             const menuUiSchemas = role.menuUiSchemas || [];
-            const desktopRoutes = role.desktopRoutes || [];
-            const needRemoveIds = getNeedRemoveIds(desktopRoutes, menuUiSchemas);
+            const { needRemoveIds, needAddIds } = getIds(allDesktopRoutes, menuUiSchemas);
 
-            if (needRemoveIds.length === 0) {
-              continue;
+            if (needRemoveIds.length > 0) {
+              // @ts-ignore
+              await this.db.getRepository('roles.desktopRoutes', role.name).remove({
+                tk: needRemoveIds,
+                transaction,
+              });
             }
 
-            // @ts-ignore
-            await this.db.getRepository('roles.desktopRoutes', role.name).remove({
-              tk: needRemoveIds,
-              transaction,
-            });
+            if (needAddIds.length > 0) {
+              // @ts-ignore
+              await this.db.getRepository('roles.desktopRoutes', role.name).add({
+                tk: needAddIds,
+                transaction,
+              });
+            }
           }
         }
 
@@ -159,7 +165,7 @@ export async function schemaToRoutes(schema: any, uiSchemas: any) {
     // Tab
     return {
       type: 'tabs',
-      title: item.title || '{{t("Unnamed")}}',
+      title: item.title,
       icon: item['x-component-props']?.icon,
       schemaUid: item['x-uid'],
       tabSchemaName: key,
@@ -170,9 +176,9 @@ export async function schemaToRoutes(schema: any, uiSchemas: any) {
   return Promise.all(result);
 }
 
-function getNeedRemoveIds(desktopRoutes: any[], menuUiSchemas: any[]) {
+export function getIds(desktopRoutes: any[], menuUiSchemas: any[]) {
   const uidList = menuUiSchemas.map((item) => item['x-uid']);
-  return desktopRoutes
+  const needRemoveIds = desktopRoutes
     .filter((item) => {
       // 之前是不支持配置 tab 的权限的，所以所有的 tab 都不会存在于旧版的 menuUiSchemas 中
       if (item.type === 'tabs') {
@@ -189,4 +195,7 @@ function getNeedRemoveIds(desktopRoutes: any[], menuUiSchemas: any[]) {
       return !uidList.includes(item?.schemaUid);
     })
     .map((item) => item?.id);
+  const needAddIds = desktopRoutes.map((item) => item?.id).filter((id) => !needRemoveIds.includes(id));
+
+  return { needRemoveIds, needAddIds };
 }

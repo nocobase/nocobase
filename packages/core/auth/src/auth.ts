@@ -25,6 +25,7 @@ export const AuthErrorCode = {
   BLOCKED_TOKEN: 'BLOCKED_TOKEN' as const,
   EXPIRED_SESSION: 'EXPIRED_SESSION' as const,
   NOT_EXIST_USER: 'NOT_EXIST_USER' as const,
+  SKIP_TOKEN_RENEW: 'SKIP_TOKEN_RENEW' as const,
 };
 
 export type AuthErrorType = keyof typeof AuthErrorCode;

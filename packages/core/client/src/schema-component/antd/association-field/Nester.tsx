@@ -322,7 +322,7 @@ const ToManyNester = observer(
                 }
               />
             )}
-            {field.editable && allowSelectExistingRecord && currentMode === 'Nester' && (
+            {field.editable && allowSelectExistingRecord && currentMode === 'Nester' && allowMultiple && (
               <Action.Link
                 useAction={useNesterSelectProps}
                 title={

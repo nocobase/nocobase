@@ -19,7 +19,7 @@ describe('external data source', () => {
   beforeAll(async () => {
     process.env.INIT_ROOT_USERNAME = 'test';
     app = await createMockServer({
-      plugins: ['field-sort', 'data-source-manager', 'users', 'acl'],
+      plugins: ['field-sort', 'data-source-manager', 'users', 'acl', 'auth'],
     });
     db = app.db;
     ctx = {
@@ -40,7 +40,7 @@ describe('external data source', () => {
         username: process.env.INIT_ROOT_USERNAME,
       },
     });
-    adminAgent = app.agent().login(adminUser);
+    adminAgent = await app.agent().login(adminUser);
   });
 
   it('should check permission for external data source', async () => {

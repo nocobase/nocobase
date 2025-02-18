@@ -18,3 +18,8 @@ export function usePluginTranslation() {
 export function generatePluginTranslationTemplate(key: string) {
   return `{{t('${key}', { ns: ['${pkg.name}', 'client'], nsMode: 'fallback' })}}`;
 }
+
+export const ROUTE_NAMESPACE = 'lm-mobile-routes';
+export function useRouteTranslation() {
+  return useTranslation(ROUTE_NAMESPACE);
+}
