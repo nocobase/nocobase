@@ -47,20 +47,25 @@ export async function setCurrentRole(ctx: Context, next) {
   ctx.state.currentUser.roles = userRoles;
 
   let role: string | undefined;
-  // 1. If the X-Role is set, use the specified role
-  if (currentRole) {
-    role = userRoles.find((role) => role.name === currentRole)?.name;
-    if (!role) {
-      return ctx.throw(401, {
-        code: 'ROLE_NOT_FOUND_FOR_USER',
-        message: ctx.t('The role does not belong to the user', { ns: 'acl' }),
-      });
+
+  if (currentRole === '*') {
+    role = currentRole;
+  } else {
+    // 1. If the X-Role is set, use the specified role
+    if (currentRole) {
+      role = userRoles.find((role) => role.name === currentRole)?.name;
+      if (!role) {
+        return ctx.throw(401, {
+          code: 'ROLE_NOT_FOUND_FOR_USER',
+          message: ctx.t('The role does not belong to the user', { ns: 'acl' }),
+        });
+      }
     }
-  }
-  // 2. If the X-Role is not set, or the X-Role does not belong to the user, use the default role
-  if (!role) {
-    const defaultRole = userRoles.find((role) => role?.rolesUsers?.default);
-    role = (defaultRole || userRoles[0])?.name;
+    // 2. If the X-Role is not set, or the X-Role does not belong to the user, use the default role
+    if (!role) {
+      const defaultRole = userRoles.find((role) => role?.rolesUsers?.default);
+      role = (defaultRole || userRoles[0])?.name;
+    }
   }
   ctx.state.currentRole = role;
   if (!ctx.state.currentRole) {

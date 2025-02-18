@@ -162,7 +162,7 @@ describe('acl', () => {
     });
 
     const acl = app.acl;
-    const canResult = acl.can({ role: 'test-role', resource: 'repairs', action: 'list' });
+    const canResult = acl.can({ roleNames: 'test-role', resource: 'repairs', action: 'list' });
     const params = canResult['params'];
 
     expect(params['fields']).toHaveLength(3);
@@ -224,7 +224,7 @@ describe('acl', () => {
 
     expect(
       acl.can({
-        role: 'test-role',
+        roleNames: 'test-role',
         resource: 'posts.comments',
         action: 'list',
       }),
@@ -232,7 +232,7 @@ describe('acl', () => {
 
     expect(
       acl.can({
-        role: 'test-role',
+        roleNames: 'test-role',
         resource: 'comments',
         action: 'list',
       }),
@@ -320,7 +320,7 @@ describe('acl', () => {
 
     expect(
       acl.can({
-        role: 'new',
+        roleNames: 'new',
         resource: 'posts',
         action: 'create',
       }),
@@ -340,7 +340,7 @@ describe('acl', () => {
     app.acl.appendStrategyResource('posts');
     expect(
       acl.can({
-        role: 'new',
+        roleNames: 'new',
         resource: 'posts',
         action: 'create',
       }),
@@ -387,7 +387,7 @@ describe('acl', () => {
 
     expect(
       acl.can({
-        role: 'new',
+        roleNames: 'new',
         resource: 'c1',
         action: 'list',
       }),
@@ -432,7 +432,7 @@ describe('acl', () => {
 
     expect(
       acl.can({
-        role: 'new',
+        roleNames: 'new',
         resource: 'c1',
         action: 'view',
       }),
@@ -506,7 +506,7 @@ describe('acl', () => {
 
     expect(
       acl.can({
-        role: 'new',
+        roleNames: 'new',
         resource: 'c1',
         action: 'create',
       }),
@@ -521,7 +521,7 @@ describe('acl', () => {
 
     expect(
       acl.can({
-        role: 'new',
+        roleNames: 'new',
         resource: 'c1',
         action: 'view',
       }),
@@ -563,7 +563,7 @@ describe('acl', () => {
 
     expect(
       acl.can({
-        role: 'new',
+        roleNames: 'new',
         resource: 'c1',
         action: 'create',
       }),
@@ -607,7 +607,7 @@ describe('acl', () => {
 
     expect(
       acl.can({
-        role: 'new',
+        roleNames: 'new',
         resource: 'posts',
         action: 'view',
       }),
@@ -621,7 +621,7 @@ describe('acl', () => {
 
     expect(
       acl.can({
-        role: 'new',
+        roleNames: 'new',
         resource: 'posts',
         action: 'view',
       }),
@@ -657,7 +657,7 @@ describe('acl', () => {
 
     expect(
       acl.can({
-        role: 'new',
+        roleNames: 'new',
         resource: 'posts',
         action: 'create',
       }),
@@ -684,7 +684,7 @@ describe('acl', () => {
 
     expect(
       acl.can({
-        role: 'new',
+        roleNames: 'new',
         resource: 'posts',
         action: 'create',
       }),
@@ -699,7 +699,7 @@ describe('acl', () => {
 
     expect(
       acl.can({
-        role: 'new',
+        roleNames: 'new',
         resource: 'posts',
         action: 'create',
       }),
@@ -746,7 +746,7 @@ describe('acl', () => {
     });
 
     const allowFields = acl.can({
-      role: 'new',
+      roleNames: 'new',
       resource: 'posts',
       action: 'view',
     })['params']['fields'];
@@ -762,7 +762,7 @@ describe('acl', () => {
     });
 
     const newAllowFields = acl.can({
-      role: 'new',
+      roleNames: 'new',
       resource: 'posts',
       action: 'view',
     })['params']['fields'];
@@ -848,7 +848,7 @@ describe('acl', () => {
 
     expect(
       app.acl.can({
-        role: 'new',
+        roleNames: 'new',
         resource: 'posts',
         action: 'view',
       }),

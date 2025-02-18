@@ -31,6 +31,7 @@ export interface ResourceActionsOptions {
  * @internal
  */
 export class ACLRole {
+  name: string;
   strategy: string | AvailableStrategyOptions;
   resources = new Map<string, ACLResource>();
   snippets: Set<string> = new Set();
@@ -41,8 +42,14 @@ export class ACLRole {
 
   constructor(
     public acl: ACL,
-    public name: string,
-  ) {}
+    name: string,
+    public roles: ACLRole[] = [],
+  ) {
+    this.name = name;
+    if (roles.length > 0) {
+      this.snippets = new Set(lodash.intersection(...roles.map((role) => [...role.snippets])));
+    }
+  }
 
   _serializeSet(set: Set<string>) {
     return JSON.stringify([...set].sort());

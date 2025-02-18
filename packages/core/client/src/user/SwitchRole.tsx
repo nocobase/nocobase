@@ -30,7 +30,7 @@ export const useSwitchRole = () => {
             value: 'name',
           }}
           options={roles}
-          defaultValue={api.auth.role}
+          defaultValue={api.auth.role || '*'}
           onChange={async (roleName) => {
             api.auth.setRole(roleName);
             await api.resource('users').setDefaultRole({ values: { roleName } });
@@ -45,6 +45,5 @@ export const useSwitchRole = () => {
   if (roles.length <= 1) {
     return null;
   }
-
   return result;
 };

@@ -33,7 +33,7 @@ describe('nocobase snippet', () => {
 
     expect(
       app.acl.can({
-        role: 'test',
+        roleNames: 'test',
         resource: 'users',
         action: 'list',
       }),
@@ -50,7 +50,7 @@ describe('nocobase snippet', () => {
 
     expect(
       app.acl.can({
-        role: 'test',
+        roleNames: 'test',
         resource: 'users',
         action: 'list',
       }),
@@ -131,14 +131,14 @@ describe('acl snippet', () => {
     });
 
     adminRole.snippets.add('sc.*');
-    expect(acl.can({ role: 'admin', resource: 'collections', action: 'list' })).not.toBeNull();
+    expect(acl.can({ roleNames: 'admin', resource: 'collections', action: 'list' })).not.toBeNull();
     expect(adminRole.snippetAllowed('collections:list')).toBe(true);
 
     adminRole.snippets.add('!sc.collection-manager.gi');
-    expect(acl.can({ role: 'admin', resource: 'gi', action: 'list' })).toBeNull();
+    expect(acl.can({ roleNames: 'admin', resource: 'gi', action: 'list' })).toBeNull();
     expect(adminRole.snippetAllowed('gi:list')).toBe(false);
 
-    expect(acl.can({ role: 'admin', resource: 'fields', action: 'list' })).not.toBeNull();
+    expect(acl.can({ roleNames: 'admin', resource: 'fields', action: 'list' })).not.toBeNull();
     expect(adminRole.snippetAllowed('fields:list')).toBe(true);
 
     expect(adminRole.snippetAllowed('other:list')).toBeNull();
@@ -168,8 +168,8 @@ describe('acl snippet', () => {
     adminRole.snippets.add('!sc.users');
     adminRole.snippets.add('sc.*');
 
-    expect(acl.can({ role: 'admin', resource: 'fields', action: 'list' })).toBeTruthy();
-    expect(acl.can({ role: 'admin', resource: 'users', action: 'list' })).toBeNull();
+    expect(acl.can({ roleNames: 'admin', resource: 'fields', action: 'list' })).toBeTruthy();
+    expect(acl.can({ roleNames: 'admin', resource: 'users', action: 'list' })).toBeNull();
   });
 });
 
