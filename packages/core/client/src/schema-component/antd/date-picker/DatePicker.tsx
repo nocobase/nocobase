@@ -288,6 +288,12 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
   };
   const field: any = useField();
   const [stateProps, setStateProps] = useState(newProps);
+  useEffect(() => {
+    newProps.picker = targetPicker;
+    const dateTimeFormat = getDateTimeFormat(targetPicker, format, showTime, timeFormat);
+    newProps.format = dateTimeFormat;
+    setStateProps(newProps);
+  }, [targetPicker]);
   return (
     <Space.Compact style={{ width: '100%' }}>
       <Select
@@ -296,7 +302,7 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
         data-testid="select-picker"
         style={{ width: '100px' }}
         popupMatchSelectWidth={false}
-        defaultValue={targetPicker}
+        value={targetPicker}
         options={compile([
           {
             label: '{{t("Date")}}',
