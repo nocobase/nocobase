@@ -3,7 +3,7 @@ import { TreeSelect } from '@formily/antd-v5';
 import { Field, onFieldChange } from '@formily/core';
 import { ISchema } from "@formily/react";
 import { uid } from "@formily/shared";
-import { App, ConfigProvider, Modal } from 'antd';
+import { App, ConfigProvider } from 'antd';
 import { SiderContext } from "antd/es/layout/Sider";
 import React, { FC, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -325,12 +325,13 @@ const HiddenMenuItem = () => {
   const { t } = useTranslation();
   const currentRoute = useCurrentRouteData();
   const { updateRoute } = useNocoBaseRoutes();
+  const { modal } = App.useApp();
 
   return <SchemaSettingsSwitchItem
     title={t('Hidden')}
     checked={currentRoute.hideInMenu}
     onChange={(value) => {
-      Modal.confirm({
+      modal.confirm({
         title: t('Are you sure you want to hide this menu?'),
         icon: <ExclamationCircleFilled />,
         content: t(
