@@ -30,7 +30,7 @@ export function VariableSelect({
   changeOnSelect?: boolean;
   fieldNames?: any;
   className?: string;
-  disabled: boolean;
+  disabled?: boolean;
 }): JSX.Element {
   const { t } = useTranslation();
   const [selectedVar, setSelectedVar] = useState<string[]>([]);
