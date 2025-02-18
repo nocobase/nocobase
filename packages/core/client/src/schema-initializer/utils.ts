@@ -1902,7 +1902,3 @@ const initializerMenusGenerators = new Map<string, (options: any) => SchemaIniti
 export function registerInitializerMenusGenerator(key: string, generator: (options: any) => SchemaInitializerItemType) {
   initializerMenusGenerators.set(key, generator);
 }
-
-export function unregisterInitializerMenusGenerator(key: string) {
-  initializerMenusGenerators.delete(key);
-}

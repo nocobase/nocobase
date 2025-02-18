@@ -133,12 +133,13 @@ export const BlockTemplateProvider = ({ children }) => {
     const generator = ({ collection, association, item, index, field, componentName, dataSource, keyPrefix, name }) => {
       let collectionName = collection?.name || item?.options?.name;
       const dataSourceName = dataSource || item?.options?.dataSource || collection?.dataSource;
+      const isInWorkflowPage = window.location.pathname.includes('/admin/workflow');
 
       if (componentName?.startsWith('mobile-')) {
         componentName = componentName.replace('mobile-', '');
       }
 
-      if (plugin.isInBlockTemplateConfigPage()) {
+      if (plugin.isInBlockTemplateConfigPage() || isInWorkflowPage) {
         // hide menu in template config page
         return null;
       }
