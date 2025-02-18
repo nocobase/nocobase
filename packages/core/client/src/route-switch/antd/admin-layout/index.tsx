@@ -608,6 +608,22 @@ function findRouteBySchemaUid(schemaUid: string, treeArray: any[]) {
   return null;
 }
 
+const MenuItemIcon: FC<{ icon: string; title: string }> = (props) => {
+  return (
+    <RouteContext.Consumer>
+      {(value: RouteContextType) => {
+        const { collapsed } = value;
+
+        if (collapsed) {
+          return props.icon ? <Icon type={props.icon} /> : props.title.charAt(0);
+        }
+
+        return <Icon type={props.icon} />;
+      }}
+    </RouteContext.Consumer>
+  )
+}
+
 function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializer, designable, parentRoute, isMobile, depth = 0 }: any) {
   if (!routes) return;
 
@@ -626,7 +642,7 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializ
     if (item.type === NocoBaseDesktopRouteType.link) {
       return {
         name: item.title,
-        icon: <Icon type={item.icon} />,
+        icon: <MenuItemIcon icon={item.icon} title={item.title} />,
         path: '/',
         hideInMenu: item.hideInMenu,
         _route: item,
@@ -637,7 +653,7 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializ
     if (item.type === NocoBaseDesktopRouteType.page) {
       return {
         name: item.title,
-        icon: <Icon type={item.icon} />,
+        icon: <MenuItemIcon icon={item.icon} title={item.title} />,
         path: `/admin/${item.schemaUid}`,
         redirect: `/admin/${item.schemaUid}`,
         hideInMenu: item.hideInMenu,
@@ -656,7 +672,7 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializ
 
       return {
         name: item.title,
-        icon: <Icon type={item.icon} />,
+        icon: <MenuItemIcon icon={item.icon} title={item.title} />,
         path: `/admin/${item.id}`,
         redirect: children[0]?.key === 'x-designer-button' ? undefined : `/admin/${findFirstPageRoute(item.children)?.schemaUid || ''}`,
         routes: children.length === 0 ? [{ path: '/', name: ' ', disabled: true, _hidden: true }] : children,
