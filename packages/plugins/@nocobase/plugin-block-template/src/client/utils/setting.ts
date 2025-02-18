@@ -76,6 +76,16 @@ export const hideBlocksFromTemplate = (initializers: string[], app: Application)
   const hiddenBlocks = ['ChartV2BlockInitializer', 'WorkflowTodo.Initializer', 'ApprovalBlock.BlockInitializer']; // the blocks that should be hidden from template
   for (const initializerName of initializers) {
     const initializer = app.schemaInitializerManager.get(initializerName);
+    if (['page:addBlock', 'mobile:addBlock'].includes(initializerName)) {
+      const otherBlocks = initializer?.items?.find((item) => item.name === 'otherBlocks');
+      if (otherBlocks) {
+        const visible = otherBlocks?.useVisible || (() => true);
+        otherBlocks.useVisible = function useVisible() {
+          const plugin = usePlugin(PluginBlockTemplateClient);
+          return visible() && !plugin?.isInBlockTemplateConfigPage();
+        };
+      }
+    }
     if (initializer && initializer.items) {
       for (const item of initializer.items) {
         for (const child of item.children || []) {
