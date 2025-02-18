@@ -12,9 +12,12 @@
 //
 // Created by Curran Kelleher and Chrostophe Serafin.
 // Contributions from Paul Brewer and Javier Blanco Martinez.
-import { get } from 'lodash';
+import { get, template } from 'lodash';
 import liquidjsEngine from './liquidjs';
+import { TokenKind } from 'liquidjs';
 import engine from './liquidjs';
+import raw from 'liquidjs/dist/tags/raw';
+import b from 'packages/core/database/src/__tests__/fixtures/c1/b';
 
 // An enhanced version of `typeof` that handles arrays and dates as well.
 function type(value) {
@@ -28,25 +31,6 @@ function type(value) {
   }
 
   return valueType;
-}
-
-// Constructs a parameter object from a match result.
-// e.g. "['{{foo}}']" --> { key: "foo" }
-// e.g. "['{{foo:bar}}']" --> { key: "foo", defaultValue: "bar" }
-function Parameter(match) {
-  let param;
-  const matchValue = match.substr(2, match.length - 4).trim();
-  const i = matchValue.indexOf(':');
-
-  if (i !== -1) {
-    param = {
-      key: matchValue.substr(0, i),
-    };
-  } else {
-    param = { key: matchValue };
-  }
-
-  return param;
 }
 
 // Constructs a template function with deduped `parameters` property.
@@ -85,10 +69,56 @@ const parseString = (() => {
   // template parameter syntax such as {{foo}} or {{foo:someDefault}}.
 
   return (str) => {
+    const rawTemplates = liquidjsEngine.parse(str);
+    // const ref = {};
+    // rawTemplates.forEach((template) => {
+    //   if (template.token.kind === TokenKind.Output) {
+    //     // @ts-ignore
+    //     const variable = template.value?.initial?.postfix;
+    //     // @ts-ignore
+    //     ref.variableName = variable[0].props[0].content;
+    //     // @ts-ignore
+    //     ref.filters = template.value?.filters.map(({ name, handler, args }) => ({
+    //       name,
+    //       handler,
+    //       args: args.map((arg) => arg.content),
+    //     }));
+    //   }
+    // });
+
+    const templates = rawTemplates
+      .filter((rawTemplate) => rawTemplate.token.kind === TokenKind.Output)
+      .map((rawTemplate) => {
+        const fullVariables = liquidjsEngine.fullVariablesSync(rawTemplate.token.input);
+        return {
+          // @ts-ignore
+          variableName: fullVariables[0],
+          tokenBegin: rawTemplate.token.begin,
+          tokenEnd: rawTemplate.token.end,
+          // @ts-ignore
+          filters: rawTemplate.value?.filters.map(({ name, handler, args }) => ({
+            name,
+            handler,
+            args: args.map((arg) => arg.content),
+          })),
+        };
+      });
     const templateFn = (context) => {
-      return engine.parseAndRenderSync(str, context);
+      if (templates.length === 1 && templates[0].tokenBegin === 0 && templates[0].tokenEnd === str.length) {
+        let value = get(context, templates[0].variableName);
+        if (typeof value === 'function') {
+          value = value();
+        }
+        if (Array.isArray(templates[0].filters)) {
+          return templates[0].filters.reduce((acc, filter) => filter.handler(...[acc, ...filter.args]), value);
+        }
+      }
+      return engine.renderSync(rawTemplates, context);
     };
-    const parameters = liquidjsEngine.fullVariablesSync(str).map((variable) => ({ key: variable }));
+
+    // Accommodate non-string as original values.
+
+    const parameters = templates.map((template) => ({ key: template.variableName }));
 
     return Template(templateFn, parameters);
   };

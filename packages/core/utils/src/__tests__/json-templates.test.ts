@@ -8,7 +8,7 @@
  */
 
 import { parse } from '../json-templates';
-
+import { TokenKind } from 'liquidjs';
 describe('json-templates', () => {
   it('parse json with string template', async () => {
     const template = {
@@ -29,16 +29,18 @@ describe('json-templates', () => {
 describe('json-templates filters', () => {
   it('date filters', async () => {
     const template = {
+      now: '{{now}}',
       today: '{{now | date_format: "YYYY-MM-DD"}}',
       yesterday: '{{now | date_subtract: 1, "day" | date_format: "YYYY-MM-DD"}}',
     };
 
-    const compiledFn = parse(template);
-    compiledFn.parameters.some((parameter) => parameter.key === 'now');
-    const result = compiledFn({
-      now: new Date('2025-01-01: 12:00:00'),
+    const parsed = parse(template);
+    const now = new Date('2025-01-01: 12:00:00');
+    const result = parsed({
+      now,
     });
     expect(result).toEqual({
+      now,
       today: '2025-01-01',
       yesterday: '2024-12-31',
     });
@@ -61,17 +63,31 @@ describe('json-templates filters', () => {
     });
   });
 
+  it('when non-string type', async () => {
+    class Form {}
+    const form = new Form();
+    const template = {
+      form: '{{form}}',
+    };
+    const result = parse(template)({
+      form,
+    });
+    expect(result).toEqual({
+      form,
+    });
+  });
+
   it('when key is undefined, ignore it', async () => {
     const template = {
       key1: '{{current.key1}}',
       key2: '{{current.key2}}',
     };
     const result = parse(template)({
-      current: { key1: 'value1', key2: undefined },
+      current: { key1: 'value1' },
     });
     expect(result).toEqual({
       key1: 'value1',
-      key2: '',
+      key2: undefined,
     });
   });
 });
