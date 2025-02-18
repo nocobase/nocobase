@@ -8,6 +8,7 @@
  */
 
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
+import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
 import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
@@ -409,6 +410,8 @@ const contentStyle = {
   paddingInline: 0,
 };
 
+const headerContext = React.createContext<{ inHeader: boolean }>({ inHeader: false });
+
 const actionsRender = (props) => {
   if (props.isMobile) return null;
   return <PinnedPluginList />;
@@ -425,6 +428,15 @@ const subMenuItemRender = (item, dom) => {
 const collapsedButtonRender = (collapsed, dom) => {
   return <div style={{ zIndex: 999 }}>{dom}</div>;
 };
+
+const headerContextValue = { inHeader: true };
+const headerRender = (props: HeaderViewProps, defaultDom: React.ReactNode) => {
+  return (
+    <headerContext.Provider value={headerContextValue}>
+      {defaultDom}
+    </headerContext.Provider>
+  );
+}
 
 export const InternalAdminLayout = () => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
@@ -495,6 +507,7 @@ export const InternalAdminLayout = () => {
         layout="mix"
         splitMenus
         token={layoutToken}
+        headerRender={headerRender}
         menuItemRender={menuItemRender}
         subMenuItemRender={subMenuItemRender}
         collapsedButtonRender={collapsedButtonRender}
@@ -642,12 +655,14 @@ function findRouteBySchemaUid(schemaUid: string, treeArray: any[]) {
 }
 
 const MenuItemIcon: FC<{ icon: string; title: string }> = (props) => {
+  const { inHeader } = useContext(headerContext);
+
   return (
     <RouteContext.Consumer>
       {(value: RouteContextType) => {
         const { collapsed } = value;
 
-        if (collapsed) {
+        if (collapsed && !inHeader) {
           return props.icon ? <Icon type={props.icon} /> : props.title.charAt(0);
         }
 
