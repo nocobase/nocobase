@@ -254,7 +254,7 @@ const MenuSchemaToolbarWithContainer = () => {
   const [container, setContainer] = React.useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    setContainer(divRef.current.parentElement.parentElement);
+    setContainer(divRef.current.parentElement.parentElement.parentElement);
   }, []);
 
   return (
