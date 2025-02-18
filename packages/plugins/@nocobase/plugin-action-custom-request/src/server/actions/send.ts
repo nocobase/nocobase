@@ -66,6 +66,7 @@ export const getParsedValue = (value, variables) => {
 export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) {
   const resourceName = ctx.action.resourceName;
   const { filterByTk, values = {} } = ctx.action.params;
+  const globalVariables = await ctx.db.getGlobalVariable();
   const {
     currentRecord = {
       id: 0,
@@ -155,6 +156,7 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
     $nToken: ctx.getBearerToken(),
     $nForm,
     $env: ctx.app.environment.getVariables(),
+    ...globalVariables,
   };
 
   const axiosRequestConfig = {
