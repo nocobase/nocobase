@@ -39,9 +39,15 @@ const workflowConfigSettings = {
   Component: BindWorkflowConfig,
 };
 
+type InstructionGroup = {
+  key?: string;
+  label: string;
+};
+
 export default class PluginWorkflowClient extends Plugin {
   triggers = new Registry<Trigger>();
   instructions = new Registry<Instruction>();
+  instructionGroups = new Registry<InstructionGroup>();
   systemVariables = new Registry<VariableOption>();
 
   taskTypes = new Registry<TaskTypeOptions>();
@@ -54,6 +60,16 @@ export default class PluginWorkflowClient extends Plugin {
         label: compile(title),
         color: 'gold',
         options,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  };
+
+  useInstructionGroupOptions = () => {
+    const compile = useCompile();
+    return Array.from(this.instructionGroups.getEntities())
+      .map(([key, { label }]) => ({
+        key,
+        label: compile(label),
       }))
       .sort((a, b) => a.label.localeCompare(b.label));
   };
@@ -80,6 +96,10 @@ export default class PluginWorkflowClient extends Plugin {
     } else {
       throw new TypeError('invalid instruction type to register');
     }
+  }
+
+  registerInstructionGroup(key: string, group: InstructionGroup) {
+    this.instructionGroups.register(key, group);
   }
 
   registerSystemVariable(option: VariableOption) {
@@ -127,6 +147,21 @@ export default class PluginWorkflowClient extends Plugin {
     this.app.schemaSettingsManager.addItem('actionSettings:updateRecord', 'workflowConfig', workflowConfigSettings);
     this.app.schemaSettingsManager.addItem('actionSettings:delete', 'workflowConfig', workflowConfigSettings);
     this.app.schemaSettingsManager.addItem('actionSettings:bulkEditSubmit', 'workflowConfig', workflowConfigSettings);
+
+    this.registerInstructionGroup('control', { key: 'control', label: `{{t("Control", { ns: "${NAMESPACE}" })}}` });
+    this.registerInstructionGroup('calculation', {
+      key: 'calculation',
+      label: `{{t("Calculation", { ns: "${NAMESPACE}" })}}`,
+    });
+    this.registerInstructionGroup('collection', {
+      key: 'collection',
+      label: `{{t("Collection operations", { ns: "${NAMESPACE}" })}}`,
+    });
+    this.registerInstructionGroup('manual', { key: 'manual', label: `{{t("Manual", { ns: "${NAMESPACE}" })}}` });
+    this.registerInstructionGroup('extended', {
+      key: 'extended',
+      label: `{{t("Extended types", { ns: "${NAMESPACE}" })}}`,
+    });
 
     this.registerTrigger('collection', CollectionTrigger);
     this.registerTrigger('schedule', ScheduleTrigger);
