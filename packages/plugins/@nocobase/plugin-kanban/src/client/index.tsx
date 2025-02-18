@@ -56,7 +56,7 @@ type CollectionField = {
   [key: string]: any; // 扩展字段
 };
 
-type Option = { color: string; label: string; value: string };
+type Option = { color?: string; label: string; value: string };
 type GroupOptions = { options: Option[]; loading?: boolean };
 type GetGroupOptions = (collectionField: string) => GroupOptions;
 
