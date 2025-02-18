@@ -291,6 +291,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
   const { item } = props;
   const { parseURLAndParams } = useParseURLAndParams();
   const divRef = useRef(null);
+  const location = useLocation();
 
   useEffect(() => {
     if (divRef.current) {
@@ -342,19 +343,22 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
   if (item._route?.type === NocoBaseDesktopRouteType.link) {
     // fake schema used to pass routing information to SortableItem
     return (
-      <div onClick={handleClickLink}>
-        <ParentRouteContext.Provider value={item._parentRoute}>
-          <NocoBaseRouteContext.Provider value={item._route}>
-            <SortableItem
-              id={item._route.id}
-              schema={fakeSchema}
-            >
-              {props.children}
-              <MenuSchemaToolbar />
-            </SortableItem>
-          </NocoBaseRouteContext.Provider>
-        </ParentRouteContext.Provider>
-      </div>
+      <ParentRouteContext.Provider value={item._parentRoute}>
+        <NocoBaseRouteContext.Provider value={item._route}>
+          <SortableItem
+            id={item._route.id}
+            schema={fakeSchema}
+          >
+            <div onClick={handleClickLink}>
+              {/* 这里是为了扩大点击区域 */}
+              <Link to={location.pathname}>
+                {props.children}
+              </Link>
+            </div>
+            <MenuSchemaToolbar />
+          </SortableItem>
+        </NocoBaseRouteContext.Provider>
+      </ParentRouteContext.Provider>
     )
   }
 
@@ -362,21 +366,19 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
   const path = item.redirect || item.path;
 
   return (
-    <div>
-      <ParentRouteContext.Provider value={item._parentRoute}>
-        <NocoBaseRouteContext.Provider value={item._route}>
-          <SortableItem
-            id={item._route.id}
-            schema={fakeSchema}
-          >
-            <Link to={path}>
-              {props.children}
-            </Link>
-            <MenuSchemaToolbar />
-          </SortableItem>
-        </NocoBaseRouteContext.Provider>
-      </ParentRouteContext.Provider>
-    </div>
+    <ParentRouteContext.Provider value={item._parentRoute}>
+      <NocoBaseRouteContext.Provider value={item._route}>
+        <SortableItem
+          id={item._route.id}
+          schema={fakeSchema}
+        >
+          <Link to={path}>
+            {props.children}
+          </Link>
+          <MenuSchemaToolbar />
+        </SortableItem>
+      </NocoBaseRouteContext.Provider>
+    </ParentRouteContext.Provider>
   );
 };
 
