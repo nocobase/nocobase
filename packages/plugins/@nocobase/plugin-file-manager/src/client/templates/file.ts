@@ -116,7 +116,7 @@ export class FileCollectionTemplate extends CollectionTemplate {
         interface: 'url',
         type: 'string',
         name: 'preview',
-        // field: 'url', // 后续创建的文件表，preview不再直接引用 url 字段，预览时由前端进行判定，如果preview不存在，则使用url+thumbnailRule进行预览;如果preview存在，则使用preview
+        field: 'url', // 直接引用 url 字段
         deletable: false,
         uiSchema: {
           type: 'string',
