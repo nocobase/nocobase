@@ -278,6 +278,7 @@ const useStyles = createStyles(({ css, token }) => {
         opacity: 0;
         color: ${token.colorText};
         font-size: ${token.fontSizeIcon}px;
+        line-height: 1em;
 
         &[disabled] {
           display: none;
@@ -340,12 +341,20 @@ const useStyles = createStyles(({ css, token }) => {
 
     nodeMetaClass: css`
       flex-grow: 1;
-      line-height: 1em;
+      display: flex;
+      align-items: center;
 
       .ant-tag {
-        max-width: 10rem;
+        max-width: 10em;
         overflow: hidden;
         text-overflow: ellipsis;
+      }
+
+      .workflow-node-id {
+        color: ${token.colorTextDescription};
+        &:before {
+          content: '#';
+        }
       }
     `,
 
