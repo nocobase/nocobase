@@ -9,7 +9,6 @@
 
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
-import { Menu } from 'antd';
 import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import {
@@ -444,6 +443,11 @@ export const InternalAdminLayout = () => {
       },
       sider: {
         colorMenuBackground: token.colorBgContainer,
+        colorTextMenu: token.colorText,
+        colorTextMenuSelected: token.colorPrimary,
+        colorBgMenuItemSelected: token.colorPrimaryBg,
+        colorBgMenuItemActive: token.colorPrimaryBg,
+        colorBgMenuItemHover: token.colorBgTextHover,
       },
       bgLayout: token.colorBgLayout,
     }
@@ -479,8 +483,6 @@ export const InternalAdminLayout = () => {
           }}
         </RouteContext.Consumer>
       </ProLayout>
-      {/* 这里是为了加载 Menu 的样式，除此之外没什么用 */}
-      <Menu />
     </DndContext>
   );
 };
