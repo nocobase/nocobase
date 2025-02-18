@@ -236,7 +236,6 @@ const InsertMenuItems = (props) => {
                 params,
               },
             },
-            false,
           );
 
           if (insertPositionToMethod[insertPosition]) {

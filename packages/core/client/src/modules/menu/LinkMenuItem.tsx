@@ -9,7 +9,6 @@
 
 import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
-import { uid } from '@formily/shared';
 import { createMemoryHistory } from 'history';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -74,7 +73,6 @@ export const LinkMenuItem = () => {
       initialValues: {},
     });
     const { title, href, params, icon } = values;
-    const schemaUid = uid();
 
     // 创建一个路由到 desktopRoutes 表中
     await createRoute({
@@ -82,7 +80,6 @@ export const LinkMenuItem = () => {
       title,
       icon,
       parentId: parentRoute?.id,
-      schemaUid,
       options: {
         href,
         params,
