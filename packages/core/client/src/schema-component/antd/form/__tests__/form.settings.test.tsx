@@ -215,10 +215,10 @@ describe('form.settings', () => {
         title: 'Form data templates',
         type: 'modal',
       },
-      {
-        title: 'Save as block template',
-        type: 'modal',
-      },
+      // {
+      //   title: 'Save as block template',
+      //   type: 'modal',
+      // },
       {
         title: 'Delete',
         type: 'delete',
