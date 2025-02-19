@@ -60,7 +60,7 @@ export default {
     if (!isValid) {
       ctx.throw(401, ctx.t('The password is incorrect, please re-enter', { ns: namespace }));
     }
-    UserRepo.update({
+    await UserRepo.update({
       filterByTk: user.id,
       values: {
         password: newPassword,

@@ -320,6 +320,7 @@ describe('workflow > triggers > collection', () => {
     it('password changed in users', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
+        sync: true,
         type: 'collection',
         config: {
           mode: 2,
@@ -335,8 +336,6 @@ describe('workflow > triggers > collection', () => {
           confirmPassword: 'abc123',
         },
       });
-
-      await sleep(500);
 
       expect(res.status).toBe(200);
 
