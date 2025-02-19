@@ -29,7 +29,12 @@ import { WebSocketClient, WebSocketClientOptions } from './WebSocketClient';
 import { AppComponent, BlankComponent, defaultAppComponents } from './components';
 import { SchemaInitializer, SchemaInitializerManager } from './schema-initializer';
 import * as schemaInitializerComponents from './schema-initializer/components';
-import { SchemaSettings, SchemaSettingsManager, SchemaSettingItemComponentType } from './schema-settings';
+import {
+  SchemaSettings,
+  SchemaSettingsManager,
+  SchemaSettingItemComponentType,
+  SchemaSettingItemDividerProps,
+} from './schema-settings';
 
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
@@ -496,7 +501,7 @@ export class Application {
   getGlobalVar(key) {
     return get(this.globalVars, key);
   }
-  addUserCenterSettingsItem(name, item: SchemaSettingItemComponentType) {
-    this.schemaSettingsManager.addItem('userCenterSettings', name, item);
+  addUserCenterSettingsItem(item: SchemaSettingItemComponentType | SchemaSettingItemDividerProps) {
+    this.schemaSettingsManager.addItem('userCenterSettings', item.name, item);
   }
 }

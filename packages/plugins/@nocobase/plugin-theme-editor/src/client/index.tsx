@@ -101,7 +101,7 @@ export class PluginThemeEditorClient extends Plugin {
       aclSnippet: 'pm.theme-editor.themes',
     });
     // 个人中心注册 Theme 菜单项
-    this.app.addUserCenterSettingsItem('theme', {
+    this.app.addUserCenterSettingsItem({
       name: 'theme',
       sort: 310,
       Component: ThemeSettings,

@@ -38,32 +38,32 @@ class PluginUsersClient extends Plugin {
       Component: RoleUsersManager,
     });
     // 个人中心注册 注册设置项
-    this.app.addUserCenterSettingsItem('nickName', {
+    this.app.addUserCenterSettingsItem({
       name: 'nickName',
       Component: NickName,
       sort: 0,
     });
-    this.app.addUserCenterSettingsItem('divider1', {
+    this.app.addUserCenterSettingsItem({
       name: 'divider1',
       type: 'divider',
       sort: 10,
     });
-    this.app.addUserCenterSettingsItem('editProfile', {
+    this.app.addUserCenterSettingsItem({
       name: 'editProfile',
       Component: EditProfile,
       sort: 50,
     });
-    this.app.addUserCenterSettingsItem('changePassword', {
+    this.app.addUserCenterSettingsItem({
       name: 'changePassword',
       Component: ChangePassword,
       sort: 100,
     });
-    this.app.addUserCenterSettingsItem('divider_signOut', {
+    this.app.addUserCenterSettingsItem({
       name: 'divider_signOut',
       type: 'divider',
       sort: 900,
     });
-    this.app.addUserCenterSettingsItem('signOut', {
+    this.app.addUserCenterSettingsItem({
       name: 'dignOut',
       Component: SignOut,
       sort: 1000,

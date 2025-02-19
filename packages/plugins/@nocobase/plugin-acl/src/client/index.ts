@@ -27,12 +27,12 @@ export class PluginACLClient extends Plugin {
     });
 
     // 个人中心注册 切换角色
-    this.app.addUserCenterSettingsItem('divider_switchRole', {
+    this.app.addUserCenterSettingsItem({
       name: 'divider_switchRole',
       type: 'divider',
       sort: 200,
     });
-    this.app.addUserCenterSettingsItem('switchRole', {
+    this.app.addUserCenterSettingsItem({
       name: 'switchRole',
       Component: SwitchRole,
       sort: 300,
