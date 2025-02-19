@@ -178,7 +178,7 @@ export function convertToCreateSchema(schema: ISchema, skipUids: string[] = []):
 function cleanSchema(schema?: any) {
   const properties = schema?.properties || {};
   for (const key of Object.keys(properties)) {
-    if (schema.properties[key]['x-component'] === undefined) {
+    if (schema.properties[key]['x-component'] === undefined && schema.properties[key]['x-template-uid']) {
       delete schema.properties[key];
     }
     // 如果x-component是Grid.Row，且内部无任何内容，则删除
