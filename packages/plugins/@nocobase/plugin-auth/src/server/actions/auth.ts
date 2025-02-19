@@ -49,7 +49,8 @@ export default {
     } else {
       key = 'email';
     }
-    const user = await ctx.db.getRepository('users').findOne({
+    const UserRepo = ctx.db.getRepository('users');
+    const user = await UserRepo.findOne({
       where: {
         [key]: currentUser[key],
       },
@@ -59,8 +60,12 @@ export default {
     if (!isValid) {
       ctx.throw(401, ctx.t('The password is incorrect, please re-enter', { ns: namespace }));
     }
-    user.password = newPassword;
-    await user.save();
+    UserRepo.update({
+      filterByTk: user.id,
+      values: {
+        password: newPassword,
+      },
+    });
     ctx.body = currentUser;
     await next();
   },
