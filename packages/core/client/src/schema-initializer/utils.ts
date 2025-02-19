@@ -36,6 +36,7 @@ import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useCompile, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplateProvider';
+import { DeprecatedTemplateTitleElement } from './components/DeprecatedTemplateTitle';
 
 export const itemsMerge = (items1) => {
   return items1;
@@ -262,7 +263,7 @@ function getGroupItemForTable({
     type: 'itemGroup',
     key: `${field.target}_${schemaName}_displayFields`,
     name: `${schemaName}-displayCollectionFields`,
-    title: t('Display fields'),
+    title: DeprecatedTemplateTitleElement,
     children: items,
   };
 
@@ -838,7 +839,6 @@ export const useRecordCollectionDataSourceItems = (
     .filter((template) => {
       return ['FormItem', 'ReadPrettyFormItem'].includes(componentName) || template.resourceName === resourceName;
     });
-  // const extralCollectionMenuItems = initializerMenusGenerators.map((generator) => generator({ collection, field, componentName })).filter(Boolean);
   const extralCollectionMenuItems = Array.from(initializerMenusGenerators.values())
     .map((generator) => generator({ collection, componentName }))
     .filter(Boolean)
@@ -854,42 +854,48 @@ export const useRecordCollectionDataSourceItems = (
         type: 'divider',
       },
       {
-        key: `${collectionName || componentName}_table_subMenu_${index}_copy`,
-        type: 'subMenu',
-        name: 'copy',
-        title: t('Duplicate template'),
-        children: templates.map((template) => {
-          const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
-            ? `${template?.name} ${t('(Fields only)')}`
-            : template?.name;
-          return {
-            type: 'item',
-            mode: 'copy',
-            name: collection.name,
-            template,
-            item,
-            title: templateName || t('Untitled'),
-          };
-        }),
-      },
-      {
-        key: `${collectionName || componentName}_table_subMenu_${index}_ref`,
-        type: 'subMenu',
-        name: 'ref',
-        title: t('Reference template'),
-        children: templates.map((template) => {
-          const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
-            ? `${template?.name} ${t('(Fields only)')}`
-            : template?.name;
-          return {
-            type: 'item',
-            mode: 'reference',
-            name: collection.name,
-            template,
-            item,
-            title: templateName || t('Untitled'),
-          };
-        }),
+        type: 'itemGroup',
+        title: DeprecatedTemplateTitleElement,
+        children: [
+          {
+            key: `${collectionName || componentName}_table_subMenu_${index}_copy`,
+            type: 'subMenu',
+            name: 'copy',
+            title: t('Duplicate template'),
+            children: templates.map((template) => {
+              const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
+                ? `${template?.name} ${t('(Fields only)')}`
+                : template?.name;
+              return {
+                type: 'item',
+                mode: 'copy',
+                name: collection.name,
+                template,
+                item,
+                title: templateName || t('Untitled'),
+              };
+            }),
+          },
+          {
+            key: `${collectionName || componentName}_table_subMenu_${index}_ref`,
+            type: 'subMenu',
+            name: 'ref',
+            title: t('Reference template'),
+            children: templates.map((template) => {
+              const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
+                ? `${template?.name} ${t('(Fields only)')}`
+                : template?.name;
+              return {
+                type: 'item',
+                mode: 'reference',
+                name: collection.name,
+                template,
+                item,
+                title: templateName || t('Untitled'),
+              };
+            }),
+          },
+        ],
       },
     );
   }
@@ -1549,50 +1555,56 @@ const getChildren = ({
             type: 'divider',
           },
           {
-            key: `${componentName}_table_subMenu_${index}_copy`,
-            type: 'subMenu',
-            name: 'copy',
-            dataSource,
-            title: t('Duplicate template'),
-            children: templates.map((template) => {
-              const templateName = [
-                componentNamePrefix + 'FormItem',
-                componentNamePrefix + 'ReadPrettyFormItem',
-              ].includes(template?.componentName)
-                ? `${template?.name} ${t('(Fields only)')}`
-                : template?.name;
-              return {
-                type: 'item',
-                mode: 'copy',
-                name: item.name,
-                template,
+            type: 'itemGroup',
+            title: DeprecatedTemplateTitleElement,
+            children: [
+              {
+                key: `${componentName}_table_subMenu_${index}_copy`,
+                type: 'subMenu',
+                name: 'copy',
                 dataSource,
-                title: templateName || t('Untitled'),
-              };
-            }),
-          },
-          {
-            key: `${componentName}_table_subMenu_${index}_ref`,
-            type: 'subMenu',
-            name: 'ref',
-            dataSource,
-            title: t('Reference template'),
-            children: templates.map((template) => {
-              const templateName = [
-                componentNamePrefix + 'FormItem',
-                componentNamePrefix + 'ReadPrettyFormItem',
-              ].includes(template?.componentName)
-                ? `${template?.name} ${t('(Fields only)')}`
-                : template?.name;
-              return {
-                type: 'item',
-                mode: 'reference',
-                name: item.name,
-                template,
+                title: t('Duplicate template'),
+                children: templates.map((template) => {
+                  const templateName = [
+                    componentNamePrefix + 'FormItem',
+                    componentNamePrefix + 'ReadPrettyFormItem',
+                  ].includes(template?.componentName)
+                    ? `${template?.name} ${t('(Fields only)')}`
+                    : template?.name;
+                  return {
+                    type: 'item',
+                    mode: 'copy',
+                    name: item.name,
+                    template,
+                    dataSource,
+                    title: templateName || t('Untitled'),
+                  };
+                }),
+              },
+              {
+                key: `${componentName}_table_subMenu_${index}_ref`,
+                type: 'subMenu',
+                name: 'ref',
                 dataSource,
-                title: templateName || t('Untitled'),
-              };
-            }),
+                title: t('Reference template'),
+                children: templates.map((template) => {
+                  const templateName = [
+                    componentNamePrefix + 'FormItem',
+                    componentNamePrefix + 'ReadPrettyFormItem',
+                  ].includes(template?.componentName)
+                    ? `${template?.name} ${t('(Fields only)')}`
+                    : template?.name;
+                  return {
+                    type: 'item',
+                    mode: 'reference',
+                    name: item.name,
+                    template,
+                    dataSource,
+                    title: templateName || t('Untitled'),
+                  };
+                }),
+              },
+            ],
           },
         );
       }
@@ -1814,54 +1826,60 @@ function useAssociationFields({
               type: 'divider',
             },
             {
-              key: `associationFiled_${componentName}_table_subMenu_${index}_copy`,
-              type: 'subMenu',
-              name: 'copy',
-              dataSource,
-              title: t('Duplicate template'),
-              children: templates.map((template) => {
-                const templateName = [
-                  componentNamePrefix + 'FormItem',
-                  componentNamePrefix + 'ReadPrettyFormItem',
-                ].includes(template?.componentName)
-                  ? `${template?.name} ${t('(Fields only)')}`
-                  : template?.name;
-                return {
-                  type: 'item',
-                  mode: 'copy',
-                  name: `${field.collectionName}.${field.name}`,
-                  collectionName: field.target,
-                  template,
+              type: 'itemGroup',
+              title: DeprecatedTemplateTitleElement,
+              children: [
+                {
+                  key: `associationFiled_${componentName}_table_subMenu_${index}_copy`,
+                  type: 'subMenu',
+                  name: 'copy',
                   dataSource,
-                  title: templateName || t('Untitled'),
-                  associationField: field,
-                };
-              }),
-            },
-            {
-              key: `associationFiled_${componentName}_table_subMenu_${index}_ref`,
-              type: 'subMenu',
-              name: 'ref',
-              dataSource,
-              title: t('Reference template'),
-              children: templates.map((template) => {
-                const templateName = [
-                  componentNamePrefix + 'FormItem',
-                  componentNamePrefix + 'ReadPrettyFormItem',
-                ].includes(template?.componentName)
-                  ? `${template?.name} ${t('(Fields only)')}`
-                  : template?.name;
-                return {
-                  type: 'item',
-                  mode: 'reference',
-                  name: `${field.collectionName}.${field.name}`,
-                  collectionName: field.target,
-                  template,
+                  title: t('Duplicate template'),
+                  children: templates.map((template) => {
+                    const templateName = [
+                      componentNamePrefix + 'FormItem',
+                      componentNamePrefix + 'ReadPrettyFormItem',
+                    ].includes(template?.componentName)
+                      ? `${template?.name} ${t('(Fields only)')}`
+                      : template?.name;
+                    return {
+                      type: 'item',
+                      mode: 'copy',
+                      name: `${field.collectionName}.${field.name}`,
+                      collectionName: field.target,
+                      template,
+                      dataSource,
+                      title: templateName || t('Untitled'),
+                      associationField: field,
+                    };
+                  }),
+                },
+                {
+                  key: `associationFiled_${componentName}_table_subMenu_${index}_ref`,
+                  type: 'subMenu',
+                  name: 'ref',
                   dataSource,
-                  title: templateName || t('Untitled'),
-                  associationField: field,
-                };
-              }),
+                  title: t('Reference template'),
+                  children: templates.map((template) => {
+                    const templateName = [
+                      componentNamePrefix + 'FormItem',
+                      componentNamePrefix + 'ReadPrettyFormItem',
+                    ].includes(template?.componentName)
+                      ? `${template?.name} ${t('(Fields only)')}`
+                      : template?.name;
+                    return {
+                      type: 'item',
+                      mode: 'reference',
+                      name: `${field.collectionName}.${field.name}`,
+                      collectionName: field.target,
+                      template,
+                      dataSource,
+                      title: templateName || t('Untitled'),
+                      associationField: field,
+                    };
+                  }),
+                },
+              ],
             },
           );
         }
