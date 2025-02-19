@@ -154,7 +154,10 @@ export class PluginBlockTemplateClient extends Plugin {
               const nextItem = schemaSetting.items[index + 1];
               return item['type'] === 'divider' && (nextItem?.name === 'delete' || nextItem?.name === 'remove');
             });
-            if (deleteItemIndex !== -1) {
+            if (
+              deleteItemIndex !== -1 &&
+              !schemaSetting.items.find((item) => item.name === 'template-revertSettingItem')
+            ) {
               schemaSetting.items.splice(deleteItemIndex, 0, revertSettingItem);
             } else {
               schemaSetting.add('template-revertSettingItem', revertSettingItem);
