@@ -40,7 +40,7 @@ export class RefreshInstruction extends Instruction {
       message: {
         type: 'refresh',
         payload: {
-          test: 123,
+          refresh: true,
         },
       },
     });
