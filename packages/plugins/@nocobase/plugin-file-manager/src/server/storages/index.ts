@@ -27,21 +27,23 @@ export interface AttachmentModel {
   title: string;
   filename: string;
   path: string;
+  url: string;
+  storageId: number;
 }
 
-export interface IStorage {
-  filenameKey?: string;
-  middleware?(app: Application): void;
+export abstract class StorageType {
+  static defaults(): StorageModel {
+    return {} as StorageModel;
+  }
+  static filenameKey?: string;
+  constructor(public storage: StorageModel) {}
+  abstract make(): StorageEngine;
+  abstract delete(records: AttachmentModel[]): [number, AttachmentModel[]] | Promise<[number, AttachmentModel[]]>;
+
   getFileData?(file: { [key: string]: any }): { [key: string]: any };
-  make(storage: StorageModel): StorageEngine;
-  defaults(): StorageModel;
-  delete(storage: StorageModel, records: AttachmentModel[]): Promise<[number, AttachmentModel[]]>;
-}
-
-export abstract class StorageType implements IStorage {
-  abstract make(storage: StorageModel): StorageEngine;
-  abstract delete(storage: StorageModel, records: AttachmentModel[]): Promise<[number, AttachmentModel[]]>;
-  defaults(): StorageModel {
-    return {} as any;
+  getFileURL(file: AttachmentModel): string | Promise<string> {
+    return file.url;
   }
 }
+
+export type StorageClassType = { new (storage: StorageModel): StorageType } & typeof StorageType;
