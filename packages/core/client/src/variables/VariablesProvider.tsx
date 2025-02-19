@@ -67,7 +67,6 @@ const VariablesProvider = ({ children, filterVariables }: any) => {
       ctxRef.current = ctx;
     }
   }, []);
-
   /**
    * 1. Get value from `ctx` based on `path`
    * 2. If a `key` does not exist and is an association field, fetch data from api and cache it in `ctx`
@@ -91,7 +90,7 @@ const VariablesProvider = ({ children, filterVariables }: any) => {
       const list = variablePath.split('.');
       const variableName = list[0];
       const _variableToCollectionName = mergeVariableToCollectionNameWithLocalVariables(variablesStore, localVariables);
-      let current = mergeCtxWithLocalVariables(ctxRef.current, localVariables);
+      let current = mergeCtxWithLocalVariables(ctxRef.current, localVariables.concat(builtinVariables));
       const { fieldPath, dataSource, variableOption } = getFieldPath(variableName, _variableToCollectionName);
       let collectionName = fieldPath;
 
