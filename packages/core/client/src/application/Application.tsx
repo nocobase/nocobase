@@ -17,6 +17,7 @@ import React, { ComponentType, FC, ReactElement, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { Link, NavLink, Navigate } from 'react-router-dom';
+import ignore from 'ignore';
 
 import { APIClient, APIClientProvider } from '../api-client';
 import { CSSVariableProvider } from '../css-variable';
@@ -87,6 +88,11 @@ export interface ApplicationOptions {
   disableAcl?: boolean;
 }
 
+interface UserCenterItemComponentType<T = {}> extends SchemaSettingItemComponentType {
+  Component?: string | ComponentType<T>;
+  type?: string;
+  aclSnippet?: string;
+}
 export class Application {
   public eventBus = new EventTarget();
 
@@ -501,7 +507,14 @@ export class Application {
   getGlobalVar(key) {
     return get(this.globalVars, key);
   }
-  addUserCenterSettingsItem(item: SchemaSettingItemComponentType | SchemaSettingItemDividerProps) {
-    this.schemaSettingsManager.addItem('userCenterSettings', item.name, item);
+  addUserCenterSettingsItem(item: UserCenterItemComponentType) {
+    this.schemaSettingsManager.addItem('userCenterSettings', item.name, {
+      ...item,
+      useVisible() {
+        const snippets = ['pm.*', '!pm.users'];
+        const ig = ignore().add(snippets);
+        return ig.ignores(item.aclSnippet);
+      },
+    });
   }
 }

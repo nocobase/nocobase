@@ -105,9 +105,7 @@ export class PluginThemeEditorClient extends Plugin {
       name: 'theme',
       sort: 310,
       Component: ThemeSettings,
-      useVisible: () => {
-        return !!this.app.pluginSettingsManager.get('theme-editor');
-      },
+      aclSnippet: 'theme-editor',
     });
   }
 }
