@@ -843,7 +843,7 @@ export const useRecordCollectionDataSourceItems = (
     .map((generator) => generator({ collection, componentName }))
     .filter(Boolean)
     .flat();
-  if (!templates.length && !extralCollectionMenuItems.length) {
+  if ((!templates.length && !extralCollectionMenuItems.length) || isInTemplateSettingPage()) {
     return [];
   }
   const index = 0;
@@ -1540,7 +1540,7 @@ const getChildren = ({
         })
         .filter(Boolean)
         .flat();
-      if (!templates.length && !extralCollectionMenuItems.length) {
+      if ((!templates.length && !extralCollectionMenuItems.length) || isInTemplateSettingPage()) {
         return {
           type: 'item',
           name: item.name,
@@ -1809,7 +1809,7 @@ function useAssociationFields({
           .map((generator) => generator({ collection, index, field, componentName, keyPrefix, name }))
           .filter(Boolean)
           .flat();
-        if (!templates.length && !extralCollectionMenuItems.length) {
+        if ((!templates.length && !extralCollectionMenuItems.length) || isInTemplateSettingPage()) {
           return {
             type: 'item',
             name: `${field.collectionName}.${field.name}`,
@@ -1917,6 +1917,8 @@ function useAssociationFields({
     componentNamePrefix,
   ]);
 }
+
+const isInTemplateSettingPage = () => window.location.pathname.includes('/block-templates/');
 
 const initializerMenusGenerators = new Map<
   string,
