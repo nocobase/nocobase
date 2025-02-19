@@ -21,7 +21,7 @@ export class RefreshInstruction extends Instruction {
   }
 
   async run(node: FlowNodeModel, input, processor: Processor) {
-    const { aggregator, associated, collection, association = {}, params = {} } = node.config;
+    const { uri } = node.config;
     // this.app.emit('ws:sendToTag', {
     //   tagKey: 'userId',
     //   tagValue: userId,
@@ -40,7 +40,7 @@ export class RefreshInstruction extends Instruction {
       message: {
         type: 'refresh',
         payload: {
-          refresh: true,
+          uri,
         },
       },
     });

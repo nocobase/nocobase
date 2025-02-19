@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, useCollectionDataSource, useVariables } from '@nocobase/client';
+import { Plugin, useApp, useCollectionDataSource, useVariables } from '@nocobase/client';
 import WorkflowPlugin, { Instruction, useNodeSavedConfig } from '@nocobase/plugin-workflow/client';
 import { LoadingOutlined } from '@ant-design/icons';
-import React from 'react';
+import React, { useCallback, useEffect } from 'react';
 
 export class PluginWorkflowRefreshClient extends Plugin {
   async afterAdd() {
@@ -30,6 +30,8 @@ export class PluginWorkflowRefreshClient extends Plugin {
     // this.app.addProvider()
     // this.app.addProviders()
     // this.app.router.add()
+
+    this.app.addProvider(PluginWorkflowRefreshProvider, { name: 'nocobase' });
   }
 }
 
@@ -41,7 +43,16 @@ class RefreshInstruction extends Instruction {
   group = 'collection';
   description = `refresh`;
   icon = (<LoadingOutlined />);
-  fieldset = {};
+  fieldset = {
+    uri: {
+      type: 'string',
+      title: `Adres URI lub URL`,
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+      required: true,
+      default: '/',
+    },
+  };
   scope = {
     useNodeSavedConfig,
     useCollectionDataSource,
@@ -69,3 +80,25 @@ class RefreshInstruction extends Instruction {
   //   };
   // }
 }
+
+const PluginWorkflowRefreshProvider = ({ name, children }) => {
+  const app = useApp();
+
+  const handleRefresh = useCallback((event: CustomEvent) => {
+    const { uri } = event.detail;
+
+    if (window?.location?.href == uri || window?.location?.pathname == uri) {
+      window.location.reload();
+    }
+  }, []);
+
+  useEffect(() => {
+    app.eventBus.addEventListener('ws:message:refresh', handleRefresh);
+
+    return () => {
+      app.eventBus.removeEventListener('ws:message:refresh', handleRefresh);
+    };
+  }, [app]);
+
+  return children;
+};
