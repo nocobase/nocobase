@@ -460,12 +460,13 @@ const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
   return ReactDOM.createPortal(
     <div
       className={css`
-        // 修复折叠展开按钮被子页面遮挡的问题
-        .ant-pro-sider-collapsed-button {
-          top: 64px;
-          left: 188px;
-          z-index: 200;
-        }
+      // Fix the issue where the collapse/expand button is covered by subpages
+      .ant-pro-sider-collapsed-button {
+        top: 64px;
+        left: ${props.collapsed ? 52 : 188}px;
+        z-index: 200;
+        transition: left 0.2s;
+      }
       `}
     >
       {props.children}
