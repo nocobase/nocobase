@@ -7,9 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { EllipsisOutlined } from '@ant-design/icons';
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
+import { Popover } from 'antd';
 import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import {
@@ -414,8 +416,39 @@ const contentStyle = {
 
 const headerContext = React.createContext<{ inHeader: boolean }>({ inHeader: false });
 
+const popoverStyle = css`
+  .ant-popover-inner {
+    padding: 0;
+    overflow: hidden;
+  }
+`;
+
+const MobileActions: FC = (props) => {
+  const { token } = useToken();
+
+  return (
+    <Popover
+      rootClassName={popoverStyle}
+      content={<PinnedPluginList />}
+      color={token.colorBgHeader}
+    >
+      <div style={{ padding: '0 16px', display: 'flex', alignItems: 'center', height: '100%', marginRight: -16 }}>
+        <EllipsisOutlined
+          style={{
+            color: token.colorTextHeaderMenu,
+            fontSize: 20,
+          }}
+        />
+      </div>
+    </Popover>
+  );
+};
+
 const actionsRender = (props) => {
-  if (props.isMobile) return null;
+  if (props.isMobile) {
+    return <MobileActions />;
+  }
+
   return <PinnedPluginList />;
 };
 
