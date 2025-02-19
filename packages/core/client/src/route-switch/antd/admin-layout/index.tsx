@@ -177,7 +177,8 @@ const style2: any = {
 };
 
 const className1 = css`
-  width: 200px;
+  width: 168px;
+  margin-right: 4px;
   display: inline-flex;
   flex-shrink: 0;
   color: #fff;
@@ -185,13 +186,11 @@ const className1 = css`
   align-items: center;
 `;
 const className2 = css`
-  padding: 0 16px;
   object-fit: contain;
   width: 100%;
   height: 100%;
 `;
 const className3 = css`
-  padding: 0 16px;
   width: 100%;
   height: 100%;
   font-weight: 500;
@@ -385,10 +384,6 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
 };
 
 const resetStyle = css`
-  .ant-pro-top-nav-header-main {
-    padding-inline-start: 0;
-  }
-
   .ant-layout-sider-children {
     margin-inline-end: 0 !important;
   }
