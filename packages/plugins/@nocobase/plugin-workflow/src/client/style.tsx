@@ -256,7 +256,7 @@ const useStyles = createStyles(({ css, token }) => {
       position: relative;
       width: 16em;
       background: ${token.colorBgContainer};
-      padding: 1em;
+      padding: 0.75em;
       box-shadow: ${token.boxShadowTertiary};
       border-radius: ${token.borderRadiusLG}px;
       cursor: pointer;
@@ -266,7 +266,7 @@ const useStyles = createStyles(({ css, token }) => {
         box-shadow: ${token.boxShadow};
 
         .workflow-node-remove-button {
-          display: block;
+          opacity: 1;
         }
       }
 
@@ -275,11 +275,10 @@ const useStyles = createStyles(({ css, token }) => {
       }
 
       .workflow-node-remove-button {
-        display: none;
-        position: absolute;
-        right: 0;
-        top: 0;
+        opacity: 0;
         color: ${token.colorText};
+        font-size: ${token.fontSizeIcon}px;
+        line-height: 1em;
 
         &[disabled] {
           display: none;
@@ -325,9 +324,6 @@ const useStyles = createStyles(({ css, token }) => {
 
     nodeJobButtonClass: css`
       display: flex;
-      position: absolute;
-      top: 0;
-      right: 0;
       justify-content: center;
       align-items: center;
       color: ${token.colorTextLightSolid};
@@ -335,19 +331,27 @@ const useStyles = createStyles(({ css, token }) => {
 
     nodeHeaderClass: css`
       display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 0.5em;
 
       .workflow-node-actions {
-        position: relative;
       }
     `,
 
     nodeMetaClass: css`
       flex-grow: 1;
+      display: flex;
+      align-items: center;
+
+      .ant-tag {
+        max-width: 10em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
 
       .workflow-node-id {
         color: ${token.colorTextDescription};
-
         &:before {
           content: '#';
         }

@@ -697,6 +697,7 @@ export function NodeDefaultView(props) {
                               'x-component-props': {
                                 label: lang('Node type'),
                                 title: instruction.title,
+                                icon: instruction.icon,
                                 description: instruction.description,
                               },
                             },
