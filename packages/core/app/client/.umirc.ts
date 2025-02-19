@@ -16,7 +16,7 @@ generatePlugins();
 export default defineConfig({
   title: 'Loading...',
   devtool: process.env.NODE_ENV === 'development' ? 'source-map' : false,
-  favicons: [`${appPublicPath}favicon/favicon.ico`],
+  favicons: [`${appPublicPath}favicon/favicon.ico?v2`],
   metas: [{ name: 'viewport', content: 'initial-scale=0.1' }],
   links: [{ rel: 'stylesheet', href: `${appPublicPath}global.css` }],
   headScripts: [
