@@ -457,23 +457,33 @@ const subMenuItemRender = (item, dom) => {
 };
 
 const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
-  return ReactDOM.createPortal(
-    <div
-      className={css`
-      // Fix the issue where the collapse/expand button is covered by subpages
-      .ant-pro-sider-collapsed-button {
-        top: 64px;
-        left: ${props.collapsed ? 52 : 188}px;
-        z-index: 200;
-        transition: left 0.2s;
+  return (
+    <RouteContext.Consumer>
+      {(context) =>
+        context.isMobile ? (
+          <>{props.children}</>
+        ) : (
+          ReactDOM.createPortal(
+            <div
+              className={css`
+                // Fix the issue where the collapse/expand button is covered by subpages
+                .ant-pro-sider-collapsed-button {
+                  top: 64px;
+                  left: ${props.collapsed ? 52 : 188}px;
+                  z-index: 200;
+                  transition: left 0.2s;
+                }
+              `}
+            >
+              {props.children}
+            </div>,
+            document.body
+          )
+        )
       }
-      `}
-    >
-      {props.children}
-    </div>,
-    document.body
+    </RouteContext.Consumer>
   );
-}
+};
 
 const collapsedButtonRender = (collapsed, dom) => {
   return <CollapsedButton collapsed={collapsed}>{dom}</CollapsedButton>;
