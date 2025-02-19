@@ -67,8 +67,8 @@ const IsSubPageClosedByPageMenuContext = React.createContext<{
   reset: () => void;
 }>({
   isSubPageClosedByPageMenu: () => false,
-  setFieldSchema: () => { },
-  reset: () => { },
+  setFieldSchema: () => {},
+  reset: () => {},
 });
 IsSubPageClosedByPageMenuContext.displayName = 'IsSubPageClosedByPageMenuContext';
 
@@ -92,7 +92,10 @@ export const IsSubPageClosedByPageMenuProvider: FC = ({ children }) => {
     prevParamsRef.current = {};
   }, []);
 
-  const value = useMemo(() => ({ isSubPageClosedByPageMenu, setFieldSchema, reset }), [isSubPageClosedByPageMenu, reset]);
+  const value = useMemo(
+    () => ({ isSubPageClosedByPageMenu, setFieldSchema, reset }),
+    [isSubPageClosedByPageMenu, reset],
+  );
 
   return (
     <IsSubPageClosedByPageMenuContext.Provider value={value}>{children}</IsSubPageClosedByPageMenuContext.Provider>
