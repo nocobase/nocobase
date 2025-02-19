@@ -32,10 +32,10 @@ export function registerTemplateBlockInterceptors(
   const setToTrueSchema = (uid: string) => {
     const cacheSchema = findSchemaCache(pageBlocks, uid);
     const deleteVirtual = (schema: ISchema) => {
-      if (schema['x-virtual']) {
+      if (schema?.['x-virtual']) {
         savedSchemaUids.add(schema['x-uid']);
       }
-      if (schema.properties) {
+      if (schema?.properties) {
         for (const key in schema.properties) {
           deleteVirtual(schema.properties[key]);
         }
