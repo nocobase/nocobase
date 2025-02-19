@@ -1,4 +1,4 @@
-export default {
+{
     "Configure calendar": "Konfiguracja kalendarza",
     "Title field": "Pole tytułu",
     "Custom title": "Niestandardowy tytuł",
@@ -7,7 +7,6 @@ export default {
     "End date field": "Pole daty zakończenia",
     "Work week": "Tydzień roboczy",
     "Today": "Dzisiaj",
-    "Day": "Dzień",
     "Agenda": "Agenda",
     "Date": "Data",
     "Time": "Czas",
@@ -46,6 +45,6 @@ export default {
     "Yearly": "Co rok",
     "Repeats": "Powtarza się",
     "Background color field": "Pole koloru tła",
-    "Not selected": "Nie wybrano",
-  };
+    "Not selected": "Nie wybrano"
+  }
   
