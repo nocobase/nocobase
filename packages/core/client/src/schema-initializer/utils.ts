@@ -263,7 +263,7 @@ function getGroupItemForTable({
     type: 'itemGroup',
     key: `${field.target}_${schemaName}_displayFields`,
     name: `${schemaName}-displayCollectionFields`,
-    title: DeprecatedTemplateTitleElement,
+    title: t('Display fields'),
     children: items,
   };
 
