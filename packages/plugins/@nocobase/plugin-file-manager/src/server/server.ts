@@ -281,7 +281,7 @@ export class PluginFileManagerServer extends Plugin {
     this.app.db.interfaceManager.registerInterfaceType('attachment', AttachmentInterface);
   }
 
-  async getFileURL(file: AttachmentModel) {
+  getFileURL(file: AttachmentModel) {
     const storage = this.storagesCache.get(file.storageId);
     const storageType = this.storageTypes.get(storage.type);
     return new storageType(storage).getFileURL(file);

@@ -129,13 +129,27 @@ describe('file manager > server', () => {
     });
 
     describe('getFileURL', () => {
-      it.only('local attachment', async () => {
+      it('local attachment without env', async () => {
         const { body } = await agent.resource('attachments').create({
           [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
         });
 
         const url = await plugin.getFileURL(body.data);
         expect(url).toBe(`${process.env.APP_PUBLIC_PATH?.replace(/\/$/g, '') || ''}${body.data.url}`);
+      });
+
+      it('local attachment with env', async () => {
+        const originalPath = process.env.APP_PUBLIC_PATH;
+        process.env.APP_PUBLIC_PATH = 'http://localhost';
+
+        const { body } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+        });
+
+        const url = await plugin.getFileURL(body.data);
+        expect(url).toBe(`http://localhost${body.data.url}`);
+
+        process.env.APP_PUBLIC_PATH = originalPath;
       });
     });
   });
