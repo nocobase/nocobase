@@ -98,6 +98,10 @@ export function convertTplBlock(
       };
     }
 
+    if (!tpl['x-component']) {
+      newSchema['x-no-component'] = true;
+    }
+
     // filter should be in tpl
     if (_.get(tpl, 'x-filter-targets')) {
       newSchema['x-filter-targets'] = tpl['x-filter-targets'];
@@ -157,7 +161,9 @@ export function formSchemaPatch(currentSchema: ISchema, options?: any) {
         for (const key in actionBarSchema) {
           if (actionBarSchema[key]['x-settings']?.includes('createSubmit')) {
             actionBarSchema[key]['x-settings'] = 'actionSettings:updateSubmit';
-            actionBarSchema[key]['x-use-component-props'] = 'useUpdateActionProps';
+            if (actionBarSchema[key]['x-use-component-props'] !== 'useStepsFormSubmitActionProps') {
+              actionBarSchema[key]['x-use-component-props'] = 'useUpdateActionProps';
+            }
           }
         }
       }

@@ -220,6 +220,11 @@ export function mergeSchema(template, schema, rootTemplate) {
                   'stepsFormNext',
                   'stepsFormPrevious',
                   'disassociate',
+                  'MailSend',
+                  'MailRefresh',
+                  'MailAccountSetting',
+                  'MailMarkAsRead',
+                  'MailMarkAsUnRead',
                 ].find((name) => name === actionName);
                 if (targetActionName) {
                   const removedTargetKeys = _.remove(
@@ -237,7 +242,7 @@ export function mergeSchema(template, schema, rootTemplate) {
           // 可重复的fields情况有以下几种
           // table:configureColumns
           for (const skey of sourceKeys) {
-            if (object['x-initializer'] === 'table:configureColumns') {
+            if (object['x-initializer']?.includes(':configureColumns')) {
               if (sourceValue[skey]['x-component'] && sourceValue[skey]['x-settings'] === 'fieldSettings:TableColumn') {
                 const sourceColFieldSchema = Object.values(sourceValue[skey]?.['properties'] || {})[0];
                 const xColField = _.get(sourceColFieldSchema, 'x-collection-field');
@@ -255,9 +260,9 @@ export function mergeSchema(template, schema, rootTemplate) {
                 }
               }
               // find the x-initializer: "table:configureItemActions"
-              if (sourceValue[skey]['x-initializer'] === 'table:configureItemActions') {
+              if (sourceValue[skey]['x-initializer']?.includes(':configureItemActions')) {
                 const removedTargetKeys = _.remove(targetKeys, (key) => {
-                  return objectValue[key]?.['x-initializer'] === 'table:configureItemActions';
+                  return objectValue[key]?.['x-initializer']?.includes(':configureItemActions');
                 });
                 if (removedTargetKeys.length > 0) {
                   sourceValue[skey]['x-template-uid'] = objectValue[removedTargetKeys[0]]['x-uid'];
@@ -366,6 +371,14 @@ export function mergeSchema(template, schema, rootTemplate) {
   );
 }
 
+function shouldDeleteNoComponentSchema(schema: Schema) {
+  if (!schema['x-no-component']) {
+    return true;
+  }
+  const properties = schema?.properties;
+  return properties && Object.values(properties).some((s) => s['x-component'] === undefined);
+}
+
 export function cleanSchema(schema?: Schema, templateId?: string) {
   const properties = schema?.properties || {};
   if (schema) {
@@ -376,7 +389,11 @@ export function cleanSchema(schema?: Schema, templateId?: string) {
     delete schema['x-template-version'];
   }
   for (const key of Object.keys(properties)) {
-    if (schema.properties[key]['x-component'] === undefined && !schema.properties[key]['x-template-root-uid']) {
+    if (
+      schema.properties[key]['x-component'] === undefined &&
+      !schema.properties[key]['x-template-root-uid'] &&
+      shouldDeleteNoComponentSchema(schema.properties[key])
+    ) {
       delete schema.properties[key];
       continue;
     }

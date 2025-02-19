@@ -175,10 +175,19 @@ export function convertToCreateSchema(schema: ISchema, skipUids: string[] = []):
   return tmpSchema.toJSON();
 }
 
+function shouldDeleteNoComponentSchema(schema: ISchema) {
+  if (!schema['x-no-component']) {
+    return true;
+  }
+  const properties = schema?.properties;
+  return properties && Object.values(properties).some((s) => s['x-component'] === undefined);
+}
+
 function cleanSchema(schema?: any) {
   const properties = schema?.properties || {};
   for (const key of Object.keys(properties)) {
-    if (schema.properties[key]['x-component'] === undefined && schema.properties[key]['x-template-uid']) {
+    // 如果x-component是undefined
+    if (schema.properties[key]['x-component'] === undefined && shouldDeleteNoComponentSchema(schema.properties[key])) {
       delete schema.properties[key];
     }
     // 如果x-component是Grid.Row，且内部无任何内容，则删除
@@ -495,6 +504,11 @@ function mergeSchema(
                   'stepsFormNext',
                   'stepsFormPrevious',
                   'disassociate',
+                  'MailSend',
+                  'MailRefresh',
+                  'MailAccountSetting',
+                  'MailMarkAsRead',
+                  'MailMarkAsUnRead',
                 ].find((name) => name === actionName);
                 if (targetActionName) {
                   const removedTargetKeys = _.remove(
@@ -512,7 +526,7 @@ function mergeSchema(
           // 可重复的fields情况有以下几种
           // table:configureColumns
           for (const skey of sourceKeys) {
-            if (object['x-initializer'] === 'table:configureColumns') {
+            if (object['x-initializer']?.includes(':configureColumns')) {
               if (sourceValue[skey]['x-component'] && sourceValue[skey]['x-settings'] === 'fieldSettings:TableColumn') {
                 const sourceColFieldSchema = Object.values(sourceValue[skey]?.['properties'] || {})[0];
                 const xColField = _.get(sourceColFieldSchema, 'x-collection-field');
@@ -530,9 +544,9 @@ function mergeSchema(
                 }
               }
               // find the x-initializer: "table:configureItemActions"
-              if (sourceValue[skey]['x-initializer'] === 'table:configureItemActions') {
+              if (sourceValue[skey]['x-initializer']?.includes(':configureItemActions')) {
                 const removedTargetKeys = _.remove(targetKeys, (key) => {
-                  return objectValue[key]?.['x-initializer'] === 'table:configureItemActions';
+                  return objectValue[key]?.['x-initializer']?.includes(':configureItemActions');
                 });
                 if (removedTargetKeys.length > 0) {
                   sourceValue[skey]['x-template-uid'] = objectValue[removedTargetKeys[0]]['x-uid'];
