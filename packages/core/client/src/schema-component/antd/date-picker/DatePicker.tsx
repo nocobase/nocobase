@@ -197,7 +197,7 @@ DatePicker.RangePicker = function RangePicker(props: any) {
     { label: t('Next 90 days'), value: rangesValue.next90Days },
   ];
 
-  const targetPicker = value ? inferPickerType(value?.[0]) : picker;
+  const targetPicker = value ? inferPickerType(value?.[0], picker) : picker;
   const targetDateFormat = getPickerFormat(targetPicker) || format;
   const newProps: any = {
     utc,
