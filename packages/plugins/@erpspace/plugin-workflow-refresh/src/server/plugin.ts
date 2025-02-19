@@ -10,9 +10,7 @@
 import { Context } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
 import WorkflowPlugin from '@nocobase/plugin-workflow';
-import { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plugin-workflow';
-import { parseCollectionName } from '@nocobase/data-source-manager';
-import { DataTypes } from '@nocobase/database';
+import { RefreshInstruction } from './instruction';
 
 export class PluginWorkflowRefreshServer extends Plugin {
   async afterAdd() {}
@@ -34,14 +32,3 @@ export class PluginWorkflowRefreshServer extends Plugin {
 }
 
 export default PluginWorkflowRefreshServer;
-
-class RefreshInstruction extends Instruction {
-  async run(node: FlowNodeModel, input, processor: Processor) {
-    const { aggregator, associated, collection, association = {}, params = {} } = node.config;
-
-    return {
-      result: true,
-      status: JOB_STATUS.RESOLVED,
-    };
-  }
-}
