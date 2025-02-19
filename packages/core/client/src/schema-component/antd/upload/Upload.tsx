@@ -430,7 +430,7 @@ export function Uploader({ rules, ...props }: UploadProps) {
   return (
     <>
       {uploadedList.map((file, index) => (
-        <AttachmentListItem key={file.uid} file={file} index={index} disabled={disabled} onDelete={onDeleteUploaded} />
+        <AttachmentListItem key={file.id} file={file} index={index} disabled={disabled} onDelete={onDeleteUploaded} />
       ))}
       {pendingList.map((file, index) => (
         <AttachmentListItem key={file.uid} file={file} index={index} disabled={disabled} onDelete={onDeletePending} />
