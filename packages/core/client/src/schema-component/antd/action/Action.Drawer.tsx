@@ -22,7 +22,7 @@ import { ActionContextNoRerender } from './context';
 import { useActionContext } from './hooks';
 import { useSetAriaLabelForDrawer } from './hooks/useSetAriaLabelForDrawer';
 import { ActionDrawerProps, ComposedActionDrawer, OpenSize } from './types';
-import { useZIndexContext, zIndexContext } from './zIndexContext';
+import { getZIndex, useZIndexContext, zIndexContext } from './zIndexContext';
 
 const MemoizeRecursionField = React.memo(RecursionField);
 MemoizeRecursionField.displayName = 'MemoizeRecursionField';
@@ -104,7 +104,7 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
       useSetAriaLabelForDrawer(visible);
     }
 
-    const zIndex = _zIndex || parentZIndex + (props.level || 0);
+    const zIndex = getZIndex('drawer', _zIndex || parentZIndex, props.level || 0);
 
     const onClose = useCallback(
       (e) => {

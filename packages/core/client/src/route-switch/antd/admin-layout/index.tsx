@@ -13,6 +13,7 @@ import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
 import { Popover } from 'antd';
 import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import ReactDOM from 'react-dom';
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
@@ -34,7 +35,7 @@ import {
   useRequest,
   useSchemaInitializerRender,
   useSystemSettings,
-  useToken,
+  useToken
 } from '../../../';
 import {
   CurrentPageUidProvider,
@@ -455,8 +456,26 @@ const subMenuItemRender = (item, dom) => {
   return <GroupItem item={item}>{dom}</GroupItem>;
 };
 
+const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
+  return ReactDOM.createPortal(
+    <div
+      className={css`
+        // 修复折叠展开按钮被子页面遮挡的问题
+        .ant-pro-sider-collapsed-button {
+          top: 64px;
+          left: 188px;
+          z-index: 200;
+        }
+      `}
+    >
+      {props.children}
+    </div>,
+    document.body
+  );
+}
+
 const collapsedButtonRender = (collapsed, dom) => {
-  return <div style={{ zIndex: 999 }}>{dom}</div>;
+  return <CollapsedButton collapsed={collapsed}>{dom}</CollapsedButton>;
 };
 
 const headerContextValue = { inHeader: true };
