@@ -88,7 +88,9 @@ export interface SchemaSettingItemSubMenuType extends SchemaSettingsItemCommon<S
 }
 
 export interface SchemaSettingItemComponentType<T = {}> extends SchemaSettingsItemCommon<T> {
-  Component: string | ComponentType<T>;
+  Component?: string | ComponentType<T>;
+  aclSnippet?: string;
+  type?: any;
 }
 
 export type SchemaSettingItemAllBuiltType =

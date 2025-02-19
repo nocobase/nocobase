@@ -88,11 +88,6 @@ export interface ApplicationOptions {
   disableAcl?: boolean;
 }
 
-interface UserCenterItemComponentType<T = {}> extends SchemaSettingItemComponentType {
-  Component?: string | ComponentType<T>;
-  type?: string;
-  aclSnippet?: string;
-}
 export class Application {
   public eventBus = new EventTarget();
 
@@ -507,14 +502,15 @@ export class Application {
   getGlobalVar(key) {
     return get(this.globalVars, key);
   }
-  addUserCenterSettingsItem(item: UserCenterItemComponentType) {
-    this.schemaSettingsManager.addItem('userCenterSettings', item.name, {
-      ...item,
-      useVisible() {
+  addUserCenterSettingsItem(item: SchemaSettingItemComponentType) {
+    item.useVisible = () => {
+      if (item.aclSnippet) {
         const snippets = ['pm.*', '!pm.users'];
         const ig = ignore().add(snippets);
         return ig.ignores(item.aclSnippet);
-      },
-    });
+      }
+      return true;
+    };
+    this.schemaSettingsManager.addItem('userCenterSettings', item.name, item);
   }
 }

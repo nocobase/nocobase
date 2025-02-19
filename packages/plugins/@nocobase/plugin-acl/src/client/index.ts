@@ -9,10 +9,11 @@
 
 import { Plugin, lazy } from '@nocobase/client';
 import { ACLSettingsUI } from './ACLSettingsUI';
-// import { RolesManagement } from './RolesManagement';
-const { RolesManagement } = lazy(() => import('./RolesManagement'), 'RolesManagement');
 import { RolesManager } from './roles-manager';
 import { SwitchRole } from './SwitchRole';
+
+const { RolesManagement } = lazy(() => import('./RolesManagement'), 'RolesManagement');
+
 export class PluginACLClient extends Plugin {
   rolesManager = new RolesManager();
   settingsUI = new ACLSettingsUI();
