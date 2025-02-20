@@ -6,7 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
+import React from 'react';
 import { Plugin, useToken } from '@nocobase/client';
 import { generateNTemplate } from '../locale';
 import { CalendarV2 } from './calendar';
@@ -28,7 +28,11 @@ import {
 } from './schema-initializer/items';
 
 const TitleRenderer = ({ value }) => {
-  return value || 'N/A';
+  return (
+    <a type="button" aria-label="event-title">
+      {value || 'N/A'}
+    </a>
+  );
 };
 interface ColorFunctions {
   loading: boolean;
