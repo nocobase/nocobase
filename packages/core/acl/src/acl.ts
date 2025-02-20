@@ -169,6 +169,10 @@ export class ACL extends EventEmitter {
     return this.roles.get(name);
   }
 
+  getRoles(names: string[]): ACLRole[] {
+    return names.map((name) => this.getRole(name));
+  }
+
   removeRole(name: string) {
     return this.roles.delete(name);
   }
@@ -351,11 +355,16 @@ export class ACL extends EventEmitter {
       }
 
       ctx.can = (options: Omit<CanArgs, 'role'>) => {
-        const canResult = acl.can({ role: roleName, ...options });
-
-        return canResult;
+        const roles = ctx.state.currentRoles || [roleName];
+        for (const role of roles) {
+          const canResult = acl.can({ role, ...options });
+          if (canResult) {
+            return canResult;
+          }
+        }
+        return null;
       };
-
+      const r = ctx.can({ resource: resourceName, action: actionName, rawResourceName });
       ctx.permission = {
         can: ctx.can({ resource: resourceName, action: actionName, rawResourceName }),
         resourceName,

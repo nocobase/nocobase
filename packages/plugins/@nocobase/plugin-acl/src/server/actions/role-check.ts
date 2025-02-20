@@ -7,6 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { ACLRole } from '@nocobase/acl';
+import { mergeRole } from '../utils';
+
 const map2obj = (map: Map<string, string>) => {
   const obj = {};
   for (const [key, value] of map) {
@@ -16,17 +19,16 @@ const map2obj = (map: Map<string, string>) => {
 };
 
 export async function checkAction(ctx, next) {
-  const currentRole = ctx.state.currentRole;
+  const currentRoles = ctx.state.currentRoles;
 
-  const roleInstance = await ctx.db.getRepository('roles').findOne({
+  const roleInstances = await ctx.db.getRepository('roles').find({
     filter: {
-      name: currentRole,
+      name: currentRoles,
     },
     appends: ['menuUiSchemas'],
   });
-
-  if (!roleInstance) {
-    throw new Error(`Role ${currentRole} not exists`);
+  if (!roleInstances.length) {
+    throw new Error(`Role ${currentRoles} not exists`);
   }
 
   const anonymous = await ctx.db.getRepository('roles').findOne({
@@ -35,23 +37,25 @@ export async function checkAction(ctx, next) {
     },
   });
 
-  let role = ctx.app.acl.getRole(currentRole);
-
-  if (!role) {
-    await ctx.app.emitAsync('acl:writeRoleToACL', roleInstance);
-    role = ctx.app.acl.getRole(currentRole);
+  let roles = ctx.app.acl.getRoles(currentRoles);
+  if (!roles.length) {
+    await ctx.app.emitAsync('acl:writeRoleToACL', roleInstances);
+    roles = ctx.app.acl.getRoles(currentRoles);
   }
-
   const availableActions = ctx.app.acl.getAvailableActions();
-
+  const role = mergeRole(roles);
+  const allowMenuItemIds = roleInstances.flatMap((roleInstance) =>
+    roleInstance.get('menuUiSchemas').map((uiSchema) => uiSchema.get('x-uid')),
+  );
   ctx.body = {
-    ...role.toJSON(),
+    ...role,
+    role: ctx.state.currentRole,
     availableActions: [...availableActions.keys()],
-    resources: [...role.resources.keys()],
     actionAlias: map2obj(ctx.app.acl.actionAlias),
-    allowAll: currentRole === 'root',
-    allowConfigure: roleInstance.get('allowConfigure'),
-    allowMenuItemIds: roleInstance.get('menuUiSchemas').map((uiSchema) => uiSchema.get('x-uid')),
+    allowAll: !!currentRoles.includes('root'),
+    allowConfigure: !!roleInstances.find((x) => x.get('allowConfigure')),
+    // allowConfigure: roleInstances[0].get('allowConfigure'),
+    allowMenuItemIds: [...new Set(allowMenuItemIds)],
     allowAnonymous: !!anonymous,
   };
 

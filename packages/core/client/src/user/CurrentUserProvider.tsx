@@ -33,6 +33,7 @@ export const useCurrentRoles = () => {
         name: 'anonymous',
       });
     }
+    roles.unshift({ name: 'union', title: '全部角色并集' });
     return roles;
   }, [allowAnonymous, data?.data?.roles]);
   return options;
