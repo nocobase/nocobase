@@ -397,6 +397,8 @@ const NocoBasePageHeader = React.memo(({ activeKey, className }: { activeKey: st
   const enablePageTabs = currentRoute.enableTabs;
   const hidePageTitle = fieldSchema['x-component-props']?.hidePageTitle;
 
+  const { token } = useToken();
+
   useEffect(() => {
     const title = t(fieldSchema.title) || t(currentRoute?.title);
     if (title) {
@@ -411,6 +413,9 @@ const NocoBasePageHeader = React.memo(({ activeKey, className }: { activeKey: st
       {!disablePageHeader && (
         <AntdPageHeader
           className={classNames('pageHeaderCss', pageTitle || enablePageTabs ? '' : 'height0')}
+          style={{
+            paddingBottom: (currentRoute.enableTabs || hidePageTitle) ? 0 : token.paddingSM,
+          }}
           ghost={false}
           // 如果标题为空的时候会导致 PageHeader 不渲染，所以这里设置一个空白字符，然后再设置高度为 0
           title={hidePageTitle ? ' ' : (!fieldSchema.title && pageTitle ? routeT(pageTitle) : pageTitle) || ' '}
