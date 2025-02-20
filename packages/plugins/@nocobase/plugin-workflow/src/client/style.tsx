@@ -345,16 +345,13 @@ const useStyles = createStyles(({ css, token }) => {
       align-items: center;
 
       .ant-tag {
-        max-width: 10em;
+        max-width: 14em;
         overflow: hidden;
         text-overflow: ellipsis;
       }
 
       .workflow-node-id {
-        color: ${token.colorTextDescription};
-        &:before {
-          content: '#';
-        }
+        display: none;
       }
     `,
 
@@ -363,7 +360,7 @@ const useStyles = createStyles(({ css, token }) => {
       align-items: center;
       font-weight: normal;
       .workflow-node-id {
-        color: ${token.colorTextDescription};
+        display: none;
       }
     `,
 
