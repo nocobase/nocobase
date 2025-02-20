@@ -13,7 +13,6 @@ import { App, Modal } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
-import { useSchemaToolbar } from '../../../application/schema-toolbar';
 import { useCurrentRouteData } from '../../../route-switch';
 import { useDesignable } from '../../hooks';
 import { useNocoBaseRoutes } from '../menu/Menu';
@@ -102,7 +101,9 @@ export const pageTabSettings = new SchemaSettings({
         const { modal } = App.useApp();
         const { dn } = useDesignable();
         const { t } = useTranslation();
-        const { schema } = useSchemaToolbar();
+        const { deleteRoute } = useNocoBaseRoutes();
+        const currentRoute = useCurrentRouteData();
+
         return {
           title: t('Delete'),
           eventKey: 'remove',
@@ -111,8 +112,13 @@ export const pageTabSettings = new SchemaSettings({
               title: t('Delete block'),
               content: t('Are you sure you want to delete it?'),
               ...confirm,
-              onOk() {
-                dn.remove(schema);
+              async onOk() {
+                await deleteRoute(currentRoute.id);
+                dn.emit('remove', {
+                  removed: {
+                    'x-uid': currentRoute.schemaUid,
+                  }
+                })
               },
             });
           },

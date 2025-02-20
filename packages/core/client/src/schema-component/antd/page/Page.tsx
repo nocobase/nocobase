@@ -25,6 +25,7 @@ import {
   CurrentTabUidContext,
   useCurrentSearchParams,
   useCurrentTabUid,
+  useLocationNoUpdate,
   useNavigateNoUpdate,
   useRouterBasename,
 } from '../../../application/CustomRouterContextProvider';
@@ -197,18 +198,27 @@ interface PageContentProps {
 const InternalPageContent = (props: PageContentProps) => {
   const { loading, disablePageHeader, enablePageTabs, activeKey } = props;
   const currentRoute = useCurrentRouteData();
+  const location = useLocationNoUpdate();
+  const navigate = useNavigateNoUpdate();
 
-  const noTabs = currentRoute?.children?.length === 0 || currentRoute?.children?.length === undefined;
+  const noTabs = currentRoute?.children?.every((tabRoute) => tabRoute.schemaUid !== activeKey && tabRoute.tabSchemaName !== activeKey);
 
-  if (noTabs || !activeKey) {
+  if (activeKey && noTabs) {
     return <AppNotFound />;
+  }
+
+  // 兼容旧版本的 tab 路径
+  const oldTab = currentRoute?.children?.find((tabRoute) => tabRoute.tabSchemaName === activeKey);
+  if (oldTab) {
+    navigate(location.pathname.replace(activeKey, oldTab.schemaUid), { replace: true });
+    return null;
   }
 
   if (!disablePageHeader && enablePageTabs) {
     return (
       <>
         {
-          currentRoute.children.map((tabRoute) => {
+          currentRoute.children?.map((tabRoute) => {
             return (
               <NocoBaseRouteContext.Provider value={tabRoute} key={tabRoute.schemaUid}>
                 <TabPane active={tabRoute.schemaUid === activeKey} uid={tabRoute.schemaUid} />
@@ -335,7 +345,7 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
   );
 
   const items = useMemo(() => {
-    return currentRoute?.children.map((tabRoute) => {
+    return currentRoute?.children?.map((tabRoute) => {
       if (!tabRoute || tabRoute.hideInMenu) {
         return null;
       }
@@ -357,7 +367,7 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
             </SortableItem>
           </NocoBaseRouteContext.Provider>
         ),
-        key: tabRoute.schemaUid, // TODO: 兼容旧版 tab 路由
+        key: tabRoute.schemaUid,
       };
     })
       .filter(Boolean);
