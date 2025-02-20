@@ -145,7 +145,7 @@ const layoutContentClass = css`
   display: flex;
   flex-direction: column;
   position: relative;
-  height: 100vh;
+  height: calc(100vh - var(--nb-header-height));
   > div {
     position: relative;
   }
