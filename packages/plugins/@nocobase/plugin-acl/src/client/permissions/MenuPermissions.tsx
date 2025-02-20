@@ -9,7 +9,7 @@
 
 import { createForm, Form, onFormValuesChange } from '@formily/core';
 import { uid } from '@formily/shared';
-import { css, SchemaComponent, useAPIClient, useCompile, useRequest } from '@nocobase/client';
+import { css, SchemaComponent, useAllAccessDesktopRoutes, useAPIClient, useCompile, useRequest } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Checkbox, message, Table } from 'antd';
 import { uniq } from 'lodash';
@@ -166,6 +166,7 @@ export const MenuPermissions: React.FC<{
   );
   const resource = api.resource('roles.desktopRoutes', role.name);
   const allChecked = allIDList.length === IDList.length;
+  const { refresh: refreshDesktopRoutes } = useAllAccessDesktopRoutes();
 
   const handleChange = async (checked, menuItem) => {
     // 处理取消选中
@@ -214,6 +215,7 @@ export const MenuPermissions: React.FC<{
         values: shouldAdd,
       });
     }
+    refreshDesktopRoutes();
     message.success(t('Saved successfully'));
   };
 
@@ -288,6 +290,7 @@ export const MenuPermissions: React.FC<{
                       });
                     }
                     refresh();
+                    refreshDesktopRoutes();
                     message.success(t('Saved successfully'));
                   }}
                 />{' '}
