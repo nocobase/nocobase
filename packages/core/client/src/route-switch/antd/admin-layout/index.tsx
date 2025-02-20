@@ -11,7 +11,7 @@ import { EllipsisOutlined } from '@ant-design/icons';
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
-import { Popover } from 'antd';
+import { Popover, Tooltip } from 'antd';
 import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
@@ -286,6 +286,22 @@ const GroupItem: FC<{ item: any }> = (props) => {
   );
 };
 
+const WithTooltip: FC<{ title: string; hidden: boolean }> = (props) => {
+  const { inHeader } = useContext(headerContext);
+
+  return (
+    <RouteContext.Consumer>
+      {(context) =>
+        (context.collapsed && !props.hidden && !inHeader) ? (
+          <Tooltip title={props.title} placement="right">{props.children}</Tooltip>
+        ) : (
+          props.children
+        )
+      }
+    </RouteContext.Consumer>
+  );
+}
+
 const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean; } }> = (props) => {
   const { item } = props;
   const { parseURLAndParams } = useParseURLAndParams();
@@ -371,9 +387,11 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
           id={item._route.id}
           schema={fakeSchema}
         >
-          <Link to={path}>
-            {props.children}
-          </Link>
+          <WithTooltip title={item.name} hidden={item._route.type === NocoBaseDesktopRouteType.group}>
+            <Link to={path}>
+              {props.children}
+            </Link>
+          </WithTooltip>
           <MenuSchemaToolbar />
         </SortableItem>
       </NocoBaseRouteContext.Provider>
@@ -720,7 +738,19 @@ const MenuItemIcon: FC<{ icon: string; title: string }> = (props) => {
         const { collapsed } = value;
 
         if (collapsed && !inHeader) {
-          return props.icon ? <Icon type={props.icon} /> : <span style={{ display: 'inline-block', width: '100%', textAlign: 'center' }}>{props.title.charAt(0)}</span>;
+          return props.icon ? (
+            <Icon type={props.icon} />
+          ) : (
+            <span
+              style={{
+                display: 'inline-block',
+                width: '100%',
+                textAlign: 'center'
+              }}
+            >
+              {props.title.charAt(0)}
+            </span>
+          );
         }
 
         return <Icon type={props.icon} />;
