@@ -15,34 +15,6 @@ import { SchemaSettingsActionModalItem } from './SchemaSettings';
 import { useAPIClient } from '../api-client/hooks/useAPIClient';
 import { useRequest } from '../api-client';
 
-const RequestACLSchema = {
-  type: 'object',
-  properties: {
-    roles: {
-      type: 'array',
-      title: "t('Roles')",
-      'x-decorator': 'FormItem',
-      'x-decorator-props': {
-        tooltip: 't("If not set, all roles can see this action")',
-      },
-      'x-component': 'RemoteSelect',
-      'x-component-props': {
-        multiple: true,
-        objectValue: true,
-        dataSource: 'main',
-        service: {
-          resource: 'roles',
-        },
-        manual: false,
-        fieldNames: {
-          label: 'title',
-          value: 'name',
-        },
-      },
-    },
-  },
-};
-
 export function AccessControl() {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
