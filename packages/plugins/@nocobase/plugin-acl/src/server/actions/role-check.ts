@@ -54,7 +54,6 @@ export async function checkAction(ctx, next) {
     actionAlias: map2obj(ctx.app.acl.actionAlias),
     allowAll: !!currentRoles.includes('root'),
     allowConfigure: !!roleInstances.find((x) => x.get('allowConfigure')),
-    // allowConfigure: roleInstances[0].get('allowConfigure'),
     allowMenuItemIds: [...new Set(allowMenuItemIds)],
     allowAnonymous: !!anonymous,
   };

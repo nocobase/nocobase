@@ -364,7 +364,6 @@ export class ACL extends EventEmitter {
         }
         return null;
       };
-      const r = ctx.can({ resource: resourceName, action: actionName, rawResourceName });
       ctx.permission = {
         can: ctx.can({ resource: resourceName, action: actionName, rawResourceName }),
         resourceName,
