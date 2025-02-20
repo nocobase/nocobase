@@ -387,7 +387,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
           id={item._route.id}
           schema={fakeSchema}
         >
-          <WithTooltip title={item.name} hidden={item._route.type === NocoBaseDesktopRouteType.group}>
+          <WithTooltip title={item.name} hidden={item._route.type === NocoBaseDesktopRouteType.group || item._depth > 0}>
             <Link to={path}>
               {props.children}
             </Link>
@@ -753,7 +753,7 @@ const MenuItemIcon: FC<{ icon: string; title: string }> = (props) => {
           );
         }
 
-        return <Icon type={props.icon} />;
+        return props.icon ? <Icon type={props.icon} /> : null;
       }}
     </RouteContext.Consumer>
   )
@@ -777,7 +777,7 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializ
     if (item.type === NocoBaseDesktopRouteType.link) {
       return {
         name: item.title,
-        icon: <MenuItemIcon icon={item.icon} title={item.title} />,
+        icon: item.icon ? <Icon type={item.icon} /> : null,
         path: '/',
         hideInMenu: item.hideInMenu,
         _route: item,
@@ -788,7 +788,7 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializ
     if (item.type === NocoBaseDesktopRouteType.page) {
       return {
         name: item.title,
-        icon: <MenuItemIcon icon={item.icon} title={item.title} />,
+        icon: item.icon ? <Icon type={item.icon} /> : null,
         path: `/admin/${item.schemaUid}`,
         redirect: `/admin/${item.schemaUid}`,
         hideInMenu: item.hideInMenu,
@@ -807,12 +807,13 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializ
 
       return {
         name: item.title,
-        icon: <MenuItemIcon icon={item.icon} title={item.title} />,
+        icon: item.icon ? <Icon type={item.icon} /> : null,
         path: `/admin/${item.id}`,
         redirect: children[0]?.key === 'x-designer-button' ? undefined : `/admin/${findFirstPageRoute(item.children)?.schemaUid || ''}`,
         routes: children.length === 0 ? [{ path: '/', name: ' ', disabled: true, _hidden: true }] : children,
         hideInMenu: item.hideInMenu,
         _route: item,
+        _depth: depth,
       };
     }
   })
