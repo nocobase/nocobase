@@ -28,11 +28,7 @@ import {
 } from './schema-initializer/items';
 
 const TitleRenderer = ({ value }) => {
-  return (
-    <a type="button" aria-label="event-title">
-      {value || 'N/A'}
-    </a>
-  );
+  return <span aria-label="event-title">{value || 'N/A'}</span>;
 };
 interface ColorFunctions {
   loading: boolean;

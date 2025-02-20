@@ -25,7 +25,7 @@ test.describe('ReadPrettyFormActionInitializers & CalendarFormActionInitializers
     const nocoPage = await mockPage(oneCalenderWithViewAction).waitForInit();
     await mockRecord('general', { singleLineText: 'test' });
     await nocoPage.goto();
-    await page.getByLabel('event-title').click();
+    await page.getByLabel('block-item-CardItem-general-').getByLabel('event-title').click();
     await page.getByLabel('schema-initializer-ActionBar-details:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Print' }).click();
     await page.getByLabel('action-Action-Print-print-general-form').click();
