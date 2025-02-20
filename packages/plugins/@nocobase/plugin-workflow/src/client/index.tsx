@@ -63,12 +63,10 @@ export default class PluginWorkflowClient extends Plugin {
 
   useInstructionGroupOptions = () => {
     const compile = useCompile();
-    return Array.from(this.instructionGroups.getEntities())
-      .map(([key, { label }]) => ({
-        key,
-        label: compile(label),
-      }))
-      .sort((a, b) => a.label.localeCompare(b.label));
+    return Array.from(this.instructionGroups.getEntities()).map(([key, { label }]) => ({
+      key,
+      label: compile(label),
+    }));
   };
 
   isWorkflowSync(workflow) {
