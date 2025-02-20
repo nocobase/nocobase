@@ -84,7 +84,7 @@ test.describe('edit form block schema settings', () => {
     await runExpect();
   });
 
-  test('Convert reference to duplicate & Save as block template', async ({ page, mockPage, mockRecord }) => {
+  test.skip('Convert reference to duplicate & Save as block template', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneTableBlockWithActionsAndFormBlocks).waitForInit();
     await mockRecord('general');
     await nocoPage.goto();

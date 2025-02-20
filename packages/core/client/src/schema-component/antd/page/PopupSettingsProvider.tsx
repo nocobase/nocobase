@@ -40,8 +40,15 @@ export const usePopupSettings = () => {
     const isOldMobileMode = pathname?.includes('/mobile/') || hash?.includes('/mobile/');
     const isNewMobileMode = pathname?.includes('/m/');
     const isPCMode = pathname?.includes('/admin/');
+    const isMobileTemplateSettingsPage = pathname?.includes('/m/block-templates/');
 
-    return (isPCMode || isNewMobileMode) && !isOldMobileMode && enableURL && !isInSettingsPage;
+    return (
+      (isPCMode || isNewMobileMode) &&
+      !isOldMobileMode &&
+      enableURL &&
+      !isInSettingsPage &&
+      !isMobileTemplateSettingsPage
+    );
   }, [enableURL, isInSettingsPage]);
 
   return {

@@ -24,7 +24,7 @@ test.describe('list block schema settings', () => {
         'Set the data scope',
         'Set default sorting rules',
         'Records per page',
-        'Save as template',
+        // 'Save as template',
         'Delete',
       ],
     });

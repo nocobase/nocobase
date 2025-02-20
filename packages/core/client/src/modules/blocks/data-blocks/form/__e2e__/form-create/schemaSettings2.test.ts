@@ -236,7 +236,7 @@ test.describe('linkage rules', () => {
   });
 
   // https://nocobase.height.app/T-3806
-  test('after save as block template', async ({ page, mockPage }) => {
+  test.skip('after save as block template', async ({ page, mockPage }) => {
     await mockPage(T3806).goto();
 
     // 1. 一开始联动规则应该正常

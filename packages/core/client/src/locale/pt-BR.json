@@ -112,6 +112,7 @@
   "Chart type": "Tipo de gráfico",
   "Chart config": "Configuração do gráfico",
   "Templates": "Modelos",
+  "Template": "Modelo",
   "Select template": "Selecione um modelo",
   "Action logs": "Registros de ação",
   "Create template": "Criar modelo",
@@ -776,5 +777,7 @@
   "Are you sure you want to hide this menu?": "Tem certeza de que deseja ocultar este menu?",
   "After hiding, this menu will no longer appear in the menu bar. To show it again, you need to go to the route management page to configure it.": "Depois de ocultar, este menu não aparecerá mais na barra de menus. Para mostrar novamente, você precisa ir à página de gerenciamento de rotas para configurá-lo.",
   "If selected, the page will display Tab pages.": "Se selecionado, a página exibirá páginas de abas.",
-  "If selected, the route will be displayed in the menu.": "Se selecionado, a rota será exibida no menu."
+  "If selected, the route will be displayed in the menu.": "Se selecionado, a rota será exibida no menu.",
+  "Deprecated": "Descontinuado",
+  "The following old template features have been deprecated and will be removed in next version.": "As seguintes funcionalidades de modelo antigo foram descontinuadas e serão removidas na próxima versão."
 }
