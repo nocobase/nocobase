@@ -126,8 +126,13 @@ export const AdminDynamicPage = () => {
   const currentPageUid = useCurrentPageUid();
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
 
+  // Group page should not request schema data
+  if (isGroup(currentPageUid, allAccessRoutes)) {
+    return null;
+  }
+
   // 404 page
-  if (noAccessPermission(currentPageUid, allAccessRoutes) && !isGroup(currentPageUid, allAccessRoutes)) {
+  if (noAccessPermission(currentPageUid, allAccessRoutes)) {
     return <AppNotFound />;
   }
 
