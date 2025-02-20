@@ -159,14 +159,6 @@ const layoutContentClass = css`
   }
 `;
 
-const layoutContentHeaderClass = css`
-  flex-shrink: 0;
-  height: var(--nb-header-height);
-  line-height: var(--nb-header-height);
-  background: transparent;
-  pointer-events: none;
-`;
-
 const style1: any = {
   position: 'relative',
   width: '100%',
@@ -728,7 +720,7 @@ const MenuItemIcon: FC<{ icon: string; title: string }> = (props) => {
         const { collapsed } = value;
 
         if (collapsed && !inHeader) {
-          return props.icon ? <Icon type={props.icon} /> : props.title.charAt(0);
+          return props.icon ? <Icon type={props.icon} /> : <span style={{ display: 'inline-block', width: '100%', textAlign: 'center' }}>{props.title.charAt(0)}</span>;
         }
 
         return <Icon type={props.icon} />;
