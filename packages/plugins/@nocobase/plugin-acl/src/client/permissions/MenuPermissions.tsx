@@ -68,7 +68,7 @@ const style = css`
 
 const translateTitle = (menus: any[], t, compile) => {
   return menus.map((menu) => {
-    const title = menu.title?.match(/^\s*\{\{\s*.+?\s*\}\}\s*$/) ? compile(menu.title) : t(menu.title);
+    const title = (menu.title?.match(/^\s*\{\{\s*.+?\s*\}\}\s*$/) ? compile(menu.title) : t(menu.title)) || t('Unnamed');
     if (menu.children) {
       return {
         ...menu,
@@ -123,7 +123,7 @@ const DesktopRoutesProvider: FC<{
 };
 
 export const DesktopAllRoutesProvider: React.FC<{ active: boolean }> = ({ children, active }) => {
-  const refreshRef = React.useRef(() => {});
+  const refreshRef = React.useRef(() => { });
 
   useEffect(() => {
     if (active) {
