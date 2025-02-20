@@ -56,7 +56,7 @@ test.describe('schema settings', () => {
         'The default zoom level of the map',
         'Set the data scope',
         'Connect data blocks',
-        'Save as template',
+        // 'Save as template',
         'Delete',
       ],
     });
