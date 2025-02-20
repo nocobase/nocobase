@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Action, useAPIClient, useRequest, withDynamicSchemaProps } from '@nocobase/client';
+import { Action, useAPIClient, useRequest, withDynamicSchemaProps, ACLActionProvider } from '@nocobase/client';
 import React from 'react';
 import { useFieldSchema } from '@formily/react';
 import { listByCurrentRoleUrl } from '../constants';
@@ -32,7 +32,7 @@ export const CustomRequestActionACLDecorator = (props) => {
     return null;
   }
 
-  return props.children;
+  return <ACLActionProvider>{props.children}</ACLActionProvider>;
 };
 
 const components = {
