@@ -7,7 +7,7 @@ import { App, ConfigProvider } from 'antd';
 import { SiderContext } from "antd/es/layout/Sider";
 import React, { FC, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { css, isVariable, NocoBaseDesktopRouteType, useAllAccessDesktopRoutes, useCompile, useCurrentRouteData, useNocoBaseRoutes, useToken, useURLAndHTMLSchema } from "../../..";
+import { css, findRouteBySchemaUid, isVariable, NocoBaseDesktopRouteType, useAllAccessDesktopRoutes, useCompile, useCurrentPageUid, useCurrentRouteData, useNavigateNoUpdate, useNocoBaseRoutes, useToken, useURLAndHTMLSchema } from "../../..";
 import {
   getPageMenuSchema
 } from '../../../';
@@ -39,11 +39,54 @@ const insertPositionToMethod = {
   afterEnd: 'insertAfter',
 };
 
+const findPrevSibling = (routes: NocoBaseDesktopRoute[], currentRoute: NocoBaseDesktopRoute | undefined) => {
+  if (!currentRoute) {
+    return;
+  }
+
+  for (let i = 0; i < routes.length; i++) {
+    const route = routes[i];
+    if (route.id === currentRoute.id) {
+      return routes[i - 1];
+    }
+
+    if (route.children) {
+      const prevSibling = findPrevSibling(route.children, currentRoute);
+      if (prevSibling) {
+        return prevSibling;
+      }
+    }
+  }
+}
+
+const findNextSibling = (routes: NocoBaseDesktopRoute[], currentRoute: NocoBaseDesktopRoute | undefined) => {
+  if (!currentRoute) {
+    return;
+  }
+
+  for (let i = 0; i < routes.length; i++) {
+    const route = routes[i];
+    if (route.id === currentRoute.id) {
+      return routes[i + 1];
+    }
+
+    if (route.children) {
+      const nextSibling = findNextSibling(route.children, currentRoute);
+      if (nextSibling) {
+        return nextSibling;
+      }
+    }
+  }
+}
+
 export const RemoveRoute: FC = () => {
   const { t } = useTranslation();
   const { modal } = App.useApp();
   const { deleteRoute } = useNocoBaseRoutes();
   const currentRoute = useCurrentRouteData();
+  const { allAccessRoutes } = useAllAccessDesktopRoutes();
+  const navigate = useNavigateNoUpdate()
+  const currentPageUid = useCurrentPageUid();
 
   return (
     <SchemaSettingsItem
@@ -53,9 +96,25 @@ export const RemoveRoute: FC = () => {
         modal.confirm({
           title: t('Delete menu item'),
           content: t('Are you sure you want to delete it?'),
-          onOk: () => {
+          onOk: async () => {
             // 删除对应菜单的路由
-            currentRoute?.id != null && deleteRoute(currentRoute.id);
+            currentRoute?.id != null && await deleteRoute(currentRoute.id);
+
+            if (currentPageUid !== currentRoute?.schemaUid && !findRouteBySchemaUid(currentPageUid, currentRoute?.children)) {
+              return;
+            }
+
+            // 上一个兄弟节点
+            const prevSibling = findPrevSibling(allAccessRoutes, currentRoute);
+            // 下一个兄弟节点
+            const nextSibling = findNextSibling(allAccessRoutes, currentRoute);
+
+            if (prevSibling || nextSibling) {
+              // 如果删除的是当前打开的页面或分组，需要跳转到上一个页面或分组
+              navigate(`/admin/${prevSibling?.schemaUid || nextSibling?.schemaUid}`);
+            } else {
+              navigate(`/`);
+            }
           },
         });
       }}

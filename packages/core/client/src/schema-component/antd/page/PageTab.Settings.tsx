@@ -9,9 +9,11 @@
 
 import { ExclamationCircleFilled } from '@ant-design/icons';
 import { ISchema } from '@formily/json-schema';
+import { useFieldSchema } from '@formily/react';
 import { App, Modal } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { useCurrentRouteData } from '../../../route-switch';
 import { useDesignable } from '../../hooks';
@@ -103,6 +105,8 @@ export const pageTabSettings = new SchemaSettings({
         const { t } = useTranslation();
         const { deleteRoute } = useNocoBaseRoutes();
         const currentRoute = useCurrentRouteData();
+        const navigate = useNavigateNoUpdate();
+        const schema = useFieldSchema();
 
         return {
           title: t('Delete'),
@@ -119,6 +123,11 @@ export const pageTabSettings = new SchemaSettings({
                     'x-uid': currentRoute.schemaUid,
                   }
                 })
+
+                // 如果删除的是当前打开的 tab，需要跳转到其他 tab
+                if (window.location.pathname.includes(currentRoute.schemaUid)) {
+                  navigate(`/admin/${schema['x-uid']}`);
+                }
               },
             });
           },

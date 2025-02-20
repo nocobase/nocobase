@@ -201,7 +201,8 @@ const InternalPageContent = (props: PageContentProps) => {
   const location = useLocationNoUpdate();
   const navigate = useNavigateNoUpdate();
 
-  const noTabs = currentRoute?.children?.every((tabRoute) => tabRoute.schemaUid !== activeKey && tabRoute.tabSchemaName !== activeKey);
+  const children = currentRoute?.children || [];
+  const noTabs = children.every((tabRoute) => tabRoute.schemaUid !== activeKey && tabRoute.tabSchemaName !== activeKey);
 
   if (activeKey && noTabs) {
     return <AppNotFound />;
