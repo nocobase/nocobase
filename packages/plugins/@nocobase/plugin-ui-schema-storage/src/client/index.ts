@@ -8,7 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/client';
-
+import { SchemaSettingAccessControl } from './SchemaSettingAccessControl';
 class PluginUISchemaStorageClient extends Plugin {
   async load() {}
 }
