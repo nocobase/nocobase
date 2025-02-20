@@ -87,6 +87,7 @@ import { useFilterBlock } from '../filter-provider/FilterProvider';
 import { FlagProvider } from '../flag-provider';
 import { useGlobalTheme } from '../global-theme';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
+import { usePlacement } from '../hooks/usePlacement';
 import {
   VariablePopupRecordProvider,
   useCurrentPopupRecord,
@@ -113,6 +114,7 @@ import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
 import { LinkageRuleCategory, LinkageRuleDataKeyMap } from './LinkageRules/type';
 import { CurrentRecordContextProvider, useCurrentRecord } from './VariableInput/hooks/useRecordVariable';
+
 export interface SchemaSettingsProps {
   title?: any;
   dn?: Designable;
@@ -167,7 +169,7 @@ export const SchemaSettingsProvider: React.FC<SchemaSettingsProviderProps> = (pr
   return <SchemaSettingsContext.Provider value={value}>{children}</SchemaSettingsContext.Provider>;
 };
 
-export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = React.memo((props) => {
+const InternalSchemaSettingsDropdown: React.FC<SchemaSettingsProps> = React.memo((props) => {
   const { title, dn, ...others } = props;
   const [visible, setVisible] = useState(false);
   const { Component, getMenuItems } = useMenuItem();
@@ -175,6 +177,7 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = React.memo(
   // 单测中需要在首次就把菜单渲染出来，否则不会触发菜单的渲染进而报错。原因未知。
   const [openDropdown, setOpenDropdown] = useState(process.env.__TEST__ ? true : false);
   const toolbarVisible = useContext(SchemaToolbarVisibleContext);
+  const [currentRef, placement] = usePlacement();
 
   useEffect(() => {
     if (toolbarVisible) {
@@ -211,6 +214,7 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = React.memo(
       <Component />
       <Dropdown
         open={visible}
+        placement={placement}
         onOpenChange={changeMenu}
         overlayClassName={css`
           .ant-dropdown-menu-item-group-list {
@@ -226,10 +230,17 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = React.memo(
           } as any
         }
       >
-        <div data-testid={props['data-testid']}>{typeof title === 'string' ? <span>{title}</span> : title}</div>
+        <div ref={currentRef} data-testid={props['data-testid']}>
+          {typeof title === 'string' ? <span>{title}</span> : title}
+        </div>
       </Dropdown>
     </SchemaSettingsProvider>
   );
+});
+
+export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = React.memo((props) => {
+  const designable = useDesignable();
+  return designable ? <InternalSchemaSettingsDropdown {...props} /> : null;
 });
 
 SchemaSettingsDropdown.displayName = 'SchemaSettingsDropdown';

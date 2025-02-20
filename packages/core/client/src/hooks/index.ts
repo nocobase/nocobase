@@ -8,4 +8,6 @@
  */
 
 export * from './useAdminSchemaUid';
+export * from './usePlacement';
+
 export * from './useViewport';

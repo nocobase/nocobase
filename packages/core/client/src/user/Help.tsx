@@ -143,10 +143,12 @@ export const Help = observer(
       <div className={helpClassName}>
         <DropdownVisibleContext.Provider value={{ visible, setVisible }}>
           <Dropdown
+            getPopupContainer={() => document.getElementById('root')}
             open={visible}
             onOpenChange={(visible) => {
               setVisible(visible);
             }}
+            placement="bottomRight"
             dropdownRender={() => {
               return <SettingsMenu />;
             }}

@@ -196,7 +196,10 @@ export const CurrentUser = () => {
     >
       <DropdownVisibleContext.Provider value={{ visible, setVisible }}>
         <Dropdown
+          autoAdjustOverflow={false}
           open={visible}
+          placement="bottomRight"
+          getPopupContainer={() => document.getElementById('root')}
           onOpenChange={(visible) => {
             setVisible(visible);
           }}

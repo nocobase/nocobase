@@ -15,6 +15,7 @@ import { css } from '@emotion/css';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useNiceDropdownMaxHeight } from '../../common/useNiceDropdownHeight';
 import { useFlag } from '../../flag-provider';
+import { usePlacement } from '../../hooks/usePlacement';
 import { ErrorFallback, useDesignable } from '../../schema-component';
 import { useSchemaInitializerStyles } from './components/style';
 import { SchemaInitializerContext } from './context';
@@ -28,6 +29,8 @@ export function withInitializer<T>(C: ComponentType<T>) {
     (props: SchemaInitializerOptions<T>) => {
       const { designable, insertAdjacent } = useDesignable();
       const { isInSubTable } = useFlag() || {};
+      const [currentRef, placement] = usePlacement();
+
       const {
         insert,
         useInsert,
@@ -66,6 +69,7 @@ export function withInitializer<T>(C: ComponentType<T>) {
         () => ({
           options: props,
           style,
+          ref: currentRef,
           ...componentProps,
         }),
         [componentProps, props, style],
@@ -112,7 +116,7 @@ export function withInitializer<T>(C: ComponentType<T>) {
               React.createElement(C, cProps)
             ) : (
               <Popover
-                placement={'bottomLeft'}
+                placement={placement}
                 {...popoverProps}
                 arrow={false}
                 overlayClassName={overlayClassName}
