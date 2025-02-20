@@ -1,0 +1,31 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "ERPSPACE API - Collection Duplicate plugin"
+  },
+  "tags": [],
+  "paths": {
+    "/collections:duplicate": {
+      "post": {
+        "tags": ["collections"],
+        "description": "Duplicate a collection.",
+        "parameters": [
+          {
+            "name": "filterByTk",
+            "in": "query",
+            "description": "Primary key of a record",
+            "schema": {
+              "type": "string",
+              "description": "ID. The collection to duplicate."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  }
+}
