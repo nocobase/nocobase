@@ -8,7 +8,11 @@
  */
 
 import { Plugin, useApp, useCollectionDataSource, useVariables } from '@nocobase/client';
-import WorkflowPlugin, { Instruction, useNodeSavedConfig } from '@nocobase/plugin-workflow/client';
+import WorkflowPlugin, {
+  Instruction,
+  useNodeSavedConfig,
+  WorkflowVariableTextArea,
+} from '@nocobase/plugin-workflow/client';
 import { LoadingOutlined } from '@ant-design/icons';
 import React, { useCallback, useEffect } from 'react';
 
@@ -48,7 +52,11 @@ class RefreshInstruction extends Instruction {
       type: 'string',
       title: `Adres URI lub URL`,
       'x-decorator': 'FormItem',
-      'x-component': 'Input',
+      'x-decorator-props': {},
+      'x-component': 'WorkflowVariableTextArea',
+      'x-component-props': {
+        placeholder: '/',
+      },
       required: true,
       default: '/',
     },
@@ -63,6 +71,7 @@ class RefreshInstruction extends Instruction {
     // SchemaComponentContext,
     // WorkflowVariableInput,
     // RadioWithTooltip,
+    WorkflowVariableTextArea,
   };
   useVariables = useVariables;
   // useInitializers(node): SchemaInitializerItemType | null {
