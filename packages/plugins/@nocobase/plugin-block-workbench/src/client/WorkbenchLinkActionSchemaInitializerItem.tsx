@@ -14,6 +14,7 @@ import {
   useSchemaInitializer,
   useSchemaInitializerItem,
   ModalActionSchemaInitializerItem,
+  ModalActionSchemaInitializerItem,
   SchemaSettingAccessControl,
 } from '@nocobase/client';
 import React from 'react';
