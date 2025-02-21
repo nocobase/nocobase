@@ -15,6 +15,7 @@ import {
   useResource,
   ISchema,
   SchemaInitializerItemType,
+  useCurrentUserContext,
 } from '@nocobase/client';
 import React, { createContext, useContext, useEffect } from 'react';
 import PluginBlockTemplateClient from '..';
