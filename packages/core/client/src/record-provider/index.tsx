@@ -25,6 +25,7 @@ export const RecordProvider: React.FC<{
   parent?: any;
   isNew?: boolean;
   collectionName?: string;
+  children: React.ReactNode;
 }> = React.memo((props) => {
   const { record, children, parent, isNew } = props;
   const collection = useCollection();
@@ -51,7 +52,7 @@ export const RecordSimpleProvider: React.FC<{ value: Record<string, any>; childr
   return <RecordContext_deprecated.Provider {...props} />;
 };
 
-export const RecordIndexProvider: React.FC<{ index: any }> = (props) => {
+export const RecordIndexProvider: React.FC<{ index: any; children: React.ReactNode }> = (props) => {
   const { index, children } = props;
   return <RecordIndexContext.Provider value={index}>{children}</RecordIndexContext.Provider>;
 };

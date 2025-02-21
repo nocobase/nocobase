@@ -23,8 +23,12 @@ export const DocumentTitleContext = createContext<DocumentTitleContextProps>({
 });
 DocumentTitleContext.displayName = 'DocumentTitleContext';
 
-export const DocumentTitleProvider: React.FC<{ addonBefore?: string; addonAfter?: string }> = React.memo((props) => {
-  const { addonBefore, addonAfter } = props;
+export const DocumentTitleProvider: React.FC<{
+  addonBefore?: string;
+  addonAfter?: string;
+  children: React.ReactNode;
+}> = React.memo((props) => {
+  const { addonBefore, addonAfter, children } = props;
   const { t } = useTranslation();
   const { t: routeT } = useTranslation('lm-desktop-routes');
   const { t: titleT } = useTranslation('lm-collections');
@@ -52,7 +56,7 @@ export const DocumentTitleProvider: React.FC<{ addonBefore?: string; addonAfter?
 
 DocumentTitleProvider.displayName = 'DocumentTitleProvider';
 
-export const RemoteDocumentTitleProvider: React.FC = (props) => {
+export const RemoteDocumentTitleProvider: React.FC<{ children: React.ReactNode }> = (props) => {
   const ctx = useSystemSettings();
   return <DocumentTitleProvider addonAfter={ctx?.data?.data?.title}>{props.children}</DocumentTitleProvider>;
 };

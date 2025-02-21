@@ -15,6 +15,7 @@ import { useRecord } from '../../../../record-provider';
 
 export const SQLRequestProvider: React.FC<{
   manual?: boolean;
+  children: React.ReactNode;
 }> = (props) => {
   const api = useAPIClient();
   const form = useForm();

@@ -109,7 +109,12 @@ export async function requestParentRecordData({
   return res.data;
 }
 
-export const BlockRequestContextProvider: FC<{ recordRequest: UseRequestResult<any> }> = (props) => {
+interface BlockRequestContextProviderProps {
+  recordRequest: UseRequestResult<any>;
+  children?: React.ReactNode;
+}
+
+export const BlockRequestContextProvider: FC<BlockRequestContextProviderProps> = (props) => {
   const recordRequestRef = useRef<UseRequestResult<any>>(props.recordRequest);
   const prevRequestDataRef = useRef<any>(props.recordRequest?.data);
   const { active: pageActive } = useKeepAlive();
@@ -154,7 +159,11 @@ export const BlockRequestContextProvider: FC<{ recordRequest: UseRequestResult<a
   );
 };
 
-export const BlockRequestProvider: FC = React.memo(({ children }) => {
+interface BlockRequestProviderProps {
+  children?: React.ReactNode;
+}
+
+export const BlockRequestProvider: FC<BlockRequestProviderProps> = React.memo(({ children }) => {
   const props = useDataBlockProps();
   const {
     action,

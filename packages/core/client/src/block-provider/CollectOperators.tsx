@@ -22,7 +22,10 @@ const CollectOperatorsContext = createContext<{
   removeOperator: (name: string | number) => void;
 }>(null);
 
-export const CollectOperators: FC<{ defaultOperators: Record<string, string> }> = (props) => {
+export const CollectOperators: FC<{
+  defaultOperators: Record<string, string>;
+  children: React.ReactNode;
+}> = (props) => {
   const operators = useRef(props.defaultOperators || {});
 
   const collectOperator = useCallback((name: string, operator: string) => {

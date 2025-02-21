@@ -72,7 +72,9 @@ const IsSubPageClosedByPageMenuContext = React.createContext<{
 });
 IsSubPageClosedByPageMenuContext.displayName = 'IsSubPageClosedByPageMenuContext';
 
-export const IsSubPageClosedByPageMenuProvider: FC = ({ children }) => {
+export const IsSubPageClosedByPageMenuProvider: FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   const params = useParams();
   const prevParamsRef = useRef<any>({});
   const [fieldSchema, setFieldSchema] = useState<Schema>(null);
@@ -106,43 +108,59 @@ export const IsSubPageClosedByPageMenuProvider: FC = ({ children }) => {
  * see: https://stackoverflow.com/questions/50449423/accessing-basename-of-browserouter
  * @returns {string} basename
  */
-const RouterBasenameProvider: FC = ({ children }) => {
+const RouterBasenameProvider: FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   const basenameOfCurrentRouter = useHref('/');
   return <RouterBasenameContext.Provider value={basenameOfCurrentRouter}>{children}</RouterBasenameContext.Provider>;
 };
 
-const SearchParamsProvider: FC = ({ children }) => {
+const SearchParamsProvider: FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   const [searchParams] = useSearchParams();
   return <SearchParamsContext.Provider value={searchParams}>{children}</SearchParamsContext.Provider>;
 };
 
-const IsInSettingsPageProvider: FC = ({ children }) => {
+const IsInSettingsPageProvider: FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   const isInSettingsPage = useLocation().pathname.includes('/settings');
   return <IsInSettingsPageContext.Provider value={isInSettingsPage}>{children}</IsInSettingsPageContext.Provider>;
 };
 
-const MatchAdminProvider: FC = ({ children }) => {
+const MatchAdminProvider: FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   const isMatchAdmin = !!useMatch('/admin');
   return <MatchAdminContext.Provider value={isMatchAdmin}>{children}</MatchAdminContext.Provider>;
 };
 
-const MatchAdminNameProvider: FC = ({ children }) => {
+const MatchAdminNameProvider: FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   const isMatchAdminName = !!useMatch('/admin/:name');
   return <MatchAdminNameContext.Provider value={isMatchAdminName}>{children}</MatchAdminNameContext.Provider>;
 };
 
-const IsAdminPageProvider: FC = ({ children }) => {
+const IsAdminPageProvider: FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith('/admin');
   return <IsAdminPageContext.Provider value={isAdminPage}>{children}</IsAdminPageContext.Provider>;
 };
 
-export const CurrentPageUidProvider: FC = ({ children }) => {
+export const CurrentPageUidProvider: FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   const params = useParams();
   return <CurrentPageUidContext.Provider value={params.name}>{children}</CurrentPageUidContext.Provider>;
 };
 
-export const CurrentTabUidProvider: FC = ({ children }) => {
+export const CurrentTabUidProvider: FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   const params = useParams();
   return <CurrentTabUidContext.Provider value={params.tabUid}>{children}</CurrentTabUidContext.Provider>;
 };
@@ -155,7 +173,9 @@ export const CurrentTabUidProvider: FC = ({ children }) => {
  * @param param0
  * @returns
  */
-const NavigateNoUpdateProvider: FC = ({ children }) => {
+const NavigateNoUpdateProvider: FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   const navigate = useNavigate();
   const navigateRef = React.useRef(navigate);
   navigateRef.current = navigate;
@@ -175,7 +195,9 @@ const NavigateNoUpdateProvider: FC = ({ children }) => {
  * When the URL changes, components that use `useLocation` will re-render.
  * This provider provides a `useLocationNoUpdate` method that can avoid re-rendering.
  **/
-const LocationNoUpdateProvider: FC = ({ children }) => {
+const LocationNoUpdateProvider: FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   const location = useLocation();
   const locationRef = React.useRef<any>({});
 
@@ -186,7 +208,9 @@ const LocationNoUpdateProvider: FC = ({ children }) => {
   return <LocationNoUpdateContext.Provider value={locationRef.current}>{children}</LocationNoUpdateContext.Provider>;
 };
 
-const LocationSearchProvider: FC = ({ children }) => {
+const LocationSearchProvider: FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   const location = useLocation();
   return <LocationSearchContext.Provider value={location.search}>{children}</LocationSearchContext.Provider>;
 };
@@ -260,7 +284,9 @@ export const useIsSubPageClosedByPageMenu = (fieldSchema: Schema) => {
   return { isSubPageClosedByPageMenu, reset };
 };
 
-export const CustomRouterContextProvider: FC = ({ children }) => {
+export const CustomRouterContextProvider: FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   return (
     <NavigateNoUpdateProvider>
       <LocationNoUpdateProvider>

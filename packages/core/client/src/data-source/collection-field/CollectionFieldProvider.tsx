@@ -51,7 +51,7 @@ export const CollectionFieldProvider: FC<CollectionFieldProviderProps> = (props)
   return <CollectionFieldContext.Provider value={value}>{children}</CollectionFieldContext.Provider>;
 };
 
-export const ClearCollectionFieldContext: FC = (props) => {
+export const ClearCollectionFieldContext: FC<{ children: React.ReactNode }> = (props) => {
   return <CollectionFieldContext.Provider value={null}>{props.children}</CollectionFieldContext.Provider>;
 };
 

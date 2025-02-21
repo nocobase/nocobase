@@ -122,7 +122,7 @@ export const DataBlockContext = createContext<DataBlockContextValue<any>>({} as 
 DataBlockContext.displayName = 'DataBlockContext';
 
 const DataBlockResourceContext = createContext<{ rerenderDataBlock: () => void }>(null);
-export const RerenderDataBlockProvider: FC = ({ children }) => {
+export const RerenderDataBlockProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
   const [hidden, setHidden] = React.useState(false);
   const value = useMemo(() => {
     return {

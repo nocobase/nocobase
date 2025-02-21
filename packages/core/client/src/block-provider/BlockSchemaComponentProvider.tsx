@@ -45,7 +45,9 @@ import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorPro
 import * as bp from './hooks';
 
 // TODO: delete this, replaced by `BlockSchemaComponentPlugin`
-export const BlockSchemaComponentProvider: React.FC = (props) => {
+export const BlockSchemaComponentProvider: React.FC<{
+  children: React.ReactNode;
+}> = (props) => {
   return (
     <SchemaComponentOptions
       components={{

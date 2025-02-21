@@ -19,6 +19,7 @@ export interface AsyncDataProviderProps {
   request?: any;
   uid?: string;
   onSuccess?: (data, params) => void;
+  children: React.ReactNode;
 }
 
 export const AsyncDataProvider: React.FC<AsyncDataProviderProps> = (props) => {

@@ -20,7 +20,10 @@ const TreeRecordContext = createContext<TreeRecordContextProps>(null);
  * @param param0
  * @returns
  */
-export const TreeRecordProvider: FC<TreeRecordContextProps> = ({ children, parent }) => {
+export const TreeRecordProvider: FC<TreeRecordContextProps & { children: React.ReactNode }> = ({
+  children,
+  parent,
+}) => {
   return <TreeRecordContext.Provider value={{ parent }}>{children}</TreeRecordContext.Provider>;
 };
 

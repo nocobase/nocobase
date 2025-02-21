@@ -59,7 +59,7 @@ const OpenModeContext = React.createContext<{
  * @param props
  * @returns
  */
-export const OpenModeProvider: FC<OpenModeProviderProps> = (props) => {
+export const OpenModeProvider: FC<OpenModeProviderProps & { children: React.ReactNode }> = (props) => {
   const context = useMemo(() => {
     const result = { ...defaultContext };
 

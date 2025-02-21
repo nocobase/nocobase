@@ -54,10 +54,10 @@ const CollectionFieldUISchemaContext = React.createContext<CollectionFieldOption
 
 const RefreshFieldSchemaContext = React.createContext<(options?: { refreshParentSchema?: boolean }) => void>(_.noop);
 
-const RefreshFieldSchemaProvider: FC<{ refresh: (options?: { refreshParentSchema?: boolean }) => void }> = ({
-  children,
-  refresh,
-}) => {
+const RefreshFieldSchemaProvider: FC<{
+  refresh: (options?: { refreshParentSchema?: boolean }) => void;
+  children: React.ReactNode;
+}> = ({ children, refresh }) => {
   const refreshParent = useRefreshFieldSchema();
 
   const value = useCallback(
@@ -76,7 +76,10 @@ const RefreshFieldSchemaProvider: FC<{ refresh: (options?: { refreshParentSchema
 
 const RefreshComponentContext = React.createContext<() => void>(_.noop);
 
-export const RefreshComponentProvider: FC<{ refresh: () => void }> = ({ children, refresh }) => {
+export const RefreshComponentProvider: FC<{ refresh: () => void; children: React.ReactNode }> = ({
+  children,
+  refresh,
+}) => {
   return <RefreshComponentContext.Provider value={refresh}>{children}</RefreshComponentContext.Provider>;
 };
 
@@ -103,6 +106,7 @@ export const useCollectionFieldUISchema = () => {
 
 export const CollectionFieldUISchemaProvider: FC<{
   fieldSchema: Schema;
+  children: React.ReactNode;
 }> = (props) => {
   const { children, fieldSchema } = props;
   const collection = useCollection();

@@ -38,7 +38,10 @@ const ActionBarContext = React.createContext<ActionBarContextValue>({
   container: null,
 });
 
-export const ActionBarProvider: React.FC<ActionBarContextValue> = ({ children, ...props }) => {
+export const ActionBarProvider: React.FC<ActionBarContextValue & { children: React.ReactNode }> = ({
+  children,
+  ...props
+}) => {
   return <ActionBarContext.Provider value={props}>{children}</ActionBarContext.Provider>;
 };
 
@@ -46,7 +49,7 @@ export const useActionBarContext = () => {
   return useContext(ActionBarContext);
 };
 
-const Portal: React.FC = (props) => {
+const Portal: React.FC<{ children: React.ReactNode }> = (props) => {
   const filedSchema = useFieldSchema();
   const { container, parentComponents = ['BlockItem', 'CardItem'] } = useActionBarContext();
   return (
@@ -58,7 +61,7 @@ const Portal: React.FC = (props) => {
   );
 };
 
-const InternalActionBar: FC = (props: any) => {
+const InternalActionBar: FC<{ children: React.ReactNode }> = (props: any) => {
   const { forceProps = {} } = useActionBarContext();
   // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
   const { layout = 'two-columns', style, spaceProps, ...others } = { ...useProps(props), ...forceProps } as any;

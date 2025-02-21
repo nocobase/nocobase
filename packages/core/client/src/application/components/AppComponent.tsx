@@ -15,6 +15,7 @@ import { ApplicationContext } from '../context';
 
 export interface AppComponentProps {
   app: Application;
+  children: React.ReactNode;
 }
 
 export const AppComponent: FC<AppComponentProps> = observer(

@@ -10,7 +10,7 @@
 import React, { useMemo } from 'react';
 import { useApp } from '../hooks';
 
-export const MainComponent = React.memo(({ children }) => {
+export const MainComponent = React.memo<{ children: React.ReactNode }>(({ children }) => {
   const app = useApp();
   const Router = useMemo(() => app.router.getRouterComponent(children), [app]);
   const Providers = useMemo(() => app.getComposeProviders(), [app]);

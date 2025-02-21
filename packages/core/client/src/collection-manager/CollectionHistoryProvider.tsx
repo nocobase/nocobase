@@ -35,7 +35,7 @@ const options = {
   },
 };
 
-export const CollectionHistoryProvider: React.FC = (props) => {
+export const CollectionHistoryProvider: React.FC<{ children: React.ReactNode }> = (props) => {
   const api = useAPIClient();
   const isAdminPage = useIsAdminPage();
   const token = api.auth.getToken() || '';

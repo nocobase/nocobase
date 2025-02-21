@@ -30,9 +30,9 @@ export function normalizeContainer(container: Element | ShadowRoot | string): El
 }
 
 export const compose = (...components: [ComponentType, any][]) => {
-  const Component = components.reduce<ComponentType>((Parent, child) => {
+  const Component = components.reduce<ComponentType<{ children: React.ReactNode }>>((Parent, child) => {
     const [Child, childProps] = child;
-    const ComposeComponent: FC = ({ children }) => (
+    const ComposeComponent: FC<{ children: React.ReactNode }> = ({ children }) => (
       <Parent>
         <Child {...childProps}>{children}</Child>
       </Parent>
@@ -41,7 +41,7 @@ export const compose = (...components: [ComponentType, any][]) => {
     return ComposeComponent;
   }, BlankComponent);
 
-  return (LastChild?: ComponentType) =>
+  return (LastChild?: ComponentType<{ children: React.ReactNode }>) =>
     ((props?: any) => {
       return <Component>{LastChild && <LastChild {...props} />}</Component>;
     }) as FC;

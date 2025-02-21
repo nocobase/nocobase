@@ -21,7 +21,7 @@ const components = {
   ResourceActionProvider,
 };
 
-export const CollectionManagerSchemaComponentProvider: React.FC = (props) => {
+export const CollectionManagerSchemaComponentProvider: React.FC<{ children: React.ReactNode }> = (props) => {
   const scope = useMemo(() => ({ cm: { ...hooks, useDataSourceFromRAC }, ds }), []);
   return (
     <SchemaComponentOptions scope={scope} components={components}>

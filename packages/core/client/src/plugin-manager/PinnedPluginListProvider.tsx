@@ -14,7 +14,7 @@ import React, { useContext } from 'react';
 import { useACLRoleContext } from '../acl/ACLProvider';
 import { PinnedPluginListContext } from './context';
 
-export const PinnedPluginListProvider: React.FC<{ items: any }> = (props) => {
+export const PinnedPluginListProvider: React.FC<{ items: any; children: React.ReactNode }> = (props) => {
   const { children, items } = props;
   const ctx = useContext(PinnedPluginListContext);
   return (

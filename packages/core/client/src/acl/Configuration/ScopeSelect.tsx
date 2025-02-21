@@ -15,7 +15,9 @@ import { scopesSchema } from './schemas/scopes';
 const RolesResourcesScopesSelectedRowKeysContext = createContext(null);
 RolesResourcesScopesSelectedRowKeysContext.displayName = 'RolesResourcesScopesSelectedRowKeysContext';
 
-const RolesResourcesScopesSelectedRowKeysProvider: React.FC = (props) => {
+const RolesResourcesScopesSelectedRowKeysProvider: React.FC<{
+  children: React.ReactNode;
+}> = (props) => {
   const [keys, setKeys] = useState([]);
   return (
     <RolesResourcesScopesSelectedRowKeysContext.Provider value={[keys, setKeys]}>

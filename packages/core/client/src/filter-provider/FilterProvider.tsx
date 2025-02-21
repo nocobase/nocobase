@@ -84,7 +84,7 @@ FilterContext.displayName = 'FilterContext';
  * @param props
  * @returns
  */
-export const FilterBlockProvider: React.FC = React.memo(({ children }) => {
+export const FilterBlockProvider: React.FC<{ children: React.ReactNode }> = React.memo(({ children }) => {
   const dataBlocksRef = React.useRef<DataBlock[]>([]);
 
   const setDataBlocks = useCallback((value) => {

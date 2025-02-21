@@ -43,6 +43,7 @@ export const useGlobalTheme = () => {
 
 interface GlobalThemeProviderProps {
   theme?: ThemeConfig;
+  children: React.ReactNode;
 }
 
 export const GlobalThemeProvider: FC<GlobalThemeProviderProps> = ({ children, theme: themeFromProps }) => {

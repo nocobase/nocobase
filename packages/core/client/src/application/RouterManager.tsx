@@ -148,7 +148,7 @@ export class RouterManager {
 
     const routes = this.getRoutesTree();
 
-    const BaseLayoutContext = createContext<ComponentType>(null);
+    const BaseLayoutContext = createContext<ComponentType<{ children: React.ReactNode }>>(null);
 
     const Provider = () => {
       const BaseLayout = useContext(BaseLayoutContext);
@@ -181,7 +181,9 @@ export class RouterManager {
       opts,
     );
 
-    const RenderRouter: React.FC<{ BaseLayout?: ComponentType }> = ({ BaseLayout = BlankComponent }) => {
+    const RenderRouter: React.FC<{ BaseLayout?: ComponentType<{ children: React.ReactNode }> }> = ({
+      BaseLayout = BlankComponent,
+    }) => {
       return (
         <BaseLayoutContext.Provider value={BaseLayout}>
           <RouterContextCleaner>

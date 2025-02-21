@@ -23,7 +23,10 @@ export const useTemplateBlockContext = () => {
   return useContext(TemplateBlockContext);
 };
 
-const TemplateBlockProvider: FC<{ onTemplateLoaded?: () => void }> = ({ onTemplateLoaded, children }) => {
+const TemplateBlockProvider: FC<{ onTemplateLoaded?: () => void; children: React.ReactNode }> = ({
+  onTemplateLoaded,
+  children,
+}) => {
   const [templateFinished, setTemplateFinished] = useState(false);
   const onTemplateSuccess = useCallback(() => {
     setTemplateFinished(true);

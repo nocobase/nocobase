@@ -68,17 +68,19 @@ AllPopupsPropsProviderContext.displayName = 'AllPopupsPropsProviderContext';
  * @param param0
  * @returns
  */
-export const PopupVisibleProvider: FC<PopupsVisibleProviderProps> = React.memo(({ children, visible, setVisible }) => {
-  const value = useMemo(() => {
-    return { visible, setVisible };
-  }, [visible, setVisible]);
+export const PopupVisibleProvider: FC<PopupsVisibleProviderProps & { children: React.ReactNode }> = React.memo(
+  ({ children, visible, setVisible }) => {
+    const value = useMemo(() => {
+      return { visible, setVisible };
+    }, [visible, setVisible]);
 
-  return <PopupVisibleProviderContext.Provider value={value}>{children}</PopupVisibleProviderContext.Provider>;
-});
+    return <PopupVisibleProviderContext.Provider value={value}>{children}</PopupVisibleProviderContext.Provider>;
+  },
+);
 
 PopupVisibleProvider.displayName = 'PopupVisibleProvider';
 
-const VisibleProvider: FC<{ popupuid: string }> = React.memo(({ children, popupuid }) => {
+const VisibleProvider: FC<{ popupuid: string; children: React.ReactNode }> = React.memo(({ children, popupuid }) => {
   const { closePopup } = usePopupUtils();
   const [visible, _setVisible] = useState(true);
   const setVisible = useCallback(
@@ -113,7 +115,7 @@ const VisibleProvider: FC<{ popupuid: string }> = React.memo(({ children, popupu
   );
 });
 
-const PopupParamsProvider: FC<Omit<PopupProps, 'hidden'>> = (props) => {
+const PopupParamsProvider: FC<Omit<PopupProps, 'hidden'> & { children: React.ReactNode }> = (props) => {
   const value = useMemo(() => {
     return {
       params: props.params,
@@ -124,7 +126,7 @@ const PopupParamsProvider: FC<Omit<PopupProps, 'hidden'>> = (props) => {
   return <PopupParamsProviderContext.Provider value={value}>{props.children}</PopupParamsProviderContext.Provider>;
 };
 
-const PopupTabsPropsProvider: FC = ({ children }) => {
+const PopupTabsPropsProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
   const { params } = useCurrentPopupContext();
   const { changeTab } = usePopupUtils();
   const onChange = useCallback(
@@ -154,6 +156,7 @@ const PagePopupsItemProvider: FC<{
    * Used to identify the level of the current popup, where 1 represents the first level.
    */
   currentLevel: number;
+  children: React.ReactNode;
 }> = ({ params, context, currentLevel, children }) => {
   const storedContext = { ...getStoredPopupContext(params.popupuid) };
 

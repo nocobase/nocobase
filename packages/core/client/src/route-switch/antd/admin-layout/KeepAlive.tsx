@@ -22,7 +22,7 @@ const KeepAliveContext = createContext(true);
  * @param param0
  * @returns
  */
-const DesignableInterceptor: FC<{ active: boolean }> = ({ children, active }) => {
+const DesignableInterceptor: FC<{ active: boolean; children: React.ReactNode }> = ({ children, active }) => {
   const designableContext = useContext(SchemaComponentContext);
   const schemaOptionsContext = useContext(SchemaOptionsContext);
   const schemaComponentsContext = useContext(SchemaComponentsContext);
@@ -56,7 +56,7 @@ const DesignableInterceptor: FC<{ active: boolean }> = ({ children, active }) =>
   );
 };
 
-export const KeepAliveProvider: FC<{ active: boolean }> = ({ children, active }) => {
+export const KeepAliveProvider: FC<{ active: boolean; children: React.ReactNode }> = ({ children, active }) => {
   const currentLocationContext = useContext(UNSAFE_LocationContext);
   const currentRouteContext = useContext(UNSAFE_RouteContext);
   const prevLocationContextRef = useRef(currentLocationContext);
@@ -95,7 +95,7 @@ export const KeepAliveProvider: FC<{ active: boolean }> = ({ children, active })
  * Used on components that don't need KeepAlive context, to improve performance when Context values change
  * @returns
  */
-export const KeepAliveContextCleaner: FC = ({ children }) => {
+export const KeepAliveContextCleaner: FC<{ children: React.ReactNode }> = ({ children }) => {
   return <KeepAliveContext.Provider value={true}>{children}</KeepAliveContext.Provider>;
 };
 

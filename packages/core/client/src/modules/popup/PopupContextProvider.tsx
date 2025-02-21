@@ -20,6 +20,7 @@ import { PopupVisibleProvider, PopupVisibleProviderContext } from '../../schema-
 export const PopupContextProvider: React.FC<{
   visible?: boolean;
   setVisible?: (visible: boolean) => void;
+  children: React.ReactNode;
 }> = (props) => {
   const { visible: visibleFromProps, setVisible: setVisibleFromProps } = props;
   const [visible, setVisible] = useState(false);

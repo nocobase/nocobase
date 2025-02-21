@@ -35,6 +35,8 @@ export interface FlagProviderProps {
    * @default true
    */
   isVariableParsedInOtherContext?: boolean;
+
+  children: React.ReactNode;
 }
 
 export const FlagContext = React.createContext<Omit<FlagProviderProps, 'children'>>(null);

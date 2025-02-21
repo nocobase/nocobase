@@ -33,7 +33,7 @@ interface CurrentRecordContextProps {
 
 const CurrentRecordContext = createContext<CurrentRecordContextProps>(null);
 
-export const CurrentRecordContextProvider: FC<CurrentRecordContextProps> = (props) => {
+export const CurrentRecordContextProvider: FC<CurrentRecordContextProps & { children: React.ReactNode }> = (props) => {
   const value = useMemo(() => {
     return {
       recordData: props.recordData,
