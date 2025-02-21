@@ -50,6 +50,7 @@ export const BlockTemplateMenusProvider = ({ children }) => {
   const isMobile = window.location.pathname.startsWith(mobilePlugin.mobileBasename);
   const location = useLocation();
   const previousPathRef = React.useRef(location.pathname);
+  const user = useCurrentUserContext();
 
   const { data, loading, refresh } = useRequest<{
     data: {
@@ -74,6 +75,7 @@ export const BlockTemplateMenusProvider = ({ children }) => {
     },
     {
       cacheKey: 'blockTemplates',
+      manual: true,
     },
   );
 
@@ -81,11 +83,11 @@ export const BlockTemplateMenusProvider = ({ children }) => {
     const isLeavingTemplatesPage =
       previousPathRef.current.includes('/settings/block-templates') &&
       !location.pathname.includes('/settings/block-templates');
-    if (isLeavingTemplatesPage) {
+    if (isLeavingTemplatesPage && user) {
       refresh();
     }
     previousPathRef.current = location.pathname;
-  }, [location.pathname, refresh]);
+  }, [location.pathname, refresh, user]);
 
   const handleTemplateClick = useMemoizedFn(async ({ item }, options?: any, insert?: any) => {
     const { uid } = item;
