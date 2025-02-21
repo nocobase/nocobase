@@ -67,12 +67,15 @@ describe('json-templates filters', () => {
     const form = new Form();
     const template = {
       form: '{{form}}',
+      $form: '{{$form}}',
     };
     const result = parse(template)({
       form,
+      $form: form,
     });
     expect(result).toEqual({
       form,
+      $form: form,
     });
   });
 
@@ -110,5 +113,6 @@ describe('json-templates filters', () => {
       '@today': '2025-01-01',
       $yesterday: '2024-12-31',
     });
+    expect(parsed.parameters).toEqual([{ key: '$now' }, { key: '$nDate.today' }]);
   });
 });
