@@ -8,15 +8,7 @@
  */
 
 import { useFieldSchema } from '@formily/react';
-import {
-  Action,
-  Icon,
-  useCompile,
-  useCompile,
-  useComponent,
-  withDynamicSchemaProps,
-  ACLActionProvider,
-} from '@nocobase/client';
+import { Action, Icon, useCompile, useComponent, withDynamicSchemaProps, ACLActionProvider } from '@nocobase/client';
 import { Avatar } from 'antd';
 import { createStyles } from 'antd-style';
 import React, { useContext } from 'react';
