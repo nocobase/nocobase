@@ -245,7 +245,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
       width={800}
       schema={schema}
       onSubmit={handleSubmit}
-      ModalContextProvider={(props) => {
+      ModalContextProvider={(props: { children: React.ReactNode }) => {
         return (
           <FlagProvider isInSubForm={isInSubForm} isInSubTable={isInSubTable} isInSetDefaultValueDialog>
             {props.children}

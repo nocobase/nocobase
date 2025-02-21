@@ -25,6 +25,7 @@ export const VariablePopupRecordProvider: FC<{
     recordData?: Record<string, any>;
     collection?: Collection;
   };
+  children: React.ReactNode;
 }> = React.memo((props) => {
   const { t } = useTranslation();
   const recordData = useCollectionRecordData();

@@ -58,7 +58,7 @@ interface WithSchemaHookOptions {
   displayName?: string;
 }
 
-export function withDynamicSchemaProps<T extends { children: React.ReactNode }>(
+export function withDynamicSchemaProps<T extends { children?: React.ReactNode }>(
   Component: React.ComponentType<T>,
   options: WithSchemaHookOptions = {},
 ) {

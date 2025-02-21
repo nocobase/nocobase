@@ -148,6 +148,7 @@ interface SchemaSettingsProviderProps {
   template?: any;
   collectionName?: any;
   designer?: any;
+  children: React.ReactNode;
 }
 
 export const SchemaSettingsProvider: React.FC<SchemaSettingsProviderProps> = (props) => {
@@ -807,7 +808,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
     initialValues,
     width = 'fit-content',
     noRecord = false,
-    ModalContextProvider = (props) => <>{props.children}</>,
+    ModalContextProvider = (props: { children: React.ReactNode }) => <>{props.children}</>,
     ...others
   } = props;
   const options = useContext(SchemaOptionsContext);

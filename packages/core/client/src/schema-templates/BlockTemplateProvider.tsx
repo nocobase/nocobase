@@ -23,7 +23,7 @@ interface BlockTemplateProviderProps {
 
 export const BlockTemplateContext = createContext<BlockTemplateProviderProps>({ componentNamePrefix: '' });
 
-export const BlockTemplateProvider: FC<BlockTemplateProviderProps> = (props) => {
+export const BlockTemplateProvider: FC<BlockTemplateProviderProps & { children: React.ReactNode }> = (props) => {
   return (
     <BlockTemplateContext.Provider value={{ ...props, componentNamePrefix: props.componentNamePrefix || '' }}>
       {props.children}

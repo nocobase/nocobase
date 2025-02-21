@@ -160,7 +160,7 @@ interface SubFormProviderProps {
 const SubFormContext = createContext<SubFormProviderProps>(null);
 SubFormContext.displayName = 'SubFormContext';
 
-export const SubFormProvider: FC<{ value: SubFormProviderProps }> = (props) => {
+export const SubFormProvider: FC<{ value: SubFormProviderProps; children: React.ReactNode }> = (props) => {
   const _parent = useContext(SubFormContext);
   const { value, collection, fieldSchema, parent, skip } = props.value;
   const memoValue = useMemo(

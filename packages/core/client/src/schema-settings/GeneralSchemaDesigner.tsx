@@ -80,6 +80,7 @@ export interface GeneralSchemaDesignerProps {
    */
   draggable?: boolean;
   showDataSource?: boolean;
+  children?: React.ReactNode;
 }
 
 /**
