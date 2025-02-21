@@ -370,6 +370,7 @@ export function AttachmentList(props) {
 
 export function Uploader({ rules, ...props }: UploadProps) {
   const { disabled, multiple, value, onChange, toValueItem = toValueItemDefault } = props;
+  const [uploadedList, setUploadedList] = useState<any[]>([]);
   const [pendingList, setPendingList] = useState<any[]>([]);
   const { t } = useTranslation();
   const { componentCls: prefixCls } = useStyles();
@@ -393,32 +394,44 @@ export function Uploader({ rules, ...props }: UploadProps) {
 
   const onUploadChange = useCallback(
     (info) => {
+      const pendingFiles = info.fileList.filter((file) => file.status !== 'done').map(normalizeFile);
+      setPendingList(pendingFiles);
       if (multiple) {
-        const uploadedList = info.fileList.filter((file) => file.status === 'done');
-        if (uploadedList.length) {
-          const valueList = [...(value ?? []), ...uploadedList.map((v) => toValueItem(v.response?.data))];
-          onChange?.(valueList);
+        const uploaded = info.fileList.filter((file) => file.status === 'done');
+        if (uploaded.length) {
+          const valueList = [...uploadedList, ...uploaded.map((v) => toValueItem(v.response?.data))];
+          if (pendingFiles.length) {
+            setUploadedList(valueList);
+          } else {
+            setUploadedList([]);
+            onChange?.(valueList);
+          }
         }
-        setPendingList(info.fileList.filter((file) => file.status !== 'done').map(normalizeFile));
       } else {
         // NOTE: 用 fileList 里的才有附加的验证状态信息，file 没有（不清楚为何）
         const file = info.fileList.find((f) => f.uid === info.file.uid);
         if (file.status === 'done') {
           onChange?.(toValueItem(file.response?.data));
           setPendingList([]);
-        } else {
-          setPendingList([normalizeFile(file)]);
         }
       }
     },
-    [value, multiple, onChange],
+    [multiple, uploadedList, toValueItem, onChange],
   );
 
-  const onDelete = useCallback((file) => {
+  const onDeletePending = useCallback((file) => {
     setPendingList((prevPendingList) => {
       const index = prevPendingList.indexOf(file);
       prevPendingList.splice(index, 1);
       return [...prevPendingList];
+    });
+  }, []);
+
+  const onDeleteUploaded = useCallback((file) => {
+    setUploadedList((prevUploadedList) => {
+      const index = prevUploadedList.indexOf(file);
+      prevUploadedList.splice(index, 1);
+      return [...prevUploadedList];
     });
   }, []);
 
@@ -430,8 +443,11 @@ export function Uploader({ rules, ...props }: UploadProps) {
     !disabled && (multiple || ((!value || (Array.isArray(value) && !value.length)) && !pendingList.length));
   return (
     <>
+      {uploadedList.map((file, index) => (
+        <AttachmentListItem key={file.id} file={file} index={index} disabled={disabled} onDelete={onDeleteUploaded} />
+      ))}
       {pendingList.map((file, index) => (
-        <AttachmentListItem key={file.uid} file={file} index={index} disabled={disabled} onDelete={onDelete} />
+        <AttachmentListItem key={file.uid} file={file} index={index} disabled={disabled} onDelete={onDeletePending} />
       ))}
       <div
         className={cls(`${prefixCls}-list-picture-card-container`, `${prefixCls}-list-item-container`)}

@@ -119,7 +119,7 @@ describe('Upload', () => {
     await userEvent.upload(document.querySelector('input[type="file"]'), file);
 
     await waitFor(() => {
-      expect(document.querySelectorAll('.ant-upload-list-item-image')).toHaveLength(2);
+      expect(document.querySelectorAll('.ant-upload-list-item-image')).toHaveLength(1);
     });
   });
 

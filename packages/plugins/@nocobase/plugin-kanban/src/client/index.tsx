@@ -43,7 +43,45 @@ const KanbanPluginProvider = React.memo((props) => {
 });
 KanbanPluginProvider.displayName = 'KanbanPluginProvider';
 
+type GroupOption = {
+  value: string | number;
+  label: string;
+  color: string;
+};
+
+type CollectionField = {
+  name: string;
+  type: string;
+  interface: string;
+  [key: string]: any; // 扩展字段
+};
+
+type Option = { color?: string; label: string; value: string };
+type GroupOptions = { options: Option[]; loading?: boolean };
+type GetGroupOptions = (collectionField: string) => GroupOptions;
+
+type UseGetGroupOptions = (collectionField: CollectionField) => { options: GroupOption[] };
+
+const useDefaultGroupFieldsOptions = (collectionField) => {
+  return { options: collectionField.uiSchema.enum };
+};
 class PluginKanbanClient extends Plugin {
+  groupFields: { [T: string]: { useGetGroupOptions: GetGroupOptions } } = {
+    select: { useGetGroupOptions: useDefaultGroupFieldsOptions },
+    radioGroup: { useGetGroupOptions: useDefaultGroupFieldsOptions },
+  };
+
+  registerGroupFieldInterface(interfaceName: string, options: { useGetGroupOptions: GetGroupOptions }) {
+    this.groupFields[interfaceName] = options;
+  }
+
+  getGroupFieldInterface(key) {
+    if (key) {
+      return this.groupFields[key];
+    }
+    return this.groupFields;
+  }
+
   async load() {
     this.app.use(KanbanPluginProvider);
     this.app.schemaInitializerManager.add(kanbanCardInitializers_deprecated);

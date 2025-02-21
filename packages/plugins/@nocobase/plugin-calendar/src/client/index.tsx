@@ -6,8 +6,8 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
-import { Plugin } from '@nocobase/client';
+import React from 'react';
+import { Plugin, useToken } from '@nocobase/client';
 import { generateNTemplate } from '../locale';
 import { CalendarV2 } from './calendar';
 import { calendarBlockSettings } from './calendar/Calender.Settings';
@@ -27,7 +27,79 @@ import {
   useCreateCalendarBlock,
 } from './schema-initializer/items';
 
+const TitleRenderer = ({ value }) => {
+  return <span aria-label="event-title">{value || 'N/A'}</span>;
+};
+interface ColorFunctions {
+  loading: boolean;
+  getFontColor: (value: any) => string; // 返回字体颜色
+  getBackgroundColor: (value: any) => string; // 返回背景颜色
+}
+
+const useGetColor = (field) => {
+  const { token } = useToken();
+  return {
+    loading: false,
+    getFontColor(value) {
+      const option = field.uiSchema.enum.find((item) => item.value === value);
+      if (option) {
+        return token[`${option.color}7`];
+      }
+      return null;
+    },
+    getBackgroundColor(value) {
+      const option = field.uiSchema.enum.find((item) => item.value === value);
+      if (option) {
+        return token[`${option.color}1`];
+      }
+      return null;
+    },
+  };
+};
+
+type TitleRendererProps = { value: any };
+
 export class PluginCalendarClient extends Plugin {
+  titleFieldInterfaces: { [T: string]: { TitleRenderer: React.FC<TitleRendererProps> } } = {
+    input: { TitleRenderer },
+    select: { TitleRenderer },
+    phone: { TitleRenderer },
+    email: { TitleRenderer },
+    radioGroup: { TitleRenderer },
+  };
+  colorFieldInterfaces: {
+    [T: string]: { useGetColor: (field: any) => ColorFunctions };
+  } = {
+    select: { useGetColor },
+    radioGroup: { useGetColor },
+  };
+
+  dateTimeFieldInterfaces = ['date', 'datetime', 'dateOnly', 'datetimeNoTz', 'unixTimestamp', 'createdAt', 'updatedAt'];
+
+  registerTitleFieldInterface(key: string, options: { TitleRenderer: React.FC<TitleRendererProps> }) {
+    this.titleFieldInterfaces[key] = options;
+  }
+  getTitleFieldInterface(key: string) {
+    if (key) {
+      return this.titleFieldInterfaces[key];
+    } else {
+      return this.titleFieldInterfaces;
+    }
+  }
+  registerDateTimeFieldInterface(data: string | string[]) {
+    if (Array.isArray(data)) {
+      const result = this.dateTimeFieldInterfaces.concat(data);
+      this.dateTimeFieldInterfaces = result;
+    } else {
+      this.dateTimeFieldInterfaces.push(data);
+    }
+  }
+  registerColorFieldInterface(type, option: { useGetColor: (field: any) => ColorFunctions }) {
+    this.colorFieldInterfaces[type] = option;
+  }
+  getColorFieldInterface(type: string) {
+    return this.colorFieldInterfaces[type];
+  }
   async load() {
     this.app.dataSourceManager.addCollectionTemplates([CalendarCollectionTemplate]);
     this.app.schemaInitializerManager.addItem('page:addBlock', 'dataBlocks.calendar', {
