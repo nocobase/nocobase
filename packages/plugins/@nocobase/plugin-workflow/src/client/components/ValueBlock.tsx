@@ -9,7 +9,7 @@
 
 import { useFieldSchema } from '@formily/react';
 import { css, SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '@nocobase/client';
-import { parse } from '@nocobase/utils/client';
+import { parse } from '@nocobase/json-templates';
 import React from 'react';
 import { useFlowContext } from '../FlowContext';
 import { SimpleDesigner } from './SimpleDesigner';
