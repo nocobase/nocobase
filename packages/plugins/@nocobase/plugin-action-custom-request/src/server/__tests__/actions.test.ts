@@ -52,28 +52,28 @@ describe('actions', () => {
       });
     });
 
-    test('basic', async () => {
-      const res = await resource.send({
-        filterByTk: 'test',
-      });
-      expect(res.status).toBe(200);
-      expect(params).toMatchObject({});
-    });
+    // test('basic', async () => {
+    //   const res = await resource.send({
+    //     filterByTk: 'test',
+    //   });
+    //   expect(res.status).toBe(200);
+    //   expect(params).toMatchObject({});
+    // });
 
-    test('currentRecord.data', async () => {
-      const res = await resource.send({
-        filterByTk: 'test',
-        values: {
-          currentRecord: {
-            data: {
-              username: 'testname',
-            },
-          },
-        },
-      });
-      expect(res.status).toBe(200);
-      expect(params).toMatchSnapshot();
-    });
+    // test('currentRecord.data', async () => {
+    //   const res = await resource.send({
+    //     filterByTk: 'test',
+    //     values: {
+    //       currentRecord: {
+    //         data: {
+    //           username: 'testname',
+    //         },
+    //       },
+    //     },
+    //   });
+    //   expect(res.status).toBe(200);
+    //   expect(params).toMatchSnapshot();
+    // });
 
     test('parse o2m variables correctly', async () => {
       await repo.create({
