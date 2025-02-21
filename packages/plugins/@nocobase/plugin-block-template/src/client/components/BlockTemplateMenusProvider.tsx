@@ -84,11 +84,17 @@ export const BlockTemplateMenusProvider = ({ children }) => {
     const isLeavingTemplatesPage =
       previousPathRef.current.includes('/settings/block-templates') &&
       !location.pathname.includes('/settings/block-templates');
-    if (isLeavingTemplatesPage && user) {
+    if (isLeavingTemplatesPage) {
       refresh();
     }
     previousPathRef.current = location.pathname;
-  }, [location.pathname, refresh, user]);
+  }, [location.pathname, refresh]);
+
+  useEffect(() => {
+    if (user?.data) {
+      refresh();
+    }
+  }, [user, refresh]);
 
   const handleTemplateClick = useMemoizedFn(async ({ item }, options?: any, insert?: any) => {
     const { uid } = item;
