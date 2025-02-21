@@ -53,6 +53,7 @@ import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import type { Plugin } from './Plugin';
 import { getOperators } from './globalOperators';
 import type { RequireJS } from './utils/requirejs';
+import { useACLRoleContext } from '../acl/ACLProvider';
 
 type JsonLogic = {
   addOperation: (name: string, fn?: any) => void;
@@ -503,14 +504,6 @@ export class Application {
     return get(this.globalVars, key);
   }
   addUserCenterSettingsItem(item: SchemaSettingItemComponentType) {
-    item.useVisible = () => {
-      if (item.aclSnippet) {
-        const snippets = ['pm.*', '!pm.users'];
-        const ig = ignore().add(snippets);
-        return ig.ignores(item.aclSnippet);
-      }
-      return true;
-    };
     this.schemaSettingsManager.addItem('userCenterSettings', item.name, item);
   }
 }

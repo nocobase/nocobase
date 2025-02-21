@@ -105,7 +105,6 @@ export class PluginThemeEditorClient extends Plugin {
       name: 'theme',
       sort: 310,
       Component: ThemeSettings,
-      aclSnippet: 'theme-editor',
     });
   }
 }
