@@ -15,6 +15,7 @@ export * from './components';
 export * from './OverridingCollectionField';
 export * from './ViewInheritedField';
 export * from './AddCollectionAction';
+export * from './DuplicateCollectionAction';
 export * from './EditCollectionAction';
 export * from './SyncFieldsAction';
 export * from './SyncSQLFieldsAction';

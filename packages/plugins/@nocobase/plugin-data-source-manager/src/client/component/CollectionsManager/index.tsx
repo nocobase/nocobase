@@ -27,6 +27,8 @@ import {
   SyncSQLFieldsAction,
   DeleteCollection,
   DeleteCollectionAction,
+  DuplicateCollection,
+  DuplicateCollectionAction,
   CollectionCategoriesProvider,
   usePlugin,
 } from '@nocobase/client';
@@ -61,6 +63,8 @@ export const CollectionManagerPage = () => {
         AddCollectionField,
         AddCollection: type?.AddCollection || AddCollection,
         AddCollectionAction,
+        DuplicateCollectionAction,
+        DuplicateCollection,
         EditCollection: type?.EditCollection || EditCollection,
         DeleteCollection: type?.DeleteCollection || DeleteCollection,
         DeleteCollectionAction,
