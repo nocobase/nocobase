@@ -62,6 +62,8 @@ export class PluginCollectionDuplicateServer extends Plugin {
               id: undefined,
               collection_id: undefined,
               key: undefined,
+              collectionName: undefined,
+              collection_name: undefined,
               // collectionName: values.name,
             })),
           },
