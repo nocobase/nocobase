@@ -15,7 +15,7 @@ import { Button, Dropdown, MenuProps, Space } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useRequest } from '../../api-client';
+import { useAPIClient, useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import {
   ActionContextProvider,
@@ -33,6 +33,7 @@ import { createForm, Field } from '@formily/core';
 import { FilterTargetKeyAlert } from 'packages/plugins/@nocobase/plugin-data-source-manager/src/client/component/CollectionsManager/FilterTargetKeyAlert';
 
 import { css } from '@emotion/css';
+import res from 'packages/plugins/@nocobase/plugin-theme-editor/src/client/antd-token-previewer/icons/Arrow';
 
 const Title = () => {
   const { t } = useTranslation();
@@ -44,7 +45,7 @@ const Title = () => {
   );
 };
 
-const getSchema = (compile, initialValues = {}): ISchema => {
+const getSchema = (compile, initialValues = {}, props): ISchema => {
   return {
     type: 'object',
     properties: {
@@ -139,7 +140,7 @@ const getSchema = (compile, initialValues = {}): ISchema => {
                 'x-component': 'Action',
                 'x-component-props': {
                   type: 'primary',
-                  useAction: () => useDuplicateCollection(),
+                  useAction: () => useDuplicateCollection(null, props),
                 },
               },
             },
@@ -150,13 +151,14 @@ const getSchema = (compile, initialValues = {}): ISchema => {
   };
 };
 
-const useDuplicateCollection = (schema?: any) => {
+const useDuplicateCollection = (schema?: any, props = {}) => {
   const form = useForm();
   const { refreshCM } = useCollectionManager_deprecated();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
-  const { resource } = useResourceContext();
+  const api = useAPIClient();
   const field = useField();
+  const resource = api.resource('collections');
   return {
     async run() {
       field.data = field.data || {};
@@ -171,13 +173,17 @@ const useDuplicateCollection = (schema?: any) => {
           delete values.reverseField;
         }
         delete values.autoCreateReverseField;
-        await resource.create({
-          values: {
-            logging: true,
-            ...values,
-          },
-        });
-        ctx.setVisible(false);
+
+        //@ts-ignore
+        const originalResource = props.item.name;
+
+        // alert(JSON.stringify({ originalResource, resource, values }));
+
+        await resource.duplicate({
+          values,
+          filterByTk: originalResource,
+        }),
+          ctx.setVisible(false);
         await form.reset();
         field.data.loading = false;
         refresh();
@@ -205,9 +211,13 @@ export const DuplicateCollectionAction = (props) => {
   const targetTemplate = getTemplate(template);
   const { t } = useTranslation();
 
-  const schema = getSchema(compile, {
-    ...record,
-  });
+  const schema = getSchema(
+    compile,
+    {
+      ...record,
+    },
+    props,
+  );
   const [visible, setVisible] = useState(false);
 
   return (
