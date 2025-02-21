@@ -52,7 +52,7 @@ export function revertEscape(input) {
     return result;
 
     // check keys number of object to skip the object like new Date()
-  } else if (isObject(input && Object.keys(input).length > 0)) {
+  } else if (isObject(input) && Object.keys(input).length > 0) {
     return mapKeys(mapValues(input, revertEscape), (value, key) => revertEscape(key));
   } else if (isString(input)) {
     return revertEscapeSpecialChars(input);
