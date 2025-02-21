@@ -9,7 +9,7 @@
 
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient, useSystemSettings, SchemaSettingsSelectItem } from '../../../';
+import { useAPIClient, useSystemSettings, SchemaSettingsSelectItem } from '../../..';
 import locale from '../../../locale';
 
 export const LanguageSettings = () => {

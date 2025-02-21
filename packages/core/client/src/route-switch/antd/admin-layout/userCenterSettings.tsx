@@ -7,58 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { App } from 'antd';
 import { UserCenterButton } from './UserCenterButton';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
-import { SchemaSettingsItem } from '../../../schema-settings';
-import { useAPIClient, useACLRoleContext } from '../../../';
 import { LanguageSettings } from './LanguageSettings';
 
-const ClearCache = () => {
-  const { t } = useTranslation();
-  const api = useAPIClient();
-  return (
-    <SchemaSettingsItem
-      eventKey="cache"
-      title="cache"
-      onClick={async () => {
-        await api.resource('app').clearCache();
-        window.location.reload();
-      }}
-    >
-      {t('Clear cache')}
-    </SchemaSettingsItem>
-  );
-};
-
-const RestartApplication = () => {
-  const { t } = useTranslation();
-  const api = useAPIClient();
-  const { modal } = App.useApp();
-  return (
-    <SchemaSettingsItem
-      eventKey="restartApplication"
-      title="restartApplication"
-      onClick={async () => {
-        modal.confirm({
-          title: t('Restart application'),
-          // content: t('The will interrupt service, it may take a few seconds to restart. Are you sure to continue?'),
-          okText: t('Restart'),
-          okButtonProps: {
-            danger: true,
-          },
-          onOk: async () => {
-            await api.resource('app').restart();
-          },
-        });
-      }}
-    >
-      {t('Restart application')}
-    </SchemaSettingsItem>
-  );
-};
 const userCenterSettings = new SchemaSettings({
   name: 'userCenterSettings',
   Component: UserCenterButton,
@@ -67,36 +19,6 @@ const userCenterSettings = new SchemaSettings({
       name: 'langue',
       Component: LanguageSettings,
       sort: 350,
-    },
-    {
-      name: 'divider4',
-      type: 'divider',
-      sort: 499,
-      useVisible: () => {
-        const { allowAll, snippets } = useACLRoleContext();
-        const appAllowed = allowAll || snippets?.includes('app');
-        return appAllowed;
-      },
-    },
-    {
-      name: 'cache',
-      Component: ClearCache,
-      sort: 500,
-      useVisible: () => {
-        const { allowAll, snippets } = useACLRoleContext();
-        const appAllowed = allowAll || snippets?.includes('app');
-        return appAllowed;
-      },
-    },
-    {
-      name: 'restartApplication',
-      Component: RestartApplication,
-      sort: 510,
-      useVisible: () => {
-        const { allowAll, snippets } = useACLRoleContext();
-        const appAllowed = allowAll || snippets?.includes('app');
-        return appAllowed;
-      },
     },
   ],
 });
