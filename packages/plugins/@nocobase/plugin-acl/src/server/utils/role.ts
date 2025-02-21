@@ -36,14 +36,21 @@ function mergeRoleStrategy(sourceStrategy, newStrategy) {
   if (!newStrategy) {
     return sourceStrategy;
   }
-  const actions = sourceStrategy.actions.concat(newStrategy.actions);
-  return {
-    ...sourceStrategy,
-    actions: [...new Set(actions)],
-  };
+  if (_.isArray(newStrategy.actions)) {
+    if (!sourceStrategy.actions) {
+      sourceStrategy.actions = newStrategy.actions;
+    } else {
+      const actions = sourceStrategy.actions.concat(newStrategy.actions);
+      return {
+        ...sourceStrategy,
+        actions: [...new Set(actions)],
+      };
+    }
+  }
+  return sourceStrategy;
 }
 
-function mergeRoleActions(sourceActions, newActions = {}) {
+function mergeRoleActions(sourceActions, newActions) {
   // {} 为最大权限，两者合并取最大权限
   const isObjectEmpty = (value) => {
     return _.isObject(value) && Object.keys(value).length === 0;
@@ -56,19 +63,23 @@ function mergeRoleActions(sourceActions, newActions = {}) {
 }
 
 function mergeRoleSnippets(sourceSnippets, newSnippets = []) {
-  const allSnippets = Array.from(new Set([...sourceSnippets, ...newSnippets]));
+  const allSnippets = [...sourceSnippets, ...newSnippets];
 
-  return allSnippets
-    .map((snippet) => {
-      const isExclusion = snippet.startsWith('!');
-      const newSnippet = isExclusion ? snippet.slice(1) : snippet;
-      // 如果同时出现包含和排除，选择包含，如 ['!a', 'a'] 最后选择 ['a']
-      if (isExclusion && allSnippets.includes(newSnippet)) {
-        return undefined;
-      }
-      return newSnippet;
-    })
-    .filter((x) => Boolean(x));
+  const result = allSnippets.reduce((acc, snippet) => {
+    // 去重
+    if (acc.includes(snippet)) {
+      return acc;
+    }
+    // 当前是 !xxx 并且已经有 xxx，!xxx 则不需要生效
+    const isExclusion = snippet.startsWith('!');
+    if (isExclusion && acc.includes(snippet.slice(1))) {
+      return acc;
+    }
+    acc.push(snippet);
+    return acc;
+  }, []);
+
+  return result;
 }
 
 function mergeRoleResources(sourceResources, newResources) {
