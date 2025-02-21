@@ -174,8 +174,9 @@ export const ChannelConfigForm = () => {
                         'x-decorator': 'FormItem',
                         'x-component': 'TextAreaWithGlobalScope',
                         'x-component-props': {
-                          // useTypedConstant: ['string'],
+                          useTypedConstant: ['string'],
                           placeholder: `noreply <example@domain.com>`,
+                          expression: false,
                         },
                       },
                     },
