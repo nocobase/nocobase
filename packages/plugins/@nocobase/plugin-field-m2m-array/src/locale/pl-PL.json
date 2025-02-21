@@ -1,0 +1,5 @@
+{
+    "Many to many (array)": "Wiele do wielu - Many to many (array)",
+    "Many to many (array) description": "Umożliwia tworzenie relacji wiele do wielu pomiędzy dwoma modelami poprzez przechowywanie tablicy unikalnych kluczy modelu docelowego."
+  }
+  

@@ -1,0 +1,9 @@
+{
+    "Logger": "Rejestrator",
+    "Search": "Szukaj",
+    "Download": "Pobierz",
+    "Download logs": "Pobierz logi",
+    "API request and response logs": "Dzienniki żądań i odpowiedzi API",
+    "Application, database, plugins and other system logs, the error level logs will be sent to": "Logi aplikacji, bazy danych, wtyczek i innych systemów, logi poziomu błędów zostaną wysłane do",
+    "SQL execution logs, printed by Sequelize when the db logging is enabled": "Dzienniki wykonywania SQL zapisane przez Sequelize po włączeniu rejestrowania bazy danych"
+  }

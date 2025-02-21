@@ -1,0 +1,13 @@
+{
+    "Detail": "Szczegóły",
+    "Snapshot": "Migawka",
+    "Add block": "Dodaj blok",
+    "When adding a new record, create a snapshot for its relational record and save in the current record. The snapshot is not updated when the record is subsequently updated.": "Podczas dodawania nowego rekordu utwórz migawkę dla jego powiązanego rekordu i zapisz ją w bieżącym rekordzie. Migawka nie jest aktualizowana, gdy rekord zostanie później zaktualizowany.",
+    "View record": "Pokaż rekord",
+    "Allow linking to multiple records": "Zezwól na łączenie z wieloma rekordami",
+    "The association field to snapshot": "Pole powiązane do migawek",
+    "Snapshot the snapshot's association fields": "Utwórz migawkę pól powiązanych migawki",
+    "Please select": "Proszę wybrać",
+    "When a record is created, association data is backed up in a snapshot": "Gdy rekord zostanie utworzony, dane powiązane są zapisywane w migawce",
+    "Snapshot data": "Dane migawki"
+}

@@ -1,0 +1,21 @@
+{
+    "API keys": "Klucze API",
+    "API key created successfully": "Klucz API został pomyślnie utworzony",
+    "Make sure to copy your personal access key now as you will not be able to see this again.": "Upewnij się, że skopiowałeś swój klucz dostępu teraz, ponieważ nie będziesz mógł go ponownie zobaczyć.",
+    "Key name": "Nazwa klucza",
+    "Expiration": "Wygaśnięcie",
+    "Delete API key": "Usuń klucz API",
+    "Role": "Rola",
+    "Keys manager": "Menedżer kluczy",
+    "Created at": "Utworzono",
+    "Add API key": "Dodaj klucz API",
+    "Never": "Nigdy",
+    "Custom": "Niestandardowy",
+    "Never expires": "Nigdy nie wygasa",
+    "1 Day": "1 dzień",
+    "7 Days": "7 dni",
+    "30 Days": "30 dni",
+    "90 Days": "90 dni",
+    "Role not found": "Nie znaleziono roli",
+    "Allow only your own roles to be selected": "Zezwól na wybór tylko własnych ról"
+}
