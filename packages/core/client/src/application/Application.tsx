@@ -498,7 +498,7 @@ export class Application {
   getGlobalVar(key) {
     return get(this.globalVars, key);
   }
-  addUserCenterSettingsItem(item: SchemaSettingsItemType & { aclSnippet: string }) {
+  addUserCenterSettingsItem(item: SchemaSettingsItemType & { aclSnippet?: string }) {
     const useVisible = () => {
       const { allowAll, snippets } = useACLRoleContext();
       if (item.aclSnippet) {
