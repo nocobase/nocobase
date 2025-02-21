@@ -24,7 +24,6 @@ import {
   useSystemSettings,
   zIndexContext,
   useZIndexContext,
-  SchemaComponentContext,
   useAPIClient,
   SchemaSettingsItem,
 } from '@nocobase/client';
@@ -141,28 +140,26 @@ export const EditProfile = () => {
   // 避免 `SchemaComponent` 结构重新创建
   const schemaComponent = useMemo(() => {
     return (
-      <SchemaComponentContext.Provider value={{ designable: false }}>
-        <SchemaComponent
-          components={{ ProfileEditForm }}
-          schema={{
-            type: 'object',
-            properties: {
-              [uid()]: {
-                'x-component': 'Action.Drawer',
-                'x-component-props': { zIndex },
-                type: 'void',
-                title: '{{t("Edit profile")}}',
-                properties: {
-                  form: {
-                    type: 'void',
-                    'x-component': 'ProfileEditForm',
-                  },
+      <SchemaComponent
+        components={{ ProfileEditForm }}
+        schema={{
+          type: 'object',
+          properties: {
+            [uid()]: {
+              'x-component': 'Action.Drawer',
+              'x-component-props': { zIndex },
+              type: 'void',
+              title: '{{t("Edit profile")}}',
+              properties: {
+                form: {
+                  type: 'void',
+                  'x-component': 'ProfileEditForm',
                 },
               },
             },
-          }}
-        />
-      </SchemaComponentContext.Provider>
+          },
+        }}
+      />
     );
   }, [zIndex]);
   if (enableEditProfile === false) {
