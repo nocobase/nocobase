@@ -6,8 +6,8 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
 import { Plugin, useToken } from '@nocobase/client';
+import React from 'react';
 import { generateNTemplate } from '../locale';
 import { CalendarV2 } from './calendar';
 import { calendarBlockSettings } from './calendar/Calender.Settings';
@@ -28,7 +28,7 @@ import {
 } from './schema-initializer/items';
 
 const TitleRenderer = ({ value }) => {
-  return value || 'N/A';
+  return <span aria-label="event-title">{value || 'N/A'}</span>;
 };
 interface ColorFunctions {
   loading: boolean;
@@ -70,9 +70,9 @@ export class PluginCalendarClient extends Plugin {
   colorFieldInterfaces: {
     [T: string]: { useGetColor: (field: any) => ColorFunctions };
   } = {
-    select: { useGetColor },
-    radioGroup: { useGetColor },
-  };
+      select: { useGetColor },
+      radioGroup: { useGetColor },
+    };
 
   dateTimeFieldInterfaces = ['date', 'datetime', 'dateOnly', 'datetimeNoTz', 'unixTimestamp', 'createdAt', 'updatedAt'];
 

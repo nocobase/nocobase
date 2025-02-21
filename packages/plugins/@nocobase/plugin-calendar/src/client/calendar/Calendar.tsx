@@ -20,6 +20,7 @@ import {
   handleDateChangeOnForm,
   useACLRoleContext,
   useActionContext,
+  useApp,
   useCollection,
   useCollectionParentRecordData,
   useDesignable,
@@ -27,10 +28,8 @@ import {
   useLazy,
   usePopupUtils,
   useProps,
-  useToken,
   withDynamicSchemaProps,
-  withSkeletonComponent,
-  useApp,
+  withSkeletonComponent
 } from '@nocobase/client';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
@@ -76,7 +75,7 @@ const getColorString = (
 };
 
 export const DeleteEventContext = React.createContext({
-  close: () => {},
+  close: () => { },
   allowDeleteEvent: false,
 });
 
@@ -350,7 +349,7 @@ export const Calendar: any = withDynamicSchemaProps(
           const backgroundColor = getBackgroundColor?.(event.colorFieldValue);
           const style = {};
           if (fontColor) {
-            style['fontColor'] = fontColor;
+            style['color'] = fontColor;
           }
           if (backgroundColor) {
             style['backgroundColor'] = backgroundColor;

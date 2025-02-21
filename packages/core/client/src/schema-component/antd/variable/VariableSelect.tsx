@@ -22,6 +22,7 @@ export function VariableSelect({
   changeOnSelect = false,
   fieldNames = {},
   className,
+  disabled,
 }: {
   options: any[];
   setOptions: (options: any) => void;
@@ -29,6 +30,7 @@ export function VariableSelect({
   changeOnSelect?: boolean;
   fieldNames?: any;
   className?: string;
+  disabled?: boolean;
 }): JSX.Element {
   const { t } = useTranslation();
   const [selectedVar, setSelectedVar] = useState<string[]>([]);
@@ -44,8 +46,9 @@ export function VariableSelect({
   }
 
   return wrapSSR(
-    <XButton className={cx('x-button', componentCls, hashId, className)}>
+    <XButton disabled={disabled} className={cx('x-button', componentCls, hashId, className)}>
       <Cascader
+        disabled={disabled}
         placeholder={t('Select a variable')}
         value={[]}
         options={options}
