@@ -17,8 +17,6 @@ import React, { ComponentType, FC, ReactElement, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { Link, NavLink, Navigate } from 'react-router-dom';
-import ignore from 'ignore';
-
 import { APIClient, APIClientProvider } from '../api-client';
 import { CSSVariableProvider } from '../css-variable';
 import { AntdAppProvider, GlobalThemeProvider } from '../global-theme';
@@ -48,7 +46,7 @@ import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import type { Plugin } from './Plugin';
 import { getOperators } from './globalOperators';
 import type { RequireJS } from './utils/requirejs';
-import { useACLRoleContext } from '../acl/ACLProvider';
+import { useAclSnippets } from './hooks/useAclSnippets';
 
 type JsonLogic = {
   addOperation: (name: string, fn?: any) => void;
@@ -499,18 +497,19 @@ export class Application {
     return get(this.globalVars, key);
   }
   addUserCenterSettingsItem(item: SchemaSettingsItemType & { aclSnippet?: string }) {
+    const useVisibleProp = item.useVisible || (() => true);
     const useVisible = () => {
-      const { allowAll, snippets } = useACLRoleContext();
-      if (item.aclSnippet) {
-        const ig = ignore().add(snippets);
-        const appAllowed = allowAll || ig.ignores(item.aclSnippet);
-        return appAllowed;
+      const { allow } = useAclSnippets();
+      const visible = useVisibleProp();
+      if (!visible) {
+        return false;
       }
-      return true;
+      return item.aclSnippet ? allow(item.aclSnippet) : true;
     };
+
     this.schemaSettingsManager.addItem('userCenterSettings', item.name, {
       ...item,
-      useVisible: item.useVisible || useVisible,
+      useVisible: useVisible,
     });
   }
 }
