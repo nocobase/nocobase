@@ -12,9 +12,7 @@ import _ from 'lodash';
 export function mergeRole(roles) {
   const result: Record<string, any> = {
     roles: [],
-    strategy: {
-      actions: [],
-    },
+    strategy: {},
     actions: null,
     snippets: [],
     resources: null,
@@ -35,6 +33,9 @@ function mergeRoleNames(sourceRoleNames, newRoleName) {
 }
 
 function mergeRoleStrategy(sourceStrategy, newStrategy) {
+  if (!newStrategy) {
+    return sourceStrategy;
+  }
   const actions = sourceStrategy.actions.concat(newStrategy.actions);
   return {
     ...sourceStrategy,

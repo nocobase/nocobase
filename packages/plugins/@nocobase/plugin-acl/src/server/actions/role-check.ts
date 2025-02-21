@@ -39,7 +39,7 @@ export async function checkAction(ctx, next) {
 
   let roles = ctx.app.acl.getRoles(currentRoles);
   if (!roles.length) {
-    await ctx.app.emitAsync('acl:writeRoleToACL', roleInstances);
+    await Promise.all(roleInstances.map((x) => ctx.app.emitAsync('acl:writeRoleToACL', x)));
     roles = ctx.app.acl.getRoles(currentRoles);
   }
   const availableActions = ctx.app.acl.getAvailableActions();

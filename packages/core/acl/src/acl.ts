@@ -170,7 +170,7 @@ export class ACL extends EventEmitter {
   }
 
   getRoles(names: string[]): ACLRole[] {
-    return names.map((name) => this.getRole(name));
+    return names.map((name) => this.getRole(name)).filter((x) => Boolean(x));
   }
 
   removeRole(name: string) {
