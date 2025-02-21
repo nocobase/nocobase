@@ -8,6 +8,7 @@
  */
 
 import { Plugin, useACLRoleContext } from '@nocobase/client';
+import ignore from 'ignore';
 import { DesktopRoutesManager } from './DesktopRoutesManager';
 import { lang as t } from './locale';
 import { MobileRoutesManager } from './MobileRoutesManager';
@@ -19,12 +20,12 @@ class PluginClient extends Plugin {
     this.app.pluginSettingsManager.add('routes', {
       title: t('Routes'),
       icon: 'ApartmentOutlined',
-      aclSnippet: 'pm.routes',
+      aclSnippet: 'ui.*',
     });
     this.app.pluginSettingsManager.add(`routes.desktop`, {
       title: t('Desktop routes'),
       Component: DesktopRoutesManager,
-      aclSnippet: 'pm.routes.desktop',
+      aclSnippet: 'ui.*',
       sort: 1,
     });
 
@@ -33,31 +34,19 @@ class PluginClient extends Plugin {
       name: 'divider4',
       sort: 499,
       type: 'divider',
-      useVisible: () => {
-        const { allowAll, snippets } = useACLRoleContext();
-        const appAllowed = allowAll || snippets?.includes('app');
-        return appAllowed;
-      },
+      aclSnippet: 'app',
     });
     this.app.addUserCenterSettingsItem({
       name: 'cache',
       sort: 500,
       Component: ClearCache,
-      useVisible: () => {
-        const { allowAll, snippets } = useACLRoleContext();
-        const appAllowed = allowAll || snippets?.includes('app');
-        return appAllowed;
-      },
+      aclSnippet: 'app',
     });
     this.app.addUserCenterSettingsItem({
       name: 'restartApplication',
       Component: RestartApplication,
       sort: 510,
-      useVisible: () => {
-        const { allowAll, snippets } = useACLRoleContext();
-        const appAllowed = allowAll || snippets?.includes('app');
-        return appAllowed;
-      },
+      aclSnippet: 'app',
     });
 
     const mobilePlugin: any = this.app.pluginManager.get('@nocobase/plugin-mobile');

@@ -504,6 +504,18 @@ export class Application {
     return get(this.globalVars, key);
   }
   addUserCenterSettingsItem(item: SchemaSettingItemComponentType) {
-    this.schemaSettingsManager.addItem('userCenterSettings', item.name, item);
+    const useVisible = () => {
+      const { allowAll, snippets } = useACLRoleContext();
+      if (item.aclSnippet) {
+        const ig = ignore().add(snippets);
+        const appAllowed = allowAll || ig.ignores(item.aclSnippet);
+        return appAllowed;
+      }
+      return true;
+    };
+    this.schemaSettingsManager.addItem('userCenterSettings', item.name, {
+      ...item,
+      useVisible: item.useVisible || useVisible,
+    });
   }
 }
