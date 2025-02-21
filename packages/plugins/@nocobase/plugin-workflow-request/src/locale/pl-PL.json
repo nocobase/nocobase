@@ -1,0 +1,21 @@
+{
+    "HTTP request": "Żądanie HTTP",
+    "Send HTTP request to a URL. You can use the variables in the upstream nodes as request headers, parameters and request body.": "Wyślij żądanie HTTP do adresu URL. Możesz użyć zmiennych z węzłów nadrzędnych jako nagłówków żądania, parametrów i treści żądania.",
+    "HTTP method": "Metoda HTTP",
+    "URL": "URL",
+    "Headers": "Nagłówki",
+    "Add request header": "Dodaj nagłówek żądania",
+    "Parameters": "Parametry",
+    "Add parameter": "Dodaj parametr",
+    "Body": "Treść",
+    "Use variable": "Użyj zmiennej",
+    "Format": "Format",
+    "Insert": "Wstaw",
+    "Timeout config": "Konfiguracja limitu czasu",
+    "ms": "ms",
+    "Input request data": "Wprowadź dane żądania",
+    "Only support standard JSON data": "Obsługiwane są tylko standardowe dane JSON",
+    "\"Content-Type\" only support \"application/json\", and no need to specify": "\"Content-Type\" obsługuje tylko \"application/json\" i nie wymaga podania",
+    "Ignore failed request and continue workflow": "Ignoruj nieudane żądanie i kontynuuj przepływ pracy"
+  }
+  
