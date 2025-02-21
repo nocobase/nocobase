@@ -7,10 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/client';
+import { Plugin, useACLRoleContext } from '@nocobase/client';
 import { DesktopRoutesManager } from './DesktopRoutesManager';
 import { lang as t } from './locale';
 import { MobileRoutesManager } from './MobileRoutesManager';
+import { ClearCache } from './ClearCache';
+import { RestartApplication } from './RestartApplication';
 
 class PluginClient extends Plugin {
   async load() {
@@ -24,6 +26,38 @@ class PluginClient extends Plugin {
       Component: DesktopRoutesManager,
       aclSnippet: 'pm.routes.desktop',
       sort: 1,
+    });
+
+    // 个人中心注册
+    this.app.addUserCenterSettingsItem({
+      name: 'divider4',
+      sort: 499,
+      type: 'divider',
+      useVisible: () => {
+        const { allowAll, snippets } = useACLRoleContext();
+        const appAllowed = allowAll || snippets?.includes('app');
+        return appAllowed;
+      },
+    });
+    this.app.addUserCenterSettingsItem({
+      name: 'cache',
+      sort: 500,
+      Component: ClearCache,
+      useVisible: () => {
+        const { allowAll, snippets } = useACLRoleContext();
+        const appAllowed = allowAll || snippets?.includes('app');
+        return appAllowed;
+      },
+    });
+    this.app.addUserCenterSettingsItem({
+      name: 'restartApplication',
+      Component: RestartApplication,
+      sort: 510,
+      useVisible: () => {
+        const { allowAll, snippets } = useACLRoleContext();
+        const appAllowed = allowAll || snippets?.includes('app');
+        return appAllowed;
+      },
     });
 
     const mobilePlugin: any = this.app.pluginManager.get('@nocobase/plugin-mobile');

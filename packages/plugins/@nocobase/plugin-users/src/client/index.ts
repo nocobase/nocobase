@@ -64,7 +64,7 @@ class PluginUsersClient extends Plugin {
       sort: 900,
     });
     this.app.addUserCenterSettingsItem({
-      name: 'dignOut',
+      name: 'signOut',
       Component: SignOut,
       sort: 1000,
     });
