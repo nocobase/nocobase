@@ -51,13 +51,6 @@ function mergeRoleStrategy(sourceStrategy, newStrategy) {
 }
 
 function mergeRoleActions(sourceActions, newActions) {
-  // {} 为最大权限，两者合并取最大权限
-  const isObjectEmpty = (value) => {
-    return _.isObject(value) && Object.keys(value).length === 0;
-  };
-  if (isObjectEmpty(sourceActions) || isObjectEmpty(newActions)) {
-    return {};
-  }
   // 不同参数的合并策略不一样，先简单处理
   return _.merge(sourceActions, newActions);
 }
@@ -87,11 +80,5 @@ function mergeRoleResources(sourceResources, newResources) {
     return newResources;
   }
 
-  const isEmptyArray = (value) => {
-    return _.isArray(value) && value.length === 0;
-  };
-  if (isEmptyArray(sourceResources) || isEmptyArray(newResources)) {
-    return [];
-  }
   return [...new Set(sourceResources.concat(newResources))];
 }
