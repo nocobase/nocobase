@@ -16,21 +16,21 @@ import { CustomRequestActionDesigner } from './CustomRequestActionDesigner';
 
 export const CustomRequestActionACLDecorator = (props) => {
   const apiClient = useAPIClient();
-  const isRoot = apiClient.auth.role === 'root';
-  const fieldSchema = useFieldSchema();
-  const { data } = useRequest<{ data: string[] }>(
-    {
-      url: listByCurrentRoleUrl,
-    },
-    {
-      manual: isRoot,
-      cacheKey: listByCurrentRoleUrl,
-    },
-  );
+  // const isRoot = apiClient.auth.role === 'root';
+  // const fieldSchema = useFieldSchema();
+  // const { data } = useRequest<{ data: string[] }>(
+  //   {
+  //     url: listByCurrentRoleUrl,
+  //   },
+  //   {
+  //     manual: isRoot,
+  //     cacheKey: listByCurrentRoleUrl,
+  //   },
+  // );
 
-  if (!isRoot && !data?.data?.includes(fieldSchema?.['x-uid'])) {
-    return null;
-  }
+  // // if (!isRoot && !data?.data?.includes(fieldSchema?.['x-uid'])) {
+  // //   return null;
+  // // }
 
   return <ACLActionProvider>{props.children}</ACLActionProvider>;
 };
