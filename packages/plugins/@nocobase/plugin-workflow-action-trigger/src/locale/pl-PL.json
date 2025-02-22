@@ -1,0 +1,22 @@
+{
+    "Form event": "Zdarzenie formularza",
+    "Event triggers when submitted a workflow bound form action.": "Zdarzenie jest wyzwalane po przesłaniu akcji formularza powiązanej z przepływem pracy.",
+    "Form data model": "Model danych formularza",
+    "Use a collection to match form data.": "Użyj kolekcji do dopasowania danych formularza.",
+    "Associations to use": "Powiązania do użycia",
+    "User submitted form": "Formularz przesłany przez użytkownika",
+    "Role of user submitted form": "Rola formularza przesłanego przez użytkownika",
+    "Post-action event": "Zdarzenie po akcji",
+    "Triggered after the completion of a request initiated through an action button or API, such as after adding or updating data. Suitable for data processing, sending notifications, etc., after actions are completed.": "Wyzwalane po zakończeniu żądania zainicjowanego przez przycisk akcji lub API, na przykład po dodaniu lub zaktualizowaniu danych. Odpowiednie do przetwarzania danych, wysyłania powiadomień itp. po zakończeniu działań.",
+    "Collection": "Kolekcja",
+    "The collection to which the triggered data belongs.": "Kolekcja, do której należą wyzwolone dane.",
+    "Trigger mode": "Tryb wyzwalania",
+    "Local mode, triggered after the completion of actions bound to this workflow": "Tryb lokalny, wyzwalany po zakończeniu działań powiązanych z tym przepływem pracy",
+    "Global mode, triggered after the completion of the following actions": "Tryb globalny, wyzwalany po zakończeniu następujących działań",
+    "Select actions": "Wybierz działania",
+    "Create record action": "Akcja tworzenia rekordu",
+    "Update record action": "Akcja aktualizacji rekordu",
+    "Trigger data": "Dane wyzwalające",
+    "User submitted action": "Akcja przesłana przez użytkownika",
+    "Role of user submitted action": "Rola akcji przesłanej przez użytkownika"
+}

@@ -1,0 +1,6 @@
+{
+  "Export warning": "Możesz eksportować maksymalnie {{limit}} wierszy danych na raz, wszelkie nadmiarowe dane zostaną zignorowane.",
+  "Start export": "Rozpocznij eksport",
+  "True": "Prawda",
+  "False": "Fałsz"
+}

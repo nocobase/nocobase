@@ -1,0 +1,18 @@
+{
+    "Enable form": "Włącz formularz",
+    "Public forms": "Formularze publiczne",
+    "Add New": "Dodaj nowy",
+    "Type": "Typ",
+    "Open form": "Otwórz formularz publiczny",
+    "Set password": "Ustaw hasło",
+    "Copy link": "Kopiuj link",
+    "QR code": "Kod QR",
+    "The form is not enabled and cannot be accessed": "Formularz nie jest włączony i nie można go otworzyć",
+    "Link copied successfully": "Link skopiowano pomyślnie",
+    "After successful submission": "Po pomyślnym przesłaniu",
+    "Enable password": "Włącz hasło",
+    "Prompt after successful submission": "Komunikat po pomyślnym przesłaniu",
+    "Form": "Zwykły formularz",
+    "# Submitted successfully!\nThis is a demo text, **supports Markdown syntax**.": "# Przesłano pomyślnie!\nTo jest przykładowy tekst, **obsługuje składnię Markdown**.",
+    "The form is not found": "Formularz nie został znaleziony"
+}

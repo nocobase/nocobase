@@ -1,0 +1,12 @@
+{
+    "Parallel branch": "Gałąź równoległa",
+    "Run multiple branch processes in parallel.": "Uruchamiaj wiele procesów gałęzi równocześnie.",
+    "Add branch": "Dodaj gałąź",
+    "All succeeded": "Wszystkie zakończone sukcesem",
+    "Any succeeded": "Któraś zakończona sukcesem",
+    "Any succeeded or failed": "Któraś zakończona sukcesem lub niepowodzeniem",
+    "Continue after all branches succeeded": "Kontynuuj po zakończeniu wszystkich gałęzi sukcesem",
+    "Continue after any branch succeeded": "Kontynuuj po zakończeniu którejkolwiek gałęzi sukcesem",
+    "Continue after any branch succeeded, or exit after any branch failed.": "Kontynuuj po zakończeniu którejkolwiek gałęzi sukcesem lub zakończ po niepowodzeniu którejkolwiek gałęzi.",
+    "Mode": "Tryb"
+}

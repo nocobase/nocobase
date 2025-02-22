@@ -1,0 +1,22 @@
+{
+    "Email": "E-mail",
+    "From": "OD",
+    "To": "DO",
+    "CC": "DW",
+    "BCC": "UDW",
+    "Add email address": "Dodaj adres e-mail",
+    "Subject": "Temat",
+    "Content": "Treść",
+    "Host": "Host",
+    "Port": "Port",
+    "Secure": "Bezpieczne połączenie",
+    "Account": "Konto",
+    "Password": "Hasło",
+    "Configure": "Konfiguruj",
+    "The email address that will be used as the sender": "Adres e-mail, który będzie używany jako nadawca",
+    "SMTP mail": "Poczta SMTP",
+    "SMTP server host": "Host serwera SMTP",
+    "Content type": "Typ treści",
+    "Plain text": "Zwykły tekst",
+    "Transport": "Transport"
+}

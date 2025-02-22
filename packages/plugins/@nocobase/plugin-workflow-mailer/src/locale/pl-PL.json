@@ -1,0 +1,19 @@
+{
+    "Mailer": "Wysyłanie e-maili",
+    "Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "Wyślij e-mail za pomocą usługi SMTP. Możesz używać zmiennych z wcześniejszych węzłów jako odbiorców, tematu i treści e-maila.",
+    "SMTP host": "Host usługi",
+    "Port": "Port",
+    "Secure": "Bezpieczeństwo",
+    "User": "Użytkownik",
+    "Password": "Hasło",
+    "From": "Od",
+    "To": "Do",
+    "CC": "DW (Do wiadomości)",
+    "BCC": "UDW (Ukryte do wiadomości)",
+    "Add email address": "Dodaj adres e-mail",
+    "Subject": "Temat",
+    "Content": "Treść",
+    "Content type": "Typ treści",
+    "Plain text": "Zwykły tekst",
+    "Ignore failed sending and continue workflow": "Ignoruj niepowodzenie wysyłki i kontynuuj przepływ pracy"
+}

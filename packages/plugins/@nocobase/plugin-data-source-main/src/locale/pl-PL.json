@@ -1,0 +1,5 @@
+{
+    "field-name-exists": "Pole \"{{name}}\" ju istnieje w kolekcji \"{{collectionName}}\"",
+    "field-is-depended-on-by-other": "Nie możesz usunąć \"{{fieldName}}\" w \"{{fieldCollectionName}}\", jest używane przez pole \"{{dependedFieldName}}\" w \"{{dependedFieldCollectionName}}\" jako \"{{dependedFieldAs}}\""
+  }
+  

@@ -1,0 +1,11 @@
+{
+    "The current user has no roles. Please try another account.": "Bieżący użytkownik nie ma przypisanych ról. Spróbuj użyć innego konta.",
+    "The user role does not exist. Please try signing in again": "Rola użytkownika nie istnieje. Spróbuj zalogować się ponownie.",
+    "New role": "Nowa rola",
+    "Permissions": "Uprawnienia",
+    "Roles & Permissions": "Role i uprawnienia",
+    "General": "Ogólne",
+    "Desktop menu": "Menu na pulpicie",
+    "Plugin settings": "Ustawienia wtyczki",
+    "Data sources": "Źródła danych"
+}
