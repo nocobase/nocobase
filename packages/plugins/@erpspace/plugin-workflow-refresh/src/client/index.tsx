@@ -8,13 +8,10 @@
  */
 
 import { Plugin, useApp, useCollectionDataSource, useVariables } from '@nocobase/client';
-import WorkflowPlugin, {
-  Instruction,
-  useNodeSavedConfig,
-  WorkflowVariableTextArea,
-} from '@nocobase/plugin-workflow/client';
+import WorkflowPlugin, { useNodeSavedConfig, WorkflowVariableTextArea } from '@nocobase/plugin-workflow/client';
 import { LoadingOutlined } from '@ant-design/icons';
 import React, { useCallback, useEffect } from 'react';
+import { Instruction } from '@nocobase/plugin-workflow';
 
 export class PluginWorkflowRefreshClient extends Plugin {
   async afterAdd() {
