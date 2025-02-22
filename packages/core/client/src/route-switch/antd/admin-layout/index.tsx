@@ -30,7 +30,6 @@ import {
   CurrentUser,
   findByUid,
   findMenuItem,
-  NavigateIfNotSignIn,
   PinnedPluginList,
   RemoteCollectionManagerProvider,
   RemoteSchemaComponent,
@@ -544,17 +543,15 @@ export const AdminProvider = (props) => {
     <CurrentPageUidProvider>
       <CurrentTabUidProvider>
         <IsSubPageClosedByPageMenuProvider>
-          <NavigateIfNotSignIn>
-            <ACLRolesCheckProvider>
-              <MenuSchemaRequestProvider>
-                <RemoteCollectionManagerProvider>
-                  <CurrentAppInfoProvider>
-                    <RemoteSchemaTemplateManagerProvider>{props.children}</RemoteSchemaTemplateManagerProvider>
-                  </CurrentAppInfoProvider>
-                </RemoteCollectionManagerProvider>
-              </MenuSchemaRequestProvider>
-            </ACLRolesCheckProvider>
-          </NavigateIfNotSignIn>
+          <ACLRolesCheckProvider>
+            <MenuSchemaRequestProvider>
+              <RemoteCollectionManagerProvider>
+                <CurrentAppInfoProvider>
+                  <RemoteSchemaTemplateManagerProvider>{props.children}</RemoteSchemaTemplateManagerProvider>
+                </CurrentAppInfoProvider>
+              </RemoteCollectionManagerProvider>
+            </MenuSchemaRequestProvider>
+          </ACLRolesCheckProvider>
         </IsSubPageClosedByPageMenuProvider>
       </CurrentTabUidProvider>
     </CurrentPageUidProvider>
