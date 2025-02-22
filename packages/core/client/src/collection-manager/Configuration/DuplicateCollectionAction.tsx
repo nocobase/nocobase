@@ -7,15 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DownOutlined, PlusOutlined } from '@ant-design/icons';
-import { ArrayTable } from '@formily/antd-v5';
-import { FieldContext, FormContext, ISchema, useField, useForm } from '@formily/react';
+import { ISchema, useField, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Button, Dropdown, MenuProps, Space } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient, useRequest } from '../../api-client';
+import { useAPIClient } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import {
   ActionContextProvider,
@@ -24,13 +21,9 @@ import {
   useAttach,
   useCompile,
 } from '../../schema-component';
-import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
-import { useCancelAction } from '../action-hooks';
+import { useResourceActionContext } from '../ResourceActionProvider';
 import { useCollectionManager_deprecated } from '../hooks';
-import * as components from './components';
-import { TemplateSummary } from './components/TemplateSummary';
 import { createForm, Field } from '@formily/core';
-import { FilterTargetKeyAlert } from 'packages/plugins/@nocobase/plugin-data-source-manager/src/client/component/CollectionsManager/FilterTargetKeyAlert';
 
 import { css } from '@emotion/css';
 import res from 'packages/plugins/@nocobase/plugin-theme-editor/src/client/antd-token-previewer/icons/Arrow';
