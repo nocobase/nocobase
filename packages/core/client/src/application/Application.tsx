@@ -235,7 +235,7 @@ export class Application {
     this.addComponents({
       Link,
       Navigate: Navigate as ComponentType,
-      NavLink,
+      NavLink: NavLink as ComponentType,
     });
   }
 
