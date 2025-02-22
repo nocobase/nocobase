@@ -7,11 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, useApp, useVariables } from '@nocobase/client';
-import WorkflowPlugin, { WorkflowVariableTextArea } from '@nocobase/plugin-workflow/client';
+import { Plugin, useApp, useCollectionDataSource, useVariables } from '@nocobase/client';
+import WorkflowPlugin, {
+  Instruction,
+  useNodeSavedConfig,
+  WorkflowVariableTextArea,
+} from '@nocobase/plugin-workflow/client';
 import { LoadingOutlined } from '@ant-design/icons';
 import React, { useCallback, useEffect } from 'react';
-import { Instruction } from '@nocobase/plugin-workflow/client';
 
 export class PluginWorkflowRefreshClient extends Plugin {
   async afterAdd() {
@@ -59,8 +62,8 @@ class RefreshInstruction extends Instruction {
     },
   };
   scope = {
-    // useNodeSavedConfig,
-    // useCollectionDataSource,
+    useNodeSavedConfig,
+    useCollectionDataSource,
   };
   components = {
     // ArrayItems,
