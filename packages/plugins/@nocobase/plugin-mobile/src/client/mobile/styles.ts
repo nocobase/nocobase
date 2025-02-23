@@ -32,14 +32,6 @@ export const useStyles = genStyleHook('nb-mobile', (token) => {
       '.ant-pagination-simple': {
         marginTop: '0px !important',
       },
-      '.nb-action-penal-container': {
-        marginTop: '-10px',
-        marginBottom: '-10px',
-      },
-      '.nb-action-penal-container button[aria-label*="schema-initializer-WorkbenchBlock.ActionBar-workbench:configureActions"]':
-        {
-          marginBottom: '10px',
-        },
       '.ant-list-item': {
         paddingTop: '8px',
         paddingBottom: '8px',
