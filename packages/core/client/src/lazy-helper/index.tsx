@@ -14,6 +14,10 @@ import { useImported, loadableResource } from 'react-imported-component';
 
 export const LAZY_COMPONENT_KEY = Symbol('LAZY_COMPONENT_KEY');
 
+type LazyComponentType<M extends Record<string, any>, K extends keyof M> = {
+  [P in K]: M[P];
+};
+
 /**
  * Lazily loads a React component or multiple components.
  *
@@ -33,12 +37,12 @@ export const LAZY_COMPONENT_KEY = Symbol('LAZY_COMPONENT_KEY');
  */
 export function lazy<M extends Record<'default', any>>(factory: () => Promise<M>): M['default'];
 
-export function lazy<M extends Record<string, any>, K extends keyof M & string>(
+export function lazy<M extends Record<string, any>, K extends keyof M = keyof M>(
   factory: () => Promise<M>,
   ...componentNames: K[]
-): Record<K, M[K]>;
+): LazyComponentType<M, K>;
 
-export function lazy<M extends Record<string, any>, K extends keyof M & string>(
+export function lazy<M extends Record<string, any>, K extends keyof M>(
   factory: () => Promise<M>,
   ...componentNames: K[]
 ) {
@@ -71,14 +75,14 @@ export function lazy<M extends Record<string, any>, K extends keyof M & string>(
           };
         }),
       );
-      acc[name] = (props) => (
+      acc[name] = ((props) => (
         <React.Suspense fallback={<Spin />}>
           <LazyComponent {...props} />
         </React.Suspense>
-      );
+      )) as M[K];
       return acc;
     },
-    {} as Record<K, React.ComponentType<any>>,
+    {} as LazyComponentType<M, K>,
   );
 }
 
