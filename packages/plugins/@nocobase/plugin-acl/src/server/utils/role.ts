@@ -17,14 +17,18 @@ export function mergeRole(roles) {
     snippets: [],
     resources: null,
   };
+  const allSnippets: string[][] = [];
   for (const role of roles) {
     const jsonRole = role.toJSON();
     result.roles = mergeRoleNames(result.roles, jsonRole.role);
     result.strategy = mergeRoleStrategy(result.strategy, jsonRole.strategy);
     result.actions = mergeRoleActions(result.actions, jsonRole.actions);
-    result.snippets = mergeRoleSnippets(result.snippets, jsonRole.snippets);
     result.resources = mergeRoleResources(result.resources, [...role.resources.keys()]);
+    if (_.isArray(jsonRole.snippets)) {
+      allSnippets.push(jsonRole.snippets);
+    }
   }
+  result.snippets = mergeRoleSnippets(allSnippets);
   return result;
 }
 
@@ -55,22 +59,31 @@ function mergeRoleActions(sourceActions, newActions) {
   return _.merge(sourceActions, newActions);
 }
 
-function mergeRoleSnippets(sourceSnippets, newSnippets = []) {
-  const allSnippets = [...sourceSnippets, ...newSnippets];
+function mergeRoleSnippets(allRoleSnippets: string[][]): string[] {
+  if (!allRoleSnippets.length) {
+    return [];
+  }
 
-  const result = allSnippets.reduce((acc, snippet) => {
-    // 去重
-    if (acc.includes(snippet)) {
-      return acc;
+  const allSnippets = allRoleSnippets.flat();
+  const isExclusion = (value) => value.startsWith('!');
+  const includes = new Set(allSnippets.filter((x) => !isExclusion(x)));
+  const excludes = new Set(allSnippets.filter((x) => isExclusion(x)));
+
+  // 处理黑名单的交集：比如 ['a.*', '!a.b.*'] 和 ['a.*', '!a.b.*', '!a.c.*']，最终取 ['a.*', '!a.b.*']
+  const excludesSet = new Set<string>();
+  excludes.forEach((snippet) => {
+    // 取交集：所有角色都有这个黑名单
+    const allHas = allRoleSnippets.every((x) => x.includes(snippet));
+    if (allHas) {
+      excludesSet.add(snippet);
     }
-    // 当前是 !xxx 并且已经有 xxx，!xxx 则不需要生效
-    const isExclusion = snippet.startsWith('!');
-    if (isExclusion && acc.includes(snippet.slice(1))) {
-      return acc;
-    }
-    acc.push(snippet);
-    return acc;
-  }, []);
+  });
+
+  // 处理冲突项，比如 ['a'] 和 ['!a']，最终取 ['a']
+  excludesSet.forEach((x) => includes.has(x.slice(1)) && excludesSet.delete(x));
+
+  const result = [...includes];
+  excludesSet.forEach((x) => result.push(x));
 
   return result;
 }

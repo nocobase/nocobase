@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ACLRole } from '@nocobase/acl';
 import { mergeRole } from '../utils';
 
 const map2obj = (map: Map<string, string>) => {
