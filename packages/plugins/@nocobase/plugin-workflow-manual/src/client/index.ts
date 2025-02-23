@@ -13,8 +13,8 @@ import WorkflowPlugin from '@nocobase/plugin-workflow/client';
 import Manual from './instruction';
 
 import { NAMESPACE } from '../locale';
-import { useCountRequest, WorkflowManualProvider } from './WorkflowManualProvider';
-import { WorkflowTodo } from './WorkflowTodo';
+import { WorkflowManualProvider } from './WorkflowManualProvider';
+import { manualTodo, WorkflowTodo } from './WorkflowTodo';
 import {
   addActionButton,
   addActionButton_deprecated,
@@ -37,11 +37,7 @@ export default class extends Plugin {
     const workflow = this.app.pm.get('workflow') as WorkflowPlugin;
     workflow.registerInstruction('manual', Manual);
 
-    workflow.registerTaskType('manual', {
-      title: `{{t("My manual tasks", { ns: "${NAMESPACE}" })}}`,
-      useCountRequest,
-      component: WorkflowTodo.TaskBlock,
-    });
+    workflow.registerTaskType('manual', manualTodo);
 
     this.app.schemaInitializerManager.add(addBlockButton_deprecated);
     this.app.schemaInitializerManager.add(addBlockButton);

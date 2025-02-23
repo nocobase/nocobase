@@ -8,25 +8,38 @@
  */
 import React, { useEffect, useMemo } from 'react';
 import { Link, Outlet, useNavigate, useParams } from 'react-router-dom';
-import { Button, Layout, Menu, Spin, Badge, theme, Tooltip } from 'antd';
+import { Button, Layout, Menu, Spin, Badge, theme, Tooltip, Tabs, Space } from 'antd';
 import { PageHeader } from '@ant-design/pro-layout';
 import { CheckCircleOutlined } from '@ant-design/icons';
 import classnames from 'classnames';
 
 import {
   css,
+  List,
   PinnedPluginListProvider,
+  SchemaComponent,
   SchemaComponentContext,
   SchemaComponentOptions,
   useCompile,
+  useDocumentTitle,
   usePlugin,
 } from '@nocobase/client';
 
 import PluginWorkflowClient from '.';
-import { lang } from './locale';
+import { lang, NAMESPACE } from './locale';
+import { ISchema } from '@formily/react';
+
+const layoutClass = css`
+  height: 100%;
+  overflow: hidden;
+`;
 
 const sideClass = css`
-  height: calc(100vh - 46px);
+  overflow: auto;
+  position: sticky;
+  top: 0;
+  bottom: 0;
+  height: 100%;
 
   .ant-layout-sider-children {
     width: 200px;
@@ -34,11 +47,20 @@ const sideClass = css`
   }
 `;
 
+const contentClass = css`
+  padding: 24px;
+  min-height: 280px;
+  overflow: auto;
+`;
+
 export interface TaskTypeOptions {
   title: string;
   useCountRequest?: Function;
+  collection: string;
+  useActionParams: Function;
+  // schema: ISchema;
   component?: React.ComponentType;
-  children?: TaskTypeOptions[];
+  // children?: TaskTypeOptions[];
 }
 
 function MenuLink({ type }: any) {
@@ -52,7 +74,7 @@ function MenuLink({ type }: any) {
 
   return (
     <Link
-      to={`/admin/workflow/tasks/${type}`}
+      to={`/admin/workflow/tasks/${type}/${TASK_STATUS.PENDING}`}
       className={css`
         display: flex;
         align-items: center;
@@ -65,11 +87,85 @@ function MenuLink({ type }: any) {
   );
 }
 
+function ExtraActions() {
+  return (
+    <SchemaComponent
+      schema={{
+        name: 'actions',
+        type: 'void',
+        'x-component': 'ActionBar',
+        properties: {
+          refresh: {
+            type: 'void',
+            title: '{{ t("Refresh") }}',
+            'x-component': 'Action',
+            'x-use-component-props': 'useRefreshActionProps',
+            'x-component-props': {
+              icon: 'ReloadOutlined',
+            },
+          },
+          filter: {
+            type: 'void',
+            title: '{{t("Filter")}}',
+            'x-component': 'Filter.Action',
+            'x-use-component-props': 'useFilterActionProps',
+            'x-component-props': {
+              icon: 'FilterOutlined',
+            },
+          },
+        },
+      }}
+    />
+  );
+}
+
+const TASK_STATUS = {
+  ALL: 'all',
+  PENDING: 'pending',
+  COMPLETED: 'completed',
+};
+
+function StatusTabs(props) {
+  const navigate = useNavigate();
+  const { taskType, status = TASK_STATUS.PENDING } = useParams();
+  return (
+    <Tabs
+      activeKey={status}
+      onChange={(activeKey) => {
+        navigate(`/admin/workflow/tasks/${taskType}/${activeKey}`);
+      }}
+      className={css`
+        &.ant-tabs-top > .ant-tabs-nav {
+          margin-bottom: 0;
+        }
+      `}
+      items={[
+        {
+          key: TASK_STATUS.PENDING,
+          label: lang('Pending'),
+        },
+        {
+          key: TASK_STATUS.COMPLETED,
+          label: lang('Completed'),
+        },
+        {
+          key: TASK_STATUS.ALL,
+          label: lang('All'),
+        },
+      ]}
+      tabBarExtraContent={{
+        right: <ExtraActions />,
+      }}
+    />
+  );
+}
+
 export function WorkflowTasks() {
   const workflowPlugin = usePlugin(PluginWorkflowClient);
-  const navigate = useNavigate();
-  const { taskType } = useParams();
   const compile = useCompile();
+  const { setTitle } = useDocumentTitle();
+  const navigate = useNavigate();
+  const { taskType, status = TASK_STATUS.PENDING } = useParams();
   const {
     token: { colorBgContainer },
   } = theme.useToken();
@@ -85,36 +181,128 @@ export function WorkflowTasks() {
     [workflowPlugin.taskTypes],
   );
 
-  const { title, component: Component } = useMemo<any>(
+  const {
+    title,
+    collection,
+    useActionParams,
+    component: Component,
+  } = useMemo<any>(
     () => workflowPlugin.taskTypes.get(taskType ?? items[0]?.key) ?? {},
     [items, taskType, workflowPlugin.taskTypes],
   );
 
-  useEffect(() => {
-    if (!taskType && items[0].key) {
-      navigate(`/admin/workflow/tasks/${items[0].key}`, { replace: true });
-    }
-  }, [items, navigate, taskType]);
+  const params = useActionParams(status);
 
-  const key = taskType ?? items[0].key;
+  useEffect(() => {
+    setTitle?.(`${lang('Workflow todo')}${title ? `: ${compile(title)}` : ''}`);
+  }, [taskType, status, setTitle, title, compile]);
+
+  useEffect(() => {
+    if (!taskType) {
+      navigate(`/admin/workflow/tasks/${items[0].key}/${status}`, { replace: true });
+    }
+  }, [items, navigate, status, taskType]);
+
+  const typeKey = taskType ?? items[0].key;
 
   return (
-    <Layout>
+    <Layout className={layoutClass}>
       <Layout.Sider className={sideClass} theme="light">
-        <Menu mode="inline" selectedKeys={[key]} items={items} style={{ height: '100%' }} />
+        <Menu mode="inline" selectedKeys={[typeKey]} items={items} style={{ height: '100%' }} />
       </Layout.Sider>
-      <Layout>
-        <PageHeader
-          className={classnames('pageHeaderCss', 'height0')}
-          style={{ background: colorBgContainer, padding: '12px 24px 0 24px' }}
-          title={compile(title)}
-        />
-        <Layout.Content style={{ padding: '24px', minHeight: 280 }}>
-          <SchemaComponentContext.Provider value={{ designable: false }}>
-            {Component ? <Component /> : null}
-            <Outlet />
-          </SchemaComponentContext.Provider>
-        </Layout.Content>
+      <Layout
+        className={css`
+          > div {
+            height: 100%;
+            overflow: hidden;
+
+            > .ant-formily-layout {
+              height: 100%;
+
+              > div {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+              }
+            }
+          }
+        `}
+      >
+        <SchemaComponentContext.Provider value={{ designable: false }}>
+          <SchemaComponent
+            components={{
+              Layout,
+              PageHeader,
+              StatusTabs,
+            }}
+            schema={{
+              name: `${taskType}-${status}`,
+              type: 'void',
+              'x-decorator': 'List.Decorator',
+              'x-decorator-props': {
+                collection,
+                action: 'list',
+                params: {
+                  pageSize: 20,
+                  sort: ['-createdAt'],
+                  ...params,
+                },
+              },
+              properties: {
+                header: {
+                  type: 'void',
+                  'x-component': 'PageHeader',
+                  'x-component-props': {
+                    className: classnames('pageHeaderCss'),
+                    style: {
+                      background: colorBgContainer,
+                      padding: '12px 24px 0 24px',
+                    },
+                    title,
+                  },
+                  properties: {
+                    tabs: {
+                      type: 'void',
+                      'x-component': 'StatusTabs',
+                    },
+                  },
+                },
+                content: {
+                  type: 'void',
+                  'x-component': 'Layout.Content',
+                  'x-component-props': {
+                    className: contentClass,
+                  },
+                  properties: {
+                    list: {
+                      type: 'array',
+                      'x-component': 'List',
+                      'x-component-props': {
+                        className: css`
+                          > .itemCss:not(:last-child) {
+                            border-bottom: none;
+                          }
+                        `,
+                        locale: {
+                          emptyText: `{{ t("No data yet", { ns: "${NAMESPACE}" }) }}`,
+                        },
+                      },
+                      properties: {
+                        item: {
+                          type: 'object',
+                          'x-decorator': 'List.Item',
+                          'x-component': Component,
+                          'x-read-pretty': true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            }}
+          />
+          <Outlet />
+        </SchemaComponentContext.Provider>
       </Layout>
     </Layout>
   );
@@ -146,7 +334,7 @@ function WorkflowTasksLink() {
           }
         `}
       >
-        <Link to="/admin/workflow/tasks">
+        <Link to={`/admin/workflow/tasks/${types[0]}/${TASK_STATUS.PENDING}`}>
           <CheckCircleOutlined />
         </Link>
       </Button>
