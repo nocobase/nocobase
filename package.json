@@ -44,7 +44,7 @@
     "run:example": "tsx -r dotenv/config -r tsconfig-paths/register ./examples/index.ts"
   },
   "resolutions": {
-    "@types/react": "^18.0.0",
+    "@types/react": "18.3.18",
     "@types/react-dom": "^18.0.0",
     "@typescript-eslint/parser": "^6.2.0",
     "react-router-dom": "^6.11.2",
@@ -72,7 +72,7 @@
     "@commitlint/cli": "^16.1.0",
     "@commitlint/config-conventional": "^16.0.0",
     "@commitlint/prompt-cli": "^16.1.0",
-    "@types/react": "^18.0.0",
+    "@types/react": "18.3.18",
     "@types/react-dom": "^18.0.0",
     "auto-changelog": "^2.4.0",
     "eslint-plugin-jest-dom": "^5.0.1",

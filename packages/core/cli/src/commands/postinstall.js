@@ -14,6 +14,14 @@ const { existsSync, mkdirSync, readFileSync, appendFileSync } = require('fs');
 const { readFile, writeFile } = require('fs').promises;
 const { createStoragePluginsSymlink, createDevPluginsSymlink } = require('@nocobase/utils/plugin-symlink');
 
+function runPatchPackage() {
+  // run yarn patch-package
+  // console.log('patching third party packages...');
+  run('yarn', ['patch-package'], {
+    stdio: 'pipe',
+  });
+}
+
 function writeToExclude() {
   const excludePath = resolve(process.cwd(), '.git', 'info', 'exclude');
   const content = 'packages/pro-plugins/\n';
@@ -47,6 +55,7 @@ module.exports = (cli) => {
     .allowUnknownOption()
     .option('--skip-umi')
     .action(async (options) => {
+      runPatchPackage();
       writeToExclude();
       generatePlugins();
       generatePlaywrightPath(true);
