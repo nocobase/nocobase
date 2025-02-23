@@ -108,6 +108,11 @@ export const useStyles = genStyleHook('nb-mobile', (token) => {
         '[data-menu-id$="-theme"]': {
           display: 'none',
         },
+
+        '& > .ant-menu > .ant-menu-item': {
+          marginInline: 8,
+          width: `calc(100% - 16px)`,
+        },
       },
     },
   };
