@@ -8,31 +8,26 @@
  */
 
 import { genStyleHook } from '@nocobase/client';
-import { PageBackgroundColor } from '../constants';
 
 export const useStyles = genStyleHook('nb-mobile', (token) => {
   const { componentCls } = token;
 
   return {
     [componentCls]: {
+      // 调整移动端 Grid card 区块顶部按钮和卡片之间的间距
+      '--nb-spacing': '12px',
+
       WebkitOverflowScrolling: 'touch',
       display: 'initial',
 
       '& ::-webkit-scrollbar': {
         display: 'none',
       },
-      body: {
-        backgroundColor: PageBackgroundColor,
-      },
       '.nb-details .ant-formily-item-feedback-layout-loose': {
         marginBottom: '5px',
       },
       '.nb-details .ant-formily-item-layout-vertical .ant-formily-item-label': {
         marginBottom: '-8px',
-      },
-      '.ant-card .ant-card-body': {
-        paddingBottom: '10px',
-        paddingTop: '10px',
       },
       '.ant-pagination-simple': {
         marginTop: '0px !important',
