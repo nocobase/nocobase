@@ -9,7 +9,7 @@
 
 import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
-import { Space } from 'antd';
+import { Space, theme } from 'antd';
 import useInputStyle from 'antd/es/input/style';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { renderToString } from 'react-dom/server';
@@ -238,6 +238,7 @@ export function TextArea(props) {
   // NOTE: e.g. [startElementIndex, startOffset, endElementIndex, endOffset]
   const [range, setRange] = useState<[number, number, number, number]>([-1, 0, -1, 0]);
   useInputStyle('ant-input');
+  const { token } = theme.useToken();
   const delimitersString = delimiters.join(' ');
 
   useEffect(() => {
@@ -440,6 +441,7 @@ export function TextArea(props) {
           { 'ant-input-disabled': disabled },
           // NOTE: `pre-wrap` here for avoid the `&nbsp;` (\x160) issue when paste content, we need normal space (\x32).
           css`
+            min-height: ${token.controlHeight}px;
             overflow: auto;
             white-space: pre-wrap;
 
@@ -461,15 +463,14 @@ export function TextArea(props) {
         contentEditable={!disabled}
         dangerouslySetInnerHTML={{ __html: html }}
       />
-      {!disabled ? (
-        <VariableSelect
-          options={options}
-          setOptions={setOptions}
-          onInsert={onInsert}
-          changeOnSelect={changeOnSelect}
-          fieldNames={fieldNames || defaultFieldNames}
-        />
-      ) : null}
+      <VariableSelect
+        options={options}
+        setOptions={setOptions}
+        onInsert={onInsert}
+        changeOnSelect={changeOnSelect}
+        fieldNames={fieldNames || defaultFieldNames}
+        disabled={disabled}
+      />
     </Space.Compact>,
   );
 }

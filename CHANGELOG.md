@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.5.13](https://github.com/nocobase/nocobase/compare/v1.5.12...v1.5.13) - 2025-02-22
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix uploaded file missed when one by one ([#6260](https://github.com/nocobase/nocobase/pull/6260)) by @mytharcher
+
+- **[Workflow: Pre-action event]** Fix error message from response message node not shown by @mytharcher
+
+## [v1.5.12](https://github.com/nocobase/nocobase/compare/v1.5.11...v1.5.12) - 2025-02-21
+
+### 🚀 Improvements
+
+- **[Workflow]** Hide node id from node card in workflow canvas ([#6251](https://github.com/nocobase/nocobase/pull/6251)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[File manager]** Upgrade AWS SDK version to fix MinIO upload bug ([#6253](https://github.com/nocobase/nocobase/pull/6253)) by @mytharcher
+
+## [v1.5.11](https://github.com/nocobase/nocobase/compare/v1.5.10...v1.5.11) - 2025-02-20
+
+### 🎉 New Features
+
+- **[Workflow]** Support to extend group of instruction in workflow ([#6237](https://github.com/nocobase/nocobase/pull/6237)) by @mytharcher
+Reference: [Extends Node Group](https://docs.nocobase.com/handbook/workflow/development/api#registerinstructiongroup)
+### 🐛 Bug Fixes
+
+- **[client]**
+  - association block associate action popup issue on mobile ([#6235](https://github.com/nocobase/nocobase/pull/6235)) by @katherinehhh
+
+  - picker format mismatch in filter form field ([#6234](https://github.com/nocobase/nocobase/pull/6234)) by @katherinehhh
+
+  - Show `<Variable.TextArea />` component correctly in disabled mode ([#6197](https://github.com/nocobase/nocobase/pull/6197)) by @mytharcher
+
+  - Fix files missed after uploaded ([#6247](https://github.com/nocobase/nocobase/pull/6247)) by @mytharcher
+
+- **[Workflow]**
+  - Fix style details in workflow canvas ([#6240](https://github.com/nocobase/nocobase/pull/6240)) by @mytharcher
+
+  - Support to trigger workflow when change password ([#6248](https://github.com/nocobase/nocobase/pull/6248)) by @mytharcher
+
 ## [v1.5.10](https://github.com/nocobase/nocobase/compare/v1.5.9...v1.5.10) - 2025-02-17
 
 ### 🚀 Improvements

@@ -271,7 +271,7 @@ function withParams(value: any[], params: { fieldOperator?: string; isParsingVar
   return value;
 }
 
-export function inferPickerType(dateString: string): 'year' | 'month' | 'quarter' | 'date' {
+export function inferPickerType(dateString: string, picker?): 'year' | 'month' | 'quarter' | 'date' {
   if (/^\d{4}$/.test(dateString)) {
     return 'year';
   } else if (/^\d{4}-\d{2}$/.test(dateString)) {
@@ -281,6 +281,6 @@ export function inferPickerType(dateString: string): 'year' | 'month' | 'quarter
   } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
     return 'date';
   } else {
-    return 'date';
+    return picker || 'date';
   }
 }
