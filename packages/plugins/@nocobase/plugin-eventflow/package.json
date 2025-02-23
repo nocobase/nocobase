@@ -1,0 +1,13 @@
+{
+  "name": "@nocobase/plugin-eventflow",
+  "displayName": "Eventflow",
+  "description": "A frontend workflow plugin for NocoBase, designed to manage and coordinate event flows and interactions between front-end components, simplifying complex UI logic handling.",
+  "version": "1.6.0-alpha.28",
+  "main": "dist/server/index.js",
+  "dependencies": {},
+  "peerDependencies": {
+    "@nocobase/client": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
+  }
+}

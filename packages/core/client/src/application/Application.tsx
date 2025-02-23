@@ -44,6 +44,7 @@ import type { CollectionFieldInterfaceFactory } from '../data-source';
 import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import type { Plugin } from './Plugin';
+import { EventFlowManager } from './eventflow';
 import { getOperators } from './globalOperators';
 import type { RequireJS } from './utils/requirejs';
 
@@ -107,6 +108,7 @@ export class Application {
   public name: string;
   public globalVars: Record<string, any> = {};
   public jsonLogic: JsonLogic;
+  public eventFlowManager: EventFlowManager;
   loading = true;
   maintained = false;
   maintaining = false;
@@ -162,6 +164,7 @@ export class Application {
     });
     this.initListeners();
     this.jsonLogic = getOperators();
+    this.eventFlowManager = new EventFlowManager(this);
   }
 
   private initListeners() {
