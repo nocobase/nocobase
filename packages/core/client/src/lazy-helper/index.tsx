@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { ComponentType, lazy as ReactLazy } from 'react';
+import React, { lazy as ReactLazy } from 'react';
 import { Spin } from 'antd';
 import { get } from 'lodash';
 import { useImported, loadableResource } from 'react-imported-component';
@@ -31,14 +31,12 @@ export const LAZY_COMPONENT_KEY = Symbol('LAZY_COMPONENT_KEY');
  * @param {...K[]} componentNames - The names of the components to be lazy-loaded from the module.
  * @returns {Record<K, React.LazyExoticComponent<M[K]>>} An object containing the lazy-loaded components.
  */
-export function lazy<M extends ComponentType<any>>(
-  factory: () => Promise<{ default: M }>,
-): React.LazyExoticComponent<M>;
+export function lazy<M extends Record<'default', any>>(factory: () => Promise<M>): M['default'];
 
 export function lazy<M extends Record<string, any>, K extends keyof M & string>(
   factory: () => Promise<M>,
   ...componentNames: K[]
-): Record<K, React.LazyExoticComponent<M[K]>>;
+): Record<K, M[K]>;
 
 export function lazy<M extends Record<string, any>, K extends keyof M & string>(
   factory: () => Promise<M>,
