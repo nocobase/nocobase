@@ -87,8 +87,8 @@ export const useStyles = genStyleHook('nb-mobile', (token) => {
         marginInlineEnd: '0px !important',
       },
       '.ant-card-body .nb-table-container': {
-        marginRight: '-20px',
-        marginLeft: '-10px',
+        // marginRight: '-20px',
+        // marginLeft: '-10px',
       },
       '.nb-action-bar button[aria-label*="schema-initializer-ActionBar-table:configureActions"] > span:last-child': {
         display: 'none !important',
