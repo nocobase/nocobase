@@ -944,5 +944,7 @@
     "Triggered only if one of the selected fields changes. If unselected, it means that it will be triggered when any field changes. When record is added or deleted, any field is considered to have been changed.":"Wyzwalane tylko wtedy, gdy jedno z wybranych pól ulegnie zmianie. Jeśli niezaznaczone, oznacza to, że zostanie wyzwolone, gdy dowolne pole ulegnie zmianie. Gdy rekord zostanie dodany lub usunięty, każde pole zostanie uznane za zmienione.",
     "Default view": "Widok domyślny",
     "Background color field": "Pole koloru tła",
-    "Not selected": "Nie wybrano"
+    "Not selected": "Nie wybrano",
+    "Enable link": "Włącz link",
+    "Associate": "Kojarz"
 }

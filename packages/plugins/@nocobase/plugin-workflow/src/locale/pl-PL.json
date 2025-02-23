@@ -96,6 +96,21 @@
     "Can not delete": "Nie można usunąć",
     "The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.": "Wynik tego węzła jest używany przez inne węzły ({{nodes}}), usuń odniesienia przed usunięciem.",
     "Maximum number of loop calls": "Maksymalna liczba iteracji pętli",
-    "If the number of loop calls is too large, there will be performance issues.": "Zbyt duża liczba iteracji może powodować problemy z wydajnością."
+    "If the number of loop calls is too large, there will be performance issues.": "Zbyt duża liczba iteracji może powodować problemy z wydajnością.",
+    "Asynchronously": "Asynchronicznie",
+    "Synchronously": "Synchronicznie",
+    "Execute manually": "Wykonaj ręcznie",
+    "Trigger variables need to be filled for executing.": "Aby można było wykonać polecenie, zmienne wyzwalające muszą zostać wypełnione.",
+    "Automatically create a new version after execution": "Automatycznie utwórz nową wersję po wykonaniu",
+    "Choose a record or primary key of a record in the collection to trigger.": "Wybierz rekord lub klucz podstawowy rekordu w kolekcji, który chcesz wyzwolić.",
+    "For user actions that require immediate feedback. Can not use asynchronous nodes in such mode, and it is not recommended to perform time-consuming operations under synchronous mode.":"Do działań użytkownika, które wymagają natychmiastowej informacji zwrotnej. Nie można używać węzłów asynchronicznych w takim trybie i nie zaleca się wykonywania czasochłonnych operacji w trybie synchronicznym.",
+    "Execute mode":"Tryb wykonania",
+    "Execute workflow asynchronously or synchronously based on trigger type, and could not be changed after created.":"Wykonuj przepływ pracy asynchronicznie lub synchronicznie w zależności od typu wyzwalacza. Po utworzeniu nie można go zmienić.",
+    "Auto delete history when execution is on end status": "Automatyczne usuwanie historii po zakończeniu wykonywania",
+    "Maximum number of cycling triggers":"Maksymalna liczba cyklicznych wyzwalaczy",
+    "The triggers of same workflow by some node (create, update and sub-flow etc.) more than this number will be ignored. Large number may cause performance issues. Please use with caution.":"Wyzwalacze tego samego przepływu pracy przez jakiś węzeł (tworzenie, aktualizacja i podprzepływ itp.) w liczbie większej niż ta liczba zostaną zignorowane. Duża liczba może powodować problemy z wydajnością. Należy zachować ostrożność.",
+    "Bind workflows":"Przypisz workflow",
+    "System variables":"Zmienne systemowe",
+    "Date range":"Zakres dat"
   }
   
