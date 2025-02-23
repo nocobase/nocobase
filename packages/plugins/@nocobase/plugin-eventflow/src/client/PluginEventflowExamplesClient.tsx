@@ -102,13 +102,21 @@ export class PluginEventflowExamplesClient extends Plugin {
         },
       },
       async handler(params, context) {
-        if (!params.title) {
+        if (!params?.title) {
           return;
         }
-        Modal.confirm({
-          title: params.title,
-          icon: <ExclamationCircleFilled />,
-          content: params.content,
+        await new Promise((resolve, reject) => {
+          Modal.confirm({
+            title: params.title,
+            icon: <ExclamationCircleFilled />,
+            content: params.content,
+            onOk() {
+              resolve(null);
+            },
+            onCancel() {
+              reject(null);
+            },
+          });
         });
       },
     });
@@ -118,7 +126,7 @@ export class PluginEventflowExamplesClient extends Plugin {
       on: {
         title: '页面刷新事件',
         event: 'window.beforeUnload',
-        condition: '{{ctx.window.location.pathname === "/admin/vljjhr8cmf5"}}',
+        condition: '{{ctx.window.location.pathname === "/admin/sourf9euc2l"}}',
       },
     });
 
@@ -131,12 +139,19 @@ export class PluginEventflowExamplesClient extends Plugin {
       },
       steps: [
         {
-          title: '对话框',
+          title: '对话框1',
           action: 'dialog',
-          condition: "{{ ctx.event.target['className'] === 'nb-grid-warp' }}",
           params: {
-            title: '对话框标题',
-            content: '对话框内容',
+            title: '对话框标题1',
+            content: '对话框内容1',
+          },
+        },
+        {
+          title: '对话框2',
+          action: 'dialog',
+          params: {
+            title: '对话框标题2',
+            content: '对话框内容2',
           },
         },
       ],

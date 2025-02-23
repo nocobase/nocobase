@@ -287,7 +287,7 @@ export class EventFlow {
       const action = this.eventFlowManager.getAction(step.action);
       if (action) {
         if (this.checkCondition(step.condition, context)) {
-          if (step.isAwait) {
+          if (step.isAwait !== false) {
             await this.executeHandler(action.handler, step.params, context);
           } else {
             this.executeHandler(action.handler, step.params, context);
@@ -417,7 +417,7 @@ export class EventFlowManager {
 
     // 检查事件流
     for (const flow of Object.values(this.flows)) {
-      if (flow.isAwait) {
+      if (flow.isAwait === false) {
         await flow.trigger(eventName, context);
       } else {
         flow.trigger(eventName, context);
