@@ -49,8 +49,8 @@ export const BlockItemCard = React.forwardRef<HTMLDivElement, CardProps | any>((
             fontWeight: 400,
             color: '#777',
             lineHeight: '1.6',
-            padding: '4px 8px',
-            backgroundColor: '#f9f9f9',
+            padding: '4px 12px',
+            backgroundColor: token.colorFillTertiary,
             borderRadius: '4px',
           }}
         />
