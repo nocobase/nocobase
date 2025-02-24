@@ -77,7 +77,7 @@ describe('actions of verificators', async () => {
         acl: true,
         plugins: ['verification', 'users', 'field-sort', 'auth'],
       });
-      agent = app.agent().loginUsingId(1);
+      agent = await app.agent().login(1);
       const plugin = app.pm.get('verification') as PluginVerficationServer;
       manager = plugin.verificationManager;
     });
