@@ -344,7 +344,7 @@
     "Edit chart": "Edytuj wykres",
     "Add text": "Dodaj tekst",
     "Filterable fields": "Pola do filtrowania",
-    "Edit button":"Edytuj przycisk",
+    "Edit button": "Edytuj przycisk",
     "Hide": "Ukryj",
     "Enable actions": "Włącz akcje",
     "Import": "Importuj",
@@ -354,7 +354,7 @@
     "Function": "Funkcja",
     "Popup form": "Formularz wyskakujący",
     "Flexible popup": "Flexible popup",
-    "Configure actions":"Konfiguruj akcje",
+    "Configure actions": "Konfiguruj akcje",
     "Display order number": "Display order number",
     "Enable drag and drop sorting": "Włącz sortowanie metodą przeciągnij i upuść",
     "Triggered when the row is clicked": "Wywoływane po kliknięciu wiersza",
@@ -941,8 +941,10 @@
     "Trigger variable": "Zmienna wyzwalacza",
     "System variable": "Zmienna systemowa",
     "Scope variable": "Zmienna zakresu",
-    "Triggered only if one of the selected fields changes. If unselected, it means that it will be triggered when any field changes. When record is added or deleted, any field is considered to have been changed.":"Wyzwalane tylko wtedy, gdy jedno z wybranych pól ulegnie zmianie. Jeśli niezaznaczone, oznacza to, że zostanie wyzwolone, gdy dowolne pole ulegnie zmianie. Gdy rekord zostanie dodany lub usunięty, każde pole zostanie uznane za zmienione.",
+    "Triggered only if one of the selected fields changes. If unselected, it means that it will be triggered when any field changes. When record is added or deleted, any field is considered to have been changed.": "Wyzwalane tylko wtedy, gdy jedno z wybranych pól ulegnie zmianie. Jeśli niezaznaczone, oznacza to, że zostanie wyzwolone, gdy dowolne pole ulegnie zmianie. Gdy rekord zostanie dodany lub usunięty, każde pole zostanie uznane za zmienione.",
     "Default view": "Widok domyślny",
     "Background color field": "Pole koloru tła",
-    "Not selected": "Nie wybrano"
+    "Not selected": "Nie wybrano",
+    "Enable link": "Włącz link",
+    "Associate": "Kojarz"
 }

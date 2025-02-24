@@ -1,7 +1,9 @@
 {
-    "Title field": "Pole tytułu",
-    "Time scale": "Skala czasu",
-    "Start date field": "Pole daty rozpoczęcia",
-    "Progress field": "Pole postępu",
-    "End date field": "Pole daty końcowej"
-  }
+  "Title field": "Pole tytułu",
+  "Time scale": "Skala czasu",
+  "Start date field": "Pole daty rozpoczęcia",
+  "Progress field": "Pole postępu",
+  "End date field": "Pole daty końcowej",
+  "Duration": "Czas trwania",
+  "day(s)": "dzień/dni"
+}
