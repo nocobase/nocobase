@@ -35,4 +35,34 @@ test.describe('Access control', () => {
     await expect(page.getByRole('menuitem', { name: 'Access control' })).toBeVisible();
     await page.mouse.move(300, 0);
   });
+  test('access control with role ', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(accessControlActionWithTable).waitForInit();
+    await nocoPage.goto();
+    await page.getByLabel('block-item-CardItem-users-').hover();
+    //popup only member can see
+    await page.getByLabel('action-Action-Popup-customize').hover();
+    await page.getByLabel('designer-schema-settings-Action-actionSettings:popup-users').hover();
+    await page.getByRole('menuitem', { name: 'Access control' }).click();
+    await page.getByLabel('block-item-RemoteSelect-users').click();
+    await page.getByText('Member').click();
+    await page.getByRole('option', { name: 'Member' }).locator('div').click();
+    await page.getByLabel('block-item-RemoteSelect-users').click();
+    await page.getByRole('button', { name: 'Submit' }).click();
+
+    //root 角色有权限
+    await expect(page.getByLabel('action-Action-Popup-customize')).toBeVisible();
+
+    //切换 为admin
+    await page.getByTestId('user-center-button').click();
+    await page.getByText('Switch roleRoot').click();
+    await page.getByText('Admin', { exact: true }).click();
+    await expect(page.getByLabel('action-Action-Popup-customize')).not.toBeVisible();
+
+    // 切换 为 member
+
+    await page.getByTestId('user-center-button').click();
+    await page.getByText('Switch roleAdmin').click();
+    await page.getByText('Member').click();
+    await expect(page.getByLabel('action-Action-Popup-customize')).toBeVisible();
+  });
 });
