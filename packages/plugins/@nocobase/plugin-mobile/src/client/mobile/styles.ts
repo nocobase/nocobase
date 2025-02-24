@@ -45,9 +45,6 @@ export const useStyles = genStyleHook('nb-mobile', (token) => {
         paddingBottom: '0px',
         paddingTop: '0px',
       },
-      '.nb-chart-block .noco-card-item': {
-        marginBottom: '-13px',
-      },
       '.ant-table-thead button[aria-label*="schema-initializer-TableV2-table:configureColumns"] > span:last-child': {
         display: 'none !important',
       },
@@ -73,22 +70,6 @@ export const useStyles = genStyleHook('nb-mobile', (token) => {
       },
       '.ant-pagination .ant-pagination-item': {
         display: 'none',
-      },
-      '.ant-card-body .nb-action-bar .ant-btn': {
-        justifyContent: 'space-between',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        '& span': {
-          display: 'contents',
-        },
-      },
-      '.ant-card-body .nb-action-bar .ant-btn-icon': {
-        marginInlineEnd: '0px !important',
-      },
-      '.ant-card-body .nb-table-container': {
-        // marginRight: '-20px',
-        // marginLeft: '-10px',
       },
       '.nb-action-bar button[aria-label*="schema-initializer-ActionBar-table:configureActions"] > span:last-child': {
         display: 'none !important',
