@@ -29,5 +29,6 @@
   "Sign up settings": "Ustawienia rejestracji",
   "Sign up form": "Formularz rejestracji",
   "At least one of the username or email fields is required": "Wymagane jest podanie co najmniej nazwy użytkownika lub e-maila",
-  "Password is not allowed to be changed": "Zmiana hasła jest niedozwolona"
+  "Password is not allowed to be changed": "Zmiana hasła jest niedozwolona",
+  "This field is invalid":"To pole jest niepoprawne"
 }
