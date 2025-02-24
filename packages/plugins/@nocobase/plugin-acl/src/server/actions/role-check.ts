@@ -44,6 +44,13 @@ export async function checkAction(ctx, next) {
 
   const availableActions = ctx.app.acl.getAvailableActions();
 
+  const uiButtonSchemasBlacklist = await ctx.db
+    .getRepository('uiButtonSchemasRoles')
+    .find({
+      filter: { 'roleName.$ne': currentRole },
+    })
+    .then((list) => list.map((v) => v.uid));
+
   ctx.body = {
     ...role.toJSON(),
     availableActions: [...availableActions.keys()],
@@ -53,6 +60,7 @@ export async function checkAction(ctx, next) {
     allowConfigure: roleInstance.get('allowConfigure'),
     allowMenuItemIds: roleInstance.get('menuUiSchemas').map((uiSchema) => uiSchema.get('x-uid')),
     allowAnonymous: !!anonymous,
+    uiButtonSchemasBlacklist,
   };
 
   await next();
