@@ -96,37 +96,6 @@ const ProfileEditForm = () => {
   );
 };
 
-const EditProfile = ({ visible, setVisible }) => {
-  return (
-    <ActionContextProvider value={{ visible, setVisible }}>
-      <div onClick={(e) => e.stopPropagation()}>
-        <SchemaComponent
-          components={{ ProfileEditForm }}
-          schema={{
-            type: 'object',
-            properties: {
-              [uid()]: {
-                'x-component': 'Action.Drawer',
-                'x-component-props': {
-                  // zIndex: 10000,
-                },
-                type: 'void',
-                title: '{{t("Edit profile")}}',
-                properties: {
-                  form: {
-                    type: 'void',
-                    'x-component': 'ProfileEditForm',
-                  },
-                },
-              },
-            },
-          }}
-        />
-      </div>
-    </ActionContextProvider>
-  );
-};
-
 export const useEditProfile = () => {
   const ctx = useContext(DropdownVisibleContext);
   const [visible, setVisible] = useState(false);
