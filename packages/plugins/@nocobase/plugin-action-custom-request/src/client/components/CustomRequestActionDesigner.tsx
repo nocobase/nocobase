@@ -56,6 +56,9 @@ export function CustomRequestSettingsItem() {
         onSubmit={async (config) => {
           const { ...requestSettings } = config;
           fieldSchema['x-response-type'] = requestSettings.responseType;
+          const isSelfRequest =
+            !fieldSchema['x-custom-request-id'] || fieldSchema['x-custom-request-id'] === fieldSchema['x-uid'];
+
           await customRequestsResource.updateOrCreate({
             values: {
               key: fieldSchema['x-uid'],
@@ -67,14 +70,19 @@ export function CustomRequestSettingsItem() {
             },
             filterKeys: ['key'],
           });
-          dn.emit('patch', {
-            schema: {
-              'x-response-type': requestSettings.responseType,
-              'x-uid': fieldSchema['x-uid'],
-            },
+          const schema = {
+            'x-response-type': requestSettings.responseType,
+            'x-uid': fieldSchema['x-uid'],
+          };
+          if (!isSelfRequest && fieldSchema['x-custom-request-id']) {
+            schema['x-custom-request-id'] = fieldSchema['x-uid'];
+            fieldSchema['x-custom-request-id'] = fieldSchema['x-uid'];
+          }
+          await dn.emit('patch', {
+            schema,
           });
-          refresh();
           dn.refresh();
+          refresh();
         }}
       />
     </>
@@ -87,6 +95,7 @@ export function CustomRequestACL() {
   const customRequestsResource = useCustomRequestsResource();
   const { message } = App.useApp();
   const { data, refresh } = useGetCustomRequest();
+  const { dn } = useDesignable();
   const { refresh: refreshRoleCustomKeys } = useRequest<{ data: string[] }>(
     {
       url: listByCurrentRoleUrl,
@@ -107,6 +116,19 @@ export function CustomRequestACL() {
         }}
         beforeOpen={() => !data && refresh()}
         onSubmit={async ({ roles }) => {
+          const isSelfRequest =
+            !fieldSchema['x-custom-request-id'] || fieldSchema['x-custom-request-id'] === fieldSchema['x-uid'];
+
+          if (!isSelfRequest) {
+            fieldSchema['x-custom-request-id'] = fieldSchema['x-uid'];
+            await dn.emit('patch', {
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                'x-custom-request-id': fieldSchema['x-uid'],
+              },
+            });
+          }
+
           await customRequestsResource.updateOrCreate({
             values: {
               key: fieldSchema['x-uid'],
@@ -116,6 +138,7 @@ export function CustomRequestACL() {
           });
           refresh();
           refreshRoleCustomKeys();
+          dn.refresh();
           return message.success(t('Saved successfully'));
         }}
       />

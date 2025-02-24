@@ -47,7 +47,7 @@ export const Tabs: any = React.memo((props: TabsProps) => {
     });
 
     return result;
-  }, [fieldSchema.mapProperties((s, key) => key).join()]);
+  }, [fieldSchema]);
 
   const tabBarExtraContent = useMemo(
     () => ({
@@ -102,6 +102,9 @@ const designerCss = css`
     left: 0;
     right: 0;
     pointer-events: none;
+    &.nb-in-template {
+      background: var(--colorTemplateBgSettingsHover);
+    }
     > .general-schema-designer-icons {
       position: absolute;
       right: 2px;

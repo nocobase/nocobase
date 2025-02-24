@@ -1688,6 +1688,14 @@
     "type": "string",
     "source": "seed"
   },
+  "colorTemplateBgSettingsHover": {
+    "name": "UI 配置模板区块背景色悬浮态",
+    "nameEn": "Background color of template block's settings when hover",
+    "desc": "UI 配置模板区块的背景色悬浮态",
+    "descEn": "Background color of template block's settings when hover",
+    "type": "string",
+    "source": "seed"
+  },
   "colorBorderSettings": {
     "name": "UI 配置边框色",
     "nameEn": "Border color of settings",

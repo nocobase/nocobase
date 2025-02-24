@@ -35,12 +35,14 @@ export class PMPlugin extends Plugin {
     //   Component: ACLPane,
     //   aclSnippet: 'pm.acl.roles',
     // });
-    this.app.pluginSettingsManager.add('ui-schema-storage', {
-      title: '{{t("Block templates")}}',
-      icon: 'LayoutOutlined',
-      Component: BlockTemplatesPane,
-      aclSnippet: 'pm.ui-schema-storage.block-templates',
-    });
+
+    // Replaced by plugin-block-template
+    // this.app.pluginSettingsManager.add('ui-schema-storage', {
+    //   title: '{{t("Block templates")}}',
+    //   icon: 'LayoutOutlined',
+    //   Component: BlockTemplatesPane,
+    //   aclSnippet: 'pm.ui-schema-storage.block-templates',
+    // });
     this.app.pluginSettingsManager.add('system-settings', {
       icon: 'SettingOutlined',
       title: '{{t("System settings")}}',

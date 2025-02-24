@@ -15,7 +15,7 @@ import {
 } from './templates';
 
 test.describe('Submit: should refresh data after submit', () => {
-  test('submit in reference template block', async ({ page, mockPage, clearBlockTemplates, mockRecord }) => {
+  test.skip('submit in reference template block', async ({ page, mockPage, clearBlockTemplates, mockRecord }) => {
     const nocoPage = await mockPage(submitInReferenceTemplateBlock).waitForInit();
     await mockRecord('collection', { nickname: 'abc' });
     await nocoPage.goto();

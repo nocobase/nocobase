@@ -25,7 +25,7 @@ test.describe('collapse schema settings', () => {
         await page.getByLabel('block-item-CardItem-general-filter-collapse').hover();
         await page.getByLabel('designer-schema-settings-CardItem-AssociationFilter.BlockDesigner-general').hover();
       },
-      supportedOptions: ['Edit block title', 'Save as template', 'Connect data blocks', 'Delete'],
+      supportedOptions: ['Edit block title', 'Connect data blocks', 'Delete'],
     });
   });
 
