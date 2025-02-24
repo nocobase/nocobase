@@ -56,14 +56,27 @@ test.describe('zIndex', () => {
     await page.getByLabel('Close lightbox').click();
 
     // 3. 进入第二层子页面，然后点击图片预览， 图片不能被子页面盖住
-    await page.getByLabel('action-Action-Edit-update-').click();
+    await page.getByLabel('action-Action-Edit-update-').click({
+      position: {
+        x: 5,
+        y: 5,
+      },
+    });
     await page.getByRole('link', { name: title }).nth(2).click();
     await page.waitForTimeout(300);
     await check(2);
     await page.getByLabel('Close lightbox').click();
 
     // 4. 进入第三层子页面，然后点击图片预览， 图片不能被子页面盖住
-    await page.getByLabel('action-Action-Edit-update-').nth(2).click();
+    await page
+      .getByLabel('action-Action-Edit-update-')
+      .nth(2)
+      .click({
+        position: {
+          x: 5,
+          y: 5,
+        },
+      });
     await page.getByRole('link', { name: title }).nth(3).click();
     await page.waitForTimeout(300);
     await check(3);
