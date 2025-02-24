@@ -7,12 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useToken } from '@nocobase/client';
 import _ from 'lodash';
 import React, { FC, useEffect } from 'react';
+import { PageBackgroundColor } from '../../../constants';
 
 export const MobilePageContentContainer: FC<{ hideTabBar?: boolean }> = ({ children, hideTabBar }) => {
   const [mobileTabBarHeight, setMobileTabBarHeight] = React.useState(0);
   const [mobilePageHeader, setMobilePageHeader] = React.useState(0);
+  const { token } = useToken();
+
   useEffect(() => {
     const navigationBar = _.last(document.querySelectorAll<HTMLDivElement>('.mobile-page-header'));
     setMobilePageHeader(navigationBar?.offsetHeight);
@@ -34,6 +38,9 @@ export const MobilePageContentContainer: FC<{ hideTabBar?: boolean }> = ({ child
           boxSizing: 'border-box',
           maxWidth: '100%',
           overflowX: 'hidden',
+          backgroundColor: PageBackgroundColor,
+          paddingInline: token.paddingPageHorizontal,
+          paddingBlock: token.paddingPageVertical,
         }}
       >
         {children}
