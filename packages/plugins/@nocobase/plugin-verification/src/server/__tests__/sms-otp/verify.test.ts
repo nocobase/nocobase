@@ -10,6 +10,13 @@
 import { MockServer, createMockServer } from '@nocobase/test';
 import PluginVerficationServer from '../../Plugin';
 import { VerificationManager } from '../../verification-manager';
+import { SMSProvider } from '../../otp-verification/sms/providers';
+
+class MockSMSProvider extends SMSProvider {
+  async send() {
+    return true;
+  }
+}
 
 describe('verify', async () => {
   let app: MockServer;
@@ -32,6 +39,10 @@ describe('verify', async () => {
     });
     const plugin = app.pm.get('verification') as PluginVerficationServer;
     manager = plugin.verificationManager;
+    plugin.smsOTPProviderManager.registerProvider('mock', {
+      title: 'Mock',
+      provider: MockSMSProvider,
+    });
   });
 
   afterEach(async () => {
@@ -49,7 +60,7 @@ describe('verify', async () => {
         title: 'Test',
         verificationType: 'sms-otp',
         options: {
-          provider: 'sms-aliyun',
+          provider: 'mock',
           settings: {},
         },
       },
@@ -82,7 +93,7 @@ describe('verify', async () => {
         title: 'Test',
         verificationType: 'sms-otp',
         options: {
-          provider: 'sms-aliyun',
+          provider: 'mock',
           settings: {},
         },
       },
@@ -115,7 +126,7 @@ describe('verify', async () => {
         title: 'Test',
         verificationType: 'sms-otp',
         options: {
-          provider: 'sms-aliyun',
+          provider: 'mock',
           settings: {},
         },
       },
@@ -164,7 +175,7 @@ describe('verify', async () => {
         title: 'Test',
         verificationType: 'sms-otp',
         options: {
-          provider: 'sms-aliyun',
+          provider: 'mock',
           settings: {},
         },
       },
@@ -213,7 +224,7 @@ describe('verify', async () => {
         title: 'Test',
         verificationType: 'sms-otp',
         options: {
-          provider: 'sms-aliyun',
+          provider: 'mock',
           settings: {},
         },
       },
