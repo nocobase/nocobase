@@ -46,6 +46,7 @@ import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import type { Plugin } from './Plugin';
 import { getOperators } from './globalOperators';
 import type { RequireJS } from './utils/requirejs';
+import { withSchemaEvent } from '../event-flow';
 
 type JsonLogic = {
   addOperation: (name: string, fn?: any) => void;
@@ -448,7 +449,12 @@ export class Application {
       console.error('Component must have a displayName or pass name as second argument');
       return;
     }
-    set(this.components, componentName, component);
+    // event: add pasre of event schema
+    if (['Page'].includes(componentName)) {
+      set(this.components, componentName, withSchemaEvent(component));
+    } else {
+      set(this.components, componentName, component);
+    }
   }
 
   addComponents(components: Record<string, ComponentType>) {

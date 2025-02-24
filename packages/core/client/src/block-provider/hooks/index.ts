@@ -52,6 +52,7 @@ import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../B
 import { useOperators } from '../CollectOperators';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
+import { useSubmitEvents } from './useSubmitEvents';
 
 export * from './useBlockHeightProps';
 export * from './useDataBlockParentRecord';
@@ -219,7 +220,7 @@ export const useCreateActionProps = () => {
   const collectValues = useCollectValuesToSubmit();
   const action = record.isNew ? actionField.componentProps.saveMode || 'create' : 'update';
   const filterKeys = actionField.componentProps.filterKeys?.checked || [];
-
+  const { emitBeforeSubmit, emitAfterSubmit } = useSubmitEvents();
   return {
     async onClick() {
       const { onSuccess, skipValidator, triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
@@ -231,6 +232,7 @@ export const useCreateActionProps = () => {
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
+        await emitBeforeSubmit(values);
         const data = await resource[action]({
           values,
           filterKeys: filterKeys,
@@ -248,6 +250,7 @@ export const useCreateActionProps = () => {
         setFormValueChanged?.(false);
         actionField.data.loading = false;
         actionField.data.data = data;
+        await emitAfterSubmit(values);
         // __parent?.service?.refresh?.();
         if (!successMessage) {
           message.success(t('Saved successfully'));
@@ -899,9 +902,11 @@ export const useUpdateActionProps = () => {
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
   const { getActiveFieldsName } = useFormActiveFields() || {};
+  const { emitBeforeSubmit, emitAfterSubmit } = useSubmitEvents();
 
   return {
     async onClick(e?, callBack?) {
+      await emitBeforeSubmit({ values: form.values });
       const {
         assignedValues: originalAssignedValues = {},
         onSuccess,
@@ -935,6 +940,7 @@ export const useUpdateActionProps = () => {
       if (!skipValidator) {
         await form.submit();
       }
+      await emitAfterSubmit({ values: form.values });
       const fieldNames = fields.map((field) => field.name);
       const values = getFormValues({
         filterByTk,
