@@ -43,13 +43,21 @@ export async function checkAction(ctx, next) {
   }
 
   const availableActions = ctx.app.acl.getAvailableActions();
+  const eqCurrentRoleList = await ctx.db
+    .getRepository('uiButtonSchemasRoles')
+    .find({
+      filter: { 'roleName.$eq': currentRole },
+    })
+    .then((list) => list.map((v) => v.uid));
 
-  const uiButtonSchemasBlacklist = await ctx.db
+  const NECurrentRoleList = await ctx.db
     .getRepository('uiButtonSchemasRoles')
     .find({
       filter: { 'roleName.$ne': currentRole },
     })
     .then((list) => list.map((v) => v.uid));
+
+  const uiButtonSchemasBlacklist = NECurrentRoleList.filter((uid) => !eqCurrentRoleList.includes(uid));
 
   ctx.body = {
     ...role.toJSON(),
