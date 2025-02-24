@@ -164,7 +164,7 @@ async function getPRList(from, to, cwd) {
   const { stdout: logs } = await execa('git', ['log', `${from}..${to}`, '--pretty=format:%s'], { cwd });
   const prs = [];
   for (const log of logs.split('\n')) {
-    const match = log.match(/\(#(\d+)\)/);
+    const match = log.match(/#(\d+)/);
     if (match) {
       prs.push(match[1]);
     }
