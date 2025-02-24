@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Card, CardProps, Space } from 'antd';
+import { Card, CardProps } from 'antd';
 import React, { useMemo, useRef, useEffect, createContext, useState } from 'react';
 import { useToken } from '../../../style';
 import { MarkdownReadPretty } from '../markdown';
@@ -38,9 +38,23 @@ export const BlockItemCard = React.forwardRef<HTMLDivElement, CardProps | any>((
   }, [blockTitle, description]);
 
   const title = (blockTitle || description) && (
-    <div ref={titleRef}>
+    <div ref={titleRef} style={{ padding: '4px 0px 4px' }}>
       <span>{blockTitle}</span>
-      {description && <MarkdownReadPretty value={props.description} style={{ fontWeight: 400 }} />}
+      {description && (
+        <MarkdownReadPretty
+          value={props.description}
+          style={{
+            overflowWrap: 'break-word',
+            whiteSpace: 'normal',
+            fontWeight: 400,
+            color: '#777',
+            lineHeight: '1.6',
+            padding: '4px 8px',
+            backgroundColor: '#f9f9f9',
+            borderRadius: '4px',
+          }}
+        />
+      )}
     </div>
   );
   return (
