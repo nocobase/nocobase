@@ -14,6 +14,7 @@ import { App } from 'antd';
 import { SchemaSettingsActionModalItem } from './SchemaSettings';
 import { useAPIClient } from '../api-client/hooks/useAPIClient';
 import { useRequest } from '../api-client';
+import { useACLContext } from '../acl';
 
 export function AccessControl() {
   const { t } = useTranslation();
@@ -29,6 +30,7 @@ export function AccessControl() {
       manual: true,
     },
   );
+  const { refresh: refreshRoleCheck } = useACLContext();
   const AccessControl = (
     <SchemaSettingsActionModalItem
       scope={t}
@@ -65,7 +67,8 @@ export function AccessControl() {
       }}
       beforeOpen={() => !data && refresh()}
       onSubmit={async ({ roles }) => {
-        resource.set({ values: roles.map((v) => v.name) });
+        await resource.set({ values: roles.map((v) => v.name) });
+        await refreshRoleCheck();
         return message.success(t('Saved successfully'));
       }}
     />
