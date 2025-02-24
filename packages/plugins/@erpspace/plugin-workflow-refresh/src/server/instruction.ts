@@ -11,6 +11,7 @@ import PluginWorkflowServer, { Processor, Instruction, JOB_STATUS, FlowNodeModel
 import { parseCollectionName } from '@nocobase/data-source-manager';
 import { DataTypes } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
+import { parse } from '@nocobase/utils';
 
 export class RefreshInstruction extends Instruction {
   public plugin: PluginWorkflowServer;
@@ -22,6 +23,8 @@ export class RefreshInstruction extends Instruction {
 
   async run(node: FlowNodeModel, input, processor: Processor) {
     const { uri } = node.config;
+    const scope = processor.getScope(node.id);
+    const parsed = parse(uri)(scope) ?? {};
     // this.app.emit('ws:sendToTag', {
     //   tagKey: 'userId',
     //   tagValue: userId,
@@ -40,7 +43,7 @@ export class RefreshInstruction extends Instruction {
       message: {
         type: 'refresh',
         payload: {
-          uri,
+          uri: parsed,
         },
       },
     });
