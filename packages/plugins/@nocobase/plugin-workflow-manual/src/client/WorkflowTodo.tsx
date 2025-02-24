@@ -827,16 +827,12 @@ function TaskItem() {
       <Card onClick={onOpen} hoverable size="small">
         <SchemaComponent
           components={{
-            // ContentDetail,
             Space,
           }}
           schema={{
             name: 'grid',
             type: 'void',
             'x-component': 'Grid',
-            // 'x-component-props': {
-            //   direction: 'vertical',
-            // },
             properties: {
               titleRow: {
                 type: 'void',
@@ -905,22 +901,6 @@ function TaskItem() {
                   },
                 },
               },
-              // subTitleRow: {
-              //   type: 'void',
-              //   'x-component': 'Grid.Row',
-              //   properties: {
-              //     col: {
-              //       type: 'void',
-              //       'x-component': 'Grid.Col',
-              //       properties: {
-              //         workflow: {
-              //           type: 'void',
-              //           'x-component': 'ContentDetail',
-              //         },
-              //       },
-              //     },
-              //   },
-              // },
             },
           }}
         />
@@ -929,42 +909,6 @@ function TaskItem() {
         <Drawer />
       </PopupContextProvider>
     </>
-    // <ActionContextProvider value={{ openMode: defaultOpenMode, visible, setVisible }}>
-    //   <SchemaComponent
-    //     components={{
-    //       Card,
-    //     }}
-    //     scope={{
-    //       onOpen,
-    //     }}
-    //     schema={{
-    //       name: `card-${record.id}`,
-    //       type: 'void',
-    //       'x-component': 'Card',
-    //       'x-component-props': {
-    //         hoverable: true,
-    //         onClick: '{{ onOpen }}',
-    //       },
-    //       title: '{{t("View")}}',
-    //       // 1. “弹窗 URL”需要 Schema 中必须包含 uid
-    //       // 2. 所以，在这里加上一个固定的 uid 用以支持“弹窗 URL”
-    //       // 3. 然后，把这段 Schema 完整的（加上弹窗的部分）保存到内存中，以便“弹窗 URL”可以直接使用
-    //       'x-uid': `users_jobs-view`,
-    //       'x-action': 'view',
-    //       'x-action-context': {
-    //         dataSource: 'main',
-    //         collection: 'users_jobs',
-    //         doNotUpdateContext: true,
-    //       },
-    //       properties: {
-    //         drawer: {
-    //           type: 'void',
-    //           'x-component': WorkflowTodo.Drawer,
-    //         },
-    //       },
-    //     }}
-    //   />
-    // </ActionContextProvider>
   );
 }
 

@@ -8,7 +8,7 @@
  */
 import React, { useEffect, useMemo } from 'react';
 import { Link, Outlet, useNavigate, useParams } from 'react-router-dom';
-import { Button, Layout, Menu, Spin, Badge, theme, Tooltip, Tabs, Space } from 'antd';
+import { Button, Layout, Menu, Spin, Badge, theme, Tooltip, Tabs, Space, Typography } from 'antd';
 import { PageHeader } from '@ant-design/pro-layout';
 import { CheckCircleOutlined } from '@ant-design/icons';
 import classnames from 'classnames';
@@ -71,6 +71,7 @@ function MenuLink({ type }: any) {
   useEffect(() => {
     run?.();
   }, [run]);
+  const typeTitle = compile(title);
 
   return (
     <Link
@@ -79,9 +80,16 @@ function MenuLink({ type }: any) {
         display: flex;
         align-items: center;
         justify-content: space-between;
+        width: 100%;
+        overflow: hidden;
+
+        > span:first-child {
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
       `}
     >
-      <span>{compile(title)}</span>
+      <Typography.Text ellipsis>{typeTitle}</Typography.Text>
       {loading ? <Spin /> : <Badge count={data?.data || 0} />}
     </Link>
   );
