@@ -68,6 +68,7 @@ export function authCheckMiddleware({ app }: { app: Application }) {
       }
 
       if (firstError?.code === 'USER_HAS_NO_ROLES_ERR') {
+        error.config.skipNotify = true;
         app.error = firstError;
       }
     }
