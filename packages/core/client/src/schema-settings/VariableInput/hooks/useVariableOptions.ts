@@ -24,6 +24,7 @@ import { useCurrentRecordVariable } from './useRecordVariable';
 import { useCurrentRoleVariable } from './useRoleVariable';
 import { useURLSearchParamsVariable } from './useURLSearchParamsVariable';
 import { useCurrentUserVariable } from './useUserVariable';
+import { useGlobalVariables } from '../../../application/hooks/useGlobalVariable';
 
 interface Props {
   /**
@@ -122,6 +123,7 @@ export const useVariableOptions = ({
     targetFieldSchema,
   });
   const { urlSearchParamsSettings, shouldDisplay: shouldDisplayURLSearchParams } = useURLSearchParamsVariable();
+  const globalVariables = useGlobalVariables();
   return useMemo(() => {
     return [
       currentUserSettings,
@@ -137,6 +139,7 @@ export const useVariableOptions = ({
       shouldDisplayParentPopupRecord && parentPopupRecordSettings,
       shouldDisplayURLSearchParams && urlSearchParamsSettings,
     ]
+      .concat(globalVariables)
       .filter(Boolean)
       .filter(filterVariables);
   }, [

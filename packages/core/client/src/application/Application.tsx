@@ -106,6 +106,7 @@ export class Application {
   public dataSourceManager: DataSourceManager;
   public name: string;
   public globalVars: Record<string, any> = {};
+  public globalVarsCtx: Record<string, any> = {};
   public jsonLogic: JsonLogic;
   loading = true;
   maintained = false;
@@ -491,8 +492,17 @@ export class Application {
   addGlobalVar(key: string, value: any) {
     set(this.globalVars, key, value);
   }
+  setGlobalVarCtx(key: string, value: any) {
+    set(this.globalVarsCtx, key, value);
+  }
 
   getGlobalVar(key) {
     return get(this.globalVars, key);
+  }
+  getGlobalVars() {
+    return this.globalVars;
+  }
+  getGlobalVarsCtx() {
+    return this.globalVarsCtx;
   }
 }

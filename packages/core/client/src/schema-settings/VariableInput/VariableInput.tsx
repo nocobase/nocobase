@@ -10,7 +10,7 @@
 import { Form } from '@formily/core';
 // @ts-ignore
 import { Schema } from '@formily/json-schema';
-import _ from 'lodash';
+import _, { isFunction } from 'lodash';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CollectionFieldOptions_deprecated } from '../../collection-manager';

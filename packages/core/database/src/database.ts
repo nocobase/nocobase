@@ -128,6 +128,7 @@ export type AddMigrationsOptions = {
 };
 
 type OperatorFunc = (value: any, ctx?: RegisterOperatorsContext) => any;
+type VariablesFunc = (value: any, ctx?: any) => any;
 
 export class Database extends EventEmitter implements AsyncEmitter {
   static dialects = new Map<string, typeof BaseDialect>();
@@ -141,6 +142,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   models = new Map<string, ModelStatic<Model>>();
   repositories = new Map<string, RepositoryType>();
   operators = new Map();
+  variables = new Map();
   collections = new Map<string, Collection>();
   collectionsSort = new Map<string, number>();
   pendingFields = new Map<string, RelationField[]>();
@@ -717,6 +719,25 @@ export class Database extends EventEmitter implements AsyncEmitter {
     for (const [key, operator] of Object.entries(operators)) {
       this.operators.set(key, operator);
     }
+  }
+
+  registerGlobalVariables(variables: MapOf<VariablesFunc>) {
+    for (const [key, variable] of Object.entries(variables)) {
+      this.variables.set(key, variable);
+    }
+  }
+  async getGlobalVariable(name?) {
+    if (name) {
+      const value = this.variables.get(name);
+      return value instanceof Function ? await value() : value;
+    }
+
+    const result: Record<string, any> = {};
+    for (const [key, value] of this.variables.entries()) {
+      result[key] = value instanceof Function ? await value() : value;
+    }
+
+    return result;
   }
 
   /**
