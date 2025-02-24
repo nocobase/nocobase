@@ -24,9 +24,9 @@
   },
   "resolutions": {
     "cytoscape": "3.28.0",
-    "@types/react": "^18.0.0",
+    "@types/react": "18.3.18",
     "@types/react-dom": "^18.0.0",
-    "antd": "5.12.8",
+    "antd": "5.24.1",
     "rollup": "4.24.0"
   },
   "dependencies": {
