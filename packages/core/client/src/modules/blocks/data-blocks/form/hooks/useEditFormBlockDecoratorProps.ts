@@ -12,9 +12,8 @@ import { useDetailsParentRecord } from '../../details-single/hooks/useDetailsDec
 import { useHiddenForInherit } from './useHiddenForInherit';
 
 export function useEditFormBlockDecoratorProps(props) {
-  const params = useFormBlockParams();
+  const params = useFormBlockParams(props);
   let parentRecord;
-
   const { hidden } = useHiddenForInherit(props);
 
   // association 的值是固定不变的，所以这里可以使用 hooks
@@ -31,6 +30,6 @@ export function useEditFormBlockDecoratorProps(props) {
   };
 }
 
-function useFormBlockParams() {
-  return useParamsFromRecord();
+function useFormBlockParams(props) {
+  return useParamsFromRecord(props);
 }

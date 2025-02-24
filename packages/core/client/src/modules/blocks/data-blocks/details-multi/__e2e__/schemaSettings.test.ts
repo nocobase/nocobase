@@ -33,7 +33,7 @@ test.describe('multi data details block schema settings', () => {
         'Linkage rules',
         'Set the data scope',
         'Set default sorting rules',
-        'Save as template',
+        // 'Save as template',
         'Delete',
       ],
     });
