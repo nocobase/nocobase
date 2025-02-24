@@ -425,7 +425,7 @@ export const LayoutContent = () => {
   );
 };
 
-const NocoBaseLogo = () => {
+export const NocoBaseLogo = () => {
   const result = useSystemSettings();
   const { token } = useToken();
   const fontSizeStyle = useMemo(() => ({ fontSize: token.fontSizeHeading3 }), [token.fontSizeHeading3]);

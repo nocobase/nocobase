@@ -8,7 +8,15 @@
  */
 
 import { css } from '@emotion/css';
-import { PoweredBy, ReadPretty, SwitchLanguage, useAPIClient, useRequest, useSystemSettings } from '@nocobase/client';
+import {
+  NocoBaseLogo,
+  PoweredBy,
+  ReadPretty,
+  SwitchLanguage,
+  useAPIClient,
+  useRequest,
+  useSystemSettings,
+} from '@nocobase/client';
 import { Spin } from 'antd';
 import React, { FC } from 'react';
 import { Outlet } from 'react-router-dom';
@@ -58,7 +66,8 @@ export function AuthLayout() {
         <SwitchLanguage />
       </div>
       <h1 style={{ textAlign: 'center' }}>
-        <ReadPretty.TextArea value={data?.data?.title} />
+        {/* <ReadPretty.TextArea value={data?.data?.title} /> */}
+        <NocoBaseLogo />
       </h1>
       <AuthenticatorsContextProvider>
         <Outlet />
