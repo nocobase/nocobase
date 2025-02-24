@@ -38,6 +38,11 @@ export default defineCollection({
       target: 'attachments',
     },
     {
+      type: 'belongsTo',
+      name: 'authLogo',
+      target: 'attachments',
+    },
+    {
       type: 'json',
       name: 'enabledLanguages',
       defaultValue: [],

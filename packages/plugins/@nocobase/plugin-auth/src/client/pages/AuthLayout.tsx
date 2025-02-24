@@ -9,7 +9,7 @@
 
 import { css } from '@emotion/css';
 import {
-  NocoBaseLogo,
+  NocoBaseAuthLogo,
   PoweredBy,
   ReadPretty,
   SwitchLanguage,
@@ -67,7 +67,7 @@ export function AuthLayout() {
       </div>
       <h1 style={{ textAlign: 'center' }}>
         {/* <ReadPretty.TextArea value={data?.data?.title} /> */}
-        <NocoBaseLogo />
+        <NocoBaseAuthLogo />
       </h1>
       <AuthenticatorsContextProvider>
         <Outlet />

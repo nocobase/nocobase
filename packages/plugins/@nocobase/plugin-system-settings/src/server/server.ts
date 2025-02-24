@@ -35,12 +35,31 @@ export class PluginSystemSettingsServer extends Plugin {
           mimetype: 'image/png',
           url: '/nocobase.png',
         };
+
+    const authLogo = plugin
+      ? await plugin.createFileRecord({
+          filePath: resolve(__dirname, './authLogo.png'),
+          collectionName: 'attachments',
+          values: {
+            title: 'nocobase-auth-logo',
+            extname: '.png',
+            mimetype: 'image/png',
+          },
+        })
+      : {
+          title: 'nocobase-auth-logo',
+          filename: '682e5ad037dd02a0fe4800a3e91c283b.png',
+          extname: '.png',
+          mimetype: 'image/png',
+          url: '/nocobase.png',
+        };
     await this.db.getRepository('systemSettings').create({
       values: {
         title: 'NocoBase',
         appLang: this.getInitAppLang(options),
         enabledLanguages: [this.getInitAppLang(options)],
         logo,
+        authLogo,
       },
     });
   }
