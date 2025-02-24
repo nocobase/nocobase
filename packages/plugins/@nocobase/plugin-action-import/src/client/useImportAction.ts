@@ -173,6 +173,8 @@ export const useImportStartAction = () => {
         );
       }
 
+      const importMode = importSchema?.['x-action-settings']?.importMode || 'auto';
+
       setVisible(false);
       setImportModalVisible(true);
       setImportStatus(ImportStatus.IMPORTING);
@@ -181,13 +183,13 @@ export const useImportStartAction = () => {
         const { data } = await (newResource as any).importXlsx(
           {
             values: formData,
+            mode: importMode,
           },
           {
             timeout: 10 * 60 * 1000,
           },
         );
 
-        setImportResult(data);
         form.reset();
 
         if (!data.data.taskId) {
