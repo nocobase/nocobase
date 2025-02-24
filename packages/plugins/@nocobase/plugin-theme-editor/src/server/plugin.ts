@@ -24,7 +24,7 @@ export class PluginThemeEditorServer extends Plugin {
 
     this.app.acl.allow('themeConfig', 'list', 'public');
     this.app.acl.registerSnippet({
-      name: `pm.${this.name}.themeConfig`,
+      name: `pm.${this.name}.themes`,
       actions: ['themeConfig:*'],
     });
   }

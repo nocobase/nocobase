@@ -7,8 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { cx, SettingsMenu, SortableItem, useDesigner, useToken } from '@nocobase/client';
+import { cx, SortableItem, useDesigner, useToken, useSchemaSettingsRender } from '@nocobase/client';
 import React, { useMemo } from 'react';
+
+export function UserCenter() {
+  const { render } = useSchemaSettingsRender('userCenterSettings');
+  return <div style={{ display: 'inline-block', width: '100%' }}>{render({ mode: 'inline' })}</div>;
+}
 
 export const InternalSettings = () => {
   const Designer = useDesigner();
@@ -22,7 +27,7 @@ export const InternalSettings = () => {
   return (
     <SortableItem className={cx('nb-mobile-setting')} style={style}>
       <Designer />
-      <SettingsMenu />
+      <UserCenter />
     </SortableItem>
   );
 };

@@ -13,7 +13,7 @@ import { ConfigProvider, Divider } from 'antd';
 import { get } from 'lodash';
 import React, { useContext } from 'react';
 import { useACLRoleContext } from '../acl/ACLProvider';
-import { CurrentUser } from '../user/CurrentUser';
+import { UserCenter } from '../route-switch/antd/admin-layout/UserCenterButton';
 import { Help } from '../user/Help';
 import { PinnedPluginListContext } from './context';
 
@@ -75,7 +75,7 @@ export const PinnedPluginList = React.memo(() => {
         <Divider type="vertical" />
       </ConfigProvider>
       <Help key="help" />
-      <CurrentUser key="current-user" />
+      <UserCenter />
     </div>
   );
 });

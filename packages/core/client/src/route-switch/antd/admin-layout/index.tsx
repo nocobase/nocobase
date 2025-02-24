@@ -14,7 +14,7 @@ import { css } from '@emotion/css';
 import { Popover, Tooltip } from 'antd';
 import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   AppNotFound,
@@ -35,7 +35,7 @@ import {
   useRequest,
   useSchemaInitializerRender,
   useSystemSettings,
-  useToken
+  useToken,
 } from '../../../';
 import {
   CurrentPageUidProvider,
@@ -49,6 +49,7 @@ import { menuItemInitializer } from '../../../modules/menu/menuItemInitializer';
 import { KeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
+import { userCenterSettings } from './userCenterSettings';
 
 export { KeepAlive, NocoBaseDesktopRouteType };
 
@@ -71,7 +72,7 @@ const AllAccessDesktopRoutesContext = createContext<{
   refresh: () => void;
 }>({
   allAccessRoutes: emptyArray,
-  refresh: () => { },
+  refresh: () => {},
 });
 AllAccessDesktopRoutesContext.displayName = 'AllAccessDesktopRoutesContext';
 
@@ -100,7 +101,7 @@ const RoutesRequestProvider: FC = ({ children }) => {
     return null;
   } else {
     mountedRef.current = true;
-  };
+  }
 
   return (
     <AllAccessDesktopRoutesContext.Provider value={allAccessRoutesValue}>
@@ -120,7 +121,7 @@ const noAccessPermission = (currentPageUid: string, allAccessRoutes: NocoBaseDes
   }
 
   return false;
-}
+};
 
 export const AdminDynamicPage = () => {
   const currentPageUid = useCurrentPageUid();
@@ -136,9 +137,7 @@ export const AdminDynamicPage = () => {
     return <AppNotFound />;
   }
 
-  return (
-    <KeepAlive uid={currentPageUid}>{(uid) => <RemoteSchemaComponent uid={uid} />}</KeepAlive>
-  );
+  return <KeepAlive uid={currentPageUid}>{(uid) => <RemoteSchemaComponent uid={uid} />}</KeepAlive>;
 };
 
 const layoutContentClass = css`
@@ -261,8 +260,8 @@ const MenuSchemaToolbarWithContainer = () => {
       <MenuSchemaToolbar container={container} />
       <div ref={divRef}></div>
     </>
-  )
-}
+  );
+};
 
 const GroupItem: FC<{ item: any }> = (props) => {
   const { item } = props;
@@ -274,10 +273,7 @@ const GroupItem: FC<{ item: any }> = (props) => {
   return (
     <ParentRouteContext.Provider value={item._parentRoute}>
       <NocoBaseRouteContext.Provider value={item._route}>
-        <SortableItem
-          id={item._route.id}
-          schema={fakeSchema}
-        >
+        <SortableItem id={item._route.id} schema={fakeSchema}>
           {props.children}
           {designable && <MenuSchemaToolbarWithContainer />}
         </SortableItem>
@@ -292,17 +288,19 @@ const WithTooltip: FC<{ title: string; hidden: boolean }> = (props) => {
   return (
     <RouteContext.Consumer>
       {(context) =>
-        (context.collapsed && !props.hidden && !inHeader) ? (
-          <Tooltip title={props.title} placement="right">{props.children}</Tooltip>
+        context.collapsed && !props.hidden && !inHeader ? (
+          <Tooltip title={props.title} placement="right">
+            {props.children}
+          </Tooltip>
         ) : (
           props.children
         )
       }
     </RouteContext.Consumer>
   );
-}
+};
 
-const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean; } }> = (props) => {
+const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean } }> = (props) => {
   const { item } = props;
   const { parseURLAndParams } = useParseURLAndParams();
   const divRef = useRef(null);
@@ -318,21 +316,24 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
     }
   }, []);
 
-  const handleClickLink = useCallback(async (event: React.MouseEvent) => {
-    const href = item._route.options?.href;
-    const params = item._route.options?.params;
+  const handleClickLink = useCallback(
+    async (event: React.MouseEvent) => {
+      const href = item._route.options?.href;
+      const params = item._route.options?.params;
 
-    event.preventDefault();
-    event.stopPropagation();
+      event.preventDefault();
+      event.stopPropagation();
 
-    try {
-      const url = await parseURLAndParams(href, params || []);
-      window.open(url, '_blank');
-    } catch (err) {
-      console.error(err);
-      window.open(href, '_blank');
-    }
-  }, [parseURLAndParams, item]);
+      try {
+        const url = await parseURLAndParams(href, params || []);
+        window.open(url, '_blank');
+      } catch (err) {
+        console.error(err);
+        window.open(href, '_blank');
+      }
+    },
+    [parseURLAndParams, item],
+  );
 
   if (item._hidden) {
     return null;
@@ -346,13 +347,11 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
       <div ref={divRef}>
         <ResetThemeTokenAndKeepAlgorithm>
           <ParentRouteContext.Provider value={item._parentRoute}>
-            <NocoBaseRouteContext.Provider value={item._route}>
-              {props.children}
-            </NocoBaseRouteContext.Provider>
+            <NocoBaseRouteContext.Provider value={item._route}>{props.children}</NocoBaseRouteContext.Provider>
           </ParentRouteContext.Provider>
         </ResetThemeTokenAndKeepAlgorithm>
       </div>
-    )
+    );
   }
 
   if (item._route?.type === NocoBaseDesktopRouteType.link) {
@@ -360,21 +359,16 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
     return (
       <ParentRouteContext.Provider value={item._parentRoute}>
         <NocoBaseRouteContext.Provider value={item._route}>
-          <SortableItem
-            id={item._route.id}
-            schema={fakeSchema}
-          >
+          <SortableItem id={item._route.id} schema={fakeSchema}>
             <div onClick={handleClickLink}>
               {/* 这里是为了扩大点击区域 */}
-              <Link to={location.pathname}>
-                {props.children}
-              </Link>
+              <Link to={location.pathname}>{props.children}</Link>
             </div>
             <MenuSchemaToolbar />
           </SortableItem>
         </NocoBaseRouteContext.Provider>
       </ParentRouteContext.Provider>
-    )
+    );
   }
 
   // 如果点击的是一个 group，直接跳转到第一个子页面
@@ -383,14 +377,12 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
   return (
     <ParentRouteContext.Provider value={item._parentRoute}>
       <NocoBaseRouteContext.Provider value={item._route}>
-        <SortableItem
-          id={item._route.id}
-          schema={fakeSchema}
-        >
-          <WithTooltip title={item.name} hidden={item._route.type === NocoBaseDesktopRouteType.group || item._depth > 0}>
-            <Link to={path}>
-              {props.children}
-            </Link>
+        <SortableItem id={item._route.id} schema={fakeSchema}>
+          <WithTooltip
+            title={item.name}
+            hidden={item._route.type === NocoBaseDesktopRouteType.group || item._depth > 0}
+          >
+            <Link to={path}>{props.children}</Link>
           </WithTooltip>
           <MenuSchemaToolbar />
         </SortableItem>
@@ -438,11 +430,7 @@ const MobileActions: FC = (props) => {
   const { token } = useToken();
 
   return (
-    <Popover
-      rootClassName={popoverStyle}
-      content={<PinnedPluginList />}
-      color={token.colorBgHeader}
-    >
+    <Popover rootClassName={popoverStyle} content={<PinnedPluginList />} color={token.colorBgHeader}>
       <div style={{ padding: '0 16px', display: 'flex', alignItems: 'center', height: '100%', marginRight: -16 }}>
         <EllipsisOutlined
           style={{
@@ -464,7 +452,11 @@ const actionsRender = (props) => {
 };
 
 const menuItemRender = (item, dom, options) => {
-  return <MenuItem item={item} options={options}>{dom}</MenuItem>;
+  return (
+    <MenuItem item={item} options={options}>
+      {dom}
+    </MenuItem>
+  );
 };
 
 const subMenuItemRender = (item, dom) => {
@@ -492,7 +484,7 @@ const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
             >
               {props.children}
             </div>,
-            document.body
+            document.body,
           )
         )
       }
@@ -506,12 +498,8 @@ const collapsedButtonRender = (collapsed, dom) => {
 
 const headerContextValue = { inHeader: true };
 const headerRender = (props: HeaderViewProps, defaultDom: React.ReactNode) => {
-  return (
-    <headerContext.Provider value={headerContextValue}>
-      {defaultDom}
-    </headerContext.Provider>
-  );
-}
+  return <headerContext.Provider value={headerContextValue}>{defaultDom}</headerContext.Provider>;
+};
 
 export const InternalAdminLayout = () => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
@@ -527,7 +515,7 @@ export const InternalAdminLayout = () => {
     return {
       path: '/',
       children: convertRoutesToLayout(allAccessRoutes, { renderInitializer, designable, isMobile }),
-    }
+    };
   }, [allAccessRoutes, renderInitializer, designable, isMobile]);
   const layoutToken = useMemo(() => {
     return {
@@ -550,9 +538,8 @@ export const InternalAdminLayout = () => {
         colorBgMenuItemHover: token.colorBgTextHover,
       },
       bgLayout: token.colorBgLayout,
-    }
+    };
   }, [token]);
-
 
   const onCollapse = useCallback((collapsed: boolean) => {
     if (doNotChangeCollapsedRef.current) {
@@ -565,7 +552,7 @@ export const InternalAdminLayout = () => {
     doNotChangeCollapsedRef.current = true;
     setTimeout(() => {
       doNotChangeCollapsedRef.current = false;
-    })
+    });
   }, []);
 
   return (
@@ -633,7 +620,7 @@ const NavigateToDefaultPage: FC = (props) => {
       {props.children}
       {defaultPageUid && location.pathname === '/admin' && <Navigate replace to={`/admin/${defaultPageUid}`} />}
     </>
-  )
+  );
 };
 
 const findRouteByMenuSchemaUid = (schemaUid: string, routes: NocoBaseDesktopRoute[]) => {
@@ -651,7 +638,7 @@ const findRouteByMenuSchemaUid = (schemaUid: string, routes: NocoBaseDesktopRout
       }
     }
   }
-}
+};
 
 /**
  * Compatibility with legacy page routes
@@ -668,7 +655,7 @@ const LegacyRouteCompat: FC = (props) => {
   }
 
   return <>{props.children}</>;
-}
+};
 
 export const AdminProvider = (props) => {
   return (
@@ -709,6 +696,7 @@ export class AdminLayoutPlugin extends Plugin {
     await this.app.pm.add(RemoteSchemaTemplateManagerPlugin);
   }
   async load() {
+    this.app.schemaSettingsManager.add(userCenterSettings);
     this.app.addComponents({ AdminLayout, AdminDynamicPage });
   }
 }
@@ -747,7 +735,7 @@ const MenuItemIcon: FC<{ icon: string; title: string }> = (props) => {
               style={{
                 display: 'inline-block',
                 width: '100%',
-                textAlign: 'center'
+                textAlign: 'center',
               }}
             >
               {props.title.charAt(0)}
@@ -758,10 +746,13 @@ const MenuItemIcon: FC<{ icon: string; title: string }> = (props) => {
         return props.icon ? <Icon type={props.icon} /> : null;
       }}
     </RouteContext.Consumer>
-  )
-}
+  );
+};
 
-function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializer, designable, parentRoute, isMobile, depth = 0 }: any) {
+function convertRoutesToLayout(
+  routes: NocoBaseDesktopRoute[],
+  { renderInitializer, designable, parentRoute, isMobile, depth = 0 }: any,
+) {
   if (!routes) return;
 
   const initializerButton = {
@@ -796,11 +787,13 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializ
         hideInMenu: item.hideInMenu,
         _route: item,
         _parentRoute: parentRoute,
-      }
+      };
     }
 
     if (item.type === NocoBaseDesktopRouteType.group) {
-      const children = convertRoutesToLayout(item.children, { renderInitializer, designable, parentRoute: item, depth: depth + 1 }) || [];
+      const children =
+        convertRoutesToLayout(item.children, { renderInitializer, designable, parentRoute: item, depth: depth + 1 }) ||
+        [];
 
       // add a designer button
       if (designable && depth === 0) {
@@ -811,14 +804,17 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializ
         name: item.title,
         icon: item.icon ? <Icon type={item.icon} /> : null,
         path: `/admin/${item.id}`,
-        redirect: children[0]?.key === 'x-designer-button' ? undefined : `/admin/${findFirstPageRoute(item.children)?.schemaUid || ''}`,
+        redirect:
+          children[0]?.key === 'x-designer-button'
+            ? undefined
+            : `/admin/${findFirstPageRoute(item.children)?.schemaUid || ''}`,
         routes: children.length === 0 ? [{ path: '/', name: ' ', disabled: true, _hidden: true }] : children,
         hideInMenu: item.hideInMenu,
         _route: item,
         _depth: depth,
       };
     }
-  })
+  });
 
   if (designable && depth === 0) {
     isMobile ? result.push({ ...initializerButton }) : result.unshift({ ...initializerButton });
@@ -829,7 +825,7 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { renderInitializ
 
 function isGroup(groupId: string, allAccessRoutes: NocoBaseDesktopRoute[]) {
   const route = findRouteById(groupId, allAccessRoutes);
-  return route?.type === NocoBaseDesktopRouteType.group
+  return route?.type === NocoBaseDesktopRouteType.group;
 }
 
 function findRouteById(id: string, treeArray: any[]) {
