@@ -75,6 +75,7 @@ function MenuLink({ type }: any) {
 
   return (
     <Link
+      title={typeTitle}
       to={`/admin/workflow/tasks/${type}/${TASK_STATUS.PENDING}`}
       className={css`
         display: flex;
@@ -89,7 +90,7 @@ function MenuLink({ type }: any) {
         }
       `}
     >
-      <Typography.Text ellipsis>{typeTitle}</Typography.Text>
+      <span>{typeTitle}</span>
       {loading ? <Spin /> : <Badge count={data?.data || 0} />}
     </Link>
   );
