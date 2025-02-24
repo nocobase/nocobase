@@ -314,22 +314,19 @@ export const ACLActionProvider = (props) => {
   let actionPath = schema['x-acl-action'];
   const editablePath = ['create', 'update', 'destroy', 'importXlsx'];
 
-  if (!actionPath && resource && schema['x-action']) {
+  if (!actionPath && resource && schema['x-action'] && editablePath.includes(schema['x-action'])) {
     actionPath = `${resource}:${schema['x-action']}`;
   }
-  if (!actionPath?.includes(':')) {
+  if (actionPath && !actionPath?.includes(':')) {
     actionPath = `${resource}:${actionPath}`;
   }
 
   const params = useMemo(
-    () => parseAction(actionPath, { schema, recordPkValue }),
+    () => actionPath && parseAction(actionPath, { schema, recordPkValue }),
     [parseAction, actionPath, schema, recordPkValue],
   );
   if (uiButtonSchemasBlacklist.includes(currentUid)) {
     return <ACLActionParamsContext.Provider value={false}>{props.children}</ACLActionParamsContext.Provider>;
-  }
-  if (!schema['x-acl-action']) {
-    return <>{props.children}</>;
   }
   if (!actionPath) {
     return <>{props.children}</>;
