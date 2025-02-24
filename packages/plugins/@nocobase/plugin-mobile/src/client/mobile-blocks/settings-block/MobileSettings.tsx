@@ -21,8 +21,10 @@ export const InternalSettings = () => {
   const style = useMemo(() => {
     return {
       marginBottom: token.marginBlock,
+      borderRadius: token.borderRadiusBlock,
+      overflow: 'hidden',
     };
-  }, [token.marginBlock]);
+  }, [token.borderRadiusBlock, token.marginBlock]);
 
   return (
     <SortableItem className={cx('nb-mobile-setting')} style={style}>
