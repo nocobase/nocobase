@@ -70,6 +70,7 @@ export default defineCollection({
       comment: '网络访问地址',
       type: 'string',
       name: 'url',
+      length: 1024,
       // formula: '{{ storage.baseUrl }}{{ path }}/{{ filename }}'
     },
   ],
