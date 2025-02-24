@@ -403,7 +403,7 @@ export function Uploader({ rules, ...props }: UploadProps) {
           if (pendingFiles.length) {
             setUploadedList(valueList);
           } else {
-            onChange?.([...value, ...valueList]);
+            onChange?.([...(value || []), ...valueList]);
             setUploadedList([]);
           }
         }
