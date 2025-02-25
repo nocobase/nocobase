@@ -13,14 +13,4 @@ export default defineCollection({
   name: 'uiButtonSchemasRoles',
   dumpRules: 'required',
   migrationRules: ['overwrite', 'schema-only'],
-  fields: [
-    {
-      type: 'string',
-      name: 'roleName',
-    },
-    {
-      type: 'string',
-      name: 'uid',
-    },
-  ],
 });
