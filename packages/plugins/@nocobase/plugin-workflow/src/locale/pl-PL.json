@@ -111,5 +111,13 @@
   "The triggers of same workflow by some node (create, update and sub-flow etc.) more than this number will be ignored. Large number may cause performance issues. Please use with caution.": "Wyzwalacze tego samego przepływu pracy przez jakiś węzeł (tworzenie, aktualizacja i podprzepływ itp.) w liczbie większej niż ta liczba zostaną zignorowane. Duża liczba może powodować problemy z wydajnością. Należy zachować ostrożność.",
   "Bind workflows": "Przypisz workflow",
   "System variables": "Zmienne systemowe",
-  "Date range": "Zakres dat"
+  "Date range": "Zakres dat",
+  "Single record": "Pojedyńczy rekord",
+  "Query records from a collection. You can use variables from upstream nodes as query conditions.":"Zapytaj rekordy z kolekcji. Możesz użyć zmiennych z węzłów nadrzędnych jako warunków zapytania.",
+  "Result type":"Typ wyniku",
+  "Page number":"Liczba stron",
+  "Page size":"Liczba rekordów na stronie",
+  "Preload associations":"Wstępnie załaduj skojarzenia",
+  "Please select the associated fields that need to be accessed in subsequent nodes. With more than two levels of to-many associations may cause performance issue, please use with caution.":"Wybierz powiązane pola, do których należy uzyskać dostęp w kolejnych węzłach. Przy więcej niż dwóch poziomach skojarzeń to-many mogą wystąpić problemy z wydajnością, należy zachować ostrożność.",
+  "Exit when query result is null":"Zakończ jeśli wynik to null"
 }

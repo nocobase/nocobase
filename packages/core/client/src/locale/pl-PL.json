@@ -946,5 +946,14 @@
     "Background color field": "Pole koloru tła",
     "Not selected": "Nie wybrano",
     "Enable link": "Włącz link",
-    "Associate": "Kojarz"
+    "Associate": "Kojarz",
+    "Automatic close":"Zamknij automatycznie",
+    "Manually close":"Zamknij manulanie",
+    "Popup close method":"Metoda zamknięcia okna",
+    "Table size":"Wielkość tabeli",
+    "Remains the same":"Pozostaw bez zmian",
+    "Changed to":"Zmień na",
+    "Clear":"Wyczyść",
+    "Current collection":"Aktualna kolekcja",
+    "Other collections":"Inne kolekcje"
 }
