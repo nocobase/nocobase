@@ -27,6 +27,7 @@ export type ResourceActionOptions<P = any> = {
   action?: string;
   params?: P;
   url?: string;
+  skipAuth?: boolean;
 };
 
 export type UseRequestService<P> = AxiosRequestConfig<P> | ResourceActionOptions<P> | FunctionService;
