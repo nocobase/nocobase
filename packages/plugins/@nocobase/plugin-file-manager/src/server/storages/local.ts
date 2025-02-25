@@ -40,6 +40,7 @@ export default class extends StorageType {
       options: {
         documentRoot: 'storage/uploads',
       },
+      path: '',
       rules: {
         size: FILE_SIZE_LIMIT_DEFAULT,
       },

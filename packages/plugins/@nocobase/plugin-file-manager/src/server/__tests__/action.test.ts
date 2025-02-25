@@ -164,11 +164,11 @@ describe('action', () => {
 
         // 关联的存储引擎是否正确
         const storage = await attachment.getStorage();
-        expect(storage).toMatchObject({
-          type: 'local',
+        expect(storage.get()).toMatchObject({
+          type: STORAGE_TYPE_LOCAL,
           options: { documentRoot: LOCAL_STORAGE_DEST },
-          rules: {},
-          path: '',
+          rules: { size: FILE_SIZE_LIMIT_DEFAULT },
+          path: null,
           baseUrl: DEFAULT_LOCAL_BASE_URL,
           default: true,
         });
@@ -176,7 +176,7 @@ describe('action', () => {
         const { documentRoot = 'storage/uploads' } = storage.options || {};
         const destPath = path.resolve(
           path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-          storage.path,
+          storage.path || '',
         );
         const file = await fs.readFile(`${destPath}/${attachment.filename}`);
         // 文件是否保存到指定路径
