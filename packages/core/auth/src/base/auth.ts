@@ -100,6 +100,22 @@ export class BaseAuth extends Auth {
 
     const { userId, roleName, iat, temp, jti, exp, signInTime } = payload ?? {};
 
+    const blocked = await this.jwt.blacklist.has(jti ?? token);
+    if (blocked) {
+      this.ctx.throw(401, {
+        message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
+        code: AuthErrorCode.BLOCKED_TOKEN,
+      });
+    }
+
+    // api token check first
+    if (!temp && tokenStatus !== 'valid') {
+      this.ctx.throw(401, {
+        message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
+        code: AuthErrorCode.INVALID_TOKEN,
+      });
+    }
+
     const tokenPolicy = await this.tokenController.getConfig();
 
     if (signInTime && Date.now() - signInTime > tokenPolicy.sessionExpirationTime) {
@@ -111,14 +127,6 @@ export class BaseAuth extends Auth {
 
     if (tokenStatus === 'valid' && Date.now() - iat * 1000 > tokenPolicy.tokenExpirationTime) {
       tokenStatus = 'expired';
-    }
-
-    const blocked = await this.jwt.blacklist.has(jti ?? token);
-    if (blocked) {
-      this.ctx.throw(401, {
-        message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
-        code: AuthErrorCode.BLOCKED_TOKEN,
-      });
     }
 
     if (roleName) {
@@ -135,13 +143,6 @@ export class BaseAuth extends Auth {
         raw: true,
       }),
     );
-
-    if (!temp && tokenStatus !== 'valid') {
-      this.ctx.throw(401, {
-        message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
-        code: AuthErrorCode.INVALID_TOKEN,
-      });
-    }
 
     if (tokenStatus === 'valid' && user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
       this.ctx.throw(401, {
