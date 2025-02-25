@@ -20,6 +20,7 @@ import { useCurrentUserSettingsMenu } from './CurrentUserSettingsMenuProvider';
 import { useEditProfile } from './EditProfile';
 import { useLanguageSettings } from './LanguageSettings';
 import { useSwitchRole } from './SwitchRole';
+import { ItemType } from 'antd/es/menu/interface';
 
 const useNickname = () => {
   const { data } = useCurrentUserContext();
@@ -117,7 +118,7 @@ export const SettingsMenu: React.FC<{
   }, [api, appAllowed, check, modal, t]);
 
   useEffect(() => {
-    const items = [
+    const items: ItemType[] = [
       nickname,
       {
         key: 'divider_1',
