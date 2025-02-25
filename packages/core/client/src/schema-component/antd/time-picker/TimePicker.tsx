@@ -23,6 +23,7 @@ export const mapTimeFormat = function () {
   return (props: any, field) => {
     const format = props['format'] || 'HH:mm:ss';
     const onChange = props.onChange;
+    console.log(props);
     return {
       ...props,
       format,
