@@ -14,7 +14,7 @@ import { css } from '@emotion/css';
 import { Popover, Tooltip } from 'antd';
 import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   AppNotFound,
