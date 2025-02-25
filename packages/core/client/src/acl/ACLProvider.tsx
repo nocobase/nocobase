@@ -29,7 +29,6 @@ import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider'
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
 
 import { useApp } from '../application';
-import { NavigateToSigninWithRedirect } from '../user/CurrentUserProvider';
 
 // 注意: 必须要对 useBlockRequestContext 进行引用，否则会导致 Data sources 页面报错，原因未知
 useBlockRequestContext;
@@ -88,9 +87,6 @@ export const ACLRolesCheckProvider = (props) => {
   );
   if (result.loading) {
     return render();
-  }
-  if (result.error) {
-    return <NavigateToSigninWithRedirect />;
   }
   return <ACLContext.Provider value={result}>{props.children}</ACLContext.Provider>;
 };
