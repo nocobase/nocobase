@@ -425,13 +425,29 @@ export const LayoutContent = () => {
   );
 };
 
-const NocoBaseLogo = () => {
+export const NocoBaseLogo = () => {
   const result = useSystemSettings();
   const { token } = useToken();
   const fontSizeStyle = useMemo(() => ({ fontSize: token.fontSizeHeading3 }), [token.fontSizeHeading3]);
 
   const logo = result?.data?.data?.logo?.url ? (
     <img className={className2} src={result?.data?.data?.logo?.url} />
+  ) : (
+    <span style={fontSizeStyle} className={className3}>
+      {result?.data?.data?.title}
+    </span>
+  );
+
+  return <div className={className1}>{result?.loading ? null : logo}</div>;
+};
+
+export const NocoBaseAuthLogo = () => {
+  const result = useSystemSettings();
+  const { token } = useToken();
+  const fontSizeStyle = useMemo(() => ({ fontSize: token.fontSizeHeading3 }), [token.fontSizeHeading3]);
+
+  const logo = result?.data?.data?.authLogo?.url ? (
+    <img className={className2} src={result?.data?.data?.authLogo?.url} />
   ) : (
     <span style={fontSizeStyle} className={className3}>
       {result?.data?.data?.title}

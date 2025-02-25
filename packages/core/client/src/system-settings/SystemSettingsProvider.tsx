@@ -20,7 +20,7 @@ export const useSystemSettings = () => {
 
 export const SystemSettingsProvider: React.FC<{ children?: ReactNode }> = (props) => {
   const result = useRequest({
-    url: 'systemSettings:get/1?appends=logo',
+    url: 'systemSettings:get/1?appends=logo,authLogo',
   });
 
   return <SystemSettingsContext.Provider value={result}>{props.children}</SystemSettingsContext.Provider>;

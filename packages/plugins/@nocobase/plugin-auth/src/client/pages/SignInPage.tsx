@@ -48,7 +48,7 @@ export const useSignInButtons = (authenticators = []) => {
 
 export const SignInPage = () => {
   const { t } = useAuthTranslation();
-  useCurrentDocumentTitle('Signin');
+  useCurrentDocumentTitle(t('Signin'));
   useViewport();
   const signInForms = useSignInForms();
   const authenticators = useContext(AuthenticatorsContext);

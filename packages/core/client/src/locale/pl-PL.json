@@ -949,4 +949,13 @@
     "Enable link": "Włącz link",
     "Associate": "Kojarz",
     "Associated records":"Powiązane rekordy"
+    "Automatic close":"Zamknij automatycznie",
+    "Manually close":"Zamknij manulanie",
+    "Popup close method":"Metoda zamknięcia okna",
+    "Table size":"Wielkość tabeli",
+    "Remains the same":"Pozostaw bez zmian",
+    "Changed to":"Zmień na",
+    "Clear":"Wyczyść",
+    "Current collection":"Aktualna kolekcja",
+    "Other collections":"Inne kolekcje"
 }

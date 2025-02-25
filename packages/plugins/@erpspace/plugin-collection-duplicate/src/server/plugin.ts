@@ -27,6 +27,7 @@ export class PluginCollectionDuplicateServer extends Plugin {
         //   }
         // });
         const name = ctx.action.params.filterByTk;
+        const values = ctx.action.params.values;
 
         // todo: duplicate collection
         const collection = await ctx.db.getRepository('collections').findOne({
@@ -51,12 +52,20 @@ export class PluginCollectionDuplicateServer extends Plugin {
         // copy collection
         const newCollection = await ctx.db.getRepository('collections').create({
           values: {
-            title: `${collection.title} copy`,
-            name: `${collection.name}_copy`,
+            // title: `${collection.title} copy`,
+            // name: `${collection.name}_copy`,
+            ...values,
+            options: collection.options,
+            sort: collection.sort,
             fields: fields.map((field) => ({
               ...field.toJSON(),
               id: undefined,
               collection_id: undefined,
+              key: undefined,
+              reverseKey: undefined,
+              collectionName: undefined,
+              collection_name: undefined,
+              // collectionName: values.name,
             })),
           },
           context: ctx,
@@ -65,6 +74,17 @@ export class PluginCollectionDuplicateServer extends Plugin {
         if (!newCollection) {
           ctx.throw(500);
         }
+
+        // for (const field of fields) {
+        //   await ctx.db.getRepository('fields').create({
+        //     values: {
+        //       ...field.toJSON(),
+        //       key: undefined,
+        //       collectionName: values.name,
+        //       collection_name: values.name,
+        //     },
+        //   });
+        // }
 
         ctx.body = newCollection;
         ctx.status = 201;

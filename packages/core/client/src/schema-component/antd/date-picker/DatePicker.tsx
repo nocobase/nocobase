@@ -197,7 +197,7 @@ DatePicker.RangePicker = function RangePicker(props: any) {
     { label: t('Next 90 days'), value: rangesValue.next90Days },
   ];
 
-  const targetPicker = value ? inferPickerType(value?.[0]) : picker;
+  const targetPicker = value ? inferPickerType(value?.[0], picker) : picker;
   const targetDateFormat = getPickerFormat(targetPicker) || format;
   const newProps: any = {
     utc,
@@ -269,7 +269,7 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
   const value = Array.isArray(props.value) ? props.value[0] : props.value;
   const compile = useCompile();
   const fieldSchema = useFieldSchema();
-  const targetPicker = value ? inferPickerType(value) : picker;
+  const targetPicker = value ? inferPickerType(value, picker) : picker;
   const targetDateFormat = getPickerFormat(targetPicker) || format;
   const newProps = {
     utc,
@@ -288,6 +288,12 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
   };
   const field: any = useField();
   const [stateProps, setStateProps] = useState(newProps);
+  useEffect(() => {
+    newProps.picker = targetPicker;
+    const dateTimeFormat = getDateTimeFormat(targetPicker, format, showTime, timeFormat);
+    newProps.format = dateTimeFormat;
+    setStateProps(newProps);
+  }, [targetPicker]);
   return (
     <Space.Compact style={{ width: '100%' }}>
       <Select
@@ -296,7 +302,7 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
         data-testid="select-picker"
         style={{ width: '100px' }}
         popupMatchSelectWidth={false}
-        defaultValue={targetPicker}
+        value={targetPicker}
         options={compile([
           {
             label: '{{t("Date")}}',

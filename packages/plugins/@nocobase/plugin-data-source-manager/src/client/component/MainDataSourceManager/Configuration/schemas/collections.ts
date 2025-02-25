@@ -322,6 +322,18 @@ export const collectionTableSchema: ISchema = {
                     className: 'nb-action-link',
                   },
                 },
+
+                duplicate: {
+                  type: 'void',
+                  title: '{{ t("Duplicate") }}',
+                  'x-component': 'DuplicateCollection',
+                  'x-component-props': {
+                    role: 'button',
+                    'aria-label': '{{ "duplicate-button-" + $record.name }}',
+                    type: 'primary',
+                    className: 'nb-action-link',
+                  },
+                },
               },
             },
           },

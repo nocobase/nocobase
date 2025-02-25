@@ -107,6 +107,18 @@ const schema: ISchema = {
           },
           'x-use-component-props': 'useFileCollectionStorageRules',
         },
+        authLogo: {
+          type: 'string',
+          title: "{{t('Logo na stronie logowania')}}",
+          'x-decorator': 'FormItem',
+          'x-component': 'Upload.Attachment',
+          'x-component-props': {
+            action: 'attachments:create',
+            multiple: false,
+            // accept: 'jpg,png'
+          },
+          'x-use-component-props': 'useFileCollectionStorageRules',
+        },
         enabledLanguages: {
           type: 'array',
           title: '{{t("Enabled languages")}}',

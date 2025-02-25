@@ -1,8 +1,10 @@
 {
   "name": "@erpspace/plugin-workflow-refresh",
-  "version": "1.5.11",
+  "version": "1.5.13",
   "main": "dist/server/index.js",
-  "dependencies": {},
+  "dependencies": {
+    "@nocobase/plugin-workflow": "^1.5.13"
+  },
   "peerDependencies": {
     "@nocobase/client": "1.x",
     "@nocobase/server": "1.x",
