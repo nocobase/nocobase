@@ -25,7 +25,7 @@ export default class extends StorageType {
   make(storage) {
     return multer.diskStorage({
       destination: function (req, file, cb) {
-        const destPath = path.join(getDocumentRoot(storage), storage.path);
+        const destPath = path.join(getDocumentRoot(storage), storage.path || '');
         mkdirp(destPath, (err: Error | null) => cb(err, destPath));
       },
       filename: getFilename,

@@ -9,47 +9,77 @@
 
 import { DataTypes } from 'sequelize';
 import { Migration } from '@nocobase/server';
+import { CollectionRepository } from '@nocobase/plugin-data-source-main';
 
 export default class extends Migration {
   on = 'afterLoad'; // 'beforeLoad' or 'afterLoad'
-  appVersion = '<1.5.14';
+  appVersion = '<1.6.0';
 
   async up() {
     const queryInterface = this.db.sequelize.getQueryInterface();
-    const CollectionRepo = this.db.getRepository('collections');
+    const CollectionRepo = this.db.getRepository('collections') as CollectionRepository;
     const FieldRepo = this.db.getRepository('fields');
+    const StorageRepo = this.db.getRepository('storages');
+    await CollectionRepo.load({
+      filter: {
+        'options.template': 'file',
+      },
+    });
+    const collections = Array.from(this.db.collections.values()).filter(
+      (item) => item.name === 'attachments' || item.options.template === 'file',
+    );
+
     await this.db.sequelize.transaction(async (transaction) => {
-      const collections = await CollectionRepo.find({
-        filter: {
-          'options.template': 'file',
-        },
-        transaction,
-      });
-      collections.push({
-        name: 'attachments',
-      });
-      for (const item of collections) {
-        const collection = this.db.getCollection(item.name) || this.db.collection(item);
+      for (const collection of collections) {
         const tableName = collection.getTableNameWithSchema();
         await queryInterface.changeColumn(
           tableName,
           'url',
           {
-            type: DataTypes.STRING(1024),
+            type: DataTypes.TEXT,
           },
           { transaction },
         );
+        await queryInterface.changeColumn(
+          tableName,
+          'path',
+          {
+            type: DataTypes.TEXT,
+          },
+          { transaction },
+        );
+
         await FieldRepo.update({
           filter: {
-            collectionName: item.name,
-            name: 'url',
+            collectionName: collection.name,
+            name: ['url', 'path'],
           },
           values: {
-            length: 1024,
+            type: 'text',
+            length: null,
           },
           transaction,
         });
       }
+
+      await queryInterface.changeColumn(
+        this.db.getCollection('storages').getTableNameWithSchema(),
+        'path',
+        {
+          type: DataTypes.TEXT,
+        },
+        { transaction },
+      );
+      await FieldRepo.update({
+        filter: {
+          collectionName: 'storages',
+          name: 'path',
+        },
+        values: {
+          type: 'text',
+        },
+        transaction,
+      });
     });
   }
 }

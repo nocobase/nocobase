@@ -101,7 +101,7 @@ export class FileCollectionTemplate extends CollectionTemplate {
       // 文件的可访问地址
       {
         interface: 'url',
-        type: 'string',
+        type: 'text',
         name: 'url',
         deletable: false,
         length: 1024,
