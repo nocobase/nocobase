@@ -8,7 +8,6 @@
  */
 
 import { observer, useFieldSchema } from '@formily/react';
-// @ts-ignore
 import React, { FC, startTransition, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ActionContextNoRerender, useActionContext } from '.';

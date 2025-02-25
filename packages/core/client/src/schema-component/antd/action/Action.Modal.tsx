@@ -12,7 +12,6 @@ import { observer, useField, useFieldSchema } from '@formily/react';
 import { Modal, ModalProps } from 'antd';
 import classNames from 'classnames';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
-// @ts-ignore
 import React, { FC, startTransition, useEffect, useMemo, useState } from 'react';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { useToken } from '../../../style';

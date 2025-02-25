@@ -15,7 +15,6 @@ import classNames from 'classnames';
 import React, {
   createContext,
   FC,
-  //@ts-ignore
   startTransition,
   useCallback,
   useContext,

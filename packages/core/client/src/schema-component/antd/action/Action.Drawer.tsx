@@ -10,7 +10,6 @@
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Drawer } from 'antd';
 import classNames from 'classnames';
-// @ts-ignore
 import React, { FC, startTransition, useCallback, useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
