@@ -345,6 +345,7 @@
     "Add text": "Dodaj tekst",
     "Filterable fields": "Pola do filtrowania",
     "Edit button": "Edytuj przycisk",
+    "Edit link":"Edytuj link",
     "Hide": "Ukryj",
     "Enable actions": "Włącz akcje",
     "Import": "Importuj",
@@ -946,5 +947,6 @@
     "Background color field": "Pole koloru tła",
     "Not selected": "Nie wybrano",
     "Enable link": "Włącz link",
-    "Associate": "Kojarz"
+    "Associate": "Kojarz",
+    "Associated records":"Powiązane rekordy"
 }
