@@ -150,6 +150,7 @@ export class PluginPublicFormsServer extends Plugin {
         if (actionName === 'publicSubmit') {
           ctx.action.actionName = 'create';
         }
+        ctx.skipAuthCheck = true;
       } catch (error) {
         ctx.throw(401, error.message);
       }

@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, Model } from '@nocobase/database';
 import { Cache } from '@nocobase/cache';
+import { Collection, Model } from '@nocobase/database';
 import jwt from 'jsonwebtoken';
-import { Auth, AuthConfig, AuthErrorCode, AuthError } from '../auth';
+import { Auth, AuthConfig, AuthError, AuthErrorCode } from '../auth';
 import { JwtService } from './jwt-service';
 import { ITokenControlService } from './token-control-service';
 
