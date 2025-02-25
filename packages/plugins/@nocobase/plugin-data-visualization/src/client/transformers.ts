@@ -178,6 +178,7 @@ const transformers: {
           { label: '100,000.00', value: 'en-US' },
           { label: '100.000,00', value: 'de-DE' },
           { label: '100 000.00', value: 'ru-RU' },
+          { label: '100 000,00', value: 'pl-PL' },
         ],
       },
       fn: (val: number, separator: string) => {
@@ -188,6 +189,8 @@ const transformers: {
             return val.toLocaleString('de-DE', { minimumFractionDigits: 2 });
           case 'ru-RU':
             return val.toLocaleString('ru-RU', { minimumFractionDigits: 2 });
+          case 'pl-PL':
+            return val.toLocaleString('pl-PL', { minimumFractionDigits: 2 });
           default:
             return val;
         }
