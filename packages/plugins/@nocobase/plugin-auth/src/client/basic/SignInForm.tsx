@@ -65,7 +65,6 @@ const passwordForm: ISchema = {
     password: {
       type: 'string',
       'x-component': 'Password',
-      required: true,
       'x-decorator': 'FormItem',
       'x-component-props': { placeholder: '{{t("Password")}}', style: {} },
       'x-validator': `{{(value) => {
