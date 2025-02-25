@@ -72,6 +72,7 @@ export class BaseAuth extends Auth {
 
   async check(): ReturnType<Auth['check']> {
     const token = this.ctx.getBearerToken();
+    const cache = this.ctx.cache as Cache;
 
     if (!token) {
       this.ctx.throw(401, {
@@ -100,6 +101,41 @@ export class BaseAuth extends Auth {
 
     const { userId, roleName, iat, temp, jti, exp, signInTime } = payload ?? {};
 
+    const user = userId
+      ? await cache.wrap(this.getCacheKey(userId), () =>
+          this.userRepository.findOne({
+            filter: {
+              id: userId,
+            },
+            raw: true,
+          }),
+        )
+      : null;
+
+    if (roleName) {
+      this.ctx.headers['x-role'] = roleName;
+    }
+
+    const blocked = await this.jwt.blacklist.has(jti ?? token);
+    if (blocked) {
+      this.ctx.throw(401, {
+        message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
+        code: AuthErrorCode.BLOCKED_TOKEN,
+      });
+    }
+
+    // api token check first
+    if (!temp) {
+      if (tokenStatus === 'valid') {
+        return user;
+      } else {
+        this.ctx.throw(401, {
+          message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
+          code: AuthErrorCode.INVALID_TOKEN,
+        });
+      }
+    }
+
     const tokenPolicy = await this.tokenController.getConfig();
 
     if (signInTime && Date.now() - signInTime > tokenPolicy.sessionExpirationTime) {
@@ -111,36 +147,6 @@ export class BaseAuth extends Auth {
 
     if (tokenStatus === 'valid' && Date.now() - iat * 1000 > tokenPolicy.tokenExpirationTime) {
       tokenStatus = 'expired';
-    }
-
-    const blocked = await this.jwt.blacklist.has(jti ?? token);
-    if (blocked) {
-      this.ctx.throw(401, {
-        message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
-        code: AuthErrorCode.BLOCKED_TOKEN,
-      });
-    }
-
-    if (roleName) {
-      this.ctx.headers['x-role'] = roleName;
-    }
-
-    const cache = this.ctx.cache as Cache;
-
-    const user = await cache.wrap(this.getCacheKey(userId), () =>
-      this.userRepository.findOne({
-        filter: {
-          id: userId,
-        },
-        raw: true,
-      }),
-    );
-
-    if (!temp && tokenStatus !== 'valid') {
-      this.ctx.throw(401, {
-        message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
-        code: AuthErrorCode.INVALID_TOKEN,
-      });
     }
 
     if (tokenStatus === 'valid' && user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
