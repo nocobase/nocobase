@@ -24,6 +24,10 @@ async function parseMessage(message: Message) {
     case 'assistant':
       return new AIMessage(message.message);
     case 'user': {
+      if (message.content.length === 1) {
+        const msg = message.content[0];
+        return new HumanMessage(msg.content);
+      }
       const content = [];
       for (const c of message.content) {
         if (c.type === 'text') {

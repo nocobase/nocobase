@@ -31,6 +31,7 @@ const Options: React.FC = () => {
           {
             key: 'options',
             label: t('Options'),
+            forceRender: true,
             children: (
               <SchemaComponent
                 schema={{
