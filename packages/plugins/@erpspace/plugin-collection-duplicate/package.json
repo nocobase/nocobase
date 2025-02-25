@@ -1,6 +1,6 @@
 {
   "name": "@erpspace/plugin-collection-duplicate",
-  "version": "1.5.13",
+  "version": "1.5.14",
   "main": "dist/server/index.js",
   "dependencies": {},
   "peerDependencies": {
