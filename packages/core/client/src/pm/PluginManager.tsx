@@ -129,18 +129,18 @@ function BulkEnableButton({ plugins = [] }) {
           pagination={false}
           columns={[
             {
-              title: t('Plugin'),
+              title: t('Plugin') as string,
               dataIndex: 'displayName',
               ellipsis: true,
             },
             {
-              title: t('Description'),
+              title: t('Description') as string,
               dataIndex: 'description',
               ellipsis: true,
               width: 300,
             },
             {
-              title: t('Package name'),
+              title: t('Package name') as string,
               dataIndex: 'packageName',
               width: 300,
               ellipsis: true,

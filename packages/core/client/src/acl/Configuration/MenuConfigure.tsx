@@ -124,7 +124,7 @@ export const MenuConfigure = () => {
       columns={[
         {
           dataIndex: 'title',
-          title: t('Menu item title'),
+          title: t('Menu item title') as string,
         },
         {
           dataIndex: 'accessible',
@@ -149,7 +149,7 @@ export const MenuConfigure = () => {
               {t('Accessible')}
             </>
           ),
-          render: (_, schema) => {
+          render: (_, schema: { uid: string }) => {
             const checked = uids.includes(schema.uid);
             return <Checkbox checked={checked} onChange={() => handleChange(checked, schema)} />;
           },
