@@ -120,6 +120,7 @@ async function writeIndexFiles(pkgPath: string) {
 
 export default defineConfig({
   beforeBuild: async (log) => {
+    await fs.promises.rm(path.resolve(__dirname, 'dist'), { recursive: true, force: true });
     const pkgPath = path.resolve(process.cwd(), 'node_modules/@langchain/core/package.json');
     await writeIndexFiles(pkgPath);
   },
