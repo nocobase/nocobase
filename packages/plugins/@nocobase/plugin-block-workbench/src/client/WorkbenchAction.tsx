@@ -46,7 +46,7 @@ function Button() {
   const compile = useCompile();
   const title = compile(fieldSchema.title);
   return layout === WorkbenchLayout.Grid ? (
-    <div title={fieldSchema.title} className={cx(styles.avatar)}>
+    <div title={title} className={cx(styles.avatar)}>
       <Avatar style={{ backgroundColor }} size={48} icon={<Icon type={icon} />} />
       <div className={cx(styles.title)}>{title}</div>
     </div>
