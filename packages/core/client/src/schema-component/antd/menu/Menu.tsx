@@ -398,7 +398,12 @@ const HeaderMenu = React.memo<{
   },
 );
 
-const SideMenu = React.memo<any>(
+type SideMenuProps = Omit<MenuProps, 'mode'> & {
+  mode: 'mix' | MenuProps['mode'];
+  [key: string]: any;
+};
+
+const SideMenu = React.memo<SideMenuProps>(
   ({
     mode,
     sideMenuSchema,

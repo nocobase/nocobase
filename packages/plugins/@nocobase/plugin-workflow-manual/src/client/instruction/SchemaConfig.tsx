@@ -566,8 +566,8 @@ export function SchemaConfigButton(props) {
         const msg = validateForms(values.forms);
         if (msg) {
           message.error({
-            // eslint-disable-next-line react-hooks/rules-of-hooks
-            title: t('Validation failed'),
+            // message.error does not support title, and it will cause error, so comment it
+            // title: t('Validation failed'),
             content: t(msg),
           });
           return;

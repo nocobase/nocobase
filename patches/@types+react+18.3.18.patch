@@ -1,0 +1,22 @@
+diff --git a/node_modules/@types/react/index.d.ts b/node_modules/@types/react/index.d.ts
+index 6ea73ef..c835599 100644
+--- a/node_modules/@types/react/index.d.ts
++++ b/node_modules/@types/react/index.d.ts
+@@ -1030,7 +1030,7 @@ declare namespace React {
+         forceUpdate(callback?: () => void): void;
+         render(): ReactNode;
+ 
+-        readonly props: Readonly<P>;
++        readonly props: Readonly<P & { children?: P extends { children: infer C } ? C : any }>;
+         state: Readonly<S>;
+         /**
+          * @deprecated
+@@ -1125,7 +1125,7 @@ declare namespace React {
+      */
+     interface FunctionComponent<P = {}> {
+         (
+-            props: P,
++            props: P & { children?: P extends { children: infer C } ? C : any },
+             /**
+              * @deprecated
+              *

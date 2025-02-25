@@ -52,7 +52,7 @@ export const Tabs: any = React.memo((props: TabsProps) => {
   const tabBarExtraContent = useMemo(
     () => ({
       right: render(),
-      left: contextProps?.tabBarExtraContent,
+      left: contextProps?.tabBarExtraContent as React.ReactNode,
     }),
     [contextProps?.tabBarExtraContent, render],
   );

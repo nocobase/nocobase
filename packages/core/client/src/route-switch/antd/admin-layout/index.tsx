@@ -14,7 +14,6 @@ import React, {
   createContext,
   FC,
   memo,
-  // @ts-ignore
   startTransition,
   useCallback,
   useContext,
