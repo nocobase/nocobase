@@ -88,7 +88,7 @@ export class FileCollectionTemplate extends CollectionTemplate {
       // '相对路径（含“/”前缀）',
       {
         interface: 'input',
-        type: 'string',
+        type: 'text',
         name: 'path',
         deletable: false,
         uiSchema: {
