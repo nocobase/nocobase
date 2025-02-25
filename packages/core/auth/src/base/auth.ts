@@ -72,6 +72,7 @@ export class BaseAuth extends Auth {
 
   async check(): ReturnType<Auth['check']> {
     const token = this.ctx.getBearerToken();
+    const cache = this.ctx.cache as Cache;
 
     if (!token) {
       this.ctx.throw(401, {
@@ -100,6 +101,17 @@ export class BaseAuth extends Auth {
 
     const { userId, roleName, iat, temp, jti, exp, signInTime } = payload ?? {};
 
+    const user = userId
+      ? await cache.wrap(this.getCacheKey(userId), () =>
+          this.userRepository.findOne({
+            filter: {
+              id: userId,
+            },
+            raw: true,
+          }),
+        )
+      : null;
+
     const blocked = await this.jwt.blacklist.has(jti ?? token);
     if (blocked) {
       this.ctx.throw(401, {
@@ -114,6 +126,10 @@ export class BaseAuth extends Auth {
         message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
         code: AuthErrorCode.INVALID_TOKEN,
       });
+    }
+
+    if (!temp && tokenStatus === 'valid') {
+      return user;
     }
 
     const tokenPolicy = await this.tokenController.getConfig();
@@ -132,17 +148,6 @@ export class BaseAuth extends Auth {
     if (roleName) {
       this.ctx.headers['x-role'] = roleName;
     }
-
-    const cache = this.ctx.cache as Cache;
-
-    const user = await cache.wrap(this.getCacheKey(userId), () =>
-      this.userRepository.findOne({
-        filter: {
-          id: userId,
-        },
-        raw: true,
-      }),
-    );
 
     if (tokenStatus === 'valid' && user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
       this.ctx.throw(401, {
