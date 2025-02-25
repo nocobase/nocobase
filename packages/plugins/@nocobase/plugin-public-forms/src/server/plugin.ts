@@ -193,7 +193,7 @@ export class PluginPublicFormsServer extends Plugin {
     });
     this.app.dataSourceManager.afterAddDataSource((dataSource) => {
       dataSource.resourceManager.use(this.parseToken, {
-        before: 'acl',
+        before: 'auth',
       });
       dataSource.acl.use(this.parseACL, {
         before: 'core',
