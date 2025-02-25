@@ -8,9 +8,8 @@
  */
 
 import { MockServer, createMockServer } from '@nocobase/test';
-import Migration from '../../migrations/20250224112112-increase-url-length';
+import Migration from '../../migrations/20250225112112-increase-url-length';
 import PluginCollectionManagerServer from '../../server';
-import { STORAGE_TYPE_LOCAL } from '../../../constants';
 
 describe('file-manager > migrations', () => {
   let app: MockServer;
