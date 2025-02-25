@@ -168,7 +168,7 @@ describe('action', () => {
           type: STORAGE_TYPE_LOCAL,
           options: { documentRoot: LOCAL_STORAGE_DEST },
           rules: { size: FILE_SIZE_LIMIT_DEFAULT },
-          path: null,
+          path: '',
           baseUrl: DEFAULT_LOCAL_BASE_URL,
           default: true,
         });
@@ -401,7 +401,7 @@ describe('action', () => {
       const { documentRoot = 'storage/uploads' } = storage.options || {};
       const destPath = path.resolve(
         path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path,
+        storage.path || '',
       );
       const file = await fs.stat(path.join(destPath, attachment.filename));
       expect(file).toBeTruthy();
@@ -427,7 +427,7 @@ describe('action', () => {
       const { documentRoot = path.join('storage', 'uploads') } = storage.options || {};
       const destPath = path.resolve(
         path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path,
+        storage.path || '',
       );
       const file = await fs.stat(path.join(destPath, attachment.filename));
       expect(file).toBeTruthy();
@@ -459,7 +459,7 @@ describe('action', () => {
       const { documentRoot = path.join('storage', 'uploads') } = storage.options || {};
       const destPath = path.resolve(
         path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path,
+        storage.path || '',
       );
       const file1 = await fs.stat(path.join(destPath, f1.data.filename));
       expect(file1).toBeTruthy();
@@ -488,7 +488,7 @@ describe('action', () => {
       const { documentRoot = path.join('storage', 'uploads') } = storage.options || {};
       const destPath = path.resolve(
         path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path,
+        storage.path || '',
       );
       const filePath = path.join(destPath, attachment.filename);
       const file = await fs.stat(filePath);
