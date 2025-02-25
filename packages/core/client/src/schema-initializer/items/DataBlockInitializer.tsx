@@ -416,7 +416,7 @@ export const DataBlockInitializer: FC<DataBlockInitializerProps> = (props) => {
         },
         children,
       },
-    ];
+    ] as MenuProps['items'];
   }, [searchedChildren, hideChildrenIfSingleCollection, name, compile, title, icon, onClick, props]);
 
   if (childItems.length > 1 || (childItems.length === 1 && childItems[0].children?.length > 0)) {

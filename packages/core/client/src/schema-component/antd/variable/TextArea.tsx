@@ -447,6 +447,8 @@ export function TextArea(props) {
         onPaste={onPaste}
         onCompositionStart={onCompositionStart}
         onCompositionEnd={onCompositionEnd}
+        // should use data-placeholder here, but not sure if it is safe to make the change, so add ignore here
+        // @ts-ignore
         placeholder={props.placeholder}
         style={style}
         className={cx(
