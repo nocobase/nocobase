@@ -26,6 +26,7 @@ const filterOptions = categorys.map((category) => ({
 export function Addition({ variable, onFilterAdd }) {
   return (
     <>
+      <span style={{ color: '#bfbfbf', margin: '0 5px' }}>|</span>
       <Dropdown
         menu={{
           items: filterOptions,
@@ -35,7 +36,7 @@ export function Addition({ variable, onFilterAdd }) {
         }}
       >
         <a onClick={(e) => e.preventDefault()}>
-          <FilterOutlined />
+          <FilterOutlined style={{ color: '#52c41a' }} />
         </a>
       </Dropdown>
     </>
@@ -69,25 +70,30 @@ export function Filters({ filters, onFilterChange }) {
         };
 
         return (
-          <Popover
-            key={index}
-            content={
-              <FormLayout layout={'horizontal'} labelAlign={'left'} labelCol={8} wrapperCol={16}>
-                <SchemaComponent schema={schema} />
-              </FormLayout>
-            }
-            trigger={'click'}
-            open={actFilterId === index}
-          >
-            <div
-              onMouseEnter={() => {
-                setActFilterId(index);
-              }}
-              style={{ color: '#52c41a', display: 'inline-block' }}
+          <>
+            <span key={index} style={{ color: '#bfbfbf', margin: '0 5px' }}>
+              |
+            </span>
+            <Popover
+              key={index}
+              content={
+                <FormLayout layout={'horizontal'} labelAlign={'left'} labelCol={8} wrapperCol={16}>
+                  <SchemaComponent schema={schema} />
+                </FormLayout>
+              }
+              trigger={'click'}
+              // open={actFilterId === index}
             >
-              {' | '} {filterConfig.label}
-            </div>
-          </Popover>
+              <div
+                onMouseEnter={() => {
+                  setActFilterId(index);
+                }}
+                style={{ color: '#52c41a', display: 'inline-block', cursor: 'pointer' }}
+              >
+                {filterConfig.label}
+              </div>
+            </Popover>
+          </>
         );
       })}
     </>
