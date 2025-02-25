@@ -115,7 +115,7 @@ export class FileCollectionTemplate extends CollectionTemplate {
       // 用于预览
       {
         interface: 'url',
-        type: 'string',
+        type: 'text',
         name: 'preview',
         field: 'url', // 直接引用 url 字段
         deletable: false,

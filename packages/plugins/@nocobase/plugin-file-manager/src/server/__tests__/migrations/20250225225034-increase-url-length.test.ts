@@ -8,7 +8,7 @@
  */
 
 import { MockServer, createMockServer } from '@nocobase/test';
-import Migration from '../../migrations/20250225112112-increase-url-length';
+import Migration from '../../migrations/20250225225034-increase-url-length';
 import PluginCollectionManagerServer from '../../server';
 
 describe('file-manager > migrations', () => {
