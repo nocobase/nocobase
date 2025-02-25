@@ -112,6 +112,10 @@ export class BaseAuth extends Auth {
         )
       : null;
 
+    if (roleName) {
+      this.ctx.headers['x-role'] = roleName;
+    }
+
     const blocked = await this.jwt.blacklist.has(jti ?? token);
     if (blocked) {
       this.ctx.throw(401, {
@@ -143,10 +147,6 @@ export class BaseAuth extends Auth {
 
     if (tokenStatus === 'valid' && Date.now() - iat * 1000 > tokenPolicy.tokenExpirationTime) {
       tokenStatus = 'expired';
-    }
-
-    if (roleName) {
-      this.ctx.headers['x-role'] = roleName;
     }
 
     if (tokenStatus === 'valid' && user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
