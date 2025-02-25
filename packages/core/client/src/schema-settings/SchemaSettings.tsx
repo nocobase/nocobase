@@ -35,7 +35,6 @@ import React, {
   FC,
   ReactNode,
   createContext,
-  // @ts-ignore
   startTransition,
   useCallback,
   useContext,

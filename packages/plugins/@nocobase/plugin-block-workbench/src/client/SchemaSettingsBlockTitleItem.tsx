@@ -20,11 +20,11 @@ export function CustomSchemaSettingsBlockTitleItem() {
 
   return (
     <SchemaSettingsModalItem
-      title={t('Edit block title')}
+      title={t('Edit block title & description')}
       schema={
         {
           type: 'object',
-          title: t('Edit block title'),
+          title: t('Edit block title & description'),
           properties: {
             title: {
               title: t('Block title'),
