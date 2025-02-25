@@ -297,7 +297,15 @@ const PopoverContent = React.forwardRef((props: any, ref) => {
 });
 PopoverContent.displayName = 'PopoverContent';
 
-const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, node, loadCollections }) => {
+type PortsComProps = {
+  targetGraph: any;
+  collectionData: any;
+  setTargetNode: any;
+  node: any;
+  loadCollections: any;
+};
+
+const PortsCom = React.memo<PortsComProps>(({ targetGraph, collectionData, setTargetNode, node, loadCollections }) => {
   const {
     store: {
       data: { item, ports, data },

@@ -14,7 +14,6 @@ import React, {
   createContext,
   FC,
   memo,
-  // @ts-ignore
   startTransition,
   useCallback,
   useContext,
@@ -27,7 +26,6 @@ import { Outlet } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
-  CurrentUser,
   findByUid,
   findMenuItem,
   NavigateIfNotSignIn,
@@ -58,7 +56,8 @@ import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
 import { Help } from '../../../user/Help';
 import { KeepAlive } from './KeepAlive';
 import { convertRoutesToSchema, NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
-
+import { userCenterSettings } from './userCenterSettings';
+import { UserCenter } from './UserCenterButton';
 export { KeepAlive, NocoBaseDesktopRouteType };
 
 const RouteContext = createContext<NocoBaseDesktopRoute | null>(null);
@@ -529,7 +528,7 @@ export const InternalAdminLayout = () => {
               <Divider type="vertical" />
             </ConfigProvider>
             <Help />
-            <CurrentUser />
+            <UserCenter />
           </div>
         </div>
       </Layout.Header>
@@ -574,6 +573,7 @@ export class AdminLayoutPlugin extends Plugin {
     await this.app.pm.add(RemoteSchemaTemplateManagerPlugin);
   }
   async load() {
+    this.app.schemaSettingsManager.add(userCenterSettings);
     this.app.addComponents({ AdminLayout, AdminDynamicPage });
   }
 }
