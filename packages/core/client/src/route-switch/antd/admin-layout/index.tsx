@@ -21,7 +21,6 @@ import {
   CurrentAppInfoProvider,
   DndContext,
   Icon,
-  NavigateIfNotSignIn,
   ParentRouteContext,
   PinnedPluginList,
   RemoteCollectionManagerProvider,
@@ -662,21 +661,19 @@ export const AdminProvider = (props) => {
     <CurrentPageUidProvider>
       <CurrentTabUidProvider>
         <IsSubPageClosedByPageMenuProvider>
-          <NavigateIfNotSignIn>
-            <ACLRolesCheckProvider>
-              <RoutesRequestProvider>
-                <NavigateToDefaultPage>
-                  <LegacyRouteCompat>
-                    <RemoteCollectionManagerProvider>
-                      <CurrentAppInfoProvider>
-                        <RemoteSchemaTemplateManagerProvider>{props.children}</RemoteSchemaTemplateManagerProvider>
-                      </CurrentAppInfoProvider>
-                    </RemoteCollectionManagerProvider>
-                  </LegacyRouteCompat>
-                </NavigateToDefaultPage>
-              </RoutesRequestProvider>
-            </ACLRolesCheckProvider>
-          </NavigateIfNotSignIn>
+          <ACLRolesCheckProvider>
+            <RoutesRequestProvider>
+              <NavigateToDefaultPage>
+                <LegacyRouteCompat>
+                  <RemoteCollectionManagerProvider>
+                    <CurrentAppInfoProvider>
+                      <RemoteSchemaTemplateManagerProvider>{props.children}</RemoteSchemaTemplateManagerProvider>
+                    </CurrentAppInfoProvider>
+                  </RemoteCollectionManagerProvider>
+                </LegacyRouteCompat>
+              </NavigateToDefaultPage>
+            </RoutesRequestProvider>
+          </ACLRolesCheckProvider>
         </IsSubPageClosedByPageMenuProvider>
       </CurrentTabUidProvider>
     </CurrentPageUidProvider>
