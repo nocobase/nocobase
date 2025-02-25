@@ -52,7 +52,7 @@ export default class extends Migration {
         await FieldRepo.update({
           filter: {
             collectionName: collection.name,
-            name: ['url', 'path'],
+            name: ['url', 'path', 'preview'],
           },
           values: {
             type: 'text',
