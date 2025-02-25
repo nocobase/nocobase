@@ -58,12 +58,12 @@ export const StrategyActions = connect((props) => {
         columns={[
           {
             dataIndex: 'displayName',
-            title: t('Action display name'),
+            title: t('Action display name') as string,
             render: (value) => compile(value),
           },
           {
             dataIndex: 'onNewRecord',
-            title: t('Action type'),
+            title: t('Action type') as string,
             render: (onNewRecord) =>
               onNewRecord ? (
                 <Tag color={'green'}>{t('Action on new records')}</Tag>
@@ -73,7 +73,7 @@ export const StrategyActions = connect((props) => {
           },
           {
             dataIndex: 'enabled',
-            title: t('Allow'),
+            title: t('Allow') as string,
             render: (enabled, action) => (
               <Checkbox
                 checked={enabled}
@@ -91,7 +91,7 @@ export const StrategyActions = connect((props) => {
           },
           {
             dataIndex: 'scope',
-            title: t('Data scope'),
+            title: t('Data scope') as string,
             render: (scope, action) =>
               !action.onNewRecord && (
                 <Select

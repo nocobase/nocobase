@@ -105,7 +105,7 @@ export const SettingsCenterConfigure = () => {
       columns={[
         {
           dataIndex: 'title',
-          title: t('Plugin name'),
+          title: t('Plugin name') as string,
           render: (value) => {
             return compile(value);
           },
