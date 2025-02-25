@@ -121,15 +121,15 @@ export class BaseAuth extends Auth {
     }
 
     // api token check first
-    if (!temp && tokenStatus !== 'valid') {
-      this.ctx.throw(401, {
-        message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
-        code: AuthErrorCode.INVALID_TOKEN,
-      });
-    }
-
-    if (!temp && tokenStatus === 'valid') {
-      return user;
+    if (!temp) {
+      if (tokenStatus === 'valid') {
+        return user;
+      } else {
+        this.ctx.throw(401, {
+          message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
+          code: AuthErrorCode.INVALID_TOKEN,
+        });
+      }
     }
 
     const tokenPolicy = await this.tokenController.getConfig();
