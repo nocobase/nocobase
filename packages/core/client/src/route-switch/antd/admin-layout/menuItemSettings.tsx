@@ -1,21 +1,46 @@
-import { ExclamationCircleFilled } from "@ant-design/icons";
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { ExclamationCircleFilled } from '@ant-design/icons';
 import { TreeSelect } from '@formily/antd-v5';
 import { Field, onFieldChange } from '@formily/core';
-import { ISchema } from "@formily/react";
-import { uid } from "@formily/shared";
+import { ISchema } from '@formily/react';
+import { uid } from '@formily/shared';
 import { App, ConfigProvider } from 'antd';
-import { SiderContext } from "antd/es/layout/Sider";
-import React, { FC, useCallback, useMemo } from "react";
-import { useTranslation } from "react-i18next";
-import { css, findRouteBySchemaUid, isVariable, NocoBaseDesktopRouteType, useAllAccessDesktopRoutes, useCompile, useCurrentPageUid, useCurrentRouteData, useNavigateNoUpdate, useNocoBaseRoutes, useToken, useURLAndHTMLSchema } from "../../..";
+import { SiderContext } from 'antd/es/layout/Sider';
+import React, { FC, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
-  getPageMenuSchema
-} from '../../../';
-import { SchemaSettings } from "../../../application/schema-settings/SchemaSettings";
-import { useInsertPageSchema } from "../../../modules/menu/PageMenuItem";
-import { SchemaToolbar } from "../../../schema-settings/GeneralSchemaDesigner";
-import { SchemaSettingsItem, SchemaSettingsModalItem, SchemaSettingsSubMenu, SchemaSettingsSwitchItem } from "../../../schema-settings/SchemaSettings";
-import { NocoBaseDesktopRoute } from "./convertRoutesToSchema";
+  css,
+  findRouteBySchemaUid,
+  isVariable,
+  NocoBaseDesktopRouteType,
+  useAllAccessDesktopRoutes,
+  useCompile,
+  useCurrentPageUid,
+  useCurrentRouteData,
+  useNavigateNoUpdate,
+  useNocoBaseRoutes,
+  useToken,
+  useURLAndHTMLSchema,
+} from '../../..';
+import { getPageMenuSchema } from '../../../';
+import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
+import { useInsertPageSchema } from '../../../modules/menu/PageMenuItem';
+import { SchemaToolbar } from '../../../schema-settings/GeneralSchemaDesigner';
+import {
+  SchemaSettingsItem,
+  SchemaSettingsModalItem,
+  SchemaSettingsSubMenu,
+  SchemaSettingsSwitchItem,
+} from '../../../schema-settings/SchemaSettings';
+import { NocoBaseDesktopRoute } from './convertRoutesToSchema';
 
 const components = { TreeSelect };
 
@@ -57,7 +82,7 @@ const findPrevSibling = (routes: NocoBaseDesktopRoute[], currentRoute: NocoBaseD
       }
     }
   }
-}
+};
 
 const findNextSibling = (routes: NocoBaseDesktopRoute[], currentRoute: NocoBaseDesktopRoute | undefined) => {
   if (!currentRoute) {
@@ -77,7 +102,7 @@ const findNextSibling = (routes: NocoBaseDesktopRoute[], currentRoute: NocoBaseD
       }
     }
   }
-}
+};
 
 export const RemoveRoute: FC = () => {
   const { t } = useTranslation();
@@ -85,7 +110,7 @@ export const RemoveRoute: FC = () => {
   const { deleteRoute } = useNocoBaseRoutes();
   const currentRoute = useCurrentRouteData();
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
-  const navigate = useNavigateNoUpdate()
+  const navigate = useNavigateNoUpdate();
   const currentPageUid = useCurrentPageUid();
 
   return (
@@ -98,9 +123,12 @@ export const RemoveRoute: FC = () => {
           content: t('Are you sure you want to delete it?'),
           onOk: async () => {
             // 删除对应菜单的路由
-            currentRoute?.id != null && await deleteRoute(currentRoute.id);
+            currentRoute?.id != null && (await deleteRoute(currentRoute.id));
 
-            if (currentPageUid !== currentRoute?.schemaUid && !findRouteBySchemaUid(currentPageUid, currentRoute?.children)) {
+            if (
+              currentPageUid !== currentRoute?.schemaUid &&
+              !findRouteBySchemaUid(currentPageUid, currentRoute?.children)
+            ) {
               return;
             }
 
@@ -218,7 +246,6 @@ const InsertMenuItems = (props) => {
           const tabSchemaName = uid();
           const parentId = insertPosition === 'beforeEnd' ? currentRoute?.id : currentRoute?.parentId;
 
-
           // 1. 先创建一个路由
           const { data } = await createRoute({
             type: NocoBaseDesktopRouteType.page,
@@ -282,20 +309,18 @@ const InsertMenuItems = (props) => {
           const parentId = insertPosition === 'beforeEnd' ? currentRoute?.id : currentRoute?.parentId;
 
           // 1. 先创建一个路由
-          const { data } = await createRoute(
-            {
-              type: NocoBaseDesktopRouteType.link,
-              title,
-              icon,
-              // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
-              parentId: parentId || undefined,
-              schemaUid,
-              options: {
-                href,
-                params,
-              },
+          const { data } = await createRoute({
+            type: NocoBaseDesktopRouteType.link,
+            title,
+            icon,
+            // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
+            parentId: parentId || undefined,
+            schemaUid,
+            options: {
+              href,
+              params,
             },
-          );
+          });
 
           if (insertPositionToMethod[insertPosition]) {
             // 2. 然后再把路由移动到对应的位置
@@ -350,34 +375,33 @@ const EditMenuItem = () => {
   }
 
   const { updateRoute } = useNocoBaseRoutes();
-  const onEditSubmit: (values: any) => void = useCallback(
-    ({ title, icon, href, params }) => {
-      // 更新菜单对应的路由
-      if (currentRoute.id !== undefined) {
-        updateRoute(currentRoute.id, {
-          title,
-          icon,
-          options:
-            href || params
-              ? {
+  const onEditSubmit: (values: any) => void = useCallback(({ title, icon, href, params }) => {
+    // 更新菜单对应的路由
+    if (currentRoute.id !== undefined) {
+      updateRoute(currentRoute.id, {
+        title,
+        icon,
+        options:
+          href || params
+            ? {
                 href,
                 params,
               }
-              : undefined,
-        });
-      }
-    },
-    [],
-  );
+            : undefined,
+      });
+    }
+  }, []);
 
-  return <SchemaSettingsModalItem
-    title={t('Edit')}
-    eventKey="edit"
-    schema={schema as ISchema}
-    initialValues={initialValues}
-    onSubmit={onEditSubmit}
-  />
-}
+  return (
+    <SchemaSettingsModalItem
+      title={t('Edit')}
+      eventKey="edit"
+      schema={schema as ISchema}
+      initialValues={initialValues}
+      onSubmit={onEditSubmit}
+    />
+  );
+};
 
 const HiddenMenuItem = () => {
   const { t } = useTranslation();
@@ -385,27 +409,29 @@ const HiddenMenuItem = () => {
   const { updateRoute } = useNocoBaseRoutes();
   const { modal } = App.useApp();
 
-  return <SchemaSettingsSwitchItem
-    title={t('Hidden')}
-    checked={currentRoute.hideInMenu}
-    onChange={(value) => {
-      modal.confirm({
-        title: t('Are you sure you want to hide this menu?'),
-        icon: <ExclamationCircleFilled />,
-        content: t(
-          'After hiding, this menu will no longer appear in the menu bar. To show it again, you need to go to the route management page to configure it.',
-        ),
-        async onOk() {
-          if (currentRoute.id !== undefined) {
-            await updateRoute(currentRoute.id, {
-              hideInMenu: !!value,
-            });
-          }
-        },
-      });
-    }}
-  />
-}
+  return (
+    <SchemaSettingsSwitchItem
+      title={t('Hidden')}
+      checked={currentRoute.hideInMenu}
+      onChange={(value) => {
+        modal.confirm({
+          title: t('Are you sure you want to hide this menu?'),
+          icon: <ExclamationCircleFilled />,
+          content: t(
+            'After hiding, this menu will no longer appear in the menu bar. To show it again, you need to go to the route management page to configure it.',
+          ),
+          async onOk() {
+            if (currentRoute.id !== undefined) {
+              await updateRoute(currentRoute.id, {
+                hideInMenu: !!value,
+              });
+            }
+          },
+        });
+      }}
+    />
+  );
+};
 
 const MoveToMenuItem = () => {
   const { t } = useTranslation();
@@ -417,14 +443,14 @@ const MoveToMenuItem = () => {
           f.dataSource =
             type === NocoBaseDesktopRouteType.group
               ? [
-                { label: t('Before'), value: 'beforeBegin' },
-                { label: t('After'), value: 'afterEnd' },
-                { label: t('Inner'), value: 'beforeEnd' },
-              ]
+                  { label: t('Before'), value: 'beforeBegin' },
+                  { label: t('After'), value: 'afterEnd' },
+                  { label: t('Inner'), value: 'beforeEnd' },
+                ]
               : [
-                { label: t('Before'), value: 'beforeBegin' },
-                { label: t('After'), value: 'afterEnd' },
-              ];
+                  { label: t('Before'), value: 'beforeBegin' },
+                  { label: t('After'), value: 'afterEnd' },
+                ];
         });
       });
     },
@@ -463,41 +489,40 @@ const MoveToMenuItem = () => {
 
   const { moveRoute } = useNocoBaseRoutes();
   const currentRoute = useCurrentRouteData();
-  const onMoveToSubmit: (values: any) => void = useCallback(
-    async ({ target, position }) => {
-      const [targetId] = target?.split?.('||') || [];
-      if (!targetId) {
-        return;
-      }
+  const onMoveToSubmit: (values: any) => void = useCallback(async ({ target, position }) => {
+    const [targetId] = target?.split?.('||') || [];
+    if (!targetId) {
+      return;
+    }
 
-      if (targetId === undefined || !currentRoute) {
-        return;
-      }
+    if (targetId === undefined || !currentRoute) {
+      return;
+    }
 
-      const positionToMethod = {
-        beforeBegin: 'prepend',
-        afterEnd: 'insertAfter',
-      };
+    const positionToMethod = {
+      beforeBegin: 'prepend',
+      afterEnd: 'insertAfter',
+    };
 
-      await moveRoute({
-        sourceId: currentRoute.id as any,
-        targetId: targetId,
-        sortField: 'sort',
-        method: positionToMethod[position],
-      });
-    },
-    [],
+    await moveRoute({
+      sourceId: currentRoute.id as any,
+      targetId: targetId,
+      sortField: 'sort',
+      method: positionToMethod[position],
+    });
+  }, []);
+
+  return (
+    <SchemaSettingsModalItem
+      title={t('Move to')}
+      eventKey="move-to"
+      components={components}
+      effects={effects}
+      schema={modalSchema}
+      onSubmit={onMoveToSubmit}
+    />
   );
-
-  return <SchemaSettingsModalItem
-    title={t('Move to')}
-    eventKey="move-to"
-    components={components}
-    effects={effects}
-    schema={modalSchema}
-    onSubmit={onMoveToSubmit}
-  />
-}
+};
 
 export const menuItemSettings = new SchemaSettings({
   name: 'menuSettings:menuItem',
@@ -522,7 +547,9 @@ export const menuItemSettings = new SchemaSettings({
       name: 'insertbeforeBegin',
       Component: () => {
         const { t } = useTranslation();
-        return <InsertMenuItems eventKey={'insertbeforeBegin'} title={t('Insert before')} insertPosition={'beforeBegin'} />;
+        return (
+          <InsertMenuItems eventKey={'insertbeforeBegin'} title={t('Insert before')} insertPosition={'beforeBegin'} />
+        );
       },
     },
     {
@@ -563,11 +590,16 @@ export const MenuSchemaToolbar: FC<{ container?: HTMLElement }> = (props) => {
     <ResetThemeTokenAndKeepAlgorithm>
       {/* 避免 Sider 的状态影响到 SchemaToolbar。否则会导致在折叠状态下，SchemaToolbar 的样式异常 */}
       <SiderContext.Provider value={siderContextValue}>
-        <SchemaToolbar spaceClassName={iconStyle} settings={menuItemSettings} showBorder={false} container={props.container} />
+        <SchemaToolbar
+          spaceClassName={iconStyle}
+          settings={menuItemSettings}
+          showBorder={false}
+          container={props.container}
+        />
       </SiderContext.Provider>
     </ResetThemeTokenAndKeepAlgorithm>
-  )
-}
+  );
+};
 
 /**
  * 重置主题，避免被 ProLayout 的主题影响
@@ -578,10 +610,12 @@ export const ResetThemeTokenAndKeepAlgorithm: FC = (props) => {
   const { theme } = useToken() as any;
 
   return (
-    <ConfigProvider theme={{
-      inherit: false,
-      algorithm: theme.derivatives,
-    }}>
+    <ConfigProvider
+      theme={{
+        inherit: false,
+        algorithm: theme.derivatives,
+      }}
+    >
       {props.children}
     </ConfigProvider>
   );

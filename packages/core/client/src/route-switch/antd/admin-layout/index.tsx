@@ -755,15 +755,17 @@ function convertRoutesToLayout(
 ) {
   if (!routes) return;
 
-  const initializerButton = {
-    key: 'x-designer-button',
-    name: renderInitializer({
-      style: { background: 'none' },
-      'data-testid': 'schema-initializer-Menu-header',
-    }),
-    path: '/',
-    disabled: true,
-    icon: <Icon type="setting" />,
+  const getInitializerButton = (testId: string) => {
+    return {
+      key: 'x-designer-button',
+      name: renderInitializer({
+        style: { background: 'none' },
+        'data-testid': testId,
+      }),
+      path: '/',
+      disabled: true,
+      icon: <Icon type="setting" />,
+    };
   };
 
   const result: any[] = routes.map((item) => {
@@ -797,7 +799,7 @@ function convertRoutesToLayout(
 
       // add a designer button
       if (designable && depth === 0) {
-        children.push({ ...initializerButton, _parentRoute: item });
+        children.push({ ...getInitializerButton('schema-initializer-Menu-side'), _parentRoute: item });
       }
 
       return {
@@ -817,7 +819,9 @@ function convertRoutesToLayout(
   });
 
   if (designable && depth === 0) {
-    isMobile ? result.push({ ...initializerButton }) : result.unshift({ ...initializerButton });
+    isMobile
+      ? result.push({ ...getInitializerButton('schema-initializer-Menu-header') })
+      : result.unshift({ ...getInitializerButton('schema-initializer-Menu-header') });
   }
 
   return result;

@@ -360,7 +360,7 @@ export class NocoPage {
 
     this.uid = schemaUid;
     this.desktopRouteId = routeId;
-    this.url = `${this.options?.basePath || '/admin/'}${this.uid}`;
+    this.url = `${this.options?.basePath || '/admin/'}${this.uid || this.desktopRouteId}`;
   }
 
   async goto() {
@@ -393,7 +393,7 @@ export class NocoPage {
 
   async destroy() {
     const waitList: any[] = [];
-    if (this.uid) {
+    if (this.uid || this.desktopRouteId !== undefined) {
       waitList.push(deletePage(this.uid, this.desktopRouteId));
       this.uid = undefined;
       this.desktopRouteId = undefined;
@@ -756,7 +756,6 @@ const createPage = async (options?: CreatePageOptions) => {
       data: {
         type: 'group',
         title,
-        schemaUid: menuSchemaUid,
         hideInMenu: false,
       },
     });
@@ -767,7 +766,6 @@ const createPage = async (options?: CreatePageOptions) => {
 
     const data = await result.json();
     routeId = data.data?.id;
-    schemaUid = menuSchemaUid;
   }
 
   if (type === 'page') {
@@ -809,7 +807,6 @@ const createPage = async (options?: CreatePageOptions) => {
       data: {
         type: 'link',
         title,
-        schemaUid: menuSchemaUid,
         hideInMenu: false,
         options: {
           href: url,
@@ -823,7 +820,6 @@ const createPage = async (options?: CreatePageOptions) => {
 
     const data = await result.json();
     routeId = data.data?.id;
-    schemaUid = menuSchemaUid;
   }
 
   const result = await api.post(`/api/uiSchemas:insertAdjacent/nocobase-admin-menu?position=beforeEnd`, {
@@ -1063,7 +1059,7 @@ const deleteMobileRoutes = async (mobileRouteId: number) => {
 };
 
 /**
- * 根据页面 uid 删除一个 NocoBase 的页面
+ * 根据页面 uid 删除一个页面的 schema，根据页面路由的 id 删除一个页面的路由
  */
 const deletePage = async (pageUid: string, routeId: number) => {
   const api = await request.newContext({
@@ -1083,12 +1079,14 @@ const deletePage = async (pageUid: string, routeId: number) => {
     }
   }
 
-  const result = await api.post(`/api/uiSchemas:remove/${pageUid}`, {
-    headers,
-  });
+  if (pageUid) {
+    const result = await api.post(`/api/uiSchemas:remove/${pageUid}`, {
+      headers,
+    });
 
-  if (!result.ok()) {
-    throw new Error(await result.text());
+    if (!result.ok()) {
+      throw new Error(await result.text());
+    }
   }
 };
 
