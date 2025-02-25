@@ -462,7 +462,7 @@ export function Input(props: VariableInputProps) {
                   </React.Fragment>
                 );
               })}
-              {filters.length > 0 ? ' | ' : ''}
+
               <Filters filters={filters} onFilterChange={onFilterAdd} />
 
               {variableText.length > 0 && <Addition variable={fullVariable} onFilterAdd={onFilterAdd} />}
