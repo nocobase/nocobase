@@ -10,8 +10,22 @@
 import { InboxOutlined, PlusOutlined, ReloadOutlined, UploadOutlined } from '@ant-design/icons';
 import { FormItem } from '@formily/antd-v5';
 import { Checkbox, DatePicker, useAPIClient, useCompile } from '@nocobase/client';
-import { Alert, App, Button, Card, Divider, Modal, Space, Spin, Table, Tabs, Upload, UploadProps, message } from 'antd';
-import { TableProps } from 'antd/es/table';
+import {
+  Alert,
+  App,
+  Button,
+  Card,
+  Divider,
+  Modal,
+  Space,
+  Spin,
+  Table,
+  Tabs,
+  Upload,
+  UploadProps,
+  message,
+  TableProps,
+} from 'antd';
 import { saveAs } from 'file-saver';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useDuplicatorTranslation } from './locale';
@@ -89,7 +103,7 @@ const LearnMore: any = (props: { collectionsData?: any; isBackup?: boolean }) =>
   const handleCancel = () => {
     setIsModalOpen(false);
   };
-  const columns = [
+  const columns: TableProps['columns'] = [
     {
       title: t('Collection'),
       dataIndex: 'collection',

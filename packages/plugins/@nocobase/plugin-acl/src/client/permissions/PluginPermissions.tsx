@@ -8,8 +8,7 @@
  */
 
 import { useAPIClient, useApp, useCompile, useRequest } from '@nocobase/client';
-import { Checkbox, message, Table } from 'antd';
-import { TableProps } from 'antd/es/table';
+import { Checkbox, message, Table, TableProps } from 'antd';
 import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { flatMap } from 'lodash';

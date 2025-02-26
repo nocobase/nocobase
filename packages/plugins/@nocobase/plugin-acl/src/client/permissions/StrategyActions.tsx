@@ -9,8 +9,7 @@
 
 import { ArrayField } from '@formily/core';
 import { connect, useField } from '@formily/react';
-import { Checkbox, Select, Table, Tag } from 'antd';
-import { TableProps } from 'antd/es/table';
+import { Checkbox, Select, Table, Tag, TableProps } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '@nocobase/client';
