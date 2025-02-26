@@ -15,6 +15,7 @@ import {
   useBlockRequestContext,
   useCollection,
   useCollection_deprecated,
+  useParsedFilter,
 } from '@nocobase/client';
 import { Spin } from 'antd';
 import { isEqual } from 'lodash';
@@ -66,14 +67,17 @@ const InternalKanbanBlockProvider = (props) => {
 };
 
 export const KanbanBlockProvider = (props) => {
-  const params = { ...props.params };
+  const { filter: parsedFilter } = useParsedFilter({
+    filterOption: props.params?.filter,
+  });
+  const params = { ...props.params, filter: parsedFilter };
+
   return (
     <BlockProvider name="kanban" {...props} params={params}>
       <InternalKanbanBlockProvider {...props} params={params} />
     </BlockProvider>
   );
 };
-
 export const useKanbanBlockContext = () => {
   return useContext(KanbanBlockContext);
 };

@@ -13,7 +13,7 @@ import { Modal, ModalProps } from 'antd';
 import classNames from 'classnames';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 // @ts-ignore
-import React, { FC, startTransition, useEffect, useMemo, useState } from 'react';
+import React, { FC, startTransition, useEffect, useState } from 'react';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { useToken } from '../../../style';
 import { ErrorFallback } from '../error-fallback';
@@ -85,17 +85,6 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
       return buf;
     });
     const { hidden } = useCurrentPopupContext();
-    const styles: any = useMemo(() => {
-      return {
-        mask: {
-          display: hidden ? 'none' : 'block',
-        },
-        content: {
-          display: hidden ? 'none' : 'block',
-        },
-      };
-    }, [hidden]);
-
     const showFooter = !!footerSchema;
     if (process.env.__E2E__) {
       useSetAriaLabelForModal(visible);
@@ -108,12 +97,11 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
         <zIndexContext.Provider value={zIndex}>
           <TabsContextProvider {...tabContext} tabBarExtraContent={null}>
             <Modal
-              zIndex={zIndex}
+              zIndex={hidden ? -1 : zIndex}
               width={actualWidth}
               title={field.title}
               {...(others as ModalProps)}
               {...modalProps}
-              styles={styles}
               style={{
                 ...modalProps?.style,
                 ...others?.style,
