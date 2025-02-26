@@ -10,8 +10,7 @@
 import { FormItem, FormLayout } from '@formily/antd-v5';
 import { ArrayField } from '@formily/core';
 import { connect, useField } from '@formily/react';
-import { Checkbox, Table, Tag } from 'antd';
-import { TableProps } from 'antd/es/table';
+import { Checkbox, Table, Tag, TableProps } from 'antd';
 import { isEmpty } from 'lodash';
 import React, { createContext, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
