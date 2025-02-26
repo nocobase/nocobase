@@ -254,11 +254,11 @@ export class ApprovalBranchModeNode {
     this.sequentiallyRadio = page.getByLabel('Sequentially', { exact: true });
     this.goToconfigureButton = page.getByRole('button', { name: 'Go to configure' });
     this.addBlockButton = page.getByLabel('schema-initializer-Grid-ApprovalProcessAddBlockButton-workflows');
-    this.addDetailsMenu = page.getByRole('menuitem', { name: 'Details' });
+    this.addDetailsMenu = page.getByRole('menuitem', { name: 'Original application content' });
     this.detailsConfigureFieldsButton = page.getByLabel(
       `schema-initializer-Grid-details:configureFields-${collectionName}`,
     );
-    this.addActionsMenu = page.getByRole('menuitem', { name: 'Actions' }).getByRole('switch');
+    this.addActionsMenu = page.getByRole('menuitem', { name: 'Process form' }).getByRole('switch');
     this.actionsConfigureFieldsButton = page.getByLabel('schema-initializer-Grid-FormItemInitializers-approvalRecords');
     this.actionsConfigureActionsButton = page.getByLabel(
       'schema-initializer-ActionBar-ApprovalProcessAddActionButton-approvalRecords',
