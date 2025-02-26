@@ -18,13 +18,20 @@ import { WorkbenchLayout } from './workbenchBlockSettings';
 const useStyles = createStyles(({ token, css }) => ({
   // 支持 css object 的写法
   action: css`
+    display: flex;
     background-color: transparent;
     border: 0;
     height: auto;
     box-shadow: none;
+    padding-top: 8px;
+  `,
+  avatar: css`
+    width: 4em;
   `,
   title: css`
     margin-top: ${token.marginSM}px;
+    width: 100%;
+    white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
   `,
@@ -37,8 +44,8 @@ function Button() {
   const { layout } = useContext(WorkbenchBlockContext);
   const { styles, cx } = useStyles();
   return layout === WorkbenchLayout.Grid ? (
-    <div title={fieldSchema.title} style={{ width: '100%', overflow: 'hidden' }} className="nb-action-panel-container">
-      <Avatar style={{ backgroundColor }} size={54} icon={<Icon type={icon} />} />
+    <div title={fieldSchema.title} className={cx(styles.avatar)}>
+      <Avatar style={{ backgroundColor }} size={48} icon={<Icon type={icon} />} />
       <div className={cx(styles.title)}>{fieldSchema.title}</div>
     </div>
   ) : (
@@ -55,6 +62,7 @@ export const WorkbenchAction = withDynamicSchemaProps((props) => {
     <Component
       className={cx(className, styles.action, 'nb-action-panel')}
       {...others}
+      type="text"
       icon={null}
       title={<Button />}
       confirmTitle={fieldSchema.title}

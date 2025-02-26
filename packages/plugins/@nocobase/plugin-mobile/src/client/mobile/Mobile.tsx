@@ -23,6 +23,7 @@ import {
 import React from 'react';
 import { isDesktop } from 'react-device-detect';
 
+import { theme } from 'antd';
 import { ActionDrawerUsedInMobile, useToAdaptActionDrawerToMobile } from '../adaptor-of-desktop/ActionDrawer';
 import { useToAdaptFilterActionToMobile } from '../adaptor-of-desktop/FilterAction';
 import { InternalPopoverNesterUsedInMobile } from '../adaptor-of-desktop/InternalPopoverNester';
@@ -92,11 +93,13 @@ export const Mobile = () => {
         <GlobalThemeProvider
           theme={{
             token: {
-              marginBlock: 18,
-              borderRadiusBlock: 0,
-              boxShadowTertiary: 'none',
+              paddingPageHorizontal: 8,
+              paddingPageVertical: 8,
+              marginBlock: 12,
+              borderRadiusBlock: 8,
               fontSize: 14,
             },
+            algorithm: theme.compactAlgorithm,
           }}
         >
           <AntdAppProvider className={`mobile-container ${componentCls} ${hashId}`}>
