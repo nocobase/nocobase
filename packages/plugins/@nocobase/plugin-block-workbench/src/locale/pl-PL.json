@@ -1,10 +1,18 @@
 {
-    "Workbench": "Workbench",
-    "Scan QR code": "Zeskanuj kod QR",
-    "Album": "Album",
-    "No camera device detected": "Nie wykryto urządzenia z kamerą",
-    "You have not granted permission to use the camera": "Nie udzieliłeś pozwolenia na korzystanie z aparatu",
-    "Unknown error": "Nieznany błąd",
-    "The image size is too large. Please compress it to below 1MB before uploading": "Rozmiar obrazu jest za duży. Proszę skompresować go do poniżej 1MB przed przesłaniem",
-    "QR code recognition failed, please scan again": "Rozpoznanie kodu QR nie powiodło się, zeskanuj ponownie"
-  }
+  "Action panel": "Panel akcji",
+  "Workbench": "Workbench",
+  "Scan QR code": "Zeskanuj kod QR",
+  "Album": "Album",
+  "No camera device detected": "Nie wykryto urządzenia z kamerą",
+  "You have not granted permission to use the camera": "Nie udzieliłeś pozwolenia na korzystanie z aparatu",
+  "Unknown error": "Nieznany błąd",
+  "The image size is too large. Please compress it to below 1MB before uploading": "Rozmiar obrazu jest za duży. Proszę skompresować go do poniżej 1MB przed przesłaniem",
+  "QR code recognition failed, please scan again": "Rozpoznanie kodu QR nie powiodło się, zeskanuj ponownie",
+  "Layout": "Układ",
+  "Grid": "Siatka",
+  "List": "Lista",
+  "Add popup": "Dodaj wyskakujące okienko",
+  "Add custom request":"Dodaj niestandardowe żądanie",
+  "At least 1, up to 6": "Co najmniej 1, do 6",
+  "Items per row":"Wierszy na rząd"
+}
