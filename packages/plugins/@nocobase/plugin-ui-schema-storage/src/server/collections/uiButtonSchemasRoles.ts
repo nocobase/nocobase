@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/client';
-class PluginUISchemaStorageClient extends Plugin {
-  async load() {}
-}
+import { defineCollection } from '@nocobase/database';
 
-export default PluginUISchemaStorageClient;
+export default defineCollection({
+  name: 'uiButtonSchemasRoles',
+  dumpRules: 'required',
+  migrationRules: ['overwrite', 'schema-only'],
+});
