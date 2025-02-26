@@ -10,14 +10,20 @@
 import React, { useState, useMemo, useContext } from 'react';
 import { Dropdown, Popover } from 'antd';
 import { createForm } from '@formily/core';
-import { useForm, useParentForm, FormProvider, useField, FormContext } from '@formily/react';
-import { FormLayout, FormButtonGroup, Submit } from '@formily/antd-v5';
+import { useForm, FormContext } from '@formily/react';
 import { FilterOutlined } from '@ant-design/icons';
 import { uid, tval } from '@nocobase/utils/client';
 import { variableFilters } from '@nocobase/json-templates';
 import type { MenuProps } from 'antd';
 import { SchemaComponent } from '../../core/SchemaComponent';
-const categorys = [{ key: 'date', type: 'group', label: 'Date' }];
+const categorys = [
+  { key: 'date', type: 'group', label: 'Date' },
+  {
+    key: 'array',
+    type: 'group',
+    label: 'Array',
+  },
+];
 const filterOptions = categorys.map((category) => ({
   ...category,
   children: variableFilters
@@ -62,16 +68,16 @@ export function Filters({ filters, onFilterChange }) {
 export function Filter({ config, filter, filterId }) {
   const [open, setOpen] = useState(false);
 
-  const hide = () => {
-    setOpen(false);
-  };
-
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
   };
 
-  const argsMap = Object.fromEntries(config.paramSchema.map((param, index) => [param.name, filter.args[index]]));
-  const form = useMemo(() => createForm({ initialValues: argsMap }), [argsMap]);
+  const form = useMemo(() => {
+    const argsMap = config.paramSchema
+      ? Object.fromEntries(config.paramSchema.map((param, index) => [param.name, filter.args[index]]))
+      : {};
+    return createForm({ initialValues: argsMap });
+  }, [config.paramSchema, filter.args]);
 
   const useSaveActionProps = () => {
     const form = useForm();
@@ -105,46 +111,44 @@ export function Filter({ config, filter, filterId }) {
     return { form };
   };
 
-  const schema = {
-    'x-uid': uid(),
-    type: 'void',
-    // 'x-component': 'FormV2',
-    // 'x-use-component-props': 'useFormBlockProps',
-    properties: {
-      ...Object.fromEntries(
-        config.paramSchema.map((param) => [
-          param.name,
-          {
-            ...param,
-            'x-decorator': 'FormItem',
-          },
-        ]),
-      ),
-      actions: {
-        type: 'void',
-        title: tval('Save'),
-        'x-component': 'ActionBar',
-        properties: {
-          delete: {
-            type: 'void',
-            title: tval('Delete'),
-            'x-component': 'Action',
-            'x-use-component-props': 'useDeleteActionProps',
-          },
-          save: {
-            type: 'void',
-            title: tval('Save'),
-            'x-component': 'Action',
-            'x-use-component-props': 'useSaveActionProps',
+  const WithPropOver = ({ children }) => {
+    const schema = {
+      'x-uid': uid(),
+      type: 'void',
+      // 'x-component': 'FormV2',
+      // 'x-use-component-props': 'useFormBlockProps',
+      properties: {
+        ...Object.fromEntries(
+          config.paramSchema.map((param) => [
+            param.name,
+            {
+              ...param,
+              'x-decorator': 'FormItem',
+            },
+          ]),
+        ),
+        actions: {
+          type: 'void',
+          title: tval('Save'),
+          'x-component': 'ActionBar',
+          properties: {
+            delete: {
+              type: 'void',
+              title: tval('Delete'),
+              'x-component': 'Action',
+              'x-use-component-props': 'useDeleteActionProps',
+            },
+            save: {
+              type: 'void',
+              title: tval('Save'),
+              'x-component': 'Action',
+              'x-use-component-props': 'useSaveActionProps',
+            },
           },
         },
       },
-    },
-  };
-
-  return (
-    <>
-      <span style={{ color: '#bfbfbf', margin: '0 5px' }}>|</span>
+    };
+    return (
       <Popover
         open={open}
         onOpenChange={handleOpenChange}
@@ -159,8 +163,17 @@ export function Filter({ config, filter, filterId }) {
         }
         trigger={'hover'}
       >
-        <div style={{ color: '#52c41a', display: 'inline-block', cursor: 'pointer' }}>{config.label}</div>
+        {children}
       </Popover>
+    );
+  };
+  const Label = <div style={{ color: '#52c41a', display: 'inline-block', cursor: 'pointer' }}>{config.label}</div>;
+  return (
+    <>
+      <span style={{ color: '#bfbfbf', margin: '0 5px' }}>|</span>
+      <FormContext.Provider value={form}>
+        {config.paramSchema ? <WithPropOver>{Label}</WithPropOver> : Label}
+      </FormContext.Provider>
     </>
   );
 }
