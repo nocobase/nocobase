@@ -107,9 +107,9 @@ export const DetailsBlockProvider = withDynamicSchemaProps((props) => {
   const { getCollection } = useCollectionManager_deprecated(dataSource);
   const { __collection } = record || {};
   const { designable } = useDesignable();
-  const collectionName = props.collection || getCollection(association, dataSource).name;
+  const collectionName = props.collection;
   let detailFlag = true;
-  if (!designable && __collection && action === 'get') {
+  if (!designable && __collection && action === 'get' && !association) {
     detailFlag = __collection === collectionName;
   }
 
