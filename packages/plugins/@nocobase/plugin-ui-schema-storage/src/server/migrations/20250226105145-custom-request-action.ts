@@ -18,7 +18,7 @@ export default class extends Migration {
     for (const customRequestsRole of customRequestsRoles) {
       await repo2.firstOrCreate({
         values: {
-          uid: customRequestsRole.key,
+          uid: customRequestsRole.customRequestKey,
           roleName: customRequestsRole.roleName,
         },
         filterKeys: ['uid', 'roleName'],
