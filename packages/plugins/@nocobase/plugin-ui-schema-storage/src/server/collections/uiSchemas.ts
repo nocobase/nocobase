@@ -39,5 +39,16 @@ export default {
       name: 'schema',
       defaultValue: {},
     },
+    {
+      type: 'belongsToMany',
+      name: 'roles',
+      onDelete: 'CASCADE',
+      through: 'uiButtonSchemasRoles',
+      target: 'roles',
+      foreignKey: 'uid',
+      otherKey: 'roleName',
+      sourceKey: 'x-uid',
+      targetKey: 'name',
+    },
   ],
 } as CollectionOptions;

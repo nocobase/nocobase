@@ -41,6 +41,9 @@ attachmentFileTypes.add({
     return matchMimetype(file, 'image/*');
   },
   getThumbnailURL(file) {
+    if (file.preview) {
+      return file.preview;
+    }
     if (file.url) {
       return `${file.url}${file.thumbnailRule || ''}`;
     }
@@ -400,8 +403,8 @@ export function Uploader({ rules, ...props }: UploadProps) {
           if (pendingFiles.length) {
             setUploadedList(valueList);
           } else {
+            onChange?.([...(value || []), ...valueList]);
             setUploadedList([]);
-            onChange?.(valueList);
           }
         }
       } else {
@@ -413,7 +416,7 @@ export function Uploader({ rules, ...props }: UploadProps) {
         }
       }
     },
-    [multiple, uploadedList, toValueItem, onChange],
+    [multiple, value, uploadedList, toValueItem, onChange],
   );
 
   const onDeletePending = useCallback((file) => {
