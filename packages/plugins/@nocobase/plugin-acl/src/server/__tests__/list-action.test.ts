@@ -279,23 +279,11 @@ describe('list action with acl', () => {
       },
     });
 
-    app.resourcer.use(
-      (ctx, next) => {
-        ctx.state.currentRole = 'user';
-        ctx.state.currentUser = {
-          id: 1,
-          tag: 'c',
-        };
-
-        return next();
-      },
-      {
-        before: 'acl',
-        after: 'auth',
-      },
-    );
-
-    const response = await (app as any).agent().set('X-With-ACL-Meta', true).resource('posts').list();
+    // @ts-ignore
+    const response = await (await app.agent().login(users[0].id, 'user'))
+      .set('X-With-ACL-Meta', true)
+      .resource('posts')
+      .list();
     const data = response.body;
     expect(data.meta.allowedActions.view).toEqual([1, 2, 3]);
     expect(data.meta.allowedActions.update).toEqual([2, 3]);
