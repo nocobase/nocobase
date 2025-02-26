@@ -71,28 +71,30 @@ describe('providers to verificators', () => {
     await migration.up();
     const verificators = await db.getRepository('verificators').find();
     expect(verificators.length).toBe(2);
-    expect(verificators).toMatchObject([
-      {
-        title: 'Test1',
-        verificationType: 'sms-otp',
-        options: {
-          provider: 'sms-aliyun',
-          settings: {
-            accessKeyId: 'test',
+    expect(verificators).toMatchObject(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: 'Test1',
+          verificationType: 'sms-otp',
+          options: {
+            provider: 'sms-aliyun',
+            settings: {
+              accessKeyId: 'test',
+            },
           },
-        },
-      },
-      {
-        title: 'Test2',
-        verificationType: 'sms-otp',
-        options: {
-          provider: 'sms-tencent',
-          settings: {
-            accessKeyId: 'test',
+        }),
+        expect.objectContaining({
+          title: 'Test2',
+          verificationType: 'sms-otp',
+          options: {
+            provider: 'sms-tencent',
+            settings: {
+              accessKeyId: 'test',
+            },
           },
-        },
-      },
-    ]);
+        }),
+      ]),
+    );
     const authenticator = await db.getRepository('authenticators').findOne({
       filter: {
         name: 'test',
