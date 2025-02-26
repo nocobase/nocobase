@@ -34,7 +34,9 @@ export function extractTemplateElements(template: string) {
 }
 
 const composeFilterTemplate = (filter: Filter) => {
-  const value = `${filter.name}${filter.args.length ? `:${filter.args.join(',')}` : ''}`;
+  const value = `${filter.name}${
+    filter.args.length ? `:${filter.args.map((val) => JSON.stringify(val)).join(',')}` : ''
+  }`;
   return value;
 };
 

@@ -13,7 +13,7 @@ import { createForm } from '@formily/core';
 import { useForm, useParentForm, FormProvider, useField, FormContext } from '@formily/react';
 import { FormLayout, FormButtonGroup, Submit } from '@formily/antd-v5';
 import { FilterOutlined } from '@ant-design/icons';
-import { uid } from '@nocobase/utils/client';
+import { uid, tval } from '@nocobase/utils/client';
 import { variableFilters } from '@nocobase/json-templates';
 import type { MenuProps } from 'antd';
 import { SchemaComponent } from '../../core/SchemaComponent';
@@ -60,8 +60,19 @@ export function Filters({ filters, onFilterChange }) {
 }
 
 export function Filter({ config, filter, filterId }) {
+  const [open, setOpen] = useState(false);
+
+  const hide = () => {
+    setOpen(false);
+  };
+
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+  };
+
   const argsMap = Object.fromEntries(config.paramSchema.map((param, index) => [param.name, filter.args[index]]));
   const form = useMemo(() => createForm({ initialValues: argsMap }), [argsMap]);
+
   const useSaveActionProps = () => {
     const form = useForm();
     const { updateFilterParams } = useContext(FilterContext);
@@ -72,9 +83,24 @@ export function Filter({ config, filter, filterId }) {
         const values = form.values;
         const params = config.paramSchema.map((param) => values[param.name]);
         updateFilterParams({ filterId, params });
+        setOpen(false);
       },
     };
   };
+
+  const useDeleteActionProps = () => {
+    const form = useForm();
+    const { deleteFilter } = useContext(FilterContext);
+    return {
+      type: 'primary',
+      danger: true,
+      onClick: async () => {
+        deleteFilter({ filterId });
+        setOpen(false);
+      },
+    };
+  };
+
   const useFormBlockProps = () => {
     return { form };
   };
@@ -96,12 +122,18 @@ export function Filter({ config, filter, filterId }) {
       ),
       actions: {
         type: 'void',
-        title: 'Save',
+        title: tval('Save'),
         'x-component': 'ActionBar',
         properties: {
+          delete: {
+            type: 'void',
+            title: tval('Delete'),
+            'x-component': 'Action',
+            'x-use-component-props': 'useDeleteActionProps',
+          },
           save: {
             type: 'void',
-            title: 'Save',
+            title: tval('Save'),
             'x-component': 'Action',
             'x-use-component-props': 'useSaveActionProps',
           },
@@ -109,16 +141,23 @@ export function Filter({ config, filter, filterId }) {
       },
     },
   };
+
   return (
     <>
       <span style={{ color: '#bfbfbf', margin: '0 5px' }}>|</span>
       <Popover
+        open={open}
+        onOpenChange={handleOpenChange}
         content={
           <FormContext.Provider value={form}>
-            <SchemaComponent schema={schema} scope={{ useSaveActionProps, useFormBlockProps }} basePath={['']} />
+            <SchemaComponent
+              schema={schema}
+              scope={{ useSaveActionProps, useFormBlockProps, useDeleteActionProps }}
+              basePath={['']}
+            />
           </FormContext.Provider>
         }
-        trigger={'click'}
+        trigger={'hover'}
       >
         <div style={{ color: '#52c41a', display: 'inline-block', cursor: 'pointer' }}>{config.label}</div>
       </Popover>
@@ -128,8 +167,10 @@ export function Filter({ config, filter, filterId }) {
 
 type FilterContextType = {
   updateFilterParams: (args: { filterId: number; params: any[] }) => any;
+  deleteFilter: (args: { filterId: number }) => any;
 };
 
 export const FilterContext = React.createContext<FilterContextType>({
   updateFilterParams: (params: any) => {},
+  deleteFilter: (params: any) => {},
 });

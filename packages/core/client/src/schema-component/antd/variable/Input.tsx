@@ -240,11 +240,20 @@ export function Input(props: VariableInputProps) {
   const updateFilterParams = useCallback(
     ({ filterId, params }: { filterId: number; params: any[] }) => {
       const copyedFilters = cloneDeep(filters);
-      copyedFilters[filterId].args = params.map((val) => JSON.stringify(val));
+      copyedFilters[filterId].args = params;
       onChange(composeTemplate({ fullVariable, filters: copyedFilters }));
     },
     [filters, fullVariable, onChange],
   );
+
+  const deleteFilter = useCallback(
+    ({ filterId }: { filterId: number }) => {
+      const newFilters = filters.filter((_, index) => index !== filterId);
+      onChange(composeTemplate({ fullVariable, filters: newFilters }));
+    },
+    [filters, fullVariable, onChange],
+  );
+
   const parsed = useMemo(() => parseValue(variableSegments, parseOptions), [parseOptions, variableSegments]);
   const isConstant = typeof parsed === 'string';
   const type = isConstant ? parsed : '';
@@ -472,7 +481,7 @@ export function Input(props: VariableInputProps) {
                   </React.Fragment>
                 );
               })}
-              <FilterContext.Provider value={{ updateFilterParams }}>
+              <FilterContext.Provider value={{ updateFilterParams, deleteFilter }}>
                 <Filters filters={filters} onFilterChange={onFilterAdd} />
 
                 {variableText.length > 0 && <Addition variable={fullVariable} onFilterAdd={onFilterAdd} />}
