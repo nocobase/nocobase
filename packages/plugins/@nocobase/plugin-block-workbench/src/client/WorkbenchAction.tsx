@@ -8,7 +8,7 @@
  */
 
 import { useFieldSchema } from '@formily/react';
-import { Action, Icon, useCompile, useComponent, withDynamicSchemaProps } from '@nocobase/client';
+import { Action, Icon, useCompile, useComponent, withDynamicSchemaProps, ACLActionProvider } from '@nocobase/client';
 import { Avatar } from 'antd';
 import { createStyles } from 'antd-style';
 import React, { useContext } from 'react';
@@ -46,9 +46,9 @@ function Button() {
   const compile = useCompile();
   const title = compile(fieldSchema.title);
   return layout === WorkbenchLayout.Grid ? (
-    <div title={fieldSchema.title} className={cx(styles.avatar)}>
+    <div title={title} className={cx(styles.avatar)}>
       <Avatar style={{ backgroundColor }} size={48} icon={<Icon type={icon} />} />
-      <div className={cx(styles.title)}>{fieldSchema.title}</div>
+      <div className={cx(styles.title)}>{title}</div>
     </div>
   ) : (
     <span>{title}</span>
@@ -61,13 +61,15 @@ export const WorkbenchAction = withDynamicSchemaProps((props) => {
   const fieldSchema = useFieldSchema();
   const Component = useComponent(props?.targetComponent) || Action;
   return (
-    <Component
-      className={cx(className, styles.action, 'nb-action-panel')}
-      {...others}
-      type="text"
-      icon={null}
-      title={<Button />}
-      confirmTitle={fieldSchema.title}
-    />
+    <ACLActionProvider>
+      <Component
+        className={cx(className, styles.action, 'nb-action-panel')}
+        {...others}
+        type="text"
+        icon={null}
+        title={<Button />}
+        confirmTitle={fieldSchema.title}
+      />
+    </ACLActionProvider>
   );
 });

@@ -31,6 +31,7 @@ export default class extends StorageType {
       options: {
         documentRoot: 'storage/uploads',
       },
+      path: '',
       rules: {
         size: FILE_SIZE_LIMIT_DEFAULT,
       },
@@ -40,7 +41,7 @@ export default class extends StorageType {
   make() {
     return multer.diskStorage({
       destination: (req, file, cb) => {
-        const destPath = path.join(getDocumentRoot(this.storage), this.storage.path);
+        const destPath = path.join(getDocumentRoot(this.storage), this.storage.path || '');
         mkdirp(destPath, (err: Error | null) => cb(err, destPath));
       },
       filename: getFilename,
