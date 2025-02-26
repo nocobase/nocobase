@@ -1,9 +1,9 @@
 {
   "name": "@nocobase/plugin-verification",
   "displayName": "Verification",
-  "displayName.zh-CN": "验证码",
-  "description": "verification setting.",
-  "description.zh-CN": "验证码配置。",
+  "displayName.zh-CN": "验证",
+  "description": "User identity verification management, including SMS, TOTP authenticator, with extensibility.",
+  "description.zh-CN": "用户身份验证管理，包含短信、TOTP 认证器等，可扩展。",
   "version": "1.6.0-alpha.28",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
