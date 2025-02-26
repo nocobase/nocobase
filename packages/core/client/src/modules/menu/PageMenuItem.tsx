@@ -37,7 +37,7 @@ export const useInsertPageSchema = () => {
     },
     [api],
   );
-}
+};
 
 export const PageMenuItem = () => {
   const { t } = useTranslation();
@@ -110,11 +110,7 @@ export const PageMenuItem = () => {
   return <SchemaInitializerItem title={t('Page')} onClick={handleClick} className={`${componentCls} ${hashId}`} />;
 };
 
-export function getPageMenuSchema({
-  pageSchemaUid,
-  tabSchemaUid,
-  tabSchemaName,
-}) {
+export function getPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }) {
   return {
     type: 'void',
     'x-component': 'Page',
