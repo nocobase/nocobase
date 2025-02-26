@@ -20,11 +20,11 @@ describe('UnixTimestamp', () => {
     expect(container).toMatchInlineSnapshot(`
       <div>
         <div
-          class="css-dev-only-do-not-override-1gopndx ant-app"
+          class="css-dev-only-do-not-override-q942y ant-app"
           style="height: 100%;"
         >
           <div
-            class="ant-picker css-dev-only-do-not-override-1gopndx"
+            class="ant-picker css-dev-only-do-not-override-q942y"
           >
             <div
               class="ant-picker-input"
@@ -77,7 +77,7 @@ describe('UnixTimestamp', () => {
     expect(container).toMatchInlineSnapshot(`
       <div>
         <div
-          class="css-dev-only-do-not-override-1gopndx ant-app"
+          class="css-dev-only-do-not-override-q942y ant-app"
           style="height: 100%;"
         >
           <div
