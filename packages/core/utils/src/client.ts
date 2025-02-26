@@ -17,7 +17,7 @@ export * from './forEach';
 export * from './getValuesByPath';
 export * from './handlebars';
 export * from './isValidFilter';
-export * from './json-templates';
+export { parse } from '@nocobase/json-templates';
 export * from './log';
 export * from './merge';
 export * from './notification';
