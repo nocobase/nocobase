@@ -56,7 +56,7 @@ RUN cd /app \
 
 FROM node:20-bookworm-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+RUN apt-get update && apt-get install -y --no-install-recommends lsb-release wget gnupg \
   && rm -rf /var/lib/apt/lists/*
 
 RUN sh -c 'echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
