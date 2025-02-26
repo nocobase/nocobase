@@ -8,7 +8,8 @@
  */
 
 import { Context, Next } from '@nocobase/actions';
-import { parse } from '@nocobase/json-templates';
+import { parse } from '@nocobase/utils';
+
 import { appendArrayColumn } from '@nocobase/evaluators';
 import Application from '@nocobase/server';
 import axios from 'axios';
