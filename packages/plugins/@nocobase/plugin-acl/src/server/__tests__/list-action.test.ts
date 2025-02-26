@@ -230,6 +230,78 @@ describe('list action with acl', () => {
     expect(data.meta.allowedActions.destroy).toEqual([]);
   });
 
+  it('should list items meta permissions by m2m association field', async () => {
+    const userRole = app.acl.define({
+      role: 'user',
+    });
+
+    const Tag = app.db.collection({
+      name: 'tags',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    app.db.extendCollection({
+      name: 'posts',
+      fields: [
+        {
+          type: 'belongsToMany',
+          name: 'tags',
+          through: 'posts_tags',
+        },
+      ],
+    });
+    await app.db.sync();
+
+    await Tag.repository.create({
+      values: [{ name: 'a' }, { name: 'b' }, { name: 'c' }],
+    });
+    await Post.repository.create({
+      values: [
+        { title: 'p1', tags: [1, 2] },
+        { title: 'p2', tags: [1, 3] },
+        { title: 'p3', tags: [2, 3] },
+      ],
+    });
+
+    userRole.grantAction('posts:view', {});
+
+    userRole.grantAction('posts:update', {
+      filter: {
+        $and: [
+          {
+            tags: {
+              name: {
+                $includes: 'c',
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    app.resourcer.use(
+      (ctx, next) => {
+        ctx.state.currentRole = 'user';
+        ctx.state.currentUser = {
+          id: 1,
+          tag: 'c',
+        };
+
+        return next();
+      },
+      {
+        before: 'acl',
+        after: 'auth',
+      },
+    );
+
+    const response = await (app as any).agent().set('X-With-ACL-Meta', true).resource('posts').list();
+    const data = response.body;
+    expect(data.meta.allowedActions.view).toEqual([1, 2, 3]);
+    expect(data.meta.allowedActions.update).toEqual([2, 3]);
+    expect(data.meta.allowedActions.destroy).toEqual([]);
+  });
+
   it('should list items with meta permission', async () => {
     const userRole = app.acl.define({
       role: 'user',
