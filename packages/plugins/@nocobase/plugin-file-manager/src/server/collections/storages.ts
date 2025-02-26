@@ -47,7 +47,7 @@ export default defineCollection({
     },
     {
       comment: '存储相对路径模板',
-      type: 'string',
+      type: 'text',
       name: 'path',
       defaultValue: '',
     },
