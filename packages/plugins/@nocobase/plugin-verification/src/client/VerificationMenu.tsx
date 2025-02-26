@@ -11,14 +11,16 @@ import {
   ActionContextProvider,
   DropdownVisibleContext,
   SchemaComponent,
+  SchemaSettingsItem,
   useAPIClient,
   useActionContext,
-  useCurrentUserSettingsMenu,
   usePlugin,
   useRequest,
+  useZIndexContext,
+  zIndexContext,
 } from '@nocobase/client';
-import React, { createContext, createElement, useContext, useEffect, useMemo, useState } from 'react';
-import { MenuProps, List, Tag, message, Tabs } from 'antd';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { List, Tag, message, Tabs } from 'antd';
 import { uid } from '@formily/shared';
 import { Schema, useForm } from '@formily/react';
 import { useVerificationTranslation } from './locale';
@@ -388,66 +390,57 @@ const Verificators: React.FC = () => {
   );
 };
 
-const Verification: React.FC = () => {
-  const { t } = useVerificationTranslation();
+export const Verification = () => {
   const ctx = useContext(DropdownVisibleContext);
   const [visible, setVisible] = useState(false);
-  return (
-    <div
-      onClick={() => {
-        ctx?.setVisible(false);
-        setVisible(true);
-      }}
-    >
-      {t('Verification')}
-      <ActionContextProvider value={{ visible, setVisible }}>
-        <div onClick={(e) => e.stopPropagation()}>
-          <SchemaComponent
-            scope={{ t }}
-            components={{ Verificators }}
-            schema={{
-              type: 'object',
+  const { t } = useVerificationTranslation();
+  const parentZIndex = useZIndexContext();
+  const zIndex = parentZIndex + 10;
+
+  // 避免重复渲染的 click 处理
+  const handleClick = useCallback(
+    (e) => {
+      e.stopPropagation();
+      ctx?.setVisible?.(false);
+      setVisible((prev) => (prev ? prev : true)); // 只有 `visible` 变化时才触发更新
+    },
+    [ctx],
+  );
+
+  // 避免 `SchemaComponent` 结构重新创建
+  const schemaComponent = useMemo(() => {
+    return (
+      <SchemaComponent
+        components={{ Verificators }}
+        schema={{
+          type: 'object',
+          properties: {
+            [uid()]: {
+              'x-component': 'Action.Drawer',
+              'x-component-props': { zIndex },
+              type: 'void',
+              title: '{{t("Verification")}}',
               properties: {
-                [uid()]: {
-                  'x-component': 'Action.Drawer',
-                  'x-component-props': {
-                    zIndex: 2000,
-                  },
+                form: {
                   type: 'void',
-                  title: '{{t("Verification")}}',
-                  properties: {
-                    form: {
-                      type: 'void',
-                      'x-component': 'Verificators',
-                    },
-                  },
+                  'x-component': 'Verificators',
                 },
               },
-            }}
-          />
-        </div>
+            },
+          },
+        }}
+      />
+    );
+  }, [zIndex]);
+
+  return (
+    <zIndexContext.Provider value={zIndex}>
+      <SchemaSettingsItem eventKey="Verification" title="Verification">
+        <div onClick={handleClick}>{t('Verification')}</div>
+      </SchemaSettingsItem>
+      <ActionContextProvider value={{ visible, setVisible }}>
+        {visible && <div onClick={(e) => e.stopPropagation()}>{schemaComponent}</div>}
       </ActionContextProvider>
-    </div>
+    </zIndexContext.Provider>
   );
-};
-
-export const useVerificationMenu = () => {
-  const result = useMemo<MenuProps['items'][0]>(() => {
-    return {
-      key: 'verification',
-      eventKey: 'verification',
-      label: <Verification />,
-    };
-  }, []);
-  return result;
-};
-
-export const VerificationMenuProvider: React.FC = (props) => {
-  const { addMenuItem } = useCurrentUserSettingsMenu();
-  const verificationItem = useVerificationMenu();
-
-  useEffect(() => {
-    addMenuItem(verificationItem, { after: 'divider_3' });
-  }, [addMenuItem, verificationItem]);
-  return <>{props.children}</>;
 };
