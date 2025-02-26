@@ -822,5 +822,6 @@
   "If selected, the page will display Tab pages.": "Якщо вибрано, сторінка відобразить сторінки з вкладками.",
   "If selected, the route will be displayed in the menu.": "Якщо вибрано, маршрут буде відображений в меню.",
   "Deprecated": "Застаріло",
-  "The following old template features have been deprecated and will be removed in next version.": "Наступні старі функції шаблонів були застарілі і будуть видалені в наступній версії."
+  "The following old template features have been deprecated and will be removed in next version.": "Наступні старі функції шаблонів були застарілі і будуть видалені в наступній версії.",
+  "Full permissions": "Повні права"
 }

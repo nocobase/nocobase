@@ -802,5 +802,6 @@
   "If selected, the page will display Tab pages.": "Si se selecciona, la página mostrará páginas de pestañas.",
   "If selected, the route will be displayed in the menu.": "Si se selecciona, la ruta se mostrará en el menú.",
   "Deprecated": "Obsoleto",
-  "The following old template features have been deprecated and will be removed in next version.": "Las siguientes características de plantilla antigua han quedado obsoletas y se eliminarán en la próxima versión."
+  "The following old template features have been deprecated and will be removed in next version.": "Las siguientes características de plantilla antigua han quedado obsoletas y se eliminarán en la próxima versión.",
+  "Full permissions": "Todos los derechos"
 }
