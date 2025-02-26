@@ -28,7 +28,7 @@ export async function templateDataMiddleware(ctx: Context, next) {
     ctx.action.resourceName === 'uiSchemas' &&
     ['getProperties', 'getJsonSchema', 'getParentJsonSchema'].includes(ctx.action.actionName)
   ) {
-    const schema = ctx.body?.data;
+    const schema = ctx.body;
     const schemaRepository = ctx.db.getRepository<UiSchemaRepository>('uiSchemas');
     const blockTemplateRepository = ctx.db.getRepository('blockTemplates');
 
