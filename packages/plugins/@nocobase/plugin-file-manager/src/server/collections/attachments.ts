@@ -58,7 +58,7 @@ export default defineCollection({
     },
     {
       comment: '相对路径（含“/”前缀）',
-      type: 'string',
+      type: 'text',
       name: 'path',
     },
     {
@@ -69,7 +69,7 @@ export default defineCollection({
     },
     {
       comment: '网络访问地址',
-      type: 'string',
+      type: 'text',
       name: 'url',
       // formula: '{{ storage.baseUrl }}{{ path }}/{{ filename }}'
     },

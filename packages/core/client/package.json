@@ -42,6 +42,7 @@
     "flat": "^5.0.2",
     "i18next": "^22.4.9",
     "i18next-http-backend": "^2.1.1",
+    "ignore": "^5.2.0",
     "json5": "^2.2.3",
     "lodash": "4.17.21",
     "lru-cache": "6.0.0",

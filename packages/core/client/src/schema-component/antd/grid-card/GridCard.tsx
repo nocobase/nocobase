@@ -17,6 +17,7 @@ import { getCardItemSchema } from '../../../block-provider';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { withSkeletonComponent } from '../../../hoc/withSkeletonComponent';
+import { useToken } from '../../../style/useToken';
 import { SortableItem } from '../../common';
 import { SchemaComponentOptions } from '../../core';
 import { useDesigner, useProps } from '../../hooks';
@@ -141,6 +142,7 @@ const InternalGridCard = withSkeletonComponent(
       },
       [fieldSchema.properties],
     );
+    const { token } = useToken();
 
     const onPaginationChange: PaginationProps['onChange'] = useCallback(
       (page, pageSize) => {
@@ -207,7 +209,7 @@ const InternalGridCard = withSkeletonComponent(
                 ...columnCount,
                 sm: columnCount.xs,
                 xl: columnCount.lg,
-                gutter: [rowGutter, rowGutter],
+                gutter: [token.marginBlock / 2, token.marginBlock / 2],
               }}
               renderItem={(item, index) => {
                 return (
