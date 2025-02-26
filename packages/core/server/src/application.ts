@@ -34,7 +34,7 @@ import {
   ToposortOptions,
   wrapMiddlewareWithLogging,
 } from '@nocobase/utils';
-
+import { createJSONTemplateParser, JSONTemplateParser } from '@nocobase/json-template-parser';
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { randomUUID } from 'crypto';
 import glob from 'glob';
@@ -250,7 +250,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   public container = new ServiceContainer();
   public lockManager: LockManager;
-
+  public jsonTemplateParser: JSONTemplateParser;
   constructor(public options: ApplicationOptions) {
     super();
     this.context.reqId = randomUUID();
@@ -260,6 +260,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (!options.skipSupervisor) {
       this._appSupervisor.addApp(this);
     }
+
+    this.jsonTemplateParser = createJSONTemplateParser();
   }
 
   private static staticCommands = [];
