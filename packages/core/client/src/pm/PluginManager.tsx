@@ -127,27 +127,25 @@ function BulkEnableButton({ plugins = [] }) {
           }}
           size={'small'}
           pagination={false}
-          columns={
-            [
-              {
-                title: t('Plugin'),
-                dataIndex: 'displayName',
-                ellipsis: true,
-              },
-              {
-                title: t('Description'),
-                dataIndex: 'description',
-                ellipsis: true,
-                width: 300,
-              },
-              {
-                title: t('Package name'),
-                dataIndex: 'packageName',
-                width: 300,
-                ellipsis: true,
-              },
-            ] as TableProps['columns']
-          }
+          columns={[
+            {
+              title: t('Plugin'),
+              dataIndex: 'displayName',
+              ellipsis: true,
+            },
+            {
+              title: t('Description'),
+              dataIndex: 'description',
+              ellipsis: true,
+              width: 300,
+            },
+            {
+              title: t('Package name'),
+              dataIndex: 'packageName',
+              width: 300,
+              ellipsis: true,
+            },
+          ] as TableProps['columns']}
           dataSource={items}
         />
       </Modal>

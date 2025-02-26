@@ -266,42 +266,40 @@ export const MenuPermissions: React.FC<{
         expandable={{
           defaultExpandAllRows: false,
         }}
-        columns={
-          [
-            {
-              dataIndex: 'title',
-              title: t('Route name'),
+        columns={[
+          {
+            dataIndex: 'title',
+            title: t('Route name'),
+          },
+          {
+            dataIndex: 'accessible',
+            title: (
+              <>
+                <Checkbox
+                  checked={allChecked}
+                  onChange={async (value) => {
+                    if (allChecked) {
+                      await resource.set({
+                        values: [],
+                      });
+                    } else {
+                      await resource.set({
+                        values: allIDList,
+                      });
+                    }
+                    refresh();
+                    message.success(t('Saved successfully'));
+                  }}
+                />{' '}
+                {t('Accessible')}
+              </>
+            ),
+            render: (_, schema) => {
+              const checked = IDList.includes(schema.id);
+              return <Checkbox checked={checked} onChange={() => handleChange(checked, schema)} />;
             },
-            {
-              dataIndex: 'accessible',
-              title: (
-                <>
-                  <Checkbox
-                    checked={allChecked}
-                    onChange={async (value) => {
-                      if (allChecked) {
-                        await resource.set({
-                          values: [],
-                        });
-                      } else {
-                        await resource.set({
-                          values: allIDList,
-                        });
-                      }
-                      refresh();
-                      message.success(t('Saved successfully'));
-                    }}
-                  />{' '}
-                  {t('Accessible')}
-                </>
-              ),
-              render: (_, schema) => {
-                const checked = IDList.includes(schema.id);
-                return <Checkbox checked={checked} onChange={() => handleChange(checked, schema)} />;
-              },
-            },
-          ] as TableProps['columns']
-        }
+          },
+        ] as TableProps['columns']}
         dataSource={translateTitle(items, t, compile)}
       />
     </>

@@ -121,42 +121,40 @@ export const MenuConfigure = () => {
       expandable={{
         defaultExpandAllRows: true,
       }}
-      columns={
-        [
-          {
-            dataIndex: 'title',
-            title: t('Menu item title'),
+      columns={[
+        {
+          dataIndex: 'title',
+          title: t('Menu item title'),
+        },
+        {
+          dataIndex: 'accessible',
+          title: (
+            <>
+              <Checkbox
+                checked={allChecked}
+                onChange={async (value) => {
+                  if (allChecked) {
+                    await resource.set({
+                      values: [],
+                    });
+                  } else {
+                    await resource.set({
+                      values: allUids,
+                    });
+                  }
+                  refresh();
+                  message.success(t('Saved successfully'));
+                }}
+              />{' '}
+              {t('Accessible')}
+            </>
+          ),
+          render: (_, schema: { uid: string }) => {
+            const checked = uids.includes(schema.uid);
+            return <Checkbox checked={checked} onChange={() => handleChange(checked, schema)} />;
           },
-          {
-            dataIndex: 'accessible',
-            title: (
-              <>
-                <Checkbox
-                  checked={allChecked}
-                  onChange={async (value) => {
-                    if (allChecked) {
-                      await resource.set({
-                        values: [],
-                      });
-                    } else {
-                      await resource.set({
-                        values: allUids,
-                      });
-                    }
-                    refresh();
-                    message.success(t('Saved successfully'));
-                  }}
-                />{' '}
-                {t('Accessible')}
-              </>
-            ),
-            render: (_, schema: { uid: string }) => {
-              const checked = uids.includes(schema.uid);
-              return <Checkbox checked={checked} onChange={() => handleChange(checked, schema)} />;
-            },
-          },
-        ] as TableProps['columns']
-      }
+        },
+      ] as TableProps['columns']}
       dataSource={translateTitle(items)}
     />
   );

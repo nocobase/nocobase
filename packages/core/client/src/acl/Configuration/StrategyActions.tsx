@@ -55,64 +55,62 @@ export const StrategyActions = connect((props) => {
         size={'small'}
         pagination={false}
         rowKey={'name'}
-        columns={
-          [
-            {
-              dataIndex: 'displayName',
-              title: t('Action display name'),
-              render: (value) => compile(value),
-            },
-            {
-              dataIndex: 'onNewRecord',
-              title: t('Action type'),
-              render: (onNewRecord) =>
-                onNewRecord ? (
-                  <Tag color={'green'}>{t('Action on new records')}</Tag>
-                ) : (
-                  <Tag color={'geekblue'}>{t('Action on existing records')}</Tag>
-                ),
-            },
-            {
-              dataIndex: 'enabled',
-              title: t('Allow'),
-              render: (enabled, action) => (
-                <Checkbox
-                  checked={enabled}
-                  aria-label={`${action.name}_checkbox`}
-                  onChange={(e) => {
-                    if (enabled) {
-                      delete scopes[action.name];
-                    } else {
-                      scopes[action.name] = 'all';
-                    }
+        columns={[
+          {
+            dataIndex: 'displayName',
+            title: t('Action display name'),
+            render: (value) => compile(value),
+          },
+          {
+            dataIndex: 'onNewRecord',
+            title: t('Action type'),
+            render: (onNewRecord) =>
+              onNewRecord ? (
+                <Tag color={'green'}>{t('Action on new records')}</Tag>
+              ) : (
+                <Tag color={'geekblue'}>{t('Action on existing records')}</Tag>
+              ),
+          },
+          {
+            dataIndex: 'enabled',
+            title: t('Allow'),
+            render: (enabled, action) => (
+              <Checkbox
+                checked={enabled}
+                aria-label={`${action.name}_checkbox`}
+                onChange={(e) => {
+                  if (enabled) {
+                    delete scopes[action.name];
+                  } else {
+                    scopes[action.name] = 'all';
+                  }
+                  onChange(toFieldValue(scopes));
+                }}
+              />
+            ),
+          },
+          {
+            dataIndex: 'scope',
+            title: t('Data scope'),
+            render: (scope, action) =>
+              !action.onNewRecord && (
+                <Select
+                  data-testid="select-data-scope"
+                  popupMatchSelectWidth={false}
+                  size={'small'}
+                  value={scope}
+                  options={[
+                    { label: t('All records'), value: 'all' },
+                    { label: t('Own records'), value: 'own' },
+                  ]}
+                  onChange={(value) => {
+                    scopes[action.name] = value;
                     onChange(toFieldValue(scopes));
                   }}
                 />
               ),
-            },
-            {
-              dataIndex: 'scope',
-              title: t('Data scope'),
-              render: (scope, action) =>
-                !action.onNewRecord && (
-                  <Select
-                    data-testid="select-data-scope"
-                    popupMatchSelectWidth={false}
-                    size={'small'}
-                    value={scope}
-                    options={[
-                      { label: t('All records'), value: 'all' },
-                      { label: t('Own records'), value: 'own' },
-                    ]}
-                    onChange={(value) => {
-                      scopes[action.name] = value;
-                      onChange(toFieldValue(scopes));
-                    }}
-                  />
-                ),
-            },
-          ] as TableProps['columns']
-        }
+          },
+        ] as TableProps['columns']}
         dataSource={availableActions?.map((item) => {
           let scope = 'all';
           let enabled = false;

@@ -111,11 +111,11 @@ const LearnMore: any = (props: { collectionsData?: any; isBackup?: boolean }) =>
       render: (_, data) => {
         const title = compile(data.title);
         const name = data.name;
-        return name === title ? (
-          title
-        ) : (
+        return name === title ? title : (
           <div>
-            {data.name} <span style={{ color: 'rgba(0, 0, 0, 0.3)', fontSize: '0.9em' }}>({compile(data.title)})</span>
+            {data.name}
+            {' '}
+            <span style={{ color: 'rgba(0, 0, 0, 0.3)', fontSize: '0.9em' }}>({compile(data.title)})</span>
           </div>
         );
       },
@@ -418,75 +418,73 @@ export const BackupAndRestoreList = () => {
         <Table
           dataSource={dataSource}
           loading={loading}
-          columns={
-            [
-              {
-                title: t('Backup file'),
-                dataIndex: 'name',
-                width: 400,
-                onCell: (data) => {
-                  return data.inProgress
-                    ? {
-                        colSpan: 4,
-                      }
-                    : {};
-                },
-                render: (name, data) =>
-                  data.inProgress ? (
-                    <div style={{ color: 'rgba(0, 0, 0, 0.88)' }}>
-                      {name}({t('Backing up')}...)
-                    </div>
-                  ) : (
-                    <div>{name}</div>
-                  ),
+          columns={[
+            {
+              title: t('Backup file'),
+              dataIndex: 'name',
+              width: 400,
+              onCell: (data) => {
+                return data.inProgress
+                  ? {
+                      colSpan: 4,
+                    }
+                  : {};
               },
-              {
-                title: t('File size'),
-                dataIndex: 'fileSize',
-                onCell: (data) => {
-                  return data.inProgress
-                    ? {
-                        colSpan: 0,
-                      }
-                    : {};
-                },
-              },
-              {
-                title: t('Created at', { ns: 'client' }),
-                dataIndex: 'createdAt',
-                onCell: (data) => {
-                  return data.inProgress
-                    ? {
-                        colSpan: 0,
-                      }
-                    : {};
-                },
-                render: (value) => {
-                  return <DatePicker.ReadPretty value={value} showTime />;
-                },
-              },
-              {
-                title: t('Actions', { ns: 'client' }),
-                dataIndex: 'actions',
-                onCell: (data) => {
-                  return data.inProgress
-                    ? {
-                        colSpan: 0,
-                      }
-                    : {};
-                },
-                render: (_, record) => (
-                  <Space split={<Divider type="vertical" />}>
-                    <Restore ButtonComponent={'a'} title={t('Restore')} fileData={record} />
-                    <a type="link" onClick={() => handleDownload(record)}>
-                      {t('Download')}
-                    </a>
-                    <a onClick={() => handleDestory(record)}>{t('Delete')}</a>
-                  </Space>
+              render: (name, data) =>
+                data.inProgress ? (
+                  <div style={{ color: 'rgba(0, 0, 0, 0.88)' }}>
+                    {name}({t('Backing up')}...)
+                  </div>
+                ) : (
+                  <div>{name}</div>
                 ),
+            },
+            {
+              title: t('File size'),
+              dataIndex: 'fileSize',
+              onCell: (data) => {
+                return data.inProgress
+                  ? {
+                      colSpan: 0,
+                    }
+                  : {};
               },
-            ] as TableProps['columns']
-          }
+            },
+            {
+              title: t('Created at', { ns: 'client' }),
+              dataIndex: 'createdAt',
+              onCell: (data) => {
+                return data.inProgress
+                  ? {
+                      colSpan: 0,
+                    }
+                  : {};
+              },
+              render: (value) => {
+                return <DatePicker.ReadPretty value={value} showTime />;
+              },
+            },
+            {
+              title: t('Actions', { ns: 'client' }),
+              dataIndex: 'actions',
+              onCell: (data) => {
+                return data.inProgress
+                  ? {
+                      colSpan: 0,
+                    }
+                  : {};
+              },
+              render: (_, record) => (
+                <Space split={<Divider type="vertical" />}>
+                  <Restore ButtonComponent={'a'} title={t('Restore')} fileData={record} />
+                  <a type="link" onClick={() => handleDownload(record)}>
+                    {t('Download')}
+                  </a>
+                  <a onClick={() => handleDestory(record)}>{t('Delete')}</a>
+                </Space>
+              ),
+            },
+          ] as TableProps['columns']}
         />
       </Card>
     </div>
