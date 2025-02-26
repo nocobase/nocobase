@@ -10,6 +10,7 @@
 import { DataTypes } from 'sequelize';
 import { Migration } from '@nocobase/server';
 import { CollectionRepository } from '@nocobase/plugin-data-source-main';
+import { InheritedCollection } from '@nocobase/database';
 
 export default class extends Migration {
   on = 'afterLoad'; // 'beforeLoad' or 'afterLoad'
@@ -31,23 +32,25 @@ export default class extends Migration {
 
     await this.db.sequelize.transaction(async (transaction) => {
       for (const collection of collections) {
-        const tableName = collection.getTableNameWithSchema();
-        await queryInterface.changeColumn(
-          tableName,
-          'url',
-          {
-            type: DataTypes.TEXT,
-          },
-          { transaction },
-        );
-        await queryInterface.changeColumn(
-          tableName,
-          'path',
-          {
-            type: DataTypes.TEXT,
-          },
-          { transaction },
-        );
+        if (!(collection instanceof InheritedCollection)) {
+          const tableName = collection.getTableNameWithSchema();
+          await queryInterface.changeColumn(
+            tableName,
+            'url',
+            {
+              type: DataTypes.TEXT,
+            },
+            { transaction },
+          );
+          await queryInterface.changeColumn(
+            tableName,
+            'path',
+            {
+              type: DataTypes.TEXT,
+            },
+            { transaction },
+          );
+        }
 
         await FieldRepo.update({
           filter: {
