@@ -265,6 +265,7 @@ function createWithACLMetaMiddleware() {
         }),
       ],
       include: conditions.map((condition) => condition.include).flat(),
+      raw: true,
     });
 
     const allowedActions = inspectActions
@@ -273,7 +274,7 @@ function createWithACLMetaMiddleware() {
           return [action, ids];
         }
 
-        return [action, results.filter((item) => Boolean(item.get(action))).map((item) => item.get(primaryKeyField))];
+        return [action, results.filter((item) => Boolean(item[action])).map((item) => item[primaryKeyField])];
       })
       .reduce((acc, [action, ids]) => {
         acc[action] = ids;
