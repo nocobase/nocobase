@@ -119,5 +119,6 @@
   "Page size":"Liczba rekordów na stronie",
   "Preload associations":"Wstępnie załaduj skojarzenia",
   "Please select the associated fields that need to be accessed in subsequent nodes. With more than two levels of to-many associations may cause performance issue, please use with caution.":"Wybierz powiązane pola, do których należy uzyskać dostęp w kolejnych węzłach. Przy więcej niż dwóch poziomach skojarzeń to-many mogą wystąpić problemy z wydajnością, należy zachować ostrożność.",
-  "Exit when query result is null":"Zakończ jeśli wynik to null"
+  "Exit when query result is null":"Zakończ jeśli wynik to null",
+  "Syntax references: ": "Odwołania składniowe: "
 }
