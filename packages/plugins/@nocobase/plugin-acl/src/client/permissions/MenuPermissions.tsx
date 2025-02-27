@@ -9,7 +9,7 @@
 
 import { createForm, Form, onFormValuesChange } from '@formily/core';
 import { uid } from '@formily/shared';
-import { css, SchemaComponent, useAPIClient, useCompile, useRequest } from '@nocobase/client';
+import { css, SchemaComponent, useAllAccessDesktopRoutes, useAPIClient, useCompile, useRequest } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Checkbox, message, Table } from 'antd';
 import { uniq } from 'lodash';
@@ -68,7 +68,7 @@ const style = css`
 
 const translateTitle = (menus: any[], t, compile) => {
   return menus.map((menu) => {
-    const title = menu.title?.match(/^\s*\{\{\s*.+?\s*\}\}\s*$/) ? compile(menu.title) : t(menu.title);
+    const title = (menu.title?.match(/^\s*\{\{\s*.+?\s*\}\}\s*$/) ? compile(menu.title) : t(menu.title)) || t('Unnamed');
     if (menu.children) {
       return {
         ...menu,
@@ -123,7 +123,7 @@ const DesktopRoutesProvider: FC<{
 };
 
 export const DesktopAllRoutesProvider: React.FC<{ active: boolean }> = ({ children, active }) => {
-  const refreshRef = React.useRef(() => {});
+  const refreshRef = React.useRef(() => { });
 
   useEffect(() => {
     if (active) {
@@ -166,6 +166,7 @@ export const MenuPermissions: React.FC<{
   );
   const resource = api.resource('roles.desktopRoutes', role.name);
   const allChecked = allIDList.length === IDList.length;
+  const { refresh: refreshDesktopRoutes } = useAllAccessDesktopRoutes();
 
   const handleChange = async (checked, menuItem) => {
     // 处理取消选中
@@ -214,6 +215,7 @@ export const MenuPermissions: React.FC<{
         values: shouldAdd,
       });
     }
+    refreshDesktopRoutes();
     message.success(t('Saved successfully'));
   };
 
@@ -288,6 +290,7 @@ export const MenuPermissions: React.FC<{
                       });
                     }
                     refresh();
+                    refreshDesktopRoutes();
                     message.success(t('Saved successfully'));
                   }}
                 />{' '}

@@ -7,36 +7,32 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { EllipsisOutlined } from '@ant-design/icons';
+import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
+import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
-import { ConfigProvider, Divider, Layout } from 'antd';
-import { createGlobalStyle } from 'antd-style';
-import React, {
-  createContext,
-  FC,
-  memo,
-  startTransition,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import { Outlet } from 'react-router-dom';
+import { Popover, Tooltip } from 'antd';
+import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import ReactDOM from 'react-dom';
+import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
+  AppNotFound,
   CurrentAppInfoProvider,
-  findByUid,
-  findMenuItem,
+  DndContext,
+  Icon,
+  ParentRouteContext,
   PinnedPluginList,
   RemoteCollectionManagerProvider,
   RemoteSchemaComponent,
   RemoteSchemaTemplateManagerPlugin,
   RemoteSchemaTemplateManagerProvider,
-  SchemaComponent,
-  useAdminSchemaUid,
-  useDocumentTitle,
+  SortableItem,
+  useDesignable,
+  useMenuDragEnd,
+  useParseURLAndParams,
   useRequest,
+  useSchemaInitializerRender,
   useSystemSettings,
   useToken,
 } from '../../../';
@@ -45,43 +41,29 @@ import {
   CurrentTabUidProvider,
   IsSubPageClosedByPageMenuProvider,
   useCurrentPageUid,
-  useIsInSettingsPage,
-  useMatchAdmin,
-  useMatchAdminName,
-  useNavigateNoUpdate,
+  useLocationNoUpdate,
 } from '../../../application/CustomRouterContextProvider';
 import { Plugin } from '../../../application/Plugin';
-import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
-import { Help } from '../../../user/Help';
+import { menuItemInitializer } from '../../../modules/menu/menuItemInitializer';
 import { KeepAlive } from './KeepAlive';
-import { convertRoutesToSchema, NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
+import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
+import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
-import { UserCenter } from './UserCenterButton';
+
 export { KeepAlive, NocoBaseDesktopRouteType };
 
-const RouteContext = createContext<NocoBaseDesktopRoute | null>(null);
-RouteContext.displayName = 'RouteContext';
+export const NocoBaseRouteContext = createContext<NocoBaseDesktopRoute | null>(null);
+NocoBaseRouteContext.displayName = 'NocoBaseRouteContext';
 
 const CurrentRouteProvider: FC<{ uid: string }> = ({ children, uid }) => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
-  const routeNode = useMemo(() => getRouteNodeBySchemaUid(uid, allAccessRoutes), [uid, allAccessRoutes]);
-  return <RouteContext.Provider value={routeNode}>{children}</RouteContext.Provider>;
+  const routeNode = useMemo(() => findRouteBySchemaUid(uid, allAccessRoutes), [uid, allAccessRoutes]);
+  return <NocoBaseRouteContext.Provider value={routeNode}>{children}</NocoBaseRouteContext.Provider>;
 };
 
-export const useCurrentRoute = () => {
-  return useContext(RouteContext) || {};
+export const useCurrentRouteData = () => {
+  return useContext(NocoBaseRouteContext) || {};
 };
-
-const useMenuProps = () => {
-  const currentPageUid = useCurrentPageUid();
-  return {
-    selectedUid: currentPageUid,
-    defaultSelectedUid: currentPageUid,
-  };
-};
-
-const MenuSchemaRequestContext = createContext(null);
-MenuSchemaRequestContext.displayName = 'MenuSchemaRequestContext';
 
 const emptyArray = [];
 const AllAccessDesktopRoutesContext = createContext<{
@@ -97,71 +79,14 @@ export const useAllAccessDesktopRoutes = () => {
   return useContext(AllAccessDesktopRoutesContext);
 };
 
-const MenuSchemaRequestProvider: FC = ({ children }) => {
-  const { t } = useMenuTranslation();
-  const { setTitle: _setTitle } = useDocumentTitle();
-  const setTitle = useCallback((title) => _setTitle(t(title)), [_setTitle, t]);
-  const navigate = useNavigateNoUpdate();
-  const isMatchAdmin = useMatchAdmin();
-  const isMatchAdminName = useMatchAdminName();
-  const currentPageUid = useCurrentPageUid();
-  const isDynamicPage = !!currentPageUid;
-  const adminSchemaUid = useAdminSchemaUid();
-
-  const { data, refresh } = useRequest<{
+const RoutesRequestProvider: FC = ({ children }) => {
+  const mountedRef = useRef(false);
+  const { data, refresh, loading } = useRequest<{
     data: any;
-  }>(
-    {
-      url: `/desktopRoutes:listAccessible`,
-      params: { tree: true, sort: 'sort' },
-    },
-    {
-      refreshDeps: [adminSchemaUid],
-      onSuccess(data) {
-        const schema = convertRoutesToSchema(data?.data);
-        // url 为 `/admin` 的情况
-        if (isMatchAdmin) {
-          const s = findMenuItem(schema);
-          if (s) {
-            navigate(`/admin/${s['x-uid']}`);
-            startTransition(() => {
-              setTitle(s.title);
-            });
-          } else {
-            navigate(`/admin/`);
-          }
-          return;
-        }
-
-        // url 不为 `/admin/xxx` 的情况，不做处理
-        if (!isMatchAdminName || !isDynamicPage) return;
-
-        // url 为 `admin/xxx` 的情况
-        const s = findByUid(schema, currentPageUid);
-        if (s) {
-          startTransition(() => {
-            setTitle(s.title);
-          });
-        } else {
-          const s = findMenuItem(schema);
-          if (s) {
-            navigate(`/admin/${s['x-uid']}`);
-            startTransition(() => {
-              setTitle(s.title);
-            });
-          } else {
-            navigate(`/admin/`);
-          }
-        }
-      },
-    },
-  );
-
-  const menuSchema = useMemo(() => {
-    if (data?.data) {
-      return convertRoutesToSchema(data?.data);
-    }
-  }, [data?.data]);
+  }>({
+    url: `/desktopRoutes:listAccessible`,
+    params: { tree: true, sort: 'sort' },
+  });
 
   const allAccessRoutesValue = useMemo(() => {
     return {
@@ -170,183 +95,55 @@ const MenuSchemaRequestProvider: FC = ({ children }) => {
     };
   }, [data?.data, refresh]);
 
+  // Only valid on first load
+  if (loading && !mountedRef.current) {
+    return null;
+  } else {
+    mountedRef.current = true;
+  }
+
   return (
     <AllAccessDesktopRoutesContext.Provider value={allAccessRoutesValue}>
-      <MenuSchemaRequestContext.Provider value={menuSchema}>{children}</MenuSchemaRequestContext.Provider>
+      {children}
     </AllAccessDesktopRoutesContext.Provider>
   );
 };
 
-const MenuEditor = (props) => {
-  const { t } = useMenuTranslation();
-  const { setTitle: _setTitle } = useDocumentTitle();
-  const setTitle = useCallback((title) => _setTitle(t(title)), [_setTitle, t]);
-  const navigate = useNavigateNoUpdate();
-  const isInSettingsPage = useIsInSettingsPage();
-  const isMatchAdmin = useMatchAdmin();
-  const isMatchAdminName = useMatchAdminName();
-  const currentPageUid = useCurrentPageUid();
-  const { sideMenuRef } = props;
-  const [current, setCurrent] = useState(null);
-  const menuSchema = useContext(MenuSchemaRequestContext);
-
-  const onSelect = useCallback(
-    ({ item }: { item; key; keyPath; domEvent }) => {
-      const schema = item.props.schema;
-      startTransition(() => {
-        setTitle(schema.title);
-        setCurrent(schema);
-      });
-      navigate(`/admin/${schema['x-uid']}`);
-    },
-    [navigate, setTitle],
-  );
-
-  useEffect(() => {
-    const properties = Object.values(current?.root?.properties || {}).shift()?.['properties'] || menuSchema?.properties;
-    if (sideMenuRef.current) {
-      const pageType =
-        properties &&
-        Object.values(properties).find(
-          (item) => item['x-uid'] === currentPageUid && item['x-component'] === 'Menu.Item',
-        );
-      if (pageType || isInSettingsPage) {
-        sideMenuRef.current.style.display = 'none';
-      } else {
-        sideMenuRef.current.style.display = 'block';
-      }
-    }
-  }, [current?.root?.properties, currentPageUid, menuSchema?.properties, isInSettingsPage, sideMenuRef]);
-
-  const schema = useMemo(() => {
-    const s = menuSchema;
-    if (s?.['x-component-props']) {
-      s['x-component-props']['useProps'] = useMenuProps;
-    }
-    return s;
-  }, [menuSchema]);
-
-  useEffect(() => {
-    if (isMatchAdminName) {
-      const s = findByUid(schema, currentPageUid);
-      if (s) {
-        startTransition(() => {
-          setTitle(s.title);
-        });
-      }
-    }
-  }, [currentPageUid, isMatchAdmin, isMatchAdminName, schema, setTitle]);
-
-  const scope = useMemo(() => {
-    return { useMenuProps, onSelect, sideMenuRef };
-  }, [onSelect, sideMenuRef]);
-
-  return <SchemaComponent distributed scope={scope} schema={schema} />;
-};
-
-/**
- * 鼠标悬浮在顶部“更多”按钮时显示的子菜单的样式
- */
-const GlobalStyleForAdminLayout = createGlobalStyle`
-  .nb-container-of-header-submenu {
-    .ant-menu.ant-menu-submenu.ant-menu-submenu-popup {
-      .ant-menu.ant-menu-sub.ant-menu-vertical {
-        background-color: ${(p) => {
-          // @ts-ignore
-          return p.theme.colorBgHeader + ' !important';
-        }};
-        color: ${(p) => {
-          // @ts-ignore
-          return p.theme.colorTextHeaderMenu + ' !important';
-        }};
-        .ant-menu-item:hover {
-          color: ${(p) => {
-            // @ts-ignore
-            return p.theme.colorTextHeaderMenuHover + ' !important';
-          }};
-          background-color: ${(p) => {
-            // @ts-ignore
-            return p.theme.colorBgHeaderMenuHover + ' !important';
-          }};
-        }
-        .ant-menu-item.ant-menu-item-selected {
-          color: ${(p) => {
-            // @ts-ignore
-            return p.theme.colorTextHeaderMenuActive + ' !important';
-          }};
-          background-color: ${(p) => {
-            // @ts-ignore
-            return p.theme.colorBgHeaderMenuActive + ' !important';
-          }};
-        }
-      }
-    }
+const noAccessPermission = (currentPageUid: string, allAccessRoutes: NocoBaseDesktopRoute[]) => {
+  if (!currentPageUid) {
+    return false;
   }
-`;
 
-/**
- * 确保顶部菜单的子菜单的主题样式正确
- * @param param0
- * @returns
- */
-const SetThemeOfHeaderSubmenu = ({ children }) => {
-  const containerRef = useRef(null);
-
-  useEffect(() => {
-    containerRef.current = document.createElement('div');
-    containerRef.current.classList.add('nb-container-of-header-submenu');
-    document.body.appendChild(containerRef.current);
-
-    return () => {
-      document.body.removeChild(containerRef.current);
-    };
-  }, []);
-
-  const getPopupContainer = useCallback(() => containerRef.current, []);
-
-  return <ConfigProvider getPopupContainer={getPopupContainer}>{children}</ConfigProvider>;
-};
-
-const sideClass = css`
-  height: 100%;
-  /* position: fixed; */
-  position: relative;
-  left: 0;
-  top: 0;
-  background: rgba(0, 0, 0, 0);
-  z-index: 100;
-  .ant-layout-sider-children {
-    top: var(--nb-header-height);
-    position: fixed;
-    width: 200px;
-    height: calc(100vh - var(--nb-header-height));
+  const routeNode = findRouteBySchemaUid(currentPageUid, allAccessRoutes);
+  if (!routeNode) {
+    return true;
   }
-`;
 
-const InternalAdminSideBar: FC<{ pageUid: string; sideMenuRef: any }> = memo((props) => {
-  if (!props.pageUid) return null;
-  return <Layout.Sider className={sideClass} theme={'light'} ref={props.sideMenuRef}></Layout.Sider>;
-});
-InternalAdminSideBar.displayName = 'InternalAdminSideBar';
-
-const AdminSideBar = ({ sideMenuRef }) => {
-  const currentPageUid = useCurrentPageUid();
-  return <InternalAdminSideBar pageUid={currentPageUid} sideMenuRef={sideMenuRef} />;
+  return false;
 };
 
 export const AdminDynamicPage = () => {
   const currentPageUid = useCurrentPageUid();
+  const { allAccessRoutes } = useAllAccessDesktopRoutes();
 
-  return (
-    <KeepAlive uid={currentPageUid}>{(uid) => <RemoteSchemaComponent onlyRenderProperties uid={uid} />}</KeepAlive>
-  );
+  // Group page should not request schema data
+  if (isGroup(currentPageUid, allAccessRoutes)) {
+    return null;
+  }
+
+  // 404 page
+  if (noAccessPermission(currentPageUid, allAccessRoutes)) {
+    return <AppNotFound />;
+  }
+
+  return <KeepAlive uid={currentPageUid}>{(uid) => <RemoteSchemaComponent uid={uid} />}</KeepAlive>;
 };
 
 const layoutContentClass = css`
   display: flex;
   flex-direction: column;
   position: relative;
-  height: 100vh;
+  height: calc(100vh - var(--nb-header-height));
   > div {
     position: relative;
   }
@@ -358,14 +155,6 @@ const layoutContentClass = css`
     z-index: 0;
     padding: 0px 50px;
   }
-`;
-
-const layoutContentHeaderClass = css`
-  flex-shrink: 0;
-  height: var(--nb-header-height);
-  line-height: var(--nb-header-height);
-  background: transparent;
-  pointer-events: none;
 `;
 
 const style1: any = {
@@ -384,7 +173,8 @@ const style2: any = {
 };
 
 const className1 = css`
-  width: 200px;
+  width: 168px;
+  margin-right: 4px;
   display: inline-flex;
   flex-shrink: 0;
   color: #fff;
@@ -392,13 +182,11 @@ const className1 = css`
   align-items: center;
 `;
 const className2 = css`
-  padding: 0 16px;
   object-fit: contain;
   width: 100%;
   height: 100%;
 `;
 const className3 = css`
-  padding: 0 16px;
   width: 100%;
   height: 100%;
   font-weight: 500;
@@ -417,11 +205,6 @@ const className5 = css`
   height: 100%;
   z-index: 10;
 `;
-const theme = {
-  token: {
-    colorSplit: 'rgba(255, 255, 255, 0.1)',
-  },
-};
 
 const pageContentStyle: React.CSSProperties = {
   flex: 1,
@@ -434,13 +217,11 @@ export const LayoutContent = () => {
   /* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */
   return (
     <CurrentRouteProvider uid={currentPageUid}>
-      <Layout.Content className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
-        <header className={layoutContentHeaderClass}></header>
+      <div className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
         <div style={pageContentStyle}>
           <Outlet />
         </div>
-        {/* {service.contentLoading ? render() : <Outlet />} */}
-      </Layout.Content>
+      </div>
     </CurrentRouteProvider>
   );
 };
@@ -461,80 +242,422 @@ const NocoBaseLogo = () => {
   return <div className={className1}>{result?.loading ? null : logo}</div>;
 };
 
-export const InternalAdminLayout = () => {
-  const { token } = useToken();
-  const sideMenuRef = useRef<HTMLDivElement>();
+/**
+ * Fix the issue where SchemaToolbar cannot be displayed normally in Group
+ * @returns
+ */
+const MenuSchemaToolbarWithContainer = () => {
+  const divRef = useRef(null);
+  const [container, setContainer] = React.useState<HTMLDivElement | null>(null);
 
-  const layoutHeaderCss = useMemo(() => {
-    return css`
-      .ant-menu.ant-menu-dark .ant-menu-item-selected,
-      .ant-menu-submenu-popup.ant-menu-dark .ant-menu-item-selected,
-      .ant-menu-submenu-horizontal.ant-menu-submenu-selected {
-        background-color: ${token.colorBgHeaderMenuActive} !important;
-        color: ${token.colorTextHeaderMenuActive} !important;
-      }
-      .ant-menu-submenu-horizontal.ant-menu-submenu-selected > .ant-menu-submenu-title {
-        color: ${token.colorTextHeaderMenuActive} !important;
-      }
-      .ant-menu-dark.ant-menu-horizontal > .ant-menu-item:hover {
-        background-color: ${token.colorBgHeaderMenuHover} !important;
-        color: ${token.colorTextHeaderMenuHover} !important;
-      }
-
-      position: fixed;
-      left: 0;
-      right: 0;
-      height: var(--nb-header-height);
-      line-height: var(--nb-header-height);
-      padding: 0;
-      z-index: 100;
-      background-color: ${token.colorBgHeader} !important;
-
-      .ant-menu {
-        background-color: transparent;
-      }
-
-      .ant-menu-item,
-      .ant-menu-submenu-horizontal {
-        color: ${token.colorTextHeaderMenu} !important;
-      }
-    `;
-  }, [
-    token.colorBgHeaderMenuActive,
-    token.colorTextHeaderMenuActive,
-    token.colorBgHeaderMenuHover,
-    token.colorTextHeaderMenuHover,
-    token.colorBgHeader,
-    token.colorTextHeaderMenu,
-  ]);
+  useEffect(() => {
+    setContainer(divRef.current.parentElement.parentElement.parentElement);
+  }, []);
 
   return (
-    <Layout>
-      <GlobalStyleForAdminLayout />
-      <Layout.Header className={layoutHeaderCss}>
-        <div style={style1}>
-          <div style={style2}>
-            <NocoBaseLogo />
-            <div className={className4}>
-              <SetThemeOfHeaderSubmenu>
-                <MenuEditor sideMenuRef={sideMenuRef} />
-              </SetThemeOfHeaderSubmenu>
-            </div>
-          </div>
-          <div className={className5}>
-            <PinnedPluginList />
-            <ConfigProvider theme={theme}>
-              <Divider type="vertical" />
-            </ConfigProvider>
-            <Help />
-            <UserCenter />
-          </div>
-        </div>
-      </Layout.Header>
-      <AdminSideBar sideMenuRef={sideMenuRef} />
-      <LayoutContent />
-    </Layout>
+    <>
+      <MenuSchemaToolbar container={container} />
+      <div ref={divRef}></div>
+    </>
   );
+};
+
+const GroupItem: FC<{ item: any }> = (props) => {
+  const { item } = props;
+  const { designable } = useDesignable();
+
+  // fake schema used to pass routing information to SortableItem
+  const fakeSchema: any = { __route__: item._route };
+
+  return (
+    <ParentRouteContext.Provider value={item._parentRoute}>
+      <NocoBaseRouteContext.Provider value={item._route}>
+        <SortableItem id={item._route.id} schema={fakeSchema} aria-label={item.name}>
+          {props.children}
+          {designable && <MenuSchemaToolbarWithContainer />}
+        </SortableItem>
+      </NocoBaseRouteContext.Provider>
+    </ParentRouteContext.Provider>
+  );
+};
+
+const WithTooltip: FC<{ title: string; hidden: boolean }> = (props) => {
+  const { inHeader } = useContext(headerContext);
+
+  return (
+    <RouteContext.Consumer>
+      {(context) =>
+        context.collapsed && !props.hidden && !inHeader ? (
+          <Tooltip title={props.title} placement="right">
+            {props.children}
+          </Tooltip>
+        ) : (
+          props.children
+        )
+      }
+    </RouteContext.Consumer>
+  );
+};
+
+const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean } }> = (props) => {
+  const { item } = props;
+  const { parseURLAndParams } = useParseURLAndParams();
+  const divRef = useRef(null);
+  const location = useLocation();
+
+  useEffect(() => {
+    if (divRef.current) {
+      // 顶部 Add menu item 按钮放置在右侧
+      divRef.current.parentElement.parentElement.style.order = 999;
+
+      divRef.current.parentElement.parentElement.style.paddingLeft = 0;
+      divRef.current.parentElement.parentElement.style.padding = 0;
+    }
+  }, []);
+
+  const handleClickLink = useCallback(
+    async (event: React.MouseEvent) => {
+      const href = item._route.options?.href;
+      const params = item._route.options?.params;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      try {
+        const url = await parseURLAndParams(href, params || []);
+        window.open(url, '_blank');
+      } catch (err) {
+        console.error(err);
+        window.open(href, '_blank');
+      }
+    },
+    [parseURLAndParams, item],
+  );
+
+  if (item._hidden) {
+    return null;
+  }
+
+  const fakeSchema: any = { __route__: item._route };
+
+  // "Add menu item" does not need SchemaToolbar
+  if (item.key === 'x-designer-button') {
+    return (
+      <div ref={divRef}>
+        <ResetThemeTokenAndKeepAlgorithm>
+          <ParentRouteContext.Provider value={item._parentRoute}>
+            <NocoBaseRouteContext.Provider value={item._route}>{props.children}</NocoBaseRouteContext.Provider>
+          </ParentRouteContext.Provider>
+        </ResetThemeTokenAndKeepAlgorithm>
+      </div>
+    );
+  }
+
+  if (item._route?.type === NocoBaseDesktopRouteType.link) {
+    // fake schema used to pass routing information to SortableItem
+    return (
+      <ParentRouteContext.Provider value={item._parentRoute}>
+        <NocoBaseRouteContext.Provider value={item._route}>
+          <SortableItem id={item._route.id} schema={fakeSchema}>
+            <div onClick={handleClickLink}>
+              {/* 这里是为了扩大点击区域 */}
+              <Link to={location.pathname} aria-label={item.name}>
+                {props.children}
+              </Link>
+            </div>
+            <MenuSchemaToolbar />
+          </SortableItem>
+        </NocoBaseRouteContext.Provider>
+      </ParentRouteContext.Provider>
+    );
+  }
+
+  // 如果点击的是一个 group，直接跳转到第一个子页面
+  const path = item.redirect || item.path;
+
+  return (
+    <ParentRouteContext.Provider value={item._parentRoute}>
+      <NocoBaseRouteContext.Provider value={item._route}>
+        <SortableItem id={item._route.id} schema={fakeSchema}>
+          <WithTooltip
+            title={item.name}
+            hidden={item._route.type === NocoBaseDesktopRouteType.group || item._depth > 0}
+          >
+            <Link to={path} aria-label={item.name}>
+              {props.children}
+            </Link>
+          </WithTooltip>
+          <MenuSchemaToolbar />
+        </SortableItem>
+      </NocoBaseRouteContext.Provider>
+    </ParentRouteContext.Provider>
+  );
+};
+
+const resetStyle = css`
+  .ant-layout-sider-children {
+    margin-inline-end: 0 !important;
+  }
+
+  .ant-layout-header.ant-pro-layout-header {
+    border-block-end: none !important;
+  }
+
+  // 固定菜单中图标和标题的距离，防止当切换到紧凑模式后，图标和标题之间的距离过近
+  .ant-menu-title-content .ant-pro-base-menu-inline-item-title,
+  .ant-menu-title-content .ant-pro-base-menu-horizontal-item-title {
+    gap: 8px;
+  }
+
+  // 修复紧凑模式下且菜单收起时，菜单的高度不够的问题
+  .ant-pro-base-menu-vertical-collapsed .ant-pro-base-menu-vertical-menu-item {
+    height: auto;
+  }
+`;
+
+const contentStyle = {
+  paddingBlock: 0,
+  paddingInline: 0,
+};
+
+const headerContext = React.createContext<{ inHeader: boolean }>({ inHeader: false });
+
+const popoverStyle = css`
+  .ant-popover-inner {
+    padding: 0;
+    overflow: hidden;
+  }
+`;
+
+const MobileActions: FC = (props) => {
+  const { token } = useToken();
+
+  return (
+    <Popover rootClassName={popoverStyle} content={<PinnedPluginList />} color={token.colorBgHeader}>
+      <div style={{ padding: '0 16px', display: 'flex', alignItems: 'center', height: '100%', marginRight: -16 }}>
+        <EllipsisOutlined
+          style={{
+            color: token.colorTextHeaderMenu,
+            fontSize: 20,
+          }}
+        />
+      </div>
+    </Popover>
+  );
+};
+
+const actionsRender = (props) => {
+  if (props.isMobile) {
+    return <MobileActions />;
+  }
+
+  return <PinnedPluginList />;
+};
+
+const menuItemRender = (item, dom, options) => {
+  return (
+    <MenuItem item={item} options={options}>
+      {dom}
+    </MenuItem>
+  );
+};
+
+const subMenuItemRender = (item, dom) => {
+  return <GroupItem item={item}>{dom}</GroupItem>;
+};
+
+const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
+  return (
+    <RouteContext.Consumer>
+      {(context) =>
+        context.isMobile ? (
+          <>{props.children}</>
+        ) : (
+          ReactDOM.createPortal(
+            <div
+              className={css`
+                // Fix the issue where the collapse/expand button is covered by subpages
+                .ant-pro-sider-collapsed-button {
+                  top: 64px;
+                  left: ${props.collapsed ? 52 : 188}px;
+                  z-index: 200;
+                  transition: left 0.2s;
+                }
+              `}
+            >
+              {props.children}
+            </div>,
+            document.body,
+          )
+        )
+      }
+    </RouteContext.Consumer>
+  );
+};
+
+const collapsedButtonRender = (collapsed, dom) => {
+  return <CollapsedButton collapsed={collapsed}>{dom}</CollapsedButton>;
+};
+
+const headerContextValue = { inHeader: true };
+const headerRender = (props: HeaderViewProps, defaultDom: React.ReactNode) => {
+  return <headerContext.Provider value={headerContextValue}>{defaultDom}</headerContext.Provider>;
+};
+
+export const InternalAdminLayout = () => {
+  const { allAccessRoutes } = useAllAccessDesktopRoutes();
+  const { render: renderInitializer } = useSchemaInitializerRender(menuItemInitializer);
+  const { designable } = useDesignable();
+  const location = useLocation();
+  const { onDragEnd } = useMenuDragEnd();
+  const { token } = useToken();
+  const [isMobile, setIsMobile] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const doNotChangeCollapsedRef = useRef(false);
+  const route = useMemo(() => {
+    return {
+      path: '/',
+      children: convertRoutesToLayout(allAccessRoutes, { renderInitializer, designable, isMobile }),
+    };
+  }, [allAccessRoutes, renderInitializer, designable, isMobile]);
+  const layoutToken = useMemo(() => {
+    return {
+      header: {
+        colorBgHeader: token.colorBgHeader,
+        colorTextMenu: token.colorTextHeaderMenu,
+        colorTextMenuSelected: token.colorTextHeaderMenuActive,
+        colorTextMenuActive: token.colorTextHeaderMenuActive,
+        colorBgMenuItemHover: token.colorBgHeaderMenuHover,
+        colorBgMenuItemSelected: token.colorBgHeaderMenuActive,
+        heightLayoutHeader: 46,
+        colorHeaderTitle: token.colorTextHeaderMenu,
+      },
+      sider: {
+        colorMenuBackground: token.colorBgContainer,
+        colorTextMenu: token.colorText,
+        colorTextMenuSelected: token.colorPrimary,
+        colorBgMenuItemSelected: token.colorPrimaryBg,
+        colorBgMenuItemActive: token.colorPrimaryBg,
+        colorBgMenuItemHover: token.colorBgTextHover,
+      },
+      bgLayout: token.colorBgLayout,
+    };
+  }, [token]);
+
+  const onCollapse = useCallback((collapsed: boolean) => {
+    if (doNotChangeCollapsedRef.current) {
+      return;
+    }
+    setCollapsed(collapsed);
+  }, []);
+
+  const onPageChange = useCallback(() => {
+    doNotChangeCollapsedRef.current = true;
+    setTimeout(() => {
+      doNotChangeCollapsedRef.current = false;
+    });
+  }, []);
+
+  return (
+    <DndContext onDragEnd={onDragEnd}>
+      <ProLayout
+        contentStyle={contentStyle}
+        siderWidth={200}
+        className={resetStyle}
+        location={location}
+        route={route}
+        actionsRender={actionsRender}
+        logo={<NocoBaseLogo />}
+        title={''}
+        layout="mix"
+        splitMenus
+        token={layoutToken}
+        headerRender={headerRender}
+        menuItemRender={menuItemRender}
+        subMenuItemRender={subMenuItemRender}
+        collapsedButtonRender={collapsedButtonRender}
+        onCollapse={onCollapse}
+        collapsed={collapsed}
+        onPageChange={onPageChange}
+      >
+        <RouteContext.Consumer>
+          {(value: RouteContextType) => {
+            const { isMobile: _isMobile } = value;
+
+            if (_isMobile !== isMobile) {
+              setIsMobile(_isMobile);
+            }
+
+            return <LayoutContent />;
+          }}
+        </RouteContext.Consumer>
+      </ProLayout>
+    </DndContext>
+  );
+};
+
+function getDefaultPageUid(routes: NocoBaseDesktopRoute[]) {
+  // Find the first route of type "page"
+  for (const route of routes) {
+    if (route.type === NocoBaseDesktopRouteType.page) {
+      return route.schemaUid;
+    }
+
+    if (route.children?.length) {
+      const result = getDefaultPageUid(route.children);
+      if (result) {
+        return result;
+      }
+    }
+  }
+}
+
+const NavigateToDefaultPage: FC = (props) => {
+  const { allAccessRoutes } = useAllAccessDesktopRoutes();
+  const location = useLocationNoUpdate();
+
+  const defaultPageUid = getDefaultPageUid(allAccessRoutes);
+
+  return (
+    <>
+      {props.children}
+      {defaultPageUid && location.pathname === '/admin' && <Navigate replace to={`/admin/${defaultPageUid}`} />}
+    </>
+  );
+};
+
+const findRouteByMenuSchemaUid = (schemaUid: string, routes: NocoBaseDesktopRoute[]) => {
+  if (!routes) return;
+
+  for (const route of routes) {
+    if (route.menuSchemaUid === schemaUid) {
+      return route;
+    }
+
+    if (route.children?.length) {
+      const result = findRouteByMenuSchemaUid(schemaUid, route.children);
+      if (result) {
+        return result;
+      }
+    }
+  }
+};
+
+/**
+ * Compatibility with legacy page routes
+ * @param props
+ * @returns
+ */
+const LegacyRouteCompat: FC = (props) => {
+  const currentPageUid = useCurrentPageUid();
+  const { allAccessRoutes } = useAllAccessDesktopRoutes();
+  const route = findRouteByMenuSchemaUid(currentPageUid, allAccessRoutes);
+
+  if (route) {
+    return <Navigate to={`/admin/${route.schemaUid}`} />;
+  }
+
+  return <>{props.children}</>;
 };
 
 export const AdminProvider = (props) => {
@@ -543,13 +666,17 @@ export const AdminProvider = (props) => {
       <CurrentTabUidProvider>
         <IsSubPageClosedByPageMenuProvider>
           <ACLRolesCheckProvider>
-            <MenuSchemaRequestProvider>
-              <RemoteCollectionManagerProvider>
-                <CurrentAppInfoProvider>
-                  <RemoteSchemaTemplateManagerProvider>{props.children}</RemoteSchemaTemplateManagerProvider>
-                </CurrentAppInfoProvider>
-              </RemoteCollectionManagerProvider>
-            </MenuSchemaRequestProvider>
+            <RoutesRequestProvider>
+              <NavigateToDefaultPage>
+                <LegacyRouteCompat>
+                  <RemoteCollectionManagerProvider>
+                    <CurrentAppInfoProvider>
+                      <RemoteSchemaTemplateManagerProvider>{props.children}</RemoteSchemaTemplateManagerProvider>
+                    </CurrentAppInfoProvider>
+                  </RemoteCollectionManagerProvider>
+                </LegacyRouteCompat>
+              </NavigateToDefaultPage>
+            </RoutesRequestProvider>
           </ACLRolesCheckProvider>
         </IsSubPageClosedByPageMenuProvider>
       </CurrentTabUidProvider>
@@ -575,18 +702,163 @@ export class AdminLayoutPlugin extends Plugin {
   }
 }
 
-function getRouteNodeBySchemaUid(schemaUid: string, treeArray: any[]) {
+export function findRouteBySchemaUid(schemaUid: string, treeArray: any[]) {
+  if (!treeArray) return;
+
   for (const node of treeArray) {
     if (schemaUid === node.schemaUid || schemaUid === node.menuSchemaUid) {
       return node;
     }
 
     if (node.children?.length) {
-      const result = getRouteNodeBySchemaUid(schemaUid, node.children);
+      const result = findRouteBySchemaUid(schemaUid, node.children);
       if (result) {
         return result;
       }
     }
   }
   return null;
+}
+
+const MenuItemIcon: FC<{ icon: string; title: string }> = (props) => {
+  const { inHeader } = useContext(headerContext);
+
+  return (
+    <RouteContext.Consumer>
+      {(value: RouteContextType) => {
+        const { collapsed } = value;
+
+        if (collapsed && !inHeader) {
+          return props.icon ? (
+            <Icon type={props.icon} />
+          ) : (
+            <span
+              style={{
+                display: 'inline-block',
+                width: '100%',
+                textAlign: 'center',
+              }}
+            >
+              {props.title.charAt(0)}
+            </span>
+          );
+        }
+
+        return props.icon ? <Icon type={props.icon} /> : null;
+      }}
+    </RouteContext.Consumer>
+  );
+};
+
+function convertRoutesToLayout(
+  routes: NocoBaseDesktopRoute[],
+  { renderInitializer, designable, parentRoute, isMobile, depth = 0 }: any,
+) {
+  if (!routes) return;
+
+  const getInitializerButton = (testId: string) => {
+    return {
+      key: 'x-designer-button',
+      name: renderInitializer({
+        style: { background: 'none' },
+        'data-testid': testId,
+      }),
+      path: '/',
+      disabled: true,
+      icon: <Icon type="setting" />,
+    };
+  };
+
+  const result: any[] = routes.map((item) => {
+    if (item.type === NocoBaseDesktopRouteType.link) {
+      return {
+        name: item.title,
+        icon: item.icon ? <Icon type={item.icon} /> : null,
+        path: '/',
+        hideInMenu: item.hideInMenu,
+        _route: item,
+        _parentRoute: parentRoute,
+      };
+    }
+
+    if (item.type === NocoBaseDesktopRouteType.page) {
+      return {
+        name: item.title,
+        icon: item.icon ? <Icon type={item.icon} /> : null,
+        path: `/admin/${item.schemaUid}`,
+        redirect: `/admin/${item.schemaUid}`,
+        hideInMenu: item.hideInMenu,
+        _route: item,
+        _parentRoute: parentRoute,
+      };
+    }
+
+    if (item.type === NocoBaseDesktopRouteType.group) {
+      const children =
+        convertRoutesToLayout(item.children, { renderInitializer, designable, parentRoute: item, depth: depth + 1 }) ||
+        [];
+
+      // add a designer button
+      if (designable && depth === 0) {
+        children.push({ ...getInitializerButton('schema-initializer-Menu-side'), _parentRoute: item });
+      }
+
+      return {
+        name: item.title,
+        icon: item.icon ? <Icon type={item.icon} /> : null,
+        path: `/admin/${item.id}`,
+        redirect:
+          children[0]?.key === 'x-designer-button'
+            ? undefined
+            : `/admin/${findFirstPageRoute(item.children)?.schemaUid || ''}`,
+        routes: children.length === 0 ? [{ path: '/', name: ' ', disabled: true, _hidden: true }] : children,
+        hideInMenu: item.hideInMenu,
+        _route: item,
+        _depth: depth,
+      };
+    }
+  });
+
+  if (designable && depth === 0) {
+    isMobile
+      ? result.push({ ...getInitializerButton('schema-initializer-Menu-header') })
+      : result.unshift({ ...getInitializerButton('schema-initializer-Menu-header') });
+  }
+
+  return result;
+}
+
+function isGroup(groupId: string, allAccessRoutes: NocoBaseDesktopRoute[]) {
+  const route = findRouteById(groupId, allAccessRoutes);
+  return route?.type === NocoBaseDesktopRouteType.group;
+}
+
+function findRouteById(id: string, treeArray: any[]) {
+  for (const node of treeArray) {
+    if (Number(id) === Number(node.id)) {
+      return node;
+    }
+
+    if (node.children?.length) {
+      const result = findRouteById(id, node.children);
+      if (result) {
+        return result;
+      }
+    }
+  }
+  return null;
+}
+
+function findFirstPageRoute(routes: NocoBaseDesktopRoute[]) {
+  if (!routes) return;
+
+  for (const route of routes) {
+    if (route.type === NocoBaseDesktopRouteType.page) {
+      return route;
+    }
+
+    if (route.children?.length) {
+      return findFirstPageRoute(route.children);
+    }
+  }
 }
