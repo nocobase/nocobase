@@ -109,7 +109,7 @@ export const workflowCollection = {
 
 export const todoCollection = {
   title: `{{t("Workflow todos", { ns: "${NAMESPACE}" })}}`,
-  name: 'users_jobs',
+  name: 'workflowManualTasks',
   fields: [
     {
       type: 'belongsTo',
@@ -398,7 +398,7 @@ export const WorkflowTodo: React.FC<{ columns?: string[] }> & {
                 },
                 title: '{{t("Actions")}}',
                 properties: {
-                  view: getWorkflowTodoViewActionSchema({ defaultOpenMode, collectionName: 'users_jobs' }),
+                  view: getWorkflowTodoViewActionSchema({ defaultOpenMode, collectionName: 'workflowManualTasks' }),
                 },
               },
               ...columns.reduce((schema, key) => {
@@ -518,7 +518,7 @@ function useSubmit() {
       field.data = field.data || {};
       field.data.loading = true;
 
-      await api.resource('users_jobs').submit({
+      await api.resource('workflowManualTasks').submit({
         filterByTk: userJob.id,
         values: {
           result: { [formKey]: { ...values, ...assignedValues.values }, _: actionKey },
@@ -545,7 +545,7 @@ function FlowContextProvider(props) {
       return;
     }
     api
-      .resource('users_jobs')
+      .resource('workflowManualTasks')
       .get?.({
         filterByTk: id,
         appends: ['node', 'job', 'workflow', 'workflow.nodes', 'execution', 'execution.jobs'],
@@ -699,8 +699,8 @@ function Drawer() {
 function Decorator(props) {
   const { params = {}, children } = props;
   const blockProps = {
-    collection: 'users_jobs',
-    resource: 'users_jobs',
+    collection: 'workflowManualTasks',
+    resource: 'workflowManualTasks',
     action: 'list',
     params: {
       pageSize: 20,

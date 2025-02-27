@@ -414,7 +414,10 @@ const className4 = css`
 const className5 = css`
   position: relative;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
   height: 100%;
+  line-height: 1;
   z-index: 10;
 `;
 const theme = {

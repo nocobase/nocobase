@@ -16,8 +16,9 @@ import LRUCache from 'lru-cache';
 import { Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
-
+import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { Logger, LoggerOptions } from '@nocobase/logger';
+
 import Processor from './Processor';
 import initActions from './actions';
 import { EXECUTION_STATUS } from './constants';
@@ -34,10 +35,9 @@ import DestroyInstruction from './instructions/DestroyInstruction';
 import QueryInstruction from './instructions/QueryInstruction';
 import UpdateInstruction from './instructions/UpdateInstruction';
 
-import type { ExecutionModel, JobModel, WorkflowModel } from './types';
+import type { ExecutionModel, JobModel, WorkflowModel, WorkflowTaskModel } from './types';
 import WorkflowRepository from './repositories/WorkflowRepository';
-import { Context } from '@nocobase/actions';
-import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
+import WorkflowTasksRepository from './repositories/WorkflowTasksRepository';
 
 type ID = number | string;
 
@@ -213,6 +213,7 @@ export default class PluginWorkflowServer extends Plugin {
   async beforeLoad() {
     this.db.registerRepositories({
       WorkflowRepository,
+      WorkflowTasksRepository,
     });
   }
 
@@ -731,5 +732,37 @@ export default class PluginWorkflowServer extends Plugin {
     if (create) {
       return db.sequelize.transaction();
     }
+  }
+
+  /**
+   * @experimental
+   */
+  public async toggleTaskStatus(task: WorkflowTaskModel, done: boolean, { transaction }: Transactionable) {
+    const { db, ws } = this.app;
+    const repository = db.getRepository('workflowTasks') as WorkflowTasksRepository;
+    if (done) {
+      await repository.destroy({
+        filter: {
+          type: task.type,
+          key: `${task.key}`,
+        },
+        transaction,
+      });
+    } else {
+      await repository.updateOrCreate({
+        filterKeys: ['key', 'type'],
+        values: task,
+        transaction,
+      });
+    }
+    const counts =
+      (await repository.countAll({
+        where: {
+          userId: task.userId,
+        },
+        transaction,
+      })) || [];
+
+    ws.sendToAppUser(this.app.name, `${task.userId}`, { type: 'workflow:tasks:updated', payload: counts });
   }
 }
