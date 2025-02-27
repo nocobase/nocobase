@@ -398,7 +398,12 @@ const HeaderMenu = React.memo<{
   },
 );
 
-const SideMenu = React.memo<any>(
+type SideMenuProps = Omit<MenuProps, 'mode'> & {
+  mode: 'mix' | MenuProps['mode'];
+  [key: string]: any;
+};
+
+const SideMenu = React.memo<SideMenuProps>(
   ({
     mode,
     sideMenuSchema,
@@ -521,14 +526,10 @@ export const useMenuDragEnd = () => {
         return;
       }
 
-      const fromIndex = activeSchema.__route__.sort;
-      const toIndex = overSchema.__route__.sort;
-
       moveRoute({
         sourceId: activeSchema.__route__.id,
         targetId: overSchema.__route__.id,
         sortField: 'sort',
-        method: fromIndex > toIndex ? 'prepend' : 'insertAfter',
       });
     },
     [moveRoute],
