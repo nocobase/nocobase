@@ -376,4 +376,36 @@ describe('union role: full permissions', async () => {
     // no title_id, only id and createdById
     expect(getTbResponse.body.data.some((x) => Boolean(x.title_id))).toBe(false);
   });
+
+  it('should list allowedActions include update of all data when set general actions: { edit: all records, delete: all records }', async () => {
+    const rootAgent = await app.agent().login(rootUser);
+    const updateRoleActions = await rootAgent
+      .post(`/dataSources/main/roles:update`)
+      .query({
+        filterByTk: role1.name,
+      })
+      .send({
+        roleName: role1.name,
+        strategy: {
+          actions: ['create', 'view', 'destroy', 'update'],
+        },
+        dataSourceKey: 'main',
+      });
+    expect(updateRoleActions.statusCode).toBe(200);
+    const createUserResponse1 = await rootAgent.resource('roles').create({
+      values: {
+        name: generateRandomString(),
+      },
+    });
+    agent = (await (await app.agent().login(user, 'union')).set({ 'X-With-ACL-Meta': true })) as any;
+    const rolesResponse = await agent.resource('roles').list({ pageSize: 30 });
+    expect(rolesResponse.statusCode).toBe(200);
+    const meta = rolesResponse.body.meta;
+    const data = rolesResponse.body.data;
+    expect(data.length).gt(0);
+    expect(meta.allowedActions.update).exist;
+    expect(meta.allowedActions.destroy).exist;
+    expect(meta.allowedActions.update).include(createUserResponse1.body.data.name);
+    expect(meta.allowedActions.destroy).include(createUserResponse1.body.data.name);
+  });
 });
