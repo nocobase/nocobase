@@ -23,7 +23,6 @@ describe('storage:s3', () => {
   let AttachmentRepo;
   let StorageRepo;
   let storage;
-  const s3Storage = new S3Storage();
 
   beforeEach(async () => {
     app = await getApp();
@@ -35,7 +34,7 @@ describe('storage:s3', () => {
 
     storage = await StorageRepo.create({
       values: {
-        ...s3Storage.defaults(),
+        ...S3Storage.defaults(),
         name: 's3',
         default: true,
         path: 'test/path',
@@ -106,7 +105,7 @@ describe('storage:s3', () => {
     itif('destroy record should not delete file when paranoid', async () => {
       const paranoidStorage = await StorageRepo.create({
         values: {
-          ...s3Storage.defaults(),
+          ...S3Storage.defaults(),
           name: 's3-2',
           path: 'test/nocobase',
           paranoid: true,

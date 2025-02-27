@@ -29,7 +29,6 @@ import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider'
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
 
 import { useApp } from '../application';
-import { NavigateToSigninWithRedirect } from '../user/CurrentUserProvider';
 
 // 注意: 必须要对 useBlockRequestContext 进行引用，否则会导致 Data sources 页面报错，原因未知
 useBlockRequestContext;
@@ -88,9 +87,6 @@ export const ACLRolesCheckProvider = (props) => {
   );
   if (result.loading) {
     return render();
-  }
-  if (result.error) {
-    return <NavigateToSigninWithRedirect />;
   }
   return <ACLContext.Provider value={result}>{props.children}</ACLContext.Provider>;
 };
@@ -308,30 +304,32 @@ export const ACLActionProvider = (props) => {
   const collection = useCollection();
   const recordPkValue = useRecordPkValue();
   const resource = useResourceName();
-  const { parseAction } = useACLRoleContext();
+  const { parseAction, uiButtonSchemasBlacklist } = useACLRoleContext();
   const schema = useFieldSchema();
+  const currentUid = schema['x-uid'];
   let actionPath = schema['x-acl-action'];
   const editablePath = ['create', 'update', 'destroy', 'importXlsx'];
 
-  if (!actionPath && resource && schema['x-action']) {
+  if (!actionPath && resource && schema['x-action'] && editablePath.includes(schema['x-action'])) {
     actionPath = `${resource}:${schema['x-action']}`;
   }
-  if (!actionPath?.includes(':')) {
+  if (actionPath && !actionPath?.includes(':')) {
     actionPath = `${resource}:${actionPath}`;
   }
 
   const params = useMemo(
-    () => parseAction(actionPath, { schema, recordPkValue }),
+    () => actionPath && parseAction(actionPath, { schema, recordPkValue }),
     [parseAction, actionPath, schema, recordPkValue],
   );
-
+  if (uiButtonSchemasBlacklist.includes(currentUid)) {
+    return <ACLActionParamsContext.Provider value={false}>{props.children}</ACLActionParamsContext.Provider>;
+  }
   if (!actionPath) {
     return <>{props.children}</>;
   }
   if (!resource) {
     return <>{props.children}</>;
   }
-
   if (!params) {
     return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
   }

@@ -21,7 +21,6 @@ describe('storage:tx-cos', () => {
   let agent;
   let db: Database;
   let storage;
-  const txStorage = new TXCOSStorage();
 
   beforeEach(async () => {
     app = await getApp();
@@ -30,7 +29,7 @@ describe('storage:tx-cos', () => {
 
     const Storage = db.getCollection('storages').model;
     storage = await Storage.create({
-      ...txStorage.defaults(),
+      ...TXCOSStorage.defaults(),
       name: 'tx-cos',
       default: true,
       path: 'test/path',

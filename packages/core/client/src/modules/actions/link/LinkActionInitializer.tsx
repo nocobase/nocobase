@@ -20,6 +20,7 @@ export const LinkActionInitializer = (props) => {
     'x-settings': 'actionSettings:link',
     'x-component': props?.['x-component'] || 'Action.Link',
     'x-use-component-props': 'useLinkActionProps',
+    'x-decorator': 'ACLActionProvider',
   };
 
   const itemConfig = useSchemaInitializerItem();

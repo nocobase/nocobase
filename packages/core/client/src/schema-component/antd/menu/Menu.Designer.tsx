@@ -463,11 +463,23 @@ export const MenuDesigner = () => {
         afterEnd: 'insertAfter',
       };
 
+      // 'beforeEnd' 表示的是插入到一个分组的里面
+      const options =
+        position === 'beforeEnd'
+          ? {
+              targetScope: {
+                parentId: current.__route__.id,
+              },
+            }
+          : {
+              targetId: current.__route__.id,
+            };
+
       await moveRoute({
         sourceId: (fieldSchema as any).__route__.id,
-        targetId: current.__route__.id,
         sortField: 'sort',
         method: positionToMethod[position],
+        ...options,
       });
 
       dn.loadAPIClientEvents();

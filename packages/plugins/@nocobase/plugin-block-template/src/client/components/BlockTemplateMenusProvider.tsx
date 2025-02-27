@@ -15,6 +15,7 @@ import {
   useResource,
   ISchema,
   SchemaInitializerItemType,
+  useCurrentUserContext,
 } from '@nocobase/client';
 import React, { createContext, useContext, useEffect } from 'react';
 import PluginBlockTemplateClient from '..';
@@ -50,6 +51,7 @@ export const BlockTemplateMenusProvider = ({ children }) => {
   const isMobile = window.location.pathname.startsWith(mobilePlugin.mobileBasename);
   const location = useLocation();
   const previousPathRef = React.useRef(location.pathname);
+  const user = useCurrentUserContext();
 
   const { data, loading, refresh } = useRequest<{
     data: {
@@ -74,6 +76,7 @@ export const BlockTemplateMenusProvider = ({ children }) => {
     },
     {
       cacheKey: 'blockTemplates',
+      manual: true,
     },
   );
 
@@ -86,6 +89,12 @@ export const BlockTemplateMenusProvider = ({ children }) => {
     }
     previousPathRef.current = location.pathname;
   }, [location.pathname, refresh]);
+
+  useEffect(() => {
+    if (user?.data) {
+      refresh();
+    }
+  }, [user, refresh]);
 
   const handleTemplateClick = useMemoizedFn(async ({ item }, options?: any, insert?: any) => {
     const { uid } = item;

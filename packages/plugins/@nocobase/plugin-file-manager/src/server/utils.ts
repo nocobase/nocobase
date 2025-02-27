@@ -7,13 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import crypto from 'crypto';
+import { uid } from '@nocobase/utils';
 import path from 'path';
 
 export function getFilename(req, file, cb) {
-  crypto.pseudoRandomBytes(16, function (err, raw) {
-    cb(err, err ? undefined : `${raw.toString('hex')}${path.extname(file.originalname)}`);
-  });
+  const baseName = path.basename(file.originalname, path.extname(file.originalname));
+  cb(null, `${baseName}-${uid(6)}${path.extname(file.originalname)}`);
 }
 
 export const cloudFilenameGetter = (storage) => (req, file, cb) => {

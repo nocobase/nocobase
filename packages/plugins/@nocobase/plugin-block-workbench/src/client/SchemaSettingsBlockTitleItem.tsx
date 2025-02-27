@@ -20,11 +20,11 @@ export function CustomSchemaSettingsBlockTitleItem() {
 
   return (
     <SchemaSettingsModalItem
-      title={t('Edit block title')}
+      title={t('Edit block title & description')}
       schema={
         {
           type: 'object',
-          title: t('Edit block title'),
+          title: t('Edit block title & description'),
           properties: {
             title: {
               title: t('Block title'),
@@ -36,7 +36,7 @@ export function CustomSchemaSettingsBlockTitleItem() {
             description: {
               title: t('Description'),
               type: 'string',
-              default: fieldSchema?.['x-component-props']?.['description'],
+              default: fieldSchema?.['x-decorator-props']?.['description'],
               'x-decorator': 'FormItem',
               'x-component': 'Markdown',
             },

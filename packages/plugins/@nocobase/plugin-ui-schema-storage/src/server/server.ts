@@ -42,7 +42,7 @@ export class PluginUISchemaStorageServer extends Plugin {
 
     this.app.acl.registerSnippet({
       name: 'ui.uiSchemas',
-      actions: ['uiSchemas:*'],
+      actions: ['uiSchemas:*', 'uiSchemas.roles:list', 'uiSchemas.roles:set'],
     });
 
     db.on('uiSchemas.beforeCreate', function setUid(model) {

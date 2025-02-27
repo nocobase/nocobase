@@ -14,6 +14,7 @@ import {
   useSchemaInitializer,
   useOpenModeContext,
   ModalActionSchemaInitializerItem,
+  SchemaSettingAccessControl,
 } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -42,6 +43,12 @@ export const workbenchActionSettingsPopup = new SchemaSettings({
             { label: t('Page'), value: 'page' },
           ],
         };
+      },
+    },
+    {
+      ...SchemaSettingAccessControl,
+      useVisible() {
+        return true;
       },
     },
     {

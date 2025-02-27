@@ -19,7 +19,7 @@ import { FileModel } from './FileModel';
 import initActions from './actions';
 import { getFileData } from './actions/attachments';
 import { AttachmentInterface } from './interfaces/attachment-interface';
-import { AttachmentModel, IStorage, StorageModel } from './storages';
+import { AttachmentModel, StorageClassType, StorageModel, StorageType } from './storages';
 import StorageTypeAliOss from './storages/ali-oss';
 import StorageTypeLocal from './storages/local';
 import StorageTypeS3 from './storages/s3';
@@ -53,7 +53,7 @@ export type UploadFileOptions = {
 };
 
 export class PluginFileManagerServer extends Plugin {
-  storageTypes = new Registry<IStorage>();
+  storageTypes = new Registry<StorageClassType>();
   storagesCache = new Map<number, StorageModel>();
 
   afterDestroy = async (record: Model, options) => {
@@ -66,15 +66,16 @@ export class PluginFileManagerServer extends Plugin {
     if (storage?.paranoid) {
       return;
     }
-    const storageConfig = this.storageTypes.get(storage.type);
-    const result = await storageConfig.delete(storage, [record as unknown as AttachmentModel]);
+    const Type = this.storageTypes.get(storage.type);
+    const storageConfig = new Type(storage);
+    const result = await storageConfig.delete([record as unknown as AttachmentModel]);
     if (!result[0]) {
       throw new FileDeleteError('Failed to delete file', record);
     }
   };
 
-  registerStorageType(type: string, options: IStorage) {
-    this.storageTypes.register(type, options);
+  registerStorageType(type: string, Type: StorageClassType) {
+    this.storageTypes.register(type, Type);
   }
 
   async createFileRecord(options: FileRecordOptions) {
@@ -98,21 +99,15 @@ export class PluginFileManagerServer extends Plugin {
     const storageRepository = this.db.getRepository('storages');
     let storageInstance;
 
-    if (storageName) {
-      storageInstance = await storageRepository.findOne({
-        filter: {
-          name: storageName,
-        },
-      });
-    }
-
-    if (!storageInstance) {
-      storageInstance = await storageRepository.findOne({
-        filter: {
-          default: true,
-        },
-      });
-    }
+    storageInstance = await storageRepository.findOne({
+      filter: storageName
+        ? {
+            name: storageName,
+          }
+        : {
+            default: true,
+          },
+    });
 
     const fileStream = fs.createReadStream(filePath);
 
@@ -126,13 +121,14 @@ export class PluginFileManagerServer extends Plugin {
       storageInstance.options['documentRoot'] = documentRoot;
     }
 
-    const storageConfig = this.storageTypes.get(storageInstance.type);
+    const storageType = this.storageTypes.get(storageInstance.type);
+    const storage = new storageType(storageInstance);
 
-    if (!storageConfig) {
+    if (!storage) {
       throw new Error(`[file-manager] storage type "${storageInstance.type}" is not defined`);
     }
 
-    const engine = storageConfig.make(storageInstance);
+    const engine = storage.make();
 
     const file = {
       originalname: basename(filePath),
@@ -166,14 +162,14 @@ export class PluginFileManagerServer extends Plugin {
   }
 
   async install() {
-    const defaultStorageConfig = this.storageTypes.get(DEFAULT_STORAGE_TYPE);
+    const defaultStorageType = this.storageTypes.get(DEFAULT_STORAGE_TYPE);
 
-    if (defaultStorageConfig) {
+    if (defaultStorageType) {
       const Storage = this.db.getCollection('storages');
       if (
         await Storage.repository.findOne({
           filter: {
-            name: defaultStorageConfig.defaults().name,
+            name: defaultStorageType.defaults().name,
           },
         })
       ) {
@@ -181,7 +177,7 @@ export class PluginFileManagerServer extends Plugin {
       }
       await Storage.repository.create({
         values: {
-          ...defaultStorageConfig.defaults(),
+          ...defaultStorageType.defaults(),
           type: DEFAULT_STORAGE_TYPE,
           default: true,
         },
@@ -219,10 +215,10 @@ export class PluginFileManagerServer extends Plugin {
   async load() {
     this.db.on('afterDestroy', this.afterDestroy);
 
-    this.storageTypes.register(STORAGE_TYPE_LOCAL, new StorageTypeLocal());
-    this.storageTypes.register(STORAGE_TYPE_ALI_OSS, new StorageTypeAliOss());
-    this.storageTypes.register(STORAGE_TYPE_S3, new StorageTypeS3());
-    this.storageTypes.register(STORAGE_TYPE_TX_COS, new StorageTypeTxCos());
+    this.storageTypes.register(STORAGE_TYPE_LOCAL, StorageTypeLocal);
+    this.storageTypes.register(STORAGE_TYPE_ALI_OSS, StorageTypeAliOss);
+    this.storageTypes.register(STORAGE_TYPE_S3, StorageTypeS3);
+    this.storageTypes.register(STORAGE_TYPE_TX_COS, StorageTypeTxCos);
 
     const Storage = this.db.getModel('storages');
     Storage.afterSave((m, { transaction }) => {
@@ -283,6 +279,12 @@ export class PluginFileManagerServer extends Plugin {
     this.app.acl.addFixedParams('attachments', 'destroy', ownMerger);
 
     this.app.db.interfaceManager.registerInterfaceType('attachment', AttachmentInterface);
+  }
+
+  getFileURL(file: AttachmentModel) {
+    const storage = this.storagesCache.get(file.storageId);
+    const storageType = this.storageTypes.get(storage.type);
+    return new storageType(storage).getFileURL(file);
   }
 }
 

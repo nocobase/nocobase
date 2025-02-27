@@ -169,7 +169,13 @@ const useEvents = (
         if (res) return out;
         const targetTitleCollectionField = fields.find((v) => v.name === fieldNames.title);
         const targetTitle = plugin.getTitleFieldInterface(targetTitleCollectionField.interface);
-        const title = getLabelFormatValue(labelUiSchema, get(item, fieldNames.title), true, targetTitle?.TitleRenderer);
+        const title = getLabelFormatValue(
+          labelUiSchema,
+          get(item, fieldNames.title),
+          true,
+          targetTitleCollectionField,
+          targetTitle?.TitleRenderer,
+        );
 
         const event: Event = {
           id: get(item, fieldNames.id || 'id'),

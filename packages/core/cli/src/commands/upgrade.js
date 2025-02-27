@@ -52,8 +52,14 @@ module.exports = (cli) => {
         }
       };
       const pkg = require('../../package.json');
+      let distTag = 'latest';
+      if (pkg.version.includes('alpha')) {
+        distTag = 'alpha';
+      } else if (pkg.version.includes('beta')) {
+        distTag = 'beta';
+      }
       // get latest version
-      const { stdout } = await run('npm', ['info', options.next ? '@nocobase/cli@next' : '@nocobase/cli', 'version'], {
+      const { stdout } = await run('npm', ['info', `@nocobase/cli@${distTag}`, 'version'], {
         stdio: 'pipe',
       });
       if (pkg.version === stdout) {
@@ -62,13 +68,7 @@ module.exports = (cli) => {
         await rmAppDir();
         return;
       }
-      const currentY = 1 * pkg.version.split('.')[1];
-      const latestY = 1 * stdout.split('.')[1];
-      if (options.next || currentY > latestY) {
-        await run('yarn', ['add', '@nocobase/cli@next', '@nocobase/devtools@next', '-W']);
-      } else {
-        await run('yarn', ['add', '@nocobase/cli', '@nocobase/devtools', '-W']);
-      }
+      await run('yarn', ['add', `@nocobase/cli@${distTag}`, `@nocobase/devtools@${distTag}`, '-W']);
       await run('yarn', ['install']);
       await downloadPro();
       await runAppCommand('upgrade');

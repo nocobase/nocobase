@@ -10,6 +10,7 @@
 import { expect, test } from '@nocobase/test/e2e';
 import {
   formFieldDependsOnSubtableFieldsWithLinkageRules,
+  whenClearingARelationshipFieldTheValueOfTheAssociatedFieldShouldBeCleared,
   whenSetToHideRetainedValueItShouldNotImpactTheFieldSDefaultValueVariables,
 } from './template';
 
@@ -80,6 +81,25 @@ test.describe('linkage rules', () => {
     await expect(
       page.getByRole('button', { name: 'block-item-CardItem-roles-' }).getByRole('row', { name: '123456789' }),
     ).toBeVisible();
+  });
+
+  test('When clearing a relationship field, the value of the associated field should be cleared', async ({
+    page,
+    mockPage,
+  }) => {
+    await mockPage(whenClearingARelationshipFieldTheValueOfTheAssociatedFieldShouldBeCleared).goto();
+
+    // 1. 点击 Edit 按钮打开编辑表单弹窗
+    await page.getByLabel('action-Action.Link-Edit-').click();
+
+    // 2. 清空 roles 字段的值，nickname 字段的值应该被清空
+    await page.getByTestId('select-object-multiple').hover();
+    await page.getByLabel('icon-close-select').click();
+    await expect(
+      page
+        .getByRole('button', { name: 'block-item-CollectionField-users-form-users.nickname-Nickname' })
+        .getByRole('textbox'),
+    ).toBeEmpty();
   });
 });
 

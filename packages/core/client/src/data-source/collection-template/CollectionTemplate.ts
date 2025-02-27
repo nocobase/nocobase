@@ -63,7 +63,7 @@ export abstract class CollectionTemplate {
   /** UI configurable CollectionOptions parameters (fields for adding or editing Collection forms) */
   configurableProperties?: Record<string, ISchema>;
   /** Available field types for the current template */
-  availableFieldInterfaces?: AvailableFieldInterfacesInclude | AvailableFieldInterfacesExclude;
+  availableFieldInterfaces?: AvailableFieldInterfacesInclude & AvailableFieldInterfacesExclude;
   /** Whether it is a divider */
   divider?: boolean;
   /** Template description */

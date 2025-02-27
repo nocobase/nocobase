@@ -363,6 +363,10 @@ export class Gateway extends EventEmitter {
 
     const mainApp = AppSupervisor.getInstance().bootMainApp(options.mainAppOptions);
 
+    // NOTE: to avoid listener number warning (default to 10)
+    // See: https://nodejs.org/api/events.html#emittersetmaxlistenersn
+    mainApp.setMaxListeners(50);
+
     let runArgs: any = [process.argv, { throwError: true, from: 'node' }];
 
     if (!isMainThread) {

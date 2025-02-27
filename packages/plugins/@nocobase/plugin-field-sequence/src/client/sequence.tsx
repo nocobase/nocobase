@@ -367,14 +367,6 @@ export class SequenceFieldInterface extends CollectionFieldInterface {
     operators: interfacesProperties.operators.string,
   };
   titleUsable = true;
-  schemaInitialize(schema: ISchema, { block, field }) {
-    if (block === 'Form') {
-      Object.assign(schema['x-component-props'], {
-        disabled: !field.inputable,
-      });
-    }
-    return schema;
-  }
   properties = {
     ...interfacesProperties.defaultProps,
     unique: interfacesProperties.unique,

@@ -201,7 +201,7 @@ export const bulkEditFormItemSettings = new SchemaSettings({
               const { form } = useFormBlockContext();
               const isFormReadPretty = useIsFormReadPretty();
               const validateSchema = useValidateSchema();
-              return form && !isFormReadPretty && validateSchema;
+              return form && !isFormReadPretty && Boolean(validateSchema);
             },
           },
           fieldComponentSettingsItem,

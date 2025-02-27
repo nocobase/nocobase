@@ -8,6 +8,9 @@
  */
 
 import { Model } from '@nocobase/database';
+import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
+
+const currentStorage = [STORAGE_TYPE_LOCAL, STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS];
 
 export class FileModel extends Model {
   public toJSON() {
@@ -15,6 +18,10 @@ export class FileModel extends Model {
     const fileStorages = this.constructor['database']?.['_fileStorages'];
     if (json.storageId && fileStorages && fileStorages.has(json.storageId)) {
       const storage = fileStorages.get(json.storageId);
+      // 当前文件管理器内的存储类型拼接生成预览链接，其他文件存储自行处理
+      if (currentStorage.includes(storage?.type) && storage?.options?.thumbnailRule) {
+        json['preview'] = `${json['url']}${storage?.options?.thumbnailRule || ''}`;
+      }
       if (storage?.options?.thumbnailRule) {
         json['thumbnailRule'] = storage?.options?.thumbnailRule;
       }

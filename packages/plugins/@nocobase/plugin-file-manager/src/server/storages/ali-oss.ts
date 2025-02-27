@@ -12,14 +12,7 @@ import { STORAGE_TYPE_ALI_OSS } from '../../constants';
 import { cloudFilenameGetter, getFileKey } from '../utils';
 
 export default class extends StorageType {
-  make(storage) {
-    const createAliOssStorage = require('multer-aliyun-oss');
-    return new createAliOssStorage({
-      config: storage.options,
-      filename: cloudFilenameGetter(storage),
-    });
-  }
-  defaults() {
+  static defaults() {
     return {
       title: '阿里云对象存储',
       type: STORAGE_TYPE_ALI_OSS,
@@ -33,8 +26,16 @@ export default class extends StorageType {
       },
     };
   }
-  async delete(storage, records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
-    const { client } = this.make(storage);
+
+  make() {
+    const createAliOssStorage = require('multer-aliyun-oss');
+    return new createAliOssStorage({
+      config: this.storage.options,
+      filename: cloudFilenameGetter(this.storage),
+    });
+  }
+  async delete(records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
+    const { client } = this.make();
     const { deleted } = await client.deleteMulti(records.map(getFileKey));
     return [deleted.length, records.filter((record) => !deleted.find((item) => item.Key === getFileKey(record)))];
   }

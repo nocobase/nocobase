@@ -17,7 +17,7 @@ export class PluginBlockTemplateServer extends Plugin {
     this.app.resourceManager.registerActionHandler('blockTemplates:destroy', destroy);
     this.app.resourceManager.registerActionHandler('blockTemplates:link', link);
     this.app.resourceManager.registerActionHandler('blockTemplates:saveSchema', saveSchema);
-    this.app.use(templateDataMiddleware);
+    this.app.resourceManager.use(templateDataMiddleware);
   }
 
   async load() {}

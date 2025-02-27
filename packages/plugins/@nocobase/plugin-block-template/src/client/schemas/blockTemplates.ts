@@ -196,6 +196,14 @@ export const blockTemplatesSchema: ISchema = {
                           type: 'void',
                           'x-component': 'Action.Modal.Footer',
                           properties: {
+                            cancel: {
+                              type: 'void',
+                              title: '{{t("Cancel")}}',
+                              'x-component': 'Action',
+                              'x-component-props': {
+                                useAction: '{{ cm.useCancelAction }}',
+                              },
+                            },
                             submit: {
                               type: 'void',
                               title: '{{t("Submit")}}',
@@ -203,14 +211,6 @@ export const blockTemplatesSchema: ISchema = {
                               'x-component-props': {
                                 type: 'primary',
                                 useAction: '{{ useDuplicateAction }}',
-                              },
-                            },
-                            cancel: {
-                              type: 'void',
-                              title: '{{t("Cancel")}}',
-                              'x-component': 'Action',
-                              'x-component-props': {
-                                useAction: '{{ cm.useCancelAction }}',
                               },
                             },
                           },
@@ -247,6 +247,14 @@ export const blockTemplatesSchema: ISchema = {
                           type: 'void',
                           'x-component': 'Action.Modal.Footer',
                           properties: {
+                            cancel: {
+                              type: 'void',
+                              title: '{{t("Cancel")}}',
+                              'x-component': 'Action',
+                              'x-component-props': {
+                                useAction: '{{ cm.useCancelAction }}',
+                              },
+                            },
                             submit: {
                               type: 'void',
                               title: '{{t("Submit")}}',
@@ -254,14 +262,6 @@ export const blockTemplatesSchema: ISchema = {
                               'x-component-props': {
                                 type: 'primary',
                                 useAction: '{{ useDeleteAction }}',
-                              },
-                            },
-                            cancel: {
-                              type: 'void',
-                              title: '{{t("Cancel")}}',
-                              'x-component': 'Action',
-                              'x-component-props': {
-                                useAction: '{{ cm.useCancelAction }}',
                               },
                             },
                           },

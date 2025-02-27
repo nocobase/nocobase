@@ -10,7 +10,7 @@
 import { StorageEngine } from 'multer';
 
 export * from '../constants';
-export { AttachmentModel, default, IStorage, PluginFileManagerServer, StorageModel } from './server';
+export { AttachmentModel, default, PluginFileManagerServer, StorageModel } from './server';
 
 export { StorageType } from './storages';
 

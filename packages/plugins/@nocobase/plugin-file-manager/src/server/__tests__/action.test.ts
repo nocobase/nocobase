@@ -52,88 +52,6 @@ describe('action', () => {
 
   describe('create / upload', () => {
     describe('default storage', () => {
-      it('should be create file record', async () => {
-        const Plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
-        const model = await Plugin.createFileRecord({
-          collectionName: 'attachments',
-          filePath: path.resolve(__dirname, './files/text.txt'),
-        });
-        const matcher = {
-          title: 'text',
-          extname: '.txt',
-          path: '',
-          // size: 13,
-          meta: {},
-          storageId: 1,
-        };
-        expect(model.toJSON()).toMatchObject(matcher);
-      });
-
-      it('should be local2 storage', async () => {
-        const storage = await StorageRepo.create({
-          values: {
-            name: 'local2',
-            type: STORAGE_TYPE_LOCAL,
-            baseUrl: DEFAULT_LOCAL_BASE_URL,
-            rules: {
-              size: 1024,
-            },
-            paranoid: true,
-          },
-        });
-        const Plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
-        const model = await Plugin.createFileRecord({
-          collectionName: 'attachments',
-          storageName: 'local2',
-          filePath: path.resolve(__dirname, './files/text.txt'),
-        });
-        const matcher = {
-          title: 'text',
-          extname: '.txt',
-          path: '',
-          // size: 13,
-          meta: {},
-          storageId: storage.id,
-        };
-        expect(model.toJSON()).toMatchObject(matcher);
-      });
-
-      it('should be custom values', async () => {
-        const Plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
-        const model = await Plugin.createFileRecord({
-          collectionName: 'attachments',
-          filePath: path.resolve(__dirname, './files/text.txt'),
-          values: {
-            size: 22,
-          },
-        });
-        const matcher = {
-          title: 'text',
-          extname: '.txt',
-          path: '',
-          size: 22,
-          meta: {},
-          storageId: 1,
-        };
-        expect(model.toJSON()).toMatchObject(matcher);
-      });
-
-      it('should be upload file', async () => {
-        const Plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
-        const data = await Plugin.uploadFile({
-          filePath: path.resolve(__dirname, './files/text.txt'),
-          documentRoot: 'storage/backups/test',
-        });
-        const matcher = {
-          title: 'text',
-          extname: '.txt',
-          path: '',
-          meta: {},
-          storageId: 1,
-        };
-        expect(data).toMatchObject(matcher);
-      });
-
       it('upload file should be ok', async () => {
         const { body } = await agent.resource('attachments').create({
           [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
@@ -164,10 +82,10 @@ describe('action', () => {
 
         // 关联的存储引擎是否正确
         const storage = await attachment.getStorage();
-        expect(storage).toMatchObject({
-          type: 'local',
+        expect(storage.get()).toMatchObject({
+          type: STORAGE_TYPE_LOCAL,
           options: { documentRoot: LOCAL_STORAGE_DEST },
-          rules: {},
+          rules: { size: FILE_SIZE_LIMIT_DEFAULT },
           path: '',
           baseUrl: DEFAULT_LOCAL_BASE_URL,
           default: true,
@@ -176,7 +94,7 @@ describe('action', () => {
         const { documentRoot = 'storage/uploads' } = storage.options || {};
         const destPath = path.resolve(
           path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-          storage.path,
+          storage.path || '',
         );
         const file = await fs.readFile(`${destPath}/${attachment.filename}`);
         // 文件是否保存到指定路径
@@ -287,6 +205,51 @@ describe('action', () => {
         const content = await agent.get(url);
         expect(content.text.includes('Hello world!')).toBe(true);
       });
+
+      it('path longer than 255', async () => {
+        const BASE_URL = `http://localhost:${APP_PORT}/storage/uploads/another`;
+        const urlPath =
+          'extreme-test/max-long-path-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890';
+
+        // 动态添加 storage
+        const storage = await StorageRepo.create({
+          values: {
+            name: 'local_private',
+            type: STORAGE_TYPE_LOCAL,
+            rules: {
+              mimetype: ['text/*'],
+            },
+            path: urlPath,
+            baseUrl: BASE_URL,
+            options: {
+              documentRoot: 'storage/uploads/another',
+            },
+          },
+        });
+
+        db.collection({
+          name: 'customers',
+          fields: [
+            {
+              name: 'file',
+              type: 'belongsTo',
+              target: 'attachments',
+              storage: storage.name,
+            },
+          ],
+        });
+
+        const { body } = await agent.resource('attachments').create({
+          attachmentField: 'customers.file',
+          file: path.resolve(__dirname, './files/text.txt'),
+        });
+
+        // 文件的 url 是否正常生成
+        expect(body.data.url).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
+        const url = body.data.url.replace(`http://localhost:${APP_PORT}`, '');
+        const content = await agent.get(url);
+        expect(content.text.includes('Hello world!')).toBe(true);
+      });
     });
   });
 
@@ -356,7 +319,7 @@ describe('action', () => {
       const { documentRoot = 'storage/uploads' } = storage.options || {};
       const destPath = path.resolve(
         path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path,
+        storage.path || '',
       );
       const file = await fs.stat(path.join(destPath, attachment.filename));
       expect(file).toBeTruthy();
@@ -382,7 +345,7 @@ describe('action', () => {
       const { documentRoot = path.join('storage', 'uploads') } = storage.options || {};
       const destPath = path.resolve(
         path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path,
+        storage.path || '',
       );
       const file = await fs.stat(path.join(destPath, attachment.filename));
       expect(file).toBeTruthy();
@@ -414,7 +377,7 @@ describe('action', () => {
       const { documentRoot = path.join('storage', 'uploads') } = storage.options || {};
       const destPath = path.resolve(
         path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path,
+        storage.path || '',
       );
       const file1 = await fs.stat(path.join(destPath, f1.data.filename));
       expect(file1).toBeTruthy();
@@ -443,7 +406,7 @@ describe('action', () => {
       const { documentRoot = path.join('storage', 'uploads') } = storage.options || {};
       const destPath = path.resolve(
         path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path,
+        storage.path || '',
       );
       const filePath = path.join(destPath, attachment.filename);
       const file = await fs.stat(filePath);

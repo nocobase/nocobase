@@ -14,6 +14,7 @@ export const DestroyActionInitializer = (props) => {
   const schema = {
     title: '{{ t("Delete") }}',
     'x-action': 'destroy',
+    'x-acl-action': 'destroy',
     'x-component': 'Action',
     'x-use-component-props': 'useDestroyActionProps',
     'x-toolbar': 'ActionSchemaToolbar',

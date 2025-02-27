@@ -44,7 +44,7 @@ export const useMenuItem = () => {
   const renderItems = useRef<() => JSX.Element>(null);
   const shouldRerender = useRef(false);
 
-  const Component = useCallback(({ limitCount }) => {
+  const Component = useCallback(({ limitCount }: { limitCount?: number }) => {
     if (!shouldRerender.current) {
       return null;
     }
