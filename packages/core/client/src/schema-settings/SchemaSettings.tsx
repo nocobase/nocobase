@@ -726,8 +726,8 @@ export const SchemaSettingsActionModalItem: FC<SchemaSettingsActionModalItemProp
         }
         return result;
       }, {});
-      await onSubmit?.(cloneDeep(visibleValues));
       setVisible(false);
+      await onSubmit?.(cloneDeep(visibleValues));
     } catch (err) {
       console.error(err);
     }

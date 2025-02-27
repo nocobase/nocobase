@@ -19,8 +19,9 @@ import {
   useCollection,
   useCollectionRecord,
   useSchemaToolbar,
+  SchemaSettingAccessControl,
 } from '@nocobase/client';
-import { CustomRequestACL, CustomRequestSettingsItem } from './components/CustomRequestActionDesigner';
+import { CustomRequestSettingsItem } from './components/CustomRequestActionDesigner';
 
 export const customizeCustomRequestActionSettings = new SchemaSettings({
   name: 'actionSettings:customRequest',
@@ -64,8 +65,10 @@ export const customizeCustomRequestActionSettings = new SchemaSettings({
       Component: CustomRequestSettingsItem,
     },
     {
-      name: 'accessControl',
-      Component: CustomRequestACL,
+      ...SchemaSettingAccessControl,
+      useVisible() {
+        return true;
+      },
     },
     {
       name: 'refreshDataBlockRequest',

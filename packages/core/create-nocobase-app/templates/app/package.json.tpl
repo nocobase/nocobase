@@ -27,6 +27,8 @@
     "@types/react": "18.3.18",
     "@types/react-dom": "^18.0.0",
     "antd": "5.24.2",
+    "react-router-dom": "6.28.1",
+    "react-router": "6.28.1",
     "rollup": "4.24.0"
   },
   "dependencies": {
