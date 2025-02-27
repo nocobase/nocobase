@@ -48,15 +48,35 @@ export async function checkAction(ctx, next) {
   const allowMenuItemIds = roleInstances.flatMap((roleInstance) =>
     roleInstance.get('menuUiSchemas').map((uiSchema) => uiSchema.get('x-uid')),
   );
+  let uiButtonSchemasBlacklist = [];
+  const currentRole = ctx.state.currentRole;
+  if (currentRole !== 'root') {
+    const eqCurrentRoleList = await ctx.db
+      .getRepository('uiButtonSchemasRoles')
+      .find({
+        filter: { 'roleName.$eq': currentRole },
+      })
+      .then((list) => list.map((v) => v.uid));
+
+    const NECurrentRoleList = await ctx.db
+      .getRepository('uiButtonSchemasRoles')
+      .find({
+        filter: { 'roleName.$ne': currentRole },
+      })
+      .then((list) => list.map((v) => v.uid));
+    uiButtonSchemasBlacklist = NECurrentRoleList.filter((uid) => !eqCurrentRoleList.includes(uid));
+  }
+
   ctx.body = {
     ...role,
-    role: ctx.state.currentRole,
+    role: currentRole,
     availableActions: [...availableActions.keys()],
     actionAlias: map2obj(ctx.app.acl.actionAlias),
     allowAll: !!currentRoles.includes('root'),
     allowConfigure: !!roleInstances.find((x) => x.get('allowConfigure')),
     allowMenuItemIds: [...new Set(allowMenuItemIds)],
     allowAnonymous: !!anonymous,
+    uiButtonSchemasBlacklist,
   };
 
   await next();

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Action, useAPIClient, useRequest, withDynamicSchemaProps } from '@nocobase/client';
+import { Action, useAPIClient, useRequest, withDynamicSchemaProps, ACLActionProvider } from '@nocobase/client';
 import React from 'react';
 import { useFieldSchema } from '@formily/react';
 import { listByCurrentRoleUrl } from '../constants';
@@ -16,23 +16,23 @@ import { CustomRequestActionDesigner } from './CustomRequestActionDesigner';
 
 export const CustomRequestActionACLDecorator = (props) => {
   const apiClient = useAPIClient();
-  const isRoot = apiClient.auth.role === 'root';
-  const fieldSchema = useFieldSchema();
-  const { data } = useRequest<{ data: string[] }>(
-    {
-      url: listByCurrentRoleUrl,
-    },
-    {
-      manual: isRoot,
-      cacheKey: listByCurrentRoleUrl,
-    },
-  );
-  const requestId = fieldSchema?.['x-custom-request-id'] || fieldSchema?.['x-uid'];
-  if (!isRoot && !data?.data?.includes(requestId)) {
-    return null;
-  }
+  // const isRoot = apiClient.auth.role === 'root';
+  // const fieldSchema = useFieldSchema();
+  // const { data } = useRequest<{ data: string[] }>(
+  //   {
+  //     url: listByCurrentRoleUrl,
+  //   },
+  //   {
+  //     manual: isRoot,
+  //     cacheKey: listByCurrentRoleUrl,
+  //   },
+  // );
 
-  return props.children;
+  // // if (!isRoot && !data?.data?.includes(fieldSchema?.['x-uid'])) {
+  // //   return null;
+  // // }
+
+  return <ACLActionProvider>{props.children}</ACLActionProvider>;
 };
 
 const components = {
