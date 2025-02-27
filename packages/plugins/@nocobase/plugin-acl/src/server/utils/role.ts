@@ -67,25 +67,59 @@ function mergeRoleSnippets(allRoleSnippets: string[][]): string[] {
   const allSnippets = allRoleSnippets.flat();
   const isExclusion = (value) => value.startsWith('!');
   const includes = new Set(allSnippets.filter((x) => !isExclusion(x)));
-  const excludes = new Set(allSnippets.filter((x) => isExclusion(x)));
+  const excludes = new Set(allSnippets.filter(isExclusion));
 
-  // 处理黑名单的交集：比如 ['a.*', '!a.b.*'] 和 ['a.*', '!a.b.*', '!a.c.*']，最终取 ['a.*', '!a.b.*']
-  const excludesSet = new Set<string>();
-  excludes.forEach((snippet) => {
-    // 取交集：所有角色都有这个黑名单
-    const allHas = allRoleSnippets.every((x) => x.includes(snippet));
-    if (allHas) {
-      excludesSet.add(snippet);
-    }
+  // 统计 xxx.* 在多少个角色中存在
+  const domainRoleMap = new Map<string, Set<number>>();
+  allRoleSnippets.forEach((roleSnippets, i) => {
+    roleSnippets
+      .filter((x) => x.endsWith('.*') && !isExclusion(x))
+      .forEach((include) => {
+        const domain = include.slice(0, -1);
+        if (!domainRoleMap.has(domain)) {
+          domainRoleMap.set(domain, new Set());
+        }
+        domainRoleMap.get(domain).add(i);
+      });
   });
 
-  // 处理冲突项，比如 ['a'] 和 ['!a']，最终取 ['a']
-  excludesSet.forEach((x) => includes.has(x.slice(1)) && excludesSet.delete(x));
+  // 处理黑名单交集（只有所有角色都有 `!xxx` 才保留）
+  const excludesSet = new Set<string>();
+  for (const snippet of excludes) {
+    if (allRoleSnippets.every((x) => x.includes(snippet))) {
+      excludesSet.add(snippet);
+    }
+  }
 
-  const result = [...includes];
-  excludesSet.forEach((x) => result.push(x));
+  for (const [domain, indexes] of domainRoleMap.entries()) {
+    const fullDomain = `${domain}.*`;
 
-  return result;
+    // xxx.* 存在时，覆盖 !xxx.*
+    if (includes.has(fullDomain)) {
+      excludesSet.delete(`!${fullDomain}`);
+    }
+
+    // 计算 !xxx.yyy，当所有 xxx.* 角色都包含 !xxx.yyy 时才保留
+    for (const roleIndex of indexes) {
+      for (const exclude of allRoleSnippets[roleIndex]) {
+        if (exclude.startsWith(`!${domain}`) && exclude !== `!${fullDomain}`) {
+          if ([...indexes].every((i) => allRoleSnippets[i].includes(exclude))) {
+            excludesSet.add(exclude);
+          }
+        }
+      }
+    }
+  }
+
+  // 确保 !xxx.yyy 只有在 xxx.* 存在时才有效，同时解决 [xxx] 和 [!xxx] 冲突
+  for (const x of [...excludesSet]) {
+    const parentDomain = x.slice(1).split('.')[0] + '.*';
+    if (!includes.has(parentDomain) || includes.has(x.slice(1))) {
+      excludesSet.delete(x);
+    }
+  }
+
+  return [...includes, ...excludesSet];
 }
 
 function mergeRoleResources(sourceResources, newResources) {

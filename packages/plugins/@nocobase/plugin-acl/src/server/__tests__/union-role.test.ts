@@ -88,20 +88,22 @@ describe('union role: full permissions', async () => {
     let data = rolesResponse.body.data;
     expect(data.snippets).not.include('ui.*');
     const rootAgent = await app.agent().login(rootUser);
-    const updateResponse = await rootAgent.resource('roles').update({
+    let updateResponse = await rootAgent.resource('roles').update({
       filterByTk: role1.name,
+      values: {
+        snippets: ['!ui.*', '!pm', 'pm.*', '!app'],
+      },
+    });
+    updateResponse = await rootAgent.resource('roles').update({
+      filterByTk: role2.name,
       values: {
         snippets: ['!ui.*', '!pm', 'pm.*', '!app'],
       },
     });
     expect(updateResponse.statusCode).toBe(200);
 
-    await rootAgent.post(`/roles/${role1.name}/snippets:add`).send({
-      values: ['!pm.logger'],
-    });
-    await rootAgent.post(`/roles/${role2.name}/snippets:add`).send({
-      values: ['!pm.workflow.workflows'],
-    });
+    await rootAgent.post(`/roles/${role1.name}/snippets:add`).send(['!pm.logger']);
+    await rootAgent.post(`/roles/${role2.name}/snippets:add`).send(['!pm.workflow.workflows']);
     agent = await app.agent().login(user, role1.name);
     rolesResponse = await agent.resource('roles').check();
     expect(rolesResponse.statusCode).toBe(200);
@@ -116,6 +118,36 @@ describe('union role: full permissions', async () => {
     expect(data.snippets).include('pm.*');
     expect(data.snippets).not.include('!pm.logger');
     expect(data.snippets).not.include('!pm.workflow.workflows');
+  });
+
+  it('System -> Allows to install, activate, disable plugins: role1 snippets [pm.*, !pm.authenticators], role2 snippets [!pm.*], expect: snippets [pm.*, !pm.authenticators]', async () => {
+    let rolesResponse = await agent.resource('roles').check();
+    expect(rolesResponse.statusCode).toBe(200);
+    let data = rolesResponse.body.data;
+    expect(data.snippets).not.include('pm.*');
+    const rootAgent = await app.agent().login(rootUser);
+    const updateResponse = await rootAgent.resource('roles').update({
+      filterByTk: role1.name,
+      values: {
+        snippets: ['!ui.*', '!pm', 'pm.*', '!app'],
+      },
+    });
+    expect(updateResponse.statusCode).toBe(200);
+
+    await rootAgent.post(`/roles/${role1.name}/snippets:add`).send(['!pm.auth.authenticators']);
+    agent = await app.agent().login(user, role1.name);
+    rolesResponse = await agent.resource('roles').check();
+    expect(rolesResponse.statusCode).toBe(200);
+    data = rolesResponse.body.data;
+    expect(data.snippets).include('pm.*');
+    expect(data.snippets).include('!pm.auth.authenticators');
+
+    agent = await app.agent().login(user, 'union');
+    rolesResponse = await agent.resource('roles').check();
+    expect(rolesResponse.statusCode).toBe(200);
+    data = rolesResponse.body.data;
+    expect(data.snippets).include('pm.*');
+    expect(data.snippets).include('!pm.auth.authenticators');
   });
 
   it('Data sources -> General action permissions, strategy.actions: role1->[view], role2->[create], expect: strategy.actions=[view,create]', async () => {
