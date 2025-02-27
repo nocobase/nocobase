@@ -118,6 +118,8 @@ jobs:
           yarn config set registry https://registry.npmjs.org/
           yarn install
           yarn build
+      - name: Install Lerna
+        run: npm install -g lerna@4
       - name: Run release.sh
         shell: bash
         run: |
