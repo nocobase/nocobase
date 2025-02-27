@@ -453,7 +453,7 @@ export function TextArea(props) {
         style={style}
         className={cx(
           hashId,
-          'ant-input',
+          'ant-input ant-input-outlined',
           { 'ant-input-disabled': disabled },
           // NOTE: `pre-wrap` here for avoid the `&nbsp;` (\x160) issue when paste content, we need normal space (\x32).
           css`
