@@ -10,6 +10,7 @@
 import { FlowNodeModel, Instruction, JOB_STATUS, Processor } from '@nocobase/plugin-workflow';
 import PluginAIServer from '../../../plugin';
 import { LLMProvider } from '../../../llm-providers/provider';
+import _ from 'lodash';
 
 export class LLMInstruction extends Instruction {
   async getLLMProvider(llmService: string, chatOptions: any) {
@@ -66,6 +67,7 @@ export class LLMInstruction extends Instruction {
         processor.logger.error(`llm invoke failed, ${e.message}`, {
           node: node.id,
           error: e,
+          chatOptions: _.omit(chatOptions, 'messages'),
         });
         return {
           status: JOB_STATUS.ERROR,
@@ -106,6 +108,7 @@ export class LLMInstruction extends Instruction {
         processor.logger.error(`llm invoke failed, ${e.message}`, {
           node: node.id,
           error: e,
+          chatOptions: _.omit(chatOptions, 'messages'),
         });
         job.set({
           status: JOB_STATUS.ERROR,
