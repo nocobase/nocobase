@@ -36,7 +36,7 @@ export function CustomSchemaSettingsBlockTitleItem() {
             description: {
               title: t('Description'),
               type: 'string',
-              default: fieldSchema?.['x-component-props']?.['description'],
+              default: fieldSchema?.['x-decorator-props']?.['description'],
               'x-decorator': 'FormItem',
               'x-component': 'Markdown',
             },
