@@ -25,7 +25,6 @@ import {
   CurrentTabUidContext,
   useCurrentSearchParams,
   useCurrentTabUid,
-  useLocationNoUpdate,
   useNavigateNoUpdate,
   useRouterBasename,
 } from '../../../application/CustomRouterContextProvider';
@@ -202,7 +201,6 @@ interface PageContentProps {
 const InternalPageContent = (props: PageContentProps) => {
   const { loading, disablePageHeader, enablePageTabs, activeKey } = props;
   const currentRoute = useCurrentRouteData();
-  const location = useLocationNoUpdate();
   const navigate = useNavigateNoUpdate();
 
   const children = currentRoute?.children || [];
