@@ -621,7 +621,9 @@ const NavigateToDefaultPage: FC = (props) => {
   return (
     <>
       {props.children}
-      {defaultPageUid && location.pathname === '/admin' && <Navigate replace to={`/admin/${defaultPageUid}`} />}
+      {defaultPageUid && (location.pathname === '/admin' || location.pathname === '/admin/') && (
+        <Navigate replace to={`/admin/${defaultPageUid}`} />
+      )}
     </>
   );
 };
