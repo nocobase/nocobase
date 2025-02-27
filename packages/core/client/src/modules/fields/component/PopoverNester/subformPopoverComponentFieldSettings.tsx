@@ -17,7 +17,7 @@ import { useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../..
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
 import { useIsFieldReadPretty } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
-import { titleField } from '../Select/selectComponentFieldSettings';
+import { SchemaSettingsTitleField } from '../../../../schema-settings/SchemaSettingsTitleField';
 
 import { linkageRules } from '../SubTable/subTablePopoverComponentFieldSettings';
 import { SchemaSettingsLayoutItem } from '../../../../schema-settings/SchemaSettingsLayoutItem';
@@ -109,7 +109,10 @@ export const subformPopoverComponentFieldSettings = new SchemaSettings({
   items: [
     fieldComponent,
     allowMultiple,
-    titleField,
+    {
+      name: 'titleField',
+      Component: SchemaSettingsTitleField,
+    },
     linkageRules,
     {
       name: 'setBlockLayout',

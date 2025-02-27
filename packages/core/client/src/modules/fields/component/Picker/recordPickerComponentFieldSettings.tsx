@@ -17,7 +17,7 @@ import { useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../..
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
 import { allowAddNew, useIsFieldReadPretty } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
-import { titleField } from '../Select/selectComponentFieldSettings';
+import { SchemaSettingsTitleField } from '../../../../schema-settings/SchemaSettingsTitleField';
 
 const allowMultiple: any = {
   name: 'allowMultiple',
@@ -145,6 +145,9 @@ export const recordPickerComponentFieldSettings = new SchemaSettings({
     },
     allowAddNew,
     allowMultiple,
-    titleField,
+    {
+      name: 'titleField',
+      Component: SchemaSettingsTitleField,
+    },
   ],
 });

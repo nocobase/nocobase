@@ -11,7 +11,7 @@ import { isPlainObject } from '@nocobase/utils/client';
 import { castArray } from 'lodash';
 
 export interface FieldNames {
-  label?: string;
+  label?: any;
   value?: string;
   color?: string;
   options?: string;

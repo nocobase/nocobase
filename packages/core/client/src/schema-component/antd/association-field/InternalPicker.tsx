@@ -26,6 +26,7 @@ import {
   useCollectionRecordData,
 } from '../../..';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
+import { useCollectionManager } from '../../../data-source';
 import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
@@ -35,6 +36,7 @@ import { ActionContextProvider } from '../action';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
+import { getFieldNameLabel } from '../remote-select/RemoteSelect';
 
 export const useTableSelectorProps = () => {
   const field: any = useField();
@@ -84,6 +86,9 @@ export const InternalPicker = observer(
     const fieldSchema = useFieldSchema();
     const insertSelector = useInsertSchema('Selector');
     const { options: collectionField } = useAssociationFieldContext();
+    const cm = useCollectionManager();
+    const targetCollection = cm.getCollection(collectionField?.target);
+    const targetFields = targetCollection?.fields || [];
     const { collectionName } = useFormBlockContext();
     const compile = useCompile();
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
@@ -93,10 +98,10 @@ export const InternalPicker = observer(
     const options = useMemo(() => {
       if (value && Object.keys(value).length > 0) {
         const opts = (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean).map((option) => {
-          const label = option?.[fieldNames.label];
+          const label: any = getFieldNameLabel({ fieldNames, record: option, targetFields, compile });
           return {
             ...option,
-            [fieldNames.label]: getLabelFormatValue(compile(labelUiSchema), compile(label)),
+            [fieldNames.label]: getLabelFormatValue(compile(labelUiSchema), label),
           };
         });
         return opts;

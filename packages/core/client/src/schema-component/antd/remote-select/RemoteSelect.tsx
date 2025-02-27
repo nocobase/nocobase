@@ -9,9 +9,9 @@
 
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useFieldSchema } from '@formily/react';
-import { Divider, Tag } from 'antd';
+import { Divider, Tag, Space } from 'antd';
 import dayjs from 'dayjs';
-import { uniqBy } from 'lodash';
+import { uniqBy, assign } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
@@ -50,11 +50,49 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   toOptionsItem?: (data) => any;
 };
 
+//格式化标题字段label
+export const getTargetFieldLabel = (value, targetField) => {
+  //日期字段
+  if (targetField.type === 'date') {
+    const { format = 'YYYY-MM-DD', timeFormat, showTime } = targetField?.uiSchema?.['x-component-props'] || {};
+    return dayjs(value).format(`${format} ${showTime ? timeFormat : ''}`);
+  }
+  // 下拉选项字段
+  if (targetField?.uiSchema?.enum) {
+    const item = targetField.uiSchema.enum.find((i) => i.value === value);
+    if (item) {
+      return (
+        <Tag role="button" color={item.color}>
+          {item.label}
+        </Tag>
+      );
+    } else {
+      return value;
+    }
+  }
+  return value;
+};
+
+export const getFieldNameLabel = ({ fieldNames, targetFields, record, compile }) => {
+  const isGroupLabel = Array.isArray(fieldNames.label) && fieldNames.label.length > 1;
+  const label = isGroupLabel ? (
+    <Space>
+      {fieldNames.label.map((v) => {
+        const result = targetFields.find((f) => f.name === v);
+        return getTargetFieldLabel(compile(record[v]), result);
+      })}
+    </Space>
+  ) : (
+    compile(record[fieldNames.label])
+  );
+  return label;
+};
+
 const InternalRemoteSelect = withDynamicSchemaProps(
   connect(
     (props: RemoteSelectProps) => {
       const {
-        fieldNames = {} as FieldNames,
+        fieldNames = {} as any,
         service = {},
         wait = 300,
         value,
@@ -81,25 +119,55 @@ const InternalRemoteSelect = withDynamicSchemaProps(
       const { getCollectionJoinField, getInterface } = useCollectionManager_deprecated();
       const colletionFieldName = fieldSchema['x-collection-field'] || fieldSchema.name;
       const collectionField = getField(colletionFieldName) || getCollectionJoinField(colletionFieldName);
-      const targetField =
-        _targetField ||
-        (collectionField?.target &&
-          fieldNames?.label &&
-          getCollectionJoinField(`${collectionField.target}.${fieldNames.label}`));
+      const compile = useCompile();
+      const isGroupLabel = Array.isArray(fieldNames.label) && fieldNames.label.length > 1;
 
+      //标题字段
+      const targetField = useMemo(() => {
+        if (isGroupLabel) {
+          return (fieldNames.label as any).map((v) => {
+            return (
+              collectionField?.target && fieldNames?.label && getCollectionJoinField(`${collectionField.target}.${v}`)
+            );
+          });
+        } else {
+          return (
+            _targetField ||
+            (collectionField?.target &&
+              fieldNames?.label &&
+              getCollectionJoinField(`${collectionField.target}.${fieldNames.label}`))
+          );
+        }
+      }, [collectionField, fieldNames.label]);
+
+      //标题字段操作符
       const operator = useMemo(() => {
-        if (targetField?.interface) {
-          const targetInterface = getInterface(targetField.interface);
-          const initialOperator = targetInterface?.filterable?.operators[0].value || '$includes';
-          if (targetField.type === 'string') {
-            return '$includes';
+        if (Array.isArray(targetField)) {
+          return targetField.map((v) => {
+            const targetInterface = getInterface(v.interface);
+            let initialOperator = targetInterface?.filterable?.operators[0].value || '$includes';
+            if (v.type === 'string') {
+              initialOperator = '$includes';
+            }
+
+            return {
+              [v.name]: initialOperator,
+            };
+          });
+        } else {
+          if (targetField?.interface) {
+            const targetInterface = getInterface(targetField.interface);
+            const initialOperator = targetInterface?.filterable?.operators[0].value || '$includes';
+            if (targetField.type === 'string') {
+              return '$includes';
+            }
+            return initialOperator;
           }
-          return initialOperator;
         }
         return '$includes';
       }, [targetField]);
-      const compile = useCompile();
 
+      //格式化options
       const mapOptionsToTags = useCallback(
         (options) => {
           try {
@@ -108,8 +176,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
                 return ['number', 'string'].includes(typeof v[fieldNames.value]) || !v[fieldNames.value];
               })
               .map((option) => {
-                let label = compile(option[fieldNames.label]);
-
+                let label: any = getFieldNameLabel({ fieldNames, record: option, targetFields: targetField, compile });
                 if (targetField?.uiSchema?.enum) {
                   if (Array.isArray(label)) {
                     label = label
@@ -142,7 +209,12 @@ const InternalRemoteSelect = withDynamicSchemaProps(
                   }
                 }
                 if (targetField?.type === 'date') {
-                  label = dayjs(label).format('YYYY-MM-DD');
+                  const {
+                    format = 'YYYY-MM-DD',
+                    timeFormat,
+                    showTime,
+                  } = targetField?.uiSchema?.['x-component-props'] || {};
+                  label = dayjs(label).format(`${format} ${showTime ? timeFormat : ''}`);
                 }
 
                 if (mapOptions) {
@@ -165,6 +237,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
         },
         [targetField?.uiSchema, fieldNames],
       );
+
       const { data, run, loading } = useRequest(
         {
           action: 'list',
@@ -213,18 +286,29 @@ const InternalRemoteSelect = withDynamicSchemaProps(
       }, [runDep]);
 
       const onSearch = async (search) => {
-        run({
-          filter: mergeFilter([
-            search
-              ? {
-                  [fieldNames.label]: {
-                    [operator]: search,
-                  },
-                }
-              : {},
-            service?.params?.filter,
-          ]),
-        });
+        const searchFilter = search
+          ? isGroupLabel
+            ? {
+                $or: fieldNames.label
+                  .map((field) => {
+                    if (assign({}, ...operator)[field] === '$dateOn') {
+                      return null;
+                    }
+                    return {
+                      [field]: { [assign({}, ...operator)[field]]: search },
+                    };
+                  })
+                  .filter(Boolean),
+              }
+            : {
+                [fieldNames.label]: { [operator]: search },
+              }
+          : {};
+
+        const updatedFilter = mergeFilter([searchFilter, service?.params?.filter]);
+
+        await run({ filter: updatedFilter });
+
         searchData.current = search;
       };
 
@@ -251,7 +335,6 @@ const InternalRemoteSelect = withDynamicSchemaProps(
         }
         firstRun.current = true;
       };
-
       return (
         <Select
           open={open}
@@ -259,7 +342,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
           autoClearSearchValue
           filterOption={false}
           filterSort={null}
-          fieldNames={fieldNames as any}
+          fieldNames={fieldNames}
           onSearch={onSearch}
           onDropdownVisibleChange={onDropdownVisibleChange}
           objectValue={objectValue}
