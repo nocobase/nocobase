@@ -31,7 +31,7 @@ export const ColorPicker = connect(
           // getPopupContainer={(current) => current}
           presets={[
             {
-              label: 'Recommended',
+              label: '{{t("Recommended", { ns: "${NAMESPACE}" })}}',
               colors: [
                 '#8BBB11',
                 '#52C41A',

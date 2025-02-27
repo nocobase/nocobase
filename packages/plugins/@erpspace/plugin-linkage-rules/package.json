@@ -1,0 +1,13 @@
+{
+  "name": "@erpspace/linkage-rules",
+  "version": "0.0.3",
+  "main": "dist/server/index.js",
+  "dependencies": {
+    "@nocobase/client": "^1.5.5"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
+  }
+}
