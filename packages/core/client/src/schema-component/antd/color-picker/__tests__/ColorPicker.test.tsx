@@ -35,6 +35,7 @@ describe('ColorPicker', () => {
             style="display: inline-block;"
           >
             <div
+              aria-describedby="test-id"
               class="ant-color-picker-trigger css-dev-only-do-not-override-o4wr1g"
             >
               <div
@@ -99,6 +100,7 @@ describe('ColorPicker', () => {
             role="button"
           >
             <div
+              aria-describedby="test-id"
               class="ant-color-picker-trigger ant-color-picker-sm css-dev-only-do-not-override-o4wr1g ant-color-picker-trigger-disabled"
             >
               <div

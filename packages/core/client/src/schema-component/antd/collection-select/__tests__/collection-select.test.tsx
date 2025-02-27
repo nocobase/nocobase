@@ -84,7 +84,7 @@ describe('CollectionSelect', () => {
                     class="ant-formily-item-control-content-component"
                   >
                     <div
-                      class="ant-select css-dev-only-do-not-override-o4wr1g ant-select-focused ant-select-single ant-select-show-arrow ant-select-show-search"
+                      class="ant-select ant-select-outlined css-dev-only-do-not-override-o4wr1g ant-select-focused ant-select-single ant-select-show-arrow ant-select-show-search"
                       data-testid="select-collection"
                       role="button"
                     >
@@ -98,27 +98,31 @@ describe('CollectionSelect', () => {
                         class="ant-select-selector"
                       >
                         <span
-                          class="ant-select-selection-search"
+                          class="ant-select-selection-wrap"
                         >
-                          <input
-                            aria-autocomplete="list"
-                            aria-controls="rc_select_TEST_OR_SSR_list"
-                            aria-expanded="false"
-                            aria-haspopup="listbox"
-                            aria-owns="rc_select_TEST_OR_SSR_list"
-                            autocomplete="off"
-                            class="ant-select-selection-search-input"
-                            id="rc_select_TEST_OR_SSR"
-                            role="button"
-                            type="search"
-                            value=""
-                          />
-                        </span>
-                        <span
-                          class="ant-select-selection-item"
-                          title="Users"
-                        >
-                          Users
+                          <span
+                            class="ant-select-selection-search"
+                          >
+                            <input
+                              aria-autocomplete="list"
+                              aria-controls="rc_select_TEST_OR_SSR_list"
+                              aria-expanded="false"
+                              aria-haspopup="listbox"
+                              aria-owns="rc_select_TEST_OR_SSR_list"
+                              autocomplete="off"
+                              class="ant-select-selection-search-input"
+                              id="rc_select_TEST_OR_SSR"
+                              role="button"
+                              type="search"
+                              value=""
+                            />
+                          </span>
+                          <span
+                            class="ant-select-selection-item"
+                            title="Users"
+                          >
+                            Users
+                          </span>
                         </span>
                       </div>
                       <span
