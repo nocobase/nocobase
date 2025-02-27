@@ -1010,7 +1010,7 @@
     "CreatedAt": "Utworzono",
     "CreatedBy": "Utworzony przez",
     "Current object": "Aktualny obiekt",
-    "Current popup record": "Aktualny rekord wyskakującego okienka",
+    "Current popup record": "Aktualny rekord okna",
     "Data fields": "Pola danych",
     "Data model": "Model danych",
     "Data Model": "Model danych",
@@ -1234,5 +1234,9 @@
     "Dropdown":"Lista rozwijana",
     "Pop-up":"Wyskakujące okienko",
     "Save mode":"Tryb zapisu",
-    "No data":"Brak danych"
+    "No data":"Brak danych",
+    "Date range limit": "Ograniczenie zakresu dat",
+    "MinDate":"Minimalna data",
+    "MaxDate":"Masymalna data",
+    "Please select time or variable":"Proszę wybrać czas lub zmienną"
 }
