@@ -381,7 +381,9 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
             title={item.name}
             hidden={item._route.type === NocoBaseDesktopRouteType.group || item._depth > 0}
           >
-            <Link to={path}>{props.children}</Link>
+            <Link to={path} aria-label={item.name}>
+              {props.children}
+            </Link>
           </WithTooltip>
           <MenuSchemaToolbar />
         </SortableItem>
