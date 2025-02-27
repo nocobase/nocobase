@@ -1153,6 +1153,7 @@ export const useDetailsPaginationProps = () => {
       current: ctx.service?.data?.meta?.page || 1,
       pageSize: 1,
       showSizeChanger: false,
+      align: 'center',
       async onChange(page) {
         const params = ctx.service?.params?.[0];
         ctx.service.run({ ...params, page });
@@ -1178,6 +1179,7 @@ export const useDetailsPaginationProps = () => {
     total: count,
     pageSize: 1,
     showSizeChanger: false,
+    align: 'center',
     async onChange(page) {
       const params = ctx.service?.params?.[0];
       ctx.service.run({ ...params, page });
