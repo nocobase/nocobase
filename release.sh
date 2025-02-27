@@ -44,14 +44,14 @@ lerna version $new_version --preid alpha --force-publish=* --no-git-tag-version 
 
 echo $PRO_PLUGIN_REPOS | jq -r '.[]' | while read i; do
   cd ./packages/pro-plugins/@nocobase/$i
-  git add .
+  git add package.json
   git commit -m "chore(versions): 😊 publish v$(jq -r '.version' ../../../../lerna.json)"
   git tag v$(jq -r '.version' ../../../../lerna.json)
   cd ../../../../
 done
 echo $CUSTOM_PRO_PLUGIN_REPOS | jq -r '.[]' | while read i; do
   cd ./packages/pro-plugins/@nocobase/$i
-  git add .
+  git add package.json
   git commit -m "chore(versions): 😊 publish v$(jq -r '.version' ../../../../lerna.json)"
   git tag v$(jq -r '.version' ../../../../lerna.json)
   cd ../../../../
