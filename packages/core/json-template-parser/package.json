@@ -1,0 +1,14 @@
+{
+  "name": "@nocobase/json-template-parser",
+  "version": "1.6.0-alpha.28",
+  "license": "AGPL-3.0",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "dependencies": {
+    "lodash": "^4.x",
+    "dayjs": "^1.11.9",
+    "object-path": "^0.11.8",
+    "liquidjs": "^10.20.3"
+  },
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
+}

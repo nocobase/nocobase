@@ -17,6 +17,7 @@
         "@nocobase/data-source-manager": "1.6.0-alpha.28",
         "@nocobase/database": "1.6.0-alpha.28",
         "@nocobase/evaluators": "1.6.0-alpha.28",
+        "@nocobase/json-template-parser": "1.6.0-alpha.28",
         "@nocobase/lock-manager": "1.6.0-alpha.28",
         "@nocobase/logger": "1.6.0-alpha.28",
         "@nocobase/resourcer": "1.6.0-alpha.28",

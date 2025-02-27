@@ -6,6 +6,7 @@
   "license": "AGPL-3.0",
   "dependencies": {
     "@budibase/handlebars-helpers": "^0.14.0",
+    "@nocobase/json-template-parser": "1.6.0-alpha.28",
     "@hapi/topo": "^6.0.0",
     "@rc-component/mini-decimal": "^1.1.0",
     "dayjs": "^1.11.9",
