@@ -136,7 +136,15 @@ export const AdminDynamicPage = () => {
     return <AppNotFound />;
   }
 
-  return <KeepAlive uid={currentPageUid}>{(uid) => <RemoteSchemaComponent uid={uid} />}</KeepAlive>;
+  return (
+    <KeepAlive uid={currentPageUid}>
+      {(uid) => (
+        <CurrentRouteProvider uid={uid}>
+          <RemoteSchemaComponent uid={uid} />
+        </CurrentRouteProvider>
+      )}
+    </KeepAlive>
+  );
 };
 
 const layoutContentClass = css`
@@ -212,17 +220,13 @@ const pageContentStyle: React.CSSProperties = {
 };
 
 export const LayoutContent = () => {
-  const currentPageUid = useCurrentPageUid();
-
   /* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */
   return (
-    <CurrentRouteProvider uid={currentPageUid}>
-      <div className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
-        <div style={pageContentStyle}>
-          <Outlet />
-        </div>
+    <div className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
+      <div style={pageContentStyle}>
+        <Outlet />
       </div>
-    </CurrentRouteProvider>
+    </div>
   );
 };
 
