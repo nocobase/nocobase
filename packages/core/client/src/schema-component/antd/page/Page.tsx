@@ -33,7 +33,11 @@ import { useDocumentTitle } from '../../../document-title';
 import { useGlobalTheme } from '../../../global-theme';
 import { Icon } from '../../../icon';
 import { AppNotFound } from '../../../nocobase-buildin-plugin';
-import { NocoBaseDesktopRouteType, NocoBaseRouteContext, useCurrentRouteData } from '../../../route-switch/antd/admin-layout';
+import {
+  NocoBaseDesktopRouteType,
+  NocoBaseRouteContext,
+  useCurrentRouteData,
+} from '../../../route-switch/antd/admin-layout';
 import { KeepAliveProvider, useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
 import { DndContext } from '../../common';
@@ -211,26 +215,23 @@ const InternalPageContent = (props: PageContentProps) => {
   // 兼容旧版本的 tab 路径
   const oldTab = currentRoute?.children?.find((tabRoute) => tabRoute.tabSchemaName === activeKey);
   if (oldTab) {
-    navigate(location.pathname.replace(activeKey, oldTab.schemaUid), { replace: true });
+    navigate(`/admin/${currentRoute.schemaUid}/tabs/${oldTab.schemaUid}`);
     return null;
   }
 
   if (!disablePageHeader && enablePageTabs) {
     return (
       <>
-        {
-          currentRoute.children?.map((tabRoute) => {
-            return (
-              <NocoBaseRouteContext.Provider value={tabRoute} key={tabRoute.schemaUid}>
-                <TabPane active={tabRoute.schemaUid === activeKey} uid={tabRoute.schemaUid} />
-              </NocoBaseRouteContext.Provider>
-            );
-          })
-        }
+        {currentRoute.children?.map((tabRoute) => {
+          return (
+            <NocoBaseRouteContext.Provider value={tabRoute} key={tabRoute.schemaUid}>
+              <TabPane active={tabRoute.schemaUid === activeKey} uid={tabRoute.schemaUid} />
+            </NocoBaseRouteContext.Provider>
+          );
+        })}
       </>
     );
   }
-
 
   return (
     <div className={className1}>
@@ -346,31 +347,32 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
   );
 
   const items = useMemo(() => {
-    return currentRoute?.children?.map((tabRoute) => {
-      if (!tabRoute || tabRoute.hideInMenu) {
-        return null;
-      }
+    return currentRoute?.children
+      ?.map((tabRoute) => {
+        if (!tabRoute || tabRoute.hideInMenu) {
+          return null;
+        }
 
-      // fake schema used to pass routing information to SortableItem
-      const fakeSchema: any = { __route__: tabRoute };
+        // fake schema used to pass routing information to SortableItem
+        const fakeSchema: any = { __route__: tabRoute };
 
-      return {
-        label: (
-          <NocoBaseRouteContext.Provider value={tabRoute}>
-            <SortableItem
-              id={String(tabRoute.id)}
-              className={classNames('nb-action-link', 'designerCss', className)}
-              schema={fakeSchema}
-            >
-              {tabRoute.icon && <Icon style={{ marginRight: 8 }} type={tabRoute.icon} />}
-              <span>{(tabRoute.title && routeT(compile(tabRoute.title))) || t('Unnamed')}</span>
-              <PageTabDesigner />
-            </SortableItem>
-          </NocoBaseRouteContext.Provider>
-        ),
-        key: tabRoute.schemaUid,
-      };
-    })
+        return {
+          label: (
+            <NocoBaseRouteContext.Provider value={tabRoute}>
+              <SortableItem
+                id={String(tabRoute.id)}
+                className={classNames('nb-action-link', 'designerCss', className)}
+                schema={fakeSchema}
+              >
+                {tabRoute.icon && <Icon style={{ marginRight: 8 }} type={tabRoute.icon} />}
+                <span>{(tabRoute.title && routeT(compile(tabRoute.title))) || t('Unnamed')}</span>
+                <PageTabDesigner />
+              </SortableItem>
+            </NocoBaseRouteContext.Provider>
+          ),
+          key: tabRoute.schemaUid,
+        };
+      })
       .filter(Boolean);
   }, [
     fieldSchema,
@@ -425,7 +427,7 @@ const NocoBasePageHeader = React.memo(({ activeKey, className }: { activeKey: st
         <AntdPageHeader
           className={classNames('pageHeaderCss', pageTitle || enablePageTabs ? '' : 'height0')}
           style={{
-            paddingBottom: (currentRoute.enableTabs || hidePageTitle) ? 0 : token.paddingSM,
+            paddingBottom: currentRoute.enableTabs || hidePageTitle ? 0 : token.paddingSM,
           }}
           ghost={false}
           // 如果标题为空的时候会导致 PageHeader 不渲染，所以这里设置一个空白字符，然后再设置高度为 0

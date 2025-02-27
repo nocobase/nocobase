@@ -272,7 +272,7 @@ const GroupItem: FC<{ item: any }> = (props) => {
   return (
     <ParentRouteContext.Provider value={item._parentRoute}>
       <NocoBaseRouteContext.Provider value={item._route}>
-        <SortableItem id={item._route.id} schema={fakeSchema}>
+        <SortableItem id={item._route.id} schema={fakeSchema} aria-label={item.name}>
           {props.children}
           {designable && <MenuSchemaToolbarWithContainer />}
         </SortableItem>
@@ -361,7 +361,9 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
           <SortableItem id={item._route.id} schema={fakeSchema}>
             <div onClick={handleClickLink}>
               {/* 这里是为了扩大点击区域 */}
-              <Link to={location.pathname}>{props.children}</Link>
+              <Link to={location.pathname} aria-label={item.name}>
+                {props.children}
+              </Link>
             </div>
             <MenuSchemaToolbar />
           </SortableItem>
