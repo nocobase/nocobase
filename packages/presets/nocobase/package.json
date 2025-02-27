@@ -19,6 +19,7 @@
     "@nocobase/plugin-audit-logs": "1.6.0-beta.15",
     "@nocobase/plugin-auth": "1.6.0-beta.15",
     "@nocobase/plugin-auth-sms": "1.6.0-beta.15",
+    "@nocobase/plugin-ai": "1.6.0-beta.15",
     "@nocobase/plugin-backup-restore": "1.6.0-beta.15",
     "@nocobase/plugin-block-iframe": "1.6.0-beta.15",
     "@nocobase/plugin-block-workbench": "1.6.0-beta.15",
