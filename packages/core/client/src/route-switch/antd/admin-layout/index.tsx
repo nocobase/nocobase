@@ -446,7 +446,7 @@ const MobileActions: FC = (props) => {
   );
 };
 
-const actionsRender = (props) => {
+const actionsRender: any = (props) => {
   if (props.isMobile) {
     return <MobileActions />;
   }
@@ -652,9 +652,10 @@ const LegacyRouteCompat: FC = (props) => {
   const currentPageUid = useCurrentPageUid();
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const route = findRouteByMenuSchemaUid(currentPageUid, allAccessRoutes);
+  const location = useLocationNoUpdate();
 
   if (route) {
-    return <Navigate to={`/admin/${route.schemaUid}`} />;
+    return <Navigate to={location.pathname.replace(currentPageUid, route.schemaUid)} />;
   }
 
   return <>{props.children}</>;
