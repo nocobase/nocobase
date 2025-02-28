@@ -34,7 +34,7 @@ export const getLabelFormatValue = (
   labelUiSchema: ISchema,
   value: any,
   isTag = false,
-  targetTitleCollectionField,
+  targetTitleCollectionField?,
   TitleRenderer?: any,
 ): any => {
   if (TitleRenderer) {

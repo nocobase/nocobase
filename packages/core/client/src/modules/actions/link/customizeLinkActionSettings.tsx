@@ -16,7 +16,11 @@ import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { useCollection_deprecated } from '../../../collection-manager';
 import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/action/Action.Designer';
-import { SchemaSettingsLinkageRules, SchemaSettingsModalItem } from '../../../schema-settings';
+import {
+  SchemaSettingsLinkageRules,
+  SchemaSettingsModalItem,
+  SchemaSettingAccessControl,
+} from '../../../schema-settings';
 import { useURLAndHTMLSchema } from './useURLAndHTMLSchema';
 
 export const SchemaSettingsActionLinkItem: FC = () => {
@@ -103,6 +107,7 @@ export const customizeLinkActionSettings = new SchemaSettings({
         };
       },
     },
+    SchemaSettingAccessControl,
     {
       name: 'remove',
       sort: 100,

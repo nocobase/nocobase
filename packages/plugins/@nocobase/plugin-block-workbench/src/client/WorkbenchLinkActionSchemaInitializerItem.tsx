@@ -14,6 +14,7 @@ import {
   useSchemaInitializer,
   useSchemaInitializerItem,
   ModalActionSchemaInitializerItem,
+  SchemaSettingAccessControl,
 } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -31,6 +32,12 @@ export const workbenchActionSettingsLink = new SchemaSettings({
     {
       name: 'editLink',
       Component: SchemaSettingsActionLinkItem,
+    },
+    {
+      ...SchemaSettingAccessControl,
+      useVisible() {
+        return true;
+      },
     },
     {
       sort: 800,
