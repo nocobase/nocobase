@@ -30,6 +30,7 @@ import {
   useDesignable,
   useURLAndHTMLSchema,
 } from '../../../';
+import { useInsertPageSchema } from '../../../modules/menu/PageMenuItem';
 import { NocoBaseDesktopRouteType } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 
 const insertPositionToMethod = {
@@ -71,11 +72,11 @@ const findMenuSchema = (fieldSchema: Schema) => {
 const InsertMenuItems = (props) => {
   const { eventKey, title, insertPosition } = props;
   const { t } = useTranslation();
-  const { dn } = useDesignable();
   const fieldSchema = useFieldSchema();
   const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
   const isSubMenu = fieldSchema['x-component'] === 'Menu.SubMenu';
   const { createRoute, moveRoute } = useNocoBaseRoutes();
+  const insertPageSchema = useInsertPageSchema();
 
   if (!isSubMenu && insertPosition === 'beforeEnd') {
     return null;
@@ -131,18 +132,6 @@ const InsertMenuItems = (props) => {
               method: insertPositionToMethod[insertPosition],
             });
           }
-
-          // 3. 插入一个对应的 Schema
-          dn.insertAdjacent(insertPosition, {
-            type: 'void',
-            title,
-            'x-component': 'Menu.SubMenu',
-            'x-decorator': 'ACLMenuItemProvider',
-            'x-component-props': {
-              icon,
-            },
-            'x-uid': schemaUid,
-          });
         }}
       />
 
@@ -208,17 +197,7 @@ const InsertMenuItems = (props) => {
           }
 
           // 3. 插入一个对应的 Schema
-          dn.insertAdjacent(
-            insertPosition,
-            getPageMenuSchema({
-              title,
-              icon,
-              pageSchemaUid,
-              menuSchemaUid,
-              tabSchemaUid,
-              tabSchemaName,
-            }),
-          );
+          insertPageSchema(getPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }));
         }}
       />
       <SchemaSettingsModalItem
@@ -276,20 +255,6 @@ const InsertMenuItems = (props) => {
               method: insertPositionToMethod[insertPosition],
             });
           }
-
-          // 3. 插入一个对应的 Schema
-          dn.insertAdjacent(insertPosition, {
-            type: 'void',
-            title,
-            'x-component': 'Menu.URL',
-            'x-decorator': 'ACLMenuItemProvider',
-            'x-component-props': {
-              icon,
-              href,
-              params,
-            },
-            'x-uid': schemaUid,
-          });
         }}
       />
     </SchemaSettingsSubMenu>

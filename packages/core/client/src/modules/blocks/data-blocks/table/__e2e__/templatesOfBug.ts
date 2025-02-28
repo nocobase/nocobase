@@ -3824,10 +3824,11 @@ export const T4334 = {
           },
         },
         'x-uid': 'ribk031tkp8',
-        'x-async': false,
+        'x-async': true,
         'x-index': 1,
       },
     },
+    'x-uid': '1j5z1j5z1j5',
   },
 };
 

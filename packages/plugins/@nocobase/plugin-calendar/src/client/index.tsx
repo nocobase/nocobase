@@ -6,8 +6,8 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import React from 'react';
 import { Plugin, useToken } from '@nocobase/client';
+import React from 'react';
 import { generateNTemplate } from '../locale';
 import { CalendarV2 } from './calendar';
 import { calendarBlockSettings } from './calendar/Calender.Settings';

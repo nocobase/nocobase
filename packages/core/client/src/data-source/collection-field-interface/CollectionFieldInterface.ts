@@ -110,6 +110,7 @@ export abstract class CollectionFieldInterface {
               'uiSchema.x-component-props.dateFormat',
               'uiSchema.x-component-props.timeFormat',
               'uiSchema.x-component-props.picker',
+              'uiSchema.x-component-props.format',
             ],
             fulfill: {
               state: {
@@ -119,6 +120,7 @@ export abstract class CollectionFieldInterface {
                   dateFormat: '{{$deps[2]}}',
                   timeFormat: '{{$deps[3]}}',
                   picker: '{{$deps[4]}}',
+                  format: '{{$deps[5]}}',
                 },
               },
             },

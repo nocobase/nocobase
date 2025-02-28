@@ -13,8 +13,6 @@ import { useField, useForm } from '@formily/react';
 import {
   CollectionField,
   css,
-  getGroupMenuSchema,
-  getLinkMenuSchema,
   getPageMenuSchema,
   getTabSchema,
   getVariableComponentWithScope,
@@ -26,6 +24,7 @@ import {
   useCollectionRecordData,
   useDataBlockRequestData,
   useDataBlockRequestGetter,
+  useInsertPageSchema,
   useNocoBaseRoutes,
   useRequest,
   useRouterBasename,
@@ -1244,22 +1243,11 @@ function useCreateRouteSchema(isMobile: boolean) {
   const collectionName = 'uiSchemas';
   const api = useAPIClient();
   const resource = useMemo(() => api.resource(collectionName), [api, collectionName]);
+  const insertPageSchema = useInsertPageSchema();
 
   const createRouteSchema = useCallback(
-    async ({
-      title,
-      icon,
-      type,
-      href,
-      params,
-    }: {
-      title: string;
-      icon: string;
-      type: NocoBaseDesktopRouteType;
-      href?: string;
-      params?: Record<string, any>;
-    }) => {
-      const menuSchemaUid = uid();
+    async ({ type }: { type: NocoBaseDesktopRouteType }) => {
+      const menuSchemaUid = isMobile ? undefined : uid();
       const pageSchemaUid = uid();
       const tabSchemaName = uid();
       const tabSchemaUid = type === NocoBaseDesktopRouteType.page ? uid() : undefined;
@@ -1268,16 +1256,15 @@ function useCreateRouteSchema(isMobile: boolean) {
         [NocoBaseDesktopRouteType.page]: isMobile
           ? getMobilePageSchema(pageSchemaUid, tabSchemaUid).schema
           : getPageMenuSchema({
-              title,
-              icon,
               pageSchemaUid,
               tabSchemaUid,
-              menuSchemaUid,
               tabSchemaName,
             }),
-        [NocoBaseDesktopRouteType.group]: getGroupMenuSchema({ title, icon, schemaUid: menuSchemaUid }),
-        [NocoBaseDesktopRouteType.link]: getLinkMenuSchema({ title, icon, schemaUid: menuSchemaUid, href, params }),
       };
+
+      if (!typeToSchema[type]) {
+        return {};
+      }
 
       if (isMobile) {
         await resource['insertAdjacent']({
@@ -1288,17 +1275,12 @@ function useCreateRouteSchema(isMobile: boolean) {
           },
         });
       } else {
-        await resource['insertAdjacent/nocobase-admin-menu']({
-          position: 'beforeEnd',
-          values: {
-            schema: typeToSchema[type],
-          },
-        });
+        await insertPageSchema(typeToSchema[type]);
       }
 
       return { menuSchemaUid, pageSchemaUid, tabSchemaUid, tabSchemaName };
     },
-    [isMobile, resource],
+    [isMobile, resource, insertPageSchema],
   );
 
   /**

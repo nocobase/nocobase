@@ -71,16 +71,14 @@ export * from './modules/blocks/data-blocks/table';
 export * from './modules/blocks/data-blocks/table-selector';
 export * from './modules/blocks/index';
 export * from './modules/blocks/useParentRecordCommon';
-export { getGroupMenuSchema } from './modules/menu/GroupItem';
-export { getLinkMenuSchema } from './modules/menu/LinkMenuItem';
-export { getPageMenuSchema } from './modules/menu/PageMenuItem';
+export { getPageMenuSchema, useInsertPageSchema } from './modules/menu/PageMenuItem';
 export { OpenModeProvider, useOpenModeContext } from './modules/popup/OpenModeProvider';
 export { PopupContextProvider } from './modules/popup/PopupContextProvider';
 export { usePopupUtils } from './modules/popup/usePopupUtils';
 export { VariablePopupRecordProvider } from './modules/variable/variablesProvider/VariablePopupRecordProvider';
 
-export { useCurrentPopupRecord } from './modules/variable/variablesProvider/VariablePopupRecordProvider';
 export { showFileName } from './modules/fields/component/FileManager/fileManagerComponentFieldSettings';
+export { useCurrentPopupRecord } from './modules/variable/variablesProvider/VariablePopupRecordProvider';
 
 export { languageCodes } from './locale';
 
