@@ -286,14 +286,14 @@ export const MenuDesigner = () => {
           f.dataSource =
             component === 'Menu.SubMenu'
               ? [
-                { label: t('Before'), value: 'beforeBegin' },
-                { label: t('After'), value: 'afterEnd' },
-                { label: t('Inner'), value: 'beforeEnd' },
-              ]
+                  { label: t('Before'), value: 'beforeBegin' },
+                  { label: t('After'), value: 'afterEnd' },
+                  { label: t('Inner'), value: 'beforeEnd' },
+                ]
               : [
-                { label: t('Before'), value: 'beforeBegin' },
-                { label: t('After'), value: 'afterEnd' },
-              ];
+                  { label: t('Before'), value: 'beforeBegin' },
+                  { label: t('After'), value: 'afterEnd' },
+                ];
         });
       });
     },
@@ -369,9 +369,9 @@ export const MenuDesigner = () => {
           options:
             href || params
               ? {
-                href,
-                params,
-              }
+                  href,
+                  params,
+                }
               : undefined,
         });
       }

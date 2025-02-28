@@ -80,7 +80,9 @@ export const pageTabSettings = new SchemaSettings({
             Modal.confirm({
               title: t('Are you sure you want to hide this tab?'),
               icon: <ExclamationCircleFilled />,
-              content: t('After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.'),
+              content: t(
+                'After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.',
+              ),
               async onOk() {
                 // Update the route corresponding to the menu
                 await updateRoute(currentRoute.id, {
@@ -121,8 +123,8 @@ export const pageTabSettings = new SchemaSettings({
                 dn.emit('remove', {
                   removed: {
                     'x-uid': currentRoute.schemaUid,
-                  }
-                })
+                  },
+                });
 
                 // 如果删除的是当前打开的 tab，需要跳转到其他 tab
                 if (window.location.pathname.includes(currentRoute.schemaUid)) {

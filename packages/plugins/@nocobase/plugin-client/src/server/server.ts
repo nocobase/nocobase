@@ -33,7 +33,7 @@ async function getLang(ctx) {
 }
 
 export class PluginClientServer extends Plugin {
-  async beforeLoad() { }
+  async beforeLoad() {}
 
   async install() {
     const uiSchemas = this.db.getRepository<any>('uiSchemas');
@@ -216,9 +216,7 @@ export class PluginClientServer extends Plugin {
         appends: ['desktopRoutes'],
       });
 
-      const desktopRoutesId = role
-        .get('desktopRoutes')
-        .map((item) => item.id);
+      const desktopRoutesId = role.get('desktopRoutes').map((item) => item.id);
 
       ctx.body = await desktopRoutesRepository.find({
         tree: true,

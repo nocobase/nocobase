@@ -70,9 +70,9 @@ export class PluginCalendarClient extends Plugin {
   colorFieldInterfaces: {
     [T: string]: { useGetColor: (field: any) => ColorFunctions };
   } = {
-      select: { useGetColor },
-      radioGroup: { useGetColor },
-    };
+    select: { useGetColor },
+    radioGroup: { useGetColor },
+  };
 
   dateTimeFieldInterfaces = ['date', 'datetime', 'dateOnly', 'datetimeNoTz', 'unixTimestamp', 'createdAt', 'updatedAt'];
 
