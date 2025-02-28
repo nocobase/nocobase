@@ -1,0 +1,11 @@
+{
+    "Dynamic Calculation": "Dynamic Calculation",
+    "Calculate an expression based on a calculation engine and obtain a value as the result. Variables in the upstream nodes can be used in the expression. The expression is dynamic one from an expression collections.": "Calculate an expression based on a calculation engine and obtain a value as the result. Variables in the upstream nodes can be used in the expression. The expression is dynamic one from an expression collections.",
+    "Select dynamic expression": "Select dynamic expression",
+    "Select the dynamic expression queried from the upstream node. You need to query it from an expression collection.": "Select the dynamic expression queried from the upstream node. You need to query it from an expression collection.",
+    "Variable datasource": "Variable datasource",
+    "Dynamic expression": "Dynamic expression",
+    "An expression for calculation in each rows": "An expression for calculation in each rows",
+    "Unconfigured": "Unconfigured",
+    "Calculation result": "Calculation result"
+}
