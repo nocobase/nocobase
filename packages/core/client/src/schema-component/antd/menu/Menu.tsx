@@ -203,7 +203,7 @@ type ComposedMenu = React.FC<any> & {
   Designer?: React.FC<any>;
 };
 
-const ParentRouteContext = createContext<NocoBaseDesktopRoute>(null);
+export const ParentRouteContext = createContext<NocoBaseDesktopRoute>(null);
 ParentRouteContext.displayName = 'ParentRouteContext';
 
 export const useParentRoute = () => {
@@ -264,8 +264,8 @@ export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
       method,
       refreshAfterMove = true,
     }: {
-      sourceId: string;
-      targetId?: string;
+      sourceId: string | number;
+      targetId?: string | number;
       targetScope?: any;
       sortField?: string;
       sticky?: boolean;
@@ -526,14 +526,10 @@ export const useMenuDragEnd = () => {
         return;
       }
 
-      const fromIndex = activeSchema.__route__.sort;
-      const toIndex = overSchema.__route__.sort;
-
       moveRoute({
         sourceId: activeSchema.__route__.id,
         targetId: overSchema.__route__.id,
         sortField: 'sort',
-        method: fromIndex > toIndex ? 'prepend' : 'insertAfter',
       });
     },
     [moveRoute],
