@@ -1,11 +1,3 @@
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
 
 import { css } from '@emotion/css';
 import { usePrefixCls } from '@formily/antd-v5/esm/__builtins__';
@@ -31,7 +23,7 @@ export const ColorPicker = connect(
           // getPopupContainer={(current) => current}
           presets={[
             {
-              label: 'Recommended',
+              label: '{{t("Recommended", { ns: "${NAMESPACE}" })}}',
               colors: [
                 '#8BBB11',
                 '#52C41A',
