@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React from 'react';
 import { ISchema } from '@formily/react';
+import { NAMESPACE } from '../../../locale';
+import { SchemaComponent } from '@nocobase/client';
 
-import { NAMESPACE } from '../locale';
-
-export default {
+const schema = {
   type: 'object',
   properties: {
     accessKeyId: {
@@ -19,6 +20,7 @@ export default {
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'TextAreaWithGlobalScope',
+      required: true,
     },
     accessKeySecret: {
       title: `{{t("Access Key Secret", { ns: "${NAMESPACE}" })}}`,
@@ -26,24 +28,32 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'TextAreaWithGlobalScope',
       'x-component-props': { password: true },
+      required: true,
     },
     endpoint: {
       title: `{{t("Endpoint", { ns: "${NAMESPACE}" })}}`,
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'TextAreaWithGlobalScope',
+      required: true,
     },
     sign: {
       title: `{{t("Sign", { ns: "${NAMESPACE}" })}}`,
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'TextAreaWithGlobalScope',
+      required: true,
     },
     template: {
       title: `{{t("Template code", { ns: "${NAMESPACE}" })}}`,
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'TextAreaWithGlobalScope',
+      required: true,
     },
   },
 } as ISchema;
+
+export const AliyunSettings: React.FC = () => {
+  return <SchemaComponent schema={schema} />;
+};

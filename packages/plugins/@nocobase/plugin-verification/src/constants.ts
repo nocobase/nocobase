@@ -7,5 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const CODE_STATUS_UNUSED = 0;
-export const CODE_STATUS_USED = 1;
+export const SMS_OTP_VERIFICATION_TYPE = 'sms-otp';
+export const PROVIDER_TYPE_SMS_ALIYUN = 'sms-aliyun';
+export const PROVIDER_TYPE_SMS_TENCENT = 'sms-tencent';

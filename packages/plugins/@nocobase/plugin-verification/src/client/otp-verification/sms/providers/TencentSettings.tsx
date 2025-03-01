@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React from 'react';
 import { ISchema } from '@formily/react';
+import { NAMESPACE } from '../../../locale';
+import { SchemaComponent } from '@nocobase/client';
 
-import { NAMESPACE } from '../locale';
-
-export default {
+const schema = {
   type: 'object',
   properties: {
     secretId: {
@@ -19,6 +20,7 @@ export default {
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'TextAreaWithGlobalScope',
+      required: true,
     },
     secretKey: {
       title: `{{t("Secret Key", { ns: "${NAMESPACE}" })}}`,
@@ -26,12 +28,14 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'TextAreaWithGlobalScope',
       'x-component-props': { password: true },
+      required: true,
     },
     region: {
       title: `{{t("Region", { ns: "${NAMESPACE}" })}}`,
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'TextAreaWithGlobalScope',
+      required: true,
     },
     endpoint: {
       title: `{{t("Endpoint", { ns: "${NAMESPACE}" })}}`,
@@ -51,12 +55,18 @@ export default {
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'TextAreaWithGlobalScope',
+      required: true,
     },
     TemplateId: {
       title: `{{t("Template Id", { ns: "${NAMESPACE}" })}}`,
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'TextAreaWithGlobalScope',
+      required: true,
     },
   },
 } as ISchema;
+
+export const TencentSettings: React.FC = () => {
+  return <SchemaComponent schema={schema} />;
+};

@@ -51,8 +51,14 @@ export class PluginAuthClient extends Plugin {
     this.app.pluginSettingsManager.add(NAMESPACE, {
       icon: 'LoginOutlined',
       title: `{{t("Authentication", { ns: "${NAMESPACE}" })}}`,
+      aclSnippet: 'pm.auth',
+    });
+    this.app.pluginSettingsManager.add('auth.authenticators', {
+      icon: 'LoginOutlined',
+      title: `{{t("Authenticators", { ns: "${NAMESPACE}" })}}`,
       Component: Authenticator,
       aclSnippet: 'pm.auth.authenticators',
+      sort: 1,
     });
 
     this.router.add('auth', {
@@ -106,7 +112,11 @@ const useSignIn = function (name: string) {
   const useSignIn = useLazy<typeof import('./basic').useSignIn>(() => import('./basic'), 'useSignIn');
   return useSignIn(name);
 };
+const useRedirect = function (next = '/admin') {
+  const useRedirect = useLazy<typeof import('./basic').useRedirect>(() => import('./basic'), 'useRedirect');
+  return useRedirect(next);
+};
 
-export { useSignIn };
+export { useSignIn, useRedirect };
 
 export default PluginAuthClient;

@@ -10,14 +10,13 @@
 import DysmsApi, { SendSmsRequest } from '@alicloud/dysmsapi20170525';
 import * as OpenApi from '@alicloud/openapi-client';
 import { RuntimeOptions } from '@alicloud/tea-util';
+import { SMSProvider } from '.';
 
-import { Provider } from './Provider';
-
-export default class extends Provider {
+export default class extends SMSProvider {
   client: DysmsApi;
 
-  constructor(plugin, options) {
-    super(plugin, options);
+  constructor(options: any) {
+    super(options);
 
     const { accessKeyId, accessKeySecret, endpoint } = this.options;
 

@@ -7,18 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CollectionOptions } from '@nocobase/database';
+import { defineCollection } from '@nocobase/database';
+import verificators from '../../collections/verificators';
 
-export default {
-  name: 'authors',
-  fields: [
-    {
-      type: 'string',
-      name: 'title',
-    },
-    {
-      type: 'string',
-      name: 'phone',
-    },
-  ],
-} as CollectionOptions;
+export default defineCollection({
+  migrationRules: ['overwrite', 'skip'],
+  ...verificators,
+});
