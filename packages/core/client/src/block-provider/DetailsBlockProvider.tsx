@@ -103,14 +103,14 @@ const useCompatDetailsBlockParams = (props) => {
 export const DetailsBlockProvider = withDynamicSchemaProps((props) => {
   const { params, parseVariableLoading } = useCompatDetailsBlockParams(props);
   const record = useCollectionRecordData();
-  const { association, dataSource } = props;
+  const { association, dataSource, action } = props;
   const { getCollection } = useCollectionManager_deprecated(dataSource);
   const { __collection } = record || {};
   const { designable } = useDesignable();
-  const collection = props.collection || getCollection(association, dataSource).name;
+  const collectionName = props.collection;
   let detailFlag = true;
-  if (!designable && __collection) {
-    detailFlag = __collection === collection;
+  if (!designable && __collection && action === 'get' && !association) {
+    detailFlag = __collection === collectionName;
   }
 
   const refresh = useUpdate();
