@@ -755,15 +755,18 @@ export default class PluginWorkflowServer extends Plugin {
         transaction,
       });
     }
-    const counts =
-      (await repository.countAll({
-        where: {
-          userId: task.userId,
-        },
-        transaction,
-      })) || [];
 
-    if (ws) {
+    // NOTE:
+    // 1. `ws` not works in backend test cases for now.
+    // 2. `userId` here for compatibility of no user approvals (deprecated).
+    if (ws && task.userId) {
+      const counts =
+        (await repository.countAll({
+          where: {
+            userId: task.userId,
+          },
+          transaction,
+        })) || [];
       ws.sendToAppUser(this.app.name, `${task.userId}`, { type: 'workflow:tasks:updated', payload: counts });
     }
   }
