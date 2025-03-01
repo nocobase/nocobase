@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Checkbox, message, Table } from 'antd';
+import { Checkbox, message, Table, TableProps } from 'antd';
 import { omit } from 'lodash';
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -139,7 +139,7 @@ export const SettingsCenterConfigure = () => {
             return <Checkbox checked={checked} onChange={() => handleChange(checked, record)} />;
           },
         },
-      ]}
+      ] as TableProps['columns']}
       dataSource={settings
         .filter((v) => {
           return v.isTopLevel !== false;

@@ -96,7 +96,7 @@ export const PresetFields = observer(
         rowSelection={{
           type: 'checkbox',
           selectedRowKeys,
-          getCheckboxProps: (record) => ({
+          getCheckboxProps: (record: { name: string }) => ({
             name: record.name,
             disabled: props?.disabled || props?.presetFieldsDisabledIncludes?.includes?.(record.name),
           }),
