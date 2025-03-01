@@ -262,6 +262,7 @@ export default class PluginWorkflowServer extends Plugin {
       actions: ['workflows:list'],
     });
 
+    this.app.acl.allow('workflowTasks', 'countMine', 'loggedIn');
     this.app.acl.allow('*', ['trigger'], 'loggedIn');
 
     this.db.addMigrations({
