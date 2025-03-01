@@ -8,11 +8,13 @@
  */
 
 import { uid } from '@nocobase/utils';
+import iconv from 'iconv-lite';
 import path from 'path';
 
 export function getFilename(req, file, cb) {
-  const baseName = path.basename(file.originalname, path.extname(file.originalname));
-  cb(null, `${baseName}-${uid(6)}${path.extname(file.originalname)}`);
+  const originalname = iconv.decode(Buffer.from(file.originalname, 'binary'), 'utf8');
+  const baseName = path.basename(originalname, path.extname(originalname));
+  cb(null, `${baseName}-${uid(6)}${path.extname(originalname)}`);
 }
 
 export const cloudFilenameGetter = (storage) => (req, file, cb) => {
