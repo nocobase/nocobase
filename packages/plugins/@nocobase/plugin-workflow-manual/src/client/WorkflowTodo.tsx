@@ -810,7 +810,7 @@ function TaskItem() {
       //       'x-uid': 'job-view',
       //       'x-action-context': {
       //         dataSource: 'main',
-      //         collection: 'users_jobs',
+      //         collection: 'workflowManualTasks',
       //         doNotUpdateContext: true,
       //       },
       //       properties: {},

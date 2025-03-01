@@ -11,15 +11,19 @@ import { Migration } from '@nocobase/server';
 
 export default class extends Migration {
   appVersion = '<1.6.0';
+  on = 'beforeLoad';
   async up() {
     const { db } = this.context;
     const queryInterface = db.sequelize.getQueryInterface();
     await db.sequelize.transaction(async (transaction) => {
-      await queryInterface.renameTable(
-        'users_jobs',
-        db.options.underscored ? 'workflow_manual_tasks' : 'workflowManualTasks',
-        { transaction },
-      );
+      const exists = await queryInterface.tableExists('users_jobs', { transaction });
+      if (exists) {
+        await queryInterface.renameTable(
+          'users_jobs',
+          db.options.underscored ? 'workflow_manual_tasks' : 'workflowManualTasks',
+          { transaction },
+        );
+      }
     });
   }
 }
