@@ -9,12 +9,13 @@
 
 import { ExclamationCircleFilled } from '@ant-design/icons';
 import { ISchema } from '@formily/json-schema';
+import { useFieldSchema } from '@formily/react';
 import { App, Modal } from 'antd';
-import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
-import { useSchemaToolbar } from '../../../application/schema-toolbar';
+import { useCurrentRouteData } from '../../../route-switch';
 import { useDesignable } from '../../hooks';
 import { useNocoBaseRoutes } from '../menu/Menu';
 
@@ -29,9 +30,8 @@ export const pageTabSettings = new SchemaSettings({
       type: 'modal',
       useComponentProps() {
         const { t } = useTranslation();
-        const { schema } = useSchemaToolbar<{ schema: ISchema }>();
-        const { dn } = useDesignable();
         const { updateRoute } = useNocoBaseRoutes();
+        const currentRoute = useCurrentRouteData();
 
         return {
           title: t('Edit'),
@@ -54,20 +54,10 @@ export const pageTabSettings = new SchemaSettings({
               },
             },
           } as ISchema,
-          initialValues: { title: schema.title, icon: schema['x-icon'] },
+          initialValues: { title: currentRoute.title, icon: currentRoute.icon },
           onSubmit: ({ title, icon }) => {
-            schema.title = title;
-            schema['x-icon'] = icon;
-            dn.emit('patch', {
-              schema: {
-                ['x-uid']: schema['x-uid'],
-                title,
-                'x-icon': icon,
-              },
-            });
-
             // 更新路由
-            updateRoute(schema['__route__'].id, {
+            updateRoute(currentRoute.id, {
               title,
               icon,
             });
@@ -80,33 +70,21 @@ export const pageTabSettings = new SchemaSettings({
       type: 'switch',
       useComponentProps() {
         const { t } = useTranslation();
-        const { schema } = useSchemaToolbar<{ schema: ISchema }>();
         const { updateRoute } = useNocoBaseRoutes();
-        const { dn } = useDesignable();
+        const currentRoute = useCurrentRouteData();
 
         return {
           title: t('Hidden'),
-          checked: schema['x-component-props']?.hidden,
+          checked: currentRoute.hideInMenu,
           onChange: (v) => {
             Modal.confirm({
-              title: '确定要隐藏该菜单吗？',
+              title: t('Are you sure you want to hide this tab?'),
               icon: <ExclamationCircleFilled />,
-              content: '隐藏后，该菜单将不再显示在菜单栏中。如需再次显示，需要去路由管理页面设置。',
+              content: t('After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.'),
               async onOk() {
-                _.set(schema, 'x-component-props.hidden', !!v);
-
-                // 更新菜单对应的路由
-                if (schema['__route__']?.id) {
-                  await updateRoute(schema['__route__'].id, {
-                    hideInMenu: !!v,
-                  });
-                }
-
-                dn.emit('patch', {
-                  schema: {
-                    'x-uid': schema['x-uid'],
-                    'x-component-props': schema['x-component-props'],
-                  },
+                // Update the route corresponding to the menu
+                await updateRoute(currentRoute.id, {
+                  hideInMenu: !!v,
                 });
               },
             });
@@ -125,7 +103,11 @@ export const pageTabSettings = new SchemaSettings({
         const { modal } = App.useApp();
         const { dn } = useDesignable();
         const { t } = useTranslation();
-        const { schema } = useSchemaToolbar();
+        const { deleteRoute } = useNocoBaseRoutes();
+        const currentRoute = useCurrentRouteData();
+        const navigate = useNavigateNoUpdate();
+        const schema = useFieldSchema();
+
         return {
           title: t('Delete'),
           eventKey: 'remove',
@@ -134,8 +116,18 @@ export const pageTabSettings = new SchemaSettings({
               title: t('Delete block'),
               content: t('Are you sure you want to delete it?'),
               ...confirm,
-              onOk() {
-                dn.remove(schema);
+              async onOk() {
+                await deleteRoute(currentRoute.id);
+                dn.emit('remove', {
+                  removed: {
+                    'x-uid': currentRoute.schemaUid,
+                  }
+                })
+
+                // 如果删除的是当前打开的 tab，需要跳转到其他 tab
+                if (window.location.pathname.includes(currentRoute.schemaUid)) {
+                  navigate(`/admin/${schema['x-uid']}`);
+                }
               },
             });
           },

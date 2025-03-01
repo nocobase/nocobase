@@ -16,7 +16,7 @@ import { BackButtonUsedInSubPage } from '../page/BackButtonUsedInSubPage';
 import { TabsContextProvider, useTabsContext } from '../tabs/context';
 import { useActionPageStyle } from './Action.Page.style';
 import { usePopupOrSubpagesContainerDOM } from './hooks/usePopupSlotDOM';
-import { useZIndexContext, zIndexContext } from './zIndexContext';
+import { getZIndex, useZIndexContext, zIndexContext } from './zIndexContext';
 
 const ActionPageContent: FC<{ schema: any }> = React.memo(({ schema }) => {
   // Improve the speed of opening the page
@@ -45,7 +45,7 @@ export function ActionPage({ level }) {
 
   const style = useMemo(() => {
     return {
-      zIndex: parentZIndex + (level || 0),
+      zIndex: getZIndex('page', parentZIndex, level || 0),
     };
   }, [parentZIndex, level]);
 

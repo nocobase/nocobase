@@ -8,14 +8,14 @@
  */
 
 import { Model } from '@nocobase/database';
+import PluginLocalizationServer from '@nocobase/plugin-localization';
 import { Plugin } from '@nocobase/server';
+import { tval } from '@nocobase/utils';
 import * as process from 'node:process';
 import { resolve } from 'path';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
-import PluginLocalizationServer from '@nocobase/plugin-localization';
-import { tval } from '@nocobase/utils';
 
 async function getLang(ctx) {
   const SystemSetting = ctx.db.getRepository('systemSettings');
@@ -33,7 +33,7 @@ async function getLang(ctx) {
 }
 
 export class PluginClientServer extends Plugin {
-  async beforeLoad() {}
+  async beforeLoad() { }
 
   async install() {
     const uiSchemas = this.db.getRepository<any>('uiSchemas');
@@ -218,8 +218,6 @@ export class PluginClientServer extends Plugin {
 
       const desktopRoutesId = role
         .get('desktopRoutes')
-        // hidden 为 true 的节点不会显示在权限配置表格中，所以无法被配置，需要被过滤掉
-        .filter((item) => !item.hidden)
         .map((item) => item.id);
 
       ctx.body = await desktopRoutesRepository.find({
