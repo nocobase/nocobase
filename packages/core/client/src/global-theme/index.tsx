@@ -75,8 +75,21 @@ export const GlobalThemeProvider: FC<GlobalThemeProviderProps> = ({ children, th
   }, []);
 
   const value = useMemo(() => {
+    const finalTheme = addCustomAlgorithmToTheme(theme);
+    if (process.env.__E2E__) {
+      // Ant design 升级到5.2后 Modal 组件在 E2E 测试中会有问题，需要打开动画，否则会导致弹窗遮罩无法关闭
+      finalTheme.components = {
+        ...finalTheme.components,
+        Modal: {
+          motion: true,
+          motionDurationFast: '0.01ms',
+          motionDurationMid: '0.01ms',
+          motionDurationSlow: '0.01ms',
+        },
+      };
+    }
     return {
-      theme: addCustomAlgorithmToTheme(theme),
+      theme: finalTheme,
       setTheme,
       setCurrentSettingTheme,
       getCurrentSettingTheme,

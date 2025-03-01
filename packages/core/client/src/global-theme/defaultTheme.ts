@@ -29,8 +29,7 @@ const defaultTheme: ThemeConfig = {
 
     // 动画相关
     motionUnit: 0.03,
-    // setting true will break the e2e testing with modal.confirm!
-    motion: true, //!process.env.__E2E__,
+    motion: !process.env.__E2E__,
   },
 };
 
