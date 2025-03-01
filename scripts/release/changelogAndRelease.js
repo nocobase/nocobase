@@ -120,12 +120,12 @@ async function parsePR(number, pkgType, cwd, pkg, retries = 10) {
     return { number };
   }
   const { author, body, files, baseRefName, url } = JSON.parse(res);
-  if (ver === 'beta' && baseRefName !== 'next') {
-    return { number };
-  }
-  if (ver === 'alpha' && baseRefName !== 'develop') {
-    return { number };
-  }
+  // if (ver === 'beta' && baseRefName !== 'next') {
+  //   return { number };
+  // }
+  // if (ver === 'alpha' && baseRefName !== 'develop') {
+  //   return { number };
+  // }
   const typeRegExp = /\[x\] ([^(\\\r)]+)/;
   const typeMatch = body.match(typeRegExp);
   const prType = typeMatch ? typeMatch[1] : '';
