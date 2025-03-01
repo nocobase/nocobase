@@ -367,6 +367,9 @@ function shouldToRequest(value, variableCtx: Record<string, any>, variablePath: 
   // value may be a reactive object, using untracked to avoid unexpected autorun
   untracked(() => {
     // fix https://nocobase.height.app/T-2502
+    if (value === null) {
+      return false;
+    }
     // Compatible with `xxx to many` and `xxx to one` subform fields and subtable fields
     if (JSON.stringify(value) === '[{}]' || JSON.stringify(value) === '{}') {
       result = true;
