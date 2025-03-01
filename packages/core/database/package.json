@@ -28,7 +28,8 @@
     "semver": "^7.3.7",
     "sequelize": "^6.26.0",
     "umzug": "^3.1.1",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "@theinternetfolks/snowflake": "1.3.0"
   },
   "devDependencies": {
     "@types/glob": "^7.2.0"

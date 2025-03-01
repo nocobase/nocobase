@@ -103,7 +103,6 @@ describe('list action', () => {
 
     const body = response.body;
     expect(body.rows.length).toEqual(1);
-    expect(body.rows[0]['id']).toEqual(2);
     expect(body.count).toEqual(3);
     expect(body.totalPage).toEqual(3);
   });
