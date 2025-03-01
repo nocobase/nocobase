@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.5.19](https://github.com/nocobase/nocobase/compare/v1.5.18...v1.5.19) - 2025-03-01
+
+### 🐛 Bug Fixes
+
+- **[client]** add new button appears on hover in association field read-only mode ([#6322](https://github.com/nocobase/nocobase/pull/6322)) by @katherinehhh
+
+- **[Action: Export records Pro]** remove 'add block' option in export attachment button settings by @katherinehhh
+
+- **[Action: Import records Pro]** association block import button duplicate record detection shows no data in field dropdown by @katherinehhh
+
 ## [v1.5.18](https://github.com/nocobase/nocobase/compare/v1.5.17...v1.5.18) - 2025-02-27
 
 ### 🐛 Bug Fixes
