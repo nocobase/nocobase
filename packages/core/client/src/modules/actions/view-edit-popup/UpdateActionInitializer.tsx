@@ -20,6 +20,7 @@ export const UpdateActionInitializer = (props) => {
     type: 'void',
     title: '{{ t("Edit") }}',
     'x-action': 'update',
+    'x-acl-action': 'update',
     'x-toolbar': 'ActionSchemaToolbar',
     'x-settings': 'actionSettings:edit',
     'x-component': 'Action',

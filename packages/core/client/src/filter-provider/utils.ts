@@ -193,16 +193,19 @@ export const useFilterAPI = () => {
 
   const doFilter = useCallback(
     (
-      value,
-      field: string | ((target: FilterTarget['targets'][0]) => string) = 'id',
+      value: any | ((target: FilterTarget['targets'][0], block: DataBlock) => any),
+      field: string | ((target: FilterTarget['targets'][0], block: DataBlock) => string) = 'id',
       operator: string | ((target: FilterTarget['targets'][0]) => string) = '$eq',
     ) => {
       dataBlocks.forEach((block) => {
         const target = targets.find((target) => target.uid === block.uid);
         if (!target) return;
 
+        if (_.isFunction(value)) {
+          value = value(target, block);
+        }
         if (_.isFunction(field)) {
-          field = field(target);
+          field = field(target, block);
         }
         if (_.isFunction(operator)) {
           operator = operator(target);

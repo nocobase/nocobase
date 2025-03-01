@@ -25,15 +25,40 @@ export const PinnedPluginListProvider: React.FC<{ items: any }> = (props) => {
 };
 
 const pinnedPluginListClassName = css`
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
 
   .ant-btn {
-    border: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     height: 46px;
     width: 46px;
+    padding: 0;
+    border: 0;
     border-radius: 0;
     background: none;
     color: rgba(255, 255, 255, 0.65);
+    vertical-align: middle;
+
+    a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+    }
+
+    .ant-badge {
+      color: rgba(255, 255, 255, 0.65);
+      .anticon {
+        display: inline-block;
+        vertical-align: middle;
+        line-height: 1em;
+        font-size: initial;
+      }
+    }
+
     &:hover {
       background: rgba(255, 255, 255, 0.1) !important;
     }

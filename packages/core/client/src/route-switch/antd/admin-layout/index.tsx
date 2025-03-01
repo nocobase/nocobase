@@ -14,7 +14,6 @@ import React, {
   createContext,
   FC,
   memo,
-  // @ts-ignore
   startTransition,
   useCallback,
   useContext,
@@ -27,10 +26,8 @@ import { Outlet } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
-  CurrentUser,
   findByUid,
   findMenuItem,
-  NavigateIfNotSignIn,
   PinnedPluginList,
   RemoteCollectionManagerProvider,
   RemoteSchemaComponent,
@@ -58,7 +55,8 @@ import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
 import { Help } from '../../../user/Help';
 import { KeepAlive } from './KeepAlive';
 import { convertRoutesToSchema, NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
-
+import { userCenterSettings } from './userCenterSettings';
+import { UserCenter } from './UserCenterButton';
 export { KeepAlive, NocoBaseDesktopRouteType };
 
 const RouteContext = createContext<NocoBaseDesktopRoute | null>(null);
@@ -416,7 +414,10 @@ const className4 = css`
 const className5 = css`
   position: relative;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
   height: 100%;
+  line-height: 1;
   z-index: 10;
 `;
 const theme = {
@@ -529,7 +530,7 @@ export const InternalAdminLayout = () => {
               <Divider type="vertical" />
             </ConfigProvider>
             <Help />
-            <CurrentUser />
+            <UserCenter />
           </div>
         </div>
       </Layout.Header>
@@ -544,17 +545,15 @@ export const AdminProvider = (props) => {
     <CurrentPageUidProvider>
       <CurrentTabUidProvider>
         <IsSubPageClosedByPageMenuProvider>
-          <NavigateIfNotSignIn>
-            <ACLRolesCheckProvider>
-              <MenuSchemaRequestProvider>
-                <RemoteCollectionManagerProvider>
-                  <CurrentAppInfoProvider>
-                    <RemoteSchemaTemplateManagerProvider>{props.children}</RemoteSchemaTemplateManagerProvider>
-                  </CurrentAppInfoProvider>
-                </RemoteCollectionManagerProvider>
-              </MenuSchemaRequestProvider>
-            </ACLRolesCheckProvider>
-          </NavigateIfNotSignIn>
+          <ACLRolesCheckProvider>
+            <MenuSchemaRequestProvider>
+              <RemoteCollectionManagerProvider>
+                <CurrentAppInfoProvider>
+                  <RemoteSchemaTemplateManagerProvider>{props.children}</RemoteSchemaTemplateManagerProvider>
+                </CurrentAppInfoProvider>
+              </RemoteCollectionManagerProvider>
+            </MenuSchemaRequestProvider>
+          </ACLRolesCheckProvider>
         </IsSubPageClosedByPageMenuProvider>
       </CurrentTabUidProvider>
     </CurrentPageUidProvider>
@@ -574,6 +573,7 @@ export class AdminLayoutPlugin extends Plugin {
     await this.app.pm.add(RemoteSchemaTemplateManagerPlugin);
   }
   async load() {
+    this.app.schemaSettingsManager.add(userCenterSettings);
     this.app.addComponents({ AdminLayout, AdminDynamicPage });
   }
 }

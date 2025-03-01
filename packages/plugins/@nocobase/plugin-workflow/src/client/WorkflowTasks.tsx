@@ -6,28 +6,29 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import React, { useEffect, useMemo } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Link, Outlet, useNavigate, useParams } from 'react-router-dom';
-import { Button, Layout, Menu, Spin, Badge, theme, Tooltip, Tabs, Space, Typography } from 'antd';
+import { Button, Layout, Menu, Badge, Tooltip, Tabs } from 'antd';
 import { PageHeader } from '@ant-design/pro-layout';
 import { CheckCircleOutlined } from '@ant-design/icons';
 import classnames from 'classnames';
 
 import {
   css,
-  List,
   PinnedPluginListProvider,
   SchemaComponent,
   SchemaComponentContext,
   SchemaComponentOptions,
+  useApp,
   useCompile,
   useDocumentTitle,
   usePlugin,
+  useRequest,
+  useToken,
 } from '@nocobase/client';
 
 import PluginWorkflowClient from '.';
 import { lang, NAMESPACE } from './locale';
-import { ISchema } from '@formily/react';
 
 const layoutClass = css`
   height: 100%;
@@ -55,22 +56,19 @@ const contentClass = css`
 
 export interface TaskTypeOptions {
   title: string;
-  useCountRequest?: Function;
   collection: string;
   useActionParams: Function;
-  // schema: ISchema;
   component?: React.ComponentType;
   // children?: TaskTypeOptions[];
 }
 
+const TasksCountsContext = createContext<{ counts: Record<string, number>; total: number }>({ counts: {}, total: 0 });
+
 function MenuLink({ type }: any) {
   const workflowPlugin = usePlugin(PluginWorkflowClient);
   const compile = useCompile();
-  const { title, useCountRequest } = workflowPlugin.taskTypes.get(type);
-  const { data, loading, run } = useCountRequest?.() || { loading: false };
-  useEffect(() => {
-    run?.();
-  }, [run]);
+  const { title } = workflowPlugin.taskTypes.get(type);
+  const { counts } = useContext(TasksCountsContext);
   const typeTitle = compile(title);
 
   return (
@@ -91,7 +89,7 @@ function MenuLink({ type }: any) {
       `}
     >
       <span>{typeTitle}</span>
-      {loading ? <Spin /> : <Badge count={data?.data || 0} />}
+      <Badge count={counts[type] || 0} size="small" />
     </Link>
   );
 }
@@ -177,7 +175,7 @@ export function WorkflowTasks() {
   const { taskType, status = TASK_STATUS.PENDING } = useParams();
   const {
     token: { colorBgContainer },
-  } = theme.useToken();
+  } = useToken();
 
   const items = useMemo(
     () =>
@@ -319,52 +317,91 @@ export function WorkflowTasks() {
 
 function WorkflowTasksLink() {
   const workflowPlugin = usePlugin(PluginWorkflowClient);
+  const { total } = useContext(TasksCountsContext);
 
   const types = Array.from(workflowPlugin.taskTypes.getKeys());
   return types.length ? (
     <Tooltip title={lang('Workflow todos')}>
-      <Button
-        className={css`
-          padding: 0;
-          display: inline-flex;
-          vertical-align: middle;
-          a {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 100%;
-
-            .anticon {
-              display: inline-block;
-              vertical-align: middle;
-              line-height: 1em;
-            }
-          }
-        `}
-      >
-        <Link to={`/admin/workflow/tasks/${types[0]}/${TASK_STATUS.PENDING}`}>
-          <CheckCircleOutlined />
+      <Button>
+        <Link to="/admin/workflow/tasks">
+          <Badge dot={Boolean(total)}>
+            <CheckCircleOutlined />
+          </Badge>
         </Link>
       </Button>
     </Tooltip>
   ) : null;
 }
 
+function transform(detail) {
+  return detail.reduce((result, stats) => {
+    result[stats.type] = stats.count;
+    return result;
+  }, {});
+}
+
 export const TasksProvider = (props: any) => {
+  const app = useApp();
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const onTaskUpdate = useCallback(({ detail = [] }: CustomEvent) => {
+    setCounts((prev) => {
+      return {
+        ...prev,
+        ...transform(detail),
+      };
+    });
+  }, []);
+
+  const { runAsync } = useRequest(
+    {
+      resource: 'workflowTasks',
+      action: 'countMine',
+    },
+    {
+      manual: true,
+    },
+  );
+
+  useEffect(() => {
+    runAsync()
+      .then((res) => {
+        setCounts((prev) => {
+          return {
+            ...prev,
+            ...transform(res['data']),
+          };
+        });
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }, [runAsync]);
+
+  useEffect(() => {
+    app.eventBus.addEventListener('ws:message:workflow:tasks:updated', onTaskUpdate);
+
+    return () => {
+      app.eventBus.removeEventListener('ws:message:workflow:tasks:updated', onTaskUpdate);
+    };
+  }, [app.eventBus, onTaskUpdate]);
+
+  const total = Object.values(counts).reduce((a, b) => a + b, 0) || 0;
+
   return (
-    <PinnedPluginListProvider
-      items={{
-        todo: { component: 'WorkflowTasksLink', pin: true, snippet: '*' },
-      }}
-    >
-      <SchemaComponentOptions
-        components={{
-          WorkflowTasksLink,
+    <TasksCountsContext.Provider value={{ total, counts }}>
+      <PinnedPluginListProvider
+        items={{
+          todo: { component: 'WorkflowTasksLink', pin: true, snippet: '*' },
         }}
       >
-        {props.children}
-      </SchemaComponentOptions>
-    </PinnedPluginListProvider>
+        <SchemaComponentOptions
+          components={{
+            WorkflowTasksLink,
+          }}
+        >
+          {props.children}
+        </SchemaComponentOptions>
+      </PinnedPluginListProvider>
+    </TasksCountsContext.Provider>
   );
 };

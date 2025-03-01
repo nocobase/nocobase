@@ -78,6 +78,7 @@ import AesEncryptor from './aes-encryptor';
 import { AuditManager } from './audit-manager';
 import { Environment } from './environment';
 import { ServiceContainer } from './service-container';
+import { Gateway } from './gateway';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -442,6 +443,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get aesEncryptor() {
     return this._aesEncryptor;
+  }
+
+  get ws() {
+    return Gateway.getInstance().wsServer;
   }
 
   /**
@@ -1334,6 +1339,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       },
       logger: this._logger.child({ module: 'database' }),
     });
+
+    // NOTE: to avoid listener number warning (default to 10)
+    // See: https://nodejs.org/api/events.html#emittersetmaxlistenersn
+    db.setMaxListeners(100);
+
     return db;
   }
 }

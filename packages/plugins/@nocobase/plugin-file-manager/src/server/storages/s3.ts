@@ -12,11 +12,27 @@ import { STORAGE_TYPE_S3 } from '../../constants';
 import { cloudFilenameGetter, getFileKey } from '../utils';
 
 export default class extends StorageType {
-  filenameKey = 'key';
-  make(storage) {
+  static defaults() {
+    return {
+      title: 'AWS S3',
+      name: 'aws-s3',
+      type: STORAGE_TYPE_S3,
+      baseUrl: process.env.AWS_S3_STORAGE_BASE_URL,
+      options: {
+        region: process.env.AWS_S3_REGION,
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        bucket: process.env.AWS_S3_BUCKET,
+      },
+    };
+  }
+
+  static filenameKey = 'key';
+
+  make() {
     const { S3Client } = require('@aws-sdk/client-s3');
     const multerS3 = require('multer-s3');
-    const { accessKeyId, secretAccessKey, bucket, acl = 'public-read', ...options } = storage.options;
+    const { accessKeyId, secretAccessKey, bucket, acl = 'public-read', ...options } = this.storage.options;
     if (options.endpoint) {
       options.forcePathStyle = true;
     } else {
@@ -42,29 +58,16 @@ export default class extends StorageType {
 
         multerS3.AUTO_CONTENT_TYPE(req, file, cb);
       },
-      key: cloudFilenameGetter(storage),
+      key: cloudFilenameGetter(this.storage),
     });
   }
-  defaults() {
-    return {
-      title: 'AWS S3',
-      name: 'aws-s3',
-      type: STORAGE_TYPE_S3,
-      baseUrl: process.env.AWS_S3_STORAGE_BASE_URL,
-      options: {
-        region: process.env.AWS_S3_REGION,
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-        bucket: process.env.AWS_S3_BUCKET,
-      },
-    };
-  }
-  async delete(storage, records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
+
+  async delete(records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
     const { DeleteObjectsCommand } = require('@aws-sdk/client-s3');
-    const { s3 } = this.make(storage);
+    const { s3 } = this.make();
     const { Deleted } = await s3.send(
       new DeleteObjectsCommand({
-        Bucket: storage.options.bucket,
+        Bucket: this.storage.options.bucket,
         Delete: {
           Objects: records.map((record) => ({ Key: getFileKey(record) })),
         },
