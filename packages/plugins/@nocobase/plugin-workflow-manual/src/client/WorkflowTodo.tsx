@@ -7,18 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
-import { Button, Space, Spin, Tag } from 'antd';
+import { Button, Card, Descriptions, Space, Spin, Tag } from 'antd';
+import { TableOutlined } from '@ant-design/icons';
+import { useAntdToken } from 'antd-style';
 import dayjs from 'dayjs';
-import React, { createContext, useContext, useEffect, useState } from 'react';
 
 import {
+  ActionContextProvider,
   css,
+  PopupContextProvider,
   SchemaInitializerItem,
   useCollectionRecordData,
   useCompile,
   useOpenModeContext,
   usePlugin,
+  usePopupSettings,
+  usePopupUtils,
   useSchemaInitializer,
   useSchemaInitializerItem,
 } from '@nocobase/client';
@@ -41,12 +47,13 @@ import WorkflowPlugin, {
   linkNodes,
   useAvailableUpstreams,
   useFlowContext,
+  EXECUTION_STATUS,
+  JOB_STATUS,
 } from '@nocobase/plugin-workflow/client';
 
-import { NAMESPACE, useLang } from '../locale';
+import { lang, NAMESPACE, useLang } from '../locale';
 import { FormBlockProvider } from './instruction/FormBlockProvider';
 import { ManualFormType, manualFormTypes } from './instruction/SchemaConfig';
-import { TableOutlined } from '@ant-design/icons';
 
 export const nodeCollection = {
   title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,
@@ -109,7 +116,7 @@ export const workflowCollection = {
 
 export const todoCollection = {
   title: `{{t("Workflow todos", { ns: "${NAMESPACE}" })}}`,
-  name: 'users_jobs',
+  name: 'workflowManualTasks',
   fields: [
     {
       type: 'belongsTo',
@@ -202,6 +209,19 @@ export const todoCollection = {
       uiSchema: {
         type: 'datetime',
         title: '{{t("Created at")}}',
+        'x-component': 'DatePicker',
+        'x-component-props': {
+          showTime: true,
+        },
+      },
+    },
+    {
+      name: 'updatedAt',
+      type: 'date',
+      interface: 'updatedAt',
+      uiSchema: {
+        type: 'datetime',
+        title: '{{t("Updated at")}}',
         'x-component': 'DatePicker',
         'x-component-props': {
           showTime: true,
@@ -328,7 +348,7 @@ export const WorkflowTodo: React.FC<{ columns?: string[] }> & {
   Initializer: React.FC;
   Drawer: React.FC;
   Decorator: React.FC;
-  TaskBlock: React.FC;
+  // TaskBlock: React.FC;
 } = (props) => {
   const { columns = Object.keys(tableColumns) } = props;
   const { defaultOpenMode } = useOpenModeContext();
@@ -398,7 +418,7 @@ export const WorkflowTodo: React.FC<{ columns?: string[] }> & {
                 },
                 title: '{{t("Actions")}}',
                 properties: {
-                  view: getWorkflowTodoViewActionSchema({ defaultOpenMode, collectionName: 'users_jobs' }),
+                  view: getWorkflowTodoViewActionSchema({ defaultOpenMode, collectionName: 'workflowManualTasks' }),
                 },
               },
               ...columns.reduce((schema, key) => {
@@ -518,7 +538,7 @@ function useSubmit() {
       field.data = field.data || {};
       field.data.loading = true;
 
-      await api.resource('users_jobs').submit({
+      await api.resource('workflowManualTasks').submit({
         filterByTk: userJob.id,
         values: {
           result: { [formKey]: { ...values, ...assignedValues.values }, _: actionKey },
@@ -545,7 +565,7 @@ function FlowContextProvider(props) {
       return;
     }
     api
-      .resource('users_jobs')
+      .resource('workflowManualTasks')
       .get?.({
         filterByTk: id,
         appends: ['node', 'job', 'workflow', 'workflow.nodes', 'execution', 'execution.jobs'],
@@ -699,8 +719,8 @@ function Drawer() {
 function Decorator(props) {
   const { params = {}, children } = props;
   const blockProps = {
-    collection: 'users_jobs',
-    resource: 'users_jobs',
+    collection: 'workflowManualTasks',
+    resource: 'workflowManualTasks',
     action: 'list',
     params: {
       pageSize: 20,
@@ -754,47 +774,177 @@ function Initializer() {
 WorkflowTodo.Initializer = Initializer;
 WorkflowTodo.Drawer = Drawer;
 WorkflowTodo.Decorator = Decorator;
-WorkflowTodo.TaskBlock = TaskBlock;
 
-function TaskBlock() {
-  const { data: user } = useCurrentUserContext();
+function ContentDetail() {
+  const record = useCollectionRecordData();
   return (
-    <SchemaComponent
-      components={{
-        WorkflowTodo,
-      }}
-      schema={{
-        name: 'todos',
-        type: 'void',
-        'x-decorator': 'WorkflowTodo.Decorator',
-        'x-decorator-props': {
-          params: {
-            filter: {
-              userId: user?.data?.id,
-            },
-            appends: [
-              'job.id',
-              'job.status',
-              'job.result',
-              'workflow.id',
-              'workflow.title',
-              'workflow.enabled',
-              'execution.id',
-              'execution.status',
-            ],
-          },
+    <Descriptions
+      items={[
+        {
+          key: 'workflow.title',
+          label: lang('Workflow belonged'),
+          children: record.workflow.title,
         },
-        'x-component': 'CardItem',
-        properties: {
-          todos: {
-            type: 'void',
-            'x-component': 'WorkflowTodo',
-            'x-component-props': {
-              columns: ['title', 'workflow', 'node', 'status', 'createdAt'],
-            },
-          },
-        },
-      }}
+      ]}
     />
   );
 }
+
+function TaskItem() {
+  const token = useAntdToken();
+  const [visible, setVisible] = useState(false);
+  // const { defaultOpenMode } = useOpenModeContext();
+  // const { openPopup } = usePopupUtils();
+  // const { isPopupVisibleControlledByURL } = usePopupSettings();
+  const onOpen = useCallback((e: React.MouseEvent) => {
+    const targetElement = e.target as Element; // 将事件目标转换为Element类型
+    const currentTargetElement = e.currentTarget as Element;
+    if (currentTargetElement.contains(targetElement)) {
+      setVisible(true);
+      // if (!isPopupVisibleControlledByURL()) {
+      // } else {
+      //   openPopup({
+      //     // popupUidUsedInURL: 'job',
+      //     customActionSchema: {
+      //       type: 'void',
+      //       'x-uid': 'job-view',
+      //       'x-action-context': {
+      //         dataSource: 'main',
+      //         collection: 'workflowManualTasks',
+      //         doNotUpdateContext: true,
+      //       },
+      //       properties: {},
+      //     },
+      //   });
+      // }
+    }
+    e.stopPropagation();
+  }, []);
+
+  return (
+    <>
+      <Card onClick={onOpen} hoverable size="small">
+        <SchemaComponent
+          components={{
+            Space,
+          }}
+          schema={{
+            name: 'grid',
+            type: 'void',
+            'x-component': 'Grid',
+            properties: {
+              titleRow: {
+                type: 'void',
+                'x-component': 'Grid.Row',
+                properties: {
+                  left: {
+                    type: 'void',
+                    'x-component': 'Grid.Col',
+                    properties: {
+                      title: {
+                        type: 'void',
+                        'x-component': 'Space',
+                        properties: {
+                          'workflow.title': {
+                            type: 'string',
+                            'x-component': 'CollectionField',
+                            'x-component-props': {
+                              className: css`
+                                color: ${token.colorTextDescription};
+
+                                &:after {
+                                  content: '>';
+                                  margin-left: 4px;
+                                }
+                              `,
+                            },
+                          },
+                          title: {
+                            type: 'string',
+                            'x-component': 'CollectionField',
+                          },
+                        },
+                      },
+                    },
+                  },
+                  right: {
+                    type: 'void',
+                    'x-component': 'Grid.Col',
+                    'x-align': 'right',
+                    'x-component-props': {
+                      className: css`
+                        text-align: right;
+                      `,
+                    },
+                    properties: {
+                      meta: {
+                        type: 'void',
+                        'x-component': 'Space',
+                        properties: {
+                          status: {
+                            type: 'number',
+                            'x-component': 'CollectionField',
+                          },
+                          updatedAt: {
+                            type: 'string',
+                            'x-component': 'CollectionField',
+                            'x-component-props': {
+                              className: css`
+                                color: ${token.colorTextDescription};
+                              `,
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          }}
+        />
+      </Card>
+      <PopupContextProvider visible={visible} setVisible={setVisible}>
+        <Drawer />
+      </PopupContextProvider>
+    </>
+  );
+}
+
+const StatusFilterMap = {
+  pending: {
+    status: JOB_STATUS.PENDING,
+    'execution.status': EXECUTION_STATUS.STARTED,
+  },
+  completed: {
+    status: JOB_STATUS.RESOLVED,
+  },
+};
+
+function useTodoActionParams(status) {
+  const { data: user } = useCurrentUserContext();
+  const filter = StatusFilterMap[status] ?? {};
+  return {
+    filter: {
+      ...filter,
+      userId: user?.data?.id,
+    },
+    appends: [
+      'job.id',
+      'job.status',
+      'job.result',
+      'workflow.id',
+      'workflow.title',
+      'workflow.enabled',
+      'execution.id',
+      'execution.status',
+    ],
+  };
+}
+
+export const manualTodo = {
+  title: `{{t("My manual tasks", { ns: "${NAMESPACE}" })}}`,
+  collection: 'workflowManualTasks',
+  useActionParams: useTodoActionParams,
+  component: TaskItem,
+};
