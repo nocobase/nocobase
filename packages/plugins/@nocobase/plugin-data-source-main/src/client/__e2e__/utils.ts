@@ -11,7 +11,7 @@ import { Page, expect } from '@nocobase/test/e2e';
 
 export async function showSettingsMenu(page: Page, fieldName: string) {
   await page.getByRole('columnheader', { name: fieldName, exact: true }).hover();
-  await page.getByLabel('designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-general').hover();
+  await page.getByLabel('designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-general').click();
 }
 
 export async function createColumnItem(page: Page, fieldName: string) {

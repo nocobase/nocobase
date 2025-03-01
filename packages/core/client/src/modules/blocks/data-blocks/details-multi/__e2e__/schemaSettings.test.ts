@@ -26,7 +26,7 @@ test.describe('multi data details block schema settings', () => {
       page,
       showMenu: async () => {
         await page.getByLabel('block-item-CardItem-targetToGeneral-details').hover();
-        await page.getByLabel('designer-schema-settings-CardItem-DetailsDesigner-targetToGeneral').hover();
+        await page.getByLabel('designer-schema-settings-CardItem-DetailsDesigner-targetToGeneral').click();
       },
       supportedOptions: [
         'Edit block title',
@@ -87,7 +87,7 @@ test.describe('actions schema settings', () => {
       page,
       showMenu: async () => {
         await page.getByRole('button', { name: 'Delete' }).hover();
-        await page.getByRole('button', { name: 'designer-schema-settings-Action' }).hover();
+        await page.getByRole('button', { name: 'designer-schema-settings-Action' }).click();
       },
       supportedOptions: ['Edit button', 'Linkage rules', 'Delete'],
     });

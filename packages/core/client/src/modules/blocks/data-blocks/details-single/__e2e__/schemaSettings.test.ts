@@ -22,7 +22,7 @@ test.describe('single details block schema settings', () => {
       page,
       showMenu: async () => {
         await page.getByLabel('block-item-CardItem-general-form').hover();
-        await page.getByLabel('designer-schema-settings-CardItem-FormV2.ReadPrettyDesigner-general').hover();
+        await page.getByLabel('designer-schema-settings-CardItem-FormV2.ReadPrettyDesigner-general').click();
       },
       supportedOptions: ['Edit block title', 'Linkage rules', 'Save as block template', 'Delete'],
     });

@@ -28,7 +28,7 @@ test.describe('form item & create form', () => {
         await page.getByLabel(`block-item-CollectionField-general-form-general.singleLineText-singleLineText`).hover();
         await page
           .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.singleLineText`)
-          .hover();
+          .click();
       },
       supportedOptions: [
         'Edit field title',
