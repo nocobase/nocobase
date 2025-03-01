@@ -11,12 +11,13 @@ import { Plugin } from '@nocobase/client';
 import { lazy } from '@nocobase/client';
 const { Verificators } = lazy(() => import('./verificators/Verificators'), 'Verificators');
 const { VerificatorSelect } = lazy(() => import('./verificators/VerificatorSelect'), 'VerificatorSelect');
-const { Verification } = lazy(() => import('./VerificationMenu'), 'Verification');
+// const { Verification } = lazy(() => import('./VerificationMenu'), 'Verification');
 import { NAMESPACE } from './locale';
 import { PROVIDER_TYPE_SMS_ALIYUN, PROVIDER_TYPE_SMS_TENCENT, SMS_OTP_VERIFICATION_TYPE } from '../constants';
 import { VerificationManager } from './verification-manager';
 import { smsAliyunProviderOptions, smsOTPVerificationOptions, smsTencentProviderOptions } from './otp-verification/sms';
 import { SMSOTPProviderManager } from './otp-verification/sms/provider-manager';
+import { Verification } from './VerificationMenu';
 
 export class PluginVerificationClient extends Plugin {
   verificationManager = new VerificationManager();
