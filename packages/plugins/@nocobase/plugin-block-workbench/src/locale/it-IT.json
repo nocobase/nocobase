@@ -1,0 +1,10 @@
+{
+  "Workbench": "Banco di lavoro",
+  "Scan QR code": "Scansiona codice QR",
+  "Album": "Album",
+  "No camera device detected": "Nessuna fotocamera rilevata",
+  "You have not granted permission to use the camera": "Non hai concesso l'autorizzazione per utilizzare la fotocamera",
+  "Unknown error": "Errore sconosciuto",
+  "The image size is too large. Please compress it to below 1MB before uploading": "La dimensione dell'immagine è troppo grande. Si prega di comprimerla sotto 1MB prima di caricarla.",
+  "QR code recognition failed, please scan again": "Riconoscimento del codice QR fallito, si prega di scansionare di nuovo."
+}
