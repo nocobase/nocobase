@@ -38,16 +38,20 @@ export async function setDefaultRole(ctx: Context, next: Next) {
       },
       transaction,
     });
-    await repository.update({
-      filter: {
-        userId: currentUser.id,
-        roleName,
-      },
-      values: {
-        default: true,
-      },
-      transaction,
-    });
+    if (roleName !== '*') {
+      // If roleName is '*', it indicates the current role is a collection of roles.
+      // Avoid setting any specific role as default in this case.
+      await repository.update({
+        filter: {
+          userId: currentUser.id,
+          roleName,
+        },
+        values: {
+          default: true,
+        },
+        transaction,
+      });
+    }
   });
 
   ctx.body = 'ok';
