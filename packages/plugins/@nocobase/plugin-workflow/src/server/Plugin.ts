@@ -763,6 +763,8 @@ export default class PluginWorkflowServer extends Plugin {
         transaction,
       })) || [];
 
-    ws.sendToAppUser(this.app.name, `${task.userId}`, { type: 'workflow:tasks:updated', payload: counts });
+    if (ws) {
+      ws.sendToAppUser(this.app.name, `${task.userId}`, { type: 'workflow:tasks:updated', payload: counts });
+    }
   }
 }
