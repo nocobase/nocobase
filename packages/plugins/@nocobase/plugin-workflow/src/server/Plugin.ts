@@ -738,7 +738,7 @@ export default class PluginWorkflowServer extends Plugin {
    * @experimental
    */
   public async toggleTaskStatus(task: WorkflowTaskModel, done: boolean, { transaction }: Transactionable) {
-    const { db, ws } = this.app;
+    const { db } = this.app;
     const repository = db.getRepository('workflowTasks') as WorkflowTasksRepository;
     if (done) {
       await repository.destroy({
@@ -759,7 +759,7 @@ export default class PluginWorkflowServer extends Plugin {
     // NOTE:
     // 1. `ws` not works in backend test cases for now.
     // 2. `userId` here for compatibility of no user approvals (deprecated).
-    if (ws && task.userId) {
+    if (task.userId) {
       const counts =
         (await repository.countAll({
           where: {
@@ -767,7 +767,11 @@ export default class PluginWorkflowServer extends Plugin {
           },
           transaction,
         })) || [];
-      ws.sendToAppUser(this.app.name, `${task.userId}`, { type: 'workflow:tasks:updated', payload: counts });
+      this.app.emit('ws:sendToTag', {
+        tagKey: 'userId',
+        tagValue: `${task.userId}`,
+        message: { type: 'workflow:tasks:updated', payload: counts },
+      });
     }
   }
 }

@@ -74,7 +74,7 @@ function MenuLink({ type }: any) {
   return (
     <Link
       title={typeTitle}
-      to={`/admin/workflow/tasks/${type}/${TASK_STATUS.PENDING}`}
+      to={`/admin/workflow/tasks/${type}`}
       className={css`
         display: flex;
         align-items: center;
@@ -323,7 +323,7 @@ function WorkflowTasksLink() {
   return types.length ? (
     <Tooltip title={lang('Workflow todos')}>
       <Button>
-        <Link to="/admin/workflow/tasks">
+        <Link to={`/admin/workflow/tasks/${types[0]}`}>
           <Badge dot={Boolean(total)}>
             <CheckCircleOutlined />
           </Badge>
