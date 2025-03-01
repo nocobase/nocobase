@@ -822,5 +822,6 @@
   "If selected, the page will display Tab pages.": "Si sélectionné, la page affichera des onglets.",
   "If selected, the route will be displayed in the menu.": "Si sélectionné, la route sera affichée dans le menu.",
   "Deprecated": "Déprécié",
-  "The following old template features have been deprecated and will be removed in next version.": "Les fonctionnalités des anciens modèles ont été dépréciées et seront supprimées dans la prochaine version."
+  "The following old template features have been deprecated and will be removed in next version.": "Les fonctionnalités des anciens modèles ont été dépréciées et seront supprimées dans la prochaine version.",
+  "Full permissions": "Tous les droits"
 }

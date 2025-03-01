@@ -12,6 +12,7 @@ import { useACLRoleContext } from '../acl';
 import { ReturnTypeOfUseRequest, useAPIClient, useRequest } from '../api-client';
 import { useAppSpin } from '../application';
 import { useCompile } from '../schema-component';
+import { useTranslation } from 'react-i18next';
 
 export const CurrentUserContext = createContext<ReturnTypeOfUseRequest>(null);
 CurrentUserContext.displayName = 'CurrentUserContext';
@@ -24,6 +25,7 @@ export const useCurrentRoles = () => {
   const { allowAnonymous } = useACLRoleContext();
   const { data } = useCurrentUserContext();
   const compile = useCompile();
+  const { t } = useTranslation();
   const options = useMemo(() => {
     const roles = (data?.data?.roles || []).map(({ name, title }) => ({ name, title: compile(title) }));
     if (allowAnonymous) {
@@ -32,6 +34,7 @@ export const useCurrentRoles = () => {
         name: 'anonymous',
       });
     }
+    roles.unshift({ name: 'union', title: t('Full permissions') });
     return roles;
   }, [allowAnonymous, data?.data?.roles]);
   return options;

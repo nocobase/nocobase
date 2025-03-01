@@ -913,6 +913,6 @@
   "If selected, the page will display Tab pages.": "如果選中，該頁面將顯示標籤頁。",
   "If selected, the route will be displayed in the menu.": "如果選中，該路由將顯示在菜單中。",
   "Deprecated": "已棄用",
-  "The following old template features have been deprecated and will be removed in next version.": "以下舊的模板功能已棄用，將在下個版本移除。"
+  "The following old template features have been deprecated and will be removed in next version.": "以下舊的模板功能已棄用，將在下個版本移除。",
+  "Full permissions": "完全權限"
 }
-
