@@ -47,10 +47,12 @@ export function revertEscape(input) {
   if (isArray(input)) {
     const result = [];
     Object.keys(input).forEach((key) => {
-      result[escape(key)] = revertEscape(input[key]);
+      result[revertEscape(key)] = revertEscape(input[key]);
     });
-    return input.map(revertEscape);
-  } else if (isObject(input)) {
+    return result;
+
+    // check keys number of object to skip the object like new Date()
+  } else if (isObject(input && Object.keys(input).length > 0)) {
     return mapKeys(mapValues(input, revertEscape), (value, key) => revertEscape(key));
   } else if (isString(input)) {
     return revertEscapeSpecialChars(input);
