@@ -10,6 +10,7 @@
 import _ from 'lodash';
 import set from 'lodash/set';
 import moment from 'moment';
+import { extractTemplateElements } from '@nocobase/json-template-parser';
 import { offsetFromString } from './date';
 import { dayjs } from './dayjs';
 import { getValuesByPath } from './getValuesByPath';
@@ -175,10 +176,16 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
       if (typeof value === 'string') {
         const match = re.exec(value);
         if (match) {
-          const key = match[1].trim();
+          const { fullVariable: key, filters } = extractTemplateElements(value);
           const val = getValuesByPath(vars, key, null);
           const field = getField?.(path);
-          value = typeof val === 'function' ? val?.({ field, operator, timezone, now }) : val;
+          if (key.startsWith('$date') || key.startsWith('$nDate')) {
+            const filteredNow = filters.reduce((acc, filter) => filter.handler(...[acc, ...filter.args]), now);
+            value = typeof val === 'function' ? val?.({ field, operator, timezone, now: filteredNow }) : val;
+          } else {
+            value = filters.reduce((acc, filter) => filter.handler(...[acc, ...filter.args]), value);
+          }
+          return value;
         }
       }
       if (isDateOperator(operator)) {
