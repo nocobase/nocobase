@@ -9,7 +9,7 @@
 
 import { Collection, Model, Op } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { parse } from '@nocobase/utils';
+import { parse } from '@nocobase/json-templates';
 import * as actions from './actions/users';
 import { UserModel } from './models/UserModel';
 import PluginUserDataSyncServer from '@nocobase/plugin-user-data-sync';

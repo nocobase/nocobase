@@ -20,7 +20,8 @@ import {
   useVariables,
   useLocalVariables,
 } from '@nocobase/client';
-import { flatten, parse, unflatten } from '@nocobase/utils/client';
+import { flatten, unflatten } from '@nocobase/utils/client';
+import { parse } from '@nocobase/json-templates';
 import { useMemoizedFn } from 'ahooks';
 import deepmerge from 'deepmerge';
 import { default as _, default as lodash } from 'lodash';
