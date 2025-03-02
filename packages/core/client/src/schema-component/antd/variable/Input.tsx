@@ -10,7 +10,8 @@
 import { CloseCircleFilled, FilterOutlined } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
-import { extractTemplateElements, composeTemplate } from 'packages/core/json-templates/src/utils';
+import { error } from '@nocobase/utils/client';
+import { extractTemplateElements, composeTemplate } from '@nocobase/json-templates';
 import {
   Input as AntInput,
   Cascader,
@@ -32,7 +33,7 @@ import { useCompile } from '../../hooks';
 import { XButton } from './XButton';
 import { useStyles } from './style';
 import { Json } from '../input';
-import { Addition } from './VariableFilters';
+import { Filters, Addition } from './VariableFilters';
 
 const { Text } = Typography;
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
@@ -462,7 +463,7 @@ export function Input(props: VariableInputProps) {
                 );
               })}
               {filters.length > 0 ? ' | ' : ''}
-              <span style={{ color: '#52c41a' }}> {filters.map((filter) => filter.name).join(' | ')}</span>
+              <Filters filters={filters} onFilterChange={onFilterAdd} />
 
               {variableText.length > 0 && <Addition variable={fullVariable} onFilterAdd={onFilterAdd} />}
             </Tag>
