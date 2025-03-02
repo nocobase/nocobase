@@ -242,36 +242,6 @@
         }
       },
       {
-        "key": "qe7b1rsct5h",
-        "name": "jobs",
-        "type": "belongsToMany",
-        "interface": null,
-        "description": null,
-        "collectionName": "users",
-        "parentKey": null,
-        "reverseKey": null,
-        "through": "users_jobs",
-        "foreignKey": "userId",
-        "sourceKey": "id",
-        "otherKey": "jobId",
-        "targetKey": "id",
-        "target": "jobs"
-      },
-      {
-        "key": "vt0n1l1ruyz",
-        "name": "usersJobs",
-        "type": "hasMany",
-        "interface": null,
-        "description": null,
-        "collectionName": "users",
-        "parentKey": null,
-        "reverseKey": null,
-        "target": "users_jobs",
-        "foreignKey": "userId",
-        "sourceKey": "id",
-        "targetKey": "id"
-      },
-      {
         "key": "ekol7p60nry",
         "name": "sortName",
         "type": "sort",
