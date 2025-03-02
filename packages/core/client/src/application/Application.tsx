@@ -17,6 +17,7 @@ import React, { ComponentType, FC, ReactElement, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { Link, NavLink, Navigate } from 'react-router-dom';
+import { createJSONTemplateParser, JSONTemplateParser } from '@nocobase/json-template-parser';
 import { APIClient, APIClientProvider } from '../api-client';
 import { CSSVariableProvider } from '../css-variable';
 import { AntdAppProvider, GlobalThemeProvider } from '../global-theme';
@@ -84,6 +85,7 @@ export interface ApplicationOptions {
 
 export class Application {
   public eventBus = new EventTarget();
+  public jsonTemplateParser: JSONTemplateParser;
 
   public providers: ComponentAndProps[] = [];
   public router: RouterManager;
@@ -181,6 +183,7 @@ export class Application {
     });
     this.initListeners();
     this.jsonLogic = getOperators();
+    this.jsonTemplateParser = createJSONTemplateParser();
   }
 
   private initListeners() {
