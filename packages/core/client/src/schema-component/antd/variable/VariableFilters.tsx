@@ -62,7 +62,6 @@ export function Filters({ filters, onFilterChange }) {
 export function Filter({ config, filter, filterId }) {
   const argsMap = Object.fromEntries(config.paramSchema.map((param, index) => [param.name, filter.args[index]]));
   const form = useMemo(() => createForm({ initialValues: argsMap }), [argsMap]);
-  const field = useField();
   const useSaveActionProps = () => {
     const form = useForm();
     const { updateFilterParams } = useContext(FilterContext);
