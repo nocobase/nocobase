@@ -183,7 +183,7 @@ export const getShouldChange = ({
       return true;
     }
 
-    const lastOption = optionPath[optionPath.length - 1];
+    const lastOption = Array.isArray(optionPath) ? optionPath[optionPath.length - 1] : null;
 
     // 点击叶子节点时，必须更新 value
     if (lastOption && _.isEmpty(lastOption.children) && !lastOption.loadChildren) {

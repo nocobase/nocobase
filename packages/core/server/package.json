@@ -23,6 +23,7 @@
         "@nocobase/sdk": "1.6.0-alpha.29",
         "@nocobase/telemetry": "1.6.0-alpha.29",
         "@nocobase/utils": "1.6.0-alpha.29",
+        "@nocobase/json-template-parser": "1.6.0-alpha.28",
         "@types/decompress": "4.2.7",
         "@types/ini": "^1.3.31",
         "@types/koa-send": "^4.1.3",
