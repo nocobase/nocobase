@@ -40,7 +40,8 @@ const aiResource: ResourceOptions = {
       });
       const res = await provider.listModels();
       if (res.errMsg) {
-        ctx.throw(res.code, res.errMsg);
+        ctx.log.error(res.errMsg);
+        ctx.throw(500, ctx.t('Get models list failed, you can enter a model name manually.'));
       }
       ctx.body = res.models || [];
       return next();

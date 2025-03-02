@@ -8,15 +8,16 @@
  */
 
 import React from 'react';
-import { useAPIClient, useRequest } from '@nocobase/client';
+import { useAPIClient, useActionContext, useRequest } from '@nocobase/client';
 import { useForm, useField } from '@formily/react';
-import { Select, Spin } from 'antd';
+import { AutoComplete, Spin } from 'antd';
 import { Field } from '@formily/core';
 
 export const ModelSelect: React.FC = () => {
   const field = useField<Field>();
   const form = useForm();
   const api = useAPIClient();
+  const ctx = useActionContext();
   const { data: models, loading } = useRequest<
     {
       label: string;
@@ -37,13 +38,13 @@ export const ModelSelect: React.FC = () => {
             })),
         ),
     {
-      ready: !!form.values?.llmService,
+      ready: !!form.values?.llmService && ctx.visible,
       refreshDeps: [form.values?.llmService],
     },
   );
 
   return (
-    <Select
+    <AutoComplete
       showSearch={true}
       options={models}
       notFoundContent={loading ? <Spin size="small" /> : null}
