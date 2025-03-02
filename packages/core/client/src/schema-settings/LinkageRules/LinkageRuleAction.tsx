@@ -99,7 +99,7 @@ export const FormFieldLinkageRuleAction = observer(
               }}
               placeholder={t('action')}
             />
-            {[ActionType.Value].includes(operator) && (
+            {[ActionType.Value, ActionType.DefaultValue].includes(operator) && (
               <ValueDynamicComponent
                 fieldValue={fieldValue}
                 schema={schema}

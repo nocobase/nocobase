@@ -70,6 +70,7 @@ export function bindLinkageRulesToFiled(
     required: field.initStateOfLinkageRules?.required || getTempFieldState(true, field.required || false),
     pattern: field.initStateOfLinkageRules?.pattern || getTempFieldState(true, field.pattern),
     value: field.initStateOfLinkageRules?.value || getTempFieldState(true, field.value || field.initialValue),
+    initialValue: field.initStateOfLinkageRules?.initialValue || getTempFieldState(true, field.initialValue),
   };
 
   return reaction(
@@ -232,12 +233,18 @@ function getSubscriber(
       stateList = stateList.filter((v) => v.condition);
 
       const lastState = stateList[stateList.length - 1];
-
       if (fieldName === 'value') {
         // value 比较特殊，它只有在匹配条件时才需要赋值，当条件不匹配时，维持现在的值；
         // stateList 中肯定会有一个初始值，所以当 stateList.length > 1 时，就说明有匹配条件的情况；
         if (stateList.length > 1) {
           field.value = lastState.value;
+        }
+      } else if (fieldName === 'initialValue') {
+        if (stateList.length > 1) {
+          if (!field.value) {
+            field.value = undefined;
+          }
+          field.initialValue = lastState.value;
         }
       } else {
         // 为了让字段的默认值中的变量能正常工作，需要保证字段被隐藏时，字段组件依然会被渲染
@@ -290,6 +297,8 @@ function getFieldNameByOperator(operator: ActionType) {
       return 'pattern';
     case ActionType.Value:
       return 'value';
+    case ActionType.DefaultValue:
+      return 'initialValue';
     default:
       return null;
   }
@@ -305,6 +314,7 @@ export const collectFieldStateOfLinkageRules = (
   const valueResult = field?.stateOfLinkageRules?.value || [field?.initStateOfLinkageRules?.value];
   const { evaluate } = evaluators.get('formula.js');
   const paramsToGetConditionResult = { ruleGroup: condition, variables, localVariables, variableNameOfLeftCondition };
+  const initialValueResult = field?.stateOfLinkageRules?.initialValue || [field?.initStateOfLinkageRules?.initialValue];
 
   switch (operator) {
     case ActionType.Required:
@@ -373,6 +383,46 @@ export const collectFieldStateOfLinkageRules = (
         field.stateOfLinkageRules = {
           ...field.stateOfLinkageRules,
           value: valueResult,
+        };
+      }
+      break;
+    case ActionType.DefaultValue:
+      {
+        const getValue = async () => {
+          if (value?.mode === 'express') {
+            if ((value.value || value.result) == null) {
+              return;
+            }
+
+            // 解析如 `{{$user.name}}` 之类的变量
+            const { exp, scope: expScope } = await replaceVariables(value.value || value.result, {
+              variables,
+              localVariables,
+            });
+
+            try {
+              const result = evaluate(exp, { now: () => new Date().toString(), ...expScope });
+              return result;
+            } catch (error) {
+              console.error(error);
+            }
+          } else if (value?.mode === 'constant') {
+            return value?.value ?? value;
+          } else {
+            return null;
+          }
+        };
+        if (isConditionEmpty(condition)) {
+          initialValueResult.push(getTempFieldState(true, getValue()));
+        } else {
+          initialValueResult.push(
+            getTempFieldState(conditionAnalyses(paramsToGetConditionResult, jsonLogic), getValue()),
+          );
+        }
+        console.log(initialValueResult);
+        field.stateOfLinkageRules = {
+          ...field.stateOfLinkageRules,
+          initialValue: initialValueResult,
         };
       }
       break;
