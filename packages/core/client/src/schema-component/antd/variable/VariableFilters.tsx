@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useContext } from 'react';
 import { Dropdown, Popover } from 'antd';
-import { useForm } from '@formily/react';
+import { createForm } from '@formily/core';
+import { useForm, useParentForm, FormProvider, useField, FormContext } from '@formily/react';
 import { FormLayout, FormButtonGroup, Submit } from '@formily/antd-v5';
 import { FilterOutlined } from '@ant-design/icons';
 import { uid } from '@nocobase/utils/client';
@@ -52,27 +53,38 @@ export function Filters({ filters, onFilterChange }) {
         if (!filterConfig) {
           return null;
         }
-        return <Filter key={index} config={filterConfig} saveFilterParams={() => {}} />;
+        return <Filter key={index} filterId={index} config={filterConfig} filter={filter} />;
       })}
     </>
   );
 }
-const useSaveActionProps = () => {
-  const form = useForm();
-  return {
-    type: 'primary',
-    onClick: async () => {
-      await form.submit();
-      const values = form.values;
-      const format = values.format;
-    },
-  };
-};
 
-export function Filter({ config, saveFilterParams }) {
+export function Filter({ config, filter, filterId }) {
+  const argsMap = Object.fromEntries(config.paramSchema.map((param, index) => [param.name, filter.args[index]]));
+  const form = useMemo(() => createForm({ initialValues: argsMap }), [argsMap]);
+  const field = useField();
+  const useSaveActionProps = () => {
+    const form = useForm();
+    const { updateFilterParams } = useContext(FilterContext);
+    return {
+      type: 'primary',
+      onClick: async () => {
+        await form.submit();
+        const values = form.values;
+        const params = config.paramSchema.map((param) => values[param.name]);
+        updateFilterParams({ filterId, params });
+      },
+    };
+  };
+  const useFormBlockProps = () => {
+    return { form };
+  };
+
   const schema = {
     'x-uid': uid(),
     type: 'void',
+    // 'x-component': 'FormV2',
+    // 'x-use-component-props': 'useFormBlockProps',
     properties: {
       ...Object.fromEntries(
         config.paramSchema.map((param) => [
@@ -83,6 +95,19 @@ export function Filter({ config, saveFilterParams }) {
           },
         ]),
       ),
+      actions: {
+        type: 'void',
+        title: 'Save',
+        'x-component': 'ActionBar',
+        properties: {
+          save: {
+            type: 'void',
+            title: 'Save',
+            'x-component': 'Action',
+            'x-use-component-props': 'useSaveActionProps',
+          },
+        },
+      },
     },
   };
   return (
@@ -90,12 +115,9 @@ export function Filter({ config, saveFilterParams }) {
       <span style={{ color: '#bfbfbf', margin: '0 5px' }}>|</span>
       <Popover
         content={
-          <FormLayout layout={'horizontal'} labelAlign={'left'} labelCol={8} wrapperCol={16}>
-            <SchemaComponent schema={schema} scope={{ useSaveActionProps }} />
-            <FormButtonGroup.FormItem>
-              <Submit>Save</Submit>
-            </FormButtonGroup.FormItem>
-          </FormLayout>
+          <FormContext.Provider value={form}>
+            <SchemaComponent schema={schema} scope={{ useSaveActionProps, useFormBlockProps }} basePath={['']} />
+          </FormContext.Provider>
         }
         trigger={'click'}
       >
@@ -104,3 +126,11 @@ export function Filter({ config, saveFilterParams }) {
     </>
   );
 }
+
+type FilterContextType = {
+  updateFilterParams: (args: { filterId: number; params: any[] }) => any;
+};
+
+export const FilterContext = React.createContext<FilterContextType>({
+  updateFilterParams: (params: any) => {},
+});

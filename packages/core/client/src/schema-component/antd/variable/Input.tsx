@@ -11,6 +11,7 @@ import { CloseCircleFilled, FilterOutlined } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
 import { error } from '@nocobase/utils/client';
+import { cloneDeep } from 'lodash';
 import { extractTemplateElements, composeTemplate } from '@nocobase/json-templates';
 import {
   Input as AntInput,
@@ -33,7 +34,7 @@ import { useCompile } from '../../hooks';
 import { XButton } from './XButton';
 import { useStyles } from './style';
 import { Json } from '../input';
-import { Filters, Addition } from './VariableFilters';
+import { Filters, Addition, FilterContext } from './VariableFilters';
 
 const { Text } = Typography;
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
@@ -232,6 +233,15 @@ export function Input(props: VariableInputProps) {
   const onFilterAdd = useCallback(
     (filterName) => {
       onChange(composeTemplate({ fullVariable, filters: [...filters, { name: filterName, args: [] }] }));
+    },
+    [filters, fullVariable, onChange],
+  );
+
+  const updateFilterParams = useCallback(
+    ({ filterId, params }: { filterId: number; params: any[] }) => {
+      const copyedFilters = cloneDeep(filters);
+      copyedFilters[filterId].args = params.map((val) => JSON.stringify(val));
+      onChange(composeTemplate({ fullVariable, filters: copyedFilters }));
     },
     [filters, fullVariable, onChange],
   );
@@ -462,10 +472,11 @@ export function Input(props: VariableInputProps) {
                   </React.Fragment>
                 );
               })}
+              <FilterContext.Provider value={{ updateFilterParams }}>
+                <Filters filters={filters} onFilterChange={onFilterAdd} />
 
-              <Filters filters={filters} onFilterChange={onFilterAdd} />
-
-              {variableText.length > 0 && <Addition variable={fullVariable} onFilterAdd={onFilterAdd} />}
+                {variableText.length > 0 && <Addition variable={fullVariable} onFilterAdd={onFilterAdd} />}
+              </FilterContext.Provider>
             </Tag>
           </div>
           {!disabled ? (
