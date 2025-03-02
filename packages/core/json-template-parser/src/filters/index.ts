@@ -17,6 +17,7 @@ export const variableFilters = [
     title: 'format',
     handler: dateFormat,
     group: 'date',
+    sort: 1,
     uiSchema: [
       {
         name: 'format',
@@ -32,6 +33,7 @@ export const variableFilters = [
     title: 'add',
     handler: dateAdd,
     group: 'date',
+    sort: 2,
     uiSchema: [
       {
         name: 'number',
@@ -59,6 +61,7 @@ export const variableFilters = [
     title: 'substract',
     handler: dateSubtract,
     group: 'date',
+    sort: 3,
     uiSchema: [
       {
         name: 'number',
@@ -83,15 +86,17 @@ export const variableFilters = [
   },
   {
     name: 'array_first',
-    label: 'first',
-    filterFn: first,
-    category: 'array',
+    title: 'first',
+    handler: first,
+    sort: 4,
+    group: 'array',
   },
   {
     name: 'array_last',
-    label: 'last',
-    filterFn: first,
-    category: 'array',
+    title: 'last',
+    sort: 5,
+    handler: first,
+    group: 'array',
   },
 ];
 
@@ -101,4 +106,5 @@ export const filterGroups = [
     title: "{{t('Date')}}",
     sort: 1,
   },
+  { name: 'array', title: "{{t('Array')}}", sort: 2 },
 ];

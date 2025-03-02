@@ -12,7 +12,7 @@ import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
 import { error } from '@nocobase/utils/client';
 import { cloneDeep } from 'lodash';
-import { extractTemplateElements, composeTemplate } from '@nocobase/json-templates';
+import { extractTemplateElements, composeTemplate } from '@nocobase/json-template-parser';
 import {
   Input as AntInput,
   Cascader,
