@@ -33,7 +33,7 @@ async function getLang(ctx) {
 }
 
 export class PluginClientServer extends Plugin {
-  async beforeLoad() {}
+  async beforeLoad() { }
 
   async install() {
     const uiSchemas = this.db.getRepository<any>('uiSchemas');
@@ -216,15 +216,34 @@ export class PluginClientServer extends Plugin {
         appends: ['desktopRoutes'],
       });
 
-      const desktopRoutesId = role.get('desktopRoutes').map((item) => item.id);
+      // 1. 如果 page 的 children 为空，那么需要把 page 的 children 全部找出来，然后返回。否则前端会因为缺少 tab 路由的数据而导致页面空白
+      // 2. 如果 page 的 children 不为空，不需要做特殊处理
+      const desktopRoutesId = role.get('desktopRoutes').map(async (item, index, items) => {
+        if (item.type === 'page' && !items.some((tab) => tab.parentId === item.id)) {
+          const children = await desktopRoutesRepository.find({
+            filter: {
+              parentId: item.id,
+            },
+          });
 
-      ctx.body = await desktopRoutesRepository.find({
-        tree: true,
-        ...ctx.query,
-        filter: {
-          id: desktopRoutesId,
-        },
+          return [item.id, ...(children || []).map((child) => child.id)];
+        }
+
+        return item.id;
       });
+
+      if (desktopRoutesId) {
+        const ids = (await Promise.all(desktopRoutesId)).flat();
+        const result = await desktopRoutesRepository.find({
+          tree: true,
+          ...ctx.query,
+          filter: {
+            id: ids,
+          },
+        });
+
+        ctx.body = result;
+      }
 
       await next();
     });
