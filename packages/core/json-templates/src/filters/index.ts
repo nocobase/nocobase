@@ -12,10 +12,10 @@ import { dateFormat, dateAdd, dateSubtract } from './date';
 export const variableFilters = [
   {
     name: 'date_format',
-    label: 'format',
-    filterFn: dateFormat,
-    category: 'date',
-    paramSchema: [
+    title: 'format',
+    handler: dateFormat,
+    group: 'date',
+    uiSchema: [
       {
         name: 'format',
         title: "{{t('Format')}}",
@@ -27,10 +27,10 @@ export const variableFilters = [
   },
   {
     name: 'date_add',
-    label: 'add',
-    filterFn: dateAdd,
-    category: 'date',
-    paramSchema: [
+    title: 'add',
+    handler: dateAdd,
+    group: 'date',
+    uiSchema: [
       {
         name: 'number',
         title: "{{t('Number')}}",
@@ -54,10 +54,10 @@ export const variableFilters = [
   },
   {
     name: 'date_subtract',
-    label: 'substract',
-    filterFn: dateSubtract,
-    category: 'date',
-    paramSchema: [
+    title: 'substract',
+    handler: dateSubtract,
+    group: 'date',
+    uiSchema: [
       {
         name: 'number',
         title: "{{t('Number')}}",
@@ -78,5 +78,13 @@ export const variableFilters = [
         ],
       },
     ],
+  },
+];
+
+export const filterGroups = [
+  {
+    name: 'date',
+    title: "{{t('Date')}}",
+    sort: 1,
   },
 ];

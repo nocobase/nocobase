@@ -13,10 +13,13 @@
 // Created by Curran Kelleher and Chrostophe Serafin.
 // Contributions from Paul Brewer and Javier Blanco Martinez.
 import { get } from 'lodash';
-import liquidjsEngine, { TokenKind } from './engine';
-import { escape, revertEscape } from './escape';
+import { TokenKind } from 'liquidjs';
+import { escape, revertEscape } from '../escape';
+import { createJSONTemplateParser } from './json-template-parser';
 
 // An enhanced version of `typeof` that handles arrays and dates as well.
+const parser = createJSONTemplateParser();
+const liquidjsEngine = parser.engine;
 function type(value) {
   let valueType: string = typeof value;
   if (Array.isArray(value)) {

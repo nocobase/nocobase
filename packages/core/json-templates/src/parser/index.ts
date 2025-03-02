@@ -7,12 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Liquid } from 'liquidjs';
-export { TokenKind } from 'liquidjs';
-import { variableFilters } from './filters';
-const engine = new Liquid();
-
-variableFilters.forEach(({ name, filterFn }) => {
-  engine.registerFilter(name, filterFn);
-});
-export default engine;
+export { parse } from './parse';
+export { createJSONTemplateParser } from './json-template-parser';
