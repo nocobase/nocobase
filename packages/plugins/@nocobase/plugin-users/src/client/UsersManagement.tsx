@@ -11,21 +11,21 @@ import { css } from '@emotion/css';
 import { createForm } from '@formily/core';
 import { useForm } from '@formily/react';
 import {
+  ExtendCollectionsProvider,
+  RemoteSchemaComponent,
   SchemaComponent,
   SchemaComponentContext,
   useAPIClient,
   useActionContext,
   useCollection,
+  useCollectionManager,
   useCollectionRecordData,
   useDataBlockRequest,
   useDataBlockResource,
   useRequest,
-  RemoteSchemaComponent,
-  useCollectionManager,
-  ExtendCollectionsProvider,
   useSchemaComponentContext,
 } from '@nocobase/client';
-import { App, Tabs, message } from 'antd';
+import { App, Spin, Tabs, message } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useUsersTranslation } from './locale';
 import { PasswordField } from './PasswordField';
@@ -134,6 +134,11 @@ const FilterAction = () => {
 
 const UsersManagementTab: React.FC = () => {
   const { t } = useUsersTranslation();
+  const collectionManager = useCollectionManager();
+  const usersCollection = useMemo(() => collectionManager?.getCollection('users'), [collectionManager]);
+
+  if (!usersCollection) return <Spin />;
+
   return (
     <SchemaComponent
       schema={usersSchema}
