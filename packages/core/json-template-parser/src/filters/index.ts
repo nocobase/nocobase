@@ -8,7 +8,9 @@
  */
 
 import { dateFormat, dateAdd, dateSubtract } from './date';
-
+import { first, last } from './array';
+const NAMESPACE = 'json-templates';
+const tval = (key) => `{{t('${key}', { ns: '${NAMESPACE}', nsMode: 'fallback' })}}`;
 export const variableFilters = [
   {
     name: 'date_format',
@@ -18,7 +20,7 @@ export const variableFilters = [
     uiSchema: [
       {
         name: 'format',
-        title: "{{t('Format')}}",
+        title: tval('Format'),
         'x-component': 'Input',
         type: 'string',
         required: true,
@@ -33,21 +35,21 @@ export const variableFilters = [
     uiSchema: [
       {
         name: 'number',
-        title: "{{t('Number')}}",
+        title: tval('Number'),
         type: 'number',
         'x-component': 'InputNumber',
         required: true,
       },
       {
         name: 'unit',
-        title: "{{t('Unit')}}",
+        title: tval('Unit'),
         type: 'string',
         required: true,
         'x-component': 'Select',
         enum: [
-          { label: "{{t('Year')}}", value: 'year' },
-          { label: "{{t('Month')}}", value: 'month' },
-          { label: "{{t('Day')}}", value: 'day' },
+          { label: tval('Year'), value: 'year' },
+          { label: tval('Month'), value: 'month' },
+          { label: tval('Day'), value: 'day' },
         ],
       },
     ],
@@ -60,24 +62,36 @@ export const variableFilters = [
     uiSchema: [
       {
         name: 'number',
-        title: "{{t('Number')}}",
+        title: tval('Number'),
         type: 'number',
         'x-component': 'InputNumber',
         required: true,
       },
       {
         name: 'unit',
-        title: "{{t('Unit')}}",
+        title: tval('Unit'),
         type: 'string',
         required: true,
         'x-component': 'Select',
         enum: [
-          { label: "{{t('Year')}}", value: 'year' },
-          { label: "{{t('Month')}}", value: 'month' },
-          { label: "{{t('Day')}}", value: 'day' },
+          { label: tval('Year'), value: 'year' },
+          { label: tval('Month'), value: 'month' },
+          { label: tval('Day'), value: 'day' },
         ],
       },
     ],
+  },
+  {
+    name: 'array_first',
+    label: 'first',
+    filterFn: first,
+    category: 'array',
+  },
+  {
+    name: 'array_last',
+    label: 'last',
+    filterFn: first,
+    category: 'array',
   },
 ];
 
