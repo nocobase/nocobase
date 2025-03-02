@@ -321,7 +321,7 @@ export const ACLActionProvider = (props) => {
     () => actionPath && parseAction(actionPath, { schema, recordPkValue }),
     [parseAction, actionPath, schema, recordPkValue],
   );
-  if (uiButtonSchemasBlacklist.includes(currentUid)) {
+  if (uiButtonSchemasBlacklist?.includes(currentUid)) {
     return <ACLActionParamsContext.Provider value={false}>{props.children}</ACLActionParamsContext.Provider>;
   }
   if (!actionPath) {

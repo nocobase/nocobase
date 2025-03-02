@@ -12,7 +12,8 @@ import { SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializerItem, useSchemaInitializer } from '../../application';
+import { useAPIClient } from '../../api-client/hooks/useAPIClient';
+import { SchemaInitializerItem } from '../../application';
 import { useGlobalTheme } from '../../global-theme';
 import { NocoBaseDesktopRouteType } from '../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import {
@@ -24,14 +25,28 @@ import {
 } from '../../schema-component';
 import { useStyles } from '../../schema-component/antd/menu/MenuItemInitializers';
 
+export const useInsertPageSchema = () => {
+  const api = useAPIClient();
+  return useCallback(
+    async (schema) => {
+      await api.request({
+        method: 'POST',
+        url: '/uiSchemas:insert',
+        data: schema,
+      });
+    },
+    [api],
+  );
+};
+
 export const PageMenuItem = () => {
-  const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
   const { componentCls, hashId } = useStyles();
   const parentRoute = useParentRoute();
   const { createRoute } = useNocoBaseRoutes();
+  const insertPageSchema = useInsertPageSchema();
 
   const handleClick = useCallback(async () => {
     const values = await FormDialog(
@@ -65,16 +80,13 @@ export const PageMenuItem = () => {
     ).open({
       initialValues: {},
     });
-    const { title, icon } = values;
     const menuSchemaUid = uid();
     const pageSchemaUid = uid();
     const tabSchemaUid = uid();
     const tabSchemaName = uid();
 
     // 创建一个路由到 desktopRoutes 表中
-    const {
-      data: { data: route },
-    } = await createRoute({
+    await createRoute({
       type: NocoBaseDesktopRouteType.page,
       title: values.title,
       icon: values.icon,
@@ -93,46 +105,25 @@ export const PageMenuItem = () => {
     });
 
     // 同时插入一个对应的 Schema
-    insert(getPageMenuSchema({ title, icon, pageSchemaUid, tabSchemaUid, menuSchemaUid, tabSchemaName, route }));
-  }, [createRoute, insert, options?.components, options?.scope, parentRoute?.id, t, theme]);
+    insertPageSchema(getPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }));
+  }, [createRoute, insertPageSchema, options?.components, options?.scope, parentRoute?.id, t, theme]);
   return <SchemaInitializerItem title={t('Page')} onClick={handleClick} className={`${componentCls} ${hashId}`} />;
 };
 
-export function getPageMenuSchema({
-  title,
-  icon,
-  pageSchemaUid,
-  tabSchemaUid,
-  menuSchemaUid,
-  tabSchemaName,
-  route = undefined,
-}) {
+export function getPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }) {
   return {
     type: 'void',
-    title,
-    'x-component': 'Menu.Item',
-    'x-decorator': 'ACLMenuItemProvider',
-    'x-component-props': {
-      icon,
-    },
+    'x-component': 'Page',
     properties: {
-      page: {
+      [tabSchemaName]: {
         type: 'void',
-        'x-component': 'Page',
+        'x-component': 'Grid',
+        'x-initializer': 'page:addBlock',
+        properties: {},
+        'x-uid': tabSchemaUid,
         'x-async': true,
-        properties: {
-          [tabSchemaName]: {
-            type: 'void',
-            'x-component': 'Grid',
-            'x-initializer': 'page:addBlock',
-            properties: {},
-            'x-uid': tabSchemaUid,
-          },
-        },
-        'x-uid': pageSchemaUid,
       },
     },
-    'x-uid': menuSchemaUid,
-    __route__: route,
+    'x-uid': pageSchemaUid,
   };
 }
