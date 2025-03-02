@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { parse } from '@nocobase/utils';
+import { parse } from '@nocobase/json-templates';
 import _ from 'lodash';
 
 export class Environment {
