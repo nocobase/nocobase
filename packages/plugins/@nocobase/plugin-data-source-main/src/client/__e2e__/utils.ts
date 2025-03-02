@@ -42,7 +42,7 @@ export async function testEditDescription(page: Page) {
   await page.getByLabel('block-item-Input.TextArea-').getByRole('textbox').click();
   await page.getByLabel('block-item-Input.TextArea-').getByRole('textbox').fill('testing edit description');
   await page.getByRole('button', { name: 'OK', exact: true }).click();
-  await expect(page.getByText('testing edit description')).toBeVisible();
+  await expect(page.getByText('testing edit description').last()).toBeVisible();
 }
 
 export async function testRequired(page: Page) {

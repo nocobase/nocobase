@@ -9,7 +9,7 @@
 
 import { ArrayField } from '@formily/core';
 import { connect, useField } from '@formily/react';
-import { Checkbox, Select, Table, Tag } from 'antd';
+import { Checkbox, Select, Table, Tag, TableProps } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../..';
@@ -110,7 +110,7 @@ export const StrategyActions = connect((props) => {
                 />
               ),
           },
-        ]}
+        ] as TableProps['columns']}
         dataSource={availableActions?.map((item) => {
           let scope = 'all';
           let enabled = false;

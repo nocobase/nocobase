@@ -55,7 +55,7 @@ test.describe('add blocks to the popup', () => {
     // 通过 Association records 创建一个关系区块
     await page.getByLabel('schema-initializer-Grid-popup').hover();
     await page.getByRole('menuitem', { name: 'Details right' }).hover();
-    await page.getByRole('menuitem', { name: 'Associated records' }).hover();
+    await page.getByRole('menuitem', { name: 'Associated records' }).last().hover();
     await page.getByRole('menuitem', { name: 'Roles' }).click();
     await page.getByLabel('schema-initializer-Grid-details:configureFields-roles').hover();
     await page.getByRole('menuitem', { name: 'Role UID' }).click();
@@ -87,7 +87,7 @@ test.describe('add blocks to the popup', () => {
     // 通过 Association records 创建关系区块
     await page.getByLabel('schema-initializer-Grid-popup').hover();
     await page.getByRole('menuitem', { name: 'Table right' }).hover();
-    await page.getByRole('menuitem', { name: 'Associated records' }).hover();
+    await page.getByRole('menuitem', { name: 'Associated records' }).last().hover();
     await page.getByRole('menuitem', { name: 'manyToMany' }).click();
     await page.mouse.move(-300, 0);
     await page
@@ -135,7 +135,7 @@ test.describe('add blocks to the popup', () => {
     // 通过 Association records 创建一个关系区块
     await page.getByLabel('schema-initializer-Grid-popup').hover();
     await page.getByRole('menuitem', { name: 'Table right' }).hover();
-    await page.getByRole('menuitem', { name: 'Associated records' }).hover();
+    await page.getByRole('menuitem', { name: 'Associated records' }).last().hover();
     await page.getByRole('menuitem', { name: 'Roles' }).click();
     await page
       .getByTestId('drawer-Action.Container-users-View record')

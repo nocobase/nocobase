@@ -29,7 +29,8 @@ const defaultTheme: ThemeConfig = {
 
     // 动画相关
     motionUnit: 0.03,
-    motion: !process.env.__E2E__,
+    // motion: !process.env.__E2E__,
+    // motionBase: 0.0000000001,
   },
 };
 

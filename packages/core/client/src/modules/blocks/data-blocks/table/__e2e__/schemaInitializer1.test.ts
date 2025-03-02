@@ -37,7 +37,7 @@ test.describe('where table block can be added', () => {
     // 添加当前表关系区块
     await page.getByLabel('schema-initializer-Grid-popup').hover();
     await page.getByRole('menuitem', { name: 'Table right' }).hover();
-    await page.getByRole('menuitem', { name: 'Associated records' }).hover();
+    await page.getByRole('menuitem', { name: 'Associated records' }).last().hover();
     await page.getByRole('menuitem', { name: 'childAssociationField' }).click();
     await page
       .getByTestId('drawer-Action.Container-childCollection-View record')
@@ -48,7 +48,7 @@ test.describe('where table block can be added', () => {
     // 添加父表关系区块
     await page.getByLabel('schema-initializer-Grid-popup').hover();
     await page.getByRole('menuitem', { name: 'Table right' }).hover();
-    await page.getByRole('menuitem', { name: 'Associated records' }).hover();
+    await page.getByRole('menuitem', { name: 'Associated records' }).last().hover();
     await page.getByRole('menuitem', { name: 'parentAssociationField' }).click();
     await page.getByLabel('schema-initializer-TableV2-table:configureColumns-parentTargetCollection').hover();
     await page.getByRole('menuitem', { name: 'parentTargetText' }).click();

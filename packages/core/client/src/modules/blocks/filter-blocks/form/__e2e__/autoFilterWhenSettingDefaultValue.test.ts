@@ -126,7 +126,7 @@ test.describe('filter form', () => {
         y: 10,
       },
     });
-    await expect(page.getByLabel('block-item-CardItem-users-table').getByText('No data')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-users-table').getByText('No data').last()).toBeVisible();
 
     // 4. 此时点击 Reset 按钮，应该只显示一条数据，因为会把 nickname 的值重置为 {{$user.nickname}}
     await page.getByLabel('action-Action-Reset-users-').click({
@@ -152,6 +152,6 @@ test.describe('filter form', () => {
         y: 10,
       },
     });
-    await expect(page.getByLabel('block-item-CardItem-users-table').getByText('No data')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-users-table').getByText('No data').last()).toBeVisible();
   });
 });
