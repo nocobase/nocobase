@@ -9,6 +9,7 @@
 
 import { Liquid } from 'liquidjs';
 import { variableFilters, filterGroups } from '../filters';
+import { escape } from '../escape';
 type FilterGroup = {
   name: string;
   title: string;
@@ -59,6 +60,10 @@ export class JSONTemplateParser {
   registerFilter(filter: Filter): void {
     this._filters.push(filter);
     this.engine.registerFilter(filter.name, filter.handler);
+  }
+
+  render(template: string, data: any = {}): any {
+    return this.engine.parseAndRenderSync(escape(template), escape(data));
   }
 }
 
