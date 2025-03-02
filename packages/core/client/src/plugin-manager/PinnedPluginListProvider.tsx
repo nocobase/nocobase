@@ -57,6 +57,11 @@ const pinnedPluginListClassName = css`
         line-height: 1em;
         font-size: initial;
       }
+      > sup {
+        height: 10px;
+        line-height: 10px;
+        font-size: 8px;
+      }
     }
 
     &:hover {
