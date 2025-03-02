@@ -16,7 +16,7 @@ generatePlugins();
 export default defineConfig({
   title: 'Loading...',
   devtool: process.env.NODE_ENV === 'development' ? 'source-map' : false,
-  favicons: [`${appPublicPath}favicon/favicon.ico`],
+  favicons: [`${appPublicPath}favicon_no_exist.ico`], // 设置一个不存在的 favicon，防止显示 Umi 默认的 favicon
   metas: [{ name: 'viewport', content: 'initial-scale=0.1' }],
   links: [{ rel: 'stylesheet', href: `${appPublicPath}global.css` }],
   headScripts: [

@@ -99,6 +99,7 @@ export class Application {
   public schemaSettingsManager: SchemaSettingsManager;
   public dataSourceManager: DataSourceManager;
   public name: string;
+  public favicon: string;
 
   loading = true;
   maintained = false;
@@ -117,6 +118,23 @@ export class Application {
 
   get isWsAuthorized() {
     return this.wsAuthorized;
+  }
+
+  updateFavicon(favicon?: string) {
+    let faviconLinkElement: HTMLLinkElement = document.querySelector('link[rel="shortcut icon"]');
+
+    if (favicon) {
+      this.favicon = favicon;
+    }
+
+    if (!faviconLinkElement) {
+      faviconLinkElement = document.createElement('link');
+      faviconLinkElement.rel = 'shortcut icon';
+      faviconLinkElement.href = this.favicon || '/favicon/favicon.ico';
+      document.head.appendChild(faviconLinkElement);
+    } else {
+      faviconLinkElement.href = this.favicon || '/favicon/favicon.ico';
+    }
   }
 
   setWsAuthorized(authorized: boolean) {
@@ -338,6 +356,7 @@ export class Application {
       console.error(error, this.error);
     }
     this.loading = false;
+    this.updateFavicon();
   }
 
   async loadWebSocket() {
