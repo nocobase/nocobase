@@ -9,11 +9,12 @@
 
 import React, { useState } from 'react';
 import { Dropdown, Popover } from 'antd';
+import { FormLayout } from '@formily/antd-v5';
 import { FilterOutlined } from '@ant-design/icons';
-import { uid } from '@nocobase/utils';
+import { uid } from '@nocobase/utils/client';
 import { variableFilters } from '@nocobase/json-templates';
 import type { MenuProps } from 'antd';
-import { SchemaComponent } from '../../core';
+import { SchemaComponent } from '../../core/SchemaComponent';
 const categorys = [{ key: 'date', type: 'group', label: 'Date' }];
 const filterOptions = categorys.map((category) => ({
   ...category,
@@ -42,19 +43,7 @@ export function Addition({ variable, onFilterAdd }) {
 }
 
 export function Filters({ filters, onFilterChange }) {
-  const [actFilterName, setActFilterName] = useState(null);
-  const actFilter = variableFilters.find((f) => f.name === actFilterName);
-  const paramSchema = actFilter?.paramSchema;
-
-  const schema = {
-    type: 'void',
-    'x-component': 'Form',
-    properties: {
-      ...Object.fromEntries(paramSchema.map((param) => [param.name, param])),
-    },
-  };
-
-  const ParamConfig = () => <SchemaComponent schema={schema} />;
+  const [actFilterId, setActFilterId] = useState(null);
   return (
     <>
       {filters.map((filter, index) => {
@@ -62,14 +51,43 @@ export function Filters({ filters, onFilterChange }) {
         if (!filterConfig) {
           return null;
         }
-        const id = uid();
+        const schema = {
+          'x-uid': uid(),
+          type: 'void',
+          'x-decorator': 'Form',
+          properties: {
+            ...Object.fromEntries(
+              filterConfig.paramSchema.map((param) => [
+                param.name,
+                {
+                  ...param,
+                  'x-decorator': 'FormItem',
+                },
+              ]),
+            ),
+          },
+        };
+
         return (
-          <>
-            <span key={id}> | </span>
-            <Popover key={id} title={filterConfig.label} content={<SchemaComponent schema={filter.paramSchema} />}>
-              <span style={{ color: '#52c41a' }}>{filterConfig.label}</span>
-            </Popover>
-          </>
+          <Popover
+            key={index}
+            content={
+              <FormLayout layout={'horizontal'} labelAlign={'left'} labelCol={8} wrapperCol={16}>
+                <SchemaComponent schema={schema} />
+              </FormLayout>
+            }
+            trigger={'click'}
+            open={actFilterId === index}
+          >
+            <div
+              onMouseEnter={() => {
+                setActFilterId(index);
+              }}
+              style={{ color: '#52c41a', display: 'inline-block' }}
+            >
+              {' | '} {filterConfig.label}
+            </div>
+          </Popover>
         );
       })}
     </>
