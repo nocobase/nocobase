@@ -9,7 +9,8 @@
 
 import React, { useState } from 'react';
 import { Dropdown, Popover } from 'antd';
-import { FormLayout } from '@formily/antd-v5';
+import { useForm } from '@formily/react';
+import { FormLayout, FormButtonGroup, Submit } from '@formily/antd-v5';
 import { FilterOutlined } from '@ant-design/icons';
 import { uid } from '@nocobase/utils/client';
 import { variableFilters } from '@nocobase/json-templates';
@@ -44,7 +45,6 @@ export function Addition({ variable, onFilterAdd }) {
 }
 
 export function Filters({ filters, onFilterChange }) {
-  const [actFilterId, setActFilterId] = useState(null);
   return (
     <>
       {filters.map((filter, index) => {
@@ -52,50 +52,55 @@ export function Filters({ filters, onFilterChange }) {
         if (!filterConfig) {
           return null;
         }
-        const schema = {
-          'x-uid': uid(),
-          type: 'void',
-          'x-decorator': 'Form',
-          properties: {
-            ...Object.fromEntries(
-              filterConfig.paramSchema.map((param) => [
-                param.name,
-                {
-                  ...param,
-                  'x-decorator': 'FormItem',
-                },
-              ]),
-            ),
-          },
-        };
-
-        return (
-          <>
-            <span key={index} style={{ color: '#bfbfbf', margin: '0 5px' }}>
-              |
-            </span>
-            <Popover
-              key={index}
-              content={
-                <FormLayout layout={'horizontal'} labelAlign={'left'} labelCol={8} wrapperCol={16}>
-                  <SchemaComponent schema={schema} />
-                </FormLayout>
-              }
-              trigger={'click'}
-              // open={actFilterId === index}
-            >
-              <div
-                onMouseEnter={() => {
-                  setActFilterId(index);
-                }}
-                style={{ color: '#52c41a', display: 'inline-block', cursor: 'pointer' }}
-              >
-                {filterConfig.label}
-              </div>
-            </Popover>
-          </>
-        );
+        return <Filter key={index} config={filterConfig} saveFilterParams={() => {}} />;
       })}
+    </>
+  );
+}
+const useSaveActionProps = () => {
+  const form = useForm();
+  return {
+    type: 'primary',
+    onClick: async () => {
+      await form.submit();
+      const values = form.values;
+      const format = values.format;
+    },
+  };
+};
+
+export function Filter({ config, saveFilterParams }) {
+  const schema = {
+    'x-uid': uid(),
+    type: 'void',
+    properties: {
+      ...Object.fromEntries(
+        config.paramSchema.map((param) => [
+          param.name,
+          {
+            ...param,
+            'x-decorator': 'FormItem',
+          },
+        ]),
+      ),
+    },
+  };
+  return (
+    <>
+      <span style={{ color: '#bfbfbf', margin: '0 5px' }}>|</span>
+      <Popover
+        content={
+          <FormLayout layout={'horizontal'} labelAlign={'left'} labelCol={8} wrapperCol={16}>
+            <SchemaComponent schema={schema} scope={{ useSaveActionProps }} />
+            <FormButtonGroup.FormItem>
+              <Submit>Save</Submit>
+            </FormButtonGroup.FormItem>
+          </FormLayout>
+        }
+        trigger={'click'}
+      >
+        <div style={{ color: '#52c41a', display: 'inline-block', cursor: 'pointer' }}>{config.label}</div>
+      </Popover>
     </>
   );
 }
