@@ -324,7 +324,7 @@ function WorkflowTasksLink() {
     <Tooltip title={lang('Workflow todos')}>
       <Button>
         <Link to={`/admin/workflow/tasks/${types[0]}`}>
-          <Badge count={total}>
+          <Badge count={total} size="small">
             <CheckCircleOutlined />
           </Badge>
         </Link>
