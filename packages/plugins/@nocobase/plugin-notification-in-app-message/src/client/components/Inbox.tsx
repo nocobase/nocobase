@@ -137,7 +137,7 @@ const InnerInbox = (props) => {
     >
       <Tooltip title={t('Message')}>
         <Button className={styles.button} onClick={onIconClick}>
-          <Badge dot={Boolean(unreadMsgsCountObs.value)} size="small">
+          <Badge count={unreadMsgsCountObs.value} size="small">
             <Icon type={'BellOutlined'} />
           </Badge>
         </Button>
