@@ -10,7 +10,7 @@
 import { Model, Transaction, Transactionable } from '@nocobase/database';
 import { appendArrayColumn } from '@nocobase/evaluators';
 import { Logger } from '@nocobase/logger';
-import { parse } from '@nocobase/json-templates';
+import { parse } from '@nocobase/utils';
 import set from 'lodash/set';
 import type Plugin from './Plugin';
 import { EXECUTION_STATUS, JOB_STATUS } from './constants';

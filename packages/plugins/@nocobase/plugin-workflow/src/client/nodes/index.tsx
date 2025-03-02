@@ -31,8 +31,8 @@ import {
   usePlugin,
   useResourceActionContext,
 } from '@nocobase/client';
-import { str2moment } from '@nocobase/utils/client';
-import { parse } from '@nocobase/json-templates';
+import { parse, str2moment } from '@nocobase/utils/client';
+
 import WorkflowPlugin from '..';
 import { AddButton } from '../AddNodeContext';
 import { useFlowContext } from '../FlowContext';

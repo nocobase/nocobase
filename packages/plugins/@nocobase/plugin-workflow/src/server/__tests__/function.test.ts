@@ -10,7 +10,7 @@
 import dayjs from 'dayjs';
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
-import { parse } from '@nocobase/json-templates';
+import { parse } from '@nocobase/utils';
 import { dateRangeFns } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
