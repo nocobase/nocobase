@@ -13,25 +13,24 @@ import { createForm } from '@formily/core';
 import { useForm, FormContext } from '@formily/react';
 import { FilterOutlined } from '@ant-design/icons';
 import { uid, tval } from '@nocobase/utils/client';
-import { variableFilters } from '@nocobase/json-templates';
+import { variableFilters } from '@nocobase/json-template-parser';
 import type { MenuProps } from 'antd';
 import { SchemaComponent } from '../../core/SchemaComponent';
-const categorys = [
-  { key: 'date', type: 'group', label: 'Date' },
-  {
-    key: 'array',
-    type: 'group',
-    label: 'Array',
-  },
-];
-const filterOptions = categorys.map((category) => ({
-  ...category,
-  children: variableFilters
-    .filter((filter) => filter.category === category.key)
-    .map((filter) => ({ key: filter.name, label: filter.label })),
-})) as MenuProps['items'];
+import { useApp } from '../../../application';
+import { useCompile } from '../../hooks';
 
 export function Addition({ variable, onFilterAdd }) {
+  const app = useApp();
+  const compile = useCompile();
+  const filterOptions = app.jsonTemplateParser.filterGroups
+    .sort((a, b) => a.sort - b.sort)
+    .map((group) => ({
+      key: group.name,
+      label: compile(group.title),
+      children: group.filters
+        .sort((a, b) => a.sort - b.sort)
+        .map((filter) => ({ key: filter.name, label: compile(filter.title) })),
+    })) as MenuProps['items'];
   return (
     <>
       <span style={{ color: '#bfbfbf', margin: '0 5px' }}>|</span>
@@ -73,11 +72,11 @@ export function Filter({ config, filter, filterId }) {
   };
 
   const form = useMemo(() => {
-    const argsMap = config.paramSchema
-      ? Object.fromEntries(config.paramSchema.map((param, index) => [param.name, filter.args[index]]))
+    const argsMap = config.uiSchema
+      ? Object.fromEntries(config.uiSchema.map((param, index) => [param.name, filter.args[index]]))
       : {};
     return createForm({ initialValues: argsMap });
-  }, [config.paramSchema, filter.args]);
+  }, [config.uiSchema, filter.args]);
 
   const useSaveActionProps = () => {
     const form = useForm();
@@ -87,7 +86,7 @@ export function Filter({ config, filter, filterId }) {
       onClick: async () => {
         await form.submit();
         const values = form.values;
-        const params = config.paramSchema.map((param) => values[param.name]);
+        const params = config.uiSchema.map((param) => values[param.name]);
         updateFilterParams({ filterId, params });
         setOpen(false);
       },
@@ -119,7 +118,7 @@ export function Filter({ config, filter, filterId }) {
       // 'x-use-component-props': 'useFormBlockProps',
       properties: {
         ...Object.fromEntries(
-          config.paramSchema.map((param) => [
+          config.uiSchema.map((param) => [
             param.name,
             {
               ...param,
@@ -167,12 +166,12 @@ export function Filter({ config, filter, filterId }) {
       </Popover>
     );
   };
-  const Label = <div style={{ color: '#52c41a', display: 'inline-block', cursor: 'pointer' }}>{config.label}</div>;
+  const Label = <div style={{ color: '#52c41a', display: 'inline-block', cursor: 'pointer' }}>{config.title}</div>;
   return (
     <>
       <span style={{ color: '#bfbfbf', margin: '0 5px' }}>|</span>
       <FormContext.Provider value={form}>
-        {config.paramSchema ? <WithPropOver>{Label}</WithPropOver> : Label}
+        {config.uiSchema ? <WithPropOver>{Label}</WithPropOver> : Label}
       </FormContext.Provider>
     </>
   );

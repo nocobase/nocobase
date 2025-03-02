@@ -8,8 +8,10 @@
  */
 
 import { escapeSpecialChars, escape, revertEscape } from '../escape';
-import engine from '../engine';
+import { createJSONTemplateParser } from '../parser';
 
+const parser = createJSONTemplateParser();
+const engine = parser.engine;
 type Filter = {
   name: string;
   handler: any;

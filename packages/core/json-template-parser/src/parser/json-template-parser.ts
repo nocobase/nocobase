@@ -20,7 +20,8 @@ type Filter = {
   title: string;
   handler: (...args: any[]) => any;
   group: string;
-  uiSchema: any;
+  uiSchema?: any;
+  sort: number;
 };
 
 export class JSONTemplateParser {
@@ -31,6 +32,7 @@ export class JSONTemplateParser {
   constructor() {
     this.engine = new Liquid();
     this._filterGroups = [];
+    this._filters = [];
     filterGroups.forEach((group) => {
       this.registerFilterGroup(group);
     });
