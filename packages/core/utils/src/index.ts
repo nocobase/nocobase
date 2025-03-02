@@ -19,7 +19,7 @@ export * from './forEach';
 export * from './fs-exists';
 export * from './handlebars';
 export * from './isValidFilter';
-export { parse } from '@nocobase/json-templates';
+export { parse } from '@nocobase/json-template-parser';
 export * from './koa-multer';
 export * from './measure-execution-time';
 export * from './merge';
