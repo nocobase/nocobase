@@ -78,13 +78,17 @@ describe.skipIf(process.env['DB_DIALECT'] === 'sqlite')('collection', () => {
 
     await Test.repository.create({
       values: {
-        id: '35809622393264128',
+        id: '7297559742767142843',
       },
     });
 
-    const item = await Test.repository.findOne();
+    const item = await Test.model.findOne({
+      where: {
+        id: 7297559742767142843n,
+      },
+    });
 
-    expect(item.toJSON()['id']).toBe('35809622393264128');
+    expect(item.toJSON()['id']).toBe('7297559742767142843');
   });
 
   it('should return number type when bigint is less than MAX_SAFE_INTEGER', async () => {
