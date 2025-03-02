@@ -17,7 +17,8 @@ export const variableFilters = [
     category: 'date',
     paramSchema: [
       {
-        label: "{{t('Format')}}",
+        name: 'format',
+        title: "{{t('Format')}}",
         'x-component': 'Input',
         type: 'string',
         required: true,
@@ -31,12 +32,15 @@ export const variableFilters = [
     category: 'date',
     paramSchema: [
       {
+        name: 'number',
         title: "{{t('Number')}}",
         type: 'number',
+        'x-component': 'InputNumber',
         required: true,
       },
       {
-        title: 'unit',
+        name: 'unit',
+        title: "{{t('Unit')}}",
         type: 'string',
         required: true,
         'x-component': 'Select',
@@ -55,11 +59,14 @@ export const variableFilters = [
     category: 'date',
     paramSchema: [
       {
+        name: 'number',
         title: "{{t('Number')}}",
         type: 'number',
+        'x-component': 'InputNumber',
         required: true,
       },
       {
+        name: 'unit',
         title: "{{t('Unit')}}",
         type: 'string',
         required: true,
