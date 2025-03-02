@@ -34,7 +34,8 @@ export function extractTemplateElements(template: string) {
 }
 
 const composeFilterTemplate = (filter: Filter) => {
-  return `${filter.name}${filter.args.length ? `:${filter.args.join(',')}` : ''}`;
+  const value = `${filter.name}${filter.args.length ? `:${filter.args.join(',')}` : ''}`;
+  return value;
 };
 
 export const composeTemplate = ({ fullVariable, filters }: { fullVariable: string; filters: any[] }) => {
