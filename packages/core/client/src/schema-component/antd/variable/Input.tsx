@@ -229,7 +229,10 @@ export function Input(props: VariableInputProps) {
     hideVariableButton || (children && value != null ? true : false),
   );
 
-  const { fullVariable, filters, variableSegments } = useMemo(() => extractTemplateElements(value), [value]);
+  const { fullVariable, filters, variableSegments } = useMemo(
+    () => extractTemplateElements(typeof value === 'string' ? value : ''),
+    [value],
+  );
   const onFilterAdd = useCallback(
     (filterName) => {
       onChange(composeTemplate({ fullVariable, filters: [...filters, { name: filterName, args: [] }] }));
