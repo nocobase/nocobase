@@ -606,5 +606,6 @@
   "If selected, the page will display Tab pages.": "Seçildiğinde, sayfa Tab sayfalarını görüntüleyecektir.",
   "If selected, the route will be displayed in the menu.": "Seçildiğinde, yol menüde görüntülenecektir.",
   "Deprecated": "Kullanımdan kaldırıldı",
-  "The following old template features have been deprecated and will be removed in next version.": "Aşağıdaki eski şablon özellikleri kullanımdan kaldırıldı ve gelecek sürümlerde kaldırılacaktır."
+  "The following old template features have been deprecated and will be removed in next version.": "Aşağıdaki eski şablon özellikleri kullanımdan kaldırıldı ve gelecek sürümlerde kaldırılacaktır.",
+  "Full permissions": "Tüm izinler"
 }

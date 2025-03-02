@@ -1040,5 +1040,6 @@
   "If selected, the page will display Tab pages.": "選択されている場合、ページはタブページを表示します。",
   "If selected, the route will be displayed in the menu.": "選択されている場合、ルートはメニューに表示されます。",
   "Deprecated": "非推奨",
-  "The following old template features have been deprecated and will be removed in next version.": "次の古いテンプレート機能は非推奨になり、次のバージョンで削除されます。"
+  "The following old template features have been deprecated and will be removed in next version.": "次の古いテンプレート機能は非推奨になり、次のバージョンで削除されます。",
+  "Full permissions": "すべての権限"
 }

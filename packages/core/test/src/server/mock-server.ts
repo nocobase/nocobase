@@ -73,7 +73,7 @@ interface Resource {
   [name: string]: (params?: ActionParams) => Promise<supertest.Response>;
 }
 
-interface ExtendedAgent extends SuperAgentTest {
+export interface ExtendedAgent extends SuperAgentTest {
   login: (user: any, roleName?: string) => Promise<ExtendedAgent>;
   loginUsingId: (userId: number, roleName?: string) => Promise<ExtendedAgent>;
   resource: (name: string, resourceOf?: any) => Resource;

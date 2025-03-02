@@ -169,6 +169,10 @@ export class ACL extends EventEmitter {
     return this.roles.get(name);
   }
 
+  getRoles(names: string[]): ACLRole[] {
+    return names.map((name) => this.getRole(name)).filter((x) => Boolean(x));
+  }
+
   removeRole(name: string) {
     return this.roles.delete(name);
   }
@@ -351,9 +355,14 @@ export class ACL extends EventEmitter {
       }
 
       ctx.can = (options: Omit<CanArgs, 'role'>) => {
-        const canResult = acl.can({ role: roleName, ...options });
-
-        return canResult;
+        const roles = ctx.state.currentRoles || [roleName];
+        for (const role of roles) {
+          const canResult = acl.can({ role, ...options });
+          if (canResult) {
+            return canResult;
+          }
+        }
+        return null;
       };
 
       ctx.permission = {
@@ -370,7 +379,7 @@ export class ACL extends EventEmitter {
    * @internal
    */
   async getActionParams(ctx) {
-    const roleName = ctx.state.currentRole || 'anonymous';
+    const roleNames = ctx.state.currentRoles?.length ? ctx.state.currentRoles : 'anonymous';
     const { resourceName: rawResourceName, actionName } = ctx.action;
 
     let resourceName = rawResourceName;
@@ -386,11 +395,13 @@ export class ACL extends EventEmitter {
     }
 
     ctx.can = (options: Omit<CanArgs, 'role'>) => {
-      const can = this.can({ role: roleName, ...options });
-      if (!can) {
-        return null;
+      for (const roleName of roleNames) {
+        const can = this.can({ role: roleName, ...options });
+        if (can) {
+          return lodash.cloneDeep(can);
+        }
       }
-      return lodash.cloneDeep(can);
+      return null;
     };
 
     ctx.permission = {
