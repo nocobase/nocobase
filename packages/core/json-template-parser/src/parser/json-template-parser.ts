@@ -23,7 +23,7 @@ type Filter = {
   uiSchema: any;
 };
 
-class JSONTemplateParser {
+export class JSONTemplateParser {
   engine: Liquid;
   private _filterGroups: Array<FilterGroup>;
   private _filters: Array<Filter>;

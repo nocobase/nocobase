@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/json-templates",
+  "name": "@nocobase/json-template-parser",
   "version": "1.6.0-alpha.28",
   "license": "AGPL-3.0",
   "main": "lib/index.js",

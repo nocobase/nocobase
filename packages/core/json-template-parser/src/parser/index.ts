@@ -8,4 +8,4 @@
  */
 
 export { parse } from './parse';
-export { createJSONTemplateParser } from './json-template-parser';
+export { createJSONTemplateParser, JSONTemplateParser } from './json-template-parser';
