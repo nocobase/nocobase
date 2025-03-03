@@ -8,7 +8,7 @@
  */
 
 import { defineCollection } from '@nocobase/database';
-import { NAMESPACE } from '../../locale';
+import { NAMESPACE } from '../../common/constants';
 
 export default defineCollection({
   name: 'workflowManualTasks',

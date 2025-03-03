@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+export const NAMESPACE = 'workflow-manual';
+
 export const MANUAL_TASK_TYPE = 'manual';
 
 export const TASK_STATUS = {
