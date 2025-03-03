@@ -190,7 +190,7 @@ export class BaseAuth extends Auth {
         this.ctx.logger.info('token renewed', {
           method: 'auth.check',
           url: this.ctx.originalUrl,
-          headers: JSON.stringify(this.ctx?.req?.headers),
+          headers: JSON.stringify(this.ctx),
         });
         const expiresIn = Math.floor(tokenPolicy.tokenExpirationTime / 1000);
         const newToken = this.jwt.sign(
@@ -203,7 +203,7 @@ export class BaseAuth extends Auth {
         this.ctx.logger.info('token renew failed', {
           method: 'auth.check',
           url: this.ctx.originalUrl,
-          err,
+          error: JSON.stringify(err),
           headers: JSON.stringify(this.ctx?.req?.headers),
         });
         const options =
