@@ -56,7 +56,7 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
     cors({
       exposeHeaders: ['content-disposition'],
       origin(ctx) {
-        return ctx.get('Origin') || '*';
+        return ctx.get('origin');
       },
       ...options.cors,
     }),
