@@ -11,6 +11,7 @@ import { Model } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import PluginLocalizationServer from '@nocobase/plugin-localization';
 import { tval } from '@nocobase/utils';
+import actions, { Context } from '@nocobase/actions';
 
 export class PluginMobileServer extends Plugin {
   async load() {
@@ -101,6 +102,36 @@ export class PluginMobileServer extends Plugin {
       });
 
       await next();
+    });
+    const processRoleMobileRoutes = async (ctx: Context, next) => {
+      const actionName = ctx.action.actionName;
+      await actions[actionName](ctx, next);
+
+      const tabs = await this.app.db.getRepository('mobileRoutes').find({
+        where: {
+          parentId: ctx.action.params.values,
+        },
+      });
+      if (tabs.length > 1 || !tabs[0].hidden) {
+        return;
+      }
+      const repository = this.app.db.getRepository('rolesMobileRoutes');
+      const whereOrValues = {
+        roleName: ctx.action.params.associatedIndex,
+        mobileRouteId: tabs[0].id,
+      };
+      const rolesMobileRoute = await repository.findOne({ where: whereOrValues });
+
+      if (actionName === 'add') {
+        !rolesMobileRoute && (await repository.create({ values: whereOrValues }));
+      }
+      if (actionName === 'remove') {
+        rolesMobileRoute && (await repository.destroy({ filter: whereOrValues }));
+      }
+    };
+    this.app.resourceManager.registerActionHandlers({
+      'roles.mobileRoutes:add': processRoleMobileRoutes,
+      'roles.mobileRoutes:remove': processRoleMobileRoutes,
     });
   }
 
