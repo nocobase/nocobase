@@ -28,7 +28,7 @@ export class LLMInstruction extends Instruction {
       throw new Error('invalid llm provider');
     }
     const Provider = providerOptions.provider;
-    const provider = new Provider({ serviceOptions: service.options, chatOptions });
+    const provider = new Provider({ app: this.workflow.app, serviceOptions: service.options, chatOptions });
     return provider;
   }
 
@@ -42,38 +42,6 @@ export class LLMInstruction extends Instruction {
         status: JOB_STATUS.ERROR,
         result: e.message,
       };
-    }
-    const { workflow } = processor.execution;
-    const sync = this.workflow.isWorkflowSync(workflow);
-    if (sync) {
-      try {
-        const aiMsg = await provider.invokeChat();
-        let raw = aiMsg;
-        if (aiMsg.raw) {
-          raw = aiMsg.raw;
-        }
-        return {
-          status: JOB_STATUS.RESOLVED,
-          result: {
-            id: raw.id,
-            content: raw.content,
-            additionalKwargs: raw.additional_kwargs,
-            responseMetadata: raw.response_metadata,
-            toolCalls: raw.tool_calls,
-            structuredContent: aiMsg.parsed,
-          },
-        };
-      } catch (e) {
-        processor.logger.error(`llm invoke failed, ${e.message}`, {
-          node: node.id,
-          error: e,
-          chatOptions: _.omit(chatOptions, 'messages'),
-        });
-        return {
-          status: JOB_STATUS.ERROR,
-          result: e.message,
-        };
-      }
     }
 
     const job = await processor.saveJob({

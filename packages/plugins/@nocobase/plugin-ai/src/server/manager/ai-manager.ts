@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Application } from '@nocobase/server';
 import { LLMProvider } from '../llm-providers/provider';
 
 export type LLMProviderOptions = {
   title: string;
-  provider: new (opts: { serviceOptions?: any; chatOptions?: any }) => LLMProvider;
+  provider: new (opts: { app: Application; serviceOptions?: any; chatOptions?: any }) => LLMProvider;
 };
 
 export class AIManager {

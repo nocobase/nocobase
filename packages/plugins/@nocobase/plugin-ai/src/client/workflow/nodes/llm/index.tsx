@@ -18,6 +18,7 @@ export class LLMInstruction extends Instruction {
   title = 'LLM';
   type = 'llm';
   group = 'ai';
+  // @ts-ignore
   icon = (<RobotOutlined />);
   fieldset = {
     llmService: {
@@ -50,6 +51,11 @@ export class LLMInstruction extends Instruction {
   components = {
     Settings,
   };
+
+  isAvailable({ engine, workflow }) {
+    return !engine.isWorkflowSync(workflow);
+  }
+
   useVariables(node, options) {
     return {
       label: node.title,

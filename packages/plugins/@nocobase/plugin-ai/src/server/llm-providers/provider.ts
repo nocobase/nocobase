@@ -10,6 +10,7 @@
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import axios from 'axios';
 import { parseMessages } from './handlers/parse-messages';
+import { Application } from '@nocobase/server';
 
 export abstract class LLMProvider {
   baseURL?: string;
@@ -22,14 +23,15 @@ export abstract class LLMProvider {
   abstract createModel(): BaseChatModel;
 
   constructor(opts: {
+    app: Application;
     serviceOptions: any;
     chatOptions?: {
       messages?: any[];
       [key: string]: any;
     };
   }) {
-    const { serviceOptions, chatOptions } = opts;
-    this.serviceOptions = serviceOptions;
+    const { app, serviceOptions, chatOptions } = opts;
+    this.serviceOptions = app.environment.renderJsonTemplate(serviceOptions);
     if (chatOptions) {
       const { messages, ...modelOptions } = chatOptions;
       this.modelOptions = modelOptions;

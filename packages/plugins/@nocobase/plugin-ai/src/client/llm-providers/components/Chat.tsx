@@ -23,6 +23,5 @@ export const Chat: React.FC = () => {
     label: Schema.compile(title, { t }),
     children: <Component />,
   }));
-  console.log(items);
   return <Tabs items={items} />;
 };

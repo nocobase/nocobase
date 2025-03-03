@@ -23,13 +23,13 @@ export const ProviderSettingsForm: React.FC = () => {
             type: 'string',
             required: true,
             'x-decorator': 'FormItem',
-            'x-component': 'Input',
+            'x-component': 'TextAreaWithGlobalScope',
           },
           baseURL: {
             title: tval('Base URL', { ns: namespace }),
             type: 'string',
             'x-decorator': 'FormItem',
-            'x-component': 'Input',
+            'x-component': 'TextAreaWithGlobalScope',
           },
         },
       }}
