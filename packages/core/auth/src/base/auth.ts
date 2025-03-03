@@ -195,8 +195,10 @@ export class BaseAuth extends Auth {
 
     return { tokenStatus, user, jti, signInTime, temp };
   }
+
   async check(): ReturnType<Auth['check']> {
     const { tokenStatus, user, jti, temp, signInTime, roleName } = await this.checkToken();
+
     if (tokenStatus === 'expired') {
       const tokenPolicy = await this.tokenController.getConfig();
       try {
@@ -234,7 +236,6 @@ export class BaseAuth extends Auth {
           { jwtid: renewedResult.jti, expiresIn },
         );
         this.ctx.res.setHeader('x-new-token', newToken);
-        return user;
       } catch (err) {
         this.ctx.logger.error('token renew failed', {
           method: 'auth.check',
