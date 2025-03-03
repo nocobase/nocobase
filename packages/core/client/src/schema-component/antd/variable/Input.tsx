@@ -7,11 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CloseCircleFilled } from '@ant-design/icons';
+import { CloseCircleFilled, FilterOutlined } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
 import { error } from '@nocobase/utils/client';
-import { Input as AntInput, Cascader, CascaderProps, DatePicker, InputNumber, Select, Space, Tag } from 'antd';
+import { cloneDeep } from 'lodash';
+import { extractTemplateElements, composeTemplate } from '@nocobase/json-template-parser';
+import {
+  Input as AntInput,
+  Cascader,
+  CascaderProps,
+  DatePicker,
+  InputNumber,
+  Select,
+  Space,
+  Tag,
+  Typography,
+} from 'antd';
 import useAntdInputStyle from 'antd/es/input/style';
 import type { DefaultOptionType } from 'antd/lib/cascader';
 import classNames from 'classnames';
@@ -22,7 +34,9 @@ import { useCompile } from '../../hooks';
 import { XButton } from './XButton';
 import { useStyles } from './style';
 import { Json } from '../input';
+import { Filters, Addition, FilterContext } from './VariableFilters';
 
+const { Text } = Typography;
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
 
 type ParseOptions = {
@@ -30,21 +44,19 @@ type ParseOptions = {
 };
 
 function parseValue(value: any, options: ParseOptions = {}): string | string[] {
-  if (value == null) {
+  if (value == null || (Array.isArray(value) && value.length === 0)) {
     return 'null';
   }
   const type = typeof value;
-  if (type === 'string') {
-    const matched = value.match(JT_VALUE_RE);
-    if (matched) {
-      return matched[1].split('.');
-    }
-    if (options.stringToDate) {
-      if (!Number.isNaN(Date.parse(value))) {
-        return 'date';
-      }
+  if (Array.isArray(value)) {
+    return value;
+  }
+  if (options.stringToDate) {
+    if (!Number.isNaN(Date.parse(value))) {
+      return 'date';
     }
   }
+
   return type === 'object' && value instanceof Date ? 'date' : type;
 }
 
@@ -217,7 +229,35 @@ export function Input(props: VariableInputProps) {
     hideVariableButton || (children && value != null ? true : false),
   );
 
-  const parsed = useMemo(() => parseValue(value, parseOptions), [parseOptions, value]);
+  const { fullVariable, filters, variableSegments } = useMemo(
+    () => extractTemplateElements(typeof value === 'string' ? value : ''),
+    [value],
+  );
+  const onFilterAdd = useCallback(
+    (filterName) => {
+      onChange(composeTemplate({ fullVariable, filters: [...filters, { name: filterName, args: [] }] }));
+    },
+    [filters, fullVariable, onChange],
+  );
+
+  const updateFilterParams = useCallback(
+    ({ filterId, params }: { filterId: number; params: any[] }) => {
+      const copyedFilters = cloneDeep(filters);
+      copyedFilters[filterId].args = params;
+      onChange(composeTemplate({ fullVariable, filters: copyedFilters }));
+    },
+    [filters, fullVariable, onChange],
+  );
+
+  const deleteFilter = useCallback(
+    ({ filterId }: { filterId: number }) => {
+      const newFilters = filters.filter((_, index) => index !== filterId);
+      onChange(composeTemplate({ fullVariable, filters: newFilters }));
+    },
+    [filters, fullVariable, onChange],
+  );
+
+  const parsed = useMemo(() => parseValue(variableSegments, parseOptions), [parseOptions, variableSegments]);
   const isConstant = typeof parsed === 'string';
   const type = isConstant ? parsed : '';
   const variable = isConstant ? null : parsed;
@@ -332,7 +372,8 @@ export function Input(props: VariableInputProps) {
         if (next[1]) {
           if (next[1] !== type) {
             // setPrevType(next[1]);
-            onChange(ConstantTypes[next[1]]?.default?.() ?? null, optionPath);
+            const newVariable = ConstantTypes[next[1]]?.default?.() ?? null;
+            onChange(composeTemplate({ fullVariable: newVariable, filters }), optionPath);
           }
         } else {
           if (variable) {
@@ -443,6 +484,11 @@ export function Input(props: VariableInputProps) {
                   </React.Fragment>
                 );
               })}
+              <FilterContext.Provider value={{ updateFilterParams, deleteFilter }}>
+                <Filters filters={filters} onFilterChange={onFilterAdd} />
+
+                {variableText.length > 0 && <Addition variable={fullVariable} onFilterAdd={onFilterAdd} />}
+              </FilterContext.Provider>
             </Tag>
           </div>
           {!disabled ? (

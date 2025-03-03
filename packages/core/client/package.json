@@ -30,6 +30,7 @@
     "@nocobase/evaluators": "1.6.0-alpha.29",
     "@nocobase/sdk": "1.6.0-alpha.29",
     "@nocobase/utils": "1.6.0-alpha.29",
+    "@nocobase/json-template-parser": "1.6.0-alpha.28",
     "ahooks": "^3.7.2",
     "antd": "5.12.8",
     "antd-style": "3.7.1",
