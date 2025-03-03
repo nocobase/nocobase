@@ -58,7 +58,8 @@ export interface TaskTypeOptions {
   title: string;
   collection: string;
   useActionParams: Function;
-  component?: React.ComponentType;
+  component: React.ComponentType;
+  extraActions?: React.ComponentType;
   // children?: TaskTypeOptions[];
 }
 
@@ -94,47 +95,17 @@ function MenuLink({ type }: any) {
   );
 }
 
-function ExtraActions() {
-  return (
-    <SchemaComponent
-      schema={{
-        name: 'actions',
-        type: 'void',
-        'x-component': 'ActionBar',
-        properties: {
-          refresh: {
-            type: 'void',
-            title: '{{ t("Refresh") }}',
-            'x-component': 'Action',
-            'x-use-component-props': 'useRefreshActionProps',
-            'x-component-props': {
-              icon: 'ReloadOutlined',
-            },
-          },
-          filter: {
-            type: 'void',
-            title: '{{t("Filter")}}',
-            'x-component': 'Filter.Action',
-            'x-use-component-props': 'useFilterActionProps',
-            'x-component-props': {
-              icon: 'FilterOutlined',
-            },
-          },
-        },
-      }}
-    />
-  );
-}
-
 const TASK_STATUS = {
   ALL: 'all',
   PENDING: 'pending',
   COMPLETED: 'completed',
 };
 
-function StatusTabs(props) {
+function StatusTabs() {
   const navigate = useNavigate();
   const { taskType, status = TASK_STATUS.PENDING } = useParams();
+  const type = useCurrentTaskType();
+  const { extraActions: ExtraActions } = type;
   return (
     <Tabs
       activeKey={status}
@@ -160,24 +131,21 @@ function StatusTabs(props) {
           label: lang('All'),
         },
       ]}
-      tabBarExtraContent={{
-        right: <ExtraActions />,
-      }}
+      tabBarExtraContent={
+        ExtraActions
+          ? {
+              right: <ExtraActions />,
+            }
+          : {}
+      }
     />
   );
 }
 
-export function WorkflowTasks() {
+function useTaskTypeItems() {
   const workflowPlugin = usePlugin(PluginWorkflowClient);
-  const compile = useCompile();
-  const { setTitle } = useDocumentTitle();
-  const navigate = useNavigate();
-  const { taskType, status = TASK_STATUS.PENDING } = useParams();
-  const {
-    token: { colorBgContainer },
-  } = useToken();
 
-  const items = useMemo(
+  return useMemo(
     () =>
       Array.from(workflowPlugin.taskTypes.getKeys()).map((key: string) => {
         return {
@@ -187,16 +155,30 @@ export function WorkflowTasks() {
       }),
     [workflowPlugin.taskTypes],
   );
+}
 
-  const {
-    title,
-    collection,
-    useActionParams,
-    component: Component,
-  } = useMemo<any>(
+function useCurrentTaskType() {
+  const workflowPlugin = usePlugin(PluginWorkflowClient);
+  const { taskType } = useParams();
+  const items = useTaskTypeItems();
+  return useMemo<any>(
     () => workflowPlugin.taskTypes.get(taskType ?? items[0]?.key) ?? {},
     [items, taskType, workflowPlugin.taskTypes],
   );
+}
+
+export function WorkflowTasks() {
+  const compile = useCompile();
+  const { setTitle } = useDocumentTitle();
+  const navigate = useNavigate();
+  const { taskType, status = TASK_STATUS.PENDING } = useParams();
+  const {
+    token: { colorBgContainer },
+  } = useToken();
+
+  const items = useTaskTypeItems();
+
+  const { title, collection, useActionParams, component: Component } = useCurrentTaskType();
 
   const params = useActionParams(status);
 
@@ -373,7 +355,7 @@ export const TasksProvider = (props: any) => {
         });
       })
       .catch((err) => {
-        console.log(err);
+        console.error(err);
       });
   }, [runAsync]);
 

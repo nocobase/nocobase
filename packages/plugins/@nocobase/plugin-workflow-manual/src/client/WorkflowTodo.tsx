@@ -8,11 +8,12 @@
  */
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { observer, useField, useFieldSchema, useForm } from '@formily/react';
+import { useField, useFieldSchema, useForm } from '@formily/react';
 import { Button, Card, Descriptions, Space, Spin, Tag } from 'antd';
 import { TableOutlined } from '@ant-design/icons';
 import { useAntdToken } from 'antd-style';
 import dayjs from 'dayjs';
+import { useTranslation } from 'react-i18next';
 
 import {
   ActionContextProvider,
@@ -27,9 +28,6 @@ import {
   usePopupUtils,
   useSchemaInitializer,
   useSchemaInitializerItem,
-} from '@nocobase/client';
-
-import {
   SchemaComponent,
   SchemaComponentContext,
   TableBlockProvider,
@@ -42,8 +40,6 @@ import {
 import WorkflowPlugin, {
   DetailsBlockProvider,
   FlowContext,
-  JobStatusOptions,
-  JobStatusOptionsMap,
   linkNodes,
   useAvailableUpstreams,
   useFlowContext,
@@ -54,208 +50,9 @@ import WorkflowPlugin, {
 import { lang, NAMESPACE, useLang } from '../locale';
 import { FormBlockProvider } from './instruction/FormBlockProvider';
 import { ManualFormType, manualFormTypes } from './instruction/SchemaConfig';
+import { TaskStatusOptionsMap } from '../common/constants';
 
-export const nodeCollection = {
-  title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,
-  name: 'flow_nodes',
-  fields: [
-    {
-      type: 'bigInt',
-      name: 'id',
-      interface: 'm2o',
-      uiSchema: {
-        type: 'number',
-        title: 'ID',
-        'x-component': 'RemoteSelect',
-        'x-component-props': {
-          fieldNames: {
-            label: 'title',
-            value: 'id',
-          },
-          service: {
-            resource: 'flow_nodes',
-            params: {
-              filter: {
-                type: 'manual',
-              },
-            },
-          },
-        },
-      },
-    },
-    {
-      type: 'string',
-      name: 'title',
-      interface: 'input',
-      uiSchema: {
-        type: 'string',
-        title: '{{t("Title")}}',
-        'x-component': 'Input',
-      },
-    },
-  ],
-};
-
-export const workflowCollection = {
-  title: `{{t("Workflow", { ns: "${NAMESPACE}" })}}`,
-  name: 'workflows',
-  fields: [
-    {
-      type: 'string',
-      name: 'title',
-      interface: 'input',
-      uiSchema: {
-        title: '{{t("Name")}}',
-        type: 'string',
-        'x-component': 'Input',
-        required: true,
-      },
-    },
-  ],
-};
-
-export const todoCollection = {
-  title: `{{t("Workflow todos", { ns: "${NAMESPACE}" })}}`,
-  name: 'workflowManualTasks',
-  fields: [
-    {
-      type: 'belongsTo',
-      name: 'user',
-      target: 'users',
-      foreignKey: 'userId',
-      interface: 'm2o',
-      uiSchema: {
-        type: 'number',
-        title: '{{t("User")}}',
-        'x-component': 'RemoteSelect',
-        'x-component-props': {
-          fieldNames: {
-            label: 'nickname',
-            value: 'id',
-          },
-          service: {
-            resource: 'users',
-          },
-        },
-      },
-    },
-    {
-      type: 'string',
-      name: 'title',
-      uiSchema: {
-        type: 'string',
-        title: `{{t("Task title", { ns: "${NAMESPACE}" })}}`,
-        'x-component': 'Input',
-      },
-    },
-    {
-      type: 'belongsTo',
-      name: 'node',
-      target: 'flow_nodes',
-      foreignKey: 'nodeId',
-      interface: 'm2o',
-      isAssociation: true,
-      uiSchema: {
-        type: 'number',
-        title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,
-        'x-component': 'RemoteSelect',
-        'x-component-props': {
-          fieldNames: {
-            label: 'title',
-            value: 'id',
-          },
-          service: {
-            resource: 'flow_nodes',
-          },
-        },
-      },
-    },
-    {
-      type: 'belongsTo',
-      name: 'workflow',
-      target: 'workflows',
-      foreignKey: 'workflowId',
-      interface: 'm2o',
-      uiSchema: {
-        type: 'number',
-        title: `{{t("Workflow", { ns: "${NAMESPACE}" })}}`,
-        'x-component': 'RemoteSelect',
-        'x-component-props': {
-          fieldNames: {
-            label: 'title',
-            value: 'id',
-          },
-          service: {
-            resource: 'workflows',
-          },
-        },
-      },
-    },
-    {
-      type: 'integer',
-      name: 'status',
-      interface: 'select',
-      uiSchema: {
-        type: 'number',
-        title: `{{t("Status", { ns: "${NAMESPACE}" })}}`,
-        'x-component': 'Select',
-        enum: JobStatusOptions,
-      },
-    },
-    {
-      name: 'createdAt',
-      type: 'date',
-      interface: 'createdAt',
-      uiSchema: {
-        type: 'datetime',
-        title: '{{t("Created at")}}',
-        'x-component': 'DatePicker',
-        'x-component-props': {
-          showTime: true,
-        },
-      },
-    },
-    {
-      name: 'updatedAt',
-      type: 'date',
-      interface: 'updatedAt',
-      uiSchema: {
-        type: 'datetime',
-        title: '{{t("Updated at")}}',
-        'x-component': 'DatePicker',
-        'x-component-props': {
-          showTime: true,
-        },
-      },
-    },
-  ],
-};
-
-const NodeColumn = observer(
-  () => {
-    const field = useField<any>();
-    return field?.value?.title ?? `#${field.value?.id}`;
-  },
-  { displayName: 'NodeColumn' },
-);
-
-const WorkflowColumn = observer(
-  () => {
-    const field = useField<any>();
-    return field?.value?.title ?? `#${field.value?.id}`;
-  },
-  { displayName: 'WorkflowColumn' },
-);
-
-const UserColumn = observer(
-  () => {
-    const field = useField<any>();
-    return field?.value?.nickname ?? field.value?.id;
-  },
-  { displayName: 'UserColumn' },
-);
-
-function UserJobStatusColumn(props) {
+function TaskStatusColumn(props) {
   const recordData = useCollectionRecordData();
   const labelUnprocessed = useLang('Unprocessed');
   if (recordData?.execution?.status && !recordData?.status) {
@@ -290,7 +87,7 @@ const tableColumns = {
     title: `{{t("Workflow", { ns: "workflow" })}}`,
     properties: {
       workflow: {
-        'x-component': 'WorkflowColumn',
+        'x-component': 'CollectionField',
         'x-read-pretty': true,
       },
     },
@@ -306,7 +103,7 @@ const tableColumns = {
     properties: {
       status: {
         type: 'number',
-        'x-decorator': 'UserJobStatusColumn',
+        'x-decorator': 'TaskStatusColumn',
         'x-component': 'CollectionField',
         'x-read-pretty': true,
       },
@@ -322,7 +119,7 @@ const tableColumns = {
     title: `{{t("Assignee", { ns: "${NAMESPACE}" })}}`,
     properties: {
       user: {
-        'x-component': 'UserColumn',
+        'x-component': 'CollectionField',
         'x-read-pretty': true,
       },
     },
@@ -356,10 +153,9 @@ export const WorkflowTodo: React.FC<{ columns?: string[] }> & {
   return (
     <SchemaComponent
       components={{
-        NodeColumn,
-        WorkflowColumn,
-        UserColumn,
-        UserJobStatusColumn,
+        // WorkflowColumn,
+        // UserColumn,
+        TaskStatusColumn,
       }}
       schema={{
         type: 'void',
@@ -658,7 +454,7 @@ function useDetailsBlockProps() {
 function FooterStatus() {
   const compile = useCompile();
   const { status, updatedAt } = useCollectionRecordData() || {};
-  const statusOption = JobStatusOptionsMap[status];
+  const statusOption = TaskStatusOptionsMap[status];
   return status ? (
     <Space>
       <time
@@ -668,9 +464,7 @@ function FooterStatus() {
       >
         {dayjs(updatedAt).format('YYYY-MM-DD HH:mm:ss')}
       </time>
-      <Tag icon={statusOption.icon} color={statusOption.color}>
-        {compile(statusOption.label)}
-      </Tag>
+      <Tag color={statusOption.color}>{compile(statusOption.label)}</Tag>
     </Space>
   ) : null;
 }
@@ -793,6 +587,8 @@ function ContentDetail() {
 function TaskItem() {
   const token = useAntdToken();
   const [visible, setVisible] = useState(false);
+  const record = useCollectionRecordData();
+  const { t } = useTranslation();
   // const { defaultOpenMode } = useOpenModeContext();
   // const { openPopup } = usePopupUtils();
   // const { isPopupVisibleControlledByURL } = usePopupSettings();
@@ -823,85 +619,57 @@ function TaskItem() {
 
   return (
     <>
-      <Card onClick={onOpen} hoverable size="small">
-        <SchemaComponent
-          components={{
-            Space,
-          }}
-          schema={{
-            name: 'grid',
-            type: 'void',
-            'x-component': 'Grid',
-            properties: {
-              titleRow: {
-                type: 'void',
-                'x-component': 'Grid.Row',
-                properties: {
-                  left: {
-                    type: 'void',
-                    'x-component': 'Grid.Col',
-                    properties: {
-                      title: {
-                        type: 'void',
-                        'x-component': 'Space',
-                        properties: {
-                          'workflow.title': {
-                            type: 'string',
-                            'x-component': 'CollectionField',
-                            'x-component-props': {
-                              className: css`
-                                color: ${token.colorTextDescription};
-
-                                &:after {
-                                  content: '>';
-                                  margin-left: 4px;
-                                }
-                              `,
-                            },
-                          },
-                          title: {
-                            type: 'string',
-                            'x-component': 'CollectionField',
-                          },
-                        },
-                      },
-                    },
-                  },
-                  right: {
-                    type: 'void',
-                    'x-component': 'Grid.Col',
-                    'x-align': 'right',
-                    'x-component-props': {
-                      className: css`
-                        text-align: right;
-                      `,
-                    },
-                    properties: {
-                      meta: {
-                        type: 'void',
-                        'x-component': 'Space',
-                        properties: {
-                          status: {
-                            type: 'number',
-                            'x-component': 'CollectionField',
-                          },
-                          updatedAt: {
-                            type: 'string',
-                            'x-component': 'CollectionField',
-                            'x-component-props': {
-                              className: css`
-                                color: ${token.colorTextDescription};
-                              `,
-                            },
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
+      <Card
+        onClick={onOpen}
+        hoverable
+        size="small"
+        title={record.title}
+        extra={record.workflow.title}
+        className={css`
+          .ant-card-extra {
+            color: ${token.colorTextDescription};
+          }
+        `}
+      >
+        <Descriptions
+          column={1}
+          items={[
+            {
+              key: 'createdAt',
+              label: t('Created at'),
+              children: (
+                <SchemaComponent
+                  schema={{
+                    name: 'createdAt',
+                    type: 'string',
+                    'x-component': 'CollectionField',
+                    'x-read-pretty': true,
+                  }}
+                />
+              ),
             },
-          }}
+            {
+              key: 'status',
+              label: t('Status', { ns: 'workflow' }),
+              children: (
+                <SchemaComponent
+                  components={{ TaskStatusColumn }}
+                  schema={{
+                    name: 'status',
+                    type: 'number',
+                    'x-decorator': 'TaskStatusColumn',
+                    'x-component': 'CollectionField',
+                    'x-read-pretty': true,
+                  }}
+                />
+              ),
+            },
+          ]}
+          className={css`
+            .ant-descriptions-item-label {
+              width: 6em;
+            }
+          `}
         />
       </Card>
       <PopupContextProvider visible={visible} setVisible={setVisible}>
@@ -942,9 +710,45 @@ function useTodoActionParams(status) {
   };
 }
 
+function TodoExtraActions() {
+  return (
+    <SchemaComponent
+      schema={{
+        name: 'actions',
+        type: 'void',
+        'x-component': 'ActionBar',
+        properties: {
+          refresh: {
+            type: 'void',
+            title: '{{ t("Refresh") }}',
+            'x-component': 'Action',
+            'x-use-component-props': 'useRefreshActionProps',
+            'x-component-props': {
+              icon: 'ReloadOutlined',
+            },
+          },
+          filter: {
+            type: 'void',
+            title: '{{t("Filter")}}',
+            'x-component': 'Filter.Action',
+            'x-use-component-props': 'useFilterActionProps',
+            'x-component-props': {
+              icon: 'FilterOutlined',
+            },
+            default: {
+              $and: [{ title: { $includes: '' } }, { 'workflow.title': { $includes: '' } }],
+            },
+          },
+        },
+      }}
+    />
+  );
+}
+
 export const manualTodo = {
   title: `{{t("My manual tasks", { ns: "${NAMESPACE}" })}}`,
   collection: 'workflowManualTasks',
   useActionParams: useTodoActionParams,
   component: TaskItem,
+  extraActions: TodoExtraActions,
 };
