@@ -40,6 +40,7 @@ import { useUpdate } from 'ahooks';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useRefreshComponent, useRefreshFieldSchema } from '../../../formily/NocoBaseRecursionField';
 import { NocoBaseDesktopRoute } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
+import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 
 const subMenuDesignerCss = css`
   position: relative;
@@ -202,6 +203,16 @@ type ComposedMenu = React.FC<any> & {
   SubMenu?: React.FC<any>;
   Designer?: React.FC<any>;
 };
+
+const MenuItemTitle: React.FC<{
+  schema: any;
+  style?: React.CSSProperties;
+}> = ({ schema, style }) => {
+  const { t } = useMenuTranslation();
+  return <span style={style}>{t(schema.title)}</span>;
+};
+
+const MenuItemTitleWithTooltip = withTooltipComponent(MenuItemTitle);
 
 const ParentRouteContext = createContext<NocoBaseDesktopRoute>(null);
 ParentRouteContext.displayName = 'ParentRouteContext';
@@ -698,7 +709,7 @@ Menu.Item = observer(
                 removeParentsIfNoChildren={false}
               >
                 <Icon type={icon} />
-                <span style={menuItemTitleStyle}>{t(schema.title)}</span>
+                <MenuItemTitleWithTooltip schema={schema} style={menuItemTitleStyle} />
                 <Designer />
               </SortableItem>
             </FieldContext.Provider>

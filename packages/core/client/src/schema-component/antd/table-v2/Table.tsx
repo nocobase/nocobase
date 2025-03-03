@@ -66,6 +66,7 @@ import { useToken } from '../__builtins__';
 import { useAssociationFieldContext } from '../association-field/hooks';
 import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
+import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 
 type BodyRowComponentProps = {
   rowIndex?: number;
@@ -198,6 +199,8 @@ const useTableColumns = (
 
   const collection = useCollection();
 
+  const TableColumnTitle = withTooltipComponent(NocoBaseRecursionField);
+
   const columns = useMemo(
     () =>
       columnsSchemas?.map((columnSchema: Schema) => {
@@ -217,7 +220,7 @@ const useTableColumns = (
         return {
           title: (
             <RefreshComponentProvider refresh={refresh}>
-              <NocoBaseRecursionField
+              <TableColumnTitle
                 name={columnSchema.name}
                 schema={columnSchema}
                 onlyRenderSelf

@@ -27,6 +27,7 @@ export interface NocoBaseDesktopRoute {
   children?: NocoBaseDesktopRoute[];
 
   title?: string;
+  tooltip?: string;
   icon?: string;
   schemaUid?: string;
   menuSchemaUid?: string;
@@ -106,6 +107,7 @@ function convertRouteToSchema(route: NocoBaseDesktopRoute) {
     'x-decorator': 'ACLMenuItemProvider',
     'x-component-props': {
       icon: route.icon,
+      tooltip: route.tooltip,
       href: route.options?.href,
       params: route.options?.params,
       hidden: route.hideInMenu,
