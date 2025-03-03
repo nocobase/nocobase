@@ -27,7 +27,11 @@ export const withTooltipComponent = (Component: React.FC) => {
     }
 
     // 不破坏原菜单css样式
-    if (schema?.['x-component'] === 'Menu.Item') {
+    if (
+      schema?.['x-component'] === 'Menu.Item' ||
+      schema?.['x-component'] === 'Menu.URL' ||
+      schema?.['x-component'] === 'Menu.SubMenu'
+    ) {
       return (
         <>
           <Component {...props} />

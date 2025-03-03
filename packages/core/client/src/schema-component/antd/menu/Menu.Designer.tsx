@@ -553,15 +553,13 @@ export const MenuDesigner = () => {
         initialValues={initialValues}
         onSubmit={onEditSubmit}
       />
-      {fieldSchema['x-component'] === 'Menu.Item' && (
-        <SchemaSettingsModalItem
-          title={t('Edit tooltip')}
-          eventKey="edit-tooltip"
-          schema={editTooltipSchema as ISchema}
-          initialValues={initialTooltipValues}
-          onSubmit={onEditTooltipSubmit}
-        />
-      )}
+      <SchemaSettingsModalItem
+        title={t('Edit tooltip')}
+        eventKey="edit-tooltip"
+        schema={editTooltipSchema as ISchema}
+        initialValues={initialTooltipValues}
+        onSubmit={onEditTooltipSubmit}
+      />
       <SchemaSettingsSwitchItem
         title={t('Hidden')}
         checked={fieldSchema['x-component-props']?.hidden}

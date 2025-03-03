@@ -681,6 +681,7 @@ const menuItemTitleStyle = {
   display: 'inline-block',
   width: '100%',
   verticalAlign: 'middle',
+  marginInlineEnd: '4px',
 };
 
 Menu.Item = observer(
@@ -731,6 +732,7 @@ Menu.Item = observer(
 
 const MenuURLButton = ({ href, params, icon }) => {
   const field = useField();
+  const schema = useFieldSchema();
   const { t } = useMenuTranslation();
   const Designer = useContext(MenuItemDesignerContext);
   const { parseURLAndParams } = useParseURLAndParams();
@@ -760,17 +762,7 @@ const MenuURLButton = ({ href, params, icon }) => {
       aria-label={t(field.title)}
     >
       <Icon type={icon} />
-      <span
-        style={{
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          display: 'inline-block',
-          width: '100%',
-          verticalAlign: 'middle',
-        }}
-      >
-        {t(field.title)}
-      </span>
+      <MenuItemTitleWithTooltip schema={schema} style={menuItemTitleStyle} />
       <Designer />
     </SortableItem>
   );
@@ -825,6 +817,7 @@ Menu.SubMenu = observer(
     const field = useField();
     const mode = useContext(MenuModeContext);
     const Designer = useContext(MenuItemDesignerContext);
+
     const submenu = useMemo(() => {
       return {
         ...others,
@@ -841,7 +834,10 @@ Menu.SubMenu = observer(
                 aria-label={t(field.title)}
               >
                 <Icon type={icon} />
-                {t(field.title)}
+                <MenuItemTitleWithTooltip
+                  schema={schema}
+                  style={{ display: 'inline-block', width: 'calc(100% - 50px)', marginInlineStart: 0 }}
+                />
                 <Designer />
               </SortableItem>
             </FieldContext.Provider>
