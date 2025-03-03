@@ -254,9 +254,11 @@ function getSubscriber(
             });
           });
         } else if (fieldName === 'dataSource') {
+          if (_.every(lastState?.value, (v) => v.value !== field.value)) {
+            field.value = null;
+          }
           field[fieldName] = lastState?.value;
           field.data = field.data || {};
-
           requestAnimationFrame(() => {
             field.setState((state) => {
               state[fieldName] = lastState?.value;
