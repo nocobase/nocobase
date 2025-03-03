@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useAPIClient, useActionContext, useRequest } from '@nocobase/client';
 import { useForm, useField } from '@formily/react';
 import { AutoComplete, Spin } from 'antd';
@@ -18,6 +18,7 @@ export const ModelSelect: React.FC = () => {
   const form = useForm();
   const api = useAPIClient();
   const ctx = useActionContext();
+  const [options, setOptions] = useState([]);
   const { data: models, loading } = useRequest<
     {
       label: string;
@@ -32,21 +33,35 @@ export const ModelSelect: React.FC = () => {
         })
         .then(
           (res) =>
-            res?.data?.data?.map(({ id }) => ({
-              label: id,
-              value: id,
-            })),
+            res?.data?.data?.map(
+              ({ id }) =>
+                ({
+                  label: id,
+                  value: id,
+                }) || [],
+            ),
         ),
     {
       ready: !!form.values?.llmService && ctx.visible,
       refreshDeps: [form.values?.llmService],
+      onSuccess: (data) => setOptions(data),
     },
   );
 
+  const handleSearch = (value: string) => {
+    if (!value) {
+      setOptions(models);
+    }
+    const searchOptions = models.filter((option) => {
+      return option.label.toLowerCase().includes(value.toLowerCase());
+    });
+    setOptions(searchOptions);
+  };
+
   return (
     <AutoComplete
-      showSearch={true}
-      options={models}
+      onSearch={handleSearch}
+      options={options}
       notFoundContent={loading ? <Spin size="small" /> : null}
       value={field.value}
       onChange={(val) => (field.value = val)}
