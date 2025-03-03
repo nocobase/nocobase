@@ -187,11 +187,15 @@ export class BaseAuth extends Auth {
         }
 
         const renewedResult = await this.tokenController.renew(jti);
-        this.ctx.logger.info('token renewed', {
-          method: 'auth.check',
-          url: this.ctx.originalUrl,
-          headers: JSON.stringify(this.ctx),
-        });
+        try {
+          this.ctx.logger.info('token renewed', {
+            method: 'auth.check',
+            url: this.ctx.originalUrl,
+            headers: JSON.stringify(this.ctx),
+          });
+        } catch (err) {
+          this.ctx.logger.error('token renewed log failed', { method: 'auth.check', error: JSON.stringify(err) });
+        }
         const expiresIn = Math.floor(tokenPolicy.tokenExpirationTime / 1000);
         const newToken = this.jwt.sign(
           { userId, roleName, temp, signInTime, iat: Math.floor(renewedResult.issuedTime / 1000) },
