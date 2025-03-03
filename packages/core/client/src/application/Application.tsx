@@ -28,7 +28,7 @@ import { WebSocketClient, WebSocketClientOptions } from './WebSocketClient';
 import { AppComponent, BlankComponent, defaultAppComponents } from './components';
 import { SchemaInitializer, SchemaInitializerManager } from './schema-initializer';
 import * as schemaInitializerComponents from './schema-initializer/components';
-import { SchemaSettings, SchemaSettingsManager, SchemaSettingsItemType } from './schema-settings';
+import { SchemaSettings, SchemaSettingsItemType, SchemaSettingsManager } from './schema-settings';
 
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
@@ -45,8 +45,8 @@ import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import type { Plugin } from './Plugin';
 import { getOperators } from './globalOperators';
-import type { RequireJS } from './utils/requirejs';
 import { useAclSnippets } from './hooks/useAclSnippets';
+import type { RequireJS } from './utils/requirejs';
 
 type JsonLogic = {
   addOperation: (name: string, fn?: any) => void;
@@ -106,6 +106,7 @@ export class Application {
   public schemaSettingsManager: SchemaSettingsManager;
   public dataSourceManager: DataSourceManager;
   public name: string;
+  public favicon: string;
   public globalVars: Record<string, any> = {};
   public jsonLogic: JsonLogic;
   loading = true;
@@ -125,6 +126,23 @@ export class Application {
 
   get isWsAuthorized() {
     return this.wsAuthorized;
+  }
+
+  updateFavicon(favicon?: string) {
+    let faviconLinkElement: HTMLLinkElement = document.querySelector('link[rel="shortcut icon"]');
+
+    if (favicon) {
+      this.favicon = favicon;
+    }
+
+    if (!faviconLinkElement) {
+      faviconLinkElement = document.createElement('link');
+      faviconLinkElement.rel = 'shortcut icon';
+      faviconLinkElement.href = this.favicon || '/favicon/favicon.ico';
+      document.head.appendChild(faviconLinkElement);
+    } else {
+      faviconLinkElement.href = this.favicon || '/favicon/favicon.ico';
+    }
   }
 
   setWsAuthorized(authorized: boolean) {
@@ -353,6 +371,7 @@ export class Application {
       console.error(error, this.error);
     }
     this.loading = false;
+    this.updateFavicon();
   }
 
   async loadWebSocket() {
