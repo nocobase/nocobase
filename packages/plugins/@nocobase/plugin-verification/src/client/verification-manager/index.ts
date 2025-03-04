@@ -25,7 +25,7 @@ export type BindFormProps = {
 
 export type VerificationTypeOptions = {
   components: {
-    AdminSettingsForm: ComponentType;
+    AdminSettingsForm?: ComponentType;
     VerificationForm: ComponentType<VerificationFormProps>;
     BindForm?: ComponentType<BindFormProps>;
   };
