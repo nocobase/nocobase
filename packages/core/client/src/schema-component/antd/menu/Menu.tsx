@@ -681,7 +681,7 @@ const menuItemTitleStyle = {
   display: 'inline-block',
   // width: '100%',
   verticalAlign: 'middle',
-  marginInlineEnd: '4px',
+  // marginInlineEnd: '4px',
 };
 
 Menu.Item = observer(
@@ -834,7 +834,7 @@ Menu.SubMenu = observer(
                 aria-label={t(field.title)}
               >
                 <Icon type={icon} />
-                <MenuItemTitleWithTooltip schema={schema} style={{ marginInlineStart: 0, marginInlineEnd: '4px' }} />
+                <MenuItemTitleWithTooltip schema={schema} style={{ marginInlineStart: 0 }} />
                 <Designer />
               </SortableItem>
             </FieldContext.Provider>

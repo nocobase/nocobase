@@ -115,7 +115,6 @@ export const tableColumnSettings = new SchemaSettings({
                     'x-component-props': columnSchema['x-component-props'],
                   },
                 });
-                dn.refresh();
               },
             };
           },

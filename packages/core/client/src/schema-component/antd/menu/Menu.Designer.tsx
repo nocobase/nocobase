@@ -433,24 +433,6 @@ export const MenuDesigner = () => {
   );
   const onEditTooltipSubmit: (values: any) => void = useCallback(
     ({ tooltip }) => {
-      const schema = {
-        ['x-uid']: fieldSchema['x-uid'],
-        'x-server-hooks': [
-          {
-            type: 'onSelfSave',
-            method: 'extractTextToLocale',
-          },
-        ],
-      };
-      field.componentProps.tooltip = tooltip;
-      fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-      fieldSchema['x-component-props']['tooltip'] = tooltip;
-      schema['x-component-props'] = fieldSchema['x-component-props'];
-      onSelect?.({ item: { props: { schema: fieldSchema } } });
-      dn.emit('patch', {
-        schema,
-      });
-
       // 更新菜单对应的路由
       if (fieldSchema['__route__']?.id) {
         updateRoute(fieldSchema['__route__'].id, {

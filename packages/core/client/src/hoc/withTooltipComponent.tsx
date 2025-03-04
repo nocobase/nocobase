@@ -36,7 +36,7 @@ export const withTooltipComponent = (Component: React.FC) => {
         <>
           <Component {...props} />
           <Tooltip title={tooltip}>
-            <QuestionCircleOutlined />
+            <QuestionCircleOutlined style={{ marginInlineStart: '4px' }} />
           </Tooltip>
         </>
       );
