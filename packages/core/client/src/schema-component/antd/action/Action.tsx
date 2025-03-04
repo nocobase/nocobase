@@ -47,6 +47,7 @@ import { ActionContextProvider } from './context';
 import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ActionContextProps, ActionProps, ComposedAction } from './types';
 import { linkageAction, setInitialActionState } from './utils';
+import debounce from 'lodash/debounce';
 
 const useA = () => {
   return {
@@ -522,7 +523,7 @@ const RenderButtonInner = observer(
     buttonStyle: React.CSSProperties;
     handleMouseEnter: (e: React.MouseEvent) => void;
     getAriaLabel: (postfix?: string) => string;
-    handleButtonClick: (e: React.MouseEvent) => void;
+    handleButtonClick: (e: React.MouseEvent, checkPortal?: boolean) => void;
     tarComponent: React.ElementType;
     componentCls: string;
     hashId: string;
@@ -558,6 +559,23 @@ const RenderButtonInner = observer(
       return null;
     }
 
+    const debouncedClick = useCallback(
+      debounce(
+        (e: React.MouseEvent, checkPortal = true) => {
+          handleButtonClick(e, checkPortal);
+        },
+        300,
+        { leading: true, trailing: false },
+      ),
+      [handleButtonClick],
+    );
+
+    useEffect(() => {
+      return () => {
+        debouncedClick.cancel();
+      };
+    }, []);
+
     const actionTitle = title || field?.title;
 
     return (
@@ -571,7 +589,7 @@ const RenderButtonInner = observer(
         icon={typeof icon === 'string' ? <Icon type={icon} /> : icon}
         disabled={disabled}
         style={buttonStyle}
-        onClick={handleButtonClick}
+        onClick={debouncedClick}
         component={tarComponent || Button}
         className={classnames(componentCls, hashId, className, 'nb-action')}
         type={type === 'danger' ? undefined : type}
