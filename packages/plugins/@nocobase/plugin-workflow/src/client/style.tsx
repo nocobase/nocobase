@@ -348,6 +348,8 @@ const useStyles = createStyles(({ css, token }) => {
         max-width: 14em;
         overflow: hidden;
         text-overflow: ellipsis;
+        display: inline-flex;
+        align-items: center;
       }
 
       .workflow-node-id {
