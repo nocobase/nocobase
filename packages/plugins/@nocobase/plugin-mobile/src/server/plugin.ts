@@ -112,21 +112,20 @@ export class PluginMobileServer extends Plugin {
           parentId: ctx.action.params.values,
         },
       });
-      if (tabs.length > 1 || !tabs[0].hidden) {
-        return;
-      }
-      const repository = this.app.db.getRepository('rolesMobileRoutes');
-      const whereOrValues = {
-        roleName: ctx.action.params.associatedIndex,
-        mobileRouteId: tabs[0].id,
-      };
-      const rolesMobileRoute = await repository.findOne({ where: whereOrValues });
+      if (tabs.length === 1 && tabs[0].hidden) {
+        const repository = this.app.db.getRepository('rolesMobileRoutes');
+        const whereOrValues = {
+          roleName: ctx.action.params.associatedIndex,
+          mobileRouteId: tabs[0].id,
+        };
+        const rolesMobileRoute = await repository.findOne({ where: whereOrValues });
 
-      if (actionName === 'add') {
-        !rolesMobileRoute && (await repository.create({ values: whereOrValues }));
-      }
-      if (actionName === 'remove') {
-        rolesMobileRoute && (await repository.destroy({ filter: whereOrValues }));
+        if (actionName === 'add') {
+          !rolesMobileRoute && (await repository.create({ values: whereOrValues }));
+        }
+        if (actionName === 'remove') {
+          rolesMobileRoute && (await repository.destroy({ filter: whereOrValues }));
+        }
       }
     };
     this.app.resourceManager.registerActionHandlers({
