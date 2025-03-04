@@ -7,13 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema, SchemaSettingsModalItem } from '@nocobase/client';
+import { ISchema, SchemaSettingsModalItem, useResource } from '@nocobase/client';
 import React from 'react';
 import { useT } from '../locale';
-import { useFieldSchema } from '@formily/react';
-import { useAPIClient } from '@nocobase/client';
+import { useFieldSchema, useField, useForm } from '@formily/react';
+import { useAPIClient, usePlugin, useDesignable } from '@nocobase/client';
 import { uid } from '@nocobase/utils/client';
 import { App } from 'antd';
+import { PluginBlockTemplateClient } from '../index';
+import { blockKeepProps } from '../initializers/TemplateBlockInitializer';
+import _ from 'lodash';
+import { addToolbarClass, syncExtraTemplateInfo } from '../utils/template';
+import { useBlockTemplateMenus } from './BlockTemplateMenusProvider';
 
 const blockDecoratorMenuMaps = {
   TableBlockProvider: ['Table', 'table'],
@@ -31,9 +36,15 @@ const blockDecoratorMenuMaps = {
 export const SaveAsTemplateSetting = () => {
   const t = useT();
   const fieldSchema = useFieldSchema();
+  const field = useField();
+  const { refresh } = useDesignable();
+  const form = useForm();
   const api = useAPIClient();
+  const blockTemplatesResource = useResource('blockTemplates');
   const blockId = uid();
   const { message } = App.useApp();
+  const plugin = usePlugin(PluginBlockTemplateClient);
+  const { templates } = useBlockTemplateMenus();
 
   return (
     <SchemaSettingsModalItem
@@ -75,7 +86,8 @@ export const SaveAsTemplateSetting = () => {
         const type = window.location.pathname.startsWith('/m/') ? 'Mobile' : 'Desktop';
         const schemaUid = uid();
         const isMobile = type === 'Mobile';
-        const schema = {
+        const templateSchema = getTemplateSchemaFromPage(fieldSchema.toJSON());
+        const schemaOfTemplate = {
           type: 'void',
           name: key,
           'x-uid': `template-${schemaUid}`,
@@ -118,25 +130,30 @@ export const SaveAsTemplateSetting = () => {
           },
         };
         const menuInfo = blockDecoratorMenuMaps[fieldSchema['x-decorator']];
-        await api.resource('blockTemplates').create({
-          values: {
-            title,
-            key,
-            description,
-            uid: schemaUid,
-            configured: true,
-            collection: fieldSchema['x-decorator-props']?.collection,
-            dataSource: fieldSchema['x-decorator-props']?.dataSource,
-            componentType: menuInfo[0],
-            menu: menuInfo[1],
-          },
-        });
-        await api.resource('uiSchemas').insert({ values: schema });
+        const newTemplate = {
+          title,
+          key,
+          description,
+          uid: schemaUid,
+          configured: true,
+          collection: fieldSchema['x-decorator-props']?.collection,
+          dataSource: fieldSchema['x-decorator-props']?.dataSource,
+          componentType: menuInfo[0],
+          menuName: menuInfo[1],
+        };
+        // step 1: create a template
+        await api.resource('blockTemplates').create({ values: newTemplate });
+        templates.push(newTemplate);
+        plugin.templateInfos.set(key, newTemplate);
+        // step 2: create a template blcok schema
+        await api.resource('uiSchemas').insert({ values: schemaOfTemplate });
+        plugin.setTemplateCache(templateSchema);
+
         await api.request({
           url: `/uiSchemas:insertAdjacent/${blockId}?position=beforeEnd`,
           method: 'POST',
           data: {
-            schema: fieldSchema.toJSON(),
+            schema: templateSchema,
             wrap: {
               name: uid(),
               type: 'void',
@@ -152,8 +169,122 @@ export const SaveAsTemplateSetting = () => {
             },
           },
         });
+        // this is a hack to make the schema component refresh to the new schema
+        const schema = fieldSchema.toJSON();
+        const fillTemplateInfo = (s: ISchema, t: ISchema) => {
+          if (!t) {
+            return;
+          }
+          s['x-block-template-key'] = key;
+          s['x-template-uid'] = templateSchema['x-uid'];
+          if (t.properties) {
+            for (const key in t.properties) {
+              fillTemplateInfo(s.properties[key], t.properties[key]);
+            }
+          }
+        };
+        const keepProps = [
+          'x-uid',
+          'version',
+          'x-template-uid',
+          'x-block-template-key',
+          'x-template-root-uid',
+          ...blockKeepProps,
+        ];
+        const getAllSchemas = (s: ISchema) => {
+          const sKeys = Object.keys(s);
+          const omitProps = _.reduce(
+            sKeys,
+            (acc, key) => {
+              acc[key] = null;
+              return acc;
+            },
+            {},
+          );
+          const ret = [{ ...omitProps, ..._.pick(s, keepProps) }];
+          if (s.properties) {
+            for (const key in s.properties) {
+              ret.push(...getAllSchemas(s.properties[key]));
+            }
+          }
+          return ret;
+        };
+
+        schema['x-template-root-uid'] = templateSchema['x-uid'];
+        schema['x-block-template-key'] = key;
+        schema['x-index'] = fieldSchema['x-index'];
+        fillTemplateInfo(schema, templateSchema);
+
+        // step 3: batchpatch the schema for sync with template
+        await api.request({
+          url: `/uiSchemas:batchPatch`,
+          method: 'POST',
+          data: getAllSchemas(schema),
+        });
+        // step 4: create a link between template and block
+        await blockTemplatesResource.create({
+          values: {
+            templateKey: key,
+            templateBlockUid: templateSchema['x-uid'],
+            blockUid: fieldSchema['x-uid'],
+          },
+        });
+
+        fieldSchema.toJSON = () => {
+          addToolbarClass(schema);
+          syncExtraTemplateInfo(schema, plugin.templateInfos, plugin.savedSchemaUids);
+          return schema;
+        };
+        refresh({ refreshParentSchema: true });
+        // set componentProps, otherwise some components props will not be refreshed
+        field['componentProps'] = {
+          ...templateSchema['x-component-props'],
+          key: uid(),
+        };
+        if (field.parent?.['componentProps']) {
+          field.parent['componentProps'] = {
+            ...field.parent['componentProps'],
+            key: uid(),
+          };
+        }
+        // set decoratorProps, otherwise title will not be refreshed
+        field['decoratorProps'] = {
+          ...field['decoratorProps'],
+          ...templateSchema['x-decorator-props'],
+          key: uid(),
+        };
+        if (field.parent?.['decoratorProps']) {
+          field.parent['decoratorProps'] = {
+            ...field.parent['decoratorProps'],
+            key: uid(),
+          };
+        }
+        form.reset();
+        form.clearFormGraph('*', false);
         message.success(t('Save as template successfully'));
       }}
     />
   );
 };
+
+function getTemplateSchemaFromPage(schema: ISchema) {
+  const templateSchema = {};
+  const traverseSchema = (s: ISchema, t: ISchema) => {
+    if (s['x-template-root-uid']) {
+      return;
+    }
+    _.merge(t, _.omit(s, ['x-uid', 'properties']));
+    t['x-uid'] = uid();
+    if (s.properties) {
+      for (const key in s.properties) {
+        if (s.properties[key]['x-template-root-uid']) {
+          continue;
+        }
+        _.set(t, `properties.${key}`, {});
+        traverseSchema(s.properties[key], t.properties[key]);
+      }
+    }
+  };
+  traverseSchema(schema, templateSchema);
+  return templateSchema;
+}
