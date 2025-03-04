@@ -19,6 +19,7 @@
     "@nocobase/plugin-audit-logs": "1.6.0-alpha.29",
     "@nocobase/plugin-auth": "1.6.0-alpha.29",
     "@nocobase/plugin-auth-sms": "1.6.0-alpha.29",
+    "@nocobase/plugin-ai": "1.6.0-alpha.16",
     "@nocobase/plugin-backup-restore": "1.6.0-alpha.29",
     "@nocobase/plugin-block-iframe": "1.6.0-alpha.29",
     "@nocobase/plugin-block-template": "1.6.0-alpha.29",
