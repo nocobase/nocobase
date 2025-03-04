@@ -25,6 +25,7 @@ import {
   useCompile,
   useCurrentPageUid,
   useCurrentRouteData,
+  useGlobalTheme,
   useNavigateNoUpdate,
   useNocoBaseRoutes,
   useToken,
@@ -607,13 +608,13 @@ export const MenuSchemaToolbar: FC<{ container?: HTMLElement }> = (props) => {
  * @returns
  */
 export const ResetThemeTokenAndKeepAlgorithm: FC = (props) => {
-  const { theme } = useToken() as any;
+  const { theme } = useGlobalTheme();
 
   return (
     <ConfigProvider
       theme={{
+        ...theme,
         inherit: false,
-        algorithm: theme.derivatives,
       }}
     >
       {props.children}

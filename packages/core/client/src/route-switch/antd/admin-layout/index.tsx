@@ -11,7 +11,7 @@ import { EllipsisOutlined } from '@ant-design/icons';
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
-import { Popover, Tooltip } from 'antd';
+import { ConfigProvider, Popover, Tooltip } from 'antd';
 import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
@@ -29,6 +29,7 @@ import {
   RemoteSchemaTemplateManagerProvider,
   SortableItem,
   useDesignable,
+  useGlobalTheme,
   useMenuDragEnd,
   useParseURLAndParams,
   useRequest,
@@ -485,7 +486,6 @@ const headerRender = (props: HeaderViewProps, defaultDom: React.ReactNode) => {
 
 export const InternalAdminLayout = () => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
-  const { render: renderInitializer } = useSchemaInitializerRender(menuItemInitializer);
   const { designable } = useDesignable();
   const location = useLocation();
   const { onDragEnd } = useMenuDragEnd();
@@ -496,9 +496,9 @@ export const InternalAdminLayout = () => {
   const route = useMemo(() => {
     return {
       path: '/',
-      children: convertRoutesToLayout(allAccessRoutes, { renderInitializer, designable, isMobile }),
+      children: convertRoutesToLayout(allAccessRoutes, { designable, isMobile }),
     };
-  }, [allAccessRoutes, renderInitializer, designable, isMobile]);
+  }, [allAccessRoutes, designable, isMobile]);
   const layoutToken = useMemo(() => {
     return {
       header: {
@@ -732,19 +732,22 @@ const MenuItemIcon: FC<{ icon: string; title: string }> = (props) => {
   );
 };
 
-function convertRoutesToLayout(
-  routes: NocoBaseDesktopRoute[],
-  { renderInitializer, designable, parentRoute, isMobile, depth = 0 }: any,
-) {
+const MenuDesignerButton: FC<{ testId: string }> = (props) => {
+  const { render: renderInitializer } = useSchemaInitializerRender(menuItemInitializer);
+
+  return renderInitializer({
+    style: { background: 'none' },
+    'data-testid': props.testId,
+  });
+};
+
+function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { designable, parentRoute, isMobile, depth = 0 }: any) {
   if (!routes) return;
 
   const getInitializerButton = (testId: string) => {
     return {
       key: 'x-designer-button',
-      name: renderInitializer({
-        style: { background: 'none' },
-        'data-testid': testId,
-      }),
+      name: <MenuDesignerButton testId={testId} />,
       path: '/',
       disabled: true,
       icon: <Icon type="setting" />,
@@ -776,9 +779,7 @@ function convertRoutesToLayout(
     }
 
     if (item.type === NocoBaseDesktopRouteType.group) {
-      const children =
-        convertRoutesToLayout(item.children, { renderInitializer, designable, parentRoute: item, depth: depth + 1 }) ||
-        [];
+      const children = convertRoutesToLayout(item.children, { designable, parentRoute: item, depth: depth + 1 }) || [];
 
       // add a designer button
       if (designable && depth === 0) {
