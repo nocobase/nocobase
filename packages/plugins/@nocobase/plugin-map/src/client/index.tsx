@@ -13,9 +13,10 @@ import { MapBlockOptions } from './block';
 import { mapActionInitializers, mapActionInitializers_deprecated } from './block/MapActionInitializers';
 import { mapBlockSettings } from './block/MapBlock.Settings';
 import { useMapBlockProps } from './block/MapBlockProvider';
-// import { Configuration, Map } from './components';
-import { lazy } from '@nocobase/client';
-const { Configuration, Map } = lazy(() => import('./components'), 'Configuration', 'Map');
+import { Configuration, Map } from './components';
+
+// 懒加载会把 Map.Designer 的值变成 undefined，进而导致地图字段不显示 settings
+// const { Configuration, Map } = lazy(() => import('./components'), 'Configuration', 'Map');
 
 import { fields } from './fields';
 import { fieldSettingsComponentMap } from './fields/fieldSettingsComponentMap';
