@@ -25,6 +25,7 @@ import {
   CurrentTabUidContext,
   useCurrentSearchParams,
   useCurrentTabUid,
+  useLocationNoUpdate,
   useNavigateNoUpdate,
   useRouterBasename,
 } from '../../../application/CustomRouterContextProvider';
@@ -202,6 +203,7 @@ const InternalPageContent = (props: PageContentProps) => {
   const { loading, disablePageHeader, enablePageTabs, activeKey } = props;
   const currentRoute = useCurrentRouteData();
   const navigate = useNavigateNoUpdate();
+  const location = useLocationNoUpdate();
 
   const children = currentRoute?.children || [];
   const noTabs = children.every((tabRoute) => tabRoute.schemaUid !== activeKey && tabRoute.tabSchemaName !== activeKey);
@@ -213,7 +215,7 @@ const InternalPageContent = (props: PageContentProps) => {
   // 兼容旧版本的 tab 路径
   const oldTab = currentRoute?.children?.find((tabRoute) => tabRoute.tabSchemaName === activeKey);
   if (oldTab) {
-    navigate(`/admin/${currentRoute.schemaUid}/tabs/${oldTab.schemaUid}`);
+    navigate(location.pathname.replace(activeKey, oldTab.schemaUid));
     return null;
   }
 
