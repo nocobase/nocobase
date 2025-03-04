@@ -356,13 +356,20 @@ export class ACL extends EventEmitter {
 
       ctx.can = (options: Omit<CanArgs, 'role'>) => {
         const roles = ctx.state.currentRoles || [roleName];
-        for (const role of roles) {
-          const canResult = acl.can({ role, ...options });
-          if (canResult) {
-            return canResult;
-          }
+        const results = roles.map((role) => acl.can({ role, ...options })).filter(Boolean);
+
+        if (!results.length) {
+          return null;
         }
-        return null;
+
+        if (!results.some((r) => r.params)) {
+          return results[0];
+        }
+
+        const allFields = [...new Set(results.flatMap((r) => r.params?.fields || []))];
+        const firstCanResult = { ...results[0], params: { ...results[0].params, fields: allFields } };
+
+        return firstCanResult;
       };
 
       ctx.permission = {

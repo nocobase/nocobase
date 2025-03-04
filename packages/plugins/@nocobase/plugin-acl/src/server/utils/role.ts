@@ -55,8 +55,15 @@ function mergeRoleStrategy(sourceStrategy, newStrategy) {
 }
 
 function mergeRoleActions(sourceActions, newActions) {
-  // 不同参数的合并策略不一样，先简单处理
-  return _.merge(sourceActions, newActions);
+  if (!sourceActions) return newActions;
+  if (!newActions) return sourceActions;
+
+  // 不同参数的合并策略不一样，只合并 fields
+  return _.mergeWith(sourceActions, newActions, (sourceVal, newVal, key) => {
+    if (Array.isArray(sourceVal) && Array.isArray(newVal) && key === 'fields') {
+      return [...new Set([...sourceVal, ...newVal])];
+    }
+  });
 }
 
 function mergeRoleSnippets(allRoleSnippets: string[][]): string[] {
