@@ -241,9 +241,7 @@ function getSubscriber(
         }
       } else if (fieldName === 'initialValue') {
         if (stateList.length > 1) {
-          if (!field.value) {
-            field.value = undefined;
-          }
+          field.value = undefined;
           field.initialValue = lastState.value;
         }
       } else {
