@@ -46,7 +46,7 @@ export const useValues = (options) => {
       const operators = option?.operators;
       field.data.operators = operators?.filter((v) => {
         if (dataIndex.length > 1) {
-          return v.value !== 'value';
+          return !['value', 'dateScope'].includes(v.value);
         }
         return true;
       });
