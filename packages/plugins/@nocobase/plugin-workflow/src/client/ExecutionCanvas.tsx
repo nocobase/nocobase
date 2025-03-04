@@ -14,12 +14,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   ActionContextProvider,
   cx,
+  Input,
   SchemaComponent,
   useAPIClient,
   useApp,
   useCompile,
   useDocumentTitle,
   usePlugin,
+  useRequest,
   useResourceActionContext,
 } from '@nocobase/client';
 import { str2moment } from '@nocobase/utils/client';
@@ -34,6 +36,7 @@ import { FlowContext, useFlowContext } from './FlowContext';
 import { lang, NAMESPACE } from './locale';
 import useStyles from './style';
 import { getWorkflowDetailPath, getWorkflowExecutionsPath, linkNodes } from './utils';
+import { get } from 'lodash';
 
 function attachJobs(nodes, jobs: any[] = []): void {
   const nodesMap = new Map();
@@ -56,6 +59,23 @@ function attachJobs(nodes, jobs: any[] = []): void {
   });
 }
 
+function JobResult(props) {
+  const { viewJob } = useFlowContext();
+  const { data, loading } = useRequest({
+    resource: 'jobs',
+    action: 'get',
+    params: {
+      filterByTk: viewJob.id,
+    },
+  });
+
+  if (loading) {
+    return <Spin />;
+  }
+  const result = get(data, 'data.result');
+  return <Input.JSON {...props} value={result} disabled />;
+}
+
 function JobModal() {
   const { instructions } = usePlugin(WorkflowPlugin);
   const compile = useCompile();
@@ -68,6 +88,9 @@ function JobModal() {
   return (
     <ActionContextProvider value={{ visible: Boolean(job), setVisible: setViewJob }}>
       <SchemaComponent
+        components={{
+          JobResult,
+        }}
         schema={{
           type: 'void',
           properties: {
@@ -108,7 +131,7 @@ function JobModal() {
                   type: 'object',
                   title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
                   'x-decorator': 'FormItem',
-                  'x-component': 'Input.JSON',
+                  'x-component': 'JobResult',
                   'x-component-props': {
                     className: styles.nodeJobResultClass,
                     autoSize: {
@@ -116,8 +139,6 @@ function JobModal() {
                       maxRows: 32,
                     },
                   },
-                  // 'x-read-pretty': true,
-                  'x-disabled': true,
                 },
               },
             },
