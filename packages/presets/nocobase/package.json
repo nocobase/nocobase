@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/preset-nocobase",
-  "version": "1.6.0-beta.15",
+  "version": "1.6.0-beta.16",
   "license": "AGPL-3.0",
   "main": "./lib/server/index.js",
   "dependencies": {
