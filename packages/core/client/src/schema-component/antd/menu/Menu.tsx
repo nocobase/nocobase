@@ -97,7 +97,7 @@ const subMenuDesignerCss = css`
 const designerCss = css`
   position: relative;
   display: flex;
-  justify-content: center;
+  // justify-content: center;
   align-items: center;
   margin-left: -20px;
   margin-right: -20px;
@@ -679,7 +679,7 @@ const menuItemTitleStyle = {
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   display: 'inline-block',
-  width: '100%',
+  // width: '100%',
   verticalAlign: 'middle',
   marginInlineEnd: '4px',
 };
@@ -834,10 +834,7 @@ Menu.SubMenu = observer(
                 aria-label={t(field.title)}
               >
                 <Icon type={icon} />
-                <MenuItemTitleWithTooltip
-                  schema={schema}
-                  style={{ display: 'inline-block', width: 'calc(100% - 50px)', marginInlineStart: 0 }}
-                />
+                <MenuItemTitleWithTooltip schema={schema} style={{ marginInlineStart: 0, marginInlineEnd: '4px' }} />
                 <Designer />
               </SortableItem>
             </FieldContext.Provider>
