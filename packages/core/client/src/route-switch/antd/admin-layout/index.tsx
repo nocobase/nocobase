@@ -165,21 +165,6 @@ const layoutContentClass = css`
   }
 `;
 
-const style1: any = {
-  position: 'relative',
-  width: '100%',
-  height: '100%',
-  display: 'flex',
-};
-
-const style2: any = {
-  position: 'relative',
-  zIndex: 1,
-  flex: '1 1 auto',
-  display: 'flex',
-  height: '100%',
-};
-
 const className1 = css`
   width: 168px;
   margin-right: 4px;
@@ -202,16 +187,6 @@ const className3 = css`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-`;
-const className4 = css`
-  flex: 1 1 auto;
-  width: 0;
-`;
-const className5 = css`
-  position: relative;
-  flex-shrink: 0;
-  height: 100%;
-  z-index: 10;
 `;
 
 const pageContentStyle: React.CSSProperties = {
