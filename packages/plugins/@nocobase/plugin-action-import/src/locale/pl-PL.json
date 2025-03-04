@@ -10,7 +10,7 @@
   "Step 2: Upload Excel": "Krok 2: Prześlij plik Excela",
   "Step 3: Import options": "Krok 3: Opcje importu",
   "Download tips": "- Pobierz szablon i uzupełnij dane zgodnie z formatem \r\n - Importuj tylko pierwszą zakładkę \r\n - Nie zmieniaj nagłówków szablonu, aby uniknąć błędów podczas importu",
-  "Import warnings": "Możesz zaimportować maksymalnie {{limit}} wierszy danych jednocześnie, nadmiarowe wiersze zostaną zignorowane.",
+  "Import warnings": "Możesz wykonać import zgodnie ze zdefiniowanym formatem danych.",
   "Upload placeholder": "Przeciągnij i upuść plik tutaj lub kliknij, aby przesłać. Maksymalny rozmiar pliku to 80 MB",
   "Excel data importing": "Importowanie danych z Excela",
   "{{successCount}} records have been successfully imported": "{{successCount}} rekordów zostało pomyślnie zaimportowanych",
