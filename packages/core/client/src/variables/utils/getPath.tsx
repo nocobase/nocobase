@@ -6,7 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
+import { extractTemplateVariable } from '@nocobase/json-template-parser';
 import { REGEX_OF_VARIABLE } from './isVariable';
 
 /**
@@ -20,6 +20,6 @@ export const getPath = (variableString: string) => {
     return variableString;
   }
 
-  const matches = variableString.match(REGEX_OF_VARIABLE);
-  return matches[0].replace(REGEX_OF_VARIABLE, '$1');
+  const variable = extractTemplateVariable(variableString);
+  return variable;
 };

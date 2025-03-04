@@ -18,9 +18,15 @@ type Filter = {
   args: string[];
 };
 
+export function extractTemplateVariable(template: string) {
+  const escapedTemplate = escape(template ?? '');
+  const fullVariable = engine.fullVariablesSync(escapedTemplate)[0] ?? '';
+  return revertEscape(fullVariable);
+}
+
 export function extractTemplateElements(template: string) {
   const escapedTemplate = escape(template ?? '');
-  const fullVariable = engine.fullVariablesSync(escapeSpecialChars(escapedTemplate))[0] ?? '';
+  const fullVariable = engine.fullVariablesSync(escapedTemplate)[0] ?? '';
   const variableSegments = engine.variableSegmentsSync(escapedTemplate)[0] ?? [];
   const parsedTemplate = engine.parse(escapedTemplate)[0] ?? {};
 
