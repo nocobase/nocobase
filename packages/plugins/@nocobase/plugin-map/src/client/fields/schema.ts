@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema } from '@formily/react';
 import { CollectionFieldInterface, interfacesProperties } from '@nocobase/client';
 import { MapTypes } from '../constants';
 import { generateNTemplate } from '../locale';
@@ -53,11 +52,4 @@ export class CommonSchema extends CollectionFieldInterface {
       enum: MapTypes,
     },
   };
-  schemaInitialize(schema: ISchema, { block }) {
-    if (block === 'Form') {
-      Object.assign(schema, {
-        'x-designer': 'Map.Designer',
-      });
-    }
-  }
 }
