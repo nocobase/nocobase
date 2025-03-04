@@ -32,7 +32,9 @@ export class PluginAIServer extends Plugin {
       actions: ['ai:*', 'llmServices:*'],
     });
     const workflowSnippet = this.app.acl.snippetManager.snippets.get('pm.workflow.workflows');
-    workflowSnippet.actions.push('ai:listModels');
+    if (workflowSnippet) {
+      workflowSnippet.actions.push('ai:listModels');
+    }
 
     const workflow = this.app.pm.get('workflow') as PluginWorkflowServer;
     workflow.registerInstruction('llm', LLMInstruction);
