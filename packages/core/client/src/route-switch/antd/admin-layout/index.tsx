@@ -55,7 +55,7 @@ export { KeepAlive, NocoBaseDesktopRouteType };
 export const NocoBaseRouteContext = createContext<NocoBaseDesktopRoute | null>(null);
 NocoBaseRouteContext.displayName = 'NocoBaseRouteContext';
 
-const CurrentRouteProvider: FC<{ uid: string }> = ({ children, uid }) => {
+export const CurrentRouteProvider: FC<{ uid: string }> = ({ children, uid }) => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const routeNode = useMemo(() => findRouteBySchemaUid(uid, allAccessRoutes), [uid, allAccessRoutes]);
   return <NocoBaseRouteContext.Provider value={routeNode}>{children}</NocoBaseRouteContext.Provider>;
