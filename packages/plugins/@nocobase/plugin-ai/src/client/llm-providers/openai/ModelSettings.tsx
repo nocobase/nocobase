@@ -36,6 +36,7 @@ const Options: React.FC = () => {
               <SchemaComponent
                 schema={{
                   type: 'void',
+                  name: 'openai',
                   properties: {
                     frequencyPenalty: {
                       title: tval('Frequency penalty', { ns: namespace }),

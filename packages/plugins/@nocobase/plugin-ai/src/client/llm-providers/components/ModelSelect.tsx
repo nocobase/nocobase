@@ -49,8 +49,13 @@ export const ModelSelect: React.FC = () => {
   );
 
   const handleSearch = (value: string) => {
+    if (!models) {
+      setOptions([]);
+      return;
+    }
     if (!value) {
       setOptions(models);
+      return;
     }
     const searchOptions = models.filter((option) => {
       return option.label.toLowerCase().includes(value.toLowerCase());

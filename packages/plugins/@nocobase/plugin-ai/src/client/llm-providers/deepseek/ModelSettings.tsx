@@ -36,6 +36,7 @@ const Options: React.FC = () => {
               <SchemaComponent
                 schema={{
                   type: 'void',
+                  name: 'deepseek',
                   properties: {
                     frequencyPenalty: {
                       title: tval('Frequency penalty', { ns: namespace }),
