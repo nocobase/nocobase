@@ -18,7 +18,7 @@ export abstract class LLMProvider {
   modelOptions: Record<string, any>;
   messages: any[];
   chatModel: any;
-  chatHandlers = new Map<string, () => Promise<void>>();
+  chatHandlers = new Map<string, () => Promise<void> | void>();
 
   abstract createModel(): BaseChatModel;
 
@@ -41,7 +41,7 @@ export abstract class LLMProvider {
     }
   }
 
-  registerChatHandler(name: string, handler: () => Promise<void>) {
+  registerChatHandler(name: string, handler: () => Promise<void> | void) {
     this.chatHandlers.set(name, handler.bind(this));
   }
 
