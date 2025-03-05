@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, useACLRoleContext } from '@nocobase/client';
-import ignore from 'ignore';
+import { Plugin } from '@nocobase/client';
 import { DesktopRoutesManager } from './DesktopRoutesManager';
 import { lang as t } from './locale';
 import { MobileRoutesManager } from './MobileRoutesManager';
