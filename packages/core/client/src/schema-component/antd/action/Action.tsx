@@ -12,6 +12,7 @@ import { observer, Schema, useField, useFieldSchema, useForm } from '@formily/re
 import { isPortalInBody } from '@nocobase/utils/client';
 import { App, Button } from 'antd';
 import classnames from 'classnames';
+import debounce from 'lodash/debounce';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
@@ -47,7 +48,6 @@ import { ActionContextProvider } from './context';
 import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ActionContextProps, ActionProps, ComposedAction } from './types';
 import { linkageAction, setInitialActionState } from './utils';
-import debounce from 'lodash/debounce';
 
 const useA = () => {
   return {
@@ -589,7 +589,7 @@ const RenderButtonInner = observer(
         icon={typeof icon === 'string' ? <Icon type={icon} /> : icon}
         disabled={disabled}
         style={buttonStyle}
-        onClick={debouncedClick}
+        onClick={process.env.__E2E__ ? handleButtonClick : debouncedClick} // E2E 中的点击操作都是很快的，如果加上 debounce 会导致 E2E 测试失败
         component={tarComponent || Button}
         className={classnames(componentCls, hashId, className, 'nb-action')}
         type={type === 'danger' ? undefined : type}
