@@ -26,19 +26,16 @@ export function mergeAclActionParams(sourceParams, targetParams) {
       }
       const xHasOr = _.has(x, '$or'),
         yHasOr = _.has(y, '$or');
+      let $or = [x, y];
       if (xHasOr && !yHasOr) {
-        return { $or: [...x.$or, y] };
+        $or = [...x.$or, y];
+      } else if (!xHasOr && yHasOr) {
+        $or = [x, ...y.$or];
+      } else if (xHasOr && yHasOr) {
+        $or = [...x.$or, ...y.$or];
       }
 
-      if (!xHasOr && yHasOr) {
-        return { $or: [x, ...y.$or] };
-      }
-
-      if (xHasOr && yHasOr) {
-        return { $or: [...x.$or, ...y.$or] };
-      }
-
-      return { $or: [x, y] };
+      return { $or: _.uniqWith($or, _.isEqual) };
     },
     fields: 'union',
     whitlist: 'union',
@@ -50,7 +47,7 @@ export function mergeAclActionParams(sourceParams, targetParams) {
 function adaptAssignParams(source, target, keys: string[]) {
   for (const key of keys) {
     if (_.has(source, key) && !_.has(target, key)) {
-      delete source.fields;
+      delete source[key];
     }
   }
 }

@@ -28,7 +28,6 @@ export function mergeRole(roles) {
     actions: null,
     resources: null,
   };
-  const allSnippets: string[][] = [];
   for (const role of roles) {
     const jsonRole = role.toJSON();
     result.strategy = mergeRoleStrategy(result.strategy, jsonRole.strategy);
