@@ -40,6 +40,9 @@ const formItemWrapCss = css`
 `;
 
 const formItemLabelCss = css`
+  .ant-card-body {
+    padding: 0px !important;
+  }
   > .ant-formily-item-label {
     display: none;
   }
