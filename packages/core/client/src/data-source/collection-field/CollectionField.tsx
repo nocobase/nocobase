@@ -109,6 +109,8 @@ const CollectionFieldInternalField = (props) => {
       field.readPretty = true;
     }
   }, [field, fieldSchema]);
+  field.data = field.data || {};
+  field.data.dataSource = uiSchema.enum;
 
   if (!uiSchema) return null;
 
