@@ -69,6 +69,7 @@ export const DateScopeComponent = (props) => {
           form={form}
           record={record}
           noDisabled={true}
+          style={{ minWidth: '250px' }}
           renderSchemaComponent={renderSchemaComponent}
         />
       );
@@ -81,12 +82,25 @@ export const DateScopeComponent = (props) => {
       <SchemaComponent
         schema={{
           type: 'object',
-
+          'x-component': 'FormLayout',
+          'x-component-props': {
+            layout: 'horizontal',
+            labelStyle: {
+              marginTop: '6px',
+            },
+            labelCol: 2,
+            wrapperCol: 24,
+          },
           properties: {
             _minDate: {
               type: 'string',
-              title: '{{t("MinDate")}}',
+              title: '{{t("Min")}}',
               'x-decorator': 'FormItem',
+              'x-decorator-props': {
+                labelCol: 4,
+                wrapperCol: 20,
+                labelAlign: 'left',
+              },
               'x-component': Component,
               'x-component-props': {
                 name: '_minDate',
@@ -96,8 +110,13 @@ export const DateScopeComponent = (props) => {
             },
             _maxDate: {
               type: 'string',
-              title: '{{t("MaxDate")}}',
+              title: '{{t("Max")}}',
               'x-decorator': 'FormItem',
+              'x-decorator-props': {
+                labelCol: 4,
+                wrapperCol: 20,
+                labelAlign: 'left',
+              },
               'x-component': Component,
               'x-component-props': {
                 name: '_maxDate',

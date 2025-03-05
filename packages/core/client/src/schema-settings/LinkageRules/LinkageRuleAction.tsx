@@ -57,7 +57,7 @@ export const FormFieldLinkageRuleAction = observer(
               .ant-space-item {
                 max-width: 95%;
                 display: inline-block;
-                margin: 2px;
+                margin: 2px 6px;
                 vertical-align: top;
               }
             `}
