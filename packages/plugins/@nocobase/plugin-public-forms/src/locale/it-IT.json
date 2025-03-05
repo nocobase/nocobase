@@ -1,0 +1,18 @@
+{
+  "Enable form": "Abilita modulo",
+  "Public forms": "Moduli pubblici",
+  "Add New": "Aggiungi",
+  "Type": "Tipo",
+  "Open form": "Apri modulo pubblico",
+  "Set password": "Imposta password",
+  "Copy link": "Copia link",
+  "QR code": "Codice QR",
+  "The form is not enabled and cannot be accessed": "Il modulo non è abilitato e non è accessibile",
+  "Link copied successfully": "Link copiato con successo",
+  "After successful submission": "Dopo l'invio riuscito",
+  "Enable password": "Abilita password",
+  "Prompt after successful submission": "Messaggio di avviso dopo l'invio riuscito",
+  "Form": "Modulo normale",
+  "# Submitted successfully!\nThis is a demo text, **supports Markdown syntax**.": "# Inviato con successo!\nQuesto è un testo dimostrativo, **supporta la sintassi Markdown**.",
+  "The form is not found": "Modulo non trovato"
+}

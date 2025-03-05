@@ -1,0 +1,22 @@
+{
+  "Email": "Email",
+  "From": "Da",
+  "To": "A",
+  "CC": "CC",
+  "BCC": "BCC",
+  "Add email address": "Aggiungi indirizzo email",
+  "Subject": "Oggetto",
+  "Content": "Contenuto",
+  "Host": "Host",
+  "Port": "Porta",
+  "Secure": "Sicuro",
+  "Account": "Account",
+  "Password": "Password",
+  "Configure": "Configura",
+  "The email address that will be used as the sender": "Indirizzo email che verrà utilizzato come mittente",
+  "SMTP mail": "Indirizzo SMTP",
+  "SMTP server host": "Host server SMTP",
+  "Content type": "Tipo di contenuto",
+  "Plain text": "Testo semplice",
+  "Transport": "Trasporto"
+}

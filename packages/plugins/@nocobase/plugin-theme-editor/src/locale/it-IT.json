@@ -1,0 +1,22 @@
+{
+  "Theme": "Tema",
+  "Local": "Locale",
+  "Dark theme": "Tema scuro",
+  "Optional": "Opzionale",
+  "Non-optional": "Non opzionale",
+  "Current": "Corrente",
+  "Default": "Predefinito",
+  "Theme Editor": "Editor Tema",
+  "Save": "Salva",
+  "Close": "Chiudi",
+  "Edit": "Modifica",
+  "Export": "Esporta",
+  "edit Theme Config": "modifica Configurazione Tema",
+  "The theme of the JSON format is incorrect": "Il tema del formato JSON non è corretto",
+  "Edited successfully": "Modifica riuscita",
+  "Saved successfully": "Salvataggio riuscito",
+  "Initializing Editor...": "Inizializzazione Editor...",
+  "Save theme": "Salva tema",
+  "Please set a name for this theme": "Imposta un nome per questo tema",
+  "Please input the theme name": "Inserisci il nome del tema"
+}
