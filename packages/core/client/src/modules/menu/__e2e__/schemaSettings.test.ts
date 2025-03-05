@@ -17,7 +17,7 @@ test.describe('group page side menus schema settings', () => {
     await expectSettingsMenu({
       page,
       showMenu: () => showSettingsInSide(page, 'group page in side'),
-      supportedOptions: ['Edit', 'Move to', 'Insert before', 'Insert after', 'Insert inner', 'Delete'],
+      supportedOptions: ['Edit', 'Edit tooltip', 'Move to', 'Insert before', 'Insert after', 'Insert inner', 'Delete'],
     });
   });
 
@@ -28,7 +28,7 @@ test.describe('group page side menus schema settings', () => {
     await expectSettingsMenu({
       page,
       showMenu: () => showSettingsInSide(page, 'link page in side'),
-      supportedOptions: ['Edit', 'Move to', 'Insert before', 'Insert after', 'Delete'],
+      supportedOptions: ['Edit', 'Edit tooltip', 'Move to', 'Insert before', 'Insert after', 'Delete'],
     });
   });
 
@@ -39,7 +39,7 @@ test.describe('group page side menus schema settings', () => {
     await expectSettingsMenu({
       page,
       showMenu: () => showSettingsInSide(page, 'single page in side'),
-      supportedOptions: ['Edit', 'Move to', 'Insert before', 'Insert after', 'Delete'],
+      supportedOptions: ['Edit', 'Edit tooltip', 'Move to', 'Insert before', 'Insert after', 'Delete'],
     });
   });
 });

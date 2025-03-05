@@ -83,6 +83,43 @@ export const tableColumnSettings = new SchemaSettings({
           },
         },
         {
+          name: 'editTooltip',
+          type: 'modal',
+          useComponentProps() {
+            const { t } = useTranslation();
+            const { dn } = useDesignable();
+            const field = useField();
+            const columnSchema = useFieldSchema();
+
+            return {
+              title: t('Edit tooltip'),
+              schema: {
+                type: 'object',
+                title: t('Edit tooltip'),
+                properties: {
+                  tooltip: {
+                    default: columnSchema?.['x-component-props']?.tooltip || '',
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Input.TextArea',
+                    'x-component-props': {},
+                  },
+                },
+              } as ISchema,
+              onSubmit({ tooltip }) {
+                field.componentProps.tooltip = tooltip;
+                columnSchema['x-component-props'] = columnSchema['x-component-props'] || {};
+                columnSchema['x-component-props']['tooltip'] = tooltip;
+                dn.emit('patch', {
+                  schema: {
+                    'x-uid': columnSchema['x-uid'],
+                    'x-component-props': columnSchema['x-component-props'],
+                  },
+                });
+              },
+            };
+          },
+        },
+        {
           name: 'style',
           Component: (props) => {
             const localProps = { ...props, category: 'style' };
