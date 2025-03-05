@@ -885,5 +885,6 @@
   "If selected, the page will display Tab pages.": "If selected, the page will display Tab pages.",
   "If selected, the route will be displayed in the menu.": "If selected, the route will be displayed in the menu.",
   "Deprecated": "Deprecated",
-  "The following old template features have been deprecated and will be removed in next version.": "The following old template features have been deprecated and will be removed in next version."
+  "The following old template features have been deprecated and will be removed in next version.": "The following old template features have been deprecated and will be removed in next version.",
+  "Full permissions": "Full permissions"
 }

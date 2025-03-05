@@ -913,5 +913,6 @@
   "If selected, the page will display Tab pages.": "선택되면 페이지는 탭 페이지를 표시합니다.",
   "If selected, the route will be displayed in the menu.": "선택되면 라우트는 메뉴에 표시됩니다.",
   "Deprecated": "사용 중단됨",
-  "The following old template features have been deprecated and will be removed in next version.": "다음 오래된 템플릿 기능은 사용 중단되었으며 다음 버전에서 제거될 것입니다."
+  "The following old template features have been deprecated and will be removed in next version.": "다음 오래된 템플릿 기능은 사용 중단되었으며 다음 버전에서 제거될 것입니다.",
+  "Full permissions": "모든 권한"
 }

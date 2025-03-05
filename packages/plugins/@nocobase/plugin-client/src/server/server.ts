@@ -211,13 +211,13 @@ export class PluginClientServer extends Plugin {
         return await next();
       }
 
-      const role = await rolesRepository.findOne({
-        filterByTk: ctx.state.currentRole,
+      const roles = await rolesRepository.find({
+        filterByTk: ctx.state.currentRoles,
         appends: ['desktopRoutes'],
       });
 
-      const desktopRoutesId = role
-        .get('desktopRoutes')
+      const desktopRoutesId = roles
+        .flatMap((x) => x.get('desktopRoutes'))
         // hidden 为 true 的节点不会显示在权限配置表格中，所以无法被配置，需要被过滤掉
         .filter((item) => !item.hidden)
         .map((item) => item.id);

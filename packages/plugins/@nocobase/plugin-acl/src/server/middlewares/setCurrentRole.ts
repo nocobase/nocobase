@@ -45,6 +45,11 @@ export async function setCurrentRole(ctx: Context, next) {
   roles.forEach((role: any) => rolesMap.set(role.name, role));
   const userRoles = Array.from(rolesMap.values());
   ctx.state.currentUser.roles = userRoles;
+  if (currentRole === 'union') {
+    ctx.state.currentRole = 'union';
+    ctx.state.currentRoles = userRoles.map((role) => role.name);
+    return next();
+  }
 
   let role: string | undefined;
   // 1. If the X-Role is set, use the specified role
@@ -63,7 +68,8 @@ export async function setCurrentRole(ctx: Context, next) {
     role = (defaultRole || userRoles[0])?.name;
   }
   ctx.state.currentRole = role;
-  if (!ctx.state.currentRole) {
+  ctx.state.currentRoles = [role];
+  if (!ctx.state.currentRoles.length) {
     return ctx.throw(401, {
       code: 'ROLE_NOT_FOUND_ERR',
       message: ctx.t('The user role does not exist. Please try signing in again', { ns: 'acl' }),

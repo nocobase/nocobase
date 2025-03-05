@@ -779,5 +779,6 @@
   "If selected, the page will display Tab pages.": "Se selecionado, a página exibirá páginas de abas.",
   "If selected, the route will be displayed in the menu.": "Se selecionado, a rota será exibida no menu.",
   "Deprecated": "Descontinuado",
-  "The following old template features have been deprecated and will be removed in next version.": "As seguintes funcionalidades de modelo antigo foram descontinuadas e serão removidas na próxima versão."
+  "The following old template features have been deprecated and will be removed in next version.": "As seguintes funcionalidades de modelo antigo foram descontinuadas e serão removidas na próxima versão.",
+  "Full permissions": "Todas as permissões"
 }
