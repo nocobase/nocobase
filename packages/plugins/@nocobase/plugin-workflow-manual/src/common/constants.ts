@@ -35,4 +35,7 @@ export const TaskStatusOptions = [
   },
 ];
 
-export const TaskStatusOptionsMap = new Map(TaskStatusOptions.map((item) => [item.value, item]));
+export const TaskStatusOptionsMap = TaskStatusOptions.reduce(
+  (map, item) => Object.assign(map, { [item.value]: item }),
+  {},
+);

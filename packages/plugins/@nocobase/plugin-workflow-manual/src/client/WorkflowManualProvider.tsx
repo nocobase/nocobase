@@ -116,15 +116,17 @@ const todoCollection = {
   ],
 };
 
-const collections = [workflowCollection, todoCollection];
-
 /**
  * 1. 扩展几个工作流相关的 collection，防止在区块中因找不到 collection 而报错；
  * @param props
  * @returns
  */
 export const WorkflowManualProvider: FC = (props) => {
-  return <ExtendCollectionsProvider collections={collections}>{props.children}</ExtendCollectionsProvider>;
+  return (
+    <ExtendCollectionsProvider collections={[workflowCollection, todoCollection]}>
+      {props.children}
+    </ExtendCollectionsProvider>
+  );
 };
 
 /**
@@ -132,7 +134,7 @@ export const WorkflowManualProvider: FC = (props) => {
  */
 function cacheSchema(collectionNameList: string[]) {
   collectionNameList.forEach((collectionName) => {
-    const defaultOpenMode = isMobile() ? 'drawer' : 'page';
+    const defaultOpenMode = isMobile() ? 'page' : 'modal';
     const workflowTodoViewActionSchema = getWorkflowTodoViewActionSchema({ defaultOpenMode, collectionName });
 
     storePopupContext(workflowTodoViewActionSchema['x-uid'], {
@@ -142,7 +144,7 @@ function cacheSchema(collectionNameList: string[]) {
   });
 }
 
-cacheSchema(Object.values(collections).map((collection) => collection.name));
+cacheSchema([todoCollection.name]);
 
 function isMobile() {
   return window.location.pathname.startsWith('/m/');

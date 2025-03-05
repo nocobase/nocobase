@@ -36,6 +36,8 @@ import {
   useCurrentUserContext,
   useFormBlockContext,
   useTableBlockContext,
+  List,
+  OpenModeProvider,
 } from '@nocobase/client';
 import WorkflowPlugin, {
   DetailsBlockProvider,
@@ -51,6 +53,7 @@ import { lang, NAMESPACE, useLang } from '../locale';
 import { FormBlockProvider } from './instruction/FormBlockProvider';
 import { ManualFormType, manualFormTypes } from './instruction/SchemaConfig';
 import { TaskStatusOptionsMap } from '../common/constants';
+import { FormLayout } from '@formily/antd-v5';
 
 function TaskStatusColumn(props) {
   const recordData = useCollectionRecordData();
@@ -141,21 +144,25 @@ const tableColumns = {
   },
 };
 
-export const WorkflowTodo: React.FC<{ columns?: string[] }> & {
+export const WorkflowTodo: React.FC & {
   Initializer: React.FC;
   Drawer: React.FC;
   Decorator: React.FC;
   // TaskBlock: React.FC;
 } = (props) => {
-  const { columns = Object.keys(tableColumns) } = props;
   const { defaultOpenMode } = useOpenModeContext();
+  const viewSchema = getWorkflowTodoViewActionSchema({ defaultOpenMode, collectionName: 'workflowManualTasks' });
 
   return (
     <SchemaComponent
+      scope={{
+        useCollectionRecordData,
+      }}
       components={{
+        FormLayout,
         // WorkflowColumn,
         // UserColumn,
-        TaskStatusColumn,
+        ContentDetail,
       }}
       schema={{
         type: 'void',
@@ -197,30 +204,60 @@ export const WorkflowTodo: React.FC<{ columns?: string[] }> & {
               },
             },
           },
-          table: {
+          list: {
             type: 'array',
-            'x-component': 'TableV2',
-            'x-use-component-props': 'useTableBlockProps',
-            'x-component-props': {
-              rowKey: 'id',
-            },
+            'x-component': 'List',
+            // 'x-use-component-props': 'useListBlockProps',
             properties: {
-              actions: {
-                type: 'void',
-                'x-decorator': 'TableV2.Column.Decorator',
-                'x-component': 'TableV2.Column',
-                'x-component-props': {
-                  width: 60,
-                },
-                title: '{{t("Actions")}}',
+              item: {
+                type: 'object',
+                'x-component': 'List.Item',
                 properties: {
-                  view: getWorkflowTodoViewActionSchema({ defaultOpenMode, collectionName: 'workflowManualTasks' }),
+                  content: {
+                    type: 'void',
+                    'x-decorator': 'FormLayout',
+                    'x-decorator-props': {
+                      layout: 'horizontal',
+                    },
+                    'x-component': 'ContentDetail',
+                    'x-component-props': {
+                      title: '{{useCollectionRecordData().title}}',
+                      extra: '{{useCollectionRecordData().workflow.title}}',
+                      // NOTE: component in schema can not work with popup
+                      // title: (
+                      //   <SchemaComponent
+                      //     schema={{
+                      //       name: 'title',
+                      //       type: 'string',
+                      //       'x-component': 'CollectionField',
+                      //     }}
+                      //   />
+                      // ),
+                      // extra: (
+                      //   <SchemaComponent
+                      //     schema={{
+                      //       name: 'workflow.title',
+                      //       type: 'string',
+                      //       'x-component': 'CollectionField',
+                      //     }}
+                      //   />
+                      // ),
+                    },
+                  },
+                  actions: {
+                    type: 'void',
+                    'x-component': 'ActionBar',
+                    'x-use-component-props': 'useListActionBarProps',
+                    'x-component-props': {
+                      layout: 'one-column',
+                    },
+                    'x-align': 'left',
+                    properties: {
+                      view: viewSchema,
+                    },
+                  },
                 },
               },
-              ...columns.reduce((schema, key) => {
-                schema[key] = tableColumns[key];
-                return schema;
-              }, {}),
             },
           },
         },
@@ -526,15 +563,12 @@ function Decorator(props) {
       appends: ['user', 'node', 'workflow', 'execution.status'],
       except: ['node.config', 'workflow.config', 'workflow.options'],
     },
-    rowKey: 'id',
-    showIndex: true,
-    dragSort: false,
   };
 
   return (
-    <TableBlockProvider name="workflow-todo" {...blockProps}>
-      {children}
-    </TableBlockProvider>
+    <OpenModeProvider defaultOpenMode="modal">
+      <List.Decorator {...blockProps}>{children}</List.Decorator>
+    </OpenModeProvider>
   );
 }
 
@@ -569,17 +603,56 @@ WorkflowTodo.Initializer = Initializer;
 WorkflowTodo.Drawer = Drawer;
 WorkflowTodo.Decorator = Decorator;
 
-function ContentDetail() {
-  const record = useCollectionRecordData();
+function ContentDetail(props) {
+  const { t } = useTranslation();
+  const token = useAntdToken();
   return (
     <Descriptions
+      {...props}
+      column={1}
       items={[
         {
-          key: 'workflow.title',
-          label: lang('Workflow belonged'),
-          children: record.workflow.title,
+          key: 'createdAt',
+          label: t('Created at'),
+          children: (
+            <SchemaComponent
+              schema={{
+                name: 'createdAt',
+                type: 'string',
+                'x-component': 'CollectionField',
+                'x-read-pretty': true,
+              }}
+            />
+          ),
+        },
+        {
+          key: 'status',
+          label: t('Status', { ns: 'workflow' }),
+          children: (
+            <SchemaComponent
+              components={{ TaskStatusColumn }}
+              schema={{
+                name: 'status',
+                type: 'number',
+                'x-decorator': 'TaskStatusColumn',
+                'x-component': 'CollectionField',
+                'x-read-pretty': true,
+              }}
+            />
+          ),
         },
       ]}
+      className={css`
+        .ant-descriptions-header {
+          margin-bottom: 0.5em;
+          .ant-descriptions-extra {
+            color: ${token.colorTextDescription};
+          }
+        }
+        .ant-descriptions-item-label {
+          width: 6em;
+        }
+      `}
     />
   );
 }
@@ -631,48 +704,9 @@ function TaskItem() {
           }
         `}
       >
-        <Descriptions
-          column={1}
-          items={[
-            {
-              key: 'createdAt',
-              label: t('Created at'),
-              children: (
-                <SchemaComponent
-                  schema={{
-                    name: 'createdAt',
-                    type: 'string',
-                    'x-component': 'CollectionField',
-                    'x-read-pretty': true,
-                  }}
-                />
-              ),
-            },
-            {
-              key: 'status',
-              label: t('Status', { ns: 'workflow' }),
-              children: (
-                <SchemaComponent
-                  components={{ TaskStatusColumn }}
-                  schema={{
-                    name: 'status',
-                    type: 'number',
-                    'x-decorator': 'TaskStatusColumn',
-                    'x-component': 'CollectionField',
-                    'x-read-pretty': true,
-                  }}
-                />
-              ),
-            },
-          ]}
-          className={css`
-            .ant-descriptions-item-label {
-              width: 6em;
-            }
-          `}
-        />
+        <ContentDetail />
       </Card>
-      <PopupContextProvider visible={visible} setVisible={setVisible}>
+      <PopupContextProvider visible={visible} setVisible={setVisible} openMode="modal">
         <Drawer />
       </PopupContextProvider>
     </>
