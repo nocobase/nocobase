@@ -11,6 +11,7 @@ import { untracked } from '@formily/reactive';
 import { getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
 import React, { createContext, useCallback, useEffect, useMemo, useRef } from 'react';
+import { extractTemplateElements } from '@nocobase/json-template-parser';
 import { useAPIClient } from '../api-client';
 import type { CollectionFieldOptions_deprecated } from '../collection-manager';
 import { useCollectionManager_deprecated } from '../collection-manager';
@@ -276,7 +277,8 @@ const VariablesProvider = ({ children, filterVariables }: any) => {
         fieldOperator?: string | void;
       },
     ) => {
-      if (!isVariable(str)) {
+      const { fullVariable, filters } = extractTemplateElements(str);
+      if (!fullVariable) {
         return str;
       }
 
@@ -286,6 +288,9 @@ const VariablesProvider = ({ children, filterVariables }: any) => {
 
       const path = getPath(str);
       const result = await getResult(path, localVariables as VariableOption[], options);
+      if (filters.length > 0) {
+        result.value = filters.reduce((acc, filter) => filter.handler(...[acc, ...filter.args]), result.value);
+      }
 
       return {
         ...result,
