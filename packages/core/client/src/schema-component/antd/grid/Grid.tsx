@@ -563,7 +563,7 @@ Grid.Col = observer(
 
     return (
       <GridColContext.Provider value={value}>
-        <div ref={setNodeRef} style={colStyle} className={cls('nb-grid-col')}>
+        <div ref={setNodeRef} style={colStyle} className={cls('nb-grid-col', props.className)}>
           {props.children}
         </div>
       </GridColContext.Provider>

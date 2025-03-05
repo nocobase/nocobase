@@ -24,7 +24,13 @@ export default function () {
       {
         type: 'string',
         name: 'title',
-        required: true,
+        interface: 'input',
+        uiSchema: {
+          title: '{{t("Name")}}',
+          type: 'string',
+          'x-component': 'Input',
+          required: true,
+        },
       },
       {
         type: 'boolean',

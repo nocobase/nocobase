@@ -445,13 +445,13 @@ export function SchemaConfig({ value, onChange }) {
             type: 'void',
             title: `{{t("User interface", { ns: "${NAMESPACE}" })}}`,
             'x-decorator': 'Form',
-            'x-component': 'Action.Drawer',
+            'x-component': 'Action.Container',
             'x-component-props': {
-              className: css`
-                .ant-drawer-body {
-                  background: var(--nb-box-bg);
-                }
-              `,
+              // className: css`
+              //   .ant-drawer-body {
+              //     background: var(--nb-box-bg);
+              //   }
+              // `,
               // Using ref to call refresh ensures accessing the latest refresh function
               onClose: () => refreshRef.current(),
             },

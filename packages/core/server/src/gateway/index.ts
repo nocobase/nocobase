@@ -76,10 +76,10 @@ export class Gateway extends EventEmitter {
 
   public server: http.Server | null = null;
   public ipcSocketServer: IPCSocketServer | null = null;
+  public wsServer: WSServer;
   loggers = new Registry<SystemLogger>();
   private port: number = process.env.APP_PORT ? parseInt(process.env.APP_PORT) : null;
   private host = '0.0.0.0';
-  private wsServer: WSServer;
   private socketPath = resolve(process.cwd(), 'storage', 'gateway.sock');
 
   private constructor() {

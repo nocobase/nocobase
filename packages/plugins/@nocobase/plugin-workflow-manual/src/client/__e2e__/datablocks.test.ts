@@ -305,7 +305,7 @@ test.describe('field data', () => {
     // await expect(page.getByText('8')).toBeAttached();
     await expect(
       page
-        .getByLabel(`block-item-CardItem-users_jobs-${preAggregateNodeTitle}`)
+        .getByLabel(`block-item-CardItem-workflowManualTasks-${preAggregateNodeTitle}`)
         .locator('.ant-card-body')
         .getByText('8'),
     ).toBeAttached();

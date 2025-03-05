@@ -7,14 +7,114 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ExtendCollectionsProvider, storePopupContext, useRequest } from '@nocobase/client';
-import React, { createContext, FC, useContext } from 'react';
-import { getWorkflowTodoViewActionSchema, nodeCollection, todoCollection, workflowCollection } from './WorkflowTodo';
-import { JOB_STATUS } from '@nocobase/plugin-workflow/client';
+import { ExtendCollectionsProvider, storePopupContext } from '@nocobase/client';
+import React, { FC } from 'react';
+import { getWorkflowTodoViewActionSchema } from './WorkflowTodo';
+import { TaskStatusOptions } from '../common/constants';
+import { NAMESPACE } from '../locale';
 
-const collections = [nodeCollection, workflowCollection, todoCollection];
+const workflowCollection = {
+  title: `{{t("Workflow", { ns: "workflow" })}}`,
+  name: 'workflows',
+  fields: [
+    {
+      type: 'string',
+      name: 'title',
+    },
+  ],
+};
 
-const ManualTaskCountRequestContext = createContext({});
+const todoCollection = {
+  title: `{{t("Workflow todos", { ns: "${NAMESPACE}" })}}`,
+  name: 'workflowManualTasks',
+  fields: [
+    {
+      type: 'string',
+      name: 'title',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        title: `{{t("Task title", { ns: "${NAMESPACE}" })}}`,
+        'x-component': 'Input',
+      },
+    },
+    {
+      type: 'belongsTo',
+      name: 'workflow',
+      target: 'workflows',
+      foreignKey: 'workflowId',
+      interface: 'm2o',
+      isAssociation: true,
+      uiSchema: {
+        type: 'number',
+        title: `{{t("Workflow", { ns: "workflow" })}}`,
+        'x-component': 'AssociationField',
+        'x-component-props': {
+          fieldNames: {
+            label: 'title',
+            value: 'id',
+          },
+        },
+      },
+    },
+    {
+      type: 'belongsTo',
+      name: 'user',
+      target: 'users',
+      foreignKey: 'userId',
+      interface: 'm2o',
+      isAssociation: true,
+      uiSchema: {
+        type: 'object',
+        title: `{{t("Assignee", { ns: "${NAMESPACE}" })}}`,
+        'x-component': 'AssociationField',
+        'x-component-props': {
+          fieldNames: {
+            label: 'nickname',
+            value: 'id',
+          },
+        },
+      },
+    },
+    {
+      type: 'integer',
+      name: 'status',
+      interface: 'select',
+      uiSchema: {
+        type: 'number',
+        title: `{{t("Status", { ns: "workflow" })}}`,
+        'x-component': 'Select',
+        enum: TaskStatusOptions,
+      },
+    },
+    {
+      name: 'createdAt',
+      type: 'date',
+      interface: 'createdAt',
+      uiSchema: {
+        type: 'datetime',
+        title: '{{t("Created at")}}',
+        'x-component': 'DatePicker',
+        'x-component-props': {
+          showTime: true,
+        },
+      },
+    },
+    {
+      name: 'updatedAt',
+      type: 'date',
+      interface: 'updatedAt',
+      uiSchema: {
+        type: 'datetime',
+        title: '{{t("Last updated at")}}',
+        'x-component': 'DatePicker',
+        'x-component-props': {
+          showTime: true,
+        },
+      },
+    },
+  ],
+};
 
 /**
  * 1. 扩展几个工作流相关的 collection，防止在区块中因找不到 collection 而报错；
@@ -22,36 +122,19 @@ const ManualTaskCountRequestContext = createContext({});
  * @returns
  */
 export const WorkflowManualProvider: FC = (props) => {
-  const request = useRequest<any>(
-    {
-      resource: 'users_jobs',
-      action: 'countMine',
-      params: {
-        filter: {
-          status: JOB_STATUS.PENDING,
-        },
-      },
-    },
-    { manual: true },
-  );
-
   return (
-    <ExtendCollectionsProvider collections={collections}>
-      <ManualTaskCountRequestContext.Provider value={request}>{props.children}</ManualTaskCountRequestContext.Provider>
+    <ExtendCollectionsProvider collections={[workflowCollection, todoCollection]}>
+      {props.children}
     </ExtendCollectionsProvider>
   );
 };
-
-export function useCountRequest() {
-  return useContext(ManualTaskCountRequestContext);
-}
 
 /**
  * 2. 将区块相关的按钮 Schema 缓存起来，这样就可以在弹窗中获取到 Schema，进而实现“弹窗 URL”的功能；
  */
 function cacheSchema(collectionNameList: string[]) {
   collectionNameList.forEach((collectionName) => {
-    const defaultOpenMode = isMobile() ? 'drawer' : 'page';
+    const defaultOpenMode = isMobile() ? 'page' : 'modal';
     const workflowTodoViewActionSchema = getWorkflowTodoViewActionSchema({ defaultOpenMode, collectionName });
 
     storePopupContext(workflowTodoViewActionSchema['x-uid'], {
@@ -61,7 +144,7 @@ function cacheSchema(collectionNameList: string[]) {
   });
 }
 
-cacheSchema(Object.values(collections).map((collection) => collection.name));
+cacheSchema([todoCollection.name]);
 
 function isMobile() {
   return window.location.pathname.startsWith('/m/');

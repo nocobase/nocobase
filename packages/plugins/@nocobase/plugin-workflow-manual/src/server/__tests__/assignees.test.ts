@@ -37,7 +37,7 @@ describe('workflow > instructions > manual > assignees', () => {
     PostRepo = db.getCollection('posts').repository;
     CommentRepo = db.getCollection('comments').repository;
     UserModel = db.getCollection('users').model;
-    UserJobModel = db.getModel('users_jobs');
+    UserJobModel = db.getModel('workflowManualTasks');
 
     users = await UserModel.bulkCreate([
       { id: 2, nickname: 'a' },
@@ -117,13 +117,13 @@ describe('workflow > instructions > manual > assignees', () => {
       expect(usersJobs[0].userId).toBe(users[0].id);
       expect(usersJobs[0].jobId).toBe(j1.id);
 
-      const res1 = await agent.resource('users_jobs').submit({
+      const res1 = await agent.resource('workflowManualTasks').submit({
         filterByTk: usersJobs[0].id,
         values: { result: { f1: {}, _: 'resolve' } },
       });
       expect(res1.status).toBe(401);
 
-      const res2 = await userAgents[1].resource('users_jobs').submit({
+      const res2 = await userAgents[1].resource('workflowManualTasks').submit({
         filterByTk: usersJobs[0].id,
         values: {
           result: { f1: {}, _: 'resolve' },
@@ -131,7 +131,7 @@ describe('workflow > instructions > manual > assignees', () => {
       });
       expect(res2.status).toBe(403);
 
-      const res3 = await userAgents[0].resource('users_jobs').submit({
+      const res3 = await userAgents[0].resource('workflowManualTasks').submit({
         filterByTk: usersJobs[0].id,
         values: {
           result: { f1: { a: 1 }, _: 'resolve' },
@@ -150,7 +150,7 @@ describe('workflow > instructions > manual > assignees', () => {
       expect(usersJobsAfter[0].status).toBe(JOB_STATUS.RESOLVED);
       expect(usersJobsAfter[0].result).toEqual({ f1: { a: 1 }, _: 'resolve' });
 
-      const res4 = await userAgents[0].resource('users_jobs').submit({
+      const res4 = await userAgents[0].resource('workflowManualTasks').submit({
         filterByTk: usersJobs[0].id,
         values: {
           result: { f1: { a: 2 }, _: 'resolve' },
