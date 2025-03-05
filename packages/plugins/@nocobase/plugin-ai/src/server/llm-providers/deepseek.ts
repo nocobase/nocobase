@@ -12,7 +12,9 @@ import { LLMProvider } from './provider';
 import { LLMProviderOptions } from '../manager/ai-manager';
 
 export class DeepSeekProvider extends LLMProvider {
-  baseURL = 'https://api.deepseek.com';
+  get baseURL() {
+    return 'https://api.deepseek.com';
+  }
 
   createModel() {
     const { baseURL, apiKey } = this.serviceOptions || {};
