@@ -86,6 +86,8 @@ export const useColumnsDeepMemoized = (columns: any[]) => {
   return oldObj.value;
 };
 
+const TableColumnTitle = withTooltipComponent(RecursionField);
+
 const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginationProps) => {
   const { token } = useToken();
   const field = useArrayField(props);
@@ -113,7 +115,6 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
   }, [token.paddingContentVerticalLG, token.marginSM]);
 
   const collection = useCollection();
-  const TableColumnTitle = withTooltipComponent(RecursionField);
   const columns = useMemo(
     () =>
       columnsSchema?.map((s: Schema) => {

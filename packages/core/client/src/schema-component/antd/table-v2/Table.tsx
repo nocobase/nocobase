@@ -199,7 +199,8 @@ const useTableColumns = (
 
   const collection = useCollection();
 
-  const TableColumnTitle = withTooltipComponent(NocoBaseRecursionField);
+  // 不能提取到外部，否则 NocoBaseRecursionField 的值在一开始会是 undefined。原因未知
+  const TableColumnTitle = useMemo(() => withTooltipComponent(NocoBaseRecursionField), []);
 
   const columns = useMemo(
     () =>
