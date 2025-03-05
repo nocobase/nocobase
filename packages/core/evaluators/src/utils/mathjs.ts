@@ -18,7 +18,7 @@ export default evaluate.bind(
       if (Number.isNaN(result) || !Number.isFinite(result)) {
         return null;
       }
-      return math.round(result, 9);
+      return math.round(result, 15);
     }
     if (result instanceof math.Matrix) {
       return result.toArray();

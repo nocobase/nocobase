@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { round } from 'mathjs';
+
 import { parseCollectionName } from '@nocobase/data-source-manager';
 import { DataTypes } from '@nocobase/database';
 import { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plugin-workflow';
@@ -47,7 +49,7 @@ export default class extends Instruction {
     });
 
     return {
-      result: options.dataType === DataTypes.DOUBLE ? Number(result) : result,
+      result: options.dataType === DataTypes.DOUBLE ? round(Number(result), 15) : result,
       status: JOB_STATUS.RESOLVED,
     };
   }
