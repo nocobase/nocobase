@@ -16,6 +16,7 @@ import {
   useCompile,
   useCurrentAppInfo,
   useDataBlockRequest,
+  useTableBlockContext,
   useDataBlockResource,
 } from '@nocobase/client';
 import lodash from 'lodash';
@@ -26,8 +27,8 @@ import { useMemo } from 'react';
 
 export const useExportAction = () => {
   const { service, resource, props } = useBlockRequestContext();
+  const { params } = useTableBlockContext();
   const newResource = useDataBlockResource();
-
   const appInfo = useCurrentAppInfo();
   const defaultFilter = props?.params.filter;
   const actionSchema = useFieldSchema();
@@ -75,13 +76,12 @@ export const useExportAction = () => {
         }
         es.defaultTitle = uiSchema?.title;
       });
-
       const { data } = await (newResource as any).export(
         {
           title: compile(title),
           appends: service.params[0]?.appends?.join(),
           filter: mergeFilter([...Object.values(filters), defaultFilter]),
-          sort: service.params[0]?.sort,
+          sort: params?.sort,
           values: {
             columns: compile(exportSettings),
           },
