@@ -53,6 +53,7 @@ export const ImportActionInitializer = () => {
     'x-component': 'ImportAction',
     'x-action': 'importXlsx',
     'x-settings': 'actionSettings:import',
+    'x-toolbar': 'ActionSchemaToolbar',
   };
 
   return (
