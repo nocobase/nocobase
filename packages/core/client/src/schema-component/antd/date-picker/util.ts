@@ -82,6 +82,7 @@ const handleChangeOnFilter = (value, picker, showTime) => {
   return value;
 };
 export const handleDateChangeOnForm = (value, dateOnly, utc, picker, showTime, gmt) => {
+  const currentTimeZone = dayjs.tz.guess();
   const format = showTime ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD';
   if (!value) {
     return value;
@@ -97,7 +98,7 @@ export const handleDateChangeOnForm = (value, dateOnly, utc, picker, showTime, g
       return dayjs(value).startOf(picker).toISOString();
     }
     const formattedDate = dayjs(value).format(format);
-    return dayjs(formattedDate).toISOString();
+    return dayjs(formattedDate).tz(currentTimeZone, true).toISOString();
   }
   if (showTime) {
     return dayjs(value).format(format);
@@ -121,6 +122,7 @@ export const mapDatePicker = function () {
           if (underFilter) {
             onChange(handleChangeOnFilter(value, picker, showTime));
           } else {
+            console.log(handleDateChangeOnForm(value, dateOnly, utc, picker, showTime, gmt));
             onChange(handleDateChangeOnForm(value, dateOnly, utc, picker, showTime, gmt));
           }
         }
