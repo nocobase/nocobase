@@ -862,7 +862,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                       if (form.values.type === NocoBaseDesktopRouteType.tabs) {
                                         const { tabSchemaUid, tabSchemaName } = await createTabRouteSchema({
                                           ...form.values,
-                                          parentSchemaUid: recordData.pageSchemaUid,
+                                          parentSchemaUid: recordData.schemaUid,
                                         });
 
                                         await createRoute({
