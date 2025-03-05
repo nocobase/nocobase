@@ -571,7 +571,7 @@ export class AggregateNode {
       .getByLabel('block-item-FieldsSelect-workflows-Field to aggregate')
       .locator('.ant-select-selection-search-input');
     this.distinctCheckBox = page
-      .getByLabel('block-item-Checkbox-workflows-Distinct')
+      .getByLabel('block-item-Checkbox-workflows')
       .locator('input.ant-checkbox-input[type="checkbox"]');
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
