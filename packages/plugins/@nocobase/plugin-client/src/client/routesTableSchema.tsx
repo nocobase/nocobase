@@ -412,6 +412,18 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                     };
                                   }
 
+                                  const childrenObj: any = {};
+                                  if (tabSchemaUid) {
+                                    childrenObj.children = [
+                                      {
+                                        schemaUid: tabSchemaUid,
+                                        type: NocoBaseDesktopRouteType.tabs,
+                                        tabSchemaName,
+                                        hidden: !form.values?.enableTabs,
+                                      },
+                                    ];
+                                  }
+
                                   const res = await createRoute({
                                     ..._.omit(form.values, ['href', 'params', 'url']),
                                     schemaUid:
@@ -420,17 +432,8 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                         : menuSchemaUid,
                                     menuSchemaUid,
                                     options,
+                                    ...childrenObj,
                                   });
-
-                                  if (tabSchemaUid) {
-                                    await createRoute({
-                                      schemaUid: tabSchemaUid,
-                                      parentId: res?.data?.data?.id,
-                                      type: NocoBaseDesktopRouteType.tabs,
-                                      tabSchemaName,
-                                      hidden: true,
-                                    });
-                                  }
 
                                   ctx.setVisible(false);
                                   actionCallback?.(res?.data?.data);
