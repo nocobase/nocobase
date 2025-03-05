@@ -163,7 +163,7 @@ describe('workflow > instructions > aggregate', () => {
         },
       });
 
-      const p1 = await PostRepo.create({ values: { title: 't1', score: 0.1000000000000001 } });
+      const p1 = await PostRepo.create({ values: { title: 't1', score: 0.100000000000001 } });
 
       await sleep(500);
 
@@ -171,7 +171,7 @@ describe('workflow > instructions > aggregate', () => {
       const [j1] = await e1.getJobs();
       expect(j1.result).toBe(0.1);
 
-      const p2 = await PostRepo.create({ values: { title: 't2', score: 0.2000000000000001 } });
+      const p2 = await PostRepo.create({ values: { title: 't2', score: 0.200000000000001 } });
 
       await sleep(500);
 
