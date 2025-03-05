@@ -793,7 +793,7 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { designable, par
         redirect:
           children[0]?.key === 'x-designer-button'
             ? undefined
-            : `/admin/${findFirstPageRoute(item.children)?.schemaUid || ''}`,
+            : `/admin/${findFirstPageRoute(item.children)?.schemaUid || item.id}`,
         routes: children.length === 0 ? [{ path: '/', name: ' ', disabled: true, _hidden: true }] : children,
         hideInMenu: item.hideInMenu,
         _route: item,
