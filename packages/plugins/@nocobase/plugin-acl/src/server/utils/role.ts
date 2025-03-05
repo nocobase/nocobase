@@ -8,6 +8,7 @@
  */
 
 import _ from 'lodash';
+import { mergeAclActionParams } from 'packages/core/acl/src/utils/acl';
 
 export function mergeRole(roles) {
   const result: Record<string, any> = {
@@ -55,15 +56,18 @@ function mergeRoleStrategy(sourceStrategy, newStrategy) {
 }
 
 function mergeRoleActions(sourceActions, newActions) {
-  if (!sourceActions) return newActions;
-  if (!newActions) return sourceActions;
+  if (_.isEmpty(sourceActions)) return newActions;
+  if (_.isEmpty(newActions)) return sourceActions;
 
-  // 不同参数的合并策略不一样，只合并 fields
-  return _.mergeWith(sourceActions, newActions, (sourceVal, newVal, key) => {
-    if (Array.isArray(sourceVal) && Array.isArray(newVal) && key === 'fields') {
-      return [...new Set([...sourceVal, ...newVal])];
+  const result = {};
+  Reflect.ownKeys(sourceActions).forEach((key) => {
+    if (!_.has(newActions, key)) {
+      return;
     }
+    result[key] = mergeAclActionParams(sourceActions[key], newActions[key]);
   });
+
+  return result;
 }
 
 function mergeRoleSnippets(allRoleSnippets: string[][]): string[] {

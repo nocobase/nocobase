@@ -19,6 +19,7 @@ import { AllowManager, ConditionFunc } from './allow-manager';
 import FixedParamsManager, { Merger } from './fixed-params-manager';
 import SnippetManager, { SnippetOptions } from './snippet-manager';
 import { NoPermissionError } from './errors/no-permission-error';
+import { mergeAclActionParams } from './utils/acl';
 
 interface CanResult {
   role: string;
@@ -54,11 +55,12 @@ export interface ListenerContext {
 type Listener = (ctx: ListenerContext) => void;
 
 interface CanArgs {
-  role: string;
+  role?: string;
   resource: string;
   action: string;
   rawResourceName?: string;
   ctx?: any;
+  roles?: string;
 }
 
 export class ACL extends EventEmitter {
@@ -206,6 +208,35 @@ export class ACL extends EventEmitter {
   }
 
   can(options: CanArgs): CanResult | null {
+    if (options.role) {
+      return lodash.cloneDeep(this.getCanByRole(options));
+    }
+    if (options.roles?.length) {
+      return lodash.cloneDeep(this.getCanByRoles(options));
+    }
+
+    return null;
+  }
+
+  private getCanByRoles(options: CanArgs) {
+    let canResult: CanResult | null = null;
+
+    for (const role of options.roles) {
+      const result = this.getCanByRole({
+        role,
+        ...options,
+      });
+      if (!canResult) {
+        canResult = result;
+      } else if (canResult && result) {
+        canResult.params = mergeAclActionParams(canResult.params, result.params);
+      }
+    }
+
+    return canResult;
+  }
+
+  private getCanByRole(options: CanArgs) {
     const { role, resource, action, rawResourceName } = options;
     const aclRole = this.roles.get(role);
 
@@ -356,20 +387,11 @@ export class ACL extends EventEmitter {
 
       ctx.can = (options: Omit<CanArgs, 'role'>) => {
         const roles = ctx.state.currentRoles || [roleName];
-        const results = roles.map((role) => acl.can({ role, ...options })).filter(Boolean);
-
-        if (!results.length) {
+        const can = acl.can({ roles, ...options });
+        if (!can) {
           return null;
         }
-
-        if (!results.some((r) => r.params)) {
-          return results[0];
-        }
-
-        const allFields = [...new Set(results.flatMap((r) => r.params?.fields || []))];
-        const firstCanResult = { ...results[0], params: { ...results[0].params, fields: allFields } };
-
-        return firstCanResult;
+        return can;
       };
 
       ctx.permission = {
@@ -402,11 +424,9 @@ export class ACL extends EventEmitter {
     }
 
     ctx.can = (options: Omit<CanArgs, 'role'>) => {
-      for (const roleName of roleNames) {
-        const can = this.can({ role: roleName, ...options });
-        if (can) {
-          return lodash.cloneDeep(can);
-        }
+      const can = this.can({ roles: roleNames, ...options });
+      if (can) {
+        return lodash.cloneDeep(can);
       }
       return null;
     };
