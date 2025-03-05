@@ -34,13 +34,10 @@ export class JSONTemplateParser {
     this.engine = new Liquid();
     this._filterGroups = [];
     this._filters = [];
-    filterGroups.forEach((group) => {
-      this.registerFilterGroup(group);
-    });
+  }
 
-    variableFilters.forEach((filter) => {
-      this.registerFilter(filter);
-    });
+  get filters(): Array<Filter> {
+    return this._filters;
   }
 
   get filterGroups(): Array<

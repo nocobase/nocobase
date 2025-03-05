@@ -8,13 +8,21 @@
  */
 
 import { Plugin } from '@nocobase/server';
-
+import { variableFilters, filterGroups } from '../json-template-filters';
 export class PluginVariableFiltersServer extends Plugin {
   async afterAdd() {}
 
   async beforeLoad() {}
 
-  async load() {}
+  async load() {
+    filterGroups.forEach((group) => {
+      this.app.jsonTemplateParser.registerFilterGroup(group);
+    });
+
+    variableFilters.forEach((filter) => {
+      this.app.jsonTemplateParser.registerFilter(filter);
+    });
+  }
 
   async install() {}
 
