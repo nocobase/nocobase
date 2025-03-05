@@ -21,7 +21,7 @@ import SnippetManager, { SnippetOptions } from './snippet-manager';
 import { NoPermissionError } from './errors/no-permission-error';
 
 interface CanResult {
-  role: string;
+  roleNames: string[];
   resource: string;
   action: string;
   params?: any;
@@ -54,7 +54,7 @@ export interface ListenerContext {
 type Listener = (ctx: ListenerContext) => void;
 
 interface CanArgs {
-  role: string;
+  roleNames: string[];
   resource: string;
   action: string;
   rawResourceName?: string;
@@ -202,8 +202,17 @@ export class ACL extends EventEmitter {
   }
 
   can(options: CanArgs): CanResult | null {
-    const { role, resource, action, rawResourceName } = options;
-    const aclRole = this.roles.get(role);
+    const { roleNames, resource, action, rawResourceName } = options;
+    let aclRole: ACLRole;
+
+    if (!roleNames) {
+      return null;
+    } else if (roleNames.length > 1) {
+      const effectiveRoles = roleNames.map((roleName) => this.roles.get(roleName)).filter(Boolean);
+      aclRole = new ACLRole(this, '*', effectiveRoles);
+    } else {
+      aclRole = this.roles.get(roleNames[0]);
+    }
 
     if (!aclRole) {
       return null;
@@ -236,7 +245,7 @@ export class ACL extends EventEmitter {
       if (actionParams) {
         // handle single action config
         return mergeParams({
-          role,
+          roleNames,
           resource,
           action,
           params: actionParams,
@@ -263,7 +272,7 @@ export class ACL extends EventEmitter {
     }
 
     if (roleStrategyParams) {
-      const result = { role, resource, action, params: {} };
+      const result = { roleNames, resource, action, params: {} };
 
       if (lodash.isPlainObject(roleStrategyParams)) {
         result['params'] = roleStrategyParams;
@@ -335,8 +344,13 @@ export class ACL extends EventEmitter {
     const acl = this;
 
     return async function ACLMiddleware(ctx, next) {
-      const roleName = ctx.state.currentRole || 'anonymous';
+      const roleName: string = ctx.state.currentRole || 'anonymous';
       const { resourceName: rawResourceName, actionName } = ctx.action;
+
+      let roleNames = [roleName];
+      if (roleName === '*') {
+        roleNames = lodash.map(ctx.state.currentUser.roles, 'name');
+      }
 
       let resourceName = rawResourceName;
       if (rawResourceName.includes('.')) {
@@ -350,11 +364,7 @@ export class ACL extends EventEmitter {
         }
       }
 
-      ctx.can = (options: Omit<CanArgs, 'role'>) => {
-        const canResult = acl.can({ role: roleName, ...options });
-
-        return canResult;
-      };
+      ctx.can = (options: Omit<CanArgs, 'roleNames'>) => acl.can({ roleNames, ...options });
 
       ctx.permission = {
         can: ctx.can({ resource: resourceName, action: actionName, rawResourceName }),
@@ -372,6 +382,7 @@ export class ACL extends EventEmitter {
   async getActionParams(ctx) {
     const roleName = ctx.state.currentRole || 'anonymous';
     const { resourceName: rawResourceName, actionName } = ctx.action;
+    console.log('getActionParams', roleName, rawResourceName, actionName);
 
     let resourceName = rawResourceName;
     if (rawResourceName.includes('.')) {
@@ -385,8 +396,12 @@ export class ACL extends EventEmitter {
       }
     }
 
-    ctx.can = (options: Omit<CanArgs, 'role'>) => {
-      const can = this.can({ role: roleName, ...options });
+    ctx.can = (options: Omit<CanArgs, 'roleNames'>) => {
+      let roleNames = [roleName];
+      if (roleName === '*') {
+        roleNames = lodash.map(ctx.state.currentUser.roles, 'name');
+      }
+      const can = this.can({ roleNames, ...options });
       if (!can) {
         return null;
       }

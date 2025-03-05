@@ -56,7 +56,7 @@ describe('fixed params', () => {
     });
 
     let canResult = acl.can({
-      role: 'admin',
+      roleNames: 'admin',
       resource: 'collections',
       action: 'destroy',
     });
@@ -72,7 +72,7 @@ describe('fixed params', () => {
     });
 
     canResult = acl.can({
-      role: 'admin',
+      roleNames: 'admin',
       resource: 'collections',
       action: 'destroy',
     });
