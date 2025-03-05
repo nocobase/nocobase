@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { useDesignable, useNocoBaseRoutes } from '../..';
 import { SchemaSettings } from '../../../application/schema-settings';
 import { useSchemaToolbar } from '../../../application/schema-toolbar';
-import { useCurrentRoute } from '../../../route-switch';
+import { useCurrentRouteData } from '../../../route-switch';
 
 function useNotDisableHeader() {
   const fieldSchema = useFieldSchema();
@@ -133,7 +133,7 @@ export const pageSettings = new SchemaSettings({
         const { dn } = useDesignable();
         const { t } = useTranslation();
         const fieldSchema = useFieldSchema();
-        const currentRoute = useCurrentRoute();
+        const currentRoute = useCurrentRouteData();
         const { updateRoute } = useNocoBaseRoutes();
         return {
           title: t('Enable page tabs'),
@@ -142,6 +142,16 @@ export const pageSettings = new SchemaSettings({
             // 更新路由
             await updateRoute(currentRoute.id, {
               enableTabs: v,
+            });
+
+            // enableTabs 已经保存在 route 中了，按说这里不需要加了。但 E2E 中需要这个参数。
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['enablePageTabs'] = v;
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                ['x-component-props']: fieldSchema['x-component-props'],
+              },
             });
           },
         };

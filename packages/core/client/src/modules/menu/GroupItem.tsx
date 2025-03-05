@@ -12,7 +12,7 @@ import { SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializerItem, useSchemaInitializer } from '../../application';
+import { SchemaInitializerItem } from '../../application';
 import { useGlobalTheme } from '../../global-theme';
 import { NocoBaseDesktopRouteType } from '../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import {
@@ -25,7 +25,6 @@ import {
 import { useStyles } from '../../schema-component/antd/menu/MenuItemInitializers';
 
 export const GroupItem = () => {
-  const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
@@ -69,30 +68,13 @@ export const GroupItem = () => {
     const schemaUid = uid();
 
     // 创建一个路由到 desktopRoutes 表中
-    const { data } = await createRoute({
+    await createRoute({
       type: NocoBaseDesktopRouteType.group,
       title,
       icon,
       parentId: parentRoute?.id,
       schemaUid,
     });
-
-    // 同时插入一个对应的 Schema
-    insert(getGroupMenuSchema({ title, icon, schemaUid, route: data?.data }));
-  }, [insert, options.components, options.scope, t, theme]);
+  }, [options.components, options.scope, t, theme]);
   return <SchemaInitializerItem title={t('Group')} onClick={handleClick} className={`${componentCls} ${hashId}`} />;
 };
-
-export function getGroupMenuSchema({ title, icon, schemaUid, route = undefined }) {
-  return {
-    type: 'void',
-    title,
-    'x-component': 'Menu.SubMenu',
-    'x-decorator': 'ACLMenuItemProvider',
-    'x-component-props': {
-      icon,
-    },
-    'x-uid': schemaUid,
-    __route__: route,
-  };
-}
