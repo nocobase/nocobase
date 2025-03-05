@@ -39,6 +39,10 @@ const Input = (props: CronProps) => {
 
             > .react-js-cron-select {
               margin: 0 0.5em 0 0;
+              .ant-select-selection-overflow {
+                align-items: center;
+                flex: initial;
+              }
             }
           }
         }

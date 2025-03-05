@@ -30,6 +30,7 @@ import { RadioWithTooltip } from './components';
 import { uid } from '@nocobase/utils/client';
 import { Button, Dropdown } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
+import { MenuItemGroupType } from 'antd/es/menu/interface';
 
 interface AddButtonProps {
   upstream;
@@ -49,7 +50,7 @@ export function AddButton(props: AddButtonProps) {
 
   const groups = useMemo(() => {
     return groupOptions
-      .map((group) => {
+      .map((group): MenuItemGroupType => {
         const groupInstructions = instructionList.filter(
           (item) =>
             item.group === group.key &&

@@ -128,9 +128,14 @@ test.describe('linkage rules', () => {
 
     // 增加一条规则：当 number 字段的值等于 123 时
     await page.getByRole('button', { name: 'plus Add linkage rule' }).click();
-    await page.locator('.ant-collapse-header').nth(1).getByRole('img', { name: 'right' }).click();
+    await page.locator('.ant-collapse-header .ant-collapse-expand-icon').nth(1).click();
 
-    await page.getByLabel('Linkage rules').getByRole('tabpanel').getByText('Add condition', { exact: true }).click();
+    await page
+      .getByLabel('Linkage rules')
+      .getByRole('tabpanel')
+      .getByText('Add condition', { exact: true })
+      .last()
+      .click();
     await page.getByRole('button', { name: 'Select field' }).click();
     await page.getByRole('menuitemcheckbox', { name: 'number' }).click();
     await page.getByLabel('Linkage rules').getByRole('spinbutton').click();
@@ -146,19 +151,19 @@ test.describe('linkage rules', () => {
     // action: 为 longText 字段赋上常量值
     await page.getByLabel('Linkage rules').getByRole('tabpanel').getByText('Add property').click();
     await page.getByRole('button', { name: 'Select field' }).click();
-    await page.getByRole('tree').getByText('longText').click();
+    await page.getByRole('tree').getByText('longText').last().click();
     await page.getByRole('button', { name: 'action', exact: true }).click();
-    await page.getByRole('option', { name: 'Value', exact: true }).click();
+    await page.getByRole('option', { name: 'Value', exact: true }).last().click();
     await page.getByLabel('dynamic-component-linkage-rules').getByRole('textbox').fill('456');
 
     // action: 为 integer 字段附上一个表达式，使其值等于 number 字段的值
     await page.getByLabel('Linkage rules').getByRole('tabpanel').getByText('Add property').click();
 
     await page.getByRole('button', { name: 'Select field' }).click();
-    await page.getByRole('tree').getByText('integer').click();
+    await page.getByRole('tree').getByText('integer').last().click();
     await page.getByRole('button', { name: 'action', exact: true }).click();
-    await page.getByRole('option', { name: 'Value', exact: true }).click();
-    await page.getByTestId('select-linkage-value-type').nth(1).click();
+    await page.getByRole('option', { name: 'Value', exact: true }).last().click();
+    await page.getByTestId('select-linkage-value-type').last().click();
     await page.getByText('Expression').click();
 
     await page.getByText('xSelect a variable').click();

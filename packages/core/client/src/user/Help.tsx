@@ -16,6 +16,9 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DropdownVisibleContext, usePlugin, useToken } from '..';
 import { useCurrentAppInfo } from '../appInfo/CurrentAppInfoProvider';
+import { MenuItemType, MenuDividerType } from 'antd/es/menu/interface';
+
+type SettingsMenuItemType = MenuItemType | MenuDividerType;
 
 /**
  * @note If you want to change here, Note the Setting block on the mobile side
@@ -30,7 +33,7 @@ const SettingsMenu: React.FC<{
   // 是否是简体中文
   const isSimplifiedChinese = data?.data?.lang === 'zh-CN';
 
-  const items = [
+  const items: SettingsMenuItemType[] = [
     {
       key: 'nocobase',
       disabled: true,

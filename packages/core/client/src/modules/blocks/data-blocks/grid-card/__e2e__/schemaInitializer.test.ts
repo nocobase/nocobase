@@ -165,7 +165,7 @@ test.describe('configure fields', () => {
 
     // delete fields
     await formItemInitializer.hover();
-    await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'ID', exact: true }).last().click();
     await expect(page.getByRole('menuitem', { name: 'ID', exact: true }).getByRole('switch')).not.toBeChecked();
 
     await page.mouse.wheel(0, 300);

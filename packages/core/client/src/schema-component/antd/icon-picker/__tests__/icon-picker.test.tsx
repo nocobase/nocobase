@@ -56,7 +56,7 @@ describe('IconPicker', () => {
     await userEvent.clear(searchInput);
     await userEvent.type(searchInput, 'abcd');
     await waitFor(() => {
-      expect(screen.getByText('No data')).toBeInTheDocument();
+      expect(screen.getAllByText('No data')).toHaveLength(2);
     });
   });
 });

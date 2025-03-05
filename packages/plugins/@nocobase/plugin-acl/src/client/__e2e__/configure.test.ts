@@ -146,7 +146,7 @@ test('plugin settings permissions', async ({ page, mockPage, mockRole, updateRol
   await expect(page.getByLabel('auth')).not.toBeVisible();
   await expect(page.getByLabel('collection-manager')).not.toBeVisible();
   await page.getByRole('link', { name: 'Users & Permissions' }).click();
-  await expect(page.getByRole('menuitem', { name: 'login Authentication' })).not.toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'login Authentication' }).last()).not.toBeVisible();
   await expect(page.getByRole('menuitem', { name: 'database Collection manager' })).not.toBeVisible();
   await updateRole({
     name: roleData.name,
