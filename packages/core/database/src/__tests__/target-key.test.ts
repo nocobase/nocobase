@@ -83,7 +83,7 @@ describe('targetKey', () => {
       values: {},
     });
 
-    await r1.create({
+    const a1 = await r1.create({
       values: {
         name: 'a1',
         b1: [b1.toJSON()],
@@ -92,7 +92,7 @@ describe('targetKey', () => {
 
     const b1r = await b1.reload();
 
-    expect(b1r.a1Id).toBe(b1.id);
+    expect(b1r.a1Id).toBe(a1.id);
   });
 
   test('should throw an error', async () => {
