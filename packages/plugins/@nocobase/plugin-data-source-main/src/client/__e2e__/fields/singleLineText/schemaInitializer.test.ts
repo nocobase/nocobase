@@ -24,7 +24,7 @@ test.describe('form item & filter form', () => {
       page,
       showMenu: async () => {
         await page.getByLabel('block-item-CollectionField-').hover();
-        await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FilterFormItem-users-').hover();
+        await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FilterFormItem-users-').click();
       },
       supportedOptions: [
         'Edit field title',

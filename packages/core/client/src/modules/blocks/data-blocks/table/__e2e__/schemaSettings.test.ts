@@ -272,7 +272,7 @@ test.describe('actions schema settings', () => {
         page,
         showMenu: async () => {
           await page.getByRole('button', { name: 'Refresh' }).hover();
-          await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-general' }).hover();
+          await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-general' }).click();
         },
         supportedOptions: ['Edit button', 'Delete'],
       });

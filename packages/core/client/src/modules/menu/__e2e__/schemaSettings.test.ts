@@ -52,7 +52,7 @@ test.describe('link page menu schema settings', () => {
       page,
       showMenu: async () => {
         await page.locator('.ant-layout-header').getByText('link page', { exact: true }).hover();
-        await page.getByRole('button', { name: 'designer-schema-settings-' }).hover();
+        await page.getByRole('button', { name: 'designer-schema-settings-' }).click();
       },
       supportedOptions: ['Edit', 'Move to', 'Insert before', 'Insert after', 'Delete'],
     });
@@ -76,7 +76,7 @@ test.describe('single page menu schema settings', () => {
 
 async function showSettingsInSide(page: Page, pageName: string) {
   await page.locator('.ant-layout-sider').getByText(pageName, { exact: true }).hover();
-  await page.getByRole('button', { name: 'designer-schema-settings-' }).hover();
+  await page.getByRole('button', { name: 'designer-schema-settings-' }).click();
 }
 
 async function createSubPage({ page, name, type }: { page: Page; name: string; type: PageConfig['type'] }) {

@@ -24,7 +24,7 @@ test.describe('filter block schema settings', () => {
       page,
       showMenu: async () => {
         await page.getByLabel('block-item-CardItem-general-filter-form').hover();
-        await page.getByLabel('designer-schema-settings-CardItem-FormV2.FilterDesigner-general').hover();
+        await page.getByLabel('designer-schema-settings-CardItem-FormV2.FilterDesigner-general').click();
       },
       supportedOptions: [
         'Edit block title',
@@ -200,7 +200,7 @@ test.describe('actions schema settings', () => {
       page,
       showMenu: async () => {
         await page.getByLabel('action-Action-Filter-submit-general-filter-form').hover();
-        await page.getByRole('button', { name: 'designer-schema-settings-Action' }).hover();
+        await page.getByRole('button', { name: 'designer-schema-settings-Action' }).click();
       },
       supportedOptions: ['Edit button', 'Delete'],
     });
@@ -210,7 +210,7 @@ test.describe('actions schema settings', () => {
       page,
       showMenu: async () => {
         await page.getByLabel('action-Action-Reset-general-filter-form').hover();
-        await page.getByRole('button', { name: 'designer-schema-settings-Action' }).hover();
+        await page.getByRole('button', { name: 'designer-schema-settings-Action' }).click();
       },
       supportedOptions: ['Edit button', 'Delete'],
     });

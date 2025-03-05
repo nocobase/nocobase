@@ -97,7 +97,7 @@ test.describe('Link', () => {
 
     // 默认情况下，点击链接按钮会在当前窗口打开
     await page.getByLabel('action-Action.Link-Link-').hover();
-    await page.getByLabel('designer-schema-settings-Action.Link-actionSettings:link-users').hover();
+    await page.getByLabel('designer-schema-settings-Action.Link-actionSettings:link-users').click();
     await page.getByRole('menuitem', { name: 'Edit link' }).click();
     await page.getByLabel('block-item-users-table-URL').getByLabel('textbox').fill(otherPageUrl);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
