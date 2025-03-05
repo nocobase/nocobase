@@ -238,7 +238,7 @@ export const publicFormsSchema: ISchema = {
                 editActionSchema,
                 delete: {
                   type: 'void',
-                  title: 'Delete',
+                  title: "{{t('Delete')}}",
                   'x-component': 'Action.Link',
                   'x-use-component-props': 'useDeleteActionProps',
                 },

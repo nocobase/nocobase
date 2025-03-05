@@ -9,7 +9,7 @@
 
 export const editActionSchema = {
   type: 'void',
-  title: 'Edit',
+  title: "{{t('Edit')}}",
   'x-component': 'Action.Link',
   'x-component-props': {
     openMode: 'drawer',
