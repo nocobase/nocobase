@@ -1208,6 +1208,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                   const resource = useMemo(() => api.resource(collectionName), [api]);
                   const { getDataBlockRequest } = useDataBlockRequestGetter();
                   const { deleteRouteSchema } = useDeleteRouteSchema();
+                  const { refresh: refreshMenu } = useAllAccessDesktopRoutes();
 
                   return {
                     onClick: async () => {
@@ -1218,6 +1219,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                         })
                         .then(() => {
                           getDataBlockRequest().refresh();
+                          refreshMenu();
                         })
                         .catch((error) => {
                           console.error(error);
