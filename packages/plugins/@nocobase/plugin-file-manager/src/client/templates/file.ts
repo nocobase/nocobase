@@ -104,7 +104,6 @@ export class FileCollectionTemplate extends CollectionTemplate {
         type: 'text',
         name: 'url',
         deletable: false,
-        length: 1024,
         uiSchema: {
           type: 'string',
           title: `{{t("URL")}}`,
