@@ -13,7 +13,6 @@ import { createForm } from '@formily/core';
 import { useForm, FormContext } from '@formily/react';
 import { FilterOutlined } from '@ant-design/icons';
 import { uid, tval } from '@nocobase/utils/client';
-import { variableFilters } from '@nocobase/json-template-parser';
 import type { MenuProps } from 'antd';
 import { SchemaComponent } from '../../core/SchemaComponent';
 import { useApp } from '../../../application';
@@ -51,6 +50,8 @@ export function Addition({ variable, onFilterAdd }) {
 }
 
 export function Filters({ filters, onFilterChange }) {
+  const app = useApp();
+  const variableFilters = app.jsonTemplateParser.filters;
   return (
     <>
       {filters.map((filter, index) => {

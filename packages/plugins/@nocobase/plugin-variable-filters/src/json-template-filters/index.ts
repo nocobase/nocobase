@@ -9,7 +9,7 @@
 
 import { dateFormat, dateAdd, dateSubtract } from './date';
 import { first, last } from './array';
-const NAMESPACE = 'json-templates';
+const NAMESPACE = 'variable-filters';
 const tval = (key) => `{{t('${key}', { ns: '${NAMESPACE}', nsMode: 'fallback' })}}`;
 export const variableFilters = [
   {
@@ -37,7 +37,7 @@ export const variableFilters = [
     uiSchema: [
       {
         name: 'number',
-        title: tval('Number'),
+        title: tval('Amount'),
         type: 'number',
         'x-component': 'InputNumber',
         required: true,
@@ -50,8 +50,12 @@ export const variableFilters = [
         'x-component': 'Select',
         enum: [
           { label: tval('Year'), value: 'year' },
-          { label: tval('Month'), value: 'month' },
+          { label: tval('Quarter'), value: 'quarter' },
+          { label: tval('Week'), value: 'week' },
           { label: tval('Day'), value: 'day' },
+          { label: tval('Hour'), value: 'hour' },
+          { label: tval('Minute'), value: 'minute' },
+          { label: tval('Second'), value: 'second' },
         ],
       },
     ],
@@ -78,8 +82,12 @@ export const variableFilters = [
         'x-component': 'Select',
         enum: [
           { label: tval('Year'), value: 'year' },
-          { label: tval('Month'), value: 'month' },
+          { label: tval('Quarter'), value: 'quarter' },
+          { label: tval('Week'), value: 'week' },
           { label: tval('Day'), value: 'day' },
+          { label: tval('Hour'), value: 'hour' },
+          { label: tval('Minute'), value: 'minute' },
+          { label: tval('Second'), value: 'second' },
         ],
       },
     ],
