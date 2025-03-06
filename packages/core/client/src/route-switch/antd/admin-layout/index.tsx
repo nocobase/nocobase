@@ -14,7 +14,7 @@ import { css } from '@emotion/css';
 import { Popover, Tooltip } from 'antd';
 import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   AppNotFound,
@@ -34,7 +34,7 @@ import {
   useRequest,
   useSchemaInitializerRender,
   useSystemSettings,
-  useToken
+  useToken,
 } from '../../../';
 import {
   CurrentPageUidProvider,
@@ -42,6 +42,7 @@ import {
   IsSubPageClosedByPageMenuProvider,
   useCurrentPageUid,
   useLocationNoUpdate,
+  useNavigateNoUpdate,
 } from '../../../application/CustomRouterContextProvider';
 import { Plugin } from '../../../application/Plugin';
 import { menuItemInitializer } from '../../../modules/menu/menuItemInitializer';
@@ -71,7 +72,7 @@ const AllAccessDesktopRoutesContext = createContext<{
   refresh: () => void;
 }>({
   allAccessRoutes: emptyArray,
-  refresh: () => { },
+  refresh: () => {},
 });
 AllAccessDesktopRoutesContext.displayName = 'AllAccessDesktopRoutesContext';
 
@@ -631,12 +632,15 @@ const findRouteByMenuSchemaUid = (schemaUid: string, routes: NocoBaseDesktopRout
 const LegacyRouteCompat: FC = (props) => {
   const currentPageUid = useCurrentPageUid();
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
-  const route = findRouteByMenuSchemaUid(currentPageUid, allAccessRoutes);
-  const location = useLocationNoUpdate();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  if (route) {
-    return <Navigate to={location.pathname.replace(currentPageUid, route.schemaUid) + location.search} />;
-  }
+  useEffect(() => {
+    const route = findRouteByMenuSchemaUid(currentPageUid, allAccessRoutes);
+    if (route) {
+      navigate(location.pathname.replace(currentPageUid, route.schemaUid) + location.search);
+    }
+  }, [allAccessRoutes, currentPageUid, location.pathname, location.search, navigate]);
 
   return <>{props.children}</>;
 };
