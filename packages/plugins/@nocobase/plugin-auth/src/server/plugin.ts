@@ -154,11 +154,15 @@ export class PluginAuthServer extends Plugin {
         cache: this.app.cache,
         logger: this.app.logger,
         log: this.app.log,
+        throw: (...args) => {
+          throw new Error(...args);
+        },
+        t: this.app.i18n.t,
       } as any);
 
       let user: Model;
       try {
-        user = await auth.check();
+        user = (await auth.checkToken()).user;
       } catch (error) {
         if (!user) {
           this.app.logger.error(error);

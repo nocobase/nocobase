@@ -373,6 +373,42 @@ export const dateTimeProps: { [key: string]: ISchema } = {
   },
 };
 
+export const timeProps: { [key: string]: ISchema } = {
+  'uiSchema.x-component-props.format': {
+    type: 'string',
+    title: '{{t("Time format")}}',
+    'x-component': 'ExpiresRadio',
+    'x-decorator': 'FormItem',
+    'x-component-props': {
+      className: css`
+        color: red;
+        .ant-radio-wrapper {
+          display: flex;
+          margin: 5px 0px;
+        }
+      `,
+      defaultValue: 'h:mm a',
+      formats: ['hh:mm:ss a', 'HH:mm:ss'],
+      timeFormat: true,
+    },
+    default: 'HH:mm:ss',
+    enum: [
+      {
+        label: DateFormatCom({ format: 'hh:mm:ss a' }),
+        value: 'hh:mm:ss a',
+      },
+      {
+        label: DateFormatCom({ format: 'HH:mm:ss' }),
+        value: 'HH:mm:ss',
+      },
+      {
+        label: 'custom',
+        value: 'custom',
+      },
+    ],
+  },
+};
+
 export const dataSource: ISchema = {
   type: 'array',
   title: '{{t("Options")}}',

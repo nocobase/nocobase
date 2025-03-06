@@ -50,13 +50,10 @@ const toArr = (v: any) => {
 };
 
 export const useDownloadXlsxTemplateAction = () => {
-  const { service, resource } = useBlockRequestContext();
-  const apiClient = useAPIClient();
-  const actionSchema = useFieldSchema();
+  const { resource } = useBlockRequestContext();
   const compile = useCompile();
   const { getCollectionJoinField, getCollectionField } = useCollectionManager_deprecated();
-  const { name, title, getField } = useCollection_deprecated();
-  const { t } = useTranslation(NAMESPACE);
+  const { name, title } = useCollection_deprecated();
   const { schema: importSchema } = useImportSchema();
 
   return {
@@ -104,20 +101,15 @@ export const useDownloadXlsxTemplateAction = () => {
 };
 
 export const useImportStartAction = () => {
-  const { service, resource } = useBlockRequestContext();
-  const apiClient = useAPIClient();
-  const actionSchema = useFieldSchema();
+  const { service } = useBlockRequestContext();
   const compile = useCompile();
   const { getCollectionJoinField, getCollectionField } = useCollectionManager_deprecated();
-  const { name, title, getField } = useCollection_deprecated();
-  const { t } = useTranslation(NAMESPACE);
+  const { name } = useCollection_deprecated();
   const { schema: importSchema } = useImportSchema();
   const form = useForm();
-  const { setVisible, fieldSchema } = useActionContext();
+  const { setVisible } = useActionContext();
   const { setImportModalVisible, setImportStatus, setImportResult } = useImportContext();
   const { upload } = form.values;
-  const dataBlockProps = useDataBlockProps();
-  const headers = useDataSourceHeaders(dataBlockProps.dataSource);
   const newResource = useDataBlockResource();
 
   useEffect(() => {
@@ -156,22 +148,6 @@ export const useImportStartAction = () => {
       formData.append('file', uploadFiles[0]);
       formData.append('columns', JSON.stringify(columns));
       formData.append('explain', explain);
-
-      const { triggerWorkflow, identifyDuplicates, uniqueField, duplicateStrategy } = form.values;
-
-      if (triggerWorkflow !== undefined) {
-        formData.append('triggerWorkflow', JSON.stringify(triggerWorkflow));
-      }
-
-      if (identifyDuplicates) {
-        formData.append(
-          'duplicateOption',
-          JSON.stringify({
-            uniqueField,
-            mode: duplicateStrategy,
-          }),
-        );
-      }
 
       const importMode = importSchema?.['x-action-settings']?.importMode || 'auto';
 

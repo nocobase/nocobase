@@ -11,6 +11,8 @@ import { useFieldSchema } from '@formily/react';
 import { useMemo, useContext } from 'react';
 import { useBlockTemplateContext } from '../../schema-templates/BlockTemplateProvider';
 import { BlockItemCardContext } from '../../schema-component/antd/block-item/BlockItemCard';
+import { useAllAccessDesktopRoutes, findRouteBySchemaUid } from '../../route-switch/antd/admin-layout';
+import { useCurrentPageUid } from '../../application/CustomRouterContextProvider';
 
 export const useBlockHeightProps = () => {
   const fieldSchema = useFieldSchema();
@@ -19,13 +21,19 @@ export const useBlockHeightProps = () => {
   const pageSchema = useMemo(() => getPageSchema(blockTemplateSchema || fieldSchema), []);
   const { disablePageHeader, enablePageTabs, hidePageTitle } = pageSchema?.['x-component-props'] || {};
   const { titleHeight } = useContext(BlockItemCardContext) || ({} as any);
+  const { allAccessRoutes } = useAllAccessDesktopRoutes();
+  const currentPageUid = useCurrentPageUid();
 
+  const currentRoute = useMemo(
+    () => findRouteBySchemaUid(currentPageUid, allAccessRoutes),
+    [currentPageUid, allAccessRoutes],
+  );
   return {
     heightProps: {
       ...cardItemSchema?.['x-component-props'],
       title: cardItemSchema?.['x-component-props']?.title || cardItemSchema?.['x-component-props']?.description,
       disablePageHeader,
-      enablePageTabs,
+      enablePageTabs: currentRoute?.enableTabs || enablePageTabs,
       hidePageTitle,
       titleHeight: titleHeight,
     },

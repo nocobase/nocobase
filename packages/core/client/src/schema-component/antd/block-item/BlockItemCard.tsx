@@ -36,9 +36,8 @@ export const BlockItemCard = React.forwardRef<HTMLDivElement, CardProps | any>((
 
     return () => clearTimeout(timer);
   }, [blockTitle, description]);
-
   const title = (blockTitle || description) && (
-    <div ref={titleRef} style={{ padding: '4px 0px 4px' }}>
+    <div ref={titleRef} style={{ padding: '8px 0px 8px' }}>
       <span>{blockTitle}</span>
       {description && (
         <MarkdownReadPretty
@@ -47,10 +46,7 @@ export const BlockItemCard = React.forwardRef<HTMLDivElement, CardProps | any>((
             overflowWrap: 'break-word',
             whiteSpace: 'normal',
             fontWeight: 400,
-            color: '#777',
-            lineHeight: '1.6',
-            padding: '4px 12px',
-            backgroundColor: token.colorFillTertiary,
+            color: token.colorTextDescription,
             borderRadius: '4px',
           }}
         />

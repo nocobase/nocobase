@@ -66,6 +66,7 @@ import { useToken } from '../__builtins__';
 import { useAssociationFieldContext } from '../association-field/hooks';
 import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
+import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 
 type BodyRowComponentProps = {
   rowIndex?: number;
@@ -198,6 +199,9 @@ const useTableColumns = (
 
   const collection = useCollection();
 
+  // 不能提取到外部，否则 NocoBaseRecursionField 的值在一开始会是 undefined。原因未知
+  const TableColumnTitle = useMemo(() => withTooltipComponent(NocoBaseRecursionField), []);
+
   const columns = useMemo(
     () =>
       columnsSchemas?.map((columnSchema: Schema) => {
@@ -217,11 +221,12 @@ const useTableColumns = (
         return {
           title: (
             <RefreshComponentProvider refresh={refresh}>
-              <NocoBaseRecursionField
+              <TableColumnTitle
                 name={columnSchema.name}
                 schema={columnSchema}
                 onlyRenderSelf
                 isUseFormilyField={false}
+                tooltip={columnSchema?.['x-component-props']?.tooltip}
               />
             </RefreshComponentProvider>
           ),
