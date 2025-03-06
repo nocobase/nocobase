@@ -8,7 +8,7 @@
  */
 
 import _ from 'lodash';
-import { mergeAclActionParams } from 'packages/core/acl/src/utils/acl';
+import { mergeAclActionParams } from '@nocobase/acl';
 
 export function mergeRole(roles) {
   const result: Record<string, any> = {

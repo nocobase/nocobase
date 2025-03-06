@@ -13,6 +13,24 @@ import { Browser, Page, test as base, expect, request } from '@playwright/test';
 import _ from 'lodash';
 import { defineConfig } from './defineConfig';
 
+function getPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }) {
+  return {
+    type: 'void',
+    'x-component': 'Page',
+    properties: {
+      [tabSchemaName]: {
+        type: 'void',
+        'x-component': 'Grid',
+        'x-initializer': 'page:addBlock',
+        properties: {},
+        'x-uid': tabSchemaUid,
+        'x-async': true,
+      },
+    },
+    'x-uid': pageSchemaUid,
+  };
+}
+
 export * from '@playwright/test';
 
 export { defineConfig };
@@ -360,7 +378,7 @@ export class NocoPage {
 
     this.uid = schemaUid;
     this.desktopRouteId = routeId;
-    this.url = `${this.options?.basePath || '/admin/'}${this.uid}`;
+    this.url = `${this.options?.basePath || '/admin/'}${this.uid || this.desktopRouteId}`;
   }
 
   async goto() {
@@ -393,7 +411,7 @@ export class NocoPage {
 
   async destroy() {
     const waitList: any[] = [];
-    if (this.uid) {
+    if (this.uid || this.desktopRouteId !== undefined) {
       waitList.push(deletePage(this.uid, this.desktopRouteId));
       this.uid = undefined;
       this.desktopRouteId = undefined;
@@ -723,30 +741,15 @@ const createPage = async (options?: CreatePageOptions) => {
   const api = await request.newContext({
     storageState: process.env.PLAYWRIGHT_AUTH_FILE,
   });
-  const typeToSchema = {
-    group: {
-      'x-component': 'Menu.SubMenu',
-      'x-component-props': {},
-    },
-    page: {
-      'x-component': 'Menu.Item',
-      'x-component-props': {},
-    },
-    link: {
-      'x-component': 'Menu.URL',
-      'x-component-props': {
-        href: url,
-      },
-    },
-  };
   const state = await api.storageState();
   const headers = getHeaders(state);
-  const menuSchemaUid = pageUidFromOptions || uid();
-  const pageSchemaUid = uid();
-  const tabSchemaUid = uid();
-  const tabSchemaName = uid();
-  const title = name || menuSchemaUid;
   const newPageSchema = keepUid ? pageSchema : updateUidOfPageSchema(pageSchema);
+  const pageSchemaUid = newPageSchema?.['x-uid'] || uid();
+  const newTabSchemaUid = uid();
+  const newTabSchemaName = uid();
+
+  const title = name || pageSchemaUid;
+
   let routeId;
   let schemaUid;
 
@@ -756,7 +759,6 @@ const createPage = async (options?: CreatePageOptions) => {
       data: {
         type: 'group',
         title,
-        schemaUid: menuSchemaUid,
         hideInMenu: false,
       },
     });
@@ -767,17 +769,15 @@ const createPage = async (options?: CreatePageOptions) => {
 
     const data = await result.json();
     routeId = data.data?.id;
-    schemaUid = menuSchemaUid;
   }
 
   if (type === 'page') {
-    const result = await api.post('/api/desktopRoutes:create', {
+    const routeResult = await api.post('/api/desktopRoutes:create', {
       headers,
       data: {
         type: 'page',
         title,
-        schemaUid: newPageSchema?.['x-uid'] || pageSchemaUid,
-        menuSchemaUid,
+        schemaUid: pageSchemaUid,
         hideInMenu: false,
         enableTabs: !!newPageSchema?.['x-component-props']?.enablePageTabs,
         children: newPageSchema
@@ -786,21 +786,36 @@ const createPage = async (options?: CreatePageOptions) => {
               {
                 type: 'tabs',
                 title: '{{t("Unnamed")}}',
-                schemaUid: tabSchemaUid,
-                tabSchemaName,
+                schemaUid: newTabSchemaUid,
+                tabSchemaName: newTabSchemaName,
                 hideInMenu: false,
               },
             ],
       },
     });
 
-    if (!result.ok()) {
-      throw new Error(await result.text());
+    if (!routeResult.ok()) {
+      throw new Error(await routeResult.text());
     }
 
-    const data = await result.json();
+    const schemaResult = await api.post(`/api/uiSchemas:insert`, {
+      headers,
+      data:
+        newPageSchema ||
+        getPageMenuSchema({
+          pageSchemaUid,
+          tabSchemaUid: newTabSchemaUid,
+          tabSchemaName: newTabSchemaName,
+        }),
+    });
+
+    if (!schemaResult.ok()) {
+      throw new Error(await routeResult.text());
+    }
+
+    const data = await routeResult.json();
     routeId = data.data?.id;
-    schemaUid = menuSchemaUid;
+    schemaUid = pageSchemaUid;
   }
 
   if (type === 'link') {
@@ -809,7 +824,6 @@ const createPage = async (options?: CreatePageOptions) => {
       data: {
         type: 'link',
         title,
-        schemaUid: menuSchemaUid,
         hideInMenu: false,
         options: {
           href: url,
@@ -823,50 +837,6 @@ const createPage = async (options?: CreatePageOptions) => {
 
     const data = await result.json();
     routeId = data.data?.id;
-    schemaUid = menuSchemaUid;
-  }
-
-  const result = await api.post(`/api/uiSchemas:insertAdjacent/nocobase-admin-menu?position=beforeEnd`, {
-    headers,
-    data: {
-      schema: {
-        _isJSONSchemaObject: true,
-        version: '2.0',
-        type: 'void',
-        title,
-        ...typeToSchema[type],
-        'x-decorator': 'ACLMenuItemProvider',
-        properties: {
-          page: newPageSchema || {
-            _isJSONSchemaObject: true,
-            version: '2.0',
-            type: 'void',
-            'x-component': 'Page',
-            'x-async': true,
-            properties: {
-              [tabSchemaName]: {
-                _isJSONSchemaObject: true,
-                version: '2.0',
-                type: 'void',
-                'x-component': 'Grid',
-                'x-initializer': 'page:addBlock',
-                'x-uid': tabSchemaUid,
-                name: tabSchemaName,
-              },
-            },
-            'x-uid': pageSchemaUid,
-            name: 'page',
-          },
-        },
-        name: uid(),
-        'x-uid': menuSchemaUid,
-      },
-      wrap: null,
-    },
-  });
-
-  if (!result.ok()) {
-    throw new Error(await result.text());
   }
 
   return { schemaUid, routeId };
@@ -1063,7 +1033,7 @@ const deleteMobileRoutes = async (mobileRouteId: number) => {
 };
 
 /**
- * 根据页面 uid 删除一个 NocoBase 的页面
+ * 根据页面 uid 删除一个页面的 schema，根据页面路由的 id 删除一个页面的路由
  */
 const deletePage = async (pageUid: string, routeId: number) => {
   const api = await request.newContext({
@@ -1083,12 +1053,14 @@ const deletePage = async (pageUid: string, routeId: number) => {
     }
   }
 
-  const result = await api.post(`/api/uiSchemas:remove/${pageUid}`, {
-    headers,
-  });
+  if (pageUid) {
+    const result = await api.post(`/api/uiSchemas:remove/${pageUid}`, {
+      headers,
+    });
 
-  if (!result.ok()) {
-    throw new Error(await result.text());
+    if (!result.ok()) {
+      throw new Error(await result.text());
+    }
   }
 };
 
@@ -1424,11 +1396,11 @@ export async function expectSettingsMenu({
   await page.waitForTimeout(100);
   await showMenu();
   for (const option of supportedOptions) {
-    await expect(page.getByRole('menuitem', { name: option })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: option, exact: option === 'Edit' })).toBeVisible();
   }
   if (unsupportedOptions) {
     for (const option of unsupportedOptions) {
-      await expect(page.getByRole('menuitem', { name: option })).not.toBeVisible();
+      await expect(page.getByRole('menuitem', { name: option, exact: option === 'Edit' })).not.toBeVisible();
     }
   }
 }

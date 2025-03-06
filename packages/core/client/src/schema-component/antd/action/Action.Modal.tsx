@@ -22,7 +22,7 @@ import { ActionContextNoRerender } from './context';
 import { useActionContext } from './hooks';
 import { useSetAriaLabelForModal } from './hooks/useSetAriaLabelForModal';
 import { ActionDrawerProps, ComposedActionDrawer, OpenSize } from './types';
-import { useZIndexContext, zIndexContext } from './zIndexContext';
+import { getZIndex, useZIndexContext, zIndexContext } from './zIndexContext';
 
 const ModalErrorFallback: React.FC<FallbackProps> = (props) => {
   const { visible, setVisible } = useActionContext();
@@ -89,7 +89,7 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
       useSetAriaLabelForModal(visible);
     }
 
-    const zIndex = _zIndex || parentZIndex + (props.level || 0);
+    const zIndex = getZIndex('modal', _zIndex || parentZIndex, props.level || 0);
 
     return (
       <ActionContextNoRerender>
@@ -177,6 +177,19 @@ ActionModal.Footer = observer(
     return <NocoBaseRecursionField basePath={field.address} schema={schema} onlyRenderProperties />;
   },
   { displayName: 'ActionModal.Footer' },
+);
+
+ActionModal.FootBar = observer(
+  () => {
+    const field = useField();
+    const schema = useFieldSchema();
+    return (
+      <div className="ant-modal-footer">
+        <NocoBaseRecursionField basePath={field.address} schema={schema} onlyRenderProperties />
+      </div>
+    );
+  },
+  { displayName: 'ActionModal.FootBar' },
 );
 
 export default ActionModal;

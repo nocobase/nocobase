@@ -8,14 +8,14 @@
  */
 
 import { Model } from '@nocobase/database';
+import PluginLocalizationServer from '@nocobase/plugin-localization';
 import { Plugin } from '@nocobase/server';
+import { tval } from '@nocobase/utils';
 import * as process from 'node:process';
 import { resolve } from 'path';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
-import PluginLocalizationServer from '@nocobase/plugin-localization';
-import { tval } from '@nocobase/utils';
 
 async function getLang(ctx) {
   const SystemSetting = ctx.db.getRepository('systemSettings');
@@ -218,17 +218,34 @@ export class PluginClientServer extends Plugin {
 
       const desktopRoutesId = roles
         .flatMap((x) => x.get('desktopRoutes'))
-        // hidden 为 true 的节点不会显示在权限配置表格中，所以无法被配置，需要被过滤掉
-        .filter((item) => !item.hidden)
-        .map((item) => item.id);
+        .map(async (item, index, items) => {
+          // 1. 如果 page 的 children 为空，那么需要把 page 的 children 全部找出来，然后返回。否则前端会因为缺少 tab 路由的数据而导致页面空白
+          // 2. 如果 page 的 children 不为空，不需要做特殊处理
+          if (item.type === 'page' && !items.some((tab) => tab.parentId === item.id)) {
+            const children = await desktopRoutesRepository.find({
+              filter: {
+                parentId: item.id,
+              },
+            });
 
-      ctx.body = await desktopRoutesRepository.find({
-        tree: true,
-        ...ctx.query,
-        filter: {
-          id: desktopRoutesId,
-        },
-      });
+            return [item.id, ...(children || []).map((child) => child.id)];
+          }
+
+          return item.id;
+        });
+
+      if (desktopRoutesId) {
+        const ids = (await Promise.all(desktopRoutesId)).flat();
+        const result = await desktopRoutesRepository.find({
+          tree: true,
+          ...ctx.query,
+          filter: {
+            id: ids,
+          },
+        });
+
+        ctx.body = result;
+      }
 
       await next();
     });

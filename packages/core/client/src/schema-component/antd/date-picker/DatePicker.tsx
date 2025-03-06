@@ -290,10 +290,11 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
   const [stateProps, setStateProps] = useState(newProps);
   useEffect(() => {
     newProps.picker = targetPicker;
-    const dateTimeFormat = getDateTimeFormat(targetPicker, format, showTime, timeFormat);
+    const dateTimeFormat = getDateTimeFormat(targetPicker, targetDateFormat, showTime, timeFormat);
     newProps.format = dateTimeFormat;
     setStateProps(newProps);
   }, [targetPicker]);
+
   return (
     <Space.Compact style={{ width: '100%' }}>
       <Select

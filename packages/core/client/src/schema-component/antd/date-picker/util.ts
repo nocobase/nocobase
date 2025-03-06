@@ -82,6 +82,8 @@ const handleChangeOnFilter = (value, picker, showTime) => {
   return value;
 };
 export const handleDateChangeOnForm = (value, dateOnly, utc, picker, showTime, gmt) => {
+  // @ts-ignore
+  const currentTimeZone = dayjs.tz.guess();
   const format = showTime ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD';
   if (!value) {
     return value;
@@ -97,7 +99,8 @@ export const handleDateChangeOnForm = (value, dateOnly, utc, picker, showTime, g
       return dayjs(value).startOf(picker).toISOString();
     }
     const formattedDate = dayjs(value).format(format);
-    return dayjs(formattedDate).toISOString();
+    // @ts-ignore
+    return dayjs(formattedDate).tz(currentTimeZone, true).toISOString();
   }
   if (showTime) {
     return dayjs(value).format(format);

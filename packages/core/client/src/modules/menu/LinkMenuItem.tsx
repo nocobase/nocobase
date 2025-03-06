@@ -9,12 +9,11 @@
 
 import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
-import { uid } from '@formily/shared';
 import { createMemoryHistory } from 'history';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Router } from 'react-router-dom';
-import { SchemaInitializerItem, useSchemaInitializer } from '../../application';
+import { SchemaInitializerItem } from '../../application';
 import { useGlobalTheme } from '../../global-theme';
 import { NocoBaseDesktopRouteType } from '../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import {
@@ -28,7 +27,6 @@ import { useStyles } from '../../schema-component/antd/menu/MenuItemInitializers
 import { useURLAndHTMLSchema } from '../actions/link/useURLAndHTMLSchema';
 
 export const LinkMenuItem = () => {
-  const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
@@ -75,40 +73,19 @@ export const LinkMenuItem = () => {
       initialValues: {},
     });
     const { title, href, params, icon } = values;
-    const schemaUid = uid();
 
     // 创建一个路由到 desktopRoutes 表中
-    const { data } = await createRoute({
+    await createRoute({
       type: NocoBaseDesktopRouteType.link,
-      title: values.title,
-      icon: values.icon,
+      title,
+      icon,
       parentId: parentRoute?.id,
-      schemaUid,
       options: {
         href,
         params,
       },
     });
-
-    // 同时插入一个对应的 Schema
-    insert(getLinkMenuSchema({ title, icon, schemaUid, href, params, route: data?.data }));
-  }, [insert, options.components, options.scope, t, theme]);
+  }, [options.components, options.scope, t, theme]);
 
   return <SchemaInitializerItem title={t('Link')} onClick={handleClick} className={`${componentCls} ${hashId}`} />;
 };
-
-export function getLinkMenuSchema({ title, icon, schemaUid, href, params, route = undefined }) {
-  return {
-    type: 'void',
-    title,
-    'x-component': 'Menu.URL',
-    'x-decorator': 'ACLMenuItemProvider',
-    'x-component-props': {
-      icon,
-      href,
-      params,
-    },
-    'x-uid': schemaUid,
-    __route__: route,
-  };
-}

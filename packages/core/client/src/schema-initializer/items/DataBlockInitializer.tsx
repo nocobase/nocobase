@@ -307,6 +307,7 @@ export interface DataBlockInitializerProps {
   /** 用于更改 Other records 的文案 */
   otherText?: string;
   children?: React.ReactNode;
+  alwaysRenderMenu?: boolean; //总是渲染为 SchemaInitializerMenu
 }
 
 export const DataBlockInitializer: FC<DataBlockInitializerProps> = (props) => {
@@ -329,6 +330,7 @@ export const DataBlockInitializer: FC<DataBlockInitializerProps> = (props) => {
     filterOtherRecordsCollection,
     currentText,
     otherText,
+    alwaysRenderMenu,
   } = props;
   const { insert, setVisible } = useSchemaInitializer();
   const compile = useCompile();
@@ -419,7 +421,7 @@ export const DataBlockInitializer: FC<DataBlockInitializerProps> = (props) => {
     ] as MenuProps['items'];
   }, [searchedChildren, hideChildrenIfSingleCollection, name, compile, title, icon, onClick, props]);
 
-  if (childItems.length > 1 || (childItems.length === 1 && childItems[0]?.children?.length > 0)) {
+  if (childItems.length > 1 || (childItems.length === 1 && childItems[0]?.children?.length > 0) || alwaysRenderMenu) {
     return (
       <SchemaInitializerMenu
         onOpenChange={(keys) => {

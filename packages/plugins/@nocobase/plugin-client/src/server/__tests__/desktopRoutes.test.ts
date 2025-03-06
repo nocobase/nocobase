@@ -61,6 +61,27 @@ describe('Web client desktopRoutes', async () => {
     await app.destroy();
   });
 
+  // 创建测试页面和tab路由
+  await db.getRepository('desktopRoutes').create({
+    values: [
+      {
+        type: 'page',
+        title: 'page1',
+        children: [{ type: 'tab', title: 'tab1' }],
+      },
+      {
+        type: 'page',
+        title: 'page2',
+        children: [{ type: 'tab', title: 'tab2' }],
+      },
+      {
+        type: 'page',
+        title: 'page3',
+        children: [{ type: 'tab', title: 'tab3' }],
+      },
+    ],
+  });
+
   const generateRandomString = () => {
     return Math.random().toString(36).substring(2, 15);
   };

@@ -70,10 +70,16 @@ export class BaseAuth extends Auth {
     return /^[^@.<>"'/]{1,50}$/.test(username);
   }
 
-  async check(): ReturnType<Auth['check']> {
-    const token = this.ctx.getBearerToken();
+  async checkToken(): Promise<{
+    tokenStatus: 'valid' | 'expired' | 'invalid';
+    user: Awaited<ReturnType<Auth['check']>>;
+    jti?: string;
+    temp: any;
+    roleName?: any;
+    signInTime?: number;
+  }> {
     const cache = this.ctx.cache as Cache;
-
+    const token = this.ctx.getBearerToken();
     if (!token) {
       this.ctx.throw(401, {
         message: this.ctx.t('Unauthenticated. Please sign in to continue.', { ns: localeNamespace }),
@@ -127,7 +133,7 @@ export class BaseAuth extends Auth {
     // api token check first
     if (!temp) {
       if (tokenStatus === 'valid') {
-        return user;
+        return { tokenStatus, user, temp };
       } else {
         this.ctx.throw(401, {
           message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
@@ -164,11 +170,41 @@ export class BaseAuth extends Auth {
         });
       }
 
+      this.ctx.logger.info('token renewing', {
+        method: 'auth.check',
+        url: this.ctx.originalUrl,
+        currentJti: jti,
+      });
+      const isStreamRequest = this.ctx?.req?.headers?.accept === 'text/event-stream';
+
+      if (isStreamRequest) {
+        this.ctx.throw(401, {
+          message: 'Stream api not allow renew token.',
+          code: AuthErrorCode.SKIP_TOKEN_RENEW,
+        });
+      }
+
+      if (!jti) {
+        this.ctx.throw(401, {
+          message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
+          code: AuthErrorCode.INVALID_TOKEN,
+        });
+      }
+      return { tokenStatus, user, jti, signInTime, temp };
+    }
+
+    return { tokenStatus, user, jti, signInTime, temp };
+  }
+
+  async check(): ReturnType<Auth['check']> {
+    const { tokenStatus, user, jti, temp, signInTime, roleName } = await this.checkToken();
+
+    if (tokenStatus === 'expired') {
+      const tokenPolicy = await this.tokenController.getConfig();
       try {
         this.ctx.logger.info('token renewing', {
           method: 'auth.check',
-          url: this.ctx.originalUrl,
-          headers: JSON.stringify(this.ctx?.req?.headers),
+          jti,
         });
         const isStreamRequest = this.ctx?.req?.headers?.accept === 'text/event-stream';
 
@@ -187,24 +223,23 @@ export class BaseAuth extends Auth {
         }
 
         const renewedResult = await this.tokenController.renew(jti);
+
         this.ctx.logger.info('token renewed', {
           method: 'auth.check',
-          url: this.ctx.originalUrl,
-          headers: JSON.stringify(this.ctx?.req?.headers),
+          oldJti: jti,
+          newJti: renewedResult.jti,
         });
+
         const expiresIn = Math.floor(tokenPolicy.tokenExpirationTime / 1000);
         const newToken = this.jwt.sign(
-          { userId, roleName, temp, signInTime, iat: Math.floor(renewedResult.issuedTime / 1000) },
+          { userId: user.id, roleName, temp, signInTime, iat: Math.floor(renewedResult.issuedTime / 1000) },
           { jwtid: renewedResult.jti, expiresIn },
         );
         this.ctx.res.setHeader('x-new-token', newToken);
-        return user;
       } catch (err) {
-        this.ctx.logger.info('token renew failed', {
+        this.ctx.logger.error('token renew failed', {
           method: 'auth.check',
-          url: this.ctx.originalUrl,
-          err,
-          headers: JSON.stringify(this.ctx?.req?.headers),
+          jti,
         });
         const options =
           err instanceof AuthError
@@ -225,6 +260,24 @@ export class BaseAuth extends Auth {
     return null;
   }
 
+  async signNewToken(userId: number) {
+    const tokenInfo = await this.tokenController.add({ userId });
+    const expiresIn = Math.floor((await this.tokenController.getConfig()).tokenExpirationTime / 1000);
+    const token = this.jwt.sign(
+      {
+        userId,
+        temp: true,
+        iat: Math.floor(tokenInfo.issuedTime / 1000),
+        signInTime: tokenInfo.signInTime,
+      },
+      {
+        jwtid: tokenInfo.jti,
+        expiresIn,
+      },
+    );
+    return token;
+  }
+
   async signIn() {
     let user: Model;
     try {
@@ -240,20 +293,7 @@ export class BaseAuth extends Auth {
         code: AuthErrorCode.NOT_EXIST_USER,
       });
     }
-    const tokenInfo = await this.tokenController.add({ userId: user.id });
-    const expiresIn = Math.floor((await this.tokenController.getConfig()).tokenExpirationTime / 1000);
-    const token = this.jwt.sign(
-      {
-        userId: user.id,
-        temp: true,
-        iat: Math.floor(tokenInfo.issuedTime / 1000),
-        signInTime: tokenInfo.signInTime,
-      },
-      {
-        jwtid: tokenInfo.jti,
-        expiresIn,
-      },
-    );
+    const token = await this.signNewToken(user.id);
     return {
       user,
       token,

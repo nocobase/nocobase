@@ -48,6 +48,7 @@ export const CSSVariableProvider = ({ children }) => {
     document.body.style.setProperty('--colorBgSettingsHover', token.colorBgSettingsHover);
     document.body.style.setProperty('--colorTemplateBgSettingsHover', token.colorTemplateBgSettingsHover);
     document.body.style.setProperty('--colorBorderSettingsHover', token.colorBorderSettingsHover);
+    document.body.style.setProperty('--colorBgMenuItemSelected', token.colorBgHeaderMenuActive);
 
     // 设置登录页面的背景色
     document.body.style.setProperty('background-color', token.colorBgContainer);

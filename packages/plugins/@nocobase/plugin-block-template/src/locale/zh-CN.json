@@ -33,5 +33,6 @@
   "Keep the created blocks?": "保留创建的区块？",
   "Please select the records you want to delete": "请选择要删除的记录",
   "Search and select template": "搜索并选择模板",
-  "This is part of a template, deletion is not allowed": "这是模板的一部分，不允许删除"
+  "This is part of a template, deletion is not allowed": "这是模板的一部分，不允许删除",
+  "This block is using some reference templates, please convert to duplicate template first.": "该区块使用了引用模板，请先将其转换为复制模板。"
 }
