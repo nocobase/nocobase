@@ -215,7 +215,7 @@ const InternalPageContent = (props: PageContentProps) => {
   // 兼容旧版本的 tab 路径
   const oldTab = currentRoute?.children?.find((tabRoute) => tabRoute.tabSchemaName === activeKey);
   if (oldTab) {
-    navigate(location.pathname.replace(activeKey, oldTab.schemaUid));
+    navigate(location.pathname.replace(activeKey, oldTab.schemaUid) + location.search);
     return null;
   }
 

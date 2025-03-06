@@ -11,7 +11,7 @@ import { EllipsisOutlined } from '@ant-design/icons';
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
-import { ConfigProvider, Popover, Tooltip } from 'antd';
+import { Popover, Tooltip } from 'antd';
 import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
@@ -29,13 +29,12 @@ import {
   RemoteSchemaTemplateManagerProvider,
   SortableItem,
   useDesignable,
-  useGlobalTheme,
   useMenuDragEnd,
   useParseURLAndParams,
   useRequest,
   useSchemaInitializerRender,
   useSystemSettings,
-  useToken,
+  useToken
 } from '../../../';
 import {
   CurrentPageUidProvider,
@@ -72,7 +71,7 @@ const AllAccessDesktopRoutesContext = createContext<{
   refresh: () => void;
 }>({
   allAccessRoutes: emptyArray,
-  refresh: () => {},
+  refresh: () => { },
 });
 AllAccessDesktopRoutesContext.displayName = 'AllAccessDesktopRoutesContext';
 
@@ -636,7 +635,7 @@ const LegacyRouteCompat: FC = (props) => {
   const location = useLocationNoUpdate();
 
   if (route) {
-    return <Navigate to={location.pathname.replace(currentPageUid, route.schemaUid)} />;
+    return <Navigate to={location.pathname.replace(currentPageUid, route.schemaUid) + location.search} />;
   }
 
   return <>{props.children}</>;
