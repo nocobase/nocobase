@@ -26,6 +26,30 @@ describe('collection', () => {
     await db.close();
   });
 
+  it('should create default id field in snowflake id type', async () => {
+    const TestCollection = db.collection({
+      name: 'tests',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const record1 = await TestCollection.repository.create({
+      values: {
+        name: 'test1',
+      },
+    });
+    // expect record1.id is snowflake id
+    const id = record1.id.toString();
+    expect(id).toMatch(/^\d+$/);
+    expect(id.length).toBe(19);
+  });
+
   it('should remove sequelize model prototype methods after field remove', async () => {
     db.collection({
       name: 'tags',
