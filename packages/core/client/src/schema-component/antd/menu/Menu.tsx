@@ -710,7 +710,11 @@ Menu.Item = observer(
                 removeParentsIfNoChildren={false}
               >
                 <Icon type={icon} />
-                <MenuItemTitleWithTooltip schema={schema} style={menuItemTitleStyle} />
+                <MenuItemTitleWithTooltip
+                  schema={schema}
+                  style={menuItemTitleStyle}
+                  tooltip={schema?.['x-component-props']?.tooltip}
+                />
                 <Designer />
               </SortableItem>
             </FieldContext.Provider>
@@ -762,7 +766,11 @@ const MenuURLButton = ({ href, params, icon }) => {
       aria-label={t(field.title)}
     >
       <Icon type={icon} />
-      <MenuItemTitleWithTooltip schema={schema} style={menuItemTitleStyle} />
+      <MenuItemTitleWithTooltip
+        schema={schema}
+        style={menuItemTitleStyle}
+        tooltip={schema?.['x-component-props']?.tooltip}
+      />
       <Designer />
     </SortableItem>
   );
@@ -834,7 +842,11 @@ Menu.SubMenu = observer(
                 aria-label={t(field.title)}
               >
                 <Icon type={icon} />
-                <MenuItemTitleWithTooltip schema={schema} style={{ marginInlineStart: 0 }} />
+                <MenuItemTitleWithTooltip
+                  schema={schema}
+                  style={{ marginInlineStart: 0 }}
+                  tooltip={schema?.['x-component-props']?.tooltip}
+                />
                 <Designer />
               </SortableItem>
             </FieldContext.Provider>

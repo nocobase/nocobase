@@ -19,34 +19,17 @@ const titleWrapperStyle = {
 
 export const withTooltipComponent = (Component: React.FC) => {
   return (props) => {
-    const { schema } = props;
-    const tooltip = schema?.['x-component-props']?.tooltip;
+    const { tooltip } = props;
 
     if (!tooltip) {
       return <Component {...props} />;
-    }
-
-    // 不破坏原菜单css样式
-    if (
-      schema?.['x-component'] === 'Menu.Item' ||
-      schema?.['x-component'] === 'Menu.URL' ||
-      schema?.['x-component'] === 'Menu.SubMenu'
-    ) {
-      return (
-        <>
-          <Component {...props} />
-          <Tooltip title={tooltip}>
-            <QuestionCircleOutlined style={{ marginInlineStart: '4px' }} />
-          </Tooltip>
-        </>
-      );
     }
 
     return (
       <div style={titleWrapperStyle}>
         <Component {...props} />
         <Tooltip title={tooltip}>
-          <QuestionCircleOutlined />
+          <QuestionCircleOutlined style={{ zIndex: 1 }} />
         </Tooltip>
       </div>
     );

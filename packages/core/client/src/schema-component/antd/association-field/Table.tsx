@@ -126,7 +126,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
         const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : s.name;
         const columnHidden = !!s['x-component-props']?.['columnHidden'];
         return {
-          title: <TableColumnTitle name={s.name} schema={s} onlyRenderSelf />,
+          title: <TableColumnTitle name={s.name} schema={s} onlyRenderSelf tooltip={s['x-component-props']?.tooltip} />,
           dataIndex,
           key: s.name,
           sorter: s['x-component-props']?.['sorter'],

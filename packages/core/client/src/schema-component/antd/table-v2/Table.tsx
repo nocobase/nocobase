@@ -226,6 +226,7 @@ const useTableColumns = (
                 schema={columnSchema}
                 onlyRenderSelf
                 isUseFormilyField={false}
+                tooltip={columnSchema?.['x-component-props']?.tooltip}
               />
             </RefreshComponentProvider>
           ),
