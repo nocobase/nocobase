@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { ErrorFallback, StablePopover, TabsContextProvider, useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { useACLActionParamsContext } from '../../../acl';
+import { useApp } from '../../../application';
 import {
   useCollectionParentRecordData,
   useCollectionRecordData,
@@ -48,7 +49,6 @@ import { ActionContextProvider } from './context';
 import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ActionContextProps, ActionProps, ComposedAction } from './types';
 import { linkageAction, setInitialActionState } from './utils';
-import { useApp } from '../../../application';
 
 const useA = () => {
   return {
@@ -558,11 +558,6 @@ const RenderButtonInner = observer(
       title,
       ...others
     } = props;
-
-    if (!designable && (field?.data?.hidden || !aclCtx)) {
-      return null;
-    }
-
     const debouncedClick = useCallback(
       debounce(
         (e: React.MouseEvent, checkPortal = true) => {
@@ -579,6 +574,10 @@ const RenderButtonInner = observer(
         debouncedClick.cancel();
       };
     }, []);
+
+    if (!designable && (field?.data?.hidden || !aclCtx)) {
+      return null;
+    }
 
     const actionTitle = title || field?.title;
 
