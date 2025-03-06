@@ -18,11 +18,30 @@ export default class extends Migration {
     await db.sequelize.transaction(async (transaction) => {
       const exists = await queryInterface.tableExists('users_jobs', { transaction });
       if (exists) {
-        await queryInterface.renameTable(
-          'users_jobs',
-          db.options.underscored ? 'workflow_manual_tasks' : 'workflowManualTasks',
-          { transaction },
-        );
+        const newTableName = db.options.underscored ? 'workflow_manual_tasks' : 'workflowManualTasks';
+
+        await queryInterface.renameTable('users_jobs', newTableName, { transaction });
+
+        const indexes: any = await queryInterface.showIndex(newTableName, { transaction });
+
+        for (const item of indexes) {
+          if (item.name.startsWith('users_jobs')) {
+            if (this.db.isPostgresCompatibleDialect()) {
+              await db.sequelize.query(
+                `ALTER INDEX "${item.name}" RENAME TO "${item.name.replace('users_jobs', 'workflow_manual_tasks')}";`,
+                { transaction },
+              );
+            } else if (this.db.isMySQLCompatibleDialect()) {
+              await db.sequelize.query(
+                `ALTER TABLE ${newTableName} RENAME INDEX ${item.name} TO ${item.name.replace(
+                  'users_jobs',
+                  'workflow_manual_tasks',
+                )};`,
+                { transaction },
+              );
+            }
+          }
+        }
       }
     });
   }
