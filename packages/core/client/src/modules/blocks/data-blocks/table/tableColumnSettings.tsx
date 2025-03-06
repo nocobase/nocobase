@@ -161,11 +161,12 @@ export const tableColumnSettings = new SchemaSettings({
             const { getInterface } = useCollectionManager_deprecated();
             const interfaceCfg = getInterface(collectionField?.interface);
             const { currentMode } = useAssociationFieldContext();
-
             return (
               interfaceCfg?.sortable === true &&
               !currentMode &&
-              (collection?.name === collectionField?.collectionName || !collectionField?.collectionName)
+              (collection?.name === collectionField?.collectionName ||
+                !collectionField?.collectionName ||
+                collectionField.inherit)
             );
           },
           useComponentProps() {
