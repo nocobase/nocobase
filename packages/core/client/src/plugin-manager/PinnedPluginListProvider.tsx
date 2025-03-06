@@ -9,9 +9,12 @@
 
 import { css } from '@emotion/css';
 import { SchemaOptionsContext } from '@formily/react';
+import { ConfigProvider, Divider } from 'antd';
 import { get } from 'lodash';
 import React, { useContext } from 'react';
 import { useACLRoleContext } from '../acl/ACLProvider';
+import { UserCenter } from '../route-switch/antd/admin-layout/UserCenterButton';
+import { Help } from '../user/Help';
 import { PinnedPluginListContext } from './context';
 
 export const PinnedPluginListProvider: React.FC<{ items: any }> = (props) => {
@@ -25,7 +28,8 @@ export const PinnedPluginListProvider: React.FC<{ items: any }> = (props) => {
 };
 
 const pinnedPluginListClassName = css`
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
 
   .ant-btn {
     border: 0;
@@ -44,6 +48,12 @@ const pinnedPluginListClassName = css`
   }
 `;
 
+const dividerTheme = {
+  token: {
+    colorSplit: 'rgba(255, 255, 255, 0.1)',
+  },
+};
+
 export const PinnedPluginList = React.memo(() => {
   const { allowAll, snippets } = useACLRoleContext();
   const getSnippetsAllow = (aclKey) => {
@@ -61,6 +71,11 @@ export const PinnedPluginList = React.memo(() => {
           const Action = get(components, ctx.items[key].component);
           return Action ? <Action key={key} /> : null;
         })}
+      <ConfigProvider theme={dividerTheme}>
+        <Divider type="vertical" />
+      </ConfigProvider>
+      <Help key="help" />
+      <UserCenter />
     </div>
   );
 });
