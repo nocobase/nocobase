@@ -62,7 +62,7 @@ export const CurrentRouteProvider: FC<{ uid: string }> = ({ children, uid }) => 
   return <NocoBaseRouteContext.Provider value={routeNode}>{children}</NocoBaseRouteContext.Provider>;
 };
 
-export const useCurrentRouteData = () => {
+export const useCurrentRoute = () => {
   return useContext(NocoBaseRouteContext) || {};
 };
 

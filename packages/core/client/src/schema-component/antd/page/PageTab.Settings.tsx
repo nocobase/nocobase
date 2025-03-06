@@ -15,7 +15,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
-import { useCurrentRouteData } from '../../../route-switch';
+import { useCurrentRoute } from '../../../route-switch';
 import { useDesignable } from '../../hooks';
 import { useNocoBaseRoutes } from '../menu/Menu';
 
@@ -31,7 +31,7 @@ export const pageTabSettings = new SchemaSettings({
       useComponentProps() {
         const { t } = useTranslation();
         const { updateRoute } = useNocoBaseRoutes();
-        const currentRoute = useCurrentRouteData();
+        const currentRoute = useCurrentRoute();
 
         return {
           title: t('Edit'),
@@ -71,7 +71,7 @@ export const pageTabSettings = new SchemaSettings({
       useComponentProps() {
         const { t } = useTranslation();
         const { updateRoute } = useNocoBaseRoutes();
-        const currentRoute = useCurrentRouteData();
+        const currentRoute = useCurrentRoute();
 
         return {
           title: t('Hidden'),
@@ -80,7 +80,9 @@ export const pageTabSettings = new SchemaSettings({
             Modal.confirm({
               title: t('Are you sure you want to hide this tab?'),
               icon: <ExclamationCircleFilled />,
-              content: t('After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.'),
+              content: t(
+                'After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.',
+              ),
               async onOk() {
                 // Update the route corresponding to the menu
                 await updateRoute(currentRoute.id, {
@@ -104,7 +106,7 @@ export const pageTabSettings = new SchemaSettings({
         const { dn } = useDesignable();
         const { t } = useTranslation();
         const { deleteRoute } = useNocoBaseRoutes();
-        const currentRoute = useCurrentRouteData();
+        const currentRoute = useCurrentRoute();
         const navigate = useNavigateNoUpdate();
         const schema = useFieldSchema();
 
@@ -121,8 +123,8 @@ export const pageTabSettings = new SchemaSettings({
                 dn.emit('remove', {
                   removed: {
                     'x-uid': currentRoute.schemaUid,
-                  }
-                })
+                  },
+                });
 
                 // 如果删除的是当前打开的 tab，需要跳转到其他 tab
                 if (window.location.pathname.includes(currentRoute.schemaUid)) {
