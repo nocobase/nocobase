@@ -11,6 +11,7 @@ import { useFieldSchema } from '@formily/react';
 import { useMemo, useContext } from 'react';
 import { useBlockTemplateContext } from '../../schema-templates/BlockTemplateProvider';
 import { BlockItemCardContext } from '../../schema-component/antd/block-item/BlockItemCard';
+import { useCurrentRoute } from '../../route-switch';
 
 export const useBlockHeightProps = () => {
   const fieldSchema = useFieldSchema();
@@ -19,13 +20,13 @@ export const useBlockHeightProps = () => {
   const pageSchema = useMemo(() => getPageSchema(blockTemplateSchema || fieldSchema), []);
   const { disablePageHeader, enablePageTabs, hidePageTitle } = pageSchema?.['x-component-props'] || {};
   const { titleHeight } = useContext(BlockItemCardContext) || ({} as any);
-
+  const currentRoute = useCurrentRoute();
   return {
     heightProps: {
       ...cardItemSchema?.['x-component-props'],
       title: cardItemSchema?.['x-component-props']?.title || cardItemSchema?.['x-component-props']?.description,
       disablePageHeader,
-      enablePageTabs,
+      enablePageTabs: currentRoute.enableTabs || enablePageTabs,
       hidePageTitle,
       titleHeight: titleHeight,
     },
