@@ -214,7 +214,7 @@ const MenuItemTitle: React.FC<{
 
 const MenuItemTitleWithTooltip = withTooltipComponent(MenuItemTitle);
 
-const ParentRouteContext = createContext<NocoBaseDesktopRoute>(null);
+export const ParentRouteContext = createContext<NocoBaseDesktopRoute>(null);
 ParentRouteContext.displayName = 'ParentRouteContext';
 
 export const useParentRoute = () => {
@@ -275,8 +275,8 @@ export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
       method,
       refreshAfterMove = true,
     }: {
-      sourceId: string;
-      targetId?: string;
+      sourceId: string | number;
+      targetId?: string | number;
       targetScope?: any;
       sortField?: string;
       sticky?: boolean;
