@@ -24,8 +24,7 @@ describe('Upload', () => {
     render(<App2 />);
   });
 
-  // TODO: skip due to not pass but works in browser
-  it.skip('upload single', async () => {
+  it('upload single', async () => {
     await renderAppOptions({
       designable: true,
       enableUserListDataBlock: true,
@@ -124,8 +123,7 @@ describe('Upload', () => {
     });
   });
 
-  // TODO: skip due to not pass but works in browser
-  it.skip('upload multi', async () => {
+  it('upload multi', async () => {
     await renderAppOptions({
       designable: true,
       enableUserListDataBlock: true,
