@@ -257,6 +257,7 @@ function getSubscriber(
           if (_.every(lastState?.value, (v) => v.value !== field.value)) {
             field.value = null;
           }
+          console.log(fieldName, lastState?.value);
           field[fieldName] = lastState?.value;
           field.data = field.data || {};
           requestAnimationFrame(() => {
