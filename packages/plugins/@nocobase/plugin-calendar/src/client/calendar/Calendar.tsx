@@ -29,7 +29,7 @@ import {
   usePopupUtils,
   useProps,
   withDynamicSchemaProps,
-  withSkeletonComponent
+  withSkeletonComponent,
 } from '@nocobase/client';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
@@ -75,7 +75,7 @@ const getColorString = (
 };
 
 export const DeleteEventContext = React.createContext({
-  close: () => { },
+  close: () => {},
   allowDeleteEvent: false,
 });
 

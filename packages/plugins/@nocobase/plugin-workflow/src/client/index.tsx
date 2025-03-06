@@ -76,7 +76,7 @@ export default class PluginWorkflowClient extends Plugin {
     return this.triggers.get(workflow.type)?.sync ?? workflow.sync;
   }
 
-  registerTrigger(type: string, trigger: Trigger | { new(): Trigger }) {
+  registerTrigger(type: string, trigger: Trigger | { new (): Trigger }) {
     if (typeof trigger === 'function') {
       this.triggers.register(type, new trigger());
     } else if (trigger) {
@@ -86,7 +86,7 @@ export default class PluginWorkflowClient extends Plugin {
     }
   }
 
-  registerInstruction(type: string, instruction: Instruction | { new(): Instruction }) {
+  registerInstruction(type: string, instruction: Instruction | { new (): Instruction }) {
     if (typeof instruction === 'function') {
       this.instructions.register(type, new instruction());
     } else if (instruction instanceof Instruction) {
@@ -193,4 +193,3 @@ export { default as useStyles } from './style';
 export { Trigger, useTrigger } from './triggers';
 export * from './utils';
 export * from './variable';
-
