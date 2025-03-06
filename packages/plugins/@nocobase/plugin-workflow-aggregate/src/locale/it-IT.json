@@ -1,0 +1,11 @@
+{
+  "Aggregate": "Aggrega",
+  "Counting, summing, finding maximum, minimum, and average values for multiple records of a collection or associated data of a record.": "Conteggio, somma, ricerca valori massimi, minimi e medi per record multipli di una raccolta o dati associati di un record.",
+  "Aggregator function": "Funzione di aggregazione",
+  "Target type": "Tipo destinazione",
+  "Data of collection": "Dati della raccolta",
+  "Data of associated collection": "Dati della raccolta associata",
+  "Field to aggregate": "Campo da aggregare",
+  "Distinct": "Rimuovi duplicati",
+  "Query result": "Risultato della query"
+}
