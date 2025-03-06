@@ -81,7 +81,7 @@ const toMoment = (val: any, options?: Str2momentOptions) => {
   if (!val) {
     return;
   }
-  const offset = options.utcOffset !== undefined ? options.utcOffset : -1 * new Date().getTimezoneOffset();
+  const offset = options.utcOffset;
   const { gmt, picker, utc = true } = options;
   if (dayjs(val).isValid()) {
     if (!utc) {
@@ -94,7 +94,7 @@ const toMoment = (val: any, options?: Str2momentOptions) => {
     if (gmt) {
       return dayjs(val).utcOffset(0);
     }
-    return dayjs(val).utcOffset(offsetFromString(offset));
+    return offset ? dayjs(val).utcOffset(offsetFromString(offset)) : dayjs(val);
   } else {
     return convertQuarterToFirstDay(val);
   }
