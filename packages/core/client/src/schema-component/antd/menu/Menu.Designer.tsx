@@ -325,6 +325,24 @@ export const MenuDesigner = () => {
       icon: field.componentProps.icon,
     };
   }, [field.title, field.componentProps.icon]);
+  const editTooltipSchema = useMemo(() => {
+    return {
+      type: 'object',
+      title: t('Edit tooltip'),
+      properties: {
+        tooltip: {
+          'x-decorator': 'FormItem',
+          'x-component': 'Input.TextArea',
+          'x-component-props': {},
+        },
+      },
+    };
+  }, [t]);
+  const initialTooltipValues = useMemo(() => {
+    return {
+      tooltip: field.componentProps.tooltip,
+    };
+  }, [field.componentProps.tooltip]);
   if (fieldSchema['x-component'] === 'Menu.URL') {
     schema.properties['href'] = urlSchema;
     schema.properties['params'] = paramsSchema;
@@ -373,6 +391,17 @@ export const MenuDesigner = () => {
                   params,
                 }
               : undefined,
+        });
+      }
+    },
+    [fieldSchema, field, dn, refresh, onSelect],
+  );
+  const onEditTooltipSubmit: (values: any) => void = useCallback(
+    ({ tooltip }) => {
+      // 更新菜单对应的路由
+      if (fieldSchema['__route__']?.id) {
+        updateRoute(fieldSchema['__route__'].id, {
+          tooltip,
         });
       }
     },
@@ -470,6 +499,13 @@ export const MenuDesigner = () => {
         schema={schema as ISchema}
         initialValues={initialValues}
         onSubmit={onEditSubmit}
+      />
+      <SchemaSettingsModalItem
+        title={t('Edit tooltip')}
+        eventKey="edit-tooltip"
+        schema={editTooltipSchema as ISchema}
+        initialValues={initialTooltipValues}
+        onSubmit={onEditTooltipSubmit}
       />
       <SchemaSettingsSwitchItem
         title={t('Hidden')}
