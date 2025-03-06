@@ -44,12 +44,13 @@ import {
   useLocationNoUpdate,
 } from '../../../application/CustomRouterContextProvider';
 import { Plugin } from '../../../application/Plugin';
+import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 import { menuItemInitializer } from '../../../modules/menu/menuItemInitializer';
+import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
 import { KeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
-import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
 
 export { KeepAlive, NocoBaseDesktopRouteType };
 
@@ -434,16 +435,26 @@ const actionsRender: any = (props) => {
   return <PinnedPluginList />;
 };
 
+const MenuItemTitle: React.FC = (props) => {
+  return <>{props.children}</>;
+};
+
+const MenuItemTitleWithTooltip = withTooltipComponent(MenuItemTitle);
+
 const menuItemRender = (item, dom, options) => {
   return (
     <MenuItem item={item} options={options}>
-      {dom}
+      <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{dom}</MenuItemTitleWithTooltip>
     </MenuItem>
   );
 };
 
 const subMenuItemRender = (item, dom) => {
-  return <GroupItem item={item}>{dom}</GroupItem>;
+  return (
+    <GroupItem item={item}>
+      <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{dom}</MenuItemTitleWithTooltip>
+    </GroupItem>
+  );
 };
 
 const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
@@ -757,6 +768,8 @@ function convertRoutesToLayout(
       name: <MenuDesignerButton testId={testId} />,
       path: '/',
       disabled: true,
+      _route: {},
+      _parentRoute: {},
       icon: <Icon type="setting" />,
     };
   };

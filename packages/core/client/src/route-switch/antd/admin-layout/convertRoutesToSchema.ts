@@ -23,6 +23,7 @@ export interface NocoBaseDesktopRoute {
   children?: NocoBaseDesktopRoute[];
 
   title?: string;
+  tooltip?: string;
   icon?: string;
   schemaUid?: string;
   menuSchemaUid?: string;
