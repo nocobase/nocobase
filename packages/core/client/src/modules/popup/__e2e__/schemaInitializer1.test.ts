@@ -124,10 +124,13 @@ test.describe('where to open a popup and what can be added to it', () => {
 
     async function addBlock(names: string[]) {
       await page.getByLabel('schema-initializer-Grid-popup').hover();
+      await page.waitForTimeout(500);
       for (let i = 0; i < names.length - 1; i++) {
         const name = names[i];
         await page.getByRole('menuitem', { name }).hover();
+        await page.waitForTimeout(500);
       }
+      await expect(page.getByRole('menuitem', { name: names[names.length - 1] })).toHaveCount(1);
       await page.getByRole('menuitem', { name: names[names.length - 1] }).click();
       await page.mouse.move(300, 0);
     }

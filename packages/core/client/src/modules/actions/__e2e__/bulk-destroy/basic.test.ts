@@ -45,6 +45,7 @@ test.describe('bulk-destroy', () => {
     await page.getByLabel('designer-schema-settings-Action-actionSettings:bulkDelete-general').hover();
     await page.getByRole('menuitem', { name: 'Secondary confirmation' }).click();
     await page.getByLabel('Enable secondary confirmation').uncheck();
+    await expect(page.getByRole('button', { name: 'OK' })).toHaveCount(1);
     await page.getByRole('button', { name: 'OK' }).click();
     await page.mouse.move(500, 0);
 

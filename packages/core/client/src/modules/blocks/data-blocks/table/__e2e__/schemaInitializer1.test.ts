@@ -12,6 +12,7 @@ import { T3686, T4005 } from './templatesOfBug';
 
 const deleteButton = async (page: Page, name: string) => {
   await page.getByRole('button', { name }).hover();
+  await page.getByRole('menuitem', { name: 'Delete' }).waitFor({ state: 'detached' });
   await page.getByRole('button', { name }).getByLabel('designer-schema-settings-').hover();
   await page.getByRole('menuitem', { name: 'Delete' }).click();
   await page.getByRole('button', { name: 'OK', exact: true }).click();
@@ -46,6 +47,7 @@ test.describe('where table block can be added', () => {
     await page.getByRole('menuitem', { name: 'childTargetText' }).click();
 
     // 添加父表关系区块
+    await page.getByRole('menuitem', { name: 'Table right' }).waitFor({ state: 'detached' });
     await page.getByLabel('schema-initializer-Grid-popup').hover();
     await page.getByRole('menuitem', { name: 'Table right' }).hover();
     await page.getByRole('menuitem', { name: 'Associated records' }).last().hover();
