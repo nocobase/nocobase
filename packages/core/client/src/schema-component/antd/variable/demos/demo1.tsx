@@ -1,6 +1,5 @@
 import { mockApp } from '@nocobase/client/demo-utils';
-import { FormItem } from '@formily/antd-v5';
-import { SchemaComponent, SchemaComponentProvider, Variable, Plugin } from '@nocobase/client';
+import { SchemaComponent, Plugin, AntdSchemaComponentProvider } from '@nocobase/client';
 import PluginVariableFiltersClient from '@nocobase/plugin-variable-filters/client';
 import React from 'react';
 
@@ -26,9 +25,9 @@ const schema = {
 
 const Demo = () => {
   return (
-    <SchemaComponentProvider components={{ Variable, FormItem }}>
+    <AntdSchemaComponentProvider>
       <SchemaComponent schema={schema} />
-    </SchemaComponentProvider>
+    </AntdSchemaComponentProvider>
   );
 };
 
