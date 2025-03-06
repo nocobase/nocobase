@@ -18,22 +18,22 @@ const { ExecutionPage } = lazy(() => import('./ExecutionPage'), 'ExecutionPage')
 const { WorkflowPage } = lazy(() => import('./WorkflowPage'), 'WorkflowPage');
 const { WorkflowPane } = lazy(() => import('./WorkflowPane'), 'WorkflowPane');
 
-import { Trigger } from './triggers';
-import CollectionTrigger from './triggers/collection';
-import ScheduleTrigger from './triggers/schedule';
+import { NAMESPACE } from './locale';
 import { Instruction } from './nodes';
 import CalculationInstruction from './nodes/calculation';
 import ConditionInstruction from './nodes/condition';
+import CreateInstruction from './nodes/create';
+import DestroyInstruction from './nodes/destroy';
 import EndInstruction from './nodes/end';
 import QueryInstruction from './nodes/query';
-import CreateInstruction from './nodes/create';
 import UpdateInstruction from './nodes/update';
-import DestroyInstruction from './nodes/destroy';
-import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './utils';
-import { lang, NAMESPACE } from './locale';
-import { VariableOption } from './variable';
-import { WorkflowTasks, TasksProvider, TaskTypeOptions } from './WorkflowTasks';
 import { BindWorkflowConfig } from './settings/BindWorkflowConfig';
+import { Trigger } from './triggers';
+import CollectionTrigger from './triggers/collection';
+import ScheduleTrigger from './triggers/schedule';
+import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './utils';
+import { VariableOption } from './variable';
+import { TasksProvider, TaskTypeOptions, WorkflowTasks } from './WorkflowTasks';
 
 const workflowConfigSettings = {
   Component: BindWorkflowConfig,
@@ -182,15 +182,14 @@ export default class PluginWorkflowClient extends Plugin {
 }
 
 export * from './Branch';
-export * from './FlowContext';
-export * from './constants';
-export * from './nodes';
-export { Trigger, useTrigger } from './triggers';
-export * from './variable';
 export * from './components';
-export * from './utils';
-export * from './hooks';
-export { default as useStyles } from './style';
-export * from './variable';
+export * from './constants';
 export * from './ExecutionContextProvider';
+export * from './FlowContext';
+export * from './hooks';
+export * from './nodes';
 export * from './settings/BindWorkflowConfig';
+export { default as useStyles } from './style';
+export { Trigger, useTrigger } from './triggers';
+export * from './utils';
+export * from './variable';

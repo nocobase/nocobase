@@ -57,7 +57,8 @@ export abstract class RelationRepository {
   decodeMultiTargetKey(str: string) {
     try {
       const decoded = decodeURIComponent(str);
-      return JSON.parse(decoded);
+      const parsed = JSON.parse(decoded);
+      return typeof parsed === 'object' && parsed !== null ? parsed : decoded;
     } catch (e) {
       return false;
     }
