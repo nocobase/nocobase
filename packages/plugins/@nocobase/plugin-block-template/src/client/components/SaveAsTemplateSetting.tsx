@@ -87,6 +87,10 @@ export const SaveAsTemplateSetting = () => {
         const schemaUid = uid();
         const isMobile = type === 'Mobile';
         const templateSchema = getTemplateSchemaFromPage(fieldSchema.toJSON());
+        if (containsReferenceTemplate(templateSchema)) {
+          message.error(t('This block is using some reference templates, please convert to duplicate template first.'));
+          return;
+        }
         const schemaOfTemplate = {
           type: 'void',
           name: key,
@@ -287,4 +291,17 @@ function getTemplateSchemaFromPage(schema: ISchema) {
   };
   traverseSchema(schema, templateSchema);
   return templateSchema;
+}
+
+function containsReferenceTemplate(schema: ISchema) {
+  if (schema['x-component'] === 'BlockTemplate') {
+    return true;
+  }
+  if (schema.properties) {
+    for (const key in schema.properties) {
+      if (containsReferenceTemplate(schema.properties[key])) {
+        return true;
+      }
+    }
+  }
 }
