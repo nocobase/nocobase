@@ -33,7 +33,7 @@ export const useBlockHeightProps = () => {
       ...cardItemSchema?.['x-component-props'],
       title: cardItemSchema?.['x-component-props']?.title || cardItemSchema?.['x-component-props']?.description,
       disablePageHeader,
-      enablePageTabs: currentRoute.enableTabs || enablePageTabs,
+      enablePageTabs: currentRoute?.enableTabs || enablePageTabs,
       hidePageTitle,
       titleHeight: titleHeight,
     },
