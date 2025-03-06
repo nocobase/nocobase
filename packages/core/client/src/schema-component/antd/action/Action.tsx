@@ -12,6 +12,7 @@ import { observer, Schema, useField, useFieldSchema, useForm } from '@formily/re
 import { isPortalInBody } from '@nocobase/utils/client';
 import { App, Button } from 'antd';
 import classnames from 'classnames';
+import debounce from 'lodash/debounce';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
@@ -526,7 +527,7 @@ const RenderButtonInner = observer(
     buttonStyle: React.CSSProperties;
     handleMouseEnter: (e: React.MouseEvent) => void;
     getAriaLabel: (postfix?: string) => string;
-    handleButtonClick: (e: React.MouseEvent) => void;
+    handleButtonClick: (e: React.MouseEvent, checkPortal?: boolean) => void;
     tarComponent: React.ElementType;
     componentCls: string;
     hashId: string;
@@ -562,6 +563,23 @@ const RenderButtonInner = observer(
       return null;
     }
 
+    const debouncedClick = useCallback(
+      debounce(
+        (e: React.MouseEvent, checkPortal = true) => {
+          handleButtonClick(e, checkPortal);
+        },
+        300,
+        { leading: true, trailing: false },
+      ),
+      [handleButtonClick],
+    );
+
+    useEffect(() => {
+      return () => {
+        debouncedClick.cancel();
+      };
+    }, []);
+
     const actionTitle = title || field?.title;
 
     return (
@@ -575,7 +593,7 @@ const RenderButtonInner = observer(
         icon={typeof icon === 'string' ? <Icon type={icon} /> : icon}
         disabled={disabled}
         style={buttonStyle}
-        onClick={handleButtonClick}
+        onClick={process.env.__E2E__ ? handleButtonClick : debouncedClick} // E2E 中的点击操作都是很快的，如果加上 debounce 会导致 E2E 测试失败
         component={tarComponent || Button}
         className={classnames(componentCls, hashId, className, 'nb-action')}
         type={type === 'danger' ? undefined : type}
