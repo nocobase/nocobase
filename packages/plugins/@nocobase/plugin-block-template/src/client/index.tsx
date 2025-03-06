@@ -27,7 +27,7 @@ import {
 } from './utils/setting';
 import { BlockTemplateMenusProvider } from './components/BlockTemplateMenusProvider';
 import { disabledDeleteSettingItem } from './settings/disabledDeleteSetting';
-
+import { saveAsTemplateSetting } from './settings/saveAsTemplateSetting';
 export class PluginBlockTemplateClient extends Plugin {
   templateInfos = new Map();
   templateschemacache = {};
@@ -163,6 +163,29 @@ export class PluginBlockTemplateClient extends Plugin {
               schemaSetting.add('template-revertSettingItem', revertSettingItem);
             }
             schemaSetting.add('template-disabledDeleteItem', disabledDeleteSettingItem);
+          }
+          const blockSettings = [
+            'blockSettings:calendar',
+            'blockSettings:createForm',
+            'blockSettings:details',
+            'blockSettings:detailsWithPagination',
+            'blockSettings:filterCollapse',
+            'blockSettings:filterForm',
+            'blockSettings:gantt',
+            'blockSettings:gridCard',
+            'blockSettings:kanban',
+            'blockSettings:list',
+            'blockSettings:table',
+          ];
+          if (blockSettings.includes(key)) {
+            // schemaSetting.add('template-saveAsTemplateItem', saveAsTemplateSetting);
+            // 放到template-revertSettingItem上方
+            const revertItemIndex = schemaSetting.items.findIndex((item) => item.name === 'template-revertSettingItem');
+            if (revertItemIndex !== -1) {
+              schemaSetting.items.splice(revertItemIndex, 0, saveAsTemplateSetting);
+            } else {
+              schemaSetting.items.push(saveAsTemplateSetting);
+            }
           }
         }
       }
