@@ -35,7 +35,11 @@ export function AccessControl() {
   const { refresh: refreshRoleCheck } = useACLContext();
 
   useEffect(() => {
-    if (fieldSchema['x-decorator'] !== 'ACLActionProvider') {
+    if (
+      fieldSchema['x-decorator'] !== 'ACLActionProvider' &&
+      fieldSchema['x-decorator'] !== `CustomRequestAction.Decorator` &&
+      fieldSchema['x-component'] !== 'WorkbenchAction'
+    ) {
       dn.emit('patch', {
         schema: {
           ['x-uid']: fieldSchema['x-uid'],
