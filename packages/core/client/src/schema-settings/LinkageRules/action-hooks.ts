@@ -56,7 +56,7 @@ export const useLinkageCollectionFieldOptions = (collectionName: string, readPre
           if (nested || children || ['formula', 'richText', 'sequence'].includes(fieldInterface.name)) {
             return operator?.value !== ActionType.Value && operator?.value !== ActionType.Options;
           }
-          if (!['select', 'radioGroup', 'multipleSelect'].includes(fieldInterface.name)) {
+          if (!['select', 'radioGroup', 'multipleSelect', 'checkboxGroup'].includes(fieldInterface.name)) {
             return operator?.value !== ActionType.Options;
           }
           return true;
