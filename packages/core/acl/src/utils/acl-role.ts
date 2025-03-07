@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { assign } from '@nocobase/utils';
-import _ from 'lodash';
+import _, { merge } from 'lodash';
 
 export function mergeRole(roles) {
   const result: Record<string, any> = {
@@ -145,8 +145,15 @@ export function mergeAclActionParams(sourceParams, targetParams) {
     return {};
   }
 
-  // source 和 target 其中之一没有 fields 字段时, 最终希望没有此字段，只删除 sourceKey, 是因为 assign 遍历的 sourceKey
-  adaptAssignParams(sourceParams, targetParams, ['fields', 'whitelist', 'appends']);
+  // source 和 target 其中之一没有 fields 字段时, 最终希望没有此字段
+  removeUnmatchedParams(sourceParams, targetParams, ['fields', 'whitelist', 'appends']);
+
+  const andMerge = (x, y) => {
+    if (_.isEmpty(x) || _.isEmpty(y)) {
+      return [];
+    }
+    return _.uniq(x.concat(y)).filter(Boolean);
+  };
 
   const mergedParams = assign(targetParams, sourceParams, {
     own: (x, y) => x || y,
@@ -167,17 +174,29 @@ export function mergeAclActionParams(sourceParams, targetParams) {
 
       return { $or: _.uniqWith($or, _.isEqual) };
     },
-    fields: 'union',
-    whitlist: 'union',
-    appends: 'union',
+    fields: andMerge,
+    whitlist: andMerge,
+    appends: andMerge,
   });
+  removeEmptyParams(mergedParams);
   return mergedParams;
 }
 
-function adaptAssignParams(source, target, keys: string[]) {
+export function removeEmptyParams(params) {
+  Object.keys(params).forEach((key) => {
+    if (_.isEmpty(params[key])) {
+      delete params[key];
+    }
+  });
+}
+
+function removeUnmatchedParams(source, target, keys: string[]) {
   for (const key of keys) {
     if (_.has(source, key) && !_.has(target, key)) {
       delete source[key];
+    }
+    if (!_.has(source, key) && _.has(target, key)) {
+      delete target[key];
     }
   }
 }

@@ -19,7 +19,7 @@ import { AllowManager, ConditionFunc } from './allow-manager';
 import FixedParamsManager, { Merger } from './fixed-params-manager';
 import SnippetManager, { SnippetOptions } from './snippet-manager';
 import { NoPermissionError } from './errors/no-permission-error';
-import { mergeAclActionParams } from './utils';
+import { mergeAclActionParams, removeEmptyParams } from './utils';
 
 interface CanResult {
   role: string;
@@ -228,6 +228,7 @@ export class ACL extends EventEmitter {
       });
       if (!canResult) {
         canResult = result;
+        removeEmptyParams(canResult.params);
       } else if (canResult && result) {
         canResult.params = mergeAclActionParams(canResult.params, result.params);
       }
