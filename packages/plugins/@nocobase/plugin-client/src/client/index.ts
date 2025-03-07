@@ -19,12 +19,12 @@ class PluginClient extends Plugin {
     this.app.pluginSettingsManager.add('routes', {
       title: t('Routes'),
       icon: 'ApartmentOutlined',
-      aclSnippet: 'ui.*',
+      aclSnippet: 'pm.routes',
     });
     this.app.pluginSettingsManager.add(`routes.desktop`, {
       title: t('Desktop routes'),
       Component: DesktopRoutesManager,
-      aclSnippet: 'ui.*',
+      aclSnippet: 'pm.routes.desktop',
       sort: 1,
     });
 
