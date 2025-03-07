@@ -152,6 +152,14 @@ export default class PluginUsersServer extends Plugin {
     const loggedInActions = ['updateProfile', 'updateLang'];
     loggedInActions.forEach((action) => this.app.acl.allow('users', action, 'loggedIn'));
 
+    this.app.acl.allow('users', 'get', (ctx) => {
+      const { filterByTk } = ctx.action.params;
+      if (filterByTk === ctx.auth.user?.id) {
+        return true;
+      }
+      return false;
+    });
+
     this.app.acl.registerSnippet({
       name: `pm.${this.name}`,
       actions: ['users:*'],
