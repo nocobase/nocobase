@@ -161,6 +161,23 @@ describe('workflow > triggers > collection', () => {
       expect(executions.length).toBe(1);
       expect(executions[0].context.data.title).toBe('c1');
     });
+
+    it('skipWorkflow', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        sync: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' }, context: { skipWorkflow: true } });
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(0);
+    });
   });
 
   describe('config.mode', () => {
