@@ -84,7 +84,9 @@ export class QueryParser {
     orders.forEach((item: OrderProps) => {
       const alias = sequelize.getQueryInterface().quoteIdentifier(item.alias);
       const name = hasAgg ? sequelize.literal(alias) : sequelize.col(item.field as string);
-      order.push([name, item.order || 'ASC']);
+      let sort = item.order || 'ASC';
+      sort = item.nulls !== 'default' ? `${sort} NULLS ${item.nulls}` : sort;
+      order.push([name, sort]);
     });
     return order;
   }
