@@ -25,6 +25,7 @@ import {
   useDataBlockRequestData,
   useDataBlockRequestGetter,
   useInsertPageSchema,
+  useMenuTranslation,
   useNocoBaseRoutes,
   useRequest,
   useRouterBasename,
@@ -411,6 +412,18 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                     };
                                   }
 
+                                  const childrenObj: any = {};
+                                  if (tabSchemaUid) {
+                                    childrenObj.children = [
+                                      {
+                                        schemaUid: tabSchemaUid,
+                                        type: NocoBaseDesktopRouteType.tabs,
+                                        tabSchemaName,
+                                        hidden: !form.values?.enableTabs,
+                                      },
+                                    ];
+                                  }
+
                                   const res = await createRoute({
                                     ..._.omit(form.values, ['href', 'params', 'url']),
                                     schemaUid:
@@ -419,17 +432,8 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                         : menuSchemaUid,
                                     menuSchemaUid,
                                     options,
+                                    ...childrenObj,
                                   });
-
-                                  if (tabSchemaUid) {
-                                    await createRoute({
-                                      schemaUid: tabSchemaUid,
-                                      parentId: res?.data?.data?.id,
-                                      type: NocoBaseDesktopRouteType.tabs,
-                                      tabSchemaName,
-                                      hidden: true,
-                                    });
-                                  }
 
                                   ctx.setVisible(false);
                                   actionCallback?.(res?.data?.data);
@@ -489,14 +493,14 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                 type: 'string',
                 'x-component': function Com(props) {
                   const record = useCollectionRecordData();
-                  const { t } = useTranslation();
+                  const { t } = useMenuTranslation();
                   let value = props.value;
 
                   if (record.type === NocoBaseDesktopRouteType.tabs && _.isNil(props.value)) {
                     value = t('Unnamed');
                   }
 
-                  return <CollectionField {...props} value={value} />;
+                  return <CollectionField {...props} value={t(value)} />;
                 },
                 'x-read-pretty': true,
                 'x-component-props': {
@@ -861,7 +865,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                       if (form.values.type === NocoBaseDesktopRouteType.tabs) {
                                         const { tabSchemaUid, tabSchemaName } = await createTabRouteSchema({
                                           ...form.values,
-                                          parentSchemaUid: recordData.pageSchemaUid,
+                                          parentSchemaUid: recordData.schemaUid,
                                         });
 
                                         await createRoute({
@@ -1207,6 +1211,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                   const resource = useMemo(() => api.resource(collectionName), [api]);
                   const { getDataBlockRequest } = useDataBlockRequestGetter();
                   const { deleteRouteSchema } = useDeleteRouteSchema();
+                  const { refresh: refreshMenu } = useAllAccessDesktopRoutes();
 
                   return {
                     onClick: async () => {
@@ -1217,6 +1222,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                         })
                         .then(() => {
                           getDataBlockRequest().refresh();
+                          refreshMenu();
                         })
                         .catch((error) => {
                           console.error(error);

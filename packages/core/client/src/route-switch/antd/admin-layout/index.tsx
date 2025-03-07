@@ -42,15 +42,15 @@ import {
   IsSubPageClosedByPageMenuProvider,
   useCurrentPageUid,
   useLocationNoUpdate,
-  useNavigateNoUpdate,
 } from '../../../application/CustomRouterContextProvider';
 import { Plugin } from '../../../application/Plugin';
+import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 import { menuItemInitializer } from '../../../modules/menu/menuItemInitializer';
+import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
 import { KeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
-import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 
 export { KeepAlive, NocoBaseDesktopRouteType };
 
@@ -504,12 +504,13 @@ export const InternalAdminLayout = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const doNotChangeCollapsedRef = useRef(false);
+  const { t } = useMenuTranslation();
   const route = useMemo(() => {
     return {
       path: '/',
-      children: convertRoutesToLayout(allAccessRoutes, { designable, isMobile }),
+      children: convertRoutesToLayout(allAccessRoutes, { designable, isMobile, t }),
     };
-  }, [allAccessRoutes, designable, isMobile]);
+  }, [allAccessRoutes, designable, isMobile, t]);
   const layoutToken = useMemo(() => {
     return {
       header: {
@@ -755,7 +756,10 @@ const MenuDesignerButton: FC<{ testId: string }> = (props) => {
   });
 };
 
-function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { designable, parentRoute, isMobile, depth = 0 }: any) {
+function convertRoutesToLayout(
+  routes: NocoBaseDesktopRoute[],
+  { designable, parentRoute, isMobile, t, depth = 0 }: any,
+) {
   if (!routes) return;
 
   const getInitializerButton = (testId: string) => {
@@ -773,7 +777,7 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { designable, par
   const result: any[] = routes.map((item) => {
     if (item.type === NocoBaseDesktopRouteType.link) {
       return {
-        name: item.title,
+        name: t(item.title),
         icon: item.icon ? <Icon type={item.icon} /> : null,
         path: '/',
         hideInMenu: item.hideInMenu,
@@ -784,7 +788,7 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { designable, par
 
     if (item.type === NocoBaseDesktopRouteType.page) {
       return {
-        name: item.title,
+        name: t(item.title),
         icon: item.icon ? <Icon type={item.icon} /> : null,
         path: `/admin/${item.schemaUid}`,
         redirect: `/admin/${item.schemaUid}`,
@@ -795,7 +799,8 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { designable, par
     }
 
     if (item.type === NocoBaseDesktopRouteType.group) {
-      const children = convertRoutesToLayout(item.children, { designable, parentRoute: item, depth: depth + 1 }) || [];
+      const children =
+        convertRoutesToLayout(item.children, { designable, parentRoute: item, depth: depth + 1, t }) || [];
 
       // add a designer button
       if (designable && depth === 0) {
@@ -803,7 +808,7 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { designable, par
       }
 
       return {
-        name: item.title,
+        name: t(item.title),
         icon: item.icon ? <Icon type={item.icon} /> : null,
         path: `/admin/${item.id}`,
         redirect:
