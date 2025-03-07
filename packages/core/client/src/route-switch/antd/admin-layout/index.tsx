@@ -497,6 +497,13 @@ const headerRender = (props: HeaderViewProps, defaultDom: React.ReactNode) => {
   return <headerContext.Provider value={headerContextValue}>{defaultDom}</headerContext.Provider>;
 };
 
+const IsMobileLayoutContext = React.createContext<boolean>(false);
+
+export const useIsMobileLayout = () => {
+  const isMobileLayout = useContext(IsMobileLayoutContext);
+  return { isMobileLayout };
+};
+
 export const InternalAdminLayout = () => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const { designable } = useDesignable();
@@ -598,7 +605,9 @@ export const InternalAdminLayout = () => {
 
             return (
               <ConfigProvider theme={_isMobile ? mobileTheme : theme}>
-                <LayoutContent />
+                <IsMobileLayoutContext.Provider value={_isMobile}>
+                  <LayoutContent />
+                </IsMobileLayoutContext.Provider>
               </ConfigProvider>
             );
           }}
