@@ -25,6 +25,7 @@ import {
   useDataBlockRequestData,
   useDataBlockRequestGetter,
   useInsertPageSchema,
+  useMenuTranslation,
   useNocoBaseRoutes,
   useRequest,
   useRouterBasename,
@@ -492,14 +493,14 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                 type: 'string',
                 'x-component': function Com(props) {
                   const record = useCollectionRecordData();
-                  const { t } = useTranslation();
+                  const { t } = useMenuTranslation();
                   let value = props.value;
 
                   if (record.type === NocoBaseDesktopRouteType.tabs && _.isNil(props.value)) {
                     value = t('Unnamed');
                   }
 
-                  return <CollectionField {...props} value={value} />;
+                  return <CollectionField {...props} value={t(value)} />;
                 },
                 'x-read-pretty': true,
                 'x-component-props': {
