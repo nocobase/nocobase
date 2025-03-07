@@ -1,0 +1,9 @@
+{
+  "Delay": "Ritarda",
+  "Delay a period of time and then continue or exit the process. Can be used to set wait or timeout times in parallel branches.": "Ritarda un periodo di tempo e quindi continua o esci dal processo. Può essere utilizzato per impostare tempi di attesa o timeout in rami paralleli.",
+  "Duration": "Durata",
+  "End status": "Stato finale",
+  "Select status": "Seleziona stato",
+  "Succeed and continue": "Riuscito e continua",
+  "Fail and exit": "Fallito ed esci"
+}

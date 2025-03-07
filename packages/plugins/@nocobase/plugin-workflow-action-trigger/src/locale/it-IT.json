@@ -1,0 +1,9 @@
+{
+  "Form event": "Evento modulo",
+  "Event triggers when submitted a workflow bound form action.": "L'evento si attiva quando viene inviata un'azione di un modulo associato a un workflow.",
+  "Form data model": "Modello dati modulo",
+  "Use a collection to match form data.": "Utilizza una raccolta per abbinare i dati del modulo.",
+  "Associations to use": "Associazioni da utilizzare",
+  "User submitted form": "Modulo inviato dall'utente",
+  "Role of user submitted form": "Ruolo del modulo inviato dall'utente"
+}
