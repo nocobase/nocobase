@@ -7,258 +7,164 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MockServer, createMockServer, ExtendedAgent } from '@nocobase/test';
+import Database from '@nocobase/database';
+import { createMockServer, MockServer } from '@nocobase/test';
 
-describe('Web client desktopRoutes', async () => {
-  let app: MockServer, db;
-  let agent: ExtendedAgent, rootUser, user, role1, role2;
+describe('desktopRoutes:listAccessible', () => {
+  let app: MockServer;
+  let db: Database;
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: [
-        'acl',
-        'client',
-        'users',
-        'ui-schema-storage',
-        'system-settings',
-        'field-sort',
-        'data-source-main',
-        'auth',
-        'data-source-manager',
-        'error-handler',
-      ],
+      registerActions: true,
+      acl: true,
+      plugins: ['nocobase'],
     });
     db = app.db;
-    rootUser = await db.getRepository('users').findOne({
-      filter: {
-        email: process.env.INIT_ROOT_EMAIL,
-      },
-    });
-    const rootAgent = await app.agent().login(rootUser);
-    const role1Response = await rootAgent.resource('roles').create({
-      values: {
-        name: 'r1',
-      },
-    });
-    role1 = role1Response.body.data;
-    const role2Response = await rootAgent.resource('roles').create({
-      values: {
-        name: 'r2',
-      },
-    });
-    role2 = role2Response.body.data;
-    user = await db.getRepository('users').create({
-      values: {
-        name: 'u1',
-        roles: [role1.name, role2.name],
-      },
-    });
 
-    agent = await app.agent().login(user, 'union');
+    // 创建测试页面和tab路由
+    await db.getRepository('desktopRoutes').create({
+      values: [
+        {
+          type: 'page',
+          title: 'page1',
+          children: [{ type: 'tab', title: 'tab1' }],
+        },
+        {
+          type: 'page',
+          title: 'page2',
+          children: [{ type: 'tab', title: 'tab2' }],
+        },
+        {
+          type: 'page',
+          title: 'page3',
+          children: [{ type: 'tab', title: 'tab3' }],
+        },
+      ],
+    });
   });
 
   afterEach(async () => {
     await app.destroy();
   });
 
-  // 创建测试页面和tab路由
-  await db.getRepository('desktopRoutes').create({
-    values: [
-      {
-        type: 'page',
-        title: 'page1',
-        children: [{ type: 'tab', title: 'tab1' }],
-      },
-      {
-        type: 'page',
-        title: 'page2',
-        children: [{ type: 'tab', title: 'tab2' }],
-      },
-      {
-        type: 'page',
-        title: 'page3',
-        children: [{ type: 'tab', title: 'tab3' }],
-      },
-    ],
+  it('should return all routes for root role', async () => {
+    const rootUser = await db.getRepository('users').create({
+      values: { roles: ['root'] },
+    });
+    const agent = await app.agent().login(rootUser);
+
+    const response = await agent.resource('desktopRoutes').listAccessible();
+    expect(response.status).toBe(200);
+    expect(response.body.data.length).toBe(3);
+    expect(response.body.data[0].children.length).toBe(1);
   });
 
-  const generateRandomString = () => {
-    return Math.random().toString(36).substring(2, 15);
-  };
-
-  const createUiMenu = async (loginAgent: ExtendedAgent, data?: { title?: string }) => {
-    const response = await loginAgent.resource(`desktopRoutes`).create({
-      values: {
-        type: 'page',
-        title: data?.title || generateRandomString(),
-        schemaUid: generateRandomString(),
-        menuSchemaUid: generateRandomString(),
-        enableTabs: false,
-        children: [
-          {
-            type: 'tabs',
-            schemaUid: generateRandomString(),
-            tabSchemaName: generateRandomString(),
-            hidden: true,
-          },
-        ],
-      },
+  it('should return all routes by default for admin/member', async () => {
+    // 测试 admin 角色
+    const adminUser = await db.getRepository('users').create({
+      values: { roles: ['admin'] },
     });
-    expect(response.statusCode).toBe(200);
-    expect(response.body.data).exist;
-    if (data?.title) {
-      expect(response.body.data.title).toBe(data.title);
-    }
-    const menu = response.body.data;
-    const uiSchemaResponse = await loginAgent
-      .post(`/uiSchemas:insertAdjacent/nocobase-admin-menu`)
-      .query({ position: 'beforeEnd' })
-      .send({
-        schema: {
-          _isJSONSchemaObject: true,
-          version: '2.0',
-          type: 'void',
-          title: menu.title,
-          'x-component': 'Menu.Item',
-          'x-decorator': 'ACLMenuItemProvider',
-          'x-component-props': {},
-          properties: {
-            page: {
-              _isJSONSchemaObject: true,
-              version: '2.0',
-              type: 'void',
-              'x-component': 'Page',
-              'x-async': true,
-              properties: {
-                [menu.children[0].tabSchemaName]: {
-                  _isJSONSchemaObject: true,
-                  version: '2.0',
-                  type: 'void',
-                  'x-component': 'Grid',
-                  'x-initializer': 'page:addBlock',
-                  'x-uid': menu.children[0].schemaUid,
-                  name: menu.children[0].tabSchemaName,
-                  'x-app-version': '1.6.0-alpha.28',
-                },
-              },
-              'x-uid': menu.schemaUid,
-              name: 'page',
-              'x-app-version': '1.6.0-alpha.28',
-            },
-          },
-          'x-uid': menu.menuSchemaUid,
-          __route__: {
-            createdAt: '2025-02-27T03:34:19.689Z',
-            updatedAt: '2025-02-27T03:34:19.689Z',
-            id: menu.id,
-            type: menu.type,
-            title: menu.title,
-            schemaUid: menu.schemaUid,
-            menuSchemaUid: menu.menuSchemaUid,
-            enableTabs: false,
-            sort: menu.sort,
-            createdById: menu.createdById,
-            updatedById: menu.updatedById,
-            parentId: null,
-            icon: null,
-            tabSchemaName: null,
-            options: null,
-            hideInMenu: null,
-            enableHeader: null,
-            displayTitle: null,
-            hidden: null,
-            children: [
-              {
-                createdAt: '2025-02-27T03:34:19.746Z',
-                updatedAt: '2025-02-27T03:34:19.746Z',
-                id: menu.children[0].id,
-                type: 'tabs',
-                schemaUid: menu.children[0].schemaUid,
-                tabSchemaName: menu.children[0].tabSchemaName,
-                hidden: true,
-                parentId: menu.children[0].parentId,
-                sort: menu.children[0].sort,
-                createdById: menu.children[0].createdById,
-                updatedById: menu.children[0].updatedById,
-                title: null,
-                icon: null,
-                menuSchemaUid: null,
-                options: null,
-                hideInMenu: null,
-                enableTabs: null,
-                enableHeader: null,
-                displayTitle: null,
-              },
-            ],
-          },
-          name: generateRandomString(),
-          'x-app-version': '1.6.0-alpha.28',
-        },
-        wrap: null,
-      });
-    expect(uiSchemaResponse.statusCode).toBe(200);
-    return response.body.data;
-  };
+    const adminAgent = await app.agent().login(adminUser);
 
-  const getAccessibleMenus = async (loginAgent: ExtendedAgent) => {
-    const menuResponse = await loginAgent
-      .get(`/desktopRoutes:listAccessible`)
-      .query({ tree: true, sort: 'sort' })
-      .send();
-    expect(menuResponse.statusCode).toBe(200);
-    return menuResponse.body.data;
-  };
+    let response = await adminAgent.resource('desktopRoutes').listAccessible();
+    expect(response.body.data.length).toBe(3);
 
-  it('Desktop menu, add menu Accessible menu1 to role1, add menu Accessible menu2 to role2, expect role1 visible menu1, role2 visible menu2', async () => {
-    const rootAgent = await app.agent().login(rootUser);
-    const page1 = await createUiMenu(rootAgent, { title: 'page1' });
-    const page2 = await createUiMenu(rootAgent, { title: 'page2' });
+    // 测试 member 角色
+    const memberUser = await db.getRepository('users').create({
+      values: { roles: ['member'] },
+    });
+    const memberAgent = await app.agent().login(memberUser);
 
-    // add accessible menu1 to role1
-    let addMenuResponse = await rootAgent.post(`/roles/${role1.name}/desktopRoutes:add`).send([page1.id]);
-
-    // add accessible menu2 to role2
-    addMenuResponse = await rootAgent.post(`/roles/${role2.name}/desktopRoutes:add`).send([page2.id]);
-
-    agent = await app.agent().login(user, role1.name);
-    let accessibleMenus = await getAccessibleMenus(agent);
-    let menuProps = accessibleMenus.map((x) => x.title);
-    expect(menuProps).include(page1.title);
-    expect(menuProps).not.include(page2.title);
-
-    agent = await app.agent().login(user, role2.name);
-    accessibleMenus = await getAccessibleMenus(agent);
-    menuProps = accessibleMenus.map((x) => x.title);
-    expect(menuProps).include(page2.title);
-    expect(menuProps).not.include(page1.title);
-
-    agent = await app.agent().login(user, 'union');
-    accessibleMenus = await getAccessibleMenus(agent);
-    menuProps = accessibleMenus.map((x) => x.title);
-    expect(menuProps).include(page1.title);
-    expect(menuProps).include(page2.title);
+    response = await memberAgent.resource('desktopRoutes').listAccessible();
+    expect(response.body.data.length).toBe(3);
   });
 
-  it('Desktop menu, allowNewMenu = true, expect display new menu', async () => {
-    const rootAgent = await app.agent().login(rootUser);
-    const role1Response = await rootAgent.resource('roles').get({
-      filterByTk: role1.name,
+  it('should return filtered routes with children', async () => {
+    // 使用 root 角色配置 member 的可访问路由
+    const rootUser = await db.getRepository('users').create({
+      values: { roles: ['root'] },
     });
-    expect(role1Response.statusCode).toBe(200);
-    const updateRole1Response = await rootAgent.resource('roles').update({
-      filterByTk: role1.name,
+    const rootAgent = await app.agent().login(rootUser);
+
+    // 更新 member 角色的可访问路由
+    await rootAgent.resource('roles.desktopRoutes', 'member').remove({
+      values: [1, 2, 3, 4, 5, 6], // 移除所有路由的访问权限
+    });
+    await rootAgent.resource('roles.desktopRoutes', 'member').add({
+      values: [1, 2], // 再加上 page1 和 tab1 的访问权限
+    });
+
+    // 使用 member 用户测试
+    const memberUser = await db.getRepository('users').create({
+      values: { roles: ['member'] },
+    });
+    const memberAgent = await app.agent().login(memberUser);
+
+    const response = await memberAgent.resource('desktopRoutes').listAccessible();
+    expect(response.body.data.length).toBe(1);
+    expect(response.body.data[0].title).toBe('page1');
+    expect(response.body.data[0].children.length).toBe(1);
+    expect(response.body.data[0].children[0].title).toBe('tab1');
+  });
+
+  it('should return an empty response when there are no accessible routes', async () => {
+    // 使用 root 角色配置 member 的可访问路由
+    const rootUser = await db.getRepository('users').create({
+      values: { roles: ['root'] },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+
+    // 更新 member 角色的可访问路由
+    await rootAgent.resource('roles.desktopRoutes', 'member').remove({
+      values: [1, 2, 3, 4, 5, 6], // 移除所有路由的访问权限
+    });
+
+    // 使用 member 用户测试
+    const memberUser = await db.getRepository('users').create({
+      values: { roles: ['member'] },
+    });
+    const memberAgent = await app.agent().login(memberUser);
+
+    const response = await memberAgent.resource('desktopRoutes').listAccessible();
+    expect(response.body.data.length).toBe(0);
+  });
+
+  it('should auto include children when page has no children', async () => {
+    // 创建一个没有子路由的页面
+    const page4 = await db.getRepository('desktopRoutes').create({
       values: {
-        ...role1Response.body.data,
-        allowNewMenu: true,
+        type: 'page',
+        title: 'page4',
       },
     });
-    expect(updateRole1Response.statusCode).toBe(200);
-    agent = await app.agent().login(user, 'union');
-    const page1 = await createUiMenu(rootAgent, { title: 'page1' });
 
-    // auto can see new menu
-    const accessibleMenus = await getAccessibleMenus(agent);
-    expect(accessibleMenus.length).toBe(1);
-    expect(accessibleMenus[0].title).toBe(page1.title);
+    // 创建两个子路由
+    await db.getRepository('desktopRoutes').create({
+      values: [
+        { type: 'tab', title: 'tab4-1', parentId: page4.id },
+        { type: 'tab', title: 'tab4-2', parentId: page4.id },
+      ],
+    });
+
+    // 配置 member 角色只能访问 page4
+    const rootUser = await db.getRepository('users').create({
+      values: { roles: ['root'] },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+    await rootAgent.resource('roles.desktopRoutes', 'member').remove({
+      values: [1, 2, 3, 4, 5, 6, 8, 9], // 只保留 page4 的访问权限
+    });
+
+    // 验证返回结果包含子路由
+    const memberUser = await db.getRepository('users').create({
+      values: { roles: ['member'] },
+    });
+    const memberAgent = await app.agent().login(memberUser);
+
+    const response = await memberAgent.resource('desktopRoutes').listAccessible();
+    expect(response.body.data.length).toBe(1);
+    expect(response.body.data[0].title).toBe('page4');
+    expect(response.body.data[0].children.length).toBe(2);
   });
 });
