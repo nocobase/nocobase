@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.5.24](https://github.com/nocobase/nocobase/compare/v1.5.23...v1.5.24) - 2025-03-07
+
+### 🎉 New Features
+
+- **[Data visualization]** Support NULLS sorting in chart queries ([#6383](https://github.com/nocobase/nocobase/pull/6383)) by @2013xile
+
+### 🚀 Improvements
+
+- **[Workflow]** Allow skip to trigger collection workflow in database event ([#6379](https://github.com/nocobase/nocobase/pull/6379)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[Action: Import records Pro]** Use additional option to determine whether to trigger workflow or not by @mytharcher
+
+- **[Action: Export records Pro]** pro export action missing sort params by @katherinehhh
+
 ## [v1.5.23](https://github.com/nocobase/nocobase/compare/v1.5.22...v1.5.23) - 2025-03-06
 
 ### 🐛 Bug Fixes
