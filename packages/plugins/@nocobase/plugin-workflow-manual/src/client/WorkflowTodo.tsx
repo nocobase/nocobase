@@ -9,14 +9,13 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useField, useFieldSchema, useForm } from '@formily/react';
-import { Button, Card, Descriptions, Space, Spin, Tag } from 'antd';
+import { Button, Card, ConfigProvider, Descriptions, Space, Spin, Tag } from 'antd';
 import { TableOutlined } from '@ant-design/icons';
 import { useAntdToken } from 'antd-style';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 
 import {
-  ActionContextProvider,
   css,
   PopupContextProvider,
   SchemaInitializerItem,
@@ -24,13 +23,10 @@ import {
   useCompile,
   useOpenModeContext,
   usePlugin,
-  usePopupSettings,
-  usePopupUtils,
   useSchemaInitializer,
   useSchemaInitializerItem,
   SchemaComponent,
   SchemaComponentContext,
-  TableBlockProvider,
   useAPIClient,
   useActionContext,
   useCurrentUserContext,
@@ -47,9 +43,10 @@ import WorkflowPlugin, {
   useFlowContext,
   EXECUTION_STATUS,
   JOB_STATUS,
+  WorkflowTitle,
 } from '@nocobase/plugin-workflow/client';
 
-import { lang, NAMESPACE, useLang } from '../locale';
+import { NAMESPACE, useLang } from '../locale';
 import { FormBlockProvider } from './instruction/FormBlockProvider';
 import { ManualFormType, manualFormTypes } from './instruction/SchemaConfig';
 import { TaskStatusOptionsMap } from '../common/constants';
@@ -493,14 +490,15 @@ function FooterStatus() {
   const { status, updatedAt } = useCollectionRecordData() || {};
   const statusOption = TaskStatusOptionsMap[status];
   return status ? (
-    <Space>
-      <time
-        className={css`
+    <Space
+      className={css`
+        margin-bottom: 1em;
+        time {
           margin-right: 0.5em;
-        `}
-      >
-        {dayjs(updatedAt).format('YYYY-MM-DD HH:mm:ss')}
-      </time>
+        }
+      `}
+    >
+      <time>{dayjs(updatedAt).format('YYYY-MM-DD HH:mm:ss')}</time>
       <Tag color={statusOption.color}>{compile(statusOption.label)}</Tag>
     </Space>
   ) : null;
@@ -607,53 +605,61 @@ function ContentDetail(props) {
   const { t } = useTranslation();
   const token = useAntdToken();
   return (
-    <Descriptions
-      {...props}
-      column={1}
-      items={[
-        {
-          key: 'createdAt',
-          label: t('Created at'),
-          children: (
-            <SchemaComponent
-              schema={{
-                name: 'createdAt',
-                type: 'string',
-                'x-component': 'CollectionField',
-                'x-read-pretty': true,
-              }}
-            />
-          ),
+    <ConfigProvider
+      theme={{
+        token: {
+          fontSizeLG: 14,
         },
-        {
-          key: 'status',
-          label: t('Status', { ns: 'workflow' }),
-          children: (
-            <SchemaComponent
-              components={{ TaskStatusColumn }}
-              schema={{
-                name: 'status',
-                type: 'number',
-                'x-decorator': 'TaskStatusColumn',
-                'x-component': 'CollectionField',
-                'x-read-pretty': true,
-              }}
-            />
-          ),
-        },
-      ]}
-      className={css`
-        .ant-descriptions-header {
-          margin-bottom: 0.5em;
-          .ant-descriptions-extra {
-            color: ${token.colorTextDescription};
+      }}
+    >
+      <Descriptions
+        {...props}
+        column={1}
+        items={[
+          {
+            key: 'createdAt',
+            label: t('Created at'),
+            children: (
+              <SchemaComponent
+                schema={{
+                  name: 'createdAt',
+                  type: 'string',
+                  'x-component': 'CollectionField',
+                  'x-read-pretty': true,
+                }}
+              />
+            ),
+          },
+          {
+            key: 'status',
+            label: t('Status', { ns: 'workflow' }),
+            children: (
+              <SchemaComponent
+                components={{ TaskStatusColumn }}
+                schema={{
+                  name: 'status',
+                  type: 'number',
+                  'x-decorator': 'TaskStatusColumn',
+                  'x-component': 'CollectionField',
+                  'x-read-pretty': true,
+                }}
+              />
+            ),
+          },
+        ]}
+        className={css`
+          .ant-descriptions-header {
+            margin-bottom: 0.5em;
+            .ant-descriptions-extra {
+              color: ${token.colorTextDescription};
+            }
           }
-        }
-        .ant-descriptions-item-label {
-          width: 6em;
-        }
-      `}
-    />
+          .ant-descriptions-item-label {
+            width: 6em;
+          }
+        `}
+      />
+    </ConfigProvider>
   );
 }
 
@@ -697,7 +703,7 @@ function TaskItem() {
         hoverable
         size="small"
         title={record.title}
-        extra={record.workflow.title}
+        extra={<WorkflowTitle {...record.workflow} />}
         className={css`
           .ant-card-extra {
             color: ${token.colorTextDescription};
