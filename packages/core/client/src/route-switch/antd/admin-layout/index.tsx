@@ -11,7 +11,7 @@ import { EllipsisOutlined } from '@ant-design/icons';
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
-import { Popover, Tooltip } from 'antd';
+import { ConfigProvider, Popover, Tooltip } from 'antd';
 import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -29,6 +29,7 @@ import {
   RemoteSchemaTemplateManagerProvider,
   SortableItem,
   useDesignable,
+  useGlobalTheme,
   useMenuDragEnd,
   useParseURLAndParams,
   useRequest,
@@ -51,6 +52,7 @@ import { KeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
+import { theme as antdTheme } from 'antd';
 
 export { KeepAlive, NocoBaseDesktopRouteType };
 
@@ -534,6 +536,21 @@ export const InternalAdminLayout = () => {
       bgLayout: token.colorBgLayout,
     };
   }, [token]);
+  const { theme } = useGlobalTheme();
+  const mobileTheme = useMemo(() => {
+    return {
+      ...theme,
+      token: {
+        ...theme.token,
+        paddingPageHorizontal: 8, // Horizontal page padding
+        paddingPageVertical: 8, // Vertical page padding
+        marginBlock: 12, // Spacing between blocks
+        borderRadiusBlock: 8, // Block border radius
+        fontSize: 14, // Font size
+      },
+      algorithm: antdTheme.compactAlgorithm, // Set mobile mode to always use compact algorithm
+    };
+  }, [theme]);
 
   const onCollapse = useCallback((collapsed: boolean) => {
     if (doNotChangeCollapsedRef.current) {
@@ -579,7 +596,11 @@ export const InternalAdminLayout = () => {
               setIsMobile(_isMobile);
             }
 
-            return <LayoutContent />;
+            return (
+              <ConfigProvider theme={_isMobile ? mobileTheme : theme}>
+                <LayoutContent />
+              </ConfigProvider>
+            );
           }}
         </RouteContext.Consumer>
       </ProLayout>
@@ -766,7 +787,7 @@ const MenuTitleWithIcon: FC<{ icon: any; title: string }> = (props) => {
     );
   }
 
-  return props.title;
+  return <>{props.title}</>;
 };
 
 function convertRoutesToLayout(
