@@ -85,7 +85,12 @@ export class QueryParser {
       const alias = sequelize.getQueryInterface().quoteIdentifier(item.alias);
       const name = hasAgg ? sequelize.literal(alias) : sequelize.col(item.field as string);
       let sort = item.order || 'ASC';
-      sort = item.nulls !== 'default' ? `${sort} NULLS ${item.nulls}` : sort;
+      if (item.nulls === 'first') {
+        sort += ' NULLS FIRST';
+      }
+      if (item.nulls === 'last') {
+        sort += ' NULLS LAST';
+      }
       order.push([name, sort]);
     });
     return order;
