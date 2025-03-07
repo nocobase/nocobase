@@ -176,7 +176,7 @@ export function mergeAclActionParams(sourceParams, targetParams) {
       return { $or: _.uniqWith($or, _.isEqual) };
     },
     fields: andMerge,
-    whitlist: andMerge,
+    whitelist: andMerge,
     appends: andMerge,
   });
   removeEmptyParams(mergedParams);

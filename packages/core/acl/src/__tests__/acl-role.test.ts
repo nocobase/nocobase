@@ -337,6 +337,68 @@ describe('multiple roles merge', () => {
     });
   });
 
+  describe('whitelist', () => {
+    test('should union whitelist(params={ fields: [a,b,c]}) when fields1 = [a,b], fields2 =[c]', () => {
+      acl.setAvailableAction('update');
+      acl.define({
+        role: 'role1',
+        actions: {
+          'posts:update': {
+            whitelist: ['a', 'b'],
+          },
+        },
+      });
+      acl.define({
+        role: 'role2',
+        actions: {
+          'posts:update': {
+            whitelist: ['c'],
+          },
+        },
+      });
+      const canResult = acl.can({ resource: 'posts', action: 'update', roles: ['role1', 'role2'] });
+      expect(canResult).toStrictEqual({
+        role: 'role1',
+        resource: 'posts',
+        action: 'update',
+        params: {
+          whitelist: expect.arrayContaining(['a', 'b', 'c']),
+        },
+      });
+    });
+  });
+
+  describe('appends', () => {
+    test('should union appends(params={ appends: [a,b,c]}) when appends = [a,b], appends =[c]', () => {
+      acl.setAvailableAction('update');
+      acl.define({
+        role: 'role1',
+        actions: {
+          'posts:update': {
+            appends: ['a', 'b'],
+          },
+        },
+      });
+      acl.define({
+        role: 'role2',
+        actions: {
+          'posts:update': {
+            appends: ['c'],
+          },
+        },
+      });
+      const canResult = acl.can({ resource: 'posts', action: 'update', roles: ['role1', 'role2'] });
+      expect(canResult).toStrictEqual({
+        role: 'role1',
+        resource: 'posts',
+        action: 'update',
+        params: {
+          appends: expect.arrayContaining(['a', 'b', 'c']),
+        },
+      });
+    });
+  });
+
   describe('filter & fields merge', () => {
     test('should allow all(params={}) when actions1 = {filter: {}}, actions2 = {fields: []}', () => {
       acl.setAvailableAction('view', {
