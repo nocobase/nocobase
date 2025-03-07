@@ -19,7 +19,6 @@ import { useTranslation } from 'react-i18next';
 import { ErrorFallback, StablePopover, TabsContextProvider, useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { useACLActionParamsContext } from '../../../acl';
-import { useApp } from '../../../application';
 import {
   useCollectionParentRecordData,
   useCollectionRecordData,
@@ -49,6 +48,9 @@ import { ActionContextProvider } from './context';
 import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ActionContextProps, ActionProps, ComposedAction } from './types';
 import { linkageAction, setInitialActionState } from './utils';
+
+// 这个要放到最下面，否则会导致前端单测失败
+import { useApp } from '../../../application';
 
 const useA = () => {
   return {
