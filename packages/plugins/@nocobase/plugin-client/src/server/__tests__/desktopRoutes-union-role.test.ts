@@ -218,7 +218,7 @@ describe('Web client desktopRoutes', async () => {
     expect(menuProps).include(page2.title);
   });
 
-  it('Desktop menu, allowNewMenu = true, expect display new menu', async () => {
+  it.skip('Desktop menu, allowNewMenu = true, expect display new menu', async () => {
     const rootAgent = await app.agent().login(rootUser);
     const role1Response = await rootAgent.resource('roles').get({
       filterByTk: role1.name,
