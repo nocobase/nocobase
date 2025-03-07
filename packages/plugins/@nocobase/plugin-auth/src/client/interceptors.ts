@@ -74,7 +74,7 @@ export function authCheckMiddleware({ app }: { app: Application }) {
       }
     }
 
-    if (error.status === 401 && !error.config?.skipAuth) {
+    if (error.status === 401 && !error.config?.skipAuth && firstError?.code && AuthErrorCode[firstError.code]) {
       if (!firstError || firstError?.code === AuthErrorCode.SKIP_TOKEN_RENEW) {
         throw error;
       }
