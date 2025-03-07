@@ -1,0 +1,22 @@
+{
+  "Edit": "Modifica",
+  "Delete": "Elimina",
+  "Cancel": "Annulla",
+  "Submit": "Invia",
+  "Actions": "Operazioni",
+  "Title": "Titolo",
+  "Enable": "Abilita",
+  "SAML manager": "Gestore SAML",
+  "SAML Providers": "Fornitori SAML",
+  "Redirect url": "URL di reindirizzamento",
+  "SP entity id": "ID entità SP",
+  "Add provider": "Aggiungi fornitore",
+  "Edit provider": "Modifica fornitore",
+  "Client id": "ID client",
+  "Entity id or issuer": "ID entità o emittente",
+  "Login Url": "URL di accesso",
+  "Public cert": "Certificato pubblico",
+  "Delete provider": "Elimina fornitore",
+  "Are you sure you want to delete it?": "Sei sicuro di volerlo eliminare?",
+  "Sign in button name, which will be displayed on the sign in page": "Nome del pulsante di accesso, che verrà visualizzato nella pagina di accesso"
+}
