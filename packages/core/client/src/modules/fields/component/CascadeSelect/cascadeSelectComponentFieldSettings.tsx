@@ -7,16 +7,27 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+import React from 'react';
+import _ from 'lodash';
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { useCollectionField } from '../../../../data-source';
-import { useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../../schema-component';
+import { useDesignable, useFieldModeOptions, useIsAddNewForm, removeNullCondition } from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
 import { useTitleFieldOptions } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { ellipsisSettingsItem } from '../Input/inputComponentSettings';
+import { setTheDataScope } from '../Select/selectComponentFieldSettings';
 
 const fieldComponent: any = {
   name: 'fieldComponent',
@@ -100,5 +111,5 @@ const titleField: any = {
 
 export const cascadeSelectComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:CascadeSelect',
-  items: [fieldComponent, titleField, ellipsisSettingsItem],
+  items: [fieldComponent, titleField, ellipsisSettingsItem, setTheDataScope],
 });
