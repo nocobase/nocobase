@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { assign } from '@nocobase/utils';
-import _, { merge } from 'lodash';
+import _ from 'lodash';
+import { ACLRole } from '../acl-role';
 
-export function mergeRole(roles) {
+export function mergeRole(roles: ACLRole[]) {
   const result: Record<string, any> = {
     roles: [],
     strategy: {},
@@ -183,6 +184,9 @@ export function mergeAclActionParams(sourceParams, targetParams) {
 }
 
 export function removeEmptyParams(params) {
+  if (!_.isObject(params)) {
+    return;
+  }
   Object.keys(params).forEach((key) => {
     if (_.isEmpty(params[key])) {
       delete params[key];

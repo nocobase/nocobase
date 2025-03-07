@@ -228,7 +228,7 @@ export class ACL extends EventEmitter {
       });
       if (!canResult) {
         canResult = result;
-        removeEmptyParams(canResult.params);
+        canResult && removeEmptyParams(canResult.params);
       } else if (canResult && result) {
         canResult.params = mergeAclActionParams(canResult.params, result.params);
       }
