@@ -9,6 +9,10 @@
 
 import lodash from 'lodash';
 import { dayjs } from './dayjs';
+import { createJSONTemplateParser } from '@nocobase/json-template-parser';
+const parser = createJSONTemplateParser();
+const parse = parser.parse;
+export { parse };
 
 export * from './assign';
 export * from './collections-graph';
@@ -19,7 +23,6 @@ export * from './forEach';
 export * from './fs-exists';
 export * from './handlebars';
 export * from './isValidFilter';
-export { parse } from '@nocobase/json-template-parser';
 export * from './koa-multer';
 export * from './measure-execution-time';
 export * from './merge';

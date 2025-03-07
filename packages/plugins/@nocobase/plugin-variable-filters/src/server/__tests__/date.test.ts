@@ -1,31 +1,22 @@
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
+import Database, { Repository } from '@nocobase/database';
+import { createMockServer, MockServer } from '@nocobase/test';
 
-import { parse } from '../parser';
-describe('json-templates', () => {
-  it('parse json with string template', async () => {
-    const template = {
-      name: '{{id}}-{{name}}.',
-      age: 18,
-    };
-    const result = parse(template)({
-      name: 'test',
-      id: 1,
+describe('date filters', async () => {
+  let app: MockServer;
+  let db: Database;
+  let repo: Repository;
+  let agent;
+  let parse;
+
+  beforeAll(async () => {
+    app = await createMockServer({
+      plugins: ['field-sort', 'auth', 'variable-filters'],
     });
-    expect(result).toEqual({
-      name: '1-test.',
-      age: 18,
-    });
+    db = app.db;
+    repo = db.getRepository('authenticators');
+    agent = app.agent();
+    parse = app.jsonTemplateParser.parse;
   });
-});
-
-describe('json-templates filters', () => {
   it('date filters', async () => {
     const template = {
       now: '{{now}}',
@@ -33,8 +24,8 @@ describe('json-templates filters', () => {
       yesterday: '{{now | date_subtract: 1, "day" | date_format: "YYYY-MM-DD"}}',
     };
 
-    const parsed = parse(template);
-    const now = new Date('2025-01-01: 12:00:00');
+    const parsed = app.jsonTemplateParser.parse(template);
+    const now = new Date('2025-01-01 12:00:00');
     const result = parsed({
       now,
     });
@@ -51,7 +42,7 @@ describe('json-templates filters', () => {
       firstOfArray1: '{{array.0}}',
       firstOfArray2: '{{array[0]}}',
     };
-    const result = parse(template)({
+    const result = app.jsonTemplateParser.parse(template)({
       user: { name: 'john' },
       array: ['first', 'second'],
     });
@@ -69,7 +60,7 @@ describe('json-templates filters', () => {
       form: '{{form}}',
       $form: '{{$form}}',
     };
-    const result = parse(template)({
+    const result = app.jsonTemplateParser.parse(template)({
       form,
       $form: form,
     });
@@ -84,7 +75,7 @@ describe('json-templates filters', () => {
       key1: '{{current.key1}}',
       key2: '{{current.key2}}',
     };
-    const result = parse(template)({
+    const result = app.jsonTemplateParser.parse(template)({
       current: { key1: 'value1' },
     });
     expect(result).toEqual({
@@ -100,7 +91,7 @@ describe('json-templates filters', () => {
       $yesterday: '{{ $now | date_subtract: 1, "day" | date_format: "YYYY-MM-DD" }}',
     };
 
-    const parsed = parse(template);
+    const parsed = app.jsonTemplateParser.parse(template);
     const $now = new Date('2025-01-01: 12:00:00');
     const result = parsed({
       $now,
