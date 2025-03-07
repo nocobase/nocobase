@@ -19,7 +19,7 @@ import { AllowManager, ConditionFunc } from './allow-manager';
 import FixedParamsManager, { Merger } from './fixed-params-manager';
 import SnippetManager, { SnippetOptions } from './snippet-manager';
 import { NoPermissionError } from './errors/no-permission-error';
-import { mergeAclActionParams } from './utils/acl';
+import { mergeAclActionParams } from './utils';
 
 interface CanResult {
   role: string;
@@ -60,7 +60,7 @@ interface CanArgs {
   action: string;
   rawResourceName?: string;
   ctx?: any;
-  roles?: string;
+  roles?: string[];
 }
 
 export class ACL extends EventEmitter {

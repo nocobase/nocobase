@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mergeAclActionParams } from '../utils/acl';
+import { mergeAclActionParams } from '../utils';
 
 describe('mergeAclActionParams', () => {
   describe('filter union: orMerge', () => {
