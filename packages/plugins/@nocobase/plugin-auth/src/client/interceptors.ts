@@ -61,7 +61,7 @@ export function authCheckMiddleware({ app }: { app: Application }) {
       app.apiClient.auth.setToken(newToken);
     }
 
-    if (error.status === 401) {
+    if (error.status === 401 && firstError?.code && AuthErrorCode[firstError.code]) {
       app.apiClient.auth.setToken('');
       if (pathname === app.getHref('signin') && firstError?.code !== AuthErrorCode.EMPTY_TOKEN && error.config) {
         error.config.skipNotify = false;
