@@ -74,7 +74,6 @@ function MenuLink({ type }: any) {
 
   return (
     <Link
-      title={typeTitle}
       to={`/admin/workflow/tasks/${type}`}
       className={css`
         display: flex;

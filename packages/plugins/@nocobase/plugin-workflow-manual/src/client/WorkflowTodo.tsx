@@ -9,11 +9,13 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useField, useFieldSchema, useForm } from '@formily/react';
+import { FormLayout } from '@formily/antd-v5';
 import { Button, Card, ConfigProvider, Descriptions, Space, Spin, Tag } from 'antd';
 import { TableOutlined } from '@ant-design/icons';
 import { useAntdToken } from 'antd-style';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
+import { get } from 'lodash';
 
 import {
   css,
@@ -50,7 +52,6 @@ import { NAMESPACE, useLang } from '../locale';
 import { FormBlockProvider } from './instruction/FormBlockProvider';
 import { ManualFormType, manualFormTypes } from './instruction/SchemaConfig';
 import { TaskStatusOptionsMap } from '../common/constants';
-import { FormLayout } from '@formily/antd-v5';
 
 function TaskStatusColumn(props) {
   const recordData = useCollectionRecordData();
@@ -61,85 +62,18 @@ function TaskStatusColumn(props) {
   return props.children;
 }
 
-const tableColumns = {
-  title: {
-    type: 'void',
-    'x-decorator': 'TableV2.Column.Decorator',
-    'x-component': 'TableV2.Column',
-    'x-component-props': {
-      width: null,
-    },
-    title: `{{t("Task title", { ns: "${NAMESPACE}" })}}`,
-    properties: {
-      title: {
-        'x-component': 'CollectionField',
-        'x-read-pretty': true,
-      },
-    },
-  },
-  workflow: {
-    type: 'void',
-    'x-decorator': 'TableV2.Column.Decorator',
-    'x-component': 'TableV2.Column',
-    'x-component-props': {
-      width: null,
-    },
-    title: `{{t("Workflow", { ns: "workflow" })}}`,
-    properties: {
-      workflow: {
-        'x-component': 'CollectionField',
-        'x-read-pretty': true,
-      },
-    },
-  },
-  status: {
-    type: 'void',
-    'x-decorator': 'TableV2.Column.Decorator',
-    'x-component': 'TableV2.Column',
-    'x-component-props': {
-      width: 100,
-    },
-    title: `{{t("Status", { ns: "workflow" })}}`,
-    properties: {
-      status: {
-        type: 'number',
-        'x-decorator': 'TaskStatusColumn',
-        'x-component': 'CollectionField',
-        'x-read-pretty': true,
-      },
-    },
-  },
-  user: {
-    type: 'void',
-    'x-decorator': 'TableV2.Column.Decorator',
-    'x-component': 'TableV2.Column',
-    'x-component-props': {
-      width: 140,
-    },
-    title: `{{t("Assignee", { ns: "${NAMESPACE}" })}}`,
-    properties: {
-      user: {
-        'x-component': 'CollectionField',
-        'x-read-pretty': true,
-      },
-    },
-  },
-  createdAt: {
-    type: 'void',
-    'x-decorator': 'TableV2.Column.Decorator',
-    'x-component': 'TableV2.Column',
-    'x-component-props': {
-      width: 160,
-    },
-    properties: {
-      createdAt: {
-        type: 'string',
-        'x-component': 'CollectionField',
-        'x-read-pretty': true,
-      },
-    },
-  },
-};
+function RecordTitle(props) {
+  const record = useCollectionRecordData();
+  if (Array.isArray(props.dataIndex)) {
+    for (const index of props.dataIndex) {
+      const title = get(record, index);
+      if (title) {
+        return title;
+      }
+    }
+  }
+  return get(record, props.dataIndex);
+}
 
 export const WorkflowTodo: React.FC & {
   Initializer: React.FC;
@@ -151,115 +85,118 @@ export const WorkflowTodo: React.FC & {
   const viewSchema = getWorkflowTodoViewActionSchema({ defaultOpenMode, collectionName: 'workflowManualTasks' });
 
   return (
-    <SchemaComponent
-      scope={{
-        useCollectionRecordData,
-      }}
-      components={{
-        FormLayout,
-        // WorkflowColumn,
-        // UserColumn,
-        ContentDetail,
-      }}
-      schema={{
-        type: 'void',
-        properties: {
-          actions: {
-            type: 'void',
-            'x-component': 'ActionBar',
-            'x-component-props': {
-              style: {
-                marginBottom: 'var(--nb-spacing)',
+    <SchemaComponentContext.Provider value={{ designable: false }}>
+      <SchemaComponent
+        scope={{
+          useCollectionRecordData,
+        }}
+        components={{
+          FormLayout,
+          // WorkflowColumn,
+          // UserColumn,
+          ContentDetailWithTitle,
+        }}
+        schema={{
+          type: 'void',
+          properties: {
+            actions: {
+              type: 'void',
+              'x-component': 'ActionBar',
+              'x-component-props': {
+                style: {
+                  marginBottom: 'var(--nb-spacing)',
+                },
+              },
+              properties: {
+                filter: {
+                  type: 'void',
+                  title: '{{ t("Filter") }}',
+                  'x-action': 'filter',
+                  'x-designer': 'Filter.Action.Designer',
+                  'x-component': 'Filter.Action',
+                  'x-use-component-props': 'useFilterActionProps',
+                  'x-component-props': {
+                    icon: 'FilterOutlined',
+                  },
+                  default: {
+                    $and: [{ title: { $includes: '' } }, { 'workflow.title': { $includes: '' } }],
+                  },
+                  'x-align': 'left',
+                },
+                refresher: {
+                  type: 'void',
+                  title: '{{ t("Refresh") }}',
+                  'x-action': 'refresh',
+                  'x-component': 'Action',
+                  'x-use-component-props': 'useRefreshActionProps',
+                  // 'x-designer': 'Action.Designer',
+                  'x-toolbar': 'ActionSchemaToolbar',
+                  'x-settings': 'actionSettings:refresh',
+                  'x-component-props': {
+                    icon: 'ReloadOutlined',
+                  },
+                  'x-align': 'right',
+                },
               },
             },
-            properties: {
-              filter: {
-                type: 'void',
-                title: '{{ t("Filter") }}',
-                'x-action': 'filter',
-                'x-designer': 'Filter.Action.Designer',
-                'x-component': 'Filter.Action',
-                'x-use-component-props': 'useFilterActionProps',
-                'x-component-props': {
-                  icon: 'FilterOutlined',
+            list: {
+              type: 'array',
+              'x-component': 'List',
+              // 'x-use-component-props': 'useListBlockProps',
+              properties: {
+                item: {
+                  type: 'object',
+                  'x-component': 'List.Item',
+                  properties: {
+                    content: {
+                      type: 'void',
+                      'x-decorator': 'FormLayout',
+                      'x-decorator-props': {
+                        layout: 'horizontal',
+                      },
+                      'x-component': 'ContentDetailWithTitle',
+                      'x-component-props': {
+                        // NOTE: component in schema can not work with popup
+                        // title: (
+                        //   <SchemaComponent
+                        //     schema={{
+                        //       name: 'title',
+                        //       type: 'string',
+                        //       'x-component': 'CollectionField',
+                        //     }}
+                        //   />
+                        // ),
+                        // extra: (
+                        //   <SchemaComponent
+                        //     schema={{
+                        //       name: 'workflow.title',
+                        //       type: 'string',
+                        //       'x-component': 'CollectionField',
+                        //     }}
+                        //   />
+                        // ),
+                      },
+                    },
+                    actions: {
+                      type: 'void',
+                      'x-component': 'ActionBar',
+                      'x-use-component-props': 'useListActionBarProps',
+                      'x-component-props': {
+                        layout: 'one-column',
+                      },
+                      'x-align': 'left',
+                      properties: {
+                        view: viewSchema,
+                      },
+                    },
+                  },
                 },
-                'x-align': 'left',
-              },
-              refresher: {
-                type: 'void',
-                title: '{{ t("Refresh") }}',
-                'x-action': 'refresh',
-                'x-component': 'Action',
-                'x-use-component-props': 'useRefreshActionProps',
-                // 'x-designer': 'Action.Designer',
-                'x-toolbar': 'ActionSchemaToolbar',
-                'x-settings': 'actionSettings:refresh',
-                'x-component-props': {
-                  icon: 'ReloadOutlined',
-                },
-                'x-align': 'right',
               },
             },
           },
-          list: {
-            type: 'array',
-            'x-component': 'List',
-            // 'x-use-component-props': 'useListBlockProps',
-            properties: {
-              item: {
-                type: 'object',
-                'x-component': 'List.Item',
-                properties: {
-                  content: {
-                    type: 'void',
-                    'x-decorator': 'FormLayout',
-                    'x-decorator-props': {
-                      layout: 'horizontal',
-                    },
-                    'x-component': 'ContentDetail',
-                    'x-component-props': {
-                      title: '{{useCollectionRecordData().title}}',
-                      extra: '{{useCollectionRecordData().workflow.title}}',
-                      // NOTE: component in schema can not work with popup
-                      // title: (
-                      //   <SchemaComponent
-                      //     schema={{
-                      //       name: 'title',
-                      //       type: 'string',
-                      //       'x-component': 'CollectionField',
-                      //     }}
-                      //   />
-                      // ),
-                      // extra: (
-                      //   <SchemaComponent
-                      //     schema={{
-                      //       name: 'workflow.title',
-                      //       type: 'string',
-                      //       'x-component': 'CollectionField',
-                      //     }}
-                      //   />
-                      // ),
-                    },
-                  },
-                  actions: {
-                    type: 'void',
-                    'x-component': 'ActionBar',
-                    'x-use-component-props': 'useListActionBarProps',
-                    'x-component-props': {
-                      layout: 'one-column',
-                    },
-                    'x-align': 'left',
-                    properties: {
-                      view: viewSchema,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      }}
-    />
+        }}
+      />
+    </SchemaComponentContext.Provider>
   );
 };
 
@@ -660,6 +597,15 @@ function ContentDetail(props) {
         `}
       />
     </ConfigProvider>
+  );
+}
+
+function ContentDetailWithTitle(props) {
+  return (
+    <ContentDetail
+      title={<RecordTitle dataIndex={['title', 'node.title']} />}
+      extra={<RecordTitle dataIndex={'workflow.title'} />}
+    />
   );
 }
 
