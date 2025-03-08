@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database from '@nocobase/database';
+import Database, { Model, Repository } from '@nocobase/database';
 import { createMockServer, MockServer } from '@nocobase/test';
 
 describe('desktopRoutes:listAccessible', () => {
@@ -166,5 +166,116 @@ describe('desktopRoutes:listAccessible', () => {
     expect(response.body.data.length).toBe(1);
     expect(response.body.data[0].title).toBe('page4');
     expect(response.body.data[0].children.length).toBe(2);
+  });
+});
+
+describe('desktopRoutes', async () => {
+  let app: MockServer, db: Database, desktopRoutesRepo: Repository, rolesDesktopRoutesRepo: Repository;
+  let role: Model;
+  beforeEach(async () => {
+    app = await createMockServer({
+      plugins: [
+        'error-handler',
+        'client',
+        'field-sort',
+        'acl',
+        'ui-schema-storage',
+        'system-settings',
+        'data-source-main',
+        'data-source-manager',
+      ],
+    });
+    db = app.db;
+    desktopRoutesRepo = db.getRepository('desktopRoutes');
+    rolesDesktopRoutesRepo = db.getRepository('rolesDesktopRoutes');
+    role = await db.getRepository('roles').create({ values: { name: 'role1' } });
+  });
+
+  afterEach(async () => {
+    await app.destroy();
+  });
+
+  it(`should rolesDesktopRoutes includes tabs when create menu`, async () => {
+    const records = [
+      { id: 50, title: 'page1', type: 'page', hideInMenu: null, hidden: null },
+      { id: 51, title: 'tabs1', type: 'tabs', parentId: 50, hideInMenu: null, hidden: true },
+    ];
+    await desktopRoutesRepo.createMany({ records });
+    // trigger bulkCreate hooks
+    await db.getCollection('rolesDesktopRoutes').model.bulkCreate([{ roleName: role.get('name'), desktopRouteId: 50 }]);
+
+    const rolesDesktopRoutes = await rolesDesktopRoutesRepo.find({ where: { roleName: role.get('name') } });
+    expect(rolesDesktopRoutes.length).toBe(2);
+    expect(rolesDesktopRoutes.map((x) => x.get('desktopRouteId'))).toStrictEqual(expect.arrayContaining([50, 51]));
+  });
+
+  it.only(`should rolesDesktopRoutes includes tabs when bulk create menu`, async () => {
+    const records = [
+      { id: 52, title: 'page1', type: 'page', hideInMenu: null, hidden: null },
+      { id: 53, title: 'tabs1', type: 'tabs', parentId: 52, hideInMenu: null, hidden: true },
+      { id: 54, title: 'page2', type: 'page', hideInMenu: null, hidden: null },
+      { id: 55, title: 'tabs2', type: 'tabs', parentId: 54, hideInMenu: null, hidden: true },
+      { id: 56, title: 'page3', type: 'page', hideInMenu: null, hidden: null },
+      { id: 57, title: 'tabs3', type: 'tabs', parentId: 56, hideInMenu: null, hidden: true },
+    ];
+    await desktopRoutesRepo.createMany({ records });
+    // trigger bulkCreate hooks
+    await db.getCollection('rolesDesktopRoutes').model.bulkCreate([
+      { roleName: role.get('name'), desktopRouteId: 52 },
+      { roleName: role.get('name'), desktopRouteId: 54 },
+    ]);
+    const rolesDesktopRoutes = await rolesDesktopRoutesRepo.find({ where: { roleName: role.get('name') } });
+    expect(rolesDesktopRoutes.length).toStrictEqual(4);
+    expect(rolesDesktopRoutes.map((x) => x.get('desktopRouteId'))).toStrictEqual(
+      expect.arrayContaining([52, 53, 54, 55]),
+    );
+  });
+
+  it(`should rolesDesktopRoutes includes tabs when create menu and invalid data`, async () => {
+    const records = [
+      { id: 60, title: 'page1', type: 'page', hideInMenu: null, hidden: null },
+      { id: 61, title: 'tabs1', type: 'tabs', parentId: 60, hideInMenu: null, hidden: true },
+      { id: 62, title: 'page3', type: 'page', hideInMenu: null, hidden: null },
+      { id: 63, title: 'tabs3', type: 'tabs', parentId: 62, hideInMenu: null, hidden: null },
+      { id: 64, title: 'tabs4', type: 'tabs', parentId: 62, hideInMenu: null, hidden: null },
+    ];
+    await desktopRoutesRepo.createMany({ records });
+    await rolesDesktopRoutesRepo.create({ values: { roleName: role.get('name'), desktopRouteId: 61 } });
+    // trigger bulkCreate hooks
+    await db.getCollection('rolesDesktopRoutes').model.bulkCreate([
+      { roleName: role.get('name'), desktopRouteId: 60 },
+      { roleName: role.get('name'), desktopRouteId: 62 },
+      { roleName: role.get('name'), desktopRouteId: 63 },
+    ]);
+
+    const rolesDesktopRoutes = await rolesDesktopRoutesRepo.find({ where: { roleName: role.get('name') } });
+    expect(rolesDesktopRoutes.length).toBe(4);
+    expect(rolesDesktopRoutes.map((x) => x.get('desktopRouteId'))).toStrictEqual(
+      expect.arrayContaining([60, 61, 62, 63]),
+    );
+  });
+
+  it(`should rolesDesktopRoutes destroy tabs when remove menu and invalid data`, async () => {
+    const records = [
+      { id: 70, title: 'page1', type: 'page', hideInMenu: null, hidden: null },
+      { id: 71, title: 'tabs1', type: 'tabs', parentId: 70, hideInMenu: null, hidden: true },
+    ];
+    await desktopRoutesRepo.createMany({ records });
+    // trigger bulkCreate hooks
+    await db.getCollection('rolesDesktopRoutes').model.bulkCreate([{ roleName: role.get('name'), desktopRouteId: 70 }]);
+
+    let rolesDesktopRoutes = await rolesDesktopRoutesRepo.find({ where: { roleName: role.get('name') } });
+    expect(rolesDesktopRoutes.length).toBe(2);
+    expect(rolesDesktopRoutes.map((x) => x.get('desktopRouteId'))).toStrictEqual(expect.arrayContaining([70, 71]));
+
+    const transaction = await db.sequelize.transaction();
+    await db.getCollection('rolesDesktopRoutes').model.destroy({
+      where: { roleName: role.get('name'), desktopRouteId: [70] },
+      individualHooks: false,
+      transaction,
+    });
+    await transaction.commit();
+    rolesDesktopRoutes = await rolesDesktopRoutesRepo.find({ where: { roleName: role.get('name') } });
+    expect(rolesDesktopRoutes.length).toBe(0);
   });
 });
