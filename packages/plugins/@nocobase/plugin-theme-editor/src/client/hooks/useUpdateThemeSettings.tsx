@@ -17,9 +17,6 @@ export function useUpdateThemeSettings() {
 
   const updateUserThemeSettings = useCallback(
     async (themeId: number | null) => {
-      if (themeId === currentUser.data.data.systemSettings?.themeId) {
-        return;
-      }
       try {
         await api.resource('users').updateTheme({
           values: {
@@ -36,6 +33,7 @@ export function useUpdateThemeSettings() {
           },
         });
       } catch (err) {
+        console.log(error);
         error(err);
       }
     },
