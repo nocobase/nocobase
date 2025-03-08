@@ -209,7 +209,7 @@ describe('desktopRoutes', async () => {
     expect(rolesDesktopRoutes.map((x) => x.get('desktopRouteId'))).toStrictEqual(expect.arrayContaining([50, 51]));
   });
 
-  it.only(`should rolesDesktopRoutes includes tabs when bulk create menu`, async () => {
+  it(`should rolesDesktopRoutes includes tabs when bulk create menu`, async () => {
     const records = [
       { id: 52, title: 'page1', type: 'page', hideInMenu: null, hidden: null },
       { id: 53, title: 'tabs1', type: 'tabs', parentId: 52, hideInMenu: null, hidden: true },
