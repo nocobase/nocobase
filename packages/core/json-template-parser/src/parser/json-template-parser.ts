@@ -65,17 +65,17 @@ export class JSONTemplateParser {
   }
 
   render(template: string, data: any = {}): any {
-    const scopeFieldsMap = new Map<string, string[]>();
+    const NamespaceMap = new Map<string, { fields: Set<String>; cachedResult: Function }>();
     Object.keys(data).forEach((key) => {
       if (key.startsWith('$') || typeof data[key] === 'function') {
-        scopeFieldsMap.set(key, []);
+        NamespaceMap.set(escape(key), { fields: new Set<String>(), cachedResult: null });
       }
     });
-    const parsed = this.parse(template, { scopeFieldsMap });
+    const parsed = this.parse(template, { NamespaceMap });
     return parsed(data);
   }
 
-  parse = (value: any, opts?: { scopeFieldsMap: Map<string, string[]> }) => {
+  parse = (value: any, opts?: { NamespaceMap: Map<string, { fields: Set<String>; cachedResult: Function }> }) => {
     const engine = this.engine;
     function type(value) {
       let valueType: string = typeof value;
@@ -99,74 +99,101 @@ export class JSONTemplateParser {
     const parseString = (() => {
       // This regular expression detects instances of the
       // template parameter syntax such as {{foo}} or {{foo:someDefault}}.
-
+      const getFieldName = ({ variableName, variableSegments }) =>
+        revertEscape(variableName.slice(variableSegments[0].length + 1));
       return (str) => {
         const escapeStr = escape(str);
         const rawTemplates = engine.parse(escapeStr);
-        const templates = rawTemplates
-          .filter((rawTemplate) => rawTemplate.token.kind === TokenKind.Output)
-          .map((rawTemplate) => {
-            if (rawTemplate.token.kind === TokenKind.Output) {
-              // @ts-ignore
-              const fullVariables = engine.fullVariablesSync(rawTemplate.token.content);
-              const variableName = fullVariables[0];
-              // @ts-ignore
-              const variableSegments = (engine.variableSegmentsSync(rawTemplate.token.content)[0] ?? []) as string[];
-              /* collect scope fields to map
+        const templates = rawTemplates.map((rawTemplate) => {
+          const content = rawTemplate.token.input.slice(rawTemplate.token.begin, rawTemplate.token.end);
+          if (rawTemplate.token.kind === TokenKind.Output) {
+            // @ts-ignore
+            const fullVariables = engine.fullVariablesSync(content);
+            const variableName = fullVariables[0];
+            // @ts-ignore
+            const variableSegments = (engine.variableSegmentsSync(content)[0] ?? []) as string[];
+            /* collect scope fields to map
            eg: '{{ $user.name }} - {{$user.id}}'
            fieldsMap = {'$user': ['name', 'id']}
            */
-              if (
-                opts?.scopeFieldsMap &&
-                variableName.startsWith('$') &&
-                variableSegments.length > 1 &&
-                opts.scopeFieldsMap.has(variableSegments[0])
-              ) {
-                opts.scopeFieldsMap.set(variableName, variableSegments.slice(1));
-              }
-              return {
-                // @ts-ignore
-                variableName: fullVariables[0],
-                variableSegments,
-                tokenKind: rawTemplate.token.kind,
-                tokenBegin: rawTemplate.token.begin,
-                tokenEnd: rawTemplate.token.end,
-                // @ts-ignore
-                filters: rawTemplate.value?.filters.map(({ name, handler, args }) => ({
-                  name,
-                  handler,
-                  args: args.map((arg) => arg.content),
-                })),
-              };
-            } else {
-              return {
-                tokenKind: rawTemplate.token.kind,
-                tokenBegin: rawTemplate.token.begin,
-                tokenEnd: rawTemplate.token.end,
-                // @ts-ignore
-                content: rawTemplate.token.content,
-              };
+            if (
+              opts?.NamespaceMap &&
+              variableName.startsWith(escape('$')) &&
+              variableSegments.length > 1 &&
+              opts.NamespaceMap.has(variableSegments[0])
+            ) {
+              const fieldSet = opts.NamespaceMap.get(variableSegments[0]).fields;
+              const field = getFieldName({ variableName, variableSegments });
+              fieldSet.add(field);
             }
-          });
+            return {
+              variableName: fullVariables[0],
+              variableSegments,
+              tokenKind: rawTemplate.token.kind,
+              tokenBegin: rawTemplate.token.begin,
+              tokenEnd: rawTemplate.token.end,
+              content,
+              // @ts-ignore
+              filters: rawTemplate.value?.filters.map(({ name, handler, args }) => ({
+                name,
+                handler,
+                args: args.map((arg) => arg.content),
+              })),
+            };
+          } else {
+            return {
+              tokenKind: rawTemplate.token.kind,
+              tokenBegin: rawTemplate.token.begin,
+              tokenEnd: rawTemplate.token.end,
+              content,
+            };
+          }
+        });
+
         const templateFn = (context) => {
           const escapedContext = escape(context);
-          if (templates.length === 1 && templates[0].tokenBegin === 0 && templates[0].tokenEnd === escapeStr.length) {
-            let value = get(escapedContext, templates[0].variableName);
-            if (typeof value === 'function') {
-              value = value();
-            }
-            if (Array.isArray(templates[0].filters)) {
-              return templates[0].filters.reduce((acc, filter) => filter.handler(...[acc, ...filter.args]), value);
-            }
-          } else {
-            return revertEscape(engine.renderSync(rawTemplates, escapedContext));
-          }
 
-          templates.map((template) => {
+          const templatesValue = templates.map((template) => {
             if (template.tokenKind === TokenKind.Output) {
-              const value = get(escapedContext, template.variableName);
+              let value;
+              const ctxVal = get(escapedContext, template.variableName);
+
+              if (opts?.NamespaceMap && opts.NamespaceMap.has(template.variableSegments[0])) {
+                const scopeKey = template.variableSegments[0];
+                const NS = opts.NamespaceMap.get(scopeKey);
+                const cachedFn = NS.cachedResult;
+                const field = getFieldName({
+                  variableName: template.variableName,
+                  variableSegments: template.variableSegments,
+                });
+
+                if (cachedFn) {
+                  return cachedFn(revertEscape(field));
+                } else {
+                  const fnWrapper = get(escapedContext, scopeKey);
+                  const fn = fnWrapper({ fields: Array.from(opts.NamespaceMap.get(scopeKey).fields), context });
+                  NS.cachedResult = fn;
+                  return fn(revertEscape(field));
+                }
+              } else if (typeof ctxVal === 'function') {
+                const ctxVal = get(escapedContext, template.variableName);
+                value = ctxVal();
+              } else {
+                value = get(escapedContext, template.variableName);
+              }
+              template.filters.reduce(
+                (acc, filter) => filter.handler(...[acc, ...filter.args]),
+                typeof value === 'function' ? value() : value,
+              );
+            } else {
+              return template.content;
             }
           });
+          if (templates.length === 1 && templates[0].tokenBegin === 0 && templates[0].tokenEnd === escapeStr.length) {
+            return revertEscape(templatesValue[0]);
+          } else {
+            return revertEscape(templatesValue.join(''));
+          }
         };
 
         // Accommodate non-string as original values.
