@@ -8,10 +8,10 @@
  */
 
 import { uid } from './uid';
-import _ from 'lodash';
 
 // @ts-ignore
 import pkg from '../package.json';
+import _ from 'lodash';
 
 /**
  * 将多列布局转换为单列布局
@@ -19,90 +19,74 @@ import pkg from '../package.json';
  * @returns {Object} - 转换后的 JSON Schema 对象
  */
 export const transformMultiColumnToSingleColumn = (schema: any): any => {
-  // 深拷贝原始 schema，避免修改原始数据
-  const result = JSON.parse(JSON.stringify(schema));
+  if (!schema) return schema;
 
-  // 遍历所有 Grid.Row
-  if (result.properties) {
-    // 记录需要删除的空行
-    const keysToDelete = [];
-
-    // 处理每一行
-    Object.entries(result.properties).forEach(([rowKey, rowValue]: any) => {
-      // 检查是否是 Grid.Row 组件
-      if (rowValue && rowValue['x-component'] === 'Grid.Row') {
-        // 检查是否有 properties
-        if (!rowValue.properties || Object.keys(rowValue.properties).length === 0) {
-          // 记录空行，稍后删除
-          keysToDelete.push(rowKey);
-          return;
-        }
-
-        // 获取所有列
-        const columns = Object.values(rowValue.properties).filter((col) => col['x-component'] === 'Grid.Col');
-
-        // 如果只有一列，不需要进行处理
-        if (columns.length <= 1) {
-          return;
-        }
-
-        // 保留第一列，将其余列的内容移到新的行中
-        const firstColumn: any = columns[0];
-
-        // 重置第一列的宽度
-        _.set(firstColumn, 'x-component-props.width', 100);
-
-        // 从第二列开始处理
-        for (let i = 1; i < columns.length; i++) {
-          const column: any = columns[i];
-
-          // 创建新的行
-          const newRowKey = `row_${uid()}`;
-          const newColKey = `col_${uid()}`;
-
-          // 创建新行并添加到 result.properties 中
-          result.properties[newRowKey] = {
-            _isJSONSchemaObject: true,
-            version: '2.0',
-            type: 'void',
-            'x-component': 'Grid.Row',
-            'x-app-version': rowValue['x-app-version'] || pkg.version,
-            properties: {
-              [newColKey]: {
-                _isJSONSchemaObject: true,
-                version: '2.0',
-                type: 'void',
-                'x-component': 'Grid.Col',
-                'x-app-version': column['x-app-version'] || pkg.version,
-                properties: { ...column.properties },
-                'x-uid': uid(),
-                'x-async': false,
-                'x-index': 1,
-              },
-            },
-            'x-uid': uid(),
-            'x-async': false,
-            'x-index': Object.keys(result.properties).length + 1,
-          };
-
-          // 从原始行的 properties 中删除该列
-          delete rowValue.properties[
-            Object.keys(rowValue.properties).find((key) => rowValue.properties[key] === column)
-          ];
-        }
-      }
+  if (schema['x-component'] !== 'Grid') {
+    Object.keys(schema.properties || {}).forEach((key) => {
+      schema.properties[key] = transformMultiColumnToSingleColumn(schema.properties[key]);
     });
-
-    // 删除空行
-    keysToDelete.forEach((key) => delete result.properties[key]);
-
-    // 重新调整所有行的 x-index
-    const rows = Object.values(result.properties).filter((prop) => prop['x-component'] === 'Grid.Row');
-
-    rows.forEach((row, index) => {
-      row['x-index'] = index + 1;
-    });
+    return schema;
   }
 
-  return result;
+  schema = _.cloneDeep(schema);
+
+  const newProperties: any = {};
+  const { properties = {} } = schema;
+  let index = 0;
+  Object.keys(properties).forEach((key, rowIndex) => {
+    const row = properties[key];
+
+    if (row['x-component'] !== 'Grid.Row') {
+      row['x-index'] = ++index;
+      newProperties[key] = row;
+      return;
+    }
+
+    // 忽略没有列的行
+    if (!row.properties) {
+      return;
+    }
+
+    // 如果一个行只有一列，那么无需展开
+    if (Object.keys(row.properties).length === 1) {
+      row['x-index'] = ++index;
+      newProperties[key] = row;
+      return;
+    }
+
+    // 如果一个行有多列，则保留第一列，其余的列需要放到外面形成新的行（每一行依然保持一列）
+    Object.keys(row.properties).forEach((columnKey, colIndex) => {
+      const column = row.properties[columnKey];
+      _.set(column, 'x-component-props.width', 100);
+
+      if (colIndex === 0) {
+        row['x-index'] = ++index;
+        newProperties[key] = row;
+        return;
+      }
+
+      delete row.properties[columnKey];
+      // 将列转换为行
+      newProperties[`${uid()}_${columnKey}`] = createRow(column, columnKey, ++index);
+    });
+  });
+
+  schema.properties = newProperties;
+  return schema;
 };
+
+function createRow(column: any, key: string, index: number) {
+  return {
+    type: 'void',
+    version: '2.0',
+    'x-component': 'Grid.Row',
+    'x-app-version': pkg.version,
+    'x-uid': uid(),
+    'x-async': false,
+    'x-index': index,
+    _isJSONSchemaObject: true,
+    properties: {
+      [key]: column,
+    },
+  };
+}
