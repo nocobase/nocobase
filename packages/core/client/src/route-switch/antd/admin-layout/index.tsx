@@ -506,7 +506,7 @@ export const useIsMobileLayout = () => {
 
 export const InternalAdminLayout = () => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
-  const { designable } = useDesignable();
+  const { designable: _designable } = useDesignable();
   const location = useLocation();
   const { onDragEnd } = useMenuDragEnd();
   const { token } = useToken();
@@ -514,6 +514,8 @@ export const InternalAdminLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
   const doNotChangeCollapsedRef = useRef(false);
   const { t } = useMenuTranslation();
+  const designable = isMobile ? false : _designable;
+
   const route = useMemo(() => {
     return {
       path: '/',
@@ -575,44 +577,44 @@ export const InternalAdminLayout = () => {
 
   return (
     <DndContext onDragEnd={onDragEnd}>
-      <ProLayout
-        contentStyle={contentStyle}
-        siderWidth={200}
-        className={resetStyle}
-        location={location}
-        route={route}
-        actionsRender={actionsRender}
-        logo={<NocoBaseLogo />}
-        title={''}
-        layout="mix"
-        splitMenus
-        token={layoutToken}
-        headerRender={headerRender}
-        menuItemRender={menuItemRender}
-        subMenuItemRender={subMenuItemRender}
-        collapsedButtonRender={collapsedButtonRender}
-        onCollapse={onCollapse}
-        collapsed={collapsed}
-        onPageChange={onPageChange}
-      >
-        <RouteContext.Consumer>
-          {(value: RouteContextType) => {
-            const { isMobile: _isMobile } = value;
+      <IsMobileLayoutContext.Provider value={isMobile}>
+        <ProLayout
+          contentStyle={contentStyle}
+          siderWidth={200}
+          className={resetStyle}
+          location={location}
+          route={route}
+          actionsRender={actionsRender}
+          logo={<NocoBaseLogo />}
+          title={''}
+          layout="mix"
+          splitMenus
+          token={layoutToken}
+          headerRender={headerRender}
+          menuItemRender={menuItemRender}
+          subMenuItemRender={subMenuItemRender}
+          collapsedButtonRender={collapsedButtonRender}
+          onCollapse={onCollapse}
+          collapsed={collapsed}
+          onPageChange={onPageChange}
+        >
+          <RouteContext.Consumer>
+            {(value: RouteContextType) => {
+              const { isMobile: _isMobile } = value;
 
-            if (_isMobile !== isMobile) {
-              setIsMobile(_isMobile);
-            }
+              if (_isMobile !== isMobile) {
+                setIsMobile(_isMobile);
+              }
 
-            return (
-              <ConfigProvider theme={_isMobile ? mobileTheme : theme}>
-                <IsMobileLayoutContext.Provider value={_isMobile}>
+              return (
+                <ConfigProvider theme={_isMobile ? mobileTheme : theme}>
                   <LayoutContent />
-                </IsMobileLayoutContext.Provider>
-              </ConfigProvider>
-            );
-          }}
-        </RouteContext.Consumer>
-      </ProLayout>
+                </ConfigProvider>
+              );
+            }}
+          </RouteContext.Consumer>
+        </ProLayout>
+      </IsMobileLayoutContext.Provider>
     </DndContext>
   );
 };
