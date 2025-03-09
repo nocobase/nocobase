@@ -25,7 +25,7 @@ import { addAppVersion } from './addAppVersion';
 
 // @ts-ignore
 import clientPkg from '../../../package.json';
-import { useIsMobileLayout } from '../../route-switch/antd/admin-layout';
+import { useMobileLayout } from '../../route-switch/antd/admin-layout';
 
 interface CreateDesignableProps {
   current: Schema;
@@ -781,7 +781,7 @@ export function useDesignable() {
     dn.loadAPIClientEvents();
   }, [dn]);
 
-  const { isMobileLayout } = useIsMobileLayout();
+  const { isMobileLayout } = useMobileLayout();
 
   return {
     dn,

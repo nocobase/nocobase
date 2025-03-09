@@ -14,7 +14,7 @@ import { useHotkeys } from 'react-hotkeys-hook';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '..';
 import { useToken } from '../../style';
-import { useIsMobileLayout } from '../../route-switch/antd/admin-layout';
+import { useMobileLayout } from '../../route-switch/antd/admin-layout';
 
 const designableStyle = {
   backgroundColor: 'var(--colorSettings) !important',
@@ -29,7 +29,7 @@ export const DesignableSwitch = () => {
   const { t } = useTranslation();
   const { token } = useToken();
   const style = designable ? designableStyle : unDesignableStyle;
-  const { isMobileLayout } = useIsMobileLayout();
+  const { isMobileLayout } = useMobileLayout();
 
   // 快捷键切换编辑状态
   useHotkeys('Ctrl+Shift+U', () => setDesignable(!designable), [designable]);

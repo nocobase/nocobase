@@ -37,7 +37,7 @@ import {
   NocoBaseDesktopRouteType,
   NocoBaseRouteContext,
   useCurrentRoute,
-  useIsMobileLayout,
+  useMobileLayout,
 } from '../../../route-switch/antd/admin-layout';
 import { KeepAliveProvider, useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
@@ -176,7 +176,7 @@ const displayNone = {
 const TabPane = React.memo(({ active: tabActive, uid }: { active: boolean; uid: string }) => {
   const mountedRef = useRef(false);
   const { active: pageActive } = useKeepAlive();
-  const { isMobileLayout } = useIsMobileLayout();
+  const { isMobileLayout } = useMobileLayout();
 
   if (tabActive && !mountedRef.current) {
     mountedRef.current = true;
@@ -210,7 +210,7 @@ const InternalPageContent = (props: PageContentProps) => {
   const currentRoute = useCurrentRoute();
   const navigate = useNavigateNoUpdate();
   const location = useLocationNoUpdate();
-  const { isMobileLayout } = useIsMobileLayout();
+  const { isMobileLayout } = useMobileLayout();
 
   const children = currentRoute?.children || [];
   const noTabs = children.every((tabRoute) => tabRoute.schemaUid !== activeKey && tabRoute.tabSchemaName !== activeKey);

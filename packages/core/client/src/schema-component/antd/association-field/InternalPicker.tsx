@@ -13,6 +13,7 @@ import { differenceBy, unionBy } from 'lodash';
 import React, { useContext, useMemo, useState } from 'react';
 import {
   FormProvider,
+  PopupSettingsProvider,
   RecordPickerContext,
   RecordPickerProvider,
   SchemaComponentOptions,
@@ -148,7 +149,7 @@ export const InternalPicker = observer(
       };
     };
     return (
-      <>
+      <PopupSettingsProvider enableURL={false}>
         <Space.Compact style={{ display: 'flex', lineHeight: '32px' }}>
           <div style={{ width: '100%' }}>
             <Select
@@ -233,7 +234,7 @@ export const InternalPicker = observer(
             </CollectionProvider_deprecated>
           </RecordPickerProvider>
         </ActionContextProvider>
-      </>
+      </PopupSettingsProvider>
     );
   },
   { displayName: 'InternalPicker' },

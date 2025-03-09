@@ -20,7 +20,7 @@ import { SchemaComponent } from '../../core';
 import { useDesigner } from '../../hooks/useDesigner';
 import { useTabsContext } from './context';
 import { TabsDesigner } from './Tabs.Designer';
-import { useIsMobileLayout } from '../../../route-switch/antd/admin-layout';
+import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
 import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
 
 const MemoizeRecursionField = React.memo(RecursionField);
@@ -34,7 +34,7 @@ export const Tabs: any = React.memo((props: TabsProps) => {
   const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
   const contextProps = useTabsContext();
   const { PaneRoot = React.Fragment as React.FC<any> } = contextProps;
-  const { isMobileLayout } = useIsMobileLayout();
+  const { isMobileLayout } = useMobileLayout();
 
   const items = useMemo(() => {
     const result = fieldSchema.mapProperties((schema, key: string) => {

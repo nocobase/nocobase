@@ -497,11 +497,24 @@ const headerRender = (props: HeaderViewProps, defaultDom: React.ReactNode) => {
   return <headerContext.Provider value={headerContextValue}>{defaultDom}</headerContext.Provider>;
 };
 
-const IsMobileLayoutContext = React.createContext<boolean>(false);
+const IsMobileLayoutContext = React.createContext<{
+  isMobileLayout: boolean;
+  setIsMobileLayout: React.Dispatch<React.SetStateAction<boolean>>;
+}>({
+  isMobileLayout: false,
+  setIsMobileLayout: () => {},
+});
 
-export const useIsMobileLayout = () => {
-  const isMobileLayout = useContext(IsMobileLayoutContext);
-  return { isMobileLayout };
+const MobileLayoutProvider: FC = (props) => {
+  const [isMobileLayout, setIsMobileLayout] = useState(false);
+  const value = useMemo(() => ({ isMobileLayout, setIsMobileLayout }), [isMobileLayout]);
+
+  return <IsMobileLayoutContext.Provider value={value}>{props.children}</IsMobileLayoutContext.Provider>;
+};
+
+export const useMobileLayout = () => {
+  const { isMobileLayout, setIsMobileLayout } = useContext(IsMobileLayoutContext);
+  return { isMobileLayout, setIsMobileLayout };
 };
 
 export const InternalAdminLayout = () => {
@@ -510,18 +523,18 @@ export const InternalAdminLayout = () => {
   const location = useLocation();
   const { onDragEnd } = useMenuDragEnd();
   const { token } = useToken();
-  const [isMobile, setIsMobile] = useState(false);
+  const { isMobileLayout, setIsMobileLayout } = useMobileLayout();
   const [collapsed, setCollapsed] = useState(false);
   const doNotChangeCollapsedRef = useRef(false);
   const { t } = useMenuTranslation();
-  const designable = isMobile ? false : _designable;
+  const designable = isMobileLayout ? false : _designable;
 
   const route = useMemo(() => {
     return {
       path: '/',
-      children: convertRoutesToLayout(allAccessRoutes, { designable, isMobile, t }),
+      children: convertRoutesToLayout(allAccessRoutes, { designable, isMobile: isMobileLayout, t }),
     };
-  }, [allAccessRoutes, designable, isMobile, t]);
+  }, [allAccessRoutes, designable, isMobileLayout, t]);
   const layoutToken = useMemo(() => {
     return {
       header: {
@@ -577,44 +590,42 @@ export const InternalAdminLayout = () => {
 
   return (
     <DndContext onDragEnd={onDragEnd}>
-      <IsMobileLayoutContext.Provider value={isMobile}>
-        <ProLayout
-          contentStyle={contentStyle}
-          siderWidth={200}
-          className={resetStyle}
-          location={location}
-          route={route}
-          actionsRender={actionsRender}
-          logo={<NocoBaseLogo />}
-          title={''}
-          layout="mix"
-          splitMenus
-          token={layoutToken}
-          headerRender={headerRender}
-          menuItemRender={menuItemRender}
-          subMenuItemRender={subMenuItemRender}
-          collapsedButtonRender={collapsedButtonRender}
-          onCollapse={onCollapse}
-          collapsed={collapsed}
-          onPageChange={onPageChange}
-        >
-          <RouteContext.Consumer>
-            {(value: RouteContextType) => {
-              const { isMobile: _isMobile } = value;
+      <ProLayout
+        contentStyle={contentStyle}
+        siderWidth={200}
+        className={resetStyle}
+        location={location}
+        route={route}
+        actionsRender={actionsRender}
+        logo={<NocoBaseLogo />}
+        title={''}
+        layout="mix"
+        splitMenus
+        token={layoutToken}
+        headerRender={headerRender}
+        menuItemRender={menuItemRender}
+        subMenuItemRender={subMenuItemRender}
+        collapsedButtonRender={collapsedButtonRender}
+        onCollapse={onCollapse}
+        collapsed={collapsed}
+        onPageChange={onPageChange}
+      >
+        <RouteContext.Consumer>
+          {(value: RouteContextType) => {
+            const { isMobile: _isMobile } = value;
 
-              if (_isMobile !== isMobile) {
-                setIsMobile(_isMobile);
-              }
+            if (_isMobile !== isMobileLayout) {
+              setIsMobileLayout(_isMobile);
+            }
 
-              return (
-                <ConfigProvider theme={_isMobile ? mobileTheme : theme}>
-                  <LayoutContent />
-                </ConfigProvider>
-              );
-            }}
-          </RouteContext.Consumer>
-        </ProLayout>
-      </IsMobileLayoutContext.Provider>
+            return (
+              <ConfigProvider theme={_isMobile ? mobileTheme : theme}>
+                <LayoutContent />
+              </ConfigProvider>
+            );
+          }}
+        </RouteContext.Consumer>
+      </ProLayout>
     </DndContext>
   );
 };
@@ -728,6 +739,7 @@ export class AdminLayoutPlugin extends Plugin {
   async load() {
     this.app.schemaSettingsManager.add(userCenterSettings);
     this.app.addComponents({ AdminLayout, AdminDynamicPage });
+    this.app.use(MobileLayoutProvider);
   }
 }
 
@@ -748,36 +760,6 @@ export function findRouteBySchemaUid(schemaUid: string, treeArray: any[]) {
   }
   return null;
 }
-
-const MenuItemIcon: FC<{ icon: string; title: string }> = (props) => {
-  const { inHeader } = useContext(headerContext);
-
-  return (
-    <RouteContext.Consumer>
-      {(value: RouteContextType) => {
-        const { collapsed } = value;
-
-        if (collapsed && !inHeader) {
-          return props.icon ? (
-            <Icon type={props.icon} />
-          ) : (
-            <span
-              style={{
-                display: 'inline-block',
-                width: '100%',
-                textAlign: 'center',
-              }}
-            >
-              {props.title.charAt(0)}
-            </span>
-          );
-        }
-
-        return props.icon ? <Icon type={props.icon} /> : null;
-      }}
-    </RouteContext.Consumer>
-  );
-};
 
 const MenuDesignerButton: FC<{ testId: string }> = (props) => {
   const { render: renderInitializer } = useSchemaInitializerRender(menuItemInitializer);

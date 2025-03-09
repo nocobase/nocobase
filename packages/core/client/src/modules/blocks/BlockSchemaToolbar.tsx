@@ -14,7 +14,7 @@ import { useCollection } from '../../data-source/collection/CollectionProvider';
 import { useCompile } from '../../schema-component';
 import { SchemaToolbar } from '../../schema-settings/GeneralSchemaDesigner';
 import { useSchemaTemplate } from '../../schema-templates';
-import { useIsMobileLayout } from '../../route-switch/antd/admin-layout';
+import { useMobileLayout } from '../../route-switch/antd/admin-layout';
 
 export const BlockSchemaToolbar = (props) => {
   const { t } = useTranslation();
@@ -23,7 +23,7 @@ export const BlockSchemaToolbar = (props) => {
   const template = useSchemaTemplate();
   const { association, collection } = useDataBlockProps() || {};
   const compile = useCompile();
-  const { isMobileLayout } = useIsMobileLayout();
+  const { isMobileLayout } = useMobileLayout();
 
   if (association) {
     const [collectionName] = association.split('.');
