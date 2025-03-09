@@ -12,6 +12,7 @@ import { uid } from './uid';
 // @ts-ignore
 import pkg from '../package.json';
 import _ from 'lodash';
+import { ISchema, Schema } from '@formily/json-schema';
 
 /**
  * 将多列布局转换为单列布局
@@ -20,6 +21,10 @@ import _ from 'lodash';
  */
 export const transformMultiColumnToSingleColumn = (schema: any): any => {
   if (!schema) return schema;
+
+  if (schema.toJSON) {
+    schema = schema.toJSON();
+  }
 
   if (schema['x-component'] !== 'Grid') {
     Object.keys(schema.properties || {}).forEach((key) => {
