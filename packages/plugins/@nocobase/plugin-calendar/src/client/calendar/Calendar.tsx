@@ -298,8 +298,7 @@ export const Calendar: any = withDynamicSchemaProps(
       const [currentSelectDate, setCurrentSelectDate] = useState(undefined);
       useEffect(() => {
         setView(props.defaultView);
-        console.log('props.doNotQuickCreateEvent', props.doNotQuickCreateEvent, doNotQuickCreate);
-      }, [props.defaultView, props.doNotQuickCreateEvent]);
+      }, [props.defaultView]);
 
       const components = useMemo(() => {
         return {

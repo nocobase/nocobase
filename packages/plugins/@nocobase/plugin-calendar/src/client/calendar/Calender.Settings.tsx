@@ -234,7 +234,6 @@ export const calendarBlockSettings = new SchemaSettings({
                 'x-decorator-props': field.decoratorProps,
               },
             });
-            dn.refresh();
           },
         };
       },
