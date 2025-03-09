@@ -258,11 +258,7 @@ export class PluginClientServer extends Plugin {
         appends: ['desktopRoutes'],
       });
 
-      const desktopRoutesId = roles
-        .flatMap((x) => x.get('desktopRoutes'))
-        // hidden 为 true 的节点不会显示在权限配置表格中，所以无法被配置，需要被过滤掉
-        .filter((item) => !item.hidden)
-        .map((item) => item.id);
+      const desktopRoutesId = roles.flatMap((x) => x.get('desktopRoutes')).map((item) => item.id);
 
       if (desktopRoutesId) {
         const ids = (await Promise.all(desktopRoutesId)).flat();
