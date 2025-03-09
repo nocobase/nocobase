@@ -261,7 +261,7 @@ export const Form: React.FC<FormProps> & {
     const theme: any = useMemo(() => {
       return {
         token: {
-          // 这里是为了防止区块内部也收到 marginBlock 的影响（marginBlock：区块之间的间距）
+          // 这里是为了防止区块内部也受到 marginBlock 的影响（marginBlock：区块之间的间距）
           // @ts-ignore
           marginBlock: token.marginLG,
         },

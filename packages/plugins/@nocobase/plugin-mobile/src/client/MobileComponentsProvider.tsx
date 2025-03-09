@@ -11,7 +11,6 @@ import { Action, OpenModeProvider, useMobileLayout, usePopupSettings } from '@no
 import React, { FC, useEffect } from 'react';
 import { ActionDrawerUsedInMobile, useToAdaptActionDrawerToMobile } from './adaptor-of-desktop/ActionDrawer';
 import { useToAdaptFilterActionToMobile } from './adaptor-of-desktop/FilterAction';
-import { useToAddMobilePopupBlockInitializers } from './adaptor-of-desktop/mobile-action-page/blockInitializers';
 
 const CommonDrawer: FC = (props) => {
   const { isMobileLayout } = useMobileLayout();
@@ -37,7 +36,7 @@ const MobileAdapter: FC = (props) => {
 
   useEffect(() => {
     document.body.style.setProperty('--nb-mobile-page-tabs-content-padding', '12px');
-    document.body.style.setProperty('--nb-mobile-page-header-height', '50px');
+    document.body.style.setProperty('--nb-mobile-page-header-height', '46px');
   }, []);
 
   return (
