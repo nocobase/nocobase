@@ -38,6 +38,7 @@ test.describe('where table block can be added', () => {
     // 添加当前表关系区块
     await page.getByLabel('schema-initializer-Grid-popup').hover();
     await page.getByRole('menuitem', { name: 'Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'childAssociationField' }).waitFor({ state: 'detached' });
     await page.getByRole('menuitem', { name: 'Associated records' }).last().hover();
     await page.getByRole('menuitem', { name: 'childAssociationField' }).click();
     await page

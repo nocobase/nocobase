@@ -190,7 +190,7 @@ export class ApprovalPassthroughModeNode {
     this.addActionsMenu = page.getByRole('menuitem', { name: 'Actions' }).getByRole('switch');
     this.actionsConfigureFieldsButton = page.getByLabel('schema-initializer-Grid-FormItemInitializers-approvalRecords');
     this.actionsConfigureActionsButton = page.getByLabel(
-      'schema-initializer-ActionBar-ApprovalProcessAddActionButton-approvalRecords',
+      'schema-initializer-ActionBar-ApprovalProcessAddActionButton-',
     );
     this.addApproveButton = page.getByRole('menuitem', { name: 'Approve' }).getByRole('switch');
     this.addRejectButton = page.getByRole('menuitem', { name: 'Reject' }).getByRole('switch');
@@ -261,7 +261,7 @@ export class ApprovalBranchModeNode {
     this.addActionsMenu = page.getByRole('menuitem', { name: 'Process form' }).getByRole('switch');
     this.actionsConfigureFieldsButton = page.getByLabel('schema-initializer-Grid-FormItemInitializers-approvalRecords');
     this.actionsConfigureActionsButton = page.getByLabel(
-      'schema-initializer-ActionBar-ApprovalProcessAddActionButton-approvalRecords',
+      'schema-initializer-ActionBar-ApprovalProcessAddActionButton-',
     );
     this.addApproveButton = page.getByRole('menuitem', { name: 'Approve' }).getByRole('switch');
     this.addRejectButton = page.getByRole('menuitem', { name: 'Reject' }).getByRole('switch');
