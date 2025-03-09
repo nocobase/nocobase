@@ -148,6 +148,14 @@ export const InternalPicker = observer(
         },
       };
     };
+    const scope = useMemo(
+      () => ({
+        usePickActionProps,
+        useTableSelectorProps,
+      }),
+      [],
+    );
+
     return (
       <PopupSettingsProvider enableURL={false}>
         <Space.Compact style={{ display: 'flex', lineHeight: '32px' }}>
@@ -214,12 +222,7 @@ export const InternalPicker = observer(
             <CollectionProvider_deprecated name={collectionField?.target}>
               <FormProvider>
                 <TableSelectorParamsProvider params={{ filter: getFilter() }}>
-                  <SchemaComponentOptions
-                    scope={{
-                      usePickActionProps,
-                      useTableSelectorProps,
-                    }}
-                  >
+                  <SchemaComponentOptions scope={scope}>
                     <NocoBaseRecursionField
                       onlyRenderProperties
                       basePath={field.address}
