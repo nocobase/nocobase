@@ -26,6 +26,7 @@ describe('Web client desktopRoutes', async () => {
         'auth',
         'data-source-manager',
         'error-handler',
+        'collection-tree',
       ],
     });
     db = app.db;
