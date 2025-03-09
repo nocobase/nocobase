@@ -40,6 +40,7 @@ import { useUpdate } from 'ahooks';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useRefreshComponent, useRefreshFieldSchema } from '../../../formily/NocoBaseRecursionField';
 import { NocoBaseDesktopRoute } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
+import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 
 const subMenuDesignerCss = css`
   position: relative;
@@ -96,7 +97,7 @@ const subMenuDesignerCss = css`
 const designerCss = css`
   position: relative;
   display: flex;
-  justify-content: center;
+  // justify-content: center;
   align-items: center;
   margin-left: -20px;
   margin-right: -20px;
@@ -203,7 +204,17 @@ type ComposedMenu = React.FC<any> & {
   Designer?: React.FC<any>;
 };
 
-const ParentRouteContext = createContext<NocoBaseDesktopRoute>(null);
+const MenuItemTitle: React.FC<{
+  schema: any;
+  style?: React.CSSProperties;
+}> = ({ schema, style }) => {
+  const { t } = useMenuTranslation();
+  return <span style={style}>{t(schema.title)}</span>;
+};
+
+const MenuItemTitleWithTooltip = withTooltipComponent(MenuItemTitle);
+
+export const ParentRouteContext = createContext<NocoBaseDesktopRoute>(null);
 ParentRouteContext.displayName = 'ParentRouteContext';
 
 export const useParentRoute = () => {
@@ -264,8 +275,8 @@ export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
       method,
       refreshAfterMove = true,
     }: {
-      sourceId: string;
-      targetId?: string;
+      sourceId: string | number;
+      targetId?: string | number;
       targetScope?: any;
       sortField?: string;
       sticky?: boolean;
@@ -668,8 +679,9 @@ const menuItemTitleStyle = {
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   display: 'inline-block',
-  width: '100%',
+  // width: '100%',
   verticalAlign: 'middle',
+  // marginInlineEnd: '4px',
 };
 
 Menu.Item = observer(
@@ -698,7 +710,11 @@ Menu.Item = observer(
                 removeParentsIfNoChildren={false}
               >
                 <Icon type={icon} />
-                <span style={menuItemTitleStyle}>{t(schema.title)}</span>
+                <MenuItemTitleWithTooltip
+                  schema={schema}
+                  style={menuItemTitleStyle}
+                  tooltip={schema?.['x-component-props']?.tooltip}
+                />
                 <Designer />
               </SortableItem>
             </FieldContext.Provider>
@@ -720,6 +736,7 @@ Menu.Item = observer(
 
 const MenuURLButton = ({ href, params, icon }) => {
   const field = useField();
+  const schema = useFieldSchema();
   const { t } = useMenuTranslation();
   const Designer = useContext(MenuItemDesignerContext);
   const { parseURLAndParams } = useParseURLAndParams();
@@ -749,17 +766,11 @@ const MenuURLButton = ({ href, params, icon }) => {
       aria-label={t(field.title)}
     >
       <Icon type={icon} />
-      <span
-        style={{
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          display: 'inline-block',
-          width: '100%',
-          verticalAlign: 'middle',
-        }}
-      >
-        {t(field.title)}
-      </span>
+      <MenuItemTitleWithTooltip
+        schema={schema}
+        style={menuItemTitleStyle}
+        tooltip={schema?.['x-component-props']?.tooltip}
+      />
       <Designer />
     </SortableItem>
   );
@@ -814,6 +825,7 @@ Menu.SubMenu = observer(
     const field = useField();
     const mode = useContext(MenuModeContext);
     const Designer = useContext(MenuItemDesignerContext);
+
     const submenu = useMemo(() => {
       return {
         ...others,
@@ -830,7 +842,11 @@ Menu.SubMenu = observer(
                 aria-label={t(field.title)}
               >
                 <Icon type={icon} />
-                {t(field.title)}
+                <MenuItemTitleWithTooltip
+                  schema={schema}
+                  style={{ marginInlineStart: 0 }}
+                  tooltip={schema?.['x-component-props']?.tooltip}
+                />
                 <Designer />
               </SortableItem>
             </FieldContext.Provider>

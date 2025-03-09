@@ -13,7 +13,7 @@ test.describe('group page menus schema settings', () => {
   test('edit', async ({ page, mockPage }) => {
     await mockPage({ type: 'group', name: 'group page' }).goto();
     await showSettings(page, 'group page');
-    await page.getByRole('menuitem', { name: 'Edit' }).click();
+    await page.getByRole('menuitem', { name: 'Edit', exact: true }).click();
     await page.mouse.move(300, 0);
 
     // 设置一个新名称

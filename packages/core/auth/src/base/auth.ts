@@ -118,6 +118,13 @@ export class BaseAuth extends Auth {
         )
       : null;
 
+    if (!user) {
+      this.ctx.throw(401, {
+        message: this.ctx.t('User not found. Please sign in again to continue.', { ns: localeNamespace }),
+        code: AuthErrorCode.NOT_EXIST_USER,
+      });
+    }
+
     if (roleName) {
       this.ctx.headers['x-role'] = roleName;
     }

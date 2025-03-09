@@ -151,7 +151,7 @@ const UsersSettingsContext = createContext<any>({});
 
 const UsersSettingsProvider = (props) => {
   const result = useRequest({
-    url: 'systemSettings:get/1',
+    url: 'users:getSystemSettings',
   });
   return <UsersSettingsContext.Provider value={result}>{props.children}</UsersSettingsContext.Provider>;
 };
@@ -181,7 +181,7 @@ const UsersSettingsTab: React.FC = () => {
       async onClick() {
         await form.submit();
         const values = form.values;
-        await api.request({ url: 'systemSettings:update/1', data: values, method: 'POST' });
+        await api.request({ url: 'users:updateSystemSettings', data: values, method: 'POST' });
         message.success(t('Saved successfully'));
         window.location.reload();
       },

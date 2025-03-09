@@ -5,6 +5,60 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.5.24](https://github.com/nocobase/nocobase/compare/v1.5.23...v1.5.24) - 2025-03-07
+
+### 🎉 New Features
+
+- **[Data visualization]** Support NULLS sorting in chart queries ([#6383](https://github.com/nocobase/nocobase/pull/6383)) by @2013xile
+
+### 🚀 Improvements
+
+- **[Workflow]** Allow skip to trigger collection workflow in database event ([#6379](https://github.com/nocobase/nocobase/pull/6379)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[Action: Import records Pro]** Use additional option to determine whether to trigger workflow or not by @mytharcher
+
+- **[Action: Export records Pro]** pro export action missing sort params by @katherinehhh
+
+## [v1.5.23](https://github.com/nocobase/nocobase/compare/v1.5.22...v1.5.23) - 2025-03-06
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - timezone-related issue causing one hour less in date picker ([#6359](https://github.com/nocobase/nocobase/pull/6359)) by @katherinehhh
+
+  - missing sortable setting for inherited collection fields ([#6372](https://github.com/nocobase/nocobase/pull/6372)) by @katherinehhh
+
+## [v1.5.22](https://github.com/nocobase/nocobase/compare/v1.5.21...v1.5.22) - 2025-03-06
+
+### 🚀 Improvements
+
+- **[client]** Add debounce handling to buttons ([#6351](https://github.com/nocobase/nocobase/pull/6351)) by @Cyx649312038
+
+### 🐛 Bug Fixes
+
+- **[database]** Fix error when retrieving relation collection records if the source key in relation fields is a numeric string ([#6360](https://github.com/nocobase/nocobase/pull/6360)) by @2013xile
+
+## [v1.5.21](https://github.com/nocobase/nocobase/compare/v1.5.20...v1.5.21) - 2025-03-05
+
+### 🚀 Improvements
+
+- **[Workflow]** Lazy load job result for better performance ([#6344](https://github.com/nocobase/nocobase/pull/6344)) by @mytharcher
+
+- **[Workflow: Aggregate node]** Add round process for aggregated number based on double type ([#6358](https://github.com/nocobase/nocobase/pull/6358)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - subform components not aligning with main form when label is hidden ([#6357](https://github.com/nocobase/nocobase/pull/6357)) by @katherinehhh
+
+  - association block not rendering in popup within collection  inheritance ([#6303](https://github.com/nocobase/nocobase/pull/6303)) by @katherinehhh
+
+  - Fix error thrown when creating file collection ([#6363](https://github.com/nocobase/nocobase/pull/6363)) by @mytharcher
+
+- **[Workflow]** Fix acl for getting job ([#6352](https://github.com/nocobase/nocobase/pull/6352)) by @mytharcher
+
 ## [v1.5.20](https://github.com/nocobase/nocobase/compare/v1.5.19...v1.5.20) - 2025-03-03
 
 ### 🐛 Bug Fixes
