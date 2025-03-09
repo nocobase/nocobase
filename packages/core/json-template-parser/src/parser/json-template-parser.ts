@@ -256,3 +256,5 @@ const parser = new JSONTemplateParser();
 export function createJSONTemplateParser() {
   return parser;
 }
+
+export const parse = parser.parse;

@@ -35,6 +35,7 @@ import { XButton } from './XButton';
 import { useStyles } from './style';
 import { Json } from '../input';
 import { Filters, Addition, FilterContext } from './VariableFilters';
+import { VariableProvider } from './VariableProvider';
 
 const { Text } = Typography;
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
@@ -484,11 +485,13 @@ export function Input(props: VariableInputProps) {
                   </React.Fragment>
                 );
               })}
-              <FilterContext.Provider value={{ updateFilterParams, deleteFilter }}>
-                <Filters filters={filters} onFilterChange={onFilterAdd} />
+              <VariableProvider variableName={fullVariable}>
+                <FilterContext.Provider value={{ updateFilterParams, deleteFilter, variableName: fullVariable }}>
+                  <Filters filters={filters} onFilterChange={onFilterAdd} />
 
-                {variableText.length > 0 && <Addition variable={fullVariable} onFilterAdd={onFilterAdd} />}
-              </FilterContext.Provider>
+                  {variableText.length > 0 && <Addition variable={fullVariable} onFilterAdd={onFilterAdd} />}
+                </FilterContext.Provider>
+              </VariableProvider>
             </Tag>
           </div>
           {!disabled ? (

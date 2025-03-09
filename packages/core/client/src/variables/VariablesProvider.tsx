@@ -347,11 +347,12 @@ const VariablesProvider = ({ children, filterVariables }: any) => {
         parseVariable,
         registerVariable,
         getVariable,
+        getVariableValue: getResult,
         getCollectionField,
         removeVariable,
         filterVariables,
       }) as VariablesContextType,
-    [getCollectionField, getVariable, parseVariable, registerVariable, removeVariable, setCtx],
+    [getCollectionField, getVariable, parseVariable, registerVariable, removeVariable, setCtx, getResult],
   );
 
   return <VariablesContext.Provider value={value}>{children}</VariablesContext.Provider>;

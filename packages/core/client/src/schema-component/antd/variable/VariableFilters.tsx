@@ -17,6 +17,7 @@ import type { MenuProps } from 'antd';
 import { SchemaComponent } from '../../core/SchemaComponent';
 import { useApp } from '../../../application';
 import { useCompile } from '../../hooks';
+import { useVariable } from './VariableProvider';
 
 export function Addition({ variable, onFilterAdd }) {
   const app = useApp();
@@ -59,15 +60,30 @@ export function Filters({ filters, onFilterChange }) {
         if (!filterConfig) {
           return null;
         }
-        return <Filter key={index} filterId={index} config={filterConfig} filter={filter} />;
+        const previousFilters = filters.slice(0, index);
+        return (
+          <Filter
+            key={index}
+            filterId={index}
+            config={filterConfig}
+            filter={filter}
+            previousFilters={previousFilters}
+          />
+        );
       })}
     </>
   );
 }
 
-export function Filter({ config, filter, filterId }) {
+export function Filter({ config, filter, filterId, previousFilters }) {
   const [open, setOpen] = useState(false);
-
+  const { value } = useVariable();
+  const inputValue = [...previousFilters].reduce((value, filter) => {
+    return filter.handler(value, ...filter.args);
+  }, value);
+  const outputValue = [...previousFilters, filter].reduce((value, filter) => {
+    return filter.handler(value, ...filter.args);
+  }, value);
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
   };
@@ -108,16 +124,28 @@ export function Filter({ config, filter, filterId }) {
   };
 
   const useFormBlockProps = () => {
-    return { form };
+    return { form, layout: 'vertical' };
   };
 
   const WithPropOver = ({ children }) => {
+    const { value } = useVariable();
     const schema = {
       'x-uid': uid(),
       type: 'void',
-      // 'x-component': 'FormV2',
-      // 'x-use-component-props': 'useFormBlockProps',
+      'x-component': 'FormV2',
+      'x-use-component-props': 'useFormBlockProps',
       properties: {
+        '$input-value': {
+          type: 'void',
+          'x-component': 'Input',
+          'x-component-props': {
+            defaultValue: '{{ inputValue }}',
+            disabled: true,
+          },
+          'x-decorator': 'FormItem',
+          title: tval('Input Value'),
+          'x-read-pretty': true,
+        },
         ...Object.fromEntries(
           config.uiSchema.map((param) => [
             param.name,
@@ -127,6 +155,17 @@ export function Filter({ config, filter, filterId }) {
             },
           ]),
         ),
+        '$return-value': {
+          type: 'void',
+          'x-component': 'Input',
+          'x-component-props': {
+            defaultValue: '{{ outputValue }}',
+            disabled: true,
+          },
+          'x-decorator': 'FormItem',
+          title: tval('Return Value'),
+          'x-read-pretty': true,
+        },
         actions: {
           type: 'void',
           title: tval('Save'),
@@ -153,13 +192,11 @@ export function Filter({ config, filter, filterId }) {
         open={open}
         onOpenChange={handleOpenChange}
         content={
-          <FormContext.Provider value={form}>
-            <SchemaComponent
-              schema={schema}
-              scope={{ useSaveActionProps, useFormBlockProps, useDeleteActionProps }}
-              basePath={['']}
-            />
-          </FormContext.Provider>
+          <SchemaComponent
+            schema={schema}
+            scope={{ useSaveActionProps, useFormBlockProps, useDeleteActionProps, outputValue, inputValue }}
+            basePath={['']}
+          />
         }
         trigger={'hover'}
       >
@@ -171,19 +208,19 @@ export function Filter({ config, filter, filterId }) {
   return (
     <>
       <span style={{ color: '#bfbfbf', margin: '0 5px' }}>|</span>
-      <FormContext.Provider value={form}>
-        {config.uiSchema ? <WithPropOver>{Label}</WithPropOver> : Label}
-      </FormContext.Provider>
+      {config.uiSchema ? <WithPropOver>{Label}</WithPropOver> : Label}
     </>
   );
 }
 
 type FilterContextType = {
+  variableName: string;
   updateFilterParams: (args: { filterId: number; params: any[] }) => any;
   deleteFilter: (args: { filterId: number }) => any;
 };
 
 export const FilterContext = React.createContext<FilterContextType>({
+  variableName: '',
   updateFilterParams: (params: any) => {},
   deleteFilter: (params: any) => {},
 });

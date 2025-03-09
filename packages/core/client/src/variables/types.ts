@@ -82,6 +82,26 @@ export interface VariablesContextType {
    * @returns 变量的配置
    */
   getVariable: (variableName: string) => VariableOption;
+
+  /**
+   * 获取变量的值
+   * @param variableName 变量的名称，例如：`$user`
+   * @returns 变量的配置
+   */
+  getVariableValue: (
+    variablePath: string,
+    localVariables?: VariableOption[],
+    options?: {
+      /** Related fields that need to be included in the first request */
+      appends?: string[];
+      /** Do not request when the association field is empty */
+      doNotRequest?: boolean;
+      /**
+       * The operator related to the current field, provided when parsing the default value of the field
+       */
+      fieldOperator?: string | void;
+    },
+  ) => Promise<any>;
   getCollectionField: (
     variableString: string,
     localVariables?: VariableOption | VariableOption[],

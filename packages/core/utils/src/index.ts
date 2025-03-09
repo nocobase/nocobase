@@ -9,11 +9,8 @@
 
 import lodash from 'lodash';
 import { dayjs } from './dayjs';
-import { createJSONTemplateParser } from '@nocobase/json-template-parser';
-const parser = createJSONTemplateParser();
-const parse = parser.parse;
-export { parse };
 
+export { parse } from '@nocobase/json-template-parser';
 export * from './assign';
 export * from './collections-graph';
 export * from './common';

@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { createJSONTemplateParser, JSONTemplateParser } from './json-template-parser';
+export { createJSONTemplateParser, JSONTemplateParser, parse } from './json-template-parser';
