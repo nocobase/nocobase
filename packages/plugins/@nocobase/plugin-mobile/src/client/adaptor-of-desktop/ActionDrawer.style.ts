@@ -59,7 +59,7 @@ export const useMobileActionDrawerStyle = genStyleHook('nb-mobile-action-drawer'
         // 带有 tab 页的半窗
         '.ant-tabs-nav': {
           marginBottom: '0px !important',
-          padding: `0 ${token.paddingPageHorizontal}px`,
+          padding: `0 ${token.paddingPageHorizontal + token.borderRadiusBlock / 2}px`,
           backgroundColor: token.colorBgContainer,
         },
 
