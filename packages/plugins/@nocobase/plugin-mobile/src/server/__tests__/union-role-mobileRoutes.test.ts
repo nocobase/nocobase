@@ -9,7 +9,7 @@
 
 import { MockServer, createMockServer, ExtendedAgent } from '@nocobase/test';
 
-describe('Web client desktopRoutes', async () => {
+describe('union role mobileRoutes', async () => {
   let app: MockServer, db;
   let agent: ExtendedAgent, rootUser, user, role1, role2;
 
@@ -17,7 +17,7 @@ describe('Web client desktopRoutes', async () => {
     app = await createMockServer({
       plugins: [
         'acl',
-        'client',
+        'mobile',
         'users',
         'ui-schema-storage',
         'system-settings',
@@ -66,7 +66,7 @@ describe('Web client desktopRoutes', async () => {
   };
 
   const createUiMenu = async (loginAgent: ExtendedAgent, data?: { title?: string }) => {
-    const response = await loginAgent.resource(`desktopRoutes`).create({
+    const response = await loginAgent.resource(`mobileRoutes`).create({
       values: {
         type: 'page',
         title: data?.title || generateRandomString(),
@@ -181,23 +181,35 @@ describe('Web client desktopRoutes', async () => {
 
   const getAccessibleMenus = async (loginAgent: ExtendedAgent) => {
     const menuResponse = await loginAgent
-      .get(`/desktopRoutes:listAccessible`)
+      .get(`/mobileRoutes:listAccessible`)
       .query({ tree: true, sort: 'sort' })
       .send();
     expect(menuResponse.statusCode).toBe(200);
     return menuResponse.body.data;
   };
 
-  it('Desktop menu, add menu Accessible menu1 to role1, add menu Accessible menu2 to role2, expect role1 visible menu1, role2 visible menu2', async () => {
+  it('should fetch successful when login role is union', async () => {
+    const listAccessibleResponse = await agent.resource('mobileRoutes').listAccessible({
+      filter: {
+        tree: true,
+        sort: 'sort',
+        pagination: false,
+      },
+    });
+
+    expect(listAccessibleResponse.statusCode).toBe(200);
+  });
+
+  it('Mobile menu, add menu Accessible menu1 to role1, add menu Accessible menu2 to role2, expect role1 visible menu1, role2 visible menu2', async () => {
     const rootAgent = await app.agent().login(rootUser);
     const page1 = await createUiMenu(rootAgent, { title: 'page1' });
     const page2 = await createUiMenu(rootAgent, { title: 'page2' });
 
     // add accessible menu1 to role1
-    let addMenuResponse = await rootAgent.post(`/roles/${role1.name}/desktopRoutes:add`).send([page1.id]);
+    let addMenuResponse = await rootAgent.post(`/roles/${role1.name}/mobileRoutes:add`).send([page1.id]);
 
     // add accessible menu2 to role2
-    addMenuResponse = await rootAgent.post(`/roles/${role2.name}/desktopRoutes:add`).send([page2.id]);
+    addMenuResponse = await rootAgent.post(`/roles/${role2.name}/mobileRoutes:add`).send([page2.id]);
 
     agent = await app.agent().login(user, role1.name);
     let accessibleMenus = await getAccessibleMenus(agent);
@@ -218,7 +230,7 @@ describe('Web client desktopRoutes', async () => {
     expect(menuProps).include(page2.title);
   });
 
-  it('Desktop menu, allowNewMenu = true, expect display new menu', async () => {
+  it('Mobile menu, allowNewMenu = true, expect display new menu', async () => {
     const rootAgent = await app.agent().login(rootUser);
     const role1Response = await rootAgent.resource('roles').get({
       filterByTk: role1.name,
@@ -228,7 +240,7 @@ describe('Web client desktopRoutes', async () => {
       filterByTk: role1.name,
       values: {
         ...role1Response.body.data,
-        allowNewMenu: true,
+        allowNewMobileMenu: true,
       },
     });
     expect(updateRole1Response.statusCode).toBe(200);
@@ -237,7 +249,6 @@ describe('Web client desktopRoutes', async () => {
 
     // auto can see new menu
     const accessibleMenus = await getAccessibleMenus(agent);
-    expect(accessibleMenus.length).toBe(1);
     expect(accessibleMenus[0].title).toBe(page1.title);
   });
 });

@@ -7,248 +7,107 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MockServer, createMockServer, ExtendedAgent } from '@nocobase/test';
+import Database, { Model, Repository } from '@nocobase/database';
+import { createMockServer, MockServer } from '@nocobase/test';
 
 describe('mobileRoutes', async () => {
-  let app: MockServer, db;
-  let agent: ExtendedAgent, rootUser, user, role1, role2;
-
+  let app: MockServer, db: Database, mobileRoutesRepo: Repository, rolesMobileRoutesRepo: Repository;
+  let role: Model;
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: [
-        'acl',
-        'mobile',
-        'users',
-        'ui-schema-storage',
-        'system-settings',
-        'field-sort',
-        'data-source-main',
-        'auth',
-        'data-source-manager',
-        'error-handler',
-      ],
+      plugins: ['error-handler', 'mobile', 'field-sort', 'acl', 'data-source-main', 'data-source-manager'],
     });
     db = app.db;
-    rootUser = await db.getRepository('users').findOne({
-      filter: {
-        email: process.env.INIT_ROOT_EMAIL,
-      },
-    });
-    const rootAgent = await app.agent().login(rootUser);
-    const role1Response = await rootAgent.resource('roles').create({
-      values: {
-        name: 'r1',
-      },
-    });
-    role1 = role1Response.body.data;
-    const role2Response = await rootAgent.resource('roles').create({
-      values: {
-        name: 'r2',
-      },
-    });
-    role2 = role2Response.body.data;
-    user = await db.getRepository('users').create({
-      values: {
-        name: 'u1',
-        roles: [role1.name, role2.name],
-      },
-    });
-
-    agent = await app.agent().login(user, 'union');
+    mobileRoutesRepo = db.getRepository('mobileRoutes');
+    rolesMobileRoutesRepo = db.getRepository('rolesMobileRoutes');
+    role = await db.getRepository('roles').create({ values: { name: 'role1' } });
   });
 
   afterEach(async () => {
     await app.destroy();
   });
 
-  const generateRandomString = () => {
-    return Math.random().toString(36).substring(2, 15);
-  };
+  it(`should rolesMobileRoutes includes tabs when create menu`, async () => {
+    const records = [
+      { id: 50, title: 'page1', type: 'page', hideInMenu: null, hidden: null },
+      { id: 51, title: 'tabs1', type: 'tabs', parentId: 50, hideInMenu: null, hidden: true },
+    ];
+    await mobileRoutesRepo.createMany({ records });
+    // trigger bulkCreate hooks
+    await db.getCollection('rolesMobileRoutes').model.bulkCreate([{ roleName: role.get('name'), mobileRouteId: 50 }]);
 
-  const createUiMenu = async (loginAgent: ExtendedAgent, data?: { title?: string }) => {
-    const response = await loginAgent.resource(`mobileRoutes`).create({
-      values: {
-        type: 'page',
-        title: data?.title || generateRandomString(),
-        schemaUid: generateRandomString(),
-        menuSchemaUid: generateRandomString(),
-        enableTabs: false,
-        children: [
-          {
-            type: 'tabs',
-            schemaUid: generateRandomString(),
-            tabSchemaName: generateRandomString(),
-            hidden: true,
-          },
-        ],
-      },
-    });
-    expect(response.statusCode).toBe(200);
-    expect(response.body.data).exist;
-    if (data?.title) {
-      expect(response.body.data.title).toBe(data.title);
-    }
-    const menu = response.body.data;
-    const uiSchemaResponse = await loginAgent
-      .post(`/uiSchemas:insertAdjacent/nocobase-admin-menu`)
-      .query({ position: 'beforeEnd' })
-      .send({
-        schema: {
-          _isJSONSchemaObject: true,
-          version: '2.0',
-          type: 'void',
-          title: menu.title,
-          'x-component': 'Menu.Item',
-          'x-decorator': 'ACLMenuItemProvider',
-          'x-component-props': {},
-          properties: {
-            page: {
-              _isJSONSchemaObject: true,
-              version: '2.0',
-              type: 'void',
-              'x-component': 'Page',
-              'x-async': true,
-              properties: {
-                [menu.children[0].tabSchemaName]: {
-                  _isJSONSchemaObject: true,
-                  version: '2.0',
-                  type: 'void',
-                  'x-component': 'Grid',
-                  'x-initializer': 'page:addBlock',
-                  'x-uid': menu.children[0].schemaUid,
-                  name: menu.children[0].tabSchemaName,
-                  'x-app-version': '1.6.0-alpha.28',
-                },
-              },
-              'x-uid': menu.schemaUid,
-              name: 'page',
-              'x-app-version': '1.6.0-alpha.28',
-            },
-          },
-          'x-uid': menu.menuSchemaUid,
-          __route__: {
-            createdAt: '2025-02-27T03:34:19.689Z',
-            updatedAt: '2025-02-27T03:34:19.689Z',
-            id: menu.id,
-            type: menu.type,
-            title: menu.title,
-            schemaUid: menu.schemaUid,
-            menuSchemaUid: menu.menuSchemaUid,
-            enableTabs: false,
-            sort: menu.sort,
-            createdById: menu.createdById,
-            updatedById: menu.updatedById,
-            parentId: null,
-            icon: null,
-            tabSchemaName: null,
-            options: null,
-            hideInMenu: null,
-            enableHeader: null,
-            displayTitle: null,
-            hidden: null,
-            children: [
-              {
-                createdAt: '2025-02-27T03:34:19.746Z',
-                updatedAt: '2025-02-27T03:34:19.746Z',
-                id: menu.children[0].id,
-                type: 'tabs',
-                schemaUid: menu.children[0].schemaUid,
-                tabSchemaName: menu.children[0].tabSchemaName,
-                hidden: true,
-                parentId: menu.children[0].parentId,
-                sort: menu.children[0].sort,
-                createdById: menu.children[0].createdById,
-                updatedById: menu.children[0].updatedById,
-                title: null,
-                icon: null,
-                menuSchemaUid: null,
-                options: null,
-                hideInMenu: null,
-                enableTabs: null,
-                enableHeader: null,
-                displayTitle: null,
-              },
-            ],
-          },
-          name: generateRandomString(),
-          'x-app-version': '1.6.0-alpha.28',
-        },
-        wrap: null,
-      });
-    expect(uiSchemaResponse.statusCode).toBe(200);
-    return response.body.data;
-  };
-
-  const getAccessibleMenus = async (loginAgent: ExtendedAgent) => {
-    const menuResponse = await loginAgent
-      .get(`/mobileRoutes:listAccessible`)
-      .query({ tree: true, sort: 'sort' })
-      .send();
-    expect(menuResponse.statusCode).toBe(200);
-    return menuResponse.body.data;
-  };
-
-  it('should fetch successful when login role is union', async () => {
-    const listAccessibleResponse = await agent.resource('mobileRoutes').listAccessible({
-      filter: {
-        tree: true,
-        sort: 'sort',
-        pagination: false,
-      },
-    });
-
-    expect(listAccessibleResponse.statusCode).toBe(200);
+    const rolesMobileRoutes = await rolesMobileRoutesRepo.find({ where: { roleName: role.get('name') } });
+    expect(rolesMobileRoutes.length).toBe(2);
+    expect(rolesMobileRoutes.map((x) => x.get('mobileRouteId'))).toStrictEqual(expect.arrayContaining([50, 51]));
   });
 
-  it('Mobile menu, add menu Accessible menu1 to role1, add menu Accessible menu2 to role2, expect role1 visible menu1, role2 visible menu2', async () => {
-    const rootAgent = await app.agent().login(rootUser);
-    const page1 = await createUiMenu(rootAgent, { title: 'page1' });
-    const page2 = await createUiMenu(rootAgent, { title: 'page2' });
-
-    // add accessible menu1 to role1
-    let addMenuResponse = await rootAgent.post(`/roles/${role1.name}/mobileRoutes:add`).send([page1.id]);
-
-    // add accessible menu2 to role2
-    addMenuResponse = await rootAgent.post(`/roles/${role2.name}/mobileRoutes:add`).send([page2.id]);
-
-    agent = await app.agent().login(user, role1.name);
-    let accessibleMenus = await getAccessibleMenus(agent);
-    let menuProps = accessibleMenus.map((x) => x.title);
-    expect(menuProps).include(page1.title);
-    expect(menuProps).not.include(page2.title);
-
-    agent = await app.agent().login(user, role2.name);
-    accessibleMenus = await getAccessibleMenus(agent);
-    menuProps = accessibleMenus.map((x) => x.title);
-    expect(menuProps).include(page2.title);
-    expect(menuProps).not.include(page1.title);
-
-    agent = await app.agent().login(user, 'union');
-    accessibleMenus = await getAccessibleMenus(agent);
-    menuProps = accessibleMenus.map((x) => x.title);
-    expect(menuProps).include(page1.title);
-    expect(menuProps).include(page2.title);
+  it(`should rolesMobileRoutes includes tabs when bulk create menu`, async () => {
+    const records = [
+      { id: 52, title: 'page1', type: 'page', hideInMenu: null, hidden: null },
+      { id: 53, title: 'tabs1', type: 'tabs', parentId: 52, hideInMenu: null, hidden: true },
+      { id: 54, title: 'page2', type: 'page', hideInMenu: null, hidden: null },
+      { id: 55, title: 'tabs2', type: 'tabs', parentId: 54, hideInMenu: null, hidden: true },
+      { id: 56, title: 'page3', type: 'page', hideInMenu: null, hidden: null },
+      { id: 57, title: 'tabs3', type: 'tabs', parentId: 56, hideInMenu: null, hidden: true },
+    ];
+    await mobileRoutesRepo.createMany({ records });
+    // trigger bulkCreate hooks
+    await db.getCollection('rolesMobileRoutes').model.bulkCreate([
+      { roleName: role.get('name'), mobileRouteId: 52 },
+      { roleName: role.get('name'), mobileRouteId: 54 },
+    ]);
+    const rolesMobileRoutes = await rolesMobileRoutesRepo.find({ where: { roleName: role.get('name') } });
+    expect(rolesMobileRoutes.length).toStrictEqual(4);
+    expect(rolesMobileRoutes.map((x) => x.get('mobileRouteId'))).toStrictEqual(
+      expect.arrayContaining([52, 53, 54, 55]),
+    );
   });
 
-  it('Mobile menu, allowNewMenu = true, expect display new menu', async () => {
-    const rootAgent = await app.agent().login(rootUser);
-    const role1Response = await rootAgent.resource('roles').get({
-      filterByTk: role1.name,
-    });
-    expect(role1Response.statusCode).toBe(200);
-    const updateRole1Response = await rootAgent.resource('roles').update({
-      filterByTk: role1.name,
-      values: {
-        ...role1Response.body.data,
-        allowNewMobileMenu: true,
-      },
-    });
-    expect(updateRole1Response.statusCode).toBe(200);
-    agent = await app.agent().login(user, 'union');
-    const page1 = await createUiMenu(rootAgent, { title: 'page1' });
+  it(`should rolesMobileRoutes includes tabs when create menu and invalid data`, async () => {
+    const records = [
+      { id: 60, title: 'page1', type: 'page', hideInMenu: null, hidden: null },
+      { id: 61, title: 'tabs1', type: 'tabs', parentId: 60, hideInMenu: null, hidden: true },
+      { id: 62, title: 'page3', type: 'page', hideInMenu: null, hidden: null },
+      { id: 63, title: 'tabs3', type: 'tabs', parentId: 62, hideInMenu: null, hidden: null },
+      { id: 64, title: 'tabs4', type: 'tabs', parentId: 62, hideInMenu: null, hidden: null },
+    ];
+    await mobileRoutesRepo.createMany({ records });
+    await rolesMobileRoutesRepo.create({ values: { roleName: role.get('name'), mobileRouteId: 61 } });
+    // trigger bulkCreate hooks
+    await db.getCollection('rolesMobileRoutes').model.bulkCreate([
+      { roleName: role.get('name'), mobileRouteId: 60 },
+      { roleName: role.get('name'), mobileRouteId: 62 },
+      { roleName: role.get('name'), mobileRouteId: 63 },
+    ]);
 
-    // auto can see new menu
-    const accessibleMenus = await getAccessibleMenus(agent);
-    expect(accessibleMenus[0].title).toBe(page1.title);
+    const rolesMobileRoutes = await rolesMobileRoutesRepo.find({ where: { roleName: role.get('name') } });
+    expect(rolesMobileRoutes.length).toBe(4);
+    expect(rolesMobileRoutes.map((x) => x.get('mobileRouteId'))).toStrictEqual(
+      expect.arrayContaining([60, 61, 62, 63]),
+    );
+  });
+
+  it(`should rolesMobileRoutes destroy tabs when remove menu and invalid data`, async () => {
+    const records = [
+      { id: 70, title: 'page1', type: 'page', hideInMenu: null, hidden: null },
+      { id: 71, title: 'tabs1', type: 'tabs', parentId: 70, hideInMenu: null, hidden: true },
+    ];
+    await mobileRoutesRepo.createMany({ records });
+    // trigger bulkCreate hooks
+    await db.getCollection('rolesMobileRoutes').model.bulkCreate([{ roleName: role.get('name'), mobileRouteId: 70 }]);
+
+    let rolesMobileRoutes = await rolesMobileRoutesRepo.find({ where: { roleName: role.get('name') } });
+    expect(rolesMobileRoutes.length).toBe(2);
+    expect(rolesMobileRoutes.map((x) => x.get('mobileRouteId'))).toStrictEqual(expect.arrayContaining([70, 71]));
+
+    const transaction = await db.sequelize.transaction();
+    await db.getCollection('rolesMobileRoutes').model.destroy({
+      where: { roleName: role.get('name'), mobileRouteId: [70] },
+      individualHooks: false,
+      transaction,
+    });
+    await transaction.commit();
+    rolesMobileRoutes = await rolesMobileRoutesRepo.find({ where: { roleName: role.get('name') } });
+    expect(rolesMobileRoutes.length).toBe(0);
   });
 });

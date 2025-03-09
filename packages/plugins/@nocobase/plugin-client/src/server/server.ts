@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model } from '@nocobase/database';
+import { Model, Transaction } from '@nocobase/database';
 import PluginLocalizationServer from '@nocobase/plugin-localization';
 import { Plugin } from '@nocobase/server';
 import { tval } from '@nocobase/utils';
@@ -16,6 +16,7 @@ import { resolve } from 'path';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
+import _ from 'lodash';
 
 async function getLang(ctx) {
   const SystemSetting = ctx.db.getRepository('systemSettings');
@@ -196,6 +197,47 @@ export class PluginClientServer extends Plugin {
         transaction,
       });
     });
+
+    const processRoleDesktopRoutes = async (params: {
+      models: Model[];
+      action: 'create' | 'remove';
+      transaction: Transaction;
+    }) => {
+      const { models, action, transaction } = params;
+      if (!models.length) return;
+      const parentIds = models.map((x) => x.desktopRouteId);
+      const tabs: Model[] = await this.app.db.getRepository('desktopRoutes').find({
+        where: { parentId: parentIds, hidden: true },
+        transaction,
+      });
+      if (!tabs.length) return;
+      const repository = this.app.db.getRepository('rolesDesktopRoutes');
+      const roleName = models[0].get('roleName');
+      const tabIds = tabs.map((x) => x.get('id'));
+      const where = { desktopRouteId: tabIds, roleName };
+      if (action === 'create') {
+        const exists = await repository.find({ where });
+        const modelsByRouteId = _.keyBy(exists, (x) => x.get('desktopRouteId'));
+        const createModels = tabs
+          .map((x) => !modelsByRouteId[x.get('id')] && { desktopRouteId: x.get('id'), roleName })
+          .filter(Boolean);
+        return await repository.create({ values: createModels, transaction });
+      }
+
+      if (action === 'remove') {
+        return await repository.destroy({ filter: where, transaction });
+      }
+    };
+    this.app.db.on('rolesDesktopRoutes.afterBulkCreate', async (instances, options) => {
+      await processRoleDesktopRoutes({ models: instances, action: 'create', transaction: options.transaction });
+    });
+
+    this.app.db.on('rolesDesktopRoutes.afterBulkDestroy', async (options) => {
+      const models = await this.app.db.getRepository('rolesDesktopRoutes').find({
+        where: options.where,
+      });
+      await processRoleDesktopRoutes({ models: models, action: 'remove', transaction: options.transaction });
+    });
   }
 
   registerActionHandlers() {
@@ -218,21 +260,9 @@ export class PluginClientServer extends Plugin {
 
       const desktopRoutesId = roles
         .flatMap((x) => x.get('desktopRoutes'))
-        .map(async (item, index, items) => {
-          // 1. 如果 page 的 children 为空，那么需要把 page 的 children 全部找出来，然后返回。否则前端会因为缺少 tab 路由的数据而导致页面空白
-          // 2. 如果 page 的 children 不为空，不需要做特殊处理
-          if (item.type === 'page' && !items.some((tab) => tab.parentId === item.id)) {
-            const children = await desktopRoutesRepository.find({
-              filter: {
-                parentId: item.id,
-              },
-            });
-
-            return [item.id, ...(children || []).map((child) => child.id)];
-          }
-
-          return item.id;
-        });
+        // hidden 为 true 的节点不会显示在权限配置表格中，所以无法被配置，需要被过滤掉
+        .filter((item) => !item.hidden)
+        .map((item) => item.id);
 
       if (desktopRoutesId) {
         const ids = (await Promise.all(desktopRoutesId)).flat();
