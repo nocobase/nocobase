@@ -60,11 +60,12 @@ function mergeRoleActions(sourceActions, newActions) {
   if (_.isEmpty(newActions)) return sourceActions;
 
   const result = {};
-  Reflect.ownKeys(sourceActions).forEach((key) => {
-    if (!_.has(newActions, key)) {
+  [...new Set(Reflect.ownKeys(sourceActions).concat(Reflect.ownKeys(newActions)))].forEach((key) => {
+    if (_.has(sourceActions, key) && _.has(newActions, key)) {
+      result[key] = mergeAclActionParams(sourceActions[key], newActions[key]);
       return;
     }
-    result[key] = mergeAclActionParams(sourceActions[key], newActions[key]);
+    result[key] = _.has(sourceActions, key) ? sourceActions[key] : newActions[key];
   });
 
   return result;
