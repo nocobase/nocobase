@@ -1395,6 +1395,7 @@ export async function expectSettingsMenu({
 }: ExpectSettingsMenuParams) {
   await page.waitForTimeout(100);
   await showMenu();
+  await page.waitForTimeout(2000);
   for (const option of supportedOptions) {
     await expect(page.getByRole('menuitem', { name: option, exact: option === 'Edit' })).toBeVisible();
   }

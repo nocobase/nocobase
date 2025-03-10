@@ -18,7 +18,7 @@ import {
   useRequest,
 } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
-import { Checkbox, message, Table } from 'antd';
+import { Checkbox, message, Table, TableProps } from 'antd';
 import { uniq } from 'lodash';
 import React, { createContext, FC, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -310,7 +310,7 @@ export const MenuPermissions: React.FC<{
               return <Checkbox checked={checked} onChange={() => handleChange(checked, schema)} />;
             },
           },
-        ]}
+        ] as TableProps['columns']}
         dataSource={translateTitle(items, t, compile)}
       />
     </>

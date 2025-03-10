@@ -279,7 +279,7 @@ test.describe('set default value', () => {
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     // 2. 设置的 ‘abcd’ 应该立即显示在 Nickname 字段的输入框中
-    await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('abcd');
+    await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox').last()).toHaveValue('abcd');
   });
 
   test('Current popup record', async ({ page, mockPage }) => {

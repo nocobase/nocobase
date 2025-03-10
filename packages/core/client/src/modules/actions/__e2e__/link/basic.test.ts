@@ -28,6 +28,9 @@ test.describe('Link', () => {
 
     // 2. config the Link button
     await page.getByLabel('action-Action.Link-Link-customize:link-users-table-0').hover();
+    await expect(
+      page.getByRole('button', { name: 'designer-schema-settings-Action.Link-actionSettings:link-users' }),
+    ).toHaveCount(1);
     await page.getByRole('button', { name: 'designer-schema-settings-Action.Link-actionSettings:link-users' }).hover();
     await page.getByRole('menuitem', { name: 'Edit link' }).click();
     await page

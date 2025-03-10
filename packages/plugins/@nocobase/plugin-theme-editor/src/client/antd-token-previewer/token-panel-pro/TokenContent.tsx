@@ -605,7 +605,7 @@ const TokenContent: FC<ColorTokenContentProps> = ({
             activeKey={activeGroup}
             expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 450 : 360} style={{ fontSize: 12 }} />}
             onChange={(key) => {
-              onActiveGroupChange(key as string);
+              onActiveGroupChange(key as unknown as string);
             }}
           >
             {category.groups.map((group, index) => {

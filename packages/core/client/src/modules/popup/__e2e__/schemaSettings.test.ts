@@ -44,6 +44,7 @@ test.describe('tabs schema settings', () => {
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     await expect(page.getByText('Add new with new name')).toBeVisible();
+    await expect(page.getByLabel('account-book').locator('svg')).toHaveCount(1);
     await expect(page.getByLabel('account-book').locator('svg')).toBeVisible();
   });
 

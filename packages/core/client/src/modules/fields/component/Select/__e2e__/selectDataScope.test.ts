@@ -34,6 +34,6 @@ test.describe('data scope of component Select', () => {
     await page.getByTestId('select-object-multiple').click();
     await expect(page.getByRole('option', { name: 'admin' })).toBeHidden();
     await expect(page.getByRole('option', { name: 'member' })).toBeHidden();
-    await expect(page.getByText('No data')).toBeVisible();
+    await expect(page.getByText('No data').last()).toBeVisible();
   });
 });
