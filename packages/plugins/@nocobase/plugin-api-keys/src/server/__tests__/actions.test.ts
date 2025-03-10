@@ -15,6 +15,7 @@ describe('actions', () => {
   let db: Database;
   let repo: Repository;
   let agent;
+  let userAgent;
   let resource;
 
   afterEach(async () => {
@@ -71,7 +72,7 @@ describe('actions', () => {
         expiresIn,
       },
     };
-    await agent.login(user);
+    userAgent = await agent.login(user);
   });
 
   describe('create', () => {
@@ -99,6 +100,22 @@ describe('actions', () => {
     });
 
     it('token should work', async () => {
+      const checkRes = await agent.set('Authorization', `Bearer ${result.token}`).resource('auth').check();
+      expect(checkRes.body.data.nickname).toBe(user.nickname);
+    });
+    it('token sercurity config should not affect api key auth', async () => {
+      const res = await userAgent.resource('tokenControlConfig').update({
+        filterByTk: 'token-policy-config',
+        values: {
+          config: {
+            tokenExpirationTime: '1s',
+            sessionExpirationTime: '1s',
+            expiredTokenRenewLimit: '1s',
+          },
+        },
+      });
+      expect(res.body.data.find((item) => item.key === 'token-policy-config').config.tokenExpirationTime).toBe('1s');
+      await new Promise((resolve) => setTimeout(resolve, 5000));
       const checkRes = await agent.set('Authorization', `Bearer ${result.token}`).resource('auth').check();
       expect(checkRes.body.data.nickname).toBe(user.nickname);
     });
