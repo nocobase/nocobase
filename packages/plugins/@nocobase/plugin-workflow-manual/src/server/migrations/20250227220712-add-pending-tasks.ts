@@ -26,17 +26,17 @@ export default class extends Migration {
         },
         transaction,
       });
-      await WorkflowTaskModel.bulkCreate(
-        tasks.map((item) => ({
-          type: MANUAL_TASK_TYPE,
-          key: `${item.id}`,
-          userId: item.userId,
-          workflowId: item.workflowId,
-        })),
-        {
+      const records = tasks.map((item) => ({
+        type: MANUAL_TASK_TYPE,
+        key: `${item.id}`,
+        userId: item.userId,
+        workflowId: item.workflowId,
+      }));
+      for (const record of records) {
+        await WorkflowTaskModel.upsert(record, {
           transaction,
-        },
-      );
+        });
+      }
     });
   }
 }
