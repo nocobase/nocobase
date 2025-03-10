@@ -7,10 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Action, OpenModeProvider, useMobileLayout, usePopupSettings } from '@nocobase/client';
+import { Action, OpenModeProvider, SchemaComponentOptions, useMobileLayout, usePopupSettings } from '@nocobase/client';
 import React, { FC, useEffect } from 'react';
 import { ActionDrawerUsedInMobile, useToAdaptActionDrawerToMobile } from './adaptor-of-desktop/ActionDrawer';
 import { useToAdaptFilterActionToMobile } from './adaptor-of-desktop/FilterAction';
+import { SchemaComponentsContext } from '@formily/react';
+import { mobileComponents } from './pages/dynamic-page/MobilePage';
 
 const CommonDrawer: FC = (props) => {
   const { isMobileLayout } = useMobileLayout();
@@ -41,7 +43,7 @@ const MobileAdapter: FC = (props) => {
 
   return (
     <OpenModeProvider defaultOpenMode="page" isMobile={true} openModeToComponent={openModeToComponent}>
-      {props.children}
+      <SchemaComponentOptions components={mobileComponents}>{props.children}</SchemaComponentOptions>
     </OpenModeProvider>
   );
 };
