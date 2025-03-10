@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useFormBlockProps } from '../../../../../block-provider/FormBlockProvider';
-import { useCreateFormBlockEventsDefine } from './useCreateFormBlockEventsDefine';
-
-export function useCreateFormBlockProps() {
-  // useCreateFormBlockEventsDefine();
-  return useFormBlockProps();
+export function forEachLinkageRule(linkageRules: any[], callback: (action: any, rule: any) => void) {
+  linkageRules.forEach((rule) => {
+    rule.actions?.forEach((action) => {
+      callback(action, rule);
+    });
+  });
 }

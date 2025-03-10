@@ -19,6 +19,7 @@ import { DataBlock, useFilterBlock } from '../../../../../filter-provider/Filter
 import { mergeFilter } from '../../../../../filter-provider/utils';
 import { removeNullCondition } from '../../../../../schema-component';
 import { useTableElementRef } from '../../../../../schema-component/antd/table-v2/Table';
+import { useTableBlockEventsInterface } from './useTableBlockEventsInterface';
 
 export const useTableBlockProps = () => {
   const field = useField<ArrayField>();
@@ -27,6 +28,7 @@ export const useTableBlockProps = () => {
   const service = useDataBlockRequest() as any;
   const { getDataBlocks } = useFilterBlock();
   const tableBlockContextBasicValue = useTableBlockContextBasicValue();
+  useTableBlockEventsInterface();
 
   const ctxRef = useRef(null);
   ctxRef.current = { service, resource };

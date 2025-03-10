@@ -28,6 +28,7 @@ import { useTableSelectorDecoratorProps } from '../modules/blocks/data-blocks/ta
 import { TableColumnSchemaToolbar } from '../modules/blocks/data-blocks/table/TableColumnSchemaToolbar';
 import { useTableBlockDecoratorProps } from '../modules/blocks/data-blocks/table/hooks/useTableBlockDecoratorProps';
 import { useTableBlockProps } from '../modules/blocks/data-blocks/table/hooks/useTableBlockProps';
+// import { useCreateFormBlockEventsInterface } from '../modules/blocks/data-blocks/form/hooks/useCreateFormBlockEventsInterface';
 import { CollapseItemSchemaToolbar } from '../modules/blocks/filter-blocks/collapse/CollapseItemSchemaToolbar';
 import { useCollapseBlockDecoratorProps } from '../modules/blocks/filter-blocks/collapse/hooks/useCollapseBlockDecoratorProps';
 import { useFilterFormBlockDecoratorProps } from '../modules/blocks/filter-blocks/form/hooks/useFilterFormBlockDecoratorProps';
@@ -87,6 +88,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useGridCardBlockDecoratorProps,
         useFormItemProps,
         useDataFormItemProps,
+        // useCreateFormBlockEventsInterface,
       }}
     >
       {props.children}
