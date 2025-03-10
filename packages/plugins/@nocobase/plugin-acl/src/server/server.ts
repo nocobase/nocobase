@@ -22,6 +22,7 @@ import { createWithACLMetaMiddleware } from './middlewares/with-acl-meta';
 import { RoleModel } from './model/RoleModel';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
+import { getSystemRoleMode, setSystemRoleMode } from './actions/union-role';
 
 export class PluginACLServer extends Plugin {
   get acl() {
@@ -162,6 +163,9 @@ export class PluginACLServer extends Plugin {
 
     this.app.resourcer.define(availableActionResource);
     this.app.resourcer.define(roleCollectionsResource);
+
+    this.app.resourcer.registerActionHandler('roles:getSystemRoleMode', getSystemRoleMode);
+    this.app.resourcer.registerActionHandler('roles:setSystemRoleMode', setSystemRoleMode);
 
     this.app.resourcer.registerActionHandler('roles:check', checkAction);
 
@@ -443,6 +447,7 @@ export class PluginACLServer extends Plugin {
 
     this.app.acl.allow('users', 'setDefaultRole', 'loggedIn');
     this.app.acl.allow('roles', 'check', 'loggedIn');
+    this.app.acl.allow('roles', 'getSystemRoleMode', 'loggedIn');
 
     this.app.acl.allow('*', '*', (ctx) => {
       return ctx.state.currentRole === 'root';

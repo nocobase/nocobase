@@ -608,5 +608,6 @@
   "Are you sure you want to hide this tab?": "Bu sekmeyi gizlemek istediğinizden emin misiniz?",
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "Gizlendikten sonra, bu sekme artık sekme çubuğunda görünmeyecek. Onu tekrar göstermek için, rotayı yönetim sayfasına gidip ayarlamanız gerekiyor.",
   "Deprecated": "Kullanımdan kaldırıldı",
-  "The following old template features have been deprecated and will be removed in next version.": "Aşağıdaki eski şablon özellikleri kullanımdan kaldırıldı ve gelecek sürümlerde kaldırılacaktır."
+  "The following old template features have been deprecated and will be removed in next version.": "Aşağıdaki eski şablon özellikleri kullanımdan kaldırıldı ve gelecek sürümlerde kaldırılacaktır.",
+  "Full permissions": "Tüm izinler"
 }

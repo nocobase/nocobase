@@ -12,8 +12,9 @@ import { useACLRoleContext } from '../acl';
 import { ReturnTypeOfUseRequest, useAPIClient, useRequest } from '../api-client';
 import { useAppSpin } from '../application';
 import { useCompile } from '../schema-component';
+import { useTranslation } from 'react-i18next';
 
-export const CurrentUserContext = createContext<ReturnTypeOfUseRequest>(null);
+export const CurrentUserContext = createContext<ReturnTypeOfUseRequest & { roleMode?: { data: { roleMode } } }>(null);
 CurrentUserContext.displayName = 'CurrentUserContext';
 
 export const useCurrentUserContext = () => {
@@ -33,8 +34,13 @@ export const useCurrentRoles = () => {
       });
     }
     return roles;
-  }, [allowAnonymous, data?.data?.roles]);
+  }, [allowAnonymous, data?.data?.roles, compile]);
   return options;
+};
+
+export const useCurrentRoleMode = () => {
+  const { roleMode } = useCurrentUserContext();
+  return roleMode?.data;
 };
 
 export const CurrentUserProvider = (props) => {
@@ -48,11 +54,17 @@ export const CurrentUserProvider = (props) => {
       })
       .then((res) => res?.data),
   );
+
+  const { loading: roleModeLoading, data } = useRequest(() => api.resource('roles').getSystemRoleMode(), {
+    onSuccess: (res) => {
+      return res.data.data.roleMode;
+    },
+  });
   const { render } = useAppSpin();
 
-  if (result.loading) {
+  if (result.loading || roleModeLoading) {
     return render();
   }
-
+  result['roleMode'] = data?.['data'];
   return <CurrentUserContext.Provider value={result}>{props.children}</CurrentUserContext.Provider>;
 };

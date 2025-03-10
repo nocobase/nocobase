@@ -7,9 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './useApp';
-export * from './useAppSpin';
-export * from './usePlugin';
-export * from './useRouter';
-export * from './useGlobalVariable';
-export * from './useAclSnippets';
+export const SystemRoleMode = {
+  default: 'default',
+  allowUseUnion: 'allow-use-union',
+  onlyUseUnion: 'only-use-union',
+  validate(value: string) {
+    return Object.values(this).includes(value);
+  },
+} as const;

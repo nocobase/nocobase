@@ -1083,5 +1083,6 @@
   "Are you sure you want to hide this tab?": "你确定要隐藏该标签页吗？",
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "隐藏后，该标签将不再显示在标签栏中。要想再次显示它，你需要到路由管理页面进行设置。",
   "Deprecated": "已弃用",
-  "The following old templates have been deprecated and will be removed in next version.": "以下旧的模板功能已弃用，将在下个版本移除。"
+  "The following old templates have been deprecated and will be removed in next version.": "以下旧的模板功能已弃用，将在下个版本移除。",
+  "Full permissions": "全部权限"
 }
