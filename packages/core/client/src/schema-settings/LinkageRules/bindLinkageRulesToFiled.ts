@@ -70,6 +70,7 @@ export function bindLinkageRulesToFiled(
     required: field.initStateOfLinkageRules?.required || getTempFieldState(true, field.required || false),
     pattern: field.initStateOfLinkageRules?.pattern || getTempFieldState(true, field.pattern),
     value: field.initStateOfLinkageRules?.value || getTempFieldState(true, field.value || field.initialValue),
+    dataSource: field.initStateOfLinkageRules?.dataSource || getTempFieldState(true, field.dataSource || field.options),
   };
 
   return reaction(
@@ -252,6 +253,18 @@ function getSubscriber(
               state.display = 'visible';
             });
           });
+        } else if (fieldName === 'dataSource') {
+          if (_.every(lastState?.value, (v) => v.value !== field.value)) {
+            field.value = null;
+          }
+          console.log(fieldName, lastState?.value);
+          field[fieldName] = lastState?.value;
+          field.data = field.data || {};
+          requestAnimationFrame(() => {
+            field.setState((state) => {
+              state[fieldName] = lastState?.value;
+            });
+          });
         } else {
           field[fieldName] = lastState?.value;
           field.data = field.data || {};
@@ -290,6 +303,8 @@ function getFieldNameByOperator(operator: ActionType) {
       return 'pattern';
     case ActionType.Value:
       return 'value';
+    case ActionType.Options:
+      return 'dataSource';
     default:
       return null;
   }
@@ -303,6 +318,7 @@ export const collectFieldStateOfLinkageRules = (
   const displayResult = field?.stateOfLinkageRules?.display || [field?.initStateOfLinkageRules?.display];
   const patternResult = field?.stateOfLinkageRules?.pattern || [field?.initStateOfLinkageRules?.pattern];
   const valueResult = field?.stateOfLinkageRules?.value || [field?.initStateOfLinkageRules?.value];
+  const optionsResult = field?.stateOfLinkageRules?.dataSource || [field?.initStateOfLinkageRules?.dataSource];
   const { evaluate } = evaluators.get('formula.js');
   const paramsToGetConditionResult = { ruleGroup: condition, variables, localVariables, variableNameOfLeftCondition };
 
@@ -373,6 +389,16 @@ export const collectFieldStateOfLinkageRules = (
         field.stateOfLinkageRules = {
           ...field.stateOfLinkageRules,
           value: valueResult,
+        };
+      }
+      break;
+    case ActionType.Options:
+      {
+        const data = field.data?.dataSource?.filter((v) => value.value.includes(v.value));
+        optionsResult.push(getTempFieldState(conditionAnalyses(paramsToGetConditionResult, jsonLogic), data || []));
+        field.stateOfLinkageRules = {
+          ...field.stateOfLinkageRules,
+          dataSource: optionsResult,
         };
       }
       break;
