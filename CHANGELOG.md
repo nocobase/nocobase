@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.5.25](https://github.com/nocobase/nocobase/compare/v1.5.24...v1.5.25) - 2025-03-09
+
+### 🐛 Bug Fixes
+
+- **[server]** Incorrect browser cache after running `yarn start` command ([#6394](https://github.com/nocobase/nocobase/pull/6394)) by @gchust
+
+- **[Workflow: Approval]** Avoid wrong assignees configuration query all users by @mytharcher
+
+- **[WeCom]** fix login prompt link and dingtalk login error by @chenzhizdt
+
 ## [v1.5.24](https://github.com/nocobase/nocobase/compare/v1.5.23...v1.5.24) - 2025-03-07
 
 ### 🎉 New Features

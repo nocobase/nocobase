@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model } from '@nocobase/database';
+import { Model, Transaction } from '@nocobase/database';
 import PluginLocalizationServer from '@nocobase/plugin-localization';
 import { Plugin } from '@nocobase/server';
 import { tval } from '@nocobase/utils';
@@ -16,6 +16,7 @@ import { resolve } from 'path';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
+import _ from 'lodash';
 
 async function getLang(ctx) {
   const SystemSetting = ctx.db.getRepository('systemSettings');
@@ -195,6 +196,47 @@ export class PluginClientServer extends Plugin {
         tk: addNewMenuRoles.map((role) => role.name),
         transaction,
       });
+    });
+
+    const processRoleDesktopRoutes = async (params: {
+      models: Model[];
+      action: 'create' | 'remove';
+      transaction: Transaction;
+    }) => {
+      const { models, action, transaction } = params;
+      if (!models.length) return;
+      const parentIds = models.map((x) => x.desktopRouteId);
+      const tabs: Model[] = await this.app.db.getRepository('desktopRoutes').find({
+        where: { parentId: parentIds, hidden: true },
+        transaction,
+      });
+      if (!tabs.length) return;
+      const repository = this.app.db.getRepository('rolesDesktopRoutes');
+      const roleName = models[0].get('roleName');
+      const tabIds = tabs.map((x) => x.get('id'));
+      const where = { desktopRouteId: tabIds, roleName };
+      if (action === 'create') {
+        const exists = await repository.find({ where });
+        const modelsByRouteId = _.keyBy(exists, (x) => x.get('desktopRouteId'));
+        const createModels = tabs
+          .map((x) => !modelsByRouteId[x.get('id')] && { desktopRouteId: x.get('id'), roleName })
+          .filter(Boolean);
+        return await repository.create({ values: createModels, transaction });
+      }
+
+      if (action === 'remove') {
+        return await repository.destroy({ filter: where, transaction });
+      }
+    };
+    this.app.db.on('rolesDesktopRoutes.afterBulkCreate', async (instances, options) => {
+      await processRoleDesktopRoutes({ models: instances, action: 'create', transaction: options.transaction });
+    });
+
+    this.app.db.on('rolesDesktopRoutes.afterBulkDestroy', async (options) => {
+      const models = await this.app.db.getRepository('rolesDesktopRoutes').find({
+        where: options.where,
+      });
+      await processRoleDesktopRoutes({ models: models, action: 'remove', transaction: options.transaction });
     });
   }
 

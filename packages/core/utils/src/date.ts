@@ -89,7 +89,7 @@ const toMoment = (val: any, options?: Str2momentOptions) => {
     }
 
     if (dayjs.isDayjs(val)) {
-      return val.utcOffset(offsetFromString(offset));
+      return offset ? val.utcOffset(offsetFromString(offset)) : val;
     }
     if (gmt) {
       return dayjs(val).utcOffset(0);

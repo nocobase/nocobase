@@ -10,7 +10,6 @@
 import { vi } from 'vitest';
 import { BaseAuth } from '../base/auth';
 import { AuthErrorCode } from '../auth';
-import jwt from 'jsonwebtoken';
 
 describe('base-auth', () => {
   it('should validate username', () => {

@@ -203,7 +203,7 @@ export const tableColumnSettings = new SchemaSettings({
               !currentMode &&
               (collection?.name === collectionField?.collectionName ||
                 !collectionField?.collectionName ||
-                collectionField.inherit)
+                collectionField?.inherit)
             );
           },
           useComponentProps() {
