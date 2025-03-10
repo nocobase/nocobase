@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { ErrorFallback, StablePopover, TabsContextProvider, useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { useACLActionParamsContext } from '../../../acl';
+import { useApp } from '../../../application';
 import {
   useCollectionParentRecordData,
   useCollectionRecordData,
