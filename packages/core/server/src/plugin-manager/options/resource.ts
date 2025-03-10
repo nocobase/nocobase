@@ -142,7 +142,7 @@ export default {
         const pkgPath = path.resolve(process.env.NODE_MODULES_PATH, item.packageName);
         const r = await fse.exists(pkgPath);
         if (r) {
-          const fsState = await fse.stat(`${pkgPath}/${PLUGIN_CLIENT_ENTRY_FILE}`);
+          const fsState = await fse.stat(pkgPath);
           const url = `${process.env.APP_SERVER_BASE_URL}${process.env.PLUGIN_STATICS_PATH}${
             item.packageName
           }/${PLUGIN_CLIENT_ENTRY_FILE}?version=${item.version}&t=${fsState.mtime.getTime()}`;
