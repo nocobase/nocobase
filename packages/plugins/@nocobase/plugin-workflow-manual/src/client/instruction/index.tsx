@@ -18,6 +18,7 @@ import {
   CollectionBlockInitializer,
   Instruction,
   WorkflowVariableTextArea,
+  useNodeContext,
 } from '@nocobase/plugin-workflow/client';
 
 import { SchemaConfig, SchemaConfigButton } from './SchemaConfig';
@@ -149,6 +150,7 @@ export default class extends Instruction {
       'x-decorator': 'FormItem',
       'x-component': 'WorkflowVariableTextArea',
       description: `{{t("Title of each task item. Default to node title.", { ns: "${NAMESPACE}" })}}`,
+      default: '{{useNodeContext().title}}',
     },
     schema: {
       type: 'void',
@@ -167,6 +169,9 @@ export default class extends Instruction {
       type: 'object',
       default: {},
     },
+  };
+  scope = {
+    useNodeContext,
   };
   components = {
     SchemaConfigButton,

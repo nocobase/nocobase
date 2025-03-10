@@ -8,14 +8,14 @@
  */
 
 import actions, { Context, utils } from '@nocobase/actions';
-import { Op, Repository } from '@nocobase/database';
+import { Op } from '@nocobase/database';
 
 import Plugin from '../Plugin';
 import Processor from '../Processor';
 import WorkflowRepository from '../repositories/WorkflowRepository';
 
 export async function update(context: Context, next) {
-  const repository = utils.getRepositoryFromParams(context) as Repository;
+  const repository = utils.getRepositoryFromParams(context) as WorkflowRepository;
   const { filterByTk, values } = context.action.params;
   context.action.mergeParams({
     whitelist: ['title', 'description', 'enabled', 'triggerTitle', 'config', 'options'],
@@ -31,7 +31,7 @@ export async function update(context: Context, next) {
 }
 
 export async function destroy(context: Context, next) {
-  const repository = utils.getRepositoryFromParams(context) as Repository;
+  const repository = utils.getRepositoryFromParams(context) as WorkflowRepository;
   const { filterByTk, filter } = context.action.params;
 
   await context.db.sequelize.transaction(async (transaction) => {
