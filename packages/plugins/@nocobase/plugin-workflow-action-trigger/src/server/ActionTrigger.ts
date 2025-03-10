@@ -12,11 +12,27 @@ import { BelongsTo, HasOne } from 'sequelize';
 import { Model, modelAssociationByKey } from '@nocobase/database';
 import Application, { DefaultContext } from '@nocobase/server';
 import { Context as ActionContext, Next } from '@nocobase/actions';
+import PluginErrorHandler from '@nocobase/plugin-error-handler';
 
-import WorkflowPlugin, { EventOptions, Trigger, WorkflowModel, toJSON } from '@nocobase/plugin-workflow';
+import WorkflowPlugin, {
+  EXECUTION_STATUS,
+  EventOptions,
+  Trigger,
+  WorkflowModel,
+  toJSON,
+} from '@nocobase/plugin-workflow';
 import { joinCollectionName, parseCollectionName } from '@nocobase/data-source-manager';
 
 interface Context extends ActionContext, DefaultContext {}
+
+class RequestOnActionTriggerError extends Error {
+  status = 400;
+  messages: any[] = [];
+  constructor(message) {
+    super(message);
+    this.name = 'RequestOnActionTriggerError';
+  }
+}
 
 export default class extends Trigger {
   static TYPE = 'action';
@@ -43,6 +59,16 @@ export default class extends Trigger {
     }
 
     workflow.app.dataSourceManager.use(triggerWorkflowActionMiddleware);
+
+    workflow.app.pm.get(PluginErrorHandler).errorHandler.register(
+      (err) => err instanceof RequestOnActionTriggerError || err.name === 'RequestOnActionTriggerError',
+      async (err, ctx) => {
+        ctx.body = {
+          errors: err.messages,
+        };
+        ctx.status = err.status;
+      },
+    );
   }
 
   /**
@@ -177,7 +203,35 @@ export default class extends Trigger {
     }
 
     for (const event of syncGroup) {
-      await this.workflow.trigger(event[0], event[1]);
+      const processor = await this.workflow.trigger(event[0], event[1], { httpContext: context });
+
+      // NOTE: workflow trigger failed
+      if (!processor) {
+        return context.throw(500);
+      }
+
+      const { lastSavedJob, nodesMap } = processor;
+      const lastNode = nodesMap.get(lastSavedJob?.nodeId);
+      // NOTE: passthrough
+      if (processor.execution.status === EXECUTION_STATUS.RESOLVED) {
+        if (lastNode?.type === 'end') {
+          return;
+        }
+        continue;
+      }
+      // NOTE: intercept
+      if (processor.execution.status < EXECUTION_STATUS.STARTED) {
+        if (lastNode?.type !== 'end') {
+          return context.throw(500, 'Workflow on your action failed, please contact the administrator');
+        }
+
+        const err = new RequestOnActionTriggerError('Request failed');
+        err.status = 400;
+        err.messages = context.state.messages;
+        return context.throw(err.status, err);
+      }
+      // NOTE: should not be pending
+      return context.throw(500, 'Workflow on your action hangs, please contact the administrator');
     }
 
     for (const event of asyncGroup) {
