@@ -136,14 +136,11 @@ const InnerInbox = (props) => {
       }}
     >
       <Tooltip title={t('Message')}>
-        <Badge count={unreadMsgsCountObs.value} size="small" offset={[-12, 14]}>
-          <Button
-            className={styles.button}
-            title={t('Message')}
-            icon={<Icon type={'BellOutlined'} />}
-            onClick={onIconClick}
-          />
-        </Badge>
+        <Button className={styles.button} onClick={onIconClick}>
+          <Badge count={unreadMsgsCountObs.value} size="small">
+            <Icon type={'BellOutlined'} />
+          </Badge>
+        </Button>
       </Tooltip>
       <Drawer
         title={DrawerTitle}

@@ -136,7 +136,7 @@ test.describe('field data entry', () => {
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
-    await page.locator('tr', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
+    await page.locator('.ant-list', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
     const manualNodeRecord = faker.internet.email();
     await page.getByRole('textbox').fill(manualNodeRecord);
     await page.getByRole('button', { name: 'Continue the process' }).click();
@@ -275,7 +275,7 @@ test.describe('field data entry', () => {
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
-    await page.locator('tr', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
+    await page.locator('.ant-list', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
     const manualNodeRecord = faker.number.int();
     await page.getByRole('spinbutton').fill(manualNodeRecord.toString());
     await page.getByRole('button', { name: 'Continue the process' }).click();
@@ -414,7 +414,7 @@ test.describe('field data entry', () => {
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
-    await page.locator('tr', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
+    await page.locator('.ant-list', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
     const manualNodeRecord = faker.number.float();
     await page.getByRole('spinbutton').fill(manualNodeRecord.toString());
     await page.getByRole('button', { name: 'Continue the process' }).click();

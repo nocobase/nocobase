@@ -8,9 +8,10 @@
  */
 
 import { defineCollection } from '@nocobase/database';
+import { NAMESPACE } from '../../common/constants';
 
 export default defineCollection({
-  name: 'users_jobs',
+  name: 'workflowManualTasks',
   dumpRules: {
     group: 'log',
   },
@@ -40,6 +41,12 @@ export default defineCollection({
     {
       type: 'string',
       name: 'title',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        title: `{{t("Task title", { ns: "${NAMESPACE}" })}}`,
+        'x-component': 'Input',
+      },
     },
     {
       type: 'belongsTo',
@@ -53,6 +60,20 @@ export default defineCollection({
     {
       type: 'belongsTo',
       name: 'workflow',
+      target: 'workflows',
+      foreignKey: 'workflowId',
+      interface: 'm2o',
+      uiSchema: {
+        type: 'object',
+        title: `{{t("Workflow", { ns: "workflow" })}}`,
+        'x-component': 'AssociationField',
+        'x-component-props': {
+          fieldNames: {
+            label: 'title',
+            value: 'id',
+          },
+        },
+      },
     },
     {
       type: 'integer',
