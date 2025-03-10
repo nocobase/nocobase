@@ -46,7 +46,6 @@ export const useMobileActionDrawerStyle = genStyleHook('nb-mobile-action-drawer'
         borderTopLeftRadius: 8,
         borderTopRightRadius: 8,
         maxHeight: 'calc(100% - var(--nb-mobile-page-header-height))',
-        minHeight: '50%',
         overflowY: 'auto',
         overflowX: 'hidden',
         backgroundColor: token.colorBgLayout,
