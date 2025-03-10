@@ -25,6 +25,7 @@ import {
   NocoBaseRecursionField,
   RecordProvider,
   useCollectionRecordData,
+  useMobileLayout,
 } from '../../..';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import {
@@ -36,6 +37,7 @@ import { ActionContextProvider } from '../action';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
+import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
 
 export const useTableSelectorProps = () => {
   const field: any = useField();
@@ -118,6 +120,7 @@ export const InternalPicker = observer(
       collectionField,
       currentFormCollection: collectionName,
     };
+    const { isMobileLayout } = useMobileLayout();
 
     const getValue = () => {
       if (multiple == null) return null;
@@ -226,7 +229,7 @@ export const InternalPicker = observer(
                     <NocoBaseRecursionField
                       onlyRenderProperties
                       basePath={field.address}
-                      schema={fieldSchema}
+                      schema={isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema}
                       filterProperties={(s) => {
                         return s['x-component'] === 'AssociationField.Selector';
                       }}
