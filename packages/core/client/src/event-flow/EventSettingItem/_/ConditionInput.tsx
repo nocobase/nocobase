@@ -7,10 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useFormBlockProps } from '../../../../../block-provider/FormBlockProvider';
-import { useCreateFormBlockEventsDefine } from './useCreateFormBlockEventsDefine';
+import React from 'react';
+import { useControllableValue } from 'ahooks';
+import { Card, Space, TreeSelect, Input } from 'antd';
 
-export function useCreateFormBlockProps() {
-  // useCreateFormBlockEventsDefine();
-  return useFormBlockProps();
+export default function ConditionInput(props) {
+  const [state, setState] = useControllableValue<Array<any>>(props, {
+    defaultValue: [],
+  });
+  return <Input />;
 }
