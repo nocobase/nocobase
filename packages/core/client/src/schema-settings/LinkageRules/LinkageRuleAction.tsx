@@ -21,6 +21,7 @@ import { ValueDynamicComponent } from './ValueDynamicComponent';
 import { LinkageLogicContext, RemoveActionContext } from './context';
 import { ActionType } from './type';
 import { useValues } from './useValues';
+import { DateScopeComponent } from './DateScopeComponent';
 
 export const FormFieldLinkageRuleAction = observer(
   (props: any) => {
@@ -56,7 +57,7 @@ export const FormFieldLinkageRuleAction = observer(
               .ant-space-item {
                 max-width: 95%;
                 display: inline-block;
-                margin: 2px;
+                margin: 2px 6px;
                 vertical-align: top;
               }
             `}
@@ -101,6 +102,14 @@ export const FormFieldLinkageRuleAction = observer(
             />
             {[ActionType.Value].includes(operator) && (
               <ValueDynamicComponent
+                fieldValue={fieldValue}
+                schema={schema}
+                setValue={setValue}
+                collectionName={collectionName}
+              />
+            )}
+            {[ActionType.DateScope].includes(operator) && (
+              <DateScopeComponent
                 fieldValue={fieldValue}
                 schema={schema}
                 setValue={setValue}
