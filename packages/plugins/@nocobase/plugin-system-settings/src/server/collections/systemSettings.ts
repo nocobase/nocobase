@@ -52,5 +52,9 @@ export default defineCollection({
       name: 'options',
       defaultValue: {},
     },
+    {
+      type: 'string',
+      name: 'roleMode',
+    },
   ],
 });

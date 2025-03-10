@@ -10,6 +10,8 @@
 import Database from '@nocobase/database';
 import { ExtendedAgent, MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
+import { SystemRoleMode } from '@nocobase/plugin-system-settings';
+import { UNION_ROLE_KEY } from '../constants';
 
 describe('union role: full permissions', async () => {
   let agent: ExtendedAgent, rootUser, user, role1, role2;
@@ -50,7 +52,7 @@ describe('union role: full permissions', async () => {
       },
     });
 
-    agent = await app.agent().login(user, 'union');
+    agent = await app.agent().login(user, UNION_ROLE_KEY);
   });
 
   it('should roles check successful when login role is union', async () => {
@@ -75,7 +77,7 @@ describe('union role: full permissions', async () => {
       },
     });
     expect(updateResponse.statusCode).toBe(200);
-    agent = await app.agent().login(user, 'union');
+    agent = await app.agent().login(user, UNION_ROLE_KEY);
     rolesResponse = await agent.resource('roles').check();
     expect(rolesResponse.statusCode).toBe(200);
     data = rolesResponse.body.data;
@@ -111,7 +113,7 @@ describe('union role: full permissions', async () => {
     expect(data.snippets).include('pm.*');
     expect(data.snippets).include('!pm.logger');
 
-    agent = await app.agent().login(user, 'union');
+    agent = await app.agent().login(user, UNION_ROLE_KEY);
     rolesResponse = await agent.resource('roles').check();
     expect(rolesResponse.statusCode).toBe(200);
     data = rolesResponse.body.data;
@@ -142,7 +144,7 @@ describe('union role: full permissions', async () => {
     expect(data.snippets).include('pm.*');
     expect(data.snippets).include('!pm.auth.authenticators');
 
-    agent = await app.agent().login(user, 'union');
+    agent = await app.agent().login(user, UNION_ROLE_KEY);
     rolesResponse = await agent.resource('roles').check();
     expect(rolesResponse.statusCode).toBe(200);
     data = rolesResponse.body.data;
@@ -308,7 +310,7 @@ describe('union role: full permissions', async () => {
     });
     expect(tbResponse.statusCode).toBe(200);
     const testTbName = tbResponse.body.data.name;
-    agent = await app.agent().login(user, 'union');
+    agent = await app.agent().login(user, UNION_ROLE_KEY);
     let getTbResponse = await agent.resource(testTbName).list({ pageSize: 30 });
     expect(getTbResponse.statusCode).toBe(403);
 
@@ -367,7 +369,7 @@ describe('union role: full permissions', async () => {
       },
     });
 
-    agent = await app.agent().login(user, 'union');
+    agent = await app.agent().login(user, UNION_ROLE_KEY);
     getTbResponse = await agent.resource(testTbName).list({ pageSize: 30 });
     expect(getTbResponse.statusCode).toBe(200);
     expect(getTbResponse.body.data.length).gt(0);
@@ -397,7 +399,7 @@ describe('union role: full permissions', async () => {
         name: generateRandomString(),
       },
     });
-    agent = (await (await app.agent().login(user, 'union')).set({ 'X-With-ACL-Meta': true })) as any;
+    agent = (await (await app.agent().login(user, UNION_ROLE_KEY)).set({ 'X-With-ACL-Meta': true })) as any;
     const rolesResponse = await agent.resource('roles').list({ pageSize: 30 });
     expect(rolesResponse.statusCode).toBe(200);
     const meta = rolesResponse.body.meta;
@@ -407,5 +409,20 @@ describe('union role: full permissions', async () => {
     expect(meta.allowedActions.destroy).exist;
     expect(meta.allowedActions.update).include(createUserResponse1.body.data.name);
     expect(meta.allowedActions.destroy).include(createUserResponse1.body.data.name);
+  });
+
+  it('should update user role mode successfully', async () => {
+    const rootAgent = await app.agent().login(rootUser);
+    let getSystemSettingsResponse = await rootAgent.resource('roles').getSystemRoleMode();
+    expect(getSystemSettingsResponse.status).toBe(200);
+    expect(getSystemSettingsResponse.body.data.roleMode).toStrictEqual(SystemRoleMode.default);
+    await rootAgent.resource('roles').setSystemRoleMode({
+      values: {
+        roleMode: SystemRoleMode.allowUseUnion,
+      },
+    });
+    getSystemSettingsResponse = await rootAgent.resource('roles').getSystemRoleMode();
+    expect(getSystemSettingsResponse.status).toBe(200);
+    expect(getSystemSettingsResponse.body.data.roleMode).toStrictEqual(SystemRoleMode.allowUseUnion);
   });
 });

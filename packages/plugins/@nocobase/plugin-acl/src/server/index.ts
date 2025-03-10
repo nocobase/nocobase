@@ -11,5 +11,5 @@ export * from './middlewares/setCurrentRole';
 export * from './middlewares/with-acl-meta';
 export { RoleResourceActionModel } from './model/RoleResourceActionModel';
 export { RoleResourceModel } from './model/RoleResourceModel';
-
+export { UNION_ROLE_KEY } from './constants';
 export { default } from './server';
