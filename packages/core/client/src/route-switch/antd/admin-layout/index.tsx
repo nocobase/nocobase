@@ -11,7 +11,7 @@ import { EllipsisOutlined } from '@ant-design/icons';
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
-import { Popover, Tooltip } from 'antd';
+import { ConfigProvider, Popover, Tooltip } from 'antd';
 import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -29,6 +29,7 @@ import {
   RemoteSchemaTemplateManagerProvider,
   SortableItem,
   useDesignable,
+  useGlobalTheme,
   useMenuDragEnd,
   useParseURLAndParams,
   useRequest,
@@ -51,6 +52,7 @@ import { KeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
+import { theme as antdTheme } from 'antd';
 
 export { KeepAlive, NocoBaseDesktopRouteType };
 
@@ -495,22 +497,44 @@ const headerRender = (props: HeaderViewProps, defaultDom: React.ReactNode) => {
   return <headerContext.Provider value={headerContextValue}>{defaultDom}</headerContext.Provider>;
 };
 
+const IsMobileLayoutContext = React.createContext<{
+  isMobileLayout: boolean;
+  setIsMobileLayout: React.Dispatch<React.SetStateAction<boolean>>;
+}>({
+  isMobileLayout: false,
+  setIsMobileLayout: () => {},
+});
+
+const MobileLayoutProvider: FC = (props) => {
+  const [isMobileLayout, setIsMobileLayout] = useState(false);
+  const value = useMemo(() => ({ isMobileLayout, setIsMobileLayout }), [isMobileLayout]);
+
+  return <IsMobileLayoutContext.Provider value={value}>{props.children}</IsMobileLayoutContext.Provider>;
+};
+
+export const useMobileLayout = () => {
+  const { isMobileLayout, setIsMobileLayout } = useContext(IsMobileLayoutContext);
+  return { isMobileLayout, setIsMobileLayout };
+};
+
 export const InternalAdminLayout = () => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
-  const { designable } = useDesignable();
+  const { designable: _designable } = useDesignable();
   const location = useLocation();
   const { onDragEnd } = useMenuDragEnd();
   const { token } = useToken();
-  const [isMobile, setIsMobile] = useState(false);
+  const { isMobileLayout, setIsMobileLayout } = useMobileLayout();
   const [collapsed, setCollapsed] = useState(false);
   const doNotChangeCollapsedRef = useRef(false);
   const { t } = useMenuTranslation();
+  const designable = isMobileLayout ? false : _designable;
+
   const route = useMemo(() => {
     return {
       path: '/',
-      children: convertRoutesToLayout(allAccessRoutes, { designable, isMobile, t }),
+      children: convertRoutesToLayout(allAccessRoutes, { designable, isMobile: isMobileLayout, t }),
     };
-  }, [allAccessRoutes, designable, isMobile, t]);
+  }, [allAccessRoutes, designable, isMobileLayout, t]);
   const layoutToken = useMemo(() => {
     return {
       header: {
@@ -534,6 +558,21 @@ export const InternalAdminLayout = () => {
       bgLayout: token.colorBgLayout,
     };
   }, [token]);
+  const { theme } = useGlobalTheme();
+  const mobileTheme = useMemo(() => {
+    return {
+      ...theme,
+      token: {
+        ...theme.token,
+        paddingPageHorizontal: 8, // Horizontal page padding
+        paddingPageVertical: 8, // Vertical page padding
+        marginBlock: 12, // Spacing between blocks
+        borderRadiusBlock: 8, // Block border radius
+        fontSize: 14, // Font size
+      },
+      algorithm: antdTheme.compactAlgorithm, // Set mobile mode to always use compact algorithm
+    };
+  }, [theme]);
 
   const onCollapse = useCallback((collapsed: boolean) => {
     if (doNotChangeCollapsedRef.current) {
@@ -575,11 +614,15 @@ export const InternalAdminLayout = () => {
           {(value: RouteContextType) => {
             const { isMobile: _isMobile } = value;
 
-            if (_isMobile !== isMobile) {
-              setIsMobile(_isMobile);
+            if (_isMobile !== isMobileLayout) {
+              setIsMobileLayout(_isMobile);
             }
 
-            return <LayoutContent />;
+            return (
+              <ConfigProvider theme={_isMobile ? mobileTheme : theme}>
+                <LayoutContent />
+              </ConfigProvider>
+            );
           }}
         </RouteContext.Consumer>
       </ProLayout>
@@ -696,6 +739,7 @@ export class AdminLayoutPlugin extends Plugin {
   async load() {
     this.app.schemaSettingsManager.add(userCenterSettings);
     this.app.addComponents({ AdminLayout, AdminDynamicPage });
+    this.app.use(MobileLayoutProvider);
   }
 }
 
@@ -716,36 +760,6 @@ export function findRouteBySchemaUid(schemaUid: string, treeArray: any[]) {
   }
   return null;
 }
-
-const MenuItemIcon: FC<{ icon: string; title: string }> = (props) => {
-  const { inHeader } = useContext(headerContext);
-
-  return (
-    <RouteContext.Consumer>
-      {(value: RouteContextType) => {
-        const { collapsed } = value;
-
-        if (collapsed && !inHeader) {
-          return props.icon ? (
-            <Icon type={props.icon} />
-          ) : (
-            <span
-              style={{
-                display: 'inline-block',
-                width: '100%',
-                textAlign: 'center',
-              }}
-            >
-              {props.title.charAt(0)}
-            </span>
-          );
-        }
-
-        return props.icon ? <Icon type={props.icon} /> : null;
-      }}
-    </RouteContext.Consumer>
-  );
-};
 
 const MenuDesignerButton: FC<{ testId: string }> = (props) => {
   const { render: renderInitializer } = useSchemaInitializerRender(menuItemInitializer);
