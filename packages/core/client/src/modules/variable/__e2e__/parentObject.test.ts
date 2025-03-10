@@ -55,6 +55,7 @@ test.describe('variable: parent object', () => {
 
     // 1. Use "Current form" and "Parent object" variables in nested subforms and subtables
     await page.getByLabel('block-item-CollectionField-collection1-form-collection1.m2m1-m2m1').hover();
+    await page.getByRole('menuitem', { name: 'Linkage rules' }).waitFor({ state: 'detached' });
     await page
       .getByLabel('designer-schema-settings-CollectionField-fieldSettings:FormItem-collection1-collection1.m2m1', {
         exact: true,

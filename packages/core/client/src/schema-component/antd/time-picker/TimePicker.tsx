@@ -14,7 +14,9 @@ import { TimePicker as AntdTimePicker } from 'antd';
 import { TimePickerProps as AntdTimePickerProps, TimeRangePickerProps } from 'antd/es/time-picker';
 import { ReadPretty } from './ReadPretty';
 
-type ComposedTimePicker = React.FC<AntdTimePickerProps> & {
+type ComposedTimePicker = React.ForwardRefExoticComponent<
+  React.PropsWithoutRef<Partial<AntdTimePickerProps>> & React.RefAttributes<unknown>
+> & {
   RangePicker?: React.FC<TimeRangePickerProps>;
   ReadPretty?: React.FC<any>;
 };

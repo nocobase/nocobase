@@ -14,6 +14,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '@nocobase/client';
 import { useAvailableActions } from './DataSourceTable';
+import { TableProps } from 'antd/es/table';
 
 const toScopes = (value) => {
   if (!value) {
@@ -109,7 +110,7 @@ export const StrategyActions = connect((props) => {
                 />
               ),
           },
-        ]}
+        ] as TableProps['columns']}
         dataSource={availableActions?.map((item) => {
           let scope = 'all';
           let enabled = false;

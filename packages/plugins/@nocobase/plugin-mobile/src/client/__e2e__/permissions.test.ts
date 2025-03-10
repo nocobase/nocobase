@@ -40,6 +40,7 @@ test.describe('mobile permissions', () => {
     await createNewPage('root', page);
 
     // expect: the new page should be visible
+    await expect(page.getByLabel('block-item-MobileTabBar.Page').filter({ hasText: 'root' })).toHaveCount(1);
     await expect(page.getByLabel('block-item-MobileTabBar.Page').filter({ hasText: 'root' })).toBeVisible();
 
     // change the user's role to admin
@@ -65,6 +66,7 @@ test.describe('mobile permissions', () => {
     await page.getByRole('button', { name: 'Submit' }).click();
 
     // expect: the new page should be visible
+    await expect(page.getByLabel('block-item-MobileTabBar.Page').filter({ hasText: 'admin' })).toHaveCount(1);
     await expect(page.getByLabel('block-item-MobileTabBar.Page').filter({ hasText: 'admin' })).toBeVisible();
 
     // change the user's role to admin, and then change the menu permission

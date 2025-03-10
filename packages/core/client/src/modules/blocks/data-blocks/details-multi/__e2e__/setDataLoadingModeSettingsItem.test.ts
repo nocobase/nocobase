@@ -50,10 +50,10 @@ test.describe('setDataLoadingModeSettingsItem', () => {
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     // 所有区块应该显示 No data
-    await expect(page.getByLabel('block-item-CardItem-users-table').getByText('No data')).toBeVisible();
-    await expect(page.getByLabel('block-item-CardItem-users-details').getByText('No data')).toBeVisible();
-    await expect(page.getByLabel('block-item-CardItem-users-list').getByText('No data')).toBeVisible();
-    await expect(page.getByLabel('block-item-BlockItem-users-').getByText('No data')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-users-table').getByText('No data').last()).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-users-details').getByText('No data').last()).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-users-list').getByText('No data').last()).toBeVisible();
+    await expect(page.getByLabel('block-item-BlockItem-users-').getByText('No data').last()).toBeVisible();
 
     // 3. 在筛选表单中数据一个筛选条件，点击筛选按钮，区块内应该显示数据
     await page.getByLabel('block-item-CollectionField-').getByRole('textbox').click();
@@ -67,10 +67,10 @@ test.describe('setDataLoadingModeSettingsItem', () => {
 
     // 4. 点击筛选表单的 Reset 按钮，区块内应该显示 No data
     await page.getByLabel('action-Action-Reset to empty-users-').click();
-    await expect(page.getByLabel('block-item-CardItem-users-table').getByText('No data')).toBeVisible();
-    await expect(page.getByLabel('block-item-CardItem-users-details').getByText('No data')).toBeVisible();
-    await expect(page.getByLabel('block-item-CardItem-users-list').getByText('No data')).toBeVisible();
-    await expect(page.getByLabel('block-item-BlockItem-users-').getByText('No data')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-users-table').getByText('No data').last()).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-users-details').getByText('No data').last()).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-users-list').getByText('No data').last()).toBeVisible();
+    await expect(page.getByLabel('block-item-BlockItem-users-').getByText('No data').last()).toBeVisible();
   });
 
   test('When the data block has data scope settings and dataLoadingMode is manual, data should not be displayed after the first page load', async ({
@@ -78,7 +78,7 @@ test.describe('setDataLoadingModeSettingsItem', () => {
     mockPage,
   }) => {
     await mockPage(TableBlockWithDataScope).goto();
-    await expect(page.getByLabel('block-item-CardItem-users-table').getByText('No data')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-users-table').getByText('No data').last()).toBeVisible();
 
     // 此时点击 filter 按钮，应该还是没数据，因为表单没有值
     await page.getByLabel('action-Action-Filter-submit-').click({
@@ -87,7 +87,7 @@ test.describe('setDataLoadingModeSettingsItem', () => {
         y: 10,
       },
     });
-    await expect(page.getByLabel('block-item-CardItem-users-table').getByText('No data')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-users-table').getByText('No data').last()).toBeVisible();
 
     // 点击 Reset 按钮，也是一样
     await page.getByLabel('action-Action-Reset-users-').click({
@@ -96,6 +96,6 @@ test.describe('setDataLoadingModeSettingsItem', () => {
         y: 10,
       },
     });
-    await expect(page.getByLabel('block-item-CardItem-users-table').getByText('No data')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-users-table').getByText('No data').last()).toBeVisible();
   });
 });

@@ -33,7 +33,7 @@ test.describe('where can be added', () => {
     await page.getByLabel('action-Action.Link-View-view-').first().click();
     await page.getByLabel('schema-initializer-Grid-popup').hover();
     await page.getByRole('menuitem', { name: 'Calendar right' }).hover();
-    await page.getByRole('menuitem', { name: 'Associated records' }).hover();
+    await page.getByRole('menuitem', { name: 'Associated records' }).last().hover();
     await page.getByRole('menuitem', { name: 'manyToMany' }).click();
 
     await page.getByLabel('block-item-Select-Title field').getByTestId('select-single').click();

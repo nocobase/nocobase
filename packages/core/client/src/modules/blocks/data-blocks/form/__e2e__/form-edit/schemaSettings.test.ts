@@ -18,6 +18,7 @@ import {
 import { T3825 } from './templatesOfBug';
 const clickOption = async (page: Page, optionName: string) => {
   await page.getByLabel('block-item-CardItem-general-form').hover();
+  await page.getByRole('menuitem', { name: optionName }).waitFor({ state: 'detached' });
   await page.getByLabel('designer-schema-settings-CardItem-FormV2.Designer-general').hover();
   await page.getByRole('menuitem', { name: optionName }).click();
 };

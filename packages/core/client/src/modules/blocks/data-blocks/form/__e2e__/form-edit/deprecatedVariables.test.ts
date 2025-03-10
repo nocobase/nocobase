@@ -34,6 +34,7 @@ test.describe('deprecated variables', () => {
 
     // 表达式输入框也是一样
     await page.getByText('xSelect a variable').click();
+    await expect(page.getByRole('menuitemcheckbox', { name: 'Current record right' })).toHaveCount(1);
     await page.getByRole('menuitemcheckbox', { name: 'Current record right' }).hover({ position: { x: 40, y: 12 } });
     await expect(page.getByRole('tooltip', { name: 'This variable has been deprecated' })).toBeVisible();
     await expect(page.getByRole('menuitemcheckbox', { name: 'Current record right' })).toHaveClass(
@@ -45,6 +46,7 @@ test.describe('deprecated variables', () => {
 
     // 3. 当设置为其它变量后，再次打开，变量列表中的弃用变量不再显示
     await page.locator('button').filter({ hasText: /^x$/ }).click();
+    await expect(page.getByRole('menuitemcheckbox', { name: 'Current form right' })).toHaveCount(1);
     await page.getByRole('menuitemcheckbox', { name: 'Current form right' }).click();
     await page.getByRole('menuitemcheckbox', { name: 'Nickname' }).click();
     await expect(page.getByLabel('variable-tag').getByText('Current form / Nickname')).toBeVisible();
