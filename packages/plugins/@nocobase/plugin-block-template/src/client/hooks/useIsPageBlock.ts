@@ -22,7 +22,8 @@ export const useIsPageBlock = () => {
     const isPage = location.pathname.includes('/admin/') || location.pathname.includes('/m/');
     const notInPopup = !location.pathname.includes('/popups/');
     const notInSetting = !location.pathname.includes('/admin/settings/');
-    return isPage && notInPopup && notInSetting;
+    const notInBlockTemplate = !location.pathname.includes('/m/block-templates/');
+    return isPage && notInPopup && notInSetting && notInBlockTemplate;
   }, [location.pathname, fieldSchema]);
 
   return isPageBlock;
