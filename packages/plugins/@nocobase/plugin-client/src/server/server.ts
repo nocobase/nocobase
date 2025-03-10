@@ -11,12 +11,12 @@ import { Model, Transaction } from '@nocobase/database';
 import PluginLocalizationServer from '@nocobase/plugin-localization';
 import { Plugin } from '@nocobase/server';
 import { tval } from '@nocobase/utils';
+import _ from 'lodash';
 import * as process from 'node:process';
 import { resolve } from 'path';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
-import _ from 'lodash';
 
 async function getLang(ctx) {
   const SystemSetting = ctx.db.getRepository('systemSettings');
@@ -221,7 +221,14 @@ export class PluginClientServer extends Plugin {
         const createModels = tabs
           .map((x) => !modelsByRouteId[x.get('id')] && { desktopRouteId: x.get('id'), roleName })
           .filter(Boolean);
-        return await repository.create({ values: createModels, transaction });
+        for (const values of createModels) {
+          await repository.firstOrCreate({
+            values,
+            filterKeys: ['desktopRouteId', 'roleName'],
+            transaction,
+          });
+        }
+        return;
       }
 
       if (action === 'remove') {

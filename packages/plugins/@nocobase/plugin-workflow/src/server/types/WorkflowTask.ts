@@ -6,3 +6,12 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+
+export default interface WorkflowTaskModel {
+  type: string;
+  key: string;
+
+  userId: number;
+
+  workflowId: number;
+}

@@ -8,8 +8,8 @@
  */
 
 import { Model, Transaction } from '@nocobase/database';
-import { Plugin } from '@nocobase/server';
 import PluginLocalizationServer from '@nocobase/plugin-localization';
+import { Plugin } from '@nocobase/server';
 import { tval } from '@nocobase/utils';
 import _ from 'lodash';
 
@@ -94,7 +94,14 @@ export class PluginMobileServer extends Plugin {
         const createModels = tabs
           .map((x) => !modelsByRouteId[x.get('id')] && { mobileRouteId: x.get('id'), roleName })
           .filter(Boolean);
-        return await repository.create({ values: createModels, transaction });
+        for (const values of createModels) {
+          await repository.firstOrCreate({
+            values,
+            filterKeys: ['mobileRouteId', 'roleName'],
+            transaction,
+          });
+        }
+        return;
       }
 
       if (action === 'remove') {

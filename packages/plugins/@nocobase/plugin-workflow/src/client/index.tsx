@@ -120,12 +120,12 @@ export default class PluginWorkflowClient extends Plugin {
     });
 
     this.router.add('admin.workflow.tasks', {
-      path: '/admin/workflow/tasks/:taskType?',
+      path: '/admin/workflow/tasks/:taskType/:status?',
       Component: WorkflowTasks,
     });
 
     this.router.add('admin.workflow.tasks.popup', {
-      path: '/admin/workflow/tasks/:taskType/popups/*',
+      path: '/admin/workflow/tasks/:taskType/:status/popups/*',
       Component: PagePopups,
     });
 
