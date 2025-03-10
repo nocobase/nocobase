@@ -18,7 +18,7 @@ export const DeprecatedTemplateTitle = () => {
     <Space>
       {t('Deprecated')}
       <Tooltip
-        title={t('The following old template features have been deprecated and will be removed in next versions.')}
+        title={t('The following old template features have been deprecated and will be removed in next version.')}
       >
         <QuestionCircleOutlined />
       </Tooltip>
