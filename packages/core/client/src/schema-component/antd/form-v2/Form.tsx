@@ -28,6 +28,8 @@ import { useLocalVariables, useVariables } from '../../../variables';
 import { useProps } from '../../hooks/useProps';
 import { useFormBlockHeight } from './hook';
 import { useApp } from '../../../application';
+import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
+import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
 
 export interface FormProps extends IFormLayoutProps {
   form?: FormilyForm;
@@ -49,6 +51,8 @@ const FormComponent: React.FC<FormProps> = (props) => {
     labelWidth = 120,
     labelWrap = true,
   } = cardItemSchema?.['x-component-props'] || {};
+  const { isMobileLayout } = useMobileLayout();
+
   return (
     <FieldContext.Provider value={undefined}>
       <FormContext.Provider value={form}>
@@ -76,7 +80,12 @@ const FormComponent: React.FC<FormProps> = (props) => {
               }
             `}
           >
-            <NocoBaseRecursionField basePath={f.address} schema={fieldSchema} onlyRenderProperties isUseFormilyField />
+            <NocoBaseRecursionField
+              basePath={f.address}
+              schema={isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema}
+              onlyRenderProperties
+              isUseFormilyField
+            />
           </div>
         </FormLayout>
       </FormContext.Provider>
@@ -93,6 +102,8 @@ const FormDecorator: React.FC<FormProps> = (props) => {
   // TODO: component 里 useField 会与当前 field 存在偏差
   const f = useAttach(form.createVoidField({ ...field.props, basePath: '' }));
   const Component = useComponent(fieldSchema['x-component'], Def);
+  const { isMobileLayout } = useMobileLayout();
+
   return (
     <FieldContext.Provider value={undefined}>
       <FormContext.Provider value={form}>
@@ -101,7 +112,7 @@ const FormDecorator: React.FC<FormProps> = (props) => {
             <Component {...field.componentProps}>
               <NocoBaseRecursionField
                 basePath={f.address}
-                schema={fieldSchema}
+                schema={isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema}
                 onlyRenderProperties
                 isUseFormilyField
               />
@@ -250,7 +261,7 @@ export const Form: React.FC<FormProps> & {
     const theme: any = useMemo(() => {
       return {
         token: {
-          // 这里是为了防止区块内部也收到 marginBlock 的影响（marginBlock：区块之间的间距）
+          // 这里是为了防止区块内部也受到 marginBlock 的影响（marginBlock：区块之间的间距）
           // @ts-ignore
           marginBlock: token.marginLG,
         },
