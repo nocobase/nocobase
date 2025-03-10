@@ -10,23 +10,13 @@
 import { Context } from '@nocobase/actions';
 import { Model } from '@nocobase/database';
 import { Authenticator } from './auth-manager';
+import { AuthErrorCode } from './constants';
 export type AuthConfig = {
   authenticator: Authenticator;
   options: {
     [key: string]: any;
   };
   ctx: Context;
-};
-export const AuthErrorCode = {
-  EMPTY_TOKEN: 'EMPTY_TOKEN' as const,
-  EXPIRED_TOKEN: 'EXPIRED_TOKEN' as const,
-  INVALID_TOKEN: 'INVALID_TOKEN' as const,
-  TOKEN_RENEW_FAILED: 'TOKEN_RENEW_FAILED' as const,
-  BLOCKED_TOKEN: 'BLOCKED_TOKEN' as const,
-  EXPIRED_SESSION: 'EXPIRED_SESSION' as const,
-  NOT_EXIST_USER: 'NOT_EXIST_USER' as const,
-  SKIP_TOKEN_RENEW: 'SKIP_TOKEN_RENEW' as const,
-  USER_HAS_NO_ROLES_ERR: 'USER_HAS_NO_ROLES_ERR' as const,
 };
 
 export type AuthErrorType = keyof typeof AuthErrorCode;
