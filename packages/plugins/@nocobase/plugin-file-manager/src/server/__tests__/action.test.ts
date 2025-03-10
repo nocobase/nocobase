@@ -524,40 +524,11 @@ describe('action', () => {
   });
 
   describe('storage actions', () => {
-    describe('getBasicInfo', () => {
-      it('get default storage', async () => {
-        const { body, status } = await agent.resource('storages').getBasicInfo();
+    describe('listBasicInfo', () => {
+      it('get all storage', async () => {
+        const { body, status } = await agent.resource('storages').listBasicInfo();
         expect(status).toBe(200);
-        expect(body.data).toMatchObject({ id: 1 });
-      });
-
-      it('get storage by unexisted id as 404', async () => {
-        const { body, status } = await agent.resource('storages').getBasicInfo({ filterByTk: -1 });
-        expect(status).toBe(404);
-      });
-
-      it('get by storage local id', async () => {
-        const { body, status } = await agent.resource('storages').getBasicInfo({ filterByTk: local1.id });
-        expect(status).toBe(200);
-        expect(body.data).toMatchObject({
-          id: local1.id,
-          title: local1.title,
-          name: local1.name,
-          type: local1.type,
-          rules: local1.rules,
-        });
-      });
-
-      it('get storage by name', async () => {
-        const { body, status } = await agent.resource('storages').getBasicInfo({ filterByTk: local1.name });
-        expect(status).toBe(200);
-        expect(body.data).toMatchObject({
-          id: local1.id,
-          title: local1.title,
-          name: local1.name,
-          type: local1.type,
-          rules: local1.rules,
-        });
+        expect(body.data).toMatchObject([{ id: 1 }, { id: local1.id }]);
       });
     });
   });

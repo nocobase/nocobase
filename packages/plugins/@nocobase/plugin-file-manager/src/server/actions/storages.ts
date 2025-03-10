@@ -9,28 +9,18 @@
 
 import Plugin from '..';
 
-export async function getBasicInfo(context, next) {
+export async function listBasicInfo(context, next) {
   const { storagesCache } = context.app.pm.get(Plugin) as Plugin;
-  let result;
-  const { filterByTk } = context.action.params;
-  if (!filterByTk) {
-    result = Array.from(storagesCache.values()).find((item) => item.default);
-  } else {
-    const isNumber = /^[1-9]\d*$/.test(filterByTk);
-    result = isNumber
-      ? storagesCache.get(Number.parseInt(filterByTk, 10))
-      : Array.from(storagesCache.values()).find((item) => item.name === filterByTk);
-  }
-  if (!result) {
-    return context.throw(404);
-  }
-  context.body = {
-    id: result.id,
-    title: result.title,
-    name: result.name,
-    type: result.type,
-    rules: result.rules,
-  };
+  const result = Array.from(storagesCache.values()).map((item) => ({
+    id: item.id,
+    title: item.title,
+    name: item.name,
+    type: item.type,
+    rules: item.rules,
+    default: item.default,
+  }));
+
+  context.body = result;
 
   next();
 }

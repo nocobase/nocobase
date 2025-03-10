@@ -7,38 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  Input,
-  Upload,
-  useCollection,
-  useCollectionField,
-  useCollectionManager,
-  useCollectionRecordData,
-  usePlugin,
-  useRequest,
-  withDynamicSchemaProps,
-} from '@nocobase/client';
-import React, { useEffect } from 'react';
-import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
-import FileManagerPlugin from '../';
+import { useCollection, useCollectionField, useCollectionManager, usePlugin } from '@nocobase/client';
 
-export function useStorage(storage) {
+import FileManagerPlugin from '../';
+import { useFileManagerContext } from '../FileManagerProvider';
+
+export function useStorage(storage: string) {
+  const { storages } = useFileManagerContext();
   const name = storage ?? '';
-  const url = `storages:getBasicInfo/${name}`;
-  const { loading, data, run } = useRequest<any>(
-    {
-      url,
-    },
-    {
-      manual: true,
-      refreshDeps: [name],
-      cacheKey: url,
-    },
-  );
-  useEffect(() => {
-    run();
-  }, [run]);
-  return (!loading && data?.data) || null;
+  const isNumber = /^\d+$/.test(name);
+  const result = storages.find((item) => {
+    if (isNumber) {
+      return item.id === Number.parseInt(name, 10);
+    } else if (name) {
+      return item.name === name;
+    } else {
+      return item.default;
+    }
+  });
+
+  return result;
 }
 
 export function useStorageCfg() {

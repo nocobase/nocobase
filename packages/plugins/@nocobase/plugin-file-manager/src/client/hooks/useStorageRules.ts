@@ -7,32 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useEffect } from 'react';
-import { useField } from '@formily/react';
-import { useAPIClient, useCollectionField, useCollectionManager, useRequest } from '@nocobase/client';
-import { useStorageUploadProps } from './useStorageUploadProps';
+import { useCollectionField, useCollectionManager } from '@nocobase/client';
+import { useStorage, useStorageUploadProps } from './useStorageUploadProps';
 
-export function useStorageRules(storage) {
-  const name = storage ?? '';
-  const apiClient = useAPIClient();
-  const field = useField<any>();
-  const { loading, data, run } = useRequest<any>(
-    {
-      url: `storages:getBasicInfo/${name}`,
-    },
-    {
-      manual: true,
-      refreshDeps: [name],
-      cacheKey: name,
-    },
-  );
-  useEffect(() => {
-    if (field.pattern !== 'editable') {
-      return;
-    }
-    run();
-  }, [field.pattern, run]);
-  return (!loading && data?.data?.rules) || null;
+export function useStorageRules(storage: string) {
+  return useStorage(storage)?.rules || null;
 }
 
 export function useAttachmentFieldProps() {
