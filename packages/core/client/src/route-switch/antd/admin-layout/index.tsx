@@ -524,7 +524,7 @@ export const InternalAdminLayout = () => {
   const { onDragEnd } = useMenuDragEnd();
   const { token } = useToken();
   const { isMobileLayout, setIsMobileLayout } = useMobileLayout();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(isMobileLayout);
   const doNotChangeCollapsedRef = useRef(false);
   const { t } = useMenuTranslation();
   const designable = isMobileLayout ? false : _designable;
