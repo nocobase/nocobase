@@ -8,27 +8,22 @@
  */
 
 import { useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useFieldSchema } from '@formily/react';
 
 export const useIsPageBlock = () => {
+  const location = useLocation();
   const fieldSchema = useFieldSchema();
+
   const isPageBlock = useMemo(() => {
     if (!fieldSchema || fieldSchema['x-template-uid']) {
       return false;
     }
-
-    let schema = fieldSchema.parent;
-    while (schema) {
-      if (['Page', 'MobilePage'].includes(schema['x-component'])) {
-        return true;
-      }
-      if (!['Grid', 'Grid.Row', 'Grid.Col'].includes(schema['x-component'])) {
-        return false;
-      }
-      schema = schema.parent;
-    }
-    return false;
-  }, [fieldSchema]);
+    const isPage = location.pathname.includes('/admin/') || location.pathname.includes('/m/');
+    const notInPopup = !location.pathname.includes('/popups/');
+    const notInSetting = !location.pathname.includes('/admin/settings/');
+    return isPage && notInPopup && notInSetting;
+  }, [location.pathname, fieldSchema]);
 
   return isPageBlock;
 };
