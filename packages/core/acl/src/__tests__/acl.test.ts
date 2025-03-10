@@ -36,7 +36,7 @@ describe('acl', () => {
       },
     });
 
-    const canResult = acl.can({ role: 'admin', resource: 'posts', action: 'edit' });
+    const canResult = acl.can({ roleNames: 'admin', resource: 'posts', action: 'edit' });
 
     expect(canResult).toMatchObject({
       role: 'admin',
@@ -88,7 +88,7 @@ describe('acl', () => {
       },
     });
 
-    const canResult = acl.can({ role: 'admin', resource: 'posts', action: 'edit' });
+    const canResult = acl.can({ roleNames: 'admin', resource: 'posts', action: 'edit' });
 
     expect(canResult).toMatchObject({
       role: 'admin',
@@ -121,7 +121,7 @@ describe('acl', () => {
       strategy: 's1',
     });
 
-    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).toMatchObject({
+    expect(acl.can({ roleNames: 'admin', resource: 'posts', action: 'create' })).toMatchObject({
       role: 'admin',
       resource: 'posts',
       action: 'create',
@@ -139,7 +139,7 @@ describe('acl', () => {
       strategy: 's1',
     });
 
-    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).toBeNull();
+    expect(acl.can({ roleNames: 'admin', resource: 'posts', action: 'create' })).toBeNull();
   });
 
   it('should grant action when define role', () => {
@@ -161,7 +161,7 @@ describe('acl', () => {
       },
     });
 
-    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).toMatchObject({
+    expect(acl.can({ roleNames: 'admin', resource: 'posts', action: 'create' })).toMatchObject({
       role: 'admin',
       resource: 'posts',
       action: 'create',
@@ -184,11 +184,11 @@ describe('acl', () => {
       strategy: 's1',
     });
 
-    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).toBeNull();
+    expect(acl.can({ roleNames: 'admin', resource: 'posts', action: 'create' })).toBeNull();
 
     role.grantAction('posts:create', {});
 
-    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).toMatchObject({
+    expect(acl.can({ roleNames: 'admin', resource: 'posts', action: 'create' })).toMatchObject({
       role: 'admin',
       resource: 'posts',
       action: 'create',
@@ -212,12 +212,12 @@ describe('acl', () => {
       strategy: 's1',
     });
 
-    expect(acl.can({ role: 'admin', resource: 'posts', action: 'get' })).toMatchObject({
+    expect(acl.can({ roleNames: 'admin', resource: 'posts', action: 'get' })).toMatchObject({
       role: 'admin',
       resource: 'posts',
       action: 'get',
     });
-    expect(acl.can({ role: 'admin', resource: 'posts', action: 'list' })).toMatchObject({
+    expect(acl.can({ roleNames: 'admin', resource: 'posts', action: 'list' })).toMatchObject({
       role: 'admin',
       resource: 'posts',
       action: 'list',
@@ -246,7 +246,7 @@ describe('acl', () => {
       },
     });
 
-    const canResult = acl.can({ role: 'admin', resource: 'posts', action: 'view' });
+    const canResult = acl.can({ roleNames: 'admin', resource: 'posts', action: 'view' });
 
     expect(canResult).toMatchObject({
       role: 'admin',
@@ -309,7 +309,7 @@ describe('acl', () => {
 
     role.grantAction('posts:create', {});
 
-    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).toMatchObject({
+    expect(acl.can({ roleNames: 'admin', resource: 'posts', action: 'create' })).toMatchObject({
       role: 'admin',
       resource: 'posts',
       action: 'create',
@@ -317,7 +317,7 @@ describe('acl', () => {
 
     role.revokeAction('posts:create');
 
-    expect(acl.can({ role: 'admin', resource: 'posts', action: 'create' })).toBeNull();
+    expect(acl.can({ roleNames: 'admin', resource: 'posts', action: 'create' })).toBeNull();
   });
 
   it('should call beforeGrantAction', () => {
@@ -342,7 +342,7 @@ describe('acl', () => {
       },
     });
 
-    const results = acl.can({ role: 'admin', resource: 'posts', action: 'create' });
+    const results = acl.can({ roleNames: 'admin', resource: 'posts', action: 'create' });
 
     expect(results).toMatchObject({
       role: 'admin',
@@ -390,7 +390,7 @@ describe('acl', () => {
 
   it('should clone can result deeply', () => {
     vi.spyOn(acl, 'can').mockReturnValue({
-      role: 'root',
+      roleNames: 'root',
       resource: 'Test',
       action: {
         resourceName: 'test',
@@ -429,14 +429,14 @@ describe('acl', () => {
       },
     });
 
-    expect(acl.can({ role: 'admin', resource: 'users', action: 'create' })).toBeTruthy();
+    expect(acl.can({ roleNames: 'admin', resource: 'users', action: 'create' })).toBeTruthy();
 
     acl.setStrategyResources(['posts']);
 
-    expect(acl.can({ role: 'admin', resource: 'users', action: 'create' })).toBeNull();
+    expect(acl.can({ roleNames: 'admin', resource: 'users', action: 'create' })).toBeNull();
 
     acl.setStrategyResources(['posts', 'users']);
 
-    expect(acl.can({ role: 'admin', resource: 'users', action: 'create' })).toBeTruthy();
+    expect(acl.can({ roleNames: 'admin', resource: 'users', action: 'create' })).toBeTruthy();
   });
 });

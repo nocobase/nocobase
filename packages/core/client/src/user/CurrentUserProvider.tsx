@@ -13,6 +13,7 @@ import { useACLRoleContext } from '../acl';
 import { ReturnTypeOfUseRequest, useRequest } from '../api-client';
 import { useAppSpin, useLocationNoUpdate } from '../application';
 import { useCompile } from '../schema-component';
+import { useTranslation } from 'react-i18next';
 
 export const CurrentUserContext = createContext<ReturnTypeOfUseRequest>(null);
 CurrentUserContext.displayName = 'CurrentUserContext';
@@ -25,12 +26,18 @@ export const useCurrentRoles = () => {
   const { allowAnonymous } = useACLRoleContext();
   const { data } = useCurrentUserContext();
   const compile = useCompile();
+  const { t } = useTranslation();
   const options = useMemo(() => {
     const roles = (data?.data?.roles || []).map(({ name, title }) => ({ name, title: compile(title) }));
     if (allowAnonymous) {
       roles.push({
         title: 'Anonymous',
         name: 'anonymous',
+      });
+    } else if (roles.length > 1) {
+      roles.unshift({
+        title: t('Roles Collection'),
+        name: '*',
       });
     }
     return roles;
@@ -43,10 +50,11 @@ export const CurrentUserProvider = (props) => {
   const result = useRequest<any>({
     url: 'auth:check',
   });
-
   if (result.loading) {
     return render();
   }
+
+  console.log('result', result.data);
 
   return <CurrentUserContext.Provider value={result}>{props.children}</CurrentUserContext.Provider>;
 };
