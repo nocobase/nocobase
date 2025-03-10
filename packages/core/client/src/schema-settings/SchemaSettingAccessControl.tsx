@@ -8,11 +8,12 @@
  */
 
 import { useFieldSchema } from '@formily/react';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { App } from 'antd';
 import { SchemaSettingsActionModalItem } from './SchemaSettings';
 import { useAPIClient } from '../api-client/hooks/useAPIClient';
+import { useDesignable } from '../schema-component/hooks/useDesignable';
 import { useRequest } from '../api-client';
 import { useACLContext } from '../acl';
 
@@ -22,6 +23,7 @@ export function AccessControl() {
   const apiClient = useAPIClient();
   const resource = apiClient.resource('uiSchemas.roles', fieldSchema['x-uid']);
   const { message } = App.useApp();
+  const { dn } = useDesignable();
   const { refresh, data }: any = useRequest(
     {
       url: `/uiSchemas/${fieldSchema['x-uid']}/roles:list`,
@@ -31,6 +33,23 @@ export function AccessControl() {
     },
   );
   const { refresh: refreshRoleCheck } = useACLContext();
+
+  useEffect(() => {
+    if (
+      fieldSchema['x-decorator'] !== 'ACLActionProvider' &&
+      fieldSchema['x-decorator'] !== `CustomRequestAction.Decorator` &&
+      fieldSchema['x-component'] !== 'WorkbenchAction'
+    ) {
+      dn.emit('patch', {
+        schema: {
+          ['x-uid']: fieldSchema['x-uid'],
+          'x-decorator': 'ACLActionProvider',
+        },
+      });
+      dn.refresh();
+    }
+  }, []);
+
   const AccessControl = (
     <SchemaSettingsActionModalItem
       scope={t}
@@ -79,8 +98,4 @@ export function AccessControl() {
 export const SchemaSettingAccessControl = {
   name: 'accessControl',
   Component: AccessControl,
-  useVisible() {
-    const fieldSchema = useFieldSchema();
-    return fieldSchema['x-decorator'] === 'ACLActionProvider';
-  },
 };
