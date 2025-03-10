@@ -1,0 +1,22 @@
+{
+  "File manager": "Gestore file",
+  "Attachment": "Allegato",
+  "MIME type": "Tipo MIME",
+  "Storage display name": "Nome visualizzato archivio",
+  "Storage name": "Nome archivio",
+  "Storage type": "Tipo archivio",
+  "Default storage": "Archivio predefinito",
+  "Storage base URL": "URL base archivio",
+  "Destination": "Destinazione",
+  "Use the built-in static file server": "Usa il server di file statici integrato",
+  "Local storage": "Archivio locale",
+  "Aliyun OSS": "Aliyun OSS",
+  "Tencent COS": "Tencent COS",
+  "Amazon S3": "Amazon S3",
+  "Region": "Regione",
+  "Bucket": "Bucket",
+  "Path": "Percorso",
+  "Filename": "Nome file",
+  "See more": "Vedi altro",
+  "Will be used for API": "Sarà utilizzato per l'API"
+}

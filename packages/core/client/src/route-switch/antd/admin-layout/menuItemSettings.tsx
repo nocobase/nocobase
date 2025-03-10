@@ -525,12 +525,63 @@ const MoveToMenuItem = () => {
   );
 };
 
+const EditTooltip = () => {
+  const { t } = useTranslation();
+  const currentRoute = useCurrentRoute();
+  const { updateRoute } = useNocoBaseRoutes();
+
+  const editTooltipSchema = useMemo(() => {
+    return {
+      type: 'object',
+      title: t('Edit tooltip'),
+      properties: {
+        tooltip: {
+          'x-decorator': 'FormItem',
+          'x-component': 'Input.TextArea',
+          'x-component-props': {},
+        },
+      },
+    };
+  }, [t]);
+  const initialTooltipValues = useMemo(() => {
+    return {
+      tooltip: currentRoute.tooltip,
+    };
+  }, [currentRoute.tooltip]);
+
+  const onEditTooltipSubmit: (values: any) => void = useCallback(
+    ({ tooltip }) => {
+      // 更新菜单对应的路由
+      if (currentRoute.id !== undefined) {
+        updateRoute(currentRoute.id, {
+          tooltip,
+        });
+      }
+    },
+    [currentRoute.id, updateRoute],
+  );
+
+  return (
+    <SchemaSettingsModalItem
+      title={t('Edit tooltip')}
+      eventKey="edit-tooltip"
+      schema={editTooltipSchema as ISchema}
+      initialValues={initialTooltipValues}
+      onSubmit={onEditTooltipSubmit}
+    />
+  );
+};
+
 export const menuItemSettings = new SchemaSettings({
   name: 'menuSettings:menuItem',
   items: [
     {
       name: 'edit',
       Component: EditMenuItem,
+    },
+    {
+      name: 'editTooltip',
+      Component: EditTooltip,
     },
     {
       name: 'hidden',

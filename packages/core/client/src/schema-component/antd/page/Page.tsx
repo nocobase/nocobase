@@ -215,7 +215,15 @@ const InternalPageContent = (props: PageContentProps) => {
   // 兼容旧版本的 tab 路径
   const oldTab = currentRoute?.children?.find((tabRoute) => tabRoute.tabSchemaName === activeKey);
   if (oldTab) {
-    navigate(location.pathname.replace(activeKey, oldTab.schemaUid));
+    const searchParams = new URLSearchParams(location.search);
+    // Check if activeKey exists in search params and remove it
+    if (searchParams.has('tab') && searchParams.get('tab') === activeKey) {
+      searchParams.delete('tab');
+    }
+    // Create a clean search string or empty string if only '?' remains
+    const searchString = searchParams.toString() ? `?${searchParams.toString()}` : '';
+
+    navigate(location.pathname.replace(activeKey, oldTab.schemaUid) + searchString);
     return null;
   }
 
