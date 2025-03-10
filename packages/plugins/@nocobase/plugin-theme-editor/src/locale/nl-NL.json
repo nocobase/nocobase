@@ -1,0 +1,22 @@
+{
+    "Theme": "Theme",
+    "Local": "Lokaal",
+    "Dark theme": "Dark theme",
+    "Optional": "Optional",
+    "Non-optional": "Non-optional",
+    "Current": "Current",
+    "Default": "Standaard",
+    "Theme Editor": "Theme Editor",
+    "Save": "Opslaan",
+    "Close": "Sluiten",
+    "Edit": "Bewerken",
+    "Export": "Exporteer",
+    "edit Theme Config": "edit Theme Config",
+    "The theme of the JSON format is incorrect": "The theme of the JSON format is incorrect",
+    "Edited successfully": "Edited successfully",
+    "Saved successfully": "Succesvol opgeslagen",
+    "Initializing Editor...": "Initializing Editor...",
+    "Save theme": "Save theme",
+    "Please set a name for this theme": "Please set a name for this theme",
+    "Please input the theme name": "Please input the theme name"
+}

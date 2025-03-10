@@ -1,0 +1,20 @@
+{
+    "HTTP request": "HTTP request",
+    "Send HTTP request to a URL. You can use the variables in the upstream nodes as request headers, parameters and request body.": "Send HTTP request to a URL. You can use the variables in the upstream nodes as request headers, parameters and request body.",
+    "HTTP method": "HTTP method",
+    "URL": "URL",
+    "Headers": "Headers",
+    "Add request header": "Add request header",
+    "Parameters": "Parameters",
+    "Add parameter": "Add parameter",
+    "Body": "Body",
+    "Use variable": "Use variable",
+    "Format": "Formaat",
+    "Insert": "Invoegen",
+    "Timeout config": "Timeout config",
+    "ms": "ms",
+    "Input request data": "Input request data",
+    "Only support standard JSON data": "Only support standard JSON data",
+    "\"Content-Type\" only support \"application/json\", and no need to specify": "\"Content-Type\" only support \"application/json\", and no need to specify",
+    "Ignore failed request and continue workflow": "Ignore failed request and continue workflow"
+}
