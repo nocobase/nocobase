@@ -28,7 +28,7 @@ test.describe('form item & view form', () => {
         await page.getByLabel(`block-item-CollectionField-general-form-general.manyToOne-manyToOne`).hover();
         await page
           .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.manyToOne`)
-          .hover();
+          .click();
       },
       supportedOptions: [
         'Edit field title',
