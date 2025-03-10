@@ -126,12 +126,12 @@ export class PluginMobileServer extends Plugin {
         return await next();
       }
 
-      const role = await rolesRepository.findOne({
-        filterByTk: ctx.state.currentRole,
+      const roles = await rolesRepository.find({
+        filterByTk: ctx.state.currentRoles,
         appends: ['mobileRoutes'],
       });
 
-      const mobileRoutesId = role.get('mobileRoutes').map((item) => item.id);
+      const mobileRoutesId = roles.flatMap((x) => x.get('mobileRoutes').map((x) => x.id));
 
       ctx.body = await mobileRoutesRepository.find({
         tree: true,

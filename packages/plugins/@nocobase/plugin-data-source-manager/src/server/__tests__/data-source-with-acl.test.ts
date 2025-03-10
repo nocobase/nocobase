@@ -408,7 +408,6 @@ describe('data source with acl', () => {
     const checkData = checkRep.body;
 
     expect(checkData.meta.dataSources.mockInstance1).toBeDefined();
-    console.log(JSON.stringify(checkData, null, 2));
   });
 
   it('should update roles strategy', async () => {
@@ -451,5 +450,71 @@ describe('data source with acl', () => {
     });
 
     expect(adminRoleResp2.body.data.strategy.actions).toHaveLength(0);
+  });
+
+  it(`should list response meta include new data sources`, async () => {
+    const adminUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['root'],
+      },
+    });
+
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'testRole',
+        title: '测试角色',
+      },
+    });
+
+    const testUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['testRole'],
+      },
+    });
+
+    const adminAgent: any = await app.agent().login(adminUser);
+
+    // create user resource permission
+    const createConnectionResourceResp = await adminAgent.resource('roles.dataSourceResources', 'testRole').create({
+      values: {
+        dataSourceKey: 'mockInstance1',
+        usingActionsConfig: true,
+        strategy: {
+          actions: ['view'],
+        },
+        name: 'posts',
+      },
+    });
+
+    expect(createConnectionResourceResp.status).toBe(200);
+
+    const createResourceResp = await adminAgent.resource('dataSources.roles', 'mockInstance1').update({
+      filterByTk: 'testRole',
+      values: {
+        strategy: {
+          actions: ['view'],
+        },
+      },
+    });
+
+    expect(createResourceResp.status).toBe(200);
+
+    // call roles check
+    let checkRep = await (await app.agent().login(testUser)).resource('roles').check({});
+    expect(checkRep.status).toBe(200);
+
+    let checkData = checkRep.body;
+
+    expect(checkData.meta.dataSources.mockInstance1).exist;
+    expect(checkData.meta.dataSources.mockInstance1.strategy).toEqual({ actions: ['view'] });
+
+    const testUserAgent = await app.agent().login(testUser, 'union');
+    checkRep = await testUserAgent.resource('roles').check({});
+    expect(checkRep.status).toBe(200);
+
+    checkData = checkRep.body;
+
+    expect(checkData.meta.dataSources.mockInstance1).exist;
+    expect(checkData.meta.dataSources.mockInstance1.strategy).toEqual({ actions: ['view'] });
   });
 });

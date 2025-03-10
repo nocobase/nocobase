@@ -1042,5 +1042,6 @@
   "Are you sure you want to hide this tab?": "このタブを非表示にしますか？",
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "非表示にすると、このタブはタブバーに表示されなくなります。再表示するには、ルート管理ページで設定する必要があります。",
   "Deprecated": "非推奨",
-  "The following old template features have been deprecated and will be removed in next version.": "次の古いテンプレート機能は非推奨になり、次のバージョンで削除されます。"
+  "The following old template features have been deprecated and will be removed in next version.": "次の古いテンプレート機能は非推奨になり、次のバージョンで削除されます。",
+  "Full permissions": "すべての権限"
 }
