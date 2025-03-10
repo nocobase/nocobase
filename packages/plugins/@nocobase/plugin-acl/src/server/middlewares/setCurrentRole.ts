@@ -10,6 +10,7 @@
 import { Context } from '@nocobase/actions';
 import { Cache } from '@nocobase/cache';
 import { Model, Repository } from '@nocobase/database';
+import { AuthErrorCode } from '@nocobase/auth';
 
 export async function setCurrentRole(ctx: Context, next) {
   const currentRole = ctx.get('X-Role');
@@ -52,7 +53,7 @@ export async function setCurrentRole(ctx: Context, next) {
     role = userRoles.find((role) => role.name === currentRole)?.name;
     if (!role) {
       return ctx.throw(401, {
-        code: 'ROLE_NOT_FOUND_FOR_USER',
+        code: AuthErrorCode.USER_HAS_NO_ROLES_ERR,
         message: ctx.t('The role does not belong to the user', { ns: 'acl' }),
       });
     }

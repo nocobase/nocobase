@@ -12,6 +12,7 @@ import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
 import { getSubAppName } from '@nocobase/sdk';
 import { tval } from '@nocobase/utils/client';
+import { AuthErrorCode } from '@nocobase/auth/client';
 import { Button, Modal, Result, Spin } from 'antd';
 import React, { FC } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
@@ -47,7 +48,7 @@ const useErrorProps = (app: Application, error: any) => {
   const err = error?.response?.data?.errors?.[0] || error;
   const subApp = getSubAppName(app.getPublicPath());
   switch (err.code) {
-    case 'USER_HAS_NO_ROLES_ERR':
+    case AuthErrorCode.USER_HAS_NO_ROLES_ERR:
       return {
         title: app.i18n.t('Permission denied'),
         subTitle: err.message,

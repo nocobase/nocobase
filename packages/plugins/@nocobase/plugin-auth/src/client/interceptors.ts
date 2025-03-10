@@ -10,17 +10,7 @@
 import { Application } from '@nocobase/client';
 import type { AxiosResponse } from 'axios';
 import debounce from 'lodash/debounce';
-
-const AuthErrorCode = {
-  EMPTY_TOKEN: 'EMPTY_TOKEN' as const,
-  EXPIRED_TOKEN: 'EXPIRED_TOKEN' as const,
-  INVALID_TOKEN: 'INVALID_TOKEN' as const,
-  TOKEN_RENEW_FAILED: 'TOKEN_RENEW_FAILED' as const,
-  BLOCKED_TOKEN: 'BLOCKED_TOKEN' as const,
-  EXPIRED_SESSION: 'EXPIRED_SESSION' as const,
-  NOT_EXIST_USER: 'NOT_EXIST_USER' as const,
-  SKIP_TOKEN_RENEW: 'SKIP_TOKEN_RENEW' as const,
-};
+import { AuthErrorCode } from '@nocobase/auth/client';
 
 function removeBasename(pathname, basename) {
   // Escape special characters in basename for use in regex
@@ -67,7 +57,7 @@ export function authCheckMiddleware({ app }: { app: Application }) {
         error.config.skipNotify = false;
       }
 
-      if (firstError?.code === 'USER_HAS_NO_ROLES_ERR') {
+      if (firstError?.code === AuthErrorCode.USER_HAS_NO_ROLES_ERR) {
         // use app error to show error message
         error.config.skipNotify = true;
         app.error = firstError;
