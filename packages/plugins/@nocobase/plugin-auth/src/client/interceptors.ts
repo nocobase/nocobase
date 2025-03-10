@@ -20,6 +20,7 @@ const AuthErrorCode = {
   EXPIRED_SESSION: 'EXPIRED_SESSION' as const,
   NOT_EXIST_USER: 'NOT_EXIST_USER' as const,
   SKIP_TOKEN_RENEW: 'SKIP_TOKEN_RENEW' as const,
+  USER_HAS_NO_ROLES_ERR: 'USER_HAS_NO_ROLES_ERR' as const,
 };
 
 function removeBasename(pathname, basename) {
