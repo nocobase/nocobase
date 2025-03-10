@@ -275,7 +275,7 @@ export const Calendar: any = withDynamicSchemaProps(
       }, [reactBigCalendar]);
 
       // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-      const { dataSource, fieldNames, showLunar, defaultView } = useProps(props);
+      const { dataSource, fieldNames, showLunar, defaultView, doNotQuickCreate } = useProps(props);
       const height = useCalenderHeight();
       const [date, setDate] = useState<Date>(new Date());
       const [view, setView] = useState<View>(props.defaultView || 'month');
@@ -421,7 +421,7 @@ export const Calendar: any = withDynamicSchemaProps(
               onView={setView}
               onSelectSlot={(slotInfo) => {
                 setCurrentSelectDate(slotInfo);
-                if (canCreate) {
+                if (canCreate && !doNotQuickCreate) {
                   insertAddNewer(addNew);
                   setVisibleAddNewer(true);
                 }
