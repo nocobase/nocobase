@@ -24,7 +24,7 @@ import {
   useAllAccessDesktopRoutes,
   useCompile,
   useCurrentPageUid,
-  useCurrentRouteData,
+  useCurrentRoute,
   useGlobalTheme,
   useNavigateNoUpdate,
   useNocoBaseRoutes,
@@ -109,7 +109,7 @@ export const RemoveRoute: FC = () => {
   const { t } = useTranslation();
   const { modal } = App.useApp();
   const { deleteRoute } = useNocoBaseRoutes();
-  const currentRoute = useCurrentRouteData();
+  const currentRoute = useCurrentRoute();
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const navigate = useNavigateNoUpdate();
   const currentPageUid = useCurrentPageUid();
@@ -157,7 +157,7 @@ const InsertMenuItems = (props) => {
   const { eventKey, title, insertPosition } = props;
   const { t } = useTranslation();
   const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
-  const currentRoute = useCurrentRouteData();
+  const currentRoute = useCurrentRoute();
   const isSubMenu = currentRoute?.type === NocoBaseDesktopRouteType.group;
   const { createRoute, moveRoute } = useNocoBaseRoutes();
   const insertPageSchema = useInsertPageSchema();
@@ -360,7 +360,7 @@ const EditMenuItem = () => {
       },
     };
   }, [t]);
-  const currentRoute = useCurrentRouteData();
+  const currentRoute = useCurrentRoute();
   const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
   const initialValues = useMemo(() => {
     return {
@@ -406,7 +406,7 @@ const EditMenuItem = () => {
 
 const HiddenMenuItem = () => {
   const { t } = useTranslation();
-  const currentRoute = useCurrentRouteData();
+  const currentRoute = useCurrentRoute();
   const { updateRoute } = useNocoBaseRoutes();
   const { modal } = App.useApp();
 
@@ -489,7 +489,7 @@ const MoveToMenuItem = () => {
   }, [items, t]);
 
   const { moveRoute } = useNocoBaseRoutes();
-  const currentRoute = useCurrentRouteData();
+  const currentRoute = useCurrentRoute();
   const onMoveToSubmit: (values: any) => void = useCallback(async ({ target, position }) => {
     const [targetId] = target?.split?.('||') || [];
     if (!targetId) {
@@ -525,12 +525,63 @@ const MoveToMenuItem = () => {
   );
 };
 
+const EditTooltip = () => {
+  const { t } = useTranslation();
+  const currentRoute = useCurrentRoute();
+  const { updateRoute } = useNocoBaseRoutes();
+
+  const editTooltipSchema = useMemo(() => {
+    return {
+      type: 'object',
+      title: t('Edit tooltip'),
+      properties: {
+        tooltip: {
+          'x-decorator': 'FormItem',
+          'x-component': 'Input.TextArea',
+          'x-component-props': {},
+        },
+      },
+    };
+  }, [t]);
+  const initialTooltipValues = useMemo(() => {
+    return {
+      tooltip: currentRoute.tooltip,
+    };
+  }, [currentRoute.tooltip]);
+
+  const onEditTooltipSubmit: (values: any) => void = useCallback(
+    ({ tooltip }) => {
+      // 更新菜单对应的路由
+      if (currentRoute.id !== undefined) {
+        updateRoute(currentRoute.id, {
+          tooltip,
+        });
+      }
+    },
+    [currentRoute.id, updateRoute],
+  );
+
+  return (
+    <SchemaSettingsModalItem
+      title={t('Edit tooltip')}
+      eventKey="edit-tooltip"
+      schema={editTooltipSchema as ISchema}
+      initialValues={initialTooltipValues}
+      onSubmit={onEditTooltipSubmit}
+    />
+  );
+};
+
 export const menuItemSettings = new SchemaSettings({
   name: 'menuSettings:menuItem',
   items: [
     {
       name: 'edit',
       Component: EditMenuItem,
+    },
+    {
+      name: 'editTooltip',
+      Component: EditTooltip,
     },
     {
       name: 'hidden',

@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, useACLRoleContext } from '@nocobase/client';
-import ignore from 'ignore';
+import { Plugin } from '@nocobase/client';
 import { DesktopRoutesManager } from './DesktopRoutesManager';
 import { lang as t } from './locale';
 import { MobileRoutesManager } from './MobileRoutesManager';
@@ -20,12 +19,12 @@ class PluginClient extends Plugin {
     this.app.pluginSettingsManager.add('routes', {
       title: t('Routes'),
       icon: 'ApartmentOutlined',
-      aclSnippet: 'ui.*',
+      aclSnippet: 'pm.routes',
     });
     this.app.pluginSettingsManager.add(`routes.desktop`, {
       title: t('Desktop routes'),
       Component: DesktopRoutesManager,
-      aclSnippet: 'ui.*',
+      aclSnippet: 'pm.routes.desktop',
       sort: 1,
     });
 

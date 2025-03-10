@@ -36,7 +36,7 @@ import { AppNotFound } from '../../../nocobase-buildin-plugin';
 import {
   NocoBaseDesktopRouteType,
   NocoBaseRouteContext,
-  useCurrentRouteData,
+  useCurrentRoute,
 } from '../../../route-switch/antd/admin-layout';
 import { KeepAliveProvider, useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
@@ -66,7 +66,7 @@ const InternalPage = React.memo((props: PageProps) => {
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
   const searchParams = useCurrentSearchParams();
   const loading = false;
-  const currentRoute = useCurrentRouteData();
+  const currentRoute = useCurrentRoute();
   const enablePageTabs = currentRoute.enableTabs;
   const defaultActiveKey = currentRoute?.children?.[0]?.schemaUid;
 
@@ -201,7 +201,7 @@ interface PageContentProps {
 
 const InternalPageContent = (props: PageContentProps) => {
   const { loading, disablePageHeader, enablePageTabs, activeKey } = props;
-  const currentRoute = useCurrentRouteData();
+  const currentRoute = useCurrentRoute();
   const navigate = useNavigateNoUpdate();
   const location = useLocationNoUpdate();
 
@@ -215,7 +215,15 @@ const InternalPageContent = (props: PageContentProps) => {
   // 兼容旧版本的 tab 路径
   const oldTab = currentRoute?.children?.find((tabRoute) => tabRoute.tabSchemaName === activeKey);
   if (oldTab) {
-    navigate(location.pathname.replace(activeKey, oldTab.schemaUid));
+    const searchParams = new URLSearchParams(location.search);
+    // Check if activeKey exists in search params and remove it
+    if (searchParams.has('tab') && searchParams.get('tab') === activeKey) {
+      searchParams.delete('tab');
+    }
+    // Create a clean search string or empty string if only '?' remains
+    const searchString = searchParams.toString() ? `?${searchParams.toString()}` : '';
+
+    navigate(location.pathname.replace(activeKey, oldTab.schemaUid) + searchString);
     return null;
   }
 
@@ -267,7 +275,7 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
   const { getAriaLabel } = useGetAriaLabelOfSchemaInitializer();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
-  const currentRoute = useCurrentRouteData();
+  const currentRoute = useCurrentRoute();
   const { createRoute } = useNocoBaseRoutes();
   const compile = useCompile();
 
@@ -406,7 +414,7 @@ const NocoBasePageHeader = React.memo(({ activeKey, className }: { activeKey: st
   const [pageTitle, setPageTitle] = useState(() => t(fieldSchema.title));
 
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
-  const currentRoute = useCurrentRouteData();
+  const currentRoute = useCurrentRoute();
   const enablePageTabs = currentRoute.enableTabs;
   const hidePageTitle = fieldSchema['x-component-props']?.hidePageTitle;
 

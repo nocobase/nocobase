@@ -11,10 +11,10 @@ import { EllipsisOutlined } from '@ant-design/icons';
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
-import { ConfigProvider, Popover, Tooltip } from 'antd';
+import { Popover, Tooltip } from 'antd';
 import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   AppNotFound,
@@ -29,7 +29,6 @@ import {
   RemoteSchemaTemplateManagerProvider,
   SortableItem,
   useDesignable,
-  useGlobalTheme,
   useMenuDragEnd,
   useParseURLAndParams,
   useRequest,
@@ -45,7 +44,9 @@ import {
   useLocationNoUpdate,
 } from '../../../application/CustomRouterContextProvider';
 import { Plugin } from '../../../application/Plugin';
+import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 import { menuItemInitializer } from '../../../modules/menu/menuItemInitializer';
+import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
 import { KeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
@@ -62,7 +63,7 @@ export const CurrentRouteProvider: FC<{ uid: string }> = ({ children, uid }) => 
   return <NocoBaseRouteContext.Provider value={routeNode}>{children}</NocoBaseRouteContext.Provider>;
 };
 
-export const useCurrentRouteData = () => {
+export const useCurrentRoute = () => {
   return useContext(NocoBaseRouteContext) || {};
 };
 
@@ -434,16 +435,26 @@ const actionsRender: any = (props) => {
   return <PinnedPluginList />;
 };
 
+const MenuItemTitle: React.FC = (props) => {
+  return <>{props.children}</>;
+};
+
+const MenuItemTitleWithTooltip = withTooltipComponent(MenuItemTitle);
+
 const menuItemRender = (item, dom, options) => {
   return (
     <MenuItem item={item} options={options}>
-      {dom}
+      <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{dom}</MenuItemTitleWithTooltip>
     </MenuItem>
   );
 };
 
 const subMenuItemRender = (item, dom) => {
-  return <GroupItem item={item}>{dom}</GroupItem>;
+  return (
+    <GroupItem item={item}>
+      <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{dom}</MenuItemTitleWithTooltip>
+    </GroupItem>
+  );
 };
 
 const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
@@ -493,12 +504,13 @@ export const InternalAdminLayout = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const doNotChangeCollapsedRef = useRef(false);
+  const { t } = useMenuTranslation();
   const route = useMemo(() => {
     return {
       path: '/',
-      children: convertRoutesToLayout(allAccessRoutes, { designable, isMobile }),
+      children: convertRoutesToLayout(allAccessRoutes, { designable, isMobile, t }),
     };
-  }, [allAccessRoutes, designable, isMobile]);
+  }, [allAccessRoutes, designable, isMobile, t]);
   const layoutToken = useMemo(() => {
     return {
       header: {
@@ -632,12 +644,15 @@ const findRouteByMenuSchemaUid = (schemaUid: string, routes: NocoBaseDesktopRout
 const LegacyRouteCompat: FC = (props) => {
   const currentPageUid = useCurrentPageUid();
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
-  const route = findRouteByMenuSchemaUid(currentPageUid, allAccessRoutes);
-  const location = useLocationNoUpdate();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  if (route) {
-    return <Navigate to={location.pathname.replace(currentPageUid, route.schemaUid)} />;
-  }
+  useEffect(() => {
+    const route = findRouteByMenuSchemaUid(currentPageUid, allAccessRoutes);
+    if (route) {
+      navigate(location.pathname.replace(currentPageUid, route.schemaUid) + location.search);
+    }
+  }, [allAccessRoutes, currentPageUid, location.pathname, location.search, navigate]);
 
   return <>{props.children}</>;
 };
@@ -741,7 +756,10 @@ const MenuDesignerButton: FC<{ testId: string }> = (props) => {
   });
 };
 
-function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { designable, parentRoute, isMobile, depth = 0 }: any) {
+function convertRoutesToLayout(
+  routes: NocoBaseDesktopRoute[],
+  { designable, parentRoute, isMobile, t, depth = 0 }: any,
+) {
   if (!routes) return;
 
   const getInitializerButton = (testId: string) => {
@@ -750,6 +768,8 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { designable, par
       name: <MenuDesignerButton testId={testId} />,
       path: '/',
       disabled: true,
+      _route: {},
+      _parentRoute: {},
       icon: <Icon type="setting" />,
     };
   };
@@ -757,7 +777,7 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { designable, par
   const result: any[] = routes.map((item) => {
     if (item.type === NocoBaseDesktopRouteType.link) {
       return {
-        name: item.title,
+        name: t(item.title),
         icon: item.icon ? <Icon type={item.icon} /> : null,
         path: '/',
         hideInMenu: item.hideInMenu,
@@ -768,7 +788,7 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { designable, par
 
     if (item.type === NocoBaseDesktopRouteType.page) {
       return {
-        name: item.title,
+        name: t(item.title),
         icon: item.icon ? <Icon type={item.icon} /> : null,
         path: `/admin/${item.schemaUid}`,
         redirect: `/admin/${item.schemaUid}`,
@@ -779,7 +799,8 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { designable, par
     }
 
     if (item.type === NocoBaseDesktopRouteType.group) {
-      const children = convertRoutesToLayout(item.children, { designable, parentRoute: item, depth: depth + 1 }) || [];
+      const children =
+        convertRoutesToLayout(item.children, { designable, parentRoute: item, depth: depth + 1, t }) || [];
 
       // add a designer button
       if (designable && depth === 0) {
@@ -787,7 +808,7 @@ function convertRoutesToLayout(routes: NocoBaseDesktopRoute[], { designable, par
       }
 
       return {
-        name: item.title,
+        name: t(item.title),
         icon: item.icon ? <Icon type={item.icon} /> : null,
         path: `/admin/${item.id}`,
         redirect:

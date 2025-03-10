@@ -85,4 +85,13 @@ describe('middleware', () => {
       expect(res.body.errors.some((error) => error.code === AuthErrorCode.EMPTY_TOKEN)).toBe(true);
     });
   });
+
+  describe('not exist user', async () => {
+    it('should throw 401 when user not exist', async () => {
+      const notExistUserAgent = await agent.login(1001);
+      const res = await notExistUserAgent.resource('auth').check();
+      expect(res.status).toBe(401);
+      expect(res.body.errors.some((error) => error.code === AuthErrorCode.NOT_EXIST_USER)).toBe(true);
+    });
+  });
 });

@@ -149,22 +149,6 @@ export const useImportStartAction = () => {
       formData.append('columns', JSON.stringify(columns));
       formData.append('explain', explain);
 
-      const { triggerWorkflow, identifyDuplicates, uniqueField, duplicateStrategy } = form.values;
-
-      if (triggerWorkflow !== undefined) {
-        formData.append('triggerWorkflow', JSON.stringify(triggerWorkflow));
-      }
-
-      if (identifyDuplicates) {
-        formData.append(
-          'duplicateOption',
-          JSON.stringify({
-            uniqueField,
-            mode: duplicateStrategy,
-          }),
-        );
-      }
-
       const importMode = importSchema?.['x-action-settings']?.importMode || 'auto';
 
       setVisible(false);

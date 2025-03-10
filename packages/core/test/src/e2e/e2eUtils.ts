@@ -1396,11 +1396,11 @@ export async function expectSettingsMenu({
   await page.waitForTimeout(100);
   await showMenu();
   for (const option of supportedOptions) {
-    await expect(page.getByRole('menuitem', { name: option })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: option, exact: option === 'Edit' })).toBeVisible();
   }
   if (unsupportedOptions) {
     for (const option of unsupportedOptions) {
-      await expect(page.getByRole('menuitem', { name: option })).not.toBeVisible();
+      await expect(page.getByRole('menuitem', { name: option, exact: option === 'Edit' })).not.toBeVisible();
     }
   }
 }
