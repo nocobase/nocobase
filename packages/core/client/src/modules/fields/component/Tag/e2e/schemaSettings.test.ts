@@ -20,7 +20,7 @@ test.describe('SchemaSettings of Tag', () => {
         await page.getByRole('button', { name: 'Roles' }).hover();
         await page
           .getByRole('button', { name: 'designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-users' })
-          .hover();
+          .click();
       },
       supportedOptions: [
         'Custom column title',
