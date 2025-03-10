@@ -8,13 +8,13 @@
  */
 
 import { Plugin, useCollection } from '@nocobase/client';
-import { FileManagerProvider } from './FileManagerProvider';
+import { FileManagerProvider, useFileManagerContext } from './FileManagerProvider';
 import { FileStoragePane } from './FileStorage';
 import { NAMESPACE } from './locale';
 import { storageTypes } from './schemas/storageTypes';
 import { AttachmentFieldInterface } from './interfaces/attachment';
 import { FileCollectionTemplate } from './templates';
-import { useAttachmentFieldProps, useFileCollectionStorageRules } from './hooks';
+import { useAttachmentFieldProps, useFileCollectionStorageRules, useStorageRules } from './hooks';
 import { FileSizeField } from './FileSizeField';
 import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
 
@@ -75,3 +75,5 @@ export class PluginFileManagerClient extends Plugin {
 }
 
 export default PluginFileManagerClient;
+
+export { useFileManagerContext, useStorageRules };

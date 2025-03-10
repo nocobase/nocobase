@@ -260,7 +260,7 @@ export class PluginFileManagerServer extends Plugin {
     initActions(this);
 
     this.app.acl.allow('attachments', ['upload', 'create'], 'loggedIn');
-    this.app.acl.allow('storages', 'getBasicInfo', 'loggedIn');
+    this.app.acl.allow('storages', 'listBasicInfo', 'loggedIn');
 
     this.app.acl.appendStrategyResource('attachments');
 
