@@ -20,6 +20,7 @@ import {
   handleDateChangeOnForm,
   useACLRoleContext,
   useActionContext,
+  useApp,
   useCollection,
   useCollectionParentRecordData,
   useDesignable,
@@ -27,13 +28,12 @@ import {
   useLazy,
   usePopupUtils,
   useProps,
-  useToken,
   withDynamicSchemaProps,
   withSkeletonComponent,
 } from '@nocobase/client';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
-import { cloneDeep, get } from 'lodash';
+import { cloneDeep, get, omit } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View } from 'react-big-calendar';
 import { i18nt, useTranslation } from '../../locale';
@@ -116,6 +116,8 @@ const useEvents = (
   );
   const { t } = useTranslation();
   const { fields } = useCollection();
+  const app = useApp();
+  const plugin = app.pm.get('calendar') as any;
   const labelUiSchema = fields.find((v) => v.name === fieldNames?.title)?.uiSchema;
   const enumUiSchema = fields.find((v) => v.name === fieldNames?.colorFieldName);
   return useMemo(() => {
@@ -164,7 +166,16 @@ const useEvents = (
         });
 
         if (res) return out;
-        const title = getLabelFormatValue(labelUiSchema, get(item, fieldNames.title), true);
+        const targetTitleCollectionField = fields.find((v) => v.name === fieldNames.title);
+        const targetTitle = plugin.getTitleFieldInterface(targetTitleCollectionField.interface);
+        const title = getLabelFormatValue(
+          labelUiSchema,
+          get(item, fieldNames.title),
+          true,
+          targetTitleCollectionField,
+          targetTitle?.TitleRenderer,
+        );
+
         const event: Event = {
           id: get(item, fieldNames.id || 'id'),
           colorFieldValue: item[fieldNames.colorFieldName],
@@ -275,7 +286,7 @@ export const Calendar: any = withDynamicSchemaProps(
       }, [reactBigCalendar]);
 
       // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-      const { dataSource, fieldNames, showLunar, defaultView } = useProps(props);
+      const { dataSource, fieldNames, showLunar, defaultView, getFontColor, getBackgroundColor } = useProps(props);
       const height = useCalenderHeight();
       const [date, setDate] = useState<Date>(new Date());
       const [view, setView] = useState<View>(props.defaultView || 'month');
@@ -285,7 +296,6 @@ export const Calendar: any = withDynamicSchemaProps(
       const parentRecordData = useCollectionParentRecordData();
       const fieldSchema = useFieldSchema();
       const field = useField();
-      const { token } = useToken();
       //nint deal with slot select to show create popup
       const { parseAction } = useACLRoleContext();
       const collection = useCollection();
@@ -296,6 +306,8 @@ export const Calendar: any = withDynamicSchemaProps(
       const ctx = useActionContext();
       const [visibleAddNewer, setVisibleAddNewer] = useState(false);
       const [currentSelectDate, setCurrentSelectDate] = useState(undefined);
+      const colorCollectionField = collection.getField(fieldNames.colorFieldName);
+
       useEffect(() => {
         setView(props.defaultView);
       }, [props.defaultView]);
@@ -339,10 +351,17 @@ export const Calendar: any = withDynamicSchemaProps(
 
       const eventPropGetter = (event: Event) => {
         if (event.colorFieldValue) {
-          const fontColor = token[`${getColorString(event.colorFieldValue, enumList)}7`];
-          const backgroundColor = token[`${getColorString(event.colorFieldValue, enumList)}1`];
+          const fontColor = getFontColor?.(event.colorFieldValue);
+          const backgroundColor = getBackgroundColor?.(event.colorFieldValue);
+          const style = {};
+          if (fontColor) {
+            style['color'] = fontColor;
+          }
+          if (backgroundColor) {
+            style['backgroundColor'] = backgroundColor;
+          }
           return {
-            style: { color: fontColor, backgroundColor, border: 'none' },
+            style,
           };
         }
       };
@@ -435,7 +454,7 @@ export const Calendar: any = withDynamicSchemaProps(
                   return;
                 }
                 record.__event = {
-                  ...event,
+                  ...omit(event, 'title'),
                   start: formatDate(dayjs(event.start)),
                   end: formatDate(dayjs(event.end)),
                 };

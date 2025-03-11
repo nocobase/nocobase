@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-mobile",
-  "version": "1.5.26",
+  "version": "1.6.0",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/mobile",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/mobile",
@@ -12,6 +12,7 @@
   "peerDependencies": {
     "@nocobase/client": "1.x",
     "@nocobase/plugin-acl": "1.x",
+    "@nocobase/plugin-localization": "1.x",
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x"
   },
@@ -22,8 +23,8 @@
     "@formily/core": "2.x",
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
-    "@types/react": "17.x",
-    "@types/react-dom": "17.x",
+    "@types/react": "18.x",
+    "@types/react-dom": "18.x",
     "ahooks": "3.x",
     "antd": "5.x",
     "antd-mobile": "^5.38",

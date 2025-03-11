@@ -148,13 +148,14 @@ export const AsyncTasks = () => {
         };
 
         const actionText = actionTypeMap[title.actionType] || title.actionType;
+
         const taskTypeMap = {
           'export-attachments': t('Export {collection} attachments'),
           export: t('Export {collection} data'),
           import: t('Import {collection} data'),
         };
 
-        const taskTemplate = taskTypeMap[title.actionType] || `${actionText} ${title.collection} ${t('Data')}`;
+        const taskTemplate = taskTypeMap[title.actionType] || `${actionText}`;
         return taskTemplate.replace('{collection}', title.collection);
       },
     },
@@ -275,7 +276,7 @@ export const AsyncTasks = () => {
         const actions = [];
         const isTaskCancelling = cancellingTasks.has(record.taskId);
 
-        if (record.status.type === 'running' || record.status.type === 'pending') {
+        if ((record.status.type === 'running' || record.status.type === 'pending') && record.cancelable) {
           actions.push(
             <Popconfirm
               key="cancel"

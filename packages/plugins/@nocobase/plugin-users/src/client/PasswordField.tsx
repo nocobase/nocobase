@@ -28,6 +28,13 @@ export const PasswordField: React.FC = () => {
     field.reset();
   }, [field, ctx.visible]);
 
+  useEffect(() => {
+    if (!field.value) {
+      return;
+    }
+    field.validate();
+  }, [field.value]);
+
   return (
     <Row gutter={10}>
       <Col span={18}>

@@ -8,7 +8,7 @@
  */
 
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
-import { defaultProps, operators } from './properties';
+import { defaultProps, operators, timeProps } from './properties';
 
 export class TimeFieldInterface extends CollectionFieldInterface {
   name = 'time';
@@ -28,23 +28,7 @@ export class TimeFieldInterface extends CollectionFieldInterface {
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
-    'uiSchema.x-component-props.format': {
-      type: 'string',
-      title: '{{t("Time format")}}',
-      'x-component': 'Radio.Group',
-      'x-decorator': 'FormItem',
-      default: 'HH:mm:ss',
-      enum: [
-        {
-          label: '{{t("12 hour")}}',
-          value: 'hh:mm:ss a',
-        },
-        {
-          label: '{{t("24 hour")}}',
-          value: 'HH:mm:ss',
-        },
-      ],
-    },
+    ...timeProps,
   };
   filterable = {
     operators: operators.time,

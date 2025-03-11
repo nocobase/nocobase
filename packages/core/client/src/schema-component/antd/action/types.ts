@@ -96,4 +96,5 @@ export type ActionDrawerProps<T = DrawerProps> = T & {
 
 export type ComposedActionDrawer<T = DrawerProps> = React.FC<ActionDrawerProps<T>> & {
   Footer?: React.FC;
+  FootBar?: React.FC;
 };

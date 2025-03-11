@@ -93,6 +93,7 @@ export const updateUnreadMsgsCount = async () => {
     url: 'myInAppMessages:count',
     method: 'get',
     params: { filter: { status: 'unread' } },
+    skipNotify: true,
   });
   unreadMsgsCountObs.value = res?.data?.data.count;
 };

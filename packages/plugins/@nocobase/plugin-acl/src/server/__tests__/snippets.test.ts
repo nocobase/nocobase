@@ -36,7 +36,7 @@ describe('snippet', () => {
     });
 
     const userPlugin: any = app.getPlugin('users');
-    const userAgent: any = app.agent().login(user);
+    const userAgent: any = await app.agent().login(user);
     const createCollectionResponse = await userAgent.resource('collections').create({});
 
     expect(createCollectionResponse.statusCode).toEqual(403);
@@ -57,7 +57,7 @@ describe('snippet', () => {
       },
     });
 
-    const userAgent: any = app.agent().login(testUser);
+    const userAgent: any = await app.agent().login(testUser);
 
     const listResp = await userAgent.resource('users').list();
 
@@ -79,7 +79,7 @@ describe('snippet', () => {
       },
     });
 
-    const userAgent: any = app.agent().login(testUser);
+    const userAgent: any = await app.agent().login(testUser);
 
     const getResp = await userAgent.resource('dataSources.roles', 'main').get({
       filterByTk: 'testRole',
@@ -110,7 +110,7 @@ describe('snippet', () => {
       },
     });
 
-    const userAgent: any = app.agent().login(testUser);
+    const userAgent: any = await app.agent().login(testUser);
 
     const getResp = await userAgent.resource('roles.dataSourcesCollections', 'testRole').list({
       filter: {

@@ -15,12 +15,14 @@ import React, { FC } from 'react';
 import { useMobileTitle } from '../../../../mobile-providers';
 import { useMobilePage } from '../../context';
 import { useStyles } from './styles';
+import { useRouteTranslation } from '../../../../locale';
 
 export const MobilePageNavigationBar: FC = () => {
   const { title } = useMobileTitle();
   const { displayNavigationBar = true, displayPageTitle = true } = useMobilePage();
   const fieldSchema = useFieldSchema();
   const { componentCls, hashId } = useStyles();
+  const { t } = useRouteTranslation();
 
   if (!displayNavigationBar) return null;
 
@@ -40,7 +42,7 @@ export const MobilePageNavigationBar: FC = () => {
           </SchemaToolbarProvider>
         }
       >
-        {displayPageTitle ? title : null}
+        {displayPageTitle ? t(title) : null}
       </NavBar>
 
       <SchemaToolbarProvider position="bottom">

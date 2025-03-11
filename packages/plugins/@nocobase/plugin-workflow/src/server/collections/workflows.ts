@@ -12,6 +12,7 @@ import { CollectionOptions } from '@nocobase/database';
 export default function () {
   return {
     dumpRules: 'required',
+    migrationRules: ['overwrite', 'schema-only'],
     name: 'workflows',
     shared: true,
     repository: 'WorkflowRepository',
@@ -23,7 +24,13 @@ export default function () {
       {
         type: 'string',
         name: 'title',
-        required: true,
+        interface: 'input',
+        uiSchema: {
+          title: '{{t("Name")}}',
+          type: 'string',
+          'x-component': 'Input',
+          required: true,
+        },
       },
       {
         type: 'boolean',

@@ -309,6 +309,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       autoGenId: false,
       timestamps: false,
       dumpRules: 'required',
+      migrationRules: ['schema-only', 'overwrite'],
       origin: '@nocobase/database',
       fields: [{ type: 'string', name: 'name', primaryKey: true }],
     });

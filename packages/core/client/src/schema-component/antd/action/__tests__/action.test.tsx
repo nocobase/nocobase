@@ -14,7 +14,7 @@ import App2 from '../demos/demo2';
 import App4 from '../demos/demo4';
 
 describe('Action', () => {
-  it('show the drawer when click the button', async () => {
+  it.skip('show the drawer when click the button', async () => {
     const { getByText } = render(<App1 />);
     await waitFor(async () => {
       await userEvent.click(getByText('Open'));

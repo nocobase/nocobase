@@ -22,16 +22,7 @@ function getDocumentRoot(storage): string {
 }
 
 export default class extends StorageType {
-  make(storage) {
-    return multer.diskStorage({
-      destination: function (req, file, cb) {
-        const destPath = path.join(getDocumentRoot(storage), storage.path || '');
-        mkdirp(destPath, (err: Error | null) => cb(err, destPath));
-      },
-      filename: getFilename,
-    });
-  }
-  defaults() {
+  static defaults() {
     return {
       title: 'Local storage',
       type: STORAGE_TYPE_LOCAL,
@@ -46,8 +37,18 @@ export default class extends StorageType {
       },
     };
   }
-  async delete(storage, records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
-    const documentRoot = getDocumentRoot(storage);
+
+  make() {
+    return multer.diskStorage({
+      destination: (req, file, cb) => {
+        const destPath = path.join(getDocumentRoot(this.storage), this.storage.path || '');
+        mkdirp(destPath, (err: Error | null) => cb(err, destPath));
+      },
+      filename: getFilename,
+    });
+  }
+  async delete(records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
+    const documentRoot = getDocumentRoot(this.storage);
     let count = 0;
     const undeleted = [];
     await records.reduce(
@@ -70,5 +71,8 @@ export default class extends StorageType {
     );
 
     return [count, undeleted];
+  }
+  getFileURL(file: AttachmentModel) {
+    return process.env.APP_PUBLIC_PATH ? `${process.env.APP_PUBLIC_PATH.replace(/\/$/g, '')}${file.url}` : file.url;
   }
 }

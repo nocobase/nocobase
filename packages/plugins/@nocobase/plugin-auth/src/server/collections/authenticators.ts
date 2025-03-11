@@ -16,6 +16,7 @@ export default defineCollection({
   dumpRules: {
     group: 'third-party',
   },
+  migrationRules: ['overwrite', 'schema-only'],
   shared: true,
   name: 'authenticators',
   sortable: true,

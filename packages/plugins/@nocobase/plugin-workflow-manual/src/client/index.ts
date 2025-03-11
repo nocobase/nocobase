@@ -14,8 +14,7 @@ import Manual from './instruction';
 
 import { NAMESPACE } from '../locale';
 import { WorkflowManualProvider } from './WorkflowManualProvider';
-import { WorkflowTodo } from './WorkflowTodo';
-import { WorkflowTodoBlockInitializer } from './WorkflowTodoBlockInitializer';
+import { manualTodo, WorkflowTodo } from './WorkflowTodo';
 import {
   addActionButton,
   addActionButton_deprecated,
@@ -23,6 +22,7 @@ import {
   addBlockButton_deprecated,
 } from './instruction/SchemaConfig';
 import { addCustomFormField, addCustomFormField_deprecated } from './instruction/forms/custom';
+import { MANUAL_TASK_TYPE } from '../common/constants';
 
 export default class extends Plugin {
   async afterAdd() {
@@ -33,9 +33,12 @@ export default class extends Plugin {
   async load() {
     this.addComponents();
 
-    // this.app.addProvider(Provider);
+    this.app.addProvider(WorkflowManualProvider);
+
     const workflow = this.app.pm.get('workflow') as WorkflowPlugin;
     workflow.registerInstruction('manual', Manual);
+
+    workflow.registerTaskType(MANUAL_TASK_TYPE, manualTodo);
 
     this.app.schemaInitializerManager.add(addBlockButton_deprecated);
     this.app.schemaInitializerManager.add(addBlockButton);
@@ -47,23 +50,20 @@ export default class extends Plugin {
     const blockInitializers = this.app.schemaInitializerManager.get('page:addBlock');
     blockInitializers.add('otherBlocks.workflowTodos', {
       title: `{{t("Workflow todos", { ns: "${NAMESPACE}" })}}`,
-      Component: 'WorkflowTodoBlockInitializer',
+      Component: 'WorkflowTodo.Initializer',
       icon: 'CheckSquareOutlined',
     });
 
     this.app.schemaInitializerManager.addItem('mobile:addBlock', 'otherBlocks.workflowTodos', {
       title: `{{t("Workflow todos", { ns: "${NAMESPACE}" })}}`,
-      Component: 'WorkflowTodoBlockInitializer',
+      Component: 'WorkflowTodo.Initializer',
       icon: 'CheckSquareOutlined',
     });
-
-    this.app.addProvider(WorkflowManualProvider);
   }
 
   addComponents() {
     this.app.addComponents({
       WorkflowTodo,
-      WorkflowTodoBlockInitializer,
     });
   }
 }

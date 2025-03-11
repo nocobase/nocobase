@@ -63,13 +63,16 @@ export const useStyles = genStyleHook('nb-mobile', (token) => {
           margin: '0px',
         },
       '.ant-pagination .ant-pagination-total-text': {
-        display: 'none',
+        // display: 'none',
       },
       '.ant-pagination .ant-pagination-options': {
         display: 'none',
       },
       '.ant-pagination .ant-pagination-item': {
         display: 'none',
+      },
+      '.ant-pagination .ant-pagination-item-active': {
+        display: 'inline-block',
       },
       '.nb-action-bar button[aria-label*="schema-initializer-ActionBar-table:configureActions"] > span:last-child': {
         display: 'none !important',

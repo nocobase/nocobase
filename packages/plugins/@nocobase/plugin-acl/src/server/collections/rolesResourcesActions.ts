@@ -12,6 +12,7 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   dumpRules: 'required',
   name: 'rolesResourcesActions',
+  migrationRules: ['overwrite', 'schema-only'],
   model: 'RoleResourceActionModel',
   fields: [
     {

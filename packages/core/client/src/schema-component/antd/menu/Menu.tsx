@@ -25,6 +25,7 @@ import { createDesignable, DndContext, SchemaComponentContext, SortableItem, use
 import {
   Icon,
   NocoBaseRecursionField,
+  useAllAccessDesktopRoutes,
   useAPIClient,
   useParseURLAndParams,
   useSchemaInitializerRender,
@@ -38,6 +39,8 @@ import { findKeysByUid, findMenuItem } from './util';
 import { useUpdate } from 'ahooks';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useRefreshComponent, useRefreshFieldSchema } from '../../../formily/NocoBaseRecursionField';
+import { NocoBaseDesktopRoute } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
+import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 
 const subMenuDesignerCss = css`
   position: relative;
@@ -94,7 +97,7 @@ const subMenuDesignerCss = css`
 const designerCss = css`
   position: relative;
   display: flex;
-  justify-content: center;
+  // justify-content: center;
   align-items: center;
   margin-left: -20px;
   margin-right: -20px;
@@ -199,6 +202,98 @@ type ComposedMenu = React.FC<any> & {
   URL?: React.FC<any>;
   SubMenu?: React.FC<any>;
   Designer?: React.FC<any>;
+};
+
+const MenuItemTitle: React.FC<{
+  schema: any;
+  style?: React.CSSProperties;
+}> = ({ schema, style }) => {
+  const { t } = useMenuTranslation();
+  return <span style={style}>{t(schema.title)}</span>;
+};
+
+const MenuItemTitleWithTooltip = withTooltipComponent(MenuItemTitle);
+
+export const ParentRouteContext = createContext<NocoBaseDesktopRoute>(null);
+ParentRouteContext.displayName = 'ParentRouteContext';
+
+export const useParentRoute = () => {
+  return useContext(ParentRouteContext);
+};
+
+/**
+ * Note: The routes here are different from React Router routes - these refer specifically to menu routing/navigation items
+ * @param collectionName
+ * @returns
+ */
+export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
+  const api = useAPIClient();
+  const resource = useMemo(() => api.resource(collectionName), [api, collectionName]);
+  const { refresh: refreshRoutes } = useAllAccessDesktopRoutes();
+
+  const createRoute = useCallback(
+    async (values: NocoBaseDesktopRoute, refreshAfterCreate = true) => {
+      const res = await resource.create({
+        values,
+      });
+      refreshAfterCreate && refreshRoutes();
+      return res;
+    },
+    [resource, refreshRoutes],
+  );
+
+  const updateRoute = useCallback(
+    async (filterByTk: any, values: NocoBaseDesktopRoute, refreshAfterUpdate = true) => {
+      const res = await resource.update({
+        filterByTk,
+        values,
+      });
+      refreshAfterUpdate && refreshRoutes();
+      return res;
+    },
+    [resource, refreshRoutes],
+  );
+
+  const deleteRoute = useCallback(
+    async (filterByTk: any, refreshAfterDelete = true) => {
+      const res = await resource.destroy({
+        filterByTk,
+      });
+      refreshAfterDelete && refreshRoutes();
+      return res;
+    },
+    [refreshRoutes, resource],
+  );
+
+  const moveRoute = useCallback(
+    async ({
+      sourceId,
+      targetId,
+      targetScope,
+      sortField,
+      sticky,
+      method,
+      refreshAfterMove = true,
+    }: {
+      sourceId: string | number;
+      targetId?: string | number;
+      targetScope?: any;
+      sortField?: string;
+      sticky?: boolean;
+      /**
+       * Insertion type - specifies whether to insert before or after the target element
+       */
+      method?: 'insertAfter' | 'prepend';
+      refreshAfterMove?: boolean;
+    }) => {
+      const res = await resource.move({ sourceId, targetId, targetScope, sortField, sticky, method });
+      refreshAfterMove && refreshRoutes();
+      return res;
+    },
+    [refreshRoutes, resource],
+  );
+
+  return { createRoute, updateRoute, deleteRoute, moveRoute };
 };
 
 const HeaderMenu = React.memo<{
@@ -314,9 +409,12 @@ const HeaderMenu = React.memo<{
   },
 );
 
-HeaderMenu.displayName = 'HeaderMenu';
+type SideMenuProps = Omit<MenuProps, 'mode'> & {
+  mode: 'mix' | MenuProps['mode'];
+  [key: string]: any;
+};
 
-const SideMenu = React.memo<any>(
+const SideMenu = React.memo<SideMenuProps>(
   ({
     mode,
     sideMenuSchema,
@@ -426,6 +524,31 @@ const useSideMenuRef = () => {
 const MenuItemDesignerContext = createContext(null);
 MenuItemDesignerContext.displayName = 'MenuItemDesignerContext';
 
+export const useMenuDragEnd = () => {
+  const { moveRoute } = useNocoBaseRoutes();
+
+  const onDragEnd = useCallback(
+    (event) => {
+      const { active, over } = event;
+      const activeSchema = active?.data?.current?.schema;
+      const overSchema = over?.data?.current?.schema;
+
+      if (!activeSchema || !overSchema) {
+        return;
+      }
+
+      moveRoute({
+        sourceId: activeSchema.__route__.id,
+        targetId: overSchema.__route__.id,
+        sortField: 'sort',
+      });
+    },
+    [moveRoute],
+  );
+
+  return { onDragEnd };
+};
+
 export const Menu: ComposedMenu = React.memo((props) => {
   const {
     onSelect,
@@ -465,7 +588,7 @@ export const Menu: ComposedMenu = React.memo((props) => {
     return dOpenKeys;
   });
 
-  const sideMenuSchema = useMemo(() => {
+  const sideMenuSchema: any = useMemo(() => {
     let key;
 
     if (selectedUid) {
@@ -505,9 +628,10 @@ export const Menu: ComposedMenu = React.memo((props) => {
   }, [defaultSelectedKeys]);
 
   const ctx = useContext(SchemaComponentContext);
+  const { onDragEnd } = useMenuDragEnd();
 
   return (
-    <DndContext>
+    <DndContext onDragEnd={onDragEnd}>
       <MenuItemDesignerContext.Provider value={Designer}>
         <MenuModeContext.Provider value={mode}>
           <HeaderMenu
@@ -528,19 +652,21 @@ export const Menu: ComposedMenu = React.memo((props) => {
           >
             {children}
           </HeaderMenu>
-          <SideMenu
-            mode={mode}
-            sideMenuSchema={sideMenuSchema}
-            sideMenuRef={sideMenuRef}
-            openKeys={defaultOpenKeys}
-            setOpenKeys={setDefaultOpenKeys}
-            selectedKeys={selectedKeys}
-            onSelect={onSelect}
-            render={render}
-            t={t}
-            api={api}
-            designable={ctx.designable}
-          />
+          <ParentRouteContext.Provider value={sideMenuSchema?.__route__}>
+            <SideMenu
+              mode={mode}
+              sideMenuSchema={sideMenuSchema}
+              sideMenuRef={sideMenuRef}
+              openKeys={defaultOpenKeys}
+              setOpenKeys={setDefaultOpenKeys}
+              selectedKeys={selectedKeys}
+              onSelect={onSelect}
+              render={render}
+              t={t}
+              api={api}
+              designable={ctx.designable}
+            />
+          </ParentRouteContext.Provider>
         </MenuModeContext.Provider>
       </MenuItemDesignerContext.Provider>
     </DndContext>
@@ -553,14 +679,14 @@ const menuItemTitleStyle = {
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   display: 'inline-block',
-  width: '100%',
+  // width: '100%',
   verticalAlign: 'middle',
+  // marginInlineEnd: '4px',
 };
 
 Menu.Item = observer(
   (props) => {
     const { t } = useMenuTranslation();
-    const { designable } = useDesignable();
     const { pushMenuItem } = useCollectMenuItems();
     const { icon, children, hidden, ...others } = props;
     const schema = useFieldSchema();
@@ -569,7 +695,7 @@ Menu.Item = observer(
     const item = useMemo(() => {
       return {
         ...others,
-        hidden: designable ? false : hidden,
+        hidden: hidden,
         className: menuItemClass,
         key: schema.name,
         eventKey: schema.name,
@@ -584,7 +710,11 @@ Menu.Item = observer(
                 removeParentsIfNoChildren={false}
               >
                 <Icon type={icon} />
-                <span style={menuItemTitleStyle}>{t(schema.title)}</span>
+                <MenuItemTitleWithTooltip
+                  schema={schema}
+                  style={menuItemTitleStyle}
+                  tooltip={schema?.['x-component-props']?.tooltip}
+                />
                 <Designer />
               </SortableItem>
             </FieldContext.Provider>
@@ -606,6 +736,7 @@ Menu.Item = observer(
 
 const MenuURLButton = ({ href, params, icon }) => {
   const field = useField();
+  const schema = useFieldSchema();
   const { t } = useMenuTranslation();
   const Designer = useContext(MenuItemDesignerContext);
   const { parseURLAndParams } = useParseURLAndParams();
@@ -635,17 +766,11 @@ const MenuURLButton = ({ href, params, icon }) => {
       aria-label={t(field.title)}
     >
       <Icon type={icon} />
-      <span
-        style={{
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          display: 'inline-block',
-          width: '100%',
-          verticalAlign: 'middle',
-        }}
-      >
-        {t(field.title)}
-      </span>
+      <MenuItemTitleWithTooltip
+        schema={schema}
+        style={menuItemTitleStyle}
+        tooltip={schema?.['x-component-props']?.tooltip}
+      />
       <Designer />
     </SortableItem>
   );
@@ -700,6 +825,7 @@ Menu.SubMenu = observer(
     const field = useField();
     const mode = useContext(MenuModeContext);
     const Designer = useContext(MenuItemDesignerContext);
+
     const submenu = useMemo(() => {
       return {
         ...others,
@@ -716,7 +842,11 @@ Menu.SubMenu = observer(
                 aria-label={t(field.title)}
               >
                 <Icon type={icon} />
-                {t(field.title)}
+                <MenuItemTitleWithTooltip
+                  schema={schema}
+                  style={{ marginInlineStart: 0 }}
+                  tooltip={schema?.['x-component-props']?.tooltip}
+                />
                 <Designer />
               </SortableItem>
             </FieldContext.Provider>

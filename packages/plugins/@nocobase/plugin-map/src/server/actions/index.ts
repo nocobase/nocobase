@@ -12,7 +12,7 @@ import { MapConfigurationCollectionName } from '../constants';
 
 export const getConfiguration = async (ctx: Context, next) => {
   const {
-    params: { type },
+    params: { type, isRaw },
   } = ctx.action;
 
   const repo = ctx.db.getRepository(MapConfigurationCollectionName);
@@ -21,8 +21,8 @@ export const getConfiguration = async (ctx: Context, next) => {
       type,
     },
   });
-
-  ctx.body = record;
+  const body = record ? record.toJSON() : {};
+  ctx.body = isRaw === true || isRaw === 'true' ? body : ctx.app.environment.renderJsonTemplate(body);
   return next();
 };
 
