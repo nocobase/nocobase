@@ -34,7 +34,7 @@ export const RoleModeSelect = () => {
     },
   );
 
-  const docLink = t(`Role mode doc`);
+  const docLink = t(`Role mode doc`, { defaultValue: 'https://docs.nocobase.com/handbook/acl/manual' });
 
   return (
     <div>
