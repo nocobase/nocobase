@@ -47,7 +47,7 @@ export const RoleModeSelect = () => {
           { value: 'only-use-union', label: t('Roles union only') },
         ]}
       />
-      <a href="https://docs.nocobase.com/welcome/getting-started/acl" target="_blank" rel="noopener noreferrer">
+      <a href={docLink} target="_blank" rel="noopener noreferrer">
         <QuestionCircleOutlined style={{ color: token.colorTextSecondary, cursor: 'pointer', marginLeft: 4 }} />
       </a>
     </div>
