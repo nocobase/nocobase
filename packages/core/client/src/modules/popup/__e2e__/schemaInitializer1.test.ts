@@ -216,7 +216,8 @@ test.describe('where to open a popup and what can be added to it', () => {
 
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'Table right' }).hover();
-    await page.getByRole('menuitem', { name: 'Associated records' }).last().hover();
+    await expect(page.getByRole('menuitem', { name: 'Associated records' })).toHaveCount(1);
+    await page.getByRole('menuitem', { name: 'Associated records' }).hover();
     await page.getByRole('menuitem', { name: 'One to many' }).click();
     await page.mouse.move(300, 0);
     await expect(page.getByLabel('block-item-CardItem-users-table')).toBeVisible();
@@ -282,7 +283,8 @@ test.describe('where to open a popup and what can be added to it', () => {
 
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'Table right' }).hover();
-    await page.getByRole('menuitem', { name: 'Associated records' }).last().hover();
+    await expect(page.getByRole('menuitem', { name: 'Associated records' })).toHaveCount(1);
+    await page.getByRole('menuitem', { name: 'Associated records' }).hover();
     await page.getByRole('menuitem', { name: 'One to many' }).click();
     await page.mouse.move(300, 0);
     await expect(page.getByLabel('block-item-CardItem-users-table')).toBeVisible();

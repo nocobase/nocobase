@@ -36,6 +36,7 @@ test.describe('bulk edit action setting', () => {
     await page.getByLabel('block-item-BulkEditField-general-form-general.startDatetime').click();
     await page.getByRole('option', { name: 'Remains the same' }).locator('div').last().click();
     await page.getByLabel('block-item-BulkEditField-general-form-general.percent').click();
+    await expect(page.getByRole('option', { name: 'Changed to' }).locator('div')).toHaveCount(1);
     await page.getByRole('option', { name: 'Changed to' }).locator('div').click();
     await page.getByRole('spinbutton').click();
     await page.getByRole('spinbutton').fill('0');
