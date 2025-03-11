@@ -10,7 +10,6 @@
 import { MockDatabase } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
 import AddSystemSettingsRoleModeMigration from '../migrations/202503101400-add-role-mode-fields';
-import { SystemRoleMode } from '@nocobase/plugin-acl/src/server/enum';
 
 describe(`202503101400-add-mode-fields`, () => {
   let app: MockServer;
@@ -39,6 +38,6 @@ describe(`202503101400-add-mode-fields`, () => {
     await migration.up();
     const allRecords = await db.getRepository('systemSettings').find();
     expect(allRecords.length).toBe(2);
-    expect(allRecords.map((x) => x.roleMode)).toStrictEqual([SystemRoleMode.default, SystemRoleMode.default]);
+    expect(allRecords.map((x) => x.roleMode)).toStrictEqual(['default', 'default']);
   });
 });
