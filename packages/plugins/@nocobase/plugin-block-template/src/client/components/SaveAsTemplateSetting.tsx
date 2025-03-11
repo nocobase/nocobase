@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema, SchemaSettingsModalItem, useResource } from '@nocobase/client';
+import { ISchema, SchemaSettingsModalItem, useResource, useSchemaSettings } from '@nocobase/client';
 import React from 'react';
 import { useT } from '../locale';
 import { useFieldSchema, useField, useForm } from '@formily/react';
@@ -19,6 +19,7 @@ import { blockKeepProps } from '../initializers/TemplateBlockInitializer';
 import _ from 'lodash';
 import { addToolbarClass, syncExtraTemplateInfo } from '../utils/template';
 import { useBlockTemplateMenus } from './BlockTemplateMenusProvider';
+import { useLocation } from 'react-router-dom';
 
 const blockDecoratorMenuMaps = {
   TableBlockProvider: ['Table', 'table'],
@@ -45,6 +46,8 @@ export const SaveAsTemplateSetting = () => {
   const { message } = App.useApp();
   const plugin = usePlugin(PluginBlockTemplateClient);
   const { templates } = useBlockTemplateMenus();
+  const location = useLocation();
+  const { template: deprecatedTemplate } = useSchemaSettings();
 
   return (
     <SchemaSettingsModalItem
@@ -83,11 +86,11 @@ export const SaveAsTemplateSetting = () => {
       }
       onSubmit={async ({ title, key, description }) => {
         // step 0: get type of the current block
-        const type = window.location.pathname.startsWith('/m/') ? 'Mobile' : 'Desktop';
+        const type = location.pathname.startsWith('/page/') ? 'Mobile' : 'Desktop';
         const schemaUid = uid();
         const isMobile = type === 'Mobile';
         const templateSchema = getTemplateSchemaFromPage(fieldSchema.toJSON());
-        if (containsReferenceTemplate(templateSchema)) {
+        if (deprecatedTemplate || containsReferenceTemplate(templateSchema)) {
           message.error(t('This block is using some reference templates, please convert to duplicate template first.'));
           return;
         }
@@ -137,6 +140,7 @@ export const SaveAsTemplateSetting = () => {
         const newTemplate = {
           title,
           key,
+          type,
           description,
           uid: schemaUid,
           configured: true,
@@ -180,7 +184,7 @@ export const SaveAsTemplateSetting = () => {
             return;
           }
           s['x-block-template-key'] = key;
-          s['x-template-uid'] = templateSchema['x-uid'];
+          s['x-template-uid'] = t['x-uid'];
           if (t.properties) {
             for (const key in t.properties) {
               fillTemplateInfo(s.properties[key], t.properties[key]);
@@ -226,7 +230,7 @@ export const SaveAsTemplateSetting = () => {
           data: getAllSchemas(schema),
         });
         // step 4: create a link between template and block
-        await blockTemplatesResource.create({
+        await blockTemplatesResource.link({
           values: {
             templateKey: key,
             templateBlockUid: templateSchema['x-uid'],

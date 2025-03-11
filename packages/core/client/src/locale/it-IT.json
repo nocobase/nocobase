@@ -857,5 +857,6 @@
     "Notification": "Notifica",
     "Ellipsis overflow content": "Contenuto Ellipsis overflow",
     "Hide column": "Nascondi colonna",
-    "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "In modalità di configurazione, l'intera colonna diventa trasparente. In modalità non di configurazione, l'intera colonna verrà nascosta. Anche se l'intera colonna è nascosta, i suoi valori predefiniti configurati e le altre impostazioni avranno comunque effetto."
+    "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "In modalità di configurazione, l'intera colonna diventa trasparente. In modalità non di configurazione, l'intera colonna verrà nascosta. Anche se l'intera colonna è nascosta, i suoi valori predefiniti configurati e le altre impostazioni avranno comunque effetto.",
+    "The following old template features have been deprecated and will be removed in next version.": "Le seguenti funzionalità dei modelli vecchi sono state deprecate e saranno rimosse nella prossima versione."
 }

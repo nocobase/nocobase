@@ -34,5 +34,6 @@
   "Please select the records you want to delete": "Please select the records you want to delete",
   "Search and select template": "Search and select template",
   "This is part of a template, deletion is not allowed": "This is part of a template, deletion is not allowed",
-  "This block is using some reference templates, please convert to duplicate template first.": "This block is using some reference templates, please convert to duplicate template first."
+  "This block is using some reference templates, please convert to duplicate template first.": "This block is using some reference templates, please convert to duplicate template first.",
+  "Save as template successfully": "Save as template successfully"
 }
