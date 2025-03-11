@@ -22,6 +22,7 @@ import {
   useApp,
   useCompile,
   useDocumentTitle,
+  useIsAdminPage,
   usePlugin,
   useRequest,
   useToken,
@@ -321,7 +322,7 @@ function transform(detail) {
   }, {});
 }
 
-export const TasksProvider = (props: any) => {
+function TasksCountsProvider(props: any) {
   const app = useApp();
   const [counts, setCounts] = useState<Record<string, number>>({});
   const onTaskUpdate = useCallback(({ detail = [] }: CustomEvent) => {
@@ -368,21 +369,27 @@ export const TasksProvider = (props: any) => {
 
   const total = Object.values(counts).reduce((a, b) => a + b, 0) || 0;
 
-  return (
-    <TasksCountsContext.Provider value={{ total, counts }}>
-      <PinnedPluginListProvider
-        items={{
-          todo: { component: 'WorkflowTasksLink', pin: true, snippet: '*' },
+  return <TasksCountsContext.Provider value={{ total, counts }}>{props.children}</TasksCountsContext.Provider>;
+}
+
+export const TasksProvider = (props: any) => {
+  const isAdminPage = useIsAdminPage();
+
+  const content = (
+    <PinnedPluginListProvider
+      items={{
+        todo: { component: 'WorkflowTasksLink', pin: true, snippet: '*' },
+      }}
+    >
+      <SchemaComponentOptions
+        components={{
+          WorkflowTasksLink,
         }}
       >
-        <SchemaComponentOptions
-          components={{
-            WorkflowTasksLink,
-          }}
-        >
-          {props.children}
-        </SchemaComponentOptions>
-      </PinnedPluginListProvider>
-    </TasksCountsContext.Provider>
+        {props.children}
+      </SchemaComponentOptions>
+    </PinnedPluginListProvider>
   );
+
+  return isAdminPage ? <TasksCountsProvider>{content}</TasksCountsProvider> : content;
 };
