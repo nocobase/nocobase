@@ -45,9 +45,9 @@ export const RoleModeSelect = () => {
         value={roleMode}
         onChange={(value) => updateRoleMode(value)}
         options={[
-          { value: 'default', label: t('Default') },
-          { value: 'allow-use-union', label: t('Allow use union') },
-          { value: 'only-use-union', label: t('Only use union') },
+          { value: 'default', label: t('Independent Roles') },
+          { value: 'allow-use-union', label: t('Allow Roles Union') },
+          { value: 'only-use-union', label: t('Roles Union Only') },
         ]}
       />
       <Tooltip title={helpText} overlayInnerStyle={{ fontSize: '12px' }}>
