@@ -90,13 +90,13 @@ export const DatePicker: ComposedDatePicker = (props: any) => {
 
     // 根据最小日期和最大日期限定日期时间
     const disabledDate = (current) => {
-      if (!current || (!minDateTime && !maxDateTime)) {
-        return false;
-      }
-      // 确保 current 是一个 dayjs 对象
+      if (!dayjs.isDayjs(current)) return false;
+
       const currentDate = dayjs(current);
-      //在minDateTime或maxDateTime为null时 dayjs的比较函数会默认返回false 所以不做特殊判断
-      return currentDate.isBefore(minDateTime, 'minute') || currentDate.isAfter(maxDateTime, 'minute');
+      const min = minDateTime ? dayjs(minDateTime) : null;
+      const max = maxDateTime ? dayjs(maxDateTime).endOf('day') : null; // 设为 23:59:59
+
+      return (min && currentDate.isBefore(min, 'minute')) || (max && currentDate.isAfter(max, 'minute'));
     };
 
     // 禁用时分秒
@@ -153,6 +153,8 @@ export const DatePicker: ComposedDatePicker = (props: any) => {
       return disabledTime;
     });
   };
+
+  console.log(disabledDate);
 
   const newProps = {
     utc,
