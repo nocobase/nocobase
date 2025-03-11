@@ -136,7 +136,7 @@ describe('data source with acl', () => {
     expect(postRes.status).toBe(200);
   });
 
-  it.only('should update roles resources', async () => {
+  it('should update roles resources', async () => {
     const adminUser = await app.db.getRepository('users').create({
       values: {
         roles: ['root'],
