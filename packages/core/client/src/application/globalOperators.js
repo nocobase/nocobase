@@ -124,7 +124,7 @@ export function getOperators() {
       return !a.includes(b);
     },
     $anyOf: function (a, b) {
-      if (a.length === 0) {
+      if (a == null || a.length === 0) {
         return false;
       }
       if (Array.isArray(a) && Array.isArray(b) && a.some((element) => Array.isArray(element))) {
@@ -347,7 +347,7 @@ export function getOperators() {
 
   /*
       This helper will defer to the JsonLogic spec as a tie-breaker when different language interpreters define different behavior for the truthiness of primitives.  E.g., PHP considers empty arrays to be falsy, but Javascript considers them to be truthy. JsonLogic, as an ecosystem, needs one consistent answer.
-  
+
       Spec and rationale here: http://jsonlogic.com/truthy
       */
   jsonLogic.truthy = function (value) {
@@ -397,7 +397,7 @@ export function getOperators() {
           if( 0 ){ 1 }else{ 2 };
           if( 0 ){ 1 }else if( 2 ){ 3 }else{ 4 };
           if( 0 ){ 1 }else if( 2 ){ 3 }else if( 4 ){ 5 }else{ 6 };
-  
+
           The implementation is:
           For pairs of values (0,1 then 2,3 then 4,5 etc)
           If the first evaluates truthy, evaluate and return the second
