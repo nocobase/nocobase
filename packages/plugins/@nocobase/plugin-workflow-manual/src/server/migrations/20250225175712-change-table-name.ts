@@ -15,27 +15,52 @@ export default class extends Migration {
   async up() {
     const { db } = this.context;
     const queryInterface = db.sequelize.getQueryInterface();
+    const usersJobsCollection = db.collection({
+      name: 'users_jobs',
+      fields: [{ name: 'id', type: 'bigInt' }],
+    });
+    const workflowManualTasksCollection = db.collection({
+      name: 'workflowManualTasks',
+      fields: [{ name: 'id', type: 'bigInt' }],
+    });
+    const oldTableName = usersJobsCollection.getTableNameWithSchema();
+    const oldTableNameWithQuotes = usersJobsCollection.getRealTableName(true);
+    const newTableName = workflowManualTasksCollection.getTableNameWithSchema();
+    const newTableNameWithQuotes = workflowManualTasksCollection.getRealTableName(true);
     await db.sequelize.transaction(async (transaction) => {
-      const exists = await queryInterface.tableExists('users_jobs', { transaction });
+      const exists = await queryInterface.tableExists(oldTableName, { transaction });
       if (exists) {
-        const newTableName = db.options.underscored ? 'workflow_manual_tasks' : 'workflowManualTasks';
-
-        await queryInterface.renameTable('users_jobs', newTableName, { transaction });
+        if (this.db.isPostgresCompatibleDialect()) {
+          await db.sequelize.query(
+            `ALTER TABLE ${oldTableNameWithQuotes} RENAME TO "${db.options.tablePrefix}${
+              db.options.underscored ? 'workflow_manual_tasks' : 'workflowManualTasks'
+            }";`,
+            {
+              transaction,
+            },
+          );
+        } else {
+          await queryInterface.renameTable(oldTableName, newTableName, { transaction });
+        }
 
         const indexes: any = await queryInterface.showIndex(newTableName, { transaction });
 
+        const oldIndexPrefix = `${db.options.tablePrefix || ''}users_jobs`;
+        const newIndexPrefix = `${db.options.tablePrefix || ''}workflow_manual_tasks`;
         for (const item of indexes) {
-          if (item.name.startsWith('users_jobs')) {
+          if (item.name.startsWith(oldIndexPrefix)) {
             if (this.db.isPostgresCompatibleDialect()) {
               await db.sequelize.query(
-                `ALTER INDEX "${item.name}" RENAME TO "${item.name.replace('users_jobs', 'workflow_manual_tasks')}";`,
+                `ALTER INDEX ${db.options.schema ? `"${db.options.schema}".` : ''}"${
+                  item.name
+                }" RENAME TO "${item.name.replace(oldIndexPrefix, newIndexPrefix)}";`,
                 { transaction },
               );
             } else if (this.db.isMySQLCompatibleDialect()) {
               await db.sequelize.query(
-                `ALTER TABLE ${newTableName} RENAME INDEX ${item.name} TO ${item.name.replace(
-                  'users_jobs',
-                  'workflow_manual_tasks',
+                `ALTER TABLE ${newTableNameWithQuotes} RENAME INDEX ${item.name} TO ${item.name.replace(
+                  oldIndexPrefix,
+                  newIndexPrefix,
                 )};`,
                 { transaction },
               );
@@ -44,5 +69,7 @@ export default class extends Migration {
         }
       }
     });
+    db.removeCollection('users_jobs');
+    db.removeCollection('workflowManualTasks');
   }
 }
