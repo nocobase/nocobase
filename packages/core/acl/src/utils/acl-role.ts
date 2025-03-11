@@ -126,7 +126,7 @@ function mergeRoleSnippets(allRoleSnippets: string[][]): string[] {
   // 确保 !xxx.yyy 只有在 xxx.* 存在时才有效，同时解决 [xxx] 和 [!xxx] 冲突
   for (const x of [...excludesSet]) {
     const parentDomain = x.slice(1).split('.')[0] + '.*';
-    if (!includes.has(parentDomain) || includes.has(x.slice(1))) {
+    if ((includes.size > 0 && !includes.has(parentDomain)) || includes.has(x.slice(1))) {
       excludesSet.delete(x);
     }
   }
