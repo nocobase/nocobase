@@ -1,0 +1,9 @@
+{
+  "Form event": "Formularereignis",
+  "Event triggers when submitted a workflow bound form action.": "Ereignis wird ausgelöst, wenn eine an einen Workflow gebundene Formularaktion übermittelt wird.",
+  "Form data model": "Formulardatenmodell",
+  "Use a collection to match form data.": "Verwenden Sie eine Sammlung, um Formulardaten abzugleichen.",
+  "Associations to use": "Zu verwendende Verknüpfungen",
+  "User submitted form": "Vom Benutzer übermitteltes Formular",
+  "Role of user submitted form": "Rolle des vom Benutzer übermittelten Formulars"
+}

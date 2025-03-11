@@ -1,0 +1,22 @@
+{
+  "File manager": "Dateimanager",
+  "Attachment": "Anhang",
+  "MIME type": "MIME-Typ",
+  "Storage display name": "Anzeigename des Speichers",
+  "Storage name": "Speichername",
+  "Storage type": "Speichertyp",
+  "Default storage": "Standardspeicher",
+  "Storage base URL": "Basis-URL des Speichers",
+  "Destination": "Ziel",
+  "Use the built-in static file server": "Den integrierten statischen Dateiserver verwenden",
+  "Local storage": "Lokaler Speicher",
+  "Aliyun OSS": "Aliyun OSS",
+  "Tencent COS": "Tencent COS",
+  "Amazon S3": "Amazon S3",
+  "Region": "Region",
+  "Bucket": "Bucket",
+  "Path": "Pfad",
+  "Filename": "Dateiname",
+  "See more": "Mehr anzeigen",
+  "Will be used for API": "Wird für API verwendet"
+}
