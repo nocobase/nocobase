@@ -10,8 +10,8 @@
 import Database from '@nocobase/database';
 import { ExtendedAgent, MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
-import { SystemRoleMode } from '@nocobase/plugin-system-settings';
 import { UNION_ROLE_KEY } from '../constants';
+import { SystemRoleMode } from '../enum';
 
 describe('union role: full permissions', async () => {
   let agent: ExtendedAgent, rootUser, user, role1, role2;

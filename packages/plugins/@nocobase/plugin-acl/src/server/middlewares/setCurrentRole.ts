@@ -11,7 +11,7 @@ import { Context } from '@nocobase/actions';
 import { Cache } from '@nocobase/cache';
 import { Model, Repository } from '@nocobase/database';
 import { UNION_ROLE_KEY } from '../constants';
-import { SystemRoleMode } from '@nocobase/plugin-system-settings';
+import { SystemRoleMode } from '../enum';
 
 export async function setCurrentRole(ctx: Context, next) {
   const currentRole = ctx.get('X-Role');

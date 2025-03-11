@@ -34,10 +34,7 @@ export const RoleModeSelect = () => {
     },
   );
 
-  const helpText = t(`
-        允许切换合并角色：可切换至“全部权限”角色，并拥有多个角色的最大权限。
-        仅使用合并角色：当切换至此模式，默认使用合并角色，且不可切换其他角色。
-    `);
+  const docLink = t(`Role mode doc`);
 
   return (
     <div>
@@ -45,14 +42,14 @@ export const RoleModeSelect = () => {
         value={roleMode}
         onChange={(value) => updateRoleMode(value)}
         options={[
-          { value: 'default', label: t('Independent Roles') },
-          { value: 'allow-use-union', label: t('Allow Roles Union') },
-          { value: 'only-use-union', label: t('Roles Union Only') },
+          { value: 'default', label: t('Independent roles') },
+          { value: 'allow-use-union', label: t('Allow roles union') },
+          { value: 'only-use-union', label: t('Roles union only') },
         ]}
       />
-      <Tooltip title={helpText} overlayInnerStyle={{ fontSize: '12px' }}>
+      <a href="https://docs.nocobase.com/welcome/getting-started/acl" target="_blank" rel="noopener noreferrer">
         <QuestionCircleOutlined style={{ color: token.colorTextSecondary, cursor: 'pointer', marginLeft: 4 }} />
-      </Tooltip>
+      </a>
     </div>
   );
 };

@@ -10,7 +10,7 @@
 import { MockDatabase } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
 import AddSystemSettingsRoleModeMigration from '../migrations/202503101400-add-role-mode-fields';
-import { SystemRoleMode } from '../enum';
+import { SystemRoleMode } from '@nocobase/plugin-acl/src/server/enum';
 
 describe(`202503101400-add-mode-fields`, () => {
   let app: MockServer;

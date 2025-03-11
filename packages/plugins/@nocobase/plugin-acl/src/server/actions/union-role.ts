@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SystemRoleMode } from '@nocobase/plugin-system-settings';
+import { SystemRoleMode } from '../enum';
 
 export const getSystemRoleMode = async (ctx, next) => {
   const systemSettings = await ctx.db.getRepository('systemSettings').findOne();

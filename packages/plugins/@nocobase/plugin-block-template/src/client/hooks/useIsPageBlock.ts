@@ -19,10 +19,10 @@ export const useIsPageBlock = () => {
     if (!fieldSchema || fieldSchema['x-template-uid']) {
       return false;
     }
-    const isPage = location.pathname.includes('/admin/') || location.pathname.includes('/m/');
+    const isPage = location.pathname.startsWith('/admin/') || location.pathname.startsWith('/page/');
     const notInPopup = !location.pathname.includes('/popups/');
-    const notInSetting = !location.pathname.includes('/admin/settings/');
-    const notInBlockTemplate = !location.pathname.includes('/m/block-templates/');
+    const notInSetting = !location.pathname.startsWith('/admin/settings/');
+    const notInBlockTemplate = !location.pathname.startsWith('/block-templates/');
     return isPage && notInPopup && notInSetting && notInBlockTemplate;
   }, [location.pathname, fieldSchema]);
 
