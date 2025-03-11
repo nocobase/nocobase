@@ -11,7 +11,7 @@ import { EllipsisOutlined } from '@ant-design/icons';
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
-import { ConfigProvider, Popover, Tooltip } from 'antd';
+import { theme as antdTheme, ConfigProvider, Popover, Tooltip } from 'antd';
 import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -52,7 +52,6 @@ import { KeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
-import { theme as antdTheme } from 'antd';
 
 export { KeepAlive, NocoBaseDesktopRouteType };
 
@@ -75,7 +74,7 @@ const AllAccessDesktopRoutesContext = createContext<{
   refresh: () => void;
 }>({
   allAccessRoutes: emptyArray,
-  refresh: () => {},
+  refresh: () => { },
 });
 AllAccessDesktopRoutesContext.displayName = 'AllAccessDesktopRoutesContext';
 
@@ -502,7 +501,7 @@ const IsMobileLayoutContext = React.createContext<{
   setIsMobileLayout: React.Dispatch<React.SetStateAction<boolean>>;
 }>({
   isMobileLayout: false,
-  setIsMobileLayout: () => {},
+  setIsMobileLayout: () => { },
 });
 
 const MobileLayoutProvider: FC = (props) => {
@@ -558,7 +557,7 @@ export const InternalAdminLayout = () => {
       bgLayout: token.colorBgLayout,
     };
   }, [token]);
-  const { theme } = useGlobalTheme();
+  const { theme, isDarkTheme } = useGlobalTheme();
   const mobileTheme = useMemo(() => {
     return {
       ...theme,
@@ -570,9 +569,9 @@ export const InternalAdminLayout = () => {
         borderRadiusBlock: 8, // Block border radius
         fontSize: 14, // Font size
       },
-      algorithm: antdTheme.compactAlgorithm, // Set mobile mode to always use compact algorithm
+      algorithm: isDarkTheme ? [antdTheme.compactAlgorithm, antdTheme.darkAlgorithm] : antdTheme.compactAlgorithm, // Set mobile mode to always use compact algorithm
     };
-  }, [theme]);
+  }, [theme, isDarkTheme]);
 
   const onCollapse = useCallback((collapsed: boolean) => {
     if (doNotChangeCollapsedRef.current) {
