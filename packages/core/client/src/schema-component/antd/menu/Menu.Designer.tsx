@@ -453,7 +453,7 @@ export const MenuDesigner = () => {
       });
 
       const positionToMethod = {
-        beforeBegin: 'prepend',
+        beforeBegin: 'insertBefore',
         afterEnd: 'insertAfter',
       };
 

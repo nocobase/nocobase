@@ -502,7 +502,7 @@ const MoveToMenuItem = () => {
       }
 
       const positionToMethod = {
-        beforeBegin: 'prepend',
+        beforeBegin: 'insertBefore',
         afterEnd: 'insertAfter',
       };
 
