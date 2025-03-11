@@ -22,6 +22,7 @@ import {
 } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { linkageRules, setDefaultSortingRules } from '../SubTable/subTablePopoverComponentFieldSettings';
 import { SchemaSettingsLayoutItem } from '../../../../schema-settings/SchemaSettingsLayoutItem';
+import { allowSelectExistingRecord } from '../SubTable/subTablePopoverComponentFieldSettings';
 
 const allowMultiple: any = {
   name: 'allowMultiple',
@@ -108,6 +109,7 @@ export const subformComponentFieldSettings = new SchemaSettings({
   items: [
     fieldComponent,
     allowMultiple,
+    allowSelectExistingRecord,
     {
       name: 'allowDissociate',
       type: 'switch',

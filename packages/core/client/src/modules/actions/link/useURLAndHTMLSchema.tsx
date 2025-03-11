@@ -16,7 +16,7 @@ import { useRecord } from '../../../record-provider';
 import { Variable } from '../../../schema-component/antd/variable/Variable';
 import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks/useVariableOptions';
 
-const getVariableComponentWithScope = (Com) => {
+export const getVariableComponentWithScope = (Com) => {
   return (props) => {
     const fieldSchema = useFieldSchema();
     const { form } = useFormBlockContext();

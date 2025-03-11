@@ -42,7 +42,7 @@ describe('acl', () => {
       },
     });
 
-    adminAgent = app.agent().login(admin);
+    adminAgent = await app.agent().login(admin);
     uiSchemaRepository = db.getRepository('uiSchemas');
   });
 
@@ -126,7 +126,7 @@ describe('acl', () => {
 
     userPlugin = app.getPlugin('users') as UsersPlugin;
 
-    const testAgent = app.agent().login(u1);
+    const testAgent = await app.agent().login(u1);
 
     // @ts-ignore
     const response1 = await testAgent.resource('repairs').list({
@@ -247,7 +247,7 @@ describe('acl', () => {
     });
     const userPlugin = app.getPlugin('users') as UsersPlugin;
 
-    const adminAgent = app.agent().login(rootUser);
+    const adminAgent = await app.agent().login(rootUser);
 
     expect(await db.getCollection('roles').repository.count()).toBe(3);
 
@@ -802,7 +802,7 @@ describe('acl', () => {
       },
     });
 
-    const userAgent = app.agent().login(user);
+    const userAgent = await app.agent().login(user);
 
     const schema = {
       'x-uid': 'test',
@@ -864,7 +864,7 @@ describe('acl', () => {
       filterByTk: 1,
     });
 
-    const rootAgent = app.agent().login(rootUser);
+    const rootAgent = await app.agent().login(rootUser);
 
     const response = await rootAgent
       // @ts-ignore

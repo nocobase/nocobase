@@ -172,8 +172,7 @@ export const localizationSchema: ISchema = {
           properties: {
             moduleTitle: {
               type: 'string',
-              'x-component': 'CollectionField',
-              'x-read-pretty': true,
+              'x-component': 'ModuleTitle',
             },
           },
         },
@@ -207,9 +206,9 @@ export const localizationSchema: ISchema = {
                       title: '{{t("Edit")}}',
                       properties: {
                         moduleTitle: {
-                          'x-component': 'CollectionField',
+                          title: '{{t("Module")}}',
+                          'x-component': 'ModuleTitle',
                           'x-decorator': 'FormItem',
-                          'x-read-pretty': true,
                         },
                         text: {
                           'x-component': 'CollectionField',

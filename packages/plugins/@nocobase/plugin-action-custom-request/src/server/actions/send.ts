@@ -154,6 +154,7 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
     currentTime: new Date().toISOString(),
     $nToken: ctx.getBearerToken(),
     $nForm,
+    $env: ctx.app.environment.getVariables(),
   };
 
   const axiosRequestConfig = {
@@ -168,8 +169,6 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
     params: getParsedValue(arrayToObject(params), variables),
     data: getParsedValue(data, variables),
   };
-
-  console.log(axiosRequestConfig);
 
   const requestUrl = axios.getUri(axiosRequestConfig);
   this.logger.info(`custom-request:send:${filterByTk} request url ${requestUrl}`);

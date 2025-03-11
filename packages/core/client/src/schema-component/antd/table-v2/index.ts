@@ -16,10 +16,10 @@ import { TableColumnDesigner } from './Table.Column.Designer';
 import { TableIndex } from './Table.Index';
 import { TableSelector } from './TableSelector';
 
+export { useColumnSchema } from './Table.Column.Decorator';
 export * from './TableBlockDesigner';
 export * from './TableField';
 export * from './TableSelectorDesigner';
-export { useColumnSchema } from './Table.Column.Decorator';
 
 export const TableV2 = Table;
 

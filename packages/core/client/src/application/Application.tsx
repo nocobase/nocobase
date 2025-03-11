@@ -17,7 +17,6 @@ import React, { ComponentType, FC, ReactElement, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { Link, NavLink, Navigate } from 'react-router-dom';
-
 import { APIClient, APIClientProvider } from '../api-client';
 import { CSSVariableProvider } from '../css-variable';
 import { AntdAppProvider, GlobalThemeProvider } from '../global-theme';
@@ -29,7 +28,8 @@ import { WebSocketClient, WebSocketClientOptions } from './WebSocketClient';
 import { AppComponent, BlankComponent, defaultAppComponents } from './components';
 import { SchemaInitializer, SchemaInitializerManager } from './schema-initializer';
 import * as schemaInitializerComponents from './schema-initializer/components';
-import { SchemaSettings, SchemaSettingsManager } from './schema-settings';
+import { SchemaSettings, SchemaSettingsItemType, SchemaSettingsManager } from './schema-settings';
+
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
 import { getRequireJs } from './utils/requirejs';
@@ -44,7 +44,14 @@ import type { CollectionFieldInterfaceFactory } from '../data-source';
 import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import type { Plugin } from './Plugin';
+import { getOperators } from './globalOperators';
+import { useAclSnippets } from './hooks/useAclSnippets';
 import type { RequireJS } from './utils/requirejs';
+
+type JsonLogic = {
+  addOperation: (name: string, fn?: any) => void;
+  rmOperation: (name: string) => void;
+};
 
 declare global {
   interface Window {
@@ -100,7 +107,8 @@ export class Application {
   public dataSourceManager: DataSourceManager;
   public name: string;
   public favicon: string;
-
+  public globalVars: Record<string, any> = {};
+  public jsonLogic: JsonLogic;
   loading = true;
   maintained = false;
   maintaining = false;
@@ -172,6 +180,7 @@ export class Application {
       this.apiClient.auth.locale = lng;
     });
     this.initListeners();
+    this.jsonLogic = getOperators();
   }
 
   private initListeners() {
@@ -244,7 +253,7 @@ export class Application {
     this.addComponents({
       Link,
       Navigate: Navigate as ComponentType,
-      NavLink,
+      NavLink: NavLink as ComponentType,
     });
   }
 
@@ -330,6 +339,12 @@ export class Application {
       await this.pm.load();
     } catch (error) {
       this.hasLoadError = true;
+
+      //not trigger infinite reload when blocked ip
+      if (error?.response?.data?.errors?.[0]?.code === 'BLOCKED_IP') {
+        this.hasLoadError = false;
+      }
+
       if (this.ws.enabled) {
         await new Promise((resolve) => {
           setTimeout(() => resolve(null), 1000);
@@ -491,5 +506,29 @@ export class Application {
       fieldName,
       componentOption,
     );
+  }
+
+  addGlobalVar(key: string, value: any) {
+    set(this.globalVars, key, value);
+  }
+
+  getGlobalVar(key) {
+    return get(this.globalVars, key);
+  }
+  addUserCenterSettingsItem(item: SchemaSettingsItemType & { aclSnippet?: string }) {
+    const useVisibleProp = item.useVisible || (() => true);
+    const useVisible = () => {
+      const { allow } = useAclSnippets();
+      const visible = useVisibleProp();
+      if (!visible) {
+        return false;
+      }
+      return item.aclSnippet ? allow(item.aclSnippet) : true;
+    };
+
+    this.schemaSettingsManager.addItem('userCenterSettings', item.name, {
+      ...item,
+      useVisible: useVisible,
+    });
   }
 }

@@ -7,6 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './Menu';
 export * from './MenuItemInitializers';
 export * from './util';
+export { useMenuTranslation } from './locale';

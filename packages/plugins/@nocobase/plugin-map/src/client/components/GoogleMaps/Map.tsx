@@ -316,7 +316,7 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
       // google maps api error
       const error = console.error;
       console.error = (err, ...args) => {
-        if (err?.includes('InvalidKeyMapError')) {
+        if (err?.includes?.('InvalidKeyMapError')) {
           setErrMessage(t('Load google maps failed, Please check the Api key and refresh the page'));
         }
         error(err, ...args);

@@ -9,12 +9,11 @@
 
 import React from 'react';
 import { observer } from '@formily/reactive-react';
-
+import { Schema } from '@formily/react';
 import { Layout, List, Badge, Button, Flex, Tabs, ConfigProvider, theme } from 'antd';
 import { css } from '@emotion/css';
 import { dayjs } from '@nocobase/utils/client';
 import { useLocalTranslation } from '../../locale';
-
 import {
   fetchChannels,
   selectedChannelNameObs,
@@ -25,11 +24,12 @@ import {
   channelStatusFilterObs,
   ChannelStatus,
 } from '../observables';
-
 import MessageList from './MessageList';
 import FilterTab from './FilterTab';
+import { useApp } from '@nocobase/client';
 
 const InnerInboxContent = () => {
+  const app = useApp();
   const { token } = theme.useToken();
   const { t } = useLocalTranslation();
   const channels = channelListObs.value;
@@ -82,6 +82,7 @@ const InnerInboxContent = () => {
           style={{ paddingBottom: '20px' }}
           loading={channels.length === 0 && isFetchingChannelsObs.value}
           renderItem={(item) => {
+            const title = Schema.compile(item.title, { t: app.i18n.t });
             const titleColor = selectedChannelName === item.name ? token.colorPrimaryText : token.colorText;
             const textColor = selectedChannelName === item.name ? token.colorPrimaryText : token.colorTextTertiary;
             return (
@@ -116,8 +117,9 @@ const InnerInboxContent = () => {
                       whiteSpace: 'nowrap',
                       fontWeight: 'bold',
                     }}
+                    title={title}
                   >
-                    {item.title}
+                    {title}
                   </div>
                   <div
                     style={{

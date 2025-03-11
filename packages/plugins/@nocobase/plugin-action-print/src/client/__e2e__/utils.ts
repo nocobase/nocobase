@@ -382,8 +382,11 @@ export const oneTableWithViewAction: PageConfig = {
             'x-index': 1,
           },
         },
+        'x-uid': 'j0k2m5r9z3b',
+        'x-async': false,
       },
     },
+    'x-uid': 'l6ioayfnq6c',
   },
 };
 

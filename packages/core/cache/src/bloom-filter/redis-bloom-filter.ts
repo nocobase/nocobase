@@ -21,27 +21,30 @@ export class RedisBloomFilter implements BloomFilter {
     this.cache = cache;
   }
 
-  getStore() {
+  private get store() {
     return this.cache.store.store as RedisStore;
   }
 
   async reserve(key: string, errorRate: number, capacity: number) {
-    const store = this.getStore();
-    await store.client.bf.reserve(key, errorRate, capacity);
+    try {
+      await this.store.client.bf.reserve(key, errorRate, capacity);
+    } catch (error) {
+      if (error.message.includes('ERR item exists')) {
+        return;
+      }
+      throw error;
+    }
   }
 
   async add(key: string, value: string) {
-    const store = this.getStore();
-    await store.client.bf.add(key, value);
+    await this.store.client.bf.add(key, value);
   }
 
   async mAdd(key: string, values: string[]) {
-    const store = this.getStore();
-    await store.client.bf.mAdd(key, values);
+    await this.store.client.bf.mAdd(key, values);
   }
 
   async exists(key: string, value: string) {
-    const store = this.getStore();
-    return await store.client.bf.exists(key, value);
+    return this.store.client.bf.exists(key, value);
   }
 }

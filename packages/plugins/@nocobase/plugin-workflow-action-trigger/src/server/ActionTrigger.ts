@@ -9,7 +9,7 @@
 
 import { get, pick } from 'lodash';
 import { BelongsTo, HasOne } from 'sequelize';
-import { Model, modelAssociationByKey } from '@nocobase/database';
+import { Collection, Model, modelAssociationByKey } from '@nocobase/database';
 import Application, { DefaultContext } from '@nocobase/server';
 import { Context as ActionContext, Next } from '@nocobase/actions';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
@@ -43,13 +43,9 @@ export default class extends Trigger {
     const self = this;
 
     async function triggerWorkflowActionMiddleware(context: Context, next: Next) {
-      const { resourceName, actionName } = context.action;
-
-      if (resourceName === 'workflows' && actionName === 'trigger') {
-        return self.workflowTriggerAction(context, next);
-      }
-
       await next();
+
+      const { actionName } = context.action;
 
       if (!['create', 'update'].includes(actionName)) {
         return;
@@ -71,20 +67,17 @@ export default class extends Trigger {
     );
   }
 
-  /**
-   * @deprecated
-   */
-  async workflowTriggerAction(context: Context, next: Next) {
-    const { triggerWorkflows } = context.action.params;
-
-    if (!triggerWorkflows) {
-      return context.throw(400);
+  getTargetCollection(collection: Collection, association: string) {
+    if (!association) {
+      return collection;
     }
 
-    context.status = 202;
-    await next();
+    let targetCollection = collection;
+    for (const key of association.split('.')) {
+      targetCollection = collection.db.getCollection(targetCollection.getField(key).target);
+    }
 
-    return this.collectionTriggerAction(context);
+    return targetCollection;
   }
 
   private async collectionTriggerAction(context: Context) {
@@ -102,7 +95,6 @@ export default class extends Trigger {
       return;
     }
 
-    const fullCollectionName = joinCollectionName(dataSourceHeader, collection.name);
     const { currentUser, currentRole } = context.state;
     const { model: UserModel } = this.workflow.db.getCollection('users');
     const userInfo = {
@@ -118,9 +110,8 @@ export default class extends Trigger {
     const globalWorkflows = new Map();
     const localWorkflows = new Map();
     workflows.forEach((item) => {
-      if (resourceName === 'workflows' && actionName === 'trigger') {
-        localWorkflows.set(item.key, item);
-      } else if (item.config.collection === fullCollectionName) {
+      const targetCollection = this.getTargetCollection(collection, triggersKeysMap.get(item.key));
+      if (item.config.collection === joinCollectionName(dataSourceHeader, targetCollection.name)) {
         if (item.config.global) {
           if (item.config.actions?.includes(actionName)) {
             globalWorkflows.set(item.key, item);

@@ -18,6 +18,7 @@ export * from './mock-server';
 
 export const pgOnly: () => any = () => (process.env.DB_DIALECT == 'postgres' ? describe : describe.skip);
 export const isPg = () => process.env.DB_DIALECT == 'postgres';
+export const isMysql = () => process.env.DB_DIALECT == 'mysql';
 
 export function randomStr() {
   // create random string

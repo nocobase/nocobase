@@ -45,6 +45,7 @@ import { useToken } from '../__builtins__';
 import { SubFormProvider, useAssociationFieldContext } from '../association-field/hooks';
 import { ColumnFieldProvider } from '../table-v2/components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from '../table-v2/utils';
+import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 
 const InViewContext = React.createContext(false);
 
@@ -85,6 +86,8 @@ export const useColumnsDeepMemoized = (columns: any[]) => {
   return oldObj.value;
 };
 
+const TableColumnTitle = withTooltipComponent(RecursionField);
+
 const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginationProps) => {
   const { token } = useToken();
   const field = useArrayField(props);
@@ -112,7 +115,6 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
   }, [token.paddingContentVerticalLG, token.marginSM]);
 
   const collection = useCollection();
-
   const columns = useMemo(
     () =>
       columnsSchema?.map((s: Schema) => {
@@ -124,7 +126,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
         const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : s.name;
         const columnHidden = !!s['x-component-props']?.['columnHidden'];
         return {
-          title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
+          title: <TableColumnTitle name={s.name} schema={s} onlyRenderSelf tooltip={s['x-component-props']?.tooltip} />,
           dataIndex,
           key: s.name,
           sorter: s['x-component-props']?.['sorter'],
@@ -405,10 +407,6 @@ const cellClass = css`
     top: 50%;
     transform: translateY(-50%);
   }
-`;
-
-const floatLeftClass = css`
-  float: left;
 `;
 
 const rowSelectCheckboxWrapperClass = css`
@@ -868,7 +866,7 @@ export const Table: any = withDynamicSchemaProps(
                   <div
                     role="button"
                     aria-label={`table-index-${index}`}
-                    className={classNames(checked ? 'checked' : floatLeftClass, rowSelectCheckboxWrapperClass, {
+                    className={classNames(checked ? 'checked' : null, rowSelectCheckboxWrapperClass, {
                       [rowSelectCheckboxWrapperClassHover]: isRowSelect,
                     })}
                   >
