@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.6.1](https://github.com/nocobase/nocobase/compare/v1.6.0...v1.6.1) - 2025-03-11
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - When using the '$anyOf' operator, the linkage rule is invalid ([#6415](https://github.com/nocobase/nocobase/pull/6415)) by @zhangzhonghe
+
+  - Data not updating in popup windows opened via Link buttons ([#6411](https://github.com/nocobase/nocobase/pull/6411)) by @zhangzhonghe
+
+  - multi-select field value changes and option loss when deleting subtable records ([#6405](https://github.com/nocobase/nocobase/pull/6405)) by @katherinehhh
+
+- **[Notification: In-app message]** Differentiate the in-app message list background color from the message cards to enhance visual hierarchy and readability. ([#6417](https://github.com/nocobase/nocobase/pull/6417)) by @sheldon66
+
 ## [v1.6.0](https://github.com/nocobase/nocobase/compare/v1.5.25...v1.6.0) - 2025-03-11
 
 ## New Features
