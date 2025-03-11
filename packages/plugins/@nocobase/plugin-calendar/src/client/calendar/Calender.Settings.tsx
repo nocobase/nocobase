@@ -215,6 +215,30 @@ export const calendarBlockSettings = new SchemaSettings({
       },
     },
     {
+      name: 'quickCreateEvent',
+      Component: SchemaSettingsSwitchItem,
+      useComponentProps() {
+        const { t } = useTranslation();
+        const fieldSchema = useFieldSchema();
+        const field = useField();
+        const { dn } = useDesignable();
+        return {
+          title: t('Quick create event'),
+          checked: !field.decoratorProps.doNotQuickCreate,
+          onChange: (v) => {
+            field.decoratorProps.doNotQuickCreate = !v;
+            fieldSchema['x-decorator-props']['doNotQuickCreate'] = !v;
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-decorator-props': field.decoratorProps,
+              },
+            });
+          },
+        };
+      },
+    },
+    {
       name: 'showLunar',
       Component: ShowLunarDesignerItem,
     },
