@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { message, Select, Space, theme, Tooltip } from 'antd';
+import { Flex, message, Select, Space, theme, Tooltip } from 'antd';
 import { useACLTranslation } from './locale';
 import { useRequest } from 'ahooks';
 import { useAPIClient, useCurrentRoleMode } from '@nocobase/client';
@@ -34,22 +34,38 @@ export const RoleModeSelect = () => {
     },
   );
 
-  const docLink = t(`Role mode doc`, { defaultValue: 'https://docs.nocobase.com/handbook/acl/manual' });
-
   return (
     <div>
       <Select
         value={roleMode}
         onChange={(value) => updateRoleMode(value)}
         options={[
-          { value: 'default', label: t('Independent roles') },
-          { value: 'allow-use-union', label: t('Allow roles union') },
-          { value: 'only-use-union', label: t('Roles union only') },
+          {
+            value: 'default',
+            label: t('Independent roles'),
+            desc: t('Do not use role union. Users need to switch between their roles individually.'),
+          },
+          {
+            value: 'allow-use-union',
+            label: t('Allow roles union'),
+            desc: t(
+              'Allow users to use role union, which means they can use permissions from all their roles simultaneously, or switch between individual roles.',
+            ),
+          },
+          {
+            value: 'only-use-union',
+            label: t('Roles union only'),
+            desc: t('Force users to use only role union. They cannot switch between individual roles.'),
+          },
         ]}
+        optionRender={(option) => (
+          <Tooltip placement="right" title={<div>{option.data.desc}</div>}>
+            <Flex justify="space-between">
+              <span style={{ display: 'inline-flex', paddingRight: 8 }}>{option.data.label}</span>
+            </Flex>
+          </Tooltip>
+        )}
       />
-      <a href={docLink} target="_blank" rel="noopener noreferrer">
-        <QuestionCircleOutlined style={{ color: token.colorTextSecondary, cursor: 'pointer', marginLeft: 4 }} />
-      </a>
     </div>
   );
 };
