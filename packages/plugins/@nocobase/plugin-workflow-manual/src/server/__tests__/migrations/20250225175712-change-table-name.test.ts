@@ -56,4 +56,27 @@ function matrixTest() {
 
 describe('20250225175712-change-table-name.test', () => {
   matrixTest();
+
+  test(`new table exists`, async () => {
+    const app = await createMockServer();
+    await app.version.update('1.5.0');
+    const oldCollection = app.db.collection({
+      ...workflowManualTasks,
+      name: 'users_jobs',
+    });
+    const newCollection = app.db.collection({
+      ...workflowManualTasks,
+    });
+    await app.db.sync();
+    const r1 = await oldCollection.repository.create({});
+    const migration = new Migration({ db: app.db, app } as any);
+    await migration.up();
+
+    const r2 = await newCollection.repository.findOne({
+      filterByTk: r1.id,
+    });
+    expect(r2).toBeTruthy();
+
+    await app.destroy();
+  });
 });

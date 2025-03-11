@@ -30,6 +30,10 @@ export default class extends Migration {
     await db.sequelize.transaction(async (transaction) => {
       const exists = await queryInterface.tableExists(oldTableName, { transaction });
       if (exists) {
+        const newExists = await queryInterface.tableExists(newTableName, { transaction });
+        if (newExists) {
+          await queryInterface.dropTable(newTableName, { transaction });
+        }
         if (this.db.isPostgresCompatibleDialect()) {
           await db.sequelize.query(
             `ALTER TABLE ${oldTableNameWithQuotes} RENAME TO "${db.options.tablePrefix || ''}${
