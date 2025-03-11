@@ -14,6 +14,7 @@ import { useCollection } from '../../data-source/collection/CollectionProvider';
 import { useCompile } from '../../schema-component';
 import { SchemaToolbar } from '../../schema-settings/GeneralSchemaDesigner';
 import { useSchemaTemplate } from '../../schema-templates';
+import { useMobileLayout } from '../../route-switch/antd/admin-layout';
 
 export const BlockSchemaToolbar = (props) => {
   const { t } = useTranslation();
@@ -22,6 +23,7 @@ export const BlockSchemaToolbar = (props) => {
   const template = useSchemaTemplate();
   const { association, collection } = useDataBlockProps() || {};
   const compile = useCompile();
+  const { isMobileLayout } = useMobileLayout();
 
   if (association) {
     const [collectionName] = association.split('.');
@@ -51,7 +53,7 @@ export const BlockSchemaToolbar = (props) => {
     ].filter(Boolean);
   }, [currentCollectionTitle, currentCollectionName, associationField, associationCollection, compile, templateName]);
 
-  return <SchemaToolbar title={toolbarTitle} {...props} />;
+  return <SchemaToolbar title={toolbarTitle} {...props} draggable={!isMobileLayout} />;
 };
 
 export function getCollectionTitle(arg: {

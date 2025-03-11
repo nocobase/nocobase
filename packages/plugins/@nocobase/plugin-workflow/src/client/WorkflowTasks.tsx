@@ -6,12 +6,12 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+import { CheckCircleOutlined } from '@ant-design/icons';
+import { PageHeader } from '@ant-design/pro-layout';
+import { Badge, Button, Layout, Menu, Tabs, Tooltip } from 'antd';
+import classnames from 'classnames';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Link, Outlet, useNavigate, useParams } from 'react-router-dom';
-import { Button, Layout, Menu, Badge, Tooltip, Tabs } from 'antd';
-import { PageHeader } from '@ant-design/pro-layout';
-import { CheckCircleOutlined } from '@ant-design/icons';
-import classnames from 'classnames';
 
 import {
   css,
@@ -34,19 +34,6 @@ import { lang, NAMESPACE } from './locale';
 const layoutClass = css`
   height: 100%;
   overflow: hidden;
-`;
-
-const sideClass = css`
-  overflow: auto;
-  position: sticky;
-  top: 0;
-  bottom: 0;
-  height: 100%;
-
-  .ant-layout-sider-children {
-    width: 200px;
-    height: 100%;
-  }
 `;
 
 const contentClass = css`
@@ -134,8 +121,8 @@ function StatusTabs() {
       tabBarExtraContent={
         ExtraActions
           ? {
-              right: <ExtraActions />,
-            }
+            right: <ExtraActions />,
+          }
           : {}
       }
     />
@@ -196,7 +183,7 @@ export function WorkflowTasks() {
 
   return (
     <Layout className={layoutClass}>
-      <Layout.Sider className={sideClass} theme="light">
+      <Layout.Sider theme="light" breakpoint="md" collapsedWidth="0" zeroWidthTriggerStyle={{ top: 38 }}>
         <Menu mode="inline" selectedKeys={[typeKey]} items={items} style={{ height: '100%' }} />
       </Layout.Sider>
       <Layout

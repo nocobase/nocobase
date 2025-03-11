@@ -37,6 +37,7 @@ import {
   NocoBaseDesktopRouteType,
   NocoBaseRouteContext,
   useCurrentRoute,
+  useMobileLayout,
 } from '../../../route-switch/antd/admin-layout';
 import { KeepAliveProvider, useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
@@ -50,6 +51,7 @@ import { useMenuDragEnd, useNocoBaseRoutes } from '../menu/Menu';
 import { useStyles } from './Page.style';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 import { PopupRouteContextResetter } from './PopupRouteContextResetter';
+import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
 
 interface PageProps {
   currentTabUid: string;
@@ -174,6 +176,7 @@ const displayNone = {
 const TabPane = React.memo(({ active: tabActive, uid }: { active: boolean; uid: string }) => {
   const mountedRef = useRef(false);
   const { active: pageActive } = useKeepAlive();
+  const { isMobileLayout } = useMobileLayout();
 
   if (tabActive && !mountedRef.current) {
     mountedRef.current = true;
@@ -186,7 +189,10 @@ const TabPane = React.memo(({ active: tabActive, uid }: { active: boolean; uid: 
   return (
     <div style={tabActive ? displayBlock : displayNone}>
       <KeepAliveProvider active={pageActive && tabActive}>
-        <RemoteSchemaComponent uid={uid} />
+        <RemoteSchemaComponent
+          uid={uid}
+          schemaTransform={isMobileLayout ? transformMultiColumnToSingleColumn : undefined}
+        />
       </KeepAliveProvider>
     </div>
   );
@@ -204,6 +210,7 @@ const InternalPageContent = (props: PageContentProps) => {
   const currentRoute = useCurrentRoute();
   const navigate = useNavigateNoUpdate();
   const location = useLocationNoUpdate();
+  const { isMobileLayout } = useMobileLayout();
 
   const children = currentRoute?.children || [];
   const noTabs = children.every((tabRoute) => tabRoute.schemaUid !== activeKey && tabRoute.tabSchemaName !== activeKey);
@@ -244,7 +251,10 @@ const InternalPageContent = (props: PageContentProps) => {
   return (
     <div className={className1}>
       <NocoBaseRouteContext.Provider value={currentRoute?.children?.[0]}>
-        <RemoteSchemaComponent uid={currentRoute?.children?.[0].schemaUid} />
+        <RemoteSchemaComponent
+          uid={currentRoute?.children?.[0].schemaUid}
+          schemaTransform={isMobileLayout ? transformMultiColumnToSingleColumn : undefined}
+        />
       </NocoBaseRouteContext.Provider>
     </div>
   );
