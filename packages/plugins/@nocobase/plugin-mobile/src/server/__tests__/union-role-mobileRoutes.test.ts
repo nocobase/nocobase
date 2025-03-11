@@ -54,7 +54,7 @@ describe('union role mobileRoutes', async () => {
       },
     });
 
-    agent = await app.agent().login(user, 'union');
+    agent = await app.agent().login(user, UNION_ROLE_KEY);
   });
 
   afterEach(async () => {
@@ -223,7 +223,7 @@ describe('union role mobileRoutes', async () => {
     expect(menuProps).include(page2.title);
     expect(menuProps).not.include(page1.title);
 
-    agent = await app.agent().login(user, 'union');
+    agent = await app.agent().login(user, UNION_ROLE_KEY);
     accessibleMenus = await getAccessibleMenus(agent);
     menuProps = accessibleMenus.map((x) => x.title);
     expect(menuProps).include(page1.title);
@@ -244,7 +244,7 @@ describe('union role mobileRoutes', async () => {
       },
     });
     expect(updateRole1Response.statusCode).toBe(200);
-    agent = await app.agent().login(user, 'union');
+    agent = await app.agent().login(user, UNION_ROLE_KEY);
     const page1 = await createUiMenu(rootAgent, { title: 'page1' });
 
     // auto can see new menu

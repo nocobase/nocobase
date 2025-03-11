@@ -9,6 +9,7 @@
 
 import { CollectionManager, DataSource, IRepository } from '@nocobase/data-source-manager';
 import { ICollectionManager, IModel } from '@nocobase/data-source-manager/src/types';
+import { UNION_ROLE_KEY } from '@nocobase/plugin-acl';
 import { MockServer, createMockServer } from '@nocobase/test';
 import os from 'os';
 import { SuperAgentTest } from 'supertest';
@@ -135,7 +136,7 @@ describe('data source with acl', () => {
     expect(postRes.status).toBe(200);
   });
 
-  it('should update roles resources', async () => {
+  it.only('should update roles resources', async () => {
     const adminUser = await app.db.getRepository('users').create({
       values: {
         roles: ['root'],
@@ -508,7 +509,7 @@ describe('data source with acl', () => {
     expect(checkData.meta.dataSources.mockInstance1).exist;
     expect(checkData.meta.dataSources.mockInstance1.strategy).toEqual({ actions: ['view'] });
 
-    const testUserAgent = await app.agent().login(testUser, 'union');
+    const testUserAgent = await app.agent().login(testUser, UNION_ROLE_KEY);
     checkRep = await testUserAgent.resource('roles').check({});
     expect(checkRep.status).toBe(200);
 
