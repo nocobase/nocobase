@@ -57,7 +57,6 @@ export class PluginPublicFormsClient extends Plugin {
     });
     this.app.pluginSettingsManager.add('public-forms', {
       title: `{{t("Public forms", { ns: "${NAMESPACE}" })}}`,
-
       icon: 'TableOutlined',
       Component: AdminPublicFormList,
     });
@@ -66,6 +65,8 @@ export class PluginPublicFormsClient extends Plugin {
       pluginKey: 'public-forms',
       isTopLevel: false,
       Component: AdminPublicFormPage,
+      skipAclConfigure: true,
+      aclSnippet: 'pm.public-forms:name',
     });
   }
 }
