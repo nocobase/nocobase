@@ -32,7 +32,7 @@ export default class extends Migration {
       if (exists) {
         if (this.db.isPostgresCompatibleDialect()) {
           await db.sequelize.query(
-            `ALTER TABLE ${oldTableNameWithQuotes} RENAME TO "${db.options.tablePrefix}${
+            `ALTER TABLE ${oldTableNameWithQuotes} RENAME TO "${db.options.tablePrefix || ''}${
               db.options.underscored ? 'workflow_manual_tasks' : 'workflowManualTasks'
             }";`,
             {
