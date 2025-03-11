@@ -80,7 +80,7 @@ describe('association test', () => {
     // should not have association actions permission
     expect(
       acl.can({
-        role: 'test-role',
+        roleNames: 'test-role',
         action: 'list',
         resource: 'posts.userComments',
       }),
@@ -246,7 +246,7 @@ describe.skip('association field acl', () => {
   it('should revoke association action on action revoke', async () => {
     expect(
       acl.can({
-        role: 'new',
+        roleNames: 'new',
         resource: 'users.orders',
         action: 'add',
       }),
@@ -280,7 +280,7 @@ describe.skip('association field acl', () => {
 
     expect(
       acl.can({
-        role: 'new',
+        roleNames: 'new',
         resource: 'users.orders',
         action: 'add',
       }),
@@ -326,7 +326,7 @@ describe.skip('association field acl', () => {
 
     expect(
       acl.can({
-        role: 'new',
+        roleNames: 'new',
         resource: 'posts',
         action: 'create',
       }),
@@ -357,7 +357,7 @@ describe.skip('association field acl', () => {
 
     expect(
       acl.can({
-        role: 'new',
+        roleNames: 'new',
         resource: 'posts',
         action: 'create',
       }),
@@ -391,7 +391,7 @@ describe.skip('association field acl', () => {
 
     expect(
       acl.can({
-        role: 'new',
+        roleNames: 'new',
         resource: 'users',
         action: 'create',
       }),
@@ -430,7 +430,7 @@ describe.skip('association field acl', () => {
 
     expect(
       acl.can({
-        role: 'new',
+        roleNames: 'new',
         resource: 'users',
         action: 'create',
       }),
@@ -465,7 +465,7 @@ describe.skip('association field acl', () => {
 
     expect(
       acl.can({
-        role: 'new',
+        roleNames: 'new',
         resource: 'orders',
         action: 'list',
       }),

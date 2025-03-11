@@ -97,7 +97,7 @@ describe('snippet', () => {
     });
 
     const canRes = app.acl.can({
-      role: 'testRole',
+      roleNames: 'testRole',
       action: 'list',
       resource: 'roles.dataSourcesCollections',
     });
