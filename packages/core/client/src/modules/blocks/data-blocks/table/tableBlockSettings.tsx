@@ -140,6 +140,30 @@ export const tableBlockSettings = new SchemaSettings({
       },
     },
     {
+      name: 'enableSelectColumn',
+      type: 'switch',
+      useComponentProps: () => {
+        const field = useField();
+        const fieldSchema = useFieldSchema();
+        const { t } = useTranslation();
+        const { dn } = useDesignable();
+        return {
+          title: t('Enable selectable column'),
+          checked: field.decoratorProps.enableSelectColumn !== false,
+          onChange: async (enableSelectableColumn) => {
+            field.decoratorProps.enableSelectableColumn = enableSelectableColumn;
+            fieldSchema['x-decorator-props'].enableSelectableColumn = enableSelectableColumn;
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-decorator-props': fieldSchema['x-decorator-props'],
+              },
+            });
+          },
+        };
+      },
+    },
+    {
       name: 'SortField',
       Component: SchemaSettingsSortField,
       useVisible() {
