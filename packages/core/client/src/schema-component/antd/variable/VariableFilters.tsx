@@ -122,84 +122,92 @@ export function Filter({ config, filter, filterId, previousFilters }) {
       },
     };
   };
+  const argsMap = config.uiSchema
+    ? Object.fromEntries(config.uiSchema.map((param, index) => [param.name, filter.args[index]]))
+    : {};
 
   const useFormBlockProps = () => {
-    return { form, layout: 'vertical' };
+    return { form: createForm({ initialValues: argsMap }), layout: 'vertical' };
   };
 
-  const WithPropOver = ({ children }) => {
-    const { value } = useVariable();
-    const schema = {
-      'x-uid': uid(),
-      type: 'void',
-      'x-component': 'FormV2',
-      'x-use-component-props': 'useFormBlockProps',
-      properties: {
-        '$input-value': {
-          type: 'void',
-          'x-component': 'Input',
-          'x-component-props': {
-            defaultValue: '{{ inputValue }}',
-            disabled: true,
-          },
-          'x-decorator': 'FormItem',
-          title: tval('Input Value'),
-          'x-read-pretty': true,
-        },
-        ...Object.fromEntries(
-          config.uiSchema.map((param) => [
-            param.name,
-            {
-              ...param,
-              'x-decorator': 'FormItem',
+  const schema = {
+    'x-uid': uid(),
+    type: 'void',
+    'x-component': 'CardItem',
+    properties: {
+      form: {
+        'x-uid': uid(),
+        type: 'void',
+        'x-component': 'FormV2',
+        'x-use-component-props': 'useFormBlockProps',
+        properties: {
+          '$input-value': {
+            type: 'void',
+            'x-component': 'Input',
+            'x-component-props': {
+              defaultValue: '{{ inputValue }}',
+              disabled: true,
             },
-          ]),
-        ),
-        '$return-value': {
-          type: 'void',
-          'x-component': 'Input',
-          'x-component-props': {
-            defaultValue: '{{ outputValue }}',
-            disabled: true,
+            'x-decorator': 'FormItem',
+            title: tval('Input Value'),
+            'x-read-pretty': true,
           },
-          'x-decorator': 'FormItem',
-          title: tval('Return Value'),
-          'x-read-pretty': true,
-        },
-        actions: {
-          type: 'void',
-          title: tval('Save'),
-          'x-component': 'ActionBar',
-          properties: {
-            delete: {
-              type: 'void',
-              title: tval('Delete'),
-              'x-component': 'Action',
-              'x-use-component-props': 'useDeleteActionProps',
+          ...Object.fromEntries(
+            config.uiSchema.map((param) => [
+              param.name,
+              {
+                ...param,
+                'x-decorator': 'FormItem',
+              },
+            ]),
+          ),
+          '$return-value': {
+            type: 'void',
+            'x-component': 'Input',
+            'x-component-props': {
+              defaultValue: '{{ outputValue }}',
+              disabled: true,
             },
-            save: {
-              type: 'void',
-              title: tval('Save'),
-              'x-component': 'Action',
-              'x-use-component-props': 'useSaveActionProps',
+            'x-decorator': 'FormItem',
+            title: tval('Return Value'),
+            'x-read-pretty': true,
+          },
+          actions: {
+            type: 'void',
+            title: tval('Save'),
+            'x-component': 'ActionBar',
+            properties: {
+              delete: {
+                type: 'void',
+                title: tval('Delete'),
+                'x-component': 'Action',
+                'x-use-component-props': 'useDeleteActionProps',
+              },
+              save: {
+                type: 'void',
+                title: tval('Save'),
+                'x-component': 'Action',
+                'x-use-component-props': 'useSaveActionProps',
+              },
             },
           },
         },
       },
-    };
+    },
+  };
+  const Content = (
+    <SchemaComponent
+      schema={schema}
+      scope={{ useSaveActionProps, useFormBlockProps, useDeleteActionProps, outputValue, inputValue }}
+      basePath={['']}
+    />
+  );
+
+  const WithPropOver = ({ children }) => {
+    const { value } = useVariable();
+
     return (
-      <Popover
-        open={open}
-        onOpenChange={handleOpenChange}
-        content={
-          <SchemaComponent
-            schema={schema}
-            scope={{ useSaveActionProps, useFormBlockProps, useDeleteActionProps, outputValue, inputValue }}
-            basePath={['']}
-          />
-        }
-        trigger={'hover'}
-      >
+      <Popover open={open} onOpenChange={handleOpenChange} content={Content} trigger={'click'}>
         {children}
       </Popover>
     );
