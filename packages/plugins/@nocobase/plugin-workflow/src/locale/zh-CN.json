@@ -133,6 +133,8 @@
   "Canceled": "已取消",
   "Rejected": "已拒绝",
   "Retry needed": "需重试",
+  "Completed": "已完成",
+  "All": "全部",
   "View result": "查看结果",
 
   "Triggered but still waiting in queue to execute.": "已触发但仍在队列中等待执行。",
@@ -231,5 +233,6 @@
   "After end of branches": "分支结束后",
   "Inside of branch": "分支内",
 
-  "Workflow todos": "流程待办"
+  "Workflow todos": "流程待办",
+  "New version enabled": "已启用新版本"
 }

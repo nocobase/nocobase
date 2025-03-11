@@ -5,6 +5,16 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.5.25](https://github.com/nocobase/nocobase/compare/v1.5.24...v1.5.25) - 2025-03-09
+
+### 🐛 修复
+
+- **[server]** `yarn start` 启动服务器后前端缓存未刷新 ([#6394](https://github.com/nocobase/nocobase/pull/6394)) by @gchust
+
+- **[工作流：审批]** 避免错误的审批人配置导致查询出全部用户 by @mytharcher
+
+- **[企业微信]** 修复登录提示链接和钉钉登录错误 by @chenzhizdt
+
 ## [v1.5.24](https://github.com/nocobase/nocobase/compare/v1.5.23...v1.5.24) - 2025-03-07
 
 ### 🎉 新特性

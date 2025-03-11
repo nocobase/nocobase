@@ -15,11 +15,20 @@ import WorkflowPlugin, { JOB_STATUS } from '@nocobase/plugin-workflow';
 import * as jobActions from './actions';
 
 import ManualInstruction from './ManualInstruction';
+import { MANUAL_TASK_TYPE } from '../common/constants';
+
+interface WorkflowManualTaskModel {
+  id: number;
+  userId: number;
+  workflowId: number;
+  executionId: number;
+  status: number;
+}
 
 export default class extends Plugin {
   async load() {
     this.app.resourceManager.define({
-      name: 'users_jobs',
+      name: 'workflowManualTasks',
       actions: {
         list: {
           filter: {
@@ -41,9 +50,22 @@ export default class extends Plugin {
       },
     });
 
-    this.app.acl.allow('users_jobs', ['list', 'get', 'submit', 'countMine'], 'loggedIn');
+    this.app.acl.allow('workflowManualTasks', ['list', 'get', 'submit'], 'loggedIn');
 
     const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
     workflowPlugin.registerInstruction('manual', ManualInstruction);
+
+    this.db.on('workflowManualTasks.afterSave', async (task: WorkflowManualTaskModel, options) => {
+      await workflowPlugin.toggleTaskStatus(
+        {
+          type: MANUAL_TASK_TYPE,
+          key: `${task.id}`,
+          userId: task.userId,
+          workflowId: task.workflowId,
+        },
+        Boolean(task.status),
+        options,
+      );
+    });
   }
 }
