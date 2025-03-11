@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { UNION_ROLE_KEY } from '@nocobase/plugin-acl';
 import { MockServer, createMockServer, ExtendedAgent } from '@nocobase/test';
 
 describe('union role mobileRoutes', async () => {
