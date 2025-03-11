@@ -255,9 +255,8 @@ function getSubscriber(
           });
         } else if (fieldName === 'dataSource') {
           if (_.every(lastState?.value, (v) => v.value !== field.value)) {
-            field.value = null;
+            field.value = field.initialValue;
           }
-          console.log(fieldName, lastState?.value);
           field[fieldName] = lastState?.value;
           field.data = field.data || {};
           requestAnimationFrame(() => {
