@@ -8,11 +8,17 @@
  */
 
 import { Action, OpenModeProvider, SchemaComponentOptions, useMobileLayout, usePopupSettings } from '@nocobase/client';
+import { createGlobalStyle } from 'antd-style';
 import React, { FC, useEffect } from 'react';
 import { ActionDrawerUsedInMobile, useToAdaptActionDrawerToMobile } from './adaptor-of-desktop/ActionDrawer';
 import { useToAdaptFilterActionToMobile } from './adaptor-of-desktop/FilterAction';
-import { SchemaComponentsContext } from '@formily/react';
 import { mobileComponents } from './pages/dynamic-page/MobilePage';
+
+const GlobalStyle = createGlobalStyle`
+  ::-webkit-scrollbar {
+    display: none;
+  }
+`;
 
 const CommonDrawer: FC = (props) => {
   const { isMobileLayout } = useMobileLayout();
@@ -42,9 +48,12 @@ const MobileAdapter: FC = (props) => {
   }, []);
 
   return (
-    <OpenModeProvider defaultOpenMode="page" isMobile={true} openModeToComponent={openModeToComponent}>
-      <SchemaComponentOptions components={mobileComponents}>{props.children}</SchemaComponentOptions>
-    </OpenModeProvider>
+    <>
+      <GlobalStyle />
+      <OpenModeProvider defaultOpenMode="page" isMobile={true} openModeToComponent={openModeToComponent}>
+        <SchemaComponentOptions components={mobileComponents}>{props.children}</SchemaComponentOptions>
+      </OpenModeProvider>
+    </>
   );
 };
 
