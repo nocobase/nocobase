@@ -132,7 +132,7 @@ export function AdminPublicFormPage() {
   };
 
   return (
-    <div style={{ marginTop: '-60px' }}>
+    <div style={{ marginTop: '-50px' }}>
       <div
         style={{
           margin: '-24px',
