@@ -28,7 +28,6 @@ import {
   useGlobalTheme,
   useNavigateNoUpdate,
   useNocoBaseRoutes,
-  useToken,
   useURLAndHTMLSchema,
 } from '../../..';
 import { getPageMenuSchema } from '../../../';
@@ -61,7 +60,7 @@ const toItems = (routes: NocoBaseDesktopRoute[], { t, compile }) => {
 };
 
 const insertPositionToMethod = {
-  beforeBegin: 'prepend',
+  beforeBegin: 'insertBefore',
   afterEnd: 'insertAfter',
 };
 
