@@ -35,7 +35,6 @@ const enabledIndexColumn: SchemaSettingsItemType = {
     const fieldSchema = useFieldSchema();
     const { t } = useTranslation();
     const { dn } = useDesignable();
-    console.log(fieldSchema);
     return {
       title: t('Enable index column'),
       checked: field.decoratorProps.enableSelectColumn !== false,
