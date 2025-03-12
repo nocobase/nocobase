@@ -14,6 +14,7 @@ import { isPlainObject } from '@nocobase/utils/client';
 import type { SelectProps as AntdSelectProps } from 'antd';
 import { Select as AntdSelect, Empty, Spin, Tag } from 'antd';
 import React from 'react';
+import { every } from 'lodash';
 import { ReadPretty } from './ReadPretty';
 import { FieldNames, defaultFieldNames, getCurrentOptions } from './utils';
 import { BaseOptionType, DefaultOptionType } from 'antd/es/select';
@@ -188,8 +189,13 @@ const InternalSelect = connect(
       dataSource: 'options',
     },
     (props, field) => {
+      const { value, options } = props;
+      const result = every(options, (k) => k.value !== value)
+        ? field?.data?.dataSource?.find?.((v) => v.value === value)?.label || value
+        : value;
       return {
         ...props,
+        value: result,
         fieldNames: { ...defaultFieldNames, ...props.fieldNames },
         suffixIcon: field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffixIcon,
       };
