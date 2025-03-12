@@ -7,12 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMockServer, MockServer } from '@nocobase/test';
+import { createMockServer } from '@nocobase/test';
 import { describe, test } from 'vitest';
 import workflowManualTasks from '../../collections/workflowManualTasks';
 import Migration from '../../migrations/20250312100512-change-table-name';
-
-const pgOnly = (schema) => (schema && process.env.DB_DIALECT == 'postgres' ? it : it.skip);
 
 const matrix: [string, string][] = [
   // schema, tablePrefix
@@ -24,7 +22,10 @@ const matrix: [string, string][] = [
 
 function matrixTest() {
   for (const [schema, tablePrefix] of matrix) {
-    pgOnly(schema)(`schema: ${schema}, tablePrefix: ${tablePrefix}`, async () => {
+    if (schema && process.env.DB_DIALECT !== 'postgres') {
+      continue;
+    }
+    test(`schema: ${schema}, tablePrefix: ${tablePrefix}`, async () => {
       const app = await createMockServer({
         database: {
           schema,
