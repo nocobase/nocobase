@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { SchemaComponent, css } from '@nocobase/client';
-import { useLocalTranslation } from '../../locale';
+import { useLocalTranslation, NAMESPACE } from '../../locale';
 import { UsersSelect } from './UsersSelect';
 import { UsersAddition } from './UsersAddition';
 import { tval } from '@nocobase/utils/client';
@@ -26,6 +26,10 @@ export const MessageConfigForm = ({ variableOptions }) => {
           receivers: {
             type: 'array',
             title: `{{t("Receivers")}}`,
+            description: tval(
+              'When select receivers from node result, only support ID of user (or IDs array of users). Others will not match any user.',
+              { ns: NAMESPACE },
+            ),
             'x-decorator': 'FormItem',
             'x-component': 'ArrayItems',
             items: {
