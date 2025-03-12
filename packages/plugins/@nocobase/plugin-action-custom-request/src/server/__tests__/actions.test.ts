@@ -22,7 +22,15 @@ describe('actions', () => {
     app = await createMockServer({
       registerActions: true,
       acl: true,
-      plugins: ['field-sort', 'users', 'auth', 'acl', 'action-custom-request', 'data-source-manager'],
+      plugins: [
+        'field-sort',
+        'users',
+        'auth',
+        'acl',
+        'action-custom-request',
+        'data-source-manager',
+        'system-settings',
+      ],
     });
     db = app.db;
     repo = db.getRepository('customRequests');

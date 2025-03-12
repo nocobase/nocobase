@@ -804,5 +804,6 @@
   "Are you sure you want to hide this tab?": "¿Estás seguro de que quieres ocultar esta pestaña?",
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "Después de ocultar, esta pestaña ya no aparecerá en la barra de pestañas. Para mostrarla de nuevo, deberás ir a la página de gestión de rutas para configurarla.",
   "Deprecated": "Obsoleto",
-  "The following old template features have been deprecated and will be removed in next version.": "Las siguientes características de plantilla antigua han quedado obsoletas y se eliminarán en la próxima versión."
+  "The following old template features have been deprecated and will be removed in next version.": "Las siguientes características de plantilla antigua han quedado obsoletas y se eliminarán en la próxima versión.",
+  "Full permissions": "Todos los derechos"
 }

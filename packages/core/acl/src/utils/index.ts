@@ -7,9 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './useApp';
-export * from './useAppSpin';
-export * from './usePlugin';
-export * from './useRouter';
-export * from './useGlobalVariable';
-export * from './useAclSnippets';
+export * from './acl-role';

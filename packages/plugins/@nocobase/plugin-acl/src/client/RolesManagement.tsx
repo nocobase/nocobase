@@ -23,6 +23,7 @@ import { RolesManagerContext } from './RolesManagerProvider';
 import { RolesMenu } from './RolesMenu';
 import { useACLTranslation } from './locale';
 import { Permissions } from './permissions/Permissions';
+import { RoleModeSelect } from './RoleModeSelect';
 
 const collection = {
   name: 'roles',
@@ -81,7 +82,7 @@ export const RolesManagement: React.FC = () => {
       <RolesManagerContext.Provider value={{ role, setRole }}>
         <Card>
           <Row gutter={24} style={{ flexWrap: 'nowrap' }}>
-            <Col flex="280px" style={{ borderRight: '1px solid #eee', minWidth: '250px' }}>
+            <Col flex="280px" style={{ borderRight: '1px solid #eee', minWidth: '350px' }}>
               <ResourceActionProvider
                 collection={collection}
                 request={{
@@ -98,8 +99,9 @@ export const RolesManagement: React.FC = () => {
                 }}
               >
                 <CollectionProvider_deprecated collection={collection}>
-                  <Row>
+                  <Row justify="space-between" align="middle" style={{ width: '100%' }}>
                     <NewRole />
+                    <RoleModeSelect />
                   </Row>
                   <Divider style={{ margin: '12px 0' }} />
                   <RolesMenu />

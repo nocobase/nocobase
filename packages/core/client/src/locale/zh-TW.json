@@ -915,6 +915,6 @@
   "Are you sure you want to hide this tab?": "你確定要隱藏這個標籤嗎？",
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "隱藏後，這個標籤將不再出現在標籤欄中。要再次顯示它，你需要到路由管理頁面進行設置。",
   "Deprecated": "已棄用",
-  "The following old template features have been deprecated and will be removed in next version.": "以下舊的模板功能已棄用，將在下個版本移除。"
+  "The following old template features have been deprecated and will be removed in next version.": "以下舊的模板功能已棄用，將在下個版本移除。",
+  "Full permissions": "完全權限"
 }
-

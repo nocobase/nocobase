@@ -14,3 +14,4 @@ export * from './acl-resource';
 export * from './acl-role';
 export * from './skip-middleware';
 export * from './errors';
+export * from './utils';

@@ -610,5 +610,6 @@
   "Are you sure you want to hide this tab?": "Вы уверены, что хотите скрыть эту вкладку?",
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "После скрытия этой вкладки она больше не будет отображаться во вкладке. Чтобы снова отобразить ее, вам нужно будет перейти на страницу управления маршрутами, чтобы установить ее.",
   "Deprecated": "Устаревший",
-  "The following old template features have been deprecated and will be removed in next version.": "Следующие старые функции шаблонов устарели и будут удалены в следующей версии."
+  "The following old template features have been deprecated and will be removed in next version.": "Следующие старые функции шаблонов устарели и будут удалены в следующей версии.",
+  "Full permissions": "Полные права"
 }

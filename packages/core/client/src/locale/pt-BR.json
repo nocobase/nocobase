@@ -781,5 +781,6 @@
   "Are you sure you want to hide this tab?": "Tem certeza de que deseja ocultar esta guia?",
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "Depois de ocultar, esta guia não aparecerá mais na barra de guias. Para mostrá-la novamente, você precisa ir à página de gerenciamento de rotas para configurá-la.",
   "Deprecated": "Descontinuado",
-  "The following old template features have been deprecated and will be removed in next version.": "As seguintes funcionalidades de modelo antigo foram descontinuadas e serão removidas na próxima versão."
+  "The following old template features have been deprecated and will be removed in next version.": "As seguintes funcionalidades de modelo antigo foram descontinuadas e serão removidas na próxima versão.",
+  "Full permissions": "Todas as permissões"
 }
