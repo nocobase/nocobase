@@ -125,7 +125,7 @@ export class DataSourceModel extends Model {
       }
 
       acl.allow('*', '*', (ctx) => {
-        return ctx.state.currentRole === 'root';
+        return ctx.state.currentRoles.include('root');
       });
 
       dataSource.resourceManager.use(setCurrentRole, { tag: 'setCurrentRole', before: 'acl', after: 'auth' });

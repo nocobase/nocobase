@@ -202,10 +202,10 @@ export const cacheMiddleware = async (ctx: Context, next: Next) => {
 
 export const checkPermission = (ctx: Context, next: Next) => {
   const { collection, dataSource } = ctx.action.params.values as QueryParams;
-  const roleName = ctx.state.currentRole || 'anonymous';
+  const roleNames = ctx.state.currentRoles || ['anonymous'];
   const acl = ctx.app.dataSourceManager.get(dataSource)?.acl || ctx.app.acl;
-  const can = acl.can({ role: roleName, resource: collection, action: 'list' });
-  if (!can && roleName !== 'root') {
+  const can = acl.can({ role: roleNames, resource: collection, action: 'list' });
+  if (!can && !roleNames.includes('root')) {
     ctx.throw(403, 'No permissions');
   }
   return next();

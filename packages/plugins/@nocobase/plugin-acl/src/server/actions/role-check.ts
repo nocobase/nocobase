@@ -50,18 +50,18 @@ export async function checkAction(ctx, next) {
   );
   let uiButtonSchemasBlacklist = [];
   const currentRole = ctx.state.currentRole;
-  if (currentRole !== 'root') {
+  if (!currentRoles.some((x) => x === 'root')) {
     const eqCurrentRoleList = await ctx.db
       .getRepository('uiButtonSchemasRoles')
       .find({
-        filter: { 'roleName.$eq': currentRole },
+        filter: { roleName: currentRoles },
       })
       .then((list) => list.map((v) => v.uid));
 
     const NECurrentRoleList = await ctx.db
       .getRepository('uiButtonSchemasRoles')
       .find({
-        filter: { 'roleName.$ne': currentRole },
+        filter: { 'roleName.$notIn': currentRoles },
       })
       .then((list) => list.map((v) => v.uid));
     uiButtonSchemasBlacklist = NECurrentRoleList.filter((uid) => !eqCurrentRoleList.includes(uid));
