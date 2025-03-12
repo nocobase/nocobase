@@ -453,8 +453,8 @@ export class ACL extends EventEmitter {
    * @internal
    */
   filterParams(ctx, resourceName, params) {
-    const collection = ctx.db.getCollection(resourceName);
     if (params?.filter?.createdById) {
+      const collection = ctx.db.getCollection(resourceName);
       if (!collection || !collection.getField('createdById')) {
         throw new NoPermissionError('createdById field not found');
       }
@@ -470,6 +470,7 @@ export class ACL extends EventEmitter {
       };
 
       if (checkCreatedById(params.filter.$or)) {
+        const collection = ctx.db.getCollection(resourceName);
         if (!collection || !collection.getField('createdById')) {
           throw new NoPermissionError('createdById field not found');
         }
