@@ -269,18 +269,16 @@ export class PluginClientServer extends Plugin {
         return item.id;
       });
 
-      if (desktopRoutesId) {
-        const ids = (await Promise.all(desktopRoutesId)).flat();
-        const result = await desktopRoutesRepository.find({
-          tree: true,
-          ...ctx.query,
-          filter: {
-            id: ids,
-          },
-        });
+      const ids = desktopRoutesId;
+      const result = await desktopRoutesRepository.find({
+        tree: true,
+        ...ctx.query,
+        filter: {
+          id: ids,
+        },
+      });
 
-        ctx.body = result;
-      }
+      ctx.body = result;
 
       await next();
     });
