@@ -23,6 +23,7 @@ export enum ActionType {
   BackgroundColor = 'backgroundColor',
   TextAlign = 'textAlign',
   Options = 'options',
+  DateScope = 'dateScope',
 }
 
 export enum LinkageRuleCategory {
