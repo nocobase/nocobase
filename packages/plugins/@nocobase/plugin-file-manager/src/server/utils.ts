@@ -12,7 +12,8 @@ import { uid } from '@nocobase/utils';
 
 export function getFilename(req, file, cb) {
   const originalname = Buffer.from(file.originalname, 'binary').toString('utf8');
-  const baseName = path.basename(originalname, path.extname(originalname));
+  // Filename in Windows cannot contain the following characters: < > ? * | : " \ /
+  const baseName = path.basename(originalname.replace(/[<>?*|:"\\/]/g, '-'), path.extname(originalname));
   cb(null, `${baseName}-${uid(6)}${path.extname(originalname)}`);
 }
 

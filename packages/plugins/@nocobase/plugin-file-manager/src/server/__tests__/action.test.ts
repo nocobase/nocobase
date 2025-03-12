@@ -107,7 +107,7 @@ describe('action', () => {
       });
 
       it('filename with special character (URL)', async () => {
-        const rawText = '[]中文报告!? 1%~50.4% (123) <{$#}>';
+        const rawText = '[]中文报告! 1%~50.4% (123) {$#}';
         const rawFilename = `${rawText}.txt`;
         const { body } = await agent.resource('attachments').create({
           [FILE_FIELD_NAME]: path.resolve(__dirname, `./files/${rawFilename}`),
@@ -191,7 +191,7 @@ describe('action', () => {
         expect(response.status).toBe(400);
       });
 
-      it.only('upload to storage which is not default', async () => {
+      it('upload to storage which is not default', async () => {
         const BASE_URL = `http://localhost:${APP_PORT}/storage/uploads/another`;
         const urlPath = 'test/path';
 
