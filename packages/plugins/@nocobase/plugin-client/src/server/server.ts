@@ -265,7 +265,7 @@ export class PluginClientServer extends Plugin {
         appends: ['desktopRoutes'],
       });
 
-      const desktopRoutesId = role.get('desktopRoutes').map(async (item) => {
+      const desktopRoutesId = role.get('desktopRoutes').map((item) => {
         return item.id;
       });
 
