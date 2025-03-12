@@ -10,7 +10,7 @@
 import { createMockServer, MockServer } from '@nocobase/test';
 import { describe, test } from 'vitest';
 import workflowManualTasks from '../../collections/workflowManualTasks';
-import Migration from '../../migrations/20250225175712-change-table-name';
+import Migration from '../../migrations/20250312100512-change-table-name';
 
 const pgOnly = (schema) => (schema && process.env.DB_DIALECT == 'postgres' ? it : it.skip);
 

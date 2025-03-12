@@ -10,7 +10,7 @@
 import { Migration } from '@nocobase/server';
 
 export default class extends Migration {
-  appVersion = '<1.6.0';
+  appVersion = '<1.6.2';
   on = 'beforeLoad';
   async up() {
     const { db } = this.context;
