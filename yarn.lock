@@ -3526,7 +3526,7 @@
   resolved "https://registry.npmmirror.com/@braintree/sanitize-url/-/sanitize-url-6.0.4.tgz#923ca57e173c6b232bbbb07347b1be982f03e783"
   integrity sha512-s3jaWicZd0pkP0jf5ysyHUI/RE7MHos6qlToFcGWXVp+ykHOy77OUMrfbgJ9it2C5bow7OIQwYYaHjk9XlBQ2A==
 
-"@budibase/handlebars-helpers@^0.14.0":
+"@budibase/handlebars-helpers@0.14.0":
   version "0.14.0"
   resolved "https://registry.npmmirror.com/@budibase/handlebars-helpers/-/handlebars-helpers-0.14.0.tgz#6124bc3d2a84840a03575b7853f7e2df95208da7"
   integrity sha512-iuK0HmxqAQ4jjcI46ILE6j1g8FK2wZXVrVFClDByGpiCrQ+TZ2rGZ/UNA2kG3qleZvoI2Izk/gXERmyfREke5w==
