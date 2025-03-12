@@ -8,18 +8,13 @@
  */
 
 import {
-  Input,
-  Upload,
   useCollection,
   useCollectionField,
   useCollectionManager,
-  useCollectionRecordData,
   usePlugin,
-  useRequest,
-  withDynamicSchemaProps,
+  useRequest
 } from '@nocobase/client';
-import React, { useEffect } from 'react';
-import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
+import { useEffect } from 'react';
 import FileManagerPlugin from '../';
 
 export function useStorage(storage) {

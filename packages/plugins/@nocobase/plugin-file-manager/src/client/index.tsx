@@ -8,15 +8,16 @@
  */
 
 import { Plugin, useCollection } from '@nocobase/client';
+import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
 import { FileManagerProvider } from './FileManagerProvider';
+import { FileSizeField } from './FileSizeField';
 import { FileStoragePane } from './FileStorage';
+import { useAttachmentFieldProps, useFileCollectionStorageRules } from './hooks';
+import { useStorageCfg } from './hooks/useStorageUploadProps';
+import { AttachmentFieldInterface } from './interfaces/attachment';
 import { NAMESPACE } from './locale';
 import { storageTypes } from './schemas/storageTypes';
-import { AttachmentFieldInterface } from './interfaces/attachment';
 import { FileCollectionTemplate } from './templates';
-import { useAttachmentFieldProps, useFileCollectionStorageRules } from './hooks';
-import { FileSizeField } from './FileSizeField';
-import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
 
 export class PluginFileManagerClient extends Plugin {
   // refer by plugin-field-attachment-url
@@ -58,6 +59,7 @@ export class PluginFileManagerClient extends Plugin {
     this.app.addScopes({
       useAttachmentFieldProps,
       useFileCollectionStorageRules,
+      useStorageCfg,
     });
 
     this.app.addComponents({

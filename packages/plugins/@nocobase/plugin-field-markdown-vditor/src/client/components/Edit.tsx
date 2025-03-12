@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useExpressionScope } from '@formily/react';
 import { useAPIClient, useApp, withDynamicSchemaProps } from '@nocobase/client';
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Vditor from 'vditor';
@@ -16,6 +17,61 @@ import useStyle from './style';
 
 const locales = ['en_US', 'fr_FR', 'pt_BR', 'ja_JP', 'ko_KR', 'ru_RU', 'sv_SE', 'zh_CN', 'zh_TW'];
 
+const format = (files, responseText) => {
+  const response = JSON.parse(responseText);
+  const formatResponse = {
+    msg: '',
+    code: 0,
+    data: {
+      errFiles: [],
+      succMap: {
+        [response.data.filename]: response.data.url,
+      },
+    },
+  };
+  return JSON.stringify(formatResponse);
+}
+
+const useUpload = (fileCollection: string) => {
+  const app = useApp();
+  const apiClient = useAPIClient();
+  const { useStorageCfg } = useExpressionScope();
+  const { storage, storageType } = useStorageCfg?.() || {};
+  const storageTypeUploadProps = storageType?.useUploadProps?.({ storage, rules: storage?.rules }) || {};
+
+  // If there is no custom upload method, use the default upload method
+  if (!storageTypeUploadProps?.customRequest) {
+    return {
+      url: app.getApiUrl(`${fileCollection || 'attachments'}:create`),
+      headers: apiClient.getHeaders(),
+      multiple: false,
+      fieldName: 'file',
+      max: 1024 * 1024 * 1024, // 1G
+      format,
+    };
+  }
+
+  return {
+    multiple: false,
+    async handler(files: File[]) {
+      const customRequest = storageTypeUploadProps.customRequest;
+      let result = null;
+      await customRequest({
+        file: files[0],
+        onSuccess: (res) => {
+          result = res;
+        },
+        onError: () => {},
+        onProgress: () => {},
+        headers: apiClient.getHeaders(),
+      });
+
+      return result;
+    },
+    format,
+  }
+};
+
 export const Edit = withDynamicSchemaProps((props) => {
   const { disabled, onChange, value, fileCollection, toolbar } = props;
 
@@ -24,11 +80,11 @@ export const Edit = withDynamicSchemaProps((props) => {
   const vdFullscreen = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const containerParentRef = useRef<HTMLDivElement>(null);
-  const app = useApp();
   const apiClient = useAPIClient();
   const cdn = useCDN();
   const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
   const locale = apiClient.auth.locale || 'en-US';
+  const upload = useUpload(fileCollection);
 
   const lang: any = useMemo(() => {
     const currentLang = locale.replace(/-/g, '_');
@@ -41,7 +97,6 @@ export const Edit = withDynamicSchemaProps((props) => {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const uploadFileCollection = fileCollection || 'attachments';
     const toolbarConfig = toolbar ?? defaultToolbar;
 
     const vditor = new Vditor(containerRef.current, {
@@ -67,34 +122,14 @@ export const Edit = withDynamicSchemaProps((props) => {
       input(value) {
         onChange(value);
       },
-      upload: {
-        url: app.getApiUrl(`${uploadFileCollection}:create`),
-        headers: apiClient.getHeaders(),
-        multiple: false,
-        fieldName: 'file',
-        max: 1024 * 1024 * 1024, // 1G
-        format(files, responseText) {
-          const response = JSON.parse(responseText);
-          const formatResponse = {
-            msg: '',
-            code: 0,
-            data: {
-              errFiles: [],
-              succMap: {
-                [response.data.filename]: response.data.url,
-              },
-            },
-          };
-          return JSON.stringify(formatResponse);
-        },
-      },
+      upload,
     });
 
     return () => {
       vdRef.current?.destroy();
       vdRef.current = undefined;
     };
-  }, [fileCollection, toolbar?.join(',')]);
+  }, [toolbar?.join(',')]);
 
   useEffect(() => {
     if (editorReady && vdRef.current) {
