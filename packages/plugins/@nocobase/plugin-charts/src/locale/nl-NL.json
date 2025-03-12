@@ -1,0 +1,22 @@
+{
+    "Edit": "Bewerken",
+    "Delete": "Verwijder",
+    "Cancel": "Annuleren",
+    "Submit": "Indienen",
+    "Actions": "Acties",
+    "Title": "Titel",
+    "Enable": "Enable",
+    "SAML manager": "SAML manager",
+    "SAML Providers": "SAML Providers",
+    "Redirect url": "Redirect url",
+    "SP entity id": "SP entity id",
+    "Add provider": "Toevoegen",
+    "Edit provider": "Bewerken",
+    "Client id": "Client id",
+    "Entity id or issuer": "Entity id or issuer",
+    "Login Url": "Login Url",
+    "Public cert": "Public cert",
+    "Delete provider": "Verwijder",
+    "Are you sure you want to delete it?": "Weet je zeker dat je het wilt verwijderen?",
+    "Sign in button name, which will be displayed on the sign in page": "Sign in button name, which will be displayed on the sign in page"
+}
