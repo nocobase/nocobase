@@ -9,7 +9,8 @@
 
 import { CloseCircleFilled, FilterOutlined } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
-import { useForm } from '@formily/react';
+import { autorun } from '@formily/reactive';
+import { useForm, observer } from '@formily/react';
 import { error } from '@nocobase/utils/client';
 import { cloneDeep } from 'lodash';
 import { extractTemplateElements, composeTemplate } from '@nocobase/json-template-parser';
@@ -34,8 +35,9 @@ import { useCompile } from '../../hooks';
 import { XButton } from './XButton';
 import { useStyles } from './style';
 import { Json } from '../input';
-import { Filters, Addition, FilterContext } from './VariableFilters';
 import { VariableProvider } from './VariableProvider';
+import { setHelpersFromTemplateStr, helpersObs } from './Helpers/observables';
+import { HelperList, HelperAddition } from './Helpers';
 
 const { Text } = Typography;
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
@@ -230,33 +232,20 @@ export function Input(props: VariableInputProps) {
     hideVariableButton || (children && value != null ? true : false),
   );
 
-  const { fullVariable, filters, variableSegments } = useMemo(
+  useEffect(() => {
+    setHelpersFromTemplateStr({ template: typeof value === 'string' ? value : '' });
+  }, [value]);
+  const { fullVariable, helpers, variableSegments } = useMemo(
     () => extractTemplateElements(typeof value === 'string' ? value : ''),
     [value],
   );
-  const onFilterAdd = useCallback(
-    (filterName) => {
-      onChange(composeTemplate({ fullVariable, filters: [...filters, { name: filterName, args: [] }] }));
-    },
-    [filters, fullVariable, onChange],
-  );
 
-  const updateFilterParams = useCallback(
-    ({ filterId, params }: { filterId: number; params: any[] }) => {
-      const copyedFilters = cloneDeep(filters);
-      copyedFilters[filterId].args = params;
-      onChange(composeTemplate({ fullVariable, filters: copyedFilters }));
-    },
-    [filters, fullVariable, onChange],
-  );
-
-  const deleteFilter = useCallback(
-    ({ filterId }: { filterId: number }) => {
-      const newFilters = filters.filter((_, index) => index !== filterId);
-      onChange(composeTemplate({ fullVariable, filters: newFilters }));
-    },
-    [filters, fullVariable, onChange],
-  );
+  useEffect(() => {
+    const dispose = autorun(() => {
+      onChange(composeTemplate({ fullVariable, helpers: helpersObs.value }));
+    });
+    return dispose;
+  }, [onChange, fullVariable, helpers]);
 
   const parsed = useMemo(() => parseValue(variableSegments, parseOptions), [parseOptions, variableSegments]);
   const isConstant = typeof parsed === 'string';
@@ -374,7 +363,7 @@ export function Input(props: VariableInputProps) {
           if (next[1] !== type) {
             // setPrevType(next[1]);
             const newVariable = ConstantTypes[next[1]]?.default?.() ?? null;
-            onChange(composeTemplate({ fullVariable: newVariable, filters }), optionPath);
+            onChange(composeTemplate({ fullVariable: newVariable, helpers }), optionPath);
           }
         } else {
           if (variable) {
@@ -486,11 +475,8 @@ export function Input(props: VariableInputProps) {
                 );
               })}
               <VariableProvider variableName={fullVariable}>
-                <FilterContext.Provider value={{ updateFilterParams, deleteFilter, variableName: fullVariable }}>
-                  <Filters filters={filters} onFilterChange={onFilterAdd} />
-
-                  {variableText.length > 0 && <Addition variable={fullVariable} onFilterAdd={onFilterAdd} />}
-                </FilterContext.Provider>
+                <HelperList />
+                {variableText.length > 0 && <HelperAddition />}
               </VariableProvider>
             </Tag>
           </div>
@@ -546,3 +532,5 @@ export function Input(props: VariableInputProps) {
     </Space.Compact>,
   );
 }
+
+// export const Input = observer(_Input, { displayName: 'VariableInput' });

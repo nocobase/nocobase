@@ -176,14 +176,14 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
       if (typeof value === 'string') {
         const match = re.exec(value);
         if (match) {
-          const { fullVariable: key, filters } = extractTemplateElements(value);
+          const { fullVariable: key, filters: helpers } = extractTemplateElements(value);
           const val = getValuesByPath(vars, key, null);
           const field = getField?.(path);
           if (key.startsWith('$date') || key.startsWith('$nDate')) {
-            const filteredNow = filters.reduce((acc, filter) => filter.handler(...[acc, ...filter.args]), now);
+            const filteredNow = helpers.reduce((acc, filter) => filter.handler(...[acc, ...filter.args]), now);
             value = typeof val === 'function' ? val?.({ field, operator, timezone, now: filteredNow }) : val;
           } else {
-            value = filters.reduce((acc, filter) => filter.handler(...[acc, ...filter.args]), value);
+            value = helpers.reduce((acc, filter) => filter.handler(...[acc, ...filter.args]), value);
           }
           return value;
         }

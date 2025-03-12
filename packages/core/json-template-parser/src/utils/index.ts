@@ -18,27 +18,34 @@ type Filter = {
   args: string[];
 };
 
-export function extractTemplateVariable(template: string) {
+export function extractTemplateVariable(template: string): string | null {
   const escapedTemplate = escape(template ?? '');
-  const fullVariable = engine.fullVariablesSync(escapedTemplate)[0] ?? '';
-  return revertEscape(fullVariable);
+  try {
+    const fullVariable = engine.fullVariablesSync(escapedTemplate)[0] ?? '';
+    return revertEscape(fullVariable);
+  } catch (e) {
+    return null;
+  }
 }
 
 export function extractTemplateElements(template: string) {
   const escapedTemplate = escape(template ?? '');
-  const fullVariable = engine.fullVariablesSync(escapedTemplate)[0] ?? '';
-  const variableSegments = engine.variableSegmentsSync(escapedTemplate)[0] ?? [];
-  const parsedTemplate = engine.parse(escapedTemplate)[0] ?? {};
+  try {
+    const fullVariable = engine.fullVariablesSync(escapedTemplate)[0] ?? '';
+    const variableSegments = engine.variableSegmentsSync(escapedTemplate)[0] ?? [];
+    const parsedTemplate = engine.parse(escapedTemplate)[0] ?? {};
+    const helpers =
+      //@ts-ignore
+      parsedTemplate?.value?.filters?.map(({ name, handler, args }) => ({
+        name,
+        handler,
+        args: args.map((arg) => arg.content),
+      })) ?? [];
 
-  const filters =
-    //@ts-ignore
-    parsedTemplate?.value?.filters?.map(({ name, handler, args }) => ({
-      name,
-      handler,
-      args: args.map((arg) => arg.content),
-    })) ?? [];
-
-  return revertEscape({ fullVariable, variableSegments, filters });
+    return revertEscape({ fullVariable, variableSegments, helpers });
+  } catch (e) {
+    return { fullVariable: null, variableSegments: [], helpers: [] };
+  }
 }
 
 const composeFilterTemplate = (filter: Filter) => {
@@ -48,8 +55,8 @@ const composeFilterTemplate = (filter: Filter) => {
   return value;
 };
 
-export const composeTemplate = ({ fullVariable, filters }: { fullVariable: string; filters: any[] }) => {
-  const filtersTemplate = filters.map(composeFilterTemplate).join(' | ');
+export const composeTemplate = ({ fullVariable, helpers }: { fullVariable: string; helpers: any[] }) => {
+  const filtersTemplate = helpers.map(composeFilterTemplate).join(' | ');
   const innerTemplateStr = [fullVariable, filtersTemplate].filter(Boolean).join(' | ');
   return `{{${innerTemplateStr}}}`;
 };

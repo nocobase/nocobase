@@ -288,7 +288,7 @@ const VariablesProvider = ({ children, filterVariables }: any) => {
 
       const path = getPath(str);
       const result = await getResult(path, localVariables as VariableOption[], options);
-      if (filters.length > 0) {
+      if (Array.isArray(filters) && filters.length > 0) {
         result.value = filters.reduce((acc, filter) => filter.handler(...[acc, ...filter.args]), result.value);
       }
 

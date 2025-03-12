@@ -12,6 +12,11 @@ import { createJSONTemplateParser } from '../parser';
 const parser = createJSONTemplateParser();
 
 describe('ctx function', () => {
+  it('should handle basic context function', () => {
+    const template = '{{}}';
+    const variable = parser.engine.fullVariablesSync(template);
+    console.log(variable);
+  });
   it('should handle basic context function with state', () => {
     const template = '{{$user.id}} - {{$user.name}}';
     const data = {
