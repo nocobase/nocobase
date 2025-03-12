@@ -9,15 +9,18 @@
 
 import React, { useState, useMemo, useContext } from 'react';
 import { Dropdown, Popover } from 'antd';
-import { createForm } from '@formily/core';
+import { createForm, onFormValuesChange, Form } from '@formily/core';
 import { useForm, FormContext } from '@formily/react';
 import { FilterOutlined } from '@ant-design/icons';
 import { uid, tval } from '@nocobase/utils/client';
 import type { MenuProps } from 'antd';
+import { Router } from 'react-router-dom';
+import { createMemoryHistory } from 'history';
 import { SchemaComponent } from '../../core/SchemaComponent';
 import { useApp } from '../../../application';
 import { useCompile } from '../../hooks';
 import { useVariable } from './VariableProvider';
+import { useGlobalTheme, GlobalThemeProvider } from '../../../global-theme';
 
 export function Addition({ variable, onFilterAdd }) {
   const app = useApp();
@@ -78,6 +81,8 @@ export function Filters({ filters, onFilterChange }) {
 export function Filter({ config, filter, filterId, previousFilters }) {
   const [open, setOpen] = useState(false);
   const { value } = useVariable();
+
+  const { updateFilterParams } = useContext(FilterContext);
   const inputValue = [...previousFilters].reduce((value, filter) => {
     return filter.handler(value, ...filter.args);
   }, value);
@@ -95,9 +100,13 @@ export function Filter({ config, filter, filterId, previousFilters }) {
     return createForm({ initialValues: argsMap });
   }, [config.uiSchema, filter.args]);
 
+  const updateFilterForm = async (form: Form<any>) => {
+    const values = form.values;
+    const params = config.uiSchema.map((param) => values[param.name]);
+    updateFilterParams({ filterId, params });
+  };
   const useSaveActionProps = () => {
     const form = useForm();
-    const { updateFilterParams } = useContext(FilterContext);
     return {
       type: 'primary',
       onClick: async () => {
@@ -127,7 +136,17 @@ export function Filter({ config, filter, filterId, previousFilters }) {
     : {};
 
   const useFormBlockProps = () => {
-    return { form: createForm({ initialValues: argsMap }), layout: 'vertical' };
+    return {
+      form: createForm({
+        initialValues: argsMap,
+        effects() {
+          onFormValuesChange((form) => {
+            updateFilterForm(form);
+          });
+        },
+      }),
+      layout: 'vertical',
+    };
   };
 
   const schema = {
@@ -143,14 +162,10 @@ export function Filter({ config, filter, filterId, previousFilters }) {
         properties: {
           '$input-value': {
             type: 'void',
-            'x-component': 'Input',
-            'x-component-props': {
-              defaultValue: '{{ inputValue }}',
-              disabled: true,
-            },
+            'x-component': 'div',
+            'x-content': '{{ inputValue }}',
             'x-decorator': 'FormItem',
             title: tval('Input Value'),
-            'x-read-pretty': true,
           },
           ...Object.fromEntries(
             config.uiSchema.map((param) => [
@@ -163,14 +178,10 @@ export function Filter({ config, filter, filterId, previousFilters }) {
           ),
           '$return-value': {
             type: 'void',
-            'x-component': 'Input',
-            'x-component-props': {
-              defaultValue: '{{ outputValue }}',
-              disabled: true,
-            },
+            'x-component': 'div',
+            'x-content': '{{ outputValue }}',
             'x-decorator': 'FormItem',
             title: tval('Return Value'),
-            'x-read-pretty': true,
           },
           actions: {
             type: 'void',
@@ -195,19 +206,24 @@ export function Filter({ config, filter, filterId, previousFilters }) {
       },
     },
   };
-  const Content = (
-    <SchemaComponent
-      schema={schema}
-      scope={{ useSaveActionProps, useFormBlockProps, useDeleteActionProps, outputValue, inputValue }}
-      basePath={['']}
-    />
+
+  const app = useApp();
+  const history = createMemoryHistory();
+  const Content = () => (
+    <Router location={history.location} navigator={history}>
+      <SchemaComponent
+        schema={schema}
+        scope={{ useSaveActionProps, useFormBlockProps, useDeleteActionProps, outputValue, inputValue }}
+        basePath={['']}
+      />
+    </Router>
   );
 
   const WithPropOver = ({ children }) => {
     const { value } = useVariable();
 
     return (
-      <Popover open={open} onOpenChange={handleOpenChange} content={Content} trigger={'click'}>
+      <Popover open={open} onOpenChange={handleOpenChange} content={<Content />} trigger={'click'}>
         {children}
       </Popover>
     );
