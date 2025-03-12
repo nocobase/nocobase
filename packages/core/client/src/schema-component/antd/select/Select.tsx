@@ -191,7 +191,7 @@ const InternalSelect = connect(
     (props, field) => {
       const { value, options } = props;
       const result = every(options, (k) => k.value !== value)
-        ? field.data?.dataSource?.find?.((v) => v.value === value)?.label || value
+        ? field?.data?.dataSource?.find?.((v) => v.value === value)?.label || value
         : value;
       return {
         ...props,
