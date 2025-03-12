@@ -454,19 +454,14 @@ export class ACL extends EventEmitter {
    */
   filterParams(ctx, resourceName, params) {
     const collection = ctx.db.getCollection(resourceName);
-    if (!collection) {
-      throw new NoPermissionError('createdById field not found');
-    }
-    const hasCreatedById = collection.getField('createdById');
-    if (params?.filter?.createdById && !hasCreatedById) {
-      throw new NoPermissionError('createdById field not found');
-    }
-    if (params?.filter?.createdById && !hasCreatedById) {
-      throw new NoPermissionError('createdById field not found');
+    if (params?.filter?.createdById) {
+      if (!collection || !collection.getField('createdById')) {
+        throw new NoPermissionError('createdById field not found');
+      }
     }
 
     // 检查 $or 条件中的 createdById
-    if (params?.filter?.$or?.length && !hasCreatedById) {
+    if (params?.filter?.$or?.length) {
       const checkCreatedById = (items) => {
         return items.some(
           (x) =>
@@ -475,7 +470,9 @@ export class ACL extends EventEmitter {
       };
 
       if (checkCreatedById(params.filter.$or)) {
-        throw new NoPermissionError('createdById field not found');
+        if (!collection || !collection.getField('createdById')) {
+          throw new NoPermissionError('createdById field not found');
+        }
       }
     }
 

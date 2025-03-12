@@ -463,4 +463,42 @@ describe('union role: full permissions', async () => {
     getRolesResponse = await agent.resource('roles').list({ pageSize: 30 });
     expect(getRolesResponse.statusCode).toBe(403);
   });
+
+  it(`should response allowedActions no edit when createdById field is missing in data tables and set edit:own`, async () => {
+    const dataSourceRoleRepo = db.getRepository('dataSourcesRoles');
+    const dataSourceRole1 = await dataSourceRoleRepo.findOne({
+      where: { dataSourceKey: 'main', roleName: role1.name },
+    });
+    await dataSourceRoleRepo.update({
+      filter: { id: dataSourceRole1.id },
+      values: {
+        strategy: { actions: ['view', 'edit:own'] },
+      },
+    });
+
+    const dataSourceRole2 = await dataSourceRoleRepo.findOne({
+      where: { dataSourceKey: 'main', roleName: role2.name },
+    });
+    await dataSourceRoleRepo.update({
+      filter: { id: dataSourceRole2.id },
+      values: {
+        strategy: { actions: ['view', 'edit:own'] },
+      },
+    });
+
+    agent = (await (await app.agent().login(user, role1.name)).set({ 'X-With-ACL-Meta': true })) as any;
+    let getRolesResponse = await agent.resource('roles').list({ pageSize: 30 });
+    expect(getRolesResponse.statusCode).toBe(200);
+    expect(getRolesResponse.body.meta.allowedActions.update.length).toBe(0);
+
+    agent = (await (await app.agent().login(user, role2.name)).set({ 'X-With-ACL-Meta': true })) as any;
+    getRolesResponse = await agent.resource('roles').list({ pageSize: 30 });
+    expect(getRolesResponse.statusCode).toBe(200);
+    expect(getRolesResponse.body.meta.allowedActions.update.length).toBe(0);
+
+    agent = (await (await app.agent().login(user, UNION_ROLE_KEY)).set({ 'X-With-ACL-Meta': true })) as any;
+    getRolesResponse = await agent.resource('roles').list({ pageSize: 30 });
+    expect(getRolesResponse.statusCode).toBe(200);
+    expect(getRolesResponse.body.meta.allowedActions.update.length).toBe(0);
+  });
 });
