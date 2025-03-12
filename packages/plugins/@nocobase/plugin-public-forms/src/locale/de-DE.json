@@ -1,0 +1,18 @@
+{
+  "Enable form": "Formular aktivieren",
+  "Public forms": "Öffentliche Formulare",
+  "Add New": "Neu hinzufügen",
+  "Type": "Typ",
+  "Open form": "Öffentliches Formular öffnen",
+  "Set password": "Passwort festlegen",
+  "Copy link": "Link kopieren",
+  "QR code": "QR-Code",
+  "The form is not enabled and cannot be accessed": "Das Formular ist nicht aktiviert und kann nicht aufgerufen werden",
+  "Link copied successfully": "Link erfolgreich kopiert",
+  "After successful submission": "Nach erfolgreicher Übermittlung",
+  "Enable password": "Passwort aktivieren",
+  "Prompt after successful submission": "Hinweis nach erfolgreicher Übermittlung",
+  "Form": "Normales Formular",
+  "# Submitted successfully!\nThis is a demo text, **supports Markdown syntax**.": "# Erfolgreich übermittelt!\nDies ist ein Beispieltext, **unterstützt Markdown-Syntax**.",
+  "The form is not found": "Formular nicht gefunden"
+}
