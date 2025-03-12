@@ -453,9 +453,28 @@ export class ACL extends EventEmitter {
    * @internal
    */
   filterParams(ctx, resourceName, params) {
-    if (params?.filter?.createdById) {
-      const collection = ctx.db.getCollection(resourceName);
-      if (!collection || !collection.getField('createdById')) {
+    const collection = ctx.db.getCollection(resourceName);
+    if (!collection) {
+      throw new NoPermissionError('createdById field not found');
+    }
+    const hasCreatedById = collection.getField('createdById');
+    if (params?.filter?.createdById && !hasCreatedById) {
+      throw new NoPermissionError('createdById field not found');
+    }
+    if (params?.filter?.createdById && !hasCreatedById) {
+      throw new NoPermissionError('createdById field not found');
+    }
+
+    // 检查 $or 条件中的 createdById
+    if (params?.filter?.$or?.length && !hasCreatedById) {
+      const checkCreatedById = (items) => {
+        return items.some(
+          (x) =>
+            'createdById' in x || x.$or?.some((y) => 'createdById' in y) || x.$and?.some((y) => 'createdById' in y),
+        );
+      };
+
+      if (checkCreatedById(params.filter.$or)) {
         throw new NoPermissionError('createdById field not found');
       }
     }

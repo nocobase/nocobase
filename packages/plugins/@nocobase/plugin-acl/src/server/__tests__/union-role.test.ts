@@ -425,4 +425,42 @@ describe('union role: full permissions', async () => {
     expect(getSystemSettingsResponse.status).toBe(200);
     expect(getSystemSettingsResponse.body.data.roleMode).toStrictEqual(SystemRoleMode.allowUseUnion);
   });
+
+  it(`should response no permission when createdById field is missing in data tables`, async () => {
+    let getRolesResponse = await agent.resource('roles').list({ pageSize: 30 });
+    expect(getRolesResponse.statusCode).toBe(403);
+
+    const dataSourceRoleRepo = db.getRepository('dataSourcesRoles');
+    const dataSourceRole1 = await dataSourceRoleRepo.findOne({
+      where: { dataSourceKey: 'main', roleName: role1.name },
+    });
+    await dataSourceRoleRepo.update({
+      filter: { id: dataSourceRole1.id },
+      values: {
+        strategy: { actions: ['view:own'] },
+      },
+    });
+
+    const dataSourceRole2 = await dataSourceRoleRepo.findOne({
+      where: { dataSourceKey: 'main', roleName: role2.name },
+    });
+    await dataSourceRoleRepo.update({
+      filter: { id: dataSourceRole2.id },
+      values: {
+        strategy: { actions: ['view:own'] },
+      },
+    });
+
+    agent = await app.agent().login(user, role1.name);
+    getRolesResponse = await agent.resource('roles').list({ pageSize: 30 });
+    expect(getRolesResponse.statusCode).toBe(403);
+
+    agent = await app.agent().login(user, role2.name);
+    getRolesResponse = await agent.resource('roles').list({ pageSize: 30 });
+    expect(getRolesResponse.statusCode).toBe(403);
+
+    agent = await app.agent().login(user, UNION_ROLE_KEY);
+    getRolesResponse = await agent.resource('roles').list({ pageSize: 30 });
+    expect(getRolesResponse.statusCode).toBe(403);
+  });
 });
