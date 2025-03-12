@@ -37,6 +37,7 @@ interface Props {
    * @default '$nForm'
    */
   variableNameOfLeftCondition?: string;
+  action?: any;
 }
 
 export function bindLinkageRulesToFiled(
@@ -71,6 +72,7 @@ export function bindLinkageRulesToFiled(
     pattern: field.initStateOfLinkageRules?.pattern || getTempFieldState(true, field.pattern),
     value: field.initStateOfLinkageRules?.value || getTempFieldState(true, field.value || field.initialValue),
     dataSource: field.initStateOfLinkageRules?.dataSource || getTempFieldState(true, field.dataSource || field.options),
+    dateScope: field.initStateOfLinkageRules?.dateScope || getTempFieldState(true, null),
   };
 
   return reaction(
@@ -213,6 +215,7 @@ function getSubscriber(
         variables,
         localVariables,
         variableNameOfLeftCondition,
+        action,
       },
       jsonLogic,
     );
@@ -240,6 +243,12 @@ function getSubscriber(
         if (stateList.length > 1) {
           field.value = lastState.value;
         }
+      } else if (fieldName === 'dateScope') {
+        console.log(lastState.value);
+        field.setComponentProps({
+          _maxDate: lastState.value?._maxDate?.value || lastState.value?._maxDate,
+          _minDate: lastState.value?._minDate?.value || lastState.value?._minDate,
+        });
       } else {
         // 为了让字段的默认值中的变量能正常工作，需要保证字段被隐藏时，字段组件依然会被渲染
         if (fieldName === 'display' && lastState?.value === 'hidden') {
@@ -304,13 +313,15 @@ function getFieldNameByOperator(operator: ActionType) {
       return 'value';
     case ActionType.Options:
       return 'dataSource';
+    case ActionType.DateScope:
+      return 'dateScope';
     default:
       return null;
   }
 }
 
 export const collectFieldStateOfLinkageRules = (
-  { operator, value, field, condition, variables, localVariables, variableNameOfLeftCondition }: Props,
+  { operator, value, field, condition, variables, localVariables, variableNameOfLeftCondition, action }: Props,
   jsonLogic: any,
 ) => {
   const requiredResult = field?.stateOfLinkageRules?.required || [field?.initStateOfLinkageRules?.required];
@@ -320,6 +331,7 @@ export const collectFieldStateOfLinkageRules = (
   const optionsResult = field?.stateOfLinkageRules?.dataSource || [field?.initStateOfLinkageRules?.dataSource];
   const { evaluate } = evaluators.get('formula.js');
   const paramsToGetConditionResult = { ruleGroup: condition, variables, localVariables, variableNameOfLeftCondition };
+  const dateScopeResult = field?.stateOfLinkageRules?.dateScope || [field?.initStateOfLinkageRules?.dateScope];
 
   switch (operator) {
     case ActionType.Required:
@@ -401,6 +413,19 @@ export const collectFieldStateOfLinkageRules = (
         };
       }
       break;
+    case ActionType.DateScope: {
+      dateScopeResult.push(
+        getTempFieldState(conditionAnalyses(paramsToGetConditionResult, jsonLogic), {
+          _maxDate: action._maxDate,
+          _minDate: action._minDate,
+        }),
+      );
+      field.stateOfLinkageRules = {
+        ...field.stateOfLinkageRules,
+        dateScope: dateScopeResult,
+      };
+      break;
+    }
     default:
       return null;
   }
