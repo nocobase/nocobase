@@ -20,6 +20,8 @@ import { PopupVisibleProvider, PopupVisibleProviderContext } from '../../schema-
 export const PopupContextProvider: React.FC<{
   visible?: boolean;
   setVisible?: (visible: boolean) => void;
+  openMode?: string;
+  openSize?: string;
 }> = (props) => {
   const { visible: visibleFromProps, setVisible: setVisibleFromProps } = props;
   const [visible, setVisible] = useState(false);
@@ -37,8 +39,8 @@ export const PopupContextProvider: React.FC<{
     },
     [setVisibleFromProps, setVisibleWithURL],
   );
-  const openMode = fieldSchema['x-component-props']?.['openMode'] || 'drawer';
-  const openSize = fieldSchema['x-component-props']?.['openSize'];
+  const openMode = props.openMode || fieldSchema['x-component-props']?.['openMode'] || 'drawer';
+  const openSize = props.openSize || fieldSchema['x-component-props']?.['openSize'];
 
   return (
     <PopupVisibleProvider visible={false}>

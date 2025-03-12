@@ -101,7 +101,7 @@ const Demo = () => {
   return (
     <div>
       <div>{render()}</div>
-      <div>可以进行参数的二次覆盖：{render({ style: { color: 'red' } })}</div>
+      <div>可以进行参数的二次覆盖：{render({ mode: 'inline', style: { color: 'red' } })}</div>
     </div>
   );
 };

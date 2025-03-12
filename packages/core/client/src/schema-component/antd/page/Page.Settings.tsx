@@ -143,6 +143,16 @@ export const pageSettings = new SchemaSettings({
             await updateRoute(currentRoute.id, {
               enableTabs: v,
             });
+
+            // enableTabs 已经保存在 route 中了，按说这里不需要加了。但 E2E 中需要这个参数。
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['enablePageTabs'] = v;
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                ['x-component-props']: fieldSchema['x-component-props'],
+              },
+            });
           },
         };
       },

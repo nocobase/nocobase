@@ -16,6 +16,8 @@ type FilterField = {
     value: string;
     noValue?: boolean;
   };
+  dataSource?: string;
+  collectionField?: string;
 };
 
 export const ChartFilterContext = createContext<{

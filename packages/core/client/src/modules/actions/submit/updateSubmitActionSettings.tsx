@@ -19,7 +19,6 @@ import {
   RemoveButton,
   SecondConFirm,
   SkipValidation,
-  WorkflowConfig,
 } from '../../../schema-component/antd/action/Action.Designer';
 import { SaveMode } from './createSubmitActionSettings';
 import { SchemaSettingsLinkageRules } from '../../../schema-settings';
@@ -55,14 +54,6 @@ export const updateSubmitActionSettings = new SchemaSettings({
     {
       name: 'secondConfirmation',
       Component: SecondConFirm,
-    },
-    {
-      name: 'workflowConfig',
-      Component: WorkflowConfig,
-      useVisible() {
-        const fieldSchema = useFieldSchema();
-        return isValid(fieldSchema?.['x-action-settings']?.triggerWorkflows);
-      },
     },
     {
       name: 'assignFieldValues',
@@ -119,14 +110,6 @@ export const submitActionSettings = new SchemaSettings({
     {
       name: 'secondConfirmation',
       Component: SecondConFirm,
-    },
-    {
-      name: 'workflowConfig',
-      Component: WorkflowConfig,
-      useVisible() {
-        const fieldSchema = useFieldSchema();
-        return isValid(fieldSchema?.['x-action-settings']?.triggerWorkflows);
-      },
     },
     {
       name: 'saveMode',

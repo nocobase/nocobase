@@ -7,16 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useMemo } from 'react';
-import { useApp } from '../../hooks';
-import { SchemaSettingOptions } from '../types';
-import React from 'react';
-import { SchemaSettingsWrapper } from '../components';
-import { SchemaSettingsProps } from '../../../schema-settings';
-import { Schema } from '@formily/json-schema';
 import { GeneralField } from '@formily/core';
+import { Schema } from '@formily/json-schema';
+import React, { useMemo } from 'react';
 import { Designable } from '../../../schema-component';
+import { SchemaSettingsProps } from '../../../schema-settings';
+import { useApp } from '../../hooks';
+import { SchemaSettingsWrapper } from '../components';
 import { SchemaSettings } from '../SchemaSettings';
+import { SchemaSettingOptions } from '../types';
 
 type UseSchemaSettingsRenderOptions<T = {}> = Omit<SchemaSettingOptions<T>, 'name' | 'items'> &
   Omit<SchemaSettingsProps, 'title' | 'children'> & {

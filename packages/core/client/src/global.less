@@ -27,9 +27,21 @@
   .rc-virtual-list-scrollbar-thumb {
     background: var(--colorBgScrollBar) !important;
   }
+
   .rc-virtual-list-scrollbar-thumb:hover {
     background: var(--colorBgScrollBarHover) !important;
   }
+
   .rc-virtual-list-scrollbar-thumb:active {
     background: var(--colorBgScrollBarActive) !important;
+  }
+
+  // Fix the style of the top collapsed menu button dropdown
+  .ant-menu-submenu-popup {
+    backdrop-filter: none;
+  }
+
+  // Fix the style of the top collapsed menu button dropdown when clicking
+  .ant-menu-item.ant-menu-item-only-child.ant-pro-base-menu-horizontal-menu-item:active {
+    background-color: var(--colorBgMenuItemSelected) !important;
   }

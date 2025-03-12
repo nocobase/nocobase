@@ -264,7 +264,7 @@ describe('view collection', function () {
 
     const Role = await collectionRepository.create({
       values: {
-        name: 'roles',
+        name: 'my_roles',
         fields: [{ name: 'name', type: 'string' }],
       },
       context: {},
@@ -276,7 +276,7 @@ describe('view collection', function () {
       values: [{ name: 'u1' }, { name: 'u2' }],
     });
 
-    await db.getRepository('roles').create({
+    await db.getRepository('my_roles').create({
       values: [{ name: 'r1' }, { name: 'r2' }],
     });
 
@@ -327,7 +327,7 @@ describe('view collection', function () {
         collectionName: 'users',
         name: 'roles',
         type: 'belongsToMany',
-        target: 'roles',
+        target: 'my_roles',
         through: 'test_view',
         foreignKey: 'user_id',
         otherKey: 'role_id',

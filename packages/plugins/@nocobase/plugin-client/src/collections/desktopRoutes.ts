@@ -206,6 +206,21 @@ export default {
       },
     },
     {
+      key: 'brt6tz4hgin',
+      name: 'tooltip',
+      type: 'string',
+      interface: 'textarea',
+      description: null,
+      collectionName: 'desktopRoutes',
+      parentKey: null,
+      reverseKey: null,
+      uiSchema: {
+        type: 'string',
+        'x-component': 'Input.TextArea',
+        title: '{{t("Tooltip")}}',
+      },
+    },
+    {
       key: 'ozl5d8t2d5e',
       name: 'icon',
       type: 'string',

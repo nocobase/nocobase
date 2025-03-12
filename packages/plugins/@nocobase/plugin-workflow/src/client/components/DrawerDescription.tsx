@@ -43,7 +43,7 @@ const useStyles = createStyles(({ css, token }) => {
 });
 
 export function DrawerDescription(props) {
-  const { label, title, description } = props;
+  const { label, title, icon, description } = props;
   const { styles } = useStyles();
 
   return (
@@ -51,7 +51,9 @@ export function DrawerDescription(props) {
       <dl>
         <dt>{label}</dt>
         <dd>
-          <Tag style={{ background: 'none' }}>{title}</Tag>
+          <Tag icon={icon} style={{ background: 'none' }}>
+            {title}
+          </Tag>
         </dd>
       </dl>
       {description ? <p>{description}</p> : null}

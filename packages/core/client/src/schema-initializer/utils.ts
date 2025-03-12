@@ -239,6 +239,7 @@ function getGroupItemForTable({
 
       return {
         type: 'item',
+        key: `${field.target}_${subField.name}_${newSchemaName}`,
         name: newSchemaName,
         title: subField?.uiSchema?.title || subField.name,
         Component: 'TableCollectionFieldInitializer',
@@ -259,6 +260,7 @@ function getGroupItemForTable({
 
   const displayCollectionFields = {
     type: 'itemGroup',
+    key: `${field.target}_${schemaName}_displayFields`,
     name: `${schemaName}-displayCollectionFields`,
     title: t('Display fields'),
     children: items,
@@ -287,6 +289,7 @@ function getGroupItemForTable({
     if (subChildren.length) {
       const group: any = {
         type: 'itemGroup',
+        key: `${field.target}_${schemaName}_associationFields`,
         name: `${schemaName}-associationFields`,
         title: t('Display association fields'),
         children: subChildren,
@@ -298,7 +301,8 @@ function getGroupItemForTable({
 
   return {
     type: 'subMenu',
-    name: `${schemaName}`,
+    key: `${field.target}_${schemaName}_submenu`,
+    name: schemaName,
     title: field.uiSchema?.title,
     children,
   } as SchemaInitializerItemType;

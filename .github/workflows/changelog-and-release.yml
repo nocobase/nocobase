@@ -89,7 +89,7 @@ jobs:
         with:
           node-version: 18
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install
       - name: Run script
         shell: bash
         run: |
@@ -101,6 +101,6 @@ jobs:
         if: ${{ steps.get-info.outputs.version == 'rc' }}
         run: |
           git pull origin main
-          git add .
+          git add CHANGELOG.md CHANGELOG.zh-CN.md
           git commit -m "docs: update changelogs"
           git push origin main

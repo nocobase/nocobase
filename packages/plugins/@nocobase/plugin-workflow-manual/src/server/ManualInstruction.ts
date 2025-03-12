@@ -118,9 +118,9 @@ export default class extends Instruction {
     }
     const title = config.title ? processor.getParsedValue(config.title, node.id) : node.title;
     // NOTE: batch create users jobs
-    const UserJobModel = this.workflow.app.db.getModel('users_jobs');
-    await UserJobModel.bulkCreate(
-      assignees.map((userId) => ({
+    const TaskRepo = this.workflow.app.db.getRepository('workflowManualTasks');
+    await TaskRepo.createMany({
+      records: assignees.map((userId) => ({
         userId,
         jobId: job.id,
         nodeId: node.id,
@@ -129,10 +129,8 @@ export default class extends Instruction {
         status: JOB_STATUS.PENDING,
         title,
       })),
-      {
-        transaction: processor.mainTransaction,
-      },
-    );
+      transaction: processor.mainTransaction,
+    });
 
     return job;
   }
@@ -141,15 +139,15 @@ export default class extends Instruction {
     // NOTE: check all users jobs related if all done then continue as parallel
     const { mode } = node.config as ManualConfig;
 
-    const UserJobRepo = this.workflow.app.db.getRepository('users_jobs');
-    const jobs = await UserJobRepo.find({
+    const TaskRepo = this.workflow.app.db.getRepository('workflowManualTasks');
+    const tasks = await TaskRepo.find({
       where: {
         jobId: job.id,
       },
       transaction: processor.mainTransaction,
     });
     const assignees = [];
-    const distributionMap = jobs.reduce((result, item) => {
+    const distributionMap = tasks.reduce((result, item) => {
       if (result[item.status] == null) {
         result[item.status] = 0;
       }
@@ -162,9 +160,9 @@ export default class extends Instruction {
       count: distributionMap[status],
     }));
 
-    const submitted = jobs.reduce((count, item) => (item.status !== JOB_STATUS.PENDING ? count + 1 : count), 0);
+    const submitted = tasks.reduce((count, item) => (item.status !== JOB_STATUS.PENDING ? count + 1 : count), 0);
     const status = job.status || (getMode(mode).getStatus(distribution, assignees) ?? JOB_STATUS.PENDING);
-    const result = mode ? (submitted || 0) / assignees.length : job.latestUserJob?.result ?? job.result;
+    const result = mode ? (submitted || 0) / assignees.length : job.latestTask?.result ?? job.result;
     processor.logger.debug(`manual resume job and next status: ${status}`);
     job.set({
       status,

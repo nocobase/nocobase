@@ -84,4 +84,5 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
 export const RemoteSchemaComponent: React.FC<RemoteSchemaComponentProps> = memo((props) => {
   return props.uid ? <RequestSchemaComponent {...props} /> : null;
 });
+
 RemoteSchemaComponent.displayName = 'RemoteSchemaComponent';

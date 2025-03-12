@@ -38,6 +38,7 @@ export const ExecutionPage = () => {
                   params: {
                     filter: params,
                     appends: ['jobs', 'workflow', 'workflow.nodes'],
+                    except: ['jobs.result', 'workflow.options'],
                   },
                 },
               },

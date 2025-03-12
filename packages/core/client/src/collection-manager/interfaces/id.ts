@@ -55,5 +55,7 @@ export class IdFieldInterface extends CollectionFieldInterface {
   filterable = {
     operators: operators.id,
   };
+
+  description = '{{t("Primary key, unique identifier, self growth") }}';
   titleUsable = true;
 }

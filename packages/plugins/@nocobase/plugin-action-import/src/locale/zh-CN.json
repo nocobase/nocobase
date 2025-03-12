@@ -39,5 +39,13 @@
   "Header mismatch at column {{column}}: expected \"{{expected}}\", but got \"{{actual}}\"": "第 {{column}} 列的表头不匹配：预期 \"{{expected}}\"，实际是 \"{{actual}}\"",
   "No data to import": "没有数据可导入",
   "Failed to import row {{row}}, {{message}}, row data: {{data}}": "导入第 {{row}} 行失败，{{message}}，行数据：{{data}}",
-  "import-error": "导入第 {{rowIndex}} 行失败，行数据：{{rowData}}, 原因：{{causeMessage}}"
+  "import-error": "导入第 {{rowIndex}} 行失败，行数据：{{rowData}}, 原因：{{causeMessage}}",
+  "Import completed": "导入完成：{{success}} 条记录已导入，{{updated}} 条记录已更新，{{skipped}} 条记录已跳过，共 {{total}} 条记录",
+  "Successfully imported": "成功导入",
+  "Updated records": "已更新记录",
+  "Skipped records": "已跳过记录",
+  "Total records": "总记录数",
+  "View result": "查看结果",
+  "ImportResult": "已导入 {{success}} 条，更新 {{updated}} 条，跳过 {{skipped}} 条，共 {{total}} 条",
+  "Task result": "任务结果"
 }

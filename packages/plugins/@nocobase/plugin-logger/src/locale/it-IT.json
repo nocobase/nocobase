@@ -1,0 +1,9 @@
+{
+  "Logger": "Registro",
+  "Search": "Cerca",
+  "Download": "Scarica",
+  "Download logs": "Scarica registri",
+  "API request and response logs": "Registri delle richieste e risposte API",
+  "Application, database, plugins and other system logs, the error level logs will be sent to": "Registri dell'applicazione, del database, dei plugin e altri registri di sistema, i registri del livello di errore verranno inviati a",
+  "SQL execution logs, printed by Sequelize when the db logging is enabled": "Registri di esecuzione SQL, stampati da Sequelize quando il logging del database è abilitato"
+}

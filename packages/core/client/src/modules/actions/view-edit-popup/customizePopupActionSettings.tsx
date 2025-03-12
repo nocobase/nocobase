@@ -14,7 +14,7 @@ import { useCollection_deprecated } from '../../../collection-manager';
 import { useCollection } from '../../../data-source';
 import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/action/Action.Designer';
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
-import { SchemaSettingsLinkageRules } from '../../../schema-settings';
+import { SchemaSettingsLinkageRules, SchemaSettingAccessControl } from '../../../schema-settings';
 import { useOpenModeContext } from '../../popup/OpenModeProvider';
 import { useCurrentPopupRecord } from '../../variable/variablesProvider/VariablePopupRecordProvider';
 
@@ -57,6 +57,7 @@ export const customizePopupActionSettings = new SchemaSettings({
         };
       },
     },
+    SchemaSettingAccessControl,
     {
       name: 'remove',
       sort: 100,

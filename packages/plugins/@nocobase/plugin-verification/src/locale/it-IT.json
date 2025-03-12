@@ -1,0 +1,22 @@
+{
+  "Verification": "Verifica",
+  "Verification providers": "Fornitori verifica",
+  "Provider type": "Tipo fornitore",
+  "Aliyun SMS": "SMS Aliyun",
+  "Access Key ID": "Access Key ID",
+  "Access Key Secret": "Access Key Secret",
+  "Endpoint": "Endpoint",
+  "Sign": "Firma",
+  "Template code": "Codice modello",
+  "Secret Id": "Secret ID",
+  "Secret Key": "Secret Key",
+  "Region": "Regione",
+  "Sign name": "Nome firma",
+  "Sms sdk app id": "ID app SDK SMS",
+  "Template Id": "ID modello",
+  "Verification send failed, please try later or contact to administrator": "Invio verifica fallito, riprova più tardi o contatta l'amministratore",
+  "Not a valid cellphone number, please re-enter": "Numero di cellulare non valido, reinserisci",
+  "Please don't retry in {{time}} seconds": "Puoi riprovare tra {{time}} secondi",
+  "You are trying so frequently, please slow down": "Stai provando troppo frequentemente, rallenta",
+  "Verification code is invalid": "Codice di verifica non valido"
+}

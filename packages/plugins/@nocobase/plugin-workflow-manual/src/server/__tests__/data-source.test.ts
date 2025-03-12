@@ -37,7 +37,7 @@ describe('workflow > instructions > manual', () => {
     PostRepo = db.getCollection('posts').repository;
     AnotherPostRepo = app.dataSourceManager.dataSources.get('another').collectionManager.getRepository('posts');
     UserModel = db.getCollection('users').model;
-    UserJobModel = db.getModel('users_jobs');
+    UserJobModel = db.getModel('workflowManualTasks');
 
     users = await UserModel.bulkCreate([
       { id: 2, nickname: 'a' },
@@ -80,13 +80,13 @@ describe('workflow > instructions > manual', () => {
 
         await sleep(500);
 
-        const UserJobModel = db.getModel('users_jobs');
+        const UserJobModel = db.getModel('workflowManualTasks');
         const pendingJobs = await UserJobModel.findAll({
           order: [['userId', 'ASC']],
         });
         expect(pendingJobs.length).toBe(1);
 
-        const res1 = await userAgents[0].resource('users_jobs').submit({
+        const res1 = await userAgents[0].resource('workflowManualTasks').submit({
           filterByTk: pendingJobs[0].get('id'),
           values: {
             result: { f1: { title: 't1' }, _: 'resolve' },
@@ -130,13 +130,13 @@ describe('workflow > instructions > manual', () => {
 
         await sleep(500);
 
-        const UserJobModel = db.getModel('users_jobs');
+        const UserJobModel = db.getModel('workflowManualTasks');
         const pendingJobs = await UserJobModel.findAll({
           order: [['userId', 'ASC']],
         });
         expect(pendingJobs.length).toBe(1);
 
-        const res1 = await userAgents[0].resource('users_jobs').submit({
+        const res1 = await userAgents[0].resource('workflowManualTasks').submit({
           filterByTk: pendingJobs[0].get('id'),
           values: {
             result: { f1: { title: 't1' }, _: 'pending' },
@@ -155,7 +155,7 @@ describe('workflow > instructions > manual', () => {
         const c1 = await AnotherPostRepo.find();
         expect(c1.length).toBe(0);
 
-        const res2 = await userAgents[0].resource('users_jobs').submit({
+        const res2 = await userAgents[0].resource('workflowManualTasks').submit({
           filterByTk: pendingJobs[0].get('id'),
           values: {
             result: { f1: { title: 't2' }, _: 'resolve' },
@@ -201,13 +201,13 @@ describe('workflow > instructions > manual', () => {
 
         await sleep(500);
 
-        const UserJobModel = db.getModel('users_jobs');
+        const UserJobModel = db.getModel('workflowManualTasks');
         const pendingJobs = await UserJobModel.findAll({
           order: [['userId', 'ASC']],
         });
         expect(pendingJobs.length).toBe(1);
 
-        const res1 = await userAgents[0].resource('users_jobs').submit({
+        const res1 = await userAgents[0].resource('workflowManualTasks').submit({
           filterByTk: pendingJobs[0].get('id'),
           values: {
             result: { f1: { title: 't2' }, _: 'resolve' },

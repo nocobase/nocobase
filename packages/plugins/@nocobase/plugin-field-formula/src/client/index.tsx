@@ -9,11 +9,38 @@
 
 import { Plugin } from '@nocobase/client';
 import { Formula } from './components';
-import { renderExpressionDescription } from './scopes';
-import { FormulaFieldInterface } from './interfaces/formula';
 import { FormulaComponentFieldSettings } from './FormulaComponentFieldSettings';
+import { FormulaFieldInterface } from './interfaces/formula';
+import { renderExpressionDescription } from './scopes';
 
 export class PluginFieldFormulaClient extends Plugin {
+  expressionFields = [
+    'checkbox',
+    'number',
+    'percent',
+    'integer',
+    'number',
+    'percent',
+    'input',
+    'textarea',
+    'email',
+    'phone',
+    'datetime',
+    'createdAt',
+    'updatedAt',
+    'radioGroup',
+    'checkboxGroup',
+    'select',
+    'multipleSelect',
+  ];
+  registerExpressionFieldInterface(data: string | string[]) {
+    if (Array.isArray(data)) {
+      const result = this.expressionFields.concat(data);
+      this.expressionFields = result;
+    } else {
+      this.expressionFields.push(data);
+    }
+  }
   async load() {
     this.app.addComponents({
       Formula,

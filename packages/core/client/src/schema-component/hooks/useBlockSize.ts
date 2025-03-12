@@ -93,7 +93,7 @@ const useFullScreenHeight = (props?) => {
   return pageReservedHeight;
 };
 
-const InternalWorkflowCollection = ['users_jobs', 'approvals', 'approvalRecords'];
+const InternalWorkflowCollection = ['workflowManualTasks', 'approvals', 'approvalRecords'];
 // 表格区块高度计算
 const useTableHeight = () => {
   const { token } = theme.useToken();

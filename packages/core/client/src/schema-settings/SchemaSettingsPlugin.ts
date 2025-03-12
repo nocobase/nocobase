@@ -78,7 +78,7 @@ import { subTablePopoverComponentFieldSettings } from '../modules/fields/compone
 import { tagComponentFieldSettings } from '../modules/fields/component/Tag/tagComponentFieldSettings';
 import { unixTimestampComponentFieldSettings } from '../modules/fields/component/UnixTimestamp/unixTimestampComponentFieldSettings';
 import { dividerSettings } from '../modules/blocks/other-blocks/divider/dividerSettings';
-
+import { timePickerComponentFieldSettings } from '../modules/fields/component/TimePicker/timePickerComponentFieldSettings';
 export class SchemaSettingsPlugin extends Plugin {
   async load() {
     // block settings
@@ -149,5 +149,6 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(uploadAttachmentComponentFieldSettings);
     this.schemaSettingsManager.add(previewComponentFieldSettings);
     this.schemaSettingsManager.add(dividerSettings);
+    this.schemaSettingsManager.add(timePickerComponentFieldSettings);
   }
 }

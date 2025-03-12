@@ -1,0 +1,14 @@
+{
+  "Dynamic Calculation": "Dynamische Berechnung",
+  "Expression": "Ausdruck",
+  "Dynamic expression calculation": "Dynamische Ausdrucksberechnung",
+  "Calculate an expression based on a calculation engine and obtain a value as the result. Variables in the upstream nodes can be used in the expression. The expression is dynamic one from an expression collections.": "Berechnet einen Ausdruck basierend auf einer Berechnungs-Engine und erhält einen Wert als Ergebnis. Variablen in den vorgelagerten Knoten können im Ausdruck verwendet werden. Der Ausdruck ist ein dynamischer Ausdruck aus einer Ausdruckssammlung.",
+  "Select dynamic expression": "Dynamischen Ausdruck auswählen",
+  "Select the dynamic expression queried from the upstream node. You need to query it from an expression collection.": "Wählen Sie den dynamischen Ausdruck aus, der vom vorgelagerten Knoten abgefragt wird. Sie müssen ihn aus einer Ausdruckssammlung abfragen.",
+  "Variable datasource": "Variable Datenquelle",
+  "Dynamic expression": "Dynamischer Ausdruck",
+  "An expression for calculation in each rows": "Ein Ausdruck für die Berechnung in jeder Zeile",
+  "Used to store expressions for use in workflows so that different expressions can be called for different data.": "Wird verwendet, um Ausdrücke zur Nutzung in Workflows zu speichern, damit für verschiedene Daten unterschiedliche Ausdrücke aufgerufen werden können.",
+  "Unconfigured": "Nicht konfiguriert",
+  "Calculation result": "Berechnungsergebnis"
+}

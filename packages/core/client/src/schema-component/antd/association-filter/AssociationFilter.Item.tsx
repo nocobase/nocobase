@@ -48,7 +48,7 @@ export const AssociationFilterItem = withDynamicSchemaProps(
 
     const [searchVisible, setSearchVisible] = useState(false);
 
-    const defaultActiveKeyCollapse = useMemo<React.Key[]>(
+    const defaultActiveKeyCollapse = useMemo<string[]>(
       () => (defaultCollapse && collectionField?.name ? [collectionField.name] : []),
       [collectionField?.name, defaultCollapse],
     );

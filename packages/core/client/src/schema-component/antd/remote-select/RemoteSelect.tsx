@@ -72,7 +72,6 @@ const InternalRemoteSelect = withDynamicSchemaProps(
       } = props;
       const dataSource = useDataSourceKey();
       const headers = useDataSourceHeaders(propsDataSource || dataSource);
-      const [open, setOpen] = useState(false);
       const firstRun = useRef(false);
       const fieldSchema = useFieldSchema();
       const isQuickAdd = fieldSchema['x-component-props']?.addMode === 'quickAdd';
@@ -197,7 +196,6 @@ const InternalRemoteSelect = withDynamicSchemaProps(
               search={searchData.current}
               callBack={() => {
                 searchData.current = null;
-                setOpen(false);
               }}
             />
           );
@@ -244,7 +242,6 @@ const InternalRemoteSelect = withDynamicSchemaProps(
       }, [value, defaultValue, data?.data, fieldNames.value, optionFilter]);
 
       const onDropdownVisibleChange = (visible) => {
-        setOpen(visible);
         searchData.current = null;
         if (visible) {
           run();
@@ -254,7 +251,6 @@ const InternalRemoteSelect = withDynamicSchemaProps(
 
       return (
         <Select
-          open={open}
           popupMatchSelectWidth={popupMatchSelectWidth}
           autoClearSearchValue
           filterOption={false}

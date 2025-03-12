@@ -34,6 +34,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     // add blocks
     await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-general').hover();
     await page.getByText('Markdown').click();
+    await page.waitForTimeout(500);
     await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-general').hover();
     await page.getByText('Form').hover();
     await page.getByRole('menuitem', { name: 'Current collection' }).click();

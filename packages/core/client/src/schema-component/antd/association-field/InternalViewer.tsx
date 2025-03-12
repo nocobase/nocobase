@@ -92,7 +92,6 @@ const RenderRecord = React.memo(
     const needWaitForFieldSchemaUpdatedRef = useRef(false);
     const fieldSchemaRef = useRef(fieldSchema);
     fieldSchemaRef.current = fieldSchema;
-
     const getCustomActionSchema = useCallback(() => {
       return fieldSchemaRef.current;
     }, []);
@@ -322,7 +321,14 @@ export const ReadPrettyInternalViewer: React.FC<ReadPrettyInternalViewerProps> =
         // The recordData here is only provided when the popup is opened, not the current row record
         <VariablePopupRecordProvider>
           <WithoutTableFieldResource.Provider value={true}>
-            <NocoBaseRecursionField schema={fieldSchema} onlyRenderProperties basePath={field.address} />
+            <NocoBaseRecursionField
+              schema={fieldSchema}
+              onlyRenderProperties
+              basePath={field.address}
+              filterProperties={(v) => {
+                return v['x-component'] !== 'Action';
+              }}
+            />
           </WithoutTableFieldResource.Provider>
         </VariablePopupRecordProvider>
       );

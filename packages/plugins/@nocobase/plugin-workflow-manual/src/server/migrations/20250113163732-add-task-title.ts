@@ -14,7 +14,7 @@ export default class extends Migration {
   async up() {
     const { db } = this.context;
     const NodeRepo = db.getRepository('flow_nodes');
-    const TaskRepo = db.getRepository('users_jobs');
+    const TaskRepo = db.getRepository('workflowManualTasks');
     await db.sequelize.transaction(async (transaction) => {
       const nodes = await NodeRepo.find({
         filter: {

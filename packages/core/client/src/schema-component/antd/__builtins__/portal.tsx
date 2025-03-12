@@ -28,12 +28,14 @@ export const createPortalProvider = (id: string | symbol) => {
       <Fragment>
         {props.children}
         <Observer>
-          {() => {
-            if (!props.id) return <></>;
-            const portal = PortalMap.get(props.id);
-            if (portal) return createPortal(portal, document.body);
-            return <></>;
-          }}
+          {
+            (() => {
+              if (!props.id) return <></>;
+              const portal = PortalMap.get(props.id);
+              if (portal) return createPortal(portal, document.body);
+              return <></>;
+            }) as unknown as React.ReactNode
+          }
         </Observer>
       </Fragment>
     );

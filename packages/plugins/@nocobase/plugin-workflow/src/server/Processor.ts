@@ -234,7 +234,7 @@ export default class Processor {
     if (parentNode) {
       this.logger.debug(`not on main, recall to parent entry node (${node.id})})`);
       await this.recall(parentNode, job);
-      return job;
+      return null;
     }
 
     // really done for all nodes

@@ -15,16 +15,16 @@ import classNames from 'classnames';
 import React, {
   createContext,
   FC,
-  //@ts-ignore
   startTransition,
   useCallback,
+  useContext,
   useEffect,
   useMemo,
   useRef,
   useState,
-  useContext,
 } from 'react';
 import { useTranslation } from 'react-i18next';
+import { SchemaComponentContext } from '../';
 import { SchemaInitializer, SchemaSettings, SchemaToolbarProvider, useSchemaInitializerRender } from '../application';
 import { useSchemaSettingsRender } from '../application/schema-settings/hooks/useSchemaSettingsRender';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
@@ -34,7 +34,6 @@ import { DragHandler, useCompile, useDesignable, useGridContext, useGridRowConte
 import { gridRowColWrap } from '../schema-initializer/utils';
 import { SchemaSettingsDropdown } from './SchemaSettings';
 import { useGetAriaLabelOfDesigner } from './hooks/useGetAriaLabelOfDesigner';
-import { SchemaComponentContext } from '../';
 import { useStyles } from './styles';
 
 const titleCss = css`
@@ -209,6 +208,11 @@ export interface SchemaToolbarProps {
   spaceWrapperStyle?: React.CSSProperties;
   spaceClassName?: string;
   spaceStyle?: React.CSSProperties;
+  /**
+   * The HTML element that listens for mouse enter/leave events.
+   * Parent element is used by default.
+   */
+  container?: HTMLElement;
   onVisibleChange?: (nextVisible: boolean) => void;
 }
 
@@ -227,6 +231,7 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = React.memo((props) => {
     spaceStyle,
     toolbarClassName,
     toolbarStyle = {},
+    container,
   } = {
     ...props,
     ...(fieldSchema?.['x-toolbar-props'] || {}),
@@ -313,7 +318,10 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = React.memo((props) => {
     while (parentElement && parentElement.clientHeight === 0) {
       parentElement = parentElement.parentElement;
     }
-    if (!parentElement) {
+
+    const el = container || parentElement;
+
+    if (!el) {
       return;
     }
 
@@ -331,18 +339,18 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = React.memo((props) => {
       }
     }
 
-    const style = window.getComputedStyle(parentElement);
-    if (style.position === 'static') {
-      parentElement.style.position = 'relative';
-    }
+    // const style = window.getComputedStyle(parentElement);
+    // if (style.position === 'static') {
+    //   parentElement.style.position = 'relative';
+    // }
 
-    parentElement.addEventListener('mouseenter', show);
-    parentElement.addEventListener('mouseleave', hide);
+    el.addEventListener('mouseenter', show);
+    el.addEventListener('mouseleave', hide);
     return () => {
-      parentElement.removeEventListener('mouseenter', show);
-      parentElement.removeEventListener('mouseleave', hide);
+      el.removeEventListener('mouseenter', show);
+      el.removeEventListener('mouseleave', hide);
     };
-  }, [props.onVisibleChange]);
+  }, [props.onVisibleChange, container]);
 
   const containerStyle = useMemo(
     () => ({

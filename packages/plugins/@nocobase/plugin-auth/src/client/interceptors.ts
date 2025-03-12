@@ -20,6 +20,7 @@ const AuthErrorCode = {
   EXPIRED_SESSION: 'EXPIRED_SESSION' as const,
   NOT_EXIST_USER: 'NOT_EXIST_USER' as const,
   SKIP_TOKEN_RENEW: 'SKIP_TOKEN_RENEW' as const,
+  USER_HAS_NO_ROLES_ERR: 'USER_HAS_NO_ROLES_ERR' as const,
 };
 
 function removeBasename(pathname, basename) {
@@ -42,44 +43,42 @@ const debouncedRedirect = debounce(
 export function authCheckMiddleware({ app }: { app: Application }) {
   const axios = app.apiClient.axios;
   const resHandler = (res: AxiosResponse) => {
-    const newToken = res.headers['x-new-token'];
+    const newToken = res?.headers?.['x-new-token'];
     if (newToken) {
       app.apiClient.auth.setToken(newToken);
     }
     return res;
   };
   const errHandler = (error) => {
-    const newToken = error.response.headers['x-new-token'];
+    const newToken = error?.response?.headers?.['x-new-token'];
+    const errors = error?.response?.data?.errors;
+    const firstError = Array.isArray(errors) ? errors[0] : null;
+
+    const state = app.router.state;
+    const { pathname, search } = state.location;
+    const basename = app.router.basename;
 
     if (newToken) {
       app.apiClient.auth.setToken(newToken);
     }
-    if (error.status === 401 && !error.config?.skipAuth) {
-      const requestToken = error?.config?.headers.Authorization?.replace(/^Bearer\s+/gi, '');
-      const currentToken = app.apiClient.auth.getToken();
-      if (currentToken && currentToken !== requestToken) {
-        error.config.skipNotify = true;
-        return app.apiClient.request(error.config);
-      }
-      app.apiClient.auth.setToken('');
-      const errors = error?.response?.data?.errors;
-      const firstError = Array.isArray(errors) ? errors[0] : null;
-      if (!firstError) {
-        throw error;
-      }
 
-      // if the code
-      if (firstError?.code === AuthErrorCode.SKIP_TOKEN_RENEW) {
-        throw error;
+    if (error.status === 401 && firstError?.code && AuthErrorCode[firstError.code]) {
+      app.apiClient.auth.setToken('');
+      if (pathname === app.getHref('signin') && firstError?.code !== AuthErrorCode.EMPTY_TOKEN && error.config) {
+        error.config.skipNotify = false;
       }
 
       if (firstError?.code === 'USER_HAS_NO_ROLES_ERR') {
+        // use app error to show error message
+        error.config.skipNotify = true;
         app.error = firstError;
+      }
+    }
+
+    if (error.status === 401 && !error.config?.skipAuth && firstError?.code && AuthErrorCode[firstError.code]) {
+      if (!firstError || firstError?.code === AuthErrorCode.SKIP_TOKEN_RENEW) {
         throw error;
       }
-      const state = app.router.state;
-      const { pathname, search } = state.location;
-      const basename = app.router.basename;
 
       if (pathname !== app.getHref('signin')) {
         const redirectPath = removeBasename(pathname, basename);

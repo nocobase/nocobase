@@ -13,6 +13,7 @@ import AliOSSStorage from '../../storages/ali-oss';
 import { FILE_FIELD_NAME } from '../../../constants';
 import { getApp, requestFile } from '..';
 import { Database } from '@nocobase/database';
+import PluginFileManagerServer from '../../server';
 
 const itif = process.env.ALI_OSS_ACCESS_KEY_SECRET ? it : it.skip;
 
@@ -23,19 +24,20 @@ describe('storage:ali-oss', () => {
   let AttachmentRepo;
   let StorageRepo;
   let storage;
-  const aliossStorage = new AliOSSStorage();
+  let plugin: PluginFileManagerServer;
 
   beforeEach(async () => {
     app = await getApp();
     agent = app.agent();
     db = app.db;
+    plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
 
     AttachmentRepo = db.getCollection('attachments').repository;
     StorageRepo = db.getCollection('storages').repository;
 
     storage = await StorageRepo.create({
       values: {
-        ...aliossStorage.defaults(),
+        ...AliOSSStorage.defaults(),
         name: 'ali-oss',
         default: true,
         path: 'test/path',
@@ -107,7 +109,7 @@ describe('storage:ali-oss', () => {
     itif('destroy record should not delete file when paranoid', async () => {
       const paranoidStorage = await StorageRepo.create({
         values: {
-          ...aliossStorage.defaults(),
+          ...AliOSSStorage.defaults(),
           name: 'ali-oss-2',
           path: 'test/nocobase',
           paranoid: true,
@@ -132,6 +134,31 @@ describe('storage:ali-oss', () => {
 
       const content2 = await requestFile(body.data.url, agent);
       expect(content2.status).toBe(200);
+    });
+  });
+
+  describe('plugin api', () => {
+    itif('getFileURL', async () => {
+      const options = AliOSSStorage.defaults();
+      await StorageRepo.create({
+        values: {
+          ...options,
+          name: 'ali-oss-2',
+          path: 'test/nocobase',
+          default: true,
+        },
+      });
+
+      const { body } = await agent.resource('attachments').create({
+        [FILE_FIELD_NAME]: path.resolve(__dirname, '../files/text.txt'),
+      });
+
+      const url = plugin.getFileURL(body.data);
+      expect(url).toBe(`${options.baseUrl}/${body.data.path}/${body.data.filename}`);
+
+      // 通过 url 是否能正确访问
+      const content1 = await requestFile(url, agent);
+      expect(content1.text).toBe('Hello world!\n');
     });
   });
 });

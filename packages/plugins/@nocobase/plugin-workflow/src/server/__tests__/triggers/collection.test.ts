@@ -28,7 +28,7 @@ describe('workflow > triggers > collection', () => {
 
   beforeEach(async () => {
     app = await getApp({
-      plugins: ['error-handler', 'data-source-main', 'users', 'auth'],
+      plugins: ['error-handler', 'data-source-main', 'users', 'auth', 'system-settings'],
     });
 
     db = app.db;
@@ -160,6 +160,23 @@ describe('workflow > triggers > collection', () => {
       const executions = await workflow.getExecutions();
       expect(executions.length).toBe(1);
       expect(executions[0].context.data.title).toBe('c1');
+    });
+
+    it('skipWorkflow', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        sync: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' }, context: { skipWorkflow: true } });
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(0);
     });
   });
 
@@ -315,6 +332,32 @@ describe('workflow > triggers > collection', () => {
 
       const executions = await workflow.getExecutions();
       expect(executions.length).toBe(0);
+    });
+
+    it('password changed in users', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        sync: true,
+        type: 'collection',
+        config: {
+          mode: 2,
+          collection: 'users',
+          changed: ['passwordChangeTz'],
+        },
+      });
+
+      const res = await (await app.agent().login(1)).resource('auth').changePassword({
+        values: {
+          oldPassword: 'admin123',
+          newPassword: 'abc123',
+          confirmPassword: 'abc123',
+        },
+      });
+
+      expect(res.status).toBe(200);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
     });
   });
 

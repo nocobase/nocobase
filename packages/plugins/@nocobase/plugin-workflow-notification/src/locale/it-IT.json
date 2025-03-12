@@ -1,0 +1,4 @@
+{
+  "Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "Invia email chiamando il servizio SMTP. Puoi usare le variabili nei nodi upstream come destinatari, oggetto e contenuto dell'email.",
+  "Ignore failed sending and continue workflow": "Ignora l'invio fallito e continua il workflow"
+}

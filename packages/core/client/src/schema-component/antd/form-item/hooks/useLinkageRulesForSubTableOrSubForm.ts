@@ -16,6 +16,7 @@ import { forEachLinkageRule } from '../../../../schema-settings/LinkageRules/for
 import useLocalVariables from '../../../../variables/hooks/useLocalVariables';
 import useVariables from '../../../../variables/hooks/useVariables';
 import { useSubFormValue } from '../../association-field/hooks';
+import { useApp } from '../../../../application';
 import { isSubMode } from '../../association-field/util';
 
 const isSubFormOrSubTableField = (fieldSchema: Schema) => {
@@ -45,6 +46,7 @@ export const useLinkageRulesForSubTableOrSubForm = () => {
   const variables = useVariables();
 
   const linkageRules = getLinkageRules(schemaOfSubTableOrSubForm);
+  const app = useApp();
 
   useEffect(() => {
     if (!isSubFormOrSubTableField(fieldSchema)) {
@@ -77,16 +79,19 @@ export const useLinkageRulesForSubTableOrSubForm = () => {
     forEachLinkageRule(linkageRules, (action, rule) => {
       if (action.targetFields?.includes(fieldSchema.name)) {
         disposes.push(
-          bindLinkageRulesToFiled({
-            field,
-            linkageRules,
-            formValues: formValue,
-            localVariables,
-            action,
-            rule,
-            variables,
-            variableNameOfLeftCondition: '$iteration',
-          }),
+          bindLinkageRulesToFiled(
+            {
+              field,
+              linkageRules,
+              formValues: formValue,
+              localVariables,
+              action,
+              rule,
+              variables,
+              variableNameOfLeftCondition: '$iteration',
+            },
+            app.jsonLogic,
+          ),
         );
       }
     });

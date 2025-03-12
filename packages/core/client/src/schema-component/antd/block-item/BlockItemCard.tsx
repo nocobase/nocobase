@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Card, CardProps, Space } from 'antd';
+import { Card, CardProps } from 'antd';
 import React, { useMemo, useRef, useEffect, createContext, useState } from 'react';
 import { useToken } from '../../../style';
 import { MarkdownReadPretty } from '../markdown';
@@ -18,7 +18,7 @@ export const BlockItemCard = React.forwardRef<HTMLDivElement, CardProps | any>((
   const { token } = useToken();
   const { title: blockTitle, description, ...others } = props;
   const style = useMemo(() => {
-    return { marginBottom: token.marginBlock };
+    return { marginBottom: token.marginBlock, height: props.height || '100%' };
   }, [token.marginBlock]);
   const [titleHeight, setTitleHeight] = useState(0);
   const titleRef = useRef<HTMLDivElement | null>(null);
@@ -36,11 +36,21 @@ export const BlockItemCard = React.forwardRef<HTMLDivElement, CardProps | any>((
 
     return () => clearTimeout(timer);
   }, [blockTitle, description]);
-
   const title = (blockTitle || description) && (
-    <div ref={titleRef}>
+    <div ref={titleRef} style={{ padding: '8px 0px 8px' }}>
       <span>{blockTitle}</span>
-      {description && <MarkdownReadPretty value={props.description} style={{ fontWeight: 400 }} />}
+      {description && (
+        <MarkdownReadPretty
+          value={props.description}
+          style={{
+            overflowWrap: 'break-word',
+            whiteSpace: 'normal',
+            fontWeight: 400,
+            color: token.colorTextDescription,
+            borderRadius: '4px',
+          }}
+        />
+      )}
     </div>
   );
   return (

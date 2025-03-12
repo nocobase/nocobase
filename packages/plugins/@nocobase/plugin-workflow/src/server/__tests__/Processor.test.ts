@@ -41,6 +41,29 @@ describe('workflow > Processor', () => {
   afterEach(() => app.destroy());
 
   describe('base', () => {
+    it.skip('saveJob', async () => {
+      const execution = await workflow.createExecution({
+        key: workflow.key,
+        context: {},
+        status: EXECUTION_STATUS.STARTED,
+        eventKey: '123',
+      });
+
+      const processor = plugin.createProcessor(execution);
+
+      const job1 = await processor.saveJob({
+        status: JOB_STATUS.RESOLVED,
+        result: null,
+      });
+
+      const job2 = await processor.saveJob({
+        status: JOB_STATUS.RESOLVED,
+        result: 'abc',
+      });
+
+      expect(job2).toBeDefined();
+    });
+
     it('empty workflow without any nodes', async () => {
       const post = await PostRepo.create({ values: { title: 't1' } });
 

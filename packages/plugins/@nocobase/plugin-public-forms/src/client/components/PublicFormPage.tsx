@@ -7,38 +7,38 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { css } from '@emotion/css';
+import { useField } from '@formily/react';
 import {
+  ACLCustomContext,
+  Action,
   APIClient,
   APIClientProvider,
+  AssociationField,
   CollectionManager,
   DataSource,
   DataSourceApplicationProvider,
   DataSourceManager,
+  DatePicker,
+  GlobalThemeProvider,
   PoweredBy,
   SchemaComponent,
   SchemaComponentContext,
   useAPIClient,
   useApp,
   useRequest,
-  ACLCustomContext,
   VariablesProvider,
-  GlobalThemeProvider,
-  AssociationField,
-  Action,
-  DatePicker,
 } from '@nocobase/client';
-import { css } from '@emotion/css';
-import { isDesktop } from 'react-device-detect';
-import { useField } from '@formily/react';
 import { Input, Modal, Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { isDesktop } from 'react-device-detect';
 import { useParams } from 'react-router';
 import { usePublicSubmitActionProps } from '../hooks';
 import { UnEnabledFormPlaceholder, UnFoundFormPlaceholder } from './UnEnabledFormPlaceholder';
 
 import { Button as MobileButton, Dialog as MobileDialog } from 'antd-mobile';
-import { MobilePicker } from './components/MobilePicker';
 import { MobileDateTimePicker } from './components/MobileDatePicker';
+import { MobilePicker } from './components/MobilePicker';
 class PublicDataSource extends DataSource {
   async getDataSource() {
     return {};
@@ -158,6 +158,7 @@ function InternalPublicForm() {
   const { error, data, loading, run } = useRequest<any>(
     {
       url: `publicForms:getMeta/${params.name}`,
+      skipAuth: true,
     },
     {
       onSuccess(data) {

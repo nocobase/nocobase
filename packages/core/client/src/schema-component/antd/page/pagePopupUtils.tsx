@@ -72,6 +72,10 @@ export const storePopupContext = (popupUid: string, params: PopupContextStorage)
   popupsContextStorage[popupUid] = params;
 };
 
+export const deletePopupContext = (popupUid: string) => {
+  delete popupsContextStorage[popupUid];
+};
+
 const blockServicesStorage: Record<string, { service: any }> = {};
 
 export const getBlockService = (popupUid: string) => {
@@ -300,7 +304,15 @@ export const usePopupUtils = (
 
     navigate(withSearchParams(removeLastPopupPath(location.pathname)), { replace: true });
     removePopupLayerState(currentLevel);
-  }, [isPopupVisibleControlledByURL, setVisibleFromAction, navigate, location?.pathname, currentLevel]);
+    popupParams?.popupuid && deletePopupContext(popupParams.popupuid);
+  }, [
+    isPopupVisibleControlledByURL,
+    setVisibleFromAction,
+    navigate,
+    location?.pathname,
+    currentLevel,
+    popupParams?.popupuid,
+  ]);
 
   const changeTab = useCallback(
     (key: string) => {

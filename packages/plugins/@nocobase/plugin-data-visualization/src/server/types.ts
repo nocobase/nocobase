@@ -27,6 +27,7 @@ export type OrderProps = {
   field: string | string[];
   alias?: string;
   order?: 'asc' | 'desc';
+  nulls?: 'default' | 'first' | 'last';
 };
 
 export type QueryParams = Partial<{

@@ -8,7 +8,6 @@
  */
 
 import { expect, test } from '@nocobase/test/e2e';
-import { oneTableBlock } from './utils';
 
 test('allows to configure interface', async ({ page, mockPage, mockRole, updateRole }) => {
   await mockPage().goto();
@@ -121,13 +120,13 @@ test('new menu items allow to be asscessed by default ', async ({ page, mockPage
     window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
   }, roleData);
   await page.reload();
-  await mockPage({ ...oneTableBlock, name: 'new page' }).goto();
+  await mockPage({ name: 'new page' }).goto();
   await expect(page.getByLabel('new page')).not.toBeVisible();
   await updateRole({
     name: roleData.name,
     allowNewMenu: true,
   });
-  await mockPage({ ...oneTableBlock, name: 'new page' }).goto();
+  await mockPage({ name: 'new page' }).goto();
   await expect(page.getByLabel('new page')).toBeVisible();
 });
 

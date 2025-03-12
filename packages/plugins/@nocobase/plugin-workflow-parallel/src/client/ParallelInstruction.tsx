@@ -109,6 +109,8 @@ export default class extends Instruction {
                         padding-top: 2em;
 
                         > button {
+                          line-height: 1;
+
                           .anticon {
                             transform: rotate(45deg);
                           }
@@ -140,6 +142,7 @@ export default class extends Instruction {
               className={css`
                 position: relative;
                 top: 1em;
+                line-height: 1;
                 transform-origin: center;
                 transform: rotate(45deg);
 

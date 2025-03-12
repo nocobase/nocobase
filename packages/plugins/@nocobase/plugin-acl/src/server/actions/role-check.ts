@@ -43,6 +43,23 @@ export async function checkAction(ctx, next) {
   }
 
   const availableActions = ctx.app.acl.getAvailableActions();
+  let uiButtonSchemasBlacklist = [];
+  if (currentRole !== 'root') {
+    const eqCurrentRoleList = await ctx.db
+      .getRepository('uiButtonSchemasRoles')
+      .find({
+        filter: { 'roleName.$eq': currentRole },
+      })
+      .then((list) => list.map((v) => v.uid));
+
+    const NECurrentRoleList = await ctx.db
+      .getRepository('uiButtonSchemasRoles')
+      .find({
+        filter: { 'roleName.$ne': currentRole },
+      })
+      .then((list) => list.map((v) => v.uid));
+    uiButtonSchemasBlacklist = NECurrentRoleList.filter((uid) => !eqCurrentRoleList.includes(uid));
+  }
 
   ctx.body = {
     ...role.toJSON(),
@@ -53,6 +70,7 @@ export async function checkAction(ctx, next) {
     allowConfigure: roleInstance.get('allowConfigure'),
     allowMenuItemIds: roleInstance.get('menuUiSchemas').map((uiSchema) => uiSchema.get('x-uid')),
     allowAnonymous: !!anonymous,
+    uiButtonSchemasBlacklist,
   };
 
   await next();

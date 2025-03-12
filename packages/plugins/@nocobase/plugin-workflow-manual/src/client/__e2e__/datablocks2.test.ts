@@ -114,7 +114,7 @@ test.describe('field data', () => {
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
-    await page.locator('tr', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
+    await page.locator('.ant-list', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
     await expect(page.getByText(triggerNodeCollectionRecordOne)).toBeAttached();
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
@@ -222,7 +222,7 @@ test.describe('field data', () => {
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
-    await page.locator('tr', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
+    await page.locator('.ant-list', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
     await expect(page.getByText(triggerNodeCollectionRecordOne)).toBeAttached();
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
@@ -341,7 +341,7 @@ test.describe('field data', () => {
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
-    await page.locator('tr', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
+    await page.locator('.ant-list', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
     await expect(page.getByText(triggerNodeCollectionRecordOne)).toBeAttached();
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);

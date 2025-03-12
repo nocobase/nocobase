@@ -45,15 +45,10 @@ export function AddButton(props: AddButtonProps) {
   const instructionList = Array.from(engine.instructions.getValues()) as Instruction[];
   const { styles } = useStyles();
   const { onCreate, creating } = useAddNodeContext();
+  const groupOptions = engine.useInstructionGroupOptions();
 
   const groups = useMemo(() => {
-    const result = [
-      { key: 'control', label: `{{t("Control", { ns: "${NAMESPACE}" })}}` },
-      { key: 'calculation', label: `{{t("Calculation", { ns: "${NAMESPACE}" })}}` },
-      { key: 'collection', label: `{{t("Collection operations", { ns: "${NAMESPACE}" })}}` },
-      { key: 'manual', label: `{{t("Manual", { ns: "${NAMESPACE}" })}}` },
-      { key: 'extended', label: `{{t("Extended types", { ns: "${NAMESPACE}" })}}` },
-    ]
+    return groupOptions
       .map((group) => {
         const groupInstructions = instructionList.filter(
           (item) =>
@@ -68,15 +63,13 @@ export function AddButton(props: AddButtonProps) {
             role: 'button',
             'aria-label': item.type,
             key: item.type,
-            label: item.title,
+            label: compile(item.title),
             icon: item.icon,
           })),
         };
       })
       .filter((group) => group.children.length);
-
-    return compile(result);
-  }, [branchIndex, compile, engine, instructionList, upstream, workflow]);
+  }, [branchIndex, compile, engine, groupOptions, instructionList, upstream, workflow]);
 
   const onClick = useCallback(
     async ({ keyPath }) => {

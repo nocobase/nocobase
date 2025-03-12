@@ -27,10 +27,6 @@ test.describe('create collection with preset fields', () => {
     //默认提交的数据符合预期
     expect(postData).toMatchObject({
       autoGenId: false,
-      createdAt: true,
-      createdBy: true,
-      updatedAt: true,
-      updatedBy: true,
       fields: expect.arrayContaining([
         expect.objectContaining({
           name: 'id',
@@ -79,10 +75,6 @@ test.describe('create collection with preset fields', () => {
     //提交的数据符合预期
     expect(postData).toMatchObject({
       autoGenId: false,
-      createdAt: false,
-      createdBy: false,
-      updatedAt: false,
-      updatedBy: false,
       fields: expect.arrayContaining([
         expect.objectContaining({
           name: 'id',
@@ -110,10 +102,6 @@ test.describe('create collection with preset fields', () => {
     //提交的数据符合预期
     expect(postData).toMatchObject({
       autoGenId: false,
-      createdAt: true,
-      createdBy: false,
-      updatedAt: false,
-      updatedBy: false,
       fields: expect.arrayContaining([
         expect.objectContaining({
           name: 'createdAt',
@@ -141,10 +129,6 @@ test.describe('create collection with preset fields', () => {
     //提交的数据符合预期
     expect(postData).toMatchObject({
       autoGenId: false,
-      createdAt: false,
-      createdBy: true,
-      updatedAt: false,
-      updatedBy: false,
       fields: expect.arrayContaining([
         expect.objectContaining({
           name: 'createdBy',
@@ -172,10 +156,6 @@ test.describe('create collection with preset fields', () => {
     //提交的数据符合预期
     expect(postData).toMatchObject({
       autoGenId: false,
-      createdAt: false,
-      createdBy: false,
-      updatedAt: false,
-      updatedBy: true,
       fields: expect.arrayContaining([
         expect.objectContaining({
           name: 'updatedBy',
@@ -203,10 +183,6 @@ test.describe('create collection with preset fields', () => {
     //提交的数据符合预期
     expect(postData).toMatchObject({
       autoGenId: false,
-      createdAt: false,
-      createdBy: false,
-      updatedAt: true,
-      updatedBy: false,
       fields: expect.arrayContaining([
         expect.objectContaining({
           name: 'updatedAt',
@@ -233,10 +209,6 @@ test.describe('create collection with preset fields', () => {
     //提交的数据符合预期
     expect(postData).toMatchObject({
       autoGenId: false,
-      createdAt: false,
-      createdBy: false,
-      updatedAt: false,
-      updatedBy: false,
       fields: [],
     });
   });

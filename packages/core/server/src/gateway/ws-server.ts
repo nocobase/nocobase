@@ -233,7 +233,7 @@ export class WSServer extends EventEmitter {
     const client = this.webSocketClients.get(clientId);
     // remove all tags with the given tagKey
     client.tags.forEach((tag) => {
-      if (tag.startsWith(tagKey)) {
+      if (tag.startsWith(`${tagKey}#`)) {
         client.tags.delete(tag);
       }
     });
@@ -291,6 +291,16 @@ export class WSServer extends EventEmitter {
     if (client) {
       this.sendMessageToConnection(client, sendMessage);
     }
+  }
+
+  sendToAppUser(appName: string, userId: string, message: object) {
+    this.sendToConnectionsByTags(
+      [
+        { tagName: 'userId', tagValue: `${userId}` },
+        { tagName: 'app', tagValue: appName },
+      ],
+      message,
+    );
   }
 
   loopThroughConnections(callback: (client: WebSocketClient) => void) {

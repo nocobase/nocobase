@@ -17,8 +17,11 @@ jobs:
   publish-npm:
     needs: get-plugins
     runs-on: ubuntu-latest
-    container: node:18
     steps:
+      - name: Set Node.js 20
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
       - name: Get info
         id: get-info
         shell: bash

@@ -46,6 +46,11 @@ export default {
       defaultValue: 0,
     },
     {
+      type: 'double',
+      name: 'score',
+      defaultValue: 0,
+    },
+    {
       type: 'date',
       name: 'createdAt',
     },

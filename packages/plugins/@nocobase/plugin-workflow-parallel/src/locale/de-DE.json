@@ -1,0 +1,12 @@
+{
+  "Parallel branch": "Paralleler Zweig",
+  "Run multiple branch processes in parallel.": "Führt mehrere Zweigprozesse parallel aus.",
+  "Add branch": "Zweig hinzufügen",
+  "Mode": "Ausführungsmodus",
+  "All succeeded": "Alle erfolgreich",
+  "Any succeeded": "Irgendein erfolgreich",
+  "Any succeeded or failed": "Irgendein erfolgreich oder fehlgeschlagen",
+  "Continue after all branches succeeded": "Fortfahren, nachdem alle Zweige erfolgreich waren",
+  "Continue after any branch succeeded": "Fortfahren, nachdem ein Zweig erfolgreich war",
+  "Continue after any branch succeeded, or exit after any branch failed.": "Fortfahren, nachdem ein Zweig erfolgreich war, oder beenden, nachdem ein Zweig fehlgeschlagen ist."
+}

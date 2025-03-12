@@ -8,7 +8,6 @@
  */
 
 import _ from 'lodash';
-// @ts-ignore
 import React, { FC, startTransition, useEffect, useState } from 'react';
 import { useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
 

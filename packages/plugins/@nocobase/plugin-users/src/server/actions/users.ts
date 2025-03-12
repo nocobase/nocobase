@@ -12,6 +12,7 @@ import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import _ from 'lodash';
 import { namespace } from '..';
 import { ValidationError, ValidationErrorItem } from 'sequelize';
+import PluginSystemSettingsServer from '@nocobase/plugin-system-settings';
 
 function parseProfileFormSchema(schema: any) {
   const properties = _.get(schema, 'properties.form.properties.edit.properties.grid.properties') || {};
@@ -126,5 +127,35 @@ export const listExcludeRole = async (ctx: Context, next: Next) => {
     pageSize: Number(pageSize),
     totalPage: Math.ceil(count / pageSize),
   };
+  await next();
+};
+
+export const getSystemSettings = async (ctx: Context, next: Next) => {
+  const systemSettings = ctx.db.getRepository('systemSettings');
+  const settings = await systemSettings.findOne();
+  ctx.body = {
+    enableEditProfile: settings.get('enableEditProfile'),
+    enableChangePassword: settings.get('enableChangePassword'),
+  };
+  await next();
+};
+
+export const updateSystemSettings = async (ctx: Context, next: Next) => {
+  const { enableEditProfile, enableChangePassword } = ctx.action.params.values || {};
+  const systemSettings = ctx.db.getRepository('systemSettings');
+  const values = {};
+  if (enableEditProfile !== undefined) {
+    values['enableEditProfile'] = enableEditProfile;
+  }
+  if (enableChangePassword !== undefined) {
+    values['enableChangePassword'] = enableChangePassword;
+  }
+  if (!Object.keys(values).length) {
+    ctx.throw(400);
+  }
+  await systemSettings.update({
+    filterByTk: 1,
+    values,
+  });
   await next();
 };

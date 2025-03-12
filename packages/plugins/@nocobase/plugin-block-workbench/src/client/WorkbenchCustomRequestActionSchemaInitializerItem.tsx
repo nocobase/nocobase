@@ -7,10 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ButtonEditor, SchemaSettings, SchemaSettingsActionLinkItem, useSchemaInitializer } from '@nocobase/client';
+import {
+  ButtonEditor,
+  SchemaSettings,
+  SchemaSettingsActionLinkItem,
+  useSchemaInitializer,
+  ModalActionSchemaInitializerItem,
+  SchemaSettingAccessControl,
+} from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ModalActionSchemaInitializerItem } from './ModalActionSchemaInitializerItem';
 export const workbenchActionSettingsCustomRequest = new SchemaSettings({
   name: 'workbench:actionSettings:customRequest',
   items: [
@@ -24,6 +30,12 @@ export const workbenchActionSettingsCustomRequest = new SchemaSettings({
     {
       name: 'editLink',
       Component: SchemaSettingsActionLinkItem,
+    },
+    {
+      ...SchemaSettingAccessControl,
+      useVisible() {
+        return true;
+      },
     },
     {
       sort: 800,

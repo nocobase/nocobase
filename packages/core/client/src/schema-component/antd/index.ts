@@ -65,5 +65,5 @@ export * from './tree-select';
 export * from './unix-timestamp';
 export * from './upload';
 export * from './variable';
-
+export * from './form-drawer';
 import './index.less';

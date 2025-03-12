@@ -338,9 +338,9 @@ export default class extends Instruction {
       properties: {
         distinct: {
           type: 'boolean',
-          title: `{{t("Distinct", { ns: "${NAMESPACE}" })}}`,
           'x-decorator': 'FormItem',
           'x-component': 'Checkbox',
+          'x-content': `{{t("Distinct", { ns: "${NAMESPACE}" })}}`,
           'x-reactions': [
             {
               dependencies: ['collection', 'aggregator'],

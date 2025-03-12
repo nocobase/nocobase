@@ -8,8 +8,9 @@
  */
 
 import { useTranslation } from 'react-i18next';
+import { NAMESPACE } from '../common/constants';
 
-export const NAMESPACE = 'workflow-manual';
+export { NAMESPACE };
 
 export function useLang(key: string, options = {}) {
   const { t } = usePluginTranslation(options);

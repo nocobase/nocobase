@@ -24,7 +24,7 @@ export async function submit(context: Context, next) {
   const plugin: WorkflowPlugin = context.app.getPlugin(WorkflowPlugin);
   const instruction = plugin.instructions.get('manual') as ManualInstruction;
 
-  const userJob = await repository.findOne({
+  const task = await repository.findOne({
     filterByTk,
     // filter: {
     //   userId: currentUser?.id
@@ -33,40 +33,40 @@ export async function submit(context: Context, next) {
     context,
   });
 
-  if (!userJob) {
+  if (!task) {
     return context.throw(404);
   }
 
-  const { forms = {} } = userJob.node.config;
+  const { forms = {} } = task.node.config;
   const [formKey] = Object.keys(values.result ?? {}).filter((key) => key !== '_');
   const actionKey = values.result?._;
 
   const actionItem = forms[formKey]?.actions?.find((item) => item.key === actionKey);
   // NOTE: validate status
   if (
-    userJob.status !== JOB_STATUS.PENDING ||
-    userJob.job.status !== JOB_STATUS.PENDING ||
-    userJob.execution.status !== EXECUTION_STATUS.STARTED ||
-    !userJob.workflow.enabled ||
+    task.status !== JOB_STATUS.PENDING ||
+    task.job.status !== JOB_STATUS.PENDING ||
+    task.execution.status !== EXECUTION_STATUS.STARTED ||
+    !task.workflow.enabled ||
     !actionKey ||
     actionItem?.status == null
   ) {
     return context.throw(400);
   }
 
-  userJob.execution.workflow = userJob.workflow;
-  const processor = plugin.createProcessor(userJob.execution);
+  task.execution.workflow = task.workflow;
+  const processor = plugin.createProcessor(task.execution);
   await processor.prepare();
 
   // NOTE: validate assignee
   const assignees = processor
-    .getParsedValue(userJob.node.config.assignees ?? [], userJob.nodeId)
+    .getParsedValue(task.node.config.assignees ?? [], task.nodeId)
     .flat()
     .filter(Boolean);
-  if (!assignees.includes(currentUser.id) || userJob.userId !== currentUser.id) {
+  if (!assignees.includes(currentUser.id) || task.userId !== currentUser.id) {
     return context.throw(403);
   }
-  const presetValues = processor.getParsedValue(actionItem.values ?? {}, userJob.nodeId, {
+  const presetValues = processor.getParsedValue(actionItem.values ?? {}, task.nodeId, {
     additionalScope: {
       // @deprecated
       currentUser: currentUser,
@@ -82,56 +82,32 @@ export async function submit(context: Context, next) {
     },
   });
 
-  userJob.set({
+  task.set({
     status: actionItem.status,
     result: actionItem.status
       ? { [formKey]: Object.assign(values.result[formKey], presetValues), _: actionKey }
-      : Object.assign(userJob.result ?? {}, values.result),
+      : Object.assign(task.result ?? {}, values.result),
   });
 
   const handler = instruction.formTypes.get(forms[formKey].type);
-  if (handler && userJob.status) {
-    await handler.call(instruction, userJob, forms[formKey], processor);
+  if (handler && task.status) {
+    await handler.call(instruction, task, forms[formKey], processor);
   }
 
-  await userJob.save();
+  await task.save();
 
   await processor.exit();
 
-  context.body = userJob;
+  context.body = task;
   context.status = 202;
 
   await next();
 
-  userJob.job.execution = userJob.execution;
-  userJob.job.latestUserJob = userJob;
+  task.job.execution = task.execution;
+  task.job.latestTask = task;
 
   // NOTE: resume the process and no `await` for quick returning
-  processor.logger.info(`manual node (${userJob.nodeId}) action trigger execution (${userJob.execution.id}) to resume`);
+  processor.logger.info(`manual node (${task.nodeId}) action trigger execution (${task.execution.id}) to resume`);
 
-  plugin.resume(userJob.job);
-}
-
-export async function countMine(context: Context, next) {
-  const repository = utils.getRepositoryFromParams(context);
-  const { currentUser } = context.state;
-
-  const count = await repository.count({
-    filter: {
-      $and: [
-        {
-          'workflow.enabled': true,
-        },
-        context.action.params.filter ?? {},
-        {
-          userId: currentUser.id,
-        },
-      ],
-    },
-    context,
-  });
-
-  context.body = count;
-
-  await next();
+  plugin.resume(task.job);
 }

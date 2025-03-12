@@ -7,20 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { DeleteOutlined, DownOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
-import {
-  Checkbox,
-  FormButtonGroup,
-  FormDrawer,
-  FormItem,
-  FormLayout,
-  Input,
-  Radio,
-  Reset,
-  Submit,
-} from '@formily/antd-v5';
+import { Checkbox, FormButtonGroup, FormItem, FormLayout, Input, Radio, Reset, Submit } from '@formily/antd-v5';
 import { registerValidateRules } from '@formily/core';
 import { createSchemaField, useField } from '@formily/react';
-import { SchemaComponent, SchemaComponentOptions, useAPIClient } from '@nocobase/client';
+import { SchemaComponent, SchemaComponentOptions, useAPIClient, FormDrawer, useGlobalTheme } from '@nocobase/client';
 import { Alert, App, Button, Card, Dropdown, Flex, Space, Table, Tag } from 'antd';
 import React, { useContext, useState } from 'react';
 import { VAR_NAME_RE } from '../../re';
@@ -122,6 +112,7 @@ export function EnvironmentVariables({ request, setSelectRowKeys }) {
   const t = useT();
   const api = useAPIClient();
   const { data, loading, refresh } = request || {};
+  const { theme } = useGlobalTheme();
 
   const typEnum = {
     default: {
@@ -150,40 +141,45 @@ export function EnvironmentVariables({ request, setSelectRowKeys }) {
   };
 
   const handleEdit = async (initialValues) => {
-    const drawer = FormDrawer({ title: t('Edit') }, () => {
-      return (
-        <FormLayout layout={'vertical'}>
-          <SchemaComponentOptions scope={{ createOnly: false, t }}>
-            <SchemaField schema={schema} />
-          </SchemaComponentOptions>
-          <FormDrawer.Footer>
-            <FormButtonGroup align="right">
-              <Reset
-                onClick={() => {
-                  drawer.close();
-                }}
-              >
-                {t('Cancel')}
-              </Reset>
-              <Submit
-                onSubmit={async (data) => {
-                  await api.request({
-                    url: `environmentVariables:update?filterByTk=${initialValues.name}`,
-                    method: 'post',
-                    data: {
-                      ...data,
-                    },
-                  });
-                  request.refresh();
-                }}
-              >
-                {t('Submit')}
-              </Submit>
-            </FormButtonGroup>
-          </FormDrawer.Footer>
-        </FormLayout>
-      );
-    });
+    const drawer = FormDrawer(
+      { title: t('Edit') },
+      'edit',
+      () => {
+        return (
+          <FormLayout layout={'vertical'}>
+            <SchemaComponentOptions scope={{ createOnly: false, t }}>
+              <SchemaField schema={schema} />
+            </SchemaComponentOptions>
+            <FormDrawer.Footer>
+              <FormButtonGroup align="right">
+                <Reset
+                  onClick={() => {
+                    drawer.close();
+                  }}
+                >
+                  {t('Cancel')}
+                </Reset>
+                <Submit
+                  onSubmit={async (data) => {
+                    await api.request({
+                      url: `environmentVariables:update?filterByTk=${initialValues.name}`,
+                      method: 'post',
+                      data: {
+                        ...data,
+                      },
+                    });
+                    request.refresh();
+                  }}
+                >
+                  {t('Submit')}
+                </Submit>
+              </FormButtonGroup>
+            </FormDrawer.Footer>
+          </FormLayout>
+        );
+      },
+      theme,
+    );
     drawer.open({
       initialValues: { ...initialValues },
     });
@@ -261,7 +257,7 @@ export function EnvironmentTabs() {
   const { variablesRequest } = useContext(EnvAndSecretsContext);
   const [selectRowKeys, setSelectRowKeys] = useState([]);
   const resource = api.resource('environmentVariables');
-
+  const { theme } = useGlobalTheme();
   const handleBulkImport = async (importData) => {
     const arr = Object.entries(importData).map(([type, dataString]) => {
       return parseKeyValuePairs(dataString, type).filter(Boolean);
@@ -434,7 +430,8 @@ export function EnvironmentTabs() {
                     {
                       variable: t('Add variable'),
                       bulk: t('Bulk import'),
-                    }[info.key],
+                    }[info.key] as any,
+                    'add-new',
                     () => {
                       return (
                         <FormLayout layout={'vertical'}>
@@ -468,6 +465,7 @@ export function EnvironmentTabs() {
                         </FormLayout>
                       );
                     },
+                    theme,
                   )
                     .open({
                       initialValues: {},

@@ -90,13 +90,13 @@ export const DatePicker: ComposedDatePicker = (props: any) => {
 
     // 根据最小日期和最大日期限定日期时间
     const disabledDate = (current) => {
-      if (!current || (!minDateTime && !maxDateTime)) {
-        return false;
-      }
-      // 确保 current 是一个 dayjs 对象
+      if (!dayjs.isDayjs(current)) return false;
+
       const currentDate = dayjs(current);
-      //在minDateTime或maxDateTime为null时 dayjs的比较函数会默认返回false 所以不做特殊判断
-      return currentDate.isBefore(minDateTime, 'minute') || currentDate.isAfter(maxDateTime, 'minute');
+      const min = minDateTime ? dayjs(minDateTime) : null;
+      const max = maxDateTime ? dayjs(maxDateTime).endOf('day') : null; // 设为 23:59:59
+
+      return (min && currentDate.isBefore(min, 'minute')) || (max && currentDate.isAfter(max, 'minute'));
     };
 
     // 禁用时分秒
@@ -154,6 +154,8 @@ export const DatePicker: ComposedDatePicker = (props: any) => {
     });
   };
 
+  console.log(disabledDate);
+
   const newProps = {
     utc,
     ...props,
@@ -197,7 +199,7 @@ DatePicker.RangePicker = function RangePicker(props: any) {
     { label: t('Next 90 days'), value: rangesValue.next90Days },
   ];
 
-  const targetPicker = value ? inferPickerType(value?.[0]) : picker;
+  const targetPicker = value ? inferPickerType(value?.[0], picker) : picker;
   const targetDateFormat = getPickerFormat(targetPicker) || format;
   const newProps: any = {
     utc,
@@ -269,7 +271,7 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
   const value = Array.isArray(props.value) ? props.value[0] : props.value;
   const compile = useCompile();
   const fieldSchema = useFieldSchema();
-  const targetPicker = value ? inferPickerType(value) : picker;
+  const targetPicker = value ? inferPickerType(value, picker) : picker;
   const targetDateFormat = getPickerFormat(targetPicker) || format;
   const newProps = {
     utc,
@@ -288,6 +290,12 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
   };
   const field: any = useField();
   const [stateProps, setStateProps] = useState(newProps);
+  useEffect(() => {
+    newProps.picker = targetPicker;
+    const dateTimeFormat = getDateTimeFormat(targetPicker, format, showTime, timeFormat);
+    newProps.format = dateTimeFormat;
+    setStateProps(newProps);
+  }, [targetPicker]);
   return (
     <Space.Compact style={{ width: '100%' }}>
       <Select
@@ -296,7 +304,7 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
         data-testid="select-picker"
         style={{ width: '100px' }}
         popupMatchSelectWidth={false}
-        defaultValue={targetPicker}
+        value={targetPicker}
         options={compile([
           {
             label: '{{t("Date")}}',

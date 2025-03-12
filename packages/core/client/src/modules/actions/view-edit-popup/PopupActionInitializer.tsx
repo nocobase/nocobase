@@ -28,6 +28,7 @@ export const PopupActionInitializer = (props) => {
       openMode: defaultOpenMode,
       refreshDataBlockRequest: true,
     },
+    'x-decorator': 'ACLActionProvider',
     properties: {
       drawer: {
         type: 'void',

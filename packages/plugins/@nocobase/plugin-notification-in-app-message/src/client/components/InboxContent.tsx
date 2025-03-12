@@ -155,7 +155,9 @@ const InnerInboxContent = () => {
           }}
         />
       </Layout.Sider>
-      <Layout.Content style={{ padding: token.paddingLG, height: '100%', overflowY: 'auto' }}>
+      <Layout.Content
+        style={{ padding: token.paddingLG, height: '100%', overflowY: 'auto', backgroundColor: token.colorBgLayout }}
+      >
         {selectedChannelName ? <MessageList /> : null}
       </Layout.Content>
     </Layout>

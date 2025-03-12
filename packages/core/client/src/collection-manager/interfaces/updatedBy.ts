@@ -75,4 +75,5 @@ export class UpdatedByFieldInterface extends CollectionFieldInterface {
       schema['x-component-props']['ellipsis'] = true;
     }
   }
+  description = '{{t("Store the last update user of each record")}}';
 }

@@ -424,15 +424,33 @@ export const querySchema: ISchema = {
                         order: {
                           type: 'string',
                           'x-decorator': 'FormItem',
-                          'x-component': 'Radio.Group',
+                          'x-component': 'Select',
                           'x-component-props': {
                             defaultValue: 'ASC',
-                            optionType: 'button',
-                            style: {
-                              width: '128px',
-                            },
                           },
                           enum: ['ASC', 'DESC'],
+                        },
+                        nulls: {
+                          type: 'string',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Select',
+                          'x-component-props': {
+                            defaultValue: 'default',
+                          },
+                          enum: [
+                            {
+                              label: lang('Default'),
+                              value: 'default',
+                            },
+                            {
+                              label: lang('NULLS first'),
+                              value: 'first',
+                            },
+                            {
+                              label: lang('NULLS last'),
+                              value: 'last',
+                            },
+                          ],
                         },
                       },
                       {

@@ -52,7 +52,8 @@ export const useSchemaInitializerStyles = genStyleHook('nb-schema-initializer', 
       },
     },
     [`${componentCls}-item-content`]: {
-      marginLeft: token.marginXS,
+      // 相当于 Menu 的 iconMarginInlineEnd，参见：https://github.com/ant-design/ant-design/blob/6a62d9e7eaf3e683c673091e39fe65ba3204d94b/components/menu/style/index.ts#L942
+      marginLeft: token.controlHeightSM - token.fontSize,
     },
   };
 });

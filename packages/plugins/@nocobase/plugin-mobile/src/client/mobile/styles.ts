@@ -8,21 +8,20 @@
  */
 
 import { genStyleHook } from '@nocobase/client';
-import { PageBackgroundColor } from '../constants';
 
 export const useStyles = genStyleHook('nb-mobile', (token) => {
   const { componentCls } = token;
 
   return {
     [componentCls]: {
+      // 调整移动端 Grid card 区块顶部按钮和卡片之间的间距
+      '--nb-spacing': '12px',
+
       WebkitOverflowScrolling: 'touch',
       display: 'initial',
 
       '& ::-webkit-scrollbar': {
         display: 'none',
-      },
-      body: {
-        backgroundColor: PageBackgroundColor,
       },
       '.nb-details .ant-formily-item-feedback-layout-loose': {
         marginBottom: '5px',
@@ -30,21 +29,9 @@ export const useStyles = genStyleHook('nb-mobile', (token) => {
       '.nb-details .ant-formily-item-layout-vertical .ant-formily-item-label': {
         marginBottom: '-8px',
       },
-      '.ant-card .ant-card-body': {
-        paddingBottom: '10px',
-        paddingTop: '10px',
-      },
       '.ant-pagination-simple': {
         marginTop: '0px !important',
       },
-      '.nb-action-penal-container': {
-        marginTop: '-10px',
-        marginBottom: '-10px',
-      },
-      '.nb-action-penal-container button[aria-label*="schema-initializer-WorkbenchBlock.ActionBar-workbench:configureActions"]':
-        {
-          marginBottom: '10px',
-        },
       '.ant-list-item': {
         paddingTop: '8px',
         paddingBottom: '8px',
@@ -57,9 +44,6 @@ export const useStyles = genStyleHook('nb-mobile', (token) => {
       '.nb-chart-block .ant-card .ant-card-body': {
         paddingBottom: '0px',
         paddingTop: '0px',
-      },
-      '.nb-chart-block .noco-card-item': {
-        marginBottom: '-13px',
       },
       '.ant-table-thead button[aria-label*="schema-initializer-TableV2-table:configureColumns"] > span:last-child': {
         display: 'none !important',
@@ -90,22 +74,6 @@ export const useStyles = genStyleHook('nb-mobile', (token) => {
       '.ant-pagination .ant-pagination-item-active': {
         display: 'inline-block',
       },
-      '.ant-card-body .nb-action-bar .ant-btn': {
-        justifyContent: 'space-between',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        '& span': {
-          display: 'contents',
-        },
-      },
-      '.ant-card-body .nb-action-bar .ant-btn-icon': {
-        marginInlineEnd: '0px !important',
-      },
-      '.ant-card-body .nb-table-container': {
-        marginRight: '-20px',
-        marginLeft: '-10px',
-      },
       '.nb-action-bar button[aria-label*="schema-initializer-ActionBar-table:configureActions"] > span:last-child': {
         display: 'none !important',
       },
@@ -123,6 +91,11 @@ export const useStyles = genStyleHook('nb-mobile', (token) => {
       '.nb-mobile-setting': {
         '[data-menu-id$="-theme"]': {
           display: 'none',
+        },
+
+        '& > .ant-menu > .ant-menu-item': {
+          marginInline: 8,
+          width: `calc(100% - 16px)`,
         },
       },
     },

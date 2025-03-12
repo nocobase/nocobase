@@ -68,6 +68,9 @@ export abstract class Auth implements IAuth {
   }
 
   async skipCheck() {
+    if (this.ctx.skipAuthCheck === true) {
+      return true;
+    }
     const token = this.ctx.getBearerToken();
     if (!token && this.ctx.app.options.acl === false) {
       return true;
@@ -80,6 +83,14 @@ export abstract class Auth implements IAuth {
 
   // The abstract methods are required to be implemented by all authentications.
   abstract check(): Promise<Model>;
+  abstract checkToken(): Promise<{
+    tokenStatus: 'valid' | 'expired' | 'invalid';
+    user: Awaited<ReturnType<Auth['check']>>;
+    jti?: string;
+    temp: any;
+    roleName?: any;
+    signInTime?: number;
+  }>;
   // The following methods are mainly designed for user authentications.
 
   async signIn(): Promise<any> {}

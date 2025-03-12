@@ -13,10 +13,11 @@ import {
   SchemaSettings,
   useSchemaInitializer,
   useSchemaInitializerItem,
+  ModalActionSchemaInitializerItem,
+  SchemaSettingAccessControl,
 } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ModalActionSchemaInitializerItem } from './ModalActionSchemaInitializerItem';
 
 export const workbenchActionSettingsScanQrCode = new SchemaSettings({
   name: 'workbench:actionSettings:scanQrCode',
@@ -26,6 +27,12 @@ export const workbenchActionSettingsScanQrCode = new SchemaSettings({
       Component: ButtonEditor,
       useComponentProps() {
         return { hasIconColor: true };
+      },
+    },
+    {
+      ...SchemaSettingAccessControl,
+      useVisible() {
+        return true;
       },
     },
     {
