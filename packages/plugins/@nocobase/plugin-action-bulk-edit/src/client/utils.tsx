@@ -108,10 +108,13 @@ export const useCustomizeBulkEditActionProps = () => {
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
-        const updateData: { filter?: any; values: any; forceUpdate: boolean } = {
+        const updateData: { filter?: any; values: any; forceUpdate: boolean; triggerWorkflows?: string } = {
           values: form.values,
           filter,
           forceUpdate: false,
+          triggerWorkflows: triggerWorkflows?.length
+            ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+            : undefined,
         };
         if (updateMode === 'selected') {
           if (!selectedRecordKeys?.length) {
