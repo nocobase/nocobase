@@ -180,7 +180,7 @@ describe('destroy action with acl', () => {
     });
 
     // should throw errors
-    expect(response.statusCode).toEqual(200);
+    expect(response.statusCode).toEqual(403);
   });
 
   it.skip('should throw error when user has no permissions with array query', async () => {
