@@ -140,7 +140,7 @@ export const tableBlockSettings = new SchemaSettings({
       },
     },
     {
-      name: 'enableSelectColumn',
+      name: 'enableIndexColumn',
       type: 'switch',
       useComponentProps: () => {
         const field = useField();
@@ -148,7 +148,7 @@ export const tableBlockSettings = new SchemaSettings({
         const { t } = useTranslation();
         const { dn } = useDesignable();
         return {
-          title: t('Enable selectable column'),
+          title: t('Enable index column'),
           checked: field.decoratorProps.enableSelectColumn !== false,
           onChange: async (enableSelectableColumn) => {
             field.decoratorProps.enableSelectableColumn = enableSelectableColumn;
