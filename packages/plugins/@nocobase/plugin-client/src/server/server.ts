@@ -252,7 +252,7 @@ export class PluginClientServer extends Plugin {
       const desktopRoutesRepository = ctx.db.getRepository('desktopRoutes');
       const rolesRepository = ctx.db.getRepository('roles');
 
-      if (ctx.state.currentRole === 'root') {
+      if (ctx.state.currentRoles.includes('root')) {
         ctx.body = await desktopRoutesRepository.find({
           tree: true,
           ...ctx.query,

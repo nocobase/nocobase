@@ -6,8 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
-import { UNION_ROLE_KEY } from '@nocobase/plugin-acl';
+import { UNION_ROLE_KEY, SystemRoleMode } from '@nocobase/plugin-acl';
 import { MockServer, createMockServer, ExtendedAgent } from '@nocobase/test';
 
 describe('Web client desktopRoutes', async () => {
@@ -241,5 +240,20 @@ describe('Web client desktopRoutes', async () => {
     const accessibleMenus = await getAccessibleMenus(agent);
     expect(accessibleMenus.length).toBe(1);
     expect(accessibleMenus[0].title).toBe(page1.title);
+  });
+
+  it('should display desktop menu when roles include root', async () => {
+    let rootAgent = await app.agent().login(rootUser);
+    const page1 = await createUiMenu(rootAgent, { title: 'page1' });
+    let accessibleMenus = await getAccessibleMenus(rootAgent);
+    expect(accessibleMenus.some((x) => x.title === page1.title)).toBeTruthy();
+    await rootAgent.resource('roles').setSystemRoleMode({
+      values: {
+        roleMode: SystemRoleMode.allowUseUnion,
+      },
+    });
+    rootAgent = await app.agent().login(rootUser, UNION_ROLE_KEY);
+    accessibleMenus = await getAccessibleMenus(rootAgent);
+    expect(accessibleMenus.some((x) => x.title === page1.title)).toBeTruthy();
   });
 });

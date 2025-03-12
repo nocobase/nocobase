@@ -125,7 +125,7 @@ export class PluginMobileServer extends Plugin {
       const mobileRoutesRepository = ctx.db.getRepository('mobileRoutes');
       const rolesRepository = ctx.db.getRepository('roles');
 
-      if (ctx.state.currentRole === 'root') {
+      if (ctx.state.currentRoles.includes('root')) {
         ctx.body = await mobileRoutesRepository.find({
           tree: true,
           ...ctx.query,

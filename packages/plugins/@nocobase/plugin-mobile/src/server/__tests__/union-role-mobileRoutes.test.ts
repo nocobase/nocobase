@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { UNION_ROLE_KEY } from '@nocobase/plugin-acl';
+import { SystemRoleMode, UNION_ROLE_KEY } from '@nocobase/plugin-acl';
 import { MockServer, createMockServer, ExtendedAgent } from '@nocobase/test';
 
 describe('union role mobileRoutes', async () => {
@@ -251,5 +251,20 @@ describe('union role mobileRoutes', async () => {
     // auto can see new menu
     const accessibleMenus = await getAccessibleMenus(agent);
     expect(accessibleMenus[0].title).toBe(page1.title);
+  });
+
+  it('should display desktop menu when roles include root', async () => {
+    let rootAgent = await app.agent().login(rootUser);
+    const page1 = await createUiMenu(rootAgent, { title: 'page1' });
+    let accessibleMenus = await getAccessibleMenus(rootAgent);
+    expect(accessibleMenus.some((x) => x.title === page1.title)).toBeTruthy();
+    await rootAgent.resource('roles').setSystemRoleMode({
+      values: {
+        roleMode: SystemRoleMode.allowUseUnion,
+      },
+    });
+    rootAgent = await app.agent().login(rootUser, UNION_ROLE_KEY);
+    accessibleMenus = await getAccessibleMenus(rootAgent);
+    expect(accessibleMenus.some((x) => x.title === page1.title)).toBeTruthy();
   });
 });
