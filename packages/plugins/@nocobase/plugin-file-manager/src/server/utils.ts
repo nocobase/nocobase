@@ -7,12 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { uid } from '@nocobase/utils';
-import iconv from 'iconv-lite';
 import path from 'path';
+import { uid } from '@nocobase/utils';
 
 export function getFilename(req, file, cb) {
-  const originalname = iconv.decode(Buffer.from(file.originalname, 'binary'), 'utf8');
+  const originalname = Buffer.from(file.originalname, 'binary').toString('utf8');
   const baseName = path.basename(originalname, path.extname(originalname));
   cb(null, `${baseName}-${uid(6)}${path.extname(originalname)}`);
 }
