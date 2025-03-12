@@ -267,3 +267,15 @@ export function useBeforeUpload(rules) {
     [rules],
   );
 }
+
+export function encodeFileURL(url: string): string {
+  if (!url) {
+    return url;
+  }
+
+  const parts = url.split('/');
+  const filename = parts.pop();
+  parts.push(encodeURIComponent(filename));
+  const encodedURL = parts.join('/');
+  return encodedURL;
+}

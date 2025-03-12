@@ -1,0 +1,18 @@
+{
+  "Enable form": "Enable form",
+  "Public forms": "Public forms",
+  "Add New": "Add New",
+  "Type": "Type",
+  "Open form": "Open form",
+  "Set password": "Set password",
+  "Copy link": "Copy link",
+  "QR code": "QR code",
+  "The form is not enabled and cannot be accessed": "The form is not enabled and cannot be accessed",
+  "Link copied successfully": "Link copied successfully",
+  "After successful submission": "After successful submission",
+  "Enable password": "Enable password",
+  "Prompt after successful submission": "Prompt after successful submission",
+  "Form": "Form",
+  "# Submitted successfully!\nThis is a demo text, **supports Markdown syntax**.": "# Submitted successfully!\nThis is a demo text, **supports Markdown syntax**.",
+  "The form is not found": "The form is not found"
+}

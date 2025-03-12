@@ -1,0 +1,9 @@
+{
+  "Logger": "Logger",
+  "Search": "Suche",
+  "Download": "Herunterladen",
+  "Download logs": "Protokolle herunterladen",
+  "API request and response logs": "API-Anfrage- und Antwortprotokolle",
+  "Application, database, plugins and other system logs, the error level logs will be sent to": "Anwendungs-, Datenbank-, Plugin- und andere Systemprotokolle, die Fehlerprotokolle werden gesendet an",
+  "SQL execution logs, printed by Sequelize when the db logging is enabled": "SQL-Ausführungsprotokolle, die von Sequelize ausgegeben werden, wenn das DB-Logging aktiviert ist"
+}

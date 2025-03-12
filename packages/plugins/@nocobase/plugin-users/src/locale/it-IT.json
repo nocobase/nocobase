@@ -1,8 +1,12 @@
 {
   "Users & Permissions": "Utenti e Permessi",
   "Add users": "Aggiungi utenti",
+  "Add user": "Aggiungi utente",
   "Remove user": "Rimuovi utente",
   "Are you sure you want to remove it?": "Sei sicuro di volerlo rimuovere?",
   "Random password": "Password casuale",
+  "Users manager": "Gestore utenti",
+  "Allow edit profile": "Permetti modifica profilo",
+  "Allow change password": "Permetti modifica password",
   "User profile is not allowed to be edited": "Il profilo utente non può essere modificato"
 }

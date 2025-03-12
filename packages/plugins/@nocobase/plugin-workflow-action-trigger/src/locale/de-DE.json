@@ -1,0 +1,22 @@
+{
+  "Form event": "Formularereignis",
+  "Event triggers when submitted a workflow bound form action.": "Ereignis wird ausgelöst, wenn eine an einen Workflow gebundene Formularaktion übermittelt wird.",
+  "Form data model": "Formulardatenmodell",
+  "Use a collection to match form data.": "Verwenden Sie eine Sammlung, um Formulardaten abzugleichen.",
+  "Post-action event": "Ereignis nach Aktion",
+  "Triggered after the completion of a request initiated through an action button or API, such as after adding or updating data. Suitable for data processing, sending notifications, etc., after actions are completed.": "Wird nach Abschluss einer Anfrage ausgelöst, die über eine Aktionsschaltfläche oder API initiiert wurde, z. B. nach dem Hinzufügen oder Aktualisieren von Daten. Geeignet für Datenverarbeitung, Senden von Benachrichtigungen usw. nach Abschluss von Aktionen.",
+  "Collection": "Sammlung",
+  "The collection to which the triggered data belongs.": "Die Sammlung, zu der die ausgelösten Daten gehören.",
+  "Trigger mode": "Auslösemodus",
+  "Local mode, triggered after the completion of actions bound to this workflow": "Lokaler Modus, wird nach Abschluss von Aktionen ausgelöst, die an diesen Workflow gebunden sind",
+  "Global mode, triggered after the completion of the following actions": "Globaler Modus, wird nach Abschluss der folgenden Aktionen ausgelöst",
+  "Select actions": "Aktionen auswählen",
+  "Create record action": "Datensatz erstellen Aktion",
+  "Update record action": "Datensatz aktualisieren Aktion",
+  "Associations to use": "Zu verwendende Verknüpfungen",
+  "User submitted form": "Vom Benutzer übermitteltes Formular",
+  "Role of user submitted form": "Rolle des vom Benutzer übermittelten Formulars",
+  "Trigger data": "Auslöserdaten",
+  "User acted": "Handelnder Benutzer",
+  "Role of user acted": "Rolle des handelnden Benutzers"
+}

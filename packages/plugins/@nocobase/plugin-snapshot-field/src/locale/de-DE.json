@@ -1,0 +1,13 @@
+{
+  "Detail": "Detail",
+  "Snapshot": "Snapshot",
+  "View record": "Datensatz anzeigen",
+  "Add block": "Block hinzufügen",
+  "Allow linking to multiple records": "Verknüpfung mit mehreren Datensätzen erlauben",
+  "When adding a new record, create a snapshot for its relational record and save in the current record. The snapshot is not updated when the record is subsequently updated.": "Beim Hinzufügen eines neuen Datensatzes wird ein Snapshot für seinen Beziehungsdatensatz erstellt und im aktuellen Datensatz gespeichert. Der Snapshot wird nicht aktualisiert, wenn der Datensatz später aktualisiert wird.",
+  "The association field to snapshot": "Das Verknüpfungsfeld für den Snapshot",
+  "Snapshot the snapshot's association fields": "Snapshot der Verknüpfungsfelder des Snapshots",
+  "Please select": "Bitte auswählen",
+  "When a record is created, association data is backed up in a snapshot": "Wenn ein Datensatz erstellt wird, werden Verknüpfungsdaten in einem Snapshot gesichert",
+  "Snapshot data": "Snapshot-Daten"
+}
