@@ -1,4 +1,5 @@
 {
+  "Fill": "Füllen",
   "App settings": "App-Einstellungen",
   "Page settings": "Seiteneinstellungen",
   "Info": "Info",
@@ -26,5 +27,9 @@
   "Mobile routes": "Mobile Routen",
   "No accessible pages found": "Keine zugänglichen Seiten gefunden",
   "This might be due to permission configuration issues": "Dies könnte auf Probleme mit der Berechtigungskonfiguration zurückzuführen sein",
-  "Select time": "Zeit auswählen"
+  "Select time": "Zeit auswählen",
+  "Clear": "Löschen",
+  "Confirm": "Bestätigen",
+  "Cancel": "Abbrechen",
+  "Display < back button": "< Zurück-Schaltfläche anzeigen"
 }

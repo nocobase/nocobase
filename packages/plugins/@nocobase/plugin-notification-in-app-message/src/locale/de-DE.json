@@ -19,6 +19,7 @@
   "Message group name": "Nachrichtengruppenname",
   "Message title": "Nachrichtentitel",
   "Message content": "Nachrichteninhalt",
+  "detail URL": "Detail-URL",
   "Details page for desktop": "Detailseite für Desktop",
   "Support two types of links: internal links and external links. If using an internal link, the link starts with\"/\", for example, \"/admin\". If using an external link, the link starts with \"http\", for example, \"https://example.com\".": "Unterstützt zwei Arten von Links: interne Links und externe Links. Bei Verwendung eines internen Links beginnt der Link mit \"/\", zum Beispiel \"/admin\". Bei Verwendung eines externen Links beginnt der Link mit \"http\", zum Beispiel \"https://example.com\".",
   "Mark as read": "Als gelesen markieren",

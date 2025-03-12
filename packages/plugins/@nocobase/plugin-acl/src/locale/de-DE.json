@@ -3,5 +3,9 @@
   "The user role does not exist. Please try signing in again": "Die Benutzerrolle existiert nicht. Bitte versuchen Sie, sich erneut anzumelden",
   "New role": "Neue Rolle",
   "Permissions": "Berechtigungen",
-  "Desktop menu": "Desktop-Menü"
+  "Roles & Permissions": "Rollen und Berechtigungen",
+  "General": "Allgemein",
+  "Desktop menu": "Desktop-Menü",
+  "Plugin settings": "Plugin-Einstellungen",
+  "Data sources": "Datenquellen"
 }

@@ -26,5 +26,11 @@
   "Update record form": "Formular zum Aktualisieren von Datensätzen",
   "Filter settings": "Filtereinstellungen",
   "Workflow todos": "Workflow-Aufgaben",
+  "Task node": "Aufgabenknoten",
+  "Unprocessed": "Unbearbeitet",
+  "Please check one of your update record form, and add at least one filter condition in form settings.": "Bitte überprüfen Sie eines Ihrer Formulare zur Aktualisierung von Datensätzen und fügen Sie in den Formulareinstellungen mindestens eine Filterbedingung hinzu.",
+  "My manual tasks": "Meine manuellen Aufgaben",
+  "Task title": "Aufgabentitel",
+  "Title of each task item. Default to node title.": "Titel jedes Aufgabenelements. Standardmäßig der Knotentitel.",
   "Task": "Aufgabe"
 }

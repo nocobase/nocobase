@@ -1,5 +1,11 @@
 {
   "Backup file": "Sicherungsdatei",
+  "Select Import data": "Bitte wählen Sie die zu importierenden Daten",
+  "Select Import Plugins": "Bitte wählen Sie die zu importierenden Plugins",
+  "Select User Collections": "Bitte wählen Sie Benutzersammlungen",
+  "Basic Data": "Basisdaten",
+  "Optional Data": "Optionale Daten",
+  "User Data": "Benutzerdaten",
   "System metadata": "System-Metadaten",
   "System config": "Systemkonfiguration",
   "Business data": "Geschäftsdaten",

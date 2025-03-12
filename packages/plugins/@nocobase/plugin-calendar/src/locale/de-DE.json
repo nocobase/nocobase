@@ -42,6 +42,13 @@
   "Monthly": "Monatlich",
   "Yearly": "Jährlich",
   "Repeats": "Wiederholungen",
+  "Title": "Titel",
+  "Month": "Monat",
+  "Week": "Woche",
+  "{{count}} more items": "{{count}} weitere Einträge",
   "Color field": "Farbfeld",
-  "Not selected": "Nicht ausgewählt"
+  "Not selected": "Nicht ausgewählt",
+  "Default view": "Standardansicht",
+  "Event open mode": "Ereignisöffnungsmodus",
+  "Update record": "Datensatz aktualisieren"
 }

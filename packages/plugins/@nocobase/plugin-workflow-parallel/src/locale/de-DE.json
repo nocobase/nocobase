@@ -2,6 +2,7 @@
   "Parallel branch": "Paralleler Zweig",
   "Run multiple branch processes in parallel.": "Führt mehrere Zweigprozesse parallel aus.",
   "Add branch": "Zweig hinzufügen",
+  "Mode": "Ausführungsmodus",
   "All succeeded": "Alle erfolgreich",
   "Any succeeded": "Irgendein erfolgreich",
   "Any succeeded or failed": "Irgendein erfolgreich oder fehlgeschlagen",
