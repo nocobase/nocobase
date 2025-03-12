@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useAPIClient, useApp, useCompile, useCollectionRecord, useRequest } from '@nocobase/client';
-import { Checkbox, message, Table } from 'antd';
+import { useAPIClient, useApp, useCompile, useRequest } from '@nocobase/client';
+import { Checkbox, message, Table, TableProps } from 'antd';
 import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { flatMap } from 'lodash';
@@ -150,7 +150,7 @@ export const PluginPermissions: React.FC<{
             return <Checkbox checked={checked} onChange={() => handleChange(checked, record)} />;
           },
         },
-      ]}
+      ] as TableProps['columns']}
       dataSource={settings
         .filter((v) => {
           return v.isTopLevel !== false;

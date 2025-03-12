@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Checkbox, message, Table } from 'antd';
+import { Checkbox, message, Table, TableProps } from 'antd';
 import { uniq } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -149,12 +149,12 @@ export const MenuConfigure = () => {
               {t('Accessible')}
             </>
           ),
-          render: (_, schema) => {
+          render: (_, schema: { uid: string }) => {
             const checked = uids.includes(schema.uid);
             return <Checkbox checked={checked} onChange={() => handleChange(checked, schema)} />;
           },
         },
-      ]}
+      ] as TableProps['columns']}
       dataSource={translateTitle(items)}
     />
   );

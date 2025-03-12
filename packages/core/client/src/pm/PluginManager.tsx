@@ -10,7 +10,7 @@
 export * from './PluginManagerLink';
 import { PageHeader } from '@ant-design/pro-layout';
 import { useDebounce } from 'ahooks';
-import { Button, Col, Divider, Input, List, Modal, Result, Row, Space, Spin, Table, Tabs } from 'antd';
+import { Button, Col, Divider, Input, List, Modal, Result, Row, Space, Spin, Table, Tabs, TableProps } from 'antd';
 import _ from 'lodash';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -145,7 +145,7 @@ function BulkEnableButton({ plugins = [] }) {
               width: 300,
               ellipsis: true,
             },
-          ]}
+          ] as TableProps['columns']}
           dataSource={items}
         />
       </Modal>

@@ -25,6 +25,7 @@ test.describe('hide column', () => {
 
     // 2. Sub table: hide column
     await page.getByRole('button', { name: 'Role name' }).hover();
+    await page.getByRole('menuitem', { name: 'Hide column question-circle' }).waitFor({ state: 'detached' });
     await page
       .getByRole('button', { name: 'designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-roles' })
       .hover();

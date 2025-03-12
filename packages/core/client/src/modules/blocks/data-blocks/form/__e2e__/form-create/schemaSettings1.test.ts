@@ -248,7 +248,7 @@ test.describe('creation form block schema settings', () => {
 
       // 重新选择一下数据，字段值才会被填充
       // TODO: 保存后，数据应该直接被填充上
-      await page.getByLabel('icon-close-select').click();
+      await page.getByLabel('icon-close-select').last().click();
       await page.getByTestId('select-object-single').click();
       await page.getByRole('option', { name: '2' }).click();
 

@@ -29,7 +29,8 @@ const defaultTheme: ThemeConfig = {
 
     // 动画相关
     motionUnit: 0.03,
-    motion: !process.env.__E2E__,
+    // ant design 升级到5.24.2后，Modal.confirm在E2E中如果关闭动画，会出现ant-modal-mask不销毁的问题
+    // motion: !process.env.__E2E__,
   },
 };
 
