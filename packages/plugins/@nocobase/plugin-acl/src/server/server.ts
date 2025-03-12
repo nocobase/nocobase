@@ -450,7 +450,7 @@ export class PluginACLServer extends Plugin {
     this.app.acl.allow('roles', 'getSystemRoleMode', 'loggedIn');
 
     this.app.acl.allow('*', '*', (ctx) => {
-      return ctx.state.currentRole.includes('root');
+      return ctx.state.currentRoles?.includes('root');
     });
 
     this.app.acl.addFixedParams('collections', 'destroy', () => {

@@ -76,7 +76,7 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
   } = values;
 
   // root role has all permissions
-  if (!ctx.state.currentRoles.some((x) => x === 'root')) {
+  if (!ctx.state.currentRoles.includes('root')) {
     const crRepo = ctx.db.getRepository('customRequestsRoles');
     const hasRoles = await crRepo.find({
       filter: {

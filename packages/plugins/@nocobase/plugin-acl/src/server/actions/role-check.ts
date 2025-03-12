@@ -50,7 +50,7 @@ export async function checkAction(ctx, next) {
   );
   let uiButtonSchemasBlacklist = [];
   const currentRole = ctx.state.currentRole;
-  if (!currentRoles.some((x) => x === 'root')) {
+  if (!currentRoles.includes('root')) {
     const eqCurrentRoleList = await ctx.db
       .getRepository('uiButtonSchemasRoles')
       .find({

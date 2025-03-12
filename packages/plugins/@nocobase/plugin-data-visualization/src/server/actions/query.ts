@@ -204,7 +204,7 @@ export const checkPermission = (ctx: Context, next: Next) => {
   const { collection, dataSource } = ctx.action.params.values as QueryParams;
   const roleNames = ctx.state.currentRoles || ['anonymous'];
   const acl = ctx.app.dataSourceManager.get(dataSource)?.acl || ctx.app.acl;
-  const can = acl.can({ role: roleNames, resource: collection, action: 'list' });
+  const can = acl.can({ roles: roleNames, resource: collection, action: 'list' });
   if (!can && !roleNames.includes('root')) {
     ctx.throw(403, 'No permissions');
   }
