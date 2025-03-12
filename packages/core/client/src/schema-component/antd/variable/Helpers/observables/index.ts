@@ -31,7 +31,7 @@ export const allHelpersConfigObs = observable<{ value: any[] }>({ value: parser.
 export const helpersObs = observable.computed(() => {
   return rawHelpersObs.value.map((helper) => {
     const config = allHelpersConfigObs.value.find((f) => f.name === helper.name);
-    const args = config.uiSchema.map((param) => helper.argsMap[param.name]);
+    const args = config.uiSchema ? config.uiSchema.map((param) => helper.argsMap[param.name]) : [];
     return {
       ...helper,
       config,

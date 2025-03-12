@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useMemo, useContext } from 'react';
-import { useForm, FormContext, observer } from '@formily/react';
-import { createForm, onFormValuesChange, Form } from '@formily/core';
+import React from 'react';
+import { useForm, observer } from '@formily/react';
+import { createForm, onFormValuesChange } from '@formily/core';
 import { uid, tval } from '@nocobase/utils/client';
 import { Router } from 'react-router-dom';
 import { createMemoryHistory } from 'history';
@@ -116,7 +116,12 @@ export const HelperConfiguator = observer(
       <Router location={history.location} navigator={history}>
         <SchemaComponent
           schema={schema}
-          scope={{ useFormBlockProps, useDeleteActionProps, outputValue, inputValue }}
+          scope={{
+            useFormBlockProps,
+            useDeleteActionProps,
+            outputValue: JSON.stringify(outputValue),
+            inputValue: JSON.stringify(inputValue),
+          }}
           basePath={['']}
         />
       </Router>
