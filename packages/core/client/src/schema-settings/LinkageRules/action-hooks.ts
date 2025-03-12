@@ -33,6 +33,7 @@ export const useLinkageCollectionFieldOptions = (collectionName: string, readPre
       selected: false,
       schema: {},
     },
+    { label: t('Date scope'), value: ActionType.DateScope, selected: false, schema: {} },
   ].filter((v) => {
     if (readPretty) {
       return [ActionType.Visible, ActionType.None, ActionType.Hidden].includes(v.value);
@@ -58,6 +59,13 @@ export const useLinkageCollectionFieldOptions = (collectionName: string, readPre
           }
           if (!['select', 'radioGroup', 'multipleSelect', 'checkboxGroup'].includes(fieldInterface.name)) {
             return operator?.value !== ActionType.Options;
+          }
+          if (
+            !['date', 'datetime', 'dateOnly', 'datetimeNoTz', 'unixTimestamp', 'createdAt', 'updatedAt'].includes(
+              fieldInterface.name,
+            )
+          ) {
+            return operator?.value !== ActionType.DateScope;
           }
           return true;
         }) || [],
