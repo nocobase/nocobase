@@ -82,7 +82,7 @@ export const roleCollectionsSchema: ISchema = {
   type: 'void',
   'x-decorator': 'RoleRecordProvider',
   properties: {
-    block: {
+    [uid()]: {
       type: 'void',
       'x-decorator': 'ResourceActionProvider',
       'x-decorator-props': {
