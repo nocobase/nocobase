@@ -28,7 +28,11 @@ export function extractTemplateVariable(template: string): string | null {
   }
 }
 
-export function extractTemplateElements(template: string) {
+export function extractTemplateElements(template: string): {
+  fullVariable: string | null;
+  variableSegments: string[];
+  helpers: Filter[];
+} {
   const escapedTemplate = escape(template ?? '');
   try {
     const fullVariable = engine.fullVariablesSync(escapedTemplate)[0] ?? '';

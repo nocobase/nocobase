@@ -277,7 +277,7 @@ const VariablesProvider = ({ children, filterVariables }: any) => {
         fieldOperator?: string | void;
       },
     ) => {
-      const { fullVariable, filters } = extractTemplateElements(str);
+      const { fullVariable, helpers } = extractTemplateElements(str);
       if (!fullVariable) {
         return str;
       }
@@ -288,8 +288,8 @@ const VariablesProvider = ({ children, filterVariables }: any) => {
 
       const path = getPath(str);
       const result = await getResult(path, localVariables as VariableOption[], options);
-      if (Array.isArray(filters) && filters.length > 0) {
-        result.value = filters.reduce((acc, filter) => filter.handler(...[acc, ...filter.args]), result.value);
+      if (Array.isArray(helpers) && helpers.length > 0) {
+        result.value = helpers.reduce((acc, helper) => helper.handler(...[acc, ...helper.args]), result.value);
       }
 
       return {
