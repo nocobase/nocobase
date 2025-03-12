@@ -11,7 +11,7 @@
     "@ant-design/icons": "^5.6.1",
     "@ant-design/pro-layout": "^7.22.1",
     "@antv/g2plot": "^2.4.18",
-    "@budibase/handlebars-helpers": "^0.14.0",
+    "@budibase/handlebars-helpers": "0.14.0",
     "@ctrl/tinycolor": "^3.6.0",
     "@dnd-kit/core": "^5.0.1",
     "@dnd-kit/modifiers": "^6.0.0",
