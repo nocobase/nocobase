@@ -1,0 +1,9 @@
+{
+  "Formula": "Formel",
+  "Calculation engine": "Berechnungs-Engine",
+  "Expression": "Ausdruck",
+  "Expression syntax error": "Ausdruckssyntaxfehler",
+  "Syntax references": "Syntaxreferenzen",
+  "Compute a value based on the other fields": "Berechnen Sie einen Wert basierend auf den anderen Feldern",
+  "Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.": "Konfigurieren und speichern Sie die Ergebnisse von Berechnungen zwischen mehreren Feldwerten im selben Datensatz, unterstützt sowohl Math.js als auch Excel-Formelfunktionen."
+}

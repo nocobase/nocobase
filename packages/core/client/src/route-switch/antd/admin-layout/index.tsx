@@ -169,6 +169,7 @@ const layoutContentClass = css`
 
 const className1 = css`
   width: 168px;
+  height: var(--nb-header-height);
   margin-right: 4px;
   display: inline-flex;
   flex-shrink: 0;
@@ -756,6 +757,19 @@ const MenuDesignerButton: FC<{ testId: string }> = (props) => {
   });
 };
 
+const MenuTitleWithIcon: FC<{ icon: any; title: string }> = (props) => {
+  if (props.icon) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <Icon type={props.icon} />
+        <span>{props.title}</span>
+      </div>
+    );
+  }
+
+  return props.title;
+};
+
 function convertRoutesToLayout(
   routes: NocoBaseDesktopRoute[],
   { designable, parentRoute, isMobile, t, depth = 0 }: any,
@@ -775,9 +789,11 @@ function convertRoutesToLayout(
   };
 
   const result: any[] = routes.map((item) => {
+    const name = depth > 1 ? <MenuTitleWithIcon icon={item.icon} title={t(item.title)} /> : t(item.title); // ProLayout 组件不显示第二级菜单的 icon，所以这里自己实现
+
     if (item.type === NocoBaseDesktopRouteType.link) {
       return {
-        name: t(item.title),
+        name,
         icon: item.icon ? <Icon type={item.icon} /> : null,
         path: '/',
         hideInMenu: item.hideInMenu,
@@ -788,7 +804,7 @@ function convertRoutesToLayout(
 
     if (item.type === NocoBaseDesktopRouteType.page) {
       return {
-        name: t(item.title),
+        name,
         icon: item.icon ? <Icon type={item.icon} /> : null,
         path: `/admin/${item.schemaUid}`,
         redirect: `/admin/${item.schemaUid}`,
@@ -808,7 +824,7 @@ function convertRoutesToLayout(
       }
 
       return {
-        name: t(item.title),
+        name,
         icon: item.icon ? <Icon type={item.icon} /> : null,
         path: `/admin/${item.id}`,
         redirect:

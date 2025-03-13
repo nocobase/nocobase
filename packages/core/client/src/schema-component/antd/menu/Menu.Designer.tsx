@@ -34,7 +34,7 @@ import { useInsertPageSchema } from '../../../modules/menu/PageMenuItem';
 import { NocoBaseDesktopRouteType } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 
 const insertPositionToMethod = {
-  beforeBegin: 'prepend',
+  beforeBegin: 'insertBefore',
   afterEnd: 'insertAfter',
 };
 
@@ -453,7 +453,7 @@ export const MenuDesigner = () => {
       });
 
       const positionToMethod = {
-        beforeBegin: 'prepend',
+        beforeBegin: 'insertBefore',
         afterEnd: 'insertAfter',
       };
 

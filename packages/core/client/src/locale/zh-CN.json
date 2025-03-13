@@ -1080,5 +1080,7 @@
   "If selected, the page will display Tab pages.": "如果选中，该页面将显示标签页。",
   "If selected, the route will be displayed in the menu.": "如果选中，该路由将显示在菜单中。",
   "Are you sure you want to hide this tab?": "你确定要隐藏该标签页吗？",
-  "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "隐藏后，该标签将不再显示在标签栏中。要想再次显示它，你需要到路由管理页面进行设置。"
+  "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "隐藏后，该标签将不再显示在标签栏中。要想再次显示它，你需要到路由管理页面进行设置。",
+  "Date scope":"日期范围",
+  "Enable index column": "启用序号列"
 }
