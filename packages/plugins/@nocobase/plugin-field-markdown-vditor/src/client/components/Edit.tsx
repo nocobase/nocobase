@@ -30,7 +30,7 @@ const format = (files, responseText) => {
     },
   };
   return JSON.stringify(formatResponse);
-}
+};
 
 const useUpload = (fileCollection: string) => {
   const app = useApp();
@@ -39,37 +39,39 @@ const useUpload = (fileCollection: string) => {
   const { storage, storageType } = useStorageCfg?.() || {};
   const storageTypeUploadProps = storageType?.useUploadProps?.({ storage, rules: storage?.rules }) || {};
 
-  // If there is no custom upload method, use the default upload method
-  if (!storageTypeUploadProps?.customRequest) {
+  return useMemo(() => {
+    // If there is no custom upload method, use the default upload method
+    if (!storageTypeUploadProps?.customRequest) {
+      return {
+        url: app.getApiUrl(`${fileCollection || 'attachments'}:create`),
+        headers: apiClient.getHeaders(),
+        multiple: false,
+        fieldName: 'file',
+        max: 1024 * 1024 * 1024, // 1G
+        format,
+      };
+    }
+
     return {
-      url: app.getApiUrl(`${fileCollection || 'attachments'}:create`),
-      headers: apiClient.getHeaders(),
       multiple: false,
-      fieldName: 'file',
-      max: 1024 * 1024 * 1024, // 1G
+      async handler(files: File[]) {
+        const customRequest = storageTypeUploadProps.customRequest;
+        let result = null;
+        await customRequest({
+          file: files[0],
+          onSuccess: (res) => {
+            result = res;
+          },
+          onError: () => {},
+          onProgress: () => {},
+          headers: apiClient.getHeaders(),
+        });
+
+        return result;
+      },
       format,
     };
-  }
-
-  return {
-    multiple: false,
-    async handler(files: File[]) {
-      const customRequest = storageTypeUploadProps.customRequest;
-      let result = null;
-      await customRequest({
-        file: files[0],
-        onSuccess: (res) => {
-          result = res;
-        },
-        onError: () => {},
-        onProgress: () => {},
-        headers: apiClient.getHeaders(),
-      });
-
-      return result;
-    },
-    format,
-  }
+  }, [apiClient, app, fileCollection, storageTypeUploadProps?.customRequest]);
 };
 
 export const Edit = withDynamicSchemaProps((props) => {
@@ -129,7 +131,7 @@ export const Edit = withDynamicSchemaProps((props) => {
       vdRef.current?.destroy();
       vdRef.current = undefined;
     };
-  }, [toolbar?.join(',')]);
+  }, [toolbar?.join(','), upload]);
 
   useEffect(() => {
     if (editorReady && vdRef.current) {
