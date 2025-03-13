@@ -5,7 +5,7 @@
   "Collection": "Raccolta",
   "The collection to which the triggered data belongs.": "La raccolta a cui appartengono i dati attivati.",
   "Trigger mode": "Modalità di attivazione",
-  "Local mode, triggered after the completion of actions bound to this workflow": "Modalità locale, attivata dopo il completamento delle azioni associate a questo flusso di lavoro",
+  "Local mode, triggered after the completion of actions bound to this workflow": "Modalità locale, attivata dopo il completamento delle azioni associate a questo workflow",
   "Global mode, triggered after the completion of the following actions": "Modalità globale, attivata dopo il completamento delle seguenti azioni",
   "Select actions": "Seleziona azioni",
   "Create record action": "Azione di creazione record",
