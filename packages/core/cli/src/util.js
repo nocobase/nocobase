@@ -259,8 +259,8 @@ const updatePackageResolutions = async () => {
     'utf-8',
   );
   const currentPackageJson = await readFile(resolve(process.cwd(), 'package.json'), 'utf-8');
-  const newResolutions = JSON.parse(content).resolutions;
-  const currentResolutions = JSON.parse(currentPackageJson).resolutions;
+  const newResolutions = JSON.parse(content).resolutions || {};
+  const currentResolutions = JSON.parse(currentPackageJson).resolutions || {};
   for (const [key, value] of Object.entries(newResolutions)) {
     if (currentResolutions[key] !== value) {
       console.log(chalk.green(`yarn config set resolutions.${key} ${value}`));
