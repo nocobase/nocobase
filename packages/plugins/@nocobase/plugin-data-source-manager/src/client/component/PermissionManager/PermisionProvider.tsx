@@ -59,12 +59,16 @@ export const PermissionProvider = (props) => {
   );
 };
 
+export const CurrentDataSourceKey = createContext({ dataSourceKey: 'main' });
+
 export const RoleRecordProvider = (props) => {
   const role = useContext(CurrentRolesContext);
   const record = useRecord();
   return (
     <RecordContext_deprecated.Provider value={{ ...role }}>
-      <SchemaComponentOptions scope={{ dataSourceKey: record.key }}>{props.children}</SchemaComponentOptions>
+      <CurrentDataSourceKey.Provider value={{ dataSourceKey: record.key }}>
+        <SchemaComponentOptions scope={{ dataSourceKey: record.key }}>{props.children}</SchemaComponentOptions>
+      </CurrentDataSourceKey.Provider>
     </RecordContext_deprecated.Provider>
   );
 };
