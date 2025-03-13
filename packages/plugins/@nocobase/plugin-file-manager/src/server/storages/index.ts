@@ -42,7 +42,7 @@ export abstract class StorageType {
 
   getFileData?(file: { [key: string]: any }): { [key: string]: any };
   getFileURL(file: AttachmentModel, preview?: boolean): string | Promise<string> {
-    return `${(this.storage.baseUrl || '').replace(/\/|$/, '/')}${
+    return `${(this.storage.baseUrl || '').replace(/\/|$/, '')}/${
       file.path ? `${encodeURI(file.path)}/` : ''
     }${encodeURIComponent(file.filename)}${(preview && this.storage.options.thumbnailRule) || ''}`;
   }

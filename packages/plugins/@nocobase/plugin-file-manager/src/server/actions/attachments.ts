@@ -28,7 +28,7 @@ function getFileFilter(storage) {
   };
 }
 
-export function getFileData(ctx: Context) {
+export async function getFileData(ctx: Context) {
   const { [FILE_FIELD_NAME]: file, storage } = ctx;
   if (!file) {
     return ctx.throw(400, 'file validation failed');
@@ -41,8 +41,6 @@ export function getFileData(ctx: Context) {
   const filename = Path.basename(name);
   const extname = Path.extname(filename);
   const path = (storage.path || '').replace(/^\/|\/$/g, '');
-  const baseUrl = storage.baseUrl.replace(/\/+$/, '');
-  const pathname = [path, filename].filter(Boolean).join('/');
 
   const storageInstance = plugin.storagesCache.get(storage.id);
 
@@ -59,7 +57,7 @@ export function getFileData(ctx: Context) {
     ...(storageInstance.getFileData ? storageInstance.getFileData(file) : {}),
   };
 
-  data.url = plugin.getFileURL(data);
+  data.url = data.url || (await plugin.getFileURL(data));
 
   return data;
 }
@@ -100,7 +98,7 @@ async function multipart(ctx: Context, next: Next) {
     return ctx.throw(500, err);
   }
 
-  const values = getFileData(ctx);
+  const values = await getFileData(ctx);
 
   ctx.action.mergeParams({
     values,
