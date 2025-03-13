@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISOLATION_LEVELS } from 'sequelize';
+import { Transaction } from 'sequelize';
 import { Migration } from '@nocobase/server';
 import workflowManualTasks from '../collections/workflowManualTasks';
 
@@ -59,7 +59,7 @@ export default class extends Migration {
 
     await db.sequelize.transaction(
       {
-        isolationLevel: ISOLATION_LEVELS.SERIALIZABLE,
+        isolationLevel: Transaction.ISOLATION_LEVELS.SERIALIZABLE,
       },
       async (transaction) => {
         const newExists = await queryInterface.tableExists(newTableName, { transaction });

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMockServer, sleep } from '@nocobase/test';
+import { createMockServer } from '@nocobase/test';
 import { describe, test } from 'vitest';
 import workflowManualTasks from '../../collections/workflowManualTasks';
 import Migration from '../../migrations/20250312100512-change-table-name';
@@ -120,12 +120,10 @@ describe('20250225175712-change-table-name.test', () => {
       fields: [{ name: 'id', type: 'bigInt', primaryKey: true }],
     });
     await app.db.sync();
-    await sleep(1000);
-    const constraints = await app.db.sequelize
+    const columns = await app.db.sequelize
       .getQueryInterface()
-      // @ts-ignore
-      .showConstraint(app.db.getCollection(workflowManualTasks.name).getTableNameWithSchema());
-    const primaryKeys = constraints.filter((c) => c.constraintType === 'PRIMARY KEY');
+      .describeTable(app.db.getCollection(workflowManualTasks.name).getTableNameWithSchema());
+    const primaryKeys = Object.values(columns).filter((c) => c.primaryKey);
     expect(primaryKeys.length).toBe(1);
 
     await app.destroy();
