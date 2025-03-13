@@ -141,6 +141,7 @@ export const useTableBlockProps = () => {
           const storedFilter = block.service.params?.[1]?.filters || {};
 
           if (selectedRow.includes(record[tableBlockContextBasicValue.rowKey])) {
+            block.clearSelection?.();
             if (block.dataLoadingMode === 'manual') {
               return block.clearData();
             }

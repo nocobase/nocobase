@@ -226,6 +226,7 @@ export const useFilterAPI = () => {
             ],
           };
         } else {
+          block.clearSelection?.();
           delete storedFilter[uid];
           if (block.dataLoadingMode === 'manual') {
             return block.clearData();
