@@ -135,7 +135,7 @@ describe('Router', () => {
 
     it('add skipAuthCheck route', () => {
       router.add('skip-auth-check', { path: '/skip-auth-check', Component: 'Hello', skipAuthCheck: true });
-      router.add('skip-auth-check', { path: '/not-skip-auth-check', Component: 'Hello' });
+      router.add('not-skip-auth-check', { path: '/not-skip-auth-check', Component: 'Hello' });
 
       const RouterComponent = router.getRouterComponent();
       const BaseLayout: FC = (props) => {
@@ -145,8 +145,24 @@ describe('Router', () => {
       router.navigate('/skip-auth-check');
       const state = router.state;
       const { pathname, search } = state.location;
-      const isSkipedAuthCheck = router.isSkippedAuthCheckRoute('/skip-auth-check');
+      const isSkipedAuthCheck = router.isSkippedAuthCheckRoute(pathname);
       expect(isSkipedAuthCheck).toBe(true);
+    });
+
+    it('add not skipAuthCheck route', () => {
+      router.add('skip-auth-check', { path: '/skip-auth-check', Component: 'Hello', skipAuthCheck: true });
+      router.add('not-skip-auth-check', { path: '/not-skip-auth-check', Component: 'Hello' });
+
+      const RouterComponent = router.getRouterComponent();
+      const BaseLayout: FC = (props) => {
+        return <div>BaseLayout {props.children}</div>;
+      };
+      render(<RouterComponent BaseLayout={BaseLayout} />);
+      router.navigate('/not-skip-auth-check');
+      const state = router.state;
+      const { pathname, search } = state.location;
+      const isSkipedAuthCheck = router.isSkippedAuthCheckRoute(pathname);
+      expect(isSkipedAuthCheck).toBe(false);
     });
   });
 
