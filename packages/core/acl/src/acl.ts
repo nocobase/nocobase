@@ -460,6 +460,23 @@ export class ACL extends EventEmitter {
       }
     }
 
+    // 检查 $or 条件中的 createdById
+    if (params?.filter?.$or?.length) {
+      const checkCreatedById = (items) => {
+        return items.some(
+          (x) =>
+            'createdById' in x || x.$or?.some((y) => 'createdById' in y) || x.$and?.some((y) => 'createdById' in y),
+        );
+      };
+
+      if (checkCreatedById(params.filter.$or)) {
+        const collection = ctx.db.getCollection(resourceName);
+        if (!collection || !collection.getField('createdById')) {
+          throw new NoPermissionError('createdById field not found');
+        }
+      }
+    }
+
     return params;
   }
 
