@@ -30,7 +30,7 @@ describe('Router', () => {
     let router: RouterManager;
 
     beforeEach(() => {
-      router = new RouterManager({ type: 'memory', initialEntries: ['/'] }, app);
+      router = new RouterManager({ type: 'memory', initialEntries: ['/'], basename: '/nocobase/apps/test1' }, app);
     });
 
     it('basic', () => {
@@ -131,6 +131,22 @@ describe('Router', () => {
       };
       router.add('test', route);
       expect(router.getRoutesTree()).toEqual([{ path: '/', element: <Hello />, children: undefined }]);
+    });
+
+    it('add skipAuthCheck route', () => {
+      router.add('skip-auth-check', { path: '/skip-auth-check', Component: 'Hello', skipAuthCheck: true });
+      router.add('skip-auth-check', { path: '/not-skip-auth-check', Component: 'Hello' });
+
+      const RouterComponent = router.getRouterComponent();
+      const BaseLayout: FC = (props) => {
+        return <div>BaseLayout {props.children}</div>;
+      };
+      render(<RouterComponent BaseLayout={BaseLayout} />);
+      router.navigate('/skip-auth-check');
+      const state = router.state;
+      const { pathname, search } = state.location;
+      const isSkipedAuthCheck = router.isSkippedAuthCheckRoute('/skip-auth-check');
+      expect(isSkipedAuthCheck).toBe(true);
     });
   });
 

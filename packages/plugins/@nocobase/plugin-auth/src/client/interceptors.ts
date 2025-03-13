@@ -82,17 +82,12 @@ export function authCheckMiddleware({ app }: { app: Application }) {
         throw error;
       }
 
-      const routes = Object.values(app.router.getRoutes());
-      // @ts-ignore
-      const matchedRoutes = matchRoutes<RouteType>(routes, pathname, basename);
-      const isPublicPage = matchedRoutes.some((match) => {
-        return match?.route?.permission === 'public';
-      });
-      if (isPublicPage) {
+      const isSkippedAuthCheckRoute = app.router.isSkippedAuthCheckRoute(pathname);
+      if (isSkippedAuthCheckRoute) {
         error.config.skipNotify = true;
       }
 
-      if (pathname !== app.getHref('signin') && !isPublicPage) {
+      if (pathname !== app.getHref('signin') && !isSkippedAuthCheckRoute) {
         const redirectPath = removeBasename(pathname, basename);
 
         debouncedRedirect(() => {
