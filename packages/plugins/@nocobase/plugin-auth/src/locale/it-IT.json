@@ -29,7 +29,7 @@
   "Sign up settings": "Impostazioni di registrazione",
   "Sign up form": "Modulo di registrazione",
   "At least one of the username or email fields is required": "È richiesto almeno uno dei campi nome utente o email",
-  "Password is not allowed to be changed": "Non consentire cambio password"
+  "Password is not allowed to be changed": "Non consentire cambio password",
   "Token policy": "Politica token",
   "Token validity period": "Periodo di validità del token",
   "Session validity period": "Periodo di validità della sessione",
