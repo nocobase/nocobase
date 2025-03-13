@@ -28,6 +28,10 @@ export default class extends Migration {
     const newTableName = workflowManualTasksCollection.getTableNameWithSchema();
     const newTableNameWithQuotes = workflowManualTasksCollection.getRealTableName(true);
 
+    const exists = await queryInterface.tableExists(oldTableName);
+    if (!exists) {
+      return;
+    }
     // @ts-ignore
     const constraints: any = await queryInterface.showConstraint(oldTableName);
     // PG:
@@ -53,55 +57,52 @@ export default class extends Migration {
     // }
 
     await db.sequelize.transaction(async (transaction) => {
-      const exists = await queryInterface.tableExists(oldTableName, { transaction });
-      if (exists) {
-        const newExists = await queryInterface.tableExists(newTableName, { transaction });
-        if (newExists) {
-          await queryInterface.dropTable(newTableName, { transaction });
+      const newExists = await queryInterface.tableExists(newTableName, { transaction });
+      if (newExists) {
+        await queryInterface.dropTable(newTableName, { transaction });
+      }
+
+      if (this.db.isPostgresCompatibleDialect()) {
+        await db.sequelize.query(
+          `ALTER TABLE ${oldTableNameWithQuotes} RENAME TO "${db.options.tablePrefix || ''}${
+            db.options.underscored ? 'workflow_manual_tasks' : 'workflowManualTasks'
+          }";`,
+          {
+            transaction,
+          },
+        );
+      } else {
+        await queryInterface.renameTable(oldTableName, newTableName, { transaction });
+      }
+
+      const primaryKeys = constraints.filter((item) => item.constraintType === 'PRIMARY KEY');
+      if (primaryKeys.length) {
+        for (const primaryKey of primaryKeys) {
+          await queryInterface.removeConstraint(newTableName, primaryKey.constraintName, { transaction });
         }
+      }
 
-        if (this.db.isPostgresCompatibleDialect()) {
-          await db.sequelize.query(
-            `ALTER TABLE ${oldTableNameWithQuotes} RENAME TO "${db.options.tablePrefix || ''}${
-              db.options.underscored ? 'workflow_manual_tasks' : 'workflowManualTasks'
-            }";`,
-            {
-              transaction,
-            },
-          );
-        } else {
-          await queryInterface.renameTable(oldTableName, newTableName, { transaction });
-        }
+      const indexes: any = await queryInterface.showIndex(newTableName, { transaction });
 
-        const primaryKeys = constraints.filter((item) => item.constraintType === 'PRIMARY KEY');
-        if (primaryKeys.length) {
-          for (const primaryKey of primaryKeys) {
-            await queryInterface.removeConstraint(newTableName, primaryKey.constraintName, { transaction });
-          }
-        }
-
-        const indexes: any = await queryInterface.showIndex(newTableName, { transaction });
-
-        const oldIndexPrefix = `${db.options.tablePrefix || ''}users_jobs`;
-        const newIndexPrefix = `${db.options.tablePrefix || ''}workflow_manual_tasks`;
-        for (const item of indexes) {
-          if (item.name.startsWith(oldIndexPrefix)) {
-            if (this.db.isPostgresCompatibleDialect()) {
-              await db.sequelize.query(
-                `ALTER INDEX ${db.options.schema ? `"${db.options.schema}".` : ''}"${
-                  item.name
-                }" RENAME TO "${item.name.replace(oldIndexPrefix, newIndexPrefix)}";`,
-                { transaction },
-              );
-            } else if (this.db.isMySQLCompatibleDialect()) {
-              await db.sequelize.query(
-                `ALTER TABLE ${newTableNameWithQuotes} RENAME INDEX ${item.name} TO ${item.name.replace(
-                  oldIndexPrefix,
-                  newIndexPrefix,
-                )};`,
-                { transaction },
-              );
-            }
+      const oldIndexPrefix = `${db.options.tablePrefix || ''}users_jobs`;
+      const newIndexPrefix = `${db.options.tablePrefix || ''}workflow_manual_tasks`;
+      for (const item of indexes) {
+        if (item.name.startsWith(oldIndexPrefix)) {
+          if (this.db.isPostgresCompatibleDialect()) {
+            await db.sequelize.query(
+              `ALTER INDEX ${db.options.schema ? `"${db.options.schema}".` : ''}"${
+                item.name
+              }" RENAME TO "${item.name.replace(oldIndexPrefix, newIndexPrefix)}";`,
+              { transaction },
+            );
+          } else if (this.db.isMySQLCompatibleDialect()) {
+            await db.sequelize.query(
+              `ALTER TABLE ${newTableNameWithQuotes} RENAME INDEX ${item.name} TO ${item.name.replace(
+                oldIndexPrefix,
+                newIndexPrefix,
+              )};`,
+              { transaction },
+            );
           }
         }
       }
