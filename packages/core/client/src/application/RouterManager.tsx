@@ -42,6 +42,7 @@ export type RouterOptions = (HashRouterOptions | BrowserRouterOptions | MemoryRo
 export type ComponentTypeAndString<T = any> = ComponentType<T> | string;
 export interface RouteType extends Omit<RouteObject, 'children' | 'Component'> {
   Component?: ComponentTypeAndString;
+  permission?: 'public' | 'loggedIn';
 }
 export type RenderComponentType = (Component: ComponentTypeAndString, props?: any) => React.ReactNode;
 
