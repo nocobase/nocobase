@@ -39,7 +39,7 @@ export default class extends Migration {
         const oldConstraints: any = await queryInterface.showConstraint(oldTableName, { transaction });
         const primaryKey = oldConstraints.find((item) => item.constraintType === 'PRIMARY KEY');
         if (primaryKey) {
-          await queryInterface.removeConstraint(oldTableName, primaryKey.name, { transaction });
+          await queryInterface.removeConstraint(oldTableName, primaryKey.constraintName, { transaction });
           await queryInterface.addConstraint(oldTableName, {
             name: primaryKey.name,
             type: 'primary key',
