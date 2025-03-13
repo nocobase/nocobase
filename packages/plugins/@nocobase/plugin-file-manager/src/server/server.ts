@@ -15,7 +15,6 @@ import { basename } from 'path';
 import { Model, Transactionable } from '@nocobase/database';
 import fs from 'fs';
 import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
-import { FileModel } from './FileModel';
 import initActions from './actions';
 import { getFileData } from './actions/attachments';
 import { AttachmentInterface } from './interfaces/attachment-interface';
@@ -158,7 +157,6 @@ export class PluginFileManagerServer extends Plugin {
     for (const storage of storages) {
       this.storagesCache.set(storage.get('id'), this.parseStorage(storage));
     }
-    this.db['_fileStorages'] = this.storagesCache;
   }
 
   async install() {
@@ -290,8 +288,8 @@ export class PluginFileManagerServer extends Plugin {
         const collection = this.db.getCollection(name);
         if (collection?.name === 'attachments' || collection?.options?.template === 'file') {
           for (const record of records) {
-            const url = await this.getFileURL(record);
-            const previewUrl = await this.getFileURL(record, true);
+            const url = record.url || (await this.getFileURL(record));
+            const previewUrl = (await this.getFileURL(record, true)) || record.url;
             record.set('url', url);
             record.set('preview', previewUrl);
             record.dataValues.preview = previewUrl; // 强制添加preview，在附件字段时，通过set设置无效
