@@ -184,7 +184,7 @@ export function mergeAclActionParams(sourceParams, targetParams) {
     },
     fields: andMerge,
     whitelist: andMerge,
-    appends: andMerge,
+    appends: 'union',
   });
   removeEmptyParams(mergedParams);
   return mergedParams;
