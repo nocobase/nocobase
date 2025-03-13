@@ -154,7 +154,10 @@ const layoutContentClass = css`
   display: flex;
   flex-direction: column;
   position: relative;
+  /* 基础高度（所有浏览器支持） */
   height: calc(100vh - var(--nb-header-height));
+  /* 动态视口高度（现代浏览器支持） */
+  height: calc(100dvh - var(--nb-header-height));
   > div {
     position: relative;
   }
