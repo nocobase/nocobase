@@ -397,6 +397,34 @@ describe('multiple roles merge', () => {
         },
       });
     });
+    test('should union appends(params={ appends: [a,b]}) when appends = [a,b], appends =[]', () => {
+      acl.setAvailableAction('update');
+      acl.define({
+        role: 'role1',
+        actions: {
+          'posts:update': {
+            appends: ['a', 'b'],
+          },
+        },
+      });
+      acl.define({
+        role: 'role2',
+        actions: {
+          'posts:update': {
+            appends: [],
+          },
+        },
+      });
+      const canResult = acl.can({ resource: 'posts', action: 'update', roles: ['role1', 'role2'] });
+      expect(canResult).toStrictEqual({
+        role: 'role1',
+        resource: 'posts',
+        action: 'update',
+        params: {
+          appends: expect.arrayContaining(['a', 'b']),
+        },
+      });
+    });
   });
 
   describe('filter & fields merge', () => {
