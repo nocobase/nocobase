@@ -65,9 +65,9 @@ attachmentFileTypes.add({
     return (
       <LightBox
         // discourageDownloads={true}
-        mainSrc={list[index]?.url}
-        nextSrc={list[(index + 1) % list.length]?.url}
-        prevSrc={list[(index + list.length - 1) % list.length]?.url}
+        mainSrc={encodeFileURL(list[index]?.url)}
+        nextSrc={encodeFileURL(list[(index + 1) % list.length]?.url)}
+        prevSrc={encodeFileURL(list[(index + list.length - 1) % list.length]?.url)}
         onCloseRequest={() => onSwitchIndex(null)}
         onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
         onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
