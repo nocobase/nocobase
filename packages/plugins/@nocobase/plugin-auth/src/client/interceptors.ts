@@ -7,10 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Application, RouteType } from '@nocobase/client';
+import { Application } from '@nocobase/client';
 import type { AxiosResponse } from 'axios';
 import debounce from 'lodash/debounce';
-import { matchRoutes } from 'react-router';
 
 const AuthErrorCode = {
   EMPTY_TOKEN: 'EMPTY_TOKEN' as const,
@@ -65,7 +64,6 @@ export function authCheckMiddleware({ app }: { app: Application }) {
 
     if (error.status === 401 && firstError?.code && AuthErrorCode[firstError.code]) {
       app.apiClient.auth.setToken('');
-
       if (pathname === app.getHref('signin') && firstError?.code !== AuthErrorCode.EMPTY_TOKEN && error.config) {
         error.config.skipNotify = false;
       }
