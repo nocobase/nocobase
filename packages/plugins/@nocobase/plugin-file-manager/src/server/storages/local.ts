@@ -15,6 +15,8 @@ import { AttachmentModel, StorageType } from '.';
 import { FILE_SIZE_LIMIT_DEFAULT, STORAGE_TYPE_LOCAL } from '../../constants';
 import { getFilename } from '../utils';
 
+const DEFAULT_BASE_URL = '/storage/uploads';
+
 function getDocumentRoot(storage): string {
   const { documentRoot = process.env.LOCAL_STORAGE_DEST || 'storage/uploads' } = storage.options || {};
   // TODO(feature): 后面考虑以字符串模板的方式使用，可注入 req/action 相关变量，以便于区分文件夹
@@ -27,7 +29,7 @@ export default class extends StorageType {
       title: 'Local storage',
       type: STORAGE_TYPE_LOCAL,
       name: `local`,
-      baseUrl: '/storage/uploads',
+      baseUrl: DEFAULT_BASE_URL,
       options: {
         documentRoot: 'storage/uploads',
       },
@@ -72,7 +74,9 @@ export default class extends StorageType {
 
     return [count, undeleted];
   }
-  getFileURL(file: AttachmentModel) {
-    return process.env.APP_PUBLIC_PATH ? `${process.env.APP_PUBLIC_PATH.replace(/\/$/g, '')}${file.url}` : file.url;
+  getFileURL(file: AttachmentModel, preview = false) {
+    return `${(this.storage.baseUrl || process.env.APP_PUBLIC_PATH || DEFAULT_BASE_URL).replace(/\/$/g, '')}/${
+      file.path ? `${encodeURI(file.path)}/` : ''
+    }${encodeURIComponent(file.filename)}${(preview && this.storage.options.thumbnailRule) || ''}`;
   }
 }
