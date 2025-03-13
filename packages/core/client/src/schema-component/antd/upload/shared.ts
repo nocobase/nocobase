@@ -273,9 +273,10 @@ export function encodeFileURL(url: string): string {
     return url;
   }
 
-  const parts = url.split('/');
+  const [base, search = ''] = url.split('?');
+  const parts = base.split('/');
   const filename = parts.pop();
   parts.push(encodeURIComponent(filename));
-  const encodedURL = parts.join('/');
+  const encodedURL = `${parts.join('/')}${search ? `?${search}` : ''}`;
   return encodedURL;
 }
