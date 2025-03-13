@@ -7,14 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useMemo, useContext } from 'react';
+import React from 'react';
 import { observer } from '@formily/reactive-react';
-import type { MenuProps } from 'antd';
-import { Dropdown, Popover } from 'antd';
-import { FilterOutlined } from '@ant-design/icons';
-import { useCompile } from '../../../hooks';
-import { useApp } from '../../../../application';
-import { addHelper } from './observables';
 import { helpersObs } from './observables';
 import { Helper } from './Helper';
 const _HelperList = () => {

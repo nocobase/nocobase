@@ -176,7 +176,7 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
       if (typeof value === 'string') {
         const match = re.exec(value);
         if (match) {
-          const { fullVariable: key, filters: helpers } = extractTemplateElements(value);
+          const { fullVariable: key, helpers } = extractTemplateElements(value);
           const val = getValuesByPath(vars, key, null);
           const field = getField?.(path);
           if (key.startsWith('$date') || key.startsWith('$nDate')) {

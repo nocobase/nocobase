@@ -8,14 +8,15 @@
  */
 import get from 'lodash/get';
 import { createJSONTemplateParser } from '../parser';
+import { extractTemplateVariable } from '../utils';
 
 const parser = createJSONTemplateParser();
 
 describe('ctx function', () => {
   it('should handle basic context function', () => {
     const template = '{{}}';
-    const variable = parser.engine.fullVariablesSync(template);
-    console.log(variable);
+    const variable = extractTemplateVariable(template);
+    expect(variable).toBe(null);
   });
   it('should handle basic context function with state', () => {
     const template = '{{$user.id}} - {{$user.name}}';
