@@ -67,7 +67,24 @@ export function ButtonEditor(props) {
               title: t('Button icon'),
               default: fieldSchema?.['x-component-props']?.icon,
               'x-component-props': {},
-              'x-visible': !isLink,
+            },
+            onlyIcon: {
+              'x-decorator': 'FormItem',
+              'x-component': 'Checkbox',
+              title: t('Icon only'),
+              default: fieldSchema?.['x-component-props']?.onlyIcon,
+              'x-component-props': {},
+              'x-visible': isLink,
+              'x-reactions': [
+                {
+                  dependencies: ['icon'],
+                  fulfill: {
+                    state: {
+                      hidden: '{{!$deps[0]}}',
+                    },
+                  },
+                },
+              ],
             },
             iconColor: {
               title: t('Color'),
@@ -96,13 +113,14 @@ export function ButtonEditor(props) {
           },
         } as ISchema
       }
-      onSubmit={({ title, icon, type, iconColor }) => {
+      onSubmit={({ title, icon, type, iconColor, onlyIcon }) => {
         if (field.address.toString() === fieldSchema.name) {
           field.title = title;
           field.componentProps.iconColor = iconColor;
           field.componentProps.icon = icon;
           field.componentProps.danger = type === 'danger';
           field.componentProps.type = type || field.componentProps.type;
+          field.componentProps.onlyIcon = onlyIcon || field.componentProps.onlyIcon;
         } else {
           field.form.query(new RegExp(`.${fieldSchema.name}$`)).forEach((fieldItem) => {
             fieldItem.title = title;
@@ -110,6 +128,7 @@ export function ButtonEditor(props) {
             fieldItem.componentProps.icon = icon;
             fieldItem.componentProps.danger = type === 'danger';
             fieldItem.componentProps.type = type || fieldItem.componentProps.type;
+            fieldItem.componentProps.onlyIcon = onlyIcon || fieldItem.componentProps.onlyIcon;
           });
         }
 
@@ -119,6 +138,7 @@ export function ButtonEditor(props) {
         fieldSchema['x-component-props'].icon = icon;
         fieldSchema['x-component-props'].danger = type === 'danger';
         fieldSchema['x-component-props'].type = type || field.componentProps.type;
+        fieldSchema['x-component-props'].onlyIcon = onlyIcon || field.componentProps.onlyIcon;
 
         dn.emit('patch', {
           schema: {
