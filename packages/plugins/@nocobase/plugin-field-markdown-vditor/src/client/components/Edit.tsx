@@ -25,12 +25,19 @@ const useUpload = (fileCollection: string, vditorInstanceRef: React.RefObject<Vd
   const { useStorageCfg } = useExpressionScope();
   const { storage, storageType } = useStorageCfg?.() || {};
   const action = app.getApiUrl(`${fileCollection || 'attachments'}:create`);
-  const storageTypeUploadProps = storageType?.useUploadProps?.({ storage, rules: storage?.rules, action }) || {};
+  const storageTypeUploadPropsRef = useRef(null);
+  const storageTypeUploadProps = storageType?.useUploadProps?.({ storage, rules: storage?.rules, action });
+
+  // Using ref to prevent re-rendering
+  if (storageTypeUploadProps && !storageTypeUploadPropsRef.current) {
+    storageTypeUploadPropsRef.current = storageTypeUploadProps;
+  }
+
   const { t } = useTranslation();
 
   return useMemo(() => {
     // If there is no custom upload method, use the default upload method
-    if (!storageTypeUploadProps?.customRequest) {
+    if (!storageTypeUploadPropsRef.current?.customRequest) {
       return {
         url: action,
         headers: apiClient.getHeaders(),
@@ -57,7 +64,7 @@ const useUpload = (fileCollection: string, vditorInstanceRef: React.RefObject<Vd
       multiple: false,
       fieldName: 'file',
       async handler(files: File[]) {
-        const customRequest = storageTypeUploadProps.customRequest;
+        const customRequest = storageTypeUploadPropsRef.current.customRequest;
         const file = files[0];
         let response = null;
         let error = null;
@@ -112,7 +119,8 @@ const useUpload = (fileCollection: string, vditorInstanceRef: React.RefObject<Vd
         return null;
       },
     };
-  }, [action, apiClient, storageTypeUploadProps.customRequest, vditorInstanceRef]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [action, apiClient, t, vditorInstanceRef, storageTypeUploadPropsRef.current]);
 };
 
 export const Edit = withDynamicSchemaProps((props) => {
@@ -172,6 +180,7 @@ export const Edit = withDynamicSchemaProps((props) => {
       vdRef.current?.destroy();
       vdRef.current = undefined;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolbar?.join(','), upload]);
 
   useEffect(() => {
