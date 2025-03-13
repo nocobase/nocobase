@@ -51,7 +51,7 @@ export class PluginPublicFormsClient extends Plugin {
     this.app.router.add('public-forms', {
       path: '/public-forms/:name',
       Component: PublicFormPage,
-      permission: 'public',
+      skipAuthCheck: true,
     });
     this.app.pluginSettingsManager.add('public-forms', {
       title: `{{t("Public forms", { ns: "${NAMESPACE}" })}}`,
