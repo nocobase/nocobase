@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { ISOLATION_LEVELS } from 'sequelize';
 import { Migration } from '@nocobase/server';
 import workflowManualTasks from '../collections/workflowManualTasks';
 
@@ -56,63 +57,68 @@ export default class extends Migration {
     //   tableSchema: 'nocobase_test'
     // }
 
-    await db.sequelize.transaction(async (transaction) => {
-      const newExists = await queryInterface.tableExists(newTableName, { transaction });
-      if (newExists) {
-        await queryInterface.dropTable(newTableName, { transaction });
-      }
+    await db.sequelize.transaction(
+      {
+        isolationLevel: ISOLATION_LEVELS.SERIALIZABLE,
+      },
+      async (transaction) => {
+        const newExists = await queryInterface.tableExists(newTableName, { transaction });
+        if (newExists) {
+          await queryInterface.dropTable(newTableName, { transaction });
+        }
 
-      if (this.db.isPostgresCompatibleDialect()) {
-        await db.sequelize.query(
-          `ALTER TABLE ${oldTableNameWithQuotes} RENAME TO "${db.options.tablePrefix || ''}${
-            db.options.underscored ? 'workflow_manual_tasks' : 'workflowManualTasks'
-          }";`,
-          {
+        if (this.db.isPostgresCompatibleDialect()) {
+          await db.sequelize.query(
+            `ALTER TABLE ${oldTableNameWithQuotes} RENAME TO "${db.options.tablePrefix || ''}${
+              db.options.underscored ? 'workflow_manual_tasks' : 'workflowManualTasks'
+            }";`,
+            {
+              transaction,
+            },
+          );
+        } else {
+          await queryInterface.renameTable(oldTableName, newTableName, { transaction });
+        }
+
+        if (this.db.isPostgresCompatibleDialect()) {
+          const primaryKeys = constraints.filter((item) => item.constraintType === 'PRIMARY KEY');
+          if (primaryKeys.length) {
+            for (const primaryKey of primaryKeys) {
+              await queryInterface.removeConstraint(newTableName, primaryKey.constraintName, { transaction });
+            }
+          }
+        } else if (this.db.isMySQLCompatibleDialect()) {
+          await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} DROP PRIMARY KEY, ADD PRIMARY KEY (id)`, {
             transaction,
-          },
-        );
-      } else {
-        await queryInterface.renameTable(oldTableName, newTableName, { transaction });
-      }
+          });
+        }
 
-      if (this.db.isPostgresCompatibleDialect()) {
-        const primaryKeys = constraints.filter((item) => item.constraintType === 'PRIMARY KEY');
-        if (primaryKeys.length) {
-          for (const primaryKey of primaryKeys) {
-            await queryInterface.removeConstraint(newTableName, primaryKey.constraintName, { transaction });
+        const indexes: any = await queryInterface.showIndex(newTableName, { transaction });
+
+        const oldIndexPrefix = `${db.options.tablePrefix || ''}users_jobs`;
+        const newIndexPrefix = `${db.options.tablePrefix || ''}workflow_manual_tasks`;
+        for (const item of indexes) {
+          if (item.name.startsWith(oldIndexPrefix)) {
+            if (this.db.isPostgresCompatibleDialect()) {
+              await db.sequelize.query(
+                `ALTER INDEX ${db.options.schema ? `"${db.options.schema}".` : ''}"${
+                  item.name
+                }" RENAME TO "${item.name.replace(oldIndexPrefix, newIndexPrefix)}";`,
+                { transaction },
+              );
+            } else if (this.db.isMySQLCompatibleDialect()) {
+              await db.sequelize.query(
+                `ALTER TABLE ${newTableNameWithQuotes} RENAME INDEX ${item.name} TO ${item.name.replace(
+                  oldIndexPrefix,
+                  newIndexPrefix,
+                )};`,
+                { transaction },
+              );
+            }
           }
         }
-      } else if (this.db.isMySQLCompatibleDialect()) {
-        await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} DROP PRIMARY KEY, ADD PRIMARY KEY (id)`, {
-          transaction,
-        });
-      }
-
-      const indexes: any = await queryInterface.showIndex(newTableName, { transaction });
-
-      const oldIndexPrefix = `${db.options.tablePrefix || ''}users_jobs`;
-      const newIndexPrefix = `${db.options.tablePrefix || ''}workflow_manual_tasks`;
-      for (const item of indexes) {
-        if (item.name.startsWith(oldIndexPrefix)) {
-          if (this.db.isPostgresCompatibleDialect()) {
-            await db.sequelize.query(
-              `ALTER INDEX ${db.options.schema ? `"${db.options.schema}".` : ''}"${
-                item.name
-              }" RENAME TO "${item.name.replace(oldIndexPrefix, newIndexPrefix)}";`,
-              { transaction },
-            );
-          } else if (this.db.isMySQLCompatibleDialect()) {
-            await db.sequelize.query(
-              `ALTER TABLE ${newTableNameWithQuotes} RENAME INDEX ${item.name} TO ${item.name.replace(
-                oldIndexPrefix,
-                newIndexPrefix,
-              )};`,
-              { transaction },
-            );
-          }
-        }
-      }
-    });
+      },
+    );
     db.removeCollection('users_jobs');
     db.removeCollection('workflowManualTasks');
   }
