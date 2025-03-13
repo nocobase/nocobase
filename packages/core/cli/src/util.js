@@ -272,7 +272,7 @@ const updatePackageResolutions = async () => {
 exports.updatePackageJson = async () => {
   await updatePackageResolutions().catch((error) => {
     console.error(chalk.red(error));
-    console.error(chalk.warn(`You may need to resolve the dependencies conflicts manually.`));
+    console.error(chalk.yellow(`You may need to resolve the dependencies conflicts manually.`));
   });
 };
 
