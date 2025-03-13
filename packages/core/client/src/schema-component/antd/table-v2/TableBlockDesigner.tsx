@@ -176,6 +176,21 @@ export const TableBlockDesigner = () => {
           });
         }}
       />
+      <SchemaSettingsSwitchItem
+        title={t('Enable index column')}
+        checked={field.decoratorProps?.enableSelectColumn !== false}
+        onChange={async (enableIndexÏColumn) => {
+          field.decoratorProps = field.decoratorProps || {};
+          field.decoratorProps.enableIndexÏColumn = enableIndexÏColumn;
+          fieldSchema['x-decorator-props'].enableIndexÏColumn = enableIndexÏColumn;
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: fieldSchema['x-uid'],
+              'x-decorator-props': fieldSchema['x-decorator-props'],
+            },
+          });
+        }}
+      />
       {field.decoratorProps.dragSort && <EditSortField />}
       <SchemaSettingsDataScope
         collectionName={name}
