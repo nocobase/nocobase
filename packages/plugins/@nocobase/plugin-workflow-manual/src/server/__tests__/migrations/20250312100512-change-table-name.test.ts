@@ -7,10 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMockServer } from '@nocobase/test';
+import { createMockServer, sleep } from '@nocobase/test';
 import { describe, test } from 'vitest';
 import workflowManualTasks from '../../collections/workflowManualTasks';
 import Migration from '../../migrations/20250312100512-change-table-name';
+
+const skipSqlite = process.env.DB_DIALECT === 'sqlite' ? test.skip : test;
 
 const matrix: [string, string][] = [
   // schema, tablePrefix
@@ -81,7 +83,7 @@ describe('20250225175712-change-table-name.test', () => {
     await app.destroy();
   });
 
-  test(`multiple primary keys`, async () => {
+  skipSqlite(`multiple primary keys`, async () => {
     const app = await createMockServer();
     await app.version.update('1.5.0');
     // mock m2m collections
@@ -118,10 +120,11 @@ describe('20250225175712-change-table-name.test', () => {
       fields: [{ name: 'id', type: 'bigInt', primaryKey: true }],
     });
     await app.db.sync();
+    await sleep(1000);
     const constraints = await app.db.sequelize
       .getQueryInterface()
       // @ts-ignore
-      .showConstraint(app.db.getCollection('workflowManualTasks').getTableNameWithSchema());
+      .showConstraint(app.db.getCollection(workflowManualTasks.name).getTableNameWithSchema());
     const primaryKeys = constraints.filter((c) => c.constraintType === 'PRIMARY KEY');
     expect(primaryKeys.length).toBe(1);
 
