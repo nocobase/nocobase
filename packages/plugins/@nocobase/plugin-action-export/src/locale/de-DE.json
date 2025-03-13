@@ -1,0 +1,7 @@
+{
+  "Export warning": "Sie können bis zu {{limit}} Datenzeilen auf einmal exportieren, alles darüber hinaus wird ignoriert.",
+  "Start export": "Export starten",
+  "another export action is running, please try again later.": "Ein anderer Exportvorgang läuft, bitte versuchen Sie es später erneut.",
+  "True": "Wahr",
+  "False": "Falsch"
+}
