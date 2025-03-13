@@ -7,12 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Flex, message, Select, Space, theme, Tooltip } from 'antd';
-import { useACLTranslation } from './locale';
-import { useRequest } from 'ahooks';
 import { useAPIClient, useCurrentRoleMode } from '@nocobase/client';
+import { useRequest } from 'ahooks';
+import { Flex, message, Select, theme, Tooltip } from 'antd';
 import React, { useState } from 'react';
-import { QuestionCircleOutlined } from '@ant-design/icons';
+import { useACLTranslation } from './locale';
 
 export const RoleModeSelect = () => {
   const { t } = useACLTranslation();
