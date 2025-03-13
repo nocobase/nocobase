@@ -10,7 +10,15 @@
 const chalk = require('chalk');
 const { Command } = require('commander');
 const { resolve } = require('path');
-const { run, promptForTs, runAppCommand, hasCorePackages, downloadPro, hasTsNode } = require('../util');
+const {
+  run,
+  promptForTs,
+  runAppCommand,
+  hasCorePackages,
+  downloadPro,
+  hasTsNode,
+  updatePackageJson,
+} = require('../util');
 const { existsSync, rmSync } = require('fs');
 
 /**
@@ -68,7 +76,14 @@ module.exports = (cli) => {
         await rmAppDir();
         return;
       }
-      await run('yarn', ['add', `@nocobase/cli@${distTag}`, `@nocobase/devtools@${distTag}`, '-W']);
+      await run('yarn', [
+        'add',
+        `@nocobase/create-nocobase-app@${distTag}`,
+        `@nocobase/cli@${distTag}`,
+        `@nocobase/devtools@${distTag}`,
+        '-W',
+      ]);
+      await updatePackageJson();
       await run('yarn', ['install']);
       await downloadPro();
       await runAppCommand('upgrade');

@@ -252,6 +252,30 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
   return content;
 };
 
+const updatePackageResolutions = async () => {
+  // get dependencies from node_modules/@nocobase/create-nocobase-app/templates/app/package.json.tpl
+  const content = await readFile(
+    resolve(process.cwd(), 'node_modules/@nocobase/create-nocobase-app/templates/app/package.json.tpl'),
+    'utf-8',
+  );
+  const currentPackageJson = await readFile(resolve(process.cwd(), 'package.json'), 'utf-8');
+  const newResolutions = JSON.parse(content).resolutions;
+  const currentResolutions = JSON.parse(currentPackageJson).resolutions;
+  for (const [key, value] of Object.entries(newResolutions)) {
+    if (currentResolutions[key] !== value) {
+      console.log(chalk.green(`yarn config set resolutions.${key} ${value}`));
+      await exports.run('yarn', ['config', 'set', `resolutions.${key}`, value]);
+    }
+  }
+};
+
+exports.updatePackageJson = async () => {
+  await updatePackageResolutions().catch((error) => {
+    console.error(chalk.red(error));
+    console.error(chalk.warn(`You may need to resolve the dependencies conflicts manually.`));
+  });
+};
+
 function generatePlaywrightPath(clean = false) {
   try {
     const playwright = resolve(process.cwd(), 'storage/playwright/tests');
