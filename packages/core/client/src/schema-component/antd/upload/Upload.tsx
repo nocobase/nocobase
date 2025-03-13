@@ -43,10 +43,10 @@ attachmentFileTypes.add({
   },
   getThumbnailURL(file) {
     if (file.preview) {
-      return file.preview;
+      return encodeFileURL(file.preview);
     }
     if (file.url) {
-      return `${file.url}${file.thumbnailRule || ''}`;
+      return encodeFileURL(`${file.url}${file.thumbnailRule || ''}`);
     }
     if (file.originFileObj) {
       return URL.createObjectURL(file.originFileObj);
