@@ -29,5 +29,7 @@
   "Both": "에디터 & 미리보기",
   "Preview": "미리보기",
   "Fullscreen": "전체화면",
-  "Outline": "개요"
+  "Outline": "개요",
+  "uploading": "uploading",
+  "upload failed": "upload failed"
 }

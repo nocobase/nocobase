@@ -29,5 +29,7 @@
   "Both": "Editor & Preview",
   "Preview": "Preview",
   "Fullscreen": "Toggle Fullscreen",
-  "Outline": "Outline"
+  "Outline": "Outline",
+  "uploading": "uploading",
+  "upload failed": "upload failed"
 }

@@ -29,5 +29,7 @@
   "Both": "Editor & Vorschau",
   "Preview": "Vorschau",
   "Fullscreen": "Vollbild umschalten",
-  "Outline": "Gliederung"
+  "Outline": "Gliederung",
+  "uploading": "Hochladen...",
+  "upload failed": "Hochladen fehlgeschlagen"
 }
