@@ -82,7 +82,7 @@ export default class extends Migration {
             await queryInterface.removeConstraint(newTableName, primaryKey.constraintName, { transaction });
           }
         }
-      } else {
+      } else if (this.db.isMySQLCompatibleDialect()) {
         await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} DROP PRIMARY KEY, ADD PRIMARY KEY (id)`, {
           transaction,
         });
