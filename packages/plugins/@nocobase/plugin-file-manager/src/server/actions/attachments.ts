@@ -12,13 +12,7 @@ import { koaMulter as multer } from '@nocobase/utils';
 import Path from 'path';
 
 import Plugin from '..';
-import {
-  FILE_FIELD_NAME,
-  FILE_SIZE_LIMIT_DEFAULT,
-  FILE_SIZE_LIMIT_MAX,
-  FILE_SIZE_LIMIT_MIN,
-  LIMIT_FILES,
-} from '../../constants';
+import { FILE_FIELD_NAME, FILE_SIZE_LIMIT_DEFAULT, FILE_SIZE_LIMIT_MIN, LIMIT_FILES } from '../../constants';
 import * as Rules from '../rules';
 import { StorageClassType } from '../storages';
 
@@ -90,10 +84,7 @@ async function multipart(ctx: Context, next: Next) {
     },
     storage: storageInstance.make(),
   };
-  multerOptions.limits['fileSize'] = Math.min(
-    Math.max(FILE_SIZE_LIMIT_MIN, storage.rules.size ?? FILE_SIZE_LIMIT_DEFAULT),
-    FILE_SIZE_LIMIT_MAX,
-  );
+  multerOptions.limits['fileSize'] = Math.max(FILE_SIZE_LIMIT_MIN, storage.rules.size ?? FILE_SIZE_LIMIT_DEFAULT);
 
   const upload = multer(multerOptions).single(FILE_FIELD_NAME);
   try {
