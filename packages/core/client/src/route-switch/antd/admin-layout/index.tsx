@@ -169,6 +169,7 @@ const layoutContentClass = css`
 
 const className1 = css`
   width: 168px;
+  height: var(--nb-header-height);
   margin-right: 4px;
   display: inline-flex;
   flex-shrink: 0;
