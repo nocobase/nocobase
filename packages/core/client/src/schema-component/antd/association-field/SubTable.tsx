@@ -189,6 +189,7 @@ export const SubTable: any = observer(
         onChange: (page, pageSize) => {
           setCurrentPage(page);
           setPageSize(pageSize);
+          field.componentProps.pageSize = pageSize;
           field.onInput(field.value);
         },
         showSizeChanger: true,
