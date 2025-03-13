@@ -9,13 +9,6 @@
 
 import { SystemRoleMode } from '../enum';
 
-export const getSystemRoleMode = async (ctx, next) => {
-  const systemSettings = await ctx.db.getRepository('systemSettings').findOne();
-  const roleMode = systemSettings?.get('roleMode') || SystemRoleMode.default;
-  ctx.body = { roleMode };
-  await next();
-};
-
 export const setSystemRoleMode = async (ctx, next) => {
   const roleMode = ctx.action.params.values?.roleMode;
   if (!SystemRoleMode.validate(roleMode)) {

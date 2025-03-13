@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { mergeRole } from '@nocobase/acl';
+import { SystemRoleMode } from '../enum';
 
 const map2obj = (map: Map<string, string>) => {
   const obj = {};
@@ -66,10 +67,13 @@ export async function checkAction(ctx, next) {
       .then((list) => list.map((v) => v.uid));
     uiButtonSchemasBlacklist = NECurrentRoleList.filter((uid) => !eqCurrentRoleList.includes(uid));
   }
+  const systemSettings = await ctx.db.getRepository('systemSettings').findOne();
+  const roleMode = systemSettings?.get('roleMode') || SystemRoleMode.default;
 
   ctx.body = {
     ...role,
     role: currentRole,
+    roleMode,
     availableActions: [...availableActions.keys()],
     actionAlias: map2obj(ctx.app.acl.actionAlias),
     allowAll: !!currentRoles.includes('root'),

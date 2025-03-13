@@ -12,9 +12,8 @@ import { useACLRoleContext } from '../acl';
 import { ReturnTypeOfUseRequest, useAPIClient, useRequest } from '../api-client';
 import { useAppSpin } from '../application';
 import { useCompile } from '../schema-component';
-import { useSystemSettings } from '../system-settings';
 
-export const CurrentUserContext = createContext<ReturnTypeOfUseRequest & { roleMode?: { data: { roleMode } } }>(null);
+export const CurrentUserContext = createContext<ReturnTypeOfUseRequest>(null);
 CurrentUserContext.displayName = 'CurrentUserContext';
 
 export const useCurrentUserContext = () => {
@@ -36,11 +35,6 @@ export const useCurrentRoles = () => {
     return roles;
   }, [allowAnonymous, data?.data?.roles, compile]);
   return options;
-};
-
-export const useCurrentRoleMode = () => {
-  const ctx = useSystemSettings();
-  return ctx?.data?.data?.roleMode;
 };
 
 export const CurrentUserProvider = (props) => {
