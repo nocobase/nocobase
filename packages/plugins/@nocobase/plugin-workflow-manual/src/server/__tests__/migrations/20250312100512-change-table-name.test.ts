@@ -86,6 +86,10 @@ describe('20250225175712-change-table-name.test', () => {
     await app.version.update('1.5.0');
     // mock m2m collections
     app.db.collection({
+      ...workflowManualTasks,
+      name: 'users_jobs',
+    });
+    app.db.collection({
       name: 'users',
       fields: [{ name: 'id', type: 'bigInt', primaryKey: true }],
     });
@@ -99,10 +103,6 @@ describe('20250225175712-change-table-name.test', () => {
           through: 'users_jobs',
         },
       ],
-    });
-    app.db.collection({
-      ...workflowManualTasks,
-      name: 'users_jobs',
     });
     await app.db.sync();
 

@@ -75,11 +75,17 @@ export default class extends Migration {
         await queryInterface.renameTable(oldTableName, newTableName, { transaction });
       }
 
-      const primaryKeys = constraints.filter((item) => item.constraintType === 'PRIMARY KEY');
-      if (primaryKeys.length) {
-        for (const primaryKey of primaryKeys) {
-          await queryInterface.removeConstraint(newTableName, primaryKey.constraintName, { transaction });
+      if (this.db.isPostgresCompatibleDialect()) {
+        const primaryKeys = constraints.filter((item) => item.constraintType === 'PRIMARY KEY');
+        if (primaryKeys.length) {
+          for (const primaryKey of primaryKeys) {
+            await queryInterface.removeConstraint(newTableName, primaryKey.constraintName, { transaction });
+          }
         }
+      } else {
+        await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} DROP PRIMARY KEY, ADD PRIMARY KEY (id)`, {
+          transaction,
+        });
       }
 
       const indexes: any = await queryInterface.showIndex(newTableName, { transaction });
