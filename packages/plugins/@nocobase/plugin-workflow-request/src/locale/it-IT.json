@@ -16,7 +16,7 @@
   "Milliseconds": "ms",
   "Input request data": "Inserisci dati richiesta",
   "Only support standard JSON data": "Supporta solo dati JSON standard",
-  "\"Content-Type\" only support \"application/json\", and no need to specify": "\"Content-Type\" supporta solo \"application/json\", e non è necessario specificarlo",
+  "\"Content-Type\" will be ignored from headers.": "\"Content-Type\" sarà ignorato dall'intestazione",
   "Ignore failed request and continue workflow": "Ignora la richiesta fallita e continua il workflow",
   "Status code": "Codice stato",
   "Data": "Dati",
