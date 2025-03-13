@@ -102,6 +102,11 @@ export const useRoleRecheck = () => {
   };
 };
 
+export const useCurrentRoleMode = () => {
+  const ctx = useContext(ACLContext);
+  return ctx?.data?.data?.roleMode;
+};
+
 export const useACLContext = () => {
   return useContext(ACLContext);
 };

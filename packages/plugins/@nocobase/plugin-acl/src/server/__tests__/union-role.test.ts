@@ -413,17 +413,17 @@ describe('union role: full permissions', async () => {
 
   it('should update user role mode successfully', async () => {
     const rootAgent = await app.agent().login(rootUser);
-    let getSystemSettingsResponse = await rootAgent.resource('roles').getSystemRoleMode();
-    expect(getSystemSettingsResponse.status).toBe(200);
-    expect(getSystemSettingsResponse.body.data.roleMode).toStrictEqual(SystemRoleMode.default);
+    let rolesResponse = await agent.resource('roles').check();
+    expect(rolesResponse.status).toBe(200);
+    expect(rolesResponse.body.data.roleMode).toStrictEqual(SystemRoleMode.default);
     await rootAgent.resource('roles').setSystemRoleMode({
       values: {
         roleMode: SystemRoleMode.allowUseUnion,
       },
     });
-    getSystemSettingsResponse = await rootAgent.resource('roles').getSystemRoleMode();
-    expect(getSystemSettingsResponse.status).toBe(200);
-    expect(getSystemSettingsResponse.body.data.roleMode).toStrictEqual(SystemRoleMode.allowUseUnion);
+    rolesResponse = await agent.resource('roles').check();
+    expect(rolesResponse.status).toBe(200);
+    expect(rolesResponse.body.data.roleMode).toStrictEqual(SystemRoleMode.allowUseUnion);
   });
 
   it(`should response no permission when createdById field is missing in data tables`, async () => {

@@ -15,10 +15,9 @@ import { useACLTranslation } from './locale';
 
 export const RoleModeSelect = () => {
   const { t } = useACLTranslation();
-  const { token } = theme.useToken();
   const api = useAPIClient();
   const roleModeData = useCurrentRoleMode();
-  const initialRoleMode = roleModeData?.roleMode || 'default';
+  const initialRoleMode = roleModeData || 'default';
   const [roleMode, setRoleMode] = useState(initialRoleMode);
 
   const { run: updateRoleMode } = useRequest(
