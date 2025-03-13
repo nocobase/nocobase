@@ -29,6 +29,7 @@ describe('actions', () => {
         'acl',
         'action-custom-request',
         'data-source-manager',
+        'ui-schema-storage',
         'system-settings',
       ],
     });

@@ -76,14 +76,13 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
   } = values;
 
   // root role has all permissions
-  if (!ctx.state.currentRoles.includes('root')) {
-    const crRepo = ctx.db.getRepository('customRequestsRoles');
+  if (ctx.state.currentRole !== 'root') {
+    const crRepo = ctx.db.getRepository('uiButtonSchemasRoles');
     const hasRoles = await crRepo.find({
       filter: {
-        customRequestKey: filterByTk,
+        uid: filterByTk,
       },
     });
-
     if (hasRoles.length) {
       if (!hasRoles.some((item) => ctx.state.currentRoles.includes(item.roleName))) {
         return ctx.throw(403, 'custom request no permission');

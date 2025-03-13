@@ -74,7 +74,7 @@ const AllAccessDesktopRoutesContext = createContext<{
   refresh: () => void;
 }>({
   allAccessRoutes: emptyArray,
-  refresh: () => { },
+  refresh: () => {},
 });
 AllAccessDesktopRoutesContext.displayName = 'AllAccessDesktopRoutesContext';
 
@@ -173,6 +173,7 @@ const layoutContentClass = css`
 
 const className1 = css`
   width: 168px;
+  height: var(--nb-header-height);
   margin-right: 4px;
   display: inline-flex;
   flex-shrink: 0;
@@ -504,7 +505,7 @@ const IsMobileLayoutContext = React.createContext<{
   setIsMobileLayout: React.Dispatch<React.SetStateAction<boolean>>;
 }>({
   isMobileLayout: false,
-  setIsMobileLayout: () => { },
+  setIsMobileLayout: () => {},
 });
 
 const MobileLayoutProvider: FC = (props) => {
