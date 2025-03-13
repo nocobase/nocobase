@@ -29,5 +29,7 @@
   "Both": "编辑 & 预览",
   "Preview": "预览",
   "Fullscreen": "全屏切换",
-  "Outline": "大纲"
+  "Outline": "大纲",
+  "uploading": "上传中",
+  "upload failed": "上传失败"
 }

@@ -10,68 +10,109 @@
 import { useExpressionScope } from '@formily/react';
 import { useAPIClient, useApp, withDynamicSchemaProps } from '@nocobase/client';
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Vditor from 'vditor';
 import { defaultToolbar } from '../interfaces/markdown-vditor';
+import { NAMESPACE } from '../locale';
 import { useCDN } from './const';
 import useStyle from './style';
 
 const locales = ['en_US', 'fr_FR', 'pt_BR', 'ja_JP', 'ko_KR', 'ru_RU', 'sv_SE', 'zh_CN', 'zh_TW'];
 
-const format = (files, responseText) => {
-  const response = JSON.parse(responseText);
-  const formatResponse = {
-    msg: '',
-    code: 0,
-    data: {
-      errFiles: [],
-      succMap: {
-        [response.data.filename]: response.data.url,
-      },
-    },
-  };
-  return JSON.stringify(formatResponse);
-};
-
-const useUpload = (fileCollection: string) => {
+const useUpload = (fileCollection: string, vditorInstanceRef: React.RefObject<Vditor>) => {
   const app = useApp();
   const apiClient = useAPIClient();
   const { useStorageCfg } = useExpressionScope();
   const { storage, storageType } = useStorageCfg?.() || {};
-  const storageTypeUploadProps = storageType?.useUploadProps?.({ storage, rules: storage?.rules }) || {};
+  const action = app.getApiUrl(`${fileCollection || 'attachments'}:create`);
+  const storageTypeUploadProps = storageType?.useUploadProps?.({ storage, rules: storage?.rules, action }) || {};
+  const { t } = useTranslation();
 
   return useMemo(() => {
     // If there is no custom upload method, use the default upload method
     if (!storageTypeUploadProps?.customRequest) {
       return {
-        url: app.getApiUrl(`${fileCollection || 'attachments'}:create`),
+        url: action,
         headers: apiClient.getHeaders(),
         multiple: false,
         fieldName: 'file',
         max: 1024 * 1024 * 1024, // 1G
-        format,
+        format: (files, responseText) => {
+          const response = JSON.parse(responseText);
+          const formatResponse = {
+            msg: '',
+            code: 0,
+            data: {
+              errFiles: [],
+              succMap: {
+                [response.data.filename]: response.data.url,
+              },
+            },
+          };
+          return JSON.stringify(formatResponse);
+        },
       };
     }
-
     return {
       multiple: false,
+      fieldName: 'file',
       async handler(files: File[]) {
         const customRequest = storageTypeUploadProps.customRequest;
-        let result = null;
+        const file = files[0];
+        let response = null;
+        let error = null;
+
+        // Show loading message when upload begins
+        const loadingId: any = vditorInstanceRef.current?.tip(
+          `${file.name} ${t('uploading', { ns: NAMESPACE })}...`,
+          0,
+        );
+
         await customRequest({
           file: files[0],
           onSuccess: (res) => {
-            result = res;
+            response = res;
           },
-          onError: () => {},
-          onProgress: () => {},
-          headers: apiClient.getHeaders(),
+          onError: (e) => {
+            error = e;
+          },
+          onProgress: ({ percent }) => {
+            // Update the loading message with progress percentage
+            if (vditorInstanceRef.current && loadingId) {
+              vditorInstanceRef.current.tip(`${file.name} ${t('uploading', { ns: NAMESPACE })}... ${percent}%`, 0);
+            }
+          },
+          headers: {},
         });
 
-        return result;
+        // Clear the loading message
+        if (loadingId) {
+          vditorInstanceRef.current?.tip('', 0);
+        }
+
+        if (error || !response?.data) {
+          vditorInstanceRef.current?.tip(`${file.name} ${t('upload failed', { ns: NAMESPACE })}`, 3000);
+          return;
+        }
+
+        const fileName = response.data.filename;
+        const fileUrl = response.data.url;
+
+        // Check if the uploaded file is an image
+        const isImage = file.type.startsWith('image/');
+
+        if (isImage) {
+          // Insert as an image - will be displayed in the editor
+          vditorInstanceRef.current?.insertValue(`![${fileName}](${fileUrl})`);
+        } else {
+          // For non-image files, insert as a download link
+          vditorInstanceRef.current?.insertValue(`[${fileName}](${fileUrl})`);
+        }
+
+        return null;
       },
-      format,
     };
-  }, [apiClient, app, fileCollection, storageTypeUploadProps?.customRequest]);
+  }, [action, apiClient, storageTypeUploadProps.customRequest, vditorInstanceRef]);
 };
 
 export const Edit = withDynamicSchemaProps((props) => {
@@ -86,7 +127,7 @@ export const Edit = withDynamicSchemaProps((props) => {
   const cdn = useCDN();
   const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
   const locale = apiClient.auth.locale || 'en-US';
-  const upload = useUpload(fileCollection);
+  const upload = useUpload(fileCollection, vdRef);
 
   const lang: any = useMemo(() => {
     const currentLang = locale.replace(/-/g, '_');
