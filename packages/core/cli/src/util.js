@@ -253,18 +253,22 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
 };
 
 const updatePackageResolutions = async () => {
-  // get dependencies from node_modules/@nocobase/create-nocobase-app/templates/app/package.json.tpl
-  const content = await readFile(
-    resolve(process.cwd(), 'node_modules/@nocobase/create-nocobase-app/templates/app/package.json.tpl'),
+  // get dependencies from node_modules/create-nocobase-app/templates/app/package.json.tpl
+  const tplContent = await readFile(
+    resolve(process.cwd(), 'node_modules/create-nocobase-app/templates/app/package.json.tpl'),
     'utf-8',
   );
+  const resolutionsRegex = /"resolutions":\s*({[\s\S]*?})\s*,?/;
+  const resolutionsMatch = tplContent.match(resolutionsRegex);
+  if (!resolutionsMatch) {
+    return;
+  }
+  const resolutions = JSON.parse(resolutionsMatch[1]);
   const currentPackageJson = await readFile(resolve(process.cwd(), 'package.json'), 'utf-8');
-  const newResolutions = JSON.parse(content).resolutions || {};
   const currentResolutions = JSON.parse(currentPackageJson).resolutions || {};
-  for (const [key, value] of Object.entries(newResolutions)) {
+  for (const [key, value] of Object.entries(resolutions)) {
     if (currentResolutions[key] !== value) {
-      console.log(chalk.green(`yarn config set resolutions.${key} ${value}`));
-      await exports.run('yarn', ['config', 'set', `resolutions.${key}`, value]);
+      await exports.run('npm', ['pkg', 'set', `"resolutions.${key}=${value}"`]);
     }
   }
 };

@@ -78,7 +78,7 @@ module.exports = (cli) => {
       }
       await run('yarn', [
         'add',
-        `@nocobase/create-nocobase-app@${distTag}`,
+        `create-nocobase-app@${distTag}`,
         `@nocobase/cli@${distTag}`,
         `@nocobase/devtools@${distTag}`,
         '-W',
