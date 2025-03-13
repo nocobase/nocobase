@@ -28,18 +28,43 @@ import {
   removeNullCondition,
   useFormBlockContext,
   useLocalVariables,
+  SchemaSettings,
+  useApp,
+  useIsFileField,
 } from '@nocobase/client';
 import { useChartsTranslation } from '../locale';
-import { Schema, useField, useFieldSchema } from '@formily/react';
+import { Schema, useField, useFieldSchema, ISchema } from '@formily/react';
 import { Field } from '@formily/core';
 import _ from 'lodash';
-import { ChartFilterContext } from './FilterProvider';
-import { getPropsSchemaByComponent, setDefaultValue } from './utils';
-import { ChartFilterVariableInput } from './FilterVariableInput';
+import { ChartFilterContext } from '../filter/FilterProvider';
+import { getPropsSchemaByComponent, setDefaultValue } from '../filter/utils';
+import { ChartFilterVariableInput } from '../filter/FilterVariableInput';
 import { useChartDataSource, useChartFilter, useCollectionJoinFieldTitle } from '../hooks';
 import { Typography } from 'antd';
 import { getFormulaInterface } from '../utils';
 const { Text } = Typography;
+
+function useFieldComponentName(): string {
+  const field = useField<Field>();
+  const isFileField = useIsFileField();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
+  const { getField } = useCollection_deprecated();
+  const fieldSchema = useFieldSchema();
+  const fieldName = fieldSchema.name as string;
+  const collectionField = getField(fieldName) || getCollectionJoinField(fieldSchema['x-collection-field']);
+
+  const map = {
+    // AssociationField 的 mode 默认值是 Select
+    AssociationField: 'Select',
+  };
+  const fieldComponentName =
+    fieldSchema?.['x-component-props']?.['mode'] ||
+    field?.componentProps?.['mode'] ||
+    (isFileField ? 'FileManager' : '') ||
+    fieldSchema?.['x-component-props']?.['component'] ||
+    collectionField?.uiSchema?.['x-component'];
+  return map[fieldComponentName] || fieldComponentName;
+}
 
 const EditTitle = () => {
   const field = useField<Field>();
@@ -137,9 +162,6 @@ const EditOperator = () => {
   const operator = fieldSchema['x-component-props']?.['filter-operator'];
 
   const setOperatorComponent = (operator: any, component: any, props = {}) => {
-    if (component === 'DatePicker.FilterWithPicker') {
-      component = 'DatePicker';
-    }
     const componentProps = field.componentProps || {};
     field.component = component;
     field.componentProps = {
@@ -353,51 +375,200 @@ const EditDataScope: React.FC = () => {
   );
 };
 
-/**
- * @deprecated
- * use `chartFilterItemSettings` instead
- */
-export const ChartFilterItemDesigner: React.FC = () => {
-  const { getCollectionJoinField } = useCollectionManager_deprecated();
-  const { getField } = useCollection_deprecated();
-  const { t } = useChartsTranslation();
-  const fieldSchema = useFieldSchema();
-  const fieldName = fieldSchema.name as string;
-  const dataSource = fieldSchema['x-data-source'] || DEFAULT_DATA_SOURCE_KEY;
-  const collectionField = getField(fieldName) || getCollectionJoinField(fieldSchema['x-collection-field']);
-  const isCustom = fieldName.startsWith('custom.');
-  const hasProps = getPropsSchemaByComponent(fieldSchema['x-component']);
-  const originalTitle = useCollectionJoinFieldTitle(dataSource, fieldName);
-  const isAssociationField = useIsAssociationField();
-  return (
-    <GeneralSchemaDesigner disableInitializer>
-      {!isCustom && (
-        <>
-          <SchemaSettingsItem title={fieldName}>
-            <Text type="secondary">
-              {t('Original field')}: {originalTitle}
-            </Text>
-          </SchemaSettingsItem>
-          <SchemaSettingsDivider />
-        </>
-      )}
-      <EditTitle />
-      <EditDescription />
-      {hasProps && isCustom && <EditProps />}
-      {!isCustom && <EditOperator />}
-      <EditTitleField />
-      <EditDefaultValue />
-      {isAssociationField && <EditDataScope />}
-      {collectionField ? <SchemaSettingsDivider /> : null}
-      <SchemaSettingsRemove
-        key="remove"
-        confirm={{
-          title: t('Delete field'),
-        }}
-        breakRemoveOn={{
-          'x-component': 'Grid',
-        }}
-      />
-    </GeneralSchemaDesigner>
-  );
-};
+export const chartFilterItemSettings = new SchemaSettings({
+  name: 'chart:filterForm:item',
+  items: [
+    {
+      name: 'originalTitle',
+      Component: () => {
+        const { t } = useChartsTranslation();
+        const fieldSchema = useFieldSchema();
+        const fieldName = fieldSchema.name as string;
+        const isCustom = fieldName.startsWith('custom.');
+        const dataSource = fieldSchema['x-data-source'] || DEFAULT_DATA_SOURCE_KEY;
+
+        const originalTitle = useCollectionJoinFieldTitle(dataSource, fieldName);
+        if (isCustom) {
+          return null;
+        }
+
+        return (
+          <>
+            <SchemaSettingsItem title={fieldName}>
+              <Text type="secondary">
+                {t('Original field')}: {originalTitle}
+              </Text>
+            </SchemaSettingsItem>
+            <SchemaSettingsDivider />
+          </>
+        );
+      },
+    },
+    {
+      name: 'decoratorOptions',
+      type: 'itemGroup',
+      hideIfNoChildren: true,
+      useComponentProps() {
+        const { t } = useChartsTranslation();
+        return {
+          title: t('Generic properties'),
+        };
+      },
+      useChildren() {
+        return [
+          {
+            name: 'title',
+            Component: EditTitle,
+          },
+          {
+            name: 'displayTitle',
+            type: 'switch',
+            useComponentProps() {
+              const { t } = useChartsTranslation();
+              const { dn } = useDesignable();
+              const field = useField<Field>();
+              const fieldSchema = useFieldSchema();
+
+              return {
+                title: t('Display title'),
+                checked: fieldSchema['x-decorator-props']?.['showTitle'] ?? true,
+                onChange(checked) {
+                  fieldSchema['x-decorator-props'] = fieldSchema['x-decorator-props'] || {};
+                  fieldSchema['x-decorator-props']['showTitle'] = checked;
+                  field.decoratorProps.showTitle = checked;
+                  dn.emit('patch', {
+                    schema: {
+                      'x-uid': fieldSchema['x-uid'],
+                      'x-decorator-props': {
+                        ...fieldSchema['x-decorator-props'],
+                        showTitle: checked,
+                      },
+                    },
+                  });
+                  dn.refresh();
+                },
+              };
+            },
+          },
+          {
+            name: 'description',
+            Component: EditDescription,
+          },
+          {
+            name: 'editTooltip',
+            type: 'modal',
+            useComponentProps() {
+              const { t } = useChartsTranslation();
+              const { dn } = useDesignable();
+              const field = useField<Field>();
+              const fieldSchema = useFieldSchema();
+
+              return {
+                title: t('Edit tooltip'),
+                schema: {
+                  type: 'object',
+                  title: t('Edit tooltip'),
+                  properties: {
+                    tooltip: {
+                      default: fieldSchema?.['x-decorator-props']?.tooltip,
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Input.TextArea',
+                      'x-component-props': {},
+                    },
+                  },
+                } as ISchema,
+                onSubmit({ tooltip }) {
+                  field.decoratorProps.tooltip = tooltip;
+                  fieldSchema['x-decorator-props'] = fieldSchema['x-decorator-props'] || {};
+                  fieldSchema['x-decorator-props']['tooltip'] = tooltip;
+                  dn.emit('patch', {
+                    schema: {
+                      'x-uid': fieldSchema['x-uid'],
+                      'x-decorator-props': fieldSchema['x-decorator-props'],
+                    },
+                  });
+                  dn.refresh();
+                },
+              };
+            },
+          },
+          {
+            name: 'defaultValue',
+            Component: EditDefaultValue,
+          },
+          {
+            name: 'operator',
+            Component: () => {
+              const fieldSchema = useFieldSchema();
+              const fieldName = fieldSchema.name as string;
+              const isCustom = fieldName.startsWith('custom.');
+              if (isCustom) {
+                return null;
+              }
+              return <EditOperator />;
+            },
+          },
+          {
+            name: 'props',
+            Component: () => {
+              const fieldSchema = useFieldSchema();
+              const fieldName = fieldSchema.name as string;
+              const isCustom = fieldName.startsWith('custom.');
+              const hasProps = getPropsSchemaByComponent(fieldSchema['x-component']);
+              if (hasProps && isCustom) {
+                return <EditProps />;
+              }
+              return null;
+            },
+          },
+        ];
+      },
+    },
+    {
+      name: 'componentOptions',
+      type: 'itemGroup',
+      hideIfNoChildren: true,
+      useComponentProps() {
+        const { t } = useChartsTranslation();
+        return {
+          title: t('Specific properties'),
+        };
+      },
+      useChildren() {
+        const fieldComponentNameMap = {
+          Select: 'FilterSelect',
+        };
+        const app = useApp();
+        const fieldComponentName = useFieldComponentName();
+        const componentSettings = app.schemaSettingsManager.get(
+          `fieldSettings:component:${fieldComponentNameMap[fieldComponentName] || fieldComponentName}`,
+        );
+        return componentSettings?.items || [];
+      },
+    },
+    {
+      name: 'divider',
+      Component: () => {
+        return <SchemaSettingsDivider />;
+      },
+    },
+    {
+      name: 'remove',
+      Component: () => {
+        const { t } = useChartsTranslation();
+
+        return (
+          <SchemaSettingsRemove
+            key="remove"
+            confirm={{
+              title: t('Delete field'),
+            }}
+            breakRemoveOn={{
+              'x-component': 'Grid',
+            }}
+          />
+        );
+      },
+    },
+  ],
+});

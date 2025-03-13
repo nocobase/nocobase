@@ -20,6 +20,11 @@ import React from 'react';
 import { useChartsTranslation } from '../locale';
 import { useField, useFieldSchema } from '@formily/react';
 
+/**
+ * @deprecated
+ * use `chartBlockSettings` instead
+ */
+
 export const ChartV2BlockDesigner: React.FC = () => {
   const { t } = useChartsTranslation();
   const field = useField();
