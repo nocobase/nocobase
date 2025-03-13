@@ -26,13 +26,20 @@ import {
   chartFilterItemInitializers_deprecated,
 } from './filter';
 import { lang } from './locale';
-import { chartActionsInitializer } from './initializers/chartActions';
-import { chartActionRefreshSettings } from './settings/chartActionRefresh';
-import { useChartRefreshActionProps } from './initializers/RefreshAction';
-import { chartBlockActionsInitializer } from './initializers/chartBlockActions';
-import { useChartBlockRefreshActionProps } from './initializers/BlockRefreshAction';
-import { chartBlockActionRefreshSettings } from './settings/chartBlockActionRefresh';
 import { useChartBlockCardProps } from './block/ChartBlock';
+import { chartActionsInitializer } from './initializers/chartActions';
+import {
+  chartActionRefreshSettings,
+  chartBlockActionRefreshSettings,
+  chartBlockSettings,
+  chartFilterBlockSettings,
+  chartFilterItemSettings,
+  chartRendererSettings,
+} from './settings';
+import { chartBlockActionsInitializer } from './initializers/chartBlockActions';
+import { useChartRefreshActionProps } from './initializers/RefreshAction';
+import { useChartBlockRefreshActionProps } from './initializers/BlockRefreshAction';
+import { ChartRendererToolbar, ChartFilterBlockToolbar, ChartFilterItemToolbar } from './toolbar';
 import { ChartCardItem } from './block/CardItem';
 
 class PluginDataVisualiztionClient extends Plugin {
@@ -48,6 +55,9 @@ class PluginDataVisualiztionClient extends Plugin {
       ChartV2Block,
       ChartCardItem,
       ChartBlockProvider,
+      ChartRendererToolbar,
+      ChartFilterBlockToolbar,
+      ChartFilterItemToolbar,
     });
     this.app.addScopes({
       useChartBlockCardProps,
@@ -55,16 +65,24 @@ class PluginDataVisualiztionClient extends Plugin {
       useChartBlockRefreshActionProps,
     });
 
-    this.app.schemaInitializerManager.add(chartInitializers_deprecated);
-    this.app.schemaInitializerManager.add(chartInitializers);
-    this.app.schemaInitializerManager.add(chartFilterItemInitializers_deprecated);
-    this.app.schemaInitializerManager.add(chartFilterItemInitializers);
-    this.app.schemaInitializerManager.add(chartFilterActionInitializers_deprecated);
-    this.app.schemaInitializerManager.add(chartFilterActionInitializers);
-    this.app.schemaInitializerManager.add(chartActionsInitializer);
-    this.app.schemaInitializerManager.add(chartBlockActionsInitializer);
-    this.app.schemaSettingsManager.add(chartActionRefreshSettings);
-    this.app.schemaSettingsManager.add(chartBlockActionRefreshSettings);
+    this.app.schemaInitializerManager.add(
+      chartInitializers_deprecated,
+      chartInitializers,
+      chartFilterItemInitializers_deprecated,
+      chartFilterItemInitializers,
+      chartFilterActionInitializers_deprecated,
+      chartFilterActionInitializers,
+      chartActionsInitializer,
+      chartBlockActionsInitializer,
+    );
+    this.app.schemaSettingsManager.add(
+      chartActionRefreshSettings,
+      chartBlockActionRefreshSettings,
+      chartBlockSettings,
+      chartRendererSettings,
+      chartFilterBlockSettings,
+      chartFilterItemSettings,
+    );
 
     const blockInitializers = this.app.schemaInitializerManager.get('page:addBlock');
     blockInitializers?.add('dataBlocks.chartV2', {

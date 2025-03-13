@@ -151,7 +151,6 @@ const InternalAssociationSelect = observer(
         </div>
       );
     };
-    console.log(fieldSchema);
     return (
       <div key={fieldSchema.name}>
         <Space.Compact style={{ display: 'flex' }}>
