@@ -9,6 +9,7 @@
 
 import { get, set } from 'lodash';
 import React, { ComponentType, createContext, useContext } from 'react';
+import { matchRoutes } from 'react-router';
 import {
   BrowserRouterProps,
   createBrowserRouter,
@@ -42,6 +43,7 @@ export type RouterOptions = (HashRouterOptions | BrowserRouterOptions | MemoryRo
 export type ComponentTypeAndString<T = any> = ComponentType<T> | string;
 export interface RouteType extends Omit<RouteObject, 'children' | 'Component'> {
   Component?: ComponentTypeAndString;
+  skipAuthCheck?: boolean;
 }
 export type RenderComponentType = (Component: ComponentTypeAndString, props?: any) => React.ReactNode;
 
@@ -134,6 +136,18 @@ export class RouterManager {
     this.options.basename = basename;
   }
 
+  matchRoutes(pathname: string) {
+    const routes = Object.values(this.routes);
+    // @ts-ignore
+    return matchRoutes<RouteType>(routes, pathname, this.basename);
+  }
+
+  isSkippedAuthCheckRoute(pathname: string) {
+    const matchedRoutes = this.matchRoutes(pathname);
+    return matchedRoutes.some((match) => {
+      return match?.route?.skipAuthCheck === true;
+    });
+  }
   /**
    * @internal
    */
