@@ -25,6 +25,33 @@ import { setDefaultSortingRulesSchemaSettingsItem } from '../../../../schema-set
 import { setTheDataScopeSchemaSettingsItem } from '../../../../schema-settings/setTheDataScopeSchemaSettingsItem';
 import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
+import { SchemaSettingsItemType } from '../../../../application';
+
+const enabledIndexColumn: SchemaSettingsItemType = {
+  name: 'enableIndexColumn',
+  type: 'switch',
+  useComponentProps: () => {
+    const field = useField();
+    const fieldSchema = useFieldSchema();
+    const { t } = useTranslation();
+    const { dn } = useDesignable();
+    return {
+      title: t('Enable index column'),
+      checked: field.decoratorProps.enableSelectColumn !== false,
+      onChange: async (enableIndexÏColumn) => {
+        field.decoratorProps = field.decoratorProps || {};
+        field.decoratorProps.enableIndexÏColumn = enableIndexÏColumn;
+        fieldSchema['x-decorator-props'].enableIndexÏColumn = enableIndexÏColumn;
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-decorator-props': fieldSchema['x-decorator-props'],
+          },
+        });
+      },
+    };
+  },
+};
 
 export const tableBlockSettings = new SchemaSettings({
   name: 'blockSettings:table',
@@ -139,6 +166,7 @@ export const tableBlockSettings = new SchemaSettings({
         };
       },
     },
+    enabledIndexColumn,
     {
       name: 'SortField',
       Component: SchemaSettingsSortField,
