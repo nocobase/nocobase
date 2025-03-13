@@ -10,7 +10,7 @@
 import { Migration } from '@nocobase/server';
 
 export default class extends Migration {
-  appVersion = '<1.6.2';
+  appVersion = '<1.7.0';
   on = 'beforeLoad';
   async up() {
     const { db } = this.context;
@@ -34,6 +34,20 @@ export default class extends Migration {
         if (newExists) {
           await queryInterface.dropTable(newTableName, { transaction });
         }
+
+        // @ts-ignore
+        const oldConstraints: any = await queryInterface.showConstraint(oldTableName, { transaction });
+        const primaryKey = oldConstraints.find((item) => item.constraintType === 'PRIMARY KEY');
+        if (primaryKey) {
+          await queryInterface.removeConstraint(oldTableName, primaryKey.name, { transaction });
+          await queryInterface.addConstraint(oldTableName, {
+            name: primaryKey.name,
+            type: 'primary key',
+            fields: ['id'],
+            transaction,
+          });
+        }
+
         if (this.db.isPostgresCompatibleDialect()) {
           await db.sequelize.query(
             `ALTER TABLE ${oldTableNameWithQuotes} RENAME TO "${db.options.tablePrefix || ''}${
