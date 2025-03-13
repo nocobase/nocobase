@@ -43,10 +43,10 @@ attachmentFileTypes.add({
   },
   getThumbnailURL(file) {
     if (file.preview) {
-      return file.preview;
+      return encodeFileURL(file.preview);
     }
     if (file.url) {
-      return `${file.url}${file.thumbnailRule || ''}`;
+      return encodeFileURL(`${file.url}${file.thumbnailRule || ''}`);
     }
     if (file.originFileObj) {
       return URL.createObjectURL(file.originFileObj);
@@ -65,9 +65,9 @@ attachmentFileTypes.add({
     return (
       <LightBox
         // discourageDownloads={true}
-        mainSrc={list[index]?.url}
-        nextSrc={list[(index + 1) % list.length]?.url}
-        prevSrc={list[(index + list.length - 1) % list.length]?.url}
+        mainSrc={encodeFileURL(list[index]?.url)}
+        nextSrc={encodeFileURL(list[(index + 1) % list.length]?.url)}
+        prevSrc={encodeFileURL(list[(index + list.length - 1) % list.length]?.url)}
         onCloseRequest={() => onSwitchIndex(null)}
         onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
         onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
@@ -264,7 +264,7 @@ function AttachmentListItem(props) {
     ) : null,
   ];
   const wrappedItem = file.url ? (
-    <a target="_blank" rel="noopener noreferrer" href={file.url} onClick={handleClick}>
+    <a target="_blank" rel="noopener noreferrer" href={encodeFileURL(file.url)} onClick={handleClick}>
       {item}
     </a>
   ) : (
