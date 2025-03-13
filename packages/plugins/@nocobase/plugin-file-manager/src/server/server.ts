@@ -201,12 +201,12 @@ export class PluginFileManagerServer extends Plugin {
   }
 
   async beforeLoad() {
-    this.db.registerModels({ FileModel });
-    this.db.on('beforeDefineCollection', (options) => {
-      if (options.template === 'file') {
-        options.model = 'FileModel';
-      }
-    });
+    // this.db.registerModels({ FileModel });
+    // this.db.on('beforeDefineCollection', (options) => {
+    //   if (options.template === 'file') {
+    //     options.model = 'FileModel';
+    //   }
+    // });
     this.app.on('afterStart', async () => {
       await this.loadStorages();
     });
@@ -279,12 +279,32 @@ export class PluginFileManagerServer extends Plugin {
     this.app.acl.addFixedParams('attachments', 'destroy', ownMerger);
 
     this.app.db.interfaceManager.registerInterfaceType('attachment', AttachmentInterface);
+
+    this.db.on('afterFind', async (instances) => {
+      if (!instances) {
+        return;
+      }
+      const records = Array.isArray(instances) ? instances : [instances];
+      const name = records[0]?.constructor?.name;
+      if (name) {
+        const collection = this.db.getCollection(name);
+        if (collection?.name === 'attachments' || collection?.options?.template === 'file') {
+          for (const record of records) {
+            const url = await this.getFileURL(record);
+            const previewUrl = await this.getFileURL(record, true);
+            record.set('url', url);
+            record.set('preview', previewUrl);
+            record.dataValues.preview = previewUrl; // 强制添加preview，在附件字段时，通过set设置无效
+          }
+        }
+      }
+    });
   }
 
-  getFileURL(file: AttachmentModel) {
+  getFileURL(file: AttachmentModel, preview = false) {
     const storage = this.storagesCache.get(file.storageId);
     const storageType = this.storageTypes.get(storage.type);
-    return new storageType(storage).getFileURL(file);
+    return new storageType(storage).getFileURL(file, preview ? storage.options.thumbnailRule : '');
   }
 }
 

@@ -34,7 +34,8 @@ export function getFileData(ctx: Context) {
     return ctx.throw(400, 'file validation failed');
   }
 
-  const StorageType = ctx.app.pm.get(Plugin).storageTypes.get(storage.type) as StorageClassType;
+  const plugin = ctx.app.pm.get(Plugin);
+  const StorageType = plugin.storageTypes.get(storage.type) as StorageClassType;
   const { [StorageType.filenameKey || 'filename']: name } = file;
   // make compatible filename across cloud service (with path)
   const filename = Path.basename(name);
@@ -43,23 +44,24 @@ export function getFileData(ctx: Context) {
   const baseUrl = storage.baseUrl.replace(/\/+$/, '');
   const pathname = [path, filename].filter(Boolean).join('/');
 
-  const storageInstance = new StorageType(storage);
+  const storageInstance = plugin.storagesCache.get(storage.id);
 
-  return {
+  const data = {
     title: Buffer.from(file.originalname, 'latin1').toString('utf8').replace(extname, ''),
     filename,
     extname,
     // TODO(feature): 暂时两者相同，后面 storage.path 模版化以后，这里只是 file 实际的 path
     path,
     size: file.size,
-    // 直接缓存起来
-    url: `${baseUrl}/${pathname}`,
     mimetype: file.mimetype,
-    // @ts-ignore
     meta: ctx.request.body,
     storageId: storage.id,
     ...(storageInstance.getFileData ? storageInstance.getFileData(file) : {}),
   };
+
+  data.url = plugin.getFileURL(data);
+
+  return data;
 }
 
 async function multipart(ctx: Context, next: Next) {
