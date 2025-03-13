@@ -264,7 +264,7 @@ function AttachmentListItem(props) {
     ) : null,
   ];
   const wrappedItem = file.url ? (
-    <a target="_blank" rel="noopener noreferrer" href={file.url} onClick={handleClick}>
+    <a target="_blank" rel="noopener noreferrer" href={encodeFileURL(file.url)} onClick={handleClick}>
       {item}
     </a>
   ) : (
