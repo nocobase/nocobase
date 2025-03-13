@@ -54,6 +54,7 @@ describe('external data source', () => {
       ...ctx,
       state: {
         currentRole: 'test',
+        currentRoles: ['test'],
       },
       action: {
         params: {

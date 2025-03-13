@@ -76,7 +76,7 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
   } = values;
 
   // root role has all permissions
-  if (ctx.state.currentRole !== 'root') {
+  if (!ctx.state.currentRoles.includes('root')) {
     const crRepo = ctx.db.getRepository('customRequestsRoles');
     const hasRoles = await crRepo.find({
       filter: {
@@ -85,7 +85,7 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
     });
 
     if (hasRoles.length) {
-      if (!hasRoles.find((item) => item.roleName === ctx.state.currentRole)) {
+      if (!hasRoles.some((item) => ctx.state.currentRoles.includes(item.roleName))) {
         return ctx.throw(403, 'custom request no permission');
       }
     }
