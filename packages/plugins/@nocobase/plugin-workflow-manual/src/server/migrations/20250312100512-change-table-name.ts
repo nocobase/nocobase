@@ -8,6 +8,7 @@
  */
 
 import { Migration } from '@nocobase/server';
+import workflowManualTasks from '../collections/workflowManualTasks';
 
 export default class extends Migration {
   appVersion = '<1.7.0';
@@ -16,36 +17,47 @@ export default class extends Migration {
     const { db } = this.context;
     const queryInterface = db.sequelize.getQueryInterface();
     const usersJobsCollection = db.collection({
+      ...workflowManualTasks,
       name: 'users_jobs',
-      fields: [{ name: 'id', type: 'bigInt' }],
     });
     const workflowManualTasksCollection = db.collection({
-      name: 'workflowManualTasks',
-      fields: [{ name: 'id', type: 'bigInt' }],
+      ...workflowManualTasks,
     });
     const oldTableName = usersJobsCollection.getTableNameWithSchema();
     const oldTableNameWithQuotes = usersJobsCollection.getRealTableName(true);
     const newTableName = workflowManualTasksCollection.getTableNameWithSchema();
     const newTableNameWithQuotes = workflowManualTasksCollection.getRealTableName(true);
+
+    // @ts-ignore
+    const constraints: any = await queryInterface.showConstraint(oldTableName);
+    // PG:
+    // {
+    //   constraintCatalog: 'nocobase_test',
+    //   constraintSchema: 'public',
+    //   constraintName: 'posts_tags_pkey',
+    //   tableCatalog: 'nocobase_test',
+    //   tableSchema: 'public',
+    //   tableName: 'posts_tags',
+    //   constraintType: 'PRIMARY KEY', // use this to determine
+    //   isDeferrable: 'NO',
+    //   initiallyDeferred: 'NO'
+    // }
+    // MYSQL:
+    // {
+    //   constraintCatalog: 'def',
+    //   constraintName: 'PRIMARY',
+    //   constraintSchema: 'nocobase_test',
+    //   constraintType: 'PRIMARY KEY', // use this to determine
+    //   tableName: 'posts_tags',
+    //   tableSchema: 'nocobase_test'
+    // }
+
     await db.sequelize.transaction(async (transaction) => {
       const exists = await queryInterface.tableExists(oldTableName, { transaction });
       if (exists) {
         const newExists = await queryInterface.tableExists(newTableName, { transaction });
         if (newExists) {
           await queryInterface.dropTable(newTableName, { transaction });
-        }
-
-        // @ts-ignore
-        const oldConstraints: any = await queryInterface.showConstraint(oldTableName, { transaction });
-        const primaryKey = oldConstraints.find((item) => item.constraintType === 'PRIMARY KEY');
-        if (primaryKey) {
-          await queryInterface.removeConstraint(oldTableName, primaryKey.constraintName, { transaction });
-          await queryInterface.addConstraint(oldTableName, {
-            name: primaryKey.name,
-            type: 'primary key',
-            fields: ['id'],
-            transaction,
-          });
         }
 
         if (this.db.isPostgresCompatibleDialect()) {
@@ -59,6 +71,13 @@ export default class extends Migration {
           );
         } else {
           await queryInterface.renameTable(oldTableName, newTableName, { transaction });
+        }
+
+        const primaryKeys = constraints.filter((item) => item.constraintType === 'PRIMARY KEY');
+        if (primaryKeys.length) {
+          for (const primaryKey of primaryKeys) {
+            await queryInterface.removeConstraint(newTableName, primaryKey.constraintName, { transaction });
+          }
         }
 
         const indexes: any = await queryInterface.showIndex(newTableName, { transaction });

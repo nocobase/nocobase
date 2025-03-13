@@ -79,4 +79,51 @@ describe('20250225175712-change-table-name.test', () => {
 
     await app.destroy();
   });
+
+  test(`multiple primary keys`, async () => {
+    const app = await createMockServer();
+    await app.version.update('1.5.0');
+    // mock m2m collections
+    app.db.collection({
+      name: 'users',
+      fields: [{ name: 'id', type: 'bigInt', primaryKey: true }],
+    });
+    app.db.collection({
+      name: 'jobs',
+      fields: [
+        { name: 'id', type: 'bigInt', primaryKey: true },
+        {
+          type: 'belongsToMany',
+          name: 'users',
+          through: 'users_jobs',
+        },
+      ],
+    });
+    app.db.collection({
+      ...workflowManualTasks,
+      name: 'users_jobs',
+    });
+    await app.db.sync();
+
+    const migration = new Migration({ db: app.db, app } as any);
+    await migration.up();
+
+    app.db.collection({
+      ...workflowManualTasks,
+    });
+    app.db.removeCollection('jobs');
+    app.db.collection({
+      name: 'jobs',
+      fields: [{ name: 'id', type: 'bigInt', primaryKey: true }],
+    });
+    await app.db.sync();
+    const constraints = await app.db.sequelize
+      .getQueryInterface()
+      // @ts-ignore
+      .showConstraint(app.db.getCollection('workflowManualTasks').getTableNameWithSchema());
+    const primaryKeys = constraints.filter((c) => c.constraintType === 'PRIMARY KEY');
+    expect(primaryKeys.length).toBe(1);
+
+    await app.destroy();
+  });
 });
