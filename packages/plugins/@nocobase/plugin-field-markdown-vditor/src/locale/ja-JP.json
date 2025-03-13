@@ -29,5 +29,7 @@
   "Both": "編集とプレビュー",
   "Preview": "プレビュー",
   "Fullscreen": "全画面表示の切り替え",
-  "Outline": "アウトライン"
+  "Outline": "アウトライン",
+  "uploading": "uploading",
+  "upload failed": "upload failed"
 }

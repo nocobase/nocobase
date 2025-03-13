@@ -1,4 +1,4 @@
-{
+ {
   "Vditor": "Markdown(Vditor)",
   "File collection": "Raccolta file",
   "Used to store files uploaded in the Markdown editor": "Utilizzato per archiviare i file caricati nell'editor Markdown",
@@ -29,5 +29,7 @@
   "Both": "Editor e Anteprima",
   "Preview": "Anteprima",
   "Fullscreen": "Attiva/disattiva schermo intero",
-  "Outline": "Struttura"
+  "Outline": "Struttura",
+  "uploading": "uploading",
+  "upload failed": "upload failed"
 }
