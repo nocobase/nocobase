@@ -72,6 +72,10 @@ describe('Table.settings', () => {
             expect(screen.queryByText('Drag and drop sorting field')).not.toBeInTheDocument();
           },
         },
+        {
+          title: 'Enable index column',
+          type: 'switch',
+        },
         // {
         //   title: 'Fix block',
         //   type: 'switch',
