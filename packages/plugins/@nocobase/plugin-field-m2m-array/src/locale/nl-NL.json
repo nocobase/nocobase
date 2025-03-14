@@ -1,4 +1,4 @@
 {
-    "Many to many (array)": "Many to many (array)",
-    "Many to many (array) description": "Allows to create many to many relationships between two models by storing an array of unique keys of the target model."
+    "Many to many (array)": "Veel-op-veel (array)",
+    "Many to many (array) description": "Hiermee kan je veel-op-veel-relaties tussen twee modellen maken door een array met unieke sleutels van het doelmodel op te slaan."
 }
