@@ -32,6 +32,7 @@ module.exports = (cli) => {
   require('./upgrade')(cli);
   require('./postinstall')(cli);
   require('./pkg')(cli);
+  require('./inst')(cli);
   if (isPackageValid('@umijs/utils')) {
     require('./create-plugin')(cli);
   }
