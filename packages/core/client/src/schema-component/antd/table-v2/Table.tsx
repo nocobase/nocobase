@@ -21,7 +21,7 @@ import { useCreation, useDeepCompareEffect, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, Skeleton, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInView } from 'react-intersection-observer';
 import { DndContext, useDesignable, useTableSize } from '../..';
@@ -30,6 +30,7 @@ import {
   RecordProvider,
   useCollection,
   useCollectionParentRecordData,
+  useDataBlockRequest,
   useSchemaInitializerRender,
   useTableSelectorContext,
 } from '../../../';
@@ -42,7 +43,6 @@ import { useToken } from '../__builtins__';
 import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
-import { useDataBlockRequest } from '../../../';
 const MemoizedAntdTable = React.memo(AntdTable);
 
 const useArrayField = (props) => {
@@ -485,6 +485,19 @@ export const Table: any = withDynamicSchemaProps(
     }, [token.controlItemBgActive, token.controlItemBgActiveHover]);
 
     const highlightRow = useMemo(() => (onClickRow ? highlightRowCss : ''), [highlightRowCss, onClickRow]);
+
+    useEffect(() => {
+      if (ctx?.field) {
+        ctx.field.data = ctx.field?.data || {};
+
+        ctx.field.data.clearSelectedRowKeys = () => {
+          ctx.field.data.selectedRowKeys = [];
+          setSelectedRowKeys([]);
+        };
+
+        ctx.field.data.setSelectedRowKeys = setSelectedRowKeys;
+      }
+    }, [ctx?.field]);
 
     const onRow = useMemo(() => {
       if (onClickRow) {
