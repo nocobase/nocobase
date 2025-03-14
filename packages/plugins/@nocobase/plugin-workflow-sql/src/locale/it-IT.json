@@ -1,5 +1,7 @@
 {
   "SQL action": "Azione SQL",
-  "Execute a SQL statement in database": "Esegui un'istruzione SQL nel database",
-  "Usage of SQL query result is not supported yet.": "L'utilizzo del risultato della query SQL non è ancora supportato."
+  "Execute a SQL statement in database.": "Esegui un'istruzione SQL nel database.",
+  "Select a data source to execute SQL.": "Seleziona un origine dati per eseguire SQL.",
+  "SQL query result could be used through <1>JSON query node</1> (Commercial plugin).": "Il risultato della query SQL potrebbe essere utilizzato tramite il <1>nodo JSON query</1>（plugin commerciale).",
+  "Include meta information of this query in result": "Includi meta informazioni di questa query nel risultato"
 }

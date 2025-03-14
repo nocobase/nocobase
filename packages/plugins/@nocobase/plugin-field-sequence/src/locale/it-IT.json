@@ -20,7 +20,7 @@
   "Monthly": "Mensile",
   "Yearly": "Annuale",
   "Operations": "Operazioni",
-  "Customize": "Personalizza"  
+  "Customize": "Personalizza",
   "Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.": "Genera automaticamente codici basati su regole configurate, supportando combinazioni di date, numeri e testo.",
   "Date": "Data",
   "Date format": "Formato data",

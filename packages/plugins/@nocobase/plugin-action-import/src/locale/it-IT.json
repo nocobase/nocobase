@@ -38,7 +38,7 @@
   "Header mismatch at column {{column}}: expected \"{{expected}}\", but got \"{{actual}}\"": "Incongruenza intestazione alla colonna {{column}}: previsto \"{{expected}}\", ma ottenuto \"{{actual}}\"",
   "No data to import": "Nessun dato da importare",
   "Failed to import row {{row}}, {{message}}, row data: {{data}}": "Errore nell'importazione della riga {{row}}, {{message}}, dati della riga: {{data}}",
-  "import-error": "Errore nell'importazione della riga {{rowIndex}}, dati della riga: {{rowData}}, causa: {{causeMessage}}"
+  "import-error": "Errore nell'importazione della riga {{rowIndex}}, dati della riga: {{rowData}}, causa: {{causeMessage}}",
   "Import": "Importa",
   "Import completed": "Importazione completata: {{success}} record importati con successo, {{updated}} record aggiornati, {{skipped}} record saltati, totale {{total}} record",
   "Successfully imported": "Importazione riuscita",
