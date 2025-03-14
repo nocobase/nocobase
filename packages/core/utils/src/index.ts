@@ -7,12 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import lodash from 'lodash';
-import { dayjs } from './dayjs';
+export { default as lodash } from 'lodash';
+export { dayjs } from './dayjs';
 
 export * from './assign';
 export * from './collections-graph';
 export * from './common';
+export * from './crypto';
 export * from './date';
 export * from './dayjs';
 export * from './forEach';
@@ -37,5 +38,4 @@ export * from './url';
 export * from './i18n';
 export * from './wrap-middleware';
 export * from './object-to-cli-args';
-export { dayjs, lodash };
 export { Schema } from '@formily/json-schema';
