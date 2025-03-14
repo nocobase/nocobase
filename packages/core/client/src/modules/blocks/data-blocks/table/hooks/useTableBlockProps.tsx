@@ -16,7 +16,6 @@ import { findFilterTargets } from '../../../../../block-provider/hooks';
 import { DataBlock, useFilterBlock } from '../../../../../filter-provider/FilterProvider';
 import { mergeFilter } from '../../../../../filter-provider/utils';
 import { removeNullCondition } from '../../../../../schema-component';
-import { useCollection } from '../../../../../data-source';
 
 export const useTableBlockProps = () => {
   const field = useField<ArrayField>();
@@ -121,6 +120,7 @@ export const useTableBlockProps = () => {
           const storedFilter = block.service.params?.[1]?.filters || {};
 
           if (selectedRow.includes(record[ctx.rowKey])) {
+            block.clearSelection?.();
             if (block.dataLoadingMode === 'manual') {
               return block.clearData();
             }

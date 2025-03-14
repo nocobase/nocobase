@@ -215,7 +215,7 @@ export const useFilterAPI = () => {
         // 保留原有的 filter
         const storedFilter = block.service.params?.[1]?.filters || {};
 
-        if (value !== undefined) {
+        if (value != null) {
           storedFilter[uid] = {
             $and: [
               {
@@ -227,6 +227,9 @@ export const useFilterAPI = () => {
           };
         } else {
           delete storedFilter[uid];
+          if (block.dataLoadingMode === 'manual') {
+            return block.clearData();
+          }
         }
 
         const mergedFilter = mergeFilter([

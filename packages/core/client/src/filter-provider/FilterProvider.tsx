@@ -52,6 +52,8 @@ export interface DataBlock {
   clearFilter: (uid: string) => void;
   /** 将数据区块的数据置为空 */
   clearData: () => void;
+  /** 清除表格的选中项 */
+  clearSelection?: () => void;
   /** 数据区块表中所有的关系字段 */
   associatedFields?: CollectionFieldOptions_deprecated[];
   /** 数据区块表中所有的外键字段 */
@@ -147,17 +149,13 @@ export const DataBlockCollector = ({
       clearData() {
         this.service.mutate(undefined);
       },
+      clearSelection() {
+        if (field) {
+          field.data.clearSelectedRowKeys?.();
+        }
+      },
     });
-  }, [
-    associatedFields,
-    collection,
-    dataLoadingMode,
-    field?.componentProps?.title,
-    fieldSchema,
-    params?.filter,
-    recordDataBlocks,
-    service,
-  ]);
+  }, [associatedFields, collection, dataLoadingMode, fieldSchema, params?.filter, recordDataBlocks, service, field]);
 
   useEffect(() => {
     if (shouldApplyFilter) addBlockToDataBlocks();
