@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { default as lodash } from 'lodash';
+import lodash from 'lodash';
+export { lodash };
 export { dayjs } from './dayjs';
 
 export * from './assign';
