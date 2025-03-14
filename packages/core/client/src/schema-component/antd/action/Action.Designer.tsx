@@ -34,6 +34,7 @@ import {
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
+import { useAfterSuccessOptions } from './hooks/useGetAfterSuccessVariablesOptions';
 
 const MenuGroup = (props) => {
   return props.children;
@@ -258,6 +259,7 @@ export function AfterSuccess() {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const { onSuccess } = fieldSchema?.['x-action-settings'] || {};
+  const variableOptions = useAfterSuccessOptions();
   return (
     <SchemaSettingsModalItem
       title={t('After successful submission')}
@@ -336,8 +338,10 @@ export function AfterSuccess() {
             redirectTo: {
               title: t('Link'),
               'x-decorator': 'FormItem',
-              'x-component': 'Input',
-              'x-component-props': {},
+              'x-component': 'Variable.TextArea',
+              'x-component-props': {
+                scope: variableOptions,
+              },
             },
           },
         } as ISchema
