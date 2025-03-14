@@ -391,6 +391,7 @@ describe('export to xlsx with preset', () => {
             extname: '.png',
             mimetype: 'image/png',
             url: 'https://nocobase.oss-cn-beijing.aliyuncs.com/test1.png',
+            storageId: 1,
           },
           {
             title: 'nocobase-logo2',
@@ -398,6 +399,7 @@ describe('export to xlsx with preset', () => {
             extname: '.png',
             mimetype: 'image/png',
             url: 'https://nocobase.oss-cn-beijing.aliyuncs.com/test2.png',
+            storageId: 1,
           },
         ],
       },

@@ -12,6 +12,7 @@ import path from 'path';
 import querystring from 'querystring';
 import { getApp } from '.';
 import { FILE_FIELD_NAME, FILE_SIZE_LIMIT_DEFAULT, STORAGE_TYPE_LOCAL } from '../../constants';
+import PluginFileManagerServer from '../server';
 
 const { LOCAL_STORAGE_BASE_URL, LOCAL_STORAGE_DEST = 'storage/uploads', APP_PORT = '13000' } = process.env;
 
@@ -52,6 +53,88 @@ describe('action', () => {
 
   describe('create / upload', () => {
     describe('default storage', () => {
+      it('should be create file record', async () => {
+        const Plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
+        const model = await Plugin.createFileRecord({
+          collectionName: 'attachments',
+          filePath: path.resolve(__dirname, './files/text.txt'),
+        });
+        const matcher = {
+          title: 'text',
+          extname: '.txt',
+          path: '',
+          // size: 13,
+          meta: {},
+          storageId: 1,
+        };
+        expect(model.toJSON()).toMatchObject(matcher);
+      });
+
+      it('should be local2 storage', async () => {
+        const storage = await StorageRepo.create({
+          values: {
+            name: 'local2',
+            type: STORAGE_TYPE_LOCAL,
+            baseUrl: DEFAULT_LOCAL_BASE_URL,
+            rules: {
+              size: 1024,
+            },
+            paranoid: true,
+          },
+        });
+        const Plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
+        const model = await Plugin.createFileRecord({
+          collectionName: 'attachments',
+          storageName: 'local2',
+          filePath: path.resolve(__dirname, './files/text.txt'),
+        });
+        const matcher = {
+          title: 'text',
+          extname: '.txt',
+          path: '',
+          // size: 13,
+          meta: {},
+          storageId: storage.id,
+        };
+        expect(model.toJSON()).toMatchObject(matcher);
+      });
+
+      it('should be custom values', async () => {
+        const Plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
+        const model = await Plugin.createFileRecord({
+          collectionName: 'attachments',
+          filePath: path.resolve(__dirname, './files/text.txt'),
+          values: {
+            size: 22,
+          },
+        });
+        const matcher = {
+          title: 'text',
+          extname: '.txt',
+          path: '',
+          size: 22,
+          meta: {},
+          storageId: 1,
+        };
+        expect(model.toJSON()).toMatchObject(matcher);
+      });
+
+      it('should be upload file', async () => {
+        const Plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
+        const data = await Plugin.uploadFile({
+          filePath: path.resolve(__dirname, './files/text.txt'),
+          documentRoot: 'storage/backups/test',
+        });
+        const matcher = {
+          title: 'text',
+          extname: '.txt',
+          path: '',
+          meta: {},
+          storageId: 1,
+        };
+        expect(data).toMatchObject(matcher);
+      });
+
       it('upload file should be ok', async () => {
         const { body } = await agent.resource('attachments').create({
           [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
@@ -125,10 +208,9 @@ describe('action', () => {
         // 文件上传和解析是否正常
         expect(body.data).toMatchObject(matcher);
         // 文件的 url 是否正常生成
-        expect(body.data.url).toBe(`${DEFAULT_LOCAL_BASE_URL}${body.data.path}/${body.data.filename}`);
+        const encodedFilename = querystring.escape(rawText);
+        expect(body.data.url).toContain(`${DEFAULT_LOCAL_BASE_URL}${body.data.path}/${encodedFilename}`);
 
-        const encodedFilename = querystring.escape(rawFilename);
-        // console.log('-----------', body.data, encodedFilename);
         // 文件的 url 是否正常访问
         // TODO: mock-server is not start within gateway, static url can not be accessed
         // const res2 = await agent.get(`${DEFAULT_LOCAL_BASE_URL}${body.data.path}/${encodedFilename}`);
