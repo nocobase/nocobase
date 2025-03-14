@@ -3,7 +3,7 @@
     "Search": "Zoeken",
     "Download": "Download",
     "Download logs": "Logs downloaden",
-    "API request and response logs": "API request and response logs",
-    "Application, database, plugins and other system logs, the error level logs will be sent to": "Application, database, plugins and other system logs, the error level logs will be sent to",
-    "SQL execution logs, printed by Sequelize when the db logging is enabled": "SQL execution logs, printed by Sequelize when the db logging is enabled"
+    "API request and response logs": "API verzoek en antwoordlogs",
+    "Application, database, plugins and other system logs, the error level logs will be sent to": "Toepassing, database, plug-ins en andere systeemlogs, waarnaar de foutniveaulogs worden verzonden",
+    "SQL execution logs, printed by Sequelize when the db logging is enabled": "SQL-uitvoeringslogboeken, afgedrukt door Sequelize wanneer de databaseregistratie is ingeschakeld"
 }
