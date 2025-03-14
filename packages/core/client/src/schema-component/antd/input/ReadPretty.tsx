@@ -205,6 +205,10 @@ function encodeFileURL(url: string): string {
     return url;
   }
 
+  if (url.includes('X-Amz-Content-Sha256')) {
+    return url;
+  }
+
   const parts = url.split('/');
   const filename = parts.pop();
   parts.push(encodeURIComponent(filename));
