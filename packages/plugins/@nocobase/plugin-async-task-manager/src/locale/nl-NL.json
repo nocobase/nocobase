@@ -1,5 +1,5 @@
 {
-    "Export {collection} attachments": "{collection} attachments export",
-    "Export {collection} data": "{collection} data export",
-    "Import {collection} data": "{collection} data import"
+    "Export {collection} attachments": "Exporteer {collection} bijlages",
+    "Export {collection} data": "Exporteer {collection} data",
+    "Import {collection} data": "Importeer {collection} data"
 }

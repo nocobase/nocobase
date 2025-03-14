@@ -1,8 +1,8 @@
 {
     "Formula": "Formule",
-    "Calculation engine": "Calculation engine",
+    "Calculation engine": "Berekeningsengine",
     "Expression": "Expressie",
-    "Expression syntax error": "Expression syntax error",
-    "Syntax references": "Syntax references",
-    "Compute a value based on the other fields": "Compute a value based on the other fields"
+    "Expression syntax error": "Fout in expressiesyntax",
+    "Syntax references": "Syntaxverwijzingen",
+    "Compute a value based on the other fields": "Bereken een waarde op basis van de andere velden"
 }
