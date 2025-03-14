@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { DeleteObjectsCommand } from '@aws-sdk/client-s3';
+import crypto from 'crypto';
 import { AttachmentModel, StorageType } from '.';
 import { STORAGE_TYPE_S3 } from '../../constants';
 import { cloudFilenameGetter, getFileKey } from '../utils';
@@ -62,18 +64,39 @@ export default class extends StorageType {
     });
   }
 
-  async delete(records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
-    const { DeleteObjectsCommand } = require('@aws-sdk/client-s3');
-    const { s3 } = this.make();
-    const { Deleted } = await s3.send(
-      new DeleteObjectsCommand({
-        Bucket: this.storage.options.bucket,
-        Delete: {
-          Objects: records.map((record) => ({ Key: getFileKey(record) })),
-        },
-      }),
-    );
+  calculateContentMD5(body) {
+    const hash = crypto.createHash('md5').update(body).digest('base64');
+    return hash;
+  }
 
+  async deleteS3Objects(bucketName: string, objects: string[]) {
+    const deleteBody = JSON.stringify({
+      Objects: objects.map((objectKey) => ({ Key: objectKey })),
+    });
+
+    const contentMD5 = this.calculateContentMD5(deleteBody);
+
+    const deleteCommand = new DeleteObjectsCommand({
+      Bucket: bucketName,
+      Delete: JSON.parse(deleteBody),
+    });
+
+    deleteCommand.middlewareStack.add(
+      (next, context) => async (args) => {
+        args.request['headers']['Content-Md5'] = contentMD5;
+        return next(args);
+      },
+      { step: 'build' },
+    );
+    const { s3 } = this.make();
+    return await s3.send(deleteCommand);
+  }
+
+  async delete(records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
+    const { Deleted } = await this.deleteS3Objects(
+      this.storage.options.bucket,
+      records.map((record) => getFileKey(record)),
+    );
     return [Deleted.length, records.filter((record) => !Deleted.find((item) => item.Key === getFileKey(record)))];
   }
 }
