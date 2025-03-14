@@ -18,10 +18,11 @@ describe('ctx function', () => {
     const variable = extractTemplateVariable(template);
     expect(variable).toBe(null);
   });
-  it('should handle basic context function with state', () => {
+
+  it('should handle basic context function with state', async () => {
     const template = '{{$user.id}} - {{$user.name}}';
     const data = {
-      $user({ fields, context }) {
+      async $user({ fields, context }) {
         if (context.state.userId) {
           return (field) => 1;
         } else return (field) => 2;
@@ -30,11 +31,11 @@ describe('ctx function', () => {
         userId: 1,
       },
     };
-    const result = parser.render(template, data);
+    const result = await parser.render(template, data);
     expect(result).toEqual('1 - 1');
   });
 
-  it('should handle context function without state', () => {
+  it('should handle context function without state', async () => {
     const template = '{{$user.id}} - {{$user.name}}';
     const data = {
       $user({ fields, context }) {
@@ -42,11 +43,11 @@ describe('ctx function', () => {
       },
       state: {},
     };
-    const result = parser.render(template, data);
+    const result = await parser.render(template, data);
     expect(result).toEqual('2 - 2');
   });
 
-  it('should handle nested context values', () => {
+  it('should handle nested context values', async () => {
     const template = '{{$user.profile.email}} - {{$user.profile.address.city}}';
     const data = {
       $user({ fields, context }) {
@@ -59,11 +60,11 @@ describe('ctx function', () => {
         };
       },
     };
-    const result = parser.render(template, data);
+    const result = await parser.render(template, data);
     expect(result).toEqual('test@example.com - New York');
   });
 
-  it('should handle multiple context functions', () => {
+  it('should handle multiple context functions', async () => {
     const template = '{{$user.name}} works at {{$company.name}}';
     const data = {
       $user({ fields, context }) {
@@ -73,22 +74,22 @@ describe('ctx function', () => {
         return (field) => 'NocoBase';
       },
     };
-    const result = parser.render(template, data);
+    const result = await parser.render(template, data);
     expect(result).toEqual('John works at NocoBase');
   });
 
-  it('should handle undefined context values', () => {
+  it('should handle undefined context values', async () => {
     const template = '{{$user.nonexistent}}';
     const data = {
       $user({ fields, context }) {
         return (field) => undefined;
       },
     };
-    const result = parser.render(template, data);
+    const result = await parser.render(template, data);
     expect(result).toBeUndefined();
   });
 
-  it('should handle context function with array values', () => {
+  it('should handle context function with array values', async () => {
     const template = '{{$user.roles[0]}} and {{$user.roles.1}}';
     const data = {
       $user({ fields, context }) {
@@ -99,11 +100,11 @@ describe('ctx function', () => {
         };
       },
     };
-    const result = parser.render(template, data);
+    const result = await parser.render(template, data);
     expect(result).toEqual('admin and user');
   });
 
-  it('should escape array', () => {
+  it('should escape array', async () => {
     const template = ' {{$user.id}} - {{$user.name}} ';
 
     const data = {
@@ -116,7 +117,7 @@ describe('ctx function', () => {
         userId: 1,
       },
     };
-    const result = parser.render(template, data);
+    const result = await parser.render(template, data);
     expect(result).toEqual(' 1 - 1 ');
   });
 });

@@ -64,18 +64,31 @@ export class JSONTemplateParser {
     this._engine.registerFilter(filter.name, filter.handler);
   }
 
-  render(template: string, data: any = {}): any {
-    const NamespaceMap = new Map<string, { fields: Set<String>; cachedResult: Function }>();
+  async render(template: string, data: any = {}): Promise<any> {
+    const NamespaceMap = new Map<string, { fields: Set<String>; fnWrapper: Function; fn?: any }>();
     Object.keys(data).forEach((key) => {
       if (key.startsWith('$') || typeof data[key] === 'function') {
-        NamespaceMap.set(escape(key), { fields: new Set<String>(), cachedResult: null });
+        NamespaceMap.set(escape(key), { fields: new Set<String>(), fnWrapper: data[key] });
       }
     });
     const parsed = this.parse(template, { NamespaceMap });
+    const fnPromises = Array.from(NamespaceMap.entries()).map(async ([key, { fields, fnWrapper }]) => {
+      const fn = await fnWrapper({ fields: Array.from(fields), context: data });
+      return { key, fn };
+    });
+    const fns = await Promise.all(fnPromises);
+    fns.forEach(({ key, fn }) => {
+      const NS = NamespaceMap.get(key);
+      NS.fn = fn;
+    });
+
     return parsed(data);
   }
 
-  parse = (value: any, opts?: { NamespaceMap: Map<string, { fields: Set<String>; cachedResult: Function }> }) => {
+  parse = (
+    value: any,
+    opts?: { NamespaceMap: Map<string, { fields: Set<String>; fnWrapper: Function; fn?: Function }> },
+  ) => {
     const engine = this.engine;
     function type(value) {
       let valueType: string = typeof value;
@@ -161,20 +174,15 @@ export class JSONTemplateParser {
               if (opts?.NamespaceMap && opts.NamespaceMap.has(template.variableSegments[0])) {
                 const scopeKey = template.variableSegments[0];
                 const NS = opts.NamespaceMap.get(scopeKey);
-                const cachedFn = NS.cachedResult;
+                const fn = NS.fn;
                 const field = getFieldName({
                   variableName: template.variableName,
                   variableSegments: template.variableSegments,
                 });
-
-                if (cachedFn) {
-                  return cachedFn(revertEscape(field));
-                } else {
-                  const fnWrapper = get(escapedContext, scopeKey);
-                  const fn = fnWrapper({ fields: Array.from(opts.NamespaceMap.get(scopeKey).fields), context });
-                  NS.cachedResult = fn;
-                  return fn(revertEscape(field));
+                if (!fn) {
+                  throw new Error(`fn not found for ${scopeKey}`);
                 }
+                return fn(revertEscape(field));
               } else if (typeof ctxVal === 'function') {
                 const ctxVal = get(escapedContext, template.variableName);
                 value = ctxVal();

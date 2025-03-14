@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import Database, { Repository } from '@nocobase/database';
 import { createMockServer, MockServer } from '@nocobase/test';
 
@@ -15,7 +24,7 @@ describe('date filters', async () => {
     db = app.db;
     repo = db.getRepository('authenticators');
     agent = app.agent();
-    parse = app.jsonTemplateParser.parse;
+    parse = app.jsonTemplateParser._parse;
   });
   it('date filters', async () => {
     const template = {
@@ -24,7 +33,7 @@ describe('date filters', async () => {
       yesterday: '{{now | date_subtract: 1, "day" | date_format: "YYYY-MM-DD"}}',
     };
 
-    const parsed = app.jsonTemplateParser.parse(template);
+    const parsed = app.jsonTemplateParser._parse(template);
     const now = new Date('2025-01-01 12:00:00');
     const result = parsed({
       now,
@@ -42,7 +51,7 @@ describe('date filters', async () => {
       firstOfArray1: '{{array.0}}',
       firstOfArray2: '{{array[0]}}',
     };
-    const result = app.jsonTemplateParser.parse(template)({
+    const result = app.jsonTemplateParser._parse(template)({
       user: { name: 'john' },
       array: ['first', 'second'],
     });
@@ -60,7 +69,7 @@ describe('date filters', async () => {
       form: '{{form}}',
       $form: '{{$form}}',
     };
-    const result = app.jsonTemplateParser.parse(template)({
+    const result = app.jsonTemplateParser._parse(template)({
       form,
       $form: form,
     });
@@ -75,7 +84,7 @@ describe('date filters', async () => {
       key1: '{{current.key1}}',
       key2: '{{current.key2}}',
     };
-    const result = app.jsonTemplateParser.parse(template)({
+    const result = app.jsonTemplateParser._parse(template)({
       current: { key1: 'value1' },
     });
     expect(result).toEqual({
@@ -91,7 +100,7 @@ describe('date filters', async () => {
       $yesterday: '{{ $now | date_subtract: 1, "day" | date_format: "YYYY-MM-DD" }}',
     };
 
-    const parsed = app.jsonTemplateParser.parse(template);
+    const parsed = app.jsonTemplateParser._parse(template);
     const $now = new Date('2025-01-01: 12:00:00');
     const result = parsed({
       $now,
