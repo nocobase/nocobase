@@ -18,7 +18,7 @@ import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE
 import initActions from './actions';
 import { getFileData } from './actions/attachments';
 import { AttachmentInterface } from './interfaces/attachment-interface';
-import { AttachmentModel, StorageClassType, StorageModel } from './storages';
+import { AttachmentModel, StorageClassType, StorageModel, StorageType } from './storages';
 import StorageTypeAliOss from './storages/ali-oss';
 import StorageTypeLocal from './storages/local';
 import StorageTypeS3 from './storages/s3';
@@ -199,12 +199,12 @@ export class PluginFileManagerServer extends Plugin {
   }
 
   async beforeLoad() {
-    // this.db.registerModels({ FileModel });
-    // this.db.on('beforeDefineCollection', (options) => {
-    //   if (options.template === 'file') {
-    //     options.model = 'FileModel';
-    //   }
-    // });
+    this.db.registerModels({ FileModel: Model });
+    this.db.on('beforeDefineCollection', (options) => {
+      if (options.template === 'file') {
+        options.model = 'FileModel';
+      }
+    });
     this.app.on('afterStart', async () => {
       await this.loadStorages();
     });
