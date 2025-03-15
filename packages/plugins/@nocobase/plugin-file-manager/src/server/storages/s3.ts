@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import crypto from 'crypto';
 import { AttachmentModel, StorageType } from '.';
 import { STORAGE_TYPE_S3 } from '../../constants';
@@ -32,7 +32,6 @@ export default class extends StorageType {
   static filenameKey = 'key';
 
   make() {
-    const { S3Client } = require('@aws-sdk/client-s3');
     const multerS3 = require('multer-s3');
     const { accessKeyId, secretAccessKey, bucket, acl = 'public-read', ...options } = this.storage.options;
     if (options.endpoint) {
