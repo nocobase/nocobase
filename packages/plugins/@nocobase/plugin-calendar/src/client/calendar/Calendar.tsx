@@ -150,7 +150,7 @@ const useEvents = (
         // 必须在这个月的开始时间和结束时间，且在日程的开始时间之后
         if (
           eventStart.isBefore(start) || // 开始时间早于 start
-          (!eventStart.isBetween(startDate, endDate) && !end.isBetween(startDate, endDate)) // 开始时间和结束时间不在月份范围内
+          (!eventStart.isBetween(startDate, endDate, null, '[]') && !end.isBetween(startDate, endDate)) // 开始时间和结束时间不在月份范围内
         ) {
           return;
         }
