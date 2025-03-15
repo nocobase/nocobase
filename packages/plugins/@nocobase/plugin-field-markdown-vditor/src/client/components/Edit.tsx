@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useAPIClient, useApp, withDynamicSchemaProps } from '@nocobase/client';
+import { encodeFileURL, useAPIClient, useApp, withDynamicSchemaProps } from '@nocobase/client';
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Vditor from 'vditor';
 import { defaultToolbar } from '../interfaces/markdown-vditor';
@@ -81,7 +81,7 @@ export const Edit = withDynamicSchemaProps((props) => {
             data: {
               errFiles: [],
               succMap: {
-                [response.data.filename]: response.data.url,
+                [response.data.filename]: encodeFileURL(response.data.url),
               },
             },
           };

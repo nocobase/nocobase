@@ -129,18 +129,21 @@ export const useChartFilter = () => {
         title,
         name: `${name}.${field.name}`,
         required: false,
-        'x-designer': 'ChartFilterItemDesigner',
+        'x-toolbar': 'ChartFilterItemToolbar',
+        'x-settings': 'chart:filterForm:item',
         'x-component': 'CollectionField',
         'x-decorator': 'ChartFilterFormItem',
         'x-data-source': dataSource,
         'x-collection-field': `${fieldName}.${field.name}`,
+        ...defaultOperator?.schema,
         'x-component-props': {
+          utc: false,
+          underFilter: true,
           ...field.uiSchema?.['x-component-props'],
           'filter-operator': defaultOperator,
           'data-source': dataSource,
           'collection-field': `${fieldName}.${field.name}`,
         },
-        'x-filter-operators': defaultOperator?.value,
       };
       if (field.interface === 'formula') {
         const component = getFormulaComponent(field.dataType) || 'Input';
@@ -189,18 +192,21 @@ export const useChartFilter = () => {
         type: 'string',
         name: `${name}.${child.name}`,
         required: false,
-        'x-designer': 'ChartFilterItemDesigner',
+        'x-settings': 'chart:filterForm:item',
+        'x-toolbar': 'ChartFilterItemToolbar',
         'x-decorator': 'ChartFilterFormItem',
         'x-data-source': dataSource,
         'x-collection-field': `${fieldName}.${child.name}`,
         ...child.schema,
         title,
+        ...defaultOperator?.schema,
         'x-component-props': {
+          utc: false,
+          underFilter: true,
           'filter-operator': defaultOperator,
           'data-source': dataSource,
           'collection-field': `${fieldName}.${child.name}`,
         },
-        'x-filter-operators': defaultOperator?.value,
       };
       if (defaultOperator?.noValue) {
         schema = {
