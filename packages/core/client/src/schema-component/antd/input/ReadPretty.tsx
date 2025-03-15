@@ -200,32 +200,11 @@ export interface URLReadPrettyProps {
 
 const ellipsisStyle = { textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', display: 'block' };
 
-function encodeFileURL(url: string): string {
-  if (!url) {
-    return url;
-  }
-
-  if (url.includes('X-Amz-Content-Sha256')) {
-    return url;
-  }
-
-  const parts = url.split('/');
-  const filename = parts.pop();
-  parts.push(encodeURIComponent(filename));
-  const encodedURL = parts.join('/');
-  return encodedURL;
-}
-
 ReadPretty.URL = (props: URLReadPrettyProps) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const prefixCls = usePrefixCls('description-url', props);
   const content = props.value && (
-    <a
-      style={props.ellipsis ? ellipsisStyle : undefined}
-      target="_blank"
-      rel="noopener noreferrer"
-      href={encodeFileURL(props.value)}
-    >
+    <a style={props.ellipsis ? ellipsisStyle : undefined} target="_blank" rel="noopener noreferrer" href={props.value}>
       {props.value}
     </a>
   );
