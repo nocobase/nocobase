@@ -49,7 +49,7 @@ export default class extends Instruction {
     });
 
     return {
-      result: round(options.dataType === DataTypes.DOUBLE ? Number(result) : result, 14),
+      result: round((options.dataType === DataTypes.DOUBLE ? Number(result) : result) || 0, 14),
       status: JOB_STATUS.RESOLVED,
     };
   }
