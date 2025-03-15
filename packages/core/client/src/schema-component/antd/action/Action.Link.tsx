@@ -10,14 +10,31 @@
 import { observer } from '@formily/react';
 import classnames from 'classnames';
 import React from 'react';
+import { Space, Tooltip } from 'antd';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import Action from './Action';
 import { ComposedAction } from './types';
+import { Icon } from '../../../icon';
+
+const WrapperComponent = ({ component: Component = 'a', icon, onlyIcon, children, ...restProps }: any) => {
+  return (
+    <Component {...restProps}>
+      <Tooltip title={restProps.title}>
+        <span style={{ marginRight: 3 }}>{icon && typeof icon === 'string' ? <Icon type={icon} /> : icon}</span>
+      </Tooltip>
+      {onlyIcon ? children[1] : children}
+    </Component>
+  );
+};
 
 export const ActionLink: ComposedAction = withDynamicSchemaProps(
   observer((props: any) => {
     return (
-      <Action {...props} component={props.component || 'a'} className={classnames('nb-action-link', props.className)} />
+      <Action
+        {...props}
+        component={props.component || WrapperComponent}
+        className={classnames('nb-action-link', props.className)}
+      />
     );
   }),
   { displayName: 'ActionLink' },
