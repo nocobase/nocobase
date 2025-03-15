@@ -140,14 +140,14 @@ describe('file manager > server', () => {
 
       it('local (default with base url) attachment with env', async () => {
         const originalPath = process.env.APP_PUBLIC_PATH;
-        process.env.APP_PUBLIC_PATH = 'http://localhost';
+        process.env.APP_PUBLIC_PATH = '/app';
 
         const { body } = await agent.resource('attachments').create({
           [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
         });
 
         const url = await plugin.getFileURL(body.data);
-        expect(url).toBe(`/storage/uploads/${body.data.filename}`);
+        expect(url).toBe(`${process.env.APP_PUBLIC_PATH}/storage/uploads/${body.data.filename}`);
 
         process.env.APP_PUBLIC_PATH = originalPath;
       });

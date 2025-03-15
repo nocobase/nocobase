@@ -274,7 +274,7 @@ describe('action', () => {
       });
 
       it('upload to storage which is not default', async () => {
-        const BASE_URL = `http://localhost:${APP_PORT}/storage/uploads/another`;
+        const BASE_URL = `/storage/uploads/another`;
         const urlPath = 'test/path';
 
         // 动态添加 storage
@@ -318,7 +318,7 @@ describe('action', () => {
       });
 
       it('path longer than 255', async () => {
-        const BASE_URL = `http://localhost:${APP_PORT}/storage/uploads/another`;
+        const BASE_URL = `/storage/uploads/another`;
         const urlPath =
           'extreme-test/max-long-path-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890';
 
