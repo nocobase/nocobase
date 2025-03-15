@@ -252,6 +252,34 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
   return content;
 };
 
+const updatePackageResolutions = async () => {
+  // get dependencies from node_modules/create-nocobase-app/templates/app/package.json.tpl
+  const tplContent = await readFile(
+    resolve(process.cwd(), 'node_modules/create-nocobase-app/templates/app/package.json.tpl'),
+    'utf-8',
+  );
+  const resolutionsRegex = /"resolutions":\s*({[\s\S]*?})\s*,?/;
+  const resolutionsMatch = tplContent.match(resolutionsRegex);
+  if (!resolutionsMatch) {
+    return;
+  }
+  const resolutions = JSON.parse(resolutionsMatch[1]);
+  const currentPackageJson = await readFile(resolve(process.cwd(), 'package.json'), 'utf-8');
+  const currentResolutions = JSON.parse(currentPackageJson).resolutions || {};
+  for (const [key, value] of Object.entries(resolutions)) {
+    if (currentResolutions[key] !== value) {
+      await exports.run('npm', ['pkg', 'set', `"resolutions.${key}=${value}"`]);
+    }
+  }
+};
+
+exports.updatePackageJson = async () => {
+  await updatePackageResolutions().catch((error) => {
+    console.error(chalk.red(error));
+    console.error(chalk.yellow(`You may need to resolve the dependencies conflicts manually.`));
+  });
+};
+
 function generatePlaywrightPath(clean = false) {
   try {
     const playwright = resolve(process.cwd(), 'storage/playwright/tests');
