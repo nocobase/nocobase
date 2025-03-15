@@ -10,7 +10,7 @@
 import { createMockServer } from '@nocobase/test';
 import { describe, test } from 'vitest';
 import workflowManualTasks from '../../collections/workflowManualTasks';
-import Migration from '../../migrations/20250312100512-change-table-name';
+import Migration from '../../migrations/20250312100513-change-table-name';
 
 const skipSqlite = process.env.DB_DIALECT === 'sqlite' ? test.skip : test;
 
@@ -86,11 +86,6 @@ describe('20250225175712-change-table-name.test', () => {
   skipSqlite(`multiple primary keys`, async () => {
     const app = await createMockServer();
     await app.version.update('1.5.0');
-    // mock m2m collections
-    app.db.collection({
-      ...workflowManualTasks,
-      name: 'users_jobs',
-    });
     app.db.collection({
       name: 'users',
       fields: [{ name: 'id', type: 'bigInt', primaryKey: true }],
