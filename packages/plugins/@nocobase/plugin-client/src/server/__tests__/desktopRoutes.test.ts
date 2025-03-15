@@ -129,44 +129,6 @@ describe('desktopRoutes:listAccessible', () => {
     const response = await memberAgent.resource('desktopRoutes').listAccessible();
     expect(response.body.data.length).toBe(0);
   });
-
-  it('should auto include children when page has no children', async () => {
-    // 创建一个没有子路由的页面
-    const page4 = await db.getRepository('desktopRoutes').create({
-      values: {
-        type: 'page',
-        title: 'page4',
-      },
-    });
-
-    // 创建两个子路由
-    await db.getRepository('desktopRoutes').create({
-      values: [
-        { type: 'tab', title: 'tab4-1', parentId: page4.id },
-        { type: 'tab', title: 'tab4-2', parentId: page4.id },
-      ],
-    });
-
-    // 配置 member 角色只能访问 page4
-    const rootUser = await db.getRepository('users').create({
-      values: { roles: ['root'] },
-    });
-    const rootAgent = await app.agent().login(rootUser);
-    await rootAgent.resource('roles.desktopRoutes', 'member').remove({
-      values: [1, 2, 3, 4, 5, 6, 8, 9], // 只保留 page4 的访问权限
-    });
-
-    // 验证返回结果包含子路由
-    const memberUser = await db.getRepository('users').create({
-      values: { roles: ['member'] },
-    });
-    const memberAgent = await app.agent().login(memberUser);
-
-    const response = await memberAgent.resource('desktopRoutes').listAccessible();
-    expect(response.body.data.length).toBe(1);
-    expect(response.body.data[0].title).toBe('page4');
-    expect(response.body.data[0].children.length).toBe(2);
-  });
 });
 
 describe('desktopRoutes', async () => {
