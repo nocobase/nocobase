@@ -120,7 +120,7 @@ export function ButtonEditor(props) {
           field.componentProps.icon = icon;
           field.componentProps.danger = type === 'danger';
           field.componentProps.type = type || field.componentProps.type;
-          field.componentProps.onlyIcon = onlyIcon || field.componentProps.onlyIcon;
+          field.componentProps.onlyIcon = onlyIcon;
         } else {
           field.form.query(new RegExp(`.${fieldSchema.name}$`)).forEach((fieldItem) => {
             fieldItem.title = title;
@@ -128,7 +128,7 @@ export function ButtonEditor(props) {
             fieldItem.componentProps.icon = icon;
             fieldItem.componentProps.danger = type === 'danger';
             fieldItem.componentProps.type = type || fieldItem.componentProps.type;
-            fieldItem.componentProps.onlyIcon = onlyIcon || fieldItem.componentProps.onlyIcon;
+            fieldItem.componentProps.onlyIcon = onlyIcon;
           });
         }
 
@@ -138,7 +138,7 @@ export function ButtonEditor(props) {
         fieldSchema['x-component-props'].icon = icon;
         fieldSchema['x-component-props'].danger = type === 'danger';
         fieldSchema['x-component-props'].type = type || field.componentProps.type;
-        fieldSchema['x-component-props'].onlyIcon = onlyIcon || field.componentProps.onlyIcon;
+        fieldSchema['x-component-props'].onlyIcon = onlyIcon;
 
         dn.emit('patch', {
           schema: {
