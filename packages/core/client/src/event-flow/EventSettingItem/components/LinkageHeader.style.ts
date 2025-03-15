@@ -7,10 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useFormBlockProps } from '../../../../../block-provider/FormBlockProvider';
-import { useCreateFormBlockEventsDefine } from './useCreateFormBlockEventsDefine';
-
-export function useCreateFormBlockProps() {
-  // useCreateFormBlockEventsDefine();
-  return useFormBlockProps();
-}
+export const arrayCollapseItemStyle = {
+  marginBottom: 10,
+};
