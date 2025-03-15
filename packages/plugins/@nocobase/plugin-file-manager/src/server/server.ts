@@ -18,7 +18,7 @@ import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE
 import initActions from './actions';
 import { getFileData } from './actions/attachments';
 import { AttachmentInterface } from './interfaces/attachment-interface';
-import { AttachmentModel, StorageClassType, StorageModel, StorageType } from './storages';
+import { AttachmentModel, StorageClassType, StorageModel } from './storages';
 import StorageTypeAliOss from './storages/ali-oss';
 import StorageTypeLocal from './storages/local';
 import StorageTypeS3 from './storages/s3';
@@ -288,8 +288,8 @@ export class PluginFileManagerServer extends Plugin {
         const collection = this.db.getCollection(name);
         if (collection?.name === 'attachments' || collection?.options?.template === 'file') {
           for (const record of records) {
-            const url = record.url || (await this.getFileURL(record));
-            const previewUrl = (await this.getFileURL(record, true)) || record.url;
+            const url = await this.getFileURL(record);
+            const previewUrl = await this.getFileURL(record, true);
             record.set('url', url);
             record.set('preview', previewUrl);
             record.dataValues.preview = previewUrl; // 强制添加preview，在附件字段时，通过set设置无效

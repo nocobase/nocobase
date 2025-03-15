@@ -11,6 +11,7 @@ import fs from 'fs/promises';
 import mkdirp from 'mkdirp';
 import multer from 'multer';
 import path from 'path';
+import urlJoin from 'url-join';
 import { AttachmentModel, StorageType } from '.';
 import { FILE_SIZE_LIMIT_DEFAULT, STORAGE_TYPE_LOCAL } from '../../constants';
 import { getFilename } from '../utils';
@@ -75,8 +76,13 @@ export default class extends StorageType {
     return [count, undeleted];
   }
   getFileURL(file: AttachmentModel, preview = false) {
-    return `${(this.storage.baseUrl || process.env.APP_PUBLIC_PATH || DEFAULT_BASE_URL).replace(/\/$/g, '')}/${
-      file.path ? `${encodeURI(file.path)}/` : ''
-    }${encodeURIComponent(file.filename)}${(preview && this.storage.options.thumbnailRule) || ''}`;
+    const keys = [
+      process.env.APP_PUBLIC_PATH,
+      this.storage.baseUrl,
+      file.path && encodeURI(file.path),
+      encodeURIComponent(file.filename),
+      preview && this.storage.options.thumbnailRule,
+    ].filter(Boolean);
+    return urlJoin(...keys);
   }
 }
