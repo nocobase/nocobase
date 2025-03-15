@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Transaction } from 'sequelize';
 import { Migration } from '@nocobase/server';
+import { Transaction } from 'sequelize';
 import workflowManualTasks from '../collections/workflowManualTasks';
 
 export default class extends Migration {
@@ -88,9 +88,23 @@ export default class extends Migration {
             }
           }
         } else if (this.db.isMySQLCompatibleDialect()) {
-          await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} DROP PRIMARY KEY, ADD PRIMARY KEY (id)`, {
-            transaction,
-          });
+          const idExists = await workflowManualTasksCollection.getField('id').existsInDb();
+          if (!idExists) {
+            await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} ADD COLUMN id BIGINT;`, {
+              transaction,
+            });
+            await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} DROP PRIMARY KEY`, {
+              transaction,
+            });
+            await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} ADD PRIMARY KEY (id)`, {
+              transaction,
+            });
+            await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} MODIFY COLUMN id BIGINT AUTO_INCREMENT`, {
+              transaction,
+            });
+          } else {
+            console.log('------------------ id exists', idExists);
+          }
         }
 
         const indexes: any = await queryInterface.showIndex(newTableName, { transaction });

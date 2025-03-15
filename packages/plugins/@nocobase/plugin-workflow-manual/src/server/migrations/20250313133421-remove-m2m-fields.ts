@@ -31,8 +31,6 @@ export default class extends Migration {
         },
         transaction,
       });
-
-      db.removeCollection('fields');
     });
   }
 }
