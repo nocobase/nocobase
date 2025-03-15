@@ -88,14 +88,22 @@ export default class extends Migration {
             }
           }
         } else if (this.db.isMySQLCompatibleDialect()) {
-          await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} DROP PRIMARY KEY`, {
-            transaction,
-          });
           const idExists = await workflowManualTasksCollection.getField('id').existsInDb();
-          if (idExists) {
+          if (!idExists) {
+            await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} ADD COLUMN id BIGINT;`, {
+              transaction,
+            });
+            await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} DROP PRIMARY KEY`, {
+              transaction,
+            });
             await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} ADD PRIMARY KEY (id)`, {
               transaction,
             });
+            await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} MODIFY COLUMN id BIGINT AUTO_INCREMENT`, {
+              transaction,
+            });
+          } else {
+            console.log('------------------ id exists', idExists);
           }
         }
 

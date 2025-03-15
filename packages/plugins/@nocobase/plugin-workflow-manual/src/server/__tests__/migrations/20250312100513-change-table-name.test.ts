@@ -127,6 +127,7 @@ describe('20250225175712-change-table-name.test', () => {
   skipSqlite(`multiple primary keys`, async () => {
     const app = await createMockServer();
     await app.version.update('1.5.0');
+
     app.db.collection({
       name: 'users',
       fields: [{ name: 'id', type: 'bigInt', primaryKey: true }],
@@ -144,8 +145,23 @@ describe('20250225175712-change-table-name.test', () => {
     });
 
     app.db.collection({
-      ...workflowManualTasks,
       name: 'users_jobs',
+      fields: [
+        {
+          type: 'belongsTo',
+          name: 'job',
+          target: 'jobs',
+          foreignKey: 'jobId',
+          primaryKey: true,
+        },
+        {
+          type: 'belongsTo',
+          name: 'user',
+          target: 'users',
+          foreignKey: 'userId',
+          primaryKey: true,
+        },
+      ],
     });
 
     await app.db.sync();
@@ -165,8 +181,9 @@ describe('20250225175712-change-table-name.test', () => {
     const columns = await app.db.sequelize
       .getQueryInterface()
       .describeTable(app.db.getCollection(workflowManualTasks.name).getTableNameWithSchema());
-    const primaryKeys = Object.values(columns).filter((c) => c.primaryKey);
+    const primaryKeys = Object.keys(columns).filter((c) => columns[c].primaryKey);
     expect(primaryKeys.length).toBe(1);
+    expect(primaryKeys[0]).toBe('id');
 
     await app.destroy();
   });
