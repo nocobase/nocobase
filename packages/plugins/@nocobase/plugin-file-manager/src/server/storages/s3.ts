@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteObjectsCommand } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand } from '@aws-sdk/client-s3';
 import crypto from 'crypto';
 import { AttachmentModel, StorageType } from '.';
 import { STORAGE_TYPE_S3 } from '../../constants';
@@ -70,26 +70,19 @@ export default class extends StorageType {
   }
 
   async deleteS3Objects(bucketName: string, objects: string[]) {
-    const deleteBody = JSON.stringify({
-      Objects: objects.map((objectKey) => ({ Key: objectKey })),
-    });
-
-    const contentMD5 = this.calculateContentMD5(deleteBody);
-
-    const deleteCommand = new DeleteObjectsCommand({
-      Bucket: bucketName,
-      Delete: JSON.parse(deleteBody),
-    });
-
-    deleteCommand.middlewareStack.add(
-      (next, context) => async (args) => {
-        args.request['headers']['Content-Md5'] = contentMD5;
-        return next(args);
-      },
-      { step: 'build' },
-    );
     const { s3 } = this.make();
-    return await s3.send(deleteCommand);
+    const Deleted = [];
+    for (const Key of objects) {
+      const deleteCommand = new DeleteObjectCommand({
+        Bucket: bucketName,
+        Key,
+      });
+      await s3.send(deleteCommand);
+      Deleted.push({ Key });
+    }
+    return {
+      Deleted,
+    };
   }
 
   async delete(records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
