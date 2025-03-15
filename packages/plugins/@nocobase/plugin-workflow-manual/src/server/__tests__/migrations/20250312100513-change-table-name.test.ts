@@ -124,13 +124,20 @@ describe('20250225175712-change-table-name.test', () => {
     await app.destroy();
   });
 
-  skipSqlite(`multiple primary keys`, async () => {
+  skipSqlite(`legacy multiple primary keys (without id)`, async () => {
     const app = await createMockServer();
     await app.version.update('1.5.0');
 
     app.db.collection({
       name: 'users',
-      fields: [{ name: 'id', type: 'bigInt', primaryKey: true }],
+      fields: [
+        { name: 'id', type: 'bigInt', primaryKey: true },
+        {
+          type: 'belongsToMany',
+          name: 'jobs',
+          through: 'users_jobs',
+        },
+      ],
     });
     app.db.collection({
       name: 'jobs',
@@ -160,6 +167,83 @@ describe('20250225175712-change-table-name.test', () => {
           target: 'users',
           foreignKey: 'userId',
           primaryKey: true,
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    const migration = new Migration({ db: app.db, app } as any);
+    await migration.up();
+
+    app.db.collection({
+      ...workflowManualTasks,
+    });
+    app.db.removeCollection('jobs');
+    app.db.collection({
+      name: 'jobs',
+      fields: [{ name: 'id', type: 'bigInt', primaryKey: true }],
+    });
+    await app.db.sync();
+    const columns = await app.db.sequelize
+      .getQueryInterface()
+      .describeTable(app.db.getCollection(workflowManualTasks.name).getTableNameWithSchema());
+    const primaryKeys = Object.keys(columns).filter((c) => columns[c].primaryKey);
+    expect(primaryKeys.length).toBe(1);
+    expect(primaryKeys[0]).toBe('id');
+
+    await app.destroy();
+  });
+
+  skipSqlite(`width id as primary key`, async () => {
+    const app = await createMockServer();
+    await app.version.update('1.5.0');
+
+    app.db.collection({
+      name: 'users_jobs',
+      fields: [
+        {
+          type: 'bigInt',
+          name: 'id',
+          primaryKey: true,
+          autoIncrement: true,
+        },
+        {
+          type: 'belongsTo',
+          name: 'job',
+          target: 'jobs',
+          foreignKey: 'jobId',
+          primaryKey: false,
+        },
+        {
+          type: 'belongsTo',
+          name: 'user',
+          target: 'users',
+          foreignKey: 'userId',
+          primaryKey: false,
+        },
+      ],
+    });
+
+    app.db.collection({
+      name: 'users',
+      fields: [
+        { name: 'id', type: 'bigInt', primaryKey: true },
+        {
+          type: 'belongsToMany',
+          name: 'jobs',
+          through: 'users_jobs',
+        },
+      ],
+    });
+    app.db.collection({
+      name: 'jobs',
+      fields: [
+        { name: 'id', type: 'bigInt', primaryKey: true },
+        {
+          type: 'belongsToMany',
+          name: 'users',
+          through: 'users_jobs',
         },
       ],
     });
