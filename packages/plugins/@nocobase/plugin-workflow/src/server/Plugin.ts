@@ -766,6 +766,9 @@ export default class PluginWorkflowServer extends Plugin {
         (await repository.countAll({
           where: {
             userId: task.userId,
+            workflowId: {
+              [Op.ne]: null,
+            },
           },
           transaction,
         })) || [];
