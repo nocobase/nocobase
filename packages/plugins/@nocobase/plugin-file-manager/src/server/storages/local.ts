@@ -75,14 +75,8 @@ export default class extends StorageType {
 
     return [count, undeleted];
   }
-  getFileURL(file: AttachmentModel, preview = false) {
-    const keys = [
-      process.env.APP_PUBLIC_PATH,
-      this.storage.baseUrl,
-      file.path && encodeURI(file.path),
-      encodeURIComponent(file.filename),
-      preview && this.storage.options.thumbnailRule,
-    ].filter(Boolean);
-    return urlJoin(...keys);
+  async getFileURL(file: AttachmentModel, preview = false) {
+    const url = await super.getFileURL(file, preview);
+    return urlJoin(process.env.APP_PUBLIC_PATH, url);
   }
 }
