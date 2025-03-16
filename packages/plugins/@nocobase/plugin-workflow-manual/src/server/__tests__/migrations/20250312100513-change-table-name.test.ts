@@ -52,6 +52,11 @@ function matrixTest() {
       });
       expect(r2).toBeTruthy();
 
+      const oldTableExists = await app.db.sequelize
+        .getQueryInterface()
+        .tableExists(oldCollection.getTableNameWithSchema());
+      expect(oldTableExists).toBe(false);
+
       await app.destroy();
     });
   }
@@ -79,6 +84,11 @@ describe('20250225175712-change-table-name.test', () => {
       filterByTk: r1.id,
     });
     expect(r2).toBeTruthy();
+
+    const oldTableExists = await app.db.sequelize
+      .getQueryInterface()
+      .tableExists(oldCollection.getTableNameWithSchema());
+    expect(oldTableExists).toBe(false);
 
     await app.destroy();
   });
