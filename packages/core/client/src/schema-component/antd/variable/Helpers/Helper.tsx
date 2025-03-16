@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState } from 'react';
 import { Popover } from 'antd';
+import React, { useState } from 'react';
 import { HelperConfiguator } from './HelperConfiguator';
 
 const WithPropOver = ({ children, index }) => {
@@ -21,7 +21,7 @@ const WithPropOver = ({ children, index }) => {
     <Popover
       open={open}
       onOpenChange={handleOpenChange}
-      content={<HelperConfiguator index={index} onDelete={() => setOpen(false)} />}
+      content={<HelperConfiguator index={index} close={() => setOpen(false)} />}
       trigger={'click'}
     >
       {children}

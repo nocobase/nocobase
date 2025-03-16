@@ -7,10 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { dateFormat, dateAdd, dateSubtract } from './date';
-import { first, last } from './array';
+import { first } from './array';
+import { dateAdd, dateFormat, dateSubtract } from './date';
 const NAMESPACE = 'variable-filters';
-const tval = (key) => `{{t('${key}', { ns: '${NAMESPACE}', nsMode: 'fallback' })}}`;
+
+function tval(text: string) {
+  return `{{t(${JSON.stringify(text)}, ${JSON.stringify({ ns: NAMESPACE, nsMode: 'fallback' })})}}`;
+}
+
 export const variableFilters = [
   {
     name: 'date_format',
@@ -69,7 +73,7 @@ export const variableFilters = [
     uiSchema: [
       {
         name: 'number',
-        title: tval('Number'),
+        title: tval('Amount'),
         type: 'number',
         'x-component': 'InputNumber',
         required: true,

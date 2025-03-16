@@ -37,15 +37,34 @@ dayjs.extend(customParseFormat);
 dayjs.extend(advancedFormat);
 
 export function dateFormat(initialValue: any, format: string) {
-  return dayjs.isDayjs(initialValue) ? initialValue.format(format) : dayjs(initialValue).format(format);
+  const handler = (value: any) => {
+    return dayjs.isDayjs(value) ? value.format(format) : dayjs(value).format(format);
+  };
+  if (Array.isArray(initialValue)) {
+    return initialValue.map(handler);
+  } else {
+    return handler(initialValue);
+  }
 }
 
 export function dateAdd(initialValue: any, number: number, unit: any) {
-  const value = dayjs.isDayjs(initialValue) ? initialValue : dayjs(initialValue);
-  return value.add(number, unit);
+  const handler = (value: any) => {
+    return dayjs.isDayjs(value) ? value.add(number, unit) : dayjs(value).add(number, unit);
+  };
+  if (Array.isArray(initialValue)) {
+    return initialValue.map(handler);
+  } else {
+    return handler(initialValue);
+  }
 }
 
 export function dateSubtract(initialValue: any, number: number, unit: any) {
-  const value = dayjs.isDayjs(initialValue) ? initialValue : dayjs(initialValue);
-  return value.subtract(number, unit);
+  const handler = (value: any) => {
+    return dayjs.isDayjs(value) ? value.subtract(number, unit) : dayjs(value).subtract(number, unit);
+  };
+  if (Array.isArray(initialValue)) {
+    return initialValue.map(handler);
+  } else {
+    return handler(initialValue);
+  }
 }

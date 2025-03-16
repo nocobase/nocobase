@@ -7,22 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { useForm, observer } from '@formily/react';
 import { createForm, onFormValuesChange } from '@formily/core';
-import { uid, tval } from '@nocobase/utils/client';
-import { Router } from 'react-router-dom';
+import { observer, useForm } from '@formily/react';
+import { tval, uid } from '@nocobase/utils/client';
+import { Tag } from 'antd';
 import { createMemoryHistory } from 'history';
-import { SchemaComponent } from '../../../core';
-import { helpersObs, rawHelpersObs, removeHelper } from './observables';
-import { useVariable } from '../VariableProvider';
 import debounce from 'lodash/debounce';
+import React from 'react';
+import { Router } from 'react-router-dom';
+import { useApp } from '../../../../application';
+import { SchemaComponent } from '../../../core/SchemaComponent';
+import { useVariable } from '../VariableProvider';
+import { helpersObs, rawHelpersObs, removeHelper } from './observables';
 
 export const HelperConfiguator = observer(
-  ({ index, onDelete }: { index: number; onDelete: () => void }) => {
+  ({ index, close }: { index: number; close: () => void }) => {
+    const app = useApp();
     const helper = helpersObs.value[index];
     const rawHelper = rawHelpersObs.value[index];
-    const config = helper.config;
+    const helperConfigs = app.jsonTemplateParser.filters;
+    const helperConfig = helperConfigs.find((item) => item.name === helper.name);
     const history = createMemoryHistory();
     const previousHelpers = helpersObs.value.slice(0, index);
     const { value } = useVariable();
@@ -32,6 +36,14 @@ export const HelperConfiguator = observer(
     const outputValue = helpersObs.value.slice(0, index + 1).reduce((value, helper) => {
       return helper.handler(value, ...helper.args);
     }, value);
+
+    const InputValue = () => {
+      return <Tag color="red">{JSON.stringify(inputValue).slice(1, -1)}</Tag>;
+    };
+
+    const OuputValue = () => {
+      return <Tag color="green">{JSON.stringify(outputValue).slice(1, -1)}</Tag>;
+    };
 
     const useFormBlockProps = () => {
       return {
@@ -56,7 +68,15 @@ export const HelperConfiguator = observer(
         danger: true,
         onClick: async () => {
           removeHelper({ index: index });
-          onDelete();
+          close();
+        },
+      };
+    };
+
+    const useCloseActionProps = () => {
+      return {
+        onClick: async () => {
+          close();
         },
       };
     };
@@ -74,13 +94,12 @@ export const HelperConfiguator = observer(
           properties: {
             '$input-value': {
               type: 'void',
-              'x-component': 'div',
-              'x-content': '{{ inputValue }}',
+              'x-component': 'InputValue',
               'x-decorator': 'FormItem',
-              title: tval('Input Value'),
+              title: tval('Input value', { ns: 'client' }),
             },
             ...Object.fromEntries(
-              config.uiSchema.map((param) => [
+              helperConfig.uiSchema.map((param) => [
                 param.name,
                 {
                   ...param,
@@ -88,12 +107,11 @@ export const HelperConfiguator = observer(
                 },
               ]),
             ),
-            '$return-value': {
+            '$output-value': {
               type: 'void',
-              'x-component': 'div',
-              'x-content': '{{ outputValue }}',
+              'x-component': 'OuputValue',
               'x-decorator': 'FormItem',
-              title: tval('Return Value'),
+              title: tval('Output value', { ns: 'client' }),
             },
             actions: {
               type: 'void',
@@ -106,6 +124,12 @@ export const HelperConfiguator = observer(
                   'x-component': 'Action',
                   'x-use-component-props': 'useDeleteActionProps',
                 },
+                close: {
+                  type: 'void',
+                  title: tval('Close'),
+                  'x-component': 'Action',
+                  'x-use-component-props': 'useCloseActionProps',
+                },
               },
             },
           },
@@ -115,12 +139,13 @@ export const HelperConfiguator = observer(
     return (
       <Router location={history.location} navigator={history}>
         <SchemaComponent
+          components={{ InputValue, OuputValue }}
           schema={schema}
           scope={{
+            t: app.i18n.t,
             useFormBlockProps,
             useDeleteActionProps,
-            outputValue: JSON.stringify(outputValue),
-            inputValue: JSON.stringify(inputValue),
+            useCloseActionProps,
           }}
           basePath={['']}
         />
