@@ -31,7 +31,7 @@ describe('ctx function', () => {
         userId: 1,
       },
     };
-    const result = await parser.render(template, data);
+    const result = await parser.render(template, data, data);
     expect(result).toEqual('1 - 1');
   });
 
@@ -113,11 +113,14 @@ describe('ctx function', () => {
           return (field) => 1;
         } else return (field) => 2;
       },
+    };
+
+    const context = {
       state: {
         userId: 1,
       },
     };
-    const result = await parser.render(template, data);
+    const result = await parser.render(template, data, context);
     expect(result).toEqual(' 1 - 1 ');
   });
 });

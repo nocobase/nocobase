@@ -7,15 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { useVariables, useLocalVariables } from '../../../variables';
-import { getPath } from '../../../variables/utils/getPath';
 import { isArray } from 'lodash';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useLocalVariables, useVariables } from '../../../variables';
 interface VariableContextValue {
   value: any;
 }
 
-interface VariableProviderProps {
+interface eProviderProps {
   variableName: string;
   children: React.ReactNode;
 }

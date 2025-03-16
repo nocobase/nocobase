@@ -9,7 +9,6 @@
 
 import { Liquid, TokenKind } from 'liquidjs';
 import { get } from 'lodash';
-import { variableFilters, filterGroups } from '../filters';
 import { escape, revertEscape } from '../escape';
 type FilterGroup = {
   name: string;
@@ -64,16 +63,20 @@ export class JSONTemplateParser {
     this._engine.registerFilter(filter.name, filter.handler);
   }
 
-  async render(template: string, data: any = {}): Promise<any> {
-    const NamespaceMap = new Map<string, { fields: Set<String>; fnWrapper: Function; fn?: any }>();
+  async render(template: string, data: any = {}, context?: Record<string, any>): Promise<any> {
+    const NamespaceMap = new Map<string, { fieldSet: Set<String>; fnWrapper: Function; fn?: any }>();
     Object.keys(data).forEach((key) => {
       if (key.startsWith('$') || typeof data[key] === 'function') {
-        NamespaceMap.set(escape(key), { fields: new Set<String>(), fnWrapper: data[key] });
+        NamespaceMap.set(escape(key), { fieldSet: new Set<String>(), fnWrapper: data[key] });
       }
     });
     const parsed = this.parse(template, { NamespaceMap });
-    const fnPromises = Array.from(NamespaceMap.entries()).map(async ([key, { fields, fnWrapper }]) => {
-      const fn = await fnWrapper({ fields: Array.from(fields), context: data });
+    const fnPromises = Array.from(NamespaceMap.entries()).map(async ([key, { fieldSet, fnWrapper }]) => {
+      const fields = Array.from(fieldSet);
+      if (fields.length === 0) {
+        return { key, fn: null };
+      }
+      const fn = await fnWrapper({ fields: Array.from(fields), data, context });
       return { key, fn };
     });
     const fns = await Promise.all(fnPromises);
@@ -87,7 +90,7 @@ export class JSONTemplateParser {
 
   parse = (
     value: any,
-    opts?: { NamespaceMap: Map<string, { fields: Set<String>; fnWrapper: Function; fn?: Function }> },
+    opts?: { NamespaceMap: Map<string, { fieldSet: Set<String>; fnWrapper: Function; fn?: Function }> },
   ) => {
     const engine = this.engine;
     function type(value) {
@@ -114,7 +117,7 @@ export class JSONTemplateParser {
       // template parameter syntax such as {{foo}} or {{foo:someDefault}}.
       const getFieldName = ({ variableName, variableSegments }) =>
         revertEscape(variableName.slice(variableSegments[0].length + 1));
-      return (str) => {
+      return (str, preKeys: string[]) => {
         const escapeStr = escape(str);
         const rawTemplates = engine.parse(escapeStr);
         const templates = rawTemplates.map((rawTemplate) => {
@@ -135,7 +138,7 @@ export class JSONTemplateParser {
               variableSegments.length > 1 &&
               opts.NamespaceMap.has(variableSegments[0])
             ) {
-              const fieldSet = opts.NamespaceMap.get(variableSegments[0]).fields;
+              const fieldSet = opts.NamespaceMap.get(variableSegments[0]).fieldSet;
               const field = getFieldName({ variableName, variableSegments });
               fieldSet.add(field);
             }
@@ -182,7 +185,7 @@ export class JSONTemplateParser {
                 if (!fn) {
                   throw new Error(`fn not found for ${scopeKey}`);
                 }
-                return fn(revertEscape(field));
+                return fn(revertEscape(field), preKeys);
               } else if (typeof ctxVal === 'function') {
                 const ctxVal = get(escapedContext, template.variableName);
                 value = ctxVal();
@@ -212,10 +215,10 @@ export class JSONTemplateParser {
       };
     })();
 
-    function parseObject(object) {
+    function parseObject(object, preKeys) {
       const children = Object.keys(object).map((key) => ({
-        keyTemplate: parseString(key),
-        valueTemplate: _parse(object[key]),
+        keyTemplate: parseString(key, preKeys),
+        valueTemplate: _parse(object[key], [...preKeys, key]),
       }));
       const templateParameters = children.reduce(
         (parameters, child) => parameters.concat(child.valueTemplate.parameters, child.keyTemplate.parameters),
@@ -232,22 +235,22 @@ export class JSONTemplateParser {
     }
 
     // Parses non-leaf-nodes in the template object that are arrays.
-    function parseArray(array) {
-      const templates = array.map(_parse);
+    function parseArray(array, preKeys) {
+      const templates = array.map((item, index) => _parse(item, [...preKeys, index]));
       const templateParameters = templates.reduce((parameters, template) => parameters.concat(template.parameters), []);
       const templateFn = (context) => templates.map((template) => template(context));
 
       return Template(templateFn, templateParameters);
     }
 
-    function _parse(value) {
+    function _parse(value, keys = []) {
       switch (type(value)) {
         case 'string':
-          return parseString(value);
+          return parseString(value, keys);
         case 'object':
-          return parseObject(value);
+          return parseObject(value, keys);
         case 'array':
-          return parseArray(value);
+          return parseArray(value, keys);
         default:
           return Template(function () {
             return value;
