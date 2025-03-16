@@ -1,0 +1,68 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { createMockServer } from '@nocobase/test';
+import { describe, test } from 'vitest';
+import workflowManualTasks from '../../collections/workflowManualTasks';
+
+import Migration from '../../migrations/20250316181621-remove-m2m-fields';
+
+describe('20250225175712-change-table-name.test', () => {
+  test(`old table and fields should not exist after migrated with fields removed`, async () => {
+    const app = await createMockServer();
+    await app.version.update('1.5.0');
+    const fieldCollection = app.db.collection({
+      name: 'fields',
+      fields: [
+        {
+          name: 'collectionName',
+          type: 'string',
+        },
+        {
+          name: 'name',
+          type: 'string',
+        },
+      ],
+    });
+
+    const oldCollection = app.db.collection({
+      ...workflowManualTasks,
+      name: 'users_jobs',
+    });
+    await app.db.sync();
+
+    const migration = new Migration({ db: app.db, app } as any);
+    await migration.up();
+
+    const oldTableExists = await app.db.sequelize
+      .getQueryInterface()
+      .tableExists(oldCollection.getTableNameWithSchema());
+    expect(oldTableExists).toBe(false);
+
+    const f1 = await fieldCollection.repository.find({
+      filter: {
+        collectionName: 'users',
+        name: ['jobs', 'usersJobs'],
+      },
+    });
+    expect(f1.length).toBe(0);
+
+    const f2 = await fieldCollection.repository.find({
+      filter: {
+        collectionName: 'jobs',
+        name: ['users', 'usersJobs'],
+      },
+    });
+    expect(f2.length).toBe(0);
+
+    app.db.removeCollection('users_jobs');
+
+    await app.destroy();
+  });
+});
