@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { isURL } from '@nocobase/utils';
 import { StorageEngine } from 'multer';
 import urlJoin from 'url-join';
 
@@ -42,6 +43,9 @@ export abstract class StorageType {
 
   getFileData?(file: { [key: string]: any }): { [key: string]: any };
   getFileURL(file: AttachmentModel, preview?: boolean): string | Promise<string> {
+    if (file.url && isURL(file.url)) {
+      return file.url;
+    }
     const keys = [
       this.storage.baseUrl,
       file.path && encodeURI(file.path),

@@ -307,9 +307,6 @@ export class PluginFileManagerServer extends Plugin {
     if (!storage) {
       return file.url;
     }
-    if (file.url && isURL(file.url)) {
-      return file.url;
-    }
     const storageType = this.storageTypes.get(storage.type);
     return new storageType(storage).getFileURL(file, preview ? storage.options.thumbnailRule : '');
   }
