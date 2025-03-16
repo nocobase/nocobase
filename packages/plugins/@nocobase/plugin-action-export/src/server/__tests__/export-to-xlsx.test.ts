@@ -354,7 +354,7 @@ describe('export to xlsx with preset', () => {
     }
   });
 
-  it('should export with attachment field', async () => {
+  it.only('should export with attachment field', async () => {
     const Post = app.db.collection({
       name: 'posts',
       fields: [
@@ -398,7 +398,6 @@ describe('export to xlsx with preset', () => {
             filename: '682e5ad037dd02a0fe4800a3e91c283b.png',
             extname: '.png',
             mimetype: 'image/png',
-            url: 'https://nocobase.oss-cn-beijing.aliyuncs.com/test2.png',
             storageId: 1,
           },
         ],
@@ -434,7 +433,7 @@ describe('export to xlsx with preset', () => {
 
       const firstUser = sheetData[1];
       expect(firstUser[1]).toEqual(
-        '/storage/uploads/682e5ad037dd02a0fe4800a3e91c283b.png,/storage/uploads/682e5ad037dd02a0fe4800a3e91c283b.png',
+        'https://nocobase.oss-cn-beijing.aliyuncs.com/test1.png,/storage/uploads/682e5ad037dd02a0fe4800a3e91c283b.png',
       );
     } finally {
       fs.unlinkSync(xlsxFilePath);

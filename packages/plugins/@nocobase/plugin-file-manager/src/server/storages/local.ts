@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { isURL } from '@nocobase/utils';
 import fs from 'fs/promises';
 import mkdirp from 'mkdirp';
 import multer from 'multer';
@@ -77,6 +78,9 @@ export default class extends StorageType {
   }
   async getFileURL(file: AttachmentModel, preview = false) {
     const url = await super.getFileURL(file, preview);
+    if (isURL(url)) {
+      return url;
+    }
     return urlJoin(process.env.APP_PUBLIC_PATH, url);
   }
 }
