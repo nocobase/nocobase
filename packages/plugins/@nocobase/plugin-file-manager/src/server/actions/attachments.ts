@@ -42,7 +42,12 @@ export async function getFileData(ctx: Context) {
   const extname = Path.extname(filename);
   const path = (storage.path || '').replace(/^\/|\/$/g, '');
 
-  const storageInstance = plugin.storagesCache.get(storage.id);
+  let storageInstance = plugin.storagesCache.get(storage.id);
+
+  if (!storageInstance) {
+    await plugin.loadStorages();
+    storageInstance = plugin.storagesCache.get(storage.id);
+  }
 
   const data = {
     title: Buffer.from(file.originalname, 'latin1').toString('utf8').replace(extname, ''),
