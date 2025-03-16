@@ -24,6 +24,7 @@ export default class extends Migration {
     const workflowManualTasksCollection = db.collection({
       ...workflowManualTasks,
     });
+
     const oldTableName = usersJobsCollection.getTableNameWithSchema();
     const oldTableNameWithQuotes = usersJobsCollection.getRealTableName(true);
     const newTableName = workflowManualTasksCollection.getTableNameWithSchema();
@@ -33,6 +34,7 @@ export default class extends Migration {
     if (!exists) {
       return;
     }
+    const oldColumns = await queryInterface.describeTable(oldTableName);
     // @ts-ignore
     const constraints: any = await queryInterface.showConstraint(oldTableName);
     // PG:
@@ -64,7 +66,14 @@ export default class extends Migration {
       async (transaction) => {
         const newExists = await queryInterface.tableExists(newTableName, { transaction });
         if (newExists) {
-          await queryInterface.dropTable(newTableName, { transaction });
+          // NOTE: old column status exists means not migrated
+          if (oldColumns.status) {
+            await queryInterface.dropTable(newTableName, { transaction });
+          } else {
+            // NOTE: means this table was synchronized from collectionManager, and should not exists.
+            await queryInterface.dropTable(oldTableName, { transaction });
+            return;
+          }
         }
 
         if (this.db.isPostgresCompatibleDialect()) {
