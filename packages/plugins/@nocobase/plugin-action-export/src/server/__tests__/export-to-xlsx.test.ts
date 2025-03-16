@@ -354,7 +354,7 @@ describe('export to xlsx with preset', () => {
     }
   });
 
-  it.only('should export with attachment field', async () => {
+  it('should export with attachment field', async () => {
     const Post = app.db.collection({
       name: 'posts',
       fields: [
