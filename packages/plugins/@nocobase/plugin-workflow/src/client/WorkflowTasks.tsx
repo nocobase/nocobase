@@ -326,12 +326,7 @@ function TasksCountsProvider(props: any) {
   const app = useApp();
   const [counts, setCounts] = useState<Record<string, number>>({});
   const onTaskUpdate = useCallback(({ detail = [] }: CustomEvent) => {
-    setCounts((prev) => {
-      return {
-        ...prev,
-        ...transform(detail),
-      };
-    });
+    setCounts(transform(detail));
   }, []);
 
   const { runAsync } = useRequest(
