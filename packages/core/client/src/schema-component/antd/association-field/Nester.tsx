@@ -14,6 +14,7 @@ import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { observer, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { each } from '@formily/shared';
+import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
 import { useUpdate } from 'ahooks';
 import { Button, Card, Divider, Space, Tooltip } from 'antd';
 import React, { useCallback, useContext, useMemo, useState } from 'react';
@@ -41,6 +42,7 @@ import {
   useRefreshComponent,
 } from '../../../formily/NocoBaseRecursionField';
 import { RecordIndexProvider, RecordProvider } from '../../../record-provider';
+import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
 import { isPatternDisabled, isSystemField } from '../../../schema-settings';
 import {
   DefaultValueProvider,
@@ -140,6 +142,7 @@ const ToManyNester = observer(
     const recordData = useCollectionRecordData();
     const collection = useCollection();
     const update = useUpdate();
+    const { isMobileLayout } = useMobileLayout();
 
     const refreshComponent = useRefreshComponent();
     const refresh = useCallback(() => {
@@ -281,7 +284,7 @@ const ToManyNester = observer(
                           <NocoBaseRecursionField
                             onlyRenderProperties
                             basePath={field.address.concat(index)}
-                            schema={fieldSchema}
+                            schema={isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema}
                           />
                         </DefaultValueProvider>
                       </RecordIndexProvider>
@@ -356,7 +359,7 @@ const ToManyNester = observer(
                     <NocoBaseRecursionField
                       onlyRenderProperties
                       basePath={field.address}
-                      schema={fieldSchema.parent}
+                      schema={isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema.parent) : fieldSchema.parent}
                       filterProperties={(s) => {
                         return s['x-component'] === 'AssociationField.Selector';
                       }}
