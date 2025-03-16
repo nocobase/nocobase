@@ -18,9 +18,6 @@ export async function countMine(context: Context, next) {
     (await repository.countAll({
       where: {
         userId: context.state.currentUser.id,
-        workflowId: {
-          [Op.ne]: null,
-        },
       },
     })) || [];
 

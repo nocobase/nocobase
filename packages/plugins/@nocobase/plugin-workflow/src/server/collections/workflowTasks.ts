@@ -20,12 +20,10 @@ export default function () {
       {
         name: 'user',
         type: 'belongsTo',
-        onDelete: 'SET NULL',
       },
       {
         name: 'workflow',
         type: 'belongsTo',
-        onDelete: 'SET NULL',
       },
       {
         type: 'string',
