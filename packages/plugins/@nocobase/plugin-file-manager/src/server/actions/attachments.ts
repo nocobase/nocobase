@@ -62,8 +62,6 @@ export async function getFileData(ctx: Context) {
     ...(storageInstance.getFileData ? storageInstance.getFileData(file) : {}),
   };
 
-  data.url = data.url || (await plugin.getFileURL(data));
-
   return data;
 }
 

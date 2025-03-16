@@ -8,7 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import { Registry } from '@nocobase/utils';
+import { isURL, Registry } from '@nocobase/utils';
 
 import { basename } from 'path';
 
@@ -299,8 +299,17 @@ export class PluginFileManagerServer extends Plugin {
     });
   }
 
-  getFileURL(file: AttachmentModel, preview = false) {
+  async getFileURL(file: AttachmentModel, preview = false) {
+    if (!file.storageId) {
+      return file.url;
+    }
     const storage = this.storagesCache.get(file.storageId);
+    if (!storage) {
+      return file.url;
+    }
+    if (file.url && isURL(file.url)) {
+      return file.url;
+    }
     const storageType = this.storageTypes.get(storage.type);
     return new storageType(storage).getFileURL(file, preview ? storage.options.thumbnailRule : '');
   }
