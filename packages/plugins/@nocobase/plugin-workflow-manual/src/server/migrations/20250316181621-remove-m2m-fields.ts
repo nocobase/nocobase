@@ -19,6 +19,10 @@ export default class extends Migration {
     });
     const fieldCollection = db.collection({
       name: 'fields',
+      autoGenId: false,
+      createdAt: false,
+      updatedAt: false,
+      filterTargetKey: ['collectionName', 'name'],
       fields: [
         {
           name: 'collectionName',
@@ -58,5 +62,6 @@ export default class extends Migration {
     });
 
     db.removeCollection('fields');
+    db.removeCollection('users_jobs');
   }
 }

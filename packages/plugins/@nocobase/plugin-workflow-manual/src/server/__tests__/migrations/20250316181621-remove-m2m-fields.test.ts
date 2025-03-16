@@ -61,8 +61,6 @@ describe('20250225175712-change-table-name.test', () => {
     });
     expect(f2.length).toBe(0);
 
-    app.db.removeCollection('users_jobs');
-
     await app.destroy();
   });
 });
