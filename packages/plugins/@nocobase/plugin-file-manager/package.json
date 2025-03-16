@@ -30,7 +30,7 @@
     "react": "^18.2.0",
     "react-i18next": "^11.15.1",
     "supertest": "^6.1.6",
-    "url-join": "^5.0.0"
+    "url-join": "4.0.1"
   },
   "peerDependencies": {
     "@nocobase/actions": "1.x",
