@@ -43,7 +43,11 @@ export abstract class StorageType {
 
   getFileData?(file: { [key: string]: any }): { [key: string]: any };
   getFileURL(file: AttachmentModel, preview?: boolean): string | Promise<string> {
+    // 兼容历史数据
     if (file.url && isURL(file.url)) {
+      if (preview) {
+        return file.url + (this.storage.options.thumbnailRule || '');
+      }
       return file.url;
     }
     const keys = [
