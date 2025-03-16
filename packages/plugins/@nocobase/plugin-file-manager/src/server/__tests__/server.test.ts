@@ -12,7 +12,7 @@ import path from 'path';
 import { getApp } from '.';
 import PluginFileManagerServer from '../server';
 
-import { STORAGE_TYPE_LOCAL, FILE_FIELD_NAME } from '../../constants';
+import { FILE_FIELD_NAME, STORAGE_TYPE_LOCAL } from '../../constants';
 
 const { LOCAL_STORAGE_BASE_URL, LOCAL_STORAGE_DEST = 'storage/uploads', APP_PORT = '13000' } = process.env;
 const DEFAULT_LOCAL_BASE_URL = LOCAL_STORAGE_BASE_URL || `/storage/uploads`;
@@ -165,14 +165,14 @@ describe('file manager > server', () => {
         });
 
         const originalPath = process.env.APP_PUBLIC_PATH;
-        process.env.APP_PUBLIC_PATH = 'http://localhost/storage/uploads';
+        process.env.APP_PUBLIC_PATH = '/nocobase/';
 
         const { body } = await agent.resource('attachments').create({
           [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
         });
 
         const url = await plugin.getFileURL(body.data);
-        expect(url).toBe(`${process.env.APP_PUBLIC_PATH?.replace(/\/$/g, '') || ''}/${body.data.filename}`);
+        expect(url).toBe(`/nocobase/${body.data.filename}`);
 
         process.env.APP_PUBLIC_PATH = originalPath;
       });
