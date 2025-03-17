@@ -267,20 +267,3 @@ export function useBeforeUpload(rules) {
     [rules],
   );
 }
-
-export function encodeFileURL(url: string): string {
-  if (!url) {
-    return url;
-  }
-
-  if (url.includes('X-Amz-Content-Sha256')) {
-    return url;
-  }
-
-  const [base, search = ''] = url.split('?');
-  const parts = base.split('/');
-  const filename = parts.pop();
-  parts.push(encodeURIComponent(filename));
-  const encodedURL = `${parts.join('/')}${search ? `?${search}` : ''}`;
-  return encodedURL;
-}
