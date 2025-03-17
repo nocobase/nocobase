@@ -30,10 +30,44 @@ describe('20250225175712-change-table-name.test', () => {
         },
       ],
     });
-
+    const usersCollection = app.db.collection({
+      name: 'users',
+      fields: [
+        {
+          name: 'jobs',
+          type: 'belongsToMany',
+        },
+        {
+          name: 'usersJobs',
+          type: 'hasMany',
+        },
+      ],
+    });
+    const jobsCollection = app.db.collection({
+      name: 'jobs',
+      fields: [
+        {
+          name: 'users',
+          type: 'belongsToMany',
+        },
+        {
+          name: 'usersJobs',
+          type: 'hasMany',
+        },
+      ],
+    });
     const oldCollection = app.db.collection({
-      ...workflowManualTasks,
       name: 'users_jobs',
+      fields: [
+        {
+          name: 'jobs',
+          type: 'belongsTo',
+        },
+        {
+          name: 'users',
+          type: 'belongsTo',
+        },
+      ],
     });
     await app.db.sync();
 
