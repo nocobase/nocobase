@@ -20,6 +20,7 @@ const AuthErrorCode = {
   EXPIRED_SESSION: 'EXPIRED_SESSION' as const,
   NOT_EXIST_USER: 'NOT_EXIST_USER' as const,
   SKIP_TOKEN_RENEW: 'SKIP_TOKEN_RENEW' as const,
+  USER_HAS_NO_ROLES_ERR: 'USER_HAS_NO_ROLES_ERR' as const,
 };
 
 function removeBasename(pathname, basename) {
@@ -61,7 +62,7 @@ export function authCheckMiddleware({ app }: { app: Application }) {
       app.apiClient.auth.setToken(newToken);
     }
 
-    if (error.status === 401) {
+    if (error.status === 401 && firstError?.code && AuthErrorCode[firstError.code]) {
       app.apiClient.auth.setToken('');
       if (pathname === app.getHref('signin') && firstError?.code !== AuthErrorCode.EMPTY_TOKEN && error.config) {
         error.config.skipNotify = false;
@@ -74,12 +75,17 @@ export function authCheckMiddleware({ app }: { app: Application }) {
       }
     }
 
-    if (error.status === 401 && !error.config?.skipAuth) {
+    if (error.status === 401 && !error.config?.skipAuth && firstError?.code && AuthErrorCode[firstError.code]) {
       if (!firstError || firstError?.code === AuthErrorCode.SKIP_TOKEN_RENEW) {
         throw error;
       }
 
-      if (pathname !== app.getHref('signin')) {
+      const isSkippedAuthCheckRoute = app.router.isSkippedAuthCheckRoute(pathname);
+      if (isSkippedAuthCheckRoute) {
+        error.config.skipNotify = true;
+      }
+
+      if (pathname !== app.getHref('signin') && !isSkippedAuthCheckRoute) {
         const redirectPath = removeBasename(pathname, basename);
 
         debouncedRedirect(() => {

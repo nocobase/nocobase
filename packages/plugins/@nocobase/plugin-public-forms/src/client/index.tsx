@@ -8,9 +8,6 @@
  */
 
 import { ISchema, Plugin } from '@nocobase/client';
-// import { AdminPublicFormList } from './components/AdminPublicFormList';
-// import { AdminPublicFormPage } from './components/AdminPublicFormPage';
-// import { PublicFormPage } from './components/PublicFormPage';
 import { lazy } from '@nocobase/client';
 const { AdminPublicFormList } = lazy(() => import('./components/AdminPublicFormList'), 'AdminPublicFormList');
 const { AdminPublicFormPage } = lazy(() => import('./components/AdminPublicFormPage'), 'AdminPublicFormPage');
@@ -54,6 +51,7 @@ export class PluginPublicFormsClient extends Plugin {
     this.app.router.add('public-forms', {
       path: '/public-forms/:name',
       Component: PublicFormPage,
+      skipAuthCheck: true,
     });
     this.app.pluginSettingsManager.add('public-forms', {
       title: `{{t("Public forms", { ns: "${NAMESPACE}" })}}`,

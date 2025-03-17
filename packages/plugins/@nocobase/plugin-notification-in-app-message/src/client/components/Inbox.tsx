@@ -18,7 +18,7 @@
 
 import React, { useEffect, useCallback } from 'react';
 import { reaction } from '@formily/reactive';
-import { Badge, Button, ConfigProvider, Drawer, Tooltip, notification } from 'antd';
+import { Badge, Button, ConfigProvider, Drawer, Tooltip, notification, theme } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import { createStyles } from 'antd-style';
 import { Icon } from '@nocobase/client';
@@ -51,6 +51,7 @@ const InnerInbox = (props) => {
   const { styles } = useStyles();
   const ctx = useCurrentUserContext();
   const currUserId = ctx.data?.data?.id;
+  const { token } = theme.useToken();
 
   useEffect(() => {
     updateUnreadMsgsCount();
@@ -88,12 +89,7 @@ const InnerInbox = (props) => {
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, []);
-  const DrawerTitle = <div style={{ padding: '0' }}>{t('Message')}</div>;
-  const CloseIcon = (
-    <div style={{ marginLeft: '15px' }}>
-      <CloseOutlined />
-    </div>
-  );
+  const DrawerTitle = <div style={{ padding: '0', paddingLeft: token.padding }}>{t('Message')}</div>;
   useEffect(() => {
     const dispose = reaction(
       () => liveSSEObs.value,
@@ -136,22 +132,23 @@ const InnerInbox = (props) => {
       }}
     >
       <Tooltip title={t('Message')}>
-        <Badge count={unreadMsgsCountObs.value} size="small" offset={[-12, 14]}>
-          <Button
-            className={styles.button}
-            title={t('Message')}
-            icon={<Icon type={'BellOutlined'} />}
-            onClick={onIconClick}
-          />
-        </Badge>
+        <Button className={styles.button} onClick={onIconClick}>
+          <Badge count={unreadMsgsCountObs.value} size="small">
+            <Icon type={'BellOutlined'} />
+          </Badge>
+        </Button>
       </Tooltip>
       <Drawer
         title={DrawerTitle}
         open={inboxVisible.value}
-        closeIcon={CloseIcon}
         width={900}
         onClose={() => {
           inboxVisible.value = false;
+        }}
+        styles={{
+          header: {
+            paddingLeft: token.paddingMD,
+          },
         }}
       >
         <InboxContent />

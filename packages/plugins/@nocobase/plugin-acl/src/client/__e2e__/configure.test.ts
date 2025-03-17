@@ -8,7 +8,6 @@
  */
 
 import { expect, test } from '@nocobase/test/e2e';
-import { oneTableBlock } from './utils';
 
 test('allows to configure interface', async ({ page, mockPage, mockRole, updateRole }) => {
   await mockPage().goto();
@@ -121,13 +120,13 @@ test('new menu items allow to be asscessed by default ', async ({ page, mockPage
     window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
   }, roleData);
   await page.reload();
-  await mockPage({ ...oneTableBlock, name: 'new page' }).goto();
+  await mockPage({ name: 'new page' }).goto();
   await expect(page.getByLabel('new page')).not.toBeVisible();
   await updateRole({
     name: roleData.name,
     allowNewMenu: true,
   });
-  await mockPage({ ...oneTableBlock, name: 'new page' }).goto();
+  await mockPage({ name: 'new page' }).goto();
   await expect(page.getByLabel('new page')).toBeVisible();
 });
 
@@ -135,7 +134,7 @@ test('plugin settings permissions', async ({ page, mockPage, mockRole, updateRol
   await mockPage().goto();
   //新建角色并切换到新角色
   const roleData = await mockRole({
-    snippets: ['pm', 'pm.*', '!pm.auth.authenticators', '!pm.collection-manager', '!pm.collection-manager.collections'],
+    snippets: ['pm', 'pm.*', '!pm.data-source-manager*'],
   });
   await page.evaluate((roleData) => {
     window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
@@ -146,16 +145,15 @@ test('plugin settings permissions', async ({ page, mockPage, mockRole, updateRol
   await expect(page.getByLabel('auth')).not.toBeVisible();
   await expect(page.getByLabel('collection-manager')).not.toBeVisible();
   await page.getByRole('link', { name: 'Users & Permissions' }).click();
-  await expect(page.getByRole('menuitem', { name: 'login Authentication' })).not.toBeVisible();
-  await expect(page.getByRole('menuitem', { name: 'database Collection manager' })).not.toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Data sources' })).not.toBeVisible();
   await updateRole({
     name: roleData.name,
-    snippets: ['pm', 'pm.*', 'pm.auth.authenticators'],
+    snippets: ['pm', 'pm.*'],
   });
   await page.reload();
   await page.getByTestId('plugin-settings-button').hover();
   await expect(page.getByRole('link', { name: 'Users & Permissions' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Authentication' })).toBeVisible();
   await page.getByRole('link', { name: 'Users & Permissions' }).click();
-  await expect(page.getByRole('menuitem', { name: 'login Authentication' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Data sources' })).toBeVisible();
 });

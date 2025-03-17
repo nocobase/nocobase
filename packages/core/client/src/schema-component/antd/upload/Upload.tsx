@@ -45,7 +45,7 @@ attachmentFileTypes.add({
       return file.preview;
     }
     if (file.url) {
-      return `${file.url}${file.thumbnailRule || ''}`;
+      return file.url;
     }
     if (file.originFileObj) {
       return URL.createObjectURL(file.originFileObj);
@@ -89,26 +89,27 @@ attachmentFileTypes.add({
   },
 });
 
-const iframePreviewSupportedTypes = ['application/pdf', 'audio/*', 'image/*', 'video/*'];
+const iframePreviewSupportedTypes = ['application/pdf', 'audio/*', 'image/*', 'video/*', 'text/*'];
 
 function IframePreviewer({ index, list, onSwitchIndex }) {
   const { t } = useTranslation();
   const file = list[index];
+  const url = file.url;
   const onOpen = useCallback(
     (e) => {
       e.preventDefault();
       e.stopPropagation();
-      window.open(file.url);
+      window.open(url);
     },
-    [file],
+    [url],
   );
   const onDownload = useCallback(
     (e) => {
       e.preventDefault();
       e.stopPropagation();
-      saveAs(file.url, `${file.title}${file.extname}`);
+      saveAs(url, `${file.title}${file.extname}`);
     },
-    [file],
+    [file.extname, file.title, url],
   );
   const onClose = useCallback(() => {
     onSwitchIndex(null);
@@ -148,7 +149,7 @@ function IframePreviewer({ index, list, onSwitchIndex }) {
       >
         {iframePreviewSupportedTypes.some((type) => matchMimetype(file, type)) ? (
           <iframe
-            src={file.url}
+            src={url}
             style={{
               width: '100%',
               maxHeight: '90vh',
@@ -390,7 +391,7 @@ export function Uploader({ rules, ...props }: UploadProps) {
     } else {
       field.setFeedback({});
     }
-  }, [field, pendingList]);
+  }, [field, pendingList, t]);
 
   const onUploadChange = useCallback(
     (info) => {

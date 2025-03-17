@@ -468,6 +468,10 @@ const useDoFilter = () => {
               block.defaultFilter,
             ]);
 
+            if (_.isEmpty(storedFilter[uid])) {
+              block.clearSelection?.();
+            }
+
             if (doNothingWhenFilterIsEmpty && _.isEmpty(storedFilter[uid])) {
               return;
             }
@@ -1153,6 +1157,7 @@ export const useDetailsPaginationProps = () => {
       current: ctx.service?.data?.meta?.page || 1,
       pageSize: 1,
       showSizeChanger: false,
+      align: 'center',
       async onChange(page) {
         const params = ctx.service?.params?.[0];
         ctx.service.run({ ...params, page });
@@ -1178,6 +1183,7 @@ export const useDetailsPaginationProps = () => {
     total: count,
     pageSize: 1,
     showSizeChanger: false,
+    align: 'center',
     async onChange(page) {
       const params = ctx.service?.params?.[0];
       ctx.service.run({ ...params, page });
@@ -1349,6 +1355,7 @@ export const useAssociationFilterBlockProps = () => {
             [filterKey]: value,
           };
         } else {
+          block.clearSelection?.();
           if (block.dataLoadingMode === 'manual') {
             return block.clearData();
           }
@@ -1441,6 +1448,8 @@ async function doReset({
       getDataBlocks().map(async (block) => {
         const target = targets.find((target) => target.uid === block.uid);
         if (!target) return;
+
+        block.clearSelection?.();
 
         if (block.dataLoadingMode === 'manual') {
           return block.clearData();

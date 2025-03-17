@@ -62,7 +62,7 @@ export async function parseVariables(ctx, next) {
       // 新的命名方式，防止和 formily 内置变量冲突
       $nDate: getDateVars(),
       $user: getUser(ctx),
-      $nRole: ctx.state.currentRole,
+      $nRole: ctx.state.currentRole === '__union__' ? ctx.state.currentRoles : ctx.state.currentRole,
     },
   });
   await next();

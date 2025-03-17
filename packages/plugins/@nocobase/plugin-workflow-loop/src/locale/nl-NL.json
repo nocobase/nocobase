@@ -1,0 +1,9 @@
+{
+    "Loop": "Lus",
+    "Loop target": "Lus doel",
+    "Loop index": "Loop index",
+    "Loop length": "Lus lengte",
+    "By using a loop node, you can perform the same operation on multiple sets of data. The source of these sets can be either multiple records from a query node or multiple associated records of a single record. Loop node can also be used for iterating a certain number of times or for looping through each character in a string. However, excessive looping may cause performance issues, so use with caution.": "Door een lus node te gebruiken, kun je dezelfde bewerking uitvoeren op meerdere gegevenssets. De bron van deze sets kan bestaan uit meerdere records van een querynode of meerdere gekoppelde records van een enkel record. De lus node kan ook worden gebruikt om een bepaald aantal keren te itereren of door elk teken in een string te lopen. Te veel lussen kunnen echter prestatieproblemen veroorzaken, dus gebruik het met voorzichtigheid.",
+    "Scope variables": "Scopevariabelen",
+    "A single number will be treated as a loop count, a single string will be treated as an array of characters, and other non-array values will be converted to arrays. The loop node ends when the loop count is reached, or when the array loop is completed. You can also add condition nodes to the loop to terminate it.": "Een enkel getal wordt behandeld als een lusaantal, een enkele string wordt behandeld als een array van tekens, en andere niet-arraywaarden worden omgezet naar arrays. De lus node eindigt wanneer het lusaantal is bereikt, of wanneer de arraylus is voltooid. Je kunt ook voorwaardelijke nodes aan de lus toevoegen om deze te beëindigen."
+}

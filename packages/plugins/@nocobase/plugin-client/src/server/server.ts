@@ -7,15 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model } from '@nocobase/database';
+import { Model, Transaction } from '@nocobase/database';
+import PluginLocalizationServer from '@nocobase/plugin-localization';
 import { Plugin } from '@nocobase/server';
+import { tval } from '@nocobase/utils';
+import _ from 'lodash';
 import * as process from 'node:process';
 import { resolve } from 'path';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
-import PluginLocalizationServer from '@nocobase/plugin-localization';
-import { tval } from '@nocobase/utils';
 
 async function getLang(ctx) {
   const SystemSetting = ctx.db.getRepository('systemSettings');
@@ -196,6 +197,54 @@ export class PluginClientServer extends Plugin {
         transaction,
       });
     });
+
+    const processRoleDesktopRoutes = async (params: {
+      models: Model[];
+      action: 'create' | 'remove';
+      transaction: Transaction;
+    }) => {
+      const { models, action, transaction } = params;
+      if (!models.length) return;
+      const parentIds = models.map((x) => x.desktopRouteId);
+      const tabs: Model[] = await this.app.db.getRepository('desktopRoutes').find({
+        where: { parentId: parentIds, hidden: true },
+        transaction,
+      });
+      if (!tabs.length) return;
+      const repository = this.app.db.getRepository('rolesDesktopRoutes');
+      const roleName = models[0].get('roleName');
+      const tabIds = tabs.map((x) => x.get('id'));
+      const where = { desktopRouteId: tabIds, roleName };
+      if (action === 'create') {
+        const exists = await repository.find({ where });
+        const modelsByRouteId = _.keyBy(exists, (x) => x.get('desktopRouteId'));
+        const createModels = tabs
+          .map((x) => !modelsByRouteId[x.get('id')] && { desktopRouteId: x.get('id'), roleName })
+          .filter(Boolean);
+        for (const values of createModels) {
+          await repository.firstOrCreate({
+            values,
+            filterKeys: ['desktopRouteId', 'roleName'],
+            transaction,
+          });
+        }
+        return;
+      }
+
+      if (action === 'remove') {
+        return await repository.destroy({ filter: where, transaction });
+      }
+    };
+    this.app.db.on('rolesDesktopRoutes.afterBulkCreate', async (instances, options) => {
+      await processRoleDesktopRoutes({ models: instances, action: 'create', transaction: options.transaction });
+    });
+
+    this.app.db.on('rolesDesktopRoutes.afterBulkDestroy', async (options) => {
+      const models = await this.app.db.getRepository('rolesDesktopRoutes').find({
+        where: options.where,
+      });
+      await processRoleDesktopRoutes({ models: models, action: 'remove', transaction: options.transaction });
+    });
   }
 
   registerActionHandlers() {
@@ -203,7 +252,7 @@ export class PluginClientServer extends Plugin {
       const desktopRoutesRepository = ctx.db.getRepository('desktopRoutes');
       const rolesRepository = ctx.db.getRepository('roles');
 
-      if (ctx.state.currentRole === 'root') {
+      if (ctx.state.currentRoles.includes('root')) {
         ctx.body = await desktopRoutesRepository.find({
           tree: true,
           ...ctx.query,
@@ -211,24 +260,25 @@ export class PluginClientServer extends Plugin {
         return await next();
       }
 
-      const role = await rolesRepository.findOne({
-        filterByTk: ctx.state.currentRole,
+      const roles = await rolesRepository.find({
+        filterByTk: ctx.state.currentRoles,
         appends: ['desktopRoutes'],
       });
 
-      const desktopRoutesId = role
-        .get('desktopRoutes')
-        // hidden 为 true 的节点不会显示在权限配置表格中，所以无法被配置，需要被过滤掉
-        .filter((item) => !item.hidden)
-        .map((item) => item.id);
+      const desktopRoutesId = roles.flatMap((x) => x.get('desktopRoutes')).map((item) => item.id);
 
-      ctx.body = await desktopRoutesRepository.find({
-        tree: true,
-        ...ctx.query,
-        filter: {
-          id: desktopRoutesId,
-        },
-      });
+      if (desktopRoutesId) {
+        const ids = (await Promise.all(desktopRoutesId)).flat();
+        const result = await desktopRoutesRepository.find({
+          tree: true,
+          ...ctx.query,
+          filter: {
+            id: ids,
+          },
+        });
+
+        ctx.body = result;
+      }
 
       await next();
     });

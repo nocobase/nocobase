@@ -22,7 +22,7 @@ describe('middleware', () => {
     app = await createMockServer({
       registerActions: true,
       acl: true,
-      plugins: ['users', 'auth', 'acl', 'field-sort', 'data-source-manager', 'error-handler'],
+      plugins: ['users', 'auth', 'acl', 'field-sort', 'data-source-manager', 'error-handler', 'system-settings'],
     });
 
     // app.plugin(ApiKeysPlugin);
@@ -83,6 +83,15 @@ describe('middleware', () => {
       const res = await visitorAgent.resource('auth').check();
       expect(res.status).toBe(401);
       expect(res.body.errors.some((error) => error.code === AuthErrorCode.EMPTY_TOKEN)).toBe(true);
+    });
+  });
+
+  describe('not exist user', async () => {
+    it('should throw 401 when user not exist', async () => {
+      const notExistUserAgent = await agent.login(1001);
+      const res = await notExistUserAgent.resource('auth').check();
+      expect(res.status).toBe(401);
+      expect(res.body.errors.some((error) => error.code === AuthErrorCode.NOT_EXIST_USER)).toBe(true);
     });
   });
 });

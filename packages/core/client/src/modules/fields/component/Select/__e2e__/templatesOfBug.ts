@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { generalWithM2oSingleSelect } from '@nocobase/test/e2e';
+
 export const T3867 = {
   pageSchema: {
     _isJSONSchemaObject: true,
@@ -580,4 +582,177 @@ export const oneFormWithSubTableSelectField = {
       filterTargetKey: 'id',
     },
   ],
+};
+
+export const oneFormWithSelectField = {
+  pageSchema: {
+    _isJSONSchemaObject: true,
+    version: '2.0',
+    type: 'void',
+    'x-component': 'Page',
+    properties: {
+      iza2br2wzq4: {
+        type: 'void',
+        'x-component': 'Grid',
+        'x-initializer': 'page:addBlock',
+        properties: {
+          dc4lkvej93w: {
+            _isJSONSchemaObject: true,
+            version: '2.0',
+            type: 'void',
+            'x-component': 'Grid.Row',
+            'x-app-version': '1.7.0-beta.1',
+            properties: {
+              jrfai5z5a4e: {
+                _isJSONSchemaObject: true,
+                version: '2.0',
+                type: 'void',
+                'x-component': 'Grid.Col',
+                'x-app-version': '1.7.0-beta.1',
+                properties: {
+                  bph3a0yrmvp: {
+                    _isJSONSchemaObject: true,
+                    version: '2.0',
+                    type: 'void',
+                    'x-acl-action-props': {
+                      skipScopeCheck: true,
+                    },
+                    'x-acl-action': 'general:create',
+                    'x-decorator': 'FormBlockProvider',
+                    'x-use-decorator-props': 'useCreateFormBlockDecoratorProps',
+                    'x-decorator-props': {
+                      dataSource: 'main',
+                      collection: 'general',
+                    },
+                    'x-toolbar': 'BlockSchemaToolbar',
+                    'x-settings': 'blockSettings:createForm',
+                    'x-component': 'CardItem',
+                    'x-app-version': '1.7.0-beta.1',
+                    properties: {
+                      '2ef5ea23d4b': {
+                        _isJSONSchemaObject: true,
+                        version: '2.0',
+                        type: 'void',
+                        'x-component': 'FormV2',
+                        'x-use-component-props': 'useCreateFormBlockProps',
+                        'x-app-version': '1.7.0-beta.1',
+                        properties: {
+                          grid: {
+                            'x-uid': 'oqk574y4mx2',
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            'x-component': 'Grid',
+                            'x-initializer': 'form:configureFields',
+                            'x-app-version': '1.7.0-beta.1',
+                            'x-linkage-rules': [
+                              {
+                                condition: {
+                                  $and: [],
+                                },
+                                actions: [
+                                  {
+                                    targetFields: ['singleSelect'],
+                                    operator: 'options',
+                                    value: {
+                                      value: ['option2'],
+                                    },
+                                  },
+                                ],
+                              },
+                            ],
+                            properties: {
+                              '1ijfrrxqs4c': {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                'x-component': 'Grid.Row',
+                                'x-app-version': '1.7.0-beta.1',
+                                properties: {
+                                  '8j09c65cp2x': {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    'x-component': 'Grid.Col',
+                                    'x-app-version': '1.7.0-beta.1',
+                                    properties: {
+                                      singleSelect: {
+                                        _isJSONSchemaObject: true,
+                                        version: '2.0',
+                                        type: 'string',
+                                        'x-toolbar': 'FormItemSchemaToolbar',
+                                        'x-settings': 'fieldSettings:FormItem',
+                                        'x-component': 'CollectionField',
+                                        'x-decorator': 'FormItem',
+                                        'x-collection-field': 'general.singleSelect',
+                                        'x-component-props': {
+                                          style: {
+                                            width: '100%',
+                                          },
+                                        },
+                                        'x-app-version': '1.7.0-beta.1',
+                                        'x-uid': 'dxsbc80ewso',
+                                        'x-async': false,
+                                        'x-index': 1,
+                                      },
+                                    },
+                                    'x-uid': 'la6qedc9qwx',
+                                    'x-async': false,
+                                    'x-index': 1,
+                                  },
+                                },
+                                'x-uid': 'ijsbxa4yys7',
+                                'x-async': false,
+                                'x-index': 1,
+                              },
+                            },
+                            'x-async': false,
+                            'x-index': 1,
+                          },
+                          kpp1azsxbzy: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            'x-initializer': 'createForm:configureActions',
+                            'x-component': 'ActionBar',
+                            'x-component-props': {
+                              layout: 'one-column',
+                            },
+                            'x-app-version': '1.7.0-beta.1',
+                            'x-uid': '1n56lepnve8',
+                            'x-async': false,
+                            'x-index': 2,
+                          },
+                        },
+                        'x-uid': 'lf74cpc3tub',
+                        'x-async': false,
+                        'x-index': 1,
+                      },
+                    },
+                    'x-uid': 'mhxlfdk74jy',
+                    'x-async': false,
+                    'x-index': 1,
+                  },
+                },
+                'x-uid': 'obyvsr0s0nx',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 's6jd8p9h28q',
+            'x-async': false,
+            'x-index': 1,
+          },
+        },
+        name: '8btun7jzkrk',
+        'x-uid': 'eyjf89l83a1',
+        'x-async': true,
+        'x-index': 1,
+      },
+    },
+    'x-uid': 'hizrr7jzogr',
+    'x-async': true,
+    'x-index': 1,
+  },
+  collections: generalWithM2oSingleSelect,
 };

@@ -37,6 +37,7 @@ interface Props {
    * @default '$nForm'
    */
   variableNameOfLeftCondition?: string;
+  action?: any;
 }
 
 export function bindLinkageRulesToFiled(
@@ -70,6 +71,8 @@ export function bindLinkageRulesToFiled(
     required: field.initStateOfLinkageRules?.required || getTempFieldState(true, field.required || false),
     pattern: field.initStateOfLinkageRules?.pattern || getTempFieldState(true, field.pattern),
     value: field.initStateOfLinkageRules?.value || getTempFieldState(true, field.value || field.initialValue),
+    dataSource: field.initStateOfLinkageRules?.dataSource || getTempFieldState(true, field.dataSource || field.options),
+    dateScope: field.initStateOfLinkageRules?.dateScope || getTempFieldState(true, null),
   };
 
   return reaction(
@@ -212,6 +215,7 @@ function getSubscriber(
         variables,
         localVariables,
         variableNameOfLeftCondition,
+        action,
       },
       jsonLogic,
     );
@@ -239,6 +243,12 @@ function getSubscriber(
         if (stateList.length > 1) {
           field.value = lastState.value;
         }
+      } else if (fieldName === 'dateScope') {
+        console.log(lastState.value);
+        field.setComponentProps({
+          _maxDate: lastState.value?._maxDate?.value || lastState.value?._maxDate,
+          _minDate: lastState.value?._minDate?.value || lastState.value?._minDate,
+        });
       } else {
         // 为了让字段的默认值中的变量能正常工作，需要保证字段被隐藏时，字段组件依然会被渲染
         if (fieldName === 'display' && lastState?.value === 'hidden') {
@@ -250,6 +260,17 @@ function getSubscriber(
           requestAnimationFrame(() => {
             field.setState((state) => {
               state.display = 'visible';
+            });
+          });
+        } else if (fieldName === 'dataSource') {
+          if (_.every(lastState?.value, (v) => v.value !== field.value)) {
+            field.value = field.initialValue;
+          }
+          field[fieldName] = lastState?.value;
+          field.data = field.data || {};
+          requestAnimationFrame(() => {
+            field.setState((state) => {
+              state[fieldName] = lastState?.value;
             });
           });
         } else {
@@ -290,21 +311,27 @@ function getFieldNameByOperator(operator: ActionType) {
       return 'pattern';
     case ActionType.Value:
       return 'value';
+    case ActionType.Options:
+      return 'dataSource';
+    case ActionType.DateScope:
+      return 'dateScope';
     default:
       return null;
   }
 }
 
 export const collectFieldStateOfLinkageRules = (
-  { operator, value, field, condition, variables, localVariables, variableNameOfLeftCondition }: Props,
+  { operator, value, field, condition, variables, localVariables, variableNameOfLeftCondition, action }: Props,
   jsonLogic: any,
 ) => {
   const requiredResult = field?.stateOfLinkageRules?.required || [field?.initStateOfLinkageRules?.required];
   const displayResult = field?.stateOfLinkageRules?.display || [field?.initStateOfLinkageRules?.display];
   const patternResult = field?.stateOfLinkageRules?.pattern || [field?.initStateOfLinkageRules?.pattern];
   const valueResult = field?.stateOfLinkageRules?.value || [field?.initStateOfLinkageRules?.value];
+  const optionsResult = field?.stateOfLinkageRules?.dataSource || [field?.initStateOfLinkageRules?.dataSource];
   const { evaluate } = evaluators.get('formula.js');
   const paramsToGetConditionResult = { ruleGroup: condition, variables, localVariables, variableNameOfLeftCondition };
+  const dateScopeResult = field?.stateOfLinkageRules?.dateScope || [field?.initStateOfLinkageRules?.dateScope];
 
   switch (operator) {
     case ActionType.Required:
@@ -376,6 +403,29 @@ export const collectFieldStateOfLinkageRules = (
         };
       }
       break;
+    case ActionType.Options:
+      {
+        const data = field.data?.dataSource?.filter((v) => value.value.includes(v.value));
+        optionsResult.push(getTempFieldState(conditionAnalyses(paramsToGetConditionResult, jsonLogic), data || []));
+        field.stateOfLinkageRules = {
+          ...field.stateOfLinkageRules,
+          dataSource: optionsResult,
+        };
+      }
+      break;
+    case ActionType.DateScope: {
+      dateScopeResult.push(
+        getTempFieldState(conditionAnalyses(paramsToGetConditionResult, jsonLogic), {
+          _maxDate: action._maxDate,
+          _minDate: action._minDate,
+        }),
+      );
+      field.stateOfLinkageRules = {
+        ...field.stateOfLinkageRules,
+        dateScope: dateScopeResult,
+      };
+      break;
+    }
     default:
       return null;
   }

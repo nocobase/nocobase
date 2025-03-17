@@ -199,6 +199,7 @@ export interface URLReadPrettyProps {
 }
 
 const ellipsisStyle = { textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', display: 'block' };
+
 ReadPretty.URL = (props: URLReadPrettyProps) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const prefixCls = usePrefixCls('description-url', props);

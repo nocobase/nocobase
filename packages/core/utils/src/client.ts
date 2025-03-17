@@ -30,4 +30,5 @@ export * from './isPortalInBody';
 export * from './parseHTML';
 export * from './uid';
 export * from './url';
+export * from './transformMultiColumnToSingleColumn';
 export { dayjs, lodash };

@@ -1,0 +1,21 @@
+{
+    "API keys": "API-sleutels",
+    "API key created successfully": "API-sleutel succesvol aangemaakt",
+    "Make sure to copy your personal access key now as you will not be able to see this again.": "Zorg ervoor dat je nu je persoonlijke toegangssleutel kopieert, want je kan deze later niet meer opnieuw zien.",
+    "Key name": "Sleutelnaam",
+    "Expiration": "Vervaldatum",
+    "Delete API key": "API key verwijderen",
+    "Role": "Rol",
+    "Keys manager": "Sleutelbeheerder",
+    "Created at": "Aangemaakt op",
+    "Add API key": "API key toevoegen",
+    "Never": "Nooit",
+    "Custom": "Aangepast",
+    "Never expires": "Verloopt nooit",
+    "1 Day": "1 dag",
+    "7 Days": "7 dagen",
+    "30 Days": "30 dagen",
+    "90 Days": "90 dagen",
+    "Role not found": "Rol niet gevonden",
+    "Allow only your own roles to be selected": "Alleen je eigen rollen mogen worden geselecteerd"
+}

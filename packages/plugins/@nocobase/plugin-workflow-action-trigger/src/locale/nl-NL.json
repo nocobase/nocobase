@@ -1,0 +1,9 @@
+{
+    "Form event": "Formuliergebeurtenis",
+    "Event triggers when submitted a workflow bound form action.": "De gebeurtenis wordt geactiveerd wanneer een formulieractie die aan een workflow is gekoppeld wordt ingediend.",
+    "Form data model": "Formuliergegevensmodel",
+    "Use a collection to match form data.": "Gebruik een collectie om formuliergegevens te matchen.",
+    "Associations to use": "Associaties om te gebruiken",
+    "User submitted form": "Gebruiker heeft formulier ingediend",
+    "Role of user submitted form": "Rol van de ingediende formuliergebruiker"
+}

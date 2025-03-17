@@ -48,7 +48,7 @@ describe('workflow > instructions > aggregate', () => {
   afterEach(() => app.destroy());
 
   describe('based on collection', () => {
-    it('count', async () => {
+    it('count with data matched', async () => {
       const n1 = await workflow.createNode({
         type: 'aggregate',
         config: {
@@ -67,6 +67,30 @@ describe('workflow > instructions > aggregate', () => {
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result).toBe(1);
+    });
+
+    it('count without data matched', async () => {
+      const n1 = await workflow.createNode({
+        type: 'aggregate',
+        config: {
+          aggregator: 'count',
+          collection: 'posts',
+          params: {
+            field: 'id',
+            filter: {
+              id: 0,
+            },
+          },
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.result).toBe(0);
     });
 
     it('sum', async () => {
@@ -96,6 +120,85 @@ describe('workflow > instructions > aggregate', () => {
       const [e2] = await workflow.getExecutions({ order: [['id', 'desc']] });
       const [j2] = await e2.getJobs();
       expect(j2.result).toBe(3);
+    });
+
+    it('sum double field', async () => {
+      const n1 = await workflow.createNode({
+        type: 'aggregate',
+        config: {
+          aggregator: 'sum',
+          collection: 'posts',
+          params: {
+            field: 'score',
+          },
+        },
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1', score: 0.1 } });
+
+      await sleep(500);
+
+      const [e1] = await workflow.getExecutions();
+      const [j1] = await e1.getJobs();
+      expect(j1.result).toBe(0.1);
+
+      const p2 = await PostRepo.create({ values: { title: 't2', score: 0.2 } });
+
+      await sleep(500);
+
+      const [e2] = await workflow.getExecutions({ order: [['id', 'desc']] });
+      const [j2] = await e2.getJobs();
+      expect(j2.result).toBe(0.3);
+    });
+
+    it('sum number will be rounded', async () => {
+      const n1 = await workflow.createNode({
+        type: 'aggregate',
+        config: {
+          aggregator: 'sum',
+          collection: 'posts',
+          params: {
+            field: 'score',
+          },
+        },
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1', score: 0.100000000000001 } });
+
+      await sleep(500);
+
+      const [e1] = await workflow.getExecutions();
+      const [j1] = await e1.getJobs();
+      expect(j1.result).toBe(0.1);
+
+      const p2 = await PostRepo.create({ values: { title: 't2', score: 0.200000000000001 } });
+
+      await sleep(500);
+
+      const [e2] = await workflow.getExecutions({ order: [['id', 'desc']] });
+      const [j2] = await e2.getJobs();
+      expect(j2.result).toBe(0.3);
+    });
+
+    it('sum null will be 0', async () => {
+      const n1 = await workflow.createNode({
+        type: 'aggregate',
+        config: {
+          aggregator: 'sum',
+          collection: 'posts',
+          params: {
+            field: 'read',
+          },
+        },
+      });
+
+      const p2 = await PostRepo.create({ values: { title: 't2' } });
+
+      await sleep(500);
+
+      const [e1] = await workflow.getExecutions();
+      const [j1] = await e1.getJobs();
+      expect(j1.result).toBe(0);
     });
 
     it('avg', async () => {

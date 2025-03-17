@@ -30,10 +30,11 @@ import {
   useDesignable,
   useURLAndHTMLSchema,
 } from '../../../';
+import { useInsertPageSchema } from '../../../modules/menu/PageMenuItem';
 import { NocoBaseDesktopRouteType } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 
 const insertPositionToMethod = {
-  beforeBegin: 'prepend',
+  beforeBegin: 'insertBefore',
   afterEnd: 'insertAfter',
 };
 
@@ -71,11 +72,11 @@ const findMenuSchema = (fieldSchema: Schema) => {
 const InsertMenuItems = (props) => {
   const { eventKey, title, insertPosition } = props;
   const { t } = useTranslation();
-  const { dn } = useDesignable();
   const fieldSchema = useFieldSchema();
   const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
   const isSubMenu = fieldSchema['x-component'] === 'Menu.SubMenu';
   const { createRoute, moveRoute } = useNocoBaseRoutes();
+  const insertPageSchema = useInsertPageSchema();
 
   if (!isSubMenu && insertPosition === 'beforeEnd') {
     return null;
@@ -131,18 +132,6 @@ const InsertMenuItems = (props) => {
               method: insertPositionToMethod[insertPosition],
             });
           }
-
-          // 3. 插入一个对应的 Schema
-          dn.insertAdjacent(insertPosition, {
-            type: 'void',
-            title,
-            'x-component': 'Menu.SubMenu',
-            'x-decorator': 'ACLMenuItemProvider',
-            'x-component-props': {
-              icon,
-            },
-            'x-uid': schemaUid,
-          });
         }}
       />
 
@@ -208,17 +197,7 @@ const InsertMenuItems = (props) => {
           }
 
           // 3. 插入一个对应的 Schema
-          dn.insertAdjacent(
-            insertPosition,
-            getPageMenuSchema({
-              title,
-              icon,
-              pageSchemaUid,
-              menuSchemaUid,
-              tabSchemaUid,
-              tabSchemaName,
-            }),
-          );
+          insertPageSchema(getPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }));
         }}
       />
       <SchemaSettingsModalItem
@@ -276,20 +255,6 @@ const InsertMenuItems = (props) => {
               method: insertPositionToMethod[insertPosition],
             });
           }
-
-          // 3. 插入一个对应的 Schema
-          dn.insertAdjacent(insertPosition, {
-            type: 'void',
-            title,
-            'x-component': 'Menu.URL',
-            'x-decorator': 'ACLMenuItemProvider',
-            'x-component-props': {
-              icon,
-              href,
-              params,
-            },
-            'x-uid': schemaUid,
-          });
         }}
       />
     </SchemaSettingsSubMenu>
@@ -360,6 +325,24 @@ export const MenuDesigner = () => {
       icon: field.componentProps.icon,
     };
   }, [field.title, field.componentProps.icon]);
+  const editTooltipSchema = useMemo(() => {
+    return {
+      type: 'object',
+      title: t('Edit tooltip'),
+      properties: {
+        tooltip: {
+          'x-decorator': 'FormItem',
+          'x-component': 'Input.TextArea',
+          'x-component-props': {},
+        },
+      },
+    };
+  }, [t]);
+  const initialTooltipValues = useMemo(() => {
+    return {
+      tooltip: field.componentProps.tooltip,
+    };
+  }, [field.componentProps.tooltip]);
   if (fieldSchema['x-component'] === 'Menu.URL') {
     schema.properties['href'] = urlSchema;
     schema.properties['params'] = paramsSchema;
@@ -413,6 +396,17 @@ export const MenuDesigner = () => {
     },
     [fieldSchema, field, dn, refresh, onSelect],
   );
+  const onEditTooltipSubmit: (values: any) => void = useCallback(
+    ({ tooltip }) => {
+      // 更新菜单对应的路由
+      if (fieldSchema['__route__']?.id) {
+        updateRoute(fieldSchema['__route__'].id, {
+          tooltip,
+        });
+      }
+    },
+    [fieldSchema, field, dn, refresh, onSelect],
+  );
 
   const modalSchema = useMemo(() => {
     return {
@@ -459,7 +453,7 @@ export const MenuDesigner = () => {
       });
 
       const positionToMethod = {
-        beforeBegin: 'prepend',
+        beforeBegin: 'insertBefore',
         afterEnd: 'insertAfter',
       };
 
@@ -505,6 +499,13 @@ export const MenuDesigner = () => {
         schema={schema as ISchema}
         initialValues={initialValues}
         onSubmit={onEditSubmit}
+      />
+      <SchemaSettingsModalItem
+        title={t('Edit tooltip')}
+        eventKey="edit-tooltip"
+        schema={editTooltipSchema as ISchema}
+        initialValues={initialTooltipValues}
+        onSubmit={onEditTooltipSubmit}
       />
       <SchemaSettingsSwitchItem
         title={t('Hidden')}

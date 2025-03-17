@@ -460,7 +460,7 @@ function _Input(props: VariableInputProps) {
             role="button"
             aria-label="variable-tag"
             style={{ overflow: 'hidden' }}
-            className={cx('ant-input', { 'ant-input-disabled': disabled }, hashId)}
+            className={cx('ant-input ant-input-outlined', { 'ant-input-disabled': disabled }, hashId)}
           >
             <Tag color="blue">
               {variableText.map((item, index) => {

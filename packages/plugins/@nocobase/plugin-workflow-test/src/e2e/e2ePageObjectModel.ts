@@ -169,7 +169,9 @@ export class ApprovalPassthroughModeNode {
     this.node = page.getByLabel(`Approval-${nodeName}`, { exact: true });
     this.nodeTitle = page.getByLabel(`Approval-${nodeName}`, { exact: true }).getByRole('textbox');
     this.nodeConfigure = this.node.locator('>div').first();
-    this.addAssigneesButton = page.getByRole('button', { name: 'plus Add' });
+    this.addAssigneesButton = page
+      .getByLabel('block-item-ArrayItems-workflows-Assignees')
+      .getByRole('button', { name: 'plus Add' });
     this.addSelectAssigneesMenu = page.getByRole('button', { name: 'Select assignees' });
     this.addQueryAssigneesMenu = page.getByRole('button', { name: 'Query assignees' });
     this.assigneesDropDown = page.getByTestId('select-single');
@@ -183,14 +185,14 @@ export class ApprovalPassthroughModeNode {
     this.sequentiallyRadio = page.getByLabel('Sequentially', { exact: true });
     this.goToconfigureButton = page.getByRole('button', { name: 'Go to configure' });
     this.addBlockButton = page.getByLabel('schema-initializer-Grid-ApprovalProcessAddBlockButton-workflows');
-    this.addDetailsMenu = page.getByRole('menuitem', { name: 'Details' });
+    this.addDetailsMenu = page.getByRole('menuitem', { name: 'Original application content' });
     this.detailsConfigureFieldsButton = page.getByLabel(
       `schema-initializer-Grid-details:configureFields-${collectionName}`,
     );
-    this.addActionsMenu = page.getByRole('menuitem', { name: 'Actions' }).getByRole('switch');
+    this.addActionsMenu = page.getByRole('menuitem', { name: 'Process form' }).getByRole('switch');
     this.actionsConfigureFieldsButton = page.getByLabel('schema-initializer-Grid-FormItemInitializers-approvalRecords');
     this.actionsConfigureActionsButton = page.getByLabel(
-      'schema-initializer-ActionBar-ApprovalProcessAddActionButton-approvalRecords',
+      'schema-initializer-ActionBar-ApprovalProcessAddActionButton-',
     );
     this.addApproveButton = page.getByRole('menuitem', { name: 'Approve' }).getByRole('switch');
     this.addRejectButton = page.getByRole('menuitem', { name: 'Reject' }).getByRole('switch');
@@ -240,7 +242,9 @@ export class ApprovalBranchModeNode {
     this.node = page.getByLabel(`Approval-${nodeName}`, { exact: true });
     this.nodeTitle = page.getByLabel(`Approval-${nodeName}`, { exact: true }).getByRole('textbox');
     this.nodeConfigure = this.node.locator('>div').first();
-    this.addAssigneesButton = page.getByRole('button', { name: 'plus Add' });
+    this.addAssigneesButton = page
+      .getByLabel('block-item-ArrayItems-workflows-Assignees')
+      .getByRole('button', { name: 'plus Add' });
     this.addSelectAssigneesMenu = page.getByRole('button', { name: 'Select assignees' });
     this.addQueryAssigneesMenu = page.getByRole('button', { name: 'Query assignees' });
     this.assigneesDropDown = page.getByTestId('select-single');
@@ -260,9 +264,7 @@ export class ApprovalBranchModeNode {
     );
     this.addActionsMenu = page.getByRole('menuitem', { name: 'Process form' }).getByRole('switch');
     this.actionsConfigureFieldsButton = page.getByLabel('schema-initializer-Grid-FormItemInitializers-approvalRecords');
-    this.actionsConfigureActionsButton = page.getByLabel(
-      'schema-initializer-ActionBar-ApprovalProcessAddActionButton-approvalRecords',
-    );
+    this.actionsConfigureActionsButton = page.getByLabel('schema-initializer-ActionBar-');
     this.addApproveButton = page.getByRole('menuitem', { name: 'Approve' }).getByRole('switch');
     this.addRejectButton = page.getByRole('menuitem', { name: 'Reject' }).getByRole('switch');
     this.addReturnButton = page.getByRole('menuitem', { name: 'Return' }).getByRole('switch');
@@ -571,7 +573,7 @@ export class AggregateNode {
       .getByLabel('block-item-FieldsSelect-workflows-Field to aggregate')
       .locator('.ant-select-selection-search-input');
     this.distinctCheckBox = page
-      .getByLabel('block-item-Checkbox-workflows-Distinct')
+      .getByLabel('block-item-Checkbox-workflows')
       .locator('input.ant-checkbox-input[type="checkbox"]');
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');

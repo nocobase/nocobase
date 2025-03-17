@@ -1,0 +1,16 @@
+{
+  "Environment": "Ambiente",
+  "Variables and secrets": "Variabili e segreti",
+  "Variables": "Variabili",
+  "Secrets": "Segreti",
+  "Add variable": "Aggiungi variabile",
+  "Bulk import": "Importazione in blocco",
+  "Name": "Nome",
+  "Value": "Valore",
+  "Type": "Tipo",
+  "Plain text": "Testo semplice",
+  "Encrypted": "Crittografato",
+  "Delete variable": "Elimina variabile",
+  "Restart now": "Riavvia ora",
+  "Variables and secrets have been updated. A restart is required for the changes to take effect.": "Rilevati aggiornamenti a variabili e segreti. È necessario un riavvio per applicare le modifiche."
+}

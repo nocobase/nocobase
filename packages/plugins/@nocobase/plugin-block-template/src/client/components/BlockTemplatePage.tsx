@@ -35,6 +35,7 @@ export const BlockTemplatePage = () => {
       <div
         style={{
           margin: -token.margin,
+          marginTop: -token.marginXL,
           padding: token.paddingSM,
           background: token.colorBgContainer,
           display: 'flex',

@@ -29,6 +29,7 @@ test('basic', async ({ page, mockPage, mockRecord }) => {
   await expect(page.getByRole('tooltip').getByText('Disassociate')).toBeVisible();
 
   await page.getByLabel('block-item-CardItem-cc-table').hover();
+  await page.getByRole('menuitem', { name: 'Associate' }).waitFor({ state: 'detached' });
   await page.getByLabel('schema-initializer-ActionBar-table:configureActions-cc').hover();
   await page.getByRole('menuitem', { name: 'Associate' }).click();
   //点击 associate 出现弹窗

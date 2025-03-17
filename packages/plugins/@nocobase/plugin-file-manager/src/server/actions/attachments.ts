@@ -12,13 +12,7 @@ import { koaMulter as multer } from '@nocobase/utils';
 import Path from 'path';
 
 import Plugin from '..';
-import {
-  FILE_FIELD_NAME,
-  FILE_SIZE_LIMIT_DEFAULT,
-  FILE_SIZE_LIMIT_MAX,
-  FILE_SIZE_LIMIT_MIN,
-  LIMIT_FILES,
-} from '../../constants';
+import { FILE_FIELD_NAME, FILE_SIZE_LIMIT_DEFAULT, FILE_SIZE_LIMIT_MIN, LIMIT_FILES } from '../../constants';
 import * as Rules from '../rules';
 import { StorageClassType } from '../storages';
 
@@ -34,38 +28,41 @@ function getFileFilter(storage) {
   };
 }
 
-export function getFileData(ctx: Context) {
+export async function getFileData(ctx: Context) {
   const { [FILE_FIELD_NAME]: file, storage } = ctx;
   if (!file) {
     return ctx.throw(400, 'file validation failed');
   }
 
-  const StorageType = ctx.app.pm.get(Plugin).storageTypes.get(storage.type) as StorageClassType;
+  const plugin = ctx.app.pm.get(Plugin);
+  const StorageType = plugin.storageTypes.get(storage.type) as StorageClassType;
   const { [StorageType.filenameKey || 'filename']: name } = file;
   // make compatible filename across cloud service (with path)
   const filename = Path.basename(name);
   const extname = Path.extname(filename);
   const path = (storage.path || '').replace(/^\/|\/$/g, '');
-  const baseUrl = storage.baseUrl.replace(/\/+$/, '');
-  const pathname = [path, filename].filter(Boolean).join('/');
 
-  const storageInstance = new StorageType(storage);
+  let storageInstance = plugin.storagesCache.get(storage.id);
 
-  return {
+  if (!storageInstance) {
+    await plugin.loadStorages();
+    storageInstance = plugin.storagesCache.get(storage.id);
+  }
+
+  const data = {
     title: Buffer.from(file.originalname, 'latin1').toString('utf8').replace(extname, ''),
     filename,
     extname,
     // TODO(feature): 暂时两者相同，后面 storage.path 模版化以后，这里只是 file 实际的 path
     path,
     size: file.size,
-    // 直接缓存起来
-    url: `${baseUrl}/${pathname}`,
     mimetype: file.mimetype,
-    // @ts-ignore
     meta: ctx.request.body,
     storageId: storage.id,
     ...(storageInstance.getFileData ? storageInstance.getFileData(file) : {}),
   };
+
+  return data;
 }
 
 async function multipart(ctx: Context, next: Next) {
@@ -90,10 +87,7 @@ async function multipart(ctx: Context, next: Next) {
     },
     storage: storageInstance.make(),
   };
-  multerOptions.limits['fileSize'] = Math.min(
-    Math.max(FILE_SIZE_LIMIT_MIN, storage.rules.size ?? FILE_SIZE_LIMIT_DEFAULT),
-    FILE_SIZE_LIMIT_MAX,
-  );
+  multerOptions.limits['fileSize'] = Math.max(FILE_SIZE_LIMIT_MIN, storage.rules.size ?? FILE_SIZE_LIMIT_DEFAULT);
 
   const upload = multer(multerOptions).single(FILE_FIELD_NAME);
   try {
@@ -107,7 +101,7 @@ async function multipart(ctx: Context, next: Next) {
     return ctx.throw(500, err);
   }
 
-  const values = getFileData(ctx);
+  const values = await getFileData(ctx);
 
   ctx.action.mergeParams({
     values,
