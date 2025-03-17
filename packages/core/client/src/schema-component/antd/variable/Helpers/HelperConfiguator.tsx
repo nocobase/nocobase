@@ -99,13 +99,15 @@ export const HelperConfiguator = observer(
               title: tval('Input value', { ns: 'client' }),
             },
             ...Object.fromEntries(
-              helperConfig.uiSchema.map((param) => [
-                param.name,
-                {
-                  ...param,
-                  'x-decorator': 'FormItem',
-                },
-              ]),
+              helperConfig.uiSchema
+                ? helperConfig.uiSchema.map((param) => [
+                    param.name,
+                    {
+                      ...param,
+                      'x-decorator': 'FormItem',
+                    },
+                  ])
+                : [],
             ),
             '$output-value': {
               type: 'void',

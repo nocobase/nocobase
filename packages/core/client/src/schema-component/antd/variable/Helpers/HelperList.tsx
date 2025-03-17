@@ -7,22 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
 import { observer } from '@formily/reactive-react';
-import { helpersObs } from './observables';
+import React from 'react';
 import { Helper } from './Helper';
+import { helpersObs } from './observables';
 const _HelperList = () => {
   return (
     <>
       {helpersObs.value.map((helper, index) => {
-        return (
-          <Helper
-            key={index}
-            index={index}
-            configurable={Boolean(helper.config.uiSchema)}
-            label={helper.config.title}
-          />
-        );
+        return <Helper key={index} index={index} label={helper.config.title} />;
       })}
     </>
   );
