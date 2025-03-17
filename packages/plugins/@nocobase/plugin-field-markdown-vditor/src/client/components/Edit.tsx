@@ -80,10 +80,7 @@ const useUpload = (fileCollectionName: string, vditorInstanceRef: React.RefObjec
         let error = null;
 
         // Show loading message when upload begins
-        const loadingId: any = vditorInstanceRef.current?.tip(
-          `${file.name} ${t('uploading', { ns: NAMESPACE })}...`,
-          0,
-        );
+        vditorInstanceRef.current?.tip(`${file.name} ${t('uploading', { ns: NAMESPACE })}...`, 0);
 
         await customRequest({
           file: files[0],
@@ -95,7 +92,7 @@ const useUpload = (fileCollectionName: string, vditorInstanceRef: React.RefObjec
           },
           onProgress: ({ percent }) => {
             // Update the loading message with progress percentage
-            if (vditorInstanceRef.current && loadingId) {
+            if (vditorInstanceRef.current) {
               vditorInstanceRef.current.tip(`${file.name} ${t('uploading', { ns: NAMESPACE })}... ${percent}%`, 0);
             }
           },
@@ -103,9 +100,7 @@ const useUpload = (fileCollectionName: string, vditorInstanceRef: React.RefObjec
         });
 
         // Clear the loading message
-        if (loadingId) {
-          vditorInstanceRef.current?.tip('', 0);
-        }
+        vditorInstanceRef.current.tip('', 10);
 
         if (error || !response?.data) {
           vditorInstanceRef.current?.tip(`${file.name} ${t('upload failed', { ns: NAMESPACE })}`, 3000);
