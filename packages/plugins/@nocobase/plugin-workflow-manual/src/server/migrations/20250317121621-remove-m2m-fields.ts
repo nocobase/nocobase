@@ -38,6 +38,9 @@ export default class extends Migration {
     const oldTableExists = await db.sequelize
       .getQueryInterface()
       .tableExists(usersJobsCollection.getTableNameWithSchema());
+    const oldColumns = await db.sequelize
+      .getQueryInterface()
+      .describeTable(usersJobsCollection.getTableNameWithSchema());
 
     await db.sequelize.transaction(async (transaction) => {
       await fieldCollection.repository.destroy({
@@ -57,7 +60,13 @@ export default class extends Migration {
       });
 
       if (oldTableExists) {
-        await db.sequelize.getQueryInterface().dropTable(usersJobsCollection.getTableNameWithSchema(), { transaction });
+        if (!oldColumns.status) {
+          await db.sequelize
+            .getQueryInterface()
+            .dropTable(usersJobsCollection.getTableNameWithSchema(), { transaction });
+        } else {
+          throw new Error('users_jobs table is not migrated properly, please contact support.');
+        }
       }
     });
 

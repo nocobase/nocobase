@@ -11,7 +11,7 @@ import { createMockServer } from '@nocobase/test';
 import { describe, test } from 'vitest';
 import workflowManualTasks from '../../collections/workflowManualTasks';
 
-import Migration from '../../migrations/20250316181621-remove-m2m-fields';
+import Migration from '../../migrations/20250317121621-remove-m2m-fields';
 
 describe('20250225175712-change-table-name.test', () => {
   test(`old table and fields should not exist after migrated with fields removed`, async () => {
