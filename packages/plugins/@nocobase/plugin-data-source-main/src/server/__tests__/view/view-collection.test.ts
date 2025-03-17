@@ -549,67 +549,9 @@ describe('view collection', function () {
       return;
     }
 
-    await app
-      .agent()
-      .resource('collections')
-      .create({
-        values: {
-          logging: true,
-          name: 'users_1',
-          template: 'general',
-          view: false,
-          fields: [
-            {
-              name: 'id',
-              type: 'bigInt',
-              autoIncrement: true,
-              primaryKey: true,
-              allowNull: false,
-              uiSchema: {
-                type: 'number',
-                title: '{{t("ID")}}',
-                'x-component': 'InputNumber',
-                'x-read-pretty': true,
-              },
-              interface: 'integer',
-            },
-            {
-              name: 'createdBy',
-              interface: 'createdBy',
-              type: 'belongsTo',
-              target: 'users_1',
-              foreignKey: 'createdById',
-              uiSchema: {
-                type: 'object',
-                title: '{{t("Created by")}}',
-                'x-component': 'AssociationField',
-                'x-component-props': { fieldNames: { value: 'id', label: 'nickname' } },
-                'x-read-pretty': true,
-              },
-            },
-            {
-              type: 'belongsTo',
-              target: 'users_1',
-              foreignKey: 'updatedById',
-              name: 'updatedBy',
-              interface: 'updatedBy',
-              uiSchema: {
-                type: 'object',
-                title: '{{t("Last updated by")}}',
-                'x-component': 'AssociationField',
-                'x-component-props': { fieldNames: { value: 'id', label: 'nickname' } },
-                'x-read-pretty': true,
-              },
-            },
-          ],
-          autoGenId: false,
-          title: 'users_1',
-        },
-      });
-
     const dropViewSQL = `DROP VIEW IF EXISTS test_view`;
     await db.sequelize.query(dropViewSQL);
-    const viewSQL = `CREATE VIEW test_view AS select * from users_1`;
+    const viewSQL = `CREATE VIEW test_view AS select * from users`;
     await db.sequelize.query(viewSQL);
 
     const response = await app
@@ -626,13 +568,13 @@ describe('view collection', function () {
               rawType: 'BIGINT',
               field: 'id',
               type: 'bigInt',
-              source: 'users_1.id',
+              source: 'users.id',
               uiSchema: { title: 'id' },
             },
             {
               name: 'createdBy',
               type: 'belongsTo',
-              source: 'users_1.createdBy',
+              source: 'users.createdBy',
               uiSchema: { title: 'createdBy' },
             },
             {
@@ -646,7 +588,7 @@ describe('view collection', function () {
             {
               name: 'updatedBy',
               type: 'belongsTo',
-              source: 'users_1.updatedBy',
+              source: 'users.updatedBy',
               uiSchema: { title: 'updatedBy' },
             },
             {
@@ -660,7 +602,7 @@ describe('view collection', function () {
           ],
           schema: null,
           writableView: false,
-          sources: ['users_1'],
+          sources: ['users'],
           title: 'view_collection_display_name',
           databaseView: 'test_view',
           viewName: 'test_view',
