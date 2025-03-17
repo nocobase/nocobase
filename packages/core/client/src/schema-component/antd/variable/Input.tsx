@@ -9,8 +9,7 @@
 
 import { CloseCircleFilled } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
-import { useForm } from '@formily/react';
-import { autorun } from '@formily/reactive';
+import { observer, useForm } from '@formily/react';
 import { composeTemplate, extractTemplateElements } from '@nocobase/json-template-parser';
 import { error } from '@nocobase/utils/client';
 import {
@@ -201,7 +200,7 @@ export type VariableInputProps = {
   hideVariableButton?: boolean;
 };
 
-export function Input(props: VariableInputProps) {
+function _Input(props: VariableInputProps) {
   const {
     value = '',
     onChange,
@@ -238,15 +237,12 @@ export function Input(props: VariableInputProps) {
     () => extractTemplateElements(typeof value === 'string' ? value : ''),
     [value],
   );
-
+  const newVal = useMemo(() => composeTemplate({ fullVariable, helpers: helpersObs.value }), [fullVariable]);
   useEffect(() => {
-    const dispose = autorun(() => {
-      if (fullVariable) {
-        onChange(composeTemplate({ fullVariable, helpers: helpersObs.value }));
-      }
-    });
-    return dispose;
-  }, [onChange, fullVariable, helpers]);
+    if (value && newVal !== value) {
+      onChange(newVal);
+    }
+  }, [newVal, value, onChange]);
 
   const parsed = useMemo(() => parseValue(variableSegments, parseOptions), [parseOptions, variableSegments]);
   const isConstant = typeof parsed === 'string';
@@ -534,4 +530,4 @@ export function Input(props: VariableInputProps) {
   );
 }
 
-// export const Input = observer(_Input, { displayName: 'VariableInput' });
+export const Input = observer(_Input, { displayName: 'VariableInput' });
