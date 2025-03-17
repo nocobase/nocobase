@@ -548,7 +548,7 @@ describe('view collection', function () {
     if (!db.options.underscored) {
       return;
     }
-
+    await db.sync();
     const dropViewSQL = `DROP VIEW IF EXISTS test_view`;
     await db.sequelize.query(dropViewSQL);
     const viewSQL = `CREATE VIEW test_view AS select * from users`;
