@@ -7,13 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  useCollection,
-  useCollectionField,
-  useCollectionManager,
-  usePlugin,
-  useRequest
-} from '@nocobase/client';
+import { useCollection, useCollectionField, useCollectionManager, usePlugin, useRequest } from '@nocobase/client';
 import { useEffect } from 'react';
 import FileManagerPlugin from '../';
 
@@ -36,14 +30,14 @@ export function useStorage(storage) {
   return (!loading && data?.data) || null;
 }
 
-export function useStorageCfg() {
+export function useStorageCfg(storageId?: number) {
   const field = useCollectionField();
   const cm = useCollectionManager();
   const targetCollection = cm.getCollection(field?.target);
   const collection = useCollection();
   const plugin = usePlugin(FileManagerPlugin);
   const storage = useStorage(
-    field?.storage || collection?.getOption('storage') || targetCollection?.getOption('storage'),
+    storageId || field?.storage || collection?.getOption('storage') || targetCollection?.getOption('storage'),
   );
   const storageType = plugin.getStorageType(storage?.type);
   return {

@@ -8,7 +8,7 @@
  */
 
 import { useExpressionScope } from '@formily/react';
-import { useAPIClient, useApp, withDynamicSchemaProps } from '@nocobase/client';
+import { useAPIClient, useApp, useCollectionManager, withDynamicSchemaProps } from '@nocobase/client';
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Vditor from 'vditor';
@@ -19,12 +19,14 @@ import useStyle from './style';
 
 const locales = ['en_US', 'fr_FR', 'pt_BR', 'ja_JP', 'ko_KR', 'ru_RU', 'sv_SE', 'zh_CN', 'zh_TW'];
 
-const useUpload = (fileCollection: string, vditorInstanceRef: React.RefObject<Vditor>) => {
+const useUpload = (fileCollectionName: string, vditorInstanceRef: React.RefObject<Vditor>) => {
   const app = useApp();
   const apiClient = useAPIClient();
+  const cm = useCollectionManager();
+  const fileCollection = cm.getCollection(fileCollectionName);
   const { useStorageCfg } = useExpressionScope();
-  const { storage, storageType } = useStorageCfg?.() || {};
-  const action = app.getApiUrl(`${fileCollection || 'attachments'}:create`);
+  const { storage, storageType } = useStorageCfg?.(fileCollection?.getOption('storage')) || {};
+  const action = app.getApiUrl(`${fileCollectionName || 'attachments'}:create`);
   const storageTypeUploadPropsRef = useRef(null);
   const storageTypeUploadProps = storageType?.useUploadProps?.({ storage, rules: storage?.rules, action });
 
