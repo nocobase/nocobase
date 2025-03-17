@@ -249,7 +249,7 @@ export const ChartFilterCustomItemInitializer: React.FC<{
       }),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [theme]);
+  }, [theme, insert]);
   return <SchemaInitializerItem {...itemConfig} {...props} onClick={handleClick} />;
 });
 ChartFilterCustomItemInitializer.displayName = 'ChartFilterCustomItemInitializer';

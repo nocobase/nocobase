@@ -7,13 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { isURL } from '@nocobase/utils';
 import fs from 'fs/promises';
 import mkdirp from 'mkdirp';
 import multer from 'multer';
 import path from 'path';
+import urlJoin from 'url-join';
 import { AttachmentModel, StorageType } from '.';
 import { FILE_SIZE_LIMIT_DEFAULT, STORAGE_TYPE_LOCAL } from '../../constants';
 import { getFilename } from '../utils';
+
+const DEFAULT_BASE_URL = '/storage/uploads';
 
 function getDocumentRoot(storage): string {
   const { documentRoot = process.env.LOCAL_STORAGE_DEST || 'storage/uploads' } = storage.options || {};
@@ -27,7 +31,7 @@ export default class extends StorageType {
       title: 'Local storage',
       type: STORAGE_TYPE_LOCAL,
       name: `local`,
-      baseUrl: '/storage/uploads',
+      baseUrl: DEFAULT_BASE_URL,
       options: {
         documentRoot: 'storage/uploads',
       },
@@ -72,7 +76,11 @@ export default class extends StorageType {
 
     return [count, undeleted];
   }
-  getFileURL(file: AttachmentModel) {
-    return process.env.APP_PUBLIC_PATH ? `${process.env.APP_PUBLIC_PATH.replace(/\/$/g, '')}${file.url}` : file.url;
+  async getFileURL(file: AttachmentModel, preview = false) {
+    const url = await super.getFileURL(file, preview);
+    if (isURL(url)) {
+      return url;
+    }
+    return urlJoin(process.env.APP_PUBLIC_PATH, url);
   }
 }

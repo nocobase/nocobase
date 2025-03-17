@@ -458,7 +458,7 @@ const CollectionFieldsInternal = () => {
             schema={{
               type: 'object',
               properties: {
-                ...targetTemplate.configureActions,
+                ...targetTemplate?.configureActions,
               },
             }}
           />

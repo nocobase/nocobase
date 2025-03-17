@@ -468,6 +468,10 @@ const useDoFilter = () => {
               block.defaultFilter,
             ]);
 
+            if (_.isEmpty(storedFilter[uid])) {
+              block.clearSelection?.();
+            }
+
             if (doNothingWhenFilterIsEmpty && _.isEmpty(storedFilter[uid])) {
               return;
             }
@@ -1349,6 +1353,7 @@ export const useAssociationFilterBlockProps = () => {
             [filterKey]: value,
           };
         } else {
+          block.clearSelection?.();
           if (block.dataLoadingMode === 'manual') {
             return block.clearData();
           }
@@ -1441,6 +1446,8 @@ async function doReset({
       getDataBlocks().map(async (block) => {
         const target = targets.find((target) => target.uid === block.uid);
         if (!target) return;
+
+        block.clearSelection?.();
 
         if (block.dataLoadingMode === 'manual') {
           return block.clearData();

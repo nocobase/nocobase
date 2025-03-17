@@ -447,4 +447,23 @@ describe('collection sync', () => {
 
     expect(error).toBeInstanceOf(IdentifierError);
   });
+
+  test('paranoid', async () => {
+    const postCollection = db.collection({
+      name: 'posts',
+      fields: [{ type: 'string', name: 'title' }],
+      paranoid: true,
+    });
+
+    await db.sync();
+
+    const p1 = await postCollection.repository.create({ values: { title: 't1' } });
+    await p1.destroy();
+
+    const p2 = await postCollection.repository.findOne({ filterByTk: p1.id });
+    expect(p2).toBeNull();
+
+    const p3 = await postCollection.repository.findOne({ filterByTk: p1.id, paranoid: false });
+    expect(p3).not.toBeNull();
+  });
 });

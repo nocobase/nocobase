@@ -283,9 +283,17 @@ export default class PluginWorkflowServer extends Plugin {
     db.on('workflows.afterUpdate', (model: WorkflowModel, { transaction }) =>
       this.toggle(model, model.enabled, { transaction }),
     );
-    db.on('workflows.afterDestroy', (model: WorkflowModel, { transaction }) =>
-      this.toggle(model, false, { transaction }),
-    );
+    db.on('workflows.afterDestroy', async (model: WorkflowModel, { transaction }) => {
+      this.toggle(model, false, { transaction });
+
+      const TaskRepo = this.db.getRepository('workflowTasks');
+      await TaskRepo.destroy({
+        filter: {
+          workflowId: model.id,
+        },
+        transaction,
+      });
+    });
 
     // [Life Cycle]:
     //   * load all workflows in db

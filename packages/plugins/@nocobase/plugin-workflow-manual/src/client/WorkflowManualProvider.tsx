@@ -20,6 +20,12 @@ const workflowCollection = {
     {
       type: 'string',
       name: 'title',
+      interface: 'input',
+      uiSchema: {
+        title: '{{t("Name")}}',
+        type: 'string',
+        'x-component': 'Input',
+      },
     },
   ],
 };

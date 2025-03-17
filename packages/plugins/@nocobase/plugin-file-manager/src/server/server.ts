@@ -8,14 +8,13 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import { Registry } from '@nocobase/utils';
+import { isURL, Registry } from '@nocobase/utils';
 
 import { basename } from 'path';
 
 import { Model, Transactionable } from '@nocobase/database';
 import fs from 'fs';
 import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
-import { FileModel } from './FileModel';
 import initActions from './actions';
 import { getFileData } from './actions/attachments';
 import { AttachmentInterface } from './interfaces/attachment-interface';
@@ -158,7 +157,6 @@ export class PluginFileManagerServer extends Plugin {
     for (const storage of storages) {
       this.storagesCache.set(storage.get('id'), this.parseStorage(storage));
     }
-    this.db['_fileStorages'] = this.storagesCache;
   }
 
   async install() {
@@ -201,7 +199,7 @@ export class PluginFileManagerServer extends Plugin {
   }
 
   async beforeLoad() {
-    this.db.registerModels({ FileModel });
+    this.db.registerModels({ FileModel: Model });
     this.db.on('beforeDefineCollection', (options) => {
       if (options.template === 'file') {
         options.model = 'FileModel';
@@ -279,12 +277,38 @@ export class PluginFileManagerServer extends Plugin {
     this.app.acl.addFixedParams('attachments', 'destroy', ownMerger);
 
     this.app.db.interfaceManager.registerInterfaceType('attachment', AttachmentInterface);
+
+    this.db.on('afterFind', async (instances) => {
+      if (!instances) {
+        return;
+      }
+      const records = Array.isArray(instances) ? instances : [instances];
+      const name = records[0]?.constructor?.name;
+      if (name) {
+        const collection = this.db.getCollection(name);
+        if (collection?.name === 'attachments' || collection?.options?.template === 'file') {
+          for (const record of records) {
+            const url = await this.getFileURL(record);
+            const previewUrl = await this.getFileURL(record, true);
+            record.set('url', url);
+            record.set('preview', previewUrl);
+            record.dataValues.preview = previewUrl; // 强制添加preview，在附件字段时，通过set设置无效
+          }
+        }
+      }
+    });
   }
 
-  getFileURL(file: AttachmentModel) {
+  async getFileURL(file: AttachmentModel, preview = false) {
+    if (!file.storageId) {
+      return file.url;
+    }
     const storage = this.storagesCache.get(file.storageId);
+    if (!storage) {
+      return file.url;
+    }
     const storageType = this.storageTypes.get(storage.type);
-    return new storageType(storage).getFileURL(file);
+    return new storageType(storage).getFileURL(file, preview ? storage.options.thumbnailRule : '');
   }
 }
 

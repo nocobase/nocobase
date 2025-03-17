@@ -30,6 +30,11 @@ export const PinnedPluginListProvider: React.FC<{ items: any }> = (props) => {
 const pinnedPluginListClassName = css`
   display: inline-flex;
   align-items: center;
+  color: var(--colorTextHeaderMenu);
+
+  .anticon {
+    color: var(--colorTextHeaderMenu);
+  }
 
   .ant-btn {
     display: inline-flex;

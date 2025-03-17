@@ -32,7 +32,6 @@ import {
   toValueItem as toValueItemDefault,
   useBeforeUpload,
   useUploadProps,
-  encodeFileURL,
 } from './shared';
 import { useStyles } from './style';
 import type { ComposedUpload, DraggerProps, DraggerV2Props, UploadProps } from './type';
@@ -46,7 +45,7 @@ attachmentFileTypes.add({
       return file.preview;
     }
     if (file.url) {
-      return `${file.url}${file.thumbnailRule || ''}`;
+      return file.url;
     }
     if (file.originFileObj) {
       return URL.createObjectURL(file.originFileObj);
@@ -95,7 +94,7 @@ const iframePreviewSupportedTypes = ['application/pdf', 'audio/*', 'image/*', 'v
 function IframePreviewer({ index, list, onSwitchIndex }) {
   const { t } = useTranslation();
   const file = list[index];
-  const url = encodeFileURL(file.url);
+  const url = file.url;
   const onOpen = useCallback(
     (e) => {
       e.preventDefault();

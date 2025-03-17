@@ -64,7 +64,11 @@ export interface TaskTypeOptions {
   // children?: TaskTypeOptions[];
 }
 
-const TasksCountsContext = createContext<{ counts: Record<string, number>; total: number }>({ counts: {}, total: 0 });
+const TasksCountsContext = createContext<{ reload: () => void; counts: Record<string, number>; total: number }>({
+  reload() {},
+  counts: {},
+  total: 0,
+});
 
 function MenuLink({ type }: any) {
   const workflowPlugin = usePlugin(PluginWorkflowClient);
@@ -299,13 +303,13 @@ export function WorkflowTasks() {
 
 function WorkflowTasksLink() {
   const workflowPlugin = usePlugin(PluginWorkflowClient);
-  const { total } = useContext(TasksCountsContext);
+  const { reload, total } = useContext(TasksCountsContext);
 
   const types = Array.from(workflowPlugin.taskTypes.getKeys());
   return types.length ? (
     <Tooltip title={lang('Workflow todos')}>
       <Button>
-        <Link to={`/admin/workflow/tasks/${types[0]}`}>
+        <Link to={`/admin/workflow/tasks/${types[0]}`} onClick={reload}>
           <Badge count={total} size="small">
             <CheckCircleOutlined />
           </Badge>
@@ -326,12 +330,7 @@ function TasksCountsProvider(props: any) {
   const app = useApp();
   const [counts, setCounts] = useState<Record<string, number>>({});
   const onTaskUpdate = useCallback(({ detail = [] }: CustomEvent) => {
-    setCounts((prev) => {
-      return {
-        ...prev,
-        ...transform(detail),
-      };
-    });
+    setCounts(transform(detail));
   }, []);
 
   const { runAsync } = useRequest(
@@ -344,20 +343,19 @@ function TasksCountsProvider(props: any) {
     },
   );
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     runAsync()
       .then((res) => {
-        setCounts((prev) => {
-          return {
-            ...prev,
-            ...transform(res['data']),
-          };
-        });
+        setCounts(transform(res['data']));
       })
       .catch((err) => {
         console.error(err);
       });
   }, [runAsync]);
+
+  useEffect(() => {
+    reload();
+  }, [reload]);
 
   useEffect(() => {
     app.eventBus.addEventListener('ws:message:workflow:tasks:updated', onTaskUpdate);
@@ -369,7 +367,7 @@ function TasksCountsProvider(props: any) {
 
   const total = Object.values(counts).reduce((a, b) => a + b, 0) || 0;
 
-  return <TasksCountsContext.Provider value={{ total, counts }}>{props.children}</TasksCountsContext.Provider>;
+  return <TasksCountsContext.Provider value={{ reload, total, counts }}>{props.children}</TasksCountsContext.Provider>;
 }
 
 export const TasksProvider = (props: any) => {

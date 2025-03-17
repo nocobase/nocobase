@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { BaseInterface } from '@nocobase/database';
 import { createMockServer, MockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
-import { XlsxExporter } from '../services/xlsx-exporter';
-import XLSX from 'xlsx';
 import fs from 'fs';
-import path from 'path';
-import { BaseInterface } from '@nocobase/database';
 import moment from 'moment';
+import path from 'path';
+import XLSX from 'xlsx';
+import { XlsxExporter } from '../services/xlsx-exporter';
 
 XLSX.set_fs(fs);
 
@@ -391,13 +391,14 @@ describe('export to xlsx with preset', () => {
             extname: '.png',
             mimetype: 'image/png',
             url: 'https://nocobase.oss-cn-beijing.aliyuncs.com/test1.png',
+            storageId: 1,
           },
           {
             title: 'nocobase-logo2',
             filename: '682e5ad037dd02a0fe4800a3e91c283b.png',
             extname: '.png',
             mimetype: 'image/png',
-            url: 'https://nocobase.oss-cn-beijing.aliyuncs.com/test2.png',
+            storageId: 1,
           },
         ],
       },
@@ -432,7 +433,7 @@ describe('export to xlsx with preset', () => {
 
       const firstUser = sheetData[1];
       expect(firstUser[1]).toEqual(
-        'https://nocobase.oss-cn-beijing.aliyuncs.com/test1.png,https://nocobase.oss-cn-beijing.aliyuncs.com/test2.png',
+        'https://nocobase.oss-cn-beijing.aliyuncs.com/test1.png,/storage/uploads/682e5ad037dd02a0fe4800a3e91c283b.png',
       );
     } finally {
       fs.unlinkSync(xlsxFilePath);

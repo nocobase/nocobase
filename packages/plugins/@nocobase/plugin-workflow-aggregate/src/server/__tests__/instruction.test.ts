@@ -180,6 +180,27 @@ describe('workflow > instructions > aggregate', () => {
       expect(j2.result).toBe(0.3);
     });
 
+    it('sum null will be 0', async () => {
+      const n1 = await workflow.createNode({
+        type: 'aggregate',
+        config: {
+          aggregator: 'sum',
+          collection: 'posts',
+          params: {
+            field: 'read',
+          },
+        },
+      });
+
+      const p2 = await PostRepo.create({ values: { title: 't2' } });
+
+      await sleep(500);
+
+      const [e1] = await workflow.getExecutions();
+      const [j1] = await e1.getJobs();
+      expect(j1.result).toBe(0);
+    });
+
     it('avg', async () => {
       const n1 = await workflow.createNode({
         type: 'aggregate',
