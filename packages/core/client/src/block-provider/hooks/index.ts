@@ -983,7 +983,7 @@ export const useUpdateActionProps = () => {
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
-        const data = await resource.update({
+        const result = await resource.update({
           filterByTk,
           values: {
             ...values,
@@ -1006,7 +1006,7 @@ export const useUpdateActionProps = () => {
         if (rawRedirectTo) {
           const { exp, scope: expScope } = await replaceVariables(rawRedirectTo, {
             variables,
-            localVariables: [...localVariables, { name: '$record', ctx: new Proxy(data?.data?.data?.[0], {}) }],
+            localVariables: [...localVariables, { name: '$record', ctx: new Proxy(result?.data?.data?.[0], {}) }],
           });
           redirectTo = interpolateVariables(exp, expScope);
         }
