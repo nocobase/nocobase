@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteObjectsCommand } from '@aws-sdk/client-s3';
-import { md5 } from '@nocobase/utils';
+import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import crypto from 'crypto';
 import { AttachmentModel, StorageType } from '.';
 import { STORAGE_TYPE_S3 } from '../../constants';
 import { cloudFilenameGetter, getFileKey } from '../utils';
@@ -32,7 +32,6 @@ export default class extends StorageType {
   static filenameKey = 'key';
 
   make() {
-    const { S3Client } = require('@aws-sdk/client-s3');
     const multerS3 = require('multer-s3');
     const { accessKeyId, secretAccessKey, bucket, acl = 'public-read', ...options } = this.storage.options;
     if (options.endpoint) {
@@ -64,27 +63,25 @@ export default class extends StorageType {
     });
   }
 
+  calculateContentMD5(body) {
+    const hash = crypto.createHash('md5').update(body).digest('base64');
+    return hash;
+  }
+
   async deleteS3Objects(bucketName: string, objects: string[]) {
-    const deleteBody = JSON.stringify({
-      Objects: objects.map((objectKey) => ({ Key: objectKey })),
-    });
-
-    const contentMD5 = md5(deleteBody);
-
-    const deleteCommand = new DeleteObjectsCommand({
-      Bucket: bucketName,
-      Delete: JSON.parse(deleteBody),
-    });
-
-    deleteCommand.middlewareStack.add(
-      (next, context) => async (args) => {
-        args.request['headers']['Content-Md5'] = contentMD5;
-        return next(args);
-      },
-      { step: 'build' },
-    );
     const { s3 } = this.make();
-    return await s3.send(deleteCommand);
+    const Deleted = [];
+    for (const Key of objects) {
+      const deleteCommand = new DeleteObjectCommand({
+        Bucket: bucketName,
+        Key,
+      });
+      await s3.send(deleteCommand);
+      Deleted.push({ Key });
+    }
+    return {
+      Deleted,
+    };
   }
 
   async delete(records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
