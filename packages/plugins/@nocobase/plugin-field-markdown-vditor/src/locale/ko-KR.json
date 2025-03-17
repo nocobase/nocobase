@@ -31,5 +31,6 @@
   "Fullscreen": "전체화면",
   "Outline": "개요",
   "uploading": "uploading",
-  "upload failed": "upload failed"
+  "upload failed": "upload failed",
+  "vditor.uploadError.message": "현재 스토리지에 파일을 업로드할 수 없습니다. Markdown 편집기에 파일을 업로드하려고 하지만 현재 스토리지 구성에서는 이 작업을 지원하지 않습니다. 업로드 기능을 활성화하려면 다음 설정을 완료하십시오: 1. \"파일 관리\"로 이동합니다. 2. 현재 사용 중인 스토리지({{storageTitle}})를 선택합니다. 3. \"기본 URL\"을 설정하고 \"공개 액세스\" 옵션을 활성화합니다."
 }

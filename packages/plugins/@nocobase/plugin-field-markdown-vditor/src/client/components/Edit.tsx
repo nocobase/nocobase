@@ -66,6 +66,14 @@ const useUpload = (fileCollectionName: string, vditorInstanceRef: React.RefObjec
       multiple: false,
       fieldName: 'file',
       async handler(files: File[]) {
+        if (!storage?.baseUrl || !storage?.public) {
+          vditorInstanceRef.current?.tip(
+            t('vditor.uploadError.message', { ns: NAMESPACE, storageTitle: storage?.title }),
+            0,
+          );
+          return;
+        }
+
         const customRequest = storageTypeUploadPropsRef.current.customRequest;
         const file = files[0];
         let response = null;
@@ -122,7 +130,7 @@ const useUpload = (fileCollectionName: string, vditorInstanceRef: React.RefObjec
       },
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [action, apiClient, t, vditorInstanceRef, storageTypeUploadPropsRef.current]);
+  }, [action, apiClient, t, vditorInstanceRef, storageTypeUploadPropsRef.current, storage]);
 };
 
 export const Edit = withDynamicSchemaProps((props) => {
