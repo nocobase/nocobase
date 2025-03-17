@@ -281,4 +281,72 @@ describe('20250225175712-change-table-name.test', () => {
 
     await app.destroy();
   });
+
+  skipSqlite(`1.6.0 -> 1.6.2, wrong migration executed (with id)`, async () => {
+    const app = await createMockServer();
+    await app.version.update('1.5.0');
+    app.db.collection({
+      name: 'workflowManualTasks',
+      migrationRules: ['schema-only'],
+      shared: true,
+      autoGenId: false,
+      fields: [
+        {
+          type: 'bigInt',
+          name: 'id',
+        },
+        {
+          type: 'bigInt',
+          name: 'userId',
+          primaryKey: true,
+        },
+        {
+          type: 'bigInt',
+          name: 'jobId',
+          primaryKey: true,
+        },
+      ],
+    });
+    await app.db.sync();
+    app.db.removeCollection('workflowManualTasks');
+    const migration = new Migration({ db: app.db, app } as any);
+    await migration.up();
+    app.db.collection({
+      ...workflowManualTasks,
+    });
+    await app.db.sync();
+    await app.destroy();
+  });
+
+  skipSqlite(`1.6.0 -> 1.6.2, wrong migration executed`, async () => {
+    const app = await createMockServer();
+    await app.version.update('1.5.0');
+    app.db.collection({
+      name: 'workflowManualTasks',
+      migrationRules: ['schema-only'],
+      shared: true,
+      autoGenId: false,
+      fields: [
+        {
+          type: 'bigInt',
+          name: 'userId',
+          primaryKey: true,
+        },
+        {
+          type: 'bigInt',
+          name: 'jobId',
+          primaryKey: true,
+        },
+      ],
+    });
+    await app.db.sync();
+    app.db.removeCollection('workflowManualTasks');
+    const migration = new Migration({ db: app.db, app } as any);
+    await migration.up();
+    app.db.collection({
+      ...workflowManualTasks,
+    });
+    await app.db.sync();
+    await app.destroy();
+  });
 });
