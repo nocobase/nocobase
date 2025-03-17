@@ -30,7 +30,7 @@ export async function getBasicInfo(context, next) {
     name: result.name,
     type: result.type,
     rules: result.rules,
-    baseUrl: result.baseUrl,
+    baseUrl: result.options?.baseUrl,
     public: result.options?.public,
   };
 
