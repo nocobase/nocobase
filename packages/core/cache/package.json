@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/cache",
-  "version": "1.6.3",
+  "version": "1.6.5",
   "description": "",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",

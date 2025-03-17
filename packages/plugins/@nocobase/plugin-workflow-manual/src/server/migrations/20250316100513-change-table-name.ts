@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Transaction } from 'sequelize';
 import { Migration } from '@nocobase/server';
+import { Transaction } from 'sequelize';
 import workflowManualTasks from '../collections/workflowManualTasks';
 
 export default class extends Migration {
@@ -24,6 +24,7 @@ export default class extends Migration {
     const workflowManualTasksCollection = db.collection({
       ...workflowManualTasks,
     });
+
     const oldTableName = usersJobsCollection.getTableNameWithSchema();
     const oldTableNameWithQuotes = usersJobsCollection.getRealTableName(true);
     const newTableName = workflowManualTasksCollection.getTableNameWithSchema();
@@ -31,8 +32,56 @@ export default class extends Migration {
 
     const exists = await queryInterface.tableExists(oldTableName);
     if (!exists) {
+      const newColumns = await queryInterface.describeTable(newTableName);
+      const newPrimaryKeys = Object.values(newColumns).filter((c) => c.primaryKey);
+      if (newPrimaryKeys.length > 1) {
+        // @ts-ignore
+        const constraints: any = await queryInterface.showConstraint(newTableName);
+        await db.sequelize.transaction(
+          {
+            isolationLevel: Transaction.ISOLATION_LEVELS.SERIALIZABLE,
+          },
+          async (transaction) => {
+            if (this.db.isPostgresCompatibleDialect()) {
+              const primaryKeys = constraints.filter((item) => item.constraintType === 'PRIMARY KEY');
+              if (primaryKeys.length) {
+                for (const primaryKey of primaryKeys) {
+                  await queryInterface.removeConstraint(newTableName, primaryKey.constraintName, { transaction });
+                }
+              }
+            } else if (this.db.isMySQLCompatibleDialect()) {
+              const idExists = await workflowManualTasksCollection.getField('id').existsInDb();
+              if (!idExists) {
+                await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} ADD COLUMN id BIGINT;`, {
+                  transaction,
+                });
+                await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} DROP PRIMARY KEY`, {
+                  transaction,
+                });
+                await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} ADD PRIMARY KEY (id)`, {
+                  transaction,
+                });
+                await db.sequelize.query(
+                  `ALTER TABLE ${newTableNameWithQuotes} MODIFY COLUMN id BIGINT AUTO_INCREMENT`,
+                  {
+                    transaction,
+                  },
+                );
+              } else {
+                await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} DROP PRIMARY KEY`, {
+                  transaction,
+                });
+                await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} ADD PRIMARY KEY (id)`, {
+                  transaction,
+                });
+              }
+            }
+          },
+        );
+      }
       return;
     }
+    const oldColumns = await queryInterface.describeTable(oldTableName);
     // @ts-ignore
     const constraints: any = await queryInterface.showConstraint(oldTableName);
     // PG:
@@ -64,7 +113,14 @@ export default class extends Migration {
       async (transaction) => {
         const newExists = await queryInterface.tableExists(newTableName, { transaction });
         if (newExists) {
-          await queryInterface.dropTable(newTableName, { transaction });
+          // NOTE: old column status exists means not migrated
+          if (oldColumns.status) {
+            await queryInterface.dropTable(newTableName, { transaction });
+          } else {
+            // NOTE: means this table was synchronized from collectionManager, and should not exists.
+            await queryInterface.dropTable(oldTableName, { transaction });
+            return;
+          }
         }
 
         if (this.db.isPostgresCompatibleDialect()) {
@@ -88,9 +144,23 @@ export default class extends Migration {
             }
           }
         } else if (this.db.isMySQLCompatibleDialect()) {
-          await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} DROP PRIMARY KEY, ADD PRIMARY KEY (id)`, {
-            transaction,
-          });
+          const idExists = await workflowManualTasksCollection.getField('id').existsInDb();
+          if (!idExists) {
+            await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} ADD COLUMN id BIGINT;`, {
+              transaction,
+            });
+            await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} DROP PRIMARY KEY`, {
+              transaction,
+            });
+            await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} ADD PRIMARY KEY (id)`, {
+              transaction,
+            });
+            await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} MODIFY COLUMN id BIGINT AUTO_INCREMENT`, {
+              transaction,
+            });
+          } else {
+            console.log('------------------ id exists', idExists);
+          }
         }
 
         const indexes: any = await queryInterface.showIndex(newTableName, { transaction });

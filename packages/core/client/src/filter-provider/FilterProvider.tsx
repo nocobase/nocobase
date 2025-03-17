@@ -169,7 +169,7 @@ export const DataBlockCollector = ({
       },
       clearSelection() {
         if (field) {
-          field.data.clearSelectedRowKeys?.();
+          field.data?.clearSelectedRowKeys?.();
         }
       },
     });
