@@ -63,8 +63,12 @@ export function dateSubtract(initialValue: any, number: number, unit: any) {
     return dayjs.isDayjs(value) ? value.subtract(number, unit) : dayjs(value).subtract(number, unit);
   };
   if (Array.isArray(initialValue)) {
-    return initialValue.map(handler);
+    const results = initialValue.map(handler);
+    console.log(results[0].toISOString());
+    return results;
   } else {
+    const result = handler(initialValue);
+    console.log(result.toISOString());
     return handler(initialValue);
   }
 }

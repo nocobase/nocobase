@@ -10,6 +10,7 @@
 import { CloseCircleFilled } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { observer, useForm } from '@formily/react';
+import { reaction } from '@formily/reactive';
 import { composeTemplate, extractTemplateElements } from '@nocobase/json-template-parser';
 import { error } from '@nocobase/utils/client';
 import {
@@ -239,16 +240,22 @@ function _Input(props: VariableInputProps) {
   );
   const newVal = useMemo(() => composeTemplate({ fullVariable, helpers: helpersObs.value }), [fullVariable]);
   useEffect(() => {
-    if (value && newVal !== value) {
-      onChange(newVal);
-    }
-  }, [newVal, value, onChange]);
+    const dispose = reaction(
+      () => {
+        return composeTemplate({ fullVariable, helpers: helpersObs.value });
+      },
+      (newVal) => {
+        onChange(newVal);
+      },
+    );
+    return dispose;
+  }, [fullVariable, onChange]);
 
   const parsed = useMemo(() => parseValue(variableSegments, parseOptions), [parseOptions, variableSegments]);
   const isConstant = typeof parsed === 'string';
   const type = isConstant ? parsed : '';
   const variable = isConstant ? null : parsed;
-  // const [prevType, setPrevType] = React.useState<string>(type);
+
   const names = Object.assign(
     {
       label: 'label',
