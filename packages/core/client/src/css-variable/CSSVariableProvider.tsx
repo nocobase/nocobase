@@ -76,6 +76,7 @@ export const CSSVariableProvider = ({ children }) => {
     token.marginXS,
     token.paddingContentVerticalSM,
     token.sizeXXL,
+    token.colorTextHeaderMenu,
   ]);
 
   return children;
