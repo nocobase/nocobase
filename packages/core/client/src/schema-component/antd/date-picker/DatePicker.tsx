@@ -153,9 +153,6 @@ export const DatePicker: ComposedDatePicker = (props: any) => {
       return disabledTime;
     });
   };
-
-  console.log(disabledDate);
-
   const newProps = {
     utc,
     ...props,

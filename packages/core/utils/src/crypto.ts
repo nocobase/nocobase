@@ -7,11 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineCollection } from '@nocobase/database';
+import { createHash } from 'crypto';
 
-export default defineCollection({
-  name: 'uiButtonSchemasRoles',
-  dumpRules: 'required',
-  autoGenId: false,
-  migrationRules: ['overwrite', 'schema-only'],
-});
+export function md5(input: string) {
+  return createHash('md5').update(input).digest('hex');
+}

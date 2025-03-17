@@ -9,10 +9,10 @@
 
 import { isArr, isValid, toArr as toArray } from '@formily/shared';
 import { UploadFile } from 'antd/es/upload/interface';
-import { useTranslation } from 'react-i18next';
 import mime from 'mime';
 import match from 'mime-match';
 import React, { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { UNKNOWN_FILE_ICON, UPLOAD_PLACEHOLDER } from './placeholder';
 import type { IUploadProps, UploadProps } from './type';
@@ -266,17 +266,4 @@ export function useBeforeUpload(rules) {
     },
     [rules],
   );
-}
-
-export function encodeFileURL(url: string): string {
-  if (!url) {
-    return url;
-  }
-
-  const [base, search = ''] = url.split('?');
-  const parts = base.split('/');
-  const filename = parts.pop();
-  parts.push(encodeURIComponent(filename));
-  const encodedURL = `${parts.join('/')}${search ? `?${search}` : ''}`;
-  return encodedURL;
 }
