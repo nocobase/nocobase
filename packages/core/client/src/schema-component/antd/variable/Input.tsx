@@ -7,13 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CloseCircleFilled, FilterOutlined } from '@ant-design/icons';
+import { CloseCircleFilled } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
+import { useForm } from '@formily/react';
 import { autorun } from '@formily/reactive';
-import { useForm, observer } from '@formily/react';
+import { composeTemplate, extractTemplateElements } from '@nocobase/json-template-parser';
 import { error } from '@nocobase/utils/client';
-import { cloneDeep } from 'lodash';
-import { extractTemplateElements, composeTemplate } from '@nocobase/json-template-parser';
 import {
   Input as AntInput,
   Cascader,
@@ -32,12 +31,12 @@ import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../hooks';
+import { Json } from '../input';
+import { HelperAddition, HelperList } from './Helpers';
+import { helpersObs, setHelpersFromTemplateStr } from './Helpers/observables';
+import { VariableProvider } from './VariableProvider';
 import { XButton } from './XButton';
 import { useStyles } from './style';
-import { Json } from '../input';
-import { VariableProvider } from './VariableProvider';
-import { setHelpersFromTemplateStr, helpersObs } from './Helpers/observables';
-import { HelperList, HelperAddition } from './Helpers';
 
 const { Text } = Typography;
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
@@ -242,7 +241,9 @@ export function Input(props: VariableInputProps) {
 
   useEffect(() => {
     const dispose = autorun(() => {
-      onChange(composeTemplate({ fullVariable, helpers: helpersObs.value }));
+      if (fullVariable) {
+        onChange(composeTemplate({ fullVariable, helpers: helpersObs.value }));
+      }
     });
     return dispose;
   }, [onChange, fullVariable, helpers]);
