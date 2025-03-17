@@ -578,9 +578,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                   }
 
                   if (recordData.type === NocoBaseDesktopRouteType.page) {
-                    const path = `${basenameOfCurrentRouter.slice(0, -1)}${basename}/${
-                      isMobile ? recordData.schemaUid : recordData.menuSchemaUid
-                    }`;
+                    const path = `${basenameOfCurrentRouter.slice(0, -1)}${basename}/${recordData.schemaUid}`;
                     // 在点击 Access 按钮时，会用到
                     recordData._path = path;
 
@@ -596,7 +594,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                       recordData.parentId,
                       data.data,
                       isMobile,
-                    )}/tabs/${recordData.tabSchemaName || recordData.schemaUid}`;
+                    )}/tabs/${recordData.schemaUid}`;
                     recordData._path = path;
 
                     return (
@@ -1253,7 +1251,7 @@ function useCreateRouteSchema(isMobile: boolean) {
 
   const createRouteSchema = useCallback(
     async ({ type }: { type: NocoBaseDesktopRouteType }) => {
-      const menuSchemaUid = isMobile ? undefined : uid();
+      const menuSchemaUid = undefined; // TODO: menuSchemaUid has been deprecated in the new version, need to remove it
       const pageSchemaUid = uid();
       const tabSchemaName = uid();
       const tabSchemaUid = type === NocoBaseDesktopRouteType.page ? uid() : undefined;
