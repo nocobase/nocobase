@@ -10,7 +10,7 @@
 import { createMockServer } from '@nocobase/test';
 import { describe, test } from 'vitest';
 import workflowManualTasks from '../../collections/workflowManualTasks';
-import Migration from '../../migrations/20250312100513-change-table-name';
+import Migration from '../../migrations/20250316100513-change-table-name';
 
 const skipSqlite = process.env.DB_DIALECT === 'sqlite' ? test.skip : test;
 
