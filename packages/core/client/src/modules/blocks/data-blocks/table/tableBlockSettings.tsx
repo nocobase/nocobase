@@ -166,7 +166,6 @@ export const tableBlockSettings = new SchemaSettings({
         };
       },
     },
-    enabledIndexColumn,
     {
       name: 'SortField',
       Component: SchemaSettingsSortField,
@@ -175,6 +174,7 @@ export const tableBlockSettings = new SchemaSettings({
         return field.decoratorProps.dragSort;
       },
     },
+    enabledIndexColumn,
     setTheDataScopeSchemaSettingsItem,
     setDefaultSortingRulesSchemaSettingsItem,
     setDataLoadingModeSettingsItem,
