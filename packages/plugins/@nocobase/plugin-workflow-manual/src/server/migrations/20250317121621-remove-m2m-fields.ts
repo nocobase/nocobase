@@ -57,7 +57,16 @@ export default class extends Migration {
       });
 
       if (oldTableExists) {
-        await db.sequelize.getQueryInterface().dropTable(usersJobsCollection.getTableNameWithSchema(), { transaction });
+        const oldColumns = await db.sequelize
+          .getQueryInterface()
+          .describeTable(usersJobsCollection.getTableNameWithSchema());
+        if (!oldColumns.status) {
+          await db.sequelize
+            .getQueryInterface()
+            .dropTable(usersJobsCollection.getTableNameWithSchema(), { transaction });
+        } else {
+          throw new Error('users_jobs table is not migrated properly, please contact support.');
+        }
       }
     });
 
