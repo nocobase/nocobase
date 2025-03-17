@@ -32,7 +32,6 @@ import {
   toValueItem as toValueItemDefault,
   useBeforeUpload,
   useUploadProps,
-  encodeFileURL,
 } from './shared';
 import { useStyles } from './style';
 import type { ComposedUpload, DraggerProps, DraggerV2Props, UploadProps } from './type';
@@ -43,10 +42,10 @@ attachmentFileTypes.add({
   },
   getThumbnailURL(file) {
     if (file.preview) {
-      return encodeFileURL(file.preview);
+      return file.preview;
     }
     if (file.url) {
-      return encodeFileURL(`${file.url}${file.thumbnailRule || ''}`);
+      return file.url;
     }
     if (file.originFileObj) {
       return URL.createObjectURL(file.originFileObj);
@@ -65,9 +64,9 @@ attachmentFileTypes.add({
     return (
       <LightBox
         // discourageDownloads={true}
-        mainSrc={encodeFileURL(list[index]?.url)}
-        nextSrc={encodeFileURL(list[(index + 1) % list.length]?.url)}
-        prevSrc={encodeFileURL(list[(index + list.length - 1) % list.length]?.url)}
+        mainSrc={list[index]?.url}
+        nextSrc={list[(index + 1) % list.length]?.url}
+        prevSrc={list[(index + list.length - 1) % list.length]?.url}
         onCloseRequest={() => onSwitchIndex(null)}
         onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
         onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
@@ -95,7 +94,7 @@ const iframePreviewSupportedTypes = ['application/pdf', 'audio/*', 'image/*', 'v
 function IframePreviewer({ index, list, onSwitchIndex }) {
   const { t } = useTranslation();
   const file = list[index];
-  const url = encodeFileURL(file.url);
+  const url = file.url;
   const onOpen = useCallback(
     (e) => {
       e.preventDefault();
@@ -264,7 +263,7 @@ function AttachmentListItem(props) {
     ) : null,
   ];
   const wrappedItem = file.url ? (
-    <a target="_blank" rel="noopener noreferrer" href={encodeFileURL(file.url)} onClick={handleClick}>
+    <a target="_blank" rel="noopener noreferrer" href={file.url} onClick={handleClick}>
       {item}
     </a>
   ) : (
