@@ -18,7 +18,14 @@ const getActionValue = (operator, value) => {
     } else return null;
   };
   switch (true) {
-    case [ActionType.Color, ActionType.BackgroundColor, ActionType.TextAlign].includes(operator):
+    case [
+      ActionType.Color,
+      ActionType.BackgroundColor,
+      ActionType.TextAlign,
+      ActionType.FontSize,
+      ActionType.FontWeight,
+      ActionType.FontStyle,
+    ].includes(operator):
       return getValueByMode(value);
     default:
       return null;
@@ -41,6 +48,7 @@ const getSatisfiedActions = async ({ rules, variables, localVariables }, jsonLog
 };
 
 const getSatisfiedValues = async ({ rules, variables, localVariables }, jsonLogic) => {
+  console.log(rules);
   return (await getSatisfiedActions({ rules, variables, localVariables }, jsonLogic)).map((action) => ({
     ...action,
     value: getActionValue(action.operator, action.value),
@@ -49,6 +57,7 @@ const getSatisfiedValues = async ({ rules, variables, localVariables }, jsonLogi
 
 export const getSatisfiedValueMap = async ({ rules, variables, localVariables }, jsonLogic) => {
   const values = await getSatisfiedValues({ rules, variables, localVariables }, jsonLogic);
+  console.log(values);
   const valueMap = values.reduce((a, v) => ({ ...a, [v.operator]: v.value }), {});
   return valueMap;
 };
