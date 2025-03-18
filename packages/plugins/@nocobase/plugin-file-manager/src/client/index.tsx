@@ -74,6 +74,72 @@ export class PluginFileManagerClient extends Plugin {
   getStorageType(name: string) {
     return this.storageTypes.get(name);
   }
+
+  async uploadFile(options?: {
+    file: File;
+    fileCollectionName?: string;
+    storageId?: string;
+    storage?: any;
+  }): Promise<{ errorMessage?: string; data?: any }> {
+    if (options.storage) {
+      const storageConfig = options.storage;
+      const storageType = this.getStorageType(storageConfig.type);
+      return await storageType?.upload({ file: options.file, storageConfig, apiClient: this.app.apiClient });
+    }
+
+    if (options?.storageId) {
+      const storageConfig = await this.app.apiClient.resource('storages').get({
+        filterByTk: options.storageId,
+      });
+
+      if (storageConfig) {
+        const storageType = this.getStorageType(storageConfig.type);
+        return await storageType?.upload({ file: options.file, storageConfig, apiClient: this.app.apiClient });
+      }
+    }
+
+    if (options?.fileCollectionName) {
+      const fileCollection = this.app.getCollectionManager().getCollection(options.fileCollectionName);
+      const storageId = fileCollection.getOption('storage');
+      if (storageId) {
+        const storageConfig = await this.app.apiClient.resource('storages').get({
+          filterByTk: storageId,
+        });
+
+        if (storageConfig) {
+          const storageType = this.getStorageType(storageConfig.type);
+          return await storageType?.upload({
+            file: options.file,
+            storageConfig,
+            fileCollectionName: options.fileCollectionName,
+            apiClient: this.app.apiClient,
+          });
+        }
+      }
+    }
+
+    // use default storage
+    const { data }: any = await this.app.apiClient.resource('storages').get({
+      filter: {
+        default: true,
+      },
+    });
+    const defaultStorage = data?.data;
+    if (defaultStorage) {
+      const storageType = this.getStorageType(defaultStorage.type);
+      if (storageType?.upload) {
+        return await storageType.upload({
+          file: options.file,
+          storageConfig: defaultStorage,
+          apiClient: this.app.apiClient,
+        });
+      }
+    }
+
+    return {
+      errorMessage: `{{ t("No storage found", { ns: "${NAMESPACE}" }) }}`,
+    };
+  }
 }
 
 export default PluginFileManagerClient;

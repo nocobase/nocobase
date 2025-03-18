@@ -9,7 +9,7 @@
 
 import { useTranslation } from 'react-i18next';
 import { NAMESPACE } from '../../locale';
-import common from './common';
+import common, { commonUpload } from './common';
 import React from 'react';
 
 export default {
@@ -72,4 +72,5 @@ export default {
     paranoid: common.paranoid,
   },
   thumbnailRuleLink: 'https://cloud.tencent.com/document/product/436/42214',
+  upload: commonUpload,
 };

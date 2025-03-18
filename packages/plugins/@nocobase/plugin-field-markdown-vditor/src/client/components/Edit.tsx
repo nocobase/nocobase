@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useExpressionScope } from '@formily/react';
-import { useAPIClient, useApp, useCollectionManager, withDynamicSchemaProps } from '@nocobase/client';
+import { useAPIClient, useApp, useCompile, usePlugin, withDynamicSchemaProps } from '@nocobase/client';
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Vditor from 'vditor';
@@ -18,115 +17,6 @@ import { useCDN } from './const';
 import useStyle from './style';
 
 const locales = ['en_US', 'fr_FR', 'pt_BR', 'ja_JP', 'ko_KR', 'ru_RU', 'sv_SE', 'zh_CN', 'zh_TW'];
-
-const useUpload = (fileCollectionName: string, vditorInstanceRef: React.RefObject<Vditor>) => {
-  const app = useApp();
-  const apiClient = useAPIClient();
-  const cm = useCollectionManager();
-  const fileCollection = cm.getCollection(fileCollectionName);
-  const { useStorageCfg } = useExpressionScope();
-  const { storage, storageType } = useStorageCfg?.(fileCollection?.getOption('storage')) || {};
-  const action = app.getApiUrl(`${fileCollectionName || 'attachments'}:create`);
-  const storageTypeUploadPropsRef = useRef(null);
-  const storageTypeUploadProps = storageType?.useUploadProps?.({ storage, rules: storage?.rules, action });
-
-  // Using ref to prevent re-rendering
-  if (storageTypeUploadProps && !storageTypeUploadPropsRef.current) {
-    storageTypeUploadPropsRef.current = storageTypeUploadProps;
-  }
-
-  const { t } = useTranslation();
-
-  return useMemo(() => {
-    // If there is no custom upload method, use the default upload method
-    if (!storageTypeUploadPropsRef.current?.customRequest) {
-      return {
-        url: action,
-        headers: apiClient.getHeaders(),
-        multiple: false,
-        fieldName: 'file',
-        max: 1024 * 1024 * 1024, // 1G
-        format: (files, responseText) => {
-          const response = JSON.parse(responseText);
-          const formatResponse = {
-            msg: '',
-            code: 0,
-            data: {
-              errFiles: [],
-              succMap: {
-                [response.data.filename]: response.data.url,
-              },
-            },
-          };
-          return JSON.stringify(formatResponse);
-        },
-      };
-    }
-    return {
-      multiple: false,
-      fieldName: 'file',
-      async handler(files: File[]) {
-        if (!storage?.baseUrl || !storage?.public) {
-          vditorInstanceRef.current?.tip(
-            t('vditor.uploadError.message', { ns: NAMESPACE, storageTitle: storage?.title }),
-            0,
-          );
-          return;
-        }
-
-        const customRequest = storageTypeUploadPropsRef.current.customRequest;
-        const file = files[0];
-        let response = null;
-        let error = null;
-
-        // Show loading message when upload begins
-        vditorInstanceRef.current?.tip(`${file.name} ${t('uploading', { ns: NAMESPACE })}...`, 0);
-
-        await customRequest({
-          file: files[0],
-          onSuccess: (res) => {
-            response = res;
-          },
-          onError: (e) => {
-            error = e;
-          },
-          onProgress: ({ percent }) => {
-            // Update the loading message with progress percentage
-            if (vditorInstanceRef.current) {
-              vditorInstanceRef.current.tip(`${file.name} ${t('uploading', { ns: NAMESPACE })}... ${percent}%`, 0);
-            }
-          },
-          headers: {},
-        });
-
-        // Clear the loading message
-        vditorInstanceRef.current.tip('', 10);
-
-        if (error || !response?.data) {
-          vditorInstanceRef.current?.tip(`${file.name} ${t('upload failed', { ns: NAMESPACE })}`, 3000);
-          return;
-        }
-
-        const fileName = response.data.filename;
-        const fileUrl = response.data.url;
-
-        // Check if the uploaded file is an image
-        const isImage = file.type.startsWith('image/');
-
-        if (isImage) {
-          // Insert as an image - will be displayed in the editor
-          vditorInstanceRef.current?.insertValue(`![${fileName}](${fileUrl})`);
-        } else {
-          // For non-image files, insert as a download link
-          vditorInstanceRef.current?.insertValue(`[${fileName}](${fileUrl})`);
-        }
-
-        return null;
-      },
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [action, apiClient, t, vditorInstanceRef, storageTypeUploadPropsRef.current, storage]);
-};
 
 export const Edit = withDynamicSchemaProps((props) => {
   const { disabled, onChange, value, fileCollection, toolbar } = props;
@@ -140,7 +30,12 @@ export const Edit = withDynamicSchemaProps((props) => {
   const cdn = useCDN();
   const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
   const locale = apiClient.auth.locale || 'en-US';
-  const upload = useUpload(fileCollection, vdRef);
+  const fileManagerPlugin: any = usePlugin('@nocobase/plugin-file-manager');
+  const compile = useCompile();
+  const compileRef = useRef(compile);
+  compileRef.current = compile;
+  const { t } = useTranslation();
+  const app = useApp();
 
   const lang: any = useMemo(() => {
     const currentLang = locale.replace(/-/g, '_');
@@ -178,7 +73,64 @@ export const Edit = withDynamicSchemaProps((props) => {
       input(value) {
         onChange(value);
       },
-      upload,
+      upload: {
+        multiple: false,
+        fieldName: 'file',
+        async handler(files: File[]) {
+          const file = files[0];
+
+          const storage = fileCollection
+            ? await getStorageConfigByFileCollectionName(fileCollection, app)
+            : await getDefaultStorageConfig(app);
+
+          if (!storage) {
+            vditor.tip(t('Storage not found', { ns: NAMESPACE }), 3000);
+            return;
+          }
+
+          // s3-pro requires configuring baseUrl and must allow public access to upload files in Vditor
+          if (storage.type === 's3-compatible' && (!storage.options.baseUrl || !storage.options.public)) {
+            vditor.tip(t('vditor.uploadError.message', { ns: NAMESPACE, storageTitle: storage?.title }), 0);
+            return;
+          }
+
+          vditor.tip(t('uploading'), 0);
+          const { data, errorMessage } = await fileManagerPlugin.uploadFile({
+            file,
+            fileCollectionName: fileCollection,
+            storage,
+          });
+
+          if (errorMessage) {
+            vditor.tip(compileRef.current(errorMessage), 3000);
+            return;
+          }
+
+          if (!data) {
+            vditor.tip(t('Response data is empty', { ns: NAMESPACE }), 3000);
+            return;
+          }
+
+          const fileName = data.filename;
+          const fileUrl = data.url;
+
+          // Check if the uploaded file is an image
+          const isImage = file.type.startsWith('image/');
+
+          if (isImage) {
+            // Insert as an image - will be displayed in the editor
+            vditor.insertValue(`![${fileName}](${fileUrl})`);
+          } else {
+            // For non-image files, insert as a download link
+            vditor.insertValue(`[${fileName}](${fileUrl})`);
+          }
+
+          // hide the tip
+          vditor.tip(t(''), 10);
+
+          return null;
+        },
+      },
     });
 
     return () => {
@@ -186,7 +138,7 @@ export const Edit = withDynamicSchemaProps((props) => {
       vdRef.current = undefined;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toolbar?.join(','), upload]);
+  }, [toolbar?.join(',')]);
 
   useEffect(() => {
     if (editorReady && vdRef.current) {
@@ -251,3 +203,27 @@ export const Edit = withDynamicSchemaProps((props) => {
     </div>,
   );
 });
+
+async function getStorageConfigByFileCollectionName(fileCollectionName: string, app: any) {
+  const fileCollection = app.getCollectionManager().getCollection(fileCollectionName);
+  const storageId = fileCollection.getOption('storage');
+
+  if (storageId) {
+    const storageConfig = await app.apiClient.resource('storages').get({
+      filterByTk: storageId,
+    });
+
+    return storageConfig;
+  }
+
+  return null;
+}
+
+async function getDefaultStorageConfig(app: any) {
+  const { data }: any = await app.apiClient.resource('storages').get({
+    filter: {
+      default: true,
+    },
+  });
+  return data?.data;
+}
