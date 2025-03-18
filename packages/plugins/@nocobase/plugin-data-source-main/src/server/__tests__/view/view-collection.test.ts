@@ -547,10 +547,10 @@ describe('view collection', function () {
     if (!db.options.underscored) {
       return;
     }
-    await db.sync();
+    const tableName = db.inDialect('postgres') ? `${process.env.DB_SCHEMA}.users` : 'users';
     const dropViewSQL = `DROP VIEW IF EXISTS test_view`;
     await db.sequelize.query(dropViewSQL);
-    const viewSQL = `CREATE VIEW test_view AS select * from ${process.env.DB_SCHEMA}.users`;
+    const viewSQL = `CREATE VIEW test_view AS select * from ${tableName}`;
     await db.sequelize.query(viewSQL);
 
     const response = await app
