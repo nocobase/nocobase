@@ -8,7 +8,7 @@
  */
 
 import { createJSONTemplateParser } from '@nocobase/json-template-parser';
-import { getDateVars, isDate } from '@nocobase/utils';
+import { getDateVars, isDate, parseDate } from '@nocobase/utils';
 import { get } from 'lodash';
 
 function getUser(ctx) {
@@ -53,12 +53,18 @@ const dateValueWrapper = (value: any, timezone?: string) => {
   }
 
   if (Array.isArray(value)) {
-    if (value.length === 2) {
-      value.push('[]', timezone);
+    const valueString = value.map((v) => {
+      if (isDate(v)) {
+        return v.toISOString();
+      }
+      return v;
+    });
+    if (valueString.length === 2) {
+      valueString.push('[]', timezone);
     } else if (value.length === 3) {
-      value.push(timezone);
+      valueString.push(timezone);
     }
-    return value;
+    return valueString;
   }
 
   if (typeof value === 'string') {
@@ -75,11 +81,15 @@ const dateValueWrapper = (value: any, timezone?: string) => {
 
 const $date = ({ fields, data, context }) => {
   const timezone = context.timezone;
+  const now = new Date().toISOString();
   const dateVars = getDateVars();
 
   const getValue = ({ field, keys }) => {
-    const value = get(dateVars, field);
-    return value;
+    const val = get(dateVars, field);
+    const operator = keys[keys.length - 1];
+    const value = typeof val === 'function' ? val?.({ field, operator, timezone, now }) : val;
+    const parsedValue = parseDate(value, { timezone });
+    return parsedValue;
   };
   const afterApplyHelpers = ({ field, value, keys }) => {
     const operator = keys[keys.length - 1];

@@ -64,11 +64,9 @@ export function dateSubtract(initialValue: any, number: number, unit: any) {
   };
   if (Array.isArray(initialValue)) {
     const results = initialValue.map(handler);
-    console.log(results[0].toISOString());
     return results;
   } else {
     const result = handler(initialValue);
-    console.log(result.toISOString());
     return handler(initialValue);
   }
 }
