@@ -7,14 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import mathjs from '../mathjs';
+import formulajs from '../formulajs';
 
-describe('evaluators > mathjs', () => {
-  it('matrix type should be to array', () => {
-    expect(mathjs('range(1, 3, 1)')).toEqual([1, 2, 3]);
+describe('evaluators > formulajs', () => {
+  it('add new line in string', () => {
+    expect(formulajs(`CONCATENATE('a', '\\n', 'b')`)).toBe('a\nb');
+  });
+
+  it('calculate null with number', () => {
+    expect(formulajs('null + 1')).toBe(1);
   });
 
   it('precision should be 9', () => {
-    expect(mathjs('100*2.3')).toBe(230);
+    expect(formulajs('100*2.3')).toBe(230);
   });
 });
