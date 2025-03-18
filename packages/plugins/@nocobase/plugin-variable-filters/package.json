@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/plugin-variable-filters",
+  "name": "@nocobase/plugin-variable-helpers",
   "version": "1.6.0-alpha.29",
   "main": "dist/server/index.js",
   "dependencies": {},

@@ -1,6 +1,6 @@
+import { AntdSchemaComponentProvider, Plugin, SchemaComponent } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
-import { SchemaComponent, Plugin, AntdSchemaComponentProvider } from '@nocobase/client';
-import PluginVariableFiltersClient from '@nocobase/plugin-variable-filters/client';
+import PluginVariableFiltersClient from '@nocobase/plugin-variable-helpers/client';
 import React from 'react';
 
 const scope = [
