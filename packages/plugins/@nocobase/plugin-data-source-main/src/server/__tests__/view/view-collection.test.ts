@@ -368,7 +368,6 @@ describe('view collection', function () {
     if (!db.inDialect('postgres')) {
       return;
     }
-
     const viewName = 'test_view';
     const dbSchema = db.options.schema || 'public';
     const randomSchema = `s_${uid(6)}`;
@@ -551,7 +550,7 @@ describe('view collection', function () {
     await db.sync();
     const dropViewSQL = `DROP VIEW IF EXISTS test_view`;
     await db.sequelize.query(dropViewSQL);
-    const viewSQL = `CREATE VIEW test_view AS select * from users`;
+    const viewSQL = `CREATE VIEW test_view AS select * from ${process.env.DB_SCHEMA}.users`;
     await db.sequelize.query(viewSQL);
 
     const response = await app
