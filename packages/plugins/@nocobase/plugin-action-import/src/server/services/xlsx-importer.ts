@@ -14,6 +14,8 @@ import { Collection as DBCollection, Database } from '@nocobase/database';
 import { Transaction } from 'sequelize';
 import EventEmitter from 'events';
 import { ImportValidationError, ImportError } from '../errors';
+import { Context } from '@nocobase/actions';
+import _ from 'lodash';
 
 export type ImportColumn = {
   dataIndex: Array<string>;
@@ -50,23 +52,23 @@ export class XlsxImporter extends EventEmitter {
     if (options.columns.length == 0) {
       throw new Error(`columns is empty`);
     }
-
     this.repository = options.repository ? options.repository : options.collection.repository;
   }
 
-  async validate() {
-    if (this.options.columns.length == 0) {
+  async validate(ctx: Context) {
+    const columns = this.getColumnsByPermission(ctx);
+    if (columns.length == 0) {
       throw new ImportValidationError('Columns configuration is empty');
     }
 
-    for (const column of this.options.columns) {
+    for (const column of columns) {
       const field = this.options.collection.getField(column.dataIndex[0]);
       if (!field) {
         throw new ImportValidationError('Field not found: {{field}}', { field: column.dataIndex[0] });
       }
     }
 
-    const data = await this.getData();
+    const data = await this.getData(ctx);
     return data;
   }
 
@@ -80,7 +82,7 @@ export class XlsxImporter extends EventEmitter {
     }
 
     try {
-      await this.validate();
+      await this.validate(options.context);
       const imported = await this.performImport(options);
 
       // @ts-ignore
@@ -111,7 +113,7 @@ export class XlsxImporter extends EventEmitter {
     }
 
     let hasImportedAutoIncrementPrimary = false;
-    for (const importedDataIndex of this.options.columns) {
+    for (const importedDataIndex of this.getColumnsByPermission(options?.context)) {
       if (importedDataIndex.dataIndex[0] === autoIncrementAttribute) {
         hasImportedAutoIncrementPrimary = true;
         break;
@@ -152,7 +154,7 @@ export class XlsxImporter extends EventEmitter {
 
   async performImport(options?: RunOptions): Promise<any> {
     const transaction = options?.transaction;
-    const data = await this.getData();
+    const data = await this.getData(options?.context);
     const chunks = lodash.chunk(data.slice(1), this.options.chunkSize || 200);
 
     let handingRowIndex = 1;
@@ -164,14 +166,15 @@ export class XlsxImporter extends EventEmitter {
     if (this.options.explain) {
       handingRowIndex += 1;
     }
+    const columns = this.getColumnsByPermission(options?.context);
 
     for (const chunkRows of chunks) {
       for (const row of chunkRows) {
         const rowValues = {};
         handingRowIndex += 1;
         try {
-          for (let index = 0; index < this.options.columns.length; index++) {
-            const column = this.options.columns[index];
+          for (let index = 0; index < columns.length; index++) {
+            const column = columns[index];
 
             const field = this.options.collection.getField(column.dataIndex[0]);
 
@@ -271,19 +274,38 @@ export class XlsxImporter extends EventEmitter {
     return str;
   }
 
-  private getExpectedHeaders(): string[] {
-    return this.options.columns.map((col) => col.title || col.defaultTitle);
+  private getColumnsByPermission(ctx: Context): ImportColumn[] {
+    const columns = this.options.columns;
+    return columns.filter((x) =>
+      ctx?.permission?.can?.params?.fields?.length
+        ? _.includes(ctx?.permission?.can?.params?.fields || [], x.dataIndex[0])
+        : true,
+    );
   }
 
-  async getData() {
+  private getExpectedHeaders(ctx: Context): string[] {
+    const columns = this.getColumnsByPermission(ctx);
+    return columns.map((col) => col.title || col.defaultTitle);
+  }
+
+  private alignWithHeaders(expectedHeaders: string[], data: string[][]): string[][] {
+    const headers = this.options.explain ? data[1] : data[0];
+
+    const keepCols = headers.map((x, i) => (expectedHeaders.includes(x) ? i : -1)).filter((i) => i > -1);
+
+    return data.map((row) => keepCols.map((i) => row[i]));
+  }
+
+  async getData(ctx: Context) {
     const workbook = this.options.workbook;
     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
 
-    const data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null }) as string[][];
+    let data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null }) as string[][];
 
     // Find and validate header row
-    const expectedHeaders = this.getExpectedHeaders();
-    const { headerRowIndex, headers } = this.findAndValidateHeaders(data);
+    const expectedHeaders = this.getExpectedHeaders(ctx);
+    data = this.alignWithHeaders(expectedHeaders, data);
+    const { headerRowIndex, headers } = this.findAndValidateHeaders({ data, expectedHeaders });
     if (headerRowIndex === -1) {
       throw new ImportValidationError('Headers not found. Expected headers: {{headers}}', {
         headers: expectedHeaders.join(', '),
@@ -301,9 +323,11 @@ export class XlsxImporter extends EventEmitter {
     return [headers, ...rows];
   }
 
-  private findAndValidateHeaders(data: string[][]): { headerRowIndex: number; headers: string[] } {
-    const expectedHeaders = this.getExpectedHeaders();
-
+  private findAndValidateHeaders(options: { expectedHeaders: string[]; data: string[][] }): {
+    headerRowIndex: number;
+    headers: string[];
+  } {
+    const { expectedHeaders, data } = options;
     // Find header row and validate
     for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
       const row = data[rowIndex];
