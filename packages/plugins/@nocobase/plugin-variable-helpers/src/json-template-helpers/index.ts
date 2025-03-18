@@ -9,13 +9,13 @@
 
 import { first } from './array';
 import { dateAdd, dateFormat, dateSubtract } from './date';
-const NAMESPACE = 'variable-filters';
+const NAMESPACE = 'variable-helpers';
 
 function tval(text: string) {
   return `{{t(${JSON.stringify(text)}, ${JSON.stringify({ ns: NAMESPACE, nsMode: 'fallback' })})}}`;
 }
 
-export const variableFilters = [
+export const helpers = [
   {
     name: 'date_format',
     title: 'format',
@@ -112,7 +112,7 @@ export const variableFilters = [
   },
 ];
 
-export const filterGroups = [
+export const helperGroups = [
   {
     name: 'date',
     title: "{{t('Date')}}",

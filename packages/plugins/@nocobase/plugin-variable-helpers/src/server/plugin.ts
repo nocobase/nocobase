@@ -8,18 +8,18 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import { variableFilters, filterGroups } from '../json-template-filters';
+import { helperGroups, helpers } from '../json-template-helpers';
 export class PluginVariableFiltersServer extends Plugin {
   async afterAdd() {}
 
   async beforeLoad() {}
 
   async load() {
-    filterGroups.forEach((group) => {
+    helperGroups.forEach((group) => {
       this.app.jsonTemplateParser.registerFilterGroup(group);
     });
 
-    variableFilters.forEach((filter) => {
+    helpers.forEach((filter) => {
       this.app.jsonTemplateParser.registerFilter(filter);
     });
   }

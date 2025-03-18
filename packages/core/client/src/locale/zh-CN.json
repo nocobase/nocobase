@@ -1033,6 +1033,8 @@
   "Left": "左",
   "Center": "居中",
   "Right": "右",
+  "Input value": "输入值",
+  "Output value": "输出值",
   "Divider line color": "分割线颜色",
   "Label align": "字段标题对齐方式",
   "Label width": "字段标题宽度",
