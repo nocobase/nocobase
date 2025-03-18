@@ -433,6 +433,8 @@ function _Input(props: VariableInputProps) {
 
   return wrapSSR(
     <Space.Compact style={style} className={classNames(componentCls, hashId, className)}>
+      {/* 确保所有ant input样式都已加载 */}
+      <AntInput style={{ display: 'none' }} />
       {variable ? (
         <div
           className={cx(
