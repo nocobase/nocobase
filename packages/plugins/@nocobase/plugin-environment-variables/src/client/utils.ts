@@ -31,3 +31,24 @@ export const useGetEnvironmentVariables = () => {
 
   return null;
 };
+
+const getEnvVariablesValue = (data = []) => {
+  const ctx = data.map((v) => {
+    return { [v.name]: v.value };
+  });
+  return {
+    name: '$env',
+    ctx: Object.assign({}, ...ctx),
+  };
+};
+
+export const useGetEnvironmentVariablesCtx = () => {
+  const { variablesRequest } = useContext(EnvAndSecretsContext);
+  const { data, loading: variablesLoading } = variablesRequest;
+  const envVariablesValue = getEnvVariablesValue(data?.data);
+  if (!variablesLoading && data?.data?.length) {
+    return envVariablesValue;
+  }
+
+  return null;
+};
