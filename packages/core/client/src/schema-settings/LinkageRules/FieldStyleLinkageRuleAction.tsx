@@ -57,9 +57,14 @@ const fontSizeSchema = {
   'x-component': 'InputNumber',
   'x-component-props': {
     precision: 0,
+    min: 10,
+    max: 40,
+    placeholder: '{{t("Valid range: 10-40")}}',
   },
-  minimum: 0,
-  maximum: 30,
+  'x-validator': {
+    maximum: 40,
+    minimum: 10,
+  },
 };
 
 const fontWeightSchema = {
@@ -68,9 +73,14 @@ const fontWeightSchema = {
   'x-component': 'InputNumber',
   'x-component-props': {
     precision: 0,
+    placeholder: '{{t("Valid range: 100-900")}}',
+    max: 900,
+    min: 100,
   },
-  minimum: 100,
-  maximum: 900,
+  'x-validator': {
+    maximum: 900,
+    minimum: 100,
+  },
 };
 
 const fontStyleSchema = {
@@ -82,11 +92,11 @@ const fontStyleSchema = {
   },
   enum: [
     {
-      label: 'normal',
+      label: "{{t('Normal')}}",
       value: 'normal',
     },
     {
-      label: 'italic',
+      label: "{{t('Italic')}}",
       value: 'italic',
     },
   ],
@@ -113,7 +123,7 @@ export const FieldStyleLinkageRuleAction = observer(
           { label: t('Color'), value: ActionType.Color, schema: {} },
           { label: t('Background Color'), value: ActionType.BackgroundColor, schema: {} },
           { label: t('Text Align'), value: ActionType.TextAlign, schema: {} },
-          { label: t('Font Size (px)'), value: ActionType.FontSize, schema: {} },
+          { label: t('Font Size（px）'), value: ActionType.FontSize, schema: {} },
           { label: t('Font Weight'), value: ActionType.FontWeight, schema: {} },
           { label: t('Font Style'), value: ActionType.FontStyle, schema: {} },
         ]),
