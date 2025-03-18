@@ -7,20 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC } from 'react';
-import { App } from 'antd';
-import { useNavigate } from 'react-router-dom';
 import {
-  SchemaSettings,
-  SchemaToolbar,
-  useSchemaToolbar,
-  SchemaToolbarProvider,
   createTextSettingsItem,
+  SchemaSettings,
   SchemaSettingsItemType,
+  SchemaToolbar,
+  SchemaToolbarProvider,
+  useSchemaToolbar,
 } from '@nocobase/client';
+import { App } from 'antd';
+import React, { FC } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-import { MobileRouteItem, useMobileRoutes } from '../../../../mobile-providers';
 import { generatePluginTranslationTemplate, usePluginTranslation } from '../../../../locale';
+import { MobileRouteItem, useMobileRoutes } from '../../../../mobile-providers';
 
 const remove = createTextSettingsItem({
   name: 'remove',
@@ -118,7 +118,7 @@ export const MobilePageTabsSettings: FC<MobilePageTabsSettingsProps> = ({ tab })
         settings={mobilePageTabsSettings}
         showBackground
         showBorder={false}
-        toolbarStyle={{ inset: '-15px -12px' }}
+        toolbarStyle={{ inset: '0 -12px' }}
         spaceWrapperStyle={{ top: 3 }}
       />
     </SchemaToolbarProvider>

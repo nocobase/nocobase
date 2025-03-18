@@ -5,6 +5,352 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.6.5](https://github.com/nocobase/nocobase/compare/v1.6.4...v1.6.5) - 2025-03-17
+
+### 🚀 Improvements
+
+- **[File manager]** Simplify file URL generating logic and API ([#6472](https://github.com/nocobase/nocobase/pull/6472)) by @mytharcher
+
+- **[File storage: S3(Pro)]** Change to a simple way to generate file URL by @mytharcher
+
+- **[Backup manager]** Allow restore backup between pre release and release version of the same version by @gchust
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - rich text field not clearing data on submission ([#6486](https://github.com/nocobase/nocobase/pull/6486)) by @katherinehhh
+
+  - The color of the icons in the upper right corner of the page does not change with the theme ([#6482](https://github.com/nocobase/nocobase/pull/6482)) by @zhangzhonghe
+
+  - Clicking the reset button on the filter form cannot clear the filtering conditions of the grid card block ([#6475](https://github.com/nocobase/nocobase/pull/6475)) by @zhangzhonghe
+
+- **[Workflow: Manual node]**
+  - Fix migration ([#6484](https://github.com/nocobase/nocobase/pull/6484)) by @mytharcher
+
+  - Change migration name to ensure rerun ([#6487](https://github.com/nocobase/nocobase/pull/6487)) by @mytharcher
+
+  - Fix workflow title field in filter ([#6480](https://github.com/nocobase/nocobase/pull/6480)) by @mytharcher
+
+  - Fix migration error when id column is not exists ([#6470](https://github.com/nocobase/nocobase/pull/6470)) by @chenos
+
+  - Avoid collection synchronized from fields ([#6478](https://github.com/nocobase/nocobase/pull/6478)) by @mytharcher
+
+- **[Workflow: Aggregate node]** Fix round on null result ([#6473](https://github.com/nocobase/nocobase/pull/6473)) by @mytharcher
+
+- **[Workflow]** Don't count tasks when workflow deleted ([#6474](https://github.com/nocobase/nocobase/pull/6474)) by @mytharcher
+
+- **[Backup manager]** Not able to start server when missing default backup settings by @gchust
+
+- **[Workflow: Approval]**
+  - Fix file association field error in process form by @mytharcher
+
+  - Fix tasks count based on hooks by @mytharcher
+
+## [v1.6.4](https://github.com/nocobase/nocobase/compare/v1.6.3...v1.6.4) - 2025-03-14
+
+### 🎉 New Features
+
+- **[client]** Cascade Selection Component Add Data Scope Setting ([#6386](https://github.com/nocobase/nocobase/pull/6386)) by @Cyx649312038
+
+### 🚀 Improvements
+
+- **[utils]** Move `md5` to utils ([#6468](https://github.com/nocobase/nocobase/pull/6468)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[client]** In the tree block, when unchecked, the data in the data block is not being cleared ([#6460](https://github.com/nocobase/nocobase/pull/6460)) by @zhangzhonghe
+
+- **[File manager]** Unable to delete files stored in S3. ([#6467](https://github.com/nocobase/nocobase/pull/6467)) by @chenos
+
+- **[Workflow]** Remove bind workflow settings button from data picker ([#6455](https://github.com/nocobase/nocobase/pull/6455)) by @mytharcher
+
+- **[File storage: S3(Pro)]** Resolve issue with inaccessible S3 Pro signed URLs by @chenos
+
+- **[Workflow: Approval]** Avoid page crash when no applicant in approval process table by @mytharcher
+
+## [v1.6.3](https://github.com/nocobase/nocobase/compare/v1.6.2...v1.6.3) - 2025-03-13
+
+### 🎉 New Features
+
+- **[WeCom]** Allows setting a custom tooltip for the sign-in button by @2013xile
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fix special character in image URL caused not showing ([#6459](https://github.com/nocobase/nocobase/pull/6459)) by @mytharcher
+
+  - incorrect page number when adding data after subtable page size change ([#6437](https://github.com/nocobase/nocobase/pull/6437)) by @katherinehhh
+
+  - The logo style is inconsistent with the previous one ([#6444](https://github.com/nocobase/nocobase/pull/6444)) by @zhangzhonghe
+
+- **[Workflow: Manual node]** Fix error thrown in migration ([#6445](https://github.com/nocobase/nocobase/pull/6445)) by @mytharcher
+
+- **[Data visualization]** Removed fields appear when adding custom filter fields ([#6450](https://github.com/nocobase/nocobase/pull/6450)) by @2013xile
+
+- **[File manager]** Fix a few issues of file manager ([#6436](https://github.com/nocobase/nocobase/pull/6436)) by @mytharcher
+
+- **[Action: Custom request]** custom request server-side permission validation error ([#6438](https://github.com/nocobase/nocobase/pull/6438)) by @katherinehhh
+
+- **[Data source manager]** switching data source in role management does not load corresponding collections ([#6431](https://github.com/nocobase/nocobase/pull/6431)) by @katherinehhh
+
+- **[Action: Batch edit]** Fix workflow can not be triggered in bulk edit submission ([#6440](https://github.com/nocobase/nocobase/pull/6440)) by @mytharcher
+
+- **[Workflow: Custom action event]** Remove `only` in E2E test case by @mytharcher
+
+- **[Workflow: Approval]**
+  - Fix association data not showing in approval form by @mytharcher
+
+  - Fix error thrown when approve on external data source by @mytharcher
+
+## [v1.6.2](https://github.com/nocobase/nocobase/compare/v1.6.1...v1.6.2) - 2025-03-12
+
+### 🐛 Bug Fixes
+
+- **[client]** date field range selection excludes the max date ([#6418](https://github.com/nocobase/nocobase/pull/6418)) by @katherinehhh
+
+- **[Notification: In-app message]** Avoid wrong receivers configuration query all users ([#6424](https://github.com/nocobase/nocobase/pull/6424)) by @sheldon66
+
+- **[Workflow: Manual node]**
+  - Fix migration which missed table prefix and schema logic ([#6425](https://github.com/nocobase/nocobase/pull/6425)) by @mytharcher
+
+  - Change version limit of migration to `<1.7.0` ([#6430](https://github.com/nocobase/nocobase/pull/6430)) by @mytharcher
+
+## [v1.6.1](https://github.com/nocobase/nocobase/compare/v1.6.0...v1.6.1) - 2025-03-11
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - When using the '$anyOf' operator, the linkage rule is invalid ([#6415](https://github.com/nocobase/nocobase/pull/6415)) by @zhangzhonghe
+
+  - Data not updating in popup windows opened via Link buttons ([#6411](https://github.com/nocobase/nocobase/pull/6411)) by @zhangzhonghe
+
+  - multi-select field value changes and option loss when deleting subtable records ([#6405](https://github.com/nocobase/nocobase/pull/6405)) by @katherinehhh
+
+- **[Notification: In-app message]** Differentiate the in-app message list background color from the message cards to enhance visual hierarchy and readability. ([#6417](https://github.com/nocobase/nocobase/pull/6417)) by @sheldon66
+
+## [v1.6.0](https://github.com/nocobase/nocobase/compare/v1.5.25...v1.6.0) - 2025-03-11
+
+## New Features
+
+### Cluster Mode
+
+The Enterprise edition supports cluster mode deployment via relevant plugins. When the application runs in cluster mode, it can leverage multiple instances and multi-core processing to improve its performance in handling concurrent access.
+
+![Cluster Mode Screenshot](https://static-docs.nocobase.com/20241231010814.png)
+
+Reference: [Deployment - Cluster Mode](https://docs.nocobase.com/welcome/getting-started/deployment/cluster-mode)
+
+### Password Policy
+
+A password policy is established for all users, including rules for password complexity, validity periods, and login security strategies, along with the management of locked accounts.
+
+![Password Policy Screenshot](https://static-docs.nocobase.com/202412281329313.png)
+
+Reference: [Password Policy](https://docs.nocobase.com/handbook/password-policy)
+
+### Token Policy
+
+The Token Security Policy is a function configuration designed to protect system security and enhance user experience. It includes three main configuration items: "session validity," "token effective period," and "expired token refresh limit."
+
+![Token Policy Screenshot](https://static-docs.nocobase.com/20250105111821-2025-01-05-11-18-24.png)
+
+Reference: [Token Policy](https://docs.nocobase.com/handbook/token-policy)
+
+### IP Restriction
+
+NocoBase allows administrators to set up an IP allowlist or blacklist for user access to restrict unauthorized external network connections or block known malicious IP addresses, thereby reducing security risks. It also supports querying access denial logs to identify risky IPs.
+
+![IP Restriction Screenshot](https://static-docs.nocobase.com/2025-01-23-10-07-34-20250123100733.png)
+
+Reference: [IP Restriction](https://docs.nocobase.com/handbook/IP-restriction)
+
+### Environment Variables
+
+Centralized configuration and management of environment variables and secrets are provided for sensitive data storage, configuration reuse, environment isolation, and more.
+
+![Environment Variables Screenshot](https://static-docs.nocobase.com/1ee6c3fa09533b19f4d6038f53b06006.png)
+
+Reference: [Environment Variables](https://docs.nocobase.com/handbook/environment-variables)
+
+### Release Management
+
+This feature allows you to migrate application configurations from one environment to another.
+
+![Migration Manager Screenshot](https://static-docs.nocobase.com/20250107105005.png)
+
+Reference: [Release Management](https://docs.nocobase.com/handbook/release-management)
+
+### Route Management
+
+- **Menu Data Separated and Renamed to Routes**: The menu data has been decoupled from the UI Schema and renamed as "routes." It is divided into two tables, desktopRoutes and mobileRoutes, which correspond to desktop and mobile routes respectively.
+- **Frontend Menu Optimization with Collapse and Responsive Support**: The frontend menu now supports collapse functionality and responsive design for an improved user experience.
+
+![Route Management Screenshot](https://static-docs.nocobase.com/20250107115449.png)
+
+Reference: [Routes](https://docs.nocobase.com/handbook/routes)
+
+### Roles and Permissions
+
+- Supports configuration of action action permissions.
+  ![Roles and Permissions Screenshot 1](https://static-docs.nocobase.com/b0a7905d9fd4beaaf21592b1f56fe752.png)
+- Supports configuration of tab permissions.
+
+![Roles and Permissions Screenshot 2](https://static-docs.nocobase.com/4fd3a5144a2301638b9f24b033d33add.png)
+
+### User Management
+
+Supports customization of user profile forms.
+
+![User Management Screenshot](https://static-docs.nocobase.com/171e5a4c61033afb237c9ae1a3d89000.png)
+
+### Workflow
+
+An entry for the workflow to-do center has been added to the global toolbar, providing real-time notifications for manual nodes and pending approval tasks.
+
+![Workflow Screenshot](https://static-docs.nocobase.com/855c58536f9fd29ae353dd19b3aff73f.png)
+
+### Workflow: Custom Action Events
+
+Supports triggering custom action events both globally and in batch actions.
+
+![Custom Action Events Screenshot](https://static-docs.nocobase.com/106ae1296d180718799eb6d7f423805c.png)
+
+### Workflow: Approval
+
+- Supports transferring approval responsibilities and adding extra approvers.
+  ![Approval Form Screenshot](https://static-docs.nocobase.com/20241226232013.png)
+- Allows approvers to modify the application content when submitting an approval.
+  ![Approval Modification Screenshot](https://static-docs.nocobase.com/20241226232124.png)
+- Supports configuration of a basic information block within the approval interface.
+- Optimizes the style and interaction of initiating approvals and viewing pending tasks, with these improvements also integrated into the global process to-do center.
+  ![Approval To-do Center Screenshot](https://static-docs.nocobase.com/20250310161203.png)
+- No longer distinguishes the location where the approval is initiated; the approval center block can both initiate and process all approvals.
+
+### Workflow: JSON Variable Mapping Node
+
+A new dedicated node has been added to map JSON data from upstream node results into variables.
+
+![JSON Variable Mapping Node Screenshot](https://static-docs.nocobase.com/20250113173635.png)
+
+Reference: [JSON Variable Mapping](https://docs.nocobase.com/handbook/workflow/nodes/json-variable-mapping)
+
+### Capability Enhancements and Plugin Examples
+
+
+| Extension                         | Plugin Example                                                  |
+| --------------------------------- | --------------------------------------------------------------- |
+| Data Source Custom Preset Fields  | @nocobase-sample/plugin-data-source-main-custom-preset-fields   |
+| Calendar Register Color Field     | @nocobase-sample/plugin-calendar-register-color-field           |
+| Calendar Register Title Field     | @nocobase-sample/plugin-calendar-register-title-field           |
+| Formula Register Expression Field | @nocobase-sample/plugin-field-formula-register-expression-field |
+| Kanban Register Group Field       | @nocobase-sample/plugin-kanban-register-group-field             |
+| Register Filter Operator          | @nocobase-sample/plugin-register-filter-operator                |
+| File Storage Extension            | @nocobase-sample/plugin-file-storage-demo                       |
+
+## Breaking Changes
+
+### Update to Token Policy
+
+In version 1.6, a new [Token Policy](https://docs.nocobase.com/handbook/token-policy) was introduced. When authentication fails, a 401 error will be returned along with a redirection to the login page. This behavior differs from previous versions. To bypass the check, refer to the following examples:
+
+Frontend Request:
+
+```javascript
+useRequest({
+  url: '/test',
+  skipAuth: true,
+});
+
+api.request({
+  url: '/test',
+  skipAuth: true,
+});
+```
+
+Backend Middleware:
+
+```javascript
+class PluginMiddlewareExampleServer extends plugin {
+  middlewareExample = (ctx, next) => {
+    if (ctx.path === '/path/to') {
+      ctx.skipAuthCheck = true;
+    }
+    await next();
+  };
+  async load() {
+    this.app.dataSourceManager.afterAddDataSource((dataSource) => {
+      dataSource.resourceManager.use(this.middlewareExample, {
+        before: 'auth',
+      });
+    });
+  }
+}
+```
+
+### Unit Test Function agent.login Changed from Synchronous to Asynchronous
+
+Due to several asynchronous operations required in the authentication process, the test function login is now asynchronous. Example:
+
+```TypeScript
+import { createMockServer } from '@nocobase/test';
+
+describe('my db suite', () => {
+  let app;
+  let agent;
+
+  beforeEach(async () => {
+    app = await createMockServer({
+      registerActions: true,
+      acl: true,
+      plugins: ['users', 'auth', 'acl'],
+    });
+    agent = await app.agent().login(1);
+  });
+
+  test('case1', async () => {
+    await agent.get('/examples');
+    await agent.get('/examples');
+    await agent.resource('examples').create();
+  });
+});
+```
+
+### New Extension API for User Center Settings Items
+
+API:
+
+```TypeScript
+type UserCenterSettingsItemOptions = SchemaSettingsItemType & { aclSnippet?: string };
+
+class Application {
+  addUserCenterSettingsItem(options: UserCenterSettingsItemOptions);
+}
+```
+
+Example:
+
+```javascript
+class PluginUserCenterSettingsExampleClient extends plugin {
+  async load() {
+    this.app.addUserCenterSettingsItem({
+      name: 'nickName',
+      Component: NickName,
+      sort: 0,
+    });
+  }
+}
+```
+
+## [v1.5.25](https://github.com/nocobase/nocobase/compare/v1.5.24...v1.5.25) - 2025-03-09
+
+### 🐛 Bug Fixes
+
+- **[server]** Incorrect browser cache after running `yarn start` command ([#6394](https://github.com/nocobase/nocobase/pull/6394)) by @gchust
+
+- **[Workflow: Approval]** Avoid wrong assignees configuration query all users by @mytharcher
+
+- **[WeCom]** fix login prompt link and dingtalk login error by @chenzhizdt
+
 ## [v1.5.24](https://github.com/nocobase/nocobase/compare/v1.5.23...v1.5.24) - 2025-03-07
 
 ### 🎉 New Features

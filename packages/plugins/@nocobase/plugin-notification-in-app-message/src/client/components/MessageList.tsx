@@ -9,7 +9,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { observer } from '@formily/reactive-react';
-
+import { Schema } from '@formily/react';
 import { Card, Descriptions, Button, Spin, Tag, ConfigProvider, Typography, Tooltip, theme } from 'antd';
 import { dayjs } from '@nocobase/utils/client';
 import { useNavigate } from 'react-router-dom';
@@ -25,8 +25,10 @@ import {
   updateMessage,
   inboxVisible,
 } from '../observables';
+import { useApp } from '@nocobase/client';
 
 const MessageList = observer(() => {
+  const app = useApp();
   const { t } = useLocalTranslation();
   const navigate = useNavigate();
   const { token } = theme.useToken();
@@ -70,6 +72,8 @@ const MessageList = observer(() => {
     fetchMessages({ filter, limit: 30 });
   }, [messages, selectedChannelName]);
 
+  const title = Schema.compile(channelMapObs.value[selectedChannelName].title, { t: app.i18n.t });
+
   return (
     <ConfigProvider
       theme={{
@@ -77,7 +81,7 @@ const MessageList = observer(() => {
       }}
     >
       <Typography.Title level={4} style={{ marginBottom: token.marginLG }}>
-        {channelMapObs.value[selectedChannelName].title}
+        {title}
       </Typography.Title>
 
       {messages.length === 0 && isFecthingMessageObs.value ? (

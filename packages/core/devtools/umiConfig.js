@@ -63,6 +63,11 @@ function getUmiConfig() {
             });
           }
         },
+        onProxyReq: (proxyReq, req, res) => {
+          if (req?.ip) {
+            proxyReq.setHeader('X-Forwarded-For', req.ip);
+          }
+        },
       },
       // for local storage
       ...getLocalStorageProxy(),

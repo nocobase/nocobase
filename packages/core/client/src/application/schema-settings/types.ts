@@ -22,6 +22,7 @@ import {
 
 export interface SchemaSettingOptions<T = {}> {
   name: string;
+  mode?: 'inline' | 'dropdown';
   Component?: ComponentType<T>;
   componentProps?: T;
   items: SchemaSettingsItemType[];

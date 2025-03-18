@@ -415,7 +415,7 @@ export const apiGetWorkflowNodeExecutions = async (id: number) => {
 
   const state = await api.storageState();
   const headers = getHeaders(state);
-  const url = `/api/executions:list?appends[]=jobs&filter[workflowId]=${id}&fields=id,createdAt,updatedAt,key,status,workflowId,jobs`;
+  const url = `/api/executions:list?appends[]=jobs&filter[workflowId]=${id}&fields=id,createdAt,updatedAt,key,status,workflowId`;
   const result = await api.get(url, {
     headers,
   });
@@ -1040,12 +1040,13 @@ function getHeaders(storageState: any) {
 }
 
 // 用户登录新会话
+export const approvalUserPassword = '1a2B3c4#';
 export const userLogin = async (browser: Browser, approvalUserEmail: string, approvalUser: string) => {
   const context = await browser.newContext();
   const page = await context.newPage();
   await page.goto('signin');
   await page.getByPlaceholder('Email').fill(approvalUserEmail);
-  await page.getByPlaceholder('Password').fill(approvalUser);
+  await page.getByPlaceholder('Password').fill(approvalUserPassword);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await page.waitForLoadState('load');
   return context;
@@ -1073,4 +1074,5 @@ export default module.exports = {
   userLogin,
   apiCreateField,
   apiTriggerCustomActionEvent,
+  approvalUserPassword,
 };

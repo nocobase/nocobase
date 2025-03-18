@@ -12,6 +12,7 @@ import { CollectionOptions } from '@nocobase/database';
 export default {
   dumpRules: 'required',
   name: 'uiSchemas',
+  migrationRules: ['overwrite', 'schema-only'],
   autoGenId: false,
   timestamps: false,
   repository: 'UiSchemaRepository',
@@ -37,6 +38,17 @@ export default {
       type: 'json',
       name: 'schema',
       defaultValue: {},
+    },
+    {
+      type: 'belongsToMany',
+      name: 'roles',
+      onDelete: 'CASCADE',
+      through: 'uiButtonSchemasRoles',
+      target: 'roles',
+      foreignKey: 'uid',
+      otherKey: 'roleName',
+      sourceKey: 'x-uid',
+      targetKey: 'name',
     },
   ],
 } as CollectionOptions;

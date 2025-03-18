@@ -8,6 +8,7 @@ import PluginErrorHandler, { ErrorHandler } from '@nocobase/plugin-error-handler
 
 export abstract class TaskType extends EventEmitter implements ITask {
   static type: string;
+  static cancelable = true;
 
   public status: TaskStatus;
   protected logger: Logger;
@@ -168,6 +169,7 @@ export abstract class TaskType extends EventEmitter implements ITask {
 
   toJSON(options?: { raw?: boolean }) {
     const json = {
+      cancelable: (this.constructor as typeof TaskType).cancelable,
       taskId: this.taskId,
       status: { ...this.status },
       progress: this.progress,

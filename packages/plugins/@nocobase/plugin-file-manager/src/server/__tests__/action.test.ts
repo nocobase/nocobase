@@ -9,6 +9,7 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
+import querystring from 'querystring';
 import { getApp } from '.';
 import { FILE_FIELD_NAME, FILE_SIZE_LIMIT_DEFAULT, STORAGE_TYPE_LOCAL } from '../../constants';
 import PluginFileManagerServer from '../server';
@@ -187,6 +188,34 @@ describe('action', () => {
         const content = await agent.get(url);
         expect(content.text.includes('Hello world!')).toBeTruthy();
       });
+
+      it('filename with special character (URL)', async () => {
+        const rawText = '[]中文报告! 1%~50.4% (123) {$#}';
+        const rawFilename = `${rawText}.txt`;
+        const { body } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, `./files/${rawFilename}`),
+        });
+
+        const matcher = {
+          title: rawText,
+          extname: '.txt',
+          path: '',
+          mimetype: 'text/plain',
+          meta: {},
+          storageId: 1,
+        };
+
+        // 文件上传和解析是否正常
+        expect(body.data).toMatchObject(matcher);
+        // 文件的 url 是否正常生成
+        const encodedFilename = querystring.escape(rawText);
+        expect(body.data.url).toContain(`${DEFAULT_LOCAL_BASE_URL}${body.data.path}/${encodedFilename}`);
+
+        // 文件的 url 是否正常访问
+        // TODO: mock-server is not start within gateway, static url can not be accessed
+        // const res2 = await agent.get(`${DEFAULT_LOCAL_BASE_URL}${body.data.path}/${encodedFilename}`);
+        // expect(res2.text).toBe(rawText);
+      });
     });
 
     describe('specific storage', () => {
@@ -245,7 +274,7 @@ describe('action', () => {
       });
 
       it('upload to storage which is not default', async () => {
-        const BASE_URL = `http://localhost:${APP_PORT}/storage/uploads/another`;
+        const BASE_URL = `/storage/uploads/another`;
         const urlPath = 'test/path';
 
         // 动态添加 storage
@@ -289,7 +318,7 @@ describe('action', () => {
       });
 
       it('path longer than 255', async () => {
-        const BASE_URL = `http://localhost:${APP_PORT}/storage/uploads/another`;
+        const BASE_URL = `/storage/uploads/another`;
         const urlPath =
           'extreme-test/max-long-path-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890';
 

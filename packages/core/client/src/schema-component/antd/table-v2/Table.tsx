@@ -21,7 +21,17 @@ import { useDeepCompareEffect, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
-import React, { createContext, FC, MutableRefObject, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import React, {
+  createContext,
+  FC,
+  MutableRefObject,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, isBulkEditAction, useDesignable, usePopupSettings, useTableSize } from '../..';
 import {
@@ -40,7 +50,7 @@ import {
   useTableSelectorContext,
 } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
-import { useTableBlockContext } from '../../../block-provider/TableBlockProvider';
+import { useTableBlockContext, useTableBlockContextBasicValue } from '../../../block-provider/TableBlockProvider';
 import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
 import {
   NocoBaseRecursionField,
@@ -56,6 +66,7 @@ import { useToken } from '../__builtins__';
 import { useAssociationFieldContext } from '../association-field/hooks';
 import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
+import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 
 type BodyRowComponentProps = {
   rowIndex?: number;
@@ -149,7 +160,10 @@ const useRefreshTableColumns = () => {
   return { refresh };
 };
 
-const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginationProps) => {
+const useTableColumns = (
+  props: { showDel?: any; isSubTable?: boolean; optimizeTextCellRender: boolean },
+  paginationProps,
+) => {
   const { token } = useToken();
   const field = useArrayField(props);
   const schema = useFieldSchema();
@@ -185,6 +199,9 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
 
   const collection = useCollection();
 
+  // 不能提取到外部，否则 NocoBaseRecursionField 的值在一开始会是 undefined。原因未知
+  const TableColumnTitle = useMemo(() => withTooltipComponent(NocoBaseRecursionField), []);
+
   const columns = useMemo(
     () =>
       columnsSchemas?.map((columnSchema: Schema) => {
@@ -204,11 +221,12 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
         return {
           title: (
             <RefreshComponentProvider refresh={refresh}>
-              <NocoBaseRecursionField
+              <TableColumnTitle
                 name={columnSchema.name}
                 schema={columnSchema}
                 onlyRenderSelf
                 isUseFormilyField={false}
+                tooltip={columnSchema?.['x-component-props']?.tooltip}
               />
             </RefreshComponentProvider>
           ),
@@ -249,7 +267,16 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
         } as TableColumnProps<any>;
       }),
 
-    [columnsSchemas, collection, refresh, designable, filterProperties, schemaToolbarBigger, field],
+    [
+      columnsSchemas,
+      collection,
+      refresh,
+      designable,
+      filterProperties,
+      schemaToolbarBigger,
+      field,
+      props.optimizeTextCellRender,
+    ],
   );
 
   const tableColumns = useMemo(() => {
@@ -473,10 +500,6 @@ const cellClass = css`
   }
 `;
 
-const floatLeftClass = css`
-  float: left;
-`;
-
 const rowSelectCheckboxWrapperClass = css`
   position: relative;
   display: flex;
@@ -655,6 +678,12 @@ interface TableProps {
   onExpand?: (flag: boolean, record: any) => void;
   isSubTable?: boolean;
   value?: any[];
+  /**
+   * If set to true, it will bypass the CollectionField component and render text directly,
+   * which provides better rendering performance.
+   * @default false
+   */
+  optimizeTextCellRender?: boolean;
 }
 
 export const TableElementRefContext = createContext<MutableRefObject<HTMLDivElement | null> | null>(null);
@@ -841,6 +870,20 @@ export const Table: any = withDynamicSchemaProps(
           }
         `;
       }, [token.controlItemBgActive, token.controlItemBgActiveHover]);
+      const tableBlockContextBasicValue = useTableBlockContextBasicValue();
+
+      useEffect(() => {
+        if (tableBlockContextBasicValue?.field) {
+          tableBlockContextBasicValue.field.data = tableBlockContextBasicValue.field?.data || {};
+
+          tableBlockContextBasicValue.field.data.clearSelectedRowKeys = () => {
+            tableBlockContextBasicValue.field.data.selectedRowKeys = [];
+            setSelectedRowKeys([]);
+          };
+
+          tableBlockContextBasicValue.field.data.setSelectedRowKeys = setSelectedRowKeys;
+        }
+      }, [tableBlockContextBasicValue?.field]);
 
       const highlightRow = useMemo(() => (onClickRow ? highlightRowCss : ''), [highlightRowCss, onClickRow]);
 
@@ -982,7 +1025,14 @@ export const Table: any = withDynamicSchemaProps(
                   field.data.selectedRowKeys = selectedRowKeys;
                   field.data.selectedRowData = selectedRows;
                   setSelectedRowKeys(selectedRowKeys);
-                  onRowSelectionChange?.(selectedRowKeys, selectedRows);
+                  onRowSelectionChange?.(selectedRowKeys, selectedRows, setSelectedRowKeys);
+                },
+                onSelect: (record, selected: boolean, selectedRows, nativeEvent) => {
+                  if (tableBlockContextBasicValue) {
+                    tableBlockContextBasicValue.field.data = tableBlockContextBasicValue.field?.data || {};
+                    tableBlockContextBasicValue.field.data.selectedRecord = record;
+                    tableBlockContextBasicValue.field.data.selected = selected;
+                  }
                 },
                 getCheckboxProps(record) {
                   return {
@@ -1008,7 +1058,7 @@ export const Table: any = withDynamicSchemaProps(
                     <div
                       role="button"
                       aria-label={`table-index-${index}`}
-                      className={classNames(checked ? 'checked' : floatLeftClass, rowSelectCheckboxWrapperClass, {
+                      className={classNames(checked ? 'checked' : null, rowSelectCheckboxWrapperClass, {
                         [rowSelectCheckboxWrapperClassHover]: isRowSelect,
                       })}
                     >
@@ -1045,6 +1095,7 @@ export const Table: any = withDynamicSchemaProps(
           isRowSelect,
           memoizedRowSelection,
           paginationProps,
+          tableBlockContextBasicValue,
         ],
       );
 
@@ -1093,6 +1144,7 @@ export const Table: any = withDynamicSchemaProps(
           expandedRowKeys: expandedKeys,
         };
       }, [expandedKeys, onExpandValue]);
+
       return (
         // If spinning is set to undefined, it will cause the subtable to always display loading, so we need to convert it here.
         // We use Spin here instead of Table's loading prop because using Spin here reduces unnecessary re-renders.

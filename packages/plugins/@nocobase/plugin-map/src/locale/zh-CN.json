@@ -19,7 +19,7 @@
   "Enter keywords to search": "输入地方名关键字搜索（必须包含省/市）",
   "The AccessKey is incorrect, please check it": "访问密钥不正确，请检查",
   "Please configure the AMap securityCode or serviceHost correctly": "请正确配置高德地图 securityCode 或 serviceHost",
-  "Map Manager": "地图管理",
+  "Map manager": "地图管理",
   "Configuration": "配置",
   "Saved successfully": "保存成功",
   "Saved failed": "保存失败",

@@ -39,9 +39,11 @@ export const startMsgSSEStreamWithRetry: () => () => void = () => {
 
   const clientId = uid();
   const createMsgSSEConnection = async (clientId: string) => {
+    await updateUnreadMsgsCount();
     const apiClient = getAPIClient();
     const res = await apiClient.silent().request({
       url: 'myInAppMessages:sse',
+      skipAuth: true,
       method: 'get',
       signal: controller.signal,
       headers: {
@@ -52,6 +54,7 @@ export const startMsgSSEStreamWithRetry: () => () => void = () => {
       },
       responseType: 'stream',
       adapter: 'fetch',
+      skipNotify: (error) => (!error || !error.message ? true : false),
     });
     if (!res?.data) return;
     const stream = res.data;

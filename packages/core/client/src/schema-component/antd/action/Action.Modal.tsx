@@ -11,9 +11,8 @@ import { css } from '@emotion/css';
 import { observer, useField, useFieldSchema } from '@formily/react';
 import { Modal, ModalProps } from 'antd';
 import classNames from 'classnames';
-import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
-// @ts-ignore
 import React, { FC, startTransition, useEffect, useState } from 'react';
+import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { useToken } from '../../../style';
 import { ErrorFallback } from '../error-fallback';
@@ -23,7 +22,7 @@ import { ActionContextNoRerender } from './context';
 import { useActionContext } from './hooks';
 import { useSetAriaLabelForModal } from './hooks/useSetAriaLabelForModal';
 import { ActionDrawerProps, ComposedActionDrawer, OpenSize } from './types';
-import { useZIndexContext, zIndexContext } from './zIndexContext';
+import { getZIndex, useZIndexContext, zIndexContext } from './zIndexContext';
 
 const ModalErrorFallback: React.FC<FallbackProps> = (props) => {
   const { visible, setVisible } = useActionContext();
@@ -90,7 +89,7 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
       useSetAriaLabelForModal(visible);
     }
 
-    const zIndex = _zIndex || parentZIndex + (props.level || 0);
+    const zIndex = getZIndex('modal', _zIndex || parentZIndex, props.level || 0);
 
     return (
       <ActionContextNoRerender>

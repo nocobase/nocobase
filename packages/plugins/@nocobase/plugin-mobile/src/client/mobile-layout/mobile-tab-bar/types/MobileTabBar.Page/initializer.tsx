@@ -7,15 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaInitializerItemActionModalType } from '@nocobase/client';
-import { useNavigate } from 'react-router-dom';
 import { uid } from '@formily/shared';
+import { SchemaInitializerItemActionModalType } from '@nocobase/client';
 import { App } from 'antd';
+import { useNavigate } from 'react-router-dom';
 
 import { generatePluginTranslationTemplate, usePluginTranslation } from '../../../../locale';
-import { getMobileTabBarItemSchemaFields } from '../../MobileTabBar.Item';
 import { MobileRouteItem, useMobileRoutes } from '../../../../mobile-providers';
 import { getMobilePageSchema } from '../../../../pages';
+import { getMobileTabBarItemSchemaFields } from '../../MobileTabBar.Item';
 
 export const mobileTabBarSchemaInitializerItem: SchemaInitializerItemActionModalType = {
   name: 'schema',
@@ -52,6 +52,7 @@ export const mobileTabBarSchemaInitializerItem: SchemaInitializerItemActionModal
             schemaUid: pageSchemaUid,
             title: values.title,
             icon: values.icon,
+            enableTabs: false,
           } as MobileRouteItem,
         });
 
@@ -68,8 +69,8 @@ export const mobileTabBarSchemaInitializerItem: SchemaInitializerItemActionModal
           values: {
             type: 'tabs',
             parentId,
-            title: 'Unnamed',
             schemaUid: firstTabUid,
+            hidden: true,
           } as MobileRouteItem,
         });
 

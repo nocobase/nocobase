@@ -35,6 +35,7 @@ const ConfigureActionsButton = observer(
   },
   { displayName: 'WorkbenchConfigureActionsButton' },
 );
+
 function isMobile() {
   return window.matchMedia('(max-width: 768px)').matches;
 }
@@ -72,10 +73,9 @@ const ResponsiveSpace = () => {
 
 const InternalIcons = () => {
   const fieldSchema = useFieldSchema();
-  const { designable } = useDesignable();
   const { layout = WorkbenchLayout.Grid } = fieldSchema.parent['x-component-props'] || {};
   return (
-    <div style={{ marginBottom: designable ? '1rem' : 0 }} className="nb-action-panel-warp">
+    <div className="nb-action-panel-warp">
       <DndContext>
         {layout === WorkbenchLayout.Grid ? (
           <ResponsiveSpace />

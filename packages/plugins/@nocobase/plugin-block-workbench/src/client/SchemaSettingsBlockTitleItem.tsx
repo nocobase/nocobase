@@ -20,11 +20,11 @@ export function CustomSchemaSettingsBlockTitleItem() {
 
   return (
     <SchemaSettingsModalItem
-      title={t('Edit block title')}
+      title={t('Edit block title & description')}
       schema={
         {
           type: 'object',
-          title: t('Edit block title'),
+          title: t('Edit block title & description'),
           properties: {
             title: {
               title: t('Block title'),
@@ -33,16 +33,23 @@ export function CustomSchemaSettingsBlockTitleItem() {
               'x-decorator': 'FormItem',
               'x-component': 'Input',
             },
+            description: {
+              title: t('Description'),
+              type: 'string',
+              default: fieldSchema?.['x-decorator-props']?.['description'],
+              'x-decorator': 'FormItem',
+              'x-component': 'Markdown',
+            },
           },
         } as ISchema
       }
-      onSubmit={({ title }) => {
-        console.log('titleSchemaTest', fieldSchema, field);
-
+      onSubmit={({ title, description }) => {
         const componentProps = fieldSchema['x-decorator-props'] || {};
         componentProps.title = title;
+        componentProps.description = description;
         fieldSchema['x-decorator-props'] = componentProps;
         field.decoratorProps.title = title;
+        field.decoratorProps.description = description;
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
