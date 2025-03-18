@@ -81,12 +81,14 @@ export class PluginFileManagerClient extends Plugin {
     storageId?: string;
     storage?: any;
   }): Promise<{ errorMessage?: string; data?: any }> {
+    // 1. If storage exists, call the upload method directly
     if (options.storage) {
       const storageConfig = options.storage;
       const storageType = this.getStorageType(storageConfig.type);
       return await storageType?.upload({ file: options.file, storageConfig, apiClient: this.app.apiClient });
     }
 
+    // 2. Get storage by storageId, then call the upload method
     if (options?.storageId) {
       const storageConfig = await this.app.apiClient.resource('storages').get({
         filterByTk: options.storageId,
@@ -98,6 +100,7 @@ export class PluginFileManagerClient extends Plugin {
       }
     }
 
+    // 3. Get storage by fileCollectionName, then call the upload method
     if (options?.fileCollectionName) {
       const fileCollection = this.app.getCollectionManager().getCollection(options.fileCollectionName);
       const storageId = fileCollection.getOption('storage');
@@ -118,7 +121,7 @@ export class PluginFileManagerClient extends Plugin {
       }
     }
 
-    // use default storage
+    // 4. Get the default storage, then call the upload method
     const { data }: any = await this.app.apiClient.resource('storages').get({
       filter: {
         default: true,
