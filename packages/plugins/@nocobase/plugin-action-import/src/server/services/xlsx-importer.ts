@@ -288,9 +288,8 @@ export class XlsxImporter extends EventEmitter {
     return columns.map((col) => col.title || col.defaultTitle);
   }
 
-  private alignWithHeaders(expectedHeaders: string[], data: string[][]): string[][] {
-    const headers = this.options.explain ? data[1] : data[0];
-
+  private alignWithHeaders(params: { headers: string[]; expectedHeaders: string[]; data: string[][] }): string[][] {
+    const { expectedHeaders, headers, data } = params;
     const keepCols = headers.map((x, i) => (expectedHeaders.includes(x) ? i : -1)).filter((i) => i > -1);
 
     return data.map((row) => keepCols.map((i) => row[i]));
@@ -304,13 +303,13 @@ export class XlsxImporter extends EventEmitter {
 
     // Find and validate header row
     const expectedHeaders = this.getExpectedHeaders(ctx);
-    data = this.alignWithHeaders(expectedHeaders, data);
     const { headerRowIndex, headers } = this.findAndValidateHeaders({ data, expectedHeaders });
     if (headerRowIndex === -1) {
       throw new ImportValidationError('Headers not found. Expected headers: {{headers}}', {
         headers: expectedHeaders.join(', '),
       });
     }
+    data = this.alignWithHeaders({ data, expectedHeaders, headers });
 
     // Extract data rows
     const rows = data.slice(headerRowIndex + 1);
@@ -334,25 +333,10 @@ export class XlsxImporter extends EventEmitter {
       const actualHeaders = row.filter((cell) => cell !== null && cell !== '');
 
       const allHeadersFound = expectedHeaders.every((header) => actualHeaders.includes(header));
-      const noExtraHeaders = actualHeaders.length === expectedHeaders.length;
 
-      if (allHeadersFound && noExtraHeaders) {
-        const mismatchIndex = expectedHeaders.findIndex((title, index) => actualHeaders[index] !== title);
-
-        if (mismatchIndex === -1) {
-          // All headers match
-          return { headerRowIndex: rowIndex, headers: actualHeaders };
-        } else {
-          // Found potential header row but with mismatch
-          throw new ImportValidationError(
-            'Header mismatch at column {{column}}: expected "{{expected}}", but got "{{actual}}"',
-            {
-              column: mismatchIndex + 1,
-              expected: expectedHeaders[mismatchIndex],
-              actual: actualHeaders[mismatchIndex] || 'empty',
-            },
-          );
-        }
+      if (allHeadersFound) {
+        const orderedHeaders = expectedHeaders.filter((h) => actualHeaders.includes(h));
+        return { headerRowIndex: rowIndex, headers: orderedHeaders };
       }
     }
 
