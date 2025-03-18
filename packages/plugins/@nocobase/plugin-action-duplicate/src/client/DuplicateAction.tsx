@@ -32,8 +32,9 @@ import {
   useCollection,
   useDataSourceHeaders,
   useDataSourceKey,
+  Icon,
 } from '@nocobase/client';
-import { App, Button } from 'antd';
+import { App, Button, Tooltip } from 'antd';
 import _ from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -84,7 +85,7 @@ export const actionDesignerCss = css`
 
 export const DuplicateAction = observer(
   (props: any) => {
-    const { children } = props;
+    const { children, onlyIcon, icon, title } = props;
     const { message } = App.useApp();
     const field = useField();
     const fieldSchema = useFieldSchema();
@@ -206,7 +207,12 @@ export const DuplicateAction = observer(
                 }}
                 onClick={handelDuplicate}
               >
-                {loading ? t('Duplicating') : children || t('Duplicate')}
+                <Tooltip title={title}>
+                  <span style={{ marginRight: 3 }}>
+                    {icon && typeof icon === 'string' ? <Icon type={icon} /> : icon}
+                  </span>
+                </Tooltip>
+                {onlyIcon ? children[1] : loading ? t('Duplicating') : children || t('Duplicate')}
               </a>
             ) : (
               <Button
