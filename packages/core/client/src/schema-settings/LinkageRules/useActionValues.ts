@@ -36,7 +36,7 @@ export function useSatisfiedActionValues({
   const localSchema = schema ?? fieldSchema;
   const styleRules = rules ?? localSchema[LinkageRuleDataKeyMap[category]];
   const app = useApp();
-  console.log(styleRules);
+
   const compute = useCallback(() => {
     if (styleRules && formValues) {
       getSatisfiedValueMap({ rules: styleRules, variables, localVariables }, app.jsonLogic)
