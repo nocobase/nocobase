@@ -8,7 +8,7 @@
  */
 
 import { NAMESPACE } from '../../locale';
-import common from './common';
+import common, { commonUpload } from './common';
 
 export default {
   title: `{{t("Local storage", { ns: "${NAMESPACE}" })}}`,
@@ -47,4 +47,5 @@ export default {
     default: common.default,
     paranoid: common.paranoid,
   },
+  upload: commonUpload,
 };
