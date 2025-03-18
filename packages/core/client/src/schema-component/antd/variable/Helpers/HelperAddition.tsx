@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useMemo, useContext } from 'react';
-import type { MenuProps } from 'antd';
-import { Dropdown, Popover } from 'antd';
 import { FilterOutlined } from '@ant-design/icons';
-import { useCompile } from '../../../hooks';
+import type { MenuProps } from 'antd';
+import { Dropdown } from 'antd';
+import React from 'react';
 import { useApp } from '../../../../application';
+import { useCompile } from '../../../hooks';
 import { addHelper } from './observables';
 
 export function HelperAddition() {
