@@ -32,6 +32,53 @@ export default class extends Migration {
 
     const exists = await queryInterface.tableExists(oldTableName);
     if (!exists) {
+      const newColumns = await queryInterface.describeTable(newTableName);
+      const newPrimaryKeys = Object.values(newColumns).filter((c) => c.primaryKey);
+      if (newPrimaryKeys.length > 1) {
+        // @ts-ignore
+        const constraints: any = await queryInterface.showConstraint(newTableName);
+        await db.sequelize.transaction(
+          {
+            isolationLevel: Transaction.ISOLATION_LEVELS.SERIALIZABLE,
+          },
+          async (transaction) => {
+            if (this.db.isPostgresCompatibleDialect()) {
+              const primaryKeys = constraints.filter((item) => item.constraintType === 'PRIMARY KEY');
+              if (primaryKeys.length) {
+                for (const primaryKey of primaryKeys) {
+                  await queryInterface.removeConstraint(newTableName, primaryKey.constraintName, { transaction });
+                }
+              }
+            } else if (this.db.isMySQLCompatibleDialect()) {
+              const idExists = await workflowManualTasksCollection.getField('id').existsInDb();
+              if (!idExists) {
+                await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} ADD COLUMN id BIGINT;`, {
+                  transaction,
+                });
+                await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} DROP PRIMARY KEY`, {
+                  transaction,
+                });
+                await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} ADD PRIMARY KEY (id)`, {
+                  transaction,
+                });
+                await db.sequelize.query(
+                  `ALTER TABLE ${newTableNameWithQuotes} MODIFY COLUMN id BIGINT AUTO_INCREMENT`,
+                  {
+                    transaction,
+                  },
+                );
+              } else {
+                await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} DROP PRIMARY KEY`, {
+                  transaction,
+                });
+                await db.sequelize.query(`ALTER TABLE ${newTableNameWithQuotes} ADD PRIMARY KEY (id)`, {
+                  transaction,
+                });
+              }
+            }
+          },
+        );
+      }
       return;
     }
     const oldColumns = await queryInterface.describeTable(oldTableName);

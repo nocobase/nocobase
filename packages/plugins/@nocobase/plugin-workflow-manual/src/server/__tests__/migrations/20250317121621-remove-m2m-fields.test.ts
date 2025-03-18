@@ -11,7 +11,7 @@ import { createMockServer } from '@nocobase/test';
 import { describe, test } from 'vitest';
 import workflowManualTasks from '../../collections/workflowManualTasks';
 
-import Migration from '../../migrations/20250316181621-remove-m2m-fields';
+import Migration from '../../migrations/20250317121621-remove-m2m-fields';
 
 describe('20250225175712-change-table-name.test', () => {
   test(`old table and fields should not exist after migrated with fields removed`, async () => {
@@ -30,10 +30,44 @@ describe('20250225175712-change-table-name.test', () => {
         },
       ],
     });
-
+    const usersCollection = app.db.collection({
+      name: 'users',
+      fields: [
+        {
+          name: 'jobs',
+          type: 'belongsToMany',
+        },
+        {
+          name: 'usersJobs',
+          type: 'hasMany',
+        },
+      ],
+    });
+    const jobsCollection = app.db.collection({
+      name: 'jobs',
+      fields: [
+        {
+          name: 'users',
+          type: 'belongsToMany',
+        },
+        {
+          name: 'usersJobs',
+          type: 'hasMany',
+        },
+      ],
+    });
     const oldCollection = app.db.collection({
-      ...workflowManualTasks,
       name: 'users_jobs',
+      fields: [
+        {
+          name: 'jobs',
+          type: 'belongsTo',
+        },
+        {
+          name: 'users',
+          type: 'belongsTo',
+        },
+      ],
     });
     await app.db.sync();
 

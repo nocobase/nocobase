@@ -45,7 +45,7 @@ export const RichText = connect(
         value={resultValue}
         onChange={(value) => {
           if (value === '<p><br></p>') {
-            onChange(undefined);
+            onChange('');
           } else {
             onChange(value);
           }
