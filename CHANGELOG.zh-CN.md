@@ -5,6 +5,81 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.6.6](https://github.com/nocobase/nocobase/compare/v1.6.5...v1.6.6) - 2025-03-18
+
+### 🎉 新特性
+
+- **[client]** 支持长文本字段作为关系字段的标题字段 ([#6495](https://github.com/nocobase/nocobase/pull/6495)) by @katherinehhh
+
+- **[工作流：聚合查询节点]** 支持为聚合结果配置精度选项 ([#6491](https://github.com/nocobase/nocobase/pull/6491)) by @mytharcher
+
+### 🚀 优化
+
+- **[文件存储：S3 (Pro)]** 将文案“访问 URL 基础”改为“基础 URL” by @zhangzhonghe
+
+### 🐛 修复
+
+- **[evaluators]** 将表达式计算保留小数调整回 9 位 ([#6492](https://github.com/nocobase/nocobase/pull/6492)) by @mytharcher
+
+- **[文件管理器]** URL 转义 ([#6497](https://github.com/nocobase/nocobase/pull/6497)) by @chenos
+
+- **[数据源：主数据库]** 无法创建 MySQL 视图 ([#6477](https://github.com/nocobase/nocobase/pull/6477)) by @aaaaaajie
+
+- **[工作流]** 修复历史遗留任务数量工作流删除后统计错误 ([#6493](https://github.com/nocobase/nocobase/pull/6493)) by @mytharcher
+
+- **[嵌入 NocoBase]** 页面显示空白 by @zhangzhonghe
+
+- **[备份管理器]**
+  - 通过多应用模板创建子应用时备份中的上传文件未被正确还原 by @gchust
+
+  - 还原 MySQL 数据库备份时由于 GTID 集合重叠导致的失败 by @gchust
+
+- **[工作流：审批]**
+  - 将退回的审批单据列入待办 by @mytharcher
+
+  - 修复审批过程表格中发起人查看按钮消失的问题 by @mytharcher
+
+## [v1.6.5](https://github.com/nocobase/nocobase/compare/v1.6.4...v1.6.5) - 2025-03-17
+
+### 🚀 优化
+
+- **[文件管理器]** 简化生成文件 URL 的逻辑和 API ([#6472](https://github.com/nocobase/nocobase/pull/6472)) by @mytharcher
+
+- **[文件存储：S3 (Pro)]** 优化生成文件 URL 的方法 by @mytharcher
+
+- **[备份管理器]** 允许在相同版本的预发布和发布版本之间恢复备份 by @gchust
+
+### 🐛 修复
+
+- **[client]**
+  - 富文本字段清空后提交时数据未删除 ([#6486](https://github.com/nocobase/nocobase/pull/6486)) by @katherinehhh
+
+  - 页面右上角图标的颜色不会随主题变化 ([#6482](https://github.com/nocobase/nocobase/pull/6482)) by @zhangzhonghe
+
+  - 点击筛选表单的重置按钮无法清除网格卡片区块的筛选条件 ([#6475](https://github.com/nocobase/nocobase/pull/6475)) by @zhangzhonghe
+
+- **[工作流：人工处理节点]**
+  - 修复迁移脚本 ([#6484](https://github.com/nocobase/nocobase/pull/6484)) by @mytharcher
+
+  - 修改迁移脚本确保执行 ([#6487](https://github.com/nocobase/nocobase/pull/6487)) by @mytharcher
+
+  - 修复区块的筛选组件中工作流标题项 ([#6480](https://github.com/nocobase/nocobase/pull/6480)) by @mytharcher
+
+  - 修复 id 列不存在时迁移脚本报错 ([#6470](https://github.com/nocobase/nocobase/pull/6470)) by @chenos
+
+  - 避免历史表被关系字段同步出来 ([#6478](https://github.com/nocobase/nocobase/pull/6478)) by @mytharcher
+
+- **[工作流：聚合查询节点]** 修复对聚合结果为 null 时取整报错 ([#6473](https://github.com/nocobase/nocobase/pull/6473)) by @mytharcher
+
+- **[工作流]** 不统计已删除的工作流的待办 ([#6474](https://github.com/nocobase/nocobase/pull/6474)) by @mytharcher
+
+- **[备份管理器]** 默认的备份设置不存在时服务器无法启动 by @gchust
+
+- **[工作流：审批]**
+  - 修复审批表单中文件字段报错问题 by @mytharcher
+
+  - 基于钩子事件修复待办任务数量 by @mytharcher
+
 ## [v1.6.4](https://github.com/nocobase/nocobase/compare/v1.6.3...v1.6.4) - 2025-03-14
 
 ### 🎉 新特性

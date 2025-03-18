@@ -22,7 +22,7 @@ export default evaluate.bind(function (expression: string, scope = {}) {
     if (Number.isNaN(result) || !Number.isFinite(result)) {
       return null;
     }
-    return round(result, 14);
+    return round(result, 9);
   }
   return result;
 }, {});

@@ -174,7 +174,7 @@ export function WorkflowTasks() {
   const params = useActionParams(status);
 
   useEffect(() => {
-    setTitle?.(`${lang('Workflow todo')}${title ? `: ${compile(title)}` : ''}`);
+    setTitle?.(`${lang('Workflow todos')}${title ? `: ${compile(title)}` : ''}`);
   }, [taskType, status, setTitle, title, compile]);
 
   useEffect(() => {

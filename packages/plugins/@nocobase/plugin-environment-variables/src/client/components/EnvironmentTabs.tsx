@@ -426,7 +426,7 @@ export function EnvironmentTabs() {
             <Dropdown
               menu={{
                 onClick(info) {
-                  FormDrawer(
+                  const drawer = FormDrawer(
                     {
                       variable: t('Add variable'),
                       bulk: t('Bulk import'),
@@ -440,7 +440,13 @@ export function EnvironmentTabs() {
                           </SchemaComponentOptions>
                           <FormDrawer.Footer>
                             <FormButtonGroup align="right">
-                              <Reset>{t('Cancel')}</Reset>
+                              <Reset
+                                onClick={() => {
+                                  drawer.close();
+                                }}
+                              >
+                                {t('Cancel')}
+                              </Reset>
                               <Submit
                                 onSubmit={async (data) => {
                                   if (info.key === 'bulk') {
@@ -466,7 +472,8 @@ export function EnvironmentTabs() {
                       );
                     },
                     theme,
-                  )
+                  );
+                  drawer
                     .open({
                       initialValues: {},
                     })

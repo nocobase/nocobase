@@ -598,6 +598,7 @@ const RenderButtonInner = observer(
         component={tarComponent || Button}
         className={classnames(componentCls, hashId, className, 'nb-action')}
         type={type === 'danger' ? undefined : type}
+        title={actionTitle}
       >
         {actionTitle && <span className={icon ? 'nb-action-title' : null}>{actionTitle}</span>}
         <Designer {...designerProps} />
