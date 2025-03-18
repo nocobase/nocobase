@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Application from '@nocobase/server';
+import { isURL } from '@nocobase/utils';
 import { StorageEngine } from 'multer';
+import urlJoin from 'url-join';
 
 export interface StorageModel {
   id?: number;
@@ -27,21 +28,36 @@ export interface AttachmentModel {
   title: string;
   filename: string;
   path: string;
+  url: string;
+  storageId: number;
 }
 
-export interface IStorage {
-  filenameKey?: string;
-  middleware?(app: Application): void;
+export abstract class StorageType {
+  static defaults(): StorageModel {
+    return {} as StorageModel;
+  }
+  static filenameKey?: string;
+  constructor(public storage: StorageModel) {}
+  abstract make(): StorageEngine;
+  abstract delete(records: AttachmentModel[]): [number, AttachmentModel[]] | Promise<[number, AttachmentModel[]]>;
+
   getFileData?(file: { [key: string]: any }): { [key: string]: any };
-  make(storage: StorageModel): StorageEngine;
-  defaults(): StorageModel;
-  delete(storage: StorageModel, records: AttachmentModel[]): Promise<[number, AttachmentModel[]]>;
-}
-
-export abstract class StorageType implements IStorage {
-  abstract make(storage: StorageModel): StorageEngine;
-  abstract delete(storage: StorageModel, records: AttachmentModel[]): Promise<[number, AttachmentModel[]]>;
-  defaults(): StorageModel {
-    return {} as any;
+  getFileURL(file: AttachmentModel, preview?: boolean): string | Promise<string> {
+    // 兼容历史数据
+    if (file.url && isURL(file.url)) {
+      if (preview) {
+        return file.url + (this.storage.options.thumbnailRule || '');
+      }
+      return file.url;
+    }
+    const keys = [
+      this.storage.baseUrl,
+      file.path && encodeURI(file.path),
+      encodeURIComponent(file.filename),
+      preview && this.storage.options.thumbnailRule,
+    ].filter(Boolean);
+    return urlJoin(keys);
   }
 }
+
+export type StorageClassType = { new (storage: StorageModel): StorageType } & typeof StorageType;

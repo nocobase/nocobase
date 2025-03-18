@@ -7,15 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/client';
+import { lazy, Plugin } from '@nocobase/client';
 import PluginACLClient from '@nocobase/plugin-acl/client';
 import { uid } from '@nocobase/utils/client';
 import React from 'react';
-import { lazy } from '@nocobase/client';
 // import { DatabaseConnectionProvider } from './DatabaseConnectionProvider';
 const { DatabaseConnectionProvider } = lazy(() => import('./DatabaseConnectionProvider'), 'DatabaseConnectionProvider');
 
 import { ThirdDataSource } from './ThridDataSource';
+import { NAMESPACE } from './locale';
 // import { BreadcumbTitle } from './component/BreadcumbTitle';
 const { BreadcumbTitle } = lazy(() => import('./component/BreadcumbTitle'), 'BreadcumbTitle');
 
@@ -33,7 +33,6 @@ const { DataSourcePermissionManager } = lazy(
   () => import('./component/PermissionManager'),
   'DataSourcePermissionManager',
 );
-import { NAMESPACE } from './locale';
 // import { CollectionMainProvider } from './component/MainDataSourceManager/CollectionMainProvider';
 const { CollectionMainProvider } = lazy(
   () => import('./component/MainDataSourceManager/CollectionMainProvider'),
@@ -58,6 +57,8 @@ export class PluginDataSourceManagerClient extends Plugin {
     this.app.pm.get(PluginACLClient).settingsUI.addPermissionsTab(({ t, TabLayout, activeRole }) => ({
       key: 'dataSource',
       label: t('Data sources'),
+      // 排在 Desktop routes (20) 之前，System (10) 之后
+      sort: 15,
       children: (
         <TabLayout>
           <DataSourcePermissionManager role={activeRole} />

@@ -15,6 +15,8 @@ import deepmerge from 'deepmerge';
 import { MemoryBloomFilter } from './bloom-filter/memory-bloom-filter';
 import { BloomFilter } from './bloom-filter';
 import { RedisBloomFilter } from './bloom-filter/redis-bloom-filter';
+import { Counter, MemoryCounter, RedisCounter, LockCounter } from './counter';
+import { LockManager } from '@nocobase/lock-manager';
 
 type StoreOptions = {
   store?: 'memory' | FactoryStore<Store, any>;
@@ -28,10 +30,12 @@ export type CacheManagerOptions = Partial<{
   stores: {
     [storeType: string]: StoreOptions;
   };
+  prefix: string;
 }>;
 
 export class CacheManager {
   defaultStore: string;
+  prefix?: string;
   private stores = new Map<
     string,
     {
@@ -69,8 +73,9 @@ export class CacheManager {
       },
     };
     const cacheOptions = deepmerge(defaultOptions, options || {});
-    const { defaultStore = 'memory', stores } = cacheOptions;
+    const { defaultStore = 'memory', stores, prefix } = cacheOptions;
     this.defaultStore = defaultStore;
+    this.prefix = prefix;
     for (const [name, store] of Object.entries(stores)) {
       const { store: s, ...globalConfig } = store;
       this.registerStore({ name, store: s, ...globalConfig });
@@ -102,7 +107,9 @@ export class CacheManager {
   }
 
   async createCache(options: { name: string; prefix?: string; store?: string; [key: string]: any }) {
-    const { name, prefix, store = this.defaultStore, ...config } = options;
+    const { name, store = this.defaultStore, ...config } = options;
+    let { prefix } = options;
+    prefix = this.prefix ? (prefix ? `${this.prefix}:${prefix}` : this.prefix) : prefix;
     if (!lodash.isEmpty(config) || store === 'memory') {
       const newStore = await this.createStore({ name, storeType: store, ...config });
       return this.newCache({ name, prefix, store: newStore });
@@ -159,6 +166,35 @@ export class CacheManager {
         return new RedisBloomFilter(cache);
       default:
         throw new Error(`BloomFilter store [${store}] is not supported`);
+    }
+  }
+
+  /**
+   * @experimental
+   */
+  async createCounter(
+    options: { name: string; prefix?: string; store?: string },
+    lockManager?: LockManager,
+  ): Promise<Counter> {
+    const { store = this.defaultStore, name, prefix } = options || {};
+    let cache: Cache;
+    if (store !== 'memory') {
+      try {
+        cache = this.getCache(name);
+      } catch (error) {
+        cache = await this.createCache({ name, store, prefix });
+      }
+    }
+    switch (store) {
+      case 'memory':
+        return new MemoryCounter();
+      case 'redis':
+        return new RedisCounter(cache);
+      default:
+        if (!lockManager) {
+          throw new Error(`Counter store [${store}] is not supported`);
+        }
+        return new LockCounter(cache, lockManager);
     }
   }
 }

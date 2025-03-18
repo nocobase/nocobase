@@ -20,7 +20,7 @@ export const useGetAriaLabelOfDesigner = () => {
   const { name: _collectionName } = useCollection_deprecated();
   const getAriaLabel = useCallback(
     (name: string, postfix?: string) => {
-      if (!fieldSchema) return '';
+      if (!fieldSchema) return `designer-${name}-${postfix}`;
 
       const component = fieldSchema['x-component'];
       const componentName = typeof component === 'string' ? component : component?.displayName || component?.name;

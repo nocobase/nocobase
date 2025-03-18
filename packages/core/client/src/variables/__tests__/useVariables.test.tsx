@@ -85,6 +85,18 @@ apiClient.auth.role = 'root';
 // 用于解析 `$nToken` 的值
 apiClient.auth.token = 'token';
 
+mockRequest.onPost('/auth:check').reply(() => {
+  return [
+    200,
+    {
+      data: {
+        id: 0,
+        nickname: 'from request',
+      },
+    },
+  ];
+});
+
 mockRequest.onGet('/auth:check').reply(() => {
   return [
     200,

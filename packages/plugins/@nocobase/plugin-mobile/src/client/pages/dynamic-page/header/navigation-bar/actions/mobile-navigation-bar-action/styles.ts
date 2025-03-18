@@ -29,25 +29,15 @@ export const useStyles = genStyleHook('nb-mobile-navigation-bar-action', (token)
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-
-        '.schema-toolbar': {
-          inset: '-15px -8px',
-        },
       },
       '.nb-navigation-bar-action-title': {
         fontSize: 17,
         padding: 0,
-        '.schema-toolbar': {
-          inset: '-15px -8px',
-        },
       },
       '.nb-navigation-bar-action-icon-and-title': {
         height: '32px !important',
         fontSize: '17px !important',
         padding: '0 6px !important',
-        '.schema-toolbar': {
-          inset: '-15px',
-        },
       },
     },
   };

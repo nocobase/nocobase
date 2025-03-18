@@ -40,7 +40,7 @@ describe('workflow > triggers > collection', () => {
     TagRepo = db.getCollection('tags').repository;
 
     const user = await app.db.getRepository('users').findOne();
-    agent = app.agent().login(user);
+    agent = await app.agent().login(user);
   });
 
   afterEach(() => app.destroy());

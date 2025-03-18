@@ -9,14 +9,30 @@
 
 import { get, pick } from 'lodash';
 import { BelongsTo, HasOne } from 'sequelize';
-import { Model, modelAssociationByKey } from '@nocobase/database';
+import { Collection, Model, modelAssociationByKey } from '@nocobase/database';
 import Application, { DefaultContext } from '@nocobase/server';
 import { Context as ActionContext, Next } from '@nocobase/actions';
+import PluginErrorHandler from '@nocobase/plugin-error-handler';
 
-import WorkflowPlugin, { EventOptions, Trigger, WorkflowModel, toJSON } from '@nocobase/plugin-workflow';
+import WorkflowPlugin, {
+  EXECUTION_STATUS,
+  EventOptions,
+  Trigger,
+  WorkflowModel,
+  toJSON,
+} from '@nocobase/plugin-workflow';
 import { joinCollectionName, parseCollectionName } from '@nocobase/data-source-manager';
 
 interface Context extends ActionContext, DefaultContext {}
+
+class RequestOnActionTriggerError extends Error {
+  status = 400;
+  messages: any[] = [];
+  constructor(message) {
+    super(message);
+    this.name = 'RequestOnActionTriggerError';
+  }
+}
 
 export default class extends Trigger {
   static TYPE = 'action';
@@ -27,13 +43,9 @@ export default class extends Trigger {
     const self = this;
 
     async function triggerWorkflowActionMiddleware(context: Context, next: Next) {
-      const { resourceName, actionName } = context.action;
-
-      if (resourceName === 'workflows' && actionName === 'trigger') {
-        return self.workflowTriggerAction(context, next);
-      }
-
       await next();
+
+      const { actionName } = context.action;
 
       if (!['create', 'update'].includes(actionName)) {
         return;
@@ -43,22 +55,29 @@ export default class extends Trigger {
     }
 
     workflow.app.dataSourceManager.use(triggerWorkflowActionMiddleware);
+
+    workflow.app.pm.get(PluginErrorHandler).errorHandler.register(
+      (err) => err instanceof RequestOnActionTriggerError || err.name === 'RequestOnActionTriggerError',
+      async (err, ctx) => {
+        ctx.body = {
+          errors: err.messages,
+        };
+        ctx.status = err.status;
+      },
+    );
   }
 
-  /**
-   * @deprecated
-   */
-  async workflowTriggerAction(context: Context, next: Next) {
-    const { triggerWorkflows } = context.action.params;
-
-    if (!triggerWorkflows) {
-      return context.throw(400);
+  getTargetCollection(collection: Collection, association: string) {
+    if (!association) {
+      return collection;
     }
 
-    context.status = 202;
-    await next();
+    let targetCollection = collection;
+    for (const key of association.split('.')) {
+      targetCollection = collection.db.getCollection(targetCollection.getField(key).target);
+    }
 
-    return this.collectionTriggerAction(context);
+    return targetCollection;
   }
 
   private async collectionTriggerAction(context: Context) {
@@ -76,7 +95,6 @@ export default class extends Trigger {
       return;
     }
 
-    const fullCollectionName = joinCollectionName(dataSourceHeader, collection.name);
     const { currentUser, currentRole } = context.state;
     const { model: UserModel } = this.workflow.db.getCollection('users');
     const userInfo = {
@@ -92,9 +110,8 @@ export default class extends Trigger {
     const globalWorkflows = new Map();
     const localWorkflows = new Map();
     workflows.forEach((item) => {
-      if (resourceName === 'workflows' && actionName === 'trigger') {
-        localWorkflows.set(item.key, item);
-      } else if (item.config.collection === fullCollectionName) {
+      const targetCollection = this.getTargetCollection(collection, triggersKeysMap.get(item.key));
+      if (item.config.collection === joinCollectionName(dataSourceHeader, targetCollection.name)) {
         if (item.config.global) {
           if (item.config.actions?.includes(actionName)) {
             globalWorkflows.set(item.key, item);
@@ -177,7 +194,35 @@ export default class extends Trigger {
     }
 
     for (const event of syncGroup) {
-      await this.workflow.trigger(event[0], event[1]);
+      const processor = await this.workflow.trigger(event[0], event[1], { httpContext: context });
+
+      // NOTE: workflow trigger failed
+      if (!processor) {
+        return context.throw(500);
+      }
+
+      const { lastSavedJob, nodesMap } = processor;
+      const lastNode = nodesMap.get(lastSavedJob?.nodeId);
+      // NOTE: passthrough
+      if (processor.execution.status === EXECUTION_STATUS.RESOLVED) {
+        if (lastNode?.type === 'end') {
+          return;
+        }
+        continue;
+      }
+      // NOTE: intercept
+      if (processor.execution.status < EXECUTION_STATUS.STARTED) {
+        if (lastNode?.type !== 'end') {
+          return context.throw(500, 'Workflow on your action failed, please contact the administrator');
+        }
+
+        const err = new RequestOnActionTriggerError('Request failed');
+        err.status = 400;
+        err.messages = context.state.messages;
+        return context.throw(err.status, err);
+      }
+      // NOTE: should not be pending
+      return context.throw(500, 'Workflow on your action hangs, please contact the administrator');
     }
 
     for (const event of asyncGroup) {

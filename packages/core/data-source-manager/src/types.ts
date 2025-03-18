@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { DataSource } from './data-source';
+
 export type CollectionOptions = {
   name: string;
   repository?: string;
@@ -102,6 +104,10 @@ export type MergeOptions = {
 };
 
 export interface ICollectionManager {
+  dataSource: DataSource;
+
+  setDataSource(dataSource: DataSource): void;
+
   registerFieldTypes(types: Record<string, any>): void;
 
   registerFieldInterfaces(interfaces: Record<string, new (options: any) => IFieldInterface>): void;

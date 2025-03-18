@@ -12,17 +12,23 @@ import actions from '@nocobase/actions';
 import { HandlerType } from '@nocobase/resourcer';
 import WorkflowPlugin, { JOB_STATUS } from '@nocobase/plugin-workflow';
 
-import path from 'path';
-import { submit } from './actions';
+import * as jobActions from './actions';
 
 import ManualInstruction from './ManualInstruction';
+import { MANUAL_TASK_TYPE } from '../common/constants';
+
+interface WorkflowManualTaskModel {
+  id: number;
+  userId: number;
+  workflowId: number;
+  executionId: number;
+  status: number;
+}
 
 export default class extends Plugin {
   async load() {
-    await this.importCollections(path.resolve(__dirname, 'collections'));
-
-    this.app.resource({
-      name: 'users_jobs',
+    this.app.resourceManager.define({
+      name: 'workflowManualTasks',
       actions: {
         list: {
           filter: {
@@ -40,13 +46,26 @@ export default class extends Plugin {
           },
           handler: actions.list as HandlerType,
         },
-        submit,
+        ...jobActions,
       },
     });
 
-    this.app.acl.allow('users_jobs', ['list', 'get', 'submit'], 'loggedIn');
+    this.app.acl.allow('workflowManualTasks', ['list', 'get', 'submit'], 'loggedIn');
 
     const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
     workflowPlugin.registerInstruction('manual', ManualInstruction);
+
+    this.db.on('workflowManualTasks.afterSave', async (task: WorkflowManualTaskModel, options) => {
+      await workflowPlugin.toggleTaskStatus(
+        {
+          type: MANUAL_TASK_TYPE,
+          key: `${task.id}`,
+          userId: task.userId,
+          workflowId: task.workflowId,
+        },
+        Boolean(task.status),
+        options,
+      );
+    });
   }
 }
