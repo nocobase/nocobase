@@ -7,7 +7,7 @@
   "Allow linking to multiple records": "Consenti collegamento a più record",  
   "The association field to snapshot": "Campo di associazione per lo snapshot",
   "Snapshot the snapshot's association fields": "Snapshot campi di associazione dello snapshot",
-  "Please select": "Seleziona"
+  "Please select": "Seleziona",
   "When a record is created, association data is backed up in a snapshot": "Quando viene creato un record, viene eseguito il backup dei dati relazionali in uno snapshot",
   "Snapshot data": "Dati snapshot"
 }
