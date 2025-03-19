@@ -18,6 +18,54 @@ export class PluginFieldMarkdownVditorServer extends Plugin {
 
   async load() {
     await this.copyVditorDist();
+    this.setResource();
+  }
+
+  setResource() {
+    this.app.resourceManager.define({
+      name: 'vditor',
+      actions: {
+        check: async (context, next) => {
+          const { fileCollectionName } = context.action.params;
+          let storageName;
+          let storage;
+
+          if (fileCollectionName) {
+            const fileCollection = this.db.getCollection(fileCollectionName);
+            storageName = fileCollection?.options?.storage;
+            if (storageName) {
+              storage = await this.db.getRepository('storages').findOne({
+                where: {
+                  name: storageName,
+                },
+              });
+            } else {
+              storage = await this.db.getRepository('storages').findOne({
+                where: {
+                  default: true,
+                },
+              });
+            }
+          } else {
+            storage = await this.db.getRepository('storages').findOne({
+              where: {
+                default: true,
+              },
+            });
+          }
+
+          const isSupportToUploadFiles =
+            storage?.type !== 's3-compatible' || (storage?.options?.baseUrl && storage?.options?.public);
+
+          context.body = {
+            isSupportToUploadFiles: !!isSupportToUploadFiles,
+            storage,
+          };
+
+          await next();
+        },
+      },
+    });
   }
 
   async copyVditorDist() {

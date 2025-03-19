@@ -79,18 +79,15 @@ export const Edit = withDynamicSchemaProps((props) => {
         async handler(files: File[]) {
           const file = files[0];
 
-          const storage = fileCollection
-            ? await getStorageConfigByFileCollectionName(fileCollection, app)
-            : await getDefaultStorageConfig(app);
+          const { data: checkData } = await apiClient.resource('vditor').check({
+            fileCollectionName: fileCollection,
+          });
 
-          if (!storage) {
-            vditor.tip(t('Storage not found', { ns: NAMESPACE }), 3000);
-            return;
-          }
-
-          // s3-pro requires configuring baseUrl and must allow public access to upload files in Vditor
-          if (storage.type === 's3-compatible' && (!storage.options.baseUrl || !storage.options.public)) {
-            vditor.tip(t('vditor.uploadError.message', { ns: NAMESPACE, storageTitle: storage?.title }), 0);
+          if (!checkData?.data?.isSupportToUploadFiles) {
+            vditor.tip(
+              t('vditor.uploadError.message', { ns: NAMESPACE, storageTitle: checkData.data.storage?.title }),
+              0,
+            );
             return;
           }
 
@@ -98,7 +95,6 @@ export const Edit = withDynamicSchemaProps((props) => {
           const { data, errorMessage } = await fileManagerPlugin.uploadFile({
             file,
             fileCollectionName: fileCollection,
-            storage,
           });
 
           if (errorMessage) {
@@ -203,27 +199,3 @@ export const Edit = withDynamicSchemaProps((props) => {
     </div>,
   );
 });
-
-async function getStorageConfigByFileCollectionName(fileCollectionName: string, app: any) {
-  const fileCollection = app.getCollectionManager().getCollection(fileCollectionName);
-  const storageId = fileCollection.getOption('storage');
-
-  if (storageId) {
-    const storageConfig = await app.apiClient.resource('storages').get({
-      filterByTk: storageId,
-    });
-
-    return storageConfig;
-  }
-
-  return null;
-}
-
-async function getDefaultStorageConfig(app: any) {
-  const { data }: any = await app.apiClient.resource('storages').get({
-    filter: {
-      default: true,
-    },
-  });
-  return data?.data;
-}
